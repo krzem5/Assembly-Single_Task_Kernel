@@ -1,0 +1,316 @@
+#include <kernel/acpi/fadt.h>
+#include <kernel/cpu/cpu.h>
+#include <kernel/drive/drive.h>
+#include <kernel/drive/drive_list.h>
+#include <kernel/elf/elf.h>
+#include <kernel/fs/fs.h>
+#include <kernel/log/log.h>
+#include <kernel/memory/memcpy.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
+#include <kernel/print/print.h>
+#include <kernel/syscall/syscall.h>
+#include <kernel/types.h>
+
+
+
+#define USER_DRIVE_FLAG_PRESENT 1
+#define USER_DRIVE_FLAG_BOOT 2
+
+
+
+#define USER_PARTITION_FLAG_PRESENT 1
+#define USER_PARTITION_FLAG_BOOT 2
+
+
+
+typedef struct _SYSCALL_REGISTERS{
+	u64 rax;
+	u64 rbx;
+	u64 rdx;
+	u64 rsi;
+	u64 rdi;
+	u64 rbp;
+	u64 r8;
+	u64 r9;
+	u64 r10;
+	u64 r12;
+	u64 r13;
+	u64 r14;
+	u64 r15;
+	u64 rflags;
+	u64 rip;
+} syscall_registers_t;
+
+
+
+typedef struct _USER_DRIVE{
+	u8 flags;
+	u8 type;
+	u8 index;
+	char name[16];
+	char serial_number[32];
+	char model_number[64];
+	u64 block_count;
+	u64 block_size;
+} user_drive_t;
+
+
+
+typedef struct _USER_PARTITION{
+	u8 flags;
+	u8 type;
+	u8 index;
+	u64 first_block_index;
+	u64 last_block_index;
+	char name[16];
+	u32 drive_index;
+} user_partition_t;
+
+
+
+void* _syscall_handlers[SYSCALL_COUNT+1];
+
+
+
+static u64 _sanatize_user_memory(u64 start,u64 size){
+	u64 address=vmm_virtual_to_physical(&vmm_user_pagemap,start);
+	if (!address||!size){
+		return 0;
+	}
+	for (u64 offset=PAGE_SIZE;offset<size;offset+=PAGE_SIZE){
+		if (!vmm_virtual_to_physical(&vmm_user_pagemap,start+offset)){
+			return 0;
+		}
+	}
+	return address;
+}
+
+
+
+static void _syscall_print_string(syscall_registers_t* regs){
+	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		return;
+	}
+	print_string(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+}
+
+
+
+static void _syscall_elf_load(syscall_registers_t* regs){
+	regs->rax=-1;
+	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		return;
+	}
+	char buffer[4096];
+	if (regs->rsi>4095){
+		return;
+	}
+	memcpy(buffer,VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	buffer[regs->rsi]=0;
+	void* start_address=elf_load(buffer);
+	if (!start_address){
+		return;
+	}
+	cpu_start_program(start_address);
+}
+
+
+
+static void _syscall_cpu_core_count(syscall_registers_t* regs){
+	regs->rax=cpu_get_core_count();
+}
+
+
+
+static void _syscall_cpu_core_start(syscall_registers_t* regs){
+	// int _syscall_cpu_core_start(unsigned int index,void* fn,void* arg);
+	WARN("Unimplemented: _syscall_cpu_core_start");
+}
+
+
+
+static void _syscall_cpu_core_stop(syscall_registers_t* regs){
+	cpu_core_stop();
+}
+
+
+
+static void _syscall_drive_list_length(syscall_registers_t* regs){
+	regs->rax=drive_list_get_length();
+}
+
+
+
+static void _syscall_drive_list_get(syscall_registers_t* regs){
+	const drive_t* drive=drive_list_get_drive(regs->rdi);
+	if (!drive||regs->rdx!=sizeof(user_drive_t)){
+		regs->rax=-1;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=-1;
+		return;
+	}
+	user_drive_t* user_drive=VMM_TRANSLATE_ADDRESS(address);
+	user_drive->flags=USER_DRIVE_FLAG_PRESENT|((drive->flags&DRIVE_FLAG_BOOT)?USER_DRIVE_FLAG_BOOT:0);
+	user_drive->type=drive->type;
+	user_drive->index=regs->rdi;
+	memcpy(user_drive->name,drive->name,16);
+	memcpy(user_drive->serial_number,drive->serial_number,32);
+	memcpy(user_drive->model_number,drive->model_number,64);
+	user_drive->block_count=drive->block_count;
+	user_drive->block_size=drive->block_size;
+	regs->rax=0;
+}
+
+
+
+static void _syscall_file_system_count(syscall_registers_t* regs){
+	regs->rax=fs_get_file_system_count();
+}
+
+
+
+static void _syscall_file_system_get(syscall_registers_t* regs){
+	const fs_file_system_t* file_system=fs_get_file_system(regs->rdi);
+	if (!file_system||regs->rdx!=sizeof(user_partition_t)){
+		regs->rax=-1;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=-1;
+		return;
+	}
+	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
+	user_partition->flags=USER_PARTITION_FLAG_PRESENT|(fs_get_boot_file_system()==regs->rdi?USER_PARTITION_FLAG_BOOT:0);
+	user_partition->type=file_system->partition_config.type;
+	user_partition->index=file_system->partition_config.index;
+	user_partition->first_block_index=file_system->partition_config.first_block_index;
+	user_partition->last_block_index=file_system->partition_config.last_block_index;
+	memcpy(user_partition->name,file_system->name,16);
+	user_partition->drive_index=file_system->drive->index;
+	regs->rax=0;
+}
+
+
+
+static void _syscall_fd_open(syscall_registers_t* regs){
+	// int _syscall_fd_open(unsigned int root,const char* path,unsigned int length,unsigned int flags);
+	WARN("Unimplemented: _syscall_fd_open");
+}
+
+
+
+static void _syscall_fd_close(syscall_registers_t* regs){
+	// int _syscall_fd_close(unsigned int fd);
+	WARN("Unimplemented: _syscall_fd_close");
+}
+
+
+
+static void _syscall_fd_delete(syscall_registers_t* regs){
+	// int _syscall_fd_delete(unsigned int fd);
+	WARN("Unimplemented: _syscall_fd_delete");
+}
+
+
+
+static void _syscall_fd_read(syscall_registers_t* regs){
+	// int _syscall_fd_read(unsigned int fd,void* buffer,unsigned int size);
+	WARN("Unimplemented: _syscall_fd_read");
+}
+
+
+
+static void _syscall_fd_write(syscall_registers_t* regs){
+	// int _syscall_fd_write(unsigned int fd,const void* buffer,unsigned int size);
+	WARN("Unimplemented: _syscall_fd_write");
+}
+
+
+
+static void _syscall_fd_seek(syscall_registers_t* regs){
+	// signed long long int _syscall_fd_seek(unsigned int fd,unsigned long long int offset,unsigned int type);
+	WARN("Unimplemented: _syscall_fd_seek");
+}
+
+
+
+static void _syscall_fd_stat(syscall_registers_t* regs){
+	// int _syscall_fd_stat(unsigned int fd,void* ptr,unsigned int size);
+	WARN("Unimplemented: _syscall_fd_stat");
+}
+
+
+
+static void _syscall_fd_get_relative(syscall_registers_t* regs){
+	// int _syscall_fd_get_relative(unsigned int fd,unsigned int relative,void* ptr,unsigned int size);
+	WARN("Unimplemented: _syscall_fd_get_relative");
+}
+
+
+
+static void _syscall_fd_dup(syscall_registers_t* regs){
+	// int _syscall_fd_dup(unsigned int fd);
+	WARN("Unimplemented: _syscall_fd_dup");
+}
+
+
+
+static void _syscall_net_send(syscall_registers_t* regs){
+	// int _syscall_net_send(const void* buffer,unsigned int length);
+	WARN("Unimplemented: _syscall_net_send");
+}
+
+
+
+static void _syscall_net_poll(syscall_registers_t* regs){
+	// int _syscall_net_poll(void* buffer,unsigned int length);
+	WARN("Unimplemented: _syscall_net_poll");
+}
+
+
+
+static void _syscall_acpi_shutdown(syscall_registers_t* regs){
+	acpi_fadt_shutdown(!!regs->rdi);
+}
+
+
+
+static void _syscall_invalid(syscall_registers_t* regs,u64 number){
+	ERROR("Invalid SYSCALL number: %lu",number);
+	for (;;);
+}
+
+
+
+void syscall_init(void){
+	LOG("Initializing SYSCALL table...");
+	_syscall_handlers[0]=_syscall_print_string;
+	_syscall_handlers[1]=_syscall_elf_load;
+	_syscall_handlers[2]=_syscall_cpu_core_count;
+	_syscall_handlers[3]=_syscall_cpu_core_start;
+	_syscall_handlers[4]=_syscall_cpu_core_stop;
+	_syscall_handlers[5]=_syscall_drive_list_length;
+	_syscall_handlers[6]=_syscall_drive_list_get;
+	_syscall_handlers[7]=_syscall_file_system_count;
+	_syscall_handlers[8]=_syscall_file_system_get;
+	_syscall_handlers[9]=_syscall_fd_open;
+	_syscall_handlers[10]=_syscall_fd_close;
+	_syscall_handlers[11]=_syscall_fd_delete;
+	_syscall_handlers[12]=_syscall_fd_read;
+	_syscall_handlers[13]=_syscall_fd_write;
+	_syscall_handlers[14]=_syscall_fd_seek;
+	_syscall_handlers[15]=_syscall_fd_stat;
+	_syscall_handlers[16]=_syscall_fd_get_relative;
+	_syscall_handlers[17]=_syscall_fd_dup;
+	_syscall_handlers[18]=_syscall_net_send;
+	_syscall_handlers[19]=_syscall_net_poll;
+	_syscall_handlers[20]=_syscall_acpi_shutdown;
+	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
+}
