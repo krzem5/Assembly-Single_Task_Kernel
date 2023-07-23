@@ -5,19 +5,8 @@
 
 
 
-typedef struct __attribute__((packed)) _FADT_GENERIC_ACCESS_STRUCTURE{
-	u8 address_space;
-	u8 bit_width;
-	u8 bit_offset;
-	u8 access_size;
-	u64 address;
-} fadt_generic_access_structure_t;
-
-
-
 typedef struct __attribute__((packed)) _FADT{
-	u32 _AAA;u32 length;u8 _padding[40-8];
-	// u8 _padding[40];
+	u8 _padding[40];
 	u32 dsdt;
 	u8 _padding2[4];
 	u32 smi_command_port;
@@ -26,9 +15,6 @@ typedef struct __attribute__((packed)) _FADT{
 	u8 _padding3[10];
 	u32 pm1a_control_block;
 	u32 pm1b_control_block;
-	u8 _padding4[116-72];
-	fadt_generic_access_structure_t reset_register;
-	u8 reset_value;
 } fadt_t;
 
 
@@ -44,18 +30,8 @@ typedef struct __attribute__((packed)) _DSDT{
 
 static u32 _fadt_pm1a_control_block;
 static u32 _fadt_pm1b_control_block;
-static fadt_generic_access_structure_t _fadt_reset_register;
-static u8 _fadt_reset_value;
 static u16 _dsdt_s5_slp_typa;
 static u16 _dsdt_s5_slp_typb;
-
-
-
-static void _generic_access_structure_write(const fadt_generic_access_structure_t* gas,u8 value){
-	WARN("%u, %p %s",_fadt_reset_register.address_space,_fadt_reset_register.address,&(_fadt_reset_register.address_space));
-	ERROR("Unimplemented: _generic_access_structure_write(1)");
-	for (;;);
-}
 
 
 
@@ -81,9 +57,6 @@ void acpi_fadt_load(const void* fadt_ptr){
 	LOG("Parsing DSDT...");
 	_fadt_pm1a_control_block=fadt->pm1a_control_block;
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
-	_fadt_reset_register=fadt->reset_register;
-	WARN("%u\n",fadt->length);
-	_fadt_reset_value=fadt->reset_value;
 	_dsdt_s5_slp_typa=0;
 	_dsdt_s5_slp_typb=0;
 	const dsdt_t* dsdt=(void*)VMM_TRANSLATE_ADDRESS(fadt->dsdt);
@@ -109,7 +82,8 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 void acpi_fadt_shutdown(_Bool restart){
 	if (restart){
-		_generic_access_structure_write(&_fadt_reset_register,_fadt_reset_value);
+		ERROR("Unimplemented: acpi_fadt_shutdown(1)");
+		for (;;);
 	}
 	io_port_out16(_fadt_pm1a_control_block,_dsdt_s5_slp_typa|0x2000);
 	if (_fadt_pm1b_control_block){
