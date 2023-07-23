@@ -178,7 +178,7 @@ void cpu_core_stop(void){
 		cpu_data->user_func=0;
 		_user_func_wait_loop();
 	}
-	acpi_fadt_shutdown(1);
+	acpi_fadt_shutdown(0);
 }
 
 

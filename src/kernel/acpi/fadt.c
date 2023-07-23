@@ -1,3 +1,4 @@
+#include <kernel/acpi/fadt.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -82,8 +83,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 void acpi_fadt_shutdown(_Bool restart){
 	if (restart){
-		ERROR("Unimplemented: acpi_fadt_shutdown(1)");
-		for (;;);
+		_acpi_fadt_reboot();
 	}
 	io_port_out16(_fadt_pm1a_control_block,_dsdt_s5_slp_typa|0x2000);
 	if (_fadt_pm1b_control_block){

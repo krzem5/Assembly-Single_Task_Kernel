@@ -11,4 +11,8 @@ void acpi_fadt_shutdown(_Bool restart);
 
 
 
+void _acpi_fadt_reboot(void);
+
+
+
 #endif

@@ -1,4 +1,5 @@
 src/kernel/acpi/acpi.c:acpi
+src/kernel/acpi/fadt.asm:fadt
 src/kernel/acpi/fadt.c:fadt
 src/kernel/acpi/madt.c:madt
 src/kernel/atomic/atomic.asm:atomic:CORE
@@ -15,8 +16,8 @@ src/kernel/elf/elf.c:elf
 src/kernel/entry.asm:entry:CORE
 src/kernel/fs/emptyfs.c:emptyfs:CORE
 src/kernel/fs/fs.c:fs:CORE
-src/kernel/fs/node_allocator.c:fs_node:CORE
 src/kernel/fs/iso9660.c:iso9660:CORE
+src/kernel/fs/node_allocator.c:fs_node:CORE
 src/kernel/fs/partition.c:fs_part:CORE
 src/kernel/gdt/gdt.asm:gdt
 src/kernel/idt/idt.asm:idt
