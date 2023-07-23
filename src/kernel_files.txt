@@ -11,7 +11,7 @@ src/kernel/driver/ahci.c:ahci:CORE
 src/kernel/driver/ata.c:ata:CORE
 src/kernel/driver/i82540.c:i82540:CORE
 src/kernel/driver/nvme.c:nvme:CORE
-src/kernel/elf/elf.c:elf:CORE
+src/kernel/elf/elf.c:elf
 src/kernel/entry.asm:entry:CORE
 src/kernel/fs/emptyfs.c:emptyfs:CORE
 src/kernel/fs/fs.c:fs:CORE

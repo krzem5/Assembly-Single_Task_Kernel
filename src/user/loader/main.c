@@ -1,8 +1,8 @@
 #include <user/drive.h>
+#include <user/elf.h>
 #include <user/partition.h>
 #include <user/print.h>
 #include <user/types.h>
-#include <user/syscall.h>
 
 
 
@@ -21,5 +21,5 @@ void main(void){
 		printf("[%u]: %s%s\n",i,partitions[i].name,((partitions[i].flags&PARTITION_FLAG_BOOT)?" [boot]":""));
 	}
 	printf("\x1b[38;2;169;42;187mHello world!\x1b[0m\n");
-	_syscall_elf_load("/abc.elf",8);
+	elf_load("/abc.elf");
 }
