@@ -105,6 +105,7 @@ void pmm_init_high_mem(const kernel_data_t* kernel_data){
 u64 pmm_alloc_raw(u64 count){
 	if (!count){
 		ERROR("Trying to allocate zero physical pages!");
+		for (;;);
 		return 0;
 	}
 	u8 i=63-__builtin_clzll(count);
@@ -112,6 +113,7 @@ u64 pmm_alloc_raw(u64 count){
 		i++;
 		if (i>PMM_ALLOCATOR_SIZE_COUNT){
 			ERROR("Trying to allocate too many pages at once!");
+			for (;;);
 			return 0;
 		}
 	}
@@ -127,6 +129,7 @@ u64 pmm_alloc_raw(u64 count){
 		j++;
 		if (j==PMM_ALLOCATOR_SIZE_COUNT){
 			ERROR("Out of memory!");
+			for (;;);
 			return 0;
 		}
 	} while (!_pmm_allocator.blocks[j]);

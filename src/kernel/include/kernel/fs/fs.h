@@ -1,6 +1,7 @@
 #ifndef _KERNEL_FS_FS_H_
 #define _KERNEL_FS_FS_H_ 1
 #include <kernel/drive/drive.h>
+#include <kernel/fs/node_allocator.h>
 #include <kernel/fs/partition.h>
 #include <kernel/types.h>
 
@@ -9,40 +10,10 @@
 #define FS_MAX_FILE_SYSTEMS 64
 #define FS_INVALID_FILE_SYSTEM_INDEX FS_MAX_FILE_SYSTEMS
 
-#define FS_NODE_TYPE_FILE 1
-#define FS_NODE_TYPE_DIRECTORY 2
-
-#define FS_NODE_FLAG_ROOT 1
-
-#define FS_NODE_ID_EMPTY 0
-#define FS_NODE_ID_UNKNOWN 1
-#define FS_NODE_ID_FIRST_FREE (FS_NODE_ID_UNKNOWN+1)
-
 #define FS_NODE_RELATIVE_PARENT 0
 #define FS_NODE_RELATIVE_PREV_SIBLING 1
 #define FS_NODE_RELATIVE_NEXT_SIBLING 2
 #define FS_NODE_RELATIVE_FIRST_CHILD 3
-
-
-
-typedef u64 fs_node_id_t;
-
-
-
-typedef struct _FS_NODE{
-	fs_node_id_t id;
-	u8 type;
-	u8 fs_index;
-	u8 name_length;
-	u8 ref_cnt;
-	u8 flags;
-	u8 _padding[3];
-	char name[64];
-	fs_node_id_t parent;
-	fs_node_id_t prev_sibling;
-	fs_node_id_t next_sibling;
-	fs_node_id_t first_child;
-} fs_node_t;
 
 
 
@@ -56,21 +27,15 @@ typedef struct _FS_FILE_SYSTEM_CONFIG{
 
 
 
-typedef struct _FS_FILE_SYSTEM_NODE_ALLOCATOR{
-	fs_node_id_t next_node_id;
-	void* nodes;
-} fs_file_system_node_allocator_t;
-
-
-
 typedef struct _FS_FILE_SYSTEM{
 	const fs_file_system_config_t* config;
 	fs_partition_config_t partition_config;
+	u8 index;
 	u8 name_length;
 	char name[16];
 	drive_t* drive;
 	fs_node_t* root;
-	fs_file_system_node_allocator_t allocator;
+	fs_node_allocator_t allocator;
 } fs_file_system_t;
 
 

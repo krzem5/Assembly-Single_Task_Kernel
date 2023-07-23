@@ -1,5 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
+#include <kernel/fs/node_allocator.h>
 #include <kernel/fs/partition.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
@@ -20,8 +21,7 @@ static fs_node_t* _alloc_node(fs_file_system_t* fs,const char* name,u8 name_leng
 		name_length=64;
 		ERROR("fs_node_t.name_length too large");
 	}
-	fs_node_t* out=fs->allocator.nodes+fs->config->node_size*(fs->allocator.next_node_id-2);
-	out->id=fs->allocator.next_node_id;
+	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
 	out->type=FS_NODE_TYPE_FILE;
 	out->fs_index=fs-_fs_file_systems;
 	out->name_length=name_length;
@@ -35,17 +35,7 @@ static fs_node_t* _alloc_node(fs_file_system_t* fs,const char* name,u8 name_leng
 	out->prev_sibling=FS_NODE_ID_UNKNOWN;
 	out->next_sibling=FS_NODE_ID_UNKNOWN;
 	out->first_child=FS_NODE_ID_UNKNOWN;
-	fs->allocator.next_node_id++;
 	return out;
-}
-
-
-
-static fs_node_t* _get_node_by_id(fs_file_system_t* fs,fs_node_id_t id){
-	if (id==FS_NODE_ID_UNKNOWN){
-		return NULL;
-	}
-	return fs->allocator.nodes+(id-2)*fs->config->node_size;
 }
 
 
@@ -92,8 +82,7 @@ void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partitio
 		fs->name_length=i+4;
 	}
 	fs->drive=drive;
-	fs->allocator.next_node_id=FS_NODE_ID_FIRST_FREE;
-	fs->allocator.nodes=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(128*fs->config->node_size)));
+	fs_node_allocator_init(config->node_size,&(fs->allocator));
 	LOG("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=_alloc_node(fs,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
@@ -242,7 +231,7 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 		return NULL;
 	}
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
-	fs_node_t* out=_get_node_by_id(fs,*id);
+	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
 		out=fs->config->get_relative(fs->drive,node,relative);
 		*id=(out?out->id:FS_NODE_ID_EMPTY);
