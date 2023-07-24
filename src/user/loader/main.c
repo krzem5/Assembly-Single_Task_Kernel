@@ -6,6 +6,15 @@
 
 
 
+// static const char* partition_type_names[]={
+// 	[PARTITION_TYPE_EMPTY_DRIVE]="empty drive",
+// 	[PARTITION_TYPE_EMPTY]="empty",
+// 	[PARTITION_TYPE_ISO9660]="ISO9660",
+// 	[PARTITION_TYPE_GPT]="gpt"
+// };
+
+
+
 void main(void){
 	drive_init();
 	partition_init();
@@ -18,7 +27,7 @@ void main(void){
 	}
 	printf("Partitions:\n");
 	for (u32 i=0;i<partition_count;i++){
-		printf("[%u]: %s%s\n",i,partitions[i].name,((partitions[i].flags&PARTITION_FLAG_BOOT)?" [boot]":""));
+		printf("[%u]: %s%s %s (%u)\n",i,partitions[i].name,((partitions[i].flags&PARTITION_FLAG_BOOT)?" [boot]":""),partitions[i].type);
 	}
 	printf("\x1b[38;2;169;42;187mHello world!\x1b[0m\n");
 	elf_load("/abc.elf");

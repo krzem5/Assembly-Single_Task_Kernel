@@ -167,10 +167,11 @@ void fs_partition_load_from_drive(drive_t* drive){
 	}
 	LOG("Failed to detected drive format, partitioning as emptyfs...");
 	const fs_partition_config_t partition_config={
-		FS_PARTITION_TYPE_EMPTY,
+		FS_PARTITION_TYPE_EMPTY_DRIVE,
 		0,
 		0,
 		drive->block_count
 	};
 	fs_emptyfs_load(drive,&partition_config);
+	for (;;);
 }
