@@ -56,6 +56,10 @@ isr_init:
 
 
 
+section .common
+
+
+
 _isr_handler_internal:
 	cmp qword [rsp+24], 0x23
 	jne ._kernel_isr

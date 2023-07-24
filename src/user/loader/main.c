@@ -6,7 +6,7 @@
 
 
 
-static const char* partition_type_names[]={
+const char* partition_type_names[]={
 	[PARTITION_TYPE_EMPTY_DRIVE]="empty drive",
 	[PARTITION_TYPE_EMPTY]="empty",
 	[PARTITION_TYPE_ISO9660]="iso9660",
