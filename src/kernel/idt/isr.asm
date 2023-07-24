@@ -18,6 +18,70 @@ section .text
 
 
 
+%macro ISR_HANDLER 1
+isr%1:
+	jmp $
+	mov rsp, cr3
+	cmp rsp, qword [vmm_common_kernel_pagemap]
+	je _isr_inisde_kernel
+	swapgs
+	mov sp, 0x10
+	mov ds, sp
+	mov es, sp
+	mov ss, sp
+	mov rsp, qword [vmm_common_kernel_pagemap]
+	mov cr3, rsp
+	mov rsp, qword [gs:8]
+	sub rsp, 0x30
+	push r15
+	push r14
+	push r13
+	push r12
+	push r11
+	push r10
+	push r9
+	push r8
+	push rbp
+	push rdi
+	push rsi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+	mov rax, cr2
+	push rax
+	mov rdi, rsp
+	mov rsi, %1
+	cld
+	call _isr_handler
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rsi
+	pop rdi
+	pop rbp
+	pop r8
+	pop r9
+	pop r10
+	pop r11
+	pop r12
+	pop r13
+	pop r14
+	pop r15
+	mov rsp, qword [vmm_user_pagemap]
+	mov cr3, rsp
+	mov sp, 0x18
+	mov ds, sp
+	mov es, sp
+	mov rsp, qword [gs:8]
+	sub rsp, 0x28
+	swapgs
+	iretq
+%endmacro
+
+
+
 [bits 64]
 isr_init:
 	REGISTER_ISR 0
@@ -60,278 +124,43 @@ section .common
 
 
 
-_isr_handler_internal:
-	cmp qword [rsp+24], 0x23
-	jne ._kernel_isr
-	swapgs
-	mov sp, 0x10
-	mov ds, sp
-	mov es, sp
-	mov ss, sp
-	mov rsp, qword [vmm_common_kernel_pagemap]
-	mov cr3, rsp
-	mov rsp, qword [gs:8]
-	sub rsp, 0x38
-	push r15
-	push r14
-	push r13
-	push r12
-	push r11
-	push r10
-	push r9
-	push r8
-	push rbp
-	push rdi
-	push rsi
-	push rdx
-	push rcx
-	push rbx
-	push rax
-	mov rdi, rsp
-	cld
-	call _isr_handler
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdx
-	pop rsi
-	pop rdi
-	pop rbp
-	pop r8
-	pop r9
-	pop r10
-	pop r11
-	pop r12
-	pop r13
-	pop r14
-	pop r15
-	mov rsp, qword [vmm_user_pagemap]
-	mov cr3, rsp
-	mov sp, 0x18
-	mov ds, sp
-	mov es, sp
+ISR_HANDLER 0
+ISR_HANDLER 1
+ISR_HANDLER 2
+ISR_HANDLER 3
+ISR_HANDLER 4
+ISR_HANDLER 5
+ISR_HANDLER 6
+ISR_HANDLER 7
+ISR_HANDLER 8
+ISR_HANDLER 9
+ISR_HANDLER 10
+ISR_HANDLER 11
+ISR_HANDLER 12
+ISR_HANDLER 13
+ISR_HANDLER 14
+ISR_HANDLER 15
+ISR_HANDLER 16
+ISR_HANDLER 17
+ISR_HANDLER 18
+ISR_HANDLER 19
+ISR_HANDLER 20
+ISR_HANDLER 21
+ISR_HANDLER 22
+ISR_HANDLER 23
+ISR_HANDLER 24
+ISR_HANDLER 25
+ISR_HANDLER 26
+ISR_HANDLER 27
+ISR_HANDLER 28
+ISR_HANDLER 29
+ISR_HANDLER 30
+ISR_HANDLER 31
+
+
+
+_isr_inisde_kernel:
 	mov rsp, qword [gs:8]
 	sub rsp, 0x28
-	swapgs
-	iretq
-._kernel_isr:
 	mov rdi, qword [rsp]
 	jmp _isr_kernel
-
-
-
-isr0:
-	push qword 0x00
-	push qword 0x00
-	jmp _isr_handler_internal
-
-
-
-isr1:
-	push qword 0x00
-	push qword 0x01
-	jmp _isr_handler_internal
-
-
-
-isr2:
-	push qword 0x00
-	push qword 0x02
-	jmp _isr_handler_internal
-
-
-
-isr3:
-	push qword 0x00
-	push qword 0x03
-	jmp _isr_handler_internal
-
-
-
-isr4:
-	push qword 0x00
-	push qword 0x04
-	jmp _isr_handler_internal
-
-
-
-isr5:
-	push qword 0x00
-	push qword 0x05
-	jmp _isr_handler_internal
-
-
-
-isr6:
-	push qword 0x00
-	push qword 0x06
-	jmp _isr_handler_internal
-
-
-
-isr7:
-	push qword 0x00
-	push qword 0x07
-	jmp _isr_handler_internal
-
-
-
-isr8:
-	push qword 0x08
-	jmp _isr_handler_internal
-
-
-
-isr9:
-	push qword 0x00
-	push qword 0x09
-	jmp _isr_handler_internal
-
-
-
-isr10:
-	push qword 0x0a
-	jmp _isr_handler_internal
-
-
-
-isr11:
-	push qword 0x0b
-	jmp _isr_handler_internal
-
-
-
-isr12:
-	push qword 0x0c
-	jmp _isr_handler_internal
-
-
-
-isr13:
-	push qword 0x0d
-	jmp _isr_handler_internal
-
-
-
-isr14:
-	push qword 0x0e
-	jmp _isr_handler_internal
-
-
-
-isr15:
-	push qword 0x00
-	push qword 0x0f
-	jmp _isr_handler_internal
-
-
-
-isr16:
-	push qword 0x00
-	push qword 0x10
-	jmp _isr_handler_internal
-
-
-
-isr17:
-	push qword 0x00
-	push qword 0x11
-	jmp _isr_handler_internal
-
-
-
-isr18:
-	push qword 0x00
-	push qword 0x12
-	jmp _isr_handler_internal
-
-
-
-isr19:
-	push qword 0x00
-	push qword 0x13
-	jmp _isr_handler_internal
-
-
-
-isr20:
-	push qword 0x00
-	push qword 0x14
-	jmp _isr_handler_internal
-
-
-
-isr21:
-	push qword 0x00
-	push qword 0x15
-	jmp _isr_handler_internal
-
-
-
-isr22:
-	push qword 0x00
-	push qword 0x16
-	jmp _isr_handler_internal
-
-
-
-isr23:
-	push qword 0x00
-	push qword 0x17
-	jmp _isr_handler_internal
-
-
-
-isr24:
-	push qword 0x00
-	push qword 0x18
-	jmp _isr_handler_internal
-
-
-
-isr25:
-	push qword 0x00
-	push qword 0x19
-	jmp _isr_handler_internal
-
-
-
-isr26:
-	push qword 0x00
-	push qword 0x1a
-	jmp _isr_handler_internal
-
-
-
-isr27:
-	push qword 0x00
-	push qword 0x1b
-	jmp _isr_handler_internal
-
-
-
-isr28:
-	push qword 0x00
-	push qword 0x1c
-	jmp _isr_handler_internal
-
-
-
-isr29:
-	push qword 0x00
-	push qword 0x1d
-	jmp _isr_handler_internal
-
-
-
-isr30:
-	push qword 0x00
-	push qword 0x1e
-	jmp _isr_handler_internal
-
-
-
-isr31:
-	push qword 0x00
-	push qword 0x1f
-	jmp _isr_handler_internal

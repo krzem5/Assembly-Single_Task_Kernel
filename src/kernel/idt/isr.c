@@ -3,8 +3,8 @@
 
 
 
-void _isr_handler(u64* vars){
-	WARN("ISR %u:",vars[15]);
+void _isr_handler(u64* vars,u8 index){
+	WARN("ISR %u:",index);
 	WARN("rax=%p",vars[0]);
 	WARN("rbx=%p",vars[1]);
 	WARN("rcx=%p",vars[2]);
@@ -25,7 +25,6 @@ void _isr_handler(u64* vars){
 	WARN("[2]=%p",vars[17]);
 	WARN("[3]=%p",vars[18]);
 	WARN("[4]=%p",vars[19]);
-	WARN("[5]=%p",vars[20]);
 	for (;;);
 }
 
