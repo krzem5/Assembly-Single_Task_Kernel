@@ -121,6 +121,9 @@ void printf(const char* template,...){
 				break;
 			}
 		}
+		// _buffer_state_add(&out,'<');
+		// _buffer_state_add(&out,*template);
+		// _buffer_state_add(&out,'>');
 		if (*template=='c'){
 			_buffer_state_add(&out,va_arg(va,int));
 		}
