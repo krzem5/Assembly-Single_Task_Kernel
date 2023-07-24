@@ -26,6 +26,7 @@ void _isr_handler(u64* vars){
 	WARN("[3]=%p",vars[18]);
 	WARN("[4]=%p",vars[19]);
 	WARN("[5]=%p",vars[20]);
+	for (;;);
 }
 
 
