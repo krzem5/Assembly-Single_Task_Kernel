@@ -7,6 +7,15 @@
 
 
 
+static const char* drive_type_names[]={
+	[DRIVE_TYPE_AHCI]="AHCI",
+	[DRIVE_TYPE_ATA]="ATA",
+	[DRIVE_TYPE_ATAPI]="ATAPI",
+	[DRIVE_TYPE_NVME]="NVMe"
+};
+
+
+
 static const char* partition_type_names[]={
 	[PARTITION_TYPE_EMPTY_DRIVE]="empty drive",
 	[PARTITION_TYPE_EMPTY]="empty",
@@ -24,7 +33,7 @@ void main(void){
 	}
 	printf("Drives:\n");
 	for (u32 i=0;i<drive_count;i++){
-		printf("[%u]: %s (%s)%s\n",i,drives[i].name,drives[i].model_number,((drives[i].flags&DRIVE_FLAG_BOOT)?" [boot]":""));
+		printf("[%u]: %s (%s) -> %s%s\n",i,drives[i].name,drives[i].model_number,drive_type_names[drives[i].type],((drives[i].flags&DRIVE_FLAG_BOOT)?" [boot]":""));
 	}
 	printf("Partitions:\n");
 	for (u32 i=0;i<partition_count;i++){
