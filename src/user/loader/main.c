@@ -40,7 +40,7 @@ void main(void){
 		printf("[%u]: %s -> %s%s\n",i,partitions[i].name,partition_type_names[partitions[i].type],((partitions[i].flags&PARTITION_FLAG_BOOT)?" [boot]":""));
 	}
 	fs_stat_t stat;
-	fs_stat(fs_open("ahci0p0:",0),&stat);
+	fs_stat(fs_open("/kernel.bin",0),&stat);
 	printf("Type: %u, Length: %llu\n",stat.type,stat.size);
 	printf("\x1b[38;2;169;42;187mHello world!\x1b[0m\n");
 	elf_load("/abc.elf");
