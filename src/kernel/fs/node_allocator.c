@@ -1,4 +1,5 @@
 #include <kernel/fs/fs.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -8,6 +9,7 @@
 
 void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
 	LOG("Initializing file system node allocator...");
+	lock_init(&(out->lock));
 	out->fs_index=fs_index;
 	out->first=0;
 	out->last=(1<<FS_NODE_ALLOCATOR_SIZE_SHIFT)-2;
@@ -33,18 +35,22 @@ void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
 
 
 fs_node_t* fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,_Bool allocate_if_not_present){
+	fs_node_t* out=NULL;
+	lock_acquire(&(allocator->lock));
 	if (allocate_if_not_present&&id==FS_NODE_ID_EMPTY){
 		if (allocator->root_node->type==FS_NODE_TYPE_INVALID){
-			return allocator->root_node;
+			out=allocator->root_node;
+			goto _return;
 		}
 		id=allocator->next_id|(((u64)(allocator->fs_index))<<56);
 		allocator->next_id++;
 	}
 	if (id==FS_NODE_ID_EMPTY||id==FS_NODE_ID_UNKNOWN){
-		return NULL;
+		goto _return;
 	}
 	if (!(id<<8)){
-		return allocator->root_node;
+		out=allocator->root_node;
+		goto _return;
 	}
 	fs_node_allocator_index_t i=1<<(FS_NODE_ALLOCATOR_SIZE_SHIFT-1);
 	fs_node_allocator_index_t j=(1<<(FS_NODE_ALLOCATOR_SIZE_SHIFT-1))-1;
@@ -67,16 +73,17 @@ fs_node_t* fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,
 				allocator->first=k;
 			}
 			if (!allocate_if_not_present&&entry->node->type==FS_NODE_TYPE_INVALID){
-				return NULL;
+				goto _return;
 			}
 			entry->node->id=id;
-			return entry->node;
+			out=entry->node;
+			goto _return;
 		}
 		i>>=1;
 		j=(id<entry->id?j-i:j+i);
 	} while (i);
 	if (!allocate_if_not_present){
-		return NULL;
+		goto _return;
 	}
 	if (entry->id<id&&j<(1<<FS_NODE_ALLOCATOR_SIZE_SHIFT)-2){
 		j++;
@@ -100,5 +107,8 @@ fs_node_t* fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,
 	(allocator->data+allocator->first)->prev=k;
 	allocator->first=k;
 	allocator->last=entry->prev;
-	return entry->node;
+	out=entry->node;
+_return:
+	lock_release(&(allocator->lock));
+	return out;
 }

@@ -2,6 +2,7 @@
 #define _KERNEL_FS_NODE_ALLOCATOR_H_ 1
 #include <kernel/drive/drive.h>
 #include <kernel/fs/partition.h>
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
 
 
@@ -55,6 +56,7 @@ typedef struct _FS_NODE_ALLOCATOR_ENTRY{
 
 
 typedef struct _FS_NODE_ALLOCATOR{
+	lock_t lock;
 	u8 fs_index;
 	fs_node_allocator_index_t first;
 	fs_node_allocator_index_t last;

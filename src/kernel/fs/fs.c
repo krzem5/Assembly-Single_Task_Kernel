@@ -2,6 +2,7 @@
 #include <kernel/fs/fs.h>
 #include <kernel/fs/node_allocator.h>
 #include <kernel/fs/partition.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
@@ -56,6 +57,7 @@ void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partitio
 	}
 	fs_file_system_t* fs=_fs_file_systems+_fs_file_systems_count;
 	_fs_file_systems_count++;
+	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
 	u8 i=0;
@@ -240,7 +242,9 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
 	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
+		lock_acquire(&(fs->lock));
 		out=fs->config->get_relative(fs->drive,node,relative);
+		lock_release(&(fs->lock));
 		*id=(out?out->id:FS_NODE_ID_EMPTY);
 	}
 	return out;
@@ -276,6 +280,7 @@ u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
 	u64 out=0;
 	u16 extra=offset&(fs->drive->block_size-1);
+	lock_acquire(&(fs->lock));
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
@@ -311,6 +316,7 @@ u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 		memcpy(buffer+count-extra,chunk,chunk_length);
 		out+=chunk_length;
 	}
+	lock_release(&(fs->lock));
 	return out;
 }
 
@@ -325,5 +331,8 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 		WARN("'offset' or 'count' is not block block-aligned");
 		return 0;
 	}
-	return fs->config->write(fs->drive,node,offset,buffer,count);
+	lock_acquire(&(fs->lock));
+	u64 out=fs->config->write(fs->drive,node,offset,buffer,count);
+	lock_release(&(fs->lock));
+	return out;
 }

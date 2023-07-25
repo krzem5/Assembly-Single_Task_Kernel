@@ -3,6 +3,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/node_allocator.h>
 #include <kernel/fs/partition.h>
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
 
 
@@ -28,6 +29,7 @@ typedef struct _FS_FILE_SYSTEM_CONFIG{
 
 
 typedef struct _FS_FILE_SYSTEM{
+	lock_t lock;
 	const fs_file_system_config_t* config;
 	fs_partition_config_t partition_config;
 	u8 index;
