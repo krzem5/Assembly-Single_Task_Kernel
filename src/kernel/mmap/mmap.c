@@ -1,3 +1,4 @@
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -5,6 +6,7 @@
 
 
 
+static lock_t _mmap_lock=LOCK_INIT_STRUCT;
 static u64 _mmap_start_address;
 static u64 _mmap_end_address;
 
@@ -20,15 +22,19 @@ void mmap_init(void){
 
 void mmap_set_range(u64 from,u64 to){
 	LOG("Resetting user mmap range to %p - %p...",from,to);
+	lock_acquire(&_mmap_lock);
 	_mmap_start_address=pmm_align_up_address(from);
 	_mmap_end_address=pmm_align_up_address(to);
+	lock_release(&_mmap_lock);
 }
 
 
 
 u64 mmap_alloc(u64 length){
 	length=pmm_align_up_address(length);
+	lock_acquire(&_mmap_lock);
 	if (_mmap_start_address+length>_mmap_end_address){
+		lock_release(&_mmap_lock);
 		return 0;
 	}
 	u64 out=_mmap_start_address;
@@ -36,6 +42,7 @@ u64 mmap_alloc(u64 length){
 		vmm_map_page(&vmm_user_pagemap,pmm_alloc(1),out+i,VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	_mmap_start_address+=length;
+	lock_release(&_mmap_lock);
 	return out;
 }
 
