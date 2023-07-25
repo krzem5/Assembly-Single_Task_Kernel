@@ -155,7 +155,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 
-void vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+_Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -163,17 +163,18 @@ void vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	vmm_pagemap_table_t* pml4=pagemap->toplevel;
 	vmm_pagemap_table_t* pml3=_get_child_table(pml4,i,0);
 	if (!pml3){
-		return;
+		return 0;
 	}
 	vmm_pagemap_table_t* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
-		return;
+		return 0;
 	}
 	vmm_pagemap_table_t* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
-		return;
+		return 0;
 	}
 	*((u64*)VMM_TRANSLATE_ADDRESS(pml1->entries+l))=0;
+	return 1;
 }
 
 
