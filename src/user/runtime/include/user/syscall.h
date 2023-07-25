@@ -88,4 +88,12 @@ void _syscall_acpi_shutdown(_Bool restart);
 
 
 
+void* _syscall_memory_map(u64 length);
+
+
+
+_Bool _syscall_memory_unmap(void* address,u64 length);
+
+
+
 #endif

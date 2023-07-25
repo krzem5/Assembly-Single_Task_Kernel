@@ -271,7 +271,6 @@ static void _syscall_fd_seek(syscall_registers_t* regs){
 
 
 static void _syscall_fd_stat(syscall_registers_t* regs){
-	// int _syscall_fd_stat(unsigned int fd,void* ptr,unsigned int size);
 	WARN("Unimplemented: _syscall_fd_stat");
 }
 
@@ -350,6 +349,20 @@ static void _syscall_acpi_shutdown(syscall_registers_t* regs){
 
 
 
+static void _syscall_memory_map(syscall_registers_t* regs){
+	// void* _syscall_memory_map(u64 length);
+	WARN("Unimplemented: _syscall_memory_map");
+}
+
+
+
+static void _syscall_memory_unmap(syscall_registers_t* regs){
+	// _Bool _syscall_memory_unmap(void* address,u64 length);
+	WARN("Unimplemented: _syscall_memory_unmap");
+}
+
+
+
 static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
@@ -380,5 +393,7 @@ void syscall_init(void){
 	_syscall_handlers[18]=_syscall_net_send;
 	_syscall_handlers[19]=_syscall_net_poll;
 	_syscall_handlers[20]=_syscall_acpi_shutdown;
+	_syscall_handlers[21]=_syscall_memory_map;
+	_syscall_handlers[22]=_syscall_memory_unmap;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

@@ -3,7 +3,8 @@
 #include <user/types.h>
 
 
-#define BUFFER_SIZE 128
+
+#define BUFFER_SIZE 256
 
 #define FLAG_SHORT_SHORT 1
 #define FLAG_SHORT 2

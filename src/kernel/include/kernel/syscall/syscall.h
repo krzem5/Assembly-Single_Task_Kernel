@@ -4,7 +4,7 @@
 
 
 
-#define SYSCALL_COUNT 21
+#define SYSCALL_COUNT 23
 
 
 

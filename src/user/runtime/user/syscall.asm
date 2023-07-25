@@ -20,6 +20,8 @@ global _syscall_fd_dup
 global _syscall_net_send
 global _syscall_net_poll
 global _syscall_acpi_shutdown
+global _syscall_memory_map
+global _syscall_memory_unmap
 section .text
 
 
@@ -167,5 +169,19 @@ _syscall_net_poll:
 
 _syscall_acpi_shutdown:
 	mov rax, 20
+	syscall
+	ret
+
+
+
+_syscall_memory_map:
+	mov rax, 21
+	syscall
+	ret
+
+
+
+_syscall_memory_unmap:
+	mov rax, 22
 	syscall
 	ret
