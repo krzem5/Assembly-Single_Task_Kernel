@@ -13,6 +13,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/pci/pci.h>
@@ -40,6 +41,7 @@ void main(void){
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
 	fd_init();
+	mmap_init();
 	syscall_init();
 	isr_init();
 	cpu_init();

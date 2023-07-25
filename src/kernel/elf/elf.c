@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
 
 
@@ -61,6 +62,7 @@ void* elf_load(const char* path){
 	if (header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=2||header.e_machine!=0x3e||header.e_version!=1){
 		goto _error;
 	}
+	u64 highest_address=0;
 	for (u16 i=0;i<header.e_phnum;i++){
 		elf_program_header_t program_header;
 		if (fs_read(node,header.e_phoff+i*sizeof(elf_program_header_t),&program_header,sizeof(elf_program_header_t))!=sizeof(elf_program_header_t)){
@@ -83,6 +85,10 @@ void* elf_load(const char* path){
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
 		u64 pages=pmm_alloc(page_count);
 		vmm_map_pages(&pagemap,pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
+		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
+		if (end_address>highest_address){
+			highest_address=end_address;
+		}
 		if (fs_read(node,program_header.p_offset,VMM_TRANSLATE_ADDRESS(pages)+offset,program_header.p_filesz)!=program_header.p_filesz){
 			goto _error;
 		}
@@ -93,6 +99,7 @@ void* elf_load(const char* path){
 	}
 	vmm_pagemap_deinit(&vmm_user_pagemap);
 	vmm_user_pagemap=pagemap;
+	mmap_set_range(highest_address,cpu_get_stack_top(cpu_count));
 	fd_clear();
 	return (void*)(header.e_entry);
 _error:

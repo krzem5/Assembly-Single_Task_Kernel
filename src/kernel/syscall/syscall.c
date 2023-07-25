@@ -9,6 +9,7 @@
 #include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/network/layer2.h>
 #include <kernel/print/print.h>
 #include <kernel/syscall/syscall.h>
@@ -350,15 +351,13 @@ static void _syscall_acpi_shutdown(syscall_registers_t* regs){
 
 
 static void _syscall_memory_map(syscall_registers_t* regs){
-	// void* _syscall_memory_map(u64 length);
-	WARN("Unimplemented: _syscall_memory_map");
+	regs->rax=mmap_alloc(regs->rdi);
 }
 
 
 
 static void _syscall_memory_unmap(syscall_registers_t* regs){
-	// _Bool _syscall_memory_unmap(void* address,u64 length);
-	WARN("Unimplemented: _syscall_memory_unmap");
+	regs->rax=mmap_dealloc(regs->rdi,regs->rsi);
 }
 
 
