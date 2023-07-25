@@ -33,9 +33,8 @@ typedef struct _FS_NODE{
 	u8 type;
 	u8 fs_index;
 	u8 name_length;
-	u8 ref_cnt;
 	u8 flags;
-	u8 _padding[3];
+	u8 _padding[4];
 	char name[64];
 	fs_node_id_t parent;
 	fs_node_id_t prev_sibling;

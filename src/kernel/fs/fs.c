@@ -26,7 +26,6 @@ static fs_node_t* _alloc_node(fs_file_system_t* fs,const char* name,u8 name_leng
 	out->type=FS_NODE_TYPE_FILE;
 	out->fs_index=fs-_fs_file_systems;
 	out->name_length=name_length;
-	out->ref_cnt=1;
 	out->flags=0;
 	for (u8 i=0;i<name_length;i++){
 		out->name[i]=name[i];
