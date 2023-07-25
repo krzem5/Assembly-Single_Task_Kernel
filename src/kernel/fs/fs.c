@@ -83,7 +83,7 @@ void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partitio
 		fs->name_length=i+4;
 	}
 	fs->drive=drive;
-	fs_node_allocator_init(config->node_size,&(fs->allocator));
+	fs_node_allocator_init(_fs_file_systems_count-1,config->node_size,&(fs->allocator));
 	LOG("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=_alloc_node(fs,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
@@ -131,8 +131,8 @@ void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length){
 
 
 
-fs_node_t* fs_get_node_by_id(u8 fs_index,fs_node_id_t id){
-	return fs_node_allocator_get(&((_fs_file_systems+fs_index)->allocator),id,0);
+fs_node_t* fs_get_node_by_id(fs_node_id_t id){
+	return fs_node_allocator_get(&((_fs_file_systems+(id>>56))->allocator),id,0);
 }
 
 

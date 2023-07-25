@@ -21,15 +21,6 @@ static inline _Bool _is_invalid_fd(fd_t fd){
 
 
 
-// static fd_data_t* _get_fd_data(fd_t fd){
-// 	if (fd>=_fd_count||(_fd_data+fd)->node_id==FS_NODE_ID_EMPTY){
-// 		return NULL;
-// 	}
-// 	return _fd_data+fd;
-// }
-
-
-
 void fd_init(void){
 	LOG("Initializing file descriptor list...");
 	_fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_COUNT*sizeof(fd_data_t))));
@@ -108,8 +99,14 @@ s64 fd_read(fd_t fd,void* buffer,u64 count){
 	if (_is_invalid_fd(fd)){
 		return FD_ERROR_INVALID_FD;
 	}
-	WARN("Unimplemented: fd_read");
-	return -1;
+	fd_data_t* data=_fd_data+fd;
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
+	if (!node){
+		return FD_ERROR_NOT_FOUND;
+	}
+	count=fs_read(node,data->offset,buffer,count);
+	data->offset+=count;
+	return count;
 }
 
 
@@ -119,7 +116,7 @@ s64 fd_write(fd_t fd,const void* buffer,u64 count){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_fd_data+fd;
-	fs_node_t* node=fs_get_node_by_id(1,data->node_id);
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}

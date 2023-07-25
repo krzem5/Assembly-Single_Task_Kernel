@@ -55,6 +55,7 @@ typedef struct _FS_NODE_ALLOCATOR_ENTRY{
 
 
 typedef struct _FS_NODE_ALLOCATOR{
+	u8 fs_index;
 	fs_node_allocator_index_t first;
 	fs_node_allocator_index_t last;
 	fs_node_id_t next_id;
@@ -63,7 +64,7 @@ typedef struct _FS_NODE_ALLOCATOR{
 
 
 
-void fs_node_allocator_init(u8 node_size,fs_node_allocator_t* out);
+void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out);
 
 
 

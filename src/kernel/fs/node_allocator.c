@@ -6,8 +6,9 @@
 
 
 
-void fs_node_allocator_init(u8 node_size,fs_node_allocator_t* out){
+void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
 	LOG("Initializing file system node allocator...");
+	out->fs_index=fs_index;
 	out->first=0;
 	out->last=(1<<FS_NODE_ALLOCATOR_SIZE_SHIFT)-2;
 	out->next_id=0;
@@ -30,7 +31,7 @@ void fs_node_allocator_init(u8 node_size,fs_node_allocator_t* out){
 
 fs_node_t* fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,_Bool allocate_if_not_present){
 	if (allocate_if_not_present&&id==FS_NODE_ID_EMPTY){
-		id=allocator->next_id;
+		id=allocator->next_id|(((u64)(allocator->fs_index))<<56);
 		allocator->next_id++;
 	}
 	if (id==FS_NODE_ID_EMPTY||id==FS_NODE_ID_UNKNOWN){

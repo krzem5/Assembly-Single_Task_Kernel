@@ -68,7 +68,7 @@ void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length);
 
 
 
-fs_node_t* fs_get_node_by_id(u8 fs_index,fs_node_id_t id);
+fs_node_t* fs_get_node_by_id(fs_node_id_t id);
 
 
 
