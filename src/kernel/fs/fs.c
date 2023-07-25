@@ -243,7 +243,7 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
 		lock_acquire(&(fs->lock));
-		out=fs->config->get_relative(fs->drive,node,relative);
+		out=fs->config->get_relative(fs,node,relative);
 		lock_release(&(fs->lock));
 		*id=(out?out->id:FS_NODE_ID_EMPTY);
 	}
@@ -287,7 +287,7 @@ u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 			ERROR("Unimplemented");
 			return 0;
 		}
-		u64 chunk_length=fs->config->read(fs->drive,node,offset-extra,chunk,fs->drive->block_size);
+		u64 chunk_length=fs->config->read(fs,node,offset-extra,chunk,fs->drive->block_size);
 		if (chunk_length<fs->drive->block_size){
 			return 0;
 		}
@@ -302,14 +302,14 @@ u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 		out+=extra;
 	}
 	extra=count&(fs->drive->block_size-1);
-	out+=fs->config->read(fs->drive,node,offset,buffer,count-extra);
+	out+=fs->config->read(fs,node,offset,buffer,count-extra);
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
 			ERROR("Unimplemented");
 			return 0;
 		}
-		u64 chunk_length=fs->config->read(fs->drive,node,offset+count-extra,chunk,fs->drive->block_size);
+		u64 chunk_length=fs->config->read(fs,node,offset+count-extra,chunk,fs->drive->block_size);
 		if (chunk_length>extra){
 			chunk_length=extra;
 		}
@@ -332,7 +332,7 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 		return 0;
 	}
 	lock_acquire(&(fs->lock));
-	u64 out=fs->config->write(fs->drive,node,offset,buffer,count);
+	u64 out=fs->config->write(fs,node,offset,buffer,count);
 	lock_release(&(fs->lock));
 	return out;
 }
@@ -342,7 +342,7 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 u64 fs_get_size(fs_node_t* node){
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
 	lock_acquire(&(fs->lock));
-	u64 out=fs->config->get_size(fs->drive,node);
+	u64 out=fs->config->get_size(fs,node);
 	lock_release(&(fs->lock));
 	return out;
 }

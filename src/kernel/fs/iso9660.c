@@ -56,7 +56,7 @@ static fs_node_t* _iso9660_create_node_from_directory_entry(const iso9660_fs_nod
 
 
 
-static fs_node_t* _iso9660_get_relative(drive_t* drive,fs_node_t* node,u8 relative){
+static fs_node_t* _iso9660_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	u8 buffer[2048];
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (relative==FS_NODE_RELATIVE_FIRST_CHILD){
@@ -74,7 +74,7 @@ static fs_node_t* _iso9660_get_relative(drive_t* drive,fs_node_t* node,u8 relati
 			}
 			if (!buffer_space){
 				directory=(iso9660_directory_t*)buffer;
-				if (drive->read_write(drive->extra_data,data_offset,buffer,1)!=1){
+				if (fs->drive->read_write(fs->drive->extra_data,data_offset,buffer,1)!=1){
 					return NULL;
 				}
 				buffer_space=2048;
@@ -110,7 +110,7 @@ _skip_directory_entry:
 		u32 data_length=iso9660_parent->data_length-offset;
 		u16 buffer_space=2048-(offset&0x7ff);
 		iso9660_directory_t* directory=(iso9660_directory_t*)(buffer+(offset&0x7ff));
-		if (drive->read_write(drive->extra_data,data_offset,buffer,1)!=1){
+		if (fs->drive->read_write(fs->drive->extra_data,data_offset,buffer,1)!=1){
 			return NULL;
 		}
 		data_offset++;
@@ -122,7 +122,7 @@ _skip_directory_entry:
 			}
 			if (!buffer_space){
 				directory=(iso9660_directory_t*)buffer;
-				if (drive->read_write(drive->extra_data,data_offset,buffer,1)!=1){
+				if (fs->drive->read_write(fs->drive->extra_data,data_offset,buffer,1)!=1){
 					return NULL;
 				}
 				buffer_space=2048;
@@ -152,24 +152,31 @@ _skip_directory_entry2:
 
 
 
-static _Bool _iso9660_set_relative(drive_t* drive,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	return 0;
 }
 
 
 
-static u64 _iso9660_read(drive_t* drive,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 _iso9660_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (count>iso9660_node->data_length){
 		count=iso9660_node->data_length;
 	}
-	return drive->read_write(drive->extra_data,iso9660_node->data_offset+(offset>>11),buffer,count>>11)<<11;
+	return fs->drive->read_write(fs->drive->extra_data,iso9660_node->data_offset+(offset>>11),buffer,count>>11)<<11;
 }
 
 
 
-static u64 _iso9660_write(drive_t* drive,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _iso9660_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	return 0;
+}
+
+
+
+static u64 _iso9660_get_size(fs_file_system_t* fs,fs_node_t* node){
+	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
+	return iso9660_node->data_length;
 }
 
 
@@ -180,6 +187,7 @@ static const fs_file_system_config_t _iso9660_fs_config={
 	_iso9660_set_relative,
 	_iso9660_read,
 	_iso9660_write,
+	_iso9660_get_size
 };
 
 

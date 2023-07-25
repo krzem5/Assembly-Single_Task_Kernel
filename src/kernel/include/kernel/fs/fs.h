@@ -18,13 +18,17 @@
 
 
 
+struct _FS_FILE_SYSTEM;
+
+
+
 typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u8 node_size;
-	fs_node_t* (*get_relative)(drive_t*,fs_node_t*,u8);
-	_Bool (*set_relative)(drive_t*,fs_node_t*,u8,fs_node_t*);
-	u64 (*read)(drive_t*,fs_node_t*,u64,u8*,u64);
-	u64 (*write)(drive_t*,fs_node_t*,u64,const u8*,u64);
-	u64 (*get_size)(drive_t*,fs_node_t*);
+	fs_node_t* (*get_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8);
+	_Bool (*set_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8,fs_node_t*);
+	u64 (*read)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,u8*,u64);
+	u64 (*write)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,const u8*,u64);
+	u64 (*get_size)(struct _FS_FILE_SYSTEM*,fs_node_t*);
 } fs_file_system_config_t;
 
 
