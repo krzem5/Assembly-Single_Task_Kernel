@@ -40,39 +40,39 @@ s32 _syscall_file_system_get(u32 index,void* ptr,u32 size);
 
 
 
-s32 _syscall_fd_open(u32 root,const char* path,u32 length,u32 flags);
+s32 _syscall_fd_open(const char* path,u32 length,u32 flags);
 
 
 
-s32 _syscall_fd_close(u32 fd);
+s32 _syscall_fd_close(s32 fd);
 
 
 
-s32 _syscall_fd_delete(u32 fd);
+s32 _syscall_fd_delete(s32 fd);
 
 
 
-s32 _syscall_fd_read(u32 fd,void* buffer,u32 size);
+s32 _syscall_fd_read(s32 fd,void* buffer,u32 size);
 
 
 
-s32 _syscall_fd_write(u32 fd,const void* buffer,u32 size);
+s32 _syscall_fd_write(s32 fd,const void* buffer,u32 size);
 
 
 
-s64 _syscall_fd_seek(u32 fd,u64 offset,u32 type);
+s64 _syscall_fd_seek(s32 fd,u64 offset,u32 type);
 
 
 
-s32 _syscall_fd_stat(u32 fd,void* ptr,u32 size);
+s32 _syscall_fd_stat(s32 fd,void* ptr,u32 size);
 
 
 
-s32 _syscall_fd_get_relative(u32 fd,u32 relative,void* ptr,u32 size);
+s32 _syscall_fd_get_relative(s32 fd,u32 relative);
 
 
 
-s32 _syscall_fd_dup(u32 fd);
+s32 _syscall_fd_dup(s32 fd,u32 flags);
 
 
 

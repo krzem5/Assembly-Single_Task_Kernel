@@ -131,6 +131,12 @@ void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length){
 
 
 
+fs_node_t* fs_get_node_by_id(u8 fs_index,fs_node_id_t id){
+	return fs_node_allocator_get(&((_fs_file_systems+fs_index)->allocator),id,0);
+}
+
+
+
 fs_node_t* fs_get_node(fs_node_t* root,const char* path){
 	if (!root&&path[0]=='/'){
 		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){

@@ -1,4 +1,5 @@
 #include <kernel/cpu/cpu.h>
+#include <kernel/fs/fd.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -92,6 +93,7 @@ void* elf_load(const char* path){
 	}
 	vmm_pagemap_deinit(&vmm_user_pagemap);
 	vmm_user_pagemap=pagemap;
+	fd_clear();
 	return (void*)(header.e_entry);
 _error:
 	ERROR("Unable to load ELF file");

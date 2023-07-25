@@ -6,6 +6,7 @@
 #include <kernel/driver/i82540.h>
 #include <kernel/driver/nvme.h>
 #include <kernel/elf/elf.h>
+#include <kernel/fs/fd.h>
 #include <kernel/fs/fs.h>
 #include <kernel/idt/isr.h>
 #include <kernel/kernel.h>
@@ -38,6 +39,7 @@ void main(void){
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
+	fd_init();
 	syscall_init();
 	isr_init();
 	cpu_init();

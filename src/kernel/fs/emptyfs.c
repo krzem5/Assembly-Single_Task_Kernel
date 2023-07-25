@@ -6,6 +6,10 @@
 
 
 
+#define BLOCK_SIZE_SHIFT 9
+
+
+
 static fs_node_t* _emptyfs_get_relative(drive_t* drive,fs_node_t* node,u8 relative){
 	return NULL;
 }
@@ -19,13 +23,13 @@ static _Bool _emptyfs_set_relative(drive_t* drive,fs_node_t* node,u8 relative,fs
 
 
 static u64 _emptyfs_read(drive_t* drive,fs_node_t* node,u64 offset,u8* buffer,u64 count){
-	return drive->read_write(drive->extra_data,offset,buffer,count);
+	return drive->read_write(drive->extra_data,offset>>BLOCK_SIZE_SHIFT,buffer,count>>BLOCK_SIZE_SHIFT)<<BLOCK_SIZE_SHIFT;
 }
 
 
 
 static u64 _emptyfs_write(drive_t* drive,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
-	return drive->read_write(drive->extra_data,offset|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,count);
+	return drive->read_write(drive->extra_data,(offset>>BLOCK_SIZE_SHIFT)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,count>>BLOCK_SIZE_SHIFT)<<BLOCK_SIZE_SHIFT;
 }
 
 

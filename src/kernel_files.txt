@@ -15,6 +15,7 @@ src/kernel/driver/nvme.c:nvme:CORE
 src/kernel/elf/elf.c:elf
 src/kernel/entry.asm:entry:CORE
 src/kernel/fs/emptyfs.c:emptyfs:CORE
+src/kernel/fs/fd.c:fd
 src/kernel/fs/fs.c:fs:CORE
 src/kernel/fs/iso9660.c:iso9660:CORE
 src/kernel/fs/node_allocator.c:fs_node:CORE

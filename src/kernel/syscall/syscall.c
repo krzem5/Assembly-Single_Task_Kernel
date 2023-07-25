@@ -3,6 +3,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/elf/elf.h>
+#include <kernel/fs/fd.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
@@ -16,8 +17,6 @@
 
 #define USER_DRIVE_FLAG_PRESENT 1
 #define USER_DRIVE_FLAG_BOOT 2
-
-
 
 #define USER_PARTITION_FLAG_PRESENT 1
 #define USER_PARTITION_FLAG_BOOT 2
@@ -200,43 +199,72 @@ static void _syscall_file_system_get(syscall_registers_t* regs){
 
 
 static void _syscall_fd_open(syscall_registers_t* regs){
-	// int _syscall_fd_open(unsigned int root,const char* path,unsigned int length,unsigned int flags);
-	WARN("Unimplemented: _syscall_fd_open");
+	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd_open(VMM_TRANSLATE_ADDRESS(address),regs->rsi,regs->rdx);
 }
 
 
 
 static void _syscall_fd_close(syscall_registers_t* regs){
-	// int _syscall_fd_close(unsigned int fd);
-	WARN("Unimplemented: _syscall_fd_close");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_close(regs->rdi);
 }
 
 
 
 static void _syscall_fd_delete(syscall_registers_t* regs){
-	// int _syscall_fd_delete(unsigned int fd);
-	WARN("Unimplemented: _syscall_fd_delete");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_delete(regs->rdi);
 }
 
 
 
 static void _syscall_fd_read(syscall_registers_t* regs){
-	// int _syscall_fd_read(unsigned int fd,void* buffer,unsigned int size);
-	WARN("Unimplemented: _syscall_fd_read");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd_read(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
 }
 
 
 
 static void _syscall_fd_write(syscall_registers_t* regs){
-	// int _syscall_fd_write(unsigned int fd,const void* buffer,unsigned int size);
-	WARN("Unimplemented: _syscall_fd_write");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd_write(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
 }
 
 
 
 static void _syscall_fd_seek(syscall_registers_t* regs){
-	// signed long long int _syscall_fd_seek(unsigned int fd,unsigned long long int offset,unsigned int type);
-	WARN("Unimplemented: _syscall_fd_seek");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_seek(regs->rdi,regs->rsi,regs->rdx);
 }
 
 
@@ -249,15 +277,21 @@ static void _syscall_fd_stat(syscall_registers_t* regs){
 
 
 static void _syscall_fd_get_relative(syscall_registers_t* regs){
-	// int _syscall_fd_get_relative(unsigned int fd,unsigned int relative,void* ptr,unsigned int size);
-	WARN("Unimplemented: _syscall_fd_get_relative");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_get_relative(regs->rdi,regs->rsi);
 }
 
 
 
 static void _syscall_fd_dup(syscall_registers_t* regs){
-	// int _syscall_fd_dup(unsigned int fd);
-	WARN("Unimplemented: _syscall_fd_dup");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_dup(regs->rdi,regs->rsi);
 }
 
 
