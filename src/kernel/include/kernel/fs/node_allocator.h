@@ -60,6 +60,7 @@ typedef struct _FS_NODE_ALLOCATOR{
 	fs_node_allocator_index_t last;
 	fs_node_id_t next_id;
 	fs_node_allocator_entry_t* data;
+	fs_node_t* root_node;
 } fs_node_allocator_t;
 
 
