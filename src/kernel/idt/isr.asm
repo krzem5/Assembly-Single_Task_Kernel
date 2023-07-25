@@ -22,7 +22,7 @@ section .text
 isr%1:
 	mov rsp, cr3
 	cmp rsp, qword [vmm_common_kernel_pagemap]
-	je _isr_inisde_kernel
+	je ._inisde_kernel
 	swapgs
 	mov sp, 0x10
 	mov ds, sp
@@ -76,6 +76,10 @@ isr%1:
 	sub rsp, 40
 	swapgs
 	iretq
+._inisde_kernel:
+	mov rsp, qword [gs:8]
+	mov rdi, %1
+	jmp _isr_kernel
 %endmacro
 
 
@@ -154,11 +158,3 @@ ISR_HANDLER 28
 ISR_HANDLER 29
 ISR_HANDLER 30
 ISR_HANDLER 31
-
-
-
-_isr_inisde_kernel:
-	mov rsp, qword [gs:8]
-	sub rsp, 0x28
-	mov rdi, qword [rsp]
-	jmp _isr_kernel

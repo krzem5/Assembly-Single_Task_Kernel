@@ -17,6 +17,7 @@
 #define FD_ERROR_INVALID_POINTER -3
 #define FD_ERROR_OUT_OF_FDS -4
 #define FD_ERROR_NOT_FOUND -5
+#define FD_ERROR_UNSUPPORTED_OPERATION -6
 
 #define FD_FLAG_READ 1
 #define FD_FLAG_WRITE 2
@@ -44,6 +45,17 @@ typedef struct _FD_DATA{
 	u64 offset;
 	u8 flags;
 } fd_data_t;
+
+
+
+typedef struct _FD_STAT{
+	fs_node_id_t node_id;
+	u8 type;
+	u8 fs_index;
+	u8 name_length;
+	char name[64];
+	u64 size;
+} fd_stat_t;
 
 
 
@@ -76,6 +88,10 @@ s64 fd_write(fd_t fd,const void* buffer,u64 count);
 
 
 s64 fd_seek(fd_t fd,u64 offset,u8 type);
+
+
+
+int fd_stat(fd_t fd,fd_stat_t* out);
 
 
 

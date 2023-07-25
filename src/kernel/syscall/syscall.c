@@ -272,7 +272,20 @@ static void _syscall_fd_seek(syscall_registers_t* regs){
 
 
 static void _syscall_fd_stat(syscall_registers_t* regs){
-	WARN("Unimplemented: _syscall_fd_stat");
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	if (regs->rdx!=sizeof(fd_stat_t)){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd_stat(regs->rdi,VMM_TRANSLATE_ADDRESS(address));
 }
 
 

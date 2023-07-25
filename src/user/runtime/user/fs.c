@@ -51,8 +51,7 @@ int fs_absolute_path(int fd,char* buffer,u32 buffer_length){
 
 
 int fs_stat(int fd,fs_stat_t* stat){
-	// _syscall_fd_stat
-	return FS_ERROR_INVALID_FD;
+	return _syscall_fd_stat(fd,stat,sizeof(fs_stat_t));
 }
 
 

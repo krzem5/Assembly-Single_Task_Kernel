@@ -69,12 +69,8 @@ int fd_open(const char* path,u32 length,u8 flags){
 	out=(out<<6)|idx;
 	fd_data_t* data=_fd_data+out;
 	data->node_id=node->id;
-	data->offset=0;
+	data->offset=((flags&FD_FLAG_APPEND)?fs_get_size(node):0);
 	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
-	if (flags&FD_FLAG_APPEND){
-		ERROR("Unimplemented: set offset of fd to file size");
-		for (;;);
-	}
 	lock_release(&_fd_lock);
 	return idx;
 }
@@ -114,6 +110,10 @@ s64 fd_read(fd_t fd,void* buffer,u64 count){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_fd_data+fd;
+	if (!(data->flags&FD_FLAG_READ)){
+		lock_release(&_fd_lock);
+		return FD_ERROR_UNSUPPORTED_OPERATION;
+	}
 	fs_node_t* node=fs_get_node_by_id(data->node_id);
 	if (!node){
 		lock_release(&_fd_lock);
@@ -134,6 +134,10 @@ s64 fd_write(fd_t fd,const void* buffer,u64 count){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_fd_data+fd;
+	if (!(data->flags&FD_FLAG_WRITE)){
+		lock_release(&_fd_lock);
+		return FD_ERROR_UNSUPPORTED_OPERATION;
+	}
 	fs_node_t* node=fs_get_node_by_id(data->node_id);
 	if (!node){
 		lock_release(&_fd_lock);
@@ -162,15 +166,43 @@ s64 fd_seek(fd_t fd,u64 offset,u8 flags){
 			data->offset+=offset;
 			break;
 		case FD_SEEK_END:
-			WARN("Unimplemented: FD_SEEK_END");
-			lock_release(&_fd_lock);
-			return -1;
+			fs_node_t* node=fs_get_node_by_id(data->node_id);
+			if (!node){
+				lock_release(&_fd_lock);
+				return FD_ERROR_NOT_FOUND;
+			}
+			data->offset=fs_get_size(node);
+			break;
 		default:
 			lock_release(&_fd_lock);
 			return FD_ERROR_INVALID_FLAGS;
 	}
 	lock_release(&_fd_lock);
 	return data->offset;
+}
+
+
+
+int fd_stat(fd_t fd,fd_stat_t* out){
+	lock_acquire(&_fd_lock);
+	if (_is_invalid_fd(fd)){
+		lock_release(&_fd_lock);
+		return FD_ERROR_INVALID_FD;
+	}
+	fd_data_t* data=_fd_data+fd;
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
+	if (!node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	out->node_id=node->id;
+	out->type=node->type;
+	out->fs_index=node->fs_index;
+	out->name_length=node->name_length;
+	memcpy(out->name,node->name,64);
+	out->size=fs_get_size(node);
+	lock_release(&_fd_lock);
+	return -1;
 }
 
 

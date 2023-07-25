@@ -336,3 +336,13 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 	lock_release(&(fs->lock));
 	return out;
 }
+
+
+
+u64 fs_get_size(fs_node_t* node){
+	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	lock_acquire(&(fs->lock));
+	u64 out=fs->config->get_size(fs->drive,node);
+	lock_release(&(fs->lock));
+	return out;
+}

@@ -9,6 +9,7 @@
 #define FS_ERROR_INVALID_POINTER -3
 #define FS_ERROR_OUT_OF_FDS -4
 #define FS_ERROR_NOT_FOUND -5
+#define FS_ERROR_UNSUPPORTED_OPERATION -6
 
 #define FS_FLAG_READ 1
 #define FS_FLAG_WRITE 2
@@ -25,10 +26,18 @@
 #define FS_RELATIVE_NEXT_SIBLING 2
 #define FS_RELATIVE_FIRST_CHILD 3
 
+#define FS_STAT_TYPE_FILE 0
+#define FS_STAT_TYPE_DIRECTORY 1
+
 
 
 typedef struct _FS_STAT{
-	int fd;
+	u64 node_id;
+	u8 type;
+	u8 fs_index;
+	u8 name_length;
+	char name[64];
+	u64 size;
 } fs_stat_t;
 
 
