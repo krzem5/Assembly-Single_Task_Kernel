@@ -29,7 +29,7 @@ typedef struct _VMM_PAGEMAP_TABLE{
 
 
 typedef struct _VMM_PAGEMAP{
-	vmm_pagemap_table_t* toplevel;
+	u64 toplevel;
 	lock_t lock;
 } vmm_pagemap_t;
 
