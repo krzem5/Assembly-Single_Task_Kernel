@@ -76,11 +76,11 @@ s32 _syscall_fd_dup(s32 fd,u32 flags);
 
 
 
-s32 _syscall_net_send(const void* buffer,u32 length);
+_Bool _syscall_net_send(const void* packet,u32 length);
 
 
 
-s32 _syscall_net_poll(void* buffer,u32 length);
+_Bool _syscall_net_poll(void* packet,u32 length);
 
 
 

@@ -1,6 +1,7 @@
 #include <kernel/driver/i82540.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
@@ -103,7 +104,7 @@ static void _i82540_tx(void* extra_data,u64 packet,u16 length){
 
 
 
-static u64 _i82540_rx(void* extra_data,u16* length){
+static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	i82540_device_t* device=extra_data;
 	u16 tail=device->mmio[REG_RDT];
 	tail++;
@@ -118,20 +119,12 @@ static u64 _i82540_rx(void* extra_data,u16* length){
 		_consume_packet(device,tail,desc);
 		return 0;
 	}
-	*length=desc->length;
-	return desc->address;
-}
-
-
-
-static void _i82540_rx_consume(void* extra_data){
-	i82540_device_t* device=extra_data;
-	u16 tail=device->mmio[REG_RDT];
-	tail++;
-	if (tail==NUM_RX_DESCRIPTORS){
-		tail=0;
+	if (desc->length<buffer_length){
+		buffer_length=desc->length;
 	}
-	_consume_packet(device,tail,GET_DESCRIPTOR(device,rx,tail));
+	memcpy(buffer,VMM_TRANSLATE_ADDRESS(desc->address),buffer_length);
+	_consume_packet(device,tail,desc);
+	return buffer_length;
 }
 
 
@@ -210,7 +203,6 @@ void driver_i82540_init_device(pci_device_t* device){
 		{ral,ral>>8,ral>>16,ral>>24,rah,rah>>8},
 		_i82540_tx,
 		_i82540_rx,
-		_i82540_rx_consume,
 		i82540_device
 	};
 	network_layer1_set_device(&layer1_device);

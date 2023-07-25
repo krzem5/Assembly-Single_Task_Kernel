@@ -166,6 +166,6 @@ _syscall_net_poll:
 
 
 _syscall_acpi_shutdown:
-	mov rax, 21
+	mov rax, 20
 	syscall
 	ret

@@ -46,17 +46,9 @@ void network_layer1_send(u64 packet,u16 length){
 
 
 
-void network_layer1_poll(void){
+u16 network_layer1_poll(void* buffer,u16 buffer_length){
 	if (!_network_layer1_device.name){
-		return;
+		return 0;
 	}
-	while (1){
-		u16 length;
-		u64 packet=_network_layer1_device.rx(_network_layer1_device.extra_data,&length);
-		if (!packet){
-			return;
-		}
-		network_layer2_process_packet(packet,length);
-		_network_layer1_device.rx_consume(_network_layer1_device.extra_data);
-	}
+	return _network_layer1_device.rx(_network_layer1_device.extra_data,buffer,buffer_length);
 }
