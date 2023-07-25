@@ -174,7 +174,7 @@ void driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_FCTTV]=0;
 	i82540_device->mmio[REG_CTRL]|=CTRL_SLU;
 	for (u64 i=0;!(i82540_device->mmio[REG_STATUS]&2);i++){
-		if (i==0xffffffff){
+		if (i==0xffffff){
 			WARN("Unable to establish ethernet link");
 			return;
 		}
