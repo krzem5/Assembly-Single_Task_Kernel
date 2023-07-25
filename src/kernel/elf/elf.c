@@ -78,10 +78,11 @@ void* elf_load(const char* path){
 		if (program_header.p_flags&2){
 			flags|=VMM_PAGE_FLAG_READWRITE;
 		}
-		u64 page_count=pmm_align_up_address(program_header.p_memsz)>>PAGE_SIZE_SHIFT;
+		u64 offset=program_header.p_vaddr&(PAGE_SIZE-1);
+		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
 		u64 pages=pmm_alloc(page_count);
-		vmm_map_pages(&pagemap,pages,program_header.p_vaddr+i,flags|VMM_MAP_WITH_COUNT,page_count);
-		if (fs_read(node,program_header.p_offset,VMM_TRANSLATE_ADDRESS(pages),program_header.p_filesz)!=program_header.p_filesz){
+		vmm_map_pages(&pagemap,pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
+		if (fs_read(node,program_header.p_offset,VMM_TRANSLATE_ADDRESS(pages)+offset,program_header.p_filesz)!=program_header.p_filesz){
 			goto _error;
 		}
 	}

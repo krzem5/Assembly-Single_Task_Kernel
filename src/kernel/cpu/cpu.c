@@ -20,6 +20,8 @@
 #define CPU_FLAG_PRESENT 1
 #define CPU_FLAG_ONLINE 2
 
+#define ISR_STACK_SIZE 48
+
 
 
 typedef struct _CPU{
@@ -29,9 +31,11 @@ typedef struct _CPU{
 	u64 stack_top;
 	u64 user_stack_tmp;
 	u64 user_stack;
+	u64 isr_stack_top;
 	tss_t tss;
 	u64 user_func;
 	u64 user_func_arg;
+	u8 isr_stack[ISR_STACK_SIZE];
 } cpu_t;
 
 
@@ -57,7 +61,8 @@ void _cpu_start_ap(_Bool is_bsp){
 	u8 index=cpu_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	cpu_t* cpu_data=_cpu_data+index;
-	cpu_data->tss.rsp0=cpu_data->stack_top;
+	cpu_data->isr_stack_top=(u64)(cpu_data->isr_stack+ISR_STACK_SIZE);
+	cpu_data->tss.rsp0=cpu_data->isr_stack_top;
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
 	gdt_enable(&(cpu_data->tss));

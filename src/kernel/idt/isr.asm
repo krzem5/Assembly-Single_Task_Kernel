@@ -20,7 +20,6 @@ section .text
 
 %macro ISR_HANDLER 1
 isr%1:
-	jmp $
 	mov rsp, cr3
 	cmp rsp, qword [vmm_common_kernel_pagemap]
 	je _isr_inisde_kernel
@@ -32,7 +31,6 @@ isr%1:
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
 	mov rsp, qword [gs:8]
-	sub rsp, 0x30
 	push r15
 	push r14
 	push r13
@@ -48,8 +46,8 @@ isr%1:
 	push rcx
 	push rbx
 	push rax
-	mov rax, cr2
-	push rax
+	mov rax, qword [gs:32]
+	push qword [rax-48]
 	mov rdi, rsp
 	mov rsi, %1
 	cld
@@ -74,8 +72,8 @@ isr%1:
 	mov sp, 0x18
 	mov ds, sp
 	mov es, sp
-	mov rsp, qword [gs:8]
-	sub rsp, 0x28
+	mov rsp, qword [gs:32]
+	sub rsp, 40
 	swapgs
 	iretq
 %endmacro

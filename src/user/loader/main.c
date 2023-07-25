@@ -25,8 +25,6 @@ void main(void){
 	for (u32 i=0;i<drive_count;i++){
 		printf("[%u]: %s (%s)%s\n",i,drives[i].name,drives[i].model_number,((drives[i].flags&DRIVE_FLAG_BOOT)?" [boot]":""));
 	}
-	*((char*)0)=0;
-	for (;;);
 	printf("Partitions:\n");
 	for (u32 i=0;i<partition_count;i++){
 		printf("[%u]: %s -> %s%s\n",i,partitions[i].name,partition_type_names[partitions[i].type],((partitions[i].flags&PARTITION_FLAG_BOOT)?" [boot]":""));

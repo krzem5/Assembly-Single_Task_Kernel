@@ -118,6 +118,10 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 
 void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
+	if (pmm_align_down_address(physical_address)!=physical_address||pmm_align_down_address(virtual_address)!=virtual_address){
+		ERROR("Invalid vmm_map_page arguments");
+		for (;;);
+	}
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
