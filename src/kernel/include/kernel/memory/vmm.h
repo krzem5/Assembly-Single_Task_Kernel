@@ -1,5 +1,6 @@
 #ifndef _KERNEL_MEMORY_VMM_H_
 #define _KERNEL_MEMORY_VMM_H_ 1
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
 
 
@@ -29,6 +30,7 @@ typedef struct _VMM_PAGEMAP_TABLE{
 
 typedef struct _VMM_PAGEMAP{
 	vmm_pagemap_table_t* toplevel;
+	lock_t lock;
 } vmm_pagemap_t;
 
 
@@ -63,7 +65,7 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
-u64 vmm_virtual_to_physical(const vmm_pagemap_t* pagemap,u64 virtual_address);
+u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 

@@ -1,4 +1,5 @@
 #include <kernel/kernel.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -61,7 +62,9 @@ static vmm_pagemap_table_t* _get_child_table(vmm_pagemap_table_t* table,u64 inde
 void vmm_init(const kernel_data_t* kernel_data){
 	LOG("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=(void*)pmm_alloc(1);
+	lock_init(&(vmm_kernel_pagemap.lock));
 	vmm_user_pagemap.toplevel=NULL;
+	lock_init(&(vmm_user_pagemap.lock));
 	INFO("Kernel top-level page map alloated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
 		*((u64*)VMM_TRANSLATE_ADDRESS(vmm_kernel_pagemap.toplevel->entries+i))=pmm_alloc(1)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
@@ -101,6 +104,7 @@ void vmm_init(const kernel_data_t* kernel_data){
 void vmm_pagemap_init(vmm_pagemap_t* pagemap){
 	LOG("Creating new pagemap...");
 	pagemap->toplevel=(void*)pmm_alloc(1);
+	lock_init(&(pagemap->lock));
 	LOG("Mapping common section...");
 	INFO("Mapping %v from %p to %p",kernel_get_end()-kernel_get_common_start(),kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset());
 	vmm_map_pages(pagemap,kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset(),VMM_PAGE_FLAG_PRESENT,pmm_align_up_address(kernel_get_end()-kernel_get_common_start())>>PAGE_SIZE_SHIFT);
@@ -109,9 +113,6 @@ void vmm_pagemap_init(vmm_pagemap_t* pagemap){
 
 
 void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
-	if (!pagemap->toplevel){
-		return;
-	}
 	_delete_pagemap_recursive((u64)(pagemap->toplevel),4);
 }
 
@@ -122,6 +123,7 @@ void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addres
 		ERROR("Invalid vmm_map_page arguments");
 		for (;;);
 	}
+	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -131,6 +133,7 @@ void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addres
 	vmm_pagemap_table_t* pml2=_get_child_table(pml3,j,1);
 	vmm_pagemap_table_t* pml1=_get_child_table(pml2,k,1);
 	*((u64*)VMM_TRANSLATE_ADDRESS(pml1->entries+l))=(physical_address&VMM_PAGE_ADDRESS_MASK)|flags;
+	lock_release(&(pagemap->lock));
 }
 
 
@@ -156,6 +159,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -163,23 +167,28 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	vmm_pagemap_table_t* pml4=pagemap->toplevel;
 	vmm_pagemap_table_t* pml3=_get_child_table(pml4,i,0);
 	if (!pml3){
+		lock_release(&(pagemap->lock));
 		return 0;
 	}
 	vmm_pagemap_table_t* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
+		lock_release(&(pagemap->lock));
 		return 0;
 	}
 	vmm_pagemap_table_t* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
+		lock_release(&(pagemap->lock));
 		return 0;
 	}
 	*((u64*)VMM_TRANSLATE_ADDRESS(pml1->entries+l))=0;
+	lock_release(&(pagemap->lock));
 	return 1;
 }
 
 
 
-u64 vmm_virtual_to_physical(const vmm_pagemap_t* pagemap,u64 virtual_address){
+u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -198,5 +207,6 @@ u64 vmm_virtual_to_physical(const vmm_pagemap_t* pagemap,u64 virtual_address){
 		return 0;
 	}
 	u64 entry=*((const u64*)VMM_TRANSLATE_ADDRESS(pml1->entries+l));
+	lock_release(&(pagemap->lock));
 	return ((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)+(virtual_address&0xfff):0);
 }
