@@ -15,4 +15,8 @@ char getchar(void);
 
 
 
+int getchar_timeout(u64 timeout);
+
+
+
 #endif

@@ -223,6 +223,13 @@ void putchar(char c){
 
 char getchar(void){
 	char out;
-	_syscall_serial_recv(&out,1);
+	_syscall_serial_recv(&out,1,0);
 	return out;
+}
+
+
+
+int getchar_timeout(u64 timeout){
+	char out;
+	return (_syscall_serial_recv(&out,1,timeout)?out:-1);
 }

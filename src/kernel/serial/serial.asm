@@ -36,17 +36,21 @@ serial_send:
 
 
 serial_recv:
-	test esi, esi
-	jz ._end
+	mov r8, rdx
 	push rdi
 	lea rdi, _serial_lock
 	call lock_acquire
 	pop rdi
 	xor ecx, ecx
+	test esi, esi
+	jz ._end
 	mov dx, 0x3f8
 ._next_char:
 	add dx, 5
+	mov r9, r8
 ._poll_serial:
+	sub r9, 1
+	jz ._end
 	in al, dx
 	and al, 0x01
 	jz ._poll_serial
@@ -56,9 +60,10 @@ serial_recv:
 	add ecx, 1
 	cmp ecx, esi
 	jl ._next_char
-	lea rdi, _serial_lock
-	jmp lock_release
 ._end:
+	lea rdi, _serial_lock
+	call lock_release
+	mov eax, ecx
 	ret
 
 

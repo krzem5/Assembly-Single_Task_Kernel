@@ -8,7 +8,7 @@ void _syscall_serial_send(const void* buffer,u32 length);
 
 
 
-void _syscall_serial_recv(void* buffer,u32 length);
+u32 _syscall_serial_recv(void* buffer,u32 length,u64 timeout);
 
 
 

@@ -8,7 +8,7 @@ void serial_send(const void* buffer,u32 length);
 
 
 
-void serial_recv(void* buffer,u32 length);
+u32 serial_recv(void* buffer,u32 length,u64 timeout);
 
 
 

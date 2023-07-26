@@ -107,9 +107,10 @@ static void _syscall_serial_send(syscall_registers_t* regs){
 static void _syscall_serial_recv(syscall_registers_t* regs){
 	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
+		regs->rax=0;
 		return;
 	}
-	serial_recv(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	regs->rax=serial_recv(VMM_TRANSLATE_ADDRESS(address),regs->rsi,regs->rdx);
 }
 
 
