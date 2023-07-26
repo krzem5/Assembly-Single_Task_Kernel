@@ -1,10 +1,22 @@
 #include <command.h>
+#include <string.h>
+#include <user/io.h>
 #include <user/shutdown.h>
 
 
 
 void shutdown_main(int argc,const char*const* argv){
-	shutdown(0);
+	_Bool reset=0;
+	for (u32 i=1;i<argc;i++){
+		if (string_equal(argv[i],"-r")){
+			reset=1;
+		}
+		else{
+			printf("shutdown: unrecognized option '%s'\n",argv[i]);
+			return;
+		}
+	}
+	shutdown(reset);
 }
 
 
@@ -21,6 +33,6 @@ void exit_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(shutdown);
-DECLARE_COMMAND(reboot);
-DECLARE_COMMAND(exit);
+DECLARE_COMMAND(shutdown,"shutdown [-r]");
+DECLARE_COMMAND(reboot,"reboot");
+DECLARE_COMMAND(exit,"exit");

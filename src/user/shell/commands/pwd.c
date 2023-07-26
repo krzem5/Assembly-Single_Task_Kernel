@@ -10,4 +10,4 @@ void pwd_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(pwd);
+DECLARE_COMMAND(pwd,"pwd");

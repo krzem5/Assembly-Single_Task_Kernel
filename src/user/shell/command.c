@@ -1,5 +1,6 @@
 #include <command.h>
 #include <input.h>
+#include <string.h>
 #include <user/io.h>
 #include <user/types.h>
 
@@ -35,18 +36,10 @@ void command_execute(const char* command){
 	}
 	*buffer_ptr=0;
 	for (const command_t*const* ptr=&__start_commands;ptr<&__stop_commands;ptr++){
-		if (!*ptr){
-			continue;
+		if (*ptr&&string_equal(buffer,(*ptr)->name)){
+			(*ptr)->func(argc,argv);
+			return;
 		}
-		const char* name=(*ptr)->name;
-		for (u32 i=0;name[i]||buffer[i];i++){
-			if (buffer[i]!=name[i]){
-				goto _try_next_command;
-			}
-		}
-		(*ptr)->func(argc,argv);
-		return;
-_try_next_command:
 	}
 	printf("%s: command not found\n",buffer);
 }

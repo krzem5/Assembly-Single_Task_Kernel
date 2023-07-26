@@ -157,7 +157,7 @@ def _compile_user_files(file_directory,changed_files,file_hash_list):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,f"-I{file_directory}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
+				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{file_directory}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
