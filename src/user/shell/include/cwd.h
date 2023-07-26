@@ -14,4 +14,8 @@ void cwd_init(void);
 
 
 
+void cwd_change(const char* path);
+
+
+
 #endif

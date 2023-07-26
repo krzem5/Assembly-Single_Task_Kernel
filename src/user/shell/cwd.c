@@ -1,4 +1,5 @@
 #include <user/fs.h>
+#include <user/io.h>
 #include <user/types.h>
 
 
@@ -14,4 +15,10 @@ void cwd_init(void){
 	cwd[1]=0;
 	cwd_length=1;
 	cwd_fd=fs_open("/",0);
+}
+
+
+
+void cwd_change(const char* path){
+	printf("Unable to change directory to '%s'\n",path);
 }
