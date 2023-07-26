@@ -12,9 +12,13 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/network/layer2.h>
-#include <kernel/print/print.h>
+#include <kernel/serial/serial.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+
+
+
+#define SYSCALL_COUNT 25
 
 
 
@@ -90,12 +94,22 @@ static u64 _sanatize_user_memory(u64 start,u64 size){
 
 
 
-static void _syscall_print_string(syscall_registers_t* regs){
+static void _syscall_serial_send(syscall_registers_t* regs){
 	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		return;
 	}
-	print_string(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	serial_send(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+}
+
+
+
+static void _syscall_serial_recv(syscall_registers_t* regs){
+	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		return;
+	}
+	serial_recv(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
 }
 
 
@@ -392,29 +406,30 @@ static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 
 void syscall_init(void){
 	LOG("Initializing SYSCALL table...");
-	_syscall_handlers[0]=_syscall_print_string;
-	_syscall_handlers[1]=_syscall_elf_load;
-	_syscall_handlers[2]=_syscall_cpu_core_count;
-	_syscall_handlers[3]=_syscall_cpu_core_start;
-	_syscall_handlers[4]=_syscall_cpu_core_stop;
-	_syscall_handlers[5]=_syscall_drive_list_length;
-	_syscall_handlers[6]=_syscall_drive_list_get;
-	_syscall_handlers[7]=_syscall_file_system_count;
-	_syscall_handlers[8]=_syscall_file_system_get;
-	_syscall_handlers[9]=_syscall_fd_open;
-	_syscall_handlers[10]=_syscall_fd_close;
-	_syscall_handlers[11]=_syscall_fd_delete;
-	_syscall_handlers[12]=_syscall_fd_read;
-	_syscall_handlers[13]=_syscall_fd_write;
-	_syscall_handlers[14]=_syscall_fd_seek;
-	_syscall_handlers[15]=_syscall_fd_stat;
-	_syscall_handlers[16]=_syscall_fd_get_relative;
-	_syscall_handlers[17]=_syscall_fd_dup;
-	_syscall_handlers[18]=_syscall_net_send;
-	_syscall_handlers[19]=_syscall_net_poll;
-	_syscall_handlers[20]=_syscall_acpi_shutdown;
-	_syscall_handlers[21]=_syscall_memory_map;
-	_syscall_handlers[22]=_syscall_memory_unmap;
-	_syscall_handlers[23]=_syscall_clock_get_converion;
+	_syscall_handlers[0]=_syscall_serial_send;
+	_syscall_handlers[1]=_syscall_serial_recv;
+	_syscall_handlers[2]=_syscall_elf_load;
+	_syscall_handlers[3]=_syscall_cpu_core_count;
+	_syscall_handlers[4]=_syscall_cpu_core_start;
+	_syscall_handlers[5]=_syscall_cpu_core_stop;
+	_syscall_handlers[6]=_syscall_drive_list_length;
+	_syscall_handlers[7]=_syscall_drive_list_get;
+	_syscall_handlers[8]=_syscall_file_system_count;
+	_syscall_handlers[9]=_syscall_file_system_get;
+	_syscall_handlers[10]=_syscall_fd_open;
+	_syscall_handlers[11]=_syscall_fd_close;
+	_syscall_handlers[12]=_syscall_fd_delete;
+	_syscall_handlers[13]=_syscall_fd_read;
+	_syscall_handlers[14]=_syscall_fd_write;
+	_syscall_handlers[15]=_syscall_fd_seek;
+	_syscall_handlers[16]=_syscall_fd_stat;
+	_syscall_handlers[17]=_syscall_fd_get_relative;
+	_syscall_handlers[18]=_syscall_fd_dup;
+	_syscall_handlers[19]=_syscall_net_send;
+	_syscall_handlers[20]=_syscall_net_poll;
+	_syscall_handlers[21]=_syscall_acpi_shutdown;
+	_syscall_handlers[22]=_syscall_memory_map;
+	_syscall_handlers[23]=_syscall_memory_unmap;
+	_syscall_handlers[24]=_syscall_clock_get_converion;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

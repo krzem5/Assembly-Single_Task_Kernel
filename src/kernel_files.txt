@@ -40,6 +40,7 @@ src/kernel/network/layer2.c:net_l2
 src/kernel/pci/pci.c:pci:CORE
 src/kernel/print/printf.c:printf:CORE
 src/kernel/print/putchar.asm:putchar:CORE
+src/kernel/serial/serial.asm:serial:CORE
 src/kernel/syscall/syscall.asm:syscall
 src/kernel/syscall/syscall.c:syscall
 src/kernel/version.c:version:CORE

@@ -4,7 +4,11 @@
 
 
 
-void _syscall_print_string(const char* str,u32 length);
+void _syscall_serial_send(const void* buffer,u32 length);
+
+
+
+void _syscall_serial_recv(void* buffer,u32 length);
 
 
 
@@ -93,6 +97,10 @@ void* _syscall_memory_map(u64 length);
 
 
 _Bool _syscall_memory_unmap(void* address,u64 length);
+
+
+
+void _syscall_clock_get_converion(void);
 
 
 

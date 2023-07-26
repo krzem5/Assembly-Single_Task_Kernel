@@ -2,8 +2,8 @@
 #include <user/drive.h>
 #include <user/elf.h>
 #include <user/fs.h>
+#include <user/io.h>
 #include <user/partition.h>
-#include <user/print.h>
 #include <user/types.h>
 
 
@@ -45,6 +45,13 @@ void main(void){
 	fs_stat_t stat;
 	fs_stat(fs_open("/kernel.bin",0),&stat);
 	printf("Type: %u, Length: %llu\n",stat.type,stat.size);
+	while (1){
+		char c=getchar();
+		if (c==13){
+			break;
+		}
+		printf("Char: %c [%u]\n",c,c);
+	}
 	u64 end=clock_get_ticks();
 	printf("Elapsed time: %lu ms (%lu ns)\n",clock_ticks_to_time(end-start)/1000000,clock_ticks_to_time(end-start));
 	printf("\x1b[38;2;169;42;187mHello world!\x1b[0m\n");

@@ -1,4 +1,4 @@
-%define SYSCALL_COUNT 24
+%define SYSCALL_COUNT 25
 
 
 

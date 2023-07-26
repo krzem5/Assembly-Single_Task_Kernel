@@ -1,3 +1,4 @@
+extern _syscall_clock_get_converion
 global clock_init
 global clock_get_ticks
 global clock_get_time
@@ -8,8 +9,7 @@ section .text
 
 [bits 64]
 clock_init:
-	mov rax, 23
-	syscall
+	call _syscall_clock_get_converion
 	mov qword [_clock_conversion_factor], rax
 	mov dword [_clock_conversion_shift], edx
 	ret

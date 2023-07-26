@@ -10,7 +10,7 @@
 #define WARN(template,...) _LOG("\x1b[38;2;231;211;72m",template,##__VA_ARGS__)
 #define ERROR(template,...) _LOG("\x1b[1m\x1b[38;2;231;72;86m",template,##__VA_ARGS__)
 
-#define _LOG(color,template,...) print_format("\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n",##__VA_ARGS__)
+#define _LOG(color,template,...) print("\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n",##__VA_ARGS__)
 
 
 

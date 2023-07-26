@@ -1,5 +1,5 @@
-global _syscall_print_string
-global _syscall_print_string
+global _syscall_serial_send
+global _syscall_serial_recv
 global _syscall_elf_load
 global _syscall_cpu_core_count
 global _syscall_cpu_core_start
@@ -22,166 +22,181 @@ global _syscall_net_poll
 global _syscall_acpi_shutdown
 global _syscall_memory_map
 global _syscall_memory_unmap
+global _syscall_clock_get_converion
 section .text
 
 
 
 [bits 64]
-_syscall_print_string:
+_syscall_serial_send:
 	mov rax, 0
 	syscall
 	ret
 
 
 
-_syscall_elf_load:
+_syscall_serial_recv:
 	mov rax, 1
 	syscall
 	ret
 
 
 
-_syscall_cpu_core_count:
+_syscall_elf_load:
 	mov rax, 2
 	syscall
 	ret
 
 
 
-_syscall_cpu_core_start:
+_syscall_cpu_core_count:
 	mov rax, 3
 	syscall
 	ret
 
 
 
-_syscall_cpu_core_stop:
+_syscall_cpu_core_start:
 	mov rax, 4
 	syscall
 	ret
 
 
 
-_syscall_drive_list_length:
+_syscall_cpu_core_stop:
 	mov rax, 5
 	syscall
 	ret
 
 
 
-_syscall_drive_list_get:
+_syscall_drive_list_length:
 	mov rax, 6
 	syscall
 	ret
 
 
 
-_syscall_file_system_count:
+_syscall_drive_list_get:
 	mov rax, 7
 	syscall
 	ret
 
 
 
-_syscall_file_system_get:
+_syscall_file_system_count:
 	mov rax, 8
 	syscall
 	ret
 
 
 
-_syscall_fd_open:
+_syscall_file_system_get:
 	mov rax, 9
 	syscall
 	ret
 
 
 
-_syscall_fd_close:
+_syscall_fd_open:
 	mov rax, 10
 	syscall
 	ret
 
 
 
-_syscall_fd_delete:
+_syscall_fd_close:
 	mov rax, 11
 	syscall
 	ret
 
 
 
-_syscall_fd_read:
+_syscall_fd_delete:
 	mov rax, 12
 	syscall
 	ret
 
 
 
-_syscall_fd_write:
+_syscall_fd_read:
 	mov rax, 13
 	syscall
 	ret
 
 
 
-_syscall_fd_seek:
+_syscall_fd_write:
 	mov rax, 14
 	syscall
 	ret
 
 
 
-_syscall_fd_stat:
+_syscall_fd_seek:
 	mov rax, 15
 	syscall
 	ret
 
 
 
-_syscall_fd_get_relative:
+_syscall_fd_stat:
 	mov rax, 16
 	syscall
 	ret
 
 
 
-_syscall_fd_dup:
+_syscall_fd_get_relative:
 	mov rax, 17
 	syscall
 	ret
 
 
 
-_syscall_net_send:
+_syscall_fd_dup:
 	mov rax, 18
 	syscall
 	ret
 
 
 
-_syscall_net_poll:
+_syscall_net_send:
 	mov rax, 19
 	syscall
 	ret
 
 
 
-_syscall_acpi_shutdown:
+_syscall_net_poll:
 	mov rax, 20
 	syscall
 	ret
 
 
 
-_syscall_memory_map:
+_syscall_acpi_shutdown:
 	mov rax, 21
 	syscall
 	ret
 
 
 
-_syscall_memory_unmap:
+_syscall_memory_map:
 	mov rax, 22
+	syscall
+	ret
+
+
+
+_syscall_memory_unmap:
+	mov rax, 23
+	syscall
+	ret
+
+
+
+_syscall_clock_get_converion:
+	mov rax, 24
 	syscall
 	ret

@@ -4,10 +4,6 @@
 
 
 
-#define SYSCALL_COUNT 24
-
-
-
 void syscall_init(void);
 
 

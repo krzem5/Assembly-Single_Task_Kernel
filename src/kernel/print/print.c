@@ -1,6 +1,6 @@
-#include <stdarg.h>
-#include <user/syscall.h>
-#include <user/types.h>
+#include <kernel/print/print.h>
+#include <kernel/serial/serial.h>
+#include <kernel/types.h>
 
 
 
@@ -54,10 +54,10 @@ static inline void _print_int_base10(u64 value,buffer_state_t* out){
 
 
 
-static void _print_int(va_list va,u8 flags,buffer_state_t* out){
+static void _print_int(__builtin_va_list va,u8 flags,buffer_state_t* out){
 	u64 data;
 	if (flags&FLAG_SIGN){
-		s64 signed_data=((flags&FLAG_LONG)?va_arg(va,s64):va_arg(va,s32));
+		s64 signed_data=((flags&FLAG_LONG)?__builtin_va_arg(va,s64):__builtin_va_arg(va,s32));
 		if (signed_data<0){
 			_buffer_state_add(out,'-');
 			signed_data=-signed_data;
@@ -65,7 +65,7 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 		data=signed_data;
 	}
 	else{
-		data=((flags&FLAG_LONG)?va_arg(va,u64):va_arg(va,u32));
+		data=((flags&FLAG_LONG)?__builtin_va_arg(va,u64):__builtin_va_arg(va,u32));
 	}
 	if (!data){
 		_buffer_state_add(out,'0');
@@ -90,12 +90,12 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 
 
 
-void printf(const char* template,...){
+void print(const char* template,...){
 	buffer_state_t out={
 		.offset=0
 	};
-	va_list va;
-	va_start(va,template);
+	__builtin_va_list va;
+	__builtin_va_start(va,template);
 	while (*template){
 		if (*template!='%'){
 			_buffer_state_add(&out,*template);
@@ -123,10 +123,10 @@ void printf(const char* template,...){
 			}
 		}
 		if (*template=='c'){
-			_buffer_state_add(&out,va_arg(va,int));
+			_buffer_state_add(&out,__builtin_va_arg(va,int));
 		}
 		else if (*template=='s'){
-			const char* ptr=va_arg(va,const char*);
+			const char* ptr=__builtin_va_arg(va,const char*);
 			if (!ptr){
 				ptr="(null)";
 			}
@@ -145,7 +145,7 @@ void printf(const char* template,...){
 			_print_int(va,flags|FLAG_HEX,&out);
 		}
 		else if (*template=='v'){
-			u64 size=va_arg(va,u64);
+			u64 size=__builtin_va_arg(va,u64);
 			if (!size){
 				_buffer_state_add(&out,'0');
 				_buffer_state_add(&out,' ');
@@ -194,7 +194,7 @@ void printf(const char* template,...){
 			}
 		}
 		else if (*template=='p'){
-			u64 address=va_arg(va,u64);
+			u64 address=__builtin_va_arg(va,u64);
 			u32 shift=64;
 			while (shift){
 				if (shift==32){
@@ -209,12 +209,6 @@ void printf(const char* template,...){
 		}
 		template++;
 	}
-	va_end(va);
-	_syscall_print_string(out.buffer,out.offset);
-}
-
-
-
-void putchar(char c){
-	_syscall_print_string(&c,1);
+	__builtin_va_end(va);
+	serial_send(out.buffer,out.offset);
 }

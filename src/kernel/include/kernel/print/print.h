@@ -4,15 +4,7 @@
 
 
 
-void print_format(const char* template,...);
-
-
-
-void print_string(const char* str,u64 length);
-
-
-
-void _putchar_nolock(char c);
+void print(const char* template,...);
 
 
 
