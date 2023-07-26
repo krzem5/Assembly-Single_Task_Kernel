@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/clock/clock.h>
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/gdt/gdt.h>
@@ -73,6 +74,8 @@ void _cpu_start_ap(_Bool is_bsp){
 	cpu_enable_simd();
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
+	INFO("Enabling user clock access...");
+	clock_enable();
 	(_cpu_data+index)->flags|=CPU_FLAG_ONLINE;
 	if (is_bsp){
 		return;

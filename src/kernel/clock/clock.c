@@ -8,11 +8,9 @@
 
 
 
-static u64 _clock_tsc_offset;
-static u64 _clock_conversion_factor;
-static u32 _clock_conversion_shift;
-
 u64 clock_cpu_frequency;
+u64 clock_conversion_factor;
+u32 clock_conversion_shift;
 
 
 
@@ -68,9 +66,9 @@ static u64 _get_cpu_frequency(void){
 
 static void _calculate_clock_conversion(void){
 	u64 freq_khz=clock_cpu_frequency/1000;
-	for (_clock_conversion_shift=32;_clock_conversion_shift;_clock_conversion_shift--){
-		_clock_conversion_factor=((1000000ull<<_clock_conversion_shift)+(freq_khz>>1))/freq_khz;
-		if (!(_clock_conversion_factor>>32)){
+	for (clock_conversion_shift=32;clock_conversion_shift;clock_conversion_shift--){
+		clock_conversion_factor=((1000000ull<<clock_conversion_shift)+(freq_khz>>1))/freq_khz;
+		if (!(clock_conversion_factor>>32)){
 			return;
 		}
 	}
@@ -85,19 +83,5 @@ void clock_init(void){
 	INFO("Calculating clock frequency...");
 	clock_cpu_frequency=_get_cpu_frequency();
 	LOG("CPU clock frequency: %lu Hz",clock_cpu_frequency);
-	_clock_tsc_offset=_get_tsc();
 	_calculate_clock_conversion();
-}
-
-
-
-u64 clock_get_ticks(void){
-	return _get_tsc()-_clock_tsc_offset;
-}
-
-
-
-u64 clock_get_time(void){
-	u64 ticks=_get_tsc()-_clock_tsc_offset;
-	return ((_clock_conversion_factor*(ticks&0xffffffff))>>_clock_conversion_shift)+((_clock_conversion_factor*(ticks>>32))<<(32-_clock_conversion_shift));
 }

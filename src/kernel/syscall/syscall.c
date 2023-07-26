@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
@@ -375,6 +376,13 @@ static void _syscall_memory_unmap(syscall_registers_t* regs){
 
 
 
+static void _syscall_clock_get_converion(syscall_registers_t* regs){
+	regs->rax=clock_conversion_factor;
+	regs->rdx=clock_conversion_shift;
+}
+
+
+
 static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
@@ -407,5 +415,6 @@ void syscall_init(void){
 	_syscall_handlers[20]=_syscall_acpi_shutdown;
 	_syscall_handlers[21]=_syscall_memory_map;
 	_syscall_handlers[22]=_syscall_memory_unmap;
+	_syscall_handlers[23]=_syscall_clock_get_converion;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

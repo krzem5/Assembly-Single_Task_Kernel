@@ -5,10 +5,16 @@
 
 
 extern u64 clock_cpu_frequency;
+extern u64 clock_conversion_factor;
+extern u32 clock_conversion_shift;
 
 
 
 void clock_init(void);
+
+
+
+void clock_enable(void);
 
 
 

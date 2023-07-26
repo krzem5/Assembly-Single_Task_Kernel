@@ -26,7 +26,6 @@
 void main(void){
 	LOG("Starting kernel...");
 	const kernel_data_t* kernel_data=kernel_init();
-	clock_init();
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
@@ -42,6 +41,7 @@ void main(void){
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
+	clock_init();
 	fd_init();
 	mmap_init();
 	syscall_init();
