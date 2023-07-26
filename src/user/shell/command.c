@@ -9,6 +9,11 @@
 
 
 
+extern const command_t* __start_commands;
+extern const command_t* __stop_commands;
+
+
+
 void command_execute(const char* command){
 	char buffer[INPUT_BUFFER_SIZE+1];
 	char* buffer_ptr=buffer;
@@ -17,7 +22,9 @@ void command_execute(const char* command){
 	while (*command){
 		if (*command==' '){
 			argv[argc]=buffer_ptr+1;
-			argc++;
+			if (argc<MAX_ARG_COUNT){
+				argc++;
+			}
 			*buffer_ptr=0;
 		}
 		else{
@@ -27,5 +34,19 @@ void command_execute(const char* command){
 		buffer_ptr++;
 	}
 	*buffer_ptr=0;
-	printf("<%u:%s>\n",argc,argv[0]);
+	for (const command_t*const* ptr=&__start_commands;ptr<&__stop_commands;ptr++){
+		if (!*ptr){
+			continue;
+		}
+		const char* name=(*ptr)->name;
+		for (u32 i=0;name[i]||buffer[i];i++){
+			if (buffer[i]!=name[i]){
+				goto _try_next_command;
+			}
+		}
+		(*ptr)->func(argc,argv);
+		return;
+_try_next_command:
+	}
+	printf("%s: command not found\n",buffer);
 }
