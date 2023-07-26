@@ -4,10 +4,6 @@
 
 
 
-#define MAKE_KEYCODE(a,b) ((a)|((b)<<8))
-
-
-
 #define KEY_UP 256
 #define KEY_DOWN 257
 #define KEY_RIGHT 258
@@ -19,13 +15,22 @@
 #define KEY_PAGE_UP 264
 #define KEY_PAGE_DOWN 265
 
-#define KEY_MASK 0x3fff
-#define KEY_FLAG_SHIFT 0x4000
+#define KEY_MASK 0x1fff
+#define KEY_FLAG_SHIFT 0x2000
+#define KEY_FLAG_ALT 0x4000
 #define KEY_FLAG_CTRL 0x8000
 
 
 
-char input[INPUT_BUFFER_SIZE];
+#define IS_IDENTIFIER(c) (((c)>64&&(c)<91)||((c)>96&&(c)<123)||(c)=='_'||((c)>47&&(c)<58))
+
+#define IS_WHITESPACE(c) ((c)==' '||(c)=='\t')
+
+
+
+static u32 _input_cursor;
+
+char input[INPUT_BUFFER_SIZE+1];
 u32 input_length;
 
 
@@ -71,8 +76,8 @@ _retry:
 	u16 keycode=0;
 	if (i&&buffer[i-1]=='~'){
 		keycode=buffer[0];
-		if (i>=2&&j>=2){
-			keycode=buffer[1]<<8;
+		if (i>=3&&j>=2){
+			keycode|=buffer[1]<<8;
 		}
 		if (j!=0xff){
 			modifiers=buffer[j+1];
@@ -95,38 +100,38 @@ _retry:
 	}
 	u16 out=0;
 	switch (keycode){
-		case MAKE_KEYCODE('A',0):
+		case 'A':
 			out=KEY_UP;
 			break;
-		case MAKE_KEYCODE('B',0):
+		case 'B':
 			out=KEY_DOWN;
 			break;
-		case MAKE_KEYCODE('C',0):
+		case 'C':
 			out=KEY_RIGHT;
 			break;
-		case MAKE_KEYCODE('D',0):
+		case 'D':
 			out=KEY_LEFT;
 			break;
-		case MAKE_KEYCODE('F',0):
-		case MAKE_KEYCODE(4,0):
-		case MAKE_KEYCODE(8,0):
+		case 'F':
+		case '4':
+		case '8':
 			out=KEY_END;
 			break;
-		case MAKE_KEYCODE('H',0):
-		case MAKE_KEYCODE(1,0):
-		case MAKE_KEYCODE(7,0):
+		case 'H':
+		case '1':
+		case '7':
 			out=KEY_HOME;
 			break;
-		case MAKE_KEYCODE(2,0):
+		case '2':
 			out=KEY_INSERT;
 			break;
-		case MAKE_KEYCODE(3,0):
+		case '3':
 			out=KEY_DELETE;
 			break;
-		case MAKE_KEYCODE(5,0):
+		case '5':
 			out=KEY_PAGE_UP;
 			break;
-		case MAKE_KEYCODE(6,0):
+		case '6':
 			out=KEY_PAGE_DOWN;
 			break;
 		default:
@@ -136,6 +141,9 @@ _retry:
 	if (modifiers&1){
 		out|=KEY_FLAG_SHIFT;
 	}
+	if (modifiers&2){
+		out|=KEY_FLAG_ALT;
+	}
 	if (modifiers&4){
 		out|=KEY_FLAG_CTRL;
 	}
@@ -144,11 +152,134 @@ _retry:
 
 
 
+static void _insert_char(char c){
+	if (_input_cursor==INPUT_BUFFER_SIZE){
+		input[_input_cursor-1]=c;
+	}
+	else{
+		for (u32 i=input_length;i>_input_cursor;i--){
+			input[i+1]=input[i];
+		}
+		input[_input_cursor]=c;
+		_input_cursor++;
+		if (input_length<INPUT_BUFFER_SIZE){
+			input_length++;
+		}
+	}
+	input[input_length]=0;
+}
+
+
+
+static void _delete_char(void){
+	if (!input_length){
+		return;
+	}
+	input_length--;
+	for (u32 i=_input_cursor;i<input_length;i++){
+		input[i]=input[i+1];
+	}
+	input[input_length]=0;
+}
+
+
+
+static void _move_cursor(_Bool is_right,_Bool whole_word){
+	// switch alnum -> other or non-alnum -> space
+	if (is_right){
+		if (_input_cursor+1>=input_length){
+			_input_cursor=input_length;
+			return;
+		}
+		_input_cursor++;
+		if (!whole_word){
+			return;
+		}
+		_Bool inside_identifier=IS_IDENTIFIER(input[_input_cursor]);
+		while (_input_cursor<input_length){
+			_input_cursor++;
+			if (inside_identifier){
+				if (!IS_IDENTIFIER(input[_input_cursor])){
+					break;
+				}
+			}
+			else{
+				if (IS_WHITESPACE(input[_input_cursor])){
+					break;
+				}
+			}
+		}
+	}
+	else{
+		if (_input_cursor<2){
+			_input_cursor=0;
+			return;
+		}
+		_input_cursor--;
+		if (!whole_word){
+			return;
+		}
+		_Bool inside_identifier=IS_IDENTIFIER(input[_input_cursor]);
+		while (_input_cursor){
+			_input_cursor--;
+			if (inside_identifier){
+				if (!IS_IDENTIFIER(input[_input_cursor])){
+					break;
+				}
+			}
+			else{
+				if (IS_WHITESPACE(input[_input_cursor])){
+					break;
+				}
+			}
+		}
+	}
+}
+
+
+
 void input_get(void){
+	input[0]=0;
+	_input_cursor=0;
 	input_length=0;
-	printf("\x1b[1m\x1b[38;2;67;154;6mshell\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ \n",cwd);
 	while (1){
+		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mshell\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,input,_input_cursor+cwd_length+9);
 		int key=_get_key();
-		printf("%u [%c]",key,key);
+		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
+			_insert_char(key&KEY_MASK);
+		}
+		else{
+			switch (key&KEY_MASK){
+				case 9:
+					_insert_char(' ');
+					_insert_char(' ');
+					_insert_char(' ');
+					_insert_char(' ');
+					break;
+				case 10:
+				case 13:
+					printf("\x1b[%uG\n",input_length+cwd_length+9);
+					return;
+				case 127:
+					if (_input_cursor){
+						_input_cursor--;
+						_delete_char();
+					}
+					break;
+				case KEY_LEFT:
+				case KEY_RIGHT:
+					_move_cursor((key&KEY_MASK)==KEY_RIGHT,!!(key&KEY_FLAG_CTRL));
+					break;
+				case KEY_DELETE:
+					_delete_char();
+					break;
+				case KEY_HOME:
+					_input_cursor=0;
+					break;
+				case KEY_END:
+					_input_cursor=input_length;
+					break;
+			}
+		}
 	}
 }
