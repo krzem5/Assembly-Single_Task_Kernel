@@ -1,7 +1,7 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/emptyfs.h>
-#include <kernel/fs/iso9660.h>
 #include <kernel/fs/partition.h>
+#include <kernel/fs_provider/emptyfs.h>
+#include <kernel/fs_provider/iso9660.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 

@@ -16,12 +16,12 @@ src/kernel/driver/i82540.c:i82540:CORE
 src/kernel/driver/nvme.c:nvme:CORE
 src/kernel/elf/elf.c:elf
 src/kernel/entry.asm:entry:CORE
-src/kernel/fs/emptyfs.c:emptyfs:CORE
 src/kernel/fs/fd.c:fd
 src/kernel/fs/fs.c:fs:CORE
-src/kernel/fs/iso9660.c:iso9660:CORE
 src/kernel/fs/node_allocator.c:fs_node:CORE
 src/kernel/fs/partition.c:fs_part:CORE
+src/kernel/fs_provider/emptyfs.c:emptyfs:CORE
+src/kernel/fs_provider/iso9660.c:iso9660:CORE
 src/kernel/gdt/gdt.asm:gdt
 src/kernel/idt/idt.asm:idt
 src/kernel/idt/isr.asm:isr
