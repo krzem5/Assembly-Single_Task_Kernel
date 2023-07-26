@@ -185,7 +185,6 @@ static void _delete_char(void){
 
 
 static void _move_cursor(_Bool is_right,_Bool whole_word){
-	// switch alnum -> other or non-alnum -> space
 	if (is_right){
 		if (_input_cursor+1>=input_length){
 			_input_cursor=input_length;
@@ -243,7 +242,7 @@ void input_get(void){
 	_input_cursor=0;
 	input_length=0;
 	while (1){
-		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mshell\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,input,_input_cursor+cwd_length+9);
+		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mroot\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,input,_input_cursor+cwd_length+8);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
 			_insert_char(key&KEY_MASK);
@@ -258,7 +257,7 @@ void input_get(void){
 					break;
 				case 10:
 				case 13:
-					printf("\x1b[%uG\n",input_length+cwd_length+9);
+					printf("\x1b[%uG\n",input_length+cwd_length+8);
 					return;
 				case 127:
 					if (_input_cursor){

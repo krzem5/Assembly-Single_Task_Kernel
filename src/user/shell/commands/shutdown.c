@@ -15,5 +15,12 @@ void reboot_main(int argc,const char*const* argv){
 
 
 
+void exit_main(int argc,const char*const* argv){
+	shutdown(0);
+}
+
+
+
 DECLARE_COMMAND(shutdown);
 DECLARE_COMMAND(reboot);
+DECLARE_COMMAND(exit);
