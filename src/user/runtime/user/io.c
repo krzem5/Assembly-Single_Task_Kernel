@@ -215,6 +215,12 @@ void printf(const char* template,...){
 
 
 
+void print_buffer(const void* buffer,u32 length){
+	_syscall_serial_send(buffer,length);
+}
+
+
+
 void putchar(char c){
 	_syscall_serial_send(&c,1);
 }
