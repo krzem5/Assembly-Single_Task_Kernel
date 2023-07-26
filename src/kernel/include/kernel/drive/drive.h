@@ -20,6 +20,7 @@ typedef struct _DRIVE{
 	u8 type;
 	u8 flags;
 	u8 index;
+	u8 block_size_shift;
 	char name[16];
 	char serial_number[32];
 	char model_number[64];

@@ -42,8 +42,13 @@ void drive_list_add_drive(const drive_t* drive){
 	_drives[_drive_count]=*drive;
 	(_drives+_drive_count)->flags=0;
 	(_drives+_drive_count)->index=_drive_count;
+	(_drives+_drive_count)->index=_drive_count;
+	(_drives+_drive_count)->block_size_shift=__builtin_clzll(drive->block_size);
 	_drive_count++;
 	INFO("Drive serial number: '%s', Drive size: %v (%lu * %lu)",drive->serial_number,drive->block_count*drive->block_size,drive->block_count,drive->block_size);
+	if (drive->block_size>>((_drives+_drive_count-1)->block_size_shift+1)){
+		WARN("Drive block size is not a power of 2");
+	}
 }
 
 

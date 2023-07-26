@@ -64,19 +64,25 @@ void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partitio
 		fs->name[i]=drive->name[i];
 		i++;
 	}
-	fs->name[i]='p';
-	if (partition_config->index<10){
+	if (partition_config->type==FS_PARTITION_TYPE_DRIVE){
+		fs->name[i]=0;
+		fs->name_length=i;
+	}
+	else if (partition_config->index<10){
+		fs->name[i]='p';
 		fs->name[i+1]=partition_config->index+48;
 		fs->name[i+2]=0;
 		fs->name_length=i+2;
 	}
 	else if (partition_config->index<100){
+		fs->name[i]='p';
 		fs->name[i+1]=partition_config->index/10+48;
 		fs->name[i+2]=(partition_config->index%10)+48;
 		fs->name[i+3]=0;
 		fs->name_length=i+3;
 	}
 	else{
+		fs->name[i]='p';
 		fs->name[i+1]=partition_config->index/100+48;
 		fs->name[i+2]=((partition_config->index/10)%10)+48;
 		fs->name[i+3]=(partition_config->index%10)+48;

@@ -18,7 +18,7 @@ static const char* drive_type_names[]={
 
 
 static const char* partition_type_names[]={
-	[PARTITION_TYPE_EMPTY_DRIVE]="empty drive",
+	[PARTITION_TYPE_DRIVE]="drive",
 	[PARTITION_TYPE_EMPTY]="empty",
 	[PARTITION_TYPE_ISO9660]="iso9660",
 	[PARTITION_TYPE_GPT]="gpt"

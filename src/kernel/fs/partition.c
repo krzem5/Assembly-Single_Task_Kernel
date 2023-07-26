@@ -162,12 +162,8 @@ void fs_partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
 	u8 loaded=_load_gpt(drive);
 	loaded|=_load_iso9660(drive);
-	if (loaded){
-		return;
-	}
-	LOG("Failed to detected drive format, partitioning as emptyfs...");
 	const fs_partition_config_t partition_config={
-		FS_PARTITION_TYPE_EMPTY_DRIVE,
+		FS_PARTITION_TYPE_DRIVE,
 		0,
 		0,
 		drive->block_count
