@@ -3,6 +3,7 @@ src/kernel/acpi/fadt.asm:fadt
 src/kernel/acpi/fadt.c:fadt
 src/kernel/acpi/madt.c:madt
 src/kernel/atomic/atomic.asm:atomic:CORE
+src/kernel/clock/clock.c:clock:CORE
 src/kernel/cpu/ap_startup.asm:cpu
 src/kernel/cpu/cpu.asm:cpu
 src/kernel/cpu/cpu.c:cpu

@@ -1,4 +1,5 @@
 #include <kernel/acpi/acpi.h>
+#include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
@@ -25,6 +26,7 @@
 void main(void){
 	LOG("Starting kernel...");
 	const kernel_data_t* kernel_data=kernel_init();
+	clock_init();
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
