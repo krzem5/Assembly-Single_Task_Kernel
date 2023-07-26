@@ -65,9 +65,8 @@ static u64 _get_cpu_frequency(void){
 
 
 static void _calculate_clock_conversion(void){
-	u64 freq_khz=clock_cpu_frequency/1000;
 	for (clock_conversion_shift=32;clock_conversion_shift;clock_conversion_shift--){
-		clock_conversion_factor=((1000000ull<<clock_conversion_shift)+(freq_khz>>1))/freq_khz;
+		clock_conversion_factor=((1000000000ull<<clock_conversion_shift)+(clock_cpu_frequency>>1))/clock_cpu_frequency;
 		if (!(clock_conversion_factor>>32)){
 			return;
 		}
