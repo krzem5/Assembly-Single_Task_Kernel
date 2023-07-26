@@ -47,12 +47,6 @@ void main(void){
 	printf("Type: %u, Length: %llu\n",stat.type,stat.size);
 	u64 end=clock_get_ticks();
 	printf("Elapsed time: %lu ms (%lu ns)\n",clock_ticks_to_time(end-start)/1000000,clock_ticks_to_time(end-start));
-	int fd=fs_open("/boot.cat",FS_FLAG_READ);
-	u8 data[2048];
-	printf("%d\n",fs_read(fd,data,2048));
-	for (u32 i=0;i<2048;i++){
-		printf("[%u] %x %c\n",i,data[i],data[i]);
-	}
 	printf("\x1b[38;2;169;42;187mHello world!\x1b[0m\n");
 	elf_load("/abc.elf");
 }
