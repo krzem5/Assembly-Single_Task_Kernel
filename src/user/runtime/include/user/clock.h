@@ -4,6 +4,10 @@
 
 
 
+extern u64 clock_cpu_frequency;
+
+
+
 void clock_init(void);
 
 

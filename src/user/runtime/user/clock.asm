@@ -1,4 +1,5 @@
 extern _syscall_clock_get_converion
+global clock_cpu_frequency
 global clock_init
 global clock_get_ticks
 global clock_get_time
@@ -12,6 +13,7 @@ clock_init:
 	call _syscall_clock_get_converion
 	mov qword [_clock_conversion_factor], rax
 	mov dword [_clock_conversion_shift], edx
+	mov qword [clock_cpu_frequency], r8
 	ret
 
 
@@ -55,6 +57,8 @@ section .data
 
 
 align 8
+clock_cpu_frequency:
+	dq 8
 _clock_conversion_factor:
 	dq 0
 _clock_conversion_shift:
