@@ -160,10 +160,11 @@ static _Bool _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relat
 
 static u64 _iso9660_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
-	if (count>iso9660_node->data_length){
-		count=iso9660_node->data_length;
+	if (count+offset>iso9660_node->data_length){
+		count=iso9660_node->data_length-offset;
 	}
-	return fs->drive->read_write(fs->drive->extra_data,iso9660_node->data_offset+(offset>>11),buffer,count>>11)<<11;
+	u64 out=fs->drive->read_write(fs->drive->extra_data,iso9660_node->data_offset+(offset>>11),buffer,(count+2047)>>11)<<11;
+	return (out>count?count:out);
 }
 
 
