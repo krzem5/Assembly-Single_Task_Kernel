@@ -136,7 +136,51 @@ static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,con
 
 
 
+static fs_node_t* _kfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
+	return NULL;
+}
+
+
+
+static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+	return 0;
+}
+
+
+
+static u64 _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+	return 0;
+}
+
+
+
+static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+	return 0;
+}
+
+
+
+static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
+	return 0;
+}
+
+
+
+static const fs_file_system_config_t _kfs_fs_config={
+	sizeof(kfs_fs_node_t),
+	_kfs_get_relative,
+	_kfs_set_relative,
+	_kfs_read,
+	_kfs_write,
+	_kfs_get_size
+};
+
+
+
 void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
+	LOG("Loading KFS file system from drive '%s'...",drive->model_number);
+	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config);
+	root->index=0;
 	// kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
 	// block_cache->flags=0;
 }

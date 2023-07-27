@@ -28,6 +28,7 @@ static const char* partition_type_names[]={
 	[PARTITION_TYPE_EMPTY]="empty",
 	[PARTITION_TYPE_ISO9660]="ISO 9660",
 	[PARTITION_TYPE_GPT]="GPT",
+	[PARTITION_TYPE_KFS]="KFS"
 };
 
 
