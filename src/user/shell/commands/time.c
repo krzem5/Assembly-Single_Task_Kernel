@@ -6,10 +6,10 @@
 
 
 void time_main(int argc,const char*const* argv){
-	_Bool format=0;
+	_Bool raw=0;
 	for (u32 i=1;i<argc;i++){
-		if (string_equal(argv[i],"-f")){
-			format=1;
+		if (string_equal(argv[i],"-r")){
+			raw=1;
 		}
 		else{
 			printf("time: unrecognized option '%s'\n",argv[i]);
@@ -17,7 +17,7 @@ void time_main(int argc,const char*const* argv){
 		}
 	}
 	u64 time=clock_get_time();
-	if (!format){
+	if (raw){
 		printf("%lu\n",time);
 		return;
 	}
@@ -57,4 +57,4 @@ void time_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(time,"time [-f]");
+DECLARE_COMMAND(time,"time [-r]");
