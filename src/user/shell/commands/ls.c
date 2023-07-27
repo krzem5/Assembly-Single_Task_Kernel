@@ -32,7 +32,7 @@ static const char* partition_type_names[]={
 
 
 
-static void _ls_files(int fd){
+static void _list_files(int fd){
 	int child=fs_get_relative(fd,FS_RELATIVE_FIRST_CHILD,0);
 	fs_stat_t stat;
 	while (child>=0){
@@ -86,7 +86,7 @@ void ls_main(int argc,const char*const* argv){
 		}
 	}
 	else if (!directory){
-		_ls_files(cwd_fd);
+		_list_files(cwd_fd);
 	}
 	else{
 		int fd=fs_open(directory,0);
@@ -94,7 +94,7 @@ void ls_main(int argc,const char*const* argv){
 			printf("ls: unable to open file '%s': error %d\n",directory,fd);
 			return;
 		}
-		_ls_files(fd);
+		_list_files(fd);
 		fs_close(fd);
 	}
 }

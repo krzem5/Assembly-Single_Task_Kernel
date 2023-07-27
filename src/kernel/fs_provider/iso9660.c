@@ -41,10 +41,14 @@ typedef struct _ISO9660_FS_NODE{
 
 
 static fs_node_t* _iso9660_create_node_from_directory_entry(const iso9660_fs_node_t* parent,iso9660_directory_t* directory_entry,u64 current_offset){
-	for (u8 i=0;i<directory_entry->identifier_length-2;i++){
+	u8 length=directory_entry->identifier_length;
+	if (!(directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)){
+		length-=2;
+	}
+	for (u8 i=0;i<length;i++){
 		directory_entry->identifier[i]+=(directory_entry->identifier[i]>64&&directory_entry->identifier[i]<91)<<5;
 	}
-	iso9660_fs_node_t* out=fs_alloc_node(parent->header.fs_index,directory_entry->identifier,directory_entry->identifier_length-2);
+	iso9660_fs_node_t* out=fs_alloc_node(parent->header.fs_index,directory_entry->identifier,length);
 	out->header.type=((directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
 	out->header.parent=parent->header.id;
 	out->parent_offset=parent->current_offset;
