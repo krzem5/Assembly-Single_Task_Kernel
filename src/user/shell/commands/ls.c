@@ -91,7 +91,7 @@ void ls_main(int argc,const char*const* argv){
 	else{
 		int fd=fs_open(directory,0);
 		if (fd<0){
-			printf("ls: unable to open file '%s': error %d\n",fd);
+			printf("ls: unable to open file '%s': error %d\n",directory,fd);
 			return;
 		}
 		_ls_files(fd);
