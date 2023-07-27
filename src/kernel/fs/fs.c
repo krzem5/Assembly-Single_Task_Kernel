@@ -50,7 +50,7 @@ void fs_init(void){
 
 
 
-void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config){
+void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
 	if (_fs_file_systems_count>=FS_MAX_FILE_SYSTEMS){
 		ERROR("Too many file systems!");
 		return NULL;
@@ -91,6 +91,7 @@ void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* pa
 		fs->name_length=i+4;
 	}
 	fs->drive=drive;
+	fs->extra_data=extra_data;
 	fs_node_allocator_init(_fs_file_systems_count-1,config->node_size,&(fs->allocator));
 	LOG("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=_alloc_node(fs,"",0);

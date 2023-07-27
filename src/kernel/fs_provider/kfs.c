@@ -20,6 +20,8 @@
 
 #define KFS_BATC_BLOCK_COUNT 257984
 
+#define KFS_NODE_FLAG_DIRECTORY 0x80
+
 
 
 typedef u8 kfs_node_flags_t;
@@ -128,10 +130,40 @@ typedef struct _KFS_FS_NODE{
 
 
 
+static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
+	if (drive->read_write(drive->extra_data,(offset<<(12-drive->block_size_shift)),(void*)buffer,length<<(12-drive->block_size_shift))!=(length<<(12-drive->block_size_shift))){
+		ERROR("Error reading data from drive");
+	}
+}
+
+
+
 static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-drive->block_size_shift))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-drive->block_size_shift))!=(length<<(12-drive->block_size_shift))){
 		ERROR("Error writing data to drive");
 	}
+}
+
+
+
+static kfs_node_t* _get_node_by_index(kfs_node_index_t index){
+	return NULL;
+}
+
+
+
+static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
+	if (!node){
+		WARN("_node_to_fs_node called with a NULL-node");
+		return;
+	}
+	out->index=node->index;
+}
+
+
+
+static kfs_node_t* _alloc_node(kfs_node_flags_t type,const char* name,u8 name_length){
+	return NULL;
 }
 
 
@@ -179,10 +211,22 @@ static const fs_file_system_config_t _kfs_fs_config={
 
 void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
 	LOG("Loading KFS file system from drive '%s'...",drive->model_number);
-	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config);
-	root->index=0;
-	// kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
-	// block_cache->flags=0;
+	INFO("Allocating block cache...");
+	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
+	block_cache->flags=0;
+	INFO("Reading ROOT block...");
+	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>drive->block_size_shift)!=(sizeof(kfs_root_block_t)>>drive->block_size_shift)){
+		ERROR("Error reading ROOT block from drive");
+		return;
+	}
+	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_PRESENT;
+	(void)_drive_read;
+	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config,NULL);
+	kfs_node_t* kfs_root=_get_node_by_index(0);
+	if (!kfs_root){
+		kfs_root=_alloc_node(KFS_NODE_FLAG_DIRECTORY,"",0);
+	}
+	_node_to_fs_node(kfs_root,root);
 }
 
 
@@ -197,6 +241,7 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
 	u64 first_free_block_index=2;
 	if (boot_length){
+		// adjust first_free_block_index
 		ERROR("Unimplemented: kfs_format_drive.boot");
 	}
 	kfs_root_block_t root={

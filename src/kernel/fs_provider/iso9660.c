@@ -203,7 +203,7 @@ void iso9660_load(const drive_t* drive,const fs_partition_config_t* partition_co
 	if (drive->block_size_shift!=11){
 		WARN("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
 	}
-	iso9660_fs_node_t* root=fs_create_file_system(drive,partition_config,&_iso9660_fs_config);
+	iso9660_fs_node_t* root=fs_create_file_system(drive,partition_config,&_iso9660_fs_config,NULL);
 	root->parent_offset=0xffffffffffffffffull;
 	root->current_offset=0xffffffffffffffffull;
 	root->data_offset=block_index;
