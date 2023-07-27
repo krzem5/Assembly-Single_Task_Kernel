@@ -23,6 +23,28 @@ static inline _Bool _is_invalid_fd(fd_t fd){
 
 
 
+static int _node_to_fd(fs_node_t* node,u8 flags){
+	lock_acquire(&_fd_lock);
+	if (_fd_count>=FD_COUNT){
+		return FD_ERROR_OUT_OF_FDS;
+	}
+	fd_t out=0;
+	while (!_fd_bitmap[out]){
+		out++;
+	}
+	fd_t idx=__builtin_ctzll(_fd_bitmap[out]);
+	_fd_bitmap[out]&=_fd_bitmap[out]-1;
+	out=(out<<6)|idx;
+	fd_data_t* data=_fd_data+out;
+	data->node_id=node->id;
+	data->offset=((flags&FD_FLAG_APPEND)?fs_get_size(node):0);
+	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
+	lock_release(&_fd_lock);
+	return idx;
+}
+
+
+
 void fd_init(void){
 	LOG("Initializing file descriptor list...");
 	_fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_COUNT*sizeof(fd_data_t))));
@@ -46,9 +68,6 @@ int fd_open(const char* path,u32 length,u8 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
-	if (_fd_count>=FD_COUNT){
-		return FD_ERROR_OUT_OF_FDS;
-	}
 	char buffer[4096];
 	if (length>4095){
 		return FD_ERROR_INVALID_POINTER;
@@ -59,20 +78,7 @@ int fd_open(const char* path,u32 length,u8 flags){
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}
-	lock_acquire(&_fd_lock);
-	fd_t out=0;
-	while (!_fd_bitmap[out]){
-		out++;
-	}
-	fd_t idx=__builtin_ctzll(_fd_bitmap[out]);
-	_fd_bitmap[out]&=_fd_bitmap[out]-1;
-	out=(out<<6)|idx;
-	fd_data_t* data=_fd_data+out;
-	data->node_id=node->id;
-	data->offset=((flags&FD_FLAG_APPEND)?fs_get_size(node):0);
-	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
-	lock_release(&_fd_lock);
-	return idx;
+	return _node_to_fd(node,flags);
 }
 
 
@@ -202,20 +208,32 @@ int fd_stat(fd_t fd,fd_stat_t* out){
 	memcpy(out->name,node->name,64);
 	out->size=fs_get_size(node);
 	lock_release(&_fd_lock);
-	return -1;
+	return 0;
 }
 
 
 
-int fd_get_relative(fd_t fd,u8 relative){
+int fd_get_relative(fd_t fd,u8 relative,u8 flags){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
+		return FD_ERROR_INVALID_FLAGS;
+	}
 	lock_acquire(&_fd_lock);
 	if (_is_invalid_fd(fd)){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	WARN("Unimplemented: fd_get_relative");
+	fd_data_t* data=_fd_data+fd;
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
+	if (!node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	fs_node_t* other=fs_get_node_relative(node,relative);
 	lock_release(&_fd_lock);
-	return -1;
+	if (!other){
+		return FD_ERROR_NO_RELATIVE;
+	}
+	return _node_to_fd(other,flags);
 }
 
 

@@ -72,7 +72,7 @@ s32 _syscall_fd_stat(s32 fd,void* ptr,u32 size);
 
 
 
-s32 _syscall_fd_get_relative(s32 fd,u32 relative);
+s32 _syscall_fd_get_relative(s32 fd,u32 relative,u32 flags);
 
 
 

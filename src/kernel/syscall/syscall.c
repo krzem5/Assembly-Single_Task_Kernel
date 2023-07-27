@@ -311,7 +311,7 @@ static void _syscall_fd_get_relative(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
 	}
-	regs->rax=fd_get_relative(regs->rdi,regs->rsi);
+	regs->rax=fd_get_relative(regs->rdi,regs->rsi,regs->rdx);
 }
 
 

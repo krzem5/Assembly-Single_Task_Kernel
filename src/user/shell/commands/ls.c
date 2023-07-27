@@ -1,4 +1,5 @@
 #include <command.h>
+#include <cwd.h>
 #include <string.h>
 #include <user/drive.h>
 #include <user/fs.h>
@@ -31,8 +32,26 @@ static const char* partition_type_names[]={
 
 
 
+static void _ls_files(int fd){
+	int child=fs_get_relative(fd,FS_RELATIVE_FIRST_CHILD,0);
+	fs_stat_t stat;
+	while (child>=0){
+		if (fs_stat(child,&stat)<0){
+			fs_close(child);
+			break;
+		}
+		printf("\x1b[1m%s\x1b[0m:\t%v\t%s\n",stat.name,stat.size,(stat.type==FS_STAT_TYPE_FILE?"file":"directory"));
+		int next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
+		fs_close(child);
+		child=next_child;
+	}
+}
+
+
+
 void ls_main(int argc,const char*const* argv){
 	u8 type=LS_TYPE_FILES;
+	const char* directory=NULL;
 	for (u32 i=1;i<argc;i++){
 		if (string_equal(argv[i],"-d")){
 			type=LS_TYPE_DRIVES;
@@ -40,10 +59,17 @@ void ls_main(int argc,const char*const* argv){
 		else if (string_equal(argv[i],"-p")){
 			type=LS_TYPE_PARTITIONS;
 		}
+		else if (argv[i][0]!='-'&&!directory){
+			directory=argv[i];
+		}
 		else{
 			printf("ls: unrecognized option '%s'\n",argv[i]);
 			return;
 		}
+	}
+	if (type!=LS_TYPE_FILES&&directory){
+		printf("ls: directory supplied during drive or partition enumeration\n");
+		return;
 	}
 	if (type==LS_TYPE_DRIVES){
 		const drive_t* drive=drives;
@@ -59,11 +85,20 @@ void ls_main(int argc,const char*const* argv){
 			partition++;
 		}
 	}
+	else if (!directory){
+		_ls_files(cwd_fd);
+	}
 	else{
-		//
+		int fd=fs_open(directory,0);
+		if (fd<0){
+			printf("ls: unable to open file '%s': error %d\n",fd);
+			return;
+		}
+		_ls_files(fd);
+		fs_close(fd);
 	}
 }
 
 
 
-DECLARE_COMMAND(ls,"ls [-d|-p]");
+DECLARE_COMMAND(ls,"ls [-d|-p|<directory>]");

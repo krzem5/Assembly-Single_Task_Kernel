@@ -10,6 +10,7 @@
 #define FS_ERROR_OUT_OF_FDS -4
 #define FS_ERROR_NOT_FOUND -5
 #define FS_ERROR_UNSUPPORTED_OPERATION -6
+#define FS_ERROR_NO_RELATIVE -7
 
 #define FS_FLAG_READ 1
 #define FS_FLAG_WRITE 2
@@ -74,7 +75,7 @@ int fs_stat(int fd,fs_stat_t* stat);
 
 
 
-int fs_get_relative(int fd,u8 relative);
+int fs_get_relative(int fd,u8 relative,u8 flags);
 
 
 

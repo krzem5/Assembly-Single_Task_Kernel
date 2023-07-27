@@ -18,6 +18,7 @@
 #define FD_ERROR_OUT_OF_FDS -4
 #define FD_ERROR_NOT_FOUND -5
 #define FD_ERROR_UNSUPPORTED_OPERATION -6
+#define FD_ERROR_NO_RELATIVE -7
 
 #define FD_FLAG_READ 1
 #define FD_FLAG_WRITE 2
@@ -95,7 +96,7 @@ int fd_stat(fd_t fd,fd_stat_t* out);
 
 
 
-int fd_get_relative(fd_t fd,u8 relative);
+int fd_get_relative(fd_t fd,u8 relative,u8 flags);
 
 
 

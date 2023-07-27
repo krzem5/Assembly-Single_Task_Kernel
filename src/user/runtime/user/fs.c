@@ -56,8 +56,8 @@ int fs_stat(int fd,fs_stat_t* stat){
 
 
 
-int fs_get_relative(int fd,u8 relative){
-	return _syscall_fd_get_relative(fd,relative);
+int fs_get_relative(int fd,u8 relative,u8 flags){
+	return _syscall_fd_get_relative(fd,relative,flags);
 }
 
 
