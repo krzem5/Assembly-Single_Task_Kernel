@@ -5,7 +5,11 @@
 
 
 
-void kfs_load(drive_t* drive,const fs_partition_config_t* partition_config);
+#define KFS_SIGNATURE 0x2053464b2053464bull
+
+
+
+void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config);
 
 
 

@@ -2,6 +2,7 @@
 #include <kernel/fs/partition.h>
 #include <kernel/fs_provider/emptyfs.h>
 #include <kernel/fs_provider/iso9660.h>
+#include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 
@@ -44,6 +45,12 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 
+typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
+	u64 signature;
+} kfs_root_block_t;
+
+
+
 static void _try_load_file_system(drive_t* drive,const fs_partition_config_t* partition_config,u64 first_block_index,u64 last_block_index){
 	LOG("Probing drive '%s' block %u for possible file systems...",drive->model_number,first_block_index);
 	u8 buffer[4096];
@@ -57,22 +64,22 @@ static void _try_load_file_system(drive_t* drive,const fs_partition_config_t* pa
 
 
 
-static _Bool _load_gpt(drive_t* drive){
+static void _load_gpt(drive_t* drive){
 	if (drive->block_size>4096){
-		return 0;
+		return;
 	}
 	u8 buffer[4096];
 	if (drive->read_write(drive->extra_data,1,buffer,1)!=1){
-		return 0;
+		return;
 	}
 	const gpt_partition_table_header_t* gpt_header=(const gpt_partition_table_header_t*)buffer;
 	if (gpt_header->signature!=0x5452415020494645ull){
-		return 0;
+		return;
 	}
 	INFO("Detected drive format of '%s' as GPT",drive->model_number);
 	if (gpt_header->partition_entry_size>drive->block_size){
 		WARN("Unimplemented");
-		return 0;
+		return;
 	}
 	u16 buffer_space=0;
 	u64 block_index=gpt_header->partition_entry_array_lba;
@@ -86,7 +93,7 @@ static _Bool _load_gpt(drive_t* drive){
 		if (!buffer_space){
 			buffer_space=drive->block_size;
 			if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
-				return 0;
+				return;
 			}
 			block_index++;
 		}
@@ -102,25 +109,25 @@ static _Bool _load_gpt(drive_t* drive){
 		}
 		buffer_space-=partition_entry_size;
 	}
-	return 1;
+	return;
 }
 
 
 
-static _Bool _load_iso9660(drive_t* drive){
+static void _load_iso9660(drive_t* drive){
 	if (drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
-		return 0;
+		return;
 	}
 	u8 partition_index=0;
 	u64 block_index=16;
 	u8 buffer[2048];
 	while (1){
 		if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
-			return 0;
+			return;
 		}
 		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;
 		if (volume_descriptor->identifier[0]!='C'||volume_descriptor->identifier[1]!='D'||volume_descriptor->identifier[2]!='0'||volume_descriptor->identifier[3]!='0'||volume_descriptor->identifier[4]!='1'||volume_descriptor->version!=1){
-			return 0;
+			return;
 		}
 		if (block_index==16){
 			INFO("Detected drive format of '%s' as ISO 9660",drive->model_number);
@@ -142,7 +149,7 @@ static _Bool _load_iso9660(drive_t* drive){
 			case 255:
 				goto _loaded_all_blocks;
 			default:
-				return 0;
+				return;
 		}
 _load_next_block:
 		block_index++;
@@ -153,15 +160,39 @@ _load_next_block:
 		partition_index++;
 	}
 _loaded_all_blocks:
-	return 1;
+	return;
+}
+
+
+
+static void _load_kfs(const drive_t* drive){
+	if (drive->block_size>4096){
+		return;
+	}
+	u8 buffer[4096];
+	if (drive->read_write(drive->extra_data,1,buffer,1)!=1){
+		return;
+	}
+	const kfs_root_block_t* kfs_root_block=(const kfs_root_block_t*)buffer;
+	if (kfs_root_block->signature!=KFS_SIGNATURE){
+		return;
+	}
+	const fs_partition_config_t partition_config={
+		FS_PARTITION_TYPE_KFS,
+		0,
+		0,
+		drive->block_count
+	};
+	kfs_load(drive,&partition_config);
 }
 
 
 
 void fs_partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
-	u8 loaded=_load_gpt(drive);
-	loaded|=_load_iso9660(drive);
+	_load_gpt(drive);
+	_load_iso9660(drive);
+	_load_kfs(drive);
 	const fs_partition_config_t partition_config={
 		FS_PARTITION_TYPE_DRIVE,
 		0,
