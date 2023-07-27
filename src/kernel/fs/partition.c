@@ -177,6 +177,7 @@ static void _load_kfs(const drive_t* drive){
 	if (kfs_root_block->signature!=KFS_SIGNATURE){
 		return;
 	}
+	INFO("Detected drive format of '%s' as KFS",drive->model_number);
 	const fs_partition_config_t partition_config={
 		FS_PARTITION_TYPE_KFS,
 		0,

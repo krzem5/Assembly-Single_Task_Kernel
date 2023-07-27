@@ -2,6 +2,7 @@
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
@@ -106,6 +107,10 @@ static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 		dbc=0x3fffff;
 	}
 	u64 aligned_buffer_raw=pmm_alloc((dbc+1)>>9);
+	u8* aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
+	if (offset&DRIVE_OFFSET_FLAG_WRITE){
+		memcpy(aligned_buffer,buffer,dbc+1);
+	}
 	u8 cmd_slot=_device_get_command_slot(device);
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
@@ -118,7 +123,6 @@ static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	fis->fis_type=FIS_TYPE_REG_H2D;
 	fis->flags=FIS_FLAG_COMMAND;
 	fis->command=((offset&DRIVE_OFFSET_FLAG_WRITE)?ATA_CMD_WRITE:ATA_CMD_READ);
-	offset&=DRIVE_OFFSET_MASK;
 	fis->featurel=0;
 	fis->lba0=offset;
 	fis->lba1=offset>>8;
@@ -133,10 +137,8 @@ static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	fis->icc=0;
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
-	const u8* aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
-	u8* out=buffer;
-	for (u32 i=0;i<=dbc;i++){
-		out[i]=aligned_buffer[i];
+	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
+		memcpy(buffer,aligned_buffer,dbc+1);
 	}
 	pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9);
 	return (dbc+1)>>9;
