@@ -23,6 +23,7 @@ global _syscall_acpi_shutdown
 global _syscall_memory_map
 global _syscall_memory_unmap
 global _syscall_clock_get_converion
+global _syscall_format_drive
 section .text
 
 
@@ -198,5 +199,12 @@ _syscall_memory_unmap:
 
 _syscall_clock_get_converion:
 	mov rax, 24
+	syscall
+	ret
+
+
+
+_syscall_format_drive:
+	mov rax, 25
 	syscall
 	ret

@@ -47,7 +47,7 @@ static const fs_file_system_config_t _emptyfs_fs_config={
 
 
 
-void fs_emptyfs_load(drive_t* drive,const fs_partition_config_t* partition_config){
+void emptyfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
 	LOG("Loading EmptyFS file system from drive '%s'...",drive->model_number);
 	fs_node_t* root=fs_create_file_system(drive,partition_config,&_emptyfs_fs_config);
 	root->type=FS_NODE_TYPE_FILE;

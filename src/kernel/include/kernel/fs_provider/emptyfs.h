@@ -5,7 +5,7 @@
 
 
 
-void fs_emptyfs_load(drive_t* drive,const fs_partition_config_t* partition_config);
+void emptyfs_load(const drive_t* drive,const fs_partition_config_t* partition_config);
 
 
 

@@ -197,7 +197,7 @@ static const fs_file_system_config_t _iso9660_fs_config={
 
 
 
-void fs_iso9660_load(drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length){
+void iso9660_load(const drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length){
 	LOG("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
 	INFO("Root block offset: %u, Root block length: %u",block_index,data_length);
 	if (drive->block_size_shift!=11){

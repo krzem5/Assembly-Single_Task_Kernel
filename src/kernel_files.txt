@@ -22,6 +22,7 @@ src/kernel/fs/node_allocator.c:fs_node:CORE
 src/kernel/fs/partition.c:fs_part:CORE
 src/kernel/fs_provider/emptyfs.c:emptyfs:CORE
 src/kernel/fs_provider/iso9660.c:iso9660:CORE
+src/kernel/fs_provider/kfs.c:kfs:CORE
 src/kernel/gdt/gdt.asm:gdt
 src/kernel/idt/idt.asm:idt
 src/kernel/idt/isr.asm:isr

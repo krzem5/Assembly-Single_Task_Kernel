@@ -52,7 +52,7 @@ static void _try_load_file_system(drive_t* drive,const fs_partition_config_t* pa
 	}
 	// Try to load different file systems and fall back to emptyfs
 	INFO("Probing failed, loading partition as emptyfs...");
-	fs_emptyfs_load(drive,partition_config);
+	emptyfs_load(drive,partition_config);
 }
 
 
@@ -137,7 +137,7 @@ static _Bool _load_iso9660(drive_t* drive){
 					0,
 					volume_descriptor->primary_volume_descriptor.volume_size
 				};
-				fs_iso9660_load(drive,&partition_config,volume_descriptor->primary_volume_descriptor.directory_lba,volume_descriptor->primary_volume_descriptor.directory_data_length);
+				iso9660_load(drive,&partition_config,volume_descriptor->primary_volume_descriptor.directory_lba,volume_descriptor->primary_volume_descriptor.directory_data_length);
 				break;
 			case 255:
 				goto _loaded_all_blocks;
@@ -168,5 +168,5 @@ void fs_partition_load_from_drive(drive_t* drive){
 		0,
 		drive->block_count
 	};
-	fs_emptyfs_load(drive,&partition_config);
+	emptyfs_load(drive,&partition_config);
 }

@@ -30,3 +30,9 @@ void drive_init(void){
 		}
 	}
 }
+
+
+
+_Bool drive_format(u32 index,const void* boot,u32 boot_length){
+	return _syscall_format_drive(index,boot,boot_length);
+}

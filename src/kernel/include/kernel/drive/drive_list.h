@@ -25,4 +25,8 @@ const drive_t* drive_list_get_drive(u32 index);
 
 
 
+void drive_list_set_boot_drive(u32 index);
+
+
+
 #endif

@@ -6,6 +6,7 @@
 #include <kernel/elf/elf.h>
 #include <kernel/fs/fd.h>
 #include <kernel/fs/fs.h>
+#include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
@@ -18,7 +19,7 @@
 
 
 
-#define SYSCALL_COUNT 25
+#define SYSCALL_COUNT 26
 
 
 
@@ -399,6 +400,26 @@ static void _syscall_clock_get_converion(syscall_registers_t* regs){
 
 
 
+static void _syscall_format_drive(syscall_registers_t* regs){
+	const drive_t* drive=drive_list_get_drive(regs->rdi);
+	if (!drive){
+		regs->rax=0;
+		return;
+	}
+	u64 address=0;
+	if (regs->rdx){
+		address=_sanatize_user_memory(regs->rsi,regs->rdx);
+		if (!address){
+			regs->rax=0;
+			return;
+		}
+		address=(u64)VMM_TRANSLATE_ADDRESS(address);
+	}
+	regs->rax=kfs_format_drive(drive,(void*)address,regs->rdx);
+}
+
+
+
 static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
@@ -433,5 +454,6 @@ void syscall_init(void){
 	_syscall_handlers[22]=_syscall_memory_map;
 	_syscall_handlers[23]=_syscall_memory_unmap;
 	_syscall_handlers[24]=_syscall_clock_get_converion;
+	_syscall_handlers[25]=_syscall_format_drive;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

@@ -71,3 +71,9 @@ u32 drive_list_get_length(void){
 const drive_t* drive_list_get_drive(u32 index){
 	return (index<_drive_count?_drives+index:NULL);
 }
+
+
+
+void drive_list_set_boot_drive(u32 index){
+	(_drives+index)->flags|=DRIVE_FLAG_BOOT;
+}

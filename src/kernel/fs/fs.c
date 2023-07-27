@@ -1,4 +1,5 @@
 #include <kernel/drive/drive.h>
+#include <kernel/drive/drive_list.h>
 #include <kernel/fs/fs.h>
 #include <kernel/fs/node_allocator.h>
 #include <kernel/fs/partition.h>
@@ -49,7 +50,7 @@ void fs_init(void){
 
 
 
-void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config){
+void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config){
 	if (_fs_file_systems_count>=FS_MAX_FILE_SYSTEMS){
 		ERROR("Too many file systems!");
 		return NULL;
@@ -127,7 +128,7 @@ void fs_set_boot_file_system(u8 fs_index){
 		return;
 	}
 	_fs_root_file_systems_index=fs_index;
-	(_fs_file_systems+fs_index)->drive->flags|=DRIVE_FLAG_BOOT;
+	drive_list_set_boot_drive((_fs_file_systems+fs_index)->drive->index);
 }
 
 

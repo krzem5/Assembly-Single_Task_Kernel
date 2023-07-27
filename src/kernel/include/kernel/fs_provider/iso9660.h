@@ -6,7 +6,7 @@
 
 
 
-void fs_iso9660_load(drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length);
+void iso9660_load(const drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length);
 
 
 

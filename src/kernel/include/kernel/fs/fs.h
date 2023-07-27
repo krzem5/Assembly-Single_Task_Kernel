@@ -40,7 +40,7 @@ typedef struct _FS_FILE_SYSTEM{
 	u8 index;
 	u8 name_length;
 	char name[16];
-	drive_t* drive;
+	const drive_t* drive;
 	fs_node_t* root;
 	fs_node_allocator_t allocator;
 } fs_file_system_t;
@@ -51,7 +51,7 @@ void fs_init(void);
 
 
 
-void* fs_create_file_system(drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config);
+void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config);
 
 
 
