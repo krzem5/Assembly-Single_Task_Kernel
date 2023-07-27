@@ -96,6 +96,7 @@ void printf(const char* template,...){
 	};
 	va_list va;
 	va_start(va,template);
+	u32 last_column=0;
 	while (*template){
 		if (*template!='%'){
 			_buffer_state_add(&out,*template);
@@ -203,6 +204,13 @@ void printf(const char* template,...){
 				shift-=4;
 				_buffer_state_add(&out,_format_base16_char(address>>shift));
 			}
+		}
+		else if (*template=='t'){
+			u32 size=va_arg(va,u32);
+			while (out.offset<BUFFER_SIZE&&out.offset-last_column<size){
+				_buffer_state_add(&out,' ');
+			}
+			last_column=out.offset;
 		}
 		else{
 			_buffer_state_add(&out,*template);
