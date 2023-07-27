@@ -9,6 +9,15 @@
 
 
 
+#define KFS_BLOCK_CACHE_NDA2_PRESENT 0x01
+#define KFS_BLOCK_CACHE_NDA2_DIRTY 0x02
+#define KFS_BLOCK_CACHE_NDA3_PRESENT 0x04
+#define KFS_BLOCK_CACHE_NDA3_DIRTY 0x08
+#define KFS_BLOCK_CACHE_BATC_PRESENT 0x10
+#define KFS_BLOCK_CACHE_BATC_DIRTY 0x20
+#define KFS_BLOCK_CACHE_ROOT_PRESENT 0x40
+#define KFS_BLOCK_CACHE_ROOT_DIRTY 0x80
+
 #define KFS_BATC_BLOCK_COUNT 257984
 
 
@@ -32,7 +41,7 @@ typedef struct _KFS_NODE{
 	kfs_node_index_t prev_sibling;
 	kfs_node_index_t next_sibling;
 	kfs_node_flags_t flags;
-	char name[99];
+	char name[35];
 	union{
 		struct{
 			kfs_large_block_index_t data_block_index;
@@ -47,7 +56,7 @@ typedef struct _KFS_NODE{
 
 
 typedef struct _KFS_NDA1_BLOCK{
-	kfs_node_t nodes[32];
+	kfs_node_t nodes[64];
 } kfs_nda1_block_t;
 
 
@@ -93,23 +102,12 @@ typedef struct _KFS_ROOT_BLOCK{
 
 
 
-_Static_assert(sizeof(kfs_node_t)==128);
+_Static_assert(sizeof(kfs_node_t)==64);
 _Static_assert(sizeof(kfs_nda1_block_t)==4096);
 _Static_assert(sizeof(kfs_nda2_block_t)==8192);
 _Static_assert(sizeof(kfs_nda3_block_t)==4096);
 _Static_assert(sizeof(kfs_batc_block_t)==32768);
 _Static_assert(sizeof(kfs_root_block_t)==4096);
-
-
-
-#define KFS_BLOCK_CACHE_NDA2_PRESENT 0x01
-#define KFS_BLOCK_CACHE_NDA2_DIRTY 0x02
-#define KFS_BLOCK_CACHE_NDA3_PRESENT 0x04
-#define KFS_BLOCK_CACHE_NDA3_DIRTY 0x08
-#define KFS_BLOCK_CACHE_BATC_PRESENT 0x10
-#define KFS_BLOCK_CACHE_BATC_DIRTY 0x20
-#define KFS_BLOCK_CACHE_ROOT_PRESENT 0x40
-#define KFS_BLOCK_CACHE_ROOT_DIRTY 0x80
 
 
 
@@ -120,6 +118,13 @@ typedef struct _KFS_BLOCK_CACHE{
 	kfs_root_block_t root;
 	u8 flags;
 } kfs_block_cache_t;
+
+
+
+typedef struct _KFS_FS_NODE{
+	fs_node_t header;
+	kfs_node_index_t index;
+} kfs_fs_node_t;
 
 
 
@@ -204,5 +209,6 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		}
 		_drive_write(drive,batc.block_index,&batc,8);
 	}
+	LOG("Drive '%s' successfully formatted as KFS",drive->model_number);
 	return 1;
 }
