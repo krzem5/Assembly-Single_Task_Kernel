@@ -19,15 +19,6 @@ typedef struct _FRAME{
 
 
 
-static void _print_frame(frame_t* frame,u32 level,_Bool has_next_sibling){
-	for (u32 i=0;i<level;i++){
-		printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
-	}
-	printf("%s── ",(has_next_sibling?"├":"└"));
-}
-
-
-
 static void _list_files(int fd,u32 level,frame_t* frame){
 	if (level>=MAX_LEVELS){
 		return;
@@ -42,8 +33,10 @@ static void _list_files(int fd,u32 level,frame_t* frame){
 		int next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
 		_Bool has_next_sibling=(next_child>=0);
 		fs_close(next_child);
-		_print_frame(frame,level,has_next_sibling);
-		printf("%s\n",stat.name);
+		for (u32 i=0;i<level;i++){
+			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
+		}
+		printf("%s── %s\n",(has_next_sibling?"├":"└"),stat.name);
 		if (stat.type==FS_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;
 			u64 mask=1ull<<(level&63);
