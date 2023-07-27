@@ -28,7 +28,17 @@
 
 
 
+typedef struct _HISTORY_ENTRY{
+	char data[INPUT_BUFFER_SIZE+1];
+	u32 length;
+} history_entry_t;
+
+
+
 static u32 _input_cursor;
+static history_entry_t _input_history[INPUT_REWIND_BUFFER_SIZE];
+static u32 _input_history_index=0;
+static u32 _input_history_length=0;
 
 char input[INPUT_BUFFER_SIZE+1];
 u32 input_length;
@@ -90,7 +100,7 @@ _retry:
 		else{
 			j++;
 		}
-		if (buffer[j]>65&&buffer[j]<90){
+		if (buffer[j]>64&&buffer[j]<91){
 			keycode=buffer[j];
 		}
 		else{
@@ -153,57 +163,60 @@ _retry:
 
 
 static void _insert_char(char c){
+	history_entry_t* entry=_input_history+_input_history_index;
 	if (_input_cursor==INPUT_BUFFER_SIZE){
-		input[_input_cursor-1]=c;
+		entry->data[_input_cursor-1]=c;
 	}
 	else{
-		for (u32 i=input_length;i>_input_cursor;i--){
-			input[i+1]=input[i];
+		for (u32 i=entry->length;i>_input_cursor;i--){
+			entry->data[i+1]=entry->data[i];
 		}
-		input[_input_cursor]=c;
+		entry->data[_input_cursor]=c;
 		_input_cursor++;
-		if (input_length<INPUT_BUFFER_SIZE){
-			input_length++;
+		if (entry->length<INPUT_BUFFER_SIZE){
+			entry->length++;
 		}
 	}
-	input[input_length]=0;
+	entry->data[entry->length]=0;
 }
 
 
 
 static void _delete_char(void){
-	if (!input_length){
+	history_entry_t* entry=_input_history+_input_history_index;
+	if (!entry->length){
 		return;
 	}
-	input_length--;
-	for (u32 i=_input_cursor;i<input_length;i++){
-		input[i]=input[i+1];
+	entry->length--;
+	for (u32 i=_input_cursor;i<entry->length;i++){
+		entry->data[i]=entry->data[i+1];
 	}
-	input[input_length]=0;
+	entry->data[entry->length]=0;
 }
 
 
 
 static void _move_cursor(_Bool is_right,_Bool whole_word){
+	history_entry_t* entry=_input_history+_input_history_index;
 	if (is_right){
-		if (_input_cursor+1>=input_length){
-			_input_cursor=input_length;
+		if (_input_cursor+1>=entry->length){
+			_input_cursor=entry->length;
 			return;
 		}
 		_input_cursor++;
 		if (!whole_word){
 			return;
 		}
-		_Bool inside_identifier=IS_IDENTIFIER(input[_input_cursor]);
-		while (_input_cursor<input_length){
+		_Bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
+		while (_input_cursor<entry->length){
 			_input_cursor++;
 			if (inside_identifier){
-				if (!IS_IDENTIFIER(input[_input_cursor])){
+				if (!IS_IDENTIFIER(entry->data[_input_cursor])){
 					break;
 				}
 			}
 			else{
-				if (IS_WHITESPACE(input[_input_cursor])){
+				if (IS_WHITESPACE(entry->data[_input_cursor])){
 					break;
 				}
 			}
@@ -218,16 +231,16 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 		if (!whole_word){
 			return;
 		}
-		_Bool inside_identifier=IS_IDENTIFIER(input[_input_cursor]);
+		_Bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
 		while (_input_cursor){
 			_input_cursor--;
 			if (inside_identifier){
-				if (!IS_IDENTIFIER(input[_input_cursor])){
+				if (!IS_IDENTIFIER(entry->data[_input_cursor])){
 					break;
 				}
 			}
 			else{
-				if (IS_WHITESPACE(input[_input_cursor])){
+				if (IS_WHITESPACE(entry->data[_input_cursor])){
 					break;
 				}
 			}
@@ -237,19 +250,58 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 
 
 
+static void _scroll_history(_Bool is_up){
+	if (is_up){
+		if (!_input_history_index){
+			return;
+		}
+		_input_history_index--;
+	}
+	else{
+		if (_input_history_index==_input_history_length-1){
+			return;
+		}
+		_input_history_index++;
+	}
+	_input_cursor=_input_history[_input_history_index].length;
+}
+
+
+
+static void _ensure_top_of_history(void){
+	if (_input_history_index==_input_history_length-1){
+		return;
+	}
+	_input_history[_input_history_length-1]=_input_history[_input_history_index];
+	_input_history_index=_input_history_length-1;
+}
+
+
+
 void input_get(void){
-	input[0]=0;
+	if (_input_history_length>=INPUT_REWIND_BUFFER_SIZE){
+		for (u32 i=1;i<INPUT_REWIND_BUFFER_SIZE;i++){
+			_input_history[i-1]=_input_history[i];
+		}
+	}
+	else{
+		_input_history_length++;
+	}
+	_input_history_index=_input_history_length-1;
+	_input_history[_input_history_index].data[0]=0;
+	_input_history[_input_history_index].length=0;
 	_input_cursor=0;
-	input_length=0;
 	while (1){
-		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mroot\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,input,_input_cursor+cwd_length+8);
+		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mroot\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
+			_ensure_top_of_history();
 			_insert_char(key&KEY_MASK);
 		}
 		else{
 			switch (key&KEY_MASK){
 				case 9:
+					_ensure_top_of_history();
 					_insert_char(' ');
 					_insert_char(' ');
 					_insert_char(' ');
@@ -257,26 +309,38 @@ void input_get(void){
 					break;
 				case 10:
 				case 13:
+					_ensure_top_of_history();
 					printf("\x1b[%uG\n",input_length+cwd_length+8);
+					history_entry_t* entry=_input_history+_input_history_index;
+					input_length=entry->length;
+					for (u32 i=0;i<=input_length;i++){
+						input[i]=entry->data[i];
+					}
 					return;
 				case 127:
+					_ensure_top_of_history();
 					if (_input_cursor){
 						_input_cursor--;
 						_delete_char();
 					}
+					break;
+				case KEY_UP:
+				case KEY_DOWN:
+					_scroll_history((key&KEY_MASK)==KEY_UP);
 					break;
 				case KEY_LEFT:
 				case KEY_RIGHT:
 					_move_cursor((key&KEY_MASK)==KEY_RIGHT,!!(key&KEY_FLAG_CTRL));
 					break;
 				case KEY_DELETE:
+					_ensure_top_of_history();
 					_delete_char();
 					break;
 				case KEY_HOME:
 					_input_cursor=0;
 					break;
 				case KEY_END:
-					_input_cursor=input_length;
+					_input_cursor=_input_history[_input_history_index].length;
 					break;
 			}
 		}

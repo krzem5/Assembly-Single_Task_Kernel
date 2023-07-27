@@ -4,6 +4,7 @@
 
 
 
+#define INPUT_REWIND_BUFFER_SIZE 64
 #define INPUT_BUFFER_SIZE 256
 
 
