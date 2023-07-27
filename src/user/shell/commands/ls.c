@@ -101,4 +101,4 @@ void ls_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(ls,"ls [-d|-p|<directory>]");
+DECLARE_COMMAND(ls,"ls [<directory>|-d|-p]");
