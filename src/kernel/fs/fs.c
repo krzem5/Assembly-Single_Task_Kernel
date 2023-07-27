@@ -294,6 +294,7 @@ u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset-extra,chunk,fs->drive->block_size);
 		if (chunk_length<fs->drive->block_size){
+			lock_release(&(fs->lock));
 			return 0;
 		}
 		extra=fs->drive->block_size-extra;
