@@ -1,3 +1,12 @@
+;;; 00000500 - 00000900: Stage2 bootloader
+;;; 00004000 - 00007000: Stack
+;;; 00007000 - 00007200: Kernel data
+;;; 00100000 - ????????: Kernel code
+
+
+%define STACK_BOTTOM 0x4000
+%define STACK_TOP 0x7000
+%define KERNEL_DATA 0x7000
 %define KERNEL_DATA_MMAP_LEN word [KERNEL_DATA]
 %define KERNEL_DATA_MMAP_PTR (KERNEL_DATA+8)
 %define KERNEL_DATA_MMAP_MAX_LEN 42
@@ -211,6 +220,9 @@ _start64:
 	mov fs, ax
 	mov gs, ax
 	mov ss, ax
+	;;; Initialize stack
+	mov rbp, (KERNEL_OFFSET+STACK_TOP)
+	mov rsp, rbp
 	;;; Start kernel
 	jmp (KERNEL_OFFSET+KERNEL_MEM_ADDR)
 
@@ -225,9 +237,6 @@ STRING_REALLOC_KERNEL: db "Reallocating kernel to 1 MB...",10,0
 STRING_SETUP_PAGING: db "Setting up paging...",10,0
 STRING_MAP_KERNEL: db "Mapping kernel address range 0 - 3fffffff to ffffffffc0000000 - ffffffffffffffff...",10,0
 STRING_SETUP_64BIT_MODE_AND_START_KERNEL: db "Setting up 64-bit mode and starting kernel...",10,0
-STACK_BOTTOM equ 0x4000
-STACK_TOP equ 0x7000
-KERNEL_DATA equ 0x7000
 
 
 
@@ -254,5 +263,5 @@ gdt64_pointer:
 
 
 
-times (($-$$+511)/512*512-($-$$)) db 0
+times (1024-($-$$)) db 0
 __BOOTLOADER_STAGE2_END__ equ $

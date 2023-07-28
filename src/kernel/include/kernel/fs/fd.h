@@ -10,7 +10,7 @@
 
 
 
-#define FD_OUT_OF_RANGE(fd) ((fd)<0||(fd)>=FD_COUNT)
+#define FD_OUT_OF_RANGE(fd) ((fd)<=0||(fd)>FD_COUNT)
 
 #define FD_ERROR_INVALID_FLAGS -1
 #define FD_ERROR_INVALID_FD -2
@@ -68,7 +68,7 @@ void fd_clear(void);
 
 
 
-int fd_open(const char* path,u32 length,u8 flags);
+int fd_open(fd_t root,const char* path,u32 length,u8 flags);
 
 
 

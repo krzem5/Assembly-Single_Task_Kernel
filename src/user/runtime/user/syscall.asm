@@ -100,6 +100,7 @@ _syscall_file_system_get:
 
 
 _syscall_fd_open:
+	mov r8, rcx
 	mov rax, 10
 	syscall
 	ret

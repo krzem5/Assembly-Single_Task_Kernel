@@ -3,6 +3,7 @@
 #include <kernel/fs/partition.h>
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -21,6 +22,8 @@
 #define KFS_BLOCK_CACHE_ROOT_DIRTY 0x200
 
 #define KFS_BATC_BLOCK_COUNT 257984
+
+#define KFS_NODE_ID_NONE 0xffffffff
 
 #define KFS_NODE_FLAG_DIRECTORY 0x80
 
@@ -44,8 +47,9 @@ typedef struct _KFS_NODE{
 	kfs_node_index_t parent;
 	kfs_node_index_t prev_sibling;
 	kfs_node_index_t next_sibling;
+	u16 file_data_padding;
 	kfs_node_flags_t flags;
-	char name[35];
+	char name[33];
 	union{
 		struct{
 			kfs_large_block_index_t data_block_index;
@@ -131,6 +135,7 @@ typedef struct _KFS_BLOCK_CACHE{
 
 typedef struct _KFS_FS_NODE{
 	fs_node_t header;
+	kfs_large_block_index_t block_index;
 	kfs_node_index_t index;
 } kfs_fs_node_t;
 
@@ -297,6 +302,11 @@ static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
 		WARN("_node_to_fs_node called with a NULL-node");
 		return;
 	}
+	out->header.parent=(node->parent==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->header.next_sibling=(node->next_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->header.first_child=(!(node->flags&KFS_NODE_FLAG_DIRECTORY)||node->data.directory.first_child==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->block_index=node->block_index;
 	out->index=node->index;
 }
 
@@ -395,7 +405,35 @@ _nda2_found:
 	}
 	out->block_index=block_cache->nda2.nda1[j];
 	out->index=k|(j<<6)|(block_cache->nda2.node_index<<15);
+	out->parent=KFS_NODE_ID_NONE;
+	out->prev_sibling=KFS_NODE_ID_NONE;
+	out->next_sibling=KFS_NODE_ID_NONE;
+	out->file_data_padding=0;
+	if (name_length>33){
+		name_length=33;
+	}
+	out->flags=type|name_length;
+	memcpy(out->name,name,name_length);
+	if (type==KFS_NODE_FLAG_DIRECTORY){
+		out->data.directory.first_child=KFS_NODE_ID_NONE;
+	}
+	else{
+		out->data.file.data_block_index=0;
+		out->data.file.data_block_count=0;
+	}
 	return 1;
+}
+
+
+
+static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+	kfs_node_t kfs_node;
+	if (!_alloc_node(fs->extra_data,(is_directory?KFS_NODE_FLAG_DIRECTORY:0),name,name_length,&kfs_node)){
+		return NULL;
+	}
+	fs_node_t* out=fs_alloc_node(fs->index,name,name_length);
+	_node_to_fs_node(&kfs_node,(kfs_fs_node_t*)out);
+	return out;
 }
 
 
@@ -432,6 +470,7 @@ static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 static const fs_file_system_config_t _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
+	_kfs_create,
 	_kfs_get_relative,
 	_kfs_set_relative,
 	_kfs_read,

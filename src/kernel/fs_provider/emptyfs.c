@@ -6,6 +6,12 @@
 
 
 
+static fs_node_t* _emptyfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+	return NULL;
+}
+
+
+
 static fs_node_t* _emptyfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	return NULL;
 }
@@ -38,6 +44,7 @@ static u64 _emptyfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 static const fs_file_system_config_t _emptyfs_fs_config={
 	sizeof(fs_node_t),
+	_emptyfs_create,
 	_emptyfs_get_relative,
 	_emptyfs_set_relative,
 	_emptyfs_read,

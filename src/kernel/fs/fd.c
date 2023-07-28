@@ -18,7 +18,13 @@ static u64 _fd_bitmap[FD_COUNT];
 
 
 static inline _Bool _is_invalid_fd(fd_t fd){
-	return (fd>=FD_COUNT||(_fd_bitmap[fd>>6]&(1ull<<(fd&63))));
+	return (!fd||fd>FD_COUNT||(_fd_bitmap[(fd-1)>>6]&(1ull<<((fd-1)&63))));
+}
+
+
+
+static inline fd_data_t* _get_fd_data(fd_t fd){
+	return _fd_data+fd-1;
 }
 
 
@@ -40,7 +46,7 @@ static int _node_to_fd(fs_node_t* node,u8 flags){
 	data->offset=((flags&FD_FLAG_APPEND)?fs_get_size(node):0);
 	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
 	lock_release(&_fd_lock);
-	return idx;
+	return idx+1;
 }
 
 
@@ -64,7 +70,7 @@ void fd_clear(void){
 
 
 
-int fd_open(const char* path,u32 length,u8 flags){
+int fd_open(fd_t root,const char* path,u32 length,u8 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
@@ -73,8 +79,22 @@ int fd_open(const char* path,u32 length,u8 flags){
 		return FD_ERROR_INVALID_POINTER;
 	}
 	memcpy(buffer,path,length);
+	lock_acquire(&_fd_lock);
+	fs_node_t* root_node=NULL;
+	if (root){
+		if (_is_invalid_fd(root)){
+			lock_release(&_fd_lock);
+			return FD_ERROR_INVALID_FD;
+		}
+		root_node=fs_get_node_by_id(_get_fd_data(root)->node_id);
+		if (!root_node){
+			lock_release(&_fd_lock);
+			return FD_ERROR_NOT_FOUND;
+		}
+	}
 	buffer[length]=0;
-	fs_node_t* node=fs_get_node(NULL,buffer);
+	fs_node_t* node=fs_get_node(root_node,buffer,((flags&FD_FLAG_CREATE)?((flags&FD_FLAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE):0));
+	lock_release(&_fd_lock);
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}
@@ -89,6 +109,7 @@ int fd_close(fd_t fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
+	fd--;
 	_fd_bitmap[fd>>6]|=1ull<<(fd&63);
 	lock_release(&_fd_lock);
 	return 0;
@@ -115,7 +136,7 @@ s64 fd_read(fd_t fd,void* buffer,u64 count){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=_fd_data+fd;
+	fd_data_t* data=_get_fd_data(fd);
 	if (!(data->flags&FD_FLAG_READ)){
 		lock_release(&_fd_lock);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -139,7 +160,7 @@ s64 fd_write(fd_t fd,const void* buffer,u64 count){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=_fd_data+fd;
+	fd_data_t* data=_get_fd_data(fd);
 	if (!(data->flags&FD_FLAG_WRITE)){
 		lock_release(&_fd_lock);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -163,7 +184,7 @@ s64 fd_seek(fd_t fd,u64 offset,u8 flags){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=_fd_data+fd;
+	fd_data_t* data=_get_fd_data(fd);
 	switch (flags){
 		case FD_SEEK_SET:
 			data->offset=offset;
@@ -195,7 +216,7 @@ int fd_stat(fd_t fd,fd_stat_t* out){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=_fd_data+fd;
+	fd_data_t* data=_get_fd_data(fd);
 	fs_node_t* node=fs_get_node_by_id(data->node_id);
 	if (!node){
 		lock_release(&_fd_lock);
@@ -222,7 +243,7 @@ int fd_get_relative(fd_t fd,u8 relative,u8 flags){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=_fd_data+fd;
+	fd_data_t* data=_get_fd_data(fd);
 	fs_node_t* node=fs_get_node_by_id(data->node_id);
 	if (!node){
 		lock_release(&_fd_lock);

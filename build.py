@@ -256,8 +256,9 @@ _save_file_hash_list(file_hash_list,USER_HASH_FILE_PATH)
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/iso"]).returncode!=0):
 	sys.exit(1)
 if ("--run" in sys.argv):
-	if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/hdd.qcow2","16G"]).returncode!=0):
-		sys.exit(1)
+	if (not os.path.exists("build/hdd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/hdd.qcow2","16G"]).returncode!=0):
+			sys.exit(1)
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",

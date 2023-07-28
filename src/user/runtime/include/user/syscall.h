@@ -44,7 +44,7 @@ s32 _syscall_file_system_get(u32 index,void* ptr,u32 size);
 
 
 
-s32 _syscall_fd_open(const char* path,u32 length,u32 flags);
+s32 _syscall_fd_open(s32 fd,const char* path,u32 length,u32 flags);
 
 
 

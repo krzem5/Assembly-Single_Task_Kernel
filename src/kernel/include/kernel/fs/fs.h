@@ -24,6 +24,7 @@ struct _FS_FILE_SYSTEM;
 
 typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u8 node_size;
+	fs_node_t* (*create)(struct _FS_FILE_SYSTEM*,_Bool,const char*,u8);
 	fs_node_t* (*get_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8);
 	_Bool (*set_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8,fs_node_t*);
 	u64 (*read)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,u8*,u64);
@@ -80,7 +81,7 @@ fs_node_t* fs_get_node_by_id(fs_node_id_t id);
 
 
 
-fs_node_t* fs_get_node(fs_node_t* root,const char* path);
+fs_node_t* fs_get_node(fs_node_t* root,const char* path,u8 type);
 
 
 

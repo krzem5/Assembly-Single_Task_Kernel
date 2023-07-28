@@ -60,6 +60,12 @@ static fs_node_t* _iso9660_create_node_from_directory_entry(const iso9660_fs_nod
 
 
 
+static fs_node_t* _iso9660_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+	return NULL;
+}
+
+
+
 static fs_node_t* _iso9660_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	u8 buffer[2048];
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
@@ -188,6 +194,7 @@ static u64 _iso9660_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 static const fs_file_system_config_t _iso9660_fs_config={
 	sizeof(iso9660_fs_node_t),
+	_iso9660_create,
 	_iso9660_get_relative,
 	_iso9660_set_relative,
 	_iso9660_read,

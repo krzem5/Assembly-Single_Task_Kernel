@@ -13,7 +13,9 @@ void cd_main(int argc,const char*const* argv){
 		printf("cd: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	cwd_change(argv[1]);
+	if (!cwd_change(argv[1])){
+		printf("cd: unable to change current working directory to '%s'\n",argv[1]);
+	}
 }
 
 

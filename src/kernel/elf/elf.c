@@ -48,7 +48,7 @@ typedef struct _ELF_PROGRAM_HEADER{
 
 void* elf_load(const char* path){
 	LOG("Loading ELF executable '%s'...",path);
-	fs_node_t* node=fs_get_node(NULL,path);
+	fs_node_t* node=fs_get_node(NULL,path,0);
 	if (!node){
 		ERROR("File '%s' not found",path);
 		return NULL;

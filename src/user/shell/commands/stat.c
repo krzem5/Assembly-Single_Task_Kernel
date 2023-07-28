@@ -1,4 +1,5 @@
 #include <command.h>
+#include <cwd.h>
 #include <user/fs.h>
 #include <user/io.h>
 #include <user/partition.h>
@@ -21,7 +22,7 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	int fd=fs_open(argv[1],0);
+	int fd=fs_open(cwd_fd,argv[1],0);
 	if (fd<0){
 		printf("stat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;

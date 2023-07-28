@@ -5,7 +5,7 @@
 
 
 void main(void){
-	int fd=fs_open("/startup.txt",FS_FLAG_READ);
+	int fd=fs_open(0,"/startup.txt",FS_FLAG_READ);
 	if (fd<0){
 		goto _error;
 	}

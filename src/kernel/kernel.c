@@ -61,7 +61,7 @@ void kernel_load(void){
 		}
 		path[i]=0;
 		INFO("Trying to load the kernel from '%s'...",path);
-		fs_node_t* kernel=fs_get_node(NULL,path);
+		fs_node_t* kernel=fs_get_node(NULL,path,0);
 		if (!kernel){
 			continue;
 		}
@@ -85,7 +85,7 @@ void kernel_load(void){
 _load_kernel:
 	LOG("Loading kernel...");
 	INFO("Opening kernel file...");
-	fs_node_t* kernel_file=fs_get_node(NULL,"/kernel.bin");
+	fs_node_t* kernel_file=fs_get_node(NULL,"/kernel.bin",0);
 	if (!kernel_file){
 		goto _error;
 	}

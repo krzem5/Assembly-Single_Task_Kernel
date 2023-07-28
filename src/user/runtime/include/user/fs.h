@@ -43,7 +43,7 @@ typedef struct _FS_STAT{
 
 
 
-int fs_open(const char* path,u8 flags);
+int fs_open(int fd,const char* path,u8 flags);
 
 
 

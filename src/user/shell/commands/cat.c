@@ -1,4 +1,5 @@
 #include <command.h>
+#include <cwd.h>
 #include <user/fs.h>
 #include <user/io.h>
 
@@ -13,7 +14,7 @@ void cat_main(int argc,const char*const* argv){
 		printf("cat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	int fd=fs_open(argv[1],FS_FLAG_READ);
+	int fd=fs_open(cwd_fd,argv[1],FS_FLAG_READ);
 	if (fd<0){
 		printf("cat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;

@@ -35,7 +35,7 @@ void hexdump_main(int argc,const char*const* argv){
 		printf("hexdump: no file supplied\n");
 		return;
 	}
-	int fd=fs_open(file,FS_FLAG_READ);
+	int fd=fs_open(cwd_fd,file,FS_FLAG_READ);
 	if (fd<0){
 		printf("hexdump: unable to open file '%s': error %d\n",file,fd);
 		return;

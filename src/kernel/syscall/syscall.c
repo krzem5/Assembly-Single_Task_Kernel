@@ -218,12 +218,16 @@ static void _syscall_file_system_get(syscall_registers_t* regs){
 
 
 static void _syscall_fd_open(syscall_registers_t* regs){
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (regs->rdi&&FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_open(VMM_TRANSLATE_ADDRESS(address),regs->rsi,regs->rdx);
+	regs->rax=fd_open(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx,regs->r8);
 }
 
 

@@ -14,11 +14,17 @@ void cwd_init(void){
 	cwd[0]='/';
 	cwd[1]=0;
 	cwd_length=1;
-	cwd_fd=fs_open("/",0);
+	cwd_fd=fs_open(0,"/",0);
 }
 
 
 
-void cwd_change(const char* path){
-	printf("Unable to change directory to '%s'\n",path);
+_Bool cwd_change(const char* path){
+	int new_cwd_fd=fs_open(cwd_fd,path,0);
+	if (new_cwd_fd<0){
+		return 0;
+	}
+	fs_close(cwd_fd);
+	cwd_fd=new_cwd_fd;
+	return 1;
 }

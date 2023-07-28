@@ -13,7 +13,7 @@
 
 
 static fs_file_system_t* _fs_file_systems;
-static u8 _fs_file_systems_count;
+static u8 _fs_file_system_count;
 static u8 _fs_root_file_systems_index;
 
 
@@ -44,22 +44,23 @@ static fs_node_t* _alloc_node(fs_file_system_t* fs,const char* name,u8 name_leng
 void fs_init(void){
 	LOG("Initializing file system...");
 	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT));
-	_fs_file_systems_count=0;
+	_fs_file_system_count=0;
 	_fs_root_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
 }
 
 
 
 void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
-	if (_fs_file_systems_count>=FS_MAX_FILE_SYSTEMS){
+	if (_fs_file_system_count>=FS_MAX_FILE_SYSTEMS){
 		ERROR("Too many file systems!");
 		return NULL;
 	}
-	fs_file_system_t* fs=_fs_file_systems+_fs_file_systems_count;
-	_fs_file_systems_count++;
+	fs_file_system_t* fs=_fs_file_systems+_fs_file_system_count;
+	_fs_file_system_count++;
 	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
+	fs->index=_fs_file_system_count-1;
 	u8 i=0;
 	while (drive->name[i]){
 		fs->name[i]=drive->name[i];
@@ -92,7 +93,7 @@ void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* pa
 	}
 	fs->drive=drive;
 	fs->extra_data=extra_data;
-	fs_node_allocator_init(_fs_file_systems_count-1,config->node_size,&(fs->allocator));
+	fs_node_allocator_init(_fs_file_system_count-1,config->node_size,&(fs->allocator));
 	LOG("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=_alloc_node(fs,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
@@ -106,13 +107,13 @@ void* fs_create_file_system(const drive_t* drive,const fs_partition_config_t* pa
 
 
 u8 fs_get_file_system_count(void){
-	return _fs_file_systems_count;
+	return _fs_file_system_count;
 }
 
 
 
 const fs_file_system_t* fs_get_file_system(u8 fs_index){
-	return (fs_index<_fs_file_systems_count?_fs_file_systems+fs_index:NULL);
+	return (fs_index<_fs_file_system_count?_fs_file_systems+fs_index:NULL);
 }
 
 
@@ -146,7 +147,7 @@ fs_node_t* fs_get_node_by_id(fs_node_id_t id){
 
 
 
-fs_node_t* fs_get_node(fs_node_t* root,const char* path){
+fs_node_t* fs_get_node(fs_node_t* root,const char* path,u8 type){
 	if (!root&&path[0]=='/'){
 		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){
 			ERROR("Root file system not located yet; partition must be specified");
@@ -162,7 +163,7 @@ fs_node_t* fs_get_node(fs_node_t* root,const char* path){
 		if (path[partition_name_length]==':'){
 			root=NULL;
 			fs_file_system_t* fs=_fs_file_systems;
-			for (u8 i=0;i<_fs_file_systems_count;i++){
+			for (u8 i=0;i<_fs_file_system_count;i++){
 				if (fs->name_length!=partition_name_length){
 					goto _check_next_fs;
 				}
@@ -211,8 +212,26 @@ _check_next_fs:
 			}
 			continue;
 		}
-		node=fs_get_node_child(node,path,i);
+		fs_node_t* child=fs_get_node_child(node,path,i);
 		path+=i;
+		if (!path[0]&&!child&&type!=FS_NODE_TYPE_INVALID){
+			fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+			lock_release(&(fs->lock));
+			child=fs->config->create(fs,type==FS_NODE_TYPE_DIRECTORY,path-i,i);
+			lock_release(&(fs->lock));
+			if (child){
+				fs_node_t* first_child=fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD);
+				lock_acquire(&(fs->lock));
+				child->parent=node->id;
+				if (first_child){
+					first_child->prev_sibling=child->id;
+					child->next_sibling=first_child->id;
+				}
+				node->first_child=child->id;
+				lock_release(&(fs->lock));
+			}
+		}
+		node=child;
 	}
 	return node;
 }
@@ -251,8 +270,8 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 	if (!out){
 		lock_acquire(&(fs->lock));
 		out=fs->config->get_relative(fs,node,relative);
-		lock_release(&(fs->lock));
 		*id=(out?out->id:FS_NODE_ID_EMPTY);
+		lock_release(&(fs->lock));
 	}
 	return out;
 }

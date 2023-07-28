@@ -4,12 +4,12 @@
 
 
 
-int fs_open(const char* path,u8 flags){
+int fs_open(int fd,const char* path,u8 flags){
 	u32 length=0;
 	while (path[length]){
 		length++;
 	}
-	return _syscall_fd_open(path,length,flags);
+	return _syscall_fd_open(fd,path,length,flags);
 }
 
 
