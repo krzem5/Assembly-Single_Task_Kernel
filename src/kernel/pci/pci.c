@@ -9,7 +9,7 @@
 
 
 
-void pci_init(void){
+void KERNEL_CORE_CODE pci_init(void){
 	LOG("Scanning PCI devices...");
 	pci_device_t device={
 		0,
@@ -58,7 +58,7 @@ void pci_init(void){
 
 
 
-_Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out){
+_Bool KERNEL_CORE_CODE pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out){
 	u8 register_index=(bar_index<<2)+16;
 	u32 bar=pci_device_read_data(device,register_index);
 	if (!bar){

@@ -2,7 +2,7 @@ extern lock_acquire
 extern lock_release
 global serial_send
 global serial_recv
-section .text
+section .ctext
 
 
 
@@ -68,7 +68,7 @@ serial_recv:
 
 
 
-section .data
+section .cdata
 
 
 

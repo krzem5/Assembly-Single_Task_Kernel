@@ -7,7 +7,7 @@
 
 
 
-void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
+void KERNEL_CORE_CODE fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
 	LOG("Initializing file system node allocator...");
 	lock_init(&(out->lock));
 	out->fs_index=fs_index;
@@ -34,7 +34,7 @@ void fs_node_allocator_init(u8 fs_index,u8 node_size,fs_node_allocator_t* out){
 
 
 
-fs_node_t* fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,_Bool allocate_if_not_present){
+fs_node_t* KERNEL_CORE_CODE fs_node_allocator_get(fs_node_allocator_t* allocator,fs_node_id_t id,_Bool allocate_if_not_present){
 	fs_node_t* out=NULL;
 	lock_acquire(&(allocator->lock));
 	if (allocate_if_not_present&&id==FS_NODE_ID_EMPTY){

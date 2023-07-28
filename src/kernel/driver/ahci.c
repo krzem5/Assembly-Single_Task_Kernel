@@ -56,14 +56,14 @@
 
 
 
-static ahci_controller_t _ahci_controllers[MAX_CONTROLLER_COUNT];
-static u32 _ahci_controller_count;
-static ahci_device_t* _ahci_devices;
-static u32 _ahci_device_count;
+static ahci_controller_t KERNEL_CORE_DATA _ahci_controllers[MAX_CONTROLLER_COUNT];
+static u32 KERNEL_CORE_DATA _ahci_controller_count;
+static ahci_device_t* KERNEL_CORE_DATA _ahci_devices;
+static u32 KERNEL_CORE_DATA _ahci_device_count;
 
 
 
-static u8 _device_get_command_slot(const ahci_device_t* device){
+static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device){
 	u8 i=0;
 	while (1){
 		if (!((device->registers->sact|device->registers->ci)&(1<<i))){
@@ -78,7 +78,7 @@ static u8 _device_get_command_slot(const ahci_device_t* device){
 
 
 
-static void _device_send_command(const ahci_device_t* device,u8 cmd_slot){
+static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8 cmd_slot){
 	while (device->registers->tfd&(TFD_STS_DSQ|TFD_STS_BSY)){
 		asm volatile("pause");
 	}
@@ -100,7 +100,7 @@ static void _device_send_command(const ahci_device_t* device,u8 cmd_slot){
 
 
 
-static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	ahci_device_t* device=extra_data;
 	u32 dbc=(count<<9)-1;
 	if (dbc>0x3fffff){
@@ -146,7 +146,7 @@ static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 
 
 
-static void _ahci_init(ahci_device_t* device,u8 port_index){
+static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	u64 command_list=pmm_alloc(1);
 	device->registers->clb=command_list;
 	device->registers->clbu=command_list>>32;
@@ -213,7 +213,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 
 
 
-void driver_ahci_init(void){
+void KERNEL_CORE_CODE driver_ahci_init(void){
 	_ahci_controller_count=0;
 	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t))));
 	_ahci_device_count=0;
@@ -221,7 +221,7 @@ void driver_ahci_init(void){
 
 
 
-void driver_ahci_init_device(pci_device_t* device){
+void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x06||device->progif!=0x01){
 		return;
 	}

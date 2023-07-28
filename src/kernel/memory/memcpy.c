@@ -2,7 +2,7 @@
 
 
 
-void* __attribute__((noipa,optimize("O0"))) memcpy(void* dst,const void* src,u64 length){
+void* KERNEL_CORE_CODE __attribute__((noipa,optimize("O0"))) memcpy(void* dst,const void* src,u64 length){
 	const u8* src_ptr=src;
 	u8* dst_ptr=dst;
 	for (;length;length--){

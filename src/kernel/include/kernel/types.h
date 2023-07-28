@@ -3,6 +3,11 @@
 
 
 
+#define KERNEL_CORE_CODE __attribute__((section(".ctext")))
+#define KERNEL_CORE_DATA __attribute__((section(".cdata")))
+
+
+
 typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;

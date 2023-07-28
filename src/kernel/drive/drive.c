@@ -2,7 +2,7 @@
 
 
 
-void drive_change_byte_order_and_truncate_spaces(const u16* src,u8 length,char* dst){
+void KERNEL_CORE_CODE drive_change_byte_order_and_truncate_spaces(const u16* src,u8 length,char* dst){
 	u8 i=0;
 	for (;i<length;i++){
 		dst[i<<1]=src[i]>>8;

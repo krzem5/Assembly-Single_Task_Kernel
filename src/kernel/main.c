@@ -23,7 +23,7 @@
 
 
 
-void main(void){
+void KERNEL_CORE_CODE main(void){
 	LOG("Starting kernel...");
 	const kernel_data_t* kernel_data=kernel_init();
 	pmm_init(kernel_data);

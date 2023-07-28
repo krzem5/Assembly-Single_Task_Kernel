@@ -1,7 +1,7 @@
 global lock_init
 global lock_acquire
 global lock_release
-section .text
+section .ctext
 
 
 

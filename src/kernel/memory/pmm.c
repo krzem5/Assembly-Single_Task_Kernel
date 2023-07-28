@@ -6,31 +6,31 @@
 
 
 
-static pmm_allocator_t _pmm_allocator;
+static pmm_allocator_t KERNEL_CORE_DATA _pmm_allocator;
 
 
 
-static inline u8 _get_block_index(u64 address){
+static inline u8 KERNEL_CORE_CODE _get_block_index(u64 address){
 	u8 out=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
 	return (out>PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT:out);
 }
 
 
 
-static inline u8 _get_largest_block_index(u64 address){
+static inline u8 KERNEL_CORE_CODE _get_largest_block_index(u64 address){
 	u8 out=63-__builtin_clzll(address)-PAGE_SIZE_SHIFT;
 	return (out>PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT:out);
 }
 
 
 
-static inline u64 _get_block_size(u8 index){
+static inline u64 KERNEL_CORE_CODE _get_block_size(u8 index){
 	return 1ull<<(PAGE_SIZE_SHIFT+index);
 }
 
 
 
-static void _add_memory_range(u64 address,u64 end){
+static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 	while (address<end){
 		u8 idx=_get_block_index(address);
 		u64 size=_get_block_size(idx);
@@ -48,7 +48,7 @@ static void _add_memory_range(u64 address,u64 end){
 
 
 
-void pmm_init(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 	LOG("Initializing physical memory manager...");
 	INFO("Initializing allocator...");
 	_pmm_allocator.bitmap=0;
@@ -85,7 +85,7 @@ void pmm_init(const kernel_data_t* kernel_data){
 
 
 
-void pmm_init_high_mem(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
 		if ((kernel_data->mmap+i)->type!=1){
@@ -102,7 +102,7 @@ void pmm_init_high_mem(const kernel_data_t* kernel_data){
 
 
 
-u64 pmm_alloc_raw(u64 count){
+u64 KERNEL_CORE_CODE pmm_alloc_raw(u64 count){
 	if (!count){
 		ERROR("Trying to allocate zero physical pages!");
 		for (;;);
@@ -154,7 +154,7 @@ _toggle_bitmap:
 
 
 
-u64 pmm_alloc(u64 count){
+u64 KERNEL_CORE_CODE pmm_alloc(u64 count){
 	u64 out=pmm_alloc_raw(count);
 	if (!out){
 		return 0;
@@ -171,7 +171,7 @@ u64 pmm_alloc(u64 count){
 
 
 
-void pmm_dealloc(u64 address,u64 count){
+void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count){
 	if (!count){
 		ERROR("Trying to deallocate zero physical pages!");
 		return;

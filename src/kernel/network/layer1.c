@@ -5,14 +5,14 @@
 
 
 
-static network_layer1_device_t _network_layer1_device;
+static network_layer1_device_t KERNEL_CORE_DATA _network_layer1_device;
 
-const char* network_layer1_name;
-mac_address_t network_layer1_mac_address;
+const char* KERNEL_CORE_DATA network_layer1_name;
+mac_address_t KERNEL_CORE_DATA network_layer1_mac_address;
 
 
 
-void network_layer1_init(void){
+void KERNEL_CORE_CODE network_layer1_init(void){
 	LOG("Initializing layer1 network...");
 	_network_layer1_device.name=NULL;
 	network_layer1_name=NULL;
@@ -21,7 +21,7 @@ void network_layer1_init(void){
 
 
 
-void network_layer1_set_device(const network_layer1_device_t* device){
+void KERNEL_CORE_CODE network_layer1_set_device(const network_layer1_device_t* device){
 	if (_network_layer1_device.name){
 		WARN("Layer1 network device already installed");
 		return;

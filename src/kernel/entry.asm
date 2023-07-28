@@ -17,7 +17,7 @@ _start:
 
 
 
-section .rdata
+section .cdata
 
 
 

@@ -163,7 +163,7 @@ typedef struct _KFS_FS_NODE{
 
 
 
-static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
+static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR("Error reading data from drive");
 	}
@@ -171,7 +171,7 @@ static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void
 
 
 
-static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
+static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR("Error writing data to drive");
 	}
@@ -179,13 +179,13 @@ static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,con
 
 
 
-static inline void* _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
+static inline void* KERNEL_CORE_CODE _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
 	return (void*)(((u64)nda2)+4096);
 }
 
 
 
-static inline void _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
+static inline void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA1_DIRTY)){
 		return;
 	}
@@ -195,7 +195,7 @@ static inline void _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
 
 
 
-static inline void _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
+static inline void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_DIRTY)){
 		return;
 	}
@@ -206,7 +206,7 @@ static inline void _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
 
 
 
-static inline void _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
+static inline void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA3_DIRTY)){
 		return;
 	}
@@ -216,7 +216,7 @@ static inline void _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
 
 
 
-static inline void _block_cache_flush_batc(kfs_block_cache_t* block_cache){
+static inline void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_BATC_DIRTY)){
 		return;
 	}
@@ -226,7 +226,7 @@ static inline void _block_cache_flush_batc(kfs_block_cache_t* block_cache){
 
 
 
-static inline void _block_cache_flush_root(kfs_block_cache_t* block_cache){
+static inline void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_ROOT_DIRTY)){
 		return;
 	}
@@ -238,7 +238,7 @@ static inline void _block_cache_flush_root(kfs_block_cache_t* block_cache){
 
 
 
-static kfs_large_block_index_t _block_cache_alloc_block(kfs_block_cache_t* block_cache){
+static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_alloc_block(kfs_block_cache_t* block_cache){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_cache->batc.bitmap3){
 		goto _batc_found;
 	}
@@ -265,7 +265,7 @@ _batc_found:
 
 
 
-static void _block_cache_dealloc_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void KERNEL_CORE_CODE _block_cache_dealloc_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_index>=block_cache->batc.first_block_index&&block_index<block_cache->batc.first_block_index+KFS_BATC_BLOCK_COUNT){
 		goto _batc_found;
 	}
@@ -281,7 +281,7 @@ _batc_found:
 
 
 
-static kfs_large_block_index_t _block_cache_init_nda2(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
+static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda2(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
 	block_cache->nda2.block_index[0]=_block_cache_alloc_block(block_cache);
 	block_cache->nda2.block_index[1]=_block_cache_alloc_block(block_cache);
 	block_cache->nda2.node_index=node_index;
@@ -300,7 +300,7 @@ static kfs_large_block_index_t _block_cache_init_nda2(kfs_block_cache_t* block_c
 
 
 
-static kfs_large_block_index_t _block_cache_init_nda3(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
+static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda3(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
 	block_cache->nda3.block_index=_block_cache_alloc_block(block_cache);
 	block_cache->nda3.node_index=node_index;
 	block_cache->nda3.nda2[0]=_block_cache_init_nda2(block_cache,node_index<<10);
@@ -313,7 +313,7 @@ static kfs_large_block_index_t _block_cache_init_nda3(kfs_block_cache_t* block_c
 
 
 
-static void _block_cache_load_nda1(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void KERNEL_CORE_CODE _block_cache_load_nda1(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NDA1_PRESENT)&&block_cache->nda1_block_index==block_index){
 		return;
 	}
@@ -325,7 +325,7 @@ static void _block_cache_load_nda1(kfs_block_cache_t* block_cache,kfs_large_bloc
 
 
 
-static kfs_node_t* _get_node_by_index(kfs_block_cache_t* block_cache,kfs_node_index_t index){
+static kfs_node_t* KERNEL_CORE_CODE _get_node_by_index(kfs_block_cache_t* block_cache,kfs_node_index_t index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)&&block_cache->nda2.node_index==(index>>15)){
 		goto _nda2_found;
 	}
@@ -356,7 +356,7 @@ _nda2_found:
 
 
 
-static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
+static void KERNEL_CORE_CODE _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
 	out->header.type=((node->flags&KFS_NODE_FLAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
 	out->header.parent=(node->parent==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
@@ -368,7 +368,7 @@ static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
 
 
 
-static _Bool _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block_index_t checked_nda2_index){
+static _Bool KERNEL_CORE_CODE _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block_index_t checked_nda2_index){
 	u16 free_nda2_index=0xffff;
 	for (u16 i=0;i<1022;i++){
 		kfs_large_block_index_t block_index=block_cache->nda3.nda2[i];
@@ -397,7 +397,7 @@ static _Bool _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block
 
 
 
-static kfs_node_t* _alloc_node(kfs_block_cache_t* block_cache,kfs_node_flags_t type,const char* name,u8 name_length){
+static kfs_node_t* KERNEL_CORE_CODE _alloc_node(kfs_block_cache_t* block_cache,kfs_node_flags_t type,const char* name,u8 name_length){
 	kfs_large_block_index_t checked_nda2_index=0;
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)){
 		goto _nda2_empty;
@@ -485,7 +485,7 @@ _nda2_found:
 
 
 
-static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static fs_node_t* KERNEL_CORE_CODE _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	kfs_node_t* kfs_node=_alloc_node(fs->extra_data,(is_directory?KFS_NODE_FLAG_DIRECTORY:0),name,name_length);
 	if (!kfs_node){
 		return NULL;
@@ -497,7 +497,7 @@ static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char
 
 
 
-static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
+static _Bool KERNEL_CORE_CODE _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_node_t* kfs_node=_get_node_by_index(block_cache,kfs_fs_node->id); // loads both NDA1 and NDA2
@@ -523,7 +523,7 @@ static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 
 
 
-static fs_node_t* _kfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
+static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -559,7 +559,7 @@ static fs_node_t* _kfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 rela
 
 
 
-static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool KERNEL_CORE_CODE _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_node_index_t other_id=(other?((kfs_fs_node_t*)other)->id:KFS_NODE_ID_NONE);
@@ -590,7 +590,7 @@ static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,
 
 
 
-static u64 _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	// offset and count are aligned against fs->drive->block_size
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
@@ -604,7 +604,7 @@ static u64 _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,
 
 
 
-static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	// offset and count are aligned against fs->drive->block_size
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
@@ -618,7 +618,7 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 
 
 
-static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
+static u64 KERNEL_CORE_CODE _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -631,7 +631,7 @@ static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 
 
-static void _kfs_flush_cache(fs_file_system_t* fs){
+static void KERNEL_CORE_CODE _kfs_flush_cache(fs_file_system_t* fs){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	_block_cache_flush_nda1(block_cache);
 	_block_cache_flush_nda2(block_cache);
@@ -642,7 +642,7 @@ static void _kfs_flush_cache(fs_file_system_t* fs){
 
 
 
-static const fs_file_system_config_t _kfs_fs_config={
+static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	_kfs_create,
 	_kfs_delete,
@@ -656,7 +656,7 @@ static const fs_file_system_config_t _kfs_fs_config={
 
 
 
-void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
+void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
 	LOG("Loading KFS file system from drive '%s'...",drive->model_number);
 	INFO("Allocating block cache...");
 	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
@@ -678,7 +678,7 @@ void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config
 
 
 
-_Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
+_Bool KERNEL_CORE_CODE kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	LOG("Formatting drive '%s' as KFS...",drive->model_number);
 	if (DRIVE_BLOCK_SIZE_SHIFT!=DRIVE_BLOCK_SIZE_SHIFT){
 		WARN("KFS requires block_size to be equal to %u bytes",1<<DRIVE_BLOCK_SIZE_SHIFT);

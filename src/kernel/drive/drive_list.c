@@ -11,7 +11,7 @@
 
 
 
-static const char* _drive_type_names[]={
+static const char* KERNEL_CORE_DATA _drive_type_names[]={
 	[DRIVE_TYPE_AHCI]="AHCI",
 	[DRIVE_TYPE_ATA]="ATA",
 	[DRIVE_TYPE_ATAPI]="ATAPI",
@@ -20,12 +20,12 @@ static const char* _drive_type_names[]={
 
 
 
-static drive_t* _drives;
-static u32 _drive_count;
+static drive_t* KERNEL_CORE_DATA _drives;
+static u32 KERNEL_CORE_DATA _drive_count;
 
 
 
-void drive_list_init(void){
+void KERNEL_CORE_CODE drive_list_init(void){
 	LOG("Initializing drive list...");
 	_drives=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_t))));
 	_drive_count=0;
@@ -33,7 +33,7 @@ void drive_list_init(void){
 
 
 
-void drive_list_add_drive(const drive_t* drive){
+void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	LOG("Installing drive '%s/%s' as '%s'",_drive_type_names[drive->type],drive->model_number,drive->name);
 	if (_drive_count>=MAX_DRIVE_COUNT){
 		ERROR("Too many drives");
@@ -53,7 +53,7 @@ void drive_list_add_drive(const drive_t* drive){
 
 
 
-void drive_list_load_partitions(void){
+void KERNEL_CORE_CODE drive_list_load_partitions(void){
 	LOG("Loading drive partitions...");
 	for (u32 i=0;i<_drive_count;i++){
 		fs_partition_load_from_drive(_drives+i);
@@ -62,18 +62,18 @@ void drive_list_load_partitions(void){
 
 
 
-u32 drive_list_get_length(void){
+u32 KERNEL_CORE_CODE drive_list_get_length(void){
 	return _drive_count;
 }
 
 
 
-const drive_t* drive_list_get_drive(u32 index){
+const drive_t* KERNEL_CORE_CODE drive_list_get_drive(u32 index){
 	return (index<_drive_count?_drives+index:NULL);
 }
 
 
 
-void drive_list_set_boot_drive(u32 index){
+void KERNEL_CORE_CODE drive_list_set_boot_drive(u32 index){
 	(_drives+index)->flags|=DRIVE_FLAG_BOOT;
 }

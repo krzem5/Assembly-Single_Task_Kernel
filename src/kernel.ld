@@ -5,14 +5,13 @@ SECTIONS{
     __KERNEL_START__ = . - __KERNEL_OFFSET__;
     .text : AT(ADDR(.text) - __KERNEL_OFFSET__) {
         *(.entry)
-        *(.version.core)
-        *.core.*(.text .text*)
+        *(.cversion)
+        *(.ctext .ctext*)
         *.core.*(.rodata .rodata* .rdata .rdata*)
         . = ALIGN(0x1000);
     }
     .data : AT(ADDR(.data) - __KERNEL_OFFSET__) {
-        *.core.*(.data .data*)
-        *.core.*(.bss .bss*)
+       	*(.cdata .cdata*)
         . = ALIGN(0x1000);
     }
     __KERNEL_LOW_END__ = . - __KERNEL_OFFSET__;

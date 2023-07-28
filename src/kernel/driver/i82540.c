@@ -71,8 +71,8 @@
 
 
 
-static i82540_device_t _i82540_devices[MAX_DEVICE_COUNT];
-static u32 _i82540_device_count;
+static i82540_device_t KERNEL_CORE_DATA _i82540_devices[MAX_DEVICE_COUNT];
+static u32 KERNEL_CORE_DATA _i82540_device_count;
 
 
 
@@ -129,13 +129,13 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 
 
 
-void driver_i82540_init(void){
+void KERNEL_CORE_CODE driver_i82540_init(void){
 	_i82540_device_count=0;
 }
 
 
 
-void driver_i82540_init_device(pci_device_t* device){
+void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
 	}

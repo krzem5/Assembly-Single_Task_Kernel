@@ -30,7 +30,7 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 
-static void _load_iso9660(drive_t* drive){
+static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
 	if (drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
 		return;
 	}
@@ -81,7 +81,7 @@ _loaded_all_blocks:
 
 
 
-static void _load_kfs(const drive_t* drive){
+static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 	if (drive->block_size>4096){
 		return;
 	}
@@ -105,7 +105,7 @@ static void _load_kfs(const drive_t* drive){
 
 
 
-void fs_partition_load_from_drive(drive_t* drive){
+void KERNEL_CORE_CODE fs_partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
 	_load_iso9660(drive);
 	_load_kfs(drive);

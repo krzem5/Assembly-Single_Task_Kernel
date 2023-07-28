@@ -5,12 +5,12 @@
 
 
 
-void driver_nvme_init(void){
+void KERNEL_CORE_CODE driver_nvme_init(void){
 	return;
 }
 
 
 
-void driver_nvme_init_device(pci_device_t* device){
+void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
 	return;
 }

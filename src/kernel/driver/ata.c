@@ -45,12 +45,12 @@
 
 
 
-static ata_device_t _ata_devices[MAX_DEVICE_COUNT];
-static u32 _ata_device_count;
+static ata_device_t KERNEL_CORE_DATA _ata_devices[MAX_DEVICE_COUNT];
+static u32 KERNEL_CORE_DATA _ata_device_count;
 
 
 
-static inline void delay_400ns(const ata_device_t* device){
+static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
@@ -59,34 +59,34 @@ static inline void delay_400ns(const ata_device_t* device){
 
 
 
-static inline _Bool _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
+static inline _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
 	for (;timeout&&(io_port_in8(device->port+ATA_REG_STATUS)&mask)!=value;timeout--){
 		if (io_port_in8(device->port+ATA_REG_STATUS)&STATUS_ERR){
 			WARN("ATA/ATAPI device returned an error");
 			return 0;
 		}
-		delay_400ns(device);
+		_delay_400ns(device);
 	}
 	return !!timeout;
 }
 
 
 
-static inline void _send_atapi_command(const ata_device_t* device,const u16* command,u16 return_length,u16* output_buffer){
+static inline void KERNEL_CORE_CODE _send_atapi_command(const ata_device_t* device,const u16* command,u16 return_length,u16* output_buffer){
 	io_port_out8(device->port+ATA_REG_DRV_HEAD,0xa0|(device->is_slave<<4));
-	delay_400ns(device);
+	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_ERROR,0x00);
 	io_port_out8(device->port+ATA_REG_LBA1,return_length);
 	io_port_out8(device->port+ATA_REG_LBA2,return_length>>8);
 	io_port_out8(device->port+ATA_REG_COMMAND,ATA_CMD_PACKET);
-	delay_400ns(device);
+	_delay_400ns(device);
 	if (!_wait_for_device(device,STATUS_DRQ|STATUS_BSY,STATUS_DRQ,TIMEOUT)){
 		return;
 	}
 	for (u8 i=0;i<6;i++){
 		io_port_out16(device->port+ATA_REG_DATA,command[i]);
 	}
-	delay_400ns(device);
+	_delay_400ns(device);
 	if (output_buffer){
 		if (!_wait_for_device(device,STATUS_DRQ|STATUS_BSY,STATUS_DRQ,TIMEOUT)){
 			return;
@@ -99,7 +99,7 @@ static inline void _send_atapi_command(const ata_device_t* device,const u16* com
 
 
 
-static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	const ata_device_t* device=extra_data;
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		WARN("ATA drives are read-only");
@@ -126,7 +126,7 @@ static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	_send_atapi_command(device,(const u16*)atapi_command,2048,NULL);
 	u16* out=buffer;
 	for (u64 i=0;i<count;i++){
-		delay_400ns(device);
+		_delay_400ns(device);
 		if (!_wait_for_device(device,STATUS_BSY,0,TIMEOUT)){
 			return 0;
 		}
@@ -147,15 +147,15 @@ static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 
 
 
-static _Bool _ata_init(ata_device_t* device,u8 index){
+static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	io_port_out8(device->port+ATA_REG_DEV_CTL,DEV_CTL_SRST);
-	delay_400ns(device);
+	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_DEV_CTL,0);
 	if (!_wait_for_device(device,STATUS_BSY,0,TIMEOUT)){
 		return 0;
 	}
 	io_port_out8(device->port+ATA_REG_DRV_HEAD,0xa0|(device->is_slave<<4));
-	delay_400ns(device);
+	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_LBA0,0);
 	io_port_out8(device->port+ATA_REG_LBA1,0);
 	io_port_out8(device->port+ATA_REG_LBA2,0);
@@ -230,13 +230,13 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 
 
 
-void driver_ata_init(void){
+void KERNEL_CORE_CODE driver_ata_init(void){
 	_ata_device_count=0;
 }
 
 
 
-void driver_ata_init_device(pci_device_t* device){
+void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x01||device->progif!=0x80){
 		return;
 	}

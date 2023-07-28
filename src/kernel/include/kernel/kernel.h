@@ -13,12 +13,12 @@ extern u64 __KERNEL_LOW_END__[1];
 extern u64 __KERNEL_COMMON_START__[1];
 extern u64 __KERNEL_END__[1];
 
-extern const u64 __kernel_version;
+extern const u64 __core_version;
 
 
 
 static inline u64 kernel_get_version(void){
-	return __kernel_version;
+	return __core_version;
 }
 
 

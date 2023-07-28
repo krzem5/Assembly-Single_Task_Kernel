@@ -6,13 +6,13 @@
 
 
 
-static const char* _kernel_file_path=":/kernel.bin";
+static const char* KERNEL_CORE_DATA _kernel_file_path=":/kernel.bin";
 
-static kernel_data_t _kernel_data;
+static kernel_data_t KERNEL_CORE_DATA _kernel_data;
 
 
 
-const kernel_data_t* kernel_init(void){
+const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 	LOG("Loading kernel data...");
 	_kernel_data=*((const volatile kernel_data_t*)0xffffffffc0007000);
 	INFO("Version: %lx",kernel_get_version());
@@ -41,7 +41,7 @@ const kernel_data_t* kernel_init(void){
 
 
 
-void kernel_load(void){
+void KERNEL_CORE_CODE kernel_load(void){
 	LOG("Searching partitions for the boot drive...");
 	u8 buffer[4096];
 	char path[64];

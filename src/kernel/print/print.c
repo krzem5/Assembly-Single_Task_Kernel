@@ -22,7 +22,7 @@ typedef struct _BUFFER_STATE{
 
 
 
-static inline void _buffer_state_add(buffer_state_t* buffer_state,char c){
+static inline void KERNEL_CORE_CODE _buffer_state_add(buffer_state_t* buffer_state,char c){
 	buffer_state->buffer[buffer_state->offset]=c;
 	if (buffer_state->offset<BUFFER_SIZE){
 		buffer_state->offset++;
@@ -31,14 +31,14 @@ static inline void _buffer_state_add(buffer_state_t* buffer_state,char c){
 
 
 
-static inline char _format_base16_char(u8 value){
+static inline char KERNEL_CORE_CODE _format_base16_char(u8 value){
 	value&=15;
 	return value+(value<10?48:87);
 }
 
 
 
-static inline void _print_int_base10(u64 value,buffer_state_t* out){
+static inline void KERNEL_CORE_CODE _print_int_base10(u64 value,buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
 	while (value){
@@ -54,7 +54,7 @@ static inline void _print_int_base10(u64 value,buffer_state_t* out){
 
 
 
-static void _print_int(__builtin_va_list va,u8 flags,buffer_state_t* out){
+static void KERNEL_CORE_CODE _print_int(__builtin_va_list va,u8 flags,buffer_state_t* out){
 	u64 data;
 	if (flags&FLAG_SIGN){
 		s64 signed_data=((flags&FLAG_LONG)?__builtin_va_arg(va,s64):__builtin_va_arg(va,s32));
@@ -90,7 +90,7 @@ static void _print_int(__builtin_va_list va,u8 flags,buffer_state_t* out){
 
 
 
-void print(const char* template,...){
+void KERNEL_CORE_CODE print(const char* template,...){
 	buffer_state_t out={
 		.offset=0
 	};
