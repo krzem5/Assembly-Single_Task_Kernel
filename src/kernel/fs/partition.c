@@ -8,27 +8,6 @@
 
 
 
-typedef struct __attribute__((packed)) _GPT_PARTITION_TABLE_HEADER{
-	u64 signature;
-	u32 revision;
-	u32 header_size;
-	u8 _padding[56];
-	u64 partition_entry_array_lba;
-	u32 partition_entry_count;
-	u32 partition_entry_size;
-} gpt_partition_table_header_t;
-
-
-
-typedef struct __attribute__((packed)) _GPT_PARTITION_ENTRY{
-	u64 type_guid[2];
-	u8 _padding[16];
-	u64 start_lba;
-	u64 end_lba;
-} gpt_partition_entry_t;
-
-
-
 typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 	u8 type;
 	u8 identifier[5];
@@ -48,69 +27,6 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 	u64 signature;
 } kfs_root_block_t;
-
-
-
-static void _try_load_file_system(drive_t* drive,const fs_partition_config_t* partition_config,u64 first_block_index,u64 last_block_index){
-	LOG("Probing drive '%s' block %u for possible file systems...",drive->model_number,first_block_index);
-	u8 buffer[4096];
-	if (drive->read_write(drive->extra_data,first_block_index,buffer,1)!=1){
-		return;
-	}
-	// Try to load different file systems and fall back to emptyfs
-	INFO("Probing failed, loading partition as emptyfs...");
-	emptyfs_load(drive,partition_config);
-}
-
-
-
-static void _load_gpt(drive_t* drive){
-	if (drive->block_size>4096){
-		return;
-	}
-	u8 buffer[4096];
-	if (drive->read_write(drive->extra_data,1,buffer,1)!=1){
-		return;
-	}
-	const gpt_partition_table_header_t* gpt_header=(const gpt_partition_table_header_t*)buffer;
-	if (gpt_header->signature!=0x5452415020494645ull){
-		return;
-	}
-	INFO("Detected drive format of '%s' as GPT",drive->model_number);
-	if (gpt_header->partition_entry_size>drive->block_size){
-		WARN("Unimplemented");
-		return;
-	}
-	u16 buffer_space=0;
-	u64 block_index=gpt_header->partition_entry_array_lba;
-	u32 partition_count=gpt_header->partition_entry_count;
-	if (partition_count>256){
-		WARN("Too many GPT partitions");
-		partition_count=256;
-	}
-	u32 partition_entry_size=gpt_header->partition_entry_size;
-	for (u32 i=0;i<partition_count;i++){
-		if (!buffer_space){
-			buffer_space=drive->block_size;
-			if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
-				return;
-			}
-			block_index++;
-		}
-		const gpt_partition_entry_t* gpt_partition_entry=(const gpt_partition_entry_t*)(buffer+drive->block_size-buffer_space);
-		if (gpt_partition_entry->type_guid[0]||gpt_partition_entry->type_guid[1]){
-			const fs_partition_config_t partition_config={
-				FS_PARTITION_TYPE_GPT,
-				i,
-				gpt_partition_entry->start_lba,
-				gpt_partition_entry->end_lba
-			};
-			_try_load_file_system(drive,&partition_config,gpt_partition_entry->start_lba,gpt_partition_entry->end_lba);
-		}
-		buffer_space-=partition_entry_size;
-	}
-	return;
-}
 
 
 
@@ -191,7 +107,6 @@ static void _load_kfs(const drive_t* drive){
 
 void fs_partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
-	_load_gpt(drive);
 	_load_iso9660(drive);
 	_load_kfs(drive);
 	const fs_partition_config_t partition_config={

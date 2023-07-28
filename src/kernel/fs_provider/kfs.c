@@ -72,7 +72,8 @@ typedef struct _KFS_NDA2_BLOCK{
 	u8 _padding[3];
 	u64 bitmap2[8];
 	u64 bitmap1[507];
-	kfs_large_block_index_t nda1[1014];
+	kfs_large_block_index_t nda1[507];
+	u8 _padding2[2028];
 } kfs_nda2_block_t;
 
 
@@ -264,8 +265,6 @@ static kfs_large_block_index_t _block_cache_init_nda2(kfs_block_cache_t* block_c
 	block_cache->nda2.bitmap2[7]=0x07ffffffffffffffull;
 	for (u16 i=0;i<507;i++){
 		block_cache->nda2.bitmap1[i]=0xffffffffffffffffull;
-	}
-	for (u16 i=0;i<1014;i++){
 		block_cache->nda2.nda1[i]=0;
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_PRESENT|KFS_BLOCK_CACHE_NDA2_DIRTY;
@@ -287,7 +286,7 @@ static kfs_large_block_index_t _block_cache_init_nda3(kfs_block_cache_t* block_c
 
 
 
-static kfs_node_t* _get_node_by_index(kfs_block_cache_t* block_cache,kfs_node_index_t index){
+static _Bool _get_node_by_index(kfs_block_cache_t* block_cache,kfs_node_index_t index,kfs_node_t* out){
 	return NULL;
 }
 
@@ -332,7 +331,7 @@ static _Bool _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block
 
 
 
-static kfs_node_t* _alloc_node(kfs_block_cache_t* block_cache,kfs_node_flags_t type,const char* name,u8 name_length){
+static _Bool _alloc_node(kfs_block_cache_t* block_cache,kfs_node_flags_t type,const char* name,u8 name_length,kfs_node_t* out){
 	kfs_large_block_index_t checked_nda2_index=0;
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)){
 		goto _nda2_empty;
@@ -371,13 +370,32 @@ _nda3_empty:
 		}
 	}
 	if (free_nda3_index==0xff){
-		return NULL;
+		return 0;
 	}
 	block_cache->root.nda3[free_nda3_index]=_block_cache_init_nda3(block_cache,free_nda3_index);
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
 _nda2_found:
-	ERROR("Unimplemented");
-	return NULL;
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_DIRTY;
+	kfs_node_index_t i=__builtin_ctzll(block_cache->nda2.bitmap3);
+	kfs_node_index_t j=__builtin_ctzll(block_cache->nda2.bitmap2[i])|(i<<6);
+	kfs_node_index_t k=0;
+	if (!block_cache->nda2.nda1[j]){
+		block_cache->nda2.nda1[j]=_block_cache_alloc_block(block_cache);
+		block_cache->nda2.bitmap1[j]=0xfffffffffffffffeull;
+	}
+	else{
+		k=__builtin_ctzll(block_cache->nda2.bitmap1[j]);
+		block_cache->nda2.bitmap1[j]&=block_cache->nda2.bitmap1[j]-1;
+		if (!block_cache->nda2.bitmap1[j]){
+			block_cache->nda2.bitmap2[i]&=block_cache->nda2.bitmap2[i]-1;
+			if (!block_cache->nda2.bitmap2[i]){
+				block_cache->nda2.bitmap3&=block_cache->nda2.bitmap3-1;
+			}
+		}
+	}
+	out->block_index=block_cache->nda2.nda1[j];
+	out->index=k|(j<<6)|(block_cache->nda2.node_index<<15);
+	return 1;
 }
 
 
@@ -436,11 +454,12 @@ void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_PRESENT;
 	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config,block_cache);
-	kfs_node_t* kfs_root=_get_node_by_index(block_cache,0);
-	if (!kfs_root){
-		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,"",0);
+	kfs_node_t kfs_root;
+	if (!_get_node_by_index(block_cache,0,&kfs_root)&&!_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,"",0,&kfs_root)){
+		ERROR("Unable to allocate root node");
+		return;
 	}
-	_node_to_fs_node(kfs_root,root);
+	_node_to_fs_node(&kfs_root,root);
 }
 
 
