@@ -164,7 +164,7 @@ fs_node_t* fs_get_node_by_id(fs_node_id_t id){
 
 
 fs_node_t* fs_get_node(fs_node_t* root,const char* path,u8 type){
-	if (!root&&path[0]=='/'){
+	if (path[0]=='/'){
 		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){
 			ERROR("Root file system not located yet; partition must be specified");
 			return NULL;
