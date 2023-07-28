@@ -6,6 +6,25 @@
 
 
 
+static void _delete_recursive(int fd){
+	int child=fs_get_relative(fd,FS_RELATIVE_FIRST_CHILD,0);
+	fs_stat_t stat;
+	while (child>=0){
+		if (fs_stat(child,&stat)<0){
+			fs_close(child);
+			break;
+		}
+		if (stat.type==FS_STAT_TYPE_DIRECTORY){
+			_delete_recursive(child);
+		}
+		int next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
+		fs_delete(child);
+		child=next_child;
+	}
+}
+
+
+
 void rm_main(int argc,const char*const* argv){
 	_Bool recursive=0;
 	const char* file=NULL;
@@ -27,14 +46,16 @@ void rm_main(int argc,const char*const* argv){
 		return;
 	}
 	if (!recursive){
-		int err=fs_delete(fd);
-		if (err<0){
-			printf("rm: unable to delete file '%s': error %d\n",file,err);
+		int error=fs_delete(fd);
+		if (error<0){
+			printf("rm: unable to delete file '%s': error %d\n",file,error);
 			fs_close(fd);
 			return;
 		}
 		return;
 	}
+	_delete_recursive(fd);
+	fs_delete(fd);
 }
 
 
