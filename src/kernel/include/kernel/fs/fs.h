@@ -25,6 +25,7 @@ struct _FS_FILE_SYSTEM;
 typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u8 node_size;
 	fs_node_t* (*create)(struct _FS_FILE_SYSTEM*,_Bool,const char*,u8);
+	_Bool (*delete)(struct _FS_FILE_SYSTEM*,fs_node_t*);
 	fs_node_t* (*get_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8);
 	_Bool (*set_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8,fs_node_t*);
 	u64 (*read)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,u8*,u64);
@@ -75,6 +76,10 @@ void fs_set_boot_file_system(u8 fs_index);
 
 
 void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length);
+
+
+
+_Bool fs_dealloc_node(fs_node_t* node);
 
 
 

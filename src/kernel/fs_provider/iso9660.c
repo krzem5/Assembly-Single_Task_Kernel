@@ -66,6 +66,12 @@ static fs_node_t* _iso9660_create(fs_file_system_t* fs,_Bool is_directory,const 
 
 
 
+static _Bool _iso9660_delete(fs_file_system_t* fs,fs_node_t* node){
+	return 0;
+}
+
+
+
 static fs_node_t* _iso9660_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	u8 buffer[2048];
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
@@ -201,6 +207,7 @@ static void _iso9660_flush_cache(fs_file_system_t* fs){
 static const fs_file_system_config_t _iso9660_fs_config={
 	sizeof(iso9660_fs_node_t),
 	_iso9660_create,
+	_iso9660_delete,
 	_iso9660_get_relative,
 	_iso9660_set_relative,
 	_iso9660_read,

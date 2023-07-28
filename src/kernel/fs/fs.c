@@ -141,6 +141,22 @@ void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length){
 
 
 
+_Bool fs_dealloc_node(fs_node_t* node){
+	if (!node){
+		return 1;
+	}
+	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	lock_acquire(&(fs->lock));
+	_Bool out=fs->config->delete(fs,node);
+	if (out){
+		node->type=FS_NODE_TYPE_INVALID;
+	}
+	lock_release(&(fs->lock));
+	return out;
+}
+
+
+
 fs_node_t* fs_get_node_by_id(fs_node_id_t id){
 	return fs_node_allocator_get(&((_fs_file_systems+(id>>56))->allocator),id,0);
 }

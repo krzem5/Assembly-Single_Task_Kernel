@@ -12,6 +12,12 @@ static fs_node_t* _emptyfs_create(fs_file_system_t* fs,_Bool is_directory,const 
 
 
 
+static _Bool _emptyfs_delete(fs_file_system_t* fs,fs_node_t* node){
+	return 0;
+}
+
+
+
 static fs_node_t* _emptyfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	return NULL;
 }
@@ -51,6 +57,7 @@ static void _emptyfs_flush_cache(fs_file_system_t* fs){
 static const fs_file_system_config_t _emptyfs_fs_config={
 	sizeof(fs_node_t),
 	_emptyfs_create,
+	_emptyfs_delete,
 	_emptyfs_get_relative,
 	_emptyfs_set_relative,
 	_emptyfs_read,

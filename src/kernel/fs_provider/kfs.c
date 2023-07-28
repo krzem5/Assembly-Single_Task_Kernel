@@ -476,6 +476,12 @@ static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char
 
 
 
+static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
+	return 0;
+}
+
+
+
 static fs_node_t* _kfs_get_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
@@ -583,6 +589,7 @@ static void _kfs_flush_cache(fs_file_system_t* fs){
 static const fs_file_system_config_t _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	_kfs_create,
+	_kfs_delete,
 	_kfs_get_relative,
 	_kfs_set_relative,
 	_kfs_read,
