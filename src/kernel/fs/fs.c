@@ -194,7 +194,7 @@ _check_next_fs:
 				fs++;
 			}
 			if (!root){
-				WARN("Partition not found");
+				ERROR("Partition not found");
 				return NULL;
 			}
 			path+=partition_name_length+1;

@@ -109,8 +109,7 @@ int fd_close(fd_t fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd--;
-	_fd_bitmap[fd>>6]|=1ull<<(fd&63);
+	_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
 	lock_release(&_fd_lock);
 	return 0;
 }
@@ -129,14 +128,15 @@ int fd_delete(fd_t fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
-	if ((node->flags&FD_FLAG_DIRECTORY)&&fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+		lock_release(&_fd_lock);
 		return FD_ERROR_NOT_EMPTY;
 	}
 	fs_node_t* prev=fs_get_node_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
 	fs_node_t* next=fs_get_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
 	_Bool out=1;
 	if (prev){
-		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_PREV_SIBLING,next);
+		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
 	}
 	else{
 		out&=fs_set_node_relative(fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
@@ -146,6 +146,9 @@ int fd_delete(fd_t fd){
 	}
 	if (out){
 		out=fs_dealloc_node(node);
+	}
+	if (out){
+		_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
 	}
 	lock_release(&_fd_lock);
 	return (out?0:FD_ERROR_NOT_EMPTY);

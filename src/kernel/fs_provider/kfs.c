@@ -218,7 +218,7 @@ static inline void _block_cache_flush_root(kfs_block_cache_t* block_cache){
 
 
 static kfs_large_block_index_t _block_cache_alloc_block(kfs_block_cache_t* block_cache){
-	if (block_cache->batc.bitmap3){
+	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_cache->batc.bitmap3){
 		goto _batc_found;
 	}
 	_block_cache_flush_batc(block_cache);
@@ -244,19 +244,19 @@ _batc_found:
 
 
 
-// static void _dealloc_block(block_index_t block_index){
-// 	if (block_index>=_block_cache.batc_block.first_block_index&&block_index<_block_cache.batc_block.first_block_index+257920){
-// 		goto _skip_descriptor_table_load;
-// 	}
-// 	_flush_batc_block_cache();
-// 	disk_read_blocks(block_index/257920*8+1,8,&(_block_cache.batc_block));
-// _skip_descriptor_table_load:
-// 	_block_cache.batc_block_has_changes=1;
-// 	block_index-=_block_cache.batc_block.first_block_index;
-// 	_block_cache.batc_block.bitmap1[block_index>>6]|=1ull<<(block_index&63);
-// 	_block_cache.batc_block.bitmap2[block_index>>12]|=1ull<<((block_index>>6)&63);
-// 	_block_cache.batc_block.bitmap3|=1ull<<(block_index>>12);
-// }
+static void _block_cache_dealloc_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_index>=block_cache->batc.first_block_index&&block_index<block_cache->batc.first_block_index+KFS_BATC_BLOCK_COUNT){
+		goto _batc_found;
+	}
+	_block_cache_flush_batc(block_cache);
+	_drive_read(block_cache->drive,block_index/KFS_BATC_BLOCK_COUNT*8+block_cache->root.batc_block_index,&(block_cache->batc),8);
+_batc_found:
+	block_cache->flags|=KFS_BLOCK_CACHE_BATC_DIRTY;
+	block_index-=block_cache->batc.first_block_index;
+	block_cache->batc.bitmap1[block_index>>6]|=1ull<<(block_index&63);
+	block_cache->batc.bitmap2[block_index>>12]|=1ull<<((block_index>>6)&63);
+	block_cache->batc.bitmap3|=1ull<<(block_index>>12);
+}
 
 
 
@@ -477,7 +477,27 @@ static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char
 
 
 static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
-	return 0;
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
+	kfs_node_t* kfs_node=_get_node_by_index(block_cache,kfs_fs_node->id); // loads both NDA1 and NDA2
+	if (!kfs_node){
+		return 0;
+	}
+	if (!(kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)&&kfs_node->data.file.data_block_index){
+		WARN("Unimplemented: _kfs_delete.file");
+	}
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_DIRTY;
+	kfs_node_index_t node_index=kfs_node->index;
+	u64 mask=1ull<<(node_index&63);
+	node_index>>=6;
+	block_cache->nda2.bitmap1[node_index]|=mask;
+	if (block_cache->nda2.bitmap1[node_index]==0xffffffffffffffffull){
+		_block_cache_dealloc_block(block_cache,block_cache->nda2.nda1[node_index]);
+		block_cache->nda2.nda1[node_index]=0;
+	}
+	block_cache->nda2.bitmap2[node_index>>6]|=1ull<<(node_index&63);
+	block_cache->nda2.bitmap3|=1<<(node_index>>6);
+	return 1;
 }
 
 
