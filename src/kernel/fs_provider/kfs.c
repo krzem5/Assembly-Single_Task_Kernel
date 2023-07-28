@@ -9,14 +9,16 @@
 
 
 
-#define KFS_BLOCK_CACHE_NDA2_PRESENT 0x01
-#define KFS_BLOCK_CACHE_NDA2_DIRTY 0x02
-#define KFS_BLOCK_CACHE_NDA3_PRESENT 0x04
-#define KFS_BLOCK_CACHE_NDA3_DIRTY 0x08
-#define KFS_BLOCK_CACHE_BATC_PRESENT 0x10
-#define KFS_BLOCK_CACHE_BATC_DIRTY 0x20
-#define KFS_BLOCK_CACHE_ROOT_PRESENT 0x40
-#define KFS_BLOCK_CACHE_ROOT_DIRTY 0x80
+#define KFS_BLOCK_CACHE_NDA1_PRESENT 0x001
+#define KFS_BLOCK_CACHE_NDA1_DIRTY 0x002
+#define KFS_BLOCK_CACHE_NDA2_PRESENT 0x004
+#define KFS_BLOCK_CACHE_NDA2_DIRTY 0x008
+#define KFS_BLOCK_CACHE_NDA3_PRESENT 0x010
+#define KFS_BLOCK_CACHE_NDA3_DIRTY 0x020
+#define KFS_BLOCK_CACHE_BATC_PRESENT 0x040
+#define KFS_BLOCK_CACHE_BATC_DIRTY 0x080
+#define KFS_BLOCK_CACHE_ROOT_PRESENT 0x100
+#define KFS_BLOCK_CACHE_ROOT_DIRTY 0x200
 
 #define KFS_BATC_BLOCK_COUNT 257984
 
@@ -114,11 +116,12 @@ _Static_assert(sizeof(kfs_root_block_t)==4096);
 
 
 typedef struct _KFS_BLOCK_CACHE{
+	kfs_nda3_block_t nda1;
 	kfs_nda3_block_t nda2;
 	kfs_nda3_block_t nda3;
 	kfs_batc_block_t batc;
 	kfs_root_block_t root;
-	u8 flags;
+	u16 flags;
 } kfs_block_cache_t;
 
 
@@ -238,8 +241,11 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		return 0;
 	}
 	u64 block_count=drive->block_count>>(12-drive->block_size_shift);
+	if (block_count>0xffffffff){
+		block_count=0xffffffff;
+	}
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
-	u64 first_free_block_index=2;
+	kfs_large_block_index_t first_free_block_index=2;
 	if (boot_length){
 		// adjust first_free_block_index
 		ERROR("Unimplemented: kfs_format_drive.boot");
@@ -268,7 +274,7 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	for (u16 i=0;i<4031;i++){
 		batc.bitmap1[i]=0xffffffffffffffffull;
 	}
-	for (u64 processed_block_count=0;processed_block_count<block_count;processed_block_count+=KFS_BATC_BLOCK_COUNT){
+	for (kfs_large_block_index_t processed_block_count=0;processed_block_count<block_count;processed_block_count+=KFS_BATC_BLOCK_COUNT){
 		batc.block_index=first_free_block_index;
 		batc.first_block_index=processed_block_count;
 		first_free_block_index+=8;
@@ -298,6 +304,25 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		}
 		_drive_write(drive,batc.block_index,&batc,8);
 	}
+	INFO("Reserving header blocks...");
+	_drive_read(drive,root.batc_block_index,&batc,8);
+	while (first_free_block_index){
+		first_free_block_index--;
+		batc.bitmap1[first_free_block_index>>6]&=~(1ull<<(first_free_block_index&63));
+	}
+	for (u16 i=0;i<4030;i++){
+		if (batc.bitmap1[i]){
+			break;
+		}
+		batc.bitmap2[i>>6]&=~(1ull<<(i&63));
+	}
+	for (u8 i=0;i<63;i++){
+		if (batc.bitmap2[i]){
+			break;
+		}
+		batc.bitmap3&=~(1ull<<i);
+	}
+	_drive_write(drive,root.batc_block_index,&batc,8);
 	LOG("Drive '%s' successfully formatted as KFS",drive->model_number);
 	return 1;
 }
