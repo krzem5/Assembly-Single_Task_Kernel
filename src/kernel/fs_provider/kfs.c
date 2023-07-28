@@ -10,6 +10,10 @@
 
 
 
+#define DRIVE_BLOCK_SIZE_SHIFT 9
+
+
+
 #define KFS_BLOCK_CACHE_NDA1_PRESENT 0x001
 #define KFS_BLOCK_CACHE_NDA1_DIRTY 0x002
 #define KFS_BLOCK_CACHE_NDA2_PRESENT 0x004
@@ -42,6 +46,13 @@ typedef u32 kfs_large_block_index_t; // 4096-aligned
 
 
 
+typedef struct _KFS_RANGE{
+	kfs_large_block_index_t block_index;
+	kfs_large_block_index_t block_count;
+} kfs_range_t;
+
+
+
 typedef struct _KFS_NODE{
 	kfs_large_block_index_t block_index;
 	kfs_node_index_t index;
@@ -64,13 +75,23 @@ typedef struct _KFS_NODE{
 
 
 
-typedef struct _KFS_NDA1_BLOCK{
+typedef struct _KFS_NFDA_BLOCK{ // Node File Data Array [1 block]
+	kfs_large_block_index_t block_index;
+	kfs_large_block_index_t next_block_index;
+	kfs_large_block_index_t data_offset;
+	kfs_large_block_index_t data_length;
+	kfs_range_t ranges[510];
+} kfs_nfda_block_t;
+
+
+
+typedef struct _KFS_NDA1_BLOCK{ // Node Descriptor Array level1 [1 block]
 	kfs_node_t nodes[64];
 } kfs_nda1_block_t;
 
 
 
-typedef struct _KFS_NDA2_BLOCK{
+typedef struct _KFS_NDA2_BLOCK{ // Node Descriptor Array level2 [2 blocks]
 	kfs_large_block_index_t block_index[2];
 	kfs_node_index_t node_index;
 	u8 bitmap3;
@@ -83,7 +104,7 @@ typedef struct _KFS_NDA2_BLOCK{
 
 
 
-typedef struct _KFS_NDA3_BLOCK{
+typedef struct _KFS_NDA3_BLOCK{ // Node Descriptor Array level3 [1 block]
 	kfs_large_block_index_t block_index;
 	kfs_node_index_t node_index;
 	kfs_large_block_index_t nda2[1022];
@@ -91,7 +112,7 @@ typedef struct _KFS_NDA3_BLOCK{
 
 
 
-typedef struct _KFS_BATC_BLOCK{
+typedef struct _KFS_BATC_BLOCK{ // Block Allocation Table [8 blocks]
 	kfs_large_block_index_t block_index;
 	kfs_large_block_index_t first_block_index;
 	u64 bitmap3;
@@ -101,7 +122,7 @@ typedef struct _KFS_BATC_BLOCK{
 
 
 
-typedef struct _KFS_ROOT_BLOCK{
+typedef struct _KFS_ROOT_BLOCK{ // Root [1 block]
 	u64 signature;
 	kfs_large_block_index_t block_count;
 	kfs_large_block_index_t batc_block_index;
@@ -112,7 +133,7 @@ typedef struct _KFS_ROOT_BLOCK{
 
 
 
-_Static_assert(sizeof(kfs_node_t)==64);
+_Static_assert(sizeof(kfs_nfda_block_t)==4096);
 _Static_assert(sizeof(kfs_nda1_block_t)==4096);
 _Static_assert(sizeof(kfs_nda2_block_t)==8192);
 _Static_assert(sizeof(kfs_nda3_block_t)==4096);
@@ -143,7 +164,7 @@ typedef struct _KFS_FS_NODE{
 
 
 static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
-	if (drive->read_write(drive->extra_data,(offset<<(12-drive->block_size_shift)),(void*)buffer,length<<(12-drive->block_size_shift))!=(length<<(12-drive->block_size_shift))){
+	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR("Error reading data from drive");
 	}
 }
@@ -151,7 +172,7 @@ static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void
 
 
 static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
-	if (drive->read_write(drive->extra_data,(offset<<(12-drive->block_size_shift))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-drive->block_size_shift))!=(length<<(12-drive->block_size_shift))){
+	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR("Error writing data to drive");
 	}
 }
@@ -210,7 +231,7 @@ static inline void _block_cache_flush_root(kfs_block_cache_t* block_cache){
 		return;
 	}
 	block_cache->flags&=~KFS_BLOCK_CACHE_ROOT_DIRTY;
-	if (block_cache->drive->read_write(block_cache->drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&(block_cache->root),sizeof(kfs_root_block_t)>>block_cache->drive->block_size_shift)!=(sizeof(kfs_root_block_t)>>block_cache->drive->block_size_shift)){
+	if (block_cache->drive->read_write(block_cache->drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR("Error writing data to drive");
 	}
 }
@@ -570,12 +591,28 @@ static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,
 
 
 static u64 _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+	// offset and count are aligned against fs->drive->block_size
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
+	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
+	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
+		return 0;
+	}
 	return 0;
 }
 
 
 
 static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+	// offset and count are aligned against fs->drive->block_size
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
+	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
+	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
+		return 0;
+	}
 	return 0;
 }
 
@@ -626,7 +663,7 @@ void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config
 	block_cache->flags=0;
 	block_cache->drive=drive;
 	INFO("Reading ROOT block...");
-	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>drive->block_size_shift)!=(sizeof(kfs_root_block_t)>>drive->block_size_shift)){
+	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR("Error reading ROOT block from drive");
 		return;
 	}
@@ -643,11 +680,11 @@ void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config
 
 _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	LOG("Formatting drive '%s' as KFS...",drive->model_number);
-	if (drive->block_size>4096){
-		WARN("KFS requires block_size to be less than or equal to 4096 bytes");
+	if (DRIVE_BLOCK_SIZE_SHIFT!=DRIVE_BLOCK_SIZE_SHIFT){
+		WARN("KFS requires block_size to be equal to %u bytes",1<<DRIVE_BLOCK_SIZE_SHIFT);
 		return 0;
 	}
-	u64 block_count=drive->block_count>>(12-drive->block_size_shift);
+	u64 block_count=drive->block_count>>(12-DRIVE_BLOCK_SIZE_SHIFT);
 	if (block_count>0xffffffff){
 		block_count=0xffffffff;
 	}
@@ -667,7 +704,7 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		root.nda3[i]=0;
 	}
 	INFO("Writing ROOT block...");
-	if (drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&root,sizeof(kfs_root_block_t)>>drive->block_size_shift)!=(sizeof(kfs_root_block_t)>>drive->block_size_shift)){
+	if (drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR("Error writing data to drive");
 		return 0;
 	}

@@ -86,4 +86,4 @@ _cleanup:
 
 
 
-DECLARE_COMMAND(cp,"cp <source_file> (<destination_directory> | <destination_file>)");
+DECLARE_COMMAND(cp,"cp <source> <destination>");
