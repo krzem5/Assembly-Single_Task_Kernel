@@ -581,7 +581,6 @@ static void _kfs_flush_cache(fs_file_system_t* fs){
 	_block_cache_flush_nda3(block_cache);
 	_block_cache_flush_batc(block_cache);
 	_block_cache_flush_root(block_cache);
-	return;
 }
 
 

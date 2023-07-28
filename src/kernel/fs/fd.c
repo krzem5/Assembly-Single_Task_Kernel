@@ -123,9 +123,32 @@ int fd_delete(fd_t fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	WARN("Unimplemented: fd_delete");
+	fd_data_t* data=_get_fd_data(fd);
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
+	if (!node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	if ((node->flags&FD_FLAG_DIRECTORY)&&fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+		return FD_ERROR_NOT_EMPTY;
+	}
+	fs_node_t* prev=fs_get_node_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
+	fs_node_t* next=fs_get_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
+	_Bool out=1;
+	if (prev){
+		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_PREV_SIBLING,next);
+	}
+	else{
+		out&=fs_set_node_relative(fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
+	}
+	if (next){
+		out&=fs_set_node_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
+	}
+	if (out){
+		out=fs_dealloc_node(node);
+	}
 	lock_release(&_fd_lock);
-	return -1;
+	return (out?0:FD_ERROR_NOT_EMPTY);
 }
 
 
