@@ -89,6 +89,10 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative);
 
 
 
+_Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other);
+
+
+
 fs_node_t* fs_get_node_child(fs_node_t* parent,const char* name,u8 name_length);
 
 

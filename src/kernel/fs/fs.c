@@ -221,14 +221,15 @@ _check_next_fs:
 			lock_release(&(fs->lock));
 			if (child){
 				fs_node_t* first_child=fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD);
-				lock_acquire(&(fs->lock));
-				child->parent=node->id;
+				_Bool out=fs_set_node_relative(child,FS_NODE_RELATIVE_PARENT,node);
 				if (first_child){
-					first_child->prev_sibling=child->id;
-					child->next_sibling=first_child->id;
+					out&=fs_set_node_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,child);
 				}
-				node->first_child=child->id;
-				lock_release(&(fs->lock));
+				out&=fs_set_node_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
+				out&=fs_set_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD,child);
+				if (!out){
+					return NULL;
+				}
 			}
 		}
 		node=child;
@@ -273,6 +274,46 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 		*id=(out?out->id:FS_NODE_ID_EMPTY);
 		lock_release(&(fs->lock));
 	}
+	return out;
+}
+
+
+
+_Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other){
+	if (!node){
+		return 0;
+	}
+	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	fs_node_id_t* id;
+	switch (relative){
+		case FS_NODE_RELATIVE_PARENT:
+			id=&(node->parent);
+			break;
+		case FS_NODE_RELATIVE_PREV_SIBLING:
+			id=&(node->prev_sibling);
+			break;
+		case FS_NODE_RELATIVE_NEXT_SIBLING:
+			id=&(node->next_sibling);
+			break;
+		case FS_NODE_RELATIVE_FIRST_CHILD:
+			if (node->type!=FS_NODE_TYPE_DIRECTORY){
+				return 0;
+			}
+			id=&(node->first_child);
+			break;
+		default:
+			return 0;
+	}
+	fs_node_id_t other_id=(other?other->id:FS_NODE_ID_EMPTY);
+	if (*id==other_id){
+		return 1;
+	}
+	lock_acquire(&(fs->lock));
+	_Bool out=fs->config->set_relative(fs,node,relative,other);
+	if (out){
+		*id=other_id;
+	}
+	lock_release(&(fs->lock));
 	return out;
 }
 
