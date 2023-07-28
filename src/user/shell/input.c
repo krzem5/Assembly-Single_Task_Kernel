@@ -169,7 +169,7 @@ static void _insert_char(char c){
 	}
 	else{
 		for (u32 i=entry->length;i>_input_cursor;i--){
-			entry->data[i+1]=entry->data[i];
+			entry->data[i]=entry->data[i-1];
 		}
 		entry->data[_input_cursor]=c;
 		_input_cursor++;
@@ -236,11 +236,13 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 			_input_cursor--;
 			if (inside_identifier){
 				if (!IS_IDENTIFIER(entry->data[_input_cursor])){
+					_input_cursor++;
 					break;
 				}
 			}
 			else{
 				if (IS_WHITESPACE(entry->data[_input_cursor])){
+					_input_cursor++;
 					break;
 				}
 			}
