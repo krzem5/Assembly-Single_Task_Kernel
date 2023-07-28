@@ -336,6 +336,7 @@ _nda2_found:
 
 
 static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
+	out->header.type=((node->flags&KFS_NODE_FLAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
 	out->header.parent=(node->parent==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->header.next_sibling=(node->next_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
@@ -555,7 +556,14 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 
 
 static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
-	return 0;
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
+	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
+	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
+		return 0;
+	}
+	return (kfs_node->data.file.data_block_count<<12)-kfs_node->file_data_padding;
 }
 
 
