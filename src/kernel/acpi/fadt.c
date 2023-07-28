@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/fs/fs.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -82,6 +83,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 
 void acpi_fadt_shutdown(_Bool restart){
+	fs_flush_cache();
 	if (restart){
 		_acpi_fadt_reboot();
 	}

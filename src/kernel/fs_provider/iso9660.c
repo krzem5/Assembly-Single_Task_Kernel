@@ -192,6 +192,12 @@ static u64 _iso9660_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 
 
+static void _iso9660_flush_cache(fs_file_system_t* fs){
+	return;
+}
+
+
+
 static const fs_file_system_config_t _iso9660_fs_config={
 	sizeof(iso9660_fs_node_t),
 	_iso9660_create,
@@ -199,7 +205,8 @@ static const fs_file_system_config_t _iso9660_fs_config={
 	_iso9660_set_relative,
 	_iso9660_read,
 	_iso9660_write,
-	_iso9660_get_size
+	_iso9660_get_size,
+	_iso9660_flush_cache
 };
 
 

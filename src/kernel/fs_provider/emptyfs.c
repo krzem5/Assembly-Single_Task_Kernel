@@ -42,6 +42,12 @@ static u64 _emptyfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 
 
+static void _emptyfs_flush_cache(fs_file_system_t* fs){
+	return;
+}
+
+
+
 static const fs_file_system_config_t _emptyfs_fs_config={
 	sizeof(fs_node_t),
 	_emptyfs_create,
@@ -49,7 +55,8 @@ static const fs_file_system_config_t _emptyfs_fs_config={
 	_emptyfs_set_relative,
 	_emptyfs_read,
 	_emptyfs_write,
-	_emptyfs_get_size
+	_emptyfs_get_size,
+	_emptyfs_flush_cache
 };
 
 

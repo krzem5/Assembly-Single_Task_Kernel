@@ -168,7 +168,6 @@ static inline void _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA1_DIRTY)){
 		return;
 	}
-	WARN("Flush NDA1 => %u",block_cache->nda1_block_index);
 	block_cache->flags&=~KFS_BLOCK_CACHE_NDA1_DIRTY;
 	_drive_write(block_cache->drive,block_cache->nda1_block_index,&(block_cache->nda1),1);
 }
@@ -179,7 +178,6 @@ static inline void _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_DIRTY)){
 		return;
 	}
-	WARN("Flush NDA2");
 	block_cache->flags&=~KFS_BLOCK_CACHE_NDA2_DIRTY;
 	_drive_write(block_cache->drive,block_cache->nda2.block_index[0],&(block_cache->nda2),1);
 	_drive_write(block_cache->drive,block_cache->nda2.block_index[1],_nda2_block_get_high_part(&(block_cache->nda2)),1);
@@ -191,7 +189,6 @@ static inline void _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA3_DIRTY)){
 		return;
 	}
-	WARN("Flush NDA3");
 	block_cache->flags&=~KFS_BLOCK_CACHE_NDA3_DIRTY;
 	_drive_write(block_cache->drive,block_cache->nda3.block_index,&(block_cache->nda3),1);
 }
@@ -202,7 +199,6 @@ static inline void _block_cache_flush_batc(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_BATC_DIRTY)){
 		return;
 	}
-	WARN("Flush BATC");
 	block_cache->flags&=~KFS_BLOCK_CACHE_BATC_DIRTY;
 	_drive_write(block_cache->drive,block_cache->batc.block_index,&(block_cache->batc),8);
 }
@@ -213,7 +209,6 @@ static inline void _block_cache_flush_root(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_ROOT_DIRTY)){
 		return;
 	}
-	WARN("Flush ROOT");
 	block_cache->flags&=~KFS_BLOCK_CACHE_ROOT_DIRTY;
 	if (block_cache->drive->read_write(block_cache->drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&(block_cache->root),sizeof(kfs_root_block_t)>>block_cache->drive->block_size_shift)!=(sizeof(kfs_root_block_t)>>block_cache->drive->block_size_shift)){
 		ERROR("Error writing data to drive");
@@ -542,11 +537,6 @@ static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,
 		default:
 			return 0;
 	}
-	_block_cache_flush_nda1(block_cache);
-	_block_cache_flush_nda2(block_cache);
-	_block_cache_flush_nda3(block_cache);
-	_block_cache_flush_batc(block_cache);
-	_block_cache_flush_root(block_cache);
 	return 1;
 }
 
@@ -570,6 +560,18 @@ static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 
 
+static void _kfs_flush_cache(fs_file_system_t* fs){
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	_block_cache_flush_nda1(block_cache);
+	_block_cache_flush_nda2(block_cache);
+	_block_cache_flush_nda3(block_cache);
+	_block_cache_flush_batc(block_cache);
+	_block_cache_flush_root(block_cache);
+	return;
+}
+
+
+
 static const fs_file_system_config_t _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	_kfs_create,
@@ -577,7 +579,8 @@ static const fs_file_system_config_t _kfs_fs_config={
 	_kfs_set_relative,
 	_kfs_read,
 	_kfs_write,
-	_kfs_get_size
+	_kfs_get_size,
+	_kfs_flush_cache
 };
 
 

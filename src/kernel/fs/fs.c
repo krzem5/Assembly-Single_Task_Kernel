@@ -414,3 +414,15 @@ u64 fs_get_size(fs_node_t* node){
 	lock_release(&(fs->lock));
 	return out;
 }
+
+
+
+void fs_flush_cache(void){
+	LOG("Flushing file system cache...");
+	for (u8 i=0;i<_fs_file_system_count;i++){
+		fs_file_system_t* fs=_fs_file_systems+i;
+		lock_acquire(&(fs->lock));
+		fs->config->flush_cache(fs);
+		lock_release(&(fs->lock));
+	}
+}

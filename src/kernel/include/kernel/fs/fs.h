@@ -30,6 +30,7 @@ typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u64 (*read)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,u8*,u64);
 	u64 (*write)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,const u8*,u64);
 	u64 (*get_size)(struct _FS_FILE_SYSTEM*,fs_node_t*);
+	void (*flush_cache)(struct _FS_FILE_SYSTEM*);
 } fs_file_system_config_t;
 
 
@@ -106,6 +107,10 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count);
 
 
 u64 fs_get_size(fs_node_t* node);
+
+
+
+void fs_flush_cache(void);
 
 
 
