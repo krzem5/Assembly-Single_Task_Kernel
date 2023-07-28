@@ -3,6 +3,7 @@
 #include <string.h>
 #include <user/fs.h>
 #include <user/io.h>
+#include <user/types.h>
 
 
 
@@ -60,4 +61,4 @@ void rm_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(rm,"rm <drive>");
+DECLARE_COMMAND(rm,"rm [-r] <file>");

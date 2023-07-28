@@ -2,6 +2,7 @@
 #include <cwd.h>
 #include <user/fs.h>
 #include <user/io.h>
+#include <user/types.h>
 
 
 

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <user/drive.h>
 #include <user/io.h>
+#include <user/types.h>
 
 
 
