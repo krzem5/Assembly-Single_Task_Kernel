@@ -246,6 +246,9 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative){
 	fs_node_id_t* id;
 	switch (relative){
 		case FS_NODE_RELATIVE_PARENT:
+			if (node->flags&FS_NODE_FLAG_ROOT){
+				return node;
+			}
 			id=&(node->parent);
 			break;
 		case FS_NODE_RELATIVE_PREV_SIBLING:
