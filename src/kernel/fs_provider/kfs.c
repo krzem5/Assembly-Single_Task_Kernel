@@ -106,8 +106,8 @@ typedef struct _KFS_ROOT_BLOCK{
 	kfs_large_block_index_t block_count;
 	kfs_large_block_index_t batc_block_index;
 	kfs_large_block_index_t batc_block_count;
-	kfs_large_block_index_t nda3[64];
-	u8 _padding[3820];
+	kfs_large_block_index_t nda3[128];
+	u8 _padding[3564];
 } kfs_root_block_t;
 
 
@@ -398,7 +398,7 @@ _nda2_empty:
 	_block_cache_flush_nda3(block_cache);
 _nda3_empty:
 	u8 free_nda3_index=0xff;
-	for (u8 i=0;i<64;i++){
+	for (u8 i=0;i<128;i++){
 		kfs_large_block_index_t nda3_block_index=block_cache->root.nda3[i];
 		if (!nda3_block_index){
 			if (free_nda3_index==0xff){
@@ -637,7 +637,7 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT,
 		first_free_block_index
 	};
-	for (u16 i=0;i<64;i++){
+	for (u16 i=0;i<128;i++){
 		root.nda3[i]=0;
 	}
 	INFO("Writing ROOT block...");

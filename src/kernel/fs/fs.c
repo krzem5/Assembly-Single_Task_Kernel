@@ -188,6 +188,9 @@ _check_next_fs:
 		ERROR("No root provided");
 		return NULL;
 	}
+	const char* name=path;
+	u8 name_length=0;
+	fs_node_t* node_parent=root;
 	fs_node_t* node=root;
 	while (path[0]){
 		if (path[0]=='/'){
@@ -212,29 +215,30 @@ _check_next_fs:
 			}
 			continue;
 		}
-		fs_node_t* child=fs_get_node_child(node,path,i);
+		name=path;
+		name_length=i;
+		node_parent=node;
+		node=fs_get_node_child(node,path,i);
 		path+=i;
-		if (!path[0]&&!child&&type!=FS_NODE_TYPE_INVALID){
-			fs_file_system_t* fs=_fs_file_systems+node->fs_index;
-			lock_release(&(fs->lock));
-			child=fs->config->create(fs,type==FS_NODE_TYPE_DIRECTORY,path-i,i);
-			lock_release(&(fs->lock));
-			if (child){
-				fs_node_t* first_child=fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD);
-				_Bool out=fs_set_node_relative(child,FS_NODE_RELATIVE_PARENT,node);
-				if (first_child){
-					out&=fs_set_node_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,child);
-				}
-				out&=fs_set_node_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
-				out&=fs_set_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD,child);
-				if (!out){
-					return NULL;
-				}
-			}
-		}
-		node=child;
 	}
-	return node;
+	if (node||type==FS_NODE_TYPE_INVALID||!name_length){
+		return node;
+	}
+	fs_file_system_t* fs=_fs_file_systems+node_parent->fs_index;
+	lock_release(&(fs->lock));
+	node=fs->config->create(fs,type==FS_NODE_TYPE_DIRECTORY,name,name_length);
+	lock_release(&(fs->lock));
+	if (!node){
+		return NULL;
+	}
+	fs_node_t* first_child=fs_get_node_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD);
+	_Bool out=fs_set_node_relative(node,FS_NODE_RELATIVE_PARENT,node_parent);
+	if (first_child){
+		out&=fs_set_node_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,node);
+	}
+	out&=fs_set_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
+	out&=fs_set_node_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD,node);
+	return (out?node:NULL);
 }
 
 
