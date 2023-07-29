@@ -88,7 +88,7 @@ def _load_short_file_name_mapping(file_path):
 			if (len(line[1])>SHORT_FILE_NAME_LENGTH):
 				print(f"Short name '{line[1]}' for file '{line[0]}' is too long")
 				sys.exit(1)
-			out[line[0]]=(line[1].ljust(SHORT_FILE_NAME_LENGTH," "),(line[2]=="CORE" if len(line)>2 else False))
+			out[line[0]]=(line[1].ljust(SHORT_FILE_NAME_LENGTH," "))
 	return out
 
 
@@ -211,8 +211,8 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (suffix not in SOURCE_FILE_SUFFIXES):
 			continue
 		file=os.path.join(root,file_name)
-		short_file_name,is_core_file=short_file_name_mapping[file]
-		object_file=f"build/objects/{file.replace('/','#')}"+(".core" if is_core_file else "")+".o"
+		short_file_name=short_file_name_mapping[file]
+		object_file=f"build/objects/{file.replace('/','#')}.o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".d")):
 			continue
