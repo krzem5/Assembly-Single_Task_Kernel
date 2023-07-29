@@ -57,7 +57,7 @@ void hexdump_main(int argc,const char*const* argv){
 				i=0;
 				putchar('\n');
 			}
-			else{
+			else if (i){
 				putchar(' ');
 			}
 			i++;

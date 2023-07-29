@@ -677,16 +677,28 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR_CORE("Block read");
-		return 0;
-		out+=1<<DRIVE_BLOCK_SIZE_SHIFT;
-		buffer+=1<<DRIVE_BLOCK_SIZE_SHIFT;
-		count-=1<<DRIVE_BLOCK_SIZE_SHIFT;
+		if (offset>=block_cache->nfda.ranges[range_index].block_count){
+			offset=0;
+			range_index++;
+			if (range_index==510){
+				ERROR_CORE("Unimplemented: load next NFDA block");
+				return 0;
+			}
+		}
+		u32 transfer_size=block_cache->nfda.ranges[range_index].block_count-offset;
+		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){
+			transfer_size=count>>DRIVE_BLOCK_SIZE_SHIFT;
+		}
+		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,(void*)buffer,transfer_size);
+		out+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		buffer+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		count-=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		offset+=transfer_size;
 	}
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
-			ERROR_CORE("Error writing data to drive");
+			ERROR_CORE("Error reading data from drive");
 			return 0;
 		}
 		memcpy(buffer,chunk,count);
@@ -707,6 +719,9 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 	}
 	if (offset+count>kfs_node->data.file.length){
 		u64 overflow=((offset+count+4095)>>12)-((kfs_node->data.file.length+4095)>>12);
+		if (!overflow){
+			goto _skip_nfda_resize;
+		}
 		if (!(kfs_node->data.file.nfda_tail)){
 			kfs_node->data.file.nfda_head=_block_cache_alloc_block(block_cache);
 			kfs_node->data.file.nfda_tail=kfs_node->data.file.nfda_head;
@@ -741,6 +756,7 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		u8 zero_buffer[4096];
 		memset(zero_buffer,0,4096);
 		_drive_write(block_cache->drive,new_block_index,zero_buffer,1);
+_skip_nfda_resize:
 		kfs_node->data.file.length=offset+count;
 	}
 	u64 range_index_and_offset=_get_nfda_and_range_index(block_cache,kfs_node,offset);
@@ -753,6 +769,7 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		if (extra>count){
 			extra=count;
 		}
+		WARN("extra: %u %u",offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1),extra);
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
 			ERROR("Error reading data from drive");
@@ -766,9 +783,10 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		out+=extra;
 		buffer+=extra;
 		count-=extra;
-		offset+=(1<<(DRIVE_BLOCK_SIZE_SHIFT+1))-1;
+		offset+=(1<<DRIVE_BLOCK_SIZE_SHIFT)-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
+	WARN("%u %u %u",offset,count,out);
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
 		if (offset>=block_cache->nfda.ranges[range_index].block_count){
 			offset=0;
@@ -778,12 +796,16 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 				return 0;
 			}
 		}
-		ERROR("Block write");
-		return 0;
-		out+=1<<DRIVE_BLOCK_SIZE_SHIFT;
-		buffer+=1<<DRIVE_BLOCK_SIZE_SHIFT;
-		count-=1<<DRIVE_BLOCK_SIZE_SHIFT;
-		offset++;// or more if the range allows for it
+		u32 transfer_size=block_cache->nfda.ranges[range_index].block_count-offset;
+		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){
+			transfer_size=count>>DRIVE_BLOCK_SIZE_SHIFT;
+		}
+		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+offset)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,transfer_size);
+		ERROR("Block write [%u]",transfer_size);
+		out+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		buffer+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		count-=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
+		offset+=transfer_size;
 	}
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
