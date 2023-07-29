@@ -719,12 +719,10 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		while (range_index<510&&block_cache->nfda.ranges[range_index+1].block_index){
 			range_index++;
 		}
-		u8 zero_buffer[4096];
-		memset(zero_buffer,0,4096);
-		while (overflow){
+		kfs_large_block_index_t new_block_index;
+		do{
 			overflow--;
-			kfs_large_block_index_t new_block_index=_block_cache_alloc_block(block_cache);
-			_drive_write(block_cache->drive,new_block_index,zero_buffer,1);
+			new_block_index=_block_cache_alloc_block(block_cache);
 			if (new_block_index==block_cache->nfda.ranges[range_index].block_index+block_cache->nfda.ranges[range_index].block_count){
 				block_cache->nfda.ranges[range_index].block_count++;
 			}
@@ -739,7 +737,10 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 			}
 			block_cache->nfda.data_length++;
 			block_cache->flags|=KFS_BLOCK_CACHE_NFDA_DIRTY;
-		}
+		} while (overflow);
+		u8 zero_buffer[4096];
+		memset(zero_buffer,0,4096);
+		_drive_write(block_cache->drive,new_block_index,zero_buffer,1);
 		kfs_node->data.file.length=offset+count;
 	}
 	u64 range_index_and_offset=_get_nfda_and_range_index(block_cache,kfs_node,offset);
