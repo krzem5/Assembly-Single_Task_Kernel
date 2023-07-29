@@ -97,21 +97,21 @@ static u64* KERNEL_CORE_CODE _get_child_table(u64* table,u64 index,_Bool allocat
 
 
 void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
-	LOG("Initializing virtual memory manager...");
+	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc(1);
 	lock_init(&(vmm_kernel_pagemap.lock));
 	vmm_user_pagemap.toplevel=0;
 	lock_init(&(vmm_user_pagemap.lock));
-	INFO("Kernel top-level page map alloated at %p",vmm_kernel_pagemap.toplevel);
+	INFO_CORE("Kernel top-level page map alloated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
 	u64 kernel_length=pmm_align_up_address(kernel_get_end());
-	INFO("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
+	INFO_CORE("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
 	for (u64 i=0;i<kernel_length;i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
-	INFO("Mapping %v from %p to %p",0x100000000-PAGE_SIZE,PAGE_SIZE,PAGE_SIZE+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	INFO_CORE("Mapping %v from %p to %p",0x100000000-PAGE_SIZE,PAGE_SIZE,PAGE_SIZE+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u64 i=PAGE_SIZE;i<0x100000000;i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
@@ -127,7 +127,7 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 		if (address<0x100000000){
 			address=0x100000000;
 		}
-		INFO("Mapping %v from %p to %p",end-address,address,address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		INFO_CORE("Mapping %v from %p to %p",end-address,address,address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		for (;address<end;address+=PAGE_SIZE){
 			vmm_map_page(&vmm_kernel_pagemap,address,address+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		}
@@ -157,7 +157,7 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
 	if (pmm_align_down_address(physical_address)!=physical_address||pmm_align_down_address(virtual_address)!=virtual_address){
-		ERROR("Invalid vmm_map_page arguments");
+		ERROR_CORE("Invalid vmm_map_page arguments");
 		for (;;);
 	}
 	lock_acquire(&(pagemap->lock));

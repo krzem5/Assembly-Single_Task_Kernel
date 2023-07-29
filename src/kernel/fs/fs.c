@@ -21,7 +21,7 @@ static u8 KERNEL_CORE_DATA _fs_root_file_systems_index;
 static fs_node_t* KERNEL_CORE_CODE _alloc_node(fs_file_system_t* fs,const char* name,u8 name_length){
 	if (name_length>64){
 		name_length=64;
-		ERROR("fs_node_t.name_length too large");
+		ERROR_CORE("fs_node_t.name_length too large");
 	}
 	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
 	out->type=FS_NODE_TYPE_FILE;
@@ -42,7 +42,7 @@ static fs_node_t* KERNEL_CORE_CODE _alloc_node(fs_file_system_t* fs,const char* 
 
 
 void KERNEL_CORE_CODE fs_init(void){
-	LOG("Initializing file system...");
+	LOG_CORE("Initializing file system...");
 	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT));
 	_fs_file_system_count=0;
 	_fs_root_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
@@ -52,7 +52,7 @@ void KERNEL_CORE_CODE fs_init(void){
 
 void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
 	if (_fs_file_system_count>=FS_MAX_FILE_SYSTEMS){
-		ERROR("Too many file systems!");
+		ERROR_CORE("Too many file systems!");
 		return NULL;
 	}
 	fs_file_system_t* fs=_fs_file_systems+_fs_file_system_count;
@@ -94,7 +94,7 @@ void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_parti
 	fs->drive=drive;
 	fs->extra_data=extra_data;
 	fs_node_allocator_init(_fs_file_system_count-1,config->node_size,&(fs->allocator));
-	LOG("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
+	LOG_CORE("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=_alloc_node(fs,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
 	fs->root->flags|=FS_NODE_FLAG_ROOT;
@@ -126,7 +126,7 @@ u8 fs_get_boot_file_system(void){
 
 void KERNEL_CORE_CODE fs_set_boot_file_system(u8 fs_index){
 	if (_fs_root_file_systems_index!=FS_INVALID_FILE_SYSTEM_INDEX){
-		WARN("fs_set_boot_file_system called more than once");
+		WARN_CORE("fs_set_boot_file_system called more than once");
 		return;
 	}
 	_fs_root_file_systems_index=fs_index;
@@ -166,7 +166,7 @@ fs_node_t* fs_get_node_by_id(fs_node_id_t id){
 fs_node_t* KERNEL_CORE_CODE fs_get_node(fs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
 		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){
-			ERROR("Root file system not located yet; partition must be specified");
+			ERROR_CORE("Root file system not located yet; partition must be specified");
 			return NULL;
 		}
 		root=(_fs_file_systems+_fs_root_file_systems_index)->root;
@@ -194,14 +194,14 @@ _check_next_fs:
 				fs++;
 			}
 			if (!root){
-				ERROR("Partition not found");
+				ERROR_CORE("Partition not found");
 				return NULL;
 			}
 			path+=partition_name_length+1;
 		}
 	}
 	if (!root){
-		ERROR("No root provided");
+		ERROR_CORE("No root provided");
 		return NULL;
 	}
 	const char* name=path;
@@ -374,7 +374,7 @@ u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
-			ERROR("Unimplemented");
+			ERROR_CORE("Unimplemented");
 			return 0;
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset-extra,chunk,fs->drive->block_size);
@@ -397,7 +397,7 @@ u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
-			ERROR("Unimplemented");
+			ERROR_CORE("Unimplemented");
 			return 0;
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset+count-extra,chunk,fs->drive->block_size);

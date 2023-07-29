@@ -46,7 +46,7 @@ static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
 			return;
 		}
 		if (block_index==16){
-			INFO("Detected drive format of '%s' as ISO 9660",drive->model_number);
+			INFO_CORE("Detected drive format of '%s' as ISO 9660",drive->model_number);
 		}
 		switch (volume_descriptor->type){
 			case 0:
@@ -70,7 +70,7 @@ static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
 _load_next_block:
 		block_index++;
 		if (partition_index==255){
-			WARN("Too many ISO 9660 partitions");
+			WARN_CORE("Too many ISO 9660 partitions");
 			break;
 		}
 		partition_index++;
@@ -93,7 +93,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 	if (kfs_root_block->signature!=KFS_SIGNATURE){
 		return;
 	}
-	INFO("Detected drive format of '%s' as KFS",drive->model_number);
+	INFO_CORE("Detected drive format of '%s' as KFS",drive->model_number);
 	const fs_partition_config_t partition_config={
 		FS_PARTITION_TYPE_KFS,
 		0,
@@ -106,7 +106,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 void KERNEL_CORE_CODE fs_partition_load_from_drive(drive_t* drive){
-	LOG("Loading partitions from drive '%s'...",drive->model_number);
+	LOG_CORE("Loading partitions from drive '%s'...",drive->model_number);
 	_load_iso9660(drive);
 	_load_kfs(drive);
 	const fs_partition_config_t partition_config={

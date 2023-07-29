@@ -13,12 +13,24 @@
 #define FLAG_HEX 16
 #define MASK_SIZE (FLAG_SHORT_SHORT|FLAG_SHORT|FLAG_LONG)
 
+#define LOWEST_FORMAT 'c'
+#define HIGHEST_FORMAT 'x'
+
 
 
 typedef struct _BUFFER_STATE{
 	char buffer[BUFFER_SIZE];
 	u32 offset;
 } buffer_state_t;
+
+
+
+typedef void (*print_format_t)(__builtin_va_list,u8,buffer_state_t*);
+
+
+
+static KERNEL_CORE_RDATA const char _print_null_str[]="(null)";
+static KERNEL_CORE_RDATA const char _print_base16_chars[]="0123456789abcdef";
 
 
 
@@ -32,8 +44,7 @@ static inline void KERNEL_CORE_CODE _buffer_state_add(buffer_state_t* buffer_sta
 
 
 static inline char KERNEL_CORE_CODE _format_base16_char(u8 value){
-	value&=15;
-	return value+(value<10?48:87);
+	return _print_base16_chars[value&15];
 }
 
 
@@ -90,6 +101,121 @@ static void KERNEL_CORE_CODE _print_int(__builtin_va_list va,u8 flags,buffer_sta
 
 
 
+static void KERNEL_CORE_CODE _print_format_char(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	_buffer_state_add(out,__builtin_va_arg(va,int));
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_string(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	const char* ptr=__builtin_va_arg(va,const char*);
+	if (!ptr){
+		ptr=_print_null_str;
+	}
+	while (*ptr){
+		_buffer_state_add(out,*ptr);
+		ptr++;
+	}
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_decimal(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	_print_int(va,flags|FLAG_SIGN,out);
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_unsigned(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	_print_int(va,flags,out);
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_hexadecimal(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	_print_int(va,flags|FLAG_HEX,out);
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_volume(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	u64 size=__builtin_va_arg(va,u64);
+	if (!size){
+		_buffer_state_add(out,'0');
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x400){
+		_print_int_base10(size,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x100000){
+		_print_int_base10((size+0x200)>>10,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'K');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x40000000){
+		_print_int_base10((size+0x80000)>>20,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'M');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x10000000000ull){
+		_print_int_base10((size+0x20000000)>>30,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'G');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x4000000000000ull){
+		_print_int_base10((size+0x8000000000ull)>>40,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'T');
+		_buffer_state_add(out,'B');
+	}
+	else if (size<0x1000000000000000ull){
+		_print_int_base10((size+0x2000000000000ull)>>50,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'P');
+		_buffer_state_add(out,'B');
+	}
+	else{
+		_print_int_base10((size+0x800000000000000ull)>>60,out);
+		_buffer_state_add(out,' ');
+		_buffer_state_add(out,'E');
+		_buffer_state_add(out,'B');
+	}
+}
+
+
+
+static void KERNEL_CORE_CODE _print_format_pointer(__builtin_va_list va,u8 flags,buffer_state_t* out){
+	u64 address=__builtin_va_arg(va,u64);
+	u32 shift=64;
+	while (shift){
+		if (shift==32){
+			_buffer_state_add(out,'_');
+		}
+		shift-=4;
+		_buffer_state_add(out,_format_base16_char(address>>shift));
+	}
+}
+
+
+
+static KERNEL_CORE_RDATA const print_format_t _print_formats[HIGHEST_FORMAT-LOWEST_FORMAT+1]={
+	['c'-LOWEST_FORMAT]=_print_format_char,
+	['s'-LOWEST_FORMAT]=_print_format_string,
+	['d'-LOWEST_FORMAT]=_print_format_decimal,
+	['u'-LOWEST_FORMAT]=_print_format_unsigned,
+	['x'-LOWEST_FORMAT]=_print_format_hexadecimal,
+	['v'-LOWEST_FORMAT]=_print_format_volume,
+	['p'-LOWEST_FORMAT]=_print_format_pointer
+};
+
+
+
 void KERNEL_CORE_CODE print(const char* template,...){
 	buffer_state_t out={
 		.offset=0
@@ -122,87 +248,8 @@ void KERNEL_CORE_CODE print(const char* template,...){
 				break;
 			}
 		}
-		if (*template=='c'){
-			_buffer_state_add(&out,__builtin_va_arg(va,int));
-		}
-		else if (*template=='s'){
-			const char* ptr=__builtin_va_arg(va,const char*);
-			if (!ptr){
-				ptr="(null)";
-			}
-			while (*ptr){
-				_buffer_state_add(&out,*ptr);
-				ptr++;
-			}
-		}
-		else if (*template=='d'){
-			_print_int(va,flags|FLAG_SIGN,&out);
-		}
-		else if (*template=='u'){
-			_print_int(va,flags,&out);
-		}
-		else if (*template=='x'){
-			_print_int(va,flags|FLAG_HEX,&out);
-		}
-		else if (*template=='v'){
-			u64 size=__builtin_va_arg(va,u64);
-			if (!size){
-				_buffer_state_add(&out,'0');
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x400){
-				_print_int_base10(size,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x100000){
-				_print_int_base10((size+0x200)>>10,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'K');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x40000000){
-				_print_int_base10((size+0x80000)>>20,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'M');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x10000000000ull){
-				_print_int_base10((size+0x20000000)>>30,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'G');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x4000000000000ull){
-				_print_int_base10((size+0x8000000000ull)>>40,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'T');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x1000000000000000ull){
-				_print_int_base10((size+0x2000000000000ull)>>50,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'P');
-				_buffer_state_add(&out,'B');
-			}
-			else{
-				_print_int_base10((size+0x800000000000000ull)>>60,&out);
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'E');
-				_buffer_state_add(&out,'B');
-			}
-		}
-		else if (*template=='p'){
-			u64 address=__builtin_va_arg(va,u64);
-			u32 shift=64;
-			while (shift){
-				if (shift==32){
-					_buffer_state_add(&out,'_');
-				}
-				shift-=4;
-				_buffer_state_add(&out,_format_base16_char(address>>shift));
-			}
+		if (*template>=LOWEST_FORMAT&&*template<=HIGHEST_FORMAT&&_print_formats[(u8)(*template)-LOWEST_FORMAT]){
+			_print_formats[(u8)(*template)-LOWEST_FORMAT](va,flags,&out);
 		}
 		else{
 			_buffer_state_add(&out,*template);

@@ -10,7 +10,17 @@
 #define WARN(template,...) _LOG("\x1b[38;2;231;211;72m",template,##__VA_ARGS__)
 #define ERROR(template,...) _LOG("\x1b[1m\x1b[38;2;231;72;86m",template,##__VA_ARGS__)
 
+#define INFO_CORE(template,...) _LOG_CORE("\x1b[38;2;182;182;182m",template,##__VA_ARGS__)
+#define LOG_CORE(template,...) _LOG_CORE("\x1b[1m\x1b[38;2;242;242;242m",template,##__VA_ARGS__)
+#define WARN_CORE(template,...) _LOG_CORE("\x1b[38;2;231;211;72m",template,##__VA_ARGS__)
+#define ERROR_CORE(template,...) _LOG_CORE("\x1b[1m\x1b[38;2;231;72;86m",template,##__VA_ARGS__)
+
 #define _LOG(color,template,...) print("\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n",##__VA_ARGS__)
+#define _LOG_CORE(color,template,...) \
+	do{ \
+		static KERNEL_CORE_RDATA const char _log[]="\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n"; \
+		print(_log,##__VA_ARGS__); \
+	} while (0)
 
 
 

@@ -98,7 +98,7 @@ static fs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(fs_file_system_t* fs,fs
 				continue; // required to break out of the loop after the last directory entry
 			}
 			if (directory->length>buffer_space){
-				WARN("Unimplemented (directory entry crosses sector boundary)");
+				WARN_CORE("Unimplemented (directory entry crosses sector boundary)");
 				return NULL;
 			}
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
@@ -115,7 +115,7 @@ _skip_directory_entry:
 		return NULL;
 	}
 	if (relative==FS_NODE_RELATIVE_PARENT){
-		ERROR("Unimplemented (_iso9660_get_relative/FS_NODE_RELATIVE_PARENT)");
+		ERROR_CORE("Unimplemented (_iso9660_get_relative/FS_NODE_RELATIVE_PARENT)");
 		return NULL;
 	}
 	fs_node_t* parent=fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT);
@@ -146,7 +146,7 @@ _skip_directory_entry:
 				continue; // required to break out of the loop after the last directory entry
 			}
 			if (directory->length>buffer_space){
-				WARN("Unimplemented (directory entry crosses sector boundary)");
+				WARN_CORE("Unimplemented (directory entry crosses sector boundary)");
 				return NULL;
 			}
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
@@ -162,7 +162,7 @@ _skip_directory_entry2:
 		}
 		return NULL;
 	}
-	ERROR("Unimplemented (_iso9660_get_relative/FS_NODE_RELATIVE_PREV_SIBLING)");
+	ERROR_CORE("Unimplemented (_iso9660_get_relative/FS_NODE_RELATIVE_PREV_SIBLING)");
 	return NULL;
 }
 
@@ -219,10 +219,10 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
 
 
 void KERNEL_CORE_CODE iso9660_load(const drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length){
-	LOG("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
-	INFO("Root block offset: %u, Root block length: %u",block_index,data_length);
+	LOG_CORE("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
+	INFO_CORE("Root block offset: %u, Root block length: %u",block_index,data_length);
 	if (drive->block_size_shift!=11){
-		WARN("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
+		WARN_CORE("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
 	}
 	iso9660_fs_node_t* root=fs_create_file_system(drive,partition_config,&_iso9660_fs_config,NULL);
 	root->parent_offset=0xffffffffffffffffull;

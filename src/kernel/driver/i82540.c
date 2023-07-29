@@ -71,6 +71,8 @@
 
 
 
+static KERNEL_CORE_RDATA const char _i82540_device_name[]="i82540";
+
 static i82540_device_t KERNEL_CORE_DATA _i82540_devices[MAX_DEVICE_COUNT];
 static u32 KERNEL_CORE_DATA _i82540_device_count;
 
@@ -139,7 +141,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
 	}
-	LOG("Attached i82540 driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG_CORE("Attached i82540 driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	pci_device_enable_bus_mastering(device);
 	pci_device_enable_memory_access(device);
 	pci_bar_t pci_bar;
@@ -147,7 +149,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 		return;
 	}
 	if (_i82540_device_count>=MAX_DEVICE_COUNT){
-		ERROR("Too many i82540 devices");
+		ERROR_CORE("Too many i82540 devices");
 		return;
 	}
 	i82540_device_t* i82540_device=_i82540_devices+_i82540_device_count;
@@ -168,7 +170,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_CTRL]|=CTRL_SLU;
 	for (u64 i=0;!(i82540_device->mmio[REG_STATUS]&2);i++){
 		if (i==0xffffff){
-			WARN("Unable to establish ethernet link");
+			WARN_CORE("Unable to establish ethernet link");
 			return;
 		}
 	}
@@ -199,7 +201,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	u32 rah=i82540_device->mmio[REG_RAH0];
 	u32 ral=i82540_device->mmio[REG_RAL0];
 	network_layer1_device_t layer1_device={
-		"i82540",
+		_i82540_device_name,
 		{ral,ral>>8,ral>>16,ral>>24,rah,rah>>8},
 		_i82540_tx,
 		_i82540_rx,

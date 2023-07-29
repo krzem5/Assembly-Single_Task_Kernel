@@ -165,7 +165,7 @@ typedef struct _KFS_FS_NODE{
 
 static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
-		ERROR("Error reading data from drive");
+		ERROR_CORE("Error reading data from drive");
 	}
 }
 
@@ -173,7 +173,7 @@ static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_in
 
 static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
-		ERROR("Error writing data to drive");
+		ERROR_CORE("Error writing data to drive");
 	}
 }
 
@@ -232,7 +232,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cache_t* b
 	}
 	block_cache->flags&=~KFS_BLOCK_CACHE_ROOT_DIRTY;
 	if (block_cache->drive->read_write(block_cache->drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR("Error writing data to drive");
+		ERROR_CORE("Error writing data to drive");
 	}
 }
 
@@ -657,14 +657,14 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 
 
 void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
-	LOG("Loading KFS file system from drive '%s'...",drive->model_number);
-	INFO("Allocating block cache...");
+	LOG_CORE("Loading KFS file system from drive '%s'...",drive->model_number);
+	INFO_CORE("Allocating block cache...");
 	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
 	block_cache->flags=0;
 	block_cache->drive=drive;
-	INFO("Reading ROOT block...");
+	INFO_CORE("Reading ROOT block...");
 	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR("Error reading ROOT block from drive");
+		ERROR_CORE("Error reading ROOT block from drive");
 		return;
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_PRESENT;

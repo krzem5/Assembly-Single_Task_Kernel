@@ -49,13 +49,13 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 
 
 void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
-	LOG("Initializing physical memory manager...");
-	INFO("Initializing allocator...");
+	LOG_CORE("Initializing physical memory manager...");
+	INFO_CORE("Initializing allocator...");
 	_pmm_allocator.bitmap=0;
 	for (u8 i=0;i<PMM_ALLOCATOR_SIZE_COUNT;i++){
 		_pmm_allocator.blocks[i]=0;
 	}
-	LOG("Registering low memory...");
+	LOG_CORE("Registering low memory...");
 	u64 last_memory_address=0;
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
 		if ((kernel_data->mmap+i)->type!=1){
@@ -77,16 +77,16 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 		}
 		_add_memory_range(address,end);
 	}
-	INFO("Allocating allocator bitmap...");
+	INFO_CORE("Allocating allocator bitmap...");
 	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
-	INFO("Bitmap size: %v",bitmap_size);
+	INFO_CORE("Bitmap size: %v",bitmap_size);
 	_pmm_allocator.bitmap=pmm_alloc(bitmap_size>>PAGE_SIZE_SHIFT);
 }
 
 
 
 void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
-	LOG("Registering high memory...");
+	LOG_CORE("Registering high memory...");
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
 		if ((kernel_data->mmap+i)->type!=1){
 			continue;
@@ -104,7 +104,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
 
 u64 KERNEL_CORE_CODE pmm_alloc_raw(u64 count){
 	if (!count){
-		ERROR("Trying to allocate zero physical pages!");
+		ERROR_CORE("Trying to allocate zero physical pages!");
 		for (;;);
 		return 0;
 	}
@@ -112,7 +112,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_raw(u64 count){
 	if ((_get_block_size(i)>>PAGE_SIZE_SHIFT)!=count){
 		i++;
 		if (i>PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR("Trying to allocate too many pages at once!");
+			ERROR_CORE("Trying to allocate too many pages at once!");
 			for (;;);
 			return 0;
 		}
@@ -128,7 +128,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_raw(u64 count){
 	do{
 		j++;
 		if (j==PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR("Out of memory!");
+			ERROR_CORE("Out of memory!");
 			for (;;);
 			return 0;
 		}
@@ -173,14 +173,14 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count){
 
 void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count){
 	if (!count){
-		ERROR("Trying to deallocate zero physical pages!");
+		ERROR_CORE("Trying to deallocate zero physical pages!");
 		return;
 	}
 	u8 i=63-__builtin_clzll(count);
 	if ((_get_block_size(i)>>PAGE_SIZE_SHIFT)!=count){
 		i++;
 		if (i>PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR("Trying to deallocate too many pages at once!");
+			ERROR_CORE("Trying to deallocate too many pages at once!");
 			return;
 		}
 	}

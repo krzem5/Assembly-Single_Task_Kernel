@@ -69,7 +69,7 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _emptyfs_fs_config={
 
 
 void KERNEL_CORE_CODE emptyfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
-	LOG("Loading EmptyFS file system from drive '%s'...",drive->model_number);
+	LOG_CORE("Loading EmptyFS file system from drive '%s'...",drive->model_number);
 	fs_node_t* root=fs_create_file_system(drive,partition_config,&_emptyfs_fs_config,NULL);
 	root->type=FS_NODE_TYPE_FILE;
 }

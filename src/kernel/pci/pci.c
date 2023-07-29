@@ -10,7 +10,7 @@
 
 
 void KERNEL_CORE_CODE pci_init(void){
-	LOG("Scanning PCI devices...");
+	LOG_CORE("Scanning PCI devices...");
 	pci_device_t device={
 		0,
 		0,
@@ -46,7 +46,7 @@ void KERNEL_CORE_CODE pci_init(void){
 				device.progif=data[2]>>8;
 				device.revision_id=data[2];
 				device.header_type=data[3]>>16;
-				INFO("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
+				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 				driver_ahci_init_device(&device);
 				driver_ata_init_device(&device);
 				driver_i82540_init_device(&device);
@@ -77,7 +77,7 @@ _Bool KERNEL_CORE_CODE pci_device_get_bar(const pci_device_t* device,u8 bar_inde
 			pci_device_write_data(device,register_index+4,bar_high);
 		}
 		if (bar&8){
-			WARN("Prefeachable PCI BAR is unimplemented!");
+			WARN_CORE("Prefeachable PCI BAR is unimplemented!");
 			return 0;
 		}
 		mask=0xfffffff0;

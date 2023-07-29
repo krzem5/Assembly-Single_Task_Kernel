@@ -45,6 +45,7 @@
 
 
 
+
 static ata_device_t KERNEL_CORE_DATA _ata_devices[MAX_DEVICE_COUNT];
 static u32 KERNEL_CORE_DATA _ata_device_count;
 
@@ -62,7 +63,7 @@ static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
 static inline _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
 	for (;timeout&&(io_port_in8(device->port+ATA_REG_STATUS)&mask)!=value;timeout--){
 		if (io_port_in8(device->port+ATA_REG_STATUS)&STATUS_ERR){
-			WARN("ATA/ATAPI device returned an error");
+			WARN_CORE("ATA/ATAPI device returned an error");
 			return 0;
 		}
 		_delay_400ns(device);
@@ -102,7 +103,7 @@ static inline void KERNEL_CORE_CODE _send_atapi_command(const ata_device_t* devi
 static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	const ata_device_t* device=extra_data;
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
-		WARN("ATA drives are read-only");
+		WARN_CORE("ATA drives are read-only");
 		return 0;
 	}
 	offset&=DRIVE_OFFSET_MASK;
@@ -132,7 +133,7 @@ static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* bu
 		}
 		u16 size=(io_port_in8(device->port+ATA_REG_LBA2)<<8)|io_port_in8(device->port+ATA_REG_LBA1);
 		if (size!=2048){
-			WARN("ATA drive returned sector not equal to 2048 bytes");
+			WARN_CORE("ATA drive returned sector not equal to 2048 bytes");
 		}
 		for (u16 j=0;j<size;j+=2){
 			*out=io_port_in16(device->port+ATA_REG_DATA);
@@ -182,7 +183,7 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		case 0x6996:
 			return 0;
 		default:
-			WARN("Invalid ATA signature '%x'; ignoring drive",signature);
+			WARN_CORE("Invalid ATA signature '%x'; ignoring drive",signature);
 			return 0;
 	}
 	u16 buffer[256];
@@ -190,20 +191,22 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		buffer[i]=io_port_in16(device->port+ATA_REG_DATA);
 	}
 	if (!(buffer[49]&0x0200)){
-		WARN("ATA/ATAPI drive does not support LBA; ignoring drive");
+		WARN_CORE("ATA/ATAPI drive does not support LBA; ignoring drive");
 		return 0;
 	}
 	drive_t drive={
 		.type=(device->is_atapi?DRIVE_TYPE_ATAPI:DRIVE_TYPE_ATA),
-		.name="ata?",
 		.read_write=_ata_read_write,
 		.extra_data=device
 	};
+	drive.name[0]='a';
+	drive.name[1]='t';
+	drive.name[2]='a';
 	drive.name[3]=index+48;
 	drive_change_byte_order_and_truncate_spaces(buffer+10,10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces(buffer+27,20,drive.model_number);
 	if (!device->is_atapi){
-		WARN("ATA drive; Unimplemented");
+		WARN_CORE("ATA drive; Unimplemented");
 		return 0;
 	}
 	const u8 atapi_command[12]={
@@ -246,10 +249,10 @@ void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,4,&pci_bar)){
 		return;
 	}
-	LOG("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG_CORE("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	for (u8 i=0;i<4;i++){
 		if (_ata_device_count>=MAX_DEVICE_COUNT){
-			ERROR("Too many ATA devices");
+			ERROR_CORE("Too many ATA devices");
 			return;
 		}
 		ata_device_t* ata_device=_ata_devices+_ata_device_count;

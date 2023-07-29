@@ -191,12 +191,15 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	const u8* buffer=VMM_TRANSLATE_ADDRESS(buffer_raw);
 	drive_t drive={
 		.type=DRIVE_TYPE_AHCI,
-		.name="ahci??",
 		.read_write=_ahci_read_write,
 		.block_count=*((u64*)(buffer+200)),
 		.block_size=512,
 		.extra_data=device
 	};
+	drive.name[0]='a';
+	drive.name[1]='h';
+	drive.name[2]='c';
+	drive.name[3]='i';
 	if (port_index<10){
 		drive.name[4]=port_index+48;
 		drive.name[5]=0;
@@ -230,17 +233,17 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	if (_ahci_controller_count>=MAX_CONTROLLER_COUNT){
-		ERROR("Too many AHCI controllers");
+		ERROR_CORE("Too many AHCI controllers");
 		return;
 	}
 	ahci_controller_t* controller=_ahci_controllers+_ahci_controller_count;
 	_ahci_controller_count++;
 	controller->registers=VMM_TRANSLATE_ADDRESS(pci_bar.address);
-	INFO("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
+	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
-		ERROR("AHCI controller does not support 64-bit addressing");
+		ERROR_CORE("AHCI controller does not support 64-bit addressing");
 		return;
 	}
 	if (controller->registers->cap2&CAP2_BOH){
@@ -249,7 +252,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 			asm volatile("pause");
 		}
 		if ((controller->registers->bohc&BOHC_BB)||(controller->registers->bohc&BOHC_BOS)||!(controller->registers->bohc&BOHC_OOS)){
-			ERROR("AHCI controller bios handoff failed");
+			ERROR_CORE("AHCI controller bios handoff failed");
 			return;
 		}
 	}
@@ -265,7 +268,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 			continue;
 		}
 		if (_ahci_device_count>=MAX_DEVICE_COUNT){
-			ERROR("Too many AHCI devices");
+			ERROR_CORE("Too many AHCI devices");
 			return;
 		}
 		ahci_device_t* ahci_device=_ahci_devices+_ahci_device_count;
