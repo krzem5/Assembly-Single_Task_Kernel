@@ -85,6 +85,9 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 void acpi_fadt_shutdown(_Bool restart){
 	fs_flush_cache();
+	for (u64 i=0;i<0xffff;i++){
+		asm volatile("pause":::"memory"); // ensure FS cache flushes properly
+	}
 	if (restart){
 		_acpi_fadt_reboot();
 	}

@@ -274,7 +274,6 @@ _batc_found:
 			block_cache->batc.bitmap3&=block_cache->batc.bitmap3-1;
 		}
 	}
-	ERROR_CORE("Alloc: %p %p",block_cache->batc.first_block_index,k);
 	return block_cache->batc.first_block_index+k;
 }
 
@@ -367,7 +366,6 @@ static void KERNEL_CORE_CODE _block_cache_load_nda1(kfs_block_cache_t* block_cac
 
 
 static kfs_node_t* KERNEL_CORE_CODE _get_node_by_index(kfs_block_cache_t* block_cache,kfs_node_index_t index){
-	WARN_CORE("!!! %u",index);
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)&&block_cache->nda2.node_index==(index>>15)){
 		goto _nda2_found;
 	}
@@ -377,23 +375,19 @@ static kfs_node_t* KERNEL_CORE_CODE _get_node_by_index(kfs_block_cache_t* block_
 	}
 	_block_cache_flush_nda3(block_cache);
 	if (!block_cache->root.nda3[index>>25]){
-		WARN_CORE("~~~ %u",__LINE__);
 		return 0;
 	}
 	_drive_read(block_cache->drive,block_cache->root.nda3[index>>25],&(block_cache->nda3),1);
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA3_PRESENT;
 _nda3_found:
 	if (!block_cache->nda3.nda2[(index>>15)&0x3ff]){
-		WARN_CORE("~~~ %u",__LINE__);
 		return 0;
 	}
 	_drive_read(block_cache->drive,block_cache->nda3.nda2[(index>>15)&0x3ff],&(block_cache->nda2),1);
 	_drive_read(block_cache->drive,block_cache->nda2.block_index[1],_nda2_block_get_high_part(&(block_cache->nda2)),1);
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_PRESENT;
 _nda2_found:
-	WARN_CORE("!!! %u %p",index,block_cache->nda2.nda1[(index>>6)&0x1ff]);
 	if (!block_cache->nda2.nda1[(index>>6)&0x1ff]){
-		WARN_CORE("~~~ %u",__LINE__);
 		return 0;
 	}
 	_block_cache_load_nda1(block_cache,block_cache->nda2.nda1[(index>>6)&0x1ff]);
@@ -677,12 +671,12 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	u64 extra=offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1);
 	u64 out=0;
 	if (extra){
-		ERROR("Fractional read");
+		ERROR_CORE("Fractional read");
 		return 0;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR("Block read");
+		ERROR_CORE("Block read");
 		return 0;
 		out+=1<<DRIVE_BLOCK_SIZE_SHIFT;
 		buffer+=1<<DRIVE_BLOCK_SIZE_SHIFT;
@@ -691,7 +685,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
-			ERROR("Error writing data to drive");
+			ERROR_CORE("Error writing data to drive");
 			return 0;
 		}
 		memcpy(buffer,chunk,count);
@@ -764,7 +758,7 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
-			ERROR("Error writing data to drive");
+			ERROR("Error reading data from drive");
 			return 0;
 		}
 		memcpy(chunk,buffer,count);
@@ -833,11 +827,9 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t*
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_PRESENT;
 	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config,block_cache);
 	kfs_node_t* kfs_root=_get_node_by_index(block_cache,0);
-	ERROR_CORE("Root: %p %p",kfs_root,_get_node_by_index);
 	if (!kfs_root){
 		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,NULL,0);
 	}
-	ERROR_CORE("Root: %u",kfs_root->index);
 	_node_to_fs_node(kfs_root,root);
 }
 
@@ -862,8 +854,8 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	kfs_root_block_t root={
 		KFS_SIGNATURE,
 		block_count,
-		(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT,
-		first_free_block_index
+		first_free_block_index,
+		(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT
 	};
 	for (u16 i=0;i<128;i++){
 		root.nda3[i]=0;
