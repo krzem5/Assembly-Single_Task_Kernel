@@ -12,7 +12,7 @@ lock_acquire:
 	add edx, 1
 ._retry:
 	lock cmpxchg dword [rdi], edx
-	or eax, 0
+	test eax, eax
 	jnz ._retry
 	ret
 
