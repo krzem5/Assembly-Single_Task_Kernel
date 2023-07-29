@@ -4,6 +4,7 @@
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
+#include <kernel/memory/memset.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -718,9 +719,12 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		while (range_index<510&&block_cache->nfda.ranges[range_index+1].block_index){
 			range_index++;
 		}
+		u8 zero_buffer[4096];
+		memset(zero_buffer,0,4096);
 		while (overflow){
 			overflow--;
 			kfs_large_block_index_t new_block_index=_block_cache_alloc_block(block_cache);
+			_drive_write(block_cache->drive,new_block_index,zero_buffer,1);
 			if (new_block_index==block_cache->nfda.ranges[range_index].block_index+block_cache->nfda.ranges[range_index].block_count){
 				block_cache->nfda.ranges[range_index].block_count++;
 			}
@@ -744,16 +748,41 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 	u64 extra=offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1);
 	u64 out=0;
 	if (extra){
-		ERROR("Fractional write");
-		return 0;
+		extra=(1<<DRIVE_BLOCK_SIZE_SHIFT)-extra;
+		if (extra>count){
+			extra=count;
+		}
+		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
+			ERROR("Error reading data from drive");
+			return 0;
+		}
+		memcpy(chunk+(offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1)),buffer,extra);
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,chunk,1)!=1){
+			ERROR("Error writing data to drive");
+			return 0;
+		}
+		out+=extra;
+		buffer+=extra;
+		count-=extra;
+		offset+=(1<<(DRIVE_BLOCK_SIZE_SHIFT+1))-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
+		if (offset>=block_cache->nfda.ranges[range_index].block_count){
+			offset=0;
+			range_index++;
+			if (range_index==510){
+				ERROR("Unimplemented: load next NFDA block");
+				return 0;
+			}
+		}
 		ERROR("Block write");
 		return 0;
 		out+=1<<DRIVE_BLOCK_SIZE_SHIFT;
 		buffer+=1<<DRIVE_BLOCK_SIZE_SHIFT;
 		count-=1<<DRIVE_BLOCK_SIZE_SHIFT;
+		offset++;// or more if the range allows for it
 	}
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];

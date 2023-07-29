@@ -1,5 +1,5 @@
-#ifndef _KERNEL_MEMORY_MEMSET_H_
-#define _KERNEL_MEMORY_MEMSET_H_ 1
+#ifndef _KERNEL_MEMORY_MEMCPY_H_
+#define _KERNEL_MEMORY_MEMCPY_H_ 1
 #include <kernel/types.h>
 
 
