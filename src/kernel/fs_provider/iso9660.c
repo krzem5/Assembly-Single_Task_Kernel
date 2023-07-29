@@ -60,13 +60,13 @@ static fs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(con
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _iso9660_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static fs_node_t* _iso9660_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	return NULL;
 }
 
 
 
-static _Bool KERNEL_CORE_CODE _iso9660_delete(fs_file_system_t* fs,fs_node_t* node){
+static _Bool _iso9660_delete(fs_file_system_t* fs,fs_node_t* node){
 	return 0;
 }
 
@@ -168,7 +168,7 @@ _skip_directory_entry2:
 
 
 
-static _Bool KERNEL_CORE_CODE _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	return 0;
 }
 
@@ -185,20 +185,20 @@ static u64 KERNEL_CORE_CODE _iso9660_read(fs_file_system_t* fs,fs_node_t* node,u
 
 
 
-static u64 KERNEL_CORE_CODE _iso9660_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _iso9660_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	return 0;
 }
 
 
 
-static u64 KERNEL_CORE_CODE _iso9660_get_size(fs_file_system_t* fs,fs_node_t* node){
+static u64 _iso9660_get_size(fs_file_system_t* fs,fs_node_t* node){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	return iso9660_node->data_length;
 }
 
 
 
-static void KERNEL_CORE_CODE _iso9660_flush_cache(fs_file_system_t* fs){
+static void _iso9660_flush_cache(fs_file_system_t* fs){
 	return;
 }
 

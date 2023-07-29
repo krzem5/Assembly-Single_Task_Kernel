@@ -485,7 +485,7 @@ _nda2_found:
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	kfs_node_t* kfs_node=_alloc_node(fs->extra_data,(is_directory?KFS_NODE_FLAG_DIRECTORY:0),name,name_length);
 	if (!kfs_node){
 		return NULL;
@@ -497,7 +497,7 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_create(fs_file_system_t* fs,_Bool is_dir
 
 
 
-static _Bool KERNEL_CORE_CODE _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
+static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_node_t* kfs_node=_get_node_by_index(block_cache,kfs_fs_node->id); // loads both NDA1 and NDA2
@@ -559,7 +559,7 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(fs_file_system_t* fs,fs_nod
 
 
 
-static _Bool KERNEL_CORE_CODE _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_node_index_t other_id=(other?((kfs_fs_node_t*)other)->id:KFS_NODE_ID_NONE);
@@ -604,7 +604,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 
 
 
-static u64 KERNEL_CORE_CODE _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	// offset and count are aligned against fs->drive->block_size
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
@@ -618,7 +618,7 @@ static u64 KERNEL_CORE_CODE _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 
 
 
 
-static u64 KERNEL_CORE_CODE _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
+static u64 _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -631,7 +631,7 @@ static u64 KERNEL_CORE_CODE _kfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 
 
 
-static void KERNEL_CORE_CODE _kfs_flush_cache(fs_file_system_t* fs){
+static void _kfs_flush_cache(fs_file_system_t* fs){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	_block_cache_flush_nda1(block_cache);
 	_block_cache_flush_nda2(block_cache);
@@ -671,14 +671,14 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t*
 	kfs_fs_node_t* root=fs_create_file_system(drive,partition_config,&_kfs_fs_config,block_cache);
 	kfs_node_t* kfs_root=_get_node_by_index(block_cache,0);
 	if (!kfs_root){
-		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,"",0);
+		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,NULL,0);
 	}
 	_node_to_fs_node(kfs_root,root);
 }
 
 
 
-_Bool KERNEL_CORE_CODE kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
+_Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	LOG("Formatting drive '%s' as KFS...",drive->model_number);
 	if (DRIVE_BLOCK_SIZE_SHIFT!=DRIVE_BLOCK_SIZE_SHIFT){
 		WARN("KFS requires block_size to be equal to %u bytes",1<<DRIVE_BLOCK_SIZE_SHIFT);

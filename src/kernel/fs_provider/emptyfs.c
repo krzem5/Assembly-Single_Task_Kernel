@@ -6,13 +6,13 @@
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _emptyfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static fs_node_t* _emptyfs_create(fs_file_system_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	return NULL;
 }
 
 
 
-static _Bool KERNEL_CORE_CODE _emptyfs_delete(fs_file_system_t* fs,fs_node_t* node){
+static _Bool _emptyfs_delete(fs_file_system_t* fs,fs_node_t* node){
 	return 0;
 }
 
@@ -24,7 +24,7 @@ static fs_node_t* KERNEL_CORE_CODE _emptyfs_get_relative(fs_file_system_t* fs,fs
 
 
 
-static _Bool KERNEL_CORE_CODE _emptyfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _emptyfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	return 0;
 }
 
@@ -36,19 +36,19 @@ static u64 KERNEL_CORE_CODE _emptyfs_read(fs_file_system_t* fs,fs_node_t* node,u
 
 
 
-static u64 KERNEL_CORE_CODE _emptyfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _emptyfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	return fs->drive->read_write(fs->drive->extra_data,(offset>>fs->drive->block_size_shift)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,count>>fs->drive->block_size_shift)<<fs->drive->block_size_shift;
 }
 
 
 
-static u64 KERNEL_CORE_CODE _emptyfs_get_size(fs_file_system_t* fs,fs_node_t* node){
+static u64 _emptyfs_get_size(fs_file_system_t* fs,fs_node_t* node){
 	return (fs->partition_config.last_block_index-fs->partition_config.first_block_index)<<fs->drive->block_size_shift;
 }
 
 
 
-static void KERNEL_CORE_CODE _emptyfs_flush_cache(fs_file_system_t* fs){
+static void _emptyfs_flush_cache(fs_file_system_t* fs){
 	return;
 }
 
