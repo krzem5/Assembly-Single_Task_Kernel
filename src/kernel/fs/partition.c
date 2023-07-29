@@ -5,6 +5,7 @@
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "fs_part"
 
 
 

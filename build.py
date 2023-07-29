@@ -19,8 +19,6 @@ SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
 USER_FILE_DIRECTORY="src/user"
-SHORT_FILE_NAME_MAPPING_FILE_PATH="src/kernel_files.txt"
-SHORT_FILE_NAME_LENGTH=7
 OS_IMAGE_SIZE=1440*1024
 
 
@@ -74,22 +72,6 @@ def _file_not_changed(changed_files,deps_file_path):
 		if (file in changed_files or not os.path.exists(file)):
 			return False
 	return True
-
-
-
-def _load_short_file_name_mapping(file_path):
-	out={}
-	with open(file_path,"r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			line=line.split(":")
-			if (len(line[1])>SHORT_FILE_NAME_LENGTH):
-				print(f"Short name '{line[1]}' for file '{line[0]}' is too long")
-				sys.exit(1)
-			out[line[0]]=(line[1].ljust(SHORT_FILE_NAME_LENGTH," "))
-	return out
 
 
 
@@ -202,7 +184,6 @@ if (not os.path.exists("build/stages")):
 	os.mkdir("build/stages")
 _generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
-short_file_name_mapping=_load_short_file_name_mapping(SHORT_FILE_NAME_MAPPING_FILE_PATH)
 object_files=[]
 error=False
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
@@ -211,14 +192,13 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (suffix not in SOURCE_FILE_SUFFIXES):
 			continue
 		file=os.path.join(root,file_name)
-		short_file_name=short_file_name_mapping[file]
 		object_file=f"build/objects/{file.replace('/','#')}.o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".d")):
 			continue
 		command=None
 		if (suffix==".c"):
-			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer","-DNULL=((void*)0)",f"-D__SHORT_FILE_NAME__=\"{short_file_name}\"","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]
+			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-o",object_file,file]+EXTRA_ASSEMBLY_COMPILER_OPTIONS
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):

@@ -20,6 +20,7 @@
 #include <kernel/pci/pci.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "main"
 
 
 

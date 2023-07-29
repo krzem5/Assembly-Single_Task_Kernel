@@ -9,6 +9,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "cpu"
 
 
 

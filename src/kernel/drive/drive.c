@@ -1,4 +1,5 @@
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "drive"
 
 
 

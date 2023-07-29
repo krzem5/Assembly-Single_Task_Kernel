@@ -1,5 +1,6 @@
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "isr"
 
 
 

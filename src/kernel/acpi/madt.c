@@ -1,6 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "madt"
 
 
 

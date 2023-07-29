@@ -1,6 +1,7 @@
 #include <kernel/print/print.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "print"
 
 
 

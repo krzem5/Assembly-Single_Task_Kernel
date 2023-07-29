@@ -7,6 +7,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "ahci"
 
 
 

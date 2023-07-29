@@ -6,6 +6,7 @@
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "net_l2"
 
 
 

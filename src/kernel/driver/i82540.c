@@ -7,6 +7,7 @@
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "i82540"
 
 
 

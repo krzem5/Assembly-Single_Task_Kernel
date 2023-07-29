@@ -15,10 +15,10 @@
 #define WARN_CORE(template,...) _LOG_CORE("\x1b[38;2;231;211;72m",template,##__VA_ARGS__)
 #define ERROR_CORE(template,...) _LOG_CORE("\x1b[1m\x1b[38;2;231;72;86m",template,##__VA_ARGS__)
 
-#define _LOG(color,template,...) print("\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n",##__VA_ARGS__)
+#define _LOG(color,template,...) print("\x1b[38;2;65;65;65m["KERNEL_LOG_NAME"] "color template"\x1b[0m\n",##__VA_ARGS__)
 #define _LOG_CORE(color,template,...) \
 	do{ \
-		static KERNEL_CORE_RDATA const char _log[]="\x1b[38;2;65;65;65m["__SHORT_FILE_NAME__"] "color template"\x1b[0m\n"; \
+		static KERNEL_CORE_RDATA const char _log[]="\x1b[38;2;65;65;65m["KERNEL_LOG_NAME"] "color template"\x1b[0m\n"; \
 		print(_log,##__VA_ARGS__); \
 	} while (0)
 

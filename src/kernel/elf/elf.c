@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
+#define KERNEL_LOG_NAME "elf"
 
 
 
