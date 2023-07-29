@@ -369,6 +369,12 @@ u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 		return 0;
 	}
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	if (!(fs->config->flags&FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
+		lock_acquire(&(fs->lock));
+		u64 out=fs->config->read(fs,node,offset,buffer,count);
+		lock_release(&(fs->lock));
+		return out;
+	}
 	u64 out=0;
 	u16 extra=offset&(fs->drive->block_size-1);
 	lock_acquire(&(fs->lock));
@@ -419,14 +425,14 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 		return 0;
 	}
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
-	if ((offset|count)&(fs->drive->block_size-1)){
-		WARN("'offset' or 'count' is not block block-aligned");
-		return 0;
+	if (!(fs->config->flags&FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
+		lock_acquire(&(fs->lock));
+		u64 out=fs->config->write(fs,node,offset,buffer,count);
+		lock_release(&(fs->lock));
+		return out;
 	}
-	lock_acquire(&(fs->lock));
-	u64 out=fs->config->write(fs,node,offset,buffer,count);
-	lock_release(&(fs->lock));
-	return out;
+	WARN("Unimplemented: fs_write");
+	return 0;
 }
 
 

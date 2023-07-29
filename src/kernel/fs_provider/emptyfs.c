@@ -57,6 +57,7 @@ static void _emptyfs_flush_cache(fs_file_system_t* fs){
 
 static const fs_file_system_config_t KERNEL_CORE_DATA _emptyfs_fs_config={
 	sizeof(fs_node_t),
+	FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO,
 	_emptyfs_create,
 	_emptyfs_delete,
 	_emptyfs_get_relative,

@@ -592,7 +592,7 @@ static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,
 
 
 static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
-	// offset and count are aligned against fs->drive->block_size
+	// offset and count are aligned against DRIVE_BLOCK_SIZE_SHIFT
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -606,13 +606,16 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 
 
 static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
-	// offset and count are aligned against fs->drive->block_size
+	// offset and count are aligned against DRIVE_BLOCK_SIZE_SHIFT
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
 	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
 		return 0;
+	}
+	if (offset+count>kfs_node->data.file.data_block_count){
+		WARN("Unimplemented");
 	}
 	return 0;
 }
@@ -645,6 +648,7 @@ static void _kfs_flush_cache(fs_file_system_t* fs){
 
 static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
+	0,
 	_kfs_create,
 	_kfs_delete,
 	_kfs_get_relative,

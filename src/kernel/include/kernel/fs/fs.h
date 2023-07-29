@@ -8,6 +8,8 @@
 
 
 
+#define FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO 1
+
 #define FS_MAX_FILE_SYSTEMS 64
 #define FS_INVALID_FILE_SYSTEM_INDEX FS_MAX_FILE_SYSTEMS
 
@@ -24,6 +26,7 @@ struct _FS_FILE_SYSTEM;
 
 typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u8 node_size;
+	u8 flags;
 	fs_node_t* (*create)(struct _FS_FILE_SYSTEM*,_Bool,const char*,u8);
 	_Bool (*delete)(struct _FS_FILE_SYSTEM*,fs_node_t*);
 	fs_node_t* (*get_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8);
