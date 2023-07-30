@@ -696,7 +696,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 		offset+=transfer_size;
 	}
 	if (count){
-		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
+		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT]="ABCDEFGHI";
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
 			ERROR_CORE("Error reading data from drive");
 			return 0;
@@ -742,10 +742,12 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 				block_cache->nfda.ranges[range_index].block_count++;
 			}
 			else{
-				range_index++;
-				if (range_index==510){
-					ERROR("Unimplemented: allocate new NFDA block");
-					return 0;
+				if (block_cache->nfda.ranges[range_index].block_index){
+					range_index++;
+					if (range_index==510){
+						ERROR("Unimplemented: allocate new NFDA block");
+						return 0;
+					}
 				}
 				block_cache->nfda.ranges[range_index].block_index=new_block_index;
 				block_cache->nfda.ranges[range_index].block_count=1;
@@ -769,7 +771,6 @@ _skip_nfda_resize:
 		if (extra>count){
 			extra=count;
 		}
-		WARN("extra: %u %u",offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1),extra);
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
 			ERROR("Error reading data from drive");
@@ -786,7 +787,6 @@ _skip_nfda_resize:
 		offset+=(1<<DRIVE_BLOCK_SIZE_SHIFT)-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
-	WARN("%u %u %u",offset,count,out);
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
 		if (offset>=block_cache->nfda.ranges[range_index].block_count){
 			offset=0;
@@ -801,7 +801,6 @@ _skip_nfda_resize:
 			transfer_size=count>>DRIVE_BLOCK_SIZE_SHIFT;
 		}
 		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+offset)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,transfer_size);
-		ERROR("Block write [%u]",transfer_size);
 		out+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		buffer+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		count-=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
