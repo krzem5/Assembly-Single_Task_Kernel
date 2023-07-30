@@ -104,7 +104,11 @@ void _syscall_clock_get_converion(void);
 
 
 
-_Bool _syscall_format_drive(u32 index,const void* boot,u32 boot_length);
+_Bool _syscall_drive_format(u32 index,const void* boot,u32 boot_length);
+
+
+
+_Bool _syscall_drive_stats(u32 index,void* buffer,u32 size);
 
 
 

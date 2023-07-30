@@ -18,6 +18,20 @@
 
 
 
+typedef struct _DRIVE_STATS{
+	u64 used_block_count;
+	u64 free_block_count;
+	u64 root_block_count;
+	u64 batc_block_count;
+	u64 nda3_block_count;
+	u64 nda2_block_count;
+	u64 nda1_block_count;
+	u64 nfda_block_count;
+	u64 data_block_count;
+} drive_stats_t;
+
+
+
 typedef struct _DRIVE{
 	u8 flags;
 	u8 type;
@@ -42,6 +56,10 @@ void drive_init(void);
 
 
 _Bool drive_format(u32 index,const void* boot,u32 boot_length);
+
+
+
+_Bool drive_get_stats(u32 index,drive_stats_t* stats);
 
 
 

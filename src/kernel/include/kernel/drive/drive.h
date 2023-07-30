@@ -16,6 +16,20 @@
 
 
 
+typedef struct _DRIVE_STATS{
+	u64 used_block_count;
+	u64 free_block_count;
+	u64 root_block_count;
+	u64 batc_block_count;
+	u64 nda3_block_count;
+	u64 nda2_block_count;
+	u64 nda1_block_count;
+	u64 nfda_block_count;
+	u64 data_block_count;
+} drive_stats_t;
+
+
+
 typedef struct _DRIVE{
 	u8 type;
 	u8 flags;
@@ -28,6 +42,7 @@ typedef struct _DRIVE{
 	u64 block_size;
 	u64 (*read_write)(void*,u64,void*,u64);
 	void* extra_data;
+	drive_stats_t stats;
 } drive_t;
 
 

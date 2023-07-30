@@ -20,7 +20,7 @@
 
 
 
-#define SYSCALL_COUNT 26
+#define SYSCALL_COUNT 27
 
 
 
@@ -405,7 +405,7 @@ static void _syscall_clock_get_converion(syscall_registers_t* regs){
 
 
 
-static void _syscall_format_drive(syscall_registers_t* regs){
+static void _syscall_drive_format(syscall_registers_t* regs){
 	const drive_t* drive=drive_list_get_drive(regs->rdi);
 	if (!drive){
 		regs->rax=0;
@@ -421,6 +421,22 @@ static void _syscall_format_drive(syscall_registers_t* regs){
 		address=(u64)VMM_TRANSLATE_ADDRESS(address);
 	}
 	regs->rax=kfs_format_drive(drive,(void*)address,regs->rdx);
+}
+
+
+
+static void _syscall_drive_stats(syscall_registers_t* regs){
+	const drive_t* drive=drive_list_get_drive(regs->rdi);
+	if (!drive||regs->rdx!=sizeof(drive_stats_t)){
+		regs->rax=0;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=drive->stats;
 }
 
 
@@ -459,6 +475,7 @@ void syscall_init(void){
 	_syscall_handlers[22]=_syscall_memory_map;
 	_syscall_handlers[23]=_syscall_memory_unmap;
 	_syscall_handlers[24]=_syscall_clock_get_converion;
-	_syscall_handlers[25]=_syscall_format_drive;
+	_syscall_handlers[26]=_syscall_drive_format;
+	_syscall_handlers[26]=_syscall_drive_stats;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

@@ -21,6 +21,10 @@ void format_main(int argc,const char*const* argv){
 			return;
 		}
 	}
+	if (!drive_name){
+		printf("format: no drive supplied\n");
+		return;
+	}
 	u32 i=0;
 	for (;i<drive_count;i++){
 		if (string_equal((drives+i)->name,drive_name)){
