@@ -677,7 +677,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 			extra=count;
 		}
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
 			ERROR("Error reading data from drive");
 			return 0;
 		}
@@ -689,19 +689,19 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
-		if (offset>=block_cache->nfda.ranges[range_index].block_count){
+		if (offset>=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 			offset=0;
 			range_index++;
 			if (range_index==510){
-				ERROR_CORE("Unimplemented: load next NFDA block");
+				ERROR("Unimplemented: load next NFDA block");
 				return 0;
 			}
 		}
-		u32 transfer_size=block_cache->nfda.ranges[range_index].block_count-offset;
+		u32 transfer_size=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))-offset;
 		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){
 			transfer_size=count>>DRIVE_BLOCK_SIZE_SHIFT;
 		}
-		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,(void*)buffer,transfer_size);
+		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset,(void*)buffer,transfer_size);
 		out+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		buffer+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		count-=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
@@ -709,7 +709,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	}
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset,chunk,1)!=1){
 			ERROR_CORE("Error reading data from drive");
 			return 0;
 		}
@@ -784,12 +784,12 @@ _skip_nfda_resize:
 			extra=count;
 		}
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
 			ERROR("Error reading data from drive");
 			return 0;
 		}
 		memcpy(chunk+(offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1)),buffer,extra);
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,((block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+(offset>>DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,chunk,1)!=1){
 			ERROR("Error writing data to drive");
 			return 0;
 		}
@@ -800,7 +800,7 @@ _skip_nfda_resize:
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
-		if (offset>=block_cache->nfda.ranges[range_index].block_count){
+		if (offset>=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 			offset=0;
 			range_index++;
 			if (range_index==510){
@@ -808,11 +808,11 @@ _skip_nfda_resize:
 				return 0;
 			}
 		}
-		u32 transfer_size=block_cache->nfda.ranges[range_index].block_count-offset;
+		u32 transfer_size=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))-offset;
 		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){
 			transfer_size=count>>DRIVE_BLOCK_SIZE_SHIFT;
 		}
-		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+offset)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,transfer_size);
+		transfer_size=block_cache->drive->read_write(block_cache->drive->extra_data,((block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,transfer_size);
 		out+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		buffer+=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
 		count-=transfer_size<<DRIVE_BLOCK_SIZE_SHIFT;
@@ -820,12 +820,12 @@ _skip_nfda_resize:
 	}
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset,chunk,1)!=1){
 			ERROR("Error reading data from drive");
 			return 0;
 		}
 		memcpy(chunk,buffer,count);
-		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index+offset)|DRIVE_OFFSET_FLAG_WRITE,chunk,1)!=1){
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,((block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset)|DRIVE_OFFSET_FLAG_WRITE,chunk,1)!=1){
 			ERROR("Error writing data to drive");
 			return 0;
 		}
