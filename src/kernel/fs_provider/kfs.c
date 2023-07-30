@@ -570,7 +570,22 @@ static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 		return 0;
 	}
 	if (!(kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)&&kfs_node->data.file.nfda_head){
-		WARN("Unimplemented: _kfs_delete.file");
+		kfs_large_block_index_t block_index=kfs_node->data.file.nfda_head;
+		do{
+			_block_cache_load_nfda(block_cache,block_index);
+			_block_cache_dealloc_block(block_cache,block_index);
+			block_index=block_cache->nfda.next_block_index;
+			for (u16 i=0;i<510;i++){
+				kfs_large_block_index_t base=block_cache->nfda.ranges[i].block_index;
+				if (!base){
+					break;
+				}
+				for (kfs_large_block_index_t j=0;j<block_cache->nfda.ranges[i].block_count;j++){
+					_block_cache_dealloc_block(block_cache,base+j);
+				}
+			}
+			block_cache->flags&=~(KFS_BLOCK_CACHE_NFDA_PRESENT|KFS_BLOCK_CACHE_NFDA_DIRTY);
+		} while (block_index);
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_DIRTY;
 	kfs_node_index_t node_index=kfs_node->index;
