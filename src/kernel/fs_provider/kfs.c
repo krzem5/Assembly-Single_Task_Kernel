@@ -672,8 +672,20 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 	u64 extra=offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1);
 	u64 out=0;
 	if (extra){
-		ERROR_CORE("Fractional read");
-		return 0;
+		extra=(1<<DRIVE_BLOCK_SIZE_SHIFT)-extra;
+		if (extra>count){
+			extra=count;
+		}
+		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
+		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+(offset>>DRIVE_BLOCK_SIZE_SHIFT),chunk,1)!=1){
+			ERROR("Error reading data from drive");
+			return 0;
+		}
+		memcpy(buffer,chunk+(offset&((1<<DRIVE_BLOCK_SIZE_SHIFT)-1)),extra);
+		out+=extra;
+		buffer+=extra;
+		count-=extra;
+		offset+=(1<<DRIVE_BLOCK_SIZE_SHIFT)-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
 	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){

@@ -13,7 +13,7 @@ void test_main(int argc,const char*const* argv){
 	cwd_change("ahci0p0:/");
 	int fd=fs_open(0,"ahci0p0:a",FS_FLAG_WRITE|FS_FLAG_CREATE);
 	for (u16 i=0;i<512;i++){
-		buffer[i]=((i&3)<3?(i&3)+48:'\n');
+		buffer[i]=((i&7)<7?(i&7)+48:'\n');
 	}
 	fs_write(fd,buffer,512);
 	fs_write(fd,"Hello $$$",9);
