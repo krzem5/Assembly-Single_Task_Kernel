@@ -696,7 +696,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(fs_file_system_t* fs,fs_node_t* node,u64 o
 		offset+=transfer_size;
 	}
 	if (count){
-		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT]="ABCDEFGHI";
+		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,block_cache->nfda.ranges[range_index].block_index+offset,chunk,1)!=1){
 			ERROR_CORE("Error reading data from drive");
 			return 0;
