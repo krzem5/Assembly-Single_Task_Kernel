@@ -436,7 +436,8 @@ static void _syscall_drive_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=drive->stats;
+	fs_flush_cache();
+	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*(drive->stats);
 }
 
 
@@ -475,7 +476,7 @@ void syscall_init(void){
 	_syscall_handlers[22]=_syscall_memory_map;
 	_syscall_handlers[23]=_syscall_memory_unmap;
 	_syscall_handlers[24]=_syscall_clock_get_converion;
-	_syscall_handlers[26]=_syscall_drive_format;
+	_syscall_handlers[25]=_syscall_drive_format;
 	_syscall_handlers[26]=_syscall_drive_stats;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

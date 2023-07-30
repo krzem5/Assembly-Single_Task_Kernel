@@ -19,8 +19,6 @@
 
 
 typedef struct _DRIVE_STATS{
-	u64 used_block_count;
-	u64 free_block_count;
 	u64 root_block_count;
 	u64 batc_block_count;
 	u64 nda3_block_count;

@@ -29,6 +29,7 @@ static const char* KERNEL_CORE_DATA _drive_type_names[]={
 
 
 static drive_t* KERNEL_CORE_DATA _drives;
+static drive_stats_t* KERNEL_CORE_DATA _drive_stats;
 static u32 KERNEL_CORE_DATA _drive_count;
 
 
@@ -36,6 +37,7 @@ static u32 KERNEL_CORE_DATA _drive_count;
 void KERNEL_CORE_CODE drive_list_init(void){
 	LOG_CORE("Initializing drive list...");
 	_drives=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_t))));
+	_drive_stats=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_stats_t))));
 	_drive_count=0;
 }
 
@@ -52,6 +54,14 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	(_drives+_drive_count)->index=_drive_count;
 	(_drives+_drive_count)->index=_drive_count;
 	(_drives+_drive_count)->block_size_shift=__builtin_ctzll(drive->block_size);
+	(_drives+_drive_count)->stats=_drive_stats+_drive_count;
+	(_drives+_drive_count)->stats->root_block_count=0;
+	(_drives+_drive_count)->stats->batc_block_count=0;
+	(_drives+_drive_count)->stats->nda3_block_count=0;
+	(_drives+_drive_count)->stats->nda2_block_count=0;
+	(_drives+_drive_count)->stats->nda1_block_count=0;
+	(_drives+_drive_count)->stats->nfda_block_count=0;
+	(_drives+_drive_count)->stats->data_block_count=0;
 	_drive_count++;
 	INFO_CORE("Drive serial number: '%s', Drive size: %v (%lu * %lu)",drive->serial_number,drive->block_count*drive->block_size,drive->block_count,drive->block_size);
 	if (drive->block_size>>((_drives+_drive_count-1)->block_size_shift+1)){

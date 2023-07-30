@@ -130,9 +130,15 @@ typedef struct _KFS_ROOT_BLOCK{ // Root [1 block]
 	u64 signature;
 	kfs_large_block_index_t block_count;
 	kfs_large_block_index_t batc_block_index;
-	kfs_large_block_index_t batc_block_count;
 	kfs_large_block_index_t nda3[128];
-	u8 _padding[3564];
+	u64 root_block_count;
+	u64 batc_block_count;
+	u64 nda3_block_count;
+	u64 nda2_block_count;
+	u64 nda1_block_count;
+	u64 nfda_block_count;
+	u64 data_block_count;
+	u8 _padding[3508];
 } kfs_root_block_t;
 
 
@@ -297,6 +303,7 @@ _batc_found:
 
 
 static void _block_cache_init_nfda(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+	block_cache->root.nfda_block_count+=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	_block_cache_flush_nfda(block_cache);
 	block_cache->nfda.block_index=block_index;
 	block_cache->nfda.next_block_index=0;
@@ -306,12 +313,13 @@ static void _block_cache_init_nfda(kfs_block_cache_t* block_cache,kfs_large_bloc
 		block_cache->nfda.ranges[i].block_index=0;
 		block_cache->nfda.ranges[i].block_count=0;
 	}
-	block_cache->flags|=KFS_BLOCK_CACHE_NFDA_PRESENT|KFS_BLOCK_CACHE_NFDA_DIRTY;
+	block_cache->flags|=KFS_BLOCK_CACHE_NFDA_PRESENT|KFS_BLOCK_CACHE_NFDA_DIRTY|KFS_BLOCK_CACHE_ROOT_DIRTY;
 }
 
 
 
 static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda2(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
+	block_cache->root.nda2_block_count+=2<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	block_cache->nda2.block_index[0]=_block_cache_alloc_block(block_cache);
 	block_cache->nda2.block_index[1]=_block_cache_alloc_block(block_cache);
 	block_cache->nda2.node_index=node_index;
@@ -324,20 +332,21 @@ static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda2(kfs_block
 		block_cache->nda2.bitmap1[i]=0xffffffffffffffffull;
 		block_cache->nda2.nda1[i]=0;
 	}
-	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_PRESENT|KFS_BLOCK_CACHE_NDA2_DIRTY;
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_PRESENT|KFS_BLOCK_CACHE_NDA2_DIRTY|KFS_BLOCK_CACHE_ROOT_DIRTY;
 	return block_cache->nda2.block_index[0];
 }
 
 
 
 static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda3(kfs_block_cache_t* block_cache,kfs_node_index_t node_index){
+	block_cache->root.nda3_block_count+=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	block_cache->nda3.block_index=_block_cache_alloc_block(block_cache);
 	block_cache->nda3.node_index=node_index;
 	block_cache->nda3.nda2[0]=_block_cache_init_nda2(block_cache,node_index<<10);
 	for (unsigned int i=1;i<1022;i++){
 		block_cache->nda3.nda2[i]=0;
 	}
-	block_cache->flags|=KFS_BLOCK_CACHE_NDA3_PRESENT|KFS_BLOCK_CACHE_NDA3_DIRTY;
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA3_PRESENT|KFS_BLOCK_CACHE_NDA3_DIRTY|KFS_BLOCK_CACHE_ROOT_DIRTY;
 	return block_cache->nda3.block_index;
 }
 
@@ -487,8 +496,10 @@ _nda2_found:
 	kfs_node_index_t j=__builtin_ctzll(block_cache->nda2.bitmap2[i])|(i<<6);
 	kfs_node_index_t k=0;
 	if (!block_cache->nda2.nda1[j]){
+		block_cache->root.nda1_block_count+=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 		block_cache->nda2.nda1[j]=_block_cache_alloc_block(block_cache);
 		block_cache->nda2.bitmap1[j]=0xfffffffffffffffeull;
+		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
 	}
 	else{
 		k=__builtin_ctzll(block_cache->nda2.bitmap1[j]);
@@ -574,6 +585,8 @@ static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 		do{
 			_block_cache_load_nfda(block_cache,block_index);
 			_block_cache_dealloc_block(block_cache,block_index);
+			block_cache->root.nfda_block_count-=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+			block_cache->root.data_block_count-=block_cache->nfda.data_length<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 			block_index=block_cache->nfda.next_block_index;
 			for (u16 i=0;i<510;i++){
 				kfs_large_block_index_t base=block_cache->nfda.ranges[i].block_index;
@@ -586,6 +599,7 @@ static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 			}
 			block_cache->flags&=~(KFS_BLOCK_CACHE_NFDA_PRESENT|KFS_BLOCK_CACHE_NFDA_DIRTY);
 		} while (block_index);
+		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA2_DIRTY;
 	kfs_node_index_t node_index=kfs_node->index;
@@ -593,8 +607,10 @@ static _Bool _kfs_delete(fs_file_system_t* fs,fs_node_t* node){
 	node_index>>=6;
 	block_cache->nda2.bitmap1[node_index]|=mask;
 	if (block_cache->nda2.bitmap1[node_index]==0xffffffffffffffffull){
+		block_cache->root.nda1_block_count-=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 		_block_cache_dealloc_block(block_cache,block_cache->nda2.nda1[node_index]);
 		block_cache->nda2.nda1[node_index]=0;
+		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
 	}
 	block_cache->nda2.bitmap2[node_index>>6]|=1ull<<(node_index&63);
 	block_cache->nda2.bitmap3|=1<<(node_index>>6);
@@ -749,6 +765,8 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		if (!overflow){
 			goto _skip_nfda_resize;
 		}
+		block_cache->root.data_block_count+=overflow<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
 		if (!(kfs_node->data.file.nfda_tail)){
 			kfs_node->data.file.nfda_head=_block_cache_alloc_block(block_cache);
 			kfs_node->data.file.nfda_tail=kfs_node->data.file.nfda_head;
@@ -872,6 +890,13 @@ static void _kfs_flush_cache(fs_file_system_t* fs){
 	_block_cache_flush_nda3(block_cache);
 	_block_cache_flush_batc(block_cache);
 	_block_cache_flush_root(block_cache);
+	fs->drive->stats->root_block_count=block_cache->root.root_block_count;
+	fs->drive->stats->batc_block_count=block_cache->root.batc_block_count;
+	fs->drive->stats->nda3_block_count=block_cache->root.nda3_block_count;
+	fs->drive->stats->nda2_block_count=block_cache->root.nda2_block_count;
+	fs->drive->stats->nda1_block_count=block_cache->root.nda1_block_count;
+	fs->drive->stats->nfda_block_count=block_cache->root.nfda_block_count;
+	fs->drive->stats->data_block_count=block_cache->root.data_block_count;
 }
 
 
@@ -909,6 +934,13 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t*
 		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,NULL,0);
 	}
 	_node_to_fs_node(kfs_root,root);
+	drive->stats->root_block_count=block_cache->root.root_block_count;
+	drive->stats->batc_block_count=block_cache->root.batc_block_count;
+	drive->stats->nda3_block_count=block_cache->root.nda3_block_count;
+	drive->stats->nda2_block_count=block_cache->root.nda2_block_count;
+	drive->stats->nda1_block_count=block_cache->root.nda1_block_count;
+	drive->stats->nfda_block_count=block_cache->root.nfda_block_count;
+	drive->stats->data_block_count=block_cache->root.data_block_count;
 }
 
 
@@ -932,17 +964,18 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	kfs_root_block_t root={
 		KFS_SIGNATURE,
 		block_count,
-		first_free_block_index,
-		(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT
+		first_free_block_index
 	};
 	for (u16 i=0;i<128;i++){
 		root.nda3[i]=0;
 	}
-	INFO("Writing ROOT block...");
-	if (drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR("Error writing data to drive");
-		return 0;
-	}
+	root.root_block_count=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+	root.batc_block_count=((block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT)<<(15-DRIVE_BLOCK_SIZE_SHIFT);
+	root.nda3_block_count=0;
+	root.nda2_block_count=0;
+	root.nda1_block_count=0;
+	root.nfda_block_count=0;
+	root.data_block_count=0;
 	INFO("Writing BATC blocks...");
 	kfs_batc_block_t batc;
 	batc.bitmap3=0x7fffffffffffffffull;
@@ -1002,6 +1035,11 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		batc.bitmap3&=~(1ull<<i);
 	}
 	_drive_write(drive,root.batc_block_index,&batc,8);
+	INFO("Writing ROOT block...");
+	if (drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
+		ERROR("Error writing data to drive");
+		return 0;
+	}
 	LOG("Drive '%s' successfully formatted as KFS",drive->model_number);
 	return 1;
 }
