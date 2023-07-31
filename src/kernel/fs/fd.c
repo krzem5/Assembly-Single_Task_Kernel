@@ -298,5 +298,5 @@ int fd_move(fd_t fd,fd_t dst_fd){
 	}
 	WARN("Unimplemented: fd_move");
 	lock_release(&_fd_lock);
-	return -1;
+	return FD_ERROR_DIFFERENT_FS;
 }
