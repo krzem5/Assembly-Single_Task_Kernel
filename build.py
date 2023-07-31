@@ -239,14 +239,19 @@ if ("--run" in sys.argv):
 	if (not os.path.exists("build/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
+	if (not os.path.exists("build/ssd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/ssd.qcow2","8G"]).returncode!=0):
+			sys.exit(1)
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
 		"-boot","order=dc",
-		"-drive","file=build/hdd.qcow2,if=none,id=harddisk",
+		"-drive","file=build/hdd.qcow2,if=none,id=hdd",
+		"-drive","file=build/ssd.qcow2,if=none,id=ssd",
 		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true",
 		"-device","ahci,id=ahci",
-		"-device","ide-hd,drive=harddisk,bus=ahci.0",
+		"-device","ide-hd,drive=hdd,bus=ahci.0",
+		"-device","nvme,serial=00112233,drive=ssd",
 		"-m","1G",
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
