@@ -31,6 +31,18 @@ static _Bool _emptyfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relat
 
 
 
+static _Bool _emptyfs_move_directory(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+	return 0;
+}
+
+
+
+static _Bool _emptyfs_move_file(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+	return 0;
+}
+
+
+
 static u64 KERNEL_CORE_CODE _emptyfs_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	return fs->drive->read_write(fs->drive->extra_data,offset>>fs->drive->block_size_shift,buffer,count>>fs->drive->block_size_shift)<<fs->drive->block_size_shift;
 }
@@ -62,6 +74,8 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _emptyfs_fs_config={
 	_emptyfs_delete,
 	_emptyfs_get_relative,
 	_emptyfs_set_relative,
+	_emptyfs_move_directory,
+	_emptyfs_move_file,
 	_emptyfs_read,
 	_emptyfs_write,
 	_emptyfs_get_size,

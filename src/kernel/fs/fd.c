@@ -296,7 +296,42 @@ int fd_move(fd_t fd,fd_t dst_fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	WARN("Unimplemented: fd_move");
+	fd_data_t* data=_get_fd_data(fd);
+	fs_node_t* node=fs_get_node_by_id(data->node_id);
+	if (!node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	fd_data_t* dst_data=_get_fd_data(dst_fd);
+	fs_node_t* dst_node=fs_get_node_by_id(dst_data->node_id);
+	if (!dst_node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	if (node->fs_index!=dst_node->fs_index){
+		lock_release(&_fd_lock);
+		return FD_ERROR_DIFFERENT_FS;
+	}
+	if ((node->flags^dst_node->flags)&FS_NODE_TYPE_DIRECTORY){
+		lock_release(&_fd_lock);
+		return FD_ERROR_DIFFERENT_TYPE;
+	}
+	if (node->flags&FS_NODE_TYPE_DIRECTORY){
+		if (fs_get_node_relative(dst_node,FS_NODE_RELATIVE_FIRST_CHILD)){
+			lock_release(&_fd_lock);
+			return FD_ERROR_NOT_EMPTY;
+		}
+	}
+	else{
+		if (fs_get_size(dst_node)){
+			lock_release(&_fd_lock);
+			return FD_ERROR_NOT_EMPTY;
+		}
+	}
+	_Bool out=fs_move_node(node,dst_node);
+	if (out){
+		_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
+	}
 	lock_release(&_fd_lock);
-	return FD_ERROR_DIFFERENT_FS;
+	return (out?0:FD_ERROR_NOT_EMPTY);
 }

@@ -31,6 +31,8 @@ typedef struct _FS_FILE_SYSTEM_CONFIG{
 	_Bool (*delete)(struct _FS_FILE_SYSTEM*,fs_node_t*);
 	fs_node_t* (*get_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8);
 	_Bool (*set_relative)(struct _FS_FILE_SYSTEM*,fs_node_t*,u8,fs_node_t*);
+	_Bool (*move_directory)(struct _FS_FILE_SYSTEM*,fs_node_t*,fs_node_t*);
+	_Bool (*move_file)(struct _FS_FILE_SYSTEM*,fs_node_t*,fs_node_t*);
 	u64 (*read)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,u8*,u64);
 	u64 (*write)(struct _FS_FILE_SYSTEM*,fs_node_t*,u64,const u8*,u64);
 	u64 (*get_size)(struct _FS_FILE_SYSTEM*,fs_node_t*);
@@ -99,6 +101,10 @@ fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative);
 
 
 _Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other);
+
+
+
+_Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node);
 
 
 

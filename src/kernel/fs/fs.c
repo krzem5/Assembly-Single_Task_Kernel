@@ -343,6 +343,19 @@ _Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 
 
 
+_Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node){
+	if (!src_node||!dst_node||src_node->fs_index!=dst_node->fs_index||((src_node->flags^dst_node->flags)&FS_NODE_TYPE_DIRECTORY)){
+		return 0;
+	}
+	fs_file_system_t* fs=_fs_file_systems+src_node->fs_index;
+	lock_acquire(&(fs->lock));
+	_Bool out=((src_node->flags&FS_NODE_TYPE_DIRECTORY)?fs->config->move_directory:fs->config->move_file)(fs,src_node,dst_node);
+	lock_release(&(fs->lock));
+	return out;
+}
+
+
+
 fs_node_t* KERNEL_CORE_CODE fs_get_node_child(fs_node_t* parent,const char* name,u8 name_length){
 	if (!parent||parent->type!=FS_NODE_TYPE_DIRECTORY){
 		return NULL;

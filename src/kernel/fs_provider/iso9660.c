@@ -175,6 +175,18 @@ static _Bool _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relat
 
 
 
+static _Bool _iso9660_move_directory(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+	return 0;
+}
+
+
+
+static _Bool _iso9660_move_file(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+	return 0;
+}
+
+
+
 static u64 KERNEL_CORE_CODE _iso9660_read(fs_file_system_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (count+offset>iso9660_node->data_length){
@@ -212,6 +224,8 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
 	_iso9660_delete,
 	_iso9660_get_relative,
 	_iso9660_set_relative,
+	_iso9660_move_directory,
+	_iso9660_move_file,
 	_iso9660_read,
 	_iso9660_write,
 	_iso9660_get_size,
