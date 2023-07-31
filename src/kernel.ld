@@ -3,7 +3,7 @@ SECTIONS{
     . = 0xffffffffc0100000;
     __KERNEL_OFFSET__ = 0xffffffffc0000000;
     __KERNEL_START__ = . - __KERNEL_OFFSET__;
-    .core : AT(ADDR(.core) - __KERNEL_OFFSET__) {
+    .core : AT(ADDR(.core) - __KERNEL_OFFSET__){
         *(.entry)
         *(.cversion)
         *(.ctext .ctext*)
