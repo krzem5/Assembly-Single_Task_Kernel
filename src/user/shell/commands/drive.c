@@ -1,8 +1,16 @@
 #include <command.h>
 #include <string.h>
+#include <user/clock.h>
 #include <user/drive.h>
+#include <user/fs.h>
 #include <user/io.h>
+#include <user/memory.h>
 #include <user/types.h>
+
+
+
+// Must be page-aligned
+#define SPEED_TEST_BUFFER_SIZE (64*4096)
 
 
 
@@ -16,22 +24,32 @@ static const char* drive_type_names[]={
 
 
 void drive_main(int argc,const char*const* argv){
-	if (argc<2){
-		printf("drive: no drive supplied\n");
-		return;
+	_Bool speed_test=0;
+	const char* drive_name=NULL;
+	for (u32 i=1;i<argc;i++){
+		if (string_equal(argv[i],"-s")){
+			speed_test=1;
+		}
+		else if (argv[i][0]!='-'&&!drive_name){
+			drive_name=argv[i];
+		}
+		else{
+			printf("drive: unrecognized option '%s'\n",argv[i]);
+			return;
+		}
 	}
-	if (argc>2){
-		printf("drive: unrecognized option '%s'\n",argv[2]);
+	if (!drive_name){
+		printf("drive: no drive supplied\n");
 		return;
 	}
 	u32 i=0;
 	for (;i<drive_count;i++){
-		if (string_equal((drives+i)->name,argv[1])){
+		if (string_equal((drives+i)->name,drive_name)){
 			break;
 		}
 	}
 	if (i==drive_count){
-		printf("drive: drive '%s' not found\n",argv[1]);
+		printf("drive: drive '%s' not found\n",drive_name);
 		return;
 	}
 	drive_stats_t stats;
@@ -41,7 +59,7 @@ void drive_main(int argc,const char*const* argv){
 	}
 	const drive_t* drive=drives+i;
 	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nBlock size: \x1b[1m%v\x1b[0m\nBlock count: \x1b[1m%lu\x1b[0m\n",
-		argv[1],
+		drive_name,
 		drive_type_names[drive->type],
 		drive->block_count*drive->block_size,
 		drive->block_size,
@@ -59,8 +77,38 @@ void drive_main(int argc,const char*const* argv){
 		stats.nfda_block_count,
 		stats.data_block_count
 	);
+	if (!speed_test){
+		return;
+	}
+	char path[64];
+	i=0;
+	while (drive_name[i]){
+		path[i]=drive_name[i];
+		i++;
+	}
+	path[i]='p';
+	path[i+1]='0';
+	path[i+2]=':';
+	path[i+3]='t';
+	path[i+4]='m';
+	path[i+5]='p';
+	path[i+6]=0;
+	int dst_fd=fs_open(0,path,0);
+	if (dst_fd>=0){
+		fs_close(dst_fd);
+		printf("drive: file '%s' already exists\n",path);
+		return;
+	}
+	dst_fd=fs_open(0,path,FS_FLAG_WRITE|FS_FLAG_CREATE);
+	void* buffer=memory_map(SPEED_TEST_BUFFER_SIZE);
+	u64 start=clock_get_ticks();
+	s64 error=fs_write(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
+	u64 end=clock_get_ticks();
+	memory_unmap(buffer,SPEED_TEST_BUFFER_SIZE);
+	fs_delete(dst_fd);
+	printf("%ld, %lu, %lu\n",error,end-start,clock_ticks_to_time(end-start));
 }
 
 
 
-DECLARE_COMMAND(drive,"drive <drive>");
+DECLARE_COMMAND(drive,"drive [-s] <drive>");

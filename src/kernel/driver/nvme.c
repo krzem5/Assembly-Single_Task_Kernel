@@ -44,5 +44,5 @@ void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
 	while (registers->csts&CSTS_RDY);
 	u32 queue_entries=(registers->cap&0xffff)+1;
 	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
-	INFO_CORE("Queue entry count: %u, Doorbell stride: %u",queue_entries,doorbell_stride);
+	INFO_CORE("Queue entry count: %u, Doorbell stride: %v",queue_entries,doorbell_stride);
 }
