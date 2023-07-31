@@ -329,9 +329,6 @@ int fd_move(fd_t fd,fd_t dst_fd){
 		}
 	}
 	_Bool out=fs_move_node(node,dst_node);
-	if (out){
-		_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
-	}
 	lock_release(&_fd_lock);
-	return (out?0:FD_ERROR_NOT_EMPTY);
+	return (out?0/*fd_delete(fd)*/:FD_ERROR_NOT_EMPTY);
 }

@@ -41,6 +41,12 @@ void mv_main(int argc,const char*const* argv){
 		printf("mv: unable to move file: error %d\n",error);
 	}
 	fs_close(dst_fd);
+	error=fs_delete(src_fd);
+	if (error<0){
+		printf("mv: unable to delete file '%s': error %d\n",argv[1],error);
+		fs_close(src_fd);
+		return;
+	}
 _cleanup:
 	fs_close(src_fd);
 }

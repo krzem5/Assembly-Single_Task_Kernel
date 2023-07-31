@@ -694,8 +694,23 @@ static _Bool _kfs_move_directory(fs_file_system_t* fs,fs_node_t* src_node,fs_nod
 
 
 static _Bool _kfs_move_file(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
-	WARN("Unimplemented: _kfs_move_file");
-	return 0;
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_src_node=(kfs_fs_node_t*)src_node;
+	_block_cache_load_nda1(block_cache,kfs_fs_src_node->block_index);
+	kfs_node_t* kfs_src_node=block_cache->nda1.nodes+(kfs_fs_src_node->id&63);
+	u64 length=kfs_src_node->data.file.length;
+	kfs_large_block_index_t nfda_head=kfs_src_node->data.file.nfda_head;
+	kfs_large_block_index_t nfda_tail=kfs_src_node->data.file.nfda_tail;
+	kfs_src_node->data.file.length=0;
+	kfs_src_node->data.file.nfda_head=0;
+	kfs_src_node->data.file.nfda_tail=0;
+	kfs_fs_node_t* kfs_fs_dst_node=(kfs_fs_node_t*)dst_node;
+	_block_cache_load_nda1(block_cache,kfs_fs_dst_node->block_index);
+	kfs_node_t* kfs_dst_node=block_cache->nda1.nodes+(kfs_fs_dst_node->id&63);
+	kfs_dst_node->data.file.length=length;
+	kfs_dst_node->data.file.nfda_head=nfda_head;
+	kfs_dst_node->data.file.nfda_tail=nfda_tail;
+	return 1;
 }
 
 
