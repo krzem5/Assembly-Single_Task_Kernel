@@ -1,5 +1,7 @@
 #include <kernel/driver/nvme.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "nvme"
