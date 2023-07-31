@@ -312,7 +312,7 @@ int fd_move(fd_t fd,fd_t dst_fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_DIFFERENT_FS;
 	}
-	if ((node->flags^dst_node->flags)&FS_NODE_TYPE_DIRECTORY){
+	if (node->type!=dst_node->type){
 		lock_release(&_fd_lock);
 		return FD_ERROR_DIFFERENT_TYPE;
 	}
@@ -330,5 +330,5 @@ int fd_move(fd_t fd,fd_t dst_fd){
 	}
 	_Bool out=fs_move_node(node,dst_node);
 	lock_release(&_fd_lock);
-	return (out?0/*fd_delete(fd)*/:FD_ERROR_NOT_EMPTY);
+	return (out?0:FD_ERROR_NOT_EMPTY);
 }

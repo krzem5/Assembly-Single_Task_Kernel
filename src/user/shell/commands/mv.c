@@ -38,7 +38,9 @@ void mv_main(int argc,const char*const* argv){
 	dst_fd=fs_open(cwd_fd,argv[2],FS_FLAG_CREATE|(stat.type==FS_STAT_TYPE_DIRECTORY?FS_FLAG_DIRECTORY:0));
 	error=fs_move(src_fd,dst_fd);
 	if (error<0){
+		fs_close(dst_fd);
 		printf("mv: unable to move file: error %d\n",error);
+		goto _cleanup;
 	}
 	fs_close(dst_fd);
 	error=fs_delete(src_fd);

@@ -344,13 +344,25 @@ _Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 
 
 _Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node){
-	if (!src_node||!dst_node||src_node->fs_index!=dst_node->fs_index||((src_node->flags^dst_node->flags)&FS_NODE_TYPE_DIRECTORY)){
+	if (!src_node||!dst_node||src_node->fs_index!=dst_node->fs_index||src_node->type!=dst_node->type){
 		return 0;
 	}
 	fs_file_system_t* fs=_fs_file_systems+src_node->fs_index;
-	lock_acquire(&(fs->lock));
-	_Bool out=((src_node->flags&FS_NODE_TYPE_DIRECTORY)?fs->config->move_directory:fs->config->move_file)(fs,src_node,dst_node);
-	lock_release(&(fs->lock));
+	_Bool out=1;
+	if (src_node->type==FS_NODE_TYPE_DIRECTORY){
+		fs_node_t* child=fs_get_node_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD);
+		out&=fs_set_node_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD,NULL);
+		out&=fs_set_node_relative(dst_node,FS_NODE_RELATIVE_FIRST_CHILD,child);
+		while (child){
+			out&=fs_set_node_relative(child,FS_NODE_RELATIVE_PARENT,dst_node);
+			child=fs_get_node_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING);
+		}
+	}
+	else{
+		lock_acquire(&(fs->lock));
+		out=fs->config->move_file(fs,src_node,dst_node);
+		lock_release(&(fs->lock));
+	}
 	return out;
 }
 

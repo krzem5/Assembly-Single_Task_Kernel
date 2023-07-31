@@ -686,13 +686,6 @@ static _Bool _kfs_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relative,
 
 
 
-static _Bool _kfs_move_directory(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
-	WARN("Unimplemented: _kfs_move_directory");
-	return 0;
-}
-
-
-
 static _Bool _kfs_move_file(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_src_node=(kfs_fs_node_t*)src_node;
@@ -937,7 +930,6 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	_kfs_delete,
 	_kfs_get_relative,
 	_kfs_set_relative,
-	_kfs_move_directory,
 	_kfs_move_file,
 	_kfs_read,
 	_kfs_write,

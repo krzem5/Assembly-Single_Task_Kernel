@@ -175,12 +175,6 @@ static _Bool _iso9660_set_relative(fs_file_system_t* fs,fs_node_t* node,u8 relat
 
 
 
-static _Bool _iso9660_move_directory(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
-	return 0;
-}
-
-
-
 static _Bool _iso9660_move_file(fs_file_system_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
 	return 0;
 }
@@ -224,7 +218,6 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
 	_iso9660_delete,
 	_iso9660_get_relative,
 	_iso9660_set_relative,
-	_iso9660_move_directory,
 	_iso9660_move_file,
 	_iso9660_read,
 	_iso9660_write,
