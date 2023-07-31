@@ -822,9 +822,6 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 			block_cache->nfda.data_length++;
 			block_cache->flags|=KFS_BLOCK_CACHE_NFDA_DIRTY;
 		} while (overflow);
-		u8 zero_buffer[4096];
-		memset(zero_buffer,0,4096);
-		_drive_write(block_cache->drive,new_block_index,zero_buffer,1);
 _skip_nfda_resize:
 		kfs_node->data.file.length=offset+count;
 	}
