@@ -322,12 +322,12 @@ static void _syscall_fd_get_relative(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_dup(syscall_registers_t* regs){
-	if (FD_OUT_OF_RANGE(regs->rdi)){
+static void _syscall_fd_move(syscall_registers_t* regs){
+	if (FD_OUT_OF_RANGE(regs->rdi)||FD_OUT_OF_RANGE(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
 	}
-	regs->rax=fd_dup(regs->rdi,regs->rsi);
+	regs->rax=fd_move(regs->rdi,regs->rsi);
 }
 
 
@@ -469,7 +469,7 @@ void syscall_init(void){
 	_syscall_handlers[15]=_syscall_fd_seek;
 	_syscall_handlers[16]=_syscall_fd_stat;
 	_syscall_handlers[17]=_syscall_fd_get_relative;
-	_syscall_handlers[18]=_syscall_fd_dup;
+	_syscall_handlers[18]=_syscall_fd_move;
 	_syscall_handlers[19]=_syscall_net_send;
 	_syscall_handlers[20]=_syscall_net_poll;
 	_syscall_handlers[21]=_syscall_acpi_shutdown;

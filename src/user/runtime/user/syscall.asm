@@ -16,7 +16,7 @@ global _syscall_fd_write
 global _syscall_fd_seek
 global _syscall_fd_stat
 global _syscall_fd_get_relative
-global _syscall_fd_dup
+global _syscall_fd_move
 global _syscall_net_send
 global _syscall_net_poll
 global _syscall_acpi_shutdown
@@ -157,7 +157,7 @@ _syscall_fd_get_relative:
 
 
 
-_syscall_fd_dup:
+_syscall_fd_move:
 	mov rax, 18
 	syscall
 	ret

@@ -286,13 +286,17 @@ int fd_get_relative(fd_t fd,u8 relative,u8 flags){
 
 
 
-int fd_dup(fd_t fd,u8 flags){
+int fd_move(fd_t fd,fd_t dst_fd){
 	lock_acquire(&_fd_lock);
 	if (_is_invalid_fd(fd)){
 		lock_release(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	WARN("Unimplemented: fd_dup");
+	if (_is_invalid_fd(dst_fd)){
+		lock_release(&_fd_lock);
+		return FD_ERROR_INVALID_FD;
+	}
+	WARN("Unimplemented: fd_move");
 	lock_release(&_fd_lock);
 	return -1;
 }

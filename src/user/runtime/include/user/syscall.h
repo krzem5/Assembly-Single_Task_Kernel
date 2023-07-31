@@ -76,7 +76,7 @@ s32 _syscall_fd_get_relative(s32 fd,u32 relative,u32 flags);
 
 
 
-s32 _syscall_fd_dup(s32 fd,u32 flags);
+s32 _syscall_fd_move(s32 fd,u32 dst_fd);
 
 
 

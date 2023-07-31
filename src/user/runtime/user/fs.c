@@ -62,6 +62,6 @@ int fs_get_relative(int fd,u8 relative,u8 flags){
 
 
 
-int fs_dup(int fd,u8 flags){
-	return _syscall_fd_dup(fd,flags);
+int fs_move(int fd,int dst_fd){
+	return _syscall_fd_move(fd,dst_fd);
 }

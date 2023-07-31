@@ -101,7 +101,7 @@ int fd_get_relative(fd_t fd,u8 relative,u8 flags);
 
 
 
-int fd_dup(fd_t fd,u8 flags);
+int fd_move(fd_t fd,fd_t dst_fd);
 
 
 
