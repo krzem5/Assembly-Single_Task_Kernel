@@ -8,6 +8,14 @@
 
 
 
+// Controller Configuration flags
+#define CC_EN 0x01
+
+// Controller Status flags
+#define CSTS_RDY 0x01
+
+
+
 void KERNEL_CORE_CODE driver_nvme_init(void){
 	return;
 }
@@ -25,4 +33,16 @@ void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
 		return;
 	}
 	LOG_CORE("Attached NVMe driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	nvme_registers_t* registers=VMM_TRANSLATE_ADDRESS(pci_bar.address);
+	if (!(registers->cap&0x0000002000000000ull)){
+		WARN("NVMe instruction set not supported");
+		return;
+	}
+	INFO_CORE("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
+	INFO_CORE("Min page size: %lu, Max page size: %lu",1<<(12+((registers->cap>>48)&15)),1<<(12+((registers->cap>>52)&15)));
+	registers->cc&=~CC_EN;
+	while (registers->csts&CSTS_RDY);
+	u32 queue_entries=(registers->cap&0xffff)+1;
+	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
+	INFO_CORE("Queue entry count: %u, Doorbell stride: %u",queue_entries,doorbell_stride);
 }
