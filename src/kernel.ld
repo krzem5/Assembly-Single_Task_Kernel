@@ -11,15 +11,12 @@ SECTIONS{
        	*(.cdata .cdata*)
         . = ALIGN(0x1000);
     }
-    __KERNEL_LOW_END__ = . - __KERNEL_OFFSET__;
-    .text : AT(ADDR(.text) - __KERNEL_OFFSET__){
-        ASSERT (__KERNEL_LOW_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
+    __KERNEL_CORE_END__ = . - __KERNEL_OFFSET__;
+    .kernel : AT(ADDR(.kernel) - __KERNEL_OFFSET__){
+        ASSERT (__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
         *(.version)
         *(.text .text*)
         *(.rodata .rodata* .rdata .rdata*)
-        . = ALIGN(0x1000);
-    }
-    .data : AT(ADDR(.data) - __KERNEL_OFFSET__){
         *(.data .data*)
         *(.bss .bss*)
         *(.ap_startup)

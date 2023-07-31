@@ -209,7 +209,7 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_file("build/kernel.bin","build/stages/kernel_core.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_LOW_END__"]-kernel_symbols["__KERNEL_START__"])
+_split_file("build/kernel.bin","build/stages/kernel_core.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
 kernel_core_size=_get_file_size("build/stages/kernel_core.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)

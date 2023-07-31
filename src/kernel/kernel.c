@@ -21,8 +21,8 @@ const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
 	_kernel_data=*((const volatile kernel_data_t*)0xffffffffc0007000);
 	INFO_CORE("Version: %lx",kernel_get_version());
-	INFO_CORE("Low kernel range: %p - %p",kernel_get_start(),kernel_get_low_end());
-	INFO_CORE("High kernel range: %p - %p",kernel_get_low_end(),kernel_get_end());
+	INFO_CORE("Core kernel range: %p - %p",kernel_get_start(),kernel_get_core_end());
+	INFO_CORE("Full kernel range: %p - %p",kernel_get_start(),kernel_get_end());
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<_kernel_data.mmap_size;i++){
@@ -96,8 +96,8 @@ _load_kernel:
 	if (!kernel_file){
 		goto _error;
 	}
-	u64 kernel_size=kernel_get_end()-kernel_get_low_end();
-	void* address=(void*)(kernel_get_low_end()+kernel_get_offset());
+	u64 kernel_size=kernel_get_end()-kernel_get_core_end();
+	void* address=(void*)(kernel_get_core_end()+kernel_get_offset());
 	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
 	if (fs_read(kernel_file,0,address,kernel_size)!=kernel_size){
 		goto _error;
