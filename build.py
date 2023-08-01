@@ -206,7 +206,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			error=True
 _save_file_hash_list(file_hash_list,HASH_FILE_PATH)
 os.remove(KERNEL_VERSION_FILE_PATH)
-if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel/linker.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_file("build/kernel.bin","build/stages/kernel_core.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
