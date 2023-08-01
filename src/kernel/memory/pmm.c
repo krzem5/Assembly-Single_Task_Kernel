@@ -81,7 +81,7 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 	INFO_CORE("Allocating allocator bitmap...");
 	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
 	INFO_CORE("Bitmap size: %v",bitmap_size);
-	_pmm_allocator.bitmap=pmm_alloc(bitmap_size>>PAGE_SIZE_SHIFT);
+	_pmm_allocator.bitmap=pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT);
 }
 
 
@@ -103,7 +103,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc_raw(u64 count){
+u64 KERNEL_CORE_CODE pmm_alloc(u64 count){
 	if (!count){
 		ERROR_CORE("Trying to allocate zero physical pages!");
 		for (;;);
@@ -155,8 +155,8 @@ _toggle_bitmap:
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc(u64 count){
-	u64 out=pmm_alloc_raw(count);
+u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count){
+	u64 out=pmm_alloc(count);
 	if (!out){
 		return 0;
 	}

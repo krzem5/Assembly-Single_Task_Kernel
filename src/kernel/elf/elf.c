@@ -84,7 +84,7 @@ void* elf_load(const char* path){
 		}
 		u64 offset=program_header.p_vaddr&(PAGE_SIZE-1);
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
-		u64 pages=pmm_alloc(page_count);
+		u64 pages=pmm_alloc_zero(page_count);
 		vmm_map_pages(&pagemap,pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
 		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
 		if (end_address>highest_address){

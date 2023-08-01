@@ -44,11 +44,11 @@ void pmm_init_high_mem(const kernel_data_t* kernel_data);
 
 
 
-u64 pmm_alloc_raw(u64 count);
-
-
-
 u64 pmm_alloc(u64 count);
+
+
+
+u64 pmm_alloc_zero(u64 count);
 
 
 
