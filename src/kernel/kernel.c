@@ -71,8 +71,11 @@ _check_every_drive:
 		if (!fs){
 			break;
 		}
-		if (boot_drive&&fs->drive!=boot_drive){
-			continue;
+		if (boot_drive){
+			if (fs->drive!=boot_drive){
+				continue;
+			}
+			// context save/restore file-system is 'fs'
 		}
 		u8 i=0;
 		while (fs->name[i]){
