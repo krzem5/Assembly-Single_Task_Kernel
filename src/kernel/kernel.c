@@ -75,7 +75,7 @@ _check_every_drive:
 			if (fs->drive!=boot_drive){
 				continue;
 			}
-			// context save/restore file-system is 'fs'
+			// mark this file system as half-installed [used in user mode to continue install after formatting a drive]
 		}
 		u8 i=0;
 		while (fs->name[i]){
