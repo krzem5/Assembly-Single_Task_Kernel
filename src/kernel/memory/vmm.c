@@ -54,30 +54,37 @@ static inline void KERNEL_CORE_CODE _increase_length_if_entry_empty(u64* table,u
 
 
 
-static void _delete_pagemap_recursive(u64 table,u8 level){
-	if (!table){
+static void _delete_pagemap_recursive(u64* table,u8 level){
+	u64 entry=*table;
+	if (!(entry&VMM_PAGE_FLAG_PRESENT)){
 		return;
 	}
-	u64* entry=VMM_TRANSLATE_ADDRESS(table);
+	if (entry&VMM_PAGE_FLAG_LARGE){
+		u64 count=(entry&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
+		if (count){
+			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,count<<(level==3?EXTRA_LARGE_PAGE_SIZE_SHIFT-PAGE_SIZE_SHIFT:LARGE_PAGE_SIZE_SHIFT-PAGE_SIZE_SHIFT),PMM_COUNTER_USER);
+		}
+		return;
+	}
+	u64* entries=_get_table(table)->entries;
 	if (level>1){
-		// check large flag
 		for (u16 i=0;i<512;i++){
-			_delete_pagemap_recursive(entry[i]&VMM_PAGE_ADDRESS_MASK,level-1);
+			_delete_pagemap_recursive(entries+i,level-1);
 		}
 	}
 	else{
 		for (u16 i=0;i<512;i++){
-			if (!(entry[i]&VMM_PAGE_FLAG_PRESENT)){
+			if (!(entries[i]&VMM_PAGE_FLAG_PRESENT)){
 				continue;
 			}
-			u64 count=(entry[i]&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
+			u64 count=(entries[i]&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
 			if (!count){
 				continue;
 			}
-			pmm_dealloc(entry[i]&VMM_PAGE_ADDRESS_MASK,count,PMM_COUNTER_USER);
+			pmm_dealloc(entries[i]&VMM_PAGE_ADDRESS_MASK,count,PMM_COUNTER_USER);
 		}
 	}
-	pmm_dealloc(table,1,PMM_COUNTER_VMM);
+	pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,PMM_COUNTER_VMM);
 }
 
 
@@ -121,8 +128,8 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 		}
 	}
 	INFO_CORE("Mapping %v from %p to %p",highest_address,0,VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	for (u64 i=0;i<highest_address;i+=PAGE_SIZE){
-		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
+		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	vmm_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
@@ -142,35 +149,58 @@ void vmm_pagemap_init(vmm_pagemap_t* pagemap){
 
 
 void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
-	_delete_pagemap_recursive((u64)(pagemap->toplevel),4);
+	_delete_pagemap_recursive(&(pagemap->toplevel),4);
 }
 
 
 
 void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
-	if (pmm_align_down_address(physical_address)!=physical_address||pmm_align_down_address(virtual_address)!=virtual_address){
-		ERROR_CORE("Invalid vmm_map_page arguments");
-		for (;;);
-	}
-	lock_acquire(&(pagemap->lock));
-	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
-		ERROR_CORE("Unimplemented: vmm_map_page.extra_large");
-		for (;;);
-	}
-	if (flags&VMM_PAGE_FLAG_LARGE){
-		ERROR_CORE("Unimplemented: vmm_map_page.large");
-		for (;;);
-	}
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
 	u64 l=(virtual_address>>12)&0x1ff;
+	lock_acquire(&(pagemap->lock));
 	u64* pml4=&(pagemap->toplevel);
 	u64* pml3=_get_child_table(pml4,i,1);
+	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
+		if (pmm_align_down_address_extra_large(physical_address)!=physical_address||pmm_align_down_address_extra_large(virtual_address)!=virtual_address){
+			ERROR_CORE("Invalid vmm_map_page arguments");
+			for (;;);
+		}
+		if (_get_table(pml3)->entries[j]&VMM_PAGE_FLAG_PRESENT){
+			ERROR_CORE("Memory mapping already present");
+			for (;;);
+		}
+		_increase_length_if_entry_empty(pml3,j);
+		_get_table(pml3)->entries[j]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
+		goto _cleanup;
+	}
 	u64* pml2=_get_child_table(pml3,j,1);
+	if (flags&VMM_PAGE_FLAG_LARGE){
+		if (pmm_align_down_address_large(physical_address)!=physical_address||pmm_align_down_address_large(virtual_address)!=virtual_address){
+			ERROR_CORE("Invalid vmm_map_page arguments");
+			for (;;);
+		}
+		if (_get_table(pml2)->entries[k]&VMM_PAGE_FLAG_PRESENT){
+			ERROR_CORE("Memory mapping already present");
+			for (;;);
+		}
+		_increase_length_if_entry_empty(pml2,k);
+		_get_table(pml2)->entries[k]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
+		goto _cleanup;
+	}
+	if (pmm_align_down_address(physical_address)!=physical_address||pmm_align_down_address(virtual_address)!=virtual_address){
+		ERROR_CORE("Invalid vmm_map_page arguments");
+		for (;;);
+	}
 	u64* pml1=_get_child_table(pml2,k,1);
+	if (_get_table(pml1)->entries[l]&VMM_PAGE_FLAG_PRESENT){
+		ERROR_CORE("Memory mapping already present");
+		for (;;);
+	}
 	_increase_length_if_entry_empty(pml1,l);
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));
+_cleanup:
 	lock_release(&(pagemap->lock));
 }
 
@@ -200,7 +230,11 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 
-_Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+	if (virtual_address&(PAGE_SIZE-1)){
+		return 0;
+	}
+	u64 out=0;
 	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -209,24 +243,53 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64* pml4=&(pagemap->toplevel);
 	u64* pml3=_get_child_table(pml4,i,0);
 	if (!pml3){
-		lock_release(&(pagemap->lock));
-		return 0;
+		goto _cleanup;
 	}
-	// check extra_large flag
+	u64 entry=_get_table(pml3)->entries[j];
+	if (entry&VMM_PAGE_FLAG_LARGE){
+		if (!(entry&VMM_PAGE_FLAG_PRESENT)||(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1))){
+			return 0;
+		}
+		u64 count=(entry&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
+		if (count){
+			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,count<<(EXTRA_LARGE_PAGE_SIZE_SHIFT-PAGE_SIZE_SHIFT),PMM_COUNTER_USER);
+		}
+		_get_table(pml3)->entries[j]=0;
+		_decrease_length(pml3);
+		out=EXTRA_LARGE_PAGE_SIZE;
+		goto _cleanup;
+	}
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
-		lock_release(&(pagemap->lock));
-		return 0;
+		goto _cleanup;
 	}
-	// check large flag
+	entry=_get_table(pml2)->entries[k];
+	if (entry&VMM_PAGE_FLAG_LARGE){
+		if (!(entry&VMM_PAGE_FLAG_PRESENT)||(virtual_address&(LARGE_PAGE_SIZE-1))){
+			return 0;
+		}
+		u64 count=(entry&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
+		if (count){
+			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,count<<(LARGE_PAGE_SIZE_SHIFT-PAGE_SIZE_SHIFT),PMM_COUNTER_USER);
+		}
+		_get_table(pml2)->entries[k]=0;
+		if (_decrease_length(pml2)){
+			_decrease_length(pml3);
+		}
+		out=LARGE_PAGE_SIZE;
+		goto _cleanup;
+	}
 	u64* pml1=_get_child_table(pml2,k,0);
-	if (!pml1||!_get_table(pml1)->entries[l]){
-		lock_release(&(pagemap->lock));
+	if (!pml1){
+		goto _cleanup;
+	}
+	entry=_get_table(pml1)->entries[l];
+	if (!(entry&VMM_PAGE_FLAG_PRESENT)){
 		return 0;
 	}
-	u64 count=(_get_table(pml1)->entries[l]&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
+	u64 count=(entry&VMM_PAGE_COUNT_MASK)>>VMM_PAGE_COUNT_SHIFT;
 	if (count){
-		pmm_dealloc(_get_table(pml1)->entries[l]&VMM_PAGE_ADDRESS_MASK,count,PMM_COUNTER_USER);
+		pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,count,PMM_COUNTER_USER);
 	}
 	_get_table(pml1)->entries[l]=0;
 	if (_decrease_length(pml1)){
@@ -234,13 +297,16 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 			_decrease_length(pml3);
 		}
 	}
+	out=PAGE_SIZE;
+_cleanup:
 	lock_release(&(pagemap->lock));
-	return 1;
+	return out;
 }
 
 
 
 u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+	u64 out=0;
 	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -249,19 +315,29 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	u64* pml4=&(pagemap->toplevel);
 	u64* pml3=_get_child_table(pml4,i,0);
 	if (!pml3){
-		return 0;
+		goto _cleanup;
 	}
-	// check extra_large flag
+	u64 entry=_get_table(pml3)->entries[j];
+	if (entry&VMM_PAGE_FLAG_LARGE){
+		out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1)):0);
+		goto _cleanup;
+	}
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
-		return 0;
+		goto _cleanup;
 	}
-	// check large flag
+	entry=_get_table(pml2)->entries[k];
+	if (entry&VMM_PAGE_FLAG_LARGE){
+		out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(LARGE_PAGE_SIZE-1)):0);
+		goto _cleanup;
+	}
 	u64* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
-		return 0;
+		goto _cleanup;
 	}
-	u64 entry=_get_table(pml1)->entries[l];
+	entry=_get_table(pml1)->entries[l];
+	out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
+_cleanup:
 	lock_release(&(pagemap->lock));
-	return ((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)+(virtual_address&0xfff):0);
+	return out;
 }

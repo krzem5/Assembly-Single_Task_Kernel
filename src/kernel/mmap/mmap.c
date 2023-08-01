@@ -35,6 +35,7 @@ u64 mmap_alloc(u64 length){
 	length=pmm_align_up_address(length);
 	lock_acquire(&_mmap_lock);
 	if (_mmap_start_address+length>_mmap_end_address){
+		ERROR("MMAP: Out of linear memory");
 		lock_release(&_mmap_lock);
 		return 0;
 	}
@@ -54,8 +55,13 @@ _Bool mmap_dealloc(u64 address,u64 length){
 	address-=offset;
 	length=pmm_align_up_address(length+offset);
 	_Bool out=1;
-	for (u64 i=0;i<length;i+=PAGE_SIZE){
-		out&=vmm_unmap_page(&vmm_user_pagemap,address+i);
+	for (u64 i=0;i<length;){
+		u64 size=vmm_unmap_page(&vmm_user_pagemap,address+i);
+		if (!size){
+			out=0;
+			size=PAGE_SIZE;
+		}
+		i+=size;
 	}
 	return out;
 }

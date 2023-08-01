@@ -136,7 +136,7 @@ static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* bu
 		if (size!=2048){
 			WARN_CORE("ATA drive returned sector not equal to 2048 bytes");
 		}
-		for (u16 j=0;j<size;j+=2){
+		for (u16 j=0;j<2048;j+=2){
 			*out=io_port_in16(device->port+ATA_REG_DATA);
 			out++;
 		}

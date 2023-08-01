@@ -63,7 +63,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 
-_Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address);
+u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
