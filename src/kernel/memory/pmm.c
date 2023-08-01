@@ -177,7 +177,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
 
 
 
-void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count){
+void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	if (!count){
 		ERROR_CORE("Trying to deallocate zero physical pages!");
 		return;
@@ -201,7 +201,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count){
 	pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
 	header->next=_pmm_allocator.blocks[i];
 	_pmm_allocator.blocks[i]=address;
-	return;
+	_pmm_allocator.counters.data[counter]-=count;
 }
 
 

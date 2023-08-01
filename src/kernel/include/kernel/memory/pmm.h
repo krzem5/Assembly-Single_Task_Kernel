@@ -13,17 +13,16 @@
 #define PMM_COUNTER_DRIVE_LIST 1
 #define PMM_COUNTER_DRIVER_AHCI 2
 #define PMM_COUNTER_DRIVER_I82540 3
-#define PMM_COUNTER_ELF 4
-#define PMM_COUNTER_FD 5
-#define PMM_COUNTER_FS 6
-#define PMM_COUNTER_KERNEL_STACK 7
-#define PMM_COUNTER_KFS 8
-#define PMM_COUNTER_MMAP 9
-#define PMM_COUNTER_NETWORK 10
-#define PMM_COUNTER_NODE_ALLOCATOR 11
-#define PMM_COUNTER_PMM 12
-#define PMM_COUNTER_USER_STACK 13
-#define PMM_COUNTER_VMM 14
+#define PMM_COUNTER_FD 4
+#define PMM_COUNTER_FS 5
+#define PMM_COUNTER_KERNEL_STACK 6
+#define PMM_COUNTER_KFS 7
+#define PMM_COUNTER_NETWORK 8
+#define PMM_COUNTER_NODE_ALLOCATOR 9
+#define PMM_COUNTER_PMM 10
+#define PMM_COUNTER_USER 11
+#define PMM_COUNTER_USER_STACK 12
+#define PMM_COUNTER_VMM 13
 #define PMM_COUNTER_MAX PMM_COUNTER_VMM
 
 
@@ -76,7 +75,7 @@ u64 pmm_alloc_zero(u64 count,u8 counter);
 
 
 
-void pmm_dealloc(u64 address,u64 count);
+void pmm_dealloc(u64 address,u64 count,u8 counter);
 
 
 

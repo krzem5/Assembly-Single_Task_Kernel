@@ -40,7 +40,7 @@ u64 mmap_alloc(u64 length){
 	}
 	u64 out=_mmap_start_address;
 	for (u64 i=0;i<length;i+=PAGE_SIZE){
-		vmm_map_page(&vmm_user_pagemap,pmm_alloc(1,PMM_COUNTER_MMAP),out+i,VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		vmm_map_page(&vmm_user_pagemap,pmm_alloc(1,PMM_COUNTER_USER),out+i,VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	_mmap_start_address+=length;
 	lock_release(&_mmap_lock);

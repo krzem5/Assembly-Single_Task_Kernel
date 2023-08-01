@@ -161,7 +161,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 		if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
 			memcpy(buffer,aligned_buffer,dbc+1);
 		}
-		pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9);
+		pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 	}
 	return (dbc+1)>>9;
 }
@@ -234,7 +234,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+20),10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);
-	pmm_dealloc(buffer_raw,1);
+	pmm_dealloc(buffer_raw,1,PMM_COUNTER_DRIVER_AHCI);
 }
 
 
