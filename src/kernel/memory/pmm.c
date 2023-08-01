@@ -32,8 +32,11 @@ static inline u64 KERNEL_CORE_CODE _get_block_size(u8 index){
 
 
 static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
+	if (address>=end){
+		return;
+	}
 	INFO_CORE("Processing memory range %p - %p",address,end);
-	while (address<end){
+	do{
 		u8 idx=_get_block_index(address);
 		u64 size=_get_block_size(idx);
 		u64 length=end-address;
@@ -46,23 +49,8 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 		header->next=_pmm_allocator.blocks[idx];
 		_pmm_allocator.blocks[idx]=address;
 		address+=size;
-	}
+	} while (address<end);
 }
-
-
-
-// static KERNEL_CORE_CODE u64 _debug_get_accessible_memory(void){
-// 	u64 out=0;
-// 	for (u8 i=0;i<PMM_ALLOCATOR_SIZE_COUNT;i++){
-// 		u64 ptr=_pmm_allocator.blocks[i];
-// 		while (ptr){
-// 			const pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(ptr);
-// 			ptr=header->next;
-// 			out+=_get_block_size(i);
-// 		}
-// 	}
-// 	return out;
-// }
 
 
 

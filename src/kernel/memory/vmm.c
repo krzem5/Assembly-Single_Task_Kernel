@@ -103,7 +103,7 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 	lock_init(&(vmm_kernel_pagemap.lock));
 	vmm_user_pagemap.toplevel=0;
 	lock_init(&(vmm_user_pagemap.lock));
-	INFO_CORE("Kernel top-level page map alloated at %p",vmm_kernel_pagemap.toplevel);
+	INFO_CORE("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
