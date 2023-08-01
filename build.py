@@ -25,10 +25,8 @@ OS_IMAGE_SIZE=1440*1024
 
 def _generate_kernel_version(version_file_path):
 	version=time.time_ns()
-	# version=0x177752c4045e2e8a
 	with open(version_file_path,"w") as wf:
 		wf.write(f"#ifndef _KERNEL__VERSION_H_\n#define _KERNEL__VERSION_H_ 1\n\n\n\n#define KERNEL_VERSION 0x{version:16x}ull\n\n\n\n#endif\n")
-	return time.time_ns()
 
 
 
@@ -247,7 +245,7 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
-		"-boot","order=c",
+		"-boot","order=dc",
 		"-drive","file=build/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/ssd.qcow2,if=none,id=ssd",
 		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
