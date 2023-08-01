@@ -113,26 +113,16 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 	for (u64 i=0;i<kernel_length;i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
-	INFO_CORE("Mapping %v from %p to %p",0x100000000-PAGE_SIZE,PAGE_SIZE,PAGE_SIZE+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	for (u64 i=PAGE_SIZE;i<0x100000000;i+=PAGE_SIZE){
-		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
-	}
+	u64 highest_address=0;
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
-		if ((kernel_data->mmap+i)->type!=1){
-			continue;
+		u64 end=pmm_align_up_address_extra_large((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
+		if (end>highest_address){
+			highest_address=end;
 		}
-		u64 end=pmm_align_down_address((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
-		if (end<=0x100000000){
-			continue;
-		}
-		u64 address=pmm_align_up_address((kernel_data->mmap+i)->base);
-		if (address<0x100000000){
-			address=0x100000000;
-		}
-		INFO_CORE("Mapping %v from %p to %p",end-address,address,address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		for (;address<end;address+=PAGE_SIZE){
-			vmm_map_page(&vmm_kernel_pagemap,address,address+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
-		}
+	}
+	INFO_CORE("Mapping %v from %p to %p",highest_address,0,VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	for (u64 i=0;i<highest_address;i+=PAGE_SIZE){
+		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	vmm_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;

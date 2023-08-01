@@ -6,6 +6,10 @@
 
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_SHIFT 12
+#define LARGE_PAGE_SIZE 2097152
+#define LARGE_PAGE_SIZE_SHIFT 21
+#define EXTRA_LARGE_PAGE_SIZE 1073741824
+#define EXTRA_LARGE_PAGE_SIZE_SHIFT 30
 
 #define PMM_ALLOCATOR_SIZE_COUNT 16
 
@@ -48,13 +52,37 @@ typedef struct _PMM_ALLOCATOR{
 
 
 static inline u64 pmm_align_up_address(u64 base){
-	return (base+PAGE_SIZE-1)&(~(PAGE_SIZE-1));
+	return (base+PAGE_SIZE-1)&(-PAGE_SIZE);
+}
+
+
+
+static inline u64 pmm_align_up_address_large(u64 base){
+	return (base+LARGE_PAGE_SIZE-1)&(-LARGE_PAGE_SIZE);
+}
+
+
+
+static inline u64 pmm_align_up_address_extra_large(u64 base){
+	return (base+EXTRA_LARGE_PAGE_SIZE-1)&(-EXTRA_LARGE_PAGE_SIZE);
 }
 
 
 
 static inline u64 pmm_align_down_address(u64 base){
-	return base&(~(PAGE_SIZE-1));
+	return base&(-PAGE_SIZE);
+}
+
+
+
+static inline u64 pmm_align_down_address_large(u64 base){
+	return base&(-LARGE_PAGE_SIZE);
+}
+
+
+
+static inline u64 pmm_align_down_address_extra_large(u64 base){
+	return base&(-EXTRA_LARGE_PAGE_SIZE);
 }
 
 
