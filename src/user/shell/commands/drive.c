@@ -12,6 +12,8 @@
 // Must be page-aligned
 #define SPEED_TEST_BUFFER_SIZE (65536*4096)
 
+#define SPEED_TEST_COUNT 32
+
 
 
 static const char* drive_type_names[]={
@@ -100,19 +102,26 @@ void drive_main(int argc,const char*const* argv){
 	}
 	dst_fd=fs_open(0,path,FS_FLAG_READ|FS_FLAG_WRITE|FS_FLAG_CREATE);
 	void* buffer=memory_map(SPEED_TEST_BUFFER_SIZE);
-	u64 start_write=clock_get_ticks();
-	s64 write=fs_write(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
-	u64 end_write=clock_get_ticks();
-	fs_seek(dst_fd,0,FS_SEEK_SET);
-	u64 start_read=clock_get_ticks();
-	s64 read=fs_read(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
-	u64 end_read=clock_get_ticks();
+	u64 read_speed=0;
+	u64 write_speed=0;
+	for (u8 i=0;i<SPEED_TEST_COUNT;i++){
+		fs_seek(dst_fd,0,FS_SEEK_SET);
+		u64 start_write=clock_get_ticks();
+		s64 write=fs_write(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
+		u64 end_write=clock_get_ticks();
+		fs_seek(dst_fd,0,FS_SEEK_SET);
+		u64 start_read=clock_get_ticks();
+		s64 read=fs_read(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
+		u64 end_read=clock_get_ticks();
+		read_speed+=read*1000000000ull/clock_ticks_to_time(end_read-start_read);
+		write_speed+=write*1000000000ull/clock_ticks_to_time(end_write-start_write);
+		if (write!=SPEED_TEST_BUFFER_SIZE||read!=SPEED_TEST_BUFFER_SIZE){
+			return;
+		}
+	}
 	memory_unmap(buffer,SPEED_TEST_BUFFER_SIZE);
 	fs_delete(dst_fd);
-	if (write!=SPEED_TEST_BUFFER_SIZE||read!=SPEED_TEST_BUFFER_SIZE){
-		return;
-	}
-	printf("Speed:\n  Read: \x1b[1m%v/s\x1b[0m\n  Write: \x1b[1m%v/s\x1b[0m\n",read*1000000000ull/clock_ticks_to_time(end_read-start_read),write*1000000000ull/clock_ticks_to_time(end_write-start_write));
+	printf("Speed:\n  Read: \x1b[1m%v/s\x1b[0m\n  Write: \x1b[1m%v/s\x1b[0m\n",read_speed/SPEED_TEST_COUNT,write_speed/SPEED_TEST_COUNT);
 }
 
 

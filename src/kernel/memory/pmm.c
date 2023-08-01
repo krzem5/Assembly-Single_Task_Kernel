@@ -35,7 +35,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
-	INFO_CORE("Processing memory range %p - %p",address,end);
+	INFO_CORE("Registering memory range %p - %p",address,end);
 	do{
 		u8 idx=_get_block_index(address);
 		u64 size=_get_block_size(idx);
