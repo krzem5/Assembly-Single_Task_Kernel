@@ -231,7 +231,7 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 
-u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	lock_acquire(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;

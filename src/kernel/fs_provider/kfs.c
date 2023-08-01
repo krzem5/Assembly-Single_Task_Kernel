@@ -152,7 +152,7 @@ _Static_assert(sizeof(kfs_root_block_t)==4096);
 
 
 
-typedef struct _KFS_BLOCK_CACHE{
+typedef struct _KFS_BLOCK_CACHE{ // all of the blocks are aligned on a page boundary
 	kfs_nfda_block_t nfda;
 	kfs_nda1_block_t nda1;
 	kfs_nda2_block_t nda2;

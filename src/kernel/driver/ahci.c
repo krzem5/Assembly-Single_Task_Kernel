@@ -75,6 +75,11 @@ static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device)
 			i=0;
 		}
 	}
+	// u32 mask;
+	// do{
+	// 	mask=~(device->registers->sact|device->registers->ci);
+	// } while (!mask);
+	// return __builtin_ctz(mask);
 }
 
 
@@ -89,6 +94,11 @@ static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8
 	}
 	device->registers->cmd|=CMD_ST|CMD_FRE;
 	device->registers->ci|=1<<cmd_slot;
+}
+
+
+
+static void KERNEL_CORE_CODE _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
 	while (device->registers->ci&(1<<cmd_slot)){
 		asm volatile("pause");
 	}
@@ -107,10 +117,18 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;
 	}
-	u64 aligned_buffer_raw=pmm_alloc((dbc+1)>>9);
-	u8* aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
-	if (offset&DRIVE_OFFSET_FLAG_WRITE){
-		memcpy(aligned_buffer,buffer,dbc+1);
+	u64 aligned_buffer_raw=0;
+	u8* aligned_buffer=NULL;
+	_Bool alignment_required=!!(((u64)buffer)&(PAGE_SIZE-1));
+	if (alignment_required){
+		aligned_buffer_raw=pmm_alloc((dbc+1)>>9);
+		aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
+		if (offset&DRIVE_OFFSET_FLAG_WRITE){
+			memcpy(aligned_buffer,buffer,dbc+1);
+		}
+	}
+	else{
+		aligned_buffer_raw=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)buffer);
 	}
 	u8 cmd_slot=_device_get_command_slot(device);
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
@@ -138,10 +156,13 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	fis->icc=0;
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
-	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
-		memcpy(buffer,aligned_buffer,dbc+1);
+	_device_wait_command(device,cmd_slot);
+	if (alignment_required){
+		if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
+			memcpy(buffer,aligned_buffer,dbc+1);
+		}
+		pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9);
 	}
-	pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9);
 	return (dbc+1)>>9;
 }
 
@@ -189,6 +210,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	fis->icc=0;
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
+	_device_wait_command(device,cmd_slot);
 	const u8* buffer=VMM_TRANSLATE_ADDRESS(buffer_raw);
 	drive_t drive={
 		.type=DRIVE_TYPE_AHCI,
