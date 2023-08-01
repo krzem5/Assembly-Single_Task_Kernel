@@ -34,4 +34,4 @@ void memory_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(memory,"memory <directory>");
+DECLARE_COMMAND(memory,"memory");
