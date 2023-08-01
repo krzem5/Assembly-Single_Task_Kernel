@@ -12,7 +12,7 @@
 // Must be page-aligned
 #define SPEED_TEST_BUFFER_SIZE (65536*4096)
 
-#define SPEED_TEST_COUNT 32
+#define SPEED_TEST_COUNT 2
 
 
 
@@ -101,7 +101,7 @@ void drive_main(int argc,const char*const* argv){
 		return;
 	}
 	dst_fd=fs_open(0,path,FS_FLAG_READ|FS_FLAG_WRITE|FS_FLAG_CREATE);
-	void* buffer=memory_map(SPEED_TEST_BUFFER_SIZE);
+	void* buffer=memory_map(SPEED_TEST_BUFFER_SIZE,MEMORY_FLAG_LARGE);
 	u64 read_speed=0;
 	u64 write_speed=0;
 	for (u8 i=0;i<SPEED_TEST_COUNT;i++){

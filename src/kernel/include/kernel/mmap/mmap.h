@@ -4,6 +4,11 @@
 
 
 
+#define MMAP_FLAG_LARGE 1
+#define MMAP_FLAG_EXTRA_LARGE 2
+
+
+
 void mmap_init(void);
 
 
@@ -12,7 +17,7 @@ void mmap_set_range(u64 from,u64 to);
 
 
 
-u64 mmap_alloc(u64 length);
+u64 mmap_alloc(u64 length,u8 flags);
 
 
 

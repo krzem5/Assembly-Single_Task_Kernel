@@ -386,7 +386,7 @@ static void _syscall_acpi_shutdown(syscall_registers_t* regs){
 
 
 static void _syscall_memory_map(syscall_registers_t* regs){
-	regs->rax=mmap_alloc(regs->rdi);
+	regs->rax=mmap_alloc(regs->rdi,regs->rsi);
 }
 
 

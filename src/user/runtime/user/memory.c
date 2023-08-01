@@ -4,8 +4,8 @@
 
 
 
-void* memory_map(u64 length){
-	return _syscall_memory_map(length);
+void* memory_map(u64 length,u8 flags){
+	return _syscall_memory_map(length,flags);
 }
 
 

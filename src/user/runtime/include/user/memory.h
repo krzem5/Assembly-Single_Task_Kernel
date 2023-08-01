@@ -4,6 +4,11 @@
 
 
 
+#define MEMORY_FLAG_LARGE 1
+#define MEMORY_FLAG_EXTRA_LARGE 2
+
+
+
 typedef struct _MEMORY_STATS{
 	u64 counter_total;
 	u64 counter_drive_list;
@@ -23,7 +28,7 @@ typedef struct _MEMORY_STATS{
 
 
 
-void* memory_map(u64 length);
+void* memory_map(u64 length,u8 flags);
 
 
 

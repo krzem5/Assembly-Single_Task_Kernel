@@ -92,7 +92,7 @@ void _syscall_acpi_shutdown(_Bool restart);
 
 
 
-void* _syscall_memory_map(u64 length);
+void* _syscall_memory_map(u64 length,u8 flags);
 
 
 

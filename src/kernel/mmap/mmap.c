@@ -2,6 +2,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "mmap"
 
@@ -31,8 +32,24 @@ void mmap_set_range(u64 from,u64 to){
 
 
 
-u64 mmap_alloc(u64 length){
-	length=pmm_align_up_address(length);
+u64 mmap_alloc(u64 length,u8 flags){
+	u64 size=PAGE_SIZE;
+	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+	if (flags&MMAP_FLAG_EXTRA_LARGE){
+		size=EXTRA_LARGE_PAGE_SIZE;
+		length=pmm_align_up_address_extra_large(length);
+		_mmap_start_address=pmm_align_up_address_extra_large(_mmap_start_address);
+		page_flags|=VMM_PAGE_FLAG_EXTRA_LARGE;
+	}
+	else if (flags&MMAP_FLAG_LARGE){
+		size=LARGE_PAGE_SIZE;
+		length=pmm_align_up_address_large(length);
+		_mmap_start_address=pmm_align_up_address_large(_mmap_start_address);
+		page_flags|=VMM_PAGE_FLAG_LARGE;
+	}
+	else{
+		length=pmm_align_up_address(length);
+	}
 	lock_acquire(&_mmap_lock);
 	if (_mmap_start_address+length>_mmap_end_address){
 		ERROR("MMAP: Out of linear memory");
@@ -40,10 +57,10 @@ u64 mmap_alloc(u64 length){
 		return 0;
 	}
 	u64 out=_mmap_start_address;
-	for (u64 i=0;i<length;i+=PAGE_SIZE){
-		vmm_map_page(&vmm_user_pagemap,pmm_alloc(1,PMM_COUNTER_USER),out+i,VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+	for (u64 i=0;i<length;i+=size){
+		vmm_map_page(&vmm_user_pagemap,pmm_alloc(size>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER),out+i,page_flags);
 	}
-	_mmap_start_address+=length;
+	_mmap_start_address+=length*(size>>PAGE_SIZE_SHIFT);
 	lock_release(&_mmap_lock);
 	return out;
 }
