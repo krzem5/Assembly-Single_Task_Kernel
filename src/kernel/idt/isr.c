@@ -4,7 +4,7 @@
 
 
 
-void _isr_handler(u64* vars,u8 index){
+void _isr_handler(u64* vars,u8 index,u64* extra_data){
 	WARN("ISR %u:",index);
 	WARN("error=%p",vars[0]);
 	WARN("rax=%p",vars[1]);
@@ -22,12 +22,8 @@ void _isr_handler(u64* vars,u8 index){
 	WARN("r13=%p",vars[13]);
 	WARN("r14=%p",vars[14]);
 	WARN("r15=%p",vars[15]);
-	for (;;);
-}
-
-
-
-void _isr_kernel(u8 index){
-	ERROR("Received ISR from inside the kernel: %u",index);
+	WARN("rip=%p",extra_data[0]);
+	WARN("rflags=%p",extra_data[2]);
+	WARN("rsp=%p",extra_data[3]);
 	for (;;);
 }

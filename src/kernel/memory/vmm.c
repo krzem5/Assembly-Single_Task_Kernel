@@ -219,12 +219,12 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 		lock_release(&(pagemap->lock));
 		return 0;
 	}
+	_get_table(pml1)->entries[l]=0;
 	if (_decrease_length(pml1)){
 		if (_decrease_length(pml2)){
 			_decrease_length(pml3);
 		}
 	}
-	_get_table(pml1)->entries[l]=0;
 	lock_release(&(pagemap->lock));
 	return 1;
 }

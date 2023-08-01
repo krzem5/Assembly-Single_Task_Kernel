@@ -31,6 +31,7 @@ isr%1:
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
 	mov rsp, qword [gs:8]
+._inisde_kernel:
 	push r15
 	push r14
 	push r13
@@ -50,8 +51,10 @@ isr%1:
 	push qword [rax-48]
 	mov rdi, rsp
 	mov rsi, %1
+	lea rdx, [rax-32]
 	cld
 	call _isr_handler
+	pop rax
 	pop rax
 	pop rbx
 	pop rcx
@@ -67,6 +70,7 @@ isr%1:
 	pop r13
 	pop r14
 	pop r15
+	;;; Not cleaned-up properly when in kernel mode
 	mov rsp, qword [vmm_user_pagemap]
 	mov cr3, rsp
 	mov sp, 0x18
@@ -76,10 +80,6 @@ isr%1:
 	sub rsp, 40
 	swapgs
 	iretq
-._inisde_kernel:
-	mov rsp, qword [gs:8]
-	mov rdi, %1
-	jmp _isr_kernel
 %endmacro
 
 
