@@ -13,14 +13,14 @@ static pmm_allocator_t KERNEL_CORE_DATA _pmm_allocator;
 
 static inline u8 KERNEL_CORE_CODE _get_block_index(u64 address){
 	u8 out=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
-	return (out>PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT:out);
+	return (out>=PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT-1:out);
 }
 
 
 
 static inline u8 KERNEL_CORE_CODE _get_largest_block_index(u64 address){
 	u8 out=63-__builtin_clzll(address)-PAGE_SIZE_SHIFT;
-	return (out>PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT:out);
+	return (out>=PMM_ALLOCATOR_SIZE_COUNT?PMM_ALLOCATOR_SIZE_COUNT-1:out);
 }
 
 
@@ -32,6 +32,7 @@ static inline u64 KERNEL_CORE_CODE _get_block_size(u8 index){
 
 
 static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
+	INFO_CORE("Processing memory range %p - %p",address,end);
 	while (address<end){
 		u8 idx=_get_block_index(address);
 		u64 size=_get_block_size(idx);
@@ -47,6 +48,21 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 		address+=size;
 	}
 }
+
+
+
+// static KERNEL_CORE_CODE u64 _debug_get_accessible_memory(void){
+// 	u64 out=0;
+// 	for (u8 i=0;i<PMM_ALLOCATOR_SIZE_COUNT;i++){
+// 		u64 ptr=_pmm_allocator.blocks[i];
+// 		while (ptr){
+// 			const pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(ptr);
+// 			ptr=header->next;
+// 			out+=_get_block_size(i);
+// 		}
+// 	}
+// 	return out;
+// }
 
 
 

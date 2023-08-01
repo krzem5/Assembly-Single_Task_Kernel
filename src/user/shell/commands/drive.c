@@ -107,7 +107,7 @@ void drive_main(int argc,const char*const* argv){
 	u64 start_read=clock_get_ticks();
 	s64 read=fs_read(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
 	u64 end_read=clock_get_ticks();
-	// memory_unmap(buffer,SPEED_TEST_BUFFER_SIZE);
+	memory_unmap(buffer,SPEED_TEST_BUFFER_SIZE);
 	fs_delete(dst_fd);
 	if (write!=SPEED_TEST_BUFFER_SIZE||read!=SPEED_TEST_BUFFER_SIZE){
 		return;
