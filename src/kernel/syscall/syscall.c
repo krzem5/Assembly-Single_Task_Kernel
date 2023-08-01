@@ -30,6 +30,9 @@
 #define USER_PARTITION_FLAG_PRESENT 1
 #define USER_PARTITION_FLAG_BOOT 2
 
+#define USER_SHUTDOWN_FLAG_RESTART 1
+#define USER_SHUTDOWN_FLAG_SAVE_CONTEXT 2
+
 
 
 typedef struct _SYSCALL_REGISTERS{
@@ -379,8 +382,12 @@ static void _syscall_net_poll(syscall_registers_t* regs){
 
 
 
-static void _syscall_acpi_shutdown(syscall_registers_t* regs){
-	acpi_fadt_shutdown(!!regs->rdi);
+static void _syscall_system_shutdown(syscall_registers_t* regs){
+	if (regs->rdi&USER_SHUTDOWN_FLAG_SAVE_CONTEXT){
+		ERROR("Unimplemented: _syscall_system_shutdown.save_context");
+		for (;;);
+	}
+	acpi_fadt_shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
 }
 
 
@@ -487,7 +494,7 @@ void syscall_init(void){
 	_syscall_handlers[18]=_syscall_fd_move;
 	_syscall_handlers[19]=_syscall_net_send;
 	_syscall_handlers[20]=_syscall_net_poll;
-	_syscall_handlers[21]=_syscall_acpi_shutdown;
+	_syscall_handlers[21]=_syscall_system_shutdown;
 	_syscall_handlers[22]=_syscall_memory_map;
 	_syscall_handlers[23]=_syscall_memory_unmap;
 	_syscall_handlers[24]=_syscall_memory_stats;

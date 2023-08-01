@@ -1,6 +1,6 @@
 #include <command.h>
 #include <user/io.h>
-#include <user/shutdown.h>
+#include <user/system.h>
 
 
 
@@ -9,7 +9,7 @@ void reboot_main(int argc,const char*const* argv){
 		printf("reboot: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	shutdown(1);
+	shutdown(SHUTDOWN_FLAG_RESTART);
 }
 
 

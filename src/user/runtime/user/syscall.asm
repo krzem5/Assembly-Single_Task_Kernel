@@ -19,7 +19,7 @@ global _syscall_fd_get_relative
 global _syscall_fd_move
 global _syscall_net_send
 global _syscall_net_poll
-global _syscall_acpi_shutdown
+global _syscall_system_shutdown
 global _syscall_memory_map
 global _syscall_memory_unmap
 global _syscall_memory_stats
@@ -179,7 +179,7 @@ _syscall_net_poll:
 
 
 
-_syscall_acpi_shutdown:
+_syscall_system_shutdown:
 	mov rax, 21
 	syscall
 	ret

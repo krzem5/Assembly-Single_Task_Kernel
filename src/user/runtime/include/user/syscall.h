@@ -88,11 +88,11 @@ _Bool _syscall_net_poll(void* packet,u32 length);
 
 
 
-void _syscall_acpi_shutdown(_Bool restart);
+void _syscall_system_shutdown(u32 flags);
 
 
 
-void* _syscall_memory_map(u64 length,u8 flags);
+void* _syscall_memory_map(u64 length,u32 flags);
 
 
 
