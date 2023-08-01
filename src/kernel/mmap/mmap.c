@@ -34,7 +34,7 @@ void mmap_set_range(u64 from,u64 to){
 
 u64 mmap_alloc(u64 length,u8 flags){
 	u64 size=PAGE_SIZE;
-	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|(1ull<<VMM_PAGE_COUNT_SHIFT)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_COUNT_MASK|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	if (flags&MMAP_FLAG_EXTRA_LARGE){
 		size=EXTRA_LARGE_PAGE_SIZE;
 		length=pmm_align_up_address_extra_large(length);
@@ -56,10 +56,8 @@ u64 mmap_alloc(u64 length,u8 flags){
 		lock_release(&_mmap_lock);
 		return 0;
 	}
+	vmm_map_pages(&vmm_user_pagemap,pmm_alloc(length>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER),_mmap_start_address,page_flags,length>>PAGE_SIZE_SHIFT);
 	u64 out=_mmap_start_address;
-	for (u64 i=0;i<length;i+=size){
-		vmm_map_page(&vmm_user_pagemap,pmm_alloc(size>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER),out+i,page_flags);
-	}
 	_mmap_start_address+=length*(size>>PAGE_SIZE_SHIFT);
 	lock_release(&_mmap_lock);
 	return out;

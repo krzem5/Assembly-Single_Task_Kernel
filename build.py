@@ -27,6 +27,7 @@ def _generate_kernel_version(version_file_path):
 	version=time.time_ns()
 	with open(version_file_path,"w") as wf:
 		wf.write(f"#ifndef _KERNEL__VERSION_H_\n#define _KERNEL__VERSION_H_ 1\n\n\n\n#define KERNEL_VERSION 0x{version:16x}ull\n\n\n\n#endif\n")
+	return version
 
 
 
@@ -182,7 +183,7 @@ if (not os.path.exists("build/objects")):
 	os.mkdir("build/objects")
 if (not os.path.exists("build/stages")):
 	os.mkdir("build/stages")
-_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
+version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
 error=False
@@ -214,7 +215,7 @@ kernel_core_size=_get_file_size("build/stages/kernel_core.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)
 stage2_size=_get_file_size("build/stages/stage2.bin")
-if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}"]).returncode!=0):
+if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}",f"-D__BOOTLOADER_VERSION__={version}"]).returncode!=0):
 	sys.exit(1)
 stage1_size=_get_file_size("build/stages/stage1.bin")
 with open("build/iso/core.bin","wb") as wf:

@@ -206,20 +206,20 @@ _cleanup:
 
 
 
-void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags,u64 size){
-	if (!size){
+void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags,u64 count){
+	if (!count){
 		return;
 	}
-	if (flags&VMM_PAGE_FLAG_LARGE){
+	if (flags&(VMM_PAGE_FLAG_LARGE|VMM_PAGE_FLAG_EXTRA_LARGE)){
 		ERROR("vmm_map_pages does not support VMM_PAGE_FLAG_LARGE");
 		return;
 	}
 	_Bool has_count=!!(flags&VMM_MAP_WITH_COUNT);
 	flags&=~(VMM_PAGE_COUNT_MASK|VMM_MAP_WITH_COUNT);
 	u64 index=0;
-	while (index<size){
+	while (index<count){
 		if (has_count&&!(index&0x7ff)){
-			u64 diff=size-index;
+			u64 diff=count-index;
 			flags|=(diff>2047?2047:diff)<<VMM_PAGE_COUNT_SHIFT;
 		}
 		vmm_map_page(pagemap,physical_address+(index<<PAGE_SIZE_SHIFT),virtual_address+(index<<PAGE_SIZE_SHIFT),flags);

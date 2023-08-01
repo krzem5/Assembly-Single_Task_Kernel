@@ -51,7 +51,7 @@ isr%1:
 	push qword [rax-48]
 	mov rdi, rsp
 	mov rsi, %1
-	lea rdx, [rax-32]
+	lea rdx, [rax-40]
 	cld
 	call _isr_handler
 	pop rax

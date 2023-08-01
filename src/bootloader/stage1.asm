@@ -16,6 +16,8 @@
 
 
 
+times 64-($-$$) db 0
+dq __BOOTLOADER_VERSION__
 times 510-($-$$) db 0
 dw 0xaa55
 times KFS_HEADER_SIZE db 0

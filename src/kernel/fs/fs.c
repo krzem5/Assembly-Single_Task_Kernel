@@ -425,7 +425,9 @@ u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 		out+=extra;
 	}
 	extra=count&(fs->drive->block_size-1);
-	out+=fs->config->read(fs,node,offset,buffer,count-extra);
+	if (count-extra){
+		out+=fs->config->read(fs,node,offset,buffer,count-extra);
+	}
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){

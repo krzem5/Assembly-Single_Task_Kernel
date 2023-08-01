@@ -86,7 +86,7 @@ u32 drive_list_get_length(void){
 
 
 
-const drive_t* drive_list_get_drive(u32 index){
+const drive_t* KERNEL_CORE_CODE drive_list_get_drive(u32 index){
 	return (index<_drive_count?_drives+index:NULL);
 }
 

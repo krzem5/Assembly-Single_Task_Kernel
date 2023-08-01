@@ -1,3 +1,4 @@
+#include <kernel/drive/drive_list.h>
 #include <kernel/fs/fs.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -13,21 +14,19 @@ static KERNEL_CORE_RDATA const char _kernel_memory_acpi[]=" (ACPI tables)";
 
 static KERNEL_CORE_RDATA const char _kernel_file_path[]="/kernel.bin";
 
-static kernel_data_t KERNEL_CORE_DATA _kernel_data;
-
 
 
 const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
-	_kernel_data=*((const volatile kernel_data_t*)0xffffffffc0007000);
+	const kernel_data_t* kernel_data=(const kernel_data_t*)0xffffffffc0007000;
 	INFO_CORE("Version: %lx",kernel_get_version());
 	INFO_CORE("Core kernel range: %p - %p",kernel_get_start(),kernel_get_core_end());
 	INFO_CORE("Full kernel range: %p - %p",kernel_get_start(),kernel_get_end());
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
-	for (u16 i=0;i<_kernel_data.mmap_size;i++){
+	for (u16 i=0;i<kernel_data->mmap_size;i++){
 		const char* type=_kernel_memory_unusable;
-		switch ((_kernel_data.mmap+i)->type){
+		switch ((kernel_data->mmap+i)->type){
 			case 1:
 				type=_kernel_memory_normal;
 				break;
@@ -35,25 +34,43 @@ const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 				type=_kernel_memory_acpi;
 				break;
 		}
-		INFO_CORE("  %p - %p%s",(_kernel_data.mmap+i)->base,(_kernel_data.mmap+i)->base+(_kernel_data.mmap+i)->length,type);
-		if ((_kernel_data.mmap+i)->type==1){
-			total+=(_kernel_data.mmap+i)->length;
+		INFO_CORE("  %p - %p%s",(kernel_data->mmap+i)->base,(kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length,type);
+		if ((kernel_data->mmap+i)->type==1){
+			total+=(kernel_data->mmap+i)->length;
 		}
 	}
 	INFO_CORE("Total: %v",total);
-	return &_kernel_data;
+	return kernel_data;
 }
 
 
 
 void KERNEL_CORE_CODE kernel_load(void){
-	LOG_CORE("Searching partitions for the boot drive...");
+	LOG_CORE("Searching drives for the boot drive...");
 	u8 buffer[4096];
+	const drive_t* boot_drive=NULL;
+	for (u8 i=0;1;i++){
+		boot_drive=drive_list_get_drive(i);
+		if (!boot_drive){
+			WARN_CORE("Unable to find the specific boot drive");
+			break;
+		}
+		if ((boot_drive->type==DRIVE_TYPE_AHCI||boot_drive->type==DRIVE_TYPE_NVME)&&boot_drive->block_size<=4096&&boot_drive->read_write(boot_drive->extra_data,0,buffer,1)==1&&*((const u64*)(buffer+64))==kernel_get_version()){
+			break;
+		}
+	}
+	if (boot_drive){
+		LOG_CORE("Found the boot drive at '%s'",boot_drive->name);
+	}
+	LOG_CORE("Searching partitions for the boot drive...");
 	char path[64];
 	for (u8 fs_index=0;1;fs_index++){
 		const fs_file_system_t* fs=fs_get_file_system(fs_index);
 		if (!fs){
 			break;
+		}
+		if (boot_drive&&fs->drive!=boot_drive){
+			continue;
 		}
 		u8 i=0;
 		while (fs->name[i]){

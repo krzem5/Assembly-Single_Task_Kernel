@@ -50,8 +50,8 @@ void format_main(int argc,const char*const* argv){
 			return;
 		}
 		boot_code_length=fs_seek(fd,0,FS_SEEK_END);
-		boot_code=memory_map(boot_code_length,0);
 		fs_seek(fd,0,FS_SEEK_SET);
+		boot_code=memory_map(boot_code_length,0);
 		fs_read(fd,boot_code,boot_code_length);
 		fs_close(fd);
 	}
