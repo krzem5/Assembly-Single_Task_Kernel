@@ -7,4 +7,8 @@ _Bool string_equal(const char* a,const char* b);
 
 
 
+int string_compare(const char* a,const char* b);
+
+
+
 #endif
