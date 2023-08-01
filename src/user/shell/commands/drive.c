@@ -68,7 +68,7 @@ void drive_main(int argc,const char*const* argv){
 		drive->block_count
 	);
 	if (stats.root_block_count){
-		printf("KFS blocks:\n  ROOT: \x1b[1m%lu\x1b[0m (%v)\n  BATC: \x1b[1m%lu\x1b[0m (%v)\n  NDA3: \x1b[1m%lu\x1b[0m (%v)\n  NDA2: \x1b[1m%lu\x1b[0m (%v)\n  NDA1: \x1b[1m%lu\x1b[0m (%v)\n  NFDA: \x1b[1m%lu\x1b[0m (%v)\n  DATA: \x1b[1m%lu\x1b[0m (%v)\n",
+		printf("KFS blocks:\n  ROOT: \x1b[1m%lu\t%v\x1b[0m\n  BATC: \x1b[1m%lu\t%v\x1b[0m\n  NDA3: \x1b[1m%lu\t%v\x1b[0m\n  NDA2: \x1b[1m%lu\t%v\x1b[0m\n  NDA1: \x1b[1m%lu\t%v\x1b[0m\n  NFDA: \x1b[1m%lu\t%v\x1b[0m\n  DATA: \x1b[1m%lu\t%v\x1b[0m\n",
 			stats.root_block_count,
 			stats.root_block_count*drive->block_size,
 			stats.batc_block_count,
