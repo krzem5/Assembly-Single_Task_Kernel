@@ -1,8 +1,14 @@
 #include <command.h>
 #include <string.h>
 #include <user/drive.h>
+#include <user/fs.h>
 #include <user/io.h>
+#include <user/memory.h>
 #include <user/types.h>
+
+
+
+#define BOOT_CODE_FILE_NAME "/core.bin"
 
 
 
@@ -35,12 +41,28 @@ void format_main(int argc,const char*const* argv){
 		printf("format: drive '%s' not found\n",drive_name);
 		return;
 	}
-	(void)boot;
-	if (!drive_format(i,NULL,0)){
+	u8* boot_code=NULL;
+	u32 boot_code_length=0;
+	if (boot){
+		int fd=fs_open(0,BOOT_CODE_FILE_NAME,FS_FLAG_READ);
+		if (fd<0){
+			printf("format: unable to open file '%s': error %d\n",BOOT_CODE_FILE_NAME,fd);
+			return;
+		}
+		boot_code_length=fs_seek(fd,0,FS_SEEK_END);
+		boot_code=memory_map(boot_code_length,0);
+		fs_seek(fd,0,FS_SEEK_SET);
+		fs_read(fd,boot_code,boot_code_length);
+		fs_close(fd);
+	}
+	if (!drive_format(i,boot_code,boot_code_length)){
 		printf("format: failed to format drive\n");
 	}
 	else{
 		printf("format: drive formatted successfully, reboot required\n");
+	}
+	if (boot){
+		memory_unmap(boot_code,boot_code_length);
 	}
 }
 

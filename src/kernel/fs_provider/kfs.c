@@ -979,8 +979,11 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
 	kfs_large_block_index_t first_free_block_index=2;
 	if (boot_length){
-		// adjust first_free_block_index
-		ERROR("Unimplemented: kfs_format_drive.boot");
+		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)boot,boot_length>>DRIVE_BLOCK_SIZE_SHIFT)!=(boot_length>>DRIVE_BLOCK_SIZE_SHIFT)){
+			ERROR("Error writing boot code to drive");
+			return 0;
+		}
+		first_free_block_index=(boot_length+4095)>>12;
 	}
 	kfs_root_block_t root={
 		KFS_SIGNATURE,

@@ -4,10 +4,12 @@
 ;;; 00100000 - ????????: Kernel code
 
 
+
+%define KFS_HEADER_SIZE 4096
 %define STACK_BOTTOM 0x4000
 %define STACK_TOP 0x7000
 %define KERNEL_DATA 0x7000
-%define KERNEL_DATA_MMAP_LEN word [KERNEL_DATA]
+%define KERNEL_DATA_MMAP_LENGTH word [KERNEL_DATA]
 %define KERNEL_DATA_MMAP_PTR (KERNEL_DATA+8)
 %define KERNEL_DATA_MMAP_MAX_LEN 42
 %define KERNEL_OFFSET 0xffffffffc0000000
@@ -92,13 +94,13 @@ _start16:
 	add di, 0x18
 	jmp ._mmap_read_next_chunk
 ._mmap_end:
-	mov KERNEL_DATA_MMAP_LEN, bp
+	mov KERNEL_DATA_MMAP_LENGTH, bp
 	;;; Load kernel
 	mov bx, STRING_LOAD_KERNEL
 	call ._print
-	mov eax, (0x200+(__KERNEL_CORE_SIZE__+511)/512)
+	mov eax, (0x0200+(__KERNEL_CORE_SIZE__+511)/512)
 	mov ebx, 0x7c00
-	mov ecx, ((__BOOTLOADER_STAGE2_END__-__BOOTLOADER_STAGE2_START__+511)/512)+2
+	mov ecx, (0x0002+(__BOOTLOADER_STAGE2_END__-__BOOTLOADER_STAGE2_START__+511)/512+(KFS_HEADER_SIZE+511)/512)
 	movzx edx, byte [boot_drive]
 	int 0x13
 	;;; Switch to 32-bit mode

@@ -445,6 +445,7 @@ static void _syscall_drive_stats(syscall_registers_t* regs){
 	}
 	fs_flush_cache();
 	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*(drive->stats);
+	regs->rax=1;
 }
 
 
@@ -460,6 +461,7 @@ static void _syscall_memory_stats(syscall_registers_t* regs){
 		return;
 	}
 	*((pmm_counters_t*)VMM_TRANSLATE_ADDRESS(address))=*pmm_get_counters();
+	regs->rax=1;
 }
 
 

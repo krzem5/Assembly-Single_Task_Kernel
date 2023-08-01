@@ -24,8 +24,10 @@ OS_IMAGE_SIZE=1440*1024
 
 
 def _generate_kernel_version(version_file_path):
+	version=time.time_ns()
+	# version=0x177752c4045e2e8a
 	with open(version_file_path,"w") as wf:
-		wf.write(f"#ifndef _KERNEL__VERSION_H_\n#define _KERNEL__VERSION_H_ 1\n\n\n\n#define KERNEL_VERSION 0x{time.time_ns():16x}ull\n\n\n\n#endif\n")
+		wf.write(f"#ifndef _KERNEL__VERSION_H_\n#define _KERNEL__VERSION_H_ 1\n\n\n\n#define KERNEL_VERSION 0x{version:16x}ull\n\n\n\n#endif\n")
 	return time.time_ns()
 
 
@@ -139,7 +141,7 @@ def _compile_user_files(file_directory,changed_files,file_hash_list):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{file_directory}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
+				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{file_directory}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
@@ -217,12 +219,12 @@ stage2_size=_get_file_size("build/stages/stage2.bin")
 if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}"]).returncode!=0):
 	sys.exit(1)
 stage1_size=_get_file_size("build/stages/stage1.bin")
-if (stage1_size!=512):
-	raise RuntimeError
-with open("build/iso/os.img","wb") as wf:
+with open("build/iso/core.bin","wb") as wf:
 	_copy_file("build/stages/stage1.bin",wf)
 	_copy_file("build/stages/stage2.bin",wf)
 	_copy_file("build/stages/kernel_core.bin",wf)
+with open("build/iso/os.img","wb") as wf:
+	_copy_file("build/iso/core.bin",wf)
 	_pad_file(wf,OS_IMAGE_SIZE-kernel_core_size-stage2_size-stage1_size)
 changed_files,file_hash_list=_load_changed_files(USER_HASH_FILE_PATH,USER_FILE_DIRECTORY)
 runtime_object_files=_compile_user_files(USER_FILE_DIRECTORY+"/runtime",changed_files,file_hash_list)
@@ -245,10 +247,10 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
-		"-boot","order=dc",
+		"-boot","order=c",
 		"-drive","file=build/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/ssd.qcow2,if=none,id=ssd",
-		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true",
+		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
 		"-device","ahci,id=ahci",
 		"-device","ide-hd,drive=hdd,bus=ahci.0",
 		"-device","nvme,serial=00112233,drive=ssd",
