@@ -68,14 +68,21 @@ void drive_main(int argc,const char*const* argv){
 		drive->block_count
 	);
 	if (stats.root_block_count){
-		printf("KFS blocks:\n  ROOT: \x1b[1m%lu\x1b[0m\n  BATC: \x1b[1m%lu\x1b[0m\n  NDA3: \x1b[1m%lu\x1b[0m\n  NDA2: \x1b[1m%lu\x1b[0m\n  NDA1: \x1b[1m%lu\x1b[0m\n  NFDA: \x1b[1m%lu\x1b[0m\n  DATA: \x1b[1m%lu\x1b[0m\n",
+		printf("KFS blocks:\n  ROOT: \x1b[1m%lu\x1b[0m (%v)\n  BATC: \x1b[1m%lu\x1b[0m (%v)\n  NDA3: \x1b[1m%lu\x1b[0m (%v)\n  NDA2: \x1b[1m%lu\x1b[0m (%v)\n  NDA1: \x1b[1m%lu\x1b[0m (%v)\n  NFDA: \x1b[1m%lu\x1b[0m (%v)\n  DATA: \x1b[1m%lu\x1b[0m (%v)\n",
 			stats.root_block_count,
+			stats.root_block_count*drive->block_size,
 			stats.batc_block_count,
+			stats.batc_block_count*drive->block_size,
 			stats.nda3_block_count,
+			stats.nda3_block_count*drive->block_size,
 			stats.nda2_block_count,
+			stats.nda2_block_count*drive->block_size,
 			stats.nda1_block_count,
+			stats.nda1_block_count*drive->block_size,
 			stats.nfda_block_count,
-			stats.data_block_count
+			stats.nfda_block_count*drive->block_size,
+			stats.data_block_count,
+			stats.data_block_count*drive->block_size
 		);
 	}
 	if (!speed_test){
