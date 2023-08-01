@@ -60,6 +60,7 @@ static void _delete_pagemap_recursive(u64 table,u8 level){
 	}
 	u64* entry=VMM_TRANSLATE_ADDRESS(table);
 	if (level>1){
+		// check large flag
 		for (u16 i=0;i<512;i++){
 			_delete_pagemap_recursive(entry[i]&VMM_PAGE_ADDRESS_MASK,level-1);
 		}
@@ -162,6 +163,14 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 		for (;;);
 	}
 	lock_acquire(&(pagemap->lock));
+	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
+		ERROR_CORE("Unimplemented: vmm_map_page.extra_large");
+		for (;;);
+	}
+	if (flags&VMM_PAGE_FLAG_LARGE){
+		ERROR_CORE("Unimplemented: vmm_map_page.large");
+		for (;;);
+	}
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -171,7 +180,7 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	u64* pml2=_get_child_table(pml3,j,1);
 	u64* pml1=_get_child_table(pml2,k,1);
 	_increase_length_if_entry_empty(pml1,l);
-	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|flags;
+	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));
 	lock_release(&(pagemap->lock));
 }
 
@@ -179,6 +188,10 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 
 void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags,u64 size){
 	if (!size){
+		return;
+	}
+	if (flags&VMM_PAGE_FLAG_LARGE){
+		ERROR("vmm_map_pages does not support VMM_PAGE_FLAG_LARGE");
 		return;
 	}
 	_Bool has_count=!!(flags&VMM_MAP_WITH_COUNT);
@@ -209,11 +222,13 @@ _Bool vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 		lock_release(&(pagemap->lock));
 		return 0;
 	}
+	// check extra_large flag
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
 		lock_release(&(pagemap->lock));
 		return 0;
 	}
+	// check large flag
 	u64* pml1=_get_child_table(pml2,k,0);
 	if (!pml1||!_get_table(pml1)->entries[l]){
 		lock_release(&(pagemap->lock));
@@ -246,10 +261,12 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	if (!pml3){
 		return 0;
 	}
+	// check extra_large flag
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
 		return 0;
 	}
+	// check large flag
 	u64* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
 		return 0;

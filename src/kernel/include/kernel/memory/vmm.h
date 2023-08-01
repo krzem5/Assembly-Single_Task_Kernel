@@ -8,9 +8,11 @@
 #define VMM_TRANSLATE_ADDRESS(address) ((void*)(((u64)(address))+vmm_address_offset))
 #define VMM_TRANSLATE_ADDRESS_REVERSE(address) (((u64)(address))-vmm_address_offset)
 
-#define VMM_PAGE_FLAG_PRESENT 0x1
-#define VMM_PAGE_FLAG_READWRITE 0x2
-#define VMM_PAGE_FLAG_USER 0x4
+#define VMM_PAGE_FLAG_PRESENT 0x01
+#define VMM_PAGE_FLAG_READWRITE 0x02
+#define VMM_PAGE_FLAG_USER 0x04
+#define VMM_PAGE_FLAG_LARGE 0x80
+#define VMM_PAGE_FLAG_EXTRA_LARGE 0x0004000000000000ull
 #define VMM_PAGE_FLAG_NOEXECUTE 0x8000000000000000ull
 
 #define VMM_PAGE_COUNT_MASK 0x7ff0000000000000ull
