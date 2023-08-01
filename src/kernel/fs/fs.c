@@ -44,7 +44,7 @@ static fs_node_t* KERNEL_CORE_CODE _alloc_node(fs_file_system_t* fs,const char* 
 
 void KERNEL_CORE_CODE fs_init(void){
 	LOG_CORE("Initializing file system...");
-	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT));
+	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
 	_fs_file_system_count=0;
 	_fs_root_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
 }

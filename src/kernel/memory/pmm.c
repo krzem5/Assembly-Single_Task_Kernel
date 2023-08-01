@@ -40,6 +40,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 			idx=_get_largest_block_index(length);
 			size=_get_block_size(idx);
 		}
+		_pmm_allocator.counters[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
 		header->next=_pmm_allocator.blocks[idx];
 		_pmm_allocator.blocks[idx]=address;
@@ -55,6 +56,9 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 	_pmm_allocator.bitmap=0;
 	for (u8 i=0;i<PMM_ALLOCATOR_SIZE_COUNT;i++){
 		_pmm_allocator.blocks[i]=0;
+	}
+	for (u8 i=0;i<=PMM_COUNTER_MAX;i++){
+		_pmm_allocator.counters[i]=0;
 	}
 	LOG_CORE("Registering low memory...");
 	u64 last_memory_address=0;
@@ -78,10 +82,10 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 		}
 		_add_memory_range(address,end);
 	}
-	INFO_CORE("Allocating allocator bitmap...");
+	LOG_CORE("Allocating allocator bitmap...");
 	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
 	INFO_CORE("Bitmap size: %v",bitmap_size);
-	_pmm_allocator.bitmap=pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT);
+	_pmm_allocator.bitmap=pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_PMM);
 }
 
 
@@ -103,7 +107,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc(u64 count){
+u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 	if (!count){
 		ERROR_CORE("Trying to allocate zero physical pages!");
 		for (;;);
@@ -150,13 +154,14 @@ _toggle_bitmap:
 		u64 k=out>>PAGE_SIZE_SHIFT;
 		bitmap[k>>6]^=1ull<<(k&63);
 	}
+	_pmm_allocator.counters[counter]+=count;
 	return out;
 }
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count){
-	u64 out=pmm_alloc(count);
+u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
+	u64 out=pmm_alloc(count,counter);
 	if (!out){
 		return 0;
 	}

@@ -36,8 +36,8 @@ static u32 KERNEL_CORE_DATA _drive_count;
 
 void KERNEL_CORE_CODE drive_list_init(void){
 	LOG_CORE("Initializing drive list...");
-	_drives=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_t))));
-	_drive_stats=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_stats_t))));
+	_drives=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVE_LIST));
+	_drive_stats=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_stats_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVE_LIST));
 	_drive_count=0;
 }
 

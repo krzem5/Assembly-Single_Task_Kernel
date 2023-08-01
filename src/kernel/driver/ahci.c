@@ -121,7 +121,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	u8* aligned_buffer=NULL;
 	_Bool alignment_required=!!(((u64)buffer)&(PAGE_SIZE-1));
 	if (alignment_required){
-		aligned_buffer_raw=pmm_alloc((dbc+1)>>9);
+		aligned_buffer_raw=pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 		aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
 		if (offset&DRIVE_OFFSET_FLAG_WRITE){
 			memcpy(aligned_buffer,buffer,dbc+1);
@@ -169,17 +169,17 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 
 
 static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
-	u64 command_list=pmm_alloc(1);
+	u64 command_list=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 	device->registers->clb=command_list;
 	device->registers->clbu=command_list>>32;
 	device->command_list=VMM_TRANSLATE_ADDRESS(command_list);
 	for (u8 i=0;i<32;i++){
-		u64 command_table=pmm_alloc(1);
+		u64 command_table=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 		device->command_tables[i]=VMM_TRANSLATE_ADDRESS(command_table);
 		(device->command_list->commands+i)->ctba=command_table;
 		(device->command_list->commands+i)->ctbau=command_table>>32;
 	}
-	u64 fis_base=pmm_alloc(1);
+	u64 fis_base=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 	device->registers->fb=fis_base;
 	device->registers->fbu=fis_base>>32;
 	device->registers->cmd|=CMD_ST|CMD_FRE;
@@ -187,7 +187,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
-	u64 buffer_raw=pmm_alloc(1);
+	u64 buffer_raw=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
 	command_table->prdt_entry->dba=buffer_raw;
 	command_table->prdt_entry->dbau=buffer_raw>>32;
@@ -241,7 +241,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 
 void KERNEL_CORE_CODE driver_ahci_init(void){
 	_ahci_controller_count=0;
-	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t))));
+	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t)),PMM_COUNTER_DRIVER_AHCI));
 	_ahci_device_count=0;
 }
 

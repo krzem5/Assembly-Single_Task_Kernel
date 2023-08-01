@@ -128,8 +128,8 @@ void cpu_start_all_cores(void){
 			ERROR("Unused CPU core: #%u",i);
 			for (;;);
 		}
-		(_cpu_data+i)->stack_top=(u64)VMM_TRANSLATE_ADDRESS(pmm_alloc(KERNEL_STACK_PAGE_COUNT)+(KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		(_cpu_data+i)->user_stack=pmm_alloc(USER_STACK_PAGE_COUNT);
+		(_cpu_data+i)->stack_top=(u64)VMM_TRANSLATE_ADDRESS(pmm_alloc(KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK)+(KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
+		(_cpu_data+i)->user_stack=pmm_alloc(USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
 		if (i==_cpu_bsp_apic_id){
 			continue;
 		}

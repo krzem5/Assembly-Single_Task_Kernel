@@ -940,7 +940,7 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config){
 	LOG_CORE("Loading KFS file system from drive '%s'...",drive->model_number);
 	INFO_CORE("Allocating block cache...");
-	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))));
+	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS));
 	block_cache->flags=0;
 	block_cache->drive=drive;
 	INFO_CORE("Reading ROOT block...");

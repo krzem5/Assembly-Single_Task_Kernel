@@ -54,7 +54,7 @@ static int _node_to_fd(fs_node_t* node,u8 flags){
 
 void fd_init(void){
 	LOG("Initializing file descriptor list...");
-	_fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_COUNT*sizeof(fd_data_t))));
+	_fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_COUNT*sizeof(fd_data_t)),PMM_COUNTER_FD));
 }
 
 
