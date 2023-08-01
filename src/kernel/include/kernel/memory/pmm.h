@@ -34,10 +34,16 @@ typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 
 
 
+typedef struct _PMM_COUNTERS{
+	u64 data[PMM_COUNTER_MAX+1];
+} pmm_counters_t;
+
+
+
 typedef struct _PMM_ALLOCATOR{
 	u64 bitmap;
 	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
-	u64 counters[PMM_COUNTER_MAX+1];
+	pmm_counters_t counters;
 } pmm_allocator_t;
 
 
@@ -71,6 +77,10 @@ u64 pmm_alloc_zero(u64 count,u8 counter);
 
 
 void pmm_dealloc(u64 address,u64 count);
+
+
+
+const pmm_counters_t* pmm_get_counters(void);
 
 
 

@@ -100,6 +100,10 @@ _Bool _syscall_memory_unmap(void* address,u64 length);
 
 
 
+_Bool _syscall_memory_stats(void* buffer,u32 size);
+
+
+
 void _syscall_clock_get_converion(void);
 
 

@@ -20,7 +20,7 @@
 
 
 
-#define SYSCALL_COUNT 27
+#define SYSCALL_COUNT 28
 
 
 
@@ -442,6 +442,21 @@ static void _syscall_drive_stats(syscall_registers_t* regs){
 
 
 
+static void _syscall_memory_stats(syscall_registers_t* regs){
+	if (regs->rsi!=sizeof(pmm_counters_t)){
+		regs->rax=0;
+		return;
+	}
+	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	*((pmm_counters_t*)VMM_TRANSLATE_ADDRESS(address))=*pmm_get_counters();
+}
+
+
+
 static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
@@ -475,8 +490,9 @@ void syscall_init(void){
 	_syscall_handlers[21]=_syscall_acpi_shutdown;
 	_syscall_handlers[22]=_syscall_memory_map;
 	_syscall_handlers[23]=_syscall_memory_unmap;
-	_syscall_handlers[24]=_syscall_clock_get_converion;
-	_syscall_handlers[25]=_syscall_drive_format;
-	_syscall_handlers[26]=_syscall_drive_stats;
+	_syscall_handlers[24]=_syscall_memory_stats;
+	_syscall_handlers[25]=_syscall_clock_get_converion;
+	_syscall_handlers[26]=_syscall_drive_format;
+	_syscall_handlers[27]=_syscall_drive_stats;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }

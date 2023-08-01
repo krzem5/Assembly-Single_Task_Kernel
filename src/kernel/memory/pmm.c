@@ -40,7 +40,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 			idx=_get_largest_block_index(length);
 			size=_get_block_size(idx);
 		}
-		_pmm_allocator.counters[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
+		_pmm_allocator.counters.data[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
 		header->next=_pmm_allocator.blocks[idx];
 		_pmm_allocator.blocks[idx]=address;
@@ -58,7 +58,7 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 		_pmm_allocator.blocks[i]=0;
 	}
 	for (u8 i=0;i<=PMM_COUNTER_MAX;i++){
-		_pmm_allocator.counters[i]=0;
+		_pmm_allocator.counters.data[i]=0;
 	}
 	LOG_CORE("Registering low memory...");
 	u64 last_memory_address=0;
@@ -154,7 +154,7 @@ _toggle_bitmap:
 		u64 k=out>>PAGE_SIZE_SHIFT;
 		bitmap[k>>6]^=1ull<<(k&63);
 	}
-	_pmm_allocator.counters[counter]+=count;
+	_pmm_allocator.counters.data[counter]+=count;
 	return out;
 }
 
@@ -202,4 +202,10 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count){
 	header->next=_pmm_allocator.blocks[i];
 	_pmm_allocator.blocks[i]=address;
 	return;
+}
+
+
+
+const pmm_counters_t* pmm_get_counters(void){
+	return &(_pmm_allocator.counters);
 }
