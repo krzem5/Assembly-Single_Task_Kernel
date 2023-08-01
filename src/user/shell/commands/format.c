@@ -4,6 +4,7 @@
 #include <user/fs.h>
 #include <user/io.h>
 #include <user/memory.h>
+#include <user/partition.h>
 #include <user/types.h>
 
 

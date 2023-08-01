@@ -52,7 +52,6 @@ void KERNEL_CORE_CODE kernel_load(void){
 	for (u8 i=0;1;i++){
 		boot_drive=drive_list_get_drive(i);
 		if (!boot_drive){
-			WARN_CORE("Unable to find the specific boot drive");
 			break;
 		}
 		if ((boot_drive->type==DRIVE_TYPE_AHCI||boot_drive->type==DRIVE_TYPE_NVME)&&boot_drive->block_size<=4096&&boot_drive->read_write(boot_drive->extra_data,0,buffer,1)==1&&*((const u64*)(buffer+64))==kernel_get_version()){
@@ -62,7 +61,10 @@ void KERNEL_CORE_CODE kernel_load(void){
 	if (boot_drive){
 		LOG_CORE("Found the boot drive at '%s'",boot_drive->name);
 	}
-	LOG_CORE("Searching partitions for the boot drive...");
+	else{
+		LOG_CORE("Searching partitions for the boot drive...");
+	}
+_check_every_drive:
 	char path[64];
 	for (u8 fs_index=0;1;fs_index++){
 		const fs_file_system_t* fs=fs_get_file_system(fs_index);
@@ -104,6 +106,11 @@ void KERNEL_CORE_CODE kernel_load(void){
 		LOG_CORE("Found boot drive: %s (%s)",fs->name,fs->drive->model_number);
 		fs_set_boot_file_system(fs_index);
 		goto _load_kernel;
+	}
+	if (boot_drive){
+		WARN_CORE("Unable to load the kernel from the boot drive, checking all drives...");
+		boot_drive=NULL;
+		goto _check_every_drive;
 	}
 	goto _error;
 _load_kernel:
