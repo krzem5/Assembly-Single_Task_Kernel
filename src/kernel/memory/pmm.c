@@ -134,6 +134,9 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		j++;
 		if (j==PMM_ALLOCATOR_SIZE_COUNT){
 			ERROR_CORE("Out of memory!");
+			for (u8 k=0;k<PMM_ALLOCATOR_SIZE_COUNT;k++){
+				INFO_CORE("[%u] %p",k,_pmm_allocator.blocks[k]);
+			}
 			for (;;);
 			return 0;
 		}
@@ -154,7 +157,7 @@ _toggle_bitmap:
 		u64 k=out>>PAGE_SIZE_SHIFT;
 		bitmap[k>>6]^=1ull<<(k&63);
 	}
-	_pmm_allocator.counters.data[counter]+=count;
+	_pmm_allocator.counters.data[counter]+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	return out;
 }
 
@@ -201,7 +204,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
 	header->next=_pmm_allocator.blocks[i];
 	_pmm_allocator.blocks[i]=address;
-	_pmm_allocator.counters.data[counter]-=count;
+	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 }
 
 

@@ -241,7 +241,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 
 void KERNEL_CORE_CODE driver_ahci_init(void){
 	_ahci_controller_count=0;
-	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t)),PMM_COUNTER_DRIVER_AHCI));
+	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_AHCI));
 	_ahci_device_count=0;
 }
 
