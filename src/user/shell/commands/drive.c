@@ -10,7 +10,7 @@
 
 
 // Must be page-aligned
-#define SPEED_TEST_BUFFER_SIZE (64*4096)
+#define SPEED_TEST_BUFFER_SIZE (65536*4096)
 
 
 
@@ -65,18 +65,17 @@ void drive_main(int argc,const char*const* argv){
 		drive->block_size,
 		drive->block_count
 	);
-	if (!stats.root_block_count){
-		return;
+	if (stats.root_block_count){
+		printf("KFS blocks:\n  ROOT: \x1b[1m%lu\x1b[0m\n  BATC: \x1b[1m%lu\x1b[0m\n  NDA3: \x1b[1m%lu\x1b[0m\n  NDA2: \x1b[1m%lu\x1b[0m\n  NDA1: \x1b[1m%lu\x1b[0m\n  NFDA: \x1b[1m%lu\x1b[0m\n  DATA: \x1b[1m%lu\x1b[0m\n",
+			stats.root_block_count,
+			stats.batc_block_count,
+			stats.nda3_block_count,
+			stats.nda2_block_count,
+			stats.nda1_block_count,
+			stats.nfda_block_count,
+			stats.data_block_count
+		);
 	}
-	printf("KFS blocks:\n  ROOT: \x1b[1m%lu\x1b[0m\n  BATC: \x1b[1m%lu\x1b[0m\n  NDA3: \x1b[1m%lu\x1b[0m\n  NDA2: \x1b[1m%lu\x1b[0m\n  NDA1: \x1b[1m%lu\x1b[0m\n  NFDA: \x1b[1m%lu\x1b[0m\n  DATA: \x1b[1m%lu\x1b[0m\n",
-		stats.root_block_count,
-		stats.batc_block_count,
-		stats.nda3_block_count,
-		stats.nda2_block_count,
-		stats.nda1_block_count,
-		stats.nfda_block_count,
-		stats.data_block_count
-	);
 	if (!speed_test){
 		return;
 	}
@@ -99,14 +98,21 @@ void drive_main(int argc,const char*const* argv){
 		printf("drive: file '%s' already exists\n",path);
 		return;
 	}
-	dst_fd=fs_open(0,path,FS_FLAG_WRITE|FS_FLAG_CREATE);
+	dst_fd=fs_open(0,path,FS_FLAG_READ|FS_FLAG_WRITE|FS_FLAG_CREATE);
 	void* buffer=memory_map(SPEED_TEST_BUFFER_SIZE);
-	u64 start=clock_get_ticks();
-	s64 error=fs_write(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
-	u64 end=clock_get_ticks();
+	u64 start_write=clock_get_ticks();
+	s64 write=fs_write(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
+	u64 end_write=clock_get_ticks();
+	fs_seek(dst_fd,0,FS_SEEK_SET);
+	u64 start_read=clock_get_ticks();
+	s64 read=fs_read(dst_fd,buffer,SPEED_TEST_BUFFER_SIZE);
+	u64 end_read=clock_get_ticks();
 	memory_unmap(buffer,SPEED_TEST_BUFFER_SIZE);
 	fs_delete(dst_fd);
-	printf("%ld, %lu, %lu\n",error,end-start,clock_ticks_to_time(end-start));
+	if (write!=SPEED_TEST_BUFFER_SIZE||read!=SPEED_TEST_BUFFER_SIZE){
+		return;
+	}
+	printf("Speed:\n  Read: \x1b[1m%v/s\x1b[0m\n  Write: \x1b[1m%v/s\x1b[0m\n",read*1000000000ull/clock_ticks_to_time(end_read-start_read),write*1000000000ull/clock_ticks_to_time(end_write-start_write));
 }
 
 

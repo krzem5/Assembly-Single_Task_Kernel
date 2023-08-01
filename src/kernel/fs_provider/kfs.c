@@ -269,6 +269,7 @@ static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_alloc_block(kfs_blo
 		_drive_read(block_cache->drive,block_index,&(block_cache->batc),8);
 		block_index+=8;
 	} while (!block_cache->batc.bitmap3);
+	block_cache->flags|=KFS_BLOCK_CACHE_BATC_PRESENT;
 _batc_found:
 	block_cache->flags|=KFS_BLOCK_CACHE_BATC_DIRTY;
 	kfs_large_block_index_t i=__builtin_ctzll(block_cache->batc.bitmap3);
