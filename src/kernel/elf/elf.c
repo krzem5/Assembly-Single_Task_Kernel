@@ -49,7 +49,7 @@ typedef struct _ELF_PROGRAM_HEADER{
 
 void* elf_load(const char* path){
 	LOG("Loading ELF executable '%s'...",path);
-	fs_node_t* node=fs_get_node(NULL,path,0);
+	fs_node_t* node=fs_node_get_by_path(NULL,path,0);
 	if (!node){
 		ERROR("File '%s' not found",path);
 		return NULL;
@@ -57,7 +57,7 @@ void* elf_load(const char* path){
 	vmm_pagemap_t pagemap;
 	vmm_pagemap_init(&pagemap);
 	elf_header_t header;
-	if (fs_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
+	if (fs_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		goto _error;
 	}
 	if (header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=2||header.e_machine!=0x3e||header.e_version!=1){
@@ -66,7 +66,7 @@ void* elf_load(const char* path){
 	u64 highest_address=0;
 	for (u16 i=0;i<header.e_phnum;i++){
 		elf_program_header_t program_header;
-		if (fs_read(node,header.e_phoff+i*sizeof(elf_program_header_t),&program_header,sizeof(elf_program_header_t))!=sizeof(elf_program_header_t)){
+		if (fs_node_read(node,header.e_phoff+i*sizeof(elf_program_header_t),&program_header,sizeof(elf_program_header_t))!=sizeof(elf_program_header_t)){
 			goto _error;
 		}
 		if (program_header.p_type!=1){
@@ -90,7 +90,7 @@ void* elf_load(const char* path){
 		if (end_address>highest_address){
 			highest_address=end_address;
 		}
-		if (fs_read(node,program_header.p_offset,VMM_TRANSLATE_ADDRESS(pages)+offset,program_header.p_filesz)!=program_header.p_filesz){
+		if (fs_node_read(node,program_header.p_offset,VMM_TRANSLATE_ADDRESS(pages)+offset,program_header.p_filesz)!=program_header.p_filesz){
 			goto _error;
 		}
 	}

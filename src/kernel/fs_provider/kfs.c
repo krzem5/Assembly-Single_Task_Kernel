@@ -569,7 +569,7 @@ static fs_node_t* _kfs_create(fs_file_system_t* fs,_Bool is_directory,const char
 	if (!kfs_node){
 		return NULL;
 	}
-	fs_node_t* out=fs_alloc_node(fs->index,name,name_length);
+	fs_node_t* out=fs_node_alloc(fs->index,name,name_length);
 	_node_to_fs_node(kfs_node,(kfs_fs_node_t*)out);
 	return out;
 }
@@ -651,7 +651,7 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(fs_file_system_t* fs,fs_nod
 		return NULL;
 	}
 	kfs_node_t* kfs_out=_get_node_by_index(block_cache,out_id);
-	fs_node_t* out=fs_alloc_node(fs->index,kfs_out->name,kfs_out->flags&KFS_NODE_MASK_NAME_LENGTH);
+	fs_node_t* out=fs_node_alloc(fs->index,kfs_out->name,kfs_out->flags&KFS_NODE_MASK_NAME_LENGTH);
 	_node_to_fs_node(kfs_out,(kfs_fs_node_t*)out);
 	return out;
 }

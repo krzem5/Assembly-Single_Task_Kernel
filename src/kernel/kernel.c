@@ -109,7 +109,7 @@ _check_every_drive:
 		}
 		path[i]=0;
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
-		fs_node_t* kernel=fs_get_node(NULL,path,0);
+		fs_node_t* kernel=fs_node_get_by_path(NULL,path,0);
 		if (!kernel){
 			if (boot_drive&&fs->partition_config.type==FS_PARTITION_TYPE_KFS){
 				fs_set_half_installed_file_system(fs_index);
@@ -117,7 +117,7 @@ _check_every_drive:
 			continue;
 		}
 		INFO_CORE("File found, reading header...");
-		if (fs_read(kernel,0,buffer,fs->drive->block_size)!=fs->drive->block_size){
+		if (fs_node_read(kernel,0,buffer,fs->drive->block_size)!=fs->drive->block_size){
 			WARN_CORE("Not a valid kernel file");
 			continue;
 		}
@@ -141,14 +141,14 @@ _check_every_drive:
 _load_kernel:
 	LOG_CORE("Loading kernel...");
 	INFO_CORE("Opening kernel file...");
-	fs_node_t* kernel_file=fs_get_node(NULL,_kernel_file_path,0);
+	fs_node_t* kernel_file=fs_node_get_by_path(NULL,_kernel_file_path,0);
 	if (!kernel_file){
 		goto _error;
 	}
 	u64 kernel_size=kernel_get_end()-kernel_get_core_end();
 	void* address=(void*)(kernel_get_core_end()+kernel_get_offset());
 	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
-	u64 rd=fs_read(kernel_file,0,address,kernel_size);
+	u64 rd=fs_node_read(kernel_file,0,address,kernel_size);
 	if (rd!=kernel_size){
 		goto _error;
 	}

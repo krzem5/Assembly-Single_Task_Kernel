@@ -88,55 +88,55 @@ void fs_set_previous_boot_file_system(u8 fs_index);
 
 
 
-void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length);
-
-
-
-_Bool fs_dealloc_node(fs_node_t* node);
-
-
-
-fs_node_t* fs_get_node_by_id(fs_node_id_t id);
-
-
-
-fs_node_t* fs_get_node(fs_node_t* root,const char* path,u8 type);
-
-
-
-fs_node_t* fs_get_node_relative(fs_node_t* node,u8 relative);
-
-
-
-_Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other);
-
-
-
-_Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node);
-
-
-
-_Bool fs_delete_node(fs_node_t* node);
-
-
-
-fs_node_t* fs_get_node_child(fs_node_t* parent,const char* name,u8 name_length);
-
-
-
-u64 fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count);
-
-
-
-u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count);
-
-
-
-u64 fs_get_size(fs_node_t* node);
-
-
-
 void fs_flush_cache(void);
+
+
+
+void* fs_node_alloc(u8 fs_index,const char* name,u8 name_length);
+
+
+
+_Bool fs_node_dealloc(fs_node_t* node);
+
+
+
+fs_node_t* fs_node_get_by_id(fs_node_id_t id);
+
+
+
+fs_node_t* fs_node_get_by_path(fs_node_t* root,const char* path,u8 type);
+
+
+
+fs_node_t* fs_node_get_relative(fs_node_t* node,u8 relative);
+
+
+
+_Bool fs_node_set_relative(fs_node_t* node,u8 relative,fs_node_t* other);
+
+
+
+_Bool fs_node_move(fs_node_t* src_node,fs_node_t* dst_node);
+
+
+
+_Bool fs_node_delete(fs_node_t* node);
+
+
+
+fs_node_t* fs_node_get_child(fs_node_t* parent,const char* name,u8 name_length);
+
+
+
+u64 fs_node_read(fs_node_t* node,u64 offset,void* buffer,u64 count);
+
+
+
+u64 fs_node_write(fs_node_t* node,u64 offset,const void* buffer,u64 count);
+
+
+
+u64 fs_node_get_size(fs_node_t* node);
 
 
 

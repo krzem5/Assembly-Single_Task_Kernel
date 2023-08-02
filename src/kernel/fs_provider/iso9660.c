@@ -49,7 +49,7 @@ static fs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(con
 	for (u8 i=0;i<length;i++){
 		directory_entry->identifier[i]+=(directory_entry->identifier[i]>64&&directory_entry->identifier[i]<91)<<5;
 	}
-	iso9660_fs_node_t* out=fs_alloc_node(parent->header.fs_index,directory_entry->identifier,length);
+	iso9660_fs_node_t* out=fs_node_alloc(parent->header.fs_index,directory_entry->identifier,length);
 	out->header.type=((directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
 	out->header.parent=parent->header.id;
 	out->parent_offset=parent->current_offset;
@@ -119,7 +119,7 @@ _skip_directory_entry:
 		ERROR_CORE("Unimplemented (_iso9660_get_relative/FS_NODE_RELATIVE_PARENT)");
 		return NULL;
 	}
-	fs_node_t* parent=fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT);
+	fs_node_t* parent=fs_node_get_relative(node,FS_NODE_RELATIVE_PARENT);
 	if (relative==FS_NODE_RELATIVE_NEXT_SIBLING){
 		const iso9660_fs_node_t* iso9660_parent=(const iso9660_fs_node_t*)parent;
 		u32 offset=iso9660_node->current_offset-(iso9660_parent->data_offset<<11);

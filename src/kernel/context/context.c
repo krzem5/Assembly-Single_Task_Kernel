@@ -112,13 +112,13 @@ void context_load(void){
 	LOG("Loading user context...");
 	char path[64];
 	_get_context_file_path(path);
-	fs_node_t* node=fs_get_node(0,path,0);
+	fs_node_t* node=fs_node_get_by_path(0,path,0);
 	if (!node){
 		LOG("Context file not found");
 		return;
 	}
 	LOG("Found context file '%s'",path);
-	fs_delete_node(node);
+	fs_node_delete(node);
 	for (;;);
 }
 
@@ -128,7 +128,7 @@ void context_save(void){
 	LOG("Saving user context...");
 	char path[64];
 	_get_context_file_path(path);
-	fs_node_t* node=fs_get_node(0,path,FS_NODE_TYPE_FILE);
+	fs_node_t* node=fs_node_get_by_path(0,path,FS_NODE_TYPE_FILE);
 	if (!node){
 		ERROR("Unable to open open context file '%s'",path);
 		return;

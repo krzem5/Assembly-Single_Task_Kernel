@@ -74,7 +74,7 @@ void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_parti
 	fs->extra_data=extra_data;
 	fs_node_allocator_init(_fs_file_system_count-1,config->node_size,&(fs->allocator));
 	LOG_CORE("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
-	fs->root=fs_alloc_node(fs->index,"",0);
+	fs->root=fs_node_alloc(fs->index,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
 	fs->root->flags|=FS_NODE_FLAG_ROOT;
 	fs->root->parent=fs->root->id;
@@ -121,7 +121,19 @@ void KERNEL_CORE_CODE fs_set_previous_boot_file_system(u8 fs_index){
 
 
 
-void* KERNEL_CORE_CODE fs_alloc_node(u8 fs_index,const char* name,u8 name_length){
+void fs_flush_cache(void){
+	LOG("Flushing file system cache...");
+	for (u8 i=0;i<_fs_file_system_count;i++){
+		fs_file_system_t* fs=_fs_file_systems+i;
+		lock_acquire(&(fs->lock));
+		fs->config->flush_cache(fs);
+		lock_release(&(fs->lock));
+	}
+}
+
+
+
+void* KERNEL_CORE_CODE fs_node_alloc(u8 fs_index,const char* name,u8 name_length){
 	fs_file_system_t* fs=_fs_file_systems+fs_index;
 	if (name_length>63){
 		name_length=63;
@@ -145,7 +157,7 @@ void* KERNEL_CORE_CODE fs_alloc_node(u8 fs_index,const char* name,u8 name_length
 
 
 
-_Bool fs_dealloc_node(fs_node_t* node){
+_Bool fs_node_dealloc(fs_node_t* node){
 	if (!node){
 		return 1;
 	}
@@ -161,13 +173,13 @@ _Bool fs_dealloc_node(fs_node_t* node){
 
 
 
-fs_node_t* fs_get_node_by_id(fs_node_id_t id){
+fs_node_t* fs_node_get_by_id(fs_node_id_t id){
 	return fs_node_allocator_get(&((_fs_file_systems+(id>>56))->allocator),id,0);
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_get_node(fs_node_t* root,const char* path,u8 type){
+fs_node_t* KERNEL_CORE_CODE fs_node_get_by_path(fs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
 		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){
 			ERROR_CORE("Root file system not located yet; partition must be specified");
@@ -231,14 +243,14 @@ _check_next_fs:
 		if (i==2&&path[0]=='.'&&path[1]=='.'){
 			path+=2;
 			if (!(node->flags&FS_NODE_FLAG_ROOT)){
-				node=fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT);
+				node=fs_node_get_relative(node,FS_NODE_RELATIVE_PARENT);
 			}
 			continue;
 		}
 		name=path;
 		name_length=i;
 		node_parent=node;
-		node=fs_get_node_child(node,path,i);
+		node=fs_node_get_child(node,path,i);
 		path+=i;
 	}
 	if (node||type==FS_NODE_TYPE_INVALID||!name_length){
@@ -251,19 +263,19 @@ _check_next_fs:
 	if (!node){
 		return NULL;
 	}
-	fs_node_t* first_child=fs_get_node_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD);
-	_Bool out=fs_set_node_relative(node,FS_NODE_RELATIVE_PARENT,node_parent);
+	fs_node_t* first_child=fs_node_get_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD);
+	_Bool out=fs_node_set_relative(node,FS_NODE_RELATIVE_PARENT,node_parent);
 	if (first_child){
-		out&=fs_set_node_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,node);
+		out&=fs_node_set_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,node);
 	}
-	out&=fs_set_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
-	out&=fs_set_node_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD,node);
+	out&=fs_node_set_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
+	out&=fs_node_set_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD,node);
 	return (out?node:NULL);
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_get_node_relative(fs_node_t* node,u8 relative){
+fs_node_t* KERNEL_CORE_CODE fs_node_get_relative(fs_node_t* node,u8 relative){
 	if (!node){
 		return NULL;
 	}
@@ -306,7 +318,7 @@ fs_node_t* KERNEL_CORE_CODE fs_get_node_relative(fs_node_t* node,u8 relative){
 
 
 
-_Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other){
+_Bool fs_node_set_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 	if (!node){
 		return 0;
 	}
@@ -346,19 +358,19 @@ _Bool fs_set_node_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 
 
 
-_Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node){
+_Bool fs_node_move(fs_node_t* src_node,fs_node_t* dst_node){
 	if (!src_node||!dst_node||src_node->fs_index!=dst_node->fs_index||src_node->type!=dst_node->type){
 		return 0;
 	}
 	fs_file_system_t* fs=_fs_file_systems+src_node->fs_index;
 	_Bool out=1;
 	if (src_node->type==FS_NODE_TYPE_DIRECTORY){
-		fs_node_t* child=fs_get_node_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD);
-		out&=fs_set_node_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD,NULL);
-		out&=fs_set_node_relative(dst_node,FS_NODE_RELATIVE_FIRST_CHILD,child);
+		fs_node_t* child=fs_node_get_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD);
+		out&=fs_node_set_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD,NULL);
+		out&=fs_node_set_relative(dst_node,FS_NODE_RELATIVE_FIRST_CHILD,child);
 		while (child){
-			out&=fs_set_node_relative(child,FS_NODE_RELATIVE_PARENT,dst_node);
-			child=fs_get_node_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING);
+			out&=fs_node_set_relative(child,FS_NODE_RELATIVE_PARENT,dst_node);
+			child=fs_node_get_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING);
 		}
 	}
 	else{
@@ -371,35 +383,35 @@ _Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node){
 
 
 
-_Bool fs_delete_node(fs_node_t* node){
-	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+_Bool fs_node_delete(fs_node_t* node){
+	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_node_get_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
 		return 0;
 	}
-	fs_node_t* prev=fs_get_node_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
-	fs_node_t* next=fs_get_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
+	fs_node_t* prev=fs_node_get_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
+	fs_node_t* next=fs_node_get_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
 	_Bool out=1;
 	if (prev){
-		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
+		out&=fs_node_set_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
 	}
 	else{
-		out&=fs_set_node_relative(fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
+		out&=fs_node_set_relative(fs_node_get_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
 	}
 	if (next){
-		out&=fs_set_node_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
+		out&=fs_node_set_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
 	}
 	if (out){
-		out=fs_dealloc_node(node);
+		out=fs_node_dealloc(node);
 	}
 	return out;
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_get_node_child(fs_node_t* parent,const char* name,u8 name_length){
+fs_node_t* KERNEL_CORE_CODE fs_node_get_child(fs_node_t* parent,const char* name,u8 name_length){
 	if (!parent||parent->type!=FS_NODE_TYPE_DIRECTORY){
 		return NULL;
 	}
-	for (fs_node_t* child=fs_get_node_relative(parent,FS_NODE_RELATIVE_FIRST_CHILD);child;child=fs_get_node_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING)){
+	for (fs_node_t* child=fs_node_get_relative(parent,FS_NODE_RELATIVE_FIRST_CHILD);child;child=fs_node_get_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING)){
 		if (child->name_length!=name_length){
 			continue;
 		}
@@ -416,7 +428,7 @@ _next_child:
 
 
 
-u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
+u64 KERNEL_CORE_CODE fs_node_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 	if (node->type!=FS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
@@ -474,7 +486,7 @@ u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 
 
 
-u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
+u64 fs_node_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 	if (node->type!=FS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
@@ -489,7 +501,7 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 	u16 extra=offset&(fs->drive->block_size-1);
 	lock_acquire(&(fs->lock));
 	if (extra){
-		ERROR("Unimplemented: fs_write.offset_extra");
+		ERROR("Unimplemented: fs_node_write.offset_extra");
 		return 0;
 	}
 	extra=count&(fs->drive->block_size-1);
@@ -519,22 +531,10 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 
 
 
-u64 fs_get_size(fs_node_t* node){
+u64 fs_node_get_size(fs_node_t* node){
 	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
 	lock_acquire(&(fs->lock));
 	u64 out=fs->config->get_size(fs,node);
 	lock_release(&(fs->lock));
 	return out;
-}
-
-
-
-void fs_flush_cache(void){
-	LOG("Flushing file system cache...");
-	for (u8 i=0;i<_fs_file_system_count;i++){
-		fs_file_system_t* fs=_fs_file_systems+i;
-		lock_acquire(&(fs->lock));
-		fs->config->flush_cache(fs);
-		lock_release(&(fs->lock));
-	}
 }
