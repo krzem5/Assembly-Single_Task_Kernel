@@ -49,13 +49,20 @@ void KERNEL_CORE_CODE kernel_load(void){
 	LOG_CORE("Searching drives for the boot drive...");
 	u8 buffer[4096];
 	const drive_t* boot_drive=NULL;
+	const drive_t* prev_boot_drive=NULL;
 	for (u8 i=0;1;i++){
-		boot_drive=drive_list_get_drive(i);
-		if (!boot_drive){
+		const drive_t* drive=drive_list_get_drive(i);
+		if (!drive){
 			break;
 		}
-		if ((boot_drive->type==DRIVE_TYPE_AHCI||boot_drive->type==DRIVE_TYPE_NVME)&&boot_drive->block_size<=4096&&boot_drive->read_write(boot_drive->extra_data,0,buffer,1)==1&&*((const u64*)(buffer+64))==kernel_get_version()){
-			break;
+		if ((drive->type==DRIVE_TYPE_AHCI||drive->type==DRIVE_TYPE_NVME)&&drive->block_size<=4096&&drive->read_write(drive->extra_data,0,buffer,1)==1){
+			u64 drive_version=*((const u64*)(buffer+64));
+			if (drive_version==kernel_get_version()){
+				boot_drive=drive;
+			}
+			else if (drive_version&&drive_version<kernel_get_version()){
+				prev_boot_drive=drive;
+			}
 		}
 	}
 	if (boot_drive){
@@ -64,8 +71,21 @@ void KERNEL_CORE_CODE kernel_load(void){
 	else{
 		LOG_CORE("Searching partitions for the boot drive...");
 	}
-_check_every_drive:
+	if (prev_boot_drive){
+		LOG_CORE("Searching for previous boot drive partition...");
+		for (u8 fs_index=0;1;fs_index++){
+			const fs_file_system_t* fs=fs_get_file_system(fs_index);
+			if (!fs){
+				break;
+			}
+			if (fs->drive==prev_boot_drive){
+				fs_set_previous_boot_file_system(fs_index);
+				break;
+			}
+		}
+	}
 	char path[64];
+_check_every_drive:
 	for (u8 fs_index=0;1;fs_index++){
 		const fs_file_system_t* fs=fs_get_file_system(fs_index);
 		if (!fs){

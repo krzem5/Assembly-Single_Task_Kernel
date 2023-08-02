@@ -13,7 +13,7 @@ SECTIONS{
     }
     __KERNEL_CORE_END__ = . - __KERNEL_OFFSET__;
     .kernel : AT(ADDR(.kernel) - __KERNEL_OFFSET__){
-        ASSERT (__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
+        ASSERT(__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
         *(.version)
         *(.text .text*)
         *(.rodata .rodata* .rdata .rdata*)

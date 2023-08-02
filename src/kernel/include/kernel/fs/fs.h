@@ -10,6 +10,10 @@
 
 #define FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO 1
 
+#define FS_FILE_SYSTEM_FLAG_BOOT 1
+#define FS_FILE_SYSTEM_FLAG_HALF_INSTALLED 2
+#define FS_FILE_SYSTEM_FLAG_PREVIOUS_BOOT 4
+
 #define FS_MAX_FILE_SYSTEMS 64
 #define FS_INVALID_FILE_SYSTEM_INDEX FS_MAX_FILE_SYSTEMS
 
@@ -45,6 +49,7 @@ typedef struct _FS_FILE_SYSTEM{
 	const fs_file_system_config_t* config;
 	fs_partition_config_t partition_config;
 	u8 index;
+	u8 flags;
 	u8 name_length;
 	char name[16];
 	const drive_t* drive;
@@ -71,19 +76,15 @@ const fs_file_system_t* fs_get_file_system(u8 fs_index);
 
 
 
-u8 fs_get_boot_file_system(void);
-
-
-
 void fs_set_boot_file_system(u8 fs_index);
 
 
 
-u8 fs_get_half_installed_file_system(void);
-
-
-
 void fs_set_half_installed_file_system(u8 fs_index);
+
+
+
+void fs_set_previous_boot_file_system(u8 fs_index);
 
 
 

@@ -234,6 +234,8 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	if (error or subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/{program}.elf"]+object_files+EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 _save_file_hash_list(file_hash_list,USER_HASH_FILE_PATH)
+with open("build/iso/startup.txt","w") as wf:
+	wf.write("/install.elf\n")
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/iso"]).returncode!=0):
 	sys.exit(1)
 if ("--run" in sys.argv):

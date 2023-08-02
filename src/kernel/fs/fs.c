@@ -16,7 +16,6 @@
 static fs_file_system_t* KERNEL_CORE_DATA _fs_file_systems;
 static u8 KERNEL_CORE_DATA _fs_file_system_count;
 static u8 KERNEL_CORE_DATA _fs_root_file_systems_index;
-static u8 KERNEL_CORE_DATA _fs_half_installed_file_systems_index;
 
 
 
@@ -48,7 +47,6 @@ void KERNEL_CORE_CODE fs_init(void){
 	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
 	_fs_file_system_count=0;
 	_fs_root_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
-	_fs_half_installed_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
 }
 
 
@@ -64,6 +62,7 @@ void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_parti
 	fs->config=config;
 	fs->partition_config=*partition_config;
 	fs->index=_fs_file_system_count-1;
+	fs->flags=0;
 	u8 i=0;
 	while (drive->name[i]){
 		fs->name[i]=drive->name[i];
@@ -121,35 +120,26 @@ const fs_file_system_t* KERNEL_CORE_CODE fs_get_file_system(u8 fs_index){
 
 
 
-u8 fs_get_boot_file_system(void){
-	return _fs_root_file_systems_index;
-}
-
-
-
 void KERNEL_CORE_CODE fs_set_boot_file_system(u8 fs_index){
 	if (_fs_root_file_systems_index!=FS_INVALID_FILE_SYSTEM_INDEX){
 		WARN_CORE("fs_set_boot_file_system called more than once");
 		return;
 	}
 	_fs_root_file_systems_index=fs_index;
+	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_BOOT;
 	drive_list_set_boot_drive((_fs_file_systems+fs_index)->drive->index);
 }
 
 
 
-u8 fs_get_half_installed_file_system(void){
-	return _fs_half_installed_file_systems_index;
+void KERNEL_CORE_CODE fs_set_half_installed_file_system(u8 fs_index){
+	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_HALF_INSTALLED;
 }
 
 
 
-void KERNEL_CORE_CODE fs_set_half_installed_file_system(u8 fs_index){
-	if (_fs_half_installed_file_systems_index!=FS_INVALID_FILE_SYSTEM_INDEX){
-		WARN_CORE("fs_set_half_installed_file_system called more than once");
-		return;
-	}
-	_fs_half_installed_file_systems_index=fs_index;
+void KERNEL_CORE_CODE fs_set_previous_boot_file_system(u8 fs_index){
+	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_PREVIOUS_BOOT;
 }
 
 
@@ -476,8 +466,36 @@ u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 		lock_release(&(fs->lock));
 		return out;
 	}
-	WARN("Unimplemented: fs_write");
-	return 0;
+	u64 out=0;
+	u16 extra=offset&(fs->drive->block_size-1);
+	lock_acquire(&(fs->lock));
+	if (extra){
+		ERROR("Unimplemented: fs_write.offset_extra");
+		return 0;
+	}
+	extra=count&(fs->drive->block_size-1);
+	if (count-extra){
+		out+=fs->config->write(fs,node,offset,buffer,count-extra);
+	}
+	if (extra){
+		u8 chunk[4096];
+		if (fs->drive->block_size>4096){
+			ERROR_CORE("Unimplemented");
+			return 0;
+		}
+		u64 chunk_length=fs->config->read(fs,node,offset+count-extra,chunk,fs->drive->block_size);
+		if (chunk_length>extra){
+			chunk_length=extra;
+		}
+		memcpy(chunk,buffer+count-extra,chunk_length);
+		chunk_length=fs->config->write(fs,node,offset+count-extra,chunk,fs->drive->block_size);
+		if (chunk_length>extra){
+			chunk_length=extra;
+		}
+		out+=chunk_length;
+	}
+	lock_release(&(fs->lock));
+	return out;
 }
 
 

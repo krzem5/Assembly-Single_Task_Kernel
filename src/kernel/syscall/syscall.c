@@ -30,6 +30,7 @@
 #define USER_PARTITION_FLAG_PRESENT 1
 #define USER_PARTITION_FLAG_BOOT 2
 #define USER_PARTITION_FLAG_HALF_INSTALLED 4
+#define USER_PARTITION_FLAG_PREVIOUS_BOOT 8
 
 #define USER_SHUTDOWN_FLAG_RESTART 1
 #define USER_SHUTDOWN_FLAG_SAVE_CONTEXT 2
@@ -199,8 +200,8 @@ static void _syscall_file_system_count(syscall_registers_t* regs){
 
 
 static void _syscall_file_system_get(syscall_registers_t* regs){
-	const fs_file_system_t* file_system=fs_get_file_system(regs->rdi);
-	if (!file_system||regs->rdx!=sizeof(user_partition_t)){
+	const fs_file_system_t* fs=fs_get_file_system(regs->rdi);
+	if (!fs||regs->rdx!=sizeof(user_partition_t)){
 		regs->rax=-1;
 		return;
 	}
@@ -210,13 +211,13 @@ static void _syscall_file_system_get(syscall_registers_t* regs){
 		return;
 	}
 	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
-	user_partition->flags=USER_PARTITION_FLAG_PRESENT|(fs_get_boot_file_system()==regs->rdi?USER_PARTITION_FLAG_BOOT:0)|(fs_get_half_installed_file_system()==regs->rdi?USER_PARTITION_FLAG_HALF_INSTALLED:0);
-	user_partition->type=file_system->partition_config.type;
-	user_partition->index=file_system->partition_config.index;
-	user_partition->first_block_index=file_system->partition_config.first_block_index;
-	user_partition->last_block_index=file_system->partition_config.last_block_index;
-	memcpy(user_partition->name,file_system->name,16);
-	user_partition->drive_index=file_system->drive->index;
+	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((fs->flags&FS_FILE_SYSTEM_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((fs->flags&FS_FILE_SYSTEM_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((fs->flags&FS_FILE_SYSTEM_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
+	user_partition->type=fs->partition_config.type;
+	user_partition->index=fs->partition_config.index;
+	user_partition->first_block_index=fs->partition_config.first_block_index;
+	user_partition->last_block_index=fs->partition_config.last_block_index;
+	memcpy(user_partition->name,fs->name,16);
+	user_partition->drive_index=fs->drive->index;
 	regs->rax=0;
 }
 
