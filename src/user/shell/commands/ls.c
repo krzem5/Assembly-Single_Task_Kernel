@@ -83,7 +83,7 @@ void ls_main(int argc,const char*const* argv){
 	else if (type==LS_TYPE_PARTITIONS){
 		const partition_t* partition=partitions;
 		for (u32 i=0;i<partition_count;i++){
-			printf("\x1b[1m%s\x1b[0m:\t%v\t%s%s\n",partition->name,(partition->last_block_index-partition->first_block_index)*(drives+partition->drive_index)->block_size,partition_type_names[partition->type],((partition->flags&DRIVE_FLAG_BOOT)?" [boot]":""));
+			printf("\x1b[1m%s\x1b[0m:\t%v\t%s%s%s\n",partition->name,(partition->last_block_index-partition->first_block_index)*(drives+partition->drive_index)->block_size,partition_type_names[partition->type],((partition->flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition->flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""));
 			partition++;
 		}
 	}

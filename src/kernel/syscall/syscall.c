@@ -29,6 +29,7 @@
 
 #define USER_PARTITION_FLAG_PRESENT 1
 #define USER_PARTITION_FLAG_BOOT 2
+#define USER_PARTITION_FLAG_HALF_INSTALLED 4
 
 #define USER_SHUTDOWN_FLAG_RESTART 1
 #define USER_SHUTDOWN_FLAG_SAVE_CONTEXT 2
@@ -209,7 +210,7 @@ static void _syscall_file_system_get(syscall_registers_t* regs){
 		return;
 	}
 	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
-	user_partition->flags=USER_PARTITION_FLAG_PRESENT|(fs_get_boot_file_system()==regs->rdi?USER_PARTITION_FLAG_BOOT:0);
+	user_partition->flags=USER_PARTITION_FLAG_PRESENT|(fs_get_boot_file_system()==regs->rdi?USER_PARTITION_FLAG_BOOT:0)|(fs_get_half_installed_file_system()==regs->rdi?USER_PARTITION_FLAG_HALF_INSTALLED:0);
 	user_partition->type=file_system->partition_config.type;
 	user_partition->index=file_system->partition_config.index;
 	user_partition->first_block_index=file_system->partition_config.first_block_index;

@@ -79,6 +79,14 @@ void fs_set_boot_file_system(u8 fs_index);
 
 
 
+u8 fs_get_half_installed_file_system(void);
+
+
+
+void fs_set_half_installed_file_system(u8 fs_index);
+
+
+
 void* fs_alloc_node(u8 fs_index,const char* name,u8 name_length);
 
 

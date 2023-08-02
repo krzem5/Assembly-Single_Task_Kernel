@@ -75,7 +75,6 @@ _check_every_drive:
 			if (fs->drive!=boot_drive){
 				continue;
 			}
-			// mark this file system as half-installed [used in user mode to continue install after formatting a drive]
 		}
 		u8 i=0;
 		while (fs->name[i]){
@@ -92,6 +91,9 @@ _check_every_drive:
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
 		fs_node_t* kernel=fs_get_node(NULL,path,0);
 		if (!kernel){
+			if (boot_drive){
+				fs_set_half_installed_file_system(fs_index);
+			}
 			continue;
 		}
 		INFO_CORE("File found, reading header...");
