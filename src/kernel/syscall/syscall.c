@@ -38,26 +38,6 @@
 
 
 
-typedef struct _SYSCALL_REGISTERS{
-	u64 rax;
-	u64 rbx;
-	u64 rdx;
-	u64 rsi;
-	u64 rdi;
-	u64 rbp;
-	u64 r8;
-	u64 r9;
-	u64 r10;
-	u64 r12;
-	u64 r13;
-	u64 r14;
-	u64 r15;
-	u64 rflags;
-	u64 rip;
-} syscall_registers_t;
-
-
-
 typedef struct _USER_DRIVE{
 	u8 flags;
 	u8 type;
@@ -87,23 +67,8 @@ void* _syscall_handlers[SYSCALL_COUNT+1];
 
 
 
-static u64 _sanatize_user_memory(u64 start,u64 size){
-	u64 address=vmm_virtual_to_physical(&vmm_user_pagemap,start);
-	if (!address||!size){
-		return 0;
-	}
-	for (u64 offset=PAGE_SIZE;offset<size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(&vmm_user_pagemap,start+offset)){
-			return 0;
-		}
-	}
-	return address;
-}
-
-
-
-static void _syscall_serial_send(syscall_registers_t* regs){
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+static void syscall_serial_send(syscall_registers_t* regs){
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		return;
 	}
@@ -112,8 +77,8 @@ static void _syscall_serial_send(syscall_registers_t* regs){
 
 
 
-static void _syscall_serial_recv(syscall_registers_t* regs){
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+static void syscall_serial_recv(syscall_registers_t* regs){
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		regs->rax=0;
 		return;
@@ -123,9 +88,9 @@ static void _syscall_serial_recv(syscall_registers_t* regs){
 
 
 
-static void _syscall_elf_load(syscall_registers_t* regs){
+static void syscall_elf_load(syscall_registers_t* regs){
 	regs->rax=-1;
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		return;
 	}
@@ -144,38 +109,37 @@ static void _syscall_elf_load(syscall_registers_t* regs){
 
 
 
-static void _syscall_cpu_core_count(syscall_registers_t* regs){
+static void syscall_cpu_core_count(syscall_registers_t* regs){
 	regs->rax=cpu_get_core_count();
 }
 
 
 
-static void _syscall_cpu_core_start(syscall_registers_t* regs){
-	// int _syscall_cpu_core_start(unsigned int index,void* fn,void* arg);
-	WARN("Unimplemented: _syscall_cpu_core_start");
+static void syscall_cpu_core_start(syscall_registers_t* regs){
+	WARN("Unimplemented: syscall_cpu_core_start");
 }
 
 
 
-static void _syscall_cpu_core_stop(syscall_registers_t* regs){
+static void syscall_cpu_core_stop(syscall_registers_t* regs){
 	cpu_core_stop();
 }
 
 
 
-static void _syscall_drive_list_length(syscall_registers_t* regs){
+static void syscall_drive_list_length(syscall_registers_t* regs){
 	regs->rax=drive_list_get_length();
 }
 
 
 
-static void _syscall_drive_list_get(syscall_registers_t* regs){
+static void syscall_drive_list_get(syscall_registers_t* regs){
 	const drive_t* drive=drive_list_get_drive(regs->rdi);
 	if (!drive||regs->rdx!=sizeof(user_drive_t)){
 		regs->rax=-1;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=-1;
 		return;
@@ -194,19 +158,19 @@ static void _syscall_drive_list_get(syscall_registers_t* regs){
 
 
 
-static void _syscall_file_system_count(syscall_registers_t* regs){
+static void syscall_file_system_count(syscall_registers_t* regs){
 	regs->rax=fs_get_file_system_count();
 }
 
 
 
-static void _syscall_file_system_get(syscall_registers_t* regs){
+static void syscall_file_system_get(syscall_registers_t* regs){
 	const fs_file_system_t* fs=fs_get_file_system(regs->rdi);
 	if (!fs||regs->rdx!=sizeof(user_partition_t)){
 		regs->rax=-1;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=-1;
 		return;
@@ -224,12 +188,12 @@ static void _syscall_file_system_get(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_open(syscall_registers_t* regs){
+static void syscall_fd_open(syscall_registers_t* regs){
 	if (regs->rdi&&FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -239,7 +203,7 @@ static void _syscall_fd_open(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_close(syscall_registers_t* regs){
+static void syscall_fd_close(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -249,7 +213,7 @@ static void _syscall_fd_close(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_delete(syscall_registers_t* regs){
+static void syscall_fd_delete(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -259,12 +223,12 @@ static void _syscall_fd_delete(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_read(syscall_registers_t* regs){
+static void syscall_fd_read(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -274,12 +238,12 @@ static void _syscall_fd_read(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_write(syscall_registers_t* regs){
+static void syscall_fd_write(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -289,7 +253,7 @@ static void _syscall_fd_write(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_seek(syscall_registers_t* regs){
+static void syscall_fd_seek(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -299,7 +263,7 @@ static void _syscall_fd_seek(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_stat(syscall_registers_t* regs){
+static void syscall_fd_stat(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -308,7 +272,7 @@ static void _syscall_fd_stat(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -318,7 +282,7 @@ static void _syscall_fd_stat(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_get_relative(syscall_registers_t* regs){
+static void syscall_fd_get_relative(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -328,7 +292,7 @@ static void _syscall_fd_get_relative(syscall_registers_t* regs){
 
 
 
-static void _syscall_fd_move(syscall_registers_t* regs){
+static void syscall_fd_move(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)||FD_OUT_OF_RANGE(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_FD;
 		return;
@@ -338,18 +302,18 @@ static void _syscall_fd_move(syscall_registers_t* regs){
 
 
 
-static void _syscall_net_send(syscall_registers_t* regs){
+static void syscall_net_send(syscall_registers_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		regs->rax=0;
 		return;
 	}
 	network_layer2_packet_t packet=*((const network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address));
-	u64 buffer_address=_sanatize_user_memory((u64)(packet.buffer),packet.buffer_length);
+	u64 buffer_address=syscall_sanatize_user_memory((u64)(packet.buffer),packet.buffer_length);
 	if (!buffer_address){
 		regs->rax=0;
 		return;
@@ -360,19 +324,19 @@ static void _syscall_net_send(syscall_registers_t* regs){
 
 
 
-static void _syscall_net_poll(syscall_registers_t* regs){
+static void syscall_net_poll(syscall_registers_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		regs->rax=0;
 		return;
 	}
 	network_layer2_packet_t packet=*((network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address));
 	void* user_buffer=packet.buffer;
-	u64 buffer_address=_sanatize_user_memory((u64)user_buffer,packet.buffer_length);
+	u64 buffer_address=syscall_sanatize_user_memory((u64)user_buffer,packet.buffer_length);
 	if (!buffer_address){
 		regs->rax=0;
 		return;
@@ -385,7 +349,7 @@ static void _syscall_net_poll(syscall_registers_t* regs){
 
 
 
-static void _syscall_system_shutdown(syscall_registers_t* regs){
+static void syscall_system_shutdown(syscall_registers_t* regs){
 	if (regs->rdi&USER_SHUTDOWN_FLAG_SAVE_CONTEXT){
 		context_save();
 	}
@@ -394,19 +358,35 @@ static void _syscall_system_shutdown(syscall_registers_t* regs){
 
 
 
-static void _syscall_memory_map(syscall_registers_t* regs){
+static void syscall_memory_map(syscall_registers_t* regs){
 	regs->rax=mmap_alloc(regs->rdi,regs->rsi);
 }
 
 
 
-static void _syscall_memory_unmap(syscall_registers_t* regs){
+static void syscall_memory_unmap(syscall_registers_t* regs){
 	regs->rax=mmap_dealloc(regs->rdi,regs->rsi);
 }
 
 
 
-static void _syscall_clock_get_converion(syscall_registers_t* regs){
+static void syscall_memory_stats(syscall_registers_t* regs){
+	if (regs->rsi!=sizeof(pmm_counters_t)){
+		regs->rax=0;
+		return;
+	}
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	*((pmm_counters_t*)VMM_TRANSLATE_ADDRESS(address))=*pmm_get_counters();
+	regs->rax=1;
+}
+
+
+
+static void syscall_clock_get_converion(syscall_registers_t* regs){
 	regs->rax=clock_conversion_factor;
 	regs->rdx=clock_conversion_shift;
 	regs->r8=clock_cpu_frequency;
@@ -414,7 +394,7 @@ static void _syscall_clock_get_converion(syscall_registers_t* regs){
 
 
 
-static void _syscall_drive_format(syscall_registers_t* regs){
+static void syscall_drive_format(syscall_registers_t* regs){
 	const drive_t* drive=drive_list_get_drive(regs->rdi);
 	if (!drive){
 		regs->rax=0;
@@ -422,7 +402,7 @@ static void _syscall_drive_format(syscall_registers_t* regs){
 	}
 	u64 address=0;
 	if (regs->rdx){
-		address=_sanatize_user_memory(regs->rsi,regs->rdx);
+		address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 		if (!address){
 			regs->rax=0;
 			return;
@@ -434,13 +414,13 @@ static void _syscall_drive_format(syscall_registers_t* regs){
 
 
 
-static void _syscall_drive_stats(syscall_registers_t* regs){
+static void syscall_drive_stats(syscall_registers_t* regs){
 	const drive_t* drive=drive_list_get_drive(regs->rdi);
 	if (!drive||regs->rdx!=sizeof(drive_stats_t)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=_sanatize_user_memory(regs->rsi,regs->rdx);
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
 	if (!address){
 		regs->rax=0;
 		return;
@@ -452,23 +432,7 @@ static void _syscall_drive_stats(syscall_registers_t* regs){
 
 
 
-static void _syscall_memory_stats(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(pmm_counters_t)){
-		regs->rax=0;
-		return;
-	}
-	u64 address=_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	*((pmm_counters_t*)VMM_TRANSLATE_ADDRESS(address))=*pmm_get_counters();
-	regs->rax=1;
-}
-
-
-
-static void _syscall_invalid(syscall_registers_t* regs,u64 number){
+static void syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
 }
@@ -477,33 +441,48 @@ static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 
 void syscall_init(void){
 	LOG("Initializing SYSCALL table...");
-	_syscall_handlers[0]=_syscall_serial_send;
-	_syscall_handlers[1]=_syscall_serial_recv;
-	_syscall_handlers[2]=_syscall_elf_load;
-	_syscall_handlers[3]=_syscall_cpu_core_count;
-	_syscall_handlers[4]=_syscall_cpu_core_start;
-	_syscall_handlers[5]=_syscall_cpu_core_stop;
-	_syscall_handlers[6]=_syscall_drive_list_length;
-	_syscall_handlers[7]=_syscall_drive_list_get;
-	_syscall_handlers[8]=_syscall_file_system_count;
-	_syscall_handlers[9]=_syscall_file_system_get;
-	_syscall_handlers[10]=_syscall_fd_open;
-	_syscall_handlers[11]=_syscall_fd_close;
-	_syscall_handlers[12]=_syscall_fd_delete;
-	_syscall_handlers[13]=_syscall_fd_read;
-	_syscall_handlers[14]=_syscall_fd_write;
-	_syscall_handlers[15]=_syscall_fd_seek;
-	_syscall_handlers[16]=_syscall_fd_stat;
-	_syscall_handlers[17]=_syscall_fd_get_relative;
-	_syscall_handlers[18]=_syscall_fd_move;
-	_syscall_handlers[19]=_syscall_net_send;
-	_syscall_handlers[20]=_syscall_net_poll;
-	_syscall_handlers[21]=_syscall_system_shutdown;
-	_syscall_handlers[22]=_syscall_memory_map;
-	_syscall_handlers[23]=_syscall_memory_unmap;
-	_syscall_handlers[24]=_syscall_memory_stats;
-	_syscall_handlers[25]=_syscall_clock_get_converion;
-	_syscall_handlers[26]=_syscall_drive_format;
-	_syscall_handlers[27]=_syscall_drive_stats;
-	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
+	_syscall_handlers[0]=syscall_serial_send;
+	_syscall_handlers[1]=syscall_serial_recv;
+	_syscall_handlers[2]=syscall_elf_load;
+	_syscall_handlers[3]=syscall_cpu_core_count;
+	_syscall_handlers[4]=syscall_cpu_core_start;
+	_syscall_handlers[5]=syscall_cpu_core_stop;
+	_syscall_handlers[6]=syscall_drive_list_length;
+	_syscall_handlers[7]=syscall_drive_list_get;
+	_syscall_handlers[8]=syscall_file_system_count;
+	_syscall_handlers[9]=syscall_file_system_get;
+	_syscall_handlers[10]=syscall_fd_open;
+	_syscall_handlers[11]=syscall_fd_close;
+	_syscall_handlers[12]=syscall_fd_delete;
+	_syscall_handlers[13]=syscall_fd_read;
+	_syscall_handlers[14]=syscall_fd_write;
+	_syscall_handlers[15]=syscall_fd_seek;
+	_syscall_handlers[16]=syscall_fd_stat;
+	_syscall_handlers[17]=syscall_fd_get_relative;
+	_syscall_handlers[18]=syscall_fd_move;
+	_syscall_handlers[19]=syscall_net_send;
+	_syscall_handlers[20]=syscall_net_poll;
+	_syscall_handlers[21]=syscall_system_shutdown;
+	_syscall_handlers[22]=syscall_memory_map;
+	_syscall_handlers[23]=syscall_memory_unmap;
+	_syscall_handlers[24]=syscall_memory_stats;
+	_syscall_handlers[25]=syscall_clock_get_converion;
+	_syscall_handlers[26]=syscall_drive_format;
+	_syscall_handlers[27]=syscall_drive_stats;
+	_syscall_handlers[SYSCALL_COUNT]=syscall_invalid;
+}
+
+
+
+u64 syscall_sanatize_user_memory(u64 start,u64 size){
+	u64 address=vmm_virtual_to_physical(&vmm_user_pagemap,start);
+	if (!address||!size){
+		return 0;
+	}
+	for (u64 offset=PAGE_SIZE;offset<size;offset+=PAGE_SIZE){
+		if (!vmm_virtual_to_physical(&vmm_user_pagemap,start+offset)){
+			return 0;
+		}
+	}
+	return address;
 }

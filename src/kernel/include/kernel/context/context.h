@@ -11,4 +11,8 @@ void context_save(void);
 
 
 
+void _context_get_cpu_state(void* buffer);
+
+
+
 #endif

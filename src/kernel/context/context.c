@@ -7,7 +7,6 @@
 
 typedef struct _CONTEXT_CPU{
 	u64 rip;
-	u64 rflags;
 	u64 fs;
 	u64 gs;
 	u64 rax;

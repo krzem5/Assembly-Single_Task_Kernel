@@ -15,20 +15,17 @@ u32 clock_conversion_shift;
 
 
 
-static inline u64 _get_tsc(void){
-	u32 low;
-	u32 high;
-	asm volatile("rdtsc":"=a"(low),"=d"(high));
-	return (((u64)high)<<32)|low;
-}
-
-
-
 static inline u64 _wait_for_pit(u8 high){
 	for (u32 i=0;i<500000;i++){
 		io_port_in8(0x42);
 		if (io_port_in8(0x42)<high){
-			return (i>10?_get_tsc():0);
+			if (i<10){
+				return 0;
+			}
+			u32 low;
+			u32 high;
+			asm volatile("rdtsc":"=a"(low),"=d"(high));
+			return (((u64)high)<<32)|low;
 		}
 	}
 	return 0;
@@ -72,7 +69,7 @@ static void _calculate_clock_conversion(void){
 			return;
 		}
 	}
-	ERROR("Unable to calculate clock conversion factor");
+	ERROR("Unable to calculate clock frequency conversion factor");
 	for (;;);
 }
 
