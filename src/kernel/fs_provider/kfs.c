@@ -14,6 +14,8 @@
 
 #define DRIVE_BLOCK_SIZE_SHIFT 9
 
+#define DRIVE_FIRST_FREE_BLOCK_INDEX 17
+
 
 
 #define KFS_BLOCK_CACHE_NFDA_PRESENT 0x001
@@ -977,14 +979,14 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		block_count=0xffffffff;
 	}
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
-	kfs_large_block_index_t first_free_block_index=2;
 	if (boot_length){
-		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)boot,boot_length>>DRIVE_BLOCK_SIZE_SHIFT)!=(boot_length>>DRIVE_BLOCK_SIZE_SHIFT)){
+		INFO("Writing %v of boot code...",((boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)<<DRIVE_BLOCK_SIZE_SHIFT);
+		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)boot,(boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)!=((boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)){
 			ERROR("Error writing boot code to drive");
 			return 0;
 		}
-		first_free_block_index=(boot_length+4095)>>12;
 	}
+	kfs_large_block_index_t first_free_block_index=DRIVE_FIRST_FREE_BLOCK_INDEX;
 	kfs_root_block_t root={
 		KFS_SIGNATURE,
 		block_count,

@@ -78,7 +78,7 @@ void KERNEL_CORE_CODE kernel_load(void){
 			if (!fs){
 				break;
 			}
-			if (fs->drive==prev_boot_drive){
+			if (fs->drive==prev_boot_drive&&fs->partition_config.type==FS_PARTITION_TYPE_KFS){
 				fs_set_previous_boot_file_system(fs_index);
 				break;
 			}
@@ -111,7 +111,7 @@ _check_every_drive:
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
 		fs_node_t* kernel=fs_get_node(NULL,path,0);
 		if (!kernel){
-			if (boot_drive){
+			if (boot_drive&&fs->partition_config.type==FS_PARTITION_TYPE_KFS){
 				fs_set_half_installed_file_system(fs_index);
 			}
 			continue;

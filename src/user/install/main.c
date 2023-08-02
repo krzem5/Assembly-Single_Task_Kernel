@@ -9,6 +9,10 @@
 
 
 
+#define BUFFER_SIZE 4096
+
+
+
 #define BOOT_CODE_FILE_NAME "/core.bin"
 
 
@@ -16,9 +20,9 @@
 static void _copy_data(int src_fd,int dst_fd,u32 offset,u32 length){
 	fs_seek(src_fd,offset,FS_SEEK_SET);
 	fs_seek(dst_fd,offset,FS_SEEK_SET);
-	u8 buffer[512];
+	u8 buffer[BUFFER_SIZE];
 	while (length){
-		s64 read=fs_read(src_fd,buffer,512);
+		s64 read=fs_read(src_fd,buffer,(length>BUFFER_SIZE?BUFFER_SIZE:length));
 		if (read<=0){
 			break;
 		}
@@ -33,16 +37,17 @@ static void _copy_data(int src_fd,int dst_fd,u32 offset,u32 length){
 
 
 static _Bool _copy_file(const char* name,char* path,u32 offset){
-	int src_fd=fs_open(0,name,FS_FLAG_READ);
-	if (src_fd<0){
-		printf("Unable to open file '%s': error %d\n",name,src_fd);
-		return 0;
-	}
 	u32 i=0;
 	for (;name[i];i++){
 		path[i+offset]=name[i];
 	}
 	path[i+offset]=0;
+	printf("Copying '%s' to '%s'...\n",name,path);
+	int src_fd=fs_open(0,name,FS_FLAG_READ);
+	if (src_fd<0){
+		printf("Unable to open file '%s': error %d\n",name,src_fd);
+		return 0;
+	}
 	int dst_fd=fs_open(0,path,FS_FLAG_WRITE|FS_FLAG_CREATE);
 	if (dst_fd<0){
 		fs_close(src_fd);
@@ -86,22 +91,21 @@ _start_shell:
 	elf_load("/shell.elf");
 	return;
 _update_boot_version:
+	path[_partition_name_to_path(path,(drives+partition->drive_index)->name)]=0;
+	printf("Copying kernel core from '%s' to '%s'...\n",BOOT_CODE_FILE_NAME,path);
 	int src_fd=fs_open(0,BOOT_CODE_FILE_NAME,FS_FLAG_READ);
 	if (src_fd<0){
 		printf("Unable to open file '%s': error %d\n",BOOT_CODE_FILE_NAME,src_fd);
 		goto _start_shell;
 	}
-	path[_partition_name_to_path(path,(drives+partition->drive_index)->name)]=0;
 	int dst_fd=fs_open(0,path,FS_FLAG_WRITE);
 	if (dst_fd<0){
 		fs_close(src_fd);
 		printf("Unable to open file '%s': error %d\n",path,dst_fd);
 		goto _start_shell;
 	}
-	u32 boot_code_length=fs_seek(src_fd,0,FS_SEEK_END);
-	printf("Boot code size: %v\n",boot_code_length);
 	_copy_data(src_fd,dst_fd,0,512);
-	_copy_data(src_fd,dst_fd,4608,boot_code_length-4608);
+	_copy_data(src_fd,dst_fd,4608,0xffffffff);
 	fs_close(src_fd);
 	fs_close(dst_fd);
 _copy_kernel_files:
