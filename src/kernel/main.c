@@ -1,5 +1,6 @@
 #include <kernel/acpi/acpi.h>
 #include <kernel/clock/clock.h>
+#include <kernel/context/context.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
@@ -51,6 +52,7 @@ void KERNEL_CORE_CODE main(void){
 	acpi_load();
 	network_layer2_init();
 	cpu_start_all_cores();
+	context_load();
 	cpu_start_program(elf_load("/loader.elf"));
 	for (;;);
 }

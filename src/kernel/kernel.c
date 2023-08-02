@@ -148,7 +148,8 @@ _load_kernel:
 	u64 kernel_size=kernel_get_end()-kernel_get_core_end();
 	void* address=(void*)(kernel_get_core_end()+kernel_get_offset());
 	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
-	if (fs_read(kernel_file,0,address,kernel_size)!=kernel_size){
+	u64 rd=fs_read(kernel_file,0,address,kernel_size);
+	if (rd!=kernel_size){
 		goto _error;
 	}
 	u64 version=*((u64*)address);

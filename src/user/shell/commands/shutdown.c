@@ -25,4 +25,4 @@ void shutdown_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(shutdown,"shutdown [-r]");
+DECLARE_COMMAND(shutdown,"shutdown [-r] [-s]");

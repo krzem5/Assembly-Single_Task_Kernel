@@ -33,7 +33,7 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unable to read data from file '%s': error %d\n",argv[1],error);
 		goto _cleanup;
 	}
-	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nPartition: \x1b[1m%s\x1b[0m\nID: \x1b[1m%p\x1b[0m\n",stat.name,fs_stat_type_names[stat.type],stat.size,(partitions+stat.fs_index)->name,stat.node_id);
+	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\nPartition: \x1b[1m%s\x1b[0m\nID: \x1b[1m%p\x1b[0m\n",stat.name,fs_stat_type_names[stat.type],stat.size,stat.size,(partitions+stat.fs_index)->name,stat.node_id);
 _cleanup:
 	fs_close(fd);
 }

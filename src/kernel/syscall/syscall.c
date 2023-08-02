@@ -1,5 +1,6 @@
 #include <kernel/acpi/fadt.h>
 #include <kernel/clock/clock.h>
+#include <kernel/context/context.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
@@ -386,8 +387,7 @@ static void _syscall_net_poll(syscall_registers_t* regs){
 
 static void _syscall_system_shutdown(syscall_registers_t* regs){
 	if (regs->rdi&USER_SHUTDOWN_FLAG_SAVE_CONTEXT){
-		ERROR("Unimplemented: _syscall_system_shutdown.save_context");
-		for (;;);
+		context_save();
 	}
 	acpi_fadt_shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
 }

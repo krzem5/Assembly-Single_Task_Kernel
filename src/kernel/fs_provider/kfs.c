@@ -827,6 +827,7 @@ static u64 _kfs_write(fs_file_system_t* fs,fs_node_t* node,u64 offset,const u8* 
 		} while (overflow);
 _skip_nfda_resize:
 		kfs_node->data.file.length=offset+count;
+		block_cache->flags|=KFS_BLOCK_CACHE_NDA1_DIRTY;
 	}
 	u64 range_index_and_offset=_get_nfda_and_range_index(block_cache,kfs_node,offset);
 	u16 range_index=range_index_and_offset&0x1ff;

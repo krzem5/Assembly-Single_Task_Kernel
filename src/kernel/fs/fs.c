@@ -376,6 +376,30 @@ _Bool fs_move_node(fs_node_t* src_node,fs_node_t* dst_node){
 
 
 
+_Bool fs_delete_node(fs_node_t* node){
+	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_get_node_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+		return 0;
+	}
+	fs_node_t* prev=fs_get_node_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
+	fs_node_t* next=fs_get_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
+	_Bool out=1;
+	if (prev){
+		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
+	}
+	else{
+		out&=fs_set_node_relative(fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
+	}
+	if (next){
+		out&=fs_set_node_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
+	}
+	if (out){
+		out=fs_dealloc_node(node);
+	}
+	return out;
+}
+
+
+
 fs_node_t* KERNEL_CORE_CODE fs_get_node_child(fs_node_t* parent,const char* name,u8 name_length){
 	if (!parent||parent->type!=FS_NODE_TYPE_DIRECTORY){
 		return NULL;

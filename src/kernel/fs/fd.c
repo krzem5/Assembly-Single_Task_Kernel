@@ -133,21 +133,7 @@ int fd_delete(fd_t fd){
 		lock_release(&_fd_lock);
 		return FD_ERROR_NOT_EMPTY;
 	}
-	fs_node_t* prev=fs_get_node_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
-	fs_node_t* next=fs_get_node_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
-	_Bool out=1;
-	if (prev){
-		out&=fs_set_node_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
-	}
-	else{
-		out&=fs_set_node_relative(fs_get_node_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
-	}
-	if (next){
-		out&=fs_set_node_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
-	}
-	if (out){
-		out=fs_dealloc_node(node);
-	}
+	_Bool out=fs_delete_node(node);
 	if (out){
 		_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
 	}
