@@ -19,29 +19,6 @@ static u8 KERNEL_CORE_DATA _fs_root_file_systems_index;
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _alloc_node(fs_file_system_t* fs,const char* name,u8 name_length){
-	if (name_length>64){
-		name_length=64;
-		ERROR_CORE("fs_node_t.name_length too large");
-	}
-	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
-	out->type=FS_NODE_TYPE_FILE;
-	out->fs_index=fs-_fs_file_systems;
-	out->name_length=name_length;
-	out->flags=0;
-	for (u8 i=0;i<name_length;i++){
-		out->name[i]=name[i];
-	}
-	out->name[name_length]=0;
-	out->parent=FS_NODE_ID_UNKNOWN;
-	out->prev_sibling=FS_NODE_ID_UNKNOWN;
-	out->next_sibling=FS_NODE_ID_UNKNOWN;
-	out->first_child=FS_NODE_ID_UNKNOWN;
-	return out;
-}
-
-
-
 void KERNEL_CORE_CODE fs_init(void){
 	LOG_CORE("Initializing file system...");
 	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
@@ -97,7 +74,7 @@ void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_parti
 	fs->extra_data=extra_data;
 	fs_node_allocator_init(_fs_file_system_count-1,config->node_size,&(fs->allocator));
 	LOG_CORE("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
-	fs->root=_alloc_node(fs,"",0);
+	fs->root=fs_alloc_node(fs->index,"",0);
 	fs->root->type=FS_NODE_TYPE_DIRECTORY;
 	fs->root->flags|=FS_NODE_FLAG_ROOT;
 	fs->root->parent=fs->root->id;
@@ -145,7 +122,25 @@ void KERNEL_CORE_CODE fs_set_previous_boot_file_system(u8 fs_index){
 
 
 void* KERNEL_CORE_CODE fs_alloc_node(u8 fs_index,const char* name,u8 name_length){
-	return _alloc_node(_fs_file_systems+fs_index,name,name_length);
+	fs_file_system_t* fs=_fs_file_systems+fs_index;
+	if (name_length>63){
+		name_length=63;
+		ERROR_CORE("fs_node_t.name_length too long");
+	}
+	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
+	out->type=FS_NODE_TYPE_FILE;
+	out->fs_index=fs-_fs_file_systems;
+	out->name_length=name_length;
+	out->flags=0;
+	for (u8 i=0;i<name_length;i++){
+		out->name[i]=name[i];
+	}
+	out->name[name_length]=0;
+	out->parent=FS_NODE_ID_UNKNOWN;
+	out->prev_sibling=FS_NODE_ID_UNKNOWN;
+	out->next_sibling=FS_NODE_ID_UNKNOWN;
+	out->first_child=FS_NODE_ID_UNKNOWN;
+	return out;
 }
 
 
