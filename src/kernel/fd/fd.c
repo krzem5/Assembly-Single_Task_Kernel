@@ -12,27 +12,28 @@
 
 
 static lock_t _fd_lock=LOCK_INIT_STRUCT;
-static fd_data_t* _fd_data;
-static fd_t _fd_count;
-static u64 _fd_bitmap[FD_COUNT];
+static u64 _fd_bitmap[FD_MAX_COUNT];
+
+fd_data_t* fd_data;
+u16 fd_count;
 
 
 
 static inline _Bool _is_invalid_fd(fd_t fd){
-	return (!fd||fd>FD_COUNT||(_fd_bitmap[(fd-1)>>6]&(1ull<<((fd-1)&63))));
+	return (!fd||fd>FD_MAX_COUNT||(_fd_bitmap[(fd-1)>>6]&(1ull<<((fd-1)&63))));
 }
 
 
 
 static inline fd_data_t* _get_fd_data(fd_t fd){
-	return _fd_data+fd-1;
+	return fd_data+fd-1;
 }
 
 
 
 static int _node_to_fd(fs_node_t* node,u8 flags){
 	lock_acquire(&_fd_lock);
-	if (_fd_count>=FD_COUNT){
+	if (fd_count>=FD_MAX_COUNT){
 		return FD_ERROR_OUT_OF_FDS;
 	}
 	fd_t out=0;
@@ -42,7 +43,7 @@ static int _node_to_fd(fs_node_t* node,u8 flags){
 	fd_t idx=__builtin_ctzll(_fd_bitmap[out]);
 	_fd_bitmap[out]&=_fd_bitmap[out]-1;
 	out=(out<<6)|idx;
-	fd_data_t* data=_fd_data+out;
+	fd_data_t* data=fd_data+out;
 	data->node_id=node->id;
 	data->offset=((flags&FD_FLAG_APPEND)?fs_get_size(node):0);
 	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
@@ -54,7 +55,7 @@ static int _node_to_fd(fs_node_t* node,u8 flags){
 
 void fd_init(void){
 	LOG("Initializing file descriptor list...");
-	_fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_COUNT*sizeof(fd_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FD));
+	fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_MAX_COUNT*sizeof(fd_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FD));
 }
 
 
@@ -62,8 +63,8 @@ void fd_init(void){
 void fd_clear(void){
 	LOG("Clearing file descriptor list...");
 	lock_acquire(&_fd_lock);
-	_fd_count=0;
-	for (u16 i=0;i<((FD_COUNT+63)>>6);i++){
+	fd_count=0;
+	for (u16 i=0;i<((FD_MAX_COUNT+63)>>6);i++){
 		_fd_bitmap[i]=0xffffffffffffffffull;
 	}
 	lock_release(&_fd_lock);

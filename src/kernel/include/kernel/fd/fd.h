@@ -6,11 +6,9 @@
 
 
 // Must be a multiple of 64
-#define FD_COUNT 1024
+#define FD_MAX_COUNT 1024
 
 
-
-#define FD_OUT_OF_RANGE(fd) ((fd)<=0||(fd)>FD_COUNT)
 
 #define FD_ERROR_INVALID_FLAGS -1
 #define FD_ERROR_INVALID_FD -2
@@ -38,6 +36,8 @@
 #define FD_RELATIVE_NEXT_SIBLING 2
 #define FD_RELATIVE_FIRST_CHILD 3
 
+#define FD_OUT_OF_RANGE(fd) ((fd)<=0||(fd)>FD_MAX_COUNT)
+
 
 
 typedef u16 fd_t;
@@ -60,6 +60,11 @@ typedef struct _FD_STAT{
 	char name[64];
 	u64 size;
 } fd_stat_t;
+
+
+
+extern fd_data_t* fd_data;
+extern u16 fd_count;
 
 
 
