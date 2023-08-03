@@ -1,7 +1,7 @@
 #ifndef _KERNEL_FS_PROVIDER_EMPTYFS_H_
 #define _KERNEL_FS_PROVIDER_EMPTYFS_H_ 1
 #include <kernel/drive/drive.h>
-#include <kernel/fs/partition.h>
+#include <kernel/partition/partition.h>
 
 
 

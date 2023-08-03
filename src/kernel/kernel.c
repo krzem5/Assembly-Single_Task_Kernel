@@ -1,5 +1,6 @@
 #include <kernel/drive/drive_list.h>
 #include <kernel/fs/fs.h>
+#include <kernel/partition/partition.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -73,51 +74,46 @@ void KERNEL_CORE_CODE kernel_load(void){
 	}
 	if (prev_boot_drive){
 		LOG_CORE("Searching for previous boot drive partition...");
-		for (u8 fs_index=0;1;fs_index++){
-			const fs_file_system_t* fs=fs_get_file_system(fs_index);
-			if (!fs){
+		fs_partition_t* partition=partition_data;
+		for (u8 i=0;i<partition_count;i++){
+			if (partition->drive==prev_boot_drive&&partition->partition_config.type==FS_PARTITION_CONFIG_TYPE_KFS){
+				partition->flags|=FS_PARTITION_FLAG_PREVIOUS_BOOT;
 				break;
 			}
-			if (fs->drive==prev_boot_drive&&fs->partition_config.type==FS_PARTITION_TYPE_KFS){
-				fs_set_previous_boot_file_system(fs_index);
-				break;
-			}
+			partition++;
 		}
 	}
 	char path[64];
 _check_every_drive:
-	for (u8 fs_index=0;1;fs_index++){
-		const fs_file_system_t* fs=fs_get_file_system(fs_index);
-		if (!fs){
-			break;
-		}
+	for (u8 i=0;i<partition_count;i++){
+		fs_partition_t* partition=partition_data+i;
 		if (boot_drive){
-			if (fs->drive!=boot_drive){
+			if (partition->drive!=boot_drive){
 				continue;
 			}
 		}
-		u8 i=0;
-		while (fs->name[i]){
-			path[i]=fs->name[i];
-			i++;
+		u8 j=0;
+		while (partition->name[j]){
+			path[j]=partition->name[j];
+			j++;
 		}
-		path[i]=':';
-		i++;
-		for (u8 j=0;_kernel_file_path[j];j++){
-			path[i]=_kernel_file_path[j];
-			i++;
+		path[j]=':';
+		j++;
+		for (u8 k=0;_kernel_file_path[k];k++){
+			path[j]=_kernel_file_path[k];
+			j++;
 		}
-		path[i]=0;
+		path[j]=0;
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
-		fs_node_t* kernel=fs_node_get_by_path(NULL,path,0);
+		fs_node_t* kernel=fs_get_by_path(NULL,path,0);
 		if (!kernel){
-			if (boot_drive&&fs->partition_config.type==FS_PARTITION_TYPE_KFS){
-				fs_set_half_installed_file_system(fs_index);
+			if (boot_drive&&partition->partition_config.type==FS_PARTITION_CONFIG_TYPE_KFS){
+				partition->flags|=FS_PARTITION_FLAG_HALF_INSTALLED;
 			}
 			continue;
 		}
 		INFO_CORE("File found, reading header...");
-		if (fs_node_read(kernel,0,buffer,fs->drive->block_size)!=fs->drive->block_size){
+		if (fs_read(kernel,0,buffer,partition->drive->block_size)!=partition->drive->block_size){
 			WARN_CORE("Not a valid kernel file");
 			continue;
 		}
@@ -128,8 +124,9 @@ _check_every_drive:
 			INFO_CORE("Expected %lx, got %lx",kernel_get_version(),version);
 			continue;
 		}
-		LOG_CORE("Found boot drive: %s (%s)",fs->name,fs->drive->model_number);
-		fs_set_boot_file_system(fs_index);
+		LOG_CORE("Found boot drive: %s (%s)",partition->name,partition->drive->model_number);
+		partition->flags|=FS_PARTITION_FLAG_BOOT;
+		partition_boot_index=i;
 		goto _load_kernel;
 	}
 	if (boot_drive){
@@ -141,14 +138,14 @@ _check_every_drive:
 _load_kernel:
 	LOG_CORE("Loading kernel...");
 	INFO_CORE("Opening kernel file...");
-	fs_node_t* kernel_file=fs_node_get_by_path(NULL,_kernel_file_path,0);
+	fs_node_t* kernel_file=fs_get_by_path(NULL,_kernel_file_path,0);
 	if (!kernel_file){
 		goto _error;
 	}
 	u64 kernel_size=kernel_get_end()-kernel_get_core_end();
 	void* address=(void*)(kernel_get_core_end()+kernel_get_offset());
 	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
-	u64 rd=fs_node_read(kernel_file,0,address,kernel_size);
+	u64 rd=fs_read(kernel_file,0,address,kernel_size);
 	if (rd!=kernel_size){
 		goto _error;
 	}

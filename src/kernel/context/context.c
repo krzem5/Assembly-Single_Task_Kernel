@@ -1,4 +1,5 @@
 #include <kernel/fs/fs.h>
+#include <kernel/partition/partition.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "context"
@@ -84,20 +85,10 @@ static const char* _context_file_path=":/__user_context";
 
 
 static void _get_context_file_path(char* path){
-	const fs_file_system_t* fs;
-	for (u8 i=0;1;i++){
-		fs=fs_get_file_system(i);
-		if (!fs){
-			path[0]=0;
-			return;
-		}
-		if (fs->flags&FS_FILE_SYSTEM_FLAG_BOOT){
-			break;
-		}
-	}
+	const fs_partition_t* partition=partition_data+partition_boot_index;
 	u8 i=0;
-	for (;fs->name[i];i++){
-		path[i]=fs->name[i];
+	for (;partition->name[i];i++){
+		path[i]=partition->name[i];
 	}
 	u8 j=0;
 	for (;_context_file_path[j];j++){
@@ -112,13 +103,13 @@ void context_load(void){
 	LOG("Loading user context...");
 	char path[64];
 	_get_context_file_path(path);
-	fs_node_t* node=fs_node_get_by_path(0,path,0);
+	fs_node_t* node=fs_get_by_path(0,path,0);
 	if (!node){
 		LOG("Context file not found");
 		return;
 	}
 	LOG("Found context file '%s'",path);
-	fs_node_delete(node);
+	fs_delete(node);
 	for (;;);
 }
 
@@ -128,7 +119,7 @@ void context_save(void){
 	LOG("Saving user context...");
 	char path[64];
 	_get_context_file_path(path);
-	fs_node_t* node=fs_node_get_by_path(0,path,FS_NODE_TYPE_FILE);
+	fs_node_t* node=fs_get_by_path(0,path,FS_NODE_TYPE_FILE);
 	if (!node){
 		ERROR("Unable to open open context file '%s'",path);
 		return;

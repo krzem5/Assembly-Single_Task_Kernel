@@ -1,6 +1,6 @@
-#ifndef _KERNEL_FS_FD_H_
-#define _KERNEL_FS_FD_H_ 1
-#include <kernel/fs/node_allocator.h>
+#ifndef _KERNEL_FD_FD_H_
+#define _KERNEL_FD_FD_H_ 1
+#include <kernel/fs/allocator.h>
 #include <kernel/types.h>
 
 

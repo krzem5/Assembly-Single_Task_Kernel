@@ -8,8 +8,8 @@
 #include <kernel/driver/i82540.h>
 #include <kernel/driver/nvme.h>
 #include <kernel/elf/elf.h>
-#include <kernel/fs/fd.h>
-#include <kernel/fs/fs.h>
+#include <kernel/fd/fd.h>
+#include <kernel/partition/partition.h>
 #include <kernel/idt/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -35,7 +35,7 @@ void KERNEL_CORE_CODE main(void){
 	driver_ata_init();
 	driver_i82540_init();
 	driver_nvme_init();
-	fs_init();
+	fs_partition_init();
 	drive_list_init();
 	network_layer1_init();
 	pci_init();

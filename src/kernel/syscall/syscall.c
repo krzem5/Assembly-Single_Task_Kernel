@@ -5,7 +5,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/elf/elf.h>
-#include <kernel/fs/fd.h>
+#include <kernel/fd/fd.h>
 #include <kernel/fs/fs.h>
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
@@ -159,14 +159,13 @@ static void syscall_drive_list_get(syscall_registers_t* regs){
 
 
 static void syscall_file_system_count(syscall_registers_t* regs){
-	regs->rax=fs_get_file_system_count();
+	regs->rax=partition_count;
 }
 
 
 
 static void syscall_file_system_get(syscall_registers_t* regs){
-	const fs_file_system_t* fs=fs_get_file_system(regs->rdi);
-	if (!fs||regs->rdx!=sizeof(user_partition_t)){
+	if (regs->rdi>=partition_count||regs->rdx!=sizeof(user_partition_t)){
 		regs->rax=-1;
 		return;
 	}
@@ -175,14 +174,15 @@ static void syscall_file_system_get(syscall_registers_t* regs){
 		regs->rax=-1;
 		return;
 	}
+	const fs_partition_t* partition=partition_data+regs->rdi;
 	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
-	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((fs->flags&FS_FILE_SYSTEM_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((fs->flags&FS_FILE_SYSTEM_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((fs->flags&FS_FILE_SYSTEM_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
-	user_partition->type=fs->partition_config.type;
-	user_partition->index=fs->partition_config.index;
-	user_partition->first_block_index=fs->partition_config.first_block_index;
-	user_partition->last_block_index=fs->partition_config.last_block_index;
-	memcpy(user_partition->name,fs->name,16);
-	user_partition->drive_index=fs->drive->index;
+	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((partition->flags&FS_PARTITION_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((partition->flags&FS_PARTITION_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((partition->flags&FS_PARTITION_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
+	user_partition->type=partition->partition_config.type;
+	user_partition->index=partition->partition_config.index;
+	user_partition->first_block_index=partition->partition_config.first_block_index;
+	user_partition->last_block_index=partition->partition_config.last_block_index;
+	memcpy(user_partition->name,partition->name,16);
+	user_partition->drive_index=partition->drive->index;
 	regs->rax=0;
 }
 
@@ -425,7 +425,7 @@ static void syscall_drive_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	fs_flush_cache();
+	fs_partition_flush_cache();
 	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*(drive->stats);
 	regs->rax=1;
 }

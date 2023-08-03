@@ -1,147 +1,27 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/fs/fs.h>
-#include <kernel/fs/node_allocator.h>
-#include <kernel/fs/partition.h>
+#include <kernel/fs/allocator.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "fs"
 
 
 
-static fs_file_system_t* KERNEL_CORE_DATA _fs_file_systems;
-static u8 KERNEL_CORE_DATA _fs_file_system_count;
-static u8 KERNEL_CORE_DATA _fs_root_file_systems_index;
-
-
-
-void KERNEL_CORE_CODE fs_init(void){
-	LOG_CORE("Initializing file system...");
-	_fs_file_systems=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_FILE_SYSTEMS*sizeof(fs_file_system_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
-	_fs_file_system_count=0;
-	_fs_root_file_systems_index=FS_INVALID_FILE_SYSTEM_INDEX;
-}
-
-
-
-void* KERNEL_CORE_CODE fs_create_file_system(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
-	if (_fs_file_system_count>=FS_MAX_FILE_SYSTEMS){
-		ERROR_CORE("Too many file systems!");
-		return NULL;
-	}
-	fs_file_system_t* fs=_fs_file_systems+_fs_file_system_count;
-	_fs_file_system_count++;
-	lock_init(&(fs->lock));
-	fs->config=config;
-	fs->partition_config=*partition_config;
-	fs->index=_fs_file_system_count-1;
-	fs->flags=0;
-	u8 i=0;
-	while (drive->name[i]){
-		fs->name[i]=drive->name[i];
-		i++;
-	}
-	if (partition_config->type==FS_PARTITION_TYPE_DRIVE){
-		fs->name[i]=0;
-		fs->name_length=i;
-	}
-	else if (partition_config->index<10){
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index+48;
-		fs->name[i+2]=0;
-		fs->name_length=i+2;
-	}
-	else if (partition_config->index<100){
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index/10+48;
-		fs->name[i+2]=(partition_config->index%10)+48;
-		fs->name[i+3]=0;
-		fs->name_length=i+3;
-	}
-	else{
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index/100+48;
-		fs->name[i+2]=((partition_config->index/10)%10)+48;
-		fs->name[i+3]=(partition_config->index%10)+48;
-		fs->name[i+4]=0;
-		fs->name_length=i+4;
-	}
-	fs->drive=drive;
-	fs->extra_data=extra_data;
-	fs_node_allocator_init(_fs_file_system_count-1,config->node_size,&(fs->allocator));
-	LOG_CORE("Created file system '%s' from drive '%s'",fs->name,drive->model_number);
-	fs->root=fs_node_alloc(fs->index,"",0);
-	fs->root->type=FS_NODE_TYPE_DIRECTORY;
-	fs->root->flags|=FS_NODE_FLAG_ROOT;
-	fs->root->parent=fs->root->id;
-	fs->root->prev_sibling=fs->root->id;
-	fs->root->next_sibling=fs->root->id;
-	return fs->root;
-}
-
-
-
-u8 fs_get_file_system_count(void){
-	return _fs_file_system_count;
-}
-
-
-
-const fs_file_system_t* KERNEL_CORE_CODE fs_get_file_system(u8 fs_index){
-	return (fs_index<_fs_file_system_count?_fs_file_systems+fs_index:NULL);
-}
-
-
-
-void KERNEL_CORE_CODE fs_set_boot_file_system(u8 fs_index){
-	if (_fs_root_file_systems_index!=FS_INVALID_FILE_SYSTEM_INDEX){
-		WARN_CORE("fs_set_boot_file_system called more than once");
-		return;
-	}
-	_fs_root_file_systems_index=fs_index;
-	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_BOOT;
-	drive_list_set_boot_drive((_fs_file_systems+fs_index)->drive->index);
-}
-
-
-
-void KERNEL_CORE_CODE fs_set_half_installed_file_system(u8 fs_index){
-	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_HALF_INSTALLED;
-}
-
-
-
-void KERNEL_CORE_CODE fs_set_previous_boot_file_system(u8 fs_index){
-	(_fs_file_systems+fs_index)->flags|=FS_FILE_SYSTEM_FLAG_PREVIOUS_BOOT;
-}
-
-
-
-void fs_flush_cache(void){
-	LOG("Flushing file system cache...");
-	for (u8 i=0;i<_fs_file_system_count;i++){
-		fs_file_system_t* fs=_fs_file_systems+i;
-		lock_acquire(&(fs->lock));
-		fs->config->flush_cache(fs);
-		lock_release(&(fs->lock));
-	}
-}
-
-
-
-void* KERNEL_CORE_CODE fs_node_alloc(u8 fs_index,const char* name,u8 name_length){
-	fs_file_system_t* fs=_fs_file_systems+fs_index;
+void* KERNEL_CORE_CODE fs_alloc(u8 fs_index,const char* name,u8 name_length){
+	fs_partition_t* fs=partition_data+fs_index;
 	if (name_length>63){
 		name_length=63;
 		ERROR_CORE("fs_node_t.name_length too long");
 	}
-	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
+	fs_node_t* out=fs_allocator_get(&(fs->allocator),FS_NODE_ID_EMPTY,1);
 	out->type=FS_NODE_TYPE_FILE;
-	out->fs_index=fs-_fs_file_systems;
+	out->fs_index=fs-partition_data;
 	out->name_length=name_length;
 	out->flags=0;
 	for (u8 i=0;i<name_length;i++){
@@ -157,11 +37,11 @@ void* KERNEL_CORE_CODE fs_node_alloc(u8 fs_index,const char* name,u8 name_length
 
 
 
-_Bool fs_node_dealloc(fs_node_t* node){
+_Bool fs_dealloc(fs_node_t* node){
 	if (!node){
 		return 1;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	fs_partition_t* fs=partition_data+node->fs_index;
 	lock_acquire(&(fs->lock));
 	_Bool out=fs->config->delete(fs,node);
 	if (out){
@@ -173,19 +53,19 @@ _Bool fs_node_dealloc(fs_node_t* node){
 
 
 
-fs_node_t* fs_node_get_by_id(fs_node_id_t id){
-	return fs_node_allocator_get(&((_fs_file_systems+(id>>56))->allocator),id,0);
+fs_node_t* fs_get_by_id(fs_node_id_t id){
+	return fs_allocator_get(&((partition_data+(id>>56))->allocator),id,0);
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_node_get_by_path(fs_node_t* root,const char* path,u8 type){
+fs_node_t* KERNEL_CORE_CODE fs_get_by_path(fs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
-		if (_fs_root_file_systems_index==FS_INVALID_FILE_SYSTEM_INDEX){
+		if (partition_boot_index==FS_INVALID_PARTITION_INDEX){
 			ERROR_CORE("Root file system not located yet; partition must be specified");
 			return NULL;
 		}
-		root=(_fs_file_systems+_fs_root_file_systems_index)->root;
+		root=(partition_data+partition_boot_index)->root;
 	}
 	else{
 		u16 partition_name_length=0;
@@ -194,8 +74,8 @@ fs_node_t* KERNEL_CORE_CODE fs_node_get_by_path(fs_node_t* root,const char* path
 		}
 		if (path[partition_name_length]==':'){
 			root=NULL;
-			fs_file_system_t* fs=_fs_file_systems;
-			for (u8 i=0;i<_fs_file_system_count;i++){
+			fs_partition_t* fs=partition_data;
+			for (u8 i=0;i<partition_count;i++){
 				if (fs->name_length!=partition_name_length){
 					goto _check_next_fs;
 				}
@@ -243,57 +123,57 @@ _check_next_fs:
 		if (i==2&&path[0]=='.'&&path[1]=='.'){
 			path+=2;
 			if (!(node->flags&FS_NODE_FLAG_ROOT)){
-				node=fs_node_get_relative(node,FS_NODE_RELATIVE_PARENT);
+				node=fs_get_relative(node,FS_RELATIVE_PARENT);
 			}
 			continue;
 		}
 		name=path;
 		name_length=i;
 		node_parent=node;
-		node=fs_node_get_child(node,path,i);
+		node=fs_get_child(node,path,i);
 		path+=i;
 	}
 	if (node||type==FS_NODE_TYPE_INVALID||!name_length){
 		return node;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node_parent->fs_index;
+	fs_partition_t* fs=partition_data+node_parent->fs_index;
 	lock_release(&(fs->lock));
 	node=fs->config->create(fs,type==FS_NODE_TYPE_DIRECTORY,name,name_length);
 	lock_release(&(fs->lock));
 	if (!node){
 		return NULL;
 	}
-	fs_node_t* first_child=fs_node_get_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD);
-	_Bool out=fs_node_set_relative(node,FS_NODE_RELATIVE_PARENT,node_parent);
+	fs_node_t* first_child=fs_get_relative(node_parent,FS_RELATIVE_FIRST_CHILD);
+	_Bool out=fs_set_relative(node,FS_RELATIVE_PARENT,node_parent);
 	if (first_child){
-		out&=fs_node_set_relative(first_child,FS_NODE_RELATIVE_PREV_SIBLING,node);
+		out&=fs_set_relative(first_child,FS_RELATIVE_PREV_SIBLING,node);
 	}
-	out&=fs_node_set_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING,first_child);
-	out&=fs_node_set_relative(node_parent,FS_NODE_RELATIVE_FIRST_CHILD,node);
+	out&=fs_set_relative(node,FS_RELATIVE_NEXT_SIBLING,first_child);
+	out&=fs_set_relative(node_parent,FS_RELATIVE_FIRST_CHILD,node);
 	return (out?node:NULL);
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_node_get_relative(fs_node_t* node,u8 relative){
+fs_node_t* KERNEL_CORE_CODE fs_get_relative(fs_node_t* node,u8 relative){
 	if (!node){
 		return NULL;
 	}
 	fs_node_id_t* id;
 	switch (relative){
-		case FS_NODE_RELATIVE_PARENT:
+		case FS_RELATIVE_PARENT:
 			if (node->flags&FS_NODE_FLAG_ROOT){
 				return node;
 			}
 			id=&(node->parent);
 			break;
-		case FS_NODE_RELATIVE_PREV_SIBLING:
+		case FS_RELATIVE_PREV_SIBLING:
 			id=&(node->prev_sibling);
 			break;
-		case FS_NODE_RELATIVE_NEXT_SIBLING:
+		case FS_RELATIVE_NEXT_SIBLING:
 			id=&(node->next_sibling);
 			break;
-		case FS_NODE_RELATIVE_FIRST_CHILD:
+		case FS_RELATIVE_FIRST_CHILD:
 			if (node->type!=FS_NODE_TYPE_DIRECTORY){
 				return NULL;
 			}
@@ -305,8 +185,8 @@ fs_node_t* KERNEL_CORE_CODE fs_node_get_relative(fs_node_t* node,u8 relative){
 	if (*id==FS_NODE_ID_EMPTY){
 		return NULL;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
-	fs_node_t* out=fs_node_allocator_get(&(fs->allocator),*id,0);
+	fs_partition_t* fs=partition_data+node->fs_index;
+	fs_node_t* out=fs_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
 		lock_acquire(&(fs->lock));
 		out=fs->config->get_relative(fs,node,relative);
@@ -318,23 +198,23 @@ fs_node_t* KERNEL_CORE_CODE fs_node_get_relative(fs_node_t* node,u8 relative){
 
 
 
-_Bool fs_node_set_relative(fs_node_t* node,u8 relative,fs_node_t* other){
+_Bool fs_set_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 	if (!node){
 		return 0;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	fs_partition_t* fs=partition_data+node->fs_index;
 	fs_node_id_t* id;
 	switch (relative){
-		case FS_NODE_RELATIVE_PARENT:
+		case FS_RELATIVE_PARENT:
 			id=&(node->parent);
 			break;
-		case FS_NODE_RELATIVE_PREV_SIBLING:
+		case FS_RELATIVE_PREV_SIBLING:
 			id=&(node->prev_sibling);
 			break;
-		case FS_NODE_RELATIVE_NEXT_SIBLING:
+		case FS_RELATIVE_NEXT_SIBLING:
 			id=&(node->next_sibling);
 			break;
-		case FS_NODE_RELATIVE_FIRST_CHILD:
+		case FS_RELATIVE_FIRST_CHILD:
 			if (node->type!=FS_NODE_TYPE_DIRECTORY){
 				return 0;
 			}
@@ -358,19 +238,19 @@ _Bool fs_node_set_relative(fs_node_t* node,u8 relative,fs_node_t* other){
 
 
 
-_Bool fs_node_move(fs_node_t* src_node,fs_node_t* dst_node){
+_Bool fs_move(fs_node_t* src_node,fs_node_t* dst_node){
 	if (!src_node||!dst_node||src_node->fs_index!=dst_node->fs_index||src_node->type!=dst_node->type){
 		return 0;
 	}
-	fs_file_system_t* fs=_fs_file_systems+src_node->fs_index;
+	fs_partition_t* fs=partition_data+src_node->fs_index;
 	_Bool out=1;
 	if (src_node->type==FS_NODE_TYPE_DIRECTORY){
-		fs_node_t* child=fs_node_get_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD);
-		out&=fs_node_set_relative(src_node,FS_NODE_RELATIVE_FIRST_CHILD,NULL);
-		out&=fs_node_set_relative(dst_node,FS_NODE_RELATIVE_FIRST_CHILD,child);
+		fs_node_t* child=fs_get_relative(src_node,FS_RELATIVE_FIRST_CHILD);
+		out&=fs_set_relative(src_node,FS_RELATIVE_FIRST_CHILD,NULL);
+		out&=fs_set_relative(dst_node,FS_RELATIVE_FIRST_CHILD,child);
 		while (child){
-			out&=fs_node_set_relative(child,FS_NODE_RELATIVE_PARENT,dst_node);
-			child=fs_node_get_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING);
+			out&=fs_set_relative(child,FS_RELATIVE_PARENT,dst_node);
+			child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING);
 		}
 	}
 	else{
@@ -383,35 +263,35 @@ _Bool fs_node_move(fs_node_t* src_node,fs_node_t* dst_node){
 
 
 
-_Bool fs_node_delete(fs_node_t* node){
-	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_node_get_relative(node,FS_NODE_RELATIVE_FIRST_CHILD)){
+_Bool fs_delete(fs_node_t* node){
+	if (node->type==FS_NODE_TYPE_DIRECTORY&&fs_get_relative(node,FS_RELATIVE_FIRST_CHILD)){
 		return 0;
 	}
-	fs_node_t* prev=fs_node_get_relative(node,FS_NODE_RELATIVE_PREV_SIBLING);
-	fs_node_t* next=fs_node_get_relative(node,FS_NODE_RELATIVE_NEXT_SIBLING);
+	fs_node_t* prev=fs_get_relative(node,FS_RELATIVE_PREV_SIBLING);
+	fs_node_t* next=fs_get_relative(node,FS_RELATIVE_NEXT_SIBLING);
 	_Bool out=1;
 	if (prev){
-		out&=fs_node_set_relative(prev,FS_NODE_RELATIVE_NEXT_SIBLING,next);
+		out&=fs_set_relative(prev,FS_RELATIVE_NEXT_SIBLING,next);
 	}
 	else{
-		out&=fs_node_set_relative(fs_node_get_relative(node,FS_NODE_RELATIVE_PARENT),FS_NODE_RELATIVE_FIRST_CHILD,next);
+		out&=fs_set_relative(fs_get_relative(node,FS_RELATIVE_PARENT),FS_RELATIVE_FIRST_CHILD,next);
 	}
 	if (next){
-		out&=fs_node_set_relative(next,FS_NODE_RELATIVE_PREV_SIBLING,prev);
+		out&=fs_set_relative(next,FS_RELATIVE_PREV_SIBLING,prev);
 	}
 	if (out){
-		out=fs_node_dealloc(node);
+		out=fs_dealloc(node);
 	}
 	return out;
 }
 
 
 
-fs_node_t* KERNEL_CORE_CODE fs_node_get_child(fs_node_t* parent,const char* name,u8 name_length){
+fs_node_t* KERNEL_CORE_CODE fs_get_child(fs_node_t* parent,const char* name,u8 name_length){
 	if (!parent||parent->type!=FS_NODE_TYPE_DIRECTORY){
 		return NULL;
 	}
-	for (fs_node_t* child=fs_node_get_relative(parent,FS_NODE_RELATIVE_FIRST_CHILD);child;child=fs_node_get_relative(child,FS_NODE_RELATIVE_NEXT_SIBLING)){
+	for (fs_node_t* child=fs_get_relative(parent,FS_RELATIVE_FIRST_CHILD);child;child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING)){
 		if (child->name_length!=name_length){
 			continue;
 		}
@@ -428,11 +308,11 @@ _next_child:
 
 
 
-u64 KERNEL_CORE_CODE fs_node_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
+u64 KERNEL_CORE_CODE fs_read(fs_node_t* node,u64 offset,void* buffer,u64 count){
 	if (node->type!=FS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	fs_partition_t* fs=partition_data+node->fs_index;
 	if (!(fs->config->flags&FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
 		lock_acquire(&(fs->lock));
 		u64 out=fs->config->read(fs,node,offset,buffer,count);
@@ -486,11 +366,11 @@ u64 KERNEL_CORE_CODE fs_node_read(fs_node_t* node,u64 offset,void* buffer,u64 co
 
 
 
-u64 fs_node_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
+u64 fs_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 	if (node->type!=FS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+	fs_partition_t* fs=partition_data+node->fs_index;
 	if (!(fs->config->flags&FS_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
 		lock_acquire(&(fs->lock));
 		u64 out=fs->config->write(fs,node,offset,buffer,count);
@@ -501,7 +381,7 @@ u64 fs_node_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 	u16 extra=offset&(fs->drive->block_size-1);
 	lock_acquire(&(fs->lock));
 	if (extra){
-		ERROR("Unimplemented: fs_node_write.offset_extra");
+		ERROR("Unimplemented: fs_write.offset_extra");
 		return 0;
 	}
 	extra=count&(fs->drive->block_size-1);
@@ -531,8 +411,8 @@ u64 fs_node_write(fs_node_t* node,u64 offset,const void* buffer,u64 count){
 
 
 
-u64 fs_node_get_size(fs_node_t* node){
-	fs_file_system_t* fs=_fs_file_systems+node->fs_index;
+u64 fs_get_size(fs_node_t* node){
+	fs_partition_t* fs=partition_data+node->fs_index;
 	lock_acquire(&(fs->lock));
 	u64 out=fs->config->get_size(fs,node);
 	lock_release(&(fs->lock));

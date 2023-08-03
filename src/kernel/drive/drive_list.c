@@ -1,5 +1,5 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/partition.h>
+#include <kernel/partition/partition.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>

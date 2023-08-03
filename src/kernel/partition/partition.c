@@ -1,11 +1,15 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/partition.h>
+#include <kernel/fs/fs.h>
+#include <kernel/fs/allocator.h>
+#include <kernel/partition/partition.h>
 #include <kernel/fs_provider/emptyfs.h>
 #include <kernel/fs_provider/iso9660.h>
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#define KERNEL_LOG_NAME "fs_part"
+#define KERNEL_LOG_NAME "partition"
 
 
 
@@ -28,6 +32,12 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 	u64 signature;
 } kfs_root_block_t;
+
+
+
+fs_partition_t* KERNEL_CORE_DATA partition_data;
+u8 KERNEL_CORE_DATA partition_count;
+u8 KERNEL_CORE_DATA partition_boot_index;
 
 
 
@@ -56,7 +66,7 @@ static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
 				goto _load_next_block;
 			case 1:
 				const fs_partition_config_t partition_config={
-					FS_PARTITION_TYPE_ISO9660,
+					FS_PARTITION_CONFIG_TYPE_ISO9660,
 					partition_index,
 					0,
 					volume_descriptor->primary_volume_descriptor.volume_size
@@ -96,7 +106,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 	}
 	INFO_CORE("Detected drive format of '%s' as KFS",drive->model_number);
 	const fs_partition_config_t partition_config={
-		FS_PARTITION_TYPE_KFS,
+		FS_PARTITION_CONFIG_TYPE_KFS,
 		0,
 		0,
 		drive->block_count
@@ -106,15 +116,93 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 
+void KERNEL_CORE_CODE fs_partition_init(void){
+	LOG_CORE("Initializing file system...");
+	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_PARTITIONS*sizeof(fs_partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
+	partition_count=0;
+	partition_boot_index=FS_INVALID_PARTITION_INDEX;
+}
+
+
+
+void* KERNEL_CORE_CODE fs_partition_add(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
+	if (partition_count>=FS_MAX_PARTITIONS){
+		ERROR_CORE("Too many file systems!");
+		return NULL;
+	}
+	fs_partition_t* fs=partition_data+partition_count;
+	partition_count++;
+	lock_init(&(fs->lock));
+	fs->config=config;
+	fs->partition_config=*partition_config;
+	fs->index=partition_count-1;
+	fs->flags=0;
+	u8 i=0;
+	while (drive->name[i]){
+		fs->name[i]=drive->name[i];
+		i++;
+	}
+	if (partition_config->type==FS_PARTITION_CONFIG_TYPE_DRIVE){
+		fs->name[i]=0;
+		fs->name_length=i;
+	}
+	else if (partition_config->index<10){
+		fs->name[i]='p';
+		fs->name[i+1]=partition_config->index+48;
+		fs->name[i+2]=0;
+		fs->name_length=i+2;
+	}
+	else if (partition_config->index<100){
+		fs->name[i]='p';
+		fs->name[i+1]=partition_config->index/10+48;
+		fs->name[i+2]=(partition_config->index%10)+48;
+		fs->name[i+3]=0;
+		fs->name_length=i+3;
+	}
+	else{
+		fs->name[i]='p';
+		fs->name[i+1]=partition_config->index/100+48;
+		fs->name[i+2]=((partition_config->index/10)%10)+48;
+		fs->name[i+3]=(partition_config->index%10)+48;
+		fs->name[i+4]=0;
+		fs->name_length=i+4;
+	}
+	fs->drive=drive;
+	fs->extra_data=extra_data;
+	fs_allocator_init(partition_count-1,config->node_size,&(fs->allocator));
+	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
+	fs->root=fs_alloc(fs->index,"",0);
+	fs->root->type=FS_NODE_TYPE_DIRECTORY;
+	fs->root->flags|=FS_NODE_FLAG_ROOT;
+	fs->root->parent=fs->root->id;
+	fs->root->prev_sibling=fs->root->id;
+	fs->root->next_sibling=fs->root->id;
+	return fs->root;
+}
+
+
+
 void KERNEL_CORE_CODE fs_partition_load_from_drive(drive_t* drive){
 	LOG_CORE("Loading partitions from drive '%s'...",drive->model_number);
 	_load_iso9660(drive);
 	_load_kfs(drive);
 	const fs_partition_config_t partition_config={
-		FS_PARTITION_TYPE_DRIVE,
+		FS_PARTITION_CONFIG_TYPE_DRIVE,
 		0,
 		0,
 		drive->block_count
 	};
 	emptyfs_load(drive,&partition_config);
+}
+
+
+
+void fs_partition_flush_cache(void){
+	LOG("Flushing partition cache...");
+	for (u8 i=0;i<partition_count;i++){
+		fs_partition_t* fs=partition_data+i;
+		lock_acquire(&(fs->lock));
+		fs->config->flush_cache(fs);
+		lock_release(&(fs->lock));
+	}
 }

@@ -1,5 +1,5 @@
 #include <kernel/acpi/fadt.h>
-#include <kernel/fs/fs.h>
+#include <kernel/partition/partition.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -84,7 +84,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 
 void acpi_fadt_shutdown(_Bool restart){
-	fs_flush_cache();
+	fs_partition_flush_cache();
 	for (u64 i=0;i<0xffff;i++){
 		asm volatile("pause":::"memory"); // ensure FS cache flushes properly
 	}
