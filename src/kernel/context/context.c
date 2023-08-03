@@ -85,7 +85,7 @@ static const char* _context_file_path=":/__user_context";
 
 
 static void _get_context_file_path(char* path){
-	const fs_partition_t* partition=partition_data+partition_boot_index;
+	const partition_t* partition=partition_data+partition_boot_index;
 	u8 i=0;
 	for (;partition->name[i];i++){
 		path[i]=partition->name[i];

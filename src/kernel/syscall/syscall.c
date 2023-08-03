@@ -174,9 +174,9 @@ static void syscall_file_system_get(syscall_registers_t* regs){
 		regs->rax=-1;
 		return;
 	}
-	const fs_partition_t* partition=partition_data+regs->rdi;
+	const partition_t* partition=partition_data+regs->rdi;
 	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
-	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((partition->flags&FS_PARTITION_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((partition->flags&FS_PARTITION_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((partition->flags&FS_PARTITION_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
+	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((partition->flags&PARTITION_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((partition->flags&PARTITION_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((partition->flags&PARTITION_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
 	user_partition->type=partition->partition_config.type;
 	user_partition->index=partition->partition_config.index;
 	user_partition->first_block_index=partition->partition_config.first_block_index;
@@ -423,7 +423,7 @@ static void syscall_drive_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	fs_partition_flush_cache();
+	partition_flush_cache();
 	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*((drive_data+regs->rdi)->stats);
 	regs->rax=1;
 }

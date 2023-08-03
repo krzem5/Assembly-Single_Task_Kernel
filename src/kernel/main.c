@@ -35,7 +35,7 @@ void KERNEL_CORE_CODE main(void){
 	driver_ata_init();
 	driver_i82540_init();
 	driver_nvme_init();
-	fs_partition_init();
+	partition_init();
 	drive_list_init();
 	network_layer1_init();
 	pci_init();

@@ -9,7 +9,7 @@
 
 
 
-void kfs_load(const drive_t* drive,const fs_partition_config_t* partition_config);
+void kfs_load(const drive_t* drive,const partition_config_t* partition_config);
 
 
 

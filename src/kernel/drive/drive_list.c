@@ -75,6 +75,6 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 void KERNEL_CORE_CODE drive_list_load_partitions(void){
 	LOG_CORE("Loading drive partitions...");
 	for (u32 i=0;i<drive_count;i++){
-		fs_partition_load_from_drive(drive_data+i);
+		partition_load_from_drive(drive_data+i);
 	}
 }

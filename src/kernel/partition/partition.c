@@ -35,7 +35,7 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 
-fs_partition_t* KERNEL_CORE_DATA partition_data;
+partition_t* KERNEL_CORE_DATA partition_data;
 u8 KERNEL_CORE_DATA partition_count;
 u8 KERNEL_CORE_DATA partition_boot_index;
 
@@ -65,8 +65,8 @@ static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
 			case 3:
 				goto _load_next_block;
 			case 1:
-				const fs_partition_config_t partition_config={
-					FS_PARTITION_CONFIG_TYPE_ISO9660,
+				const partition_config_t partition_config={
+					PARTITION_CONFIG_TYPE_ISO9660,
 					partition_index,
 					0,
 					volume_descriptor->primary_volume_descriptor.volume_size
@@ -105,8 +105,8 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 		return;
 	}
 	INFO_CORE("Detected drive format of '%s' as KFS",drive->model_number);
-	const fs_partition_config_t partition_config={
-		FS_PARTITION_CONFIG_TYPE_KFS,
+	const partition_config_t partition_config={
+		PARTITION_CONFIG_TYPE_KFS,
 		0,
 		0,
 		drive->block_count
@@ -116,21 +116,21 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 
-void KERNEL_CORE_CODE fs_partition_init(void){
+void KERNEL_CORE_CODE partition_init(void){
 	LOG_CORE("Initializing file system...");
-	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_PARTITIONS*sizeof(fs_partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
+	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_PARTITIONS*sizeof(partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
 	partition_count=0;
 	partition_boot_index=FS_INVALID_PARTITION_INDEX;
 }
 
 
 
-void* KERNEL_CORE_CODE fs_partition_add(const drive_t* drive,const fs_partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
+void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
 	if (partition_count>=FS_MAX_PARTITIONS){
 		ERROR_CORE("Too many file systems!");
 		return NULL;
 	}
-	fs_partition_t* fs=partition_data+partition_count;
+	partition_t* fs=partition_data+partition_count;
 	partition_count++;
 	lock_init(&(fs->lock));
 	fs->config=config;
@@ -142,7 +142,7 @@ void* KERNEL_CORE_CODE fs_partition_add(const drive_t* drive,const fs_partition_
 		fs->name[i]=drive->name[i];
 		i++;
 	}
-	if (partition_config->type==FS_PARTITION_CONFIG_TYPE_DRIVE){
+	if (partition_config->type==PARTITION_CONFIG_TYPE_DRIVE){
 		fs->name[i]=0;
 		fs->name_length=i;
 	}
@@ -182,12 +182,12 @@ void* KERNEL_CORE_CODE fs_partition_add(const drive_t* drive,const fs_partition_
 
 
 
-void KERNEL_CORE_CODE fs_partition_load_from_drive(drive_t* drive){
+void KERNEL_CORE_CODE partition_load_from_drive(drive_t* drive){
 	LOG_CORE("Loading partitions from drive '%s'...",drive->model_number);
 	_load_iso9660(drive);
 	_load_kfs(drive);
-	const fs_partition_config_t partition_config={
-		FS_PARTITION_CONFIG_TYPE_DRIVE,
+	const partition_config_t partition_config={
+		PARTITION_CONFIG_TYPE_DRIVE,
 		0,
 		0,
 		drive->block_count
@@ -197,10 +197,10 @@ void KERNEL_CORE_CODE fs_partition_load_from_drive(drive_t* drive){
 
 
 
-void fs_partition_flush_cache(void){
+void partition_flush_cache(void){
 	LOG("Flushing partition cache...");
 	for (u8 i=0;i<partition_count;i++){
-		fs_partition_t* fs=partition_data+i;
+		partition_t* fs=partition_data+i;
 		lock_acquire(&(fs->lock));
 		fs->config->flush_cache(fs);
 		lock_release(&(fs->lock));

@@ -61,19 +61,19 @@ static fs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(con
 
 
 
-static fs_node_t* _iso9660_create(fs_partition_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static fs_node_t* _iso9660_create(partition_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	return NULL;
 }
 
 
 
-static _Bool _iso9660_delete(fs_partition_t* fs,fs_node_t* node){
+static _Bool _iso9660_delete(partition_t* fs,fs_node_t* node){
 	return 0;
 }
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(fs_partition_t* fs,fs_node_t* node,u8 relative){
+static fs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(partition_t* fs,fs_node_t* node,u8 relative){
 	u8 buffer[2048];
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (relative==FS_RELATIVE_FIRST_CHILD){
@@ -169,19 +169,19 @@ _skip_directory_entry2:
 
 
 
-static _Bool _iso9660_set_relative(fs_partition_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _iso9660_set_relative(partition_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
 	return 0;
 }
 
 
 
-static _Bool _iso9660_move_file(fs_partition_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+static _Bool _iso9660_move_file(partition_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
 	return 0;
 }
 
 
 
-static u64 KERNEL_CORE_CODE _iso9660_read(fs_partition_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _iso9660_read(partition_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (count+offset>iso9660_node->data_length){
 		count=iso9660_node->data_length-offset;
@@ -192,20 +192,20 @@ static u64 KERNEL_CORE_CODE _iso9660_read(fs_partition_t* fs,fs_node_t* node,u64
 
 
 
-static u64 _iso9660_write(fs_partition_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _iso9660_write(partition_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	return 0;
 }
 
 
 
-static u64 _iso9660_get_size(fs_partition_t* fs,fs_node_t* node){
+static u64 _iso9660_get_size(partition_t* fs,fs_node_t* node){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	return iso9660_node->data_length;
 }
 
 
 
-static void _iso9660_flush_cache(fs_partition_t* fs){
+static void _iso9660_flush_cache(partition_t* fs){
 	return;
 }
 
@@ -227,13 +227,13 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
 
 
 
-void KERNEL_CORE_CODE iso9660_load(const drive_t* drive,const fs_partition_config_t* partition_config,u32 block_index,u32 data_length){
+void KERNEL_CORE_CODE iso9660_load(const drive_t* drive,const partition_config_t* partition_config,u32 block_index,u32 data_length){
 	LOG_CORE("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
 	INFO_CORE("Root block offset: %u, Root block length: %u",block_index,data_length);
 	if (drive->block_size_shift!=11){
 		WARN_CORE("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
 	}
-	iso9660_fs_node_t* root=fs_partition_add(drive,partition_config,&_iso9660_fs_config,NULL);
+	iso9660_fs_node_t* root=partition_add(drive,partition_config,&_iso9660_fs_config,NULL);
 	root->parent_offset=0xffffffffffffffffull;
 	root->current_offset=0xffffffffffffffffull;
 	root->data_offset=block_index;

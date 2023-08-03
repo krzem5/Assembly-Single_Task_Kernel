@@ -72,10 +72,10 @@ void KERNEL_CORE_CODE kernel_load(void){
 	}
 	if (prev_boot_drive){
 		LOG_CORE("Searching for previous boot drive partition...");
-		fs_partition_t* partition=partition_data;
+		partition_t* partition=partition_data;
 		for (u8 i=0;i<partition_count;i++){
-			if (partition->drive==prev_boot_drive&&partition->partition_config.type==FS_PARTITION_CONFIG_TYPE_KFS){
-				partition->flags|=FS_PARTITION_FLAG_PREVIOUS_BOOT;
+			if (partition->drive==prev_boot_drive&&partition->partition_config.type==PARTITION_CONFIG_TYPE_KFS){
+				partition->flags|=PARTITION_FLAG_PREVIOUS_BOOT;
 				break;
 			}
 			partition++;
@@ -84,7 +84,7 @@ void KERNEL_CORE_CODE kernel_load(void){
 	char path[64];
 _check_every_drive:
 	for (u8 i=0;i<partition_count;i++){
-		fs_partition_t* partition=partition_data+i;
+		partition_t* partition=partition_data+i;
 		if (boot_drive){
 			if (partition->drive!=boot_drive){
 				continue;
@@ -105,8 +105,8 @@ _check_every_drive:
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
 		fs_node_t* kernel=fs_get_by_path(NULL,path,0);
 		if (!kernel){
-			if (boot_drive&&partition->partition_config.type==FS_PARTITION_CONFIG_TYPE_KFS){
-				partition->flags|=FS_PARTITION_FLAG_HALF_INSTALLED;
+			if (boot_drive&&partition->partition_config.type==PARTITION_CONFIG_TYPE_KFS){
+				partition->flags|=PARTITION_FLAG_HALF_INSTALLED;
 			}
 			continue;
 		}
@@ -123,7 +123,7 @@ _check_every_drive:
 			continue;
 		}
 		LOG_CORE("Found boot drive: %s (%s)",partition->name,partition->drive->model_number);
-		partition->flags|=FS_PARTITION_FLAG_BOOT;
+		partition->flags|=PARTITION_FLAG_BOOT;
 		partition_boot_index=i;
 		((drive_t*)(partition->drive))->flags|=DRIVE_FLAG_BOOT;
 		goto _load_kernel;
