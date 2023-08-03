@@ -6,8 +6,8 @@ global _syscall_cpu_core_start
 global _syscall_cpu_core_stop
 global _syscall_drive_list_length
 global _syscall_drive_list_get
-global _syscall_file_system_count
-global _syscall_file_system_get
+global _syscall_partition_count
+global _syscall_partition_get
 global _syscall_fd_open
 global _syscall_fd_close
 global _syscall_fd_delete
@@ -87,14 +87,14 @@ _syscall_drive_list_get:
 
 
 
-_syscall_file_system_count:
+_syscall_partition_count:
 	mov rax, 8
 	syscall
 	ret
 
 
 
-_syscall_file_system_get:
+_syscall_partition_get:
 	mov rax, 9
 	syscall
 	ret

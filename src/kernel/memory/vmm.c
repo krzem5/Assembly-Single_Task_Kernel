@@ -210,10 +210,14 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 	if (!count){
 		return;
 	}
-	if (flags&(VMM_PAGE_FLAG_LARGE|VMM_PAGE_FLAG_EXTRA_LARGE)){
-		ERROR("vmm_map_pages does not support VMM_PAGE_FLAG_LARGE");
-		return;
+	u64 stride_shift=PAGE_SIZE_SHIFT;
+	if (flags&VMM_PAGE_FLAG_LARGE){
+		stride_shift=LARGE_PAGE_SIZE_SHIFT;
 	}
+	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
+		stride_shift=EXTRA_LARGE_PAGE_SIZE_SHIFT;
+	}
+	count>>=stride_shift-PAGE_SIZE_SHIFT;
 	_Bool has_count=!!(flags&VMM_MAP_WITH_COUNT);
 	flags&=~(VMM_PAGE_COUNT_MASK|VMM_MAP_WITH_COUNT);
 	u64 index=0;
@@ -222,7 +226,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 			u64 diff=count-index;
 			flags|=(diff>2047?2047:diff)<<VMM_PAGE_COUNT_SHIFT;
 		}
-		vmm_map_page(pagemap,physical_address+(index<<PAGE_SIZE_SHIFT),virtual_address+(index<<PAGE_SIZE_SHIFT),flags);
+		vmm_map_page(pagemap,physical_address+(index<<stride_shift),virtual_address+(index<<stride_shift),flags);
 		flags&=~VMM_PAGE_COUNT_MASK;
 		index++;
 	}

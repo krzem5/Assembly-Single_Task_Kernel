@@ -42,8 +42,8 @@ void syscall_init(void){
 	_syscall_handlers[5]=syscall_cpu_core_stop;
 	_syscall_handlers[6]=syscall_drive_list_length;
 	_syscall_handlers[7]=syscall_drive_list_get;
-	_syscall_handlers[8]=syscall_file_system_count;
-	_syscall_handlers[9]=syscall_file_system_get;
+	_syscall_handlers[8]=syscall_partition_count;
+	_syscall_handlers[9]=syscall_partition_get;
 	_syscall_handlers[10]=syscall_fd_open;
 	_syscall_handlers[11]=syscall_fd_close;
 	_syscall_handlers[12]=syscall_fd_delete;

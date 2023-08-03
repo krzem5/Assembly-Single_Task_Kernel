@@ -36,11 +36,11 @@ s32 _syscall_drive_list_get(u32 index,void* ptr,u32 size);
 
 
 
-u32 _syscall_file_system_count(void);
+u32 _syscall_partition_count(void);
 
 
 
-s32 _syscall_file_system_get(u32 index,void* ptr,u32 size);
+s32 _syscall_partition_get(u32 index,void* ptr,u32 size);
 
 
 

@@ -120,11 +120,11 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 	u8 i=63-__builtin_clzll(count);
 	if ((_get_block_size(i)>>PAGE_SIZE_SHIFT)!=count){
 		i++;
-		if (i>PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR_CORE("Trying to allocate too many pages at once!");
-			for (;;);
-			return 0;
-		}
+	}
+	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
+		ERROR_CORE("Trying to allocate too many pages at once!");
+		for (;;);
+		return 0;
 	}
 	u64 out=0;
 	if (_pmm_allocator.blocks[i]){
@@ -133,15 +133,15 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		_pmm_allocator.blocks[i]=header->next;
 		goto _toggle_bitmap;
 	}
+	if (i==PMM_ALLOCATOR_SIZE_COUNT){
+		ERROR_CORE("Out of memory!");
+		return 0;
+	}
 	u8 j=i;
 	do{
 		j++;
 		if (j==PMM_ALLOCATOR_SIZE_COUNT){
 			ERROR_CORE("Out of memory!");
-			for (u8 k=0;k<PMM_ALLOCATOR_SIZE_COUNT;k++){
-				INFO_CORE("[%u] %p",k,_pmm_allocator.blocks[k]);
-			}
-			for (;;);
 			return 0;
 		}
 	} while (!_pmm_allocator.blocks[j]);

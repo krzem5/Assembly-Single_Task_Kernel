@@ -25,13 +25,13 @@ typedef struct _USER_PARTITION{
 
 
 
-void syscall_file_system_count(syscall_registers_t* regs){
+void syscall_partition_count(syscall_registers_t* regs){
 	regs->rax=partition_count;
 }
 
 
 
-void syscall_file_system_get(syscall_registers_t* regs){
+void syscall_partition_get(syscall_registers_t* regs){
 	if (regs->rdi>=partition_count||regs->rdx!=sizeof(user_partition_t)){
 		regs->rax=-1;
 		return;

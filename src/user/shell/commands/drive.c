@@ -10,7 +10,7 @@
 
 
 // Must be page-aligned
-#define SPEED_TEST_BUFFER_SIZE (65536*4096)
+#define SPEED_TEST_BUFFER_SIZE (32768*4096)
 
 #define SPEED_TEST_COUNT 2
 
@@ -116,7 +116,7 @@ void drive_main(int argc,const char*const* argv){
 		read_speed+=read*1000000000ull/clock_ticks_to_time(end_read-start_read);
 		write_speed+=write*1000000000ull/clock_ticks_to_time(end_write-start_write);
 		if (write!=SPEED_TEST_BUFFER_SIZE||read!=SPEED_TEST_BUFFER_SIZE){
-			fs_close(dst_fd);
+			fs_delete(dst_fd);
 			printf("drive: file IO error\n");
 			return;
 		}

@@ -4,11 +4,11 @@
 
 
 
-void syscall_file_system_count(syscall_registers_t* regs);
+void syscall_partition_count(syscall_registers_t* regs);
 
 
 
-void syscall_file_system_get(syscall_registers_t* regs);
+void syscall_partition_get(syscall_registers_t* regs);
 
 
 
