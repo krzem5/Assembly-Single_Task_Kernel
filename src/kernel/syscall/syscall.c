@@ -1,39 +1,19 @@
+#include <kernel/acpi/syscall.h>
+#include <kernel/clock/syscall.h>
+#include <kernel/cpu/syscall.h>
 #include <kernel/drive/syscall.h>
+#include <kernel/elf/syscall.h>
+#include <kernel/fd/syscall.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/syscall.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/network/syscall.h>
+#include <kernel/partition/syscall.h>
+#include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "syscall"
-
-
-
-void syscall_serial_send(syscall_registers_t* regs);
-void syscall_serial_recv(syscall_registers_t* regs);
-void syscall_elf_load(syscall_registers_t* regs);
-void syscall_cpu_core_count(syscall_registers_t* regs);
-void syscall_cpu_core_start(syscall_registers_t* regs);
-void syscall_cpu_core_stop(syscall_registers_t* regs);
-void syscall_drive_list_length(syscall_registers_t* regs);
-void syscall_drive_list_get(syscall_registers_t* regs);
-void syscall_file_system_count(syscall_registers_t* regs);
-void syscall_file_system_get(syscall_registers_t* regs);
-void syscall_fd_open(syscall_registers_t* regs);
-void syscall_fd_close(syscall_registers_t* regs);
-void syscall_fd_delete(syscall_registers_t* regs);
-void syscall_fd_read(syscall_registers_t* regs);
-void syscall_fd_write(syscall_registers_t* regs);
-void syscall_fd_seek(syscall_registers_t* regs);
-void syscall_fd_stat(syscall_registers_t* regs);
-void syscall_fd_get_relative(syscall_registers_t* regs);
-void syscall_fd_move(syscall_registers_t* regs);
-void syscall_net_send(syscall_registers_t* regs);
-void syscall_net_poll(syscall_registers_t* regs);
-void syscall_system_shutdown(syscall_registers_t* regs);
-void syscall_memory_map(syscall_registers_t* regs);
-void syscall_memory_unmap(syscall_registers_t* regs);
-void syscall_memory_stats(syscall_registers_t* regs);
-void syscall_clock_get_converion(syscall_registers_t* regs);
 
 
 
