@@ -51,11 +51,8 @@ void KERNEL_CORE_CODE kernel_load(void){
 	u8 buffer[4096];
 	const drive_t* boot_drive=NULL;
 	const drive_t* prev_boot_drive=NULL;
-	for (u8 i=0;1;i++){
-		const drive_t* drive=drive_list_get_drive(i);
-		if (!drive){
-			break;
-		}
+	const drive_t* drive=drive_data;
+	for (u8 i=0;i<drive_count;i++){
 		if ((drive->type==DRIVE_TYPE_AHCI||drive->type==DRIVE_TYPE_NVME)&&drive->block_size<=4096&&drive->read_write(drive->extra_data,0,buffer,1)==1){
 			u64 drive_version=*((const u64*)(buffer+64));
 			if (drive_version==kernel_get_version()){
@@ -65,6 +62,7 @@ void KERNEL_CORE_CODE kernel_load(void){
 				prev_boot_drive=drive;
 			}
 		}
+		drive++;
 	}
 	if (boot_drive){
 		LOG_CORE("Found the boot drive at '%s'",boot_drive->name);
@@ -127,6 +125,7 @@ _check_every_drive:
 		LOG_CORE("Found boot drive: %s (%s)",partition->name,partition->drive->model_number);
 		partition->flags|=FS_PARTITION_FLAG_BOOT;
 		partition_boot_index=i;
+		((drive_t*)(partition->drive))->flags|=DRIVE_FLAG_BOOT;
 		goto _load_kernel;
 	}
 	if (boot_drive){

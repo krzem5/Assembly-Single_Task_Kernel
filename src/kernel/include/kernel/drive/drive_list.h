@@ -5,6 +5,11 @@
 
 
 
+extern drive_t* KERNEL_CORE_DATA drive_data;
+extern u32 KERNEL_CORE_DATA drive_count;
+
+
+
 void drive_list_init(void);
 
 
@@ -14,18 +19,6 @@ void drive_list_add_drive(const drive_t* drive);
 
 
 void drive_list_load_partitions(void);
-
-
-
-u32 drive_list_get_length(void);
-
-
-
-const drive_t* drive_list_get_drive(u32 index);
-
-
-
-void drive_list_set_boot_drive(u32 index);
 
 
 

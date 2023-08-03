@@ -128,14 +128,13 @@ static void syscall_cpu_core_stop(syscall_registers_t* regs){
 
 
 static void syscall_drive_list_length(syscall_registers_t* regs){
-	regs->rax=drive_list_get_length();
+	regs->rax=drive_count;
 }
 
 
 
 static void syscall_drive_list_get(syscall_registers_t* regs){
-	const drive_t* drive=drive_list_get_drive(regs->rdi);
-	if (!drive||regs->rdx!=sizeof(user_drive_t)){
+	if (regs->rdi>=drive_count||regs->rdx!=sizeof(user_drive_t)){
 		regs->rax=-1;
 		return;
 	}
@@ -144,6 +143,7 @@ static void syscall_drive_list_get(syscall_registers_t* regs){
 		regs->rax=-1;
 		return;
 	}
+	const drive_t* drive=drive_data+regs->rdi;
 	user_drive_t* user_drive=VMM_TRANSLATE_ADDRESS(address);
 	user_drive->flags=USER_DRIVE_FLAG_PRESENT|((drive->flags&DRIVE_FLAG_BOOT)?USER_DRIVE_FLAG_BOOT:0);
 	user_drive->type=drive->type;
@@ -395,8 +395,7 @@ static void syscall_clock_get_converion(syscall_registers_t* regs){
 
 
 static void syscall_drive_format(syscall_registers_t* regs){
-	const drive_t* drive=drive_list_get_drive(regs->rdi);
-	if (!drive){
+	if (regs->rdi>=drive_count){
 		regs->rax=0;
 		return;
 	}
@@ -409,14 +408,13 @@ static void syscall_drive_format(syscall_registers_t* regs){
 		}
 		address=(u64)VMM_TRANSLATE_ADDRESS(address);
 	}
-	regs->rax=kfs_format_drive(drive,(void*)address,regs->rdx);
+	regs->rax=kfs_format_drive(drive_data+regs->rdi,(void*)address,regs->rdx);
 }
 
 
 
 static void syscall_drive_stats(syscall_registers_t* regs){
-	const drive_t* drive=drive_list_get_drive(regs->rdi);
-	if (!drive||regs->rdx!=sizeof(drive_stats_t)){
+	if (regs->rdi>=drive_count||regs->rdx!=sizeof(drive_stats_t)){
 		regs->rax=0;
 		return;
 	}
@@ -426,7 +424,7 @@ static void syscall_drive_stats(syscall_registers_t* regs){
 		return;
 	}
 	fs_partition_flush_cache();
-	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*(drive->stats);
+	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*((drive_data+regs->rdi)->stats);
 	regs->rax=1;
 }
 
