@@ -22,7 +22,7 @@ void cpu_init(void);
 
 
 
-void cpu_set_apic_address(u64 lapic_address);
+void cpu_set_apic_address(u64 apic_address);
 
 
 

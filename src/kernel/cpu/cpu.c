@@ -39,15 +39,15 @@ typedef struct _CPU{
 	tss_t tss;
 	u64 user_func;
 	u64 user_func_arg;
-	u8 isr_stack[ISR_STACK_SIZE];
 } cpu_t;
 
 
 
 static u16 _cpu_count;
-static __attribute__((section(".common"))) cpu_t _cpu_data[256];
+static cpu_t _cpu_data[256];
+static __attribute__((section(".common"))) u8 _cpu_isr_stacks[256*ISR_STACK_SIZE];
 static u8 _cpu_bsp_apic_id;
-static volatile u32* _cpu_lapic_ptr;
+static volatile u32* _cpu_apic_ptr;
 
 
 
@@ -65,7 +65,7 @@ void _cpu_start_ap(_Bool is_bsp){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	cpu_t* cpu_data=_cpu_data+index;
-	cpu_data->isr_stack_top=(u64)(cpu_data->isr_stack+ISR_STACK_SIZE);
+	cpu_data->isr_stack_top=(u64)(_cpu_isr_stacks+(index+1)*ISR_STACK_SIZE);
 	cpu_data->tss.rsp0=cpu_data->isr_stack_top;
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
@@ -96,13 +96,13 @@ void cpu_init(void){
 		(_cpu_data+i)->flags=0;
 	}
 	_cpu_bsp_apic_id=msr_get_apic_id();
-	INFO("BSP APIC id: APIC-%u",_cpu_bsp_apic_id);
+	INFO("BSP APIC id: %u",_cpu_bsp_apic_id);
 }
 
 
 
-void cpu_set_apic_address(u64 lapic_address){
-	_cpu_lapic_ptr=VMM_TRANSLATE_ADDRESS(lapic_address);
+void cpu_set_apic_address(u64 apic_address){
+	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
 }
 
 
@@ -136,29 +136,29 @@ void cpu_start_all_cores(void){
 			continue;
 		}
 		cpu_ap_startup_set_stack_top((_cpu_data+i)->stack_top);
-		_cpu_lapic_ptr[160]=0;
-		_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
-		_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
-		while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
+		_cpu_apic_ptr[160]=0;
+		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
+		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
+		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 			__pause();;
 
 		}
-		_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
-		_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_DELIVERY_MODE_INIT;
-		while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
+		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
+		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_DELIVERY_MODE_INIT;
+		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 			__pause();
 		}
 		for (u64 j=0;j<0xfff;j++){
 			__pause();
 		}
 		for (u8 j=0;j<2;j++){
-			_cpu_lapic_ptr[160]=0;
-			_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
-			_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff0f800)|APIC_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT);
+			_cpu_apic_ptr[160]=0;
+			_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
+			_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff0f800)|APIC_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT);
 			for (u64 j=0;j<0xfff;j++){
 				__pause();
 			}
-			while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
+			while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 				__pause();
 			}
 		}

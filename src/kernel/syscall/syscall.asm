@@ -68,12 +68,14 @@ syscall_jump_to_user_mode:
 
 syscall_handler:
 	swapgs
-	mov qword [gs:16], rsp
+	mov cr2, rsp
 	mov sp, 0x10
 	mov ds, sp
 	mov es, sp
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
+	mov rsp, cr2
+	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
 	push rcx
 	push r11
@@ -114,11 +116,13 @@ syscall_handler:
 	pop r15
 	pop r11
 	pop rcx
+	mov rsp, qword [gs:16]
+	mov cr2, rsp
 	mov rsp, qword [vmm_user_pagemap]
 	mov cr3, rsp
 	mov sp, 0x18
 	mov ds, sp
 	mov es, sp
-	mov rsp, qword [gs:16]
+	mov rsp, cr2
 	swapgs
 	o64 sysret
