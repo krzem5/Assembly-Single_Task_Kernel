@@ -26,7 +26,6 @@ global _syscall_memory_stats
 global _syscall_clock_get_converion
 global _syscall_drive_format
 global _syscall_drive_stats
-global _syscall_context_save
 section .text
 
 
@@ -224,12 +223,5 @@ _syscall_drive_format:
 
 _syscall_drive_stats:
 	mov rax, 27
-	syscall
-	ret
-
-
-
-_syscall_context_save:
-	mov rax, 28
 	syscall
 	ret

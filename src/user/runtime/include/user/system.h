@@ -4,11 +4,6 @@
 
 
 #define SHUTDOWN_FLAG_RESTART 1
-#define SHUTDOWN_FLAG_SAVE_CONTEXT 2
-
-
-
-void save_context(void);
 
 
 
