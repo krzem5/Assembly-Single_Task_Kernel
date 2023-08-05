@@ -1,13 +1,13 @@
-global cpu_get_apic_id
-global cpu_set_fs_base
-global cpu_set_gs_base
-global cpu_enable_simd
+global msr_get_apic_id
+global msr_set_fs_base
+global msr_set_gs_base
+global msr_enable_simd
 section .text
 
 
 
 [bits 64]
-cpu_get_apic_id:
+msr_get_apic_id:
 	push rbx
 	mov eax, 1
 	cpuid
@@ -18,7 +18,7 @@ cpu_get_apic_id:
 
 
 
-cpu_set_fs_base:
+msr_set_fs_base:
 	mov rdx, rdi
 	mov eax, edi
 	mov ecx, 0xc0000100
@@ -28,7 +28,7 @@ cpu_set_fs_base:
 
 
 
-cpu_set_gs_base:
+msr_set_gs_base:
 	and esi, 1
 	mov rdx, rdi
 	mov eax, edi
@@ -40,7 +40,7 @@ cpu_set_gs_base:
 
 
 
-cpu_enable_simd:
+msr_enable_simd:
 	mov rax, cr0
 	and rax, 0xfffffffffffffffb
 	or rax, 0x00000002

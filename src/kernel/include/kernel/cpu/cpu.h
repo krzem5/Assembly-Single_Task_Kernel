@@ -50,20 +50,4 @@ void cpu_core_stop(void);
 
 
 
-u8 cpu_get_apic_id(void);
-
-
-
-void cpu_set_fs_base(void* fs_base);
-
-
-
-void cpu_set_gs_base(void* gs_base,_Bool kernel_gs);
-
-
-
-void cpu_enable_simd(void);
-
-
-
 #endif

@@ -7,6 +7,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/msr/msr.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "cpu"
@@ -60,7 +61,7 @@ static void _user_func_wait_loop(){
 
 
 void _cpu_start_ap(_Bool is_bsp){
-	u8 index=cpu_get_apic_id();
+	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	cpu_t* cpu_data=_cpu_data+index;
 	cpu_data->isr_stack_top=(u64)(cpu_data->isr_stack+ISR_STACK_SIZE);
@@ -68,11 +69,11 @@ void _cpu_start_ap(_Bool is_bsp){
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
 	gdt_enable(&(cpu_data->tss));
-	cpu_set_fs_base(NULL);
-	cpu_set_gs_base(cpu_data,0);
-	cpu_set_gs_base(NULL,1);
+	msr_set_fs_base(NULL);
+	msr_set_gs_base(cpu_data,0);
+	msr_set_gs_base(NULL,1);
 	INFO("Enabling SIMD support...");
-	cpu_enable_simd();
+	msr_enable_simd();
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
 	INFO("Enabling user clock access...");
@@ -93,7 +94,7 @@ void cpu_init(void){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
 	}
-	_cpu_bsp_apic_id=cpu_get_apic_id();
+	_cpu_bsp_apic_id=msr_get_apic_id();
 	INFO("BSP APIC id: APIC-%u",_cpu_bsp_apic_id);
 }
 
