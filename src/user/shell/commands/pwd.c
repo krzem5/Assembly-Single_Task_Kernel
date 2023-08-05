@@ -10,8 +10,6 @@ void pwd_main(int argc,const char*const* argv){
 		return;
 	}
 	printf("%s\n",cwd);
-	// for (;;);
-	*((volatile char*)0)=0;
 }
 
 
