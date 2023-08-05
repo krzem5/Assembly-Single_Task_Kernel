@@ -71,15 +71,11 @@ static void _user_func_wait_loop(){
 void _cpu_start_ap(_Bool is_bsp){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
-	cpu_data_t* cpu_data=_cpu_data+index;
-	cpu_common_data_t* cpu_common_data=_cpu_common_data+index;
-	cpu_data->isr_stack_top=(u64)(cpu_common_data->isr_stack+ISR_STACK_SIZE);
-	cpu_common_data->tss.rsp0=cpu_data->isr_stack_top;
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
-	gdt_enable(&(cpu_common_data->tss));
+	gdt_enable(&((_cpu_common_data+index)->tss));
 	msr_set_fs_base(NULL);
-	msr_set_gs_base(cpu_data,0);
+	msr_set_gs_base(_cpu_data+index,0);
 	msr_set_gs_base(NULL,1);
 	INFO("Enabling SIMD...");
 	msr_enable_simd();
@@ -106,6 +102,8 @@ void cpu_init(u16 count,u64 apic_address){
 	for (u16 i=0;i<count;i++){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
+		(_cpu_data+i)->isr_stack_top=(u64)((_cpu_common_data+i)->isr_stack+ISR_STACK_SIZE);
+		(_cpu_common_data+i)->tss.rsp0=(_cpu_data+i)->isr_stack_top;
 	}
 	_cpu_bsp_apic_id=msr_get_apic_id();
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
@@ -128,6 +126,8 @@ void cpu_register_core(u8 core_id,u8 apic_id){
 
 
 void cpu_start_all_cores(void){
+	LOG("Allocating user stack...");
+	u64 user_stack=pmm_alloc(cpu_count*USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
 	LOG("Starting all cpu cores...");
 	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init((u32)(u64)(vmm_kernel_pagemap.toplevel));
@@ -137,7 +137,8 @@ void cpu_start_all_cores(void){
 			for (;;);
 		}
 		(_cpu_data+i)->stack_top=(u64)VMM_TRANSLATE_ADDRESS(pmm_alloc(KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK)+(KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		(_cpu_data+i)->user_stack=pmm_alloc(USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
+		(_cpu_data+i)->user_stack=user_stack;
+		user_stack+=USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 		if (i==_cpu_bsp_apic_id){
 			continue;
 		}

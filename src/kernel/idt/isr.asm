@@ -62,7 +62,8 @@ isr%1:
 	cld
 	jmp _isr_handler
 ._inisde_kernel:
-	mov rsi, %1
+	mov rsp, qword [gs:8]
+	mov rdi, %1
 	cld
 	jmp _isr_handler_inside_kernel
 %endmacro
