@@ -74,12 +74,14 @@ void _cpu_start_ap(_Bool is_bsp){
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data,0);
 	msr_set_gs_base(NULL,1);
-	INFO("Enabling SIMD support...");
+	INFO("Enabling SIMD...");
 	msr_enable_simd();
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
-	INFO("Enabling user clock access...");
-	clock_enable();
+	INFO("Enabling RDTSC...");
+	msr_enable_rdtsc();
+	INFO("Enabling FSGSBASE...");
+	msr_enable_fsgsbase();
 	(_cpu_data+index)->flags|=CPU_FLAG_ONLINE;
 	if (is_bsp){
 		return;

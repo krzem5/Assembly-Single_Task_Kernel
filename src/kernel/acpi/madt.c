@@ -27,18 +27,6 @@ typedef struct __attribute__((packed)) _MADT_ENTRY{
 			u32 flags;
 		} lapic;
 		struct __attribute__((packed)){
-			u8 io_apic_id;
-			u8 _padding;
-			u32 io_apic_address;
-			u32 interrupt_base;
-		} io_apic;
-		struct __attribute__((packed)){
-			u8 bus;
-			u8 irq;
-			u32 interrupt;
-			u16 flags;
-		} io_apic_iso;
-		struct __attribute__((packed)){
 			u8 _padding[2];
 			u64 lapic;
 		} lapic_override;
@@ -61,16 +49,10 @@ void acpi_madt_load(const void* madt_ptr){
 				cpu_register_core(madt_entry->lapic.acpi_processor_id,madt_entry->lapic.apic_id);
 			}
 		}
-		else if (madt_entry->type==1){
-			// io_apic
-		}
-		else if (madt_entry->type==2){
-			// io_apic_iso
-		}
 		else if (madt_entry->type==5){
 			lapic_address=madt_entry->lapic_override.lapic;
 		}
 		i+=madt_entry->length;
 	}
-	cpu_set_apic_addresss(lapic_address);
+	cpu_set_apic_address(lapic_address);
 }

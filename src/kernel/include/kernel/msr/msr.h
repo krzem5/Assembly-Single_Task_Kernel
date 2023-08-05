@@ -20,4 +20,12 @@ void msr_enable_simd(void);
 
 
 
+void msr_enable_rdtsc(void);
+
+
+
+void msr_enable_fsgsbase(void);
+
+
+
 #endif

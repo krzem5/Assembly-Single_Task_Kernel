@@ -14,10 +14,6 @@ void clock_init(void);
 
 
 
-void clock_enable(void);
-
-
-
 u64 clock_get_ticks(void);
 
 

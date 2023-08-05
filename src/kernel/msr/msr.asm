@@ -2,6 +2,8 @@ global msr_get_apic_id
 global msr_set_fs_base
 global msr_set_gs_base
 global msr_enable_simd
+global msr_enable_rdtsc
+global msr_enable_fsgsbase
 section .text
 
 
@@ -53,4 +55,20 @@ msr_enable_simd:
 	or eax, 0x00000007
 	xsetbv
 	vzeroall
+	ret
+
+
+
+msr_enable_rdtsc:
+	mov rax, cr4
+	and rax, 0xfffffffffffffffb
+	mov cr4, rax
+	ret
+
+
+
+msr_enable_fsgsbase:
+	mov rax, cr4
+	or rax, 0x00010000
+	mov cr4, rax
 	ret

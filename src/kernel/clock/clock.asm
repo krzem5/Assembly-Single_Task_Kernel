@@ -1,6 +1,5 @@
 extern clock_conversion_factor
 extern clock_conversion_shift
-global clock_enable
 global clock_get_ticks
 global clock_get_time
 section .text
@@ -8,14 +7,6 @@ section .text
 
 
 [bits 64]
-clock_enable:
-	mov rax, cr4
-	and rax, 0xfffffffffffffffb
-	mov cr4, rax
-	ret
-
-
-
 clock_get_ticks:
 	rdtsc
 	shl rdx, 32
