@@ -72,5 +72,5 @@ void acpi_madt_load(const void* madt_ptr){
 		}
 		i+=madt_entry->length;
 	}
-	cpu_set_apic_address(lapic_address);
+	cpu_set_apic_addresss(lapic_address);
 }
