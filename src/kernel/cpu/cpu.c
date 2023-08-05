@@ -49,7 +49,7 @@ typedef struct _CPU_COMMON_DATA{
 
 
 
-static cpu_data_t _cpu_data[256];
+static cpu_data_t* _cpu_data;
 static __attribute__((section(".common"))) cpu_common_data_t _cpu_common_data[256];
 static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
@@ -102,13 +102,14 @@ void cpu_init(u16 count,u64 apic_address){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u, APIC address: %p",count,apic_address);
 	cpu_count=count;
-	for (u16 i=0;i<256;i++){
+	_cpu_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(count*sizeof(cpu_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU));
+	for (u16 i=0;i<count;i++){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
 	}
 	_cpu_bsp_apic_id=msr_get_apic_id();
-	INFO("BSP APIC id: %u",_cpu_bsp_apic_id);
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
+	INFO("BSP APIC id: #%u",_cpu_bsp_apic_id);
 }
 
 
