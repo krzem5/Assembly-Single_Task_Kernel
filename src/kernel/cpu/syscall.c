@@ -6,7 +6,7 @@
 
 
 void syscall_cpu_core_count(syscall_registers_t* regs){
-	regs->rax=cpu_get_core_count();
+	regs->rax=cpu_count;
 }
 
 

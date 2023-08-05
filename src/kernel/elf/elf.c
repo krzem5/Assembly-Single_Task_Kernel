@@ -94,7 +94,6 @@ void* elf_load(const char* path){
 			goto _error;
 		}
 	}
-	u16 cpu_count=cpu_get_core_count();
 	for (u16 i=0;i<cpu_count;i++){
 		vmm_map_pages(&pagemap,cpu_get_stack(i),cpu_get_stack_top(i)-(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT),VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,USER_STACK_PAGE_COUNT);
 	}

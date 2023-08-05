@@ -43,11 +43,12 @@ typedef struct _CPU{
 
 
 
-static u16 _cpu_count;
 static cpu_t _cpu_data[256];
 static __attribute__((section(".common"))) u8 _cpu_isr_stacks[256*ISR_STACK_SIZE];
 static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
+
+u16 cpu_count;
 
 
 
@@ -90,7 +91,7 @@ void _cpu_start_ap(_Bool is_bsp){
 
 void cpu_init(void){
 	LOG("Initializing CPU manager...");
-	_cpu_count=0;
+	cpu_count=0;
 	for (u16 i=0;i<256;i++){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
@@ -113,7 +114,7 @@ void cpu_register_core(u8 core_id,u8 apic_id){
 		return;
 	}
 	LOG("Registering CPU core #%u",apic_id);
-	_cpu_count++;
+	cpu_count++;
 	(_cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
 	(_cpu_data+apic_id)->user_func=0;
 	(_cpu_data+apic_id)->user_func_arg=0;
@@ -125,7 +126,7 @@ void cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
 	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init((u32)(u64)(vmm_kernel_pagemap.toplevel));
-	for (u16 i=0;i<_cpu_count;i++){
+	for (u16 i=0;i<cpu_count;i++){
 		if (!((_cpu_data+i)->flags&CPU_FLAG_PRESENT)){
 			ERROR("Unused CPU core: #%u",i);
 			for (;;);
@@ -191,12 +192,6 @@ void cpu_core_stop(void){
 		_user_func_wait_loop();
 	}
 	acpi_fadt_shutdown(0);
-}
-
-
-
-u16 cpu_get_core_count(void){
-	return _cpu_count;
 }
 
 

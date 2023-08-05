@@ -12,6 +12,10 @@
 
 
 
+extern u16 cpu_count;
+
+
+
 static inline u64 cpu_get_stack_top(u16 core_id){
 	return USER_STACK_TOP-core_id*(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 }
@@ -35,10 +39,6 @@ void cpu_start_all_cores(void);
 
 
 void cpu_start_program(void* start_address);
-
-
-
-u16 cpu_get_core_count(void);
 
 
 
