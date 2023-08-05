@@ -1,6 +1,6 @@
 extern idt_set_entry
 extern _isr_handler
-extern _isr_kernel
+extern _isr_handler_inside_kernel
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global isr_init
@@ -31,7 +31,6 @@ isr%1:
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
 	mov rsp, qword [gs:8]
-._inisde_kernel:
 	push r15
 	push r14
 	push r13
@@ -47,39 +46,25 @@ isr%1:
 	push rcx
 	push rbx
 	push rax
+	mov rax, cr4
+	push rax
+	mov rax, cr3
+	push rax
+	mov rax, cr2
+	push rax
+	mov rax, cr0
+	push rax
 	mov rax, qword [gs:32]
 	push qword [rax-48]
 	mov rdi, rsp
 	mov rsi, %1
 	lea rdx, [rax-40]
 	cld
-	call _isr_handler
-	pop rax
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdx
-	pop rsi
-	pop rdi
-	pop rbp
-	pop r8
-	pop r9
-	pop r10
-	pop r11
-	pop r12
-	pop r13
-	pop r14
-	pop r15
-	;;; Not cleaned-up properly when in kernel mode
-	mov rsp, qword [vmm_user_pagemap]
-	mov cr3, rsp
-	mov sp, 0x18
-	mov ds, sp
-	mov es, sp
-	mov rsp, qword [gs:32]
-	sub rsp, 40
-	swapgs
-	iretq
+	jmp _isr_handler
+._inisde_kernel:
+	mov rsi, %1
+	cld
+	jmp _isr_handler_inside_kernel
 %endmacro
 
 

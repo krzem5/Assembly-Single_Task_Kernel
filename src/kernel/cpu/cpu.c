@@ -36,7 +36,6 @@ typedef struct _CPU{
 	u64 user_stack_tmp;
 	u64 user_stack;
 	u64 isr_stack_top;
-	tss_t tss;
 	u64 user_func;
 	u64 user_func_arg;
 } cpu_t;
@@ -44,6 +43,7 @@ typedef struct _CPU{
 
 
 static cpu_t _cpu_data[256];
+static __attribute__((section(".common"))) tss_t _cpu_tss[256];
 static __attribute__((section(".common"))) u8 _cpu_isr_stacks[256*ISR_STACK_SIZE];
 static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
@@ -67,10 +67,10 @@ void _cpu_start_ap(_Bool is_bsp){
 	LOG("Initializing core #%u...",index);
 	cpu_t* cpu_data=_cpu_data+index;
 	cpu_data->isr_stack_top=(u64)(_cpu_isr_stacks+(index+1)*ISR_STACK_SIZE);
-	cpu_data->tss.rsp0=cpu_data->isr_stack_top;
+	(_cpu_tss+index)->rsp0=cpu_data->isr_stack_top;
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
-	gdt_enable(&(cpu_data->tss));
+	gdt_enable(_cpu_tss+index);
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data,0);
 	msr_set_gs_base(NULL,1);
