@@ -7,6 +7,7 @@
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
 
 
@@ -101,7 +102,7 @@ static void _i82540_tx(void* extra_data,u64 packet,u16 length){
 	}
 	device->mmio[REG_TDT]=tail;
 	while (!(desc->sta&0x0f)){
-		asm volatile("pause");
+		__pause();
 	}
 }
 
@@ -159,7 +160,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
 	for (u64 i=0;i<0xfffff;i++){
-		asm volatile("pause");
+		__pause();
 	}
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]|=CTRL_FD;

@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "fadt"
 
 
@@ -48,11 +49,11 @@ void acpi_fadt_load(const void* fadt_ptr){
 	else{
 		io_port_out8(fadt->smi_command_port,fadt->acpi_enable);
 		while (!(io_port_in16(fadt->pm1a_control_block)&1)){
-			asm volatile("pause":::"memory");
+			__pause();
 		}
 		if (fadt->pm1b_control_block){
 			while (!(io_port_in16(fadt->pm1b_control_block)&1)){
-				asm volatile("pause":::"memory");
+				__pause();
 			}
 		}
 	}
@@ -86,7 +87,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 void acpi_fadt_shutdown(_Bool restart){
 	partition_flush_cache();
 	for (u64 i=0;i<0xffff;i++){
-		asm volatile("pause":::"memory"); // ensure FS cache flushes properly
+		__pause(); // ensure FS cache flushes properly
 	}
 	if (restart){
 		_acpi_fadt_reboot();

@@ -10,6 +10,7 @@
 #include <kernel/msr/msr.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "cpu"
 
 
@@ -53,7 +54,7 @@ static volatile u32* _cpu_lapic_ptr;
 static void _user_func_wait_loop(){
 	volatile __seg_gs cpu_t* cpu_data=NULL;
 	while (!cpu_data->user_func){
-		asm volatile("pause":::"memory");
+		__pause();
 	}
 	syscall_jump_to_user_mode(cpu_data->user_func,cpu_data->user_func_arg,cpu_get_stack_top(cpu_data->index));
 }
@@ -139,30 +140,31 @@ void cpu_start_all_cores(void){
 		_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
 		_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
 		while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
-			asm volatile("pause":::"memory");
+			__pause();;
+
 		}
 		_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
 		_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_DELIVERY_MODE_INIT;
 		while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
-			asm volatile("pause":::"memory");
+			__pause();
 		}
 		for (u64 j=0;j<0xfff;j++){
-			asm volatile("pause":::"memory");
+			__pause();
 		}
 		for (u8 j=0;j<2;j++){
 			_cpu_lapic_ptr[160]=0;
 			_cpu_lapic_ptr[196]=(_cpu_lapic_ptr[196]&0x00ffffff)|(i<<24);
 			_cpu_lapic_ptr[192]=(_cpu_lapic_ptr[192]&0xfff0f800)|APIC_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT);
 			for (u64 j=0;j<0xfff;j++){
-				asm volatile("pause":::"memory");
+				__pause();
 			}
 			while (_cpu_lapic_ptr[192]&APIC_DELIVERY_STATUS){
-				asm volatile("pause":::"memory");
+				__pause();
 			}
 		}
 		const volatile u8* flags=&((_cpu_data+i)->flags);
 		while (!((*flags)&CPU_FLAG_ONLINE)){
-			asm volatile("pause":::"memory");
+			__pause();
 		}
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);

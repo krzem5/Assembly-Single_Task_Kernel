@@ -7,6 +7,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "ahci"
 
 
@@ -86,11 +87,11 @@ static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device)
 
 static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8 cmd_slot){
 	while (device->registers->tfd&(TFD_STS_DSQ|TFD_STS_BSY)){
-		asm volatile("pause");
+		__pause();
 	}
 	device->registers->cmd&=~CMD_ST;
 	while (device->registers->cmd&CMD_CR){
-		asm volatile("pause");
+		__pause();
 	}
 	device->registers->cmd|=CMD_ST|CMD_FRE;
 	device->registers->ci|=1<<cmd_slot;
@@ -100,11 +101,11 @@ static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8
 
 static void KERNEL_CORE_CODE _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
 	while (device->registers->ci&(1<<cmd_slot)){
-		asm volatile("pause");
+		__pause();
 	}
 	device->registers->cmd&=~CMD_ST;
 	while (device->registers->cmd&CMD_ST){
-		asm volatile("pause");
+		__pause();
 	}
 	device->registers->cmd&=~CMD_FRE;
 }
@@ -272,7 +273,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	if (controller->registers->cap2&CAP2_BOH){
 		controller->registers->bohc|=BOHC_OOS;
 		while (controller->registers->bohc&(BOHC_BOS|BOHC_BB)){
-			asm volatile("pause");
+			__pause();
 		}
 		if ((controller->registers->bohc&BOHC_BB)||(controller->registers->bohc&BOHC_BOS)||!(controller->registers->bohc&BOHC_OOS)){
 			ERROR_CORE("AHCI controller bios handoff failed");
