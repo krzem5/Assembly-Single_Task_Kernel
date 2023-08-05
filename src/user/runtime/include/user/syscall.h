@@ -116,4 +116,8 @@ _Bool _syscall_drive_stats(u32 index,void* buffer,u32 size);
 
 
 
+void _syscall_context_save(void);
+
+
+
 #endif

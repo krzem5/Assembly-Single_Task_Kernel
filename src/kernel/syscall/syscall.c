@@ -1,5 +1,6 @@
 #include <kernel/acpi/syscall.h>
 #include <kernel/clock/syscall.h>
+#include <kernel/context/syscall.h>
 #include <kernel/cpu/syscall.h>
 #include <kernel/drive/syscall.h>
 #include <kernel/elf/syscall.h>
@@ -17,7 +18,7 @@
 
 
 
-#define SYSCALL_COUNT 28
+#define SYSCALL_COUNT 29
 
 
 
@@ -62,6 +63,7 @@ void syscall_init(void){
 	_syscall_handlers[25]=syscall_clock_get_converion;
 	_syscall_handlers[26]=syscall_drive_format;
 	_syscall_handlers[27]=syscall_drive_stats;
+	_syscall_handlers[28]=syscall_context_save;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }
 

@@ -8,6 +8,10 @@
 
 
 
+void save_context(void);
+
+
+
 void shutdown(u8 flags);
 
 
