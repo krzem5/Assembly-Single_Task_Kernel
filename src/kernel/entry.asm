@@ -23,4 +23,4 @@ section .cdata
 
 align 8
 cpu_data:
-	times 256 db 0x00
+	db 0x00
