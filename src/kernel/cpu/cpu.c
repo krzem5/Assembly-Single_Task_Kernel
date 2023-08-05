@@ -28,7 +28,7 @@
 
 
 
-typedef struct _CPU{
+typedef struct _CPU_DATA{
 	u8 index;
 	u8 flags;
 	u8 _padding[5];
@@ -38,13 +38,19 @@ typedef struct _CPU{
 	u64 isr_stack_top;
 	u64 user_func;
 	u64 user_func_arg;
-} cpu_t;
+} cpu_data_t;
 
 
 
-static cpu_t _cpu_data[256];
-static __attribute__((section(".common"))) tss_t _cpu_tss[256];
-static __attribute__((section(".common"))) u8 _cpu_isr_stacks[256*ISR_STACK_SIZE];
+typedef struct _CPU_COMMON_DATA{
+	tss_t tss;
+	u8 isr_stack[ISR_STACK_SIZE];
+} cpu_common_data_t;
+
+
+
+static cpu_data_t _cpu_data[256];
+static __attribute__((section(".common"))) cpu_common_data_t _cpu_common_data[256];
 static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
 
@@ -53,7 +59,7 @@ u16 cpu_count;
 
 
 static void _user_func_wait_loop(){
-	volatile __seg_gs cpu_t* cpu_data=NULL;
+	volatile __seg_gs cpu_data_t* cpu_data=NULL;
 	while (!cpu_data->user_func){
 		__pause();
 	}
@@ -65,12 +71,13 @@ static void _user_func_wait_loop(){
 void _cpu_start_ap(_Bool is_bsp){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
-	cpu_t* cpu_data=_cpu_data+index;
-	cpu_data->isr_stack_top=(u64)(_cpu_isr_stacks+(index+1)*ISR_STACK_SIZE);
-	(_cpu_tss+index)->rsp0=cpu_data->isr_stack_top;
+	cpu_data_t* cpu_data=_cpu_data+index;
+	cpu_common_data_t* cpu_common_data=_cpu_common_data+index;
+	cpu_data->isr_stack_top=(u64)(cpu_common_data->isr_stack+ISR_STACK_SIZE);
+	cpu_common_data->tss.rsp0=cpu_data->isr_stack_top;
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
-	gdt_enable(_cpu_tss+index);
+	gdt_enable(&(cpu_common_data->tss));
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data,0);
 	msr_set_gs_base(NULL,1);
@@ -91,20 +98,16 @@ void _cpu_start_ap(_Bool is_bsp){
 
 
 
-void cpu_init(void){
+void cpu_init(u16 count,u64 apic_address){
 	LOG("Initializing CPU manager...");
-	cpu_count=0;
+	INFO("CPU count: %u, APIC address: %p",count,apic_address);
+	cpu_count=count;
 	for (u16 i=0;i<256;i++){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
 	}
 	_cpu_bsp_apic_id=msr_get_apic_id();
 	INFO("BSP APIC id: %u",_cpu_bsp_apic_id);
-}
-
-
-
-void cpu_set_apic_address(u64 apic_address){
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
 }
 
@@ -116,7 +119,6 @@ void cpu_register_core(u8 core_id,u8 apic_id){
 		return;
 	}
 	LOG("Registering CPU core #%u",apic_id);
-	cpu_count++;
 	(_cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
 	(_cpu_data+apic_id)->user_func=0;
 	(_cpu_data+apic_id)->user_func_arg=0;
@@ -177,7 +179,7 @@ void cpu_start_all_cores(void){
 
 
 void cpu_start_program(void* start_address){
-	volatile __seg_gs cpu_t* cpu_data=NULL;
+	volatile __seg_gs cpu_data_t* cpu_data=NULL;
 	if (cpu_data->index!=_cpu_bsp_apic_id){
 		ERROR("Unable to start program from non-bsp CPU");
 		return;
@@ -188,7 +190,7 @@ void cpu_start_program(void* start_address){
 
 
 void cpu_core_stop(void){
-	volatile __seg_gs cpu_t* cpu_data=NULL;
+	volatile __seg_gs cpu_data_t* cpu_data=NULL;
 	if (cpu_data->index){
 		cpu_data->user_func=0;
 		_user_func_wait_loop();

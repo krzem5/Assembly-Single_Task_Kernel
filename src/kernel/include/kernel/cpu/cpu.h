@@ -22,11 +22,7 @@ static inline u64 cpu_get_stack_top(u16 core_id){
 
 
 
-void cpu_init(void);
-
-
-
-void cpu_set_apic_address(u64 apic_address);
+void cpu_init(u16 count,u64 apic_address);
 
 
 

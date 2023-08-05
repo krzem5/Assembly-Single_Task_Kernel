@@ -47,7 +47,6 @@ void KERNEL_CORE_CODE main(void){
 	mmap_init();
 	syscall_init();
 	isr_init();
-	cpu_init();
 	acpi_load();
 	network_layer2_init();
 	cpu_start_all_cores();

@@ -12,7 +12,7 @@ void msr_set_fs_base(void* fs_base);
 
 
 
-void msr_set_gs_base(void* gs_base,_Bool kernel_gs);
+void msr_set_gs_base(void* gs_base,_Bool is_alternate_gs);
 
 
 

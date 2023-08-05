@@ -38,6 +38,7 @@ typedef struct __attribute__((packed)) _MADT_ENTRY{
 void acpi_madt_load(const void* madt_ptr){
 	LOG("Loading MADT...");
 	const madt_t* madt=madt_ptr;
+	u16 cpu_count=0;
 	u64 lapic_address=madt->lapic;
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
@@ -46,7 +47,7 @@ void acpi_madt_load(const void* madt_ptr){
 				WARN("CPU#%u not yet online!",madt_entry->lapic.acpi_processor_id);
 			}
 			else{
-				cpu_register_core(madt_entry->lapic.acpi_processor_id,madt_entry->lapic.apic_id);
+				cpu_count++;
 			}
 		}
 		else if (madt_entry->type==5){
@@ -54,5 +55,12 @@ void acpi_madt_load(const void* madt_ptr){
 		}
 		i+=madt_entry->length;
 	}
-	cpu_set_apic_address(lapic_address);
+	cpu_init(cpu_count,lapic_address);
+	for (u32 i=0;i<madt->length-sizeof(madt_t);){
+		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
+		if (!madt_entry->type&&(madt_entry->lapic.flags&1)){
+			cpu_register_core(madt_entry->lapic.acpi_processor_id,madt_entry->lapic.apic_id);
+		}
+		i+=madt_entry->length;
+	}
 }
