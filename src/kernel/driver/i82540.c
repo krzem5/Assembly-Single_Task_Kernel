@@ -204,7 +204,14 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	u32 ral=i82540_device->mmio[REG_RAL0];
 	network_layer1_device_t layer1_device={
 		_i82540_device_name,
-		{ral,ral>>8,ral>>16,ral>>24,rah,rah>>8},
+		{
+			ral,
+			ral>>8,
+			ral>>16,
+			ral>>24,
+			rah,
+			rah>>8
+		},
 		_i82540_tx,
 		_i82540_rx,
 		i82540_device
