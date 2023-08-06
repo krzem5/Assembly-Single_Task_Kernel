@@ -12,7 +12,7 @@
 
 
 static lock_t _fd_lock=LOCK_INIT_STRUCT;
-static u64 _fd_bitmap[FD_MAX_COUNT];
+static u64 _fd_bitmap[FD_MAX_COUNT>>6];
 
 fd_data_t* fd_data;
 u16 fd_count;
