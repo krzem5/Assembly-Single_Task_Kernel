@@ -20,52 +20,9 @@ section .text
 
 %macro ISR_HANDLER 1
 isr%1:
-	mov rsp, cr3
-	cmp rsp, qword [vmm_common_kernel_pagemap]
-	je ._inisde_kernel
-	swapgs
-	mov sp, 0x10
-	mov ds, sp
-	mov es, sp
-	mov ss, sp
-	mov rsp, qword [vmm_common_kernel_pagemap]
-	mov cr3, rsp
-	mov rsp, qword [gs:8]
-	push r15
-	push r14
-	push r13
-	push r12
-	push r11
-	push r10
-	push r9
-	push r8
-	push rbp
-	push rdi
-	push rsi
-	push rdx
-	push rcx
-	push rbx
-	push rax
-	mov rax, cr4
-	push rax
-	mov rax, cr3
-	push rax
-	mov rax, cr2
-	push rax
-	mov rax, cr0
-	push rax
-	mov rax, qword [gs:32]
-	push qword [rax-48]
-	mov rdi, rsp
-	mov rsi, %1
-	lea rdx, [rax-40]
-	cld
-	jmp _isr_handler
-._inisde_kernel:
-	mov rsp, qword [gs:8]
-	mov rdi, %1
-	cld
-	jmp _isr_handler_inside_kernel
+	and rsp, 0xfffffffffffffff0
+	push qword %1
+	jmp _isr_common_handler
 %endmacro
 
 
@@ -109,6 +66,55 @@ isr_init:
 
 
 section .common
+
+
+
+_isr_common_handler:
+	mov rsp, cr3
+	cmp rsp, qword [vmm_common_kernel_pagemap]
+	je ._inisde_kernel
+	swapgs
+	mov sp, 0x10
+	mov ds, sp
+	mov es, sp
+	mov ss, sp
+	mov rsp, qword [vmm_common_kernel_pagemap]
+	mov cr3, rsp
+	mov rsp, qword [gs:8]
+	push r15
+	push r14
+	push r13
+	push r12
+	push r11
+	push r10
+	push r9
+	push r8
+	push rbp
+	push rdi
+	push rsi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+	mov rax, cr4
+	push rax
+	mov rax, cr3
+	push rax
+	mov rax, cr2
+	push rax
+	mov rax, cr0
+	push rax
+	mov rax, qword [gs:32]
+	push qword [rax-48]
+	mov rdi, rsp
+	mov rsi, qword [rax-56]
+	lea rdx, [rax-40]
+	cld
+	jmp _isr_handler
+._inisde_kernel:
+	mov rsp, qword [gs:8]
+	cld
+	jmp _isr_handler_inside_kernel
 
 
 

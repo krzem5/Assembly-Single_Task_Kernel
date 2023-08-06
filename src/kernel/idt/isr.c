@@ -34,7 +34,7 @@ void _isr_handler(u64* vars,u8 index,u64* extra_data){
 
 
 
-void _isr_handler_inside_kernel(u8 index){
-	ERROR("ISR %u inside kernel",index);
+void _isr_handler_inside_kernel(void){
+	ERROR("ISR inside kernel");
 	for (;;);
 }

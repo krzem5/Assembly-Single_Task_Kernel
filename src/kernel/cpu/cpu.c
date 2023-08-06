@@ -25,7 +25,7 @@
 #define CPU_FLAG_PRESENT 1
 #define CPU_FLAG_ONLINE 2
 
-#define ISR_STACK_SIZE 48
+#define ISR_STACK_SIZE 56
 
 
 
