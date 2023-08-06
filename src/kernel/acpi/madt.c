@@ -44,7 +44,10 @@ void acpi_madt_load(const void* madt_ptr){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
 		if (!madt_entry->type){
 			if (!(madt_entry->lapic.flags&1)){
-				WARN("CPU#%u not yet online!",madt_entry->lapic.acpi_processor_id);
+				WARN("CPU#%u not yet online",madt_entry->lapic.acpi_processor_id);
+			}
+			else if (madt_entry->lapic.acpi_processor_id!=madt_entry->lapic.apic_id){
+				WARN("CPU code id does not match CPU APIC id");
 			}
 			else{
 				cpu_count++;
@@ -59,7 +62,7 @@ void acpi_madt_load(const void* madt_ptr){
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
 		if (!madt_entry->type&&(madt_entry->lapic.flags&1)){
-			cpu_register_core(madt_entry->lapic.acpi_processor_id,madt_entry->lapic.apic_id);
+			cpu_register_core(madt_entry->lapic.apic_id);
 		}
 		i+=madt_entry->length;
 	}

@@ -25,7 +25,7 @@ void cpu_init(u16 count,u64 apic_address);
 
 
 
-void cpu_register_core(u8 core_id,u8 apic_id);
+void cpu_register_core(u8 apic_id);
 
 
 

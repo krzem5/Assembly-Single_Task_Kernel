@@ -116,11 +116,7 @@ void cpu_init(u16 count,u64 apic_address){
 
 
 
-void cpu_register_core(u8 core_id,u8 apic_id){
-	if (core_id!=apic_id){
-		WARN("core_id must be equal to apic_id");
-		return;
-	}
+void cpu_register_core(u8 apic_id){
 	LOG("Registering CPU core #%u",apic_id);
 	(_cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
 	(_cpu_data+apic_id)->user_func=0;
@@ -152,7 +148,7 @@ void cpu_start_all_cores(void){
 		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
 		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
 		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
-			__pause();;
+			__pause();
 
 		}
 		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
