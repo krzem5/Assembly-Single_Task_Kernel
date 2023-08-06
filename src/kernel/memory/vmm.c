@@ -138,12 +138,8 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 
 
 void vmm_pagemap_init(vmm_pagemap_t* pagemap){
-	LOG("Creating new pagemap...");
 	pagemap->toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM);
 	lock_init(&(pagemap->lock));
-	LOG("Mapping common section...");
-	INFO("Mapping %v from %p to %p",kernel_get_end()-kernel_get_common_start(),kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset());
-	vmm_map_pages(pagemap,kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset(),VMM_PAGE_FLAG_PRESENT,pmm_align_up_address(kernel_get_end()-kernel_get_common_start())>>PAGE_SIZE_SHIFT);
 }
 
 

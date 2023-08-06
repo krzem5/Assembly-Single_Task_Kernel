@@ -6,6 +6,7 @@
 #include <kernel/idt/idt.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/syscall/syscall.h>
@@ -50,7 +51,7 @@ typedef struct _CPU_COMMON_DATA{
 
 
 static cpu_data_t* _cpu_data;
-static __attribute__((section(".common"))) cpu_common_data_t _cpu_common_data[256];
+static cpu_common_data_t* _cpu_common_data;
 static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
 
@@ -99,6 +100,8 @@ void cpu_init(u16 count,u64 apic_address){
 	INFO("CPU count: %u, APIC address: %p",count,apic_address);
 	cpu_count=count;
 	_cpu_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(count*sizeof(cpu_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU));
+	u64 cpu_common_data_raw=pmm_alloc(pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
+	_cpu_common_data=VMM_TRANSLATE_ADDRESS(cpu_common_data_raw);
 	for (u16 i=0;i<count;i++){
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
@@ -108,6 +111,7 @@ void cpu_init(u16 count,u64 apic_address){
 	_cpu_bsp_apic_id=msr_get_apic_id();
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
 	INFO("BSP APIC id: #%u",_cpu_bsp_apic_id);
+	umm_set_cpu_common_data(cpu_common_data_raw,pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT);
 }
 
 
@@ -128,6 +132,7 @@ void cpu_register_core(u8 core_id,u8 apic_id){
 void cpu_start_all_cores(void){
 	LOG("Allocating user stack...");
 	u64 user_stack=pmm_alloc(cpu_count*USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
+	umm_set_user_stacks(user_stack,cpu_count*USER_STACK_PAGE_COUNT);
 	LOG("Starting all cpu cores...");
 	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init((u32)(u64)(vmm_kernel_pagemap.toplevel));

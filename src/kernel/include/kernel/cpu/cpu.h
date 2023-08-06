@@ -1,14 +1,13 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/umm.h>
 #include <kernel/types.h>
 
 
 
 #define KERNEL_STACK_PAGE_COUNT 8
 #define USER_STACK_PAGE_COUNT 8
-
-#define USER_STACK_TOP 0x8000000000ull
 
 
 
@@ -17,7 +16,7 @@ extern u16 cpu_count;
 
 
 static inline u64 cpu_get_stack_top(u16 core_id){
-	return USER_STACK_TOP-core_id*(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	return UMM_STACK_TOP-core_id*(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 }
 
 

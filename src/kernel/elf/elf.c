@@ -3,6 +3,7 @@
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
@@ -56,6 +57,7 @@ void* elf_load(const char* path){
 	}
 	vmm_pagemap_t pagemap;
 	vmm_pagemap_init(&pagemap);
+	umm_init_pagemap(&pagemap);
 	elf_header_t header;
 	if (fs_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		goto _error;
@@ -94,12 +96,9 @@ void* elf_load(const char* path){
 			goto _error;
 		}
 	}
-	for (u16 i=0;i<cpu_count;i++){
-		vmm_map_pages(&pagemap,cpu_get_stack(i),cpu_get_stack_top(i)-(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT),VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,USER_STACK_PAGE_COUNT);
-	}
 	vmm_pagemap_deinit(&vmm_user_pagemap);
 	vmm_user_pagemap=pagemap;
-	mmap_set_range(highest_address,cpu_get_stack_top(cpu_count));
+	mmap_set_range(highest_address,umm_highest_free_address);
 	fd_clear();
 	return (void*)(header.e_entry);
 _error:
