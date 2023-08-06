@@ -1,5 +1,18 @@
 # User library
 
+The user library consists of multiple header files:
+- [`user/clock.h`](#time-measurement-userclockh)
+- [`user/cpu.h`](#cpu-usercpuh)
+- [`user/drive.h`](#drive-enumeration-userdriveh)
+- [`user/elf.h`](#elf-loading-userelfh)
+- [`user/fs.h`](#file-system-operations-userfsh)
+- [`user/io.h`](#i/o-userioh)
+- [`user/memory.h`](#memory-allocation-usermemoryh)
+- [`user/network.h`](#networking-usernetworkh)
+- [`user/partition.h`](#partition-enumeration-userpartitionh)
+- [`user/system.h`](#system-state-manipulation-usersystemh)
+- [`user/types.h`](#common-types-usertypesh)
+
 ## Time measurement (`user/clock.h`)
 
 ### Variables
@@ -229,7 +242,7 @@ int fs_get_relative(int fd,u8 relative,u8 flags);
 int fs_move(int fd,int dst_fd);
 ```
 
-## I/O (`user/IO.h`)
+## I/O (`user/io.h`)
 
 ### Functions
 
