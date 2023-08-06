@@ -151,7 +151,7 @@ _smbios_found:
 						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH;
 						break;
 					case 8:
-						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH;
+						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_AC_POWER;
 						break;
 					default:
 						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
@@ -190,4 +190,15 @@ _smbios_found:
 		bios_data.uuid[14],
 		bios_data.uuid[15]
 	);
+	switch (bios_data.wakeup_type){
+		case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
+			INFO("  Last wakeup: Unknown");
+			break;
+		case BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH:
+			INFO("  Last wakeup: Power switch");
+			break;
+		case BIOS_DATA_WAKEUP_TYPE_AC_POWER:
+			INFO("  Last wakeup: AC power");
+			break;
+	}
 }
