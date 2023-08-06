@@ -51,9 +51,13 @@ Converts clock cycles to nanoseconds using the current CPU clock frequency.
 extern u32 cpu_count;
 ```
 
+Number of CPU cores.
+
 ```c
 extern u32 cpu_bsp_id;
 ```
+
+Index of the bootstrap CPU core.
 
 ### Functions
 
@@ -61,9 +65,13 @@ extern u32 cpu_bsp_id;
 void cpu_core_start(u32 core,void* func,void* arg);
 ```
 
+Invokes the functions `func` with the argument `arg` on core `core`.
+
 ```c
 void cpu_core_stop(void);
 ```
+
+Stops code execution on the current core. If the current core is the bootstrap core, the system is shutdown. Otherwise, execution on the current core can be resumed via a call to `cpu_core_start`.
 
 ## Drive enumeration (`user/drive.h`)
 
