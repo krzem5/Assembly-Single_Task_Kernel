@@ -9,7 +9,7 @@ void reboot_main(int argc,const char*const* argv){
 		printf("reboot: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	shutdown(SHUTDOWN_FLAG_RESTART);
+	system_shutdown(SHUTDOWN_FLAG_RESTART);
 }
 
 

@@ -21,6 +21,7 @@ global _syscall_network_send
 global _syscall_network_poll
 global _syscall_network_config
 global _syscall_system_shutdown
+global _syscall_system_config
 global _syscall_memory_map
 global _syscall_memory_unmap
 global _syscall_memory_stats
@@ -194,42 +195,50 @@ _syscall_system_shutdown:
 
 
 
-_syscall_memory_map:
+_syscall_system_config:
 	mov rax, 23
 	syscall
 	ret
 
 
 
-_syscall_memory_unmap:
+_syscall_memory_map:
 	mov rax, 24
 	syscall
 	ret
 
 
 
-_syscall_memory_stats:
+_syscall_memory_unmap:
 	mov rax, 25
 	syscall
 	ret
 
 
 
-_syscall_clock_get_converion:
+_syscall_memory_stats:
 	mov rax, 26
 	syscall
 	ret
 
 
 
-_syscall_drive_format:
+_syscall_clock_get_converion:
 	mov rax, 27
 	syscall
 	ret
 
 
 
-_syscall_drive_stats:
+_syscall_drive_format:
 	mov rax, 28
 	syscall
 	ret
+
+
+
+_syscall_drive_stats:
+	mov rax, 29
+	syscall
+	ret
+

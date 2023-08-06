@@ -22,6 +22,7 @@ extern _clock_init
 extern _cpu_init
 extern _drive_init
 extern _partition_init
+extern _system_init
 extern main
 global _start
 section .text
@@ -68,6 +69,7 @@ _start:
 	call _cpu_init
 	call _drive_init
 	call _partition_init
+	call _system_init
 	;;; Start user code
 	call main
 	;;; Shutdown CPU

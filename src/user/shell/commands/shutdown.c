@@ -17,7 +17,7 @@ void shutdown_main(int argc,const char*const* argv){
 			return;
 		}
 	}
-	shutdown(flags);
+	system_shutdown(flags);
 }
 
 

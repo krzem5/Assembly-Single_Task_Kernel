@@ -96,6 +96,10 @@ void _syscall_system_shutdown(u32 flags);
 
 
 
+_Bool _syscall_system_config(void* buffer,u32 size);
+
+
+
 void* _syscall_memory_map(u64 length,u32 flags);
 
 

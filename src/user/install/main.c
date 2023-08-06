@@ -114,5 +114,5 @@ _copy_kernel_files:
 	if (!out){
 		goto _start_shell;
 	}
-	shutdown(SHUTDOWN_FLAG_RESTART);
+	system_shutdown(SHUTDOWN_FLAG_RESTART);
 }

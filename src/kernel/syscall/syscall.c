@@ -1,4 +1,5 @@
 #include <kernel/acpi/syscall.h>
+#include <kernel/bios/syscall.h>
 #include <kernel/clock/syscall.h>
 #include <kernel/cpu/syscall.h>
 #include <kernel/drive/syscall.h>
@@ -17,7 +18,7 @@
 
 
 
-#define SYSCALL_COUNT 29
+#define SYSCALL_COUNT 30
 
 
 
@@ -57,12 +58,13 @@ void syscall_init(void){
 	_syscall_handlers[20]=syscall_network_poll;
 	_syscall_handlers[21]=syscall_network_config;
 	_syscall_handlers[22]=syscall_system_shutdown;
-	_syscall_handlers[23]=syscall_memory_map;
-	_syscall_handlers[24]=syscall_memory_unmap;
-	_syscall_handlers[25]=syscall_memory_stats;
-	_syscall_handlers[26]=syscall_clock_get_converion;
-	_syscall_handlers[27]=syscall_drive_format;
-	_syscall_handlers[28]=syscall_drive_stats;
+	_syscall_handlers[23]=syscall_system_config;
+	_syscall_handlers[24]=syscall_memory_map;
+	_syscall_handlers[25]=syscall_memory_unmap;
+	_syscall_handlers[26]=syscall_memory_stats;
+	_syscall_handlers[27]=syscall_clock_get_converion;
+	_syscall_handlers[28]=syscall_drive_format;
+	_syscall_handlers[29]=syscall_drive_stats;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }
 
