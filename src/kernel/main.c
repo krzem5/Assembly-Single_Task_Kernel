@@ -1,4 +1,5 @@
 #include <kernel/acpi/acpi.h>
+#include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive_list.h>
@@ -50,5 +51,6 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	isr_init();
 	acpi_load();
 	network_layer2_init();
+	bios_get_system_data();
 	cpu_start_all_cores();
 }

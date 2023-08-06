@@ -110,14 +110,13 @@ void cpu_start_all_cores(void){
 		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
 		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 			__pause();
-
 		}
 		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
 		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_DELIVERY_MODE_INIT;
 		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 			__pause();
 		}
-		for (u64 j=0;j<0xfff;j++){
+		for (u32 j=0;j<0xfff;j++){
 			__pause();
 		}
 		for (u8 j=0;j<2;j++){

@@ -51,8 +51,8 @@ void acpi_load(void){
 	const rsdp_t* rsdp=NULL;
 	while (range[0]){
 		INFO("Searching memory range %p - %p...",range[0],range[1]);
-		u64* start=VMM_TRANSLATE_ADDRESS(range[0]);
-		u64* end=VMM_TRANSLATE_ADDRESS(range[1]);
+		const u64* start=VMM_TRANSLATE_ADDRESS(range[0]);
+		const u64* end=VMM_TRANSLATE_ADDRESS(range[1]);
 		while (start!=end){
 			if (start[0]==0x2052545020445352ull){
 				rsdp=(void*)start;
