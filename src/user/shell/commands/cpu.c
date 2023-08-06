@@ -11,7 +11,7 @@ void cpu_main(int argc,const char*const* argv){
 		printf("cpu: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	printf("CPU count: %u\nCPU frequency: %lu MHz\n",cpu_count,(clock_cpu_frequency+500000)/1000000);
+	printf("CPU count: \x1b[1m%u\x1b[0m\nCPU frequency: \x1b[1m%lu MHz\x1b[0m\n",cpu_count,(clock_cpu_frequency+500000)/1000000);
 }
 
 
