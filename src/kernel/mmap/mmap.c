@@ -34,7 +34,7 @@ void mmap_set_range(u64 from,u64 to){
 
 u64 mmap_alloc(u64 length,u8 flags){
 	u64 size=PAGE_SIZE;
-	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_COUNT_MASK|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|VMM_MAP_WITH_COUNT|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	if (flags&MMAP_FLAG_EXTRA_LARGE){
 		size=EXTRA_LARGE_PAGE_SIZE;
 		length=pmm_align_up_address_extra_large(length);

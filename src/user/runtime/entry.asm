@@ -1,5 +1,4 @@
 %define CPU_DATA_SIZE_SHIFT 3
-%define CPU_DATA_SIZE 8
 
 
 
