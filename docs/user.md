@@ -21,6 +21,8 @@ The user library consists of multiple header files:
 extern u64 clock_cpu_frequency;
 ```
 
+Current clock frequency of the CPU.
+
 ### Functions
 
 ```c
@@ -31,13 +33,19 @@ void clock_init(void);
 u64 clock_get_ticks(void);
 ```
 
+Returns the number of clock cycles since boot.
+
 ```c
 u64 clock_get_time(void);
 ```
 
+Returns the elapsed time (in nanoseconds) since boot.
+
 ```c
 u64 clock_ticks_to_time(u64 ticks);
 ```
+
+Converts clock cycles to nanoseconds using the current CPU clock frequency.
 
 ## CPU (`user/cpu.h`)
 
