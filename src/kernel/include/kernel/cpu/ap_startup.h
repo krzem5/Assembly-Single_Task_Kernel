@@ -8,7 +8,11 @@
 
 
 
-void cpu_ap_startup_init(u32 kernel_toplevel_pagemap);
+void cpu_ap_startup_init(void);
+
+
+
+void cpu_ap_startup_deinit(void);
 
 
 

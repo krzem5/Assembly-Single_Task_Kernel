@@ -33,7 +33,7 @@ u8 cpu_bsp_core_id;
 
 
 
-void _cpu_start_ap(void){
+void _cpu_init_core(void){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
@@ -97,8 +97,7 @@ void cpu_register_core(u8 apic_id){
 
 void cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
-	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
-	cpu_ap_startup_init((u32)(u64)(vmm_kernel_pagemap.toplevel));
+	cpu_ap_startup_init();
 	for (u16 i=0;i<cpu_count;i++){
 		if (!((_cpu_data+i)->flags&CPU_FLAG_PRESENT)){
 			ERROR("Unused CPU core: #%u",i);
@@ -139,8 +138,8 @@ void cpu_start_all_cores(void){
 			__pause();
 		}
 	}
-	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
-	_cpu_start_ap();
+	cpu_ap_startup_deinit();
+	_cpu_init_core();
 }
 
 
