@@ -1,5 +1,5 @@
-#ifndef _KERNEL_IDT_ISR_H_
-#define _KERNEL_IDT_ISR_H_ 1
+#ifndef _KERNEL_ISR_ISR_H_
+#define _KERNEL_ISR_ISR_H_ 1
 #include <kernel/types.h>
 
 

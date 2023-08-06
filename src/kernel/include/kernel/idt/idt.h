@@ -4,11 +4,15 @@
 
 
 
-void idt_enable(void);
+void idt_init(void);
 
 
 
 void idt_set_entry(u8 index,void* callback,u8 ist,u8 flags);
+
+
+
+void idt_enable(void);
 
 
 

@@ -8,8 +8,8 @@
 #include <kernel/driver/nvme.h>
 #include <kernel/elf/elf.h>
 #include <kernel/fd/fd.h>
-#include <kernel/partition/partition.h>
-#include <kernel/idt/isr.h>
+#include <kernel/idt/idt.h>
+#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -17,6 +17,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
+#include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -46,6 +47,7 @@ void KERNEL_CORE_CODE main(void){
 	fd_init();
 	mmap_init();
 	syscall_init();
+	idt_init();
 	isr_init();
 	acpi_load();
 	network_layer2_init();
