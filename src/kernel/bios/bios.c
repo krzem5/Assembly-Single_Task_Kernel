@@ -154,7 +154,14 @@ _smbios_found:
 				if (!serial_number_found){
 					_copy_string(_get_header_string(header,header->system_information.serial_number),_bios_data.serial_number);
 				}
-				for (u8 i=0;i<16;i++){
+				for (u8 i=0;i<4;i++){
+					_bios_data.uuid[i]=header->system_information.uuid[3-i];
+				}
+				for (u8 i=0;i<2;i++){
+					_bios_data.uuid[i+4]=header->system_information.uuid[5-i];
+					_bios_data.uuid[i+6]=header->system_information.uuid[7-i];
+				}
+				for (u8 i=8;i<16;i++){
 					_bios_data.uuid[i]=header->system_information.uuid[i];
 				}
 				switch (header->system_information.wakeup_type){
@@ -174,10 +181,32 @@ _smbios_found:
 				serial_number_found=1;
 				break;
 		}
-		for (u8 i=1;_get_header_string(header,i)[0];i++){
-			WARN("[%u:%u] %s",header->type,i,_get_header_string(header,i));
-		}
 		offset+=_get_header_length(header);
 	}
+	INFO("BIOS data:");
+	INFO("  BIOS vendor: %s",_bios_data.bios_vendor);
+	INFO("  BIOS version: %s",_bios_data.bios_version);
+	INFO("  Manufacturer: %s",_bios_data.manufacturer);
+	INFO("  Product: %s",_bios_data.product);
+	INFO("  Version: %s",_bios_data.version);
+	INFO("  Serial number: %s",_bios_data.serial_number);
+	INFO("  UUID: %x%x%x%x-%x%x-%x%x-%x%x-%x%x%x%x%x%x",
+		_bios_data.uuid[0],
+		_bios_data.uuid[1],
+		_bios_data.uuid[2],
+		_bios_data.uuid[3],
+		_bios_data.uuid[4],
+		_bios_data.uuid[5],
+		_bios_data.uuid[6],
+		_bios_data.uuid[7],
+		_bios_data.uuid[8],
+		_bios_data.uuid[9],
+		_bios_data.uuid[10],
+		_bios_data.uuid[11],
+		_bios_data.uuid[12],
+		_bios_data.uuid[13],
+		_bios_data.uuid[14],
+		_bios_data.uuid[15]
+	);
 	for (;;);
 }
