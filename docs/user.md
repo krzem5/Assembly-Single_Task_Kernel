@@ -328,6 +328,13 @@ typedef struct _NETWORK_PACKET{
 } network_packet_t;
 ```
 
+```c
+typedef struct _NETWORK_CONFIG{
+	char name[16];
+	u8 address[6];
+} network_config_t;
+```
+
 ### Functions
 
 ```c
@@ -336,6 +343,10 @@ _Bool network_send(const network_packet_t* packet);
 
 ```c
 _Bool network_poll(network_packet_t* packet);
+```
+
+```c
+_Bool network_config(network_config_t* config);
 ```
 
 ## Partition enumeration (`user/partition.h`)

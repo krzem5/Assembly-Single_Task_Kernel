@@ -13,11 +13,22 @@ typedef struct _NETWORK_PACKET{
 
 
 
+typedef struct _NETWORK_CONFIG{
+	char name[16];
+	u8 address[6];
+} network_config_t;
+
+
+
 _Bool network_send(const network_packet_t* packet);
 
 
 
 _Bool network_poll(network_packet_t* packet);
+
+
+
+_Bool network_config(network_config_t* config);
 
 
 

@@ -4,11 +4,15 @@
 
 
 
-void syscall_net_send(syscall_registers_t* regs);
+void syscall_network_send(syscall_registers_t* regs);
 
 
 
-void syscall_net_poll(syscall_registers_t* regs);
+void syscall_network_poll(syscall_registers_t* regs);
+
+
+
+void syscall_network_config(syscall_registers_t* regs);
 
 
 

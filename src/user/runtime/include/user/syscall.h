@@ -80,11 +80,15 @@ s32 _syscall_fd_move(s32 fd,u32 dst_fd);
 
 
 
-_Bool _syscall_net_send(const void* packet,u32 length);
+_Bool _syscall_network_send(const void* packet,u32 length);
 
 
 
-_Bool _syscall_net_poll(void* packet,u32 length);
+_Bool _syscall_network_poll(void* packet,u32 length);
+
+
+
+_Bool _syscall_network_config(void* buffer,u32 length);
 
 
 
