@@ -117,7 +117,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 void KERNEL_CORE_CODE partition_init(void){
-	LOG_CORE("Initializing file system...");
+	LOG_CORE("Initializing partition list...");
 	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_PARTITIONS*sizeof(partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
 	partition_count=0;
 	partition_boot_index=FS_INVALID_PARTITION_INDEX;
@@ -127,7 +127,7 @@ void KERNEL_CORE_CODE partition_init(void){
 
 void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
 	if (partition_count>=FS_MAX_PARTITIONS){
-		ERROR_CORE("Too many file systems!");
+		ERROR_CORE("Too many partitions!");
 		return NULL;
 	}
 	partition_t* fs=partition_data+partition_count;
