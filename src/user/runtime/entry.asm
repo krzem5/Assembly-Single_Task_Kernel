@@ -43,6 +43,7 @@ _start:
 	call _syscall_memory_map
 	mov r15, rax
 	;;; Reset all cores & initialize gs bases
+	mov dword [_start_core_count], 1
 ._next_core:
 	CALCULATE_CPU_DATA_POINTER r14, rdx
 	mov qword [rdx], r14
@@ -57,6 +58,11 @@ _start:
 	jne ._next_core
 	CALCULATE_CPU_DATA_POINTER r13, rax
 	wrgsbase rax
+	;;; Synchronize cores
+._wait_for_cores:
+	cmp dword [_start_core_count], r12d
+	pause
+	jne ._wait_for_cores
 	;;; Call initializers
 	call _clock_init
 	call _cpu_init
@@ -71,4 +77,14 @@ _start:
 
 _start_core:
 	wrgsbase rdi
+	lock add dword [_start_core_count], 1
 	jmp _syscall_cpu_core_stop
+
+
+
+section .data
+
+
+
+_start_core_count:
+	dd 0

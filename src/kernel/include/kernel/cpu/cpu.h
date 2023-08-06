@@ -52,7 +52,7 @@ void cpu_register_core(u8 apic_id);
 
 
 
-void cpu_start_all_cores(void);
+void KERNEL_NORETURN cpu_start_all_cores(void);
 
 
 

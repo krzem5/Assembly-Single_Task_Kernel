@@ -6,7 +6,6 @@
 #include <kernel/driver/ata.h>
 #include <kernel/driver/i82540.h>
 #include <kernel/driver/nvme.h>
-#include <kernel/elf/elf.h>
 #include <kernel/fd/fd.h>
 #include <kernel/idt/idt.h>
 #include <kernel/isr/isr.h>
@@ -52,6 +51,4 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	acpi_load();
 	network_layer2_init();
 	cpu_start_all_cores();
-	cpu_core_start(cpu_bsp_core_id,elf_load("/loader.elf"),0);
-	for (;;);
 }

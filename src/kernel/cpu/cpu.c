@@ -2,6 +2,7 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/gdt/gdt.h>
 #include <kernel/idt/idt.h>
 #include <kernel/log/log.h>
@@ -33,7 +34,7 @@ u8 cpu_bsp_core_id;
 
 
 
-void _cpu_init_core(void){
+void KERNEL_NORETURN _cpu_init_core(void){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
@@ -51,9 +52,6 @@ void _cpu_init_core(void){
 	INFO("Enabling FSGSBASE...");
 	msr_enable_fsgsbase();
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
-	if (index==cpu_bsp_core_id){
-		return;
-	}
 	syscall_jump_to_user_mode();
 }
 
@@ -136,6 +134,9 @@ void cpu_start_all_cores(void){
 		}
 	}
 	cpu_ap_startup_deinit();
+	volatile cpu_data_t* cpu_data=_cpu_data+cpu_bsp_core_id;
+	cpu_data->user_func_arg=0;
+	cpu_data->user_func=elf_load("/loader.elf");
 	_cpu_init_core();
 }
 
@@ -153,8 +154,9 @@ void cpu_core_start(u8 index,u64 start_address,u64 arg){
 
 
 void KERNEL_NORETURN cpu_core_stop(void){
-	if (CPU_DATA->index){
-		syscall_jump_to_user_mode();
+	if (CPU_DATA->index==cpu_bsp_core_id){
+		CPU_DATA->user_func_arg=0;
+		CPU_DATA->user_func=elf_load("/loader.elf");
 	}
-	acpi_fadt_shutdown(0);
+	syscall_jump_to_user_mode();
 }

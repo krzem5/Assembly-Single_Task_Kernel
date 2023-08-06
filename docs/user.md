@@ -71,7 +71,7 @@ Invokes the functions `func` with the argument `arg` on core `core`.
 void cpu_core_stop(void);
 ```
 
-Stops code execution on the current core. If the current core is the bootstrap core, the system is shutdown. Otherwise, execution on the current core can be resumed via a call to `cpu_core_start`.
+Stops code execution on the current core. If the current core is the bootstrap core, the system is soft-restarted. Otherwise, execution on the current core can be resumed via a call to `cpu_core_start`.
 
 ## Drive enumeration (`user/drive.h`)
 
