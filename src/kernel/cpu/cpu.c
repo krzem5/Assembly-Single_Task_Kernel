@@ -155,7 +155,7 @@ void cpu_core_start(u8 index,u64 start_address,u64 arg){
 
 
 
-void cpu_core_stop(void){
+void KERNEL_NORETURN cpu_core_stop(void){
 	if (CPU_DATA->index){
 		syscall_jump_to_user_mode();
 	}

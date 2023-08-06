@@ -134,6 +134,7 @@ global cpu_ap_startup_deinit
 global cpu_ap_startup_set_stack_top
 extern vmm_kernel_pagemap
 extern vmm_map_page
+extern vmm_unmap_page
 section .text
 
 
@@ -158,8 +159,7 @@ cpu_ap_startup_init:
 cpu_ap_startup_deinit:
 	lea rdi, vmm_kernel_pagemap
 	mov rsi, CPU_AP_STARTUP_MEMORY_ADDRESS
-	call vmm_unmap_page
-	ret
+	jmp vmm_unmap_page
 
 
 
