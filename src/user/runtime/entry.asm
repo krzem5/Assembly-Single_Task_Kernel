@@ -18,6 +18,10 @@ extern _syscall_cpu_core_count
 extern _syscall_cpu_core_start
 extern _syscall_cpu_core_stop
 extern _syscall_memory_map
+extern _clock_init
+extern _cpu_init
+extern _drive_init
+extern _partition_init
 extern main
 global _start
 section .text
@@ -53,6 +57,11 @@ _start:
 	jne ._next_core
 	CALCULATE_CPU_DATA_POINTER r13, rax
 	wrgsbase rax
+	;;; Call initializers
+	call _clock_init
+	call _cpu_init
+	call _drive_init
+	call _partition_init
 	;;; Start user code
 	call main
 	;;; Shutdown CPU

@@ -74,8 +74,6 @@ static u32 _partition_name_to_path(char* path,const char* name){
 
 
 void main(void){
-	drive_init();
-	partition_init();
 	char path[64];
 	const partition_t* partition=partitions;
 	for (u32 i=0;i<partition_count;i++){

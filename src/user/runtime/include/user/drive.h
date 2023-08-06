@@ -49,10 +49,6 @@ extern u32 drive_boot_index;
 
 
 
-void drive_init(void);
-
-
-
 _Bool drive_format(u32 index,const void* boot,u32 boot_length);
 
 

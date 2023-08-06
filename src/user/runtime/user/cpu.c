@@ -8,7 +8,7 @@ u32 cpu_bsp_id;
 
 
 
-void cpu_init(void){
+void _cpu_init(void){
 	u64 data=_syscall_cpu_core_count();
 	cpu_count=data;
 	cpu_bsp_id=data>>32;

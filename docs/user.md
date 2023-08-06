@@ -26,10 +26,6 @@ Current clock frequency of the CPU.
 ### Functions
 
 ```c
-void clock_init(void);
-```
-
-```c
 u64 clock_get_ticks(void);
 ```
 
@@ -60,10 +56,6 @@ extern u32 cpu_bsp_id;
 ```
 
 ### Functions
-
-```c
-void cpu_init(void);
-```
 
 ```c
 void cpu_core_start(u32 core,void* func,void* arg);
@@ -131,10 +123,6 @@ extern u32 drive_boot_index;
 ```
 
 ### Functions
-
-```c
-void drive_init(void);
-```
 
 ```c
 _Bool drive_format(u32 index,const void* boot,u32 boot_length);
@@ -387,12 +375,6 @@ extern u32 partition_count;
 
 ```c
 extern u32 partition_boot_index;
-```
-
-### Functions
-
-```c
-void partition_init(void);
 ```
 
 ## System state manipulation (`user/system.h`)

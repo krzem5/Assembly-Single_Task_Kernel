@@ -39,8 +39,4 @@ extern u32 partition_boot_index;
 
 
 
-void partition_init(void);
-
-
-
 #endif

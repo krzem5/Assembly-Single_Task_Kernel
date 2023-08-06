@@ -1,6 +1,6 @@
 extern _syscall_clock_get_converion
 global clock_cpu_frequency
-global clock_init
+global _clock_init
 global clock_get_ticks
 global clock_get_time
 global clock_ticks_to_time
@@ -9,7 +9,7 @@ section .text
 
 
 [bits 64]
-clock_init:
+_clock_init:
 	call _syscall_clock_get_converion
 	mov qword [_clock_conversion_factor], rax
 	mov dword [_clock_conversion_shift], edx

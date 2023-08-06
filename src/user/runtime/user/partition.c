@@ -6,14 +6,11 @@
 
 partition_t __attribute__((section(".bss"))) partitions[MAX_PARTITIONS];
 u32 partition_count;
-u32 partition_boot_index=0xffffffff;
+u32 partition_boot_index;
 
 
 
-void partition_init(void){
-	if (partition_boot_index!=0xffffffff){
-		return;
-	}
+void _partition_init(void){
 	for (u32 i=0;i<MAX_PARTITIONS;i++){
 		partitions[i].flags=0;
 	}
