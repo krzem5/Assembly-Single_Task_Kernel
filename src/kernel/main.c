@@ -52,6 +52,6 @@ void KERNEL_CORE_CODE main(void){
 	acpi_load();
 	network_layer2_init();
 	cpu_start_all_cores();
-	cpu_start_program(elf_load("/loader.elf"));
+	cpu_core_start(cpu_bsp_core_id,elf_load("/loader.elf"),0);
 	for (;;);
 }

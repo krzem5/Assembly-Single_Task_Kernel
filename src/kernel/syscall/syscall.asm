@@ -39,14 +39,18 @@ section .common
 
 
 syscall_jump_to_user_mode:
+	cmp qword [gs:32], 0
+	pause
+	jz syscall_jump_to_user_mode
+	mov rcx, qword [gs:32]
+	mov rdi, qword [gs:40]
+	mov rsp, qword [gs:48]
+	mov qword [gs:32], 0
 	mov rax, qword [vmm_user_pagemap]
 	mov cr3, rax
 	mov ax, 0x18
 	mov ds, ax
 	mov es, ax
-	mov rcx, rdi
-	mov rdi, rsi
-	mov rsp, rdx
 	xor eax, eax
 	mov rbx, rax
 	mov rdx, rax
@@ -74,6 +78,8 @@ syscall_handler:
 	mov es, sp
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
+	cmp qword [gs:32], 0
+	jnz syscall_jump_to_user_mode
 	mov rsp, cr2
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]

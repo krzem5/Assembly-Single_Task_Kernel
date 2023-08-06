@@ -36,7 +36,7 @@ void syscall_enable(void);
 
 
 
-void syscall_jump_to_user_mode(u64 fn,u64 arg,u64 stack_top);
+void syscall_jump_to_user_mode(void);
 
 
 

@@ -3,7 +3,7 @@
 
 
 
-void* elf_load(const char* path);
+u64 elf_load(const char* path);
 
 
 

@@ -19,9 +19,9 @@ void syscall_elf_load(syscall_registers_t* regs){
 	}
 	memcpy(buffer,VMM_TRANSLATE_ADDRESS(address),regs->rsi);
 	buffer[regs->rsi]=0;
-	void* start_address=elf_load(buffer);
+	u64 start_address=elf_load(buffer);
 	if (!start_address){
 		return;
 	}
-	cpu_start_program(start_address);
+	cpu_core_start(cpu_bsp_core_id,start_address,0);
 }

@@ -22,50 +22,14 @@
 #define APIC_TRIGGER_MODE_LEVEL 0x8000
 #define APIC_INTR_COMMAND_1_ASSERT 0x4000
 
-#define CPU_FLAG_PRESENT 1
-#define CPU_FLAG_ONLINE 2
-
-#define ISR_STACK_SIZE 56
-
-#define CPU_DATA ((volatile __seg_gs cpu_data_t*)NULL)
-
-
-
-typedef struct _CPU_DATA{
-	u8 index;
-	u8 flags;
-	u8 _padding[5];
-	u64 kernel_rsp;
-	u64 user_rsp;
-	u64 isr_rsp;
-	u64 user_func;
-	u64 user_func_arg;
-} cpu_data_t;
-
-
-
-typedef struct _CPU_COMMON_DATA{
-	tss_t tss;
-	u8 isr_stack[ISR_STACK_SIZE];
-} cpu_common_data_t;
-
 
 
 static cpu_data_t* _cpu_data;
 static cpu_common_data_t* _cpu_common_data;
-static u8 _cpu_bsp_apic_id;
 static volatile u32* _cpu_apic_ptr;
 
 u16 cpu_count;
-
-
-
-static void _user_func_wait_loop(void){
-	while (!CPU_DATA->user_func){
-		__pause();
-	}
-	syscall_jump_to_user_mode(CPU_DATA->user_func,CPU_DATA->user_func_arg,cpu_get_stack_top(CPU_DATA->index));
-}
+u8 cpu_bsp_core_id;
 
 
 
@@ -87,10 +51,10 @@ void _cpu_start_ap(void){
 	INFO("Enabling FSGSBASE...");
 	msr_enable_fsgsbase();
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
-	if (index==_cpu_bsp_apic_id){
+	if (index==cpu_bsp_core_id){
 		return;
 	}
-	_user_func_wait_loop();
+	syscall_jump_to_user_mode();
 }
 
 
@@ -102,21 +66,24 @@ void cpu_init(u16 count,u64 apic_address){
 	_cpu_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(count*sizeof(cpu_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU));
 	u64 cpu_common_data_raw=pmm_alloc(pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
 	_cpu_common_data=VMM_TRANSLATE_ADDRESS(cpu_common_data_raw);
-	u64 user_stacks=pmm_alloc(cpu_count*USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
-	u64 kernel_stacks=pmm_alloc(cpu_count*KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
+	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
+	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
 	for (u16 i=0;i<count;i++){
-		kernel_stacks+=KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
+		kernel_stacks+=CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
 		(_cpu_data+i)->kernel_rsp=(u64)VMM_TRANSLATE_ADDRESS(kernel_stacks);
 		(_cpu_data+i)->isr_rsp=(u64)((_cpu_common_data+i)->isr_stack+ISR_STACK_SIZE);
+		(_cpu_data+i)->user_func=0;
+		(_cpu_data+i)->user_func_arg=0;
+		(_cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(_cpu_common_data+i)->tss.rsp0=(_cpu_data+i)->isr_rsp;
 	}
-	_cpu_bsp_apic_id=msr_get_apic_id();
+	cpu_bsp_core_id=msr_get_apic_id();
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
-	INFO("BSP APIC id: #%u",_cpu_bsp_apic_id);
+	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
 	umm_set_cpu_common_data(cpu_common_data_raw,pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT);
-	umm_set_user_stacks(user_stacks,cpu_count*USER_STACK_PAGE_COUNT);
+	umm_set_user_stacks(user_stacks,cpu_count*CPU_USER_STACK_PAGE_COUNT);
 }
 
 
@@ -124,8 +91,6 @@ void cpu_init(u16 count,u64 apic_address){
 void cpu_register_core(u8 apic_id){
 	LOG("Registering CPU core #%u",apic_id);
 	(_cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
-	(_cpu_data+apic_id)->user_func=0;
-	(_cpu_data+apic_id)->user_func_arg=0;
 }
 
 
@@ -139,7 +104,7 @@ void cpu_start_all_cores(void){
 			ERROR("Unused CPU core: #%u",i);
 			for (;;);
 		}
-		if (i==_cpu_bsp_apic_id){
+		if (i==cpu_bsp_core_id){
 			continue;
 		}
 		cpu_ap_startup_set_stack_top((_cpu_data+i)->kernel_rsp);
@@ -180,20 +145,20 @@ void cpu_start_all_cores(void){
 
 
 
-void cpu_start_program(void* start_address){
-	if (CPU_DATA->index!=_cpu_bsp_apic_id){
-		ERROR("Unable to start program from non-bsp CPU");
-		return;
+void cpu_core_start(u8 index,u64 start_address,u64 arg){
+	volatile cpu_data_t* cpu_data=_cpu_data+index;
+	cpu_data->user_func_arg=arg;
+	cpu_data->user_func=start_address;
+	if (CPU_DATA->index==index){
+		syscall_jump_to_user_mode();
 	}
-	syscall_jump_to_user_mode((u64)start_address,0,cpu_get_stack_top(CPU_DATA->index));
 }
 
 
 
 void cpu_core_stop(void){
 	if (CPU_DATA->index){
-		CPU_DATA->user_func=0;
-		_user_func_wait_loop();
+		syscall_jump_to_user_mode();
 	}
 	acpi_fadt_shutdown(0);
 }

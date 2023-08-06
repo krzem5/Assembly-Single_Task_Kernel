@@ -48,12 +48,12 @@ typedef struct _ELF_PROGRAM_HEADER{
 
 
 
-void* elf_load(const char* path){
+u64 elf_load(const char* path){
 	LOG("Loading ELF executable '%s'...",path);
 	fs_node_t* node=fs_get_by_path(NULL,path,0);
 	if (!node){
 		ERROR("File '%s' not found",path);
-		return NULL;
+		return 0;
 	}
 	vmm_pagemap_t pagemap;
 	vmm_pagemap_init(&pagemap);
@@ -100,9 +100,9 @@ void* elf_load(const char* path){
 	vmm_user_pagemap=pagemap;
 	mmap_set_range(highest_address,umm_highest_free_address);
 	fd_clear();
-	return (void*)(header.e_entry);
+	return header.e_entry;
 _error:
 	ERROR("Unable to load ELF file");
 	vmm_pagemap_deinit(&pagemap);
-	return NULL;
+	return 0;
 }

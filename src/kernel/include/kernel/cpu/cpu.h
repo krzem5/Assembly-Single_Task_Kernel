@@ -1,23 +1,46 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
+#include <kernel/gdt/gdt.h>
+#include <kernel/isr/isr.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/types.h>
 
 
 
-#define KERNEL_STACK_PAGE_COUNT 8
-#define USER_STACK_PAGE_COUNT 8
+#define CPU_KERNEL_STACK_PAGE_COUNT 8
+#define CPU_USER_STACK_PAGE_COUNT 8
+
+#define CPU_FLAG_PRESENT 1
+#define CPU_FLAG_ONLINE 2
+
+#define CPU_DATA ((volatile __seg_gs cpu_data_t*)NULL)
+
+
+
+typedef struct _CPU_DATA{
+	u8 index;
+	u8 flags;
+	u8 _padding[5];
+	u64 kernel_rsp;
+	u64 user_rsp;
+	u64 isr_rsp;
+	u64 user_func;
+	u64 user_func_arg;
+	u64 user_rsp_top;
+} cpu_data_t;
+
+
+
+typedef struct _CPU_COMMON_DATA{
+	tss_t tss;
+	u8 isr_stack[ISR_STACK_SIZE];
+} cpu_common_data_t;
 
 
 
 extern u16 cpu_count;
-
-
-
-static inline u64 cpu_get_stack_top(u16 core_id){
-	return UMM_STACK_TOP-core_id*(USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-}
+extern u8 cpu_bsp_core_id;
 
 
 
@@ -33,7 +56,7 @@ void cpu_start_all_cores(void);
 
 
 
-void cpu_start_program(void* start_address);
+void cpu_core_start(u8 index,u64 start_address,u64 arg);
 
 
 

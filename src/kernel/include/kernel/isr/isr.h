@@ -4,6 +4,10 @@
 
 
 
+#define ISR_STACK_SIZE 56
+
+
+
 void isr_init(void);
 
 

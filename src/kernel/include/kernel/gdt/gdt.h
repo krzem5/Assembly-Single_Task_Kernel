@@ -1,5 +1,6 @@
 #ifndef _KERNEL_GDT_GDT_H_
 #define _KERNEL_GDT_GDT_H_ 1
+#include <kernel/types.h>
 
 
 

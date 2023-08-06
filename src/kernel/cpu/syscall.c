@@ -12,7 +12,7 @@ void syscall_cpu_core_count(syscall_registers_t* regs){
 
 
 void syscall_cpu_core_start(syscall_registers_t* regs){
-	WARN("Unimplemented: syscall_cpu_core_start");
+	cpu_core_start(regs->rdi,regs->rsi,regs->rdx);
 }
 
 
