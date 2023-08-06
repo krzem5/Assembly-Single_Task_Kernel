@@ -1,5 +1,6 @@
 #include <kernel/acpi/fadt.h>
 #include <kernel/syscall/syscall.h>
+#include <kernel/types.h>
 
 
 
@@ -7,6 +8,6 @@
 
 
 
-void syscall_system_shutdown(syscall_registers_t* regs){
+void KERNEL_NORETURN syscall_system_shutdown(syscall_registers_t* regs){
 	acpi_fadt_shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
 }

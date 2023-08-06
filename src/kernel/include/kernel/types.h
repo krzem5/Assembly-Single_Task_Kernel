@@ -6,6 +6,8 @@
 #define KERNEL_CORE_CODE __attribute__((section(".ctext")))
 #define KERNEL_CORE_DATA __attribute__((section(".cdata")))
 #define KERNEL_CORE_RDATA __attribute__((section(".crdata")))
+#define KERNEL_NORETURN __attribute__((noreturn))
+#define KERNEL_NOOPT __attribute__((noipa,optimize("O0")))
 
 
 

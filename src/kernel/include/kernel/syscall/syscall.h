@@ -36,7 +36,7 @@ void syscall_enable(void);
 
 
 
-void syscall_jump_to_user_mode(void);
+void KERNEL_NORETURN syscall_jump_to_user_mode(void);
 
 
 

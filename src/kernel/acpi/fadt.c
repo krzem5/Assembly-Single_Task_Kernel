@@ -84,10 +84,10 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 
 
-void acpi_fadt_shutdown(_Bool restart){
+void KERNEL_NORETURN acpi_fadt_shutdown(_Bool restart){
 	partition_flush_cache();
 	for (u64 i=0;i<0xffff;i++){
-		__pause(); // ensure FS cache flushes properly
+		__pause(); // ensure cache flushes properly
 	}
 	if (restart){
 		_acpi_fadt_reboot();
