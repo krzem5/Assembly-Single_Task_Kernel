@@ -4,7 +4,7 @@
 
 
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 
 #define FLAG_SHORT_SHORT 1
 #define FLAG_SHORT 2
