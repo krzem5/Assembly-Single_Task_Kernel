@@ -13,4 +13,12 @@ void cpu_init(void);
 
 
 
+void cpu_core_start(u32 core,void* func,void* arg);
+
+
+
+void cpu_core_stop(void);
+
+
+
 #endif
