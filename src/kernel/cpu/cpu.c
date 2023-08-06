@@ -126,9 +126,6 @@ void cpu_start_all_cores(void){
 			_cpu_apic_ptr[160]=0;
 			_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
 			_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff0f800)|APIC_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT);
-			for (u64 j=0;j<0xfff;j++){
-				__pause();
-			}
 			while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
 				__pause();
 			}
