@@ -259,5 +259,7 @@ if ("--run" in sys.argv):
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
 		"-cpu","host,tsc,invtsc","-smp","2","-accel","kvm",
-		"-nographic","-display","none"
+		"-nographic","-display","none",
+		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
+		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])

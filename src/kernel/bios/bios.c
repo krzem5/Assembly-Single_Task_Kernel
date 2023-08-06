@@ -39,8 +39,35 @@ typedef struct __attribute__((packed)) _SMBIO_HEADER{
 			u8 uuid[16];
 			u8 wakeup_type;
 		} system_information;
+		struct __attribute__((packed)){
+			u8 _padding[3];
+			u8 serial_number;
+		} baseboard_information;
 	};
 } smbios_header_t;
+
+
+
+#define BIOS_DATA_WAKEUP_TYPE_UNKNOWN 0
+#define BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH 1
+#define BIOS_DATA_WAKEUP_TYPE_AC_POWER 2
+
+
+
+typedef struct _BIOS_DATA{
+	char bios_vendor[65];
+	char bios_version[65];
+	char manufacturer[65];
+	char product[65];
+	char version[65];
+	char serial_number[65];
+	u8 uuid[16];
+	u8 wakeup_type;
+} bios_data_t;
+
+
+
+static bios_data_t _bios_data;
 
 
 
@@ -71,6 +98,19 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
+static void _copy_string(const char* src,char* dst){
+	while (1){
+		*dst=*src;
+		if (!*dst){
+			return;
+		}
+		src++;
+		dst++;
+	}
+}
+
+
+
 void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	INFO("Searching memory range %p - %p...",SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END);
@@ -89,43 +129,49 @@ void bios_get_system_data(void){
 _smbios_found:
 	INFO("Found SMBIOS at %p (revision %u.%u)",VMM_TRANSLATE_ADDRESS_REVERSE(smbios),smbios->major_version,smbios->minor_version);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
+	_bios_data.bios_vendor[0]=0;
+	_bios_data.bios_version[0]=0;
+	_bios_data.manufacturer[0]=0;
+	_bios_data.product[0]=0;
+	_bios_data.version[0]=0;
+	_bios_data.serial_number[0]=0;
+	for (u8 i=0;i<16;i++){
+		_bios_data.uuid[i]=0;
+	}
+	_bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
+	_Bool serial_number_found=0;
 	for (u64 offset=smbios->table_address;offset<smbios->table_address+smbios->table_length;){
 		const smbios_header_t* header=VMM_TRANSLATE_ADDRESS(offset);
 		switch (header->type){
 			case 0:
-				INFO("%s, %s",_get_header_string(header,header->bios_information.vendor),_get_header_string(header,header->bios_information.bios_version));
+				_copy_string(_get_header_string(header,header->bios_information.vendor),_bios_data.bios_vendor);
+				_copy_string(_get_header_string(header,header->bios_information.bios_version),_bios_data.bios_version);
 				break;
 			case 1:
-				INFO("%s, %s, %s",_get_header_string(header,header->system_information.manufacturer),_get_header_string(header,header->system_information.product_name),_get_header_string(header,header->system_information.version));
-				INFO("%s, %x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x, %u",_get_header_string(header,header->system_information.manufacturer),
-					header->system_information.uuid[0],
-					header->system_information.uuid[1],
-					header->system_information.uuid[2],
-					header->system_information.uuid[3],
-					header->system_information.uuid[4],
-					header->system_information.uuid[5],
-					header->system_information.uuid[6],
-					header->system_information.uuid[7],
-					header->system_information.uuid[8],
-					header->system_information.uuid[9],
-					header->system_information.uuid[10],
-					header->system_information.uuid[11],
-					header->system_information.uuid[12],
-					header->system_information.uuid[13],
-					header->system_information.uuid[14],
-					header->system_information.uuid[15],
-					header->system_information.wakeup_type
-				);
-				// System information
-				// wakeup_type=0 <=> Reserved
-				// wakeup_type=1 <=> Other
-				// wakeup_type=2 <=> Unknown
-				// wakeup_type=3 <=> APM Timer
-				// wakeup_type=4 <=> Modem Ring
-				// wakeup_type=5 <=> LAN Remote
-				// wakeup_type=6 <=> Power Switch
-				// wakeup_type=7 <=> PCI PME#
-				// wakeup_type=8 <=> AC Power Restored
+				_copy_string(_get_header_string(header,header->system_information.manufacturer),_bios_data.manufacturer);
+				_copy_string(_get_header_string(header,header->system_information.product_name),_bios_data.product);
+				_copy_string(_get_header_string(header,header->system_information.version),_bios_data.version);
+				if (!serial_number_found){
+					_copy_string(_get_header_string(header,header->system_information.serial_number),_bios_data.serial_number);
+				}
+				for (u8 i=0;i<16;i++){
+					_bios_data.uuid[i]=header->system_information.uuid[i];
+				}
+				switch (header->system_information.wakeup_type){
+					case 6:
+						_bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH;
+						break;
+					case 8:
+						_bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH;
+						break;
+					default:
+						_bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
+						break;
+				}
+				break;
+			case 2:
+				_copy_string(_get_header_string(header,header->baseboard_information.serial_number),_bios_data.serial_number);
+				serial_number_found=1;
 				break;
 		}
 		for (u8 i=1;_get_header_string(header,i)[0];i++){
