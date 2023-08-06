@@ -72,7 +72,7 @@ section .common
 _isr_common_handler:
 	mov rsp, cr3
 	cmp rsp, qword [vmm_common_kernel_pagemap]
-	je ._inisde_kernel
+	je ._inside_kernel
 	swapgs
 	mov sp, 0x10
 	mov ds, sp
@@ -111,7 +111,7 @@ _isr_common_handler:
 	lea rdx, [rax-40]
 	cld
 	jmp _isr_handler
-._inisde_kernel:
+._inside_kernel:
 	mov rsp, qword [gs:8]
 	cld
 	jmp _isr_handler_inside_kernel
