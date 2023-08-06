@@ -50,11 +50,15 @@ _Bool network_layer2_poll(network_layer2_packet_t* packet){
 	if (layer1_buffer_length<14){
 		return 0;
 	}
+	u8 mask=0xff;
+	u8 error=0;
 	for (u8 i=0;i<6;i++){
-		if (layer1_buffer[i]!=network_layer1_mac_address[i]){
-			return 0;
-		}
+		error|=layer1_buffer[i]^network_layer1_mac_address[i];
+		mask&=layer1_buffer[i];
 		packet->address[i]=layer1_buffer[i+6];
+	}
+	if (mask!=0xff&&error){
+		return 0;
 	}
 	packet->protocol=(layer1_buffer[12]<<8)|layer1_buffer[13];
 	layer1_buffer_length-=14;

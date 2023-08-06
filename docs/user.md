@@ -401,7 +401,34 @@ extern u32 partition_boot_index;
 ### Constants
 
 ```c
+#define SYSTEM_WAKEUP_TYPE_UNKNOWN 0
+#define SYSTEM_WAKEUP_TYPE_POWER_SWITCH 1
+#define SYSTEM_WAKEUP_TYPE_AC_POWER 2
+```
+
+```c
 #define SHUTDOWN_FLAG_RESTART 1
+```
+
+### Types
+
+```c
+typedef struct _SYSTEM_DATA{
+	char bios_vendor[65];
+	char bios_version[65];
+	char manufacturer[65];
+	char product[65];
+	char version[65];
+	char serial_number[65];
+	u8 uuid[16];
+	u8 wakeup_type;
+} system_data_t;
+```
+
+### Variables
+
+```c
+extern system_data_t system_data;
 ```
 
 ### Functions
