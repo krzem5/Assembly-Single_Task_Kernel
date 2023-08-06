@@ -12,7 +12,7 @@ import time
 OBJECT_FILE_SUFFIX=(".release.o" if "--release" in sys.argv else ".o")
 EXTRA_COMPILER_OPTIONS=(["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"] if "--release" in sys.argv else ["-O0","-g","-fno-omit-frame-pointer"])
 EXTRA_ASSEMBLY_COMPILER_OPTIONS=(["-O3"] if "--release" in sys.argv else ["-O0","-g"])
-EXTRA_LINKER_OPTIONS=(["-O3"] if "--release" in sys.argv else ["-O0","-g"])
+EXTRA_LINKER_OPTIONS=(["-O3","--gc-sections"] if "--release" in sys.argv else ["-O0","-g"])
 HASH_FILE_PATH="build/hashes.txt"
 USER_HASH_FILE_PATH=("build/user_hashes.release.txt" if "--release" in sys.argv else "build/user_hashes.txt")
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
@@ -199,7 +199,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			continue
 		command=None
 		if (suffix==".c"):
-			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]
+			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-o",object_file,file]+EXTRA_ASSEMBLY_COMPILER_OPTIONS
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
@@ -210,8 +210,8 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel/linker.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_file("build/kernel.bin","build/stages/kernel_core.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
-kernel_core_size=_get_file_size("build/stages/kernel_core.bin")
+_split_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
+kernel_core_size=_get_file_size("build/stages/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)
 stage2_size=_get_file_size("build/stages/stage2.bin")
@@ -221,7 +221,7 @@ stage1_size=_get_file_size("build/stages/stage1.bin")
 with open("build/iso/core.bin","wb") as wf:
 	_copy_file("build/stages/stage1.bin",wf)
 	_copy_file("build/stages/stage2.bin",wf)
-	_copy_file("build/stages/kernel_core.bin",wf)
+	_copy_file("build/stages/stage3.bin",wf)
 with open("build/iso/os.img","wb") as wf:
 	_copy_file("build/iso/core.bin",wf)
 	_pad_file(wf,OS_IMAGE_SIZE-kernel_core_size-stage2_size-stage1_size)
