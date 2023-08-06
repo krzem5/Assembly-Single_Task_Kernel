@@ -104,7 +104,7 @@ _isr_common_handler:
 	push rax
 	mov rax, cr0
 	push rax
-	mov rax, qword [gs:32]
+	mov rax, qword [gs:24]
 	push qword [rax-48]
 	mov rdi, rsp
 	mov rsi, qword [rax-56]

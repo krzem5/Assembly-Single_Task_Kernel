@@ -27,6 +27,8 @@
 
 #define ISR_STACK_SIZE 56
 
+#define CPU_DATA ((volatile __seg_gs cpu_data_t*)NULL)
+
 
 
 typedef struct _CPU_DATA{
@@ -34,8 +36,7 @@ typedef struct _CPU_DATA{
 	u8 flags;
 	u8 _padding[5];
 	u64 stack_top;
-	u64 user_stack_tmp;
-	u64 user_stack;
+	u64 user_rsp;
 	u64 isr_stack_top;
 	u64 user_func;
 	u64 user_func_arg;
@@ -59,17 +60,16 @@ u16 cpu_count;
 
 
 
-static void _user_func_wait_loop(){
-	volatile __seg_gs cpu_data_t* cpu_data=NULL;
-	while (!cpu_data->user_func){
+static void _user_func_wait_loop(void){
+	while (!CPU_DATA->user_func){
 		__pause();
 	}
-	syscall_jump_to_user_mode(cpu_data->user_func,cpu_data->user_func_arg,cpu_get_stack_top(cpu_data->index));
+	syscall_jump_to_user_mode(CPU_DATA->user_func,CPU_DATA->user_func_arg,cpu_get_stack_top(CPU_DATA->index));
 }
 
 
 
-void _cpu_start_ap(_Bool is_bsp){
+void _cpu_start_ap(void){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u...",index);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
@@ -86,8 +86,8 @@ void _cpu_start_ap(_Bool is_bsp){
 	msr_enable_rdtsc();
 	INFO("Enabling FSGSBASE...");
 	msr_enable_fsgsbase();
-	(_cpu_data+index)->flags|=CPU_FLAG_ONLINE;
-	if (is_bsp){
+	CPU_DATA->flags|=CPU_FLAG_ONLINE;
+	if (index==_cpu_bsp_apic_id){
 		return;
 	}
 	_user_func_wait_loop();
@@ -112,6 +112,8 @@ void cpu_init(u16 count,u64 apic_address){
 	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
 	INFO("BSP APIC id: #%u",_cpu_bsp_apic_id);
 	umm_set_cpu_common_data(cpu_common_data_raw,pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT);
+	LOG("Allocating user stacks...");
+	umm_set_user_stacks(pmm_alloc(cpu_count*USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK),cpu_count*USER_STACK_PAGE_COUNT);
 }
 
 
@@ -126,9 +128,6 @@ void cpu_register_core(u8 apic_id){
 
 
 void cpu_start_all_cores(void){
-	LOG("Allocating user stack...");
-	u64 user_stack=pmm_alloc(cpu_count*USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
-	umm_set_user_stacks(user_stack,cpu_count*USER_STACK_PAGE_COUNT);
 	LOG("Starting all cpu cores...");
 	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init((u32)(u64)(vmm_kernel_pagemap.toplevel));
@@ -138,8 +137,6 @@ void cpu_start_all_cores(void){
 			for (;;);
 		}
 		(_cpu_data+i)->stack_top=(u64)VMM_TRANSLATE_ADDRESS(pmm_alloc(KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK)+(KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		(_cpu_data+i)->user_stack=user_stack;
-		user_stack+=USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 		if (i==_cpu_bsp_apic_id){
 			continue;
 		}
@@ -176,33 +173,25 @@ void cpu_start_all_cores(void){
 		}
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
-	_cpu_start_ap(1);
+	_cpu_start_ap();
 }
 
 
 
 void cpu_start_program(void* start_address){
-	volatile __seg_gs cpu_data_t* cpu_data=NULL;
-	if (cpu_data->index!=_cpu_bsp_apic_id){
+	if (CPU_DATA->index!=_cpu_bsp_apic_id){
 		ERROR("Unable to start program from non-bsp CPU");
 		return;
 	}
-	syscall_jump_to_user_mode((u64)start_address,0,cpu_get_stack_top(cpu_data->index));
+	syscall_jump_to_user_mode((u64)start_address,0,cpu_get_stack_top(CPU_DATA->index));
 }
 
 
 
 void cpu_core_stop(void){
-	volatile __seg_gs cpu_data_t* cpu_data=NULL;
-	if (cpu_data->index){
-		cpu_data->user_func=0;
+	if (CPU_DATA->index){
+		CPU_DATA->user_func=0;
 		_user_func_wait_loop();
 	}
 	acpi_fadt_shutdown(0);
-}
-
-
-
-u64 cpu_get_stack(u16 core_id){
-	return (_cpu_data+core_id)->user_stack;
 }

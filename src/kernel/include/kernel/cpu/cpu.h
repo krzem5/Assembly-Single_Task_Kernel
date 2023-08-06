@@ -37,10 +37,6 @@ void cpu_start_program(void* start_address);
 
 
 
-u64 cpu_get_stack(u16 core_id);
-
-
-
 void cpu_core_stop(void);
 
 

@@ -87,7 +87,6 @@ _start64:
 	shr rdx, 32
 	wrmsr
 	;;; Start the kernel
-	xor edi, edi
 	lea rax, _cpu_start_ap
 	jmp rax
 
