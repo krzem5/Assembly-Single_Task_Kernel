@@ -10,7 +10,6 @@
 
 
 void main(void){
-	*((char*)0x1234)=1.0f/0.0f;
 	clock_init();
 	cpu_init();
 	drive_init();
