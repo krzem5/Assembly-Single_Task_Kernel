@@ -156,7 +156,20 @@ def _compile_user_files(program):
 
 
 
+def _process_packet(buffer):
+	if (buffer[0]&1):
+		return None
+	type=buffer[0]>>1
+	if (type==0x00):
+		return bytearray([0x01])
+	if (type==0x01):
+		return bytearray([0x03,0x00,0x22,0x11,0x33,0x44,0x66,0x55,0x77,0x88,0xaa,0x99,0xbb,0xcc,0xee,0xdd,0xff])+b"TEST_SERIAL_NUMBER\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+	return None
+
+
+
 def _l2tpv3_worker():
+	mac_address=b"\x5b\x9c\xc4\x41\x84\x2c"
 	recv_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	send_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	recv_socket.bind(("127.0.0.1",7556))
@@ -166,10 +179,10 @@ def _l2tpv3_worker():
 			continue
 		flags,version=struct.unpack("<BB",data[:2])
 		if (version==3 and (flags&1)==0):
-			buffer=bytearray(data[22:])
-			buffer[0]|=1
-			data=data[:8]+data[14:20]+data[8:14]+data[20:22]+buffer
-			send_socket.sendto(data,("127.0.0.1",7555))
+			buffer=_process_packet(bytearray(data[22:]))
+			if (buffer is not None):
+				data=data[:8]+data[14:20]+mac_address+data[20:22]+buffer
+				send_socket.sendto(data,("127.0.0.1",7555))
 
 
 
