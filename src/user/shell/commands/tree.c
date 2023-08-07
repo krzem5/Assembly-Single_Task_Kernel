@@ -92,7 +92,7 @@ void tree_main(int argc,const char*const* argv){
 		_list_files(fd,0,&frame);
 		fs_close(fd);
 	}
-	printf("\n%lu directorie%s, %lu file%s\n",frame.directory_count,(frame.directory_count==1?"":"s"),frame.file_count,(frame.file_count==1?"":"s"));
+	printf("\n%lu director%s, %lu file%s\n",frame.directory_count,(frame.directory_count==1?"y":"ies"),frame.file_count,(frame.file_count==1?"":"s"));
 }
 
 

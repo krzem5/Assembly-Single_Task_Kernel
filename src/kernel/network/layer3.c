@@ -1,4 +1,9 @@
+#include <kernel/bios/bios.h>
+#include <kernel/clock/clock.h>
+#include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
 #include <kernel/partition/partition.h>
@@ -7,19 +12,73 @@
 
 
 
+#define DEVICE_LIST_CACHE_FILE_PATH "/kernel/layer3_device_cache"
+
+
+
+#define MAX_DEVICE_COUNT 1024
+
+
+
+typedef struct _NETWORK_LAYER3_DEVICE{
+	u8 address[6];
+	u8 uuid[16];
+	char serial_number[33];
+	u8 _padding;
+	u64 last_ping_time;
+	u64 last_pong_time;
+} network_layer3_device_t;
+
+
+
 static _Bool _layer3_enabled;
+static network_layer3_device_t* _layer3_devices;
+static u32 _layer3_device_count;
+static u32 _layer3_device_max_count;
+static u32 _layer3_last_enumeration_time;
+static u32 _layer3_next_cache_flush_time;
+static _Bool _layer3_cache_is_dirty;
 
 
 
-void network_layer3_init(void){
-	LOG("Initializing layer3 network...");
-	if ((partition_data+partition_boot_index)->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
-		_layer3_enabled=0;
-		ERROR("Layer3 network disable, boot partition not formatted as KFS");
+static void _flush_device_list_cache(void){
+	if (!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
 		return;
 	}
-	_layer3_enabled=1;
+	_layer3_cache_is_dirty=0;
+	_layer3_next_cache_flush_time=clock_get_time();
+	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
+	if (!node){
+		ERROR("Unable to open device list cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
+		return;
+	}
+	fs_write(node,0,&_layer3_device_count,sizeof(u32));
+	for (u32 i=0;i<_layer3_device_count;i++){
+		fs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
+	}
+}
+
+
+
+static void _refresh_device_list(void){
+	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
+	if (node){
+		//
+	}
 	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
+	for (u32 i=0;i<_layer3_device_count;i++){
+		network_layer2_packet_t packet={
+			.protocol=NETWORK_LAYER3_PROTOCOL_TYPE,
+			.buffer_length=1,
+			.buffer=packet_buffer
+		};
+		for (u8 j=0;j<6;j++){
+			packet.address[j]=(_layer3_devices+i)->address[j];
+		}
+		network_layer2_send(&packet);
+		(_layer3_devices+i)->last_ping_time=clock_get_time();
+	}
+	packet_buffer[0]=NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1;
 	network_layer2_packet_t packet={
 		{0xff,0xff,0xff,0xff,0xff,0xff},
 		NETWORK_LAYER3_PROTOCOL_TYPE,
@@ -27,6 +86,25 @@ void network_layer3_init(void){
 		packet_buffer
 	};
 	network_layer2_send(&packet);
+	_layer3_last_enumeration_time=clock_get_time();
+}
+
+
+
+void network_layer3_init(void){
+	LOG("Initializing layer3 network...");
+	if ((partition_data+partition_boot_index)->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
+		_layer3_enabled=0;
+		ERROR("Layer3 network disabled, boot partition not formatted as KFS");
+		return;
+	}
+	_layer3_enabled=1;
+	_layer3_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK));
+	_layer3_device_count=0;
+	_layer3_device_max_count=MAX_DEVICE_COUNT;
+	_layer3_next_cache_flush_time=0;
+	_layer3_cache_is_dirty=0;
+	_refresh_device_list();
 }
 
 
@@ -54,8 +132,37 @@ void network_layer3_process(const u8* address,u16 buffer_length,const u8* buffer
 				network_layer2_send(&packet);
 			}
 			break;
+		case NETWORK_LAYER3_PACKET_TYPE_ENUMERATION:
+			if (is_response){
+				if (buffer_length<49){
+					break;
+				}
+				INFO("Enumeration response from %x:%x:%x:%x:%x:%x",address[0],address[1],address[2],address[3],address[4],address[5]);
+				INFO("UUID: %x%x%x%x-%x%x-%x%x-%x%x-%x%x%x%x%x%x, SN: %s",buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer+17);
+				_layer3_cache_is_dirty=1;
+			}
+			else{
+				u8 packet_buffer[49]={(NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1)|1};
+				for (u8 i=0;i<16;i++){
+					packet_buffer[i+1]=bios_data.uuid[i];
+				}
+				for (u8 i=0;i<32;i++){
+					packet_buffer[i+17]=bios_data.serial_number[i];
+				}
+				network_layer2_packet_t packet={
+					.protocol=NETWORK_LAYER3_PROTOCOL_TYPE,
+					.buffer_length=49,
+					.buffer=packet_buffer
+				};
+				for (u8 i=0;i<6;i++){
+					packet.address[i]=address[i];
+				}
+				network_layer2_send(&packet);
+			}
+			break;
 		default:
 			INFO("Unknown packet type '%x/%u' received from %x:%x:%x:%x:%x:%x",buffer[0]>>1,is_response,address[0],address[1],address[2],address[3],address[4],address[5]);
 			break;
 	}
+	_flush_device_list_cache();
 }
