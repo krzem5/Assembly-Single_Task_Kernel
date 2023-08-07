@@ -16,12 +16,6 @@ void _cpu_init(void){
 
 
 
-void cpu_core_start(u32 core,void* func,void* arg){
-	_syscall_cpu_core_start(core,func,arg);
-}
-
-
-
 void cpu_core_stop(void){
 	_syscall_cpu_core_stop();
 }

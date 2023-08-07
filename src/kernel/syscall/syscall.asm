@@ -44,7 +44,8 @@ syscall_jump_to_user_mode:
 	jz syscall_jump_to_user_mode
 	mov rcx, qword [gs:32]
 	mov rdi, qword [gs:40]
-	mov rsp, qword [gs:48]
+	mov rsi, qword [gs:48]
+	mov rsp, qword [gs:56]
 	mov qword [gs:32], 0
 	mov rax, qword [vmm_user_pagemap]
 	mov cr3, rax
@@ -54,7 +55,6 @@ syscall_jump_to_user_mode:
 	xor eax, eax
 	mov rbx, rax
 	mov rdx, rax
-	mov rsi, rax
 	mov rbp, rsp
 	mov r8, rax
 	mov r9, rax

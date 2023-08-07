@@ -26,7 +26,7 @@ typedef struct _CPU_DATA{
 	u64 user_rsp;
 	u64 isr_rsp;
 	u64 user_func;
-	u64 user_func_arg;
+	u64 user_func_arg[2];
 	u64 user_rsp_top;
 } cpu_data_t;
 
@@ -56,7 +56,7 @@ void KERNEL_NORETURN cpu_start_all_cores(void);
 
 
 
-void cpu_core_start(u8 index,u64 start_address,u64 arg);
+void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2);
 
 
 

@@ -14,7 +14,7 @@ EXTRA_COMPILER_OPTIONS=(["-O3","-g0","-fdata-sections","-ffunction-sections","-f
 EXTRA_ASSEMBLY_COMPILER_OPTIONS=(["-O3"] if "--release" in sys.argv else ["-O0","-g"])
 EXTRA_LINKER_OPTIONS=(["-O3","--gc-sections"] if "--release" in sys.argv else ["-O0","-g"])
 HASH_FILE_PATH="build/hashes.txt"
-USER_HASH_FILE_PATH=("build/user_hashes.release.txt" if "--release" in sys.argv else "build/user_hashes.txt")
+USER_HASH_FILE_SUFFIX=(".release.txt" if "--release" in sys.argv else ".txt")
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
@@ -125,10 +125,12 @@ def _pad_file(wf,count):
 
 
 
-def _compile_user_files(file_directory,changed_files,file_hash_list):
+def _compile_user_files(program):
+	hash_file_path=f"build/hashes."+program+USER_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program)
 	object_files=[]
 	error=False
-	for root,_,files in os.walk(file_directory):
+	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
 			if (suffix not in SOURCE_FILE_SUFFIXES):
@@ -140,14 +142,14 @@ def _compile_user_files(file_directory,changed_files,file_hash_list):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{file_directory}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
+				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
+	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
-		_save_file_hash_list(file_hash_list,USER_HASH_FILE_PATH)
 		sys.exit(1)
 	return object_files
 
@@ -179,6 +181,8 @@ if (not os.path.exists("build")):
 	os.mkdir("build")
 if (not os.path.exists("build/iso")):
 	os.mkdir("build/iso")
+if (not os.path.exists("build/iso/kernel")):
+	os.mkdir("build/iso/kernel")
 if (not os.path.exists("build/objects")):
 	os.mkdir("build/objects")
 if (not os.path.exists("build/stages")):
@@ -210,7 +214,7 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel/linker.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
+_split_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
 kernel_core_size=_get_file_size("build/stages/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)
@@ -218,24 +222,22 @@ stage2_size=_get_file_size("build/stages/stage2.bin")
 if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}",f"-D__BOOTLOADER_VERSION__={version}"]).returncode!=0):
 	sys.exit(1)
 stage1_size=_get_file_size("build/stages/stage1.bin")
-with open("build/iso/core.bin","wb") as wf:
+with open("build/iso/kernel/core.bin","wb") as wf:
 	_copy_file("build/stages/stage1.bin",wf)
 	_copy_file("build/stages/stage2.bin",wf)
 	_copy_file("build/stages/stage3.bin",wf)
 with open("build/iso/os.img","wb") as wf:
-	_copy_file("build/iso/core.bin",wf)
+	_copy_file("build/iso/kernel/core.bin",wf)
 	_pad_file(wf,OS_IMAGE_SIZE-kernel_core_size-stage2_size-stage1_size)
-changed_files,file_hash_list=_load_changed_files(USER_HASH_FILE_PATH,USER_FILE_DIRECTORY)
-runtime_object_files=_compile_user_files(USER_FILE_DIRECTORY+"/runtime",changed_files,file_hash_list)
+runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
 		continue
-	object_files=runtime_object_files+_compile_user_files(USER_FILE_DIRECTORY+"/"+program,changed_files,file_hash_list)
-	if (error or subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/{program}.elf"]+object_files+EXTRA_LINKER_OPTIONS).returncode!=0):
+	object_files=runtime_object_files+_compile_user_files(program)
+	if (subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/kernel/{program}.elf"]+object_files+EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-_save_file_hash_list(file_hash_list,USER_HASH_FILE_PATH)
-with open("build/iso/startup.txt","w") as wf:
-	wf.write("/install.elf\n")
+with open("build/iso/kernel/startup.txt","w") as wf:
+	wf.write("/kernel/install.elf\n")
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/iso"]).returncode!=0):
 	sys.exit(1)
 if ("--run" in sys.argv):
@@ -258,7 +260,7 @@ if ("--run" in sys.argv):
 		"-m","1G",
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
-		"-cpu","host,tsc,invtsc","-smp","2","-accel","kvm",
+		"-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2","-smp","2","-accel","kvm",
 		"-nographic","-display","none",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"

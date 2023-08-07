@@ -23,5 +23,5 @@ void syscall_elf_load(syscall_registers_t* regs){
 	if (!start_address){
 		return;
 	}
-	cpu_core_start(cpu_bsp_core_id,start_address,0);
+	cpu_core_start(cpu_bsp_core_id,start_address,0,0);
 }

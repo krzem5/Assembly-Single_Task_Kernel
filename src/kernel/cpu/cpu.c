@@ -17,6 +17,10 @@
 
 
 
+#define LOADER_FILE_PATH "/kernel/loader.elf"
+
+
+
 #define APIC_DELIVERY_MODE_INIT 0x0500
 #define APIC_DELIVERY_MODE_STARTUP 0x0600
 #define APIC_DELIVERY_STATUS 0x1000
@@ -73,7 +77,8 @@ void cpu_init(u16 count,u64 apic_address){
 		(_cpu_data+i)->kernel_rsp=(u64)VMM_TRANSLATE_ADDRESS(kernel_stacks);
 		(_cpu_data+i)->isr_rsp=(u64)((_cpu_common_data+i)->isr_stack+ISR_STACK_SIZE);
 		(_cpu_data+i)->user_func=0;
-		(_cpu_data+i)->user_func_arg=0;
+		(_cpu_data+i)->user_func_arg[0]=0;
+		(_cpu_data+i)->user_func_arg[1]=0;
 		(_cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(_cpu_common_data+i)->tss.rsp0=(_cpu_data+i)->isr_rsp;
 	}
@@ -134,16 +139,18 @@ void cpu_start_all_cores(void){
 	}
 	cpu_ap_startup_deinit();
 	volatile cpu_data_t* cpu_data=_cpu_data+cpu_bsp_core_id;
-	cpu_data->user_func_arg=0;
-	cpu_data->user_func=elf_load("/loader.elf");
+	cpu_data->user_func_arg[0]=0;
+	cpu_data->user_func_arg[1]=0;
+	cpu_data->user_func=elf_load(LOADER_FILE_PATH);
 	_cpu_init_core();
 }
 
 
 
-void cpu_core_start(u8 index,u64 start_address,u64 arg){
+void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2){
 	volatile cpu_data_t* cpu_data=_cpu_data+index;
-	cpu_data->user_func_arg=arg;
+	cpu_data->user_func_arg[0]=arg1;
+	cpu_data->user_func_arg[1]=arg2;
 	cpu_data->user_func=start_address;
 	if (CPU_DATA->index==index){
 		syscall_jump_to_user_mode();
@@ -154,8 +161,9 @@ void cpu_core_start(u8 index,u64 start_address,u64 arg){
 
 void KERNEL_NORETURN cpu_core_stop(void){
 	if (CPU_DATA->index==cpu_bsp_core_id){
-		CPU_DATA->user_func_arg=0;
-		CPU_DATA->user_func=elf_load("/loader.elf");
+		CPU_DATA->user_func_arg[0]=0;
+		CPU_DATA->user_func_arg[1]=0;
+		CPU_DATA->user_func=elf_load(LOADER_FILE_PATH);
 	}
 	syscall_jump_to_user_mode();
 }

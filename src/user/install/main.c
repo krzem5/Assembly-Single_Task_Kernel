@@ -13,7 +13,7 @@
 
 
 
-#define BOOT_CODE_FILE_NAME "/core.bin"
+#define BOOT_CODE_FILE_NAME "/kernel/core.bin"
 
 
 
@@ -32,6 +32,24 @@ static void _copy_data(int src_fd,int dst_fd,u32 offset,u32 length){
 		}
 		length-=read;
 	}
+}
+
+
+
+static _Bool _create_directory(const char* name,char* path,u32 offset){
+	u32 i=0;
+	for (;name[i];i++){
+		path[i+offset]=name[i];
+	}
+	path[i+offset]=0;
+	printf("Creating '%s'...\n",path);
+	int fd=fs_open(0,path,FS_FLAG_CREATE|FS_FLAG_DIRECTORY);
+	if (fd<0){
+		printf("Unable to create file '%s': error %d\n",path,fd);
+		return 0;
+	}
+	fs_close(fd);
+	return 1;
 }
 
 
@@ -86,7 +104,7 @@ void main(void){
 		partition++;
 	}
 _start_shell:
-	elf_load("/shell.elf");
+	elf_load("/kernel/shell.elf");
 	return;
 _update_boot_version:
 	path[_partition_name_to_path(path,(drives+partition->drive_index)->name)]=0;
@@ -108,9 +126,10 @@ _update_boot_version:
 	fs_close(dst_fd);
 _copy_kernel_files:
 	u32 offset=_partition_name_to_path(path,partition->name);
-	_Bool out=_copy_file("/kernel.bin",path,offset);
-	out&=_copy_file("/loader.elf",path,offset);
-	out&=_copy_file("/shell.elf",path,offset);
+	_Bool out=_create_directory("/kernel",path,offset);
+	out&=_copy_file("/kernel/kernel.bin",path,offset);
+	out&=_copy_file("/kernel/loader.elf",path,offset);
+	out&=_copy_file("/kernel/shell.elf",path,offset);
 	if (!out){
 		goto _start_shell;
 	}

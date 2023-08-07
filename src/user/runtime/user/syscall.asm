@@ -62,6 +62,7 @@ _syscall_cpu_core_count:
 
 
 _syscall_cpu_core_start:
+	mov r8, rcx
 	mov rax, 4
 	syscall
 	ret

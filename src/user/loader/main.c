@@ -5,7 +5,7 @@
 
 
 void main(void){
-	int fd=fs_open(0,"/startup.txt",FS_FLAG_READ);
+	int fd=fs_open(0,"/kernel/startup.txt",FS_FLAG_READ);
 	if (fd<0){
 		goto _error;
 	}
@@ -21,5 +21,5 @@ void main(void){
 	buffer[length]=0;
 	elf_load(buffer);
 _error:
-	elf_load("/shell.elf");
+	elf_load("/kernel/shell.elf");
 }

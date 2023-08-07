@@ -31,6 +31,10 @@ section .text
 
 [bits 64]
 _start:
+	;;; Fix stack
+	sub rsp, 8
+	and rsp, 0xfffffffffffffff0
+	mov rbp, rsp
 	;;; Acquire CPU count & BSP core id
 	call _syscall_cpu_core_count
 	mov r12, rax

@@ -13,7 +13,7 @@ static KERNEL_CORE_RDATA const char _kernel_memory_unusable[]=" (Unusable)";
 static KERNEL_CORE_RDATA const char _kernel_memory_normal[]="";
 static KERNEL_CORE_RDATA const char _kernel_memory_acpi[]=" (ACPI tables)";
 
-static KERNEL_CORE_RDATA const char _kernel_file_path[]="/kernel.bin";
+static KERNEL_CORE_RDATA const char _kernel_file_path[]="/kernel/kernel.bin";
 
 
 
