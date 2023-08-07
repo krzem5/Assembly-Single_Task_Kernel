@@ -17,6 +17,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
+#include <kernel/network/layer3.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/syscall/syscall.h>
@@ -50,7 +51,8 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	idt_init();
 	isr_init();
 	acpi_load();
-	network_layer2_init();
 	bios_get_system_data();
+	network_layer2_init();
+	network_layer3_init();
 	cpu_start_all_cores();
 }

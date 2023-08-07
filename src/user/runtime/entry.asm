@@ -2,14 +2,9 @@
 
 
 
-%macro CALCULATE_CPU_DATA_POINTER_OFFSET 2
+%macro CALCULATE_CPU_DATA_OFFSET 2
 	mov %2, %1
 	shl %2, CPU_DATA_SIZE_SHIFT
-%endmacro
-
-%macro CALCULATE_CPU_DATA_POINTER 2
-	CALCULATE_CPU_DATA_POINTER_OFFSET %1, %2
-	add %2, r15
 %endmacro
 
 
@@ -43,14 +38,15 @@ _start:
 	shr r13, 32
 	xor r14, r14
 	;;; Allocate per-core data
-	CALCULATE_CPU_DATA_POINTER_OFFSET r12, rdi
+	CALCULATE_CPU_DATA_OFFSET r12, rdi
 	xor esi, esi
 	call _syscall_memory_map
 	mov r15, rax
 	;;; Reset all cores & initialize gs bases
 	mov dword [_start_core_count], 1
 ._next_core:
-	CALCULATE_CPU_DATA_POINTER r14, rdx
+	CALCULATE_CPU_DATA_OFFSET r14, rdx
+	add rdx, r15
 	mov qword [rdx], r14
 	cmp r13, r14
 	je ._skip_core
@@ -61,7 +57,8 @@ _start:
 	add r14, 1
 	cmp r12, r14
 	jne ._next_core
-	CALCULATE_CPU_DATA_POINTER r13, rax
+	CALCULATE_CPU_DATA_OFFSET r13, rax
+	add rax, r15
 	wrgsbase rax
 	;;; Synchronize cores
 ._wait_for_cores:

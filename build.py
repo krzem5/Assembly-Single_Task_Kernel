@@ -31,7 +31,7 @@ def _generate_kernel_version(version_file_path):
 
 
 
-def _load_changed_files(hash_file_path,file_directory):
+def _load_changed_files(hash_file_path,*file_directories):
 	file_hash_list={}
 	if (os.path.exists(hash_file_path)):
 		with open(hash_file_path,"r") as rf:
@@ -42,14 +42,15 @@ def _load_changed_files(hash_file_path,file_directory):
 				line=line.split(":")
 				file_hash_list[line[0]]=line[1]
 	changed_files=[]
-	for root,_,files in os.walk(file_directory):
-		for file in files:
-			file=os.path.join(root,file)
-			with open(file,"rb") as rf:
-				new_hash=hashlib.sha256(rf.read()).hexdigest()
-			if (file not in file_hash_list or file_hash_list[file]!=new_hash):
-				file_hash_list[file]=new_hash
-				changed_files.append(file)
+	for file_directory in file_directories:
+		for root,_,files in os.walk(file_directory):
+			for file in files:
+				file=os.path.join(root,file)
+				with open(file,"rb") as rf:
+					new_hash=hashlib.sha256(rf.read()).hexdigest()
+				if (file not in file_hash_list or file_hash_list[file]!=new_hash):
+					file_hash_list[file]=new_hash
+					changed_files.append(file)
 	return changed_files,file_hash_list
 
 
@@ -127,7 +128,7 @@ def _pad_file(wf,count):
 
 def _compile_user_files(program):
 	hash_file_path=f"build/hashes."+program+USER_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program)
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
 	error=False
 	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
