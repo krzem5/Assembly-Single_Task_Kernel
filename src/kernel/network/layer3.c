@@ -49,7 +49,7 @@ static void _flush_device_list_cache(void){
 	_layer3_next_cache_flush_time=clock_get_time();
 	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
 	if (!node){
-		ERROR("Unable to open device list cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
+		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
 		return;
 	}
 	fs_write(node,0,&_layer3_device_count,sizeof(u32));
@@ -63,7 +63,7 @@ static void _flush_device_list_cache(void){
 static void _refresh_device_list(void){
 	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
 	if (node){
-		//
+		ERROR("Read devices from cache");
 	}
 	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
 	for (u32 i=0;i<_layer3_device_count;i++){
