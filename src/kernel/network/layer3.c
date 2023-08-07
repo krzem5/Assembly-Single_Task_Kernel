@@ -60,11 +60,35 @@ static void _flush_device_list_cache(void){
 
 
 
-static void _refresh_device_list(void){
+static void _load_device_list_cache(void){
 	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
-	if (node){
-		ERROR("Read devices from cache");
+	if (!node){
+		INFO("Device cache file not found");
+		return;
 	}
+	if (fs_read(node,0,&_layer3_device_count,sizeof(u32))!=sizeof(u32)){
+		goto _error;
+	}
+	if (_layer3_device_count>_layer3_device_max_count){
+		ERROR("Too many devices");
+		_layer3_device_count=_layer3_device_max_count;
+	}
+	for (u32 i=0;i<_layer3_device_count;i++){
+		if (fs_read(node,sizeof(u32)+56*i,_layer3_devices+i,56)!=56){
+			goto _error;
+		}
+		(_layer3_devices+i)->last_ping_time=0;
+		(_layer3_devices+i)->last_pong_time=0;
+	}
+	return;
+_error:
+	ERROR("Unable to read devices from cache file");
+	_layer3_device_count=0;
+}
+
+
+
+static void _refresh_device_list(void){
 	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
 	for (u32 i=0;i<_layer3_device_count;i++){
 		network_layer2_packet_t packet={
@@ -91,6 +115,21 @@ static void _refresh_device_list(void){
 
 
 
+static u32 _get_device_index(const u8* address){
+	for (u32 i=0;i<_layer3_device_count;i++){
+		for (u8 j=0;j<6;j++){
+			if ((_layer3_devices+i)->address[j]!=address[j]){
+				goto _next_device;
+			}
+		}
+		return i;
+_next_device:
+	}
+	return 0xffffffff;
+}
+
+
+
 void network_layer3_init(void){
 	LOG("Initializing layer3 network...");
 	if ((partition_data+partition_boot_index)->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
@@ -104,6 +143,7 @@ void network_layer3_init(void){
 	_layer3_device_max_count=MAX_DEVICE_COUNT;
 	_layer3_next_cache_flush_time=0;
 	_layer3_cache_is_dirty=0;
+	_load_device_list_cache();
 	_refresh_device_list();
 }
 
@@ -117,7 +157,10 @@ void network_layer3_process(const u8* address,u16 buffer_length,const u8* buffer
 	switch (buffer[0]>>1){
 		case NETWORK_LAYER3_PACKET_TYPE_PING_PONG:
 			if (is_response){
-				INFO("Pong from %x:%x:%x:%x:%x:%x",address[0],address[1],address[2],address[3],address[4],address[5]);
+				u32 index=_get_device_index(address);
+				if (index!=0xffffffff){
+					(_layer3_devices+index)->last_pong_time=clock_get_time();
+				}
 			}
 			else{
 				u8 packet_buffer[1]={(NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1)|1};
@@ -137,8 +180,28 @@ void network_layer3_process(const u8* address,u16 buffer_length,const u8* buffer
 				if (buffer_length<49){
 					break;
 				}
-				INFO("Enumeration response from %x:%x:%x:%x:%x:%x",address[0],address[1],address[2],address[3],address[4],address[5]);
-				INFO("UUID: %x%x%x%x-%x%x-%x%x-%x%x-%x%x%x%x%x%x, SN: %s",buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer+17);
+				if (_layer3_device_count>=_layer3_device_max_count){
+					ERROR("Too many devices");
+					break;
+				}
+				u32 index=_get_device_index(address);
+				if (index==0xffffffff){
+					index=_layer3_device_count;
+					_layer3_device_count++;
+				}
+				network_layer3_device_t* device=_layer3_devices+index;
+				for (u8 i=0;i<6;i++){
+					device->address[i]=address[i];
+				}
+				for (u8 i=0;i<16;i++){
+					device->uuid[i]=buffer[i+1];
+				}
+				for (u8 i=0;i<32;i++){
+					device->serial_number[i]=buffer[i+17];
+				}
+				device->serial_number[32]=0;
+				device->last_ping_time=_layer3_last_enumeration_time;
+				device->last_pong_time=clock_get_time();
 				_layer3_cache_is_dirty=1;
 			}
 			else{
