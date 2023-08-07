@@ -35,7 +35,7 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 	}
 	layer1_buffer[12]=packet->protocol>>8;
 	layer1_buffer[13]=packet->protocol;
-	memcpy(layer1_buffer,packet->buffer,packet->buffer_length);
+	memcpy(layer1_buffer+14,packet->buffer,packet->buffer_length);
 	network_layer1_send(_layer2_physical_send_buffer,packet->buffer_length+14);
 	lock_release(&_layer2_lock);
 	return 1;

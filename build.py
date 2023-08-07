@@ -166,7 +166,9 @@ def _l2tpv3_worker():
 			continue
 		flags,version=struct.unpack("<BB",data[:2])
 		if (version==3 and (flags&1)==0):
-			data=data[:8]+data[14:20]+data[8:14]+data[20:]
+			buffer=bytearray(data[22:])
+			buffer[0]|=1
+			data=data[:8]+data[14:20]+data[8:14]+data[20:22]+buffer
 			send_socket.sendto(data,("127.0.0.1",7555))
 
 

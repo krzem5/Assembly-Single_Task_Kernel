@@ -19,6 +19,14 @@ void network_layer3_init(void){
 		return;
 	}
 	_layer3_enabled=1;
+	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
+	network_layer2_packet_t packet={
+		{0xff,0xff,0xff,0xff,0xff,0xff},
+		NETWORK_LAYER3_PROTOCOL_TYPE,
+		1,
+		packet_buffer
+	};
+	network_layer2_send(&packet);
 }
 
 

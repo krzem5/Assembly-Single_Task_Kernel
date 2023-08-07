@@ -11,7 +11,7 @@ serial_send:
 	test esi, esi
 	jz ._end
 	push rdi
-	lea rdi, _serial_lock
+	lea rdi, _serial_read_lock
 	call lock_acquire
 	pop rdi
 	xor ecx, ecx
@@ -28,7 +28,7 @@ serial_send:
 	add ecx, 1
 	cmp ecx, esi
 	jl ._next_char
-	lea rdi, _serial_lock
+	lea rdi, _serial_read_lock
 	jmp lock_release
 ._end:
 	ret
@@ -38,7 +38,7 @@ serial_send:
 serial_recv:
 	mov r8, rdx
 	push rdi
-	lea rdi, _serial_lock
+	lea rdi, _serial_write_lock
 	call lock_acquire
 	pop rdi
 	xor ecx, ecx
@@ -61,7 +61,7 @@ serial_recv:
 	cmp ecx, esi
 	jl ._next_char
 ._end:
-	lea rdi, _serial_lock
+	lea rdi, _serial_write_lock
 	call lock_release
 	mov eax, ecx
 	ret
@@ -73,5 +73,7 @@ section .cdata
 
 
 align 4
-_serial_lock:
+_serial_read_lock:
+	dd 0
+_serial_write_lock:
 	dd 0
