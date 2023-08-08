@@ -270,25 +270,48 @@ static void _scroll_history(_Bool is_up){
 
 
 
-static void _ensure_top_of_history(void){
+static _Bool _shift_queue(void){
+	if (_input_history_length<INPUT_REWIND_BUFFER_SIZE){
+		_input_history_length++;
+		return 0;
+	}
+	for (u32 i=1;i<INPUT_REWIND_BUFFER_SIZE;i++){
+		_input_history[i-1]=_input_history[i];
+	}
+	return 1;
+}
+
+
+
+static void _ensure_top_of_history(_Bool duplicate_entry){
 	if (_input_history_index==_input_history_length-1){
 		return;
 	}
-	_input_history[_input_history_length-1]=_input_history[_input_history_index];
+	history_entry_t entry=_input_history[_input_history_index];
+	if (_input_history[_input_history_length-1].length){
+		if (_shift_queue()){
+			if (!_input_history_index){
+				duplicate_entry=1;
+			}
+			else{
+				_input_history_index--;
+			}
+		}
+	}
+	if (!duplicate_entry){
+		_input_history_length--;
+		for (u32 i=_input_history_index;i<_input_history_length-1;i++){
+			_input_history[i]=_input_history[i+1];
+		}
+	}
+	_input_history[_input_history_length-1]=entry;
 	_input_history_index=_input_history_length-1;
 }
 
 
 
 void input_get(void){
-	if (_input_history_length>=INPUT_REWIND_BUFFER_SIZE){
-		for (u32 i=1;i<INPUT_REWIND_BUFFER_SIZE;i++){
-			_input_history[i-1]=_input_history[i];
-		}
-	}
-	else{
-		_input_history_length++;
-	}
+	_shift_queue();
 	_input_history_index=_input_history_length-1;
 	_input_history[_input_history_index].data[0]=0;
 	_input_history[_input_history_index].length=0;
@@ -297,13 +320,13 @@ void input_get(void){
 		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mroot\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
-			_ensure_top_of_history();
+			_ensure_top_of_history(1);
 			_insert_char(key&KEY_MASK);
 		}
 		else{
 			switch (key&KEY_MASK){
 				case 9:
-					_ensure_top_of_history();
+					_ensure_top_of_history(1);
 					_insert_char(' ');
 					_insert_char(' ');
 					_insert_char(' ');
@@ -311,7 +334,7 @@ void input_get(void){
 					break;
 				case 10:
 				case 13:
-					_ensure_top_of_history();
+					_ensure_top_of_history(0);
 					printf("\x1b[%uG\n",input_length+cwd_length+8);
 					history_entry_t* entry=_input_history+_input_history_index;
 					input_length=entry->length;
@@ -320,8 +343,8 @@ void input_get(void){
 					}
 					return;
 				case 127:
-					_ensure_top_of_history();
 					if (_input_cursor){
+						_ensure_top_of_history(1);
 						_input_cursor--;
 						_delete_char();
 					}
@@ -335,7 +358,7 @@ void input_get(void){
 					_move_cursor((key&KEY_MASK)==KEY_RIGHT,!!(key&KEY_FLAG_CTRL));
 					break;
 				case KEY_DELETE:
-					_ensure_top_of_history();
+					_ensure_top_of_history(1);
 					_delete_char();
 					break;
 				case KEY_HOME:
