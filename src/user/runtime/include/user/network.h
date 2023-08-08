@@ -20,6 +20,10 @@ typedef struct _NETWORK_CONFIG{
 
 
 
+_Bool network_config(network_config_t* config);
+
+
+
 _Bool network_send(const network_packet_t* packet);
 
 
@@ -28,7 +32,7 @@ _Bool network_poll(network_packet_t* packet);
 
 
 
-_Bool network_config(network_config_t* config);
+void network_refresh_device_list(void);
 
 
 

@@ -28,7 +28,7 @@ global _syscall_memory_stats
 global _syscall_clock_get_converion
 global _syscall_drive_format
 global _syscall_drive_stats
-global _syscall_network_layer3_config
+global _syscall_network_layer3_refresh
 section .text
 
 

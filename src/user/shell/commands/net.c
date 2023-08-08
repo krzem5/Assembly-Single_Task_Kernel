@@ -5,9 +5,29 @@
 
 
 
+#define FLAG_REFRESH 1
+#define FLAG_LIST 2
+
+
+
 void net_main(int argc,const char*const* argv){
-	if (argc>1){
-		printf("net: unrecognized option '%s'\n",argv[1]);
+	u8 flags=0;
+	for (u32 i=1;i<argc;i++){
+		if (string_equal(argv[i],"-r")){
+			flags|=FLAG_REFRESH;
+		}
+		else if (string_equal(argv[i],"-l")){
+			flags|=FLAG_LIST;
+		}
+		else{
+			printf("net: unrecognized option '%s'\n",argv[i]);
+			return;
+		}
+	}
+	if (flags&FLAG_REFRESH){
+		network_refresh_device_list();
+	}
+	if (flags&FLAG_LIST){
 		return;
 	}
 	network_config_t config;
@@ -20,4 +40,4 @@ void net_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(net,"net");
+DECLARE_COMMAND(net,"net [-r] [-l]");

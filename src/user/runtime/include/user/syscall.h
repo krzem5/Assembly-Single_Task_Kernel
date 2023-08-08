@@ -124,7 +124,7 @@ _Bool _syscall_drive_stats(u32 index,void* buffer,u32 size);
 
 
 
-void _syscall_network_layer3_config(void);
+void _syscall_network_layer3_refresh(void);
 
 
 
