@@ -35,7 +35,7 @@ void net_main(int argc,const char*const* argv){
 			if (!network_device_get(i,&device)){
 				continue;
 			}
-			printf("Device #%u:\n  MAC: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n  UUID: \x1b[1m%X%X%X%X-%X%X-%X%X-%X%X-%X%X%X%X%X%X\x1b[0m\n  SN: \x1b[1m%s\x1b[0m\n  Ping duration: \x1b[1m%lu\x1b[0mms\n  Ping time: \x1b[1m%lu\x1b[0ms ago\n",
+			printf("Device #%u:\n  MAC: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n  UUID: \x1b[1m%X%X%X%X-%X%X-%X%X-%X%X-%X%X%X%X%X%X\x1b[0m\n  SN: \x1b[1m%s\x1b[0m\n  Ping: \x1b[1m%lu\x1b[0mms (\x1b[1m%lu\x1b[0ms ago)\n",
 				i,
 				device.address[0],device.address[1],device.address[2],device.address[3],device.address[4],device.address[5],
 				device.uuid[0],device.uuid[1],device.uuid[2],device.uuid[3],
@@ -63,4 +63,4 @@ void net_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(net,"net [-r] [-l]");
+DECLARE_COMMAND(net,"net [-l] [-r]");
