@@ -64,7 +64,7 @@ _Bool network_layer2_poll(network_layer2_packet_t* packet){
 	packet->protocol=(layer1_buffer[12]<<8)|layer1_buffer[13];
 	layer1_buffer_length-=14;
 	if (packet->protocol==NETWORK_LAYER3_PROTOCOL_TYPE){
-		network_layer3_process((const u8*)(layer1_buffer+6),layer1_buffer_length,layer1_buffer+14);
+		network_layer3_process_packet((const u8*)(layer1_buffer+6),layer1_buffer_length,layer1_buffer+14);
 		return 0;
 	}
 	if (packet->buffer_length>layer1_buffer_length){

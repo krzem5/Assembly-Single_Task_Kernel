@@ -1,6 +1,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
+#include <kernel/network/layer3.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 
@@ -13,7 +14,30 @@ typedef struct _USER_NETWORK_CONFIG{
 
 
 
-void syscall_network_send(syscall_registers_t* regs){
+void syscall_network_layer1_config(syscall_registers_t* regs){
+	if (regs->rsi!=sizeof(user_network_config_t)){
+		regs->rax=0;
+		return;
+	}
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	user_network_config_t* config=VMM_TRANSLATE_ADDRESS(address);
+	u8 i=0;
+	for (;network_layer1_name[i];i++){
+		config->name[i]=network_layer1_name[i];
+	}
+	config->name[i]=0;
+	for (i=0;i<6;i++){
+		config->address[i]=network_layer1_mac_address[i];
+	}
+}
+
+
+
+void syscall_network_layer2_send(syscall_registers_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)){
 		regs->rax=0;
 		return;
@@ -35,7 +59,7 @@ void syscall_network_send(syscall_registers_t* regs){
 
 
 
-void syscall_network_poll(syscall_registers_t* regs){
+void syscall_network_layer2_poll(syscall_registers_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)){
 		regs->rax=0;
 		return;
@@ -60,23 +84,6 @@ void syscall_network_poll(syscall_registers_t* regs){
 
 
 
-void syscall_network_config(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(user_network_config_t)){
-		regs->rax=0;
-		return;
-	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	user_network_config_t* config=VMM_TRANSLATE_ADDRESS(address);
-	u8 i=0;
-	for (;network_layer1_name[i];i++){
-		config->name[i]=network_layer1_name[i];
-	}
-	config->name[i]=0;
-	for (i=0;i<6;i++){
-		config->address[i]=network_layer1_mac_address[i];
-	}
+void syscall_network_layer3_refresh(syscall_registers_t* regs){
+	network_layer3_refresh_device_list();
 }

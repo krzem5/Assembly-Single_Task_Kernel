@@ -18,7 +18,7 @@
 
 
 
-#define SYSCALL_COUNT 30
+#define SYSCALL_COUNT 31
 
 
 
@@ -54,9 +54,9 @@ void syscall_init(void){
 	_syscall_handlers[16]=syscall_fd_stat;
 	_syscall_handlers[17]=syscall_fd_get_relative;
 	_syscall_handlers[18]=syscall_fd_move;
-	_syscall_handlers[19]=syscall_network_send;
-	_syscall_handlers[20]=syscall_network_poll;
-	_syscall_handlers[21]=syscall_network_config;
+	_syscall_handlers[19]=syscall_network_layer1_config;
+	_syscall_handlers[20]=syscall_network_layer2_send;
+	_syscall_handlers[21]=syscall_network_layer2_poll;
 	_syscall_handlers[22]=syscall_system_shutdown;
 	_syscall_handlers[23]=syscall_system_config;
 	_syscall_handlers[24]=syscall_memory_map;
@@ -65,6 +65,7 @@ void syscall_init(void){
 	_syscall_handlers[27]=syscall_clock_get_converion;
 	_syscall_handlers[28]=syscall_drive_format;
 	_syscall_handlers[29]=syscall_drive_stats;
+	_syscall_handlers[30]=syscall_network_layer3_refresh;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }
 

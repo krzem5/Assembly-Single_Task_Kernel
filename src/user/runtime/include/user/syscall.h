@@ -80,15 +80,15 @@ s32 _syscall_fd_move(s32 fd,u32 dst_fd);
 
 
 
-_Bool _syscall_network_send(const void* packet,u32 length);
+_Bool _syscall_network_layer1_config(void* buffer,u32 length);
 
 
 
-_Bool _syscall_network_poll(void* packet,u32 length);
+_Bool _syscall_network_layer2_send(const void* packet,u32 length);
 
 
 
-_Bool _syscall_network_config(void* buffer,u32 length);
+_Bool _syscall_network_layer2_poll(void* packet,u32 length);
 
 
 
@@ -121,6 +121,10 @@ _Bool _syscall_drive_format(u32 index,const void* boot,u32 boot_length);
 
 
 _Bool _syscall_drive_stats(u32 index,void* buffer,u32 size);
+
+
+
+void _syscall_network_layer3_config(void);
 
 
 

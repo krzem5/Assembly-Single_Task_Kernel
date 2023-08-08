@@ -4,15 +4,19 @@
 
 
 
-void syscall_network_send(syscall_registers_t* regs);
+void syscall_network_layer1_config(syscall_registers_t* regs);
 
 
 
-void syscall_network_poll(syscall_registers_t* regs);
+void syscall_network_layer2_send(syscall_registers_t* regs);
 
 
 
-void syscall_network_config(syscall_registers_t* regs);
+void syscall_network_layer2_poll(syscall_registers_t* regs);
+
+
+
+void syscall_network_layer3_refresh(syscall_registers_t* regs);
 
 
 

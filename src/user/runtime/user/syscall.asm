@@ -17,9 +17,9 @@ global _syscall_fd_seek
 global _syscall_fd_stat
 global _syscall_fd_get_relative
 global _syscall_fd_move
-global _syscall_network_send
-global _syscall_network_poll
-global _syscall_network_config
+global _syscall_network_layer1_config
+global _syscall_network_layer2_send
+global _syscall_network_layer2_poll
 global _syscall_system_shutdown
 global _syscall_system_config
 global _syscall_memory_map
@@ -28,6 +28,7 @@ global _syscall_memory_stats
 global _syscall_clock_get_converion
 global _syscall_drive_format
 global _syscall_drive_stats
+global _syscall_network_layer3_config
 section .text
 
 
@@ -168,21 +169,21 @@ _syscall_fd_move:
 
 
 
-_syscall_network_send:
+_syscall_network_layer1_config:
 	mov rax, 19
 	syscall
 	ret
 
 
 
-_syscall_network_poll:
+_syscall_network_layer2_send:
 	mov rax, 20
 	syscall
 	ret
 
 
 
-_syscall_network_config:
+_syscall_network_layer2_poll:
 	mov rax, 21
 	syscall
 	ret
@@ -243,3 +244,9 @@ _syscall_drive_stats:
 	syscall
 	ret
 
+
+
+_syscall_network_layer3_refresh:
+	mov rax, 30
+	syscall
+	ret

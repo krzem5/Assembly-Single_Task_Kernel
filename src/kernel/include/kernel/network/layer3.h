@@ -16,7 +16,11 @@ void network_layer3_init(void);
 
 
 
-void network_layer3_process(const u8* address,u16 buffer_length,const u8* buffer);
+void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8* buffer);
+
+
+
+void network_layer3_refresh_device_list(void);
 
 
 
