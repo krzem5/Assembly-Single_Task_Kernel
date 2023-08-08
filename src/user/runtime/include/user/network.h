@@ -20,6 +20,17 @@ typedef struct _NETWORK_CONFIG{
 
 
 
+typedef struct _NETWORK_DEVICE{
+	u8 address[6];
+	u8 uuid[16];
+	char serial_number[33];
+	u8 _padding;
+	u64 ping;
+	u64 last_ping_time;
+} network_device_t;
+
+
+
 _Bool network_config(network_config_t* config);
 
 
@@ -33,6 +44,14 @@ _Bool network_poll(network_packet_t* packet);
 
 
 void network_refresh_device_list(void);
+
+
+
+u32 network_device_count(void);
+
+
+
+_Bool network_device_get(u32 index,network_device_t* device);
 
 
 

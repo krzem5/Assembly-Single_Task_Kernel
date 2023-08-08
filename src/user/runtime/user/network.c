@@ -25,3 +25,15 @@ _Bool network_poll(network_packet_t* packet){
 void network_refresh_device_list(void){
 	_syscall_network_layer3_refresh();
 }
+
+
+
+u32 network_device_count(void){
+	return _syscall_network_layer3_device_count();
+}
+
+
+
+_Bool network_device_get(u32 index,network_device_t* device){
+	return _syscall_network_layer3_device_get(index,device,sizeof(network_device_t));
+}

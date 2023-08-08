@@ -20,4 +20,12 @@ void syscall_network_layer3_refresh(syscall_registers_t* regs);
 
 
 
+void syscall_network_layer3_device_count(syscall_registers_t* regs);
+
+
+
+void syscall_network_layer3_device_get(syscall_registers_t* regs);
+
+
+
 #endif

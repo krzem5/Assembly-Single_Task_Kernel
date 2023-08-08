@@ -87,3 +87,30 @@ void syscall_network_layer2_poll(syscall_registers_t* regs){
 void syscall_network_layer3_refresh(syscall_registers_t* regs){
 	network_layer3_refresh_device_list();
 }
+
+
+
+void syscall_network_layer3_device_count(syscall_registers_t* regs){
+	regs->rax=network_layer3_get_device_count();
+}
+
+
+
+void syscall_network_layer3_device_get(syscall_registers_t* regs){
+	if (regs->rdx!=sizeof(network_layer3_device_t)){
+		regs->rax=0;
+		return;
+	}
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	const network_layer3_device_t* device=network_layer3_get_device(regs->rdi);
+	if (!device){
+		regs->rax=0;
+		return;
+	}
+	*((network_layer3_device_t*)VMM_TRANSLATE_ADDRESS(address))=*device;
+	regs->rax=1;
+}

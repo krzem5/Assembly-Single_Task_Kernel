@@ -29,6 +29,8 @@ global _syscall_clock_get_converion
 global _syscall_drive_format
 global _syscall_drive_stats
 global _syscall_network_layer3_refresh
+global _syscall_network_layer3_device_count
+global _syscall_network_layer3_device_get
 section .text
 
 
@@ -248,5 +250,19 @@ _syscall_drive_stats:
 
 _syscall_network_layer3_refresh:
 	mov rax, 30
+	syscall
+	ret
+
+
+
+_syscall_network_layer3_device_count:
+	mov rax, 31
+	syscall
+	ret
+
+
+
+_syscall_network_layer3_device_get:
+	mov rax, 32
 	syscall
 	ret

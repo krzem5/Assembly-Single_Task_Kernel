@@ -12,6 +12,7 @@
 #define KERNEL_LOG_NAME "layer3"
 
 
+
 #define CACHE_FLUSH_INTERVAL 60000000000ull
 
 #define DEVICE_LIST_CACHE_FILE_PATH "/kernel/layer3_device_cache"
@@ -20,24 +21,13 @@
 
 
 
-typedef struct _NETWORK_LAYER3_DEVICE{
-	u8 address[6];
-	u8 uuid[16];
-	char serial_number[33];
-	u8 _padding;
-	u64 last_ping_time;
-	u64 last_pong_time;
-} network_layer3_device_t;
-
-
-
 static _Bool _layer3_enabled;
 static lock_t _layer3_lock;
 static network_layer3_device_t* _layer3_devices;
 static u32 _layer3_device_count;
 static u32 _layer3_device_max_count;
-static u32 _layer3_last_enumeration_time;
-static u32 _layer3_next_cache_flush_time;
+static u64 _layer3_last_ping_time;
+static u64 _layer3_next_cache_flush_time;
 static _Bool _layer3_cache_is_dirty;
 
 
@@ -81,8 +71,8 @@ static void _load_device_list_cache(void){
 		if (fs_read(node,sizeof(u32)+56*i,_layer3_devices+i,56)!=56){
 			goto _error;
 		}
+		(_layer3_devices+i)->ping=0;
 		(_layer3_devices+i)->last_ping_time=0;
-		(_layer3_devices+i)->last_pong_time=0;
 	}
 	return;
 _error:
@@ -119,6 +109,7 @@ void network_layer3_init(void){
 	_layer3_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK));
 	_layer3_device_count=0;
 	_layer3_device_max_count=MAX_DEVICE_COUNT;
+	_layer3_last_ping_time=0;
 	_layer3_next_cache_flush_time=0;
 	_layer3_cache_is_dirty=0;
 	_load_device_list_cache();
@@ -138,7 +129,8 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				lock_acquire(&_layer3_lock);
 				u32 index=_get_device_index(address);
 				if (index!=0xffffffff){
-					(_layer3_devices+index)->last_pong_time=clock_get_time();
+					(_layer3_devices+index)->ping=clock_get_time()-_layer3_last_ping_time;
+					(_layer3_devices+index)->last_ping_time=clock_get_time();
 				}
 				lock_release(&_layer3_lock);
 			}
@@ -162,8 +154,8 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				}
 				lock_acquire(&_layer3_lock);
 				if (_layer3_device_count>=_layer3_device_max_count){
-					ERROR("Too many devices");
 					lock_release(&_layer3_lock);
+					ERROR("Too many devices");
 					break;
 				}
 				u32 index=_get_device_index(address);
@@ -182,8 +174,8 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 					device->serial_number[i]=buffer[i+17];
 				}
 				device->serial_number[32]=0;
-				device->last_ping_time=_layer3_last_enumeration_time;
-				device->last_pong_time=clock_get_time();
+				device->ping=clock_get_time()-_layer3_last_ping_time;
+				device->last_ping_time=clock_get_time();
 				_layer3_cache_is_dirty=1;
 				lock_release(&_layer3_lock);
 			}
@@ -231,7 +223,6 @@ void network_layer3_refresh_device_list(void){
 			packet.address[j]=(_layer3_devices+i)->address[j];
 		}
 		network_layer2_send(&packet);
-		(_layer3_devices+i)->last_ping_time=clock_get_time();
 	}
 	lock_release(&_layer3_lock);
 	packet_buffer[0]=NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1;
@@ -242,5 +233,23 @@ void network_layer3_refresh_device_list(void){
 		packet_buffer
 	};
 	network_layer2_send(&packet);
-	_layer3_last_enumeration_time=clock_get_time();
+	_layer3_last_ping_time=clock_get_time();
+}
+
+
+
+u32 network_layer3_get_device_count(void){
+	lock_acquire(&_layer3_lock);
+	u32 out=_layer3_device_count;
+	lock_release(&_layer3_lock);
+	return out;
+}
+
+
+
+const network_layer3_device_t* network_layer3_get_device(u32 index){
+	lock_acquire(&_layer3_lock);
+	const network_layer3_device_t* out=(index>=_layer3_device_count?NULL:_layer3_devices+index);
+	lock_release(&_layer3_lock);
+	return out;
 }

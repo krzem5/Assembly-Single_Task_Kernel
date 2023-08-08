@@ -128,4 +128,12 @@ void _syscall_network_layer3_refresh(void);
 
 
 
+u32 _syscall_network_layer3_device_count(void);
+
+
+
+_Bool _syscall_network_layer3_device_get(u32 index,void* buffer,u32 size);
+
+
+
 #endif
