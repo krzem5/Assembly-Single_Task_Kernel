@@ -270,7 +270,7 @@ static void _scroll_history(_Bool is_up){
 
 
 
-static _Bool _shift_queue(void){
+static _Bool _shift_history(void){
 	if (_input_history_length<INPUT_REWIND_BUFFER_SIZE){
 		_input_history_length++;
 		return 0;
@@ -289,7 +289,7 @@ static void _ensure_top_of_history(_Bool duplicate_entry){
 	}
 	history_entry_t entry=_input_history[_input_history_index];
 	if (_input_history[_input_history_length-1].length){
-		if (_shift_queue()){
+		if (_shift_history()){
 			if (!_input_history_index){
 				duplicate_entry=1;
 			}
@@ -311,7 +311,7 @@ static void _ensure_top_of_history(_Bool duplicate_entry){
 
 
 void input_get(void){
-	_shift_queue();
+	_shift_history();
 	_input_history_index=_input_history_length-1;
 	_input_history[_input_history_index].data[0]=0;
 	_input_history[_input_history_index].length=0;
