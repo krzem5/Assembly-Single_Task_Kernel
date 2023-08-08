@@ -988,82 +988,76 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		}
 	}
 	kfs_large_block_index_t first_free_block_index=DRIVE_FIRST_FREE_BLOCK_INDEX;
-	kfs_root_block_t root={
-		KFS_SIGNATURE,
-		block_count,
-		first_free_block_index
-	};
-	for (u16 i=0;i<128;i++){
-		root.nda3[i]=0;
-	}
-	root.root_block_count=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
-	root.batc_block_count=((block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT)<<(15-DRIVE_BLOCK_SIZE_SHIFT);
-	root.nda3_block_count=0;
-	root.nda2_block_count=0;
-	root.nda1_block_count=0;
-	root.nfda_block_count=0;
-	root.data_block_count=0;
+	kfs_root_block_t* root=VMM_TRANSLATE_ADDRESS(pmm_alloc_zero(1,PMM_COUNTER_KFS));
+	root->signature=KFS_SIGNATURE;
+	root->block_count=block_count;
+	root->batc_block_index=first_free_block_index;
+	root->root_block_count=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+	root->batc_block_count=((block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT)<<(15-DRIVE_BLOCK_SIZE_SHIFT);
 	INFO("Writing BATC blocks...");
-	kfs_batc_block_t batc;
-	batc.bitmap3=0x7fffffffffffffffull;
+	kfs_batc_block_t* batc=VMM_TRANSLATE_ADDRESS(pmm_alloc_zero(8,PMM_COUNTER_KFS));
+	batc->bitmap3=0x7fffffffffffffffull;
 	for (u8 i=0;i<62;i++){
-		batc.bitmap2[i]=0xffffffffffffffffull;
+		batc->bitmap2[i]=0xffffffffffffffffull;
 	}
-	batc.bitmap2[62]=0x7fffffffffffffffull;
+	batc->bitmap2[62]=0x7fffffffffffffffull;
 	for (u16 i=0;i<4031;i++){
-		batc.bitmap1[i]=0xffffffffffffffffull;
+		batc->bitmap1[i]=0xffffffffffffffffull;
 	}
 	for (kfs_large_block_index_t processed_block_count=0;processed_block_count<block_count;processed_block_count+=KFS_BATC_BLOCK_COUNT){
-		batc.block_index=first_free_block_index;
-		batc.first_block_index=processed_block_count;
+		batc->block_index=first_free_block_index;
+		batc->first_block_index=processed_block_count;
 		first_free_block_index+=8;
 		if (processed_block_count+KFS_BATC_BLOCK_COUNT>block_count){
-			batc.bitmap3=0;
+			batc->bitmap3=0;
 			for (u8 i=0;i<63;i++){
-				batc.bitmap2[i]=0;
+				batc->bitmap2[i]=0;
 			}
 			for (u16 i=0;i<4031;i++){
-				batc.bitmap1[i]=0;
+				batc->bitmap1[i]=0;
 			}
 			for (u32 i=0;i<block_count-processed_block_count;i++){
-				batc.bitmap1[i>>6]|=1ull<<(i&63);
+				batc->bitmap1[i>>6]|=1ull<<(i&63);
 			}
 			for (u16 i=0;i<4030;i++){
-				if (!batc.bitmap1[i]){
+				if (!batc->bitmap1[i]){
 					break;
 				}
-				batc.bitmap2[i>>6]|=1ull<<(i&63);
+				batc->bitmap2[i>>6]|=1ull<<(i&63);
 			}
 			for (u8 i=0;i<63;i++){
-				if (!batc.bitmap2[i]){
+				if (!batc->bitmap2[i]){
 					break;
 				}
-				batc.bitmap3|=1ull<<i;
+				batc->bitmap3|=1ull<<i;
 			}
 		}
-		_drive_write(drive,batc.block_index,&batc,8);
+		_drive_write(drive,batc->block_index,batc,8);
 	}
 	INFO("Reserving header blocks...");
-	_drive_read(drive,root.batc_block_index,&batc,8);
+	_drive_read(drive,root->batc_block_index,batc,8);
 	while (first_free_block_index){
 		first_free_block_index--;
-		batc.bitmap1[first_free_block_index>>6]&=~(1ull<<(first_free_block_index&63));
+		batc->bitmap1[first_free_block_index>>6]&=~(1ull<<(first_free_block_index&63));
 	}
 	for (u16 i=0;i<4030;i++){
-		if (batc.bitmap1[i]){
+		if (batc->bitmap1[i]){
 			break;
 		}
-		batc.bitmap2[i>>6]&=~(1ull<<(i&63));
+		batc->bitmap2[i>>6]&=~(1ull<<(i&63));
 	}
 	for (u8 i=0;i<63;i++){
-		if (batc.bitmap2[i]){
+		if (batc->bitmap2[i]){
 			break;
 		}
-		batc.bitmap3&=~(1ull<<i);
+		batc->bitmap3&=~(1ull<<i);
 	}
-	_drive_write(drive,root.batc_block_index,&batc,8);
+	_drive_write(drive,root->batc_block_index,batc,8);
+	pmm_dealloc(VMM_TRANSLATE_ADDRESS_REVERSE(batc),8,PMM_COUNTER_KFS);
 	INFO("Writing ROOT block...");
-	if (drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
+	u64 write_count=drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT);
+	pmm_dealloc(VMM_TRANSLATE_ADDRESS_REVERSE(root),1,PMM_COUNTER_KFS);
+	if (write_count!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR("Error writing data to drive");
 		return 0;
 	}

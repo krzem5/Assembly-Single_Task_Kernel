@@ -9,7 +9,7 @@
 
 
 
-#define BOOT_CODE_FILE_NAME "/core.bin"
+#define BOOT_CODE_FILE_NAME "/kernel/core.bin"
 
 
 
