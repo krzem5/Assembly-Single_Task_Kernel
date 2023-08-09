@@ -13,8 +13,6 @@
 
 
 
-#define CACHE_FLUSH_INTERVAL 60000000000ull
-
 #define DEVICE_LIST_CACHE_FILE_PATH "/kernel/layer3_device_cache"
 
 #define MAX_DEVICE_COUNT 1024
@@ -27,17 +25,7 @@ static network_layer3_device_t* _layer3_devices;
 static u32 _layer3_device_count;
 static u32 _layer3_device_max_count;
 static u64 _layer3_last_ping_time;
-static u64 _layer3_next_cache_flush_time;
 static _Bool _layer3_cache_is_dirty;
-
-
-
-static void _flush_device_list_cache(void){
-	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
-		return;
-	}
-	network_layer3_flush_cache();
-}
 
 
 
@@ -110,7 +98,6 @@ void network_layer3_init(void){
 	_layer3_device_count=0;
 	_layer3_device_max_count=MAX_DEVICE_COUNT;
 	_layer3_last_ping_time=0;
-	_layer3_next_cache_flush_time=0;
 	_layer3_cache_is_dirty=0;
 	_load_device_list_cache();
 	network_layer3_refresh_device_list();
@@ -206,7 +193,6 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 			INFO("Unknown packet type '%x/%u' received from %x:%x:%x:%x:%x:%x",buffer[0]>>1,is_response,address[0],address[1],address[2],address[3],address[4],address[5]);
 			break;
 	}
-	_flush_device_list_cache();
 }
 
 
@@ -288,7 +274,6 @@ void network_layer3_flush_cache(void){
 	}
 	lock_acquire(&_layer3_lock);
 	_layer3_cache_is_dirty=0;
-	_layer3_next_cache_flush_time=clock_get_time()+CACHE_FLUSH_INTERVAL;
 	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
 	if (!node){
 		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
