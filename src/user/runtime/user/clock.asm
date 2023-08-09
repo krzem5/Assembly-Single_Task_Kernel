@@ -18,6 +18,7 @@ _clock_init:
 
 
 
+section .text.clock_get_ticks
 clock_get_ticks:
 	rdtsc
 	shl rdx, 32
@@ -26,6 +27,7 @@ clock_get_ticks:
 
 
 
+section .text.clock_get_time
 clock_get_time:
 	rdtsc
 	shl rdx, 32
@@ -40,6 +42,7 @@ clock_get_time:
 
 
 
+section .text.clock_ticks_to_time
 clock_ticks_to_time:
 	mov rdx, rdi
 	mulx rdx, rax, qword [_clock_conversion_factor]

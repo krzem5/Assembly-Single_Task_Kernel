@@ -1,8 +1,5 @@
-section .text
-
-
-
 %macro DECL_SYSCALL 3
+section .text._syscall_%1
 global _syscall_%1
 _syscall_%1:
 	mov rax, %2
