@@ -82,8 +82,8 @@ typedef struct _KFS_NODE{
 
 typedef struct _KFS_NFDA_BLOCK{ // Node File Data Array [1 block]
 	kfs_large_block_index_t block_index;
+	kfs_large_block_index_t prev_block_index;
 	kfs_large_block_index_t next_block_index;
-	kfs_large_block_index_t data_offset;
 	kfs_large_block_index_t data_length;
 	kfs_range_t ranges[510];
 } kfs_nfda_block_t;
@@ -308,8 +308,8 @@ static void _block_cache_init_nfda(kfs_block_cache_t* block_cache,kfs_large_bloc
 	block_cache->root.nfda_block_count+=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	_block_cache_flush_nfda(block_cache);
 	block_cache->nfda.block_index=block_index;
+	block_cache->nfda.prev_block_index=0;
 	block_cache->nfda.next_block_index=0;
-	block_cache->nfda.data_offset=0;
 	block_cache->nfda.data_length=0;
 	for (u16 i=0;i<510;i++){
 		block_cache->nfda.ranges[i].block_index=0;
@@ -568,6 +568,12 @@ static _Bool _resize_node_down(kfs_block_cache_t* block_cache,kfs_node_t* node,u
 	if (!underflow){
 		return 1;
 	}
+	block_cache->root.data_block_count-=underflow<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
+	if (!node->data.file.nfda_tail){
+		return 0;
+	}
+	_block_cache_load_nfda(block_cache,node->data.file.nfda_tail);
 	ERROR("Unimplemented: _resize_node_down");
 	return 0;
 }
@@ -581,7 +587,7 @@ static _Bool _resize_node_up(kfs_block_cache_t* block_cache,kfs_node_t* node,u64
 	}
 	block_cache->root.data_block_count+=overflow<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
-	if (!(node->data.file.nfda_tail)){
+	if (!node->data.file.nfda_tail){
 		node->data.file.nfda_head=_block_cache_alloc_block(block_cache);
 		node->data.file.nfda_tail=node->data.file.nfda_head;
 		_block_cache_init_nfda(block_cache,node->data.file.nfda_tail);
