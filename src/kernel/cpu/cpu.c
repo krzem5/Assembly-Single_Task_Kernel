@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/apic/lapic.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
@@ -21,17 +22,8 @@
 
 
 
-#define APIC_DELIVERY_MODE_INIT 0x0500
-#define APIC_DELIVERY_MODE_STARTUP 0x0600
-#define APIC_DELIVERY_STATUS 0x1000
-#define APIC_TRIGGER_MODE_LEVEL 0x8000
-#define APIC_INTR_COMMAND_1_ASSERT 0x4000
-
-
-
 static cpu_data_t* _cpu_data;
 static cpu_common_data_t* _cpu_common_data;
-static volatile u32* _cpu_apic_ptr;
 
 u16 cpu_count;
 u8 cpu_bsp_core_id;
@@ -55,15 +47,17 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	msr_enable_rdtsc();
 	INFO("Enabling FSGSBASE...");
 	msr_enable_fsgsbase();
+	INFO("Enable lAPIC...");
+	lapic_enable();
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
 	syscall_jump_to_user_mode();
 }
 
 
 
-void cpu_init(u16 count,u64 apic_address){
+void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
-	INFO("CPU count: %u, APIC address: %p",count,apic_address);
+	INFO("CPU count: %u",count);
 	cpu_count=count;
 	_cpu_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(count*sizeof(cpu_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU));
 	u64 cpu_common_data_raw=pmm_alloc(pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
@@ -80,10 +74,12 @@ void cpu_init(u16 count,u64 apic_address){
 		(_cpu_data+i)->user_func_arg[0]=0;
 		(_cpu_data+i)->user_func_arg[1]=0;
 		(_cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		for (u8 j=0;j<8;j++){
+			(_cpu_data+i)->irq_bitmap[j]=0;
+		}
 		(_cpu_common_data+i)->tss.rsp0=(_cpu_data+i)->isr_rsp;
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
-	_cpu_apic_ptr=VMM_TRANSLATE_ADDRESS(apic_address);
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
 	umm_set_cpu_common_data(cpu_common_data_raw,pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT);
 	umm_set_user_stacks(user_stacks,cpu_count*CPU_USER_STACK_PAGE_COUNT);
@@ -110,27 +106,13 @@ void cpu_start_all_cores(void){
 			continue;
 		}
 		cpu_ap_startup_set_stack_top((_cpu_data+i)->kernel_rsp);
-		_cpu_apic_ptr[160]=0;
-		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
-		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_INTR_COMMAND_1_ASSERT|APIC_DELIVERY_MODE_INIT;
-		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
-			__pause();
-		}
-		_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
-		_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff00000)|APIC_TRIGGER_MODE_LEVEL|APIC_DELIVERY_MODE_INIT;
-		while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
-			__pause();
-		}
+		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT,1);
+		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT,1);
 		for (u32 j=0;j<0xfff;j++){
 			__pause();
 		}
 		for (u8 j=0;j<2;j++){
-			_cpu_apic_ptr[160]=0;
-			_cpu_apic_ptr[196]=(_cpu_apic_ptr[196]&0x00ffffff)|(i<<24);
-			_cpu_apic_ptr[192]=(_cpu_apic_ptr[192]&0xfff0f800)|APIC_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT);
-			while (_cpu_apic_ptr[192]&APIC_DELIVERY_STATUS){
-				__pause();
-			}
+			lapic_send_ipi(i,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT),1);
 		}
 		const volatile u8* flags=&((_cpu_data+i)->flags);
 		while (!((*flags)&CPU_FLAG_ONLINE)){

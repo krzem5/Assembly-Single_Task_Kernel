@@ -28,6 +28,7 @@ typedef struct _CPU_DATA{
 	u64 user_func;
 	u64 user_func_arg[2];
 	u64 user_rsp_top;
+	u32 irq_bitmap[8];
 } cpu_data_t;
 
 
@@ -44,7 +45,7 @@ extern u8 cpu_bsp_core_id;
 
 
 
-void cpu_init(u16 count,u64 apic_address);
+void cpu_init(u16 count);
 
 
 

@@ -1,20 +1,13 @@
-extern idt_set_entry
 extern _isr_handler
 extern _isr_handler_inside_kernel
+extern _lapic_eoi_register
+extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global isr_init
+global isr_allocate
+global isr_wait
 section .text
-
-
-
-%macro REGISTER_ISR 1
-	mov edi, %1
-	lea rsi, isr%1
-	xor edx, edx
-	mov ecx, 0x8e
-	call idt_set_entry
-%endmacro
 
 
 
@@ -29,39 +22,68 @@ isr%1:
 
 [bits 64]
 isr_init:
-	REGISTER_ISR 0
-	REGISTER_ISR 1
-	REGISTER_ISR 2
-	REGISTER_ISR 3
-	REGISTER_ISR 4
-	REGISTER_ISR 5
-	REGISTER_ISR 6
-	REGISTER_ISR 7
-	REGISTER_ISR 8
-	REGISTER_ISR 9
-	REGISTER_ISR 10
-	REGISTER_ISR 11
-	REGISTER_ISR 12
-	REGISTER_ISR 13
-	REGISTER_ISR 14
-	REGISTER_ISR 15
-	REGISTER_ISR 16
-	REGISTER_ISR 17
-	REGISTER_ISR 18
-	REGISTER_ISR 19
-	REGISTER_ISR 20
-	REGISTER_ISR 21
-	REGISTER_ISR 22
-	REGISTER_ISR 23
-	REGISTER_ISR 24
-	REGISTER_ISR 25
-	REGISTER_ISR 26
-	REGISTER_ISR 27
-	REGISTER_ISR 28
-	REGISTER_ISR 29
-	REGISTER_ISR 30
-	REGISTER_ISR 31
+%assign idx 0
+%rep 256
+	mov edi, idx
+	lea rsi, isr%+idx
+	mov ecx, 0x8e
+	xor edx, edx
+	call idt_set_entry
+%assign idx idx+1
+%endrep
+	mov byte [_next_isr_index],0
 	ret
+
+
+
+isr_allocate:
+	movzx ecx, byte [_next_isr_index]
+	cmp ecx, 0xff
+	jge $
+	mov eax, ecx
+	add ecx, 1
+	mov byte [_next_isr_index], cl
+	ret
+
+
+
+isr_wait:
+	mov rsi, rdi
+	and edi, 31
+	shr rsi, 5
+	lea rsi, [gs:64+rsi*4]
+._retry:
+	btr dword [rsi], edi
+	jc ._end
+	hlt
+	jmp ._retry
+._end:
+	ret
+
+
+
+%assign idx 32
+%rep 223
+isr%+idx:
+	mov qword [_lapic_eoi_register], 0
+	bts qword [gs:64+(idx>>5)*4], (idx&31)
+	iretq
+%assign idx idx+1
+%endrep
+
+
+
+isr255:
+	iretq
+
+
+
+section .data
+
+
+
+_next_isr_index:
+	db 0
 
 
 
