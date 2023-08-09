@@ -564,7 +564,7 @@ static u64 KERNEL_CORE_CODE _get_nfda_and_range_index(kfs_block_cache_t* block_c
 
 
 static _Bool _resize_node_down(kfs_block_cache_t* block_cache,kfs_node_t* node,u64 size){
-	u64 underflow=((size+4095)>>12)-((node->data.file.length+4095)>>12);
+	u64 underflow=((node->data.file.length+4095)>>12)-((size+4095)>>12);
 	if (!underflow){
 		return 1;
 	}
@@ -574,8 +574,39 @@ static _Bool _resize_node_down(kfs_block_cache_t* block_cache,kfs_node_t* node,u
 		return 0;
 	}
 	_block_cache_load_nfda(block_cache,node->data.file.nfda_tail);
-	ERROR("Unimplemented: _resize_node_down");
-	return 0;
+	u16 range_index=0;
+	while (range_index<510&&block_cache->nfda.ranges[range_index+1].block_index){
+		range_index++;
+	}
+	do{
+		u64 count=block_cache->nfda.ranges[range_index].block_count;
+		if (count>underflow){
+			count=underflow;
+		}
+		underflow-=count;
+		while (count){
+			count--;
+			_block_cache_dealloc_block(block_cache,block_cache->nfda.ranges[range_index].block_index+count);
+		}
+		block_cache->nfda.ranges[range_index].block_index=0;
+		block_cache->nfda.ranges[range_index].block_count=0;
+		if (range_index){
+			range_index--;
+			continue;
+		}
+		block_cache->root.nfda_block_count-=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
+		u64 prev_block_index=block_cache->nfda.prev_block_index;
+		_block_cache_dealloc_block(block_cache,block_cache->nfda.block_index);
+		if (!prev_block_index){
+			node->data.file.nfda_head=0;
+			node->data.file.nfda_tail=0;
+			return 1;
+		}
+		node->data.file.nfda_tail=prev_block_index;
+		_block_cache_load_nfda(block_cache,prev_block_index);
+	} while (underflow);
+	return 1;
 }
 
 

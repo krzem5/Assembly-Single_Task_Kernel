@@ -75,7 +75,7 @@ void sz_main(int argc,const char*const* argv){
 		}
 		int error=fs_resize(fd,size);
 		if (error<0){
-			printf("sz: unable to resize '%s' to '%lu': error %d\n",argv[1],argv[2],error);
+			printf("sz: unable to resize '%s' to '%s': error %d\n",argv[1],argv[2],error);
 			goto _cleanup;
 		}
 	}
