@@ -4,7 +4,7 @@
 
 
 
-void ioapic_init(void);
+void ioapic_init(u16 count);
 
 
 

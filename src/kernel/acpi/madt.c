@@ -47,6 +47,7 @@ void acpi_madt_load(const void* madt_ptr){
 	LOG("Loading MADT...");
 	const madt_t* madt=madt_ptr;
 	u16 cpu_count=0;
+	u16 ioapic_count=0;
 	u64 lapic_address=madt->lapic;
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
@@ -61,13 +62,16 @@ void acpi_madt_load(const void* madt_ptr){
 				cpu_count++;
 			}
 		}
+		else if (madt_entry->type==1){
+			ioapic_count++;
+		}
 		else if (madt_entry->type==5){
 			lapic_address=madt_entry->lapic_override.lapic;
 		}
 		i+=madt_entry->length;
 	}
 	lapic_init(lapic_address);
-	ioapic_init();
+	ioapic_init(ioapic_count);
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
