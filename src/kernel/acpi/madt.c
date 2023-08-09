@@ -1,3 +1,4 @@
+#include <kernel/apic/ioapic.h>
 #include <kernel/apic/lapic.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/log/log.h>
@@ -66,6 +67,7 @@ void acpi_madt_load(const void* madt_ptr){
 		i+=madt_entry->length;
 	}
 	lapic_init(lapic_address);
+	ioapic_init();
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
@@ -73,7 +75,7 @@ void acpi_madt_load(const void* madt_ptr){
 			cpu_register_core(madt_entry->lapic.apic_id);
 		}
 		else if (madt_entry->type==1){
-			ERROR("IO_APIC: %u -> %p, %p",madt_entry->io_apic.apic_id,madt_entry->io_apic.address,madt_entry->io_apic.gsi_base);
+			ioapic_add(madt_entry->io_apic.apic_id,madt_entry->io_apic.address,madt_entry->io_apic.gsi_base);
 		}
 		i+=madt_entry->length;
 	}
