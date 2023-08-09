@@ -8,7 +8,7 @@ system_data_t system_data;
 
 
 
-void _system_init(void){
+void system_init(void){
 	_syscall_system_config(&system_data,sizeof(system_data_t));
 }
 

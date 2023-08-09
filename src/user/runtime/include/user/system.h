@@ -28,6 +28,10 @@ extern system_data_t system_data;
 
 
 
+void system_init(void);
+
+
+
 void system_shutdown(u8 flags);
 
 

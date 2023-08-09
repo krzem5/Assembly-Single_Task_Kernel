@@ -3,7 +3,7 @@ extern _syscall_cpu_core_start
 extern _syscall_cpu_core_stop
 global cpu_count
 global cpu_bsp_id
-global _cpu_init
+global cpu_init
 global cpu_core_start
 global cpu_core_stop
 section .text
@@ -11,7 +11,8 @@ section .text
 
 
 [bits 64]
-_cpu_init:
+section .text.cpu_init
+cpu_init:
 	call _syscall_cpu_core_count
 	mov dword [cpu_count], eax
 	shr rax, 32
@@ -43,7 +44,7 @@ cpu_core_stop:
 
 
 
-section .data
+section .data.cpu_data
 
 
 

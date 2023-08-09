@@ -932,7 +932,7 @@ static _Bool _kfs_set_size(partition_t* fs,fs_node_t* node,u64 size){
 	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
 		return 0;
 	}
-	if (((size+4095)>>12)!=((kfs_node->data.file.length+4095)>>12)){
+	if (((size+4095)>>12)==((kfs_node->data.file.length+4095)>>12)){
 		goto _change_size;
 	}
 	if (size>kfs_node->data.file.length){

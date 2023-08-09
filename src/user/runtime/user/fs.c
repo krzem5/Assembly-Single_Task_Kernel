@@ -44,6 +44,12 @@ s64 fs_seek(int fd,u64 offset,u8 type){
 
 
 
+int fs_resize(int fd,u64 size){
+	return _syscall_fd_resize(fd,size);
+}
+
+
+
 int fs_absolute_path(int fd,char* buffer,u32 buffer_length){
 	return 0;
 }

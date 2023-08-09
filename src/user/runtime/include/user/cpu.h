@@ -9,6 +9,10 @@ extern u32 cpu_bsp_id;
 
 
 
+void cpu_init(void);
+
+
+
 void cpu_core_start(u32 core,void* func,void* arg);
 
 

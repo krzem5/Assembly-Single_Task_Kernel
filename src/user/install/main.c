@@ -72,6 +72,7 @@ static _Bool _copy_file(const char* name,char* path,u32 offset){
 		printf("Unable to open file '%s': error %d\n",path,dst_fd);
 		return 0;
 	}
+	fs_resize(dst_fd,0);
 	_copy_data(src_fd,dst_fd,0,0xffffffff);
 	fs_close(src_fd);
 	fs_close(dst_fd);
@@ -92,6 +93,8 @@ static u32 _partition_name_to_path(char* path,const char* name){
 
 
 void main(void){
+	drive_init();
+	partition_init();
 	char path[64];
 	const partition_t* partition=partitions;
 	for (u32 i=0;i<partition_count;i++){

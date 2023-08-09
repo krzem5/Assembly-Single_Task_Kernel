@@ -4,13 +4,13 @@
 
 
 
-drive_t __attribute__((section(".bss"))) drives[MAX_DRIVES];
+drive_t __attribute__((section(".bss.drives"))) drives[MAX_DRIVES];
 u32 drive_count;
 u32 drive_boot_index;
 
 
 
-void _drive_init(void){
+void drive_init(void){
 	for (u32 i=0;i<MAX_DRIVES;i++){
 		drives[i].flags=0;
 	}
