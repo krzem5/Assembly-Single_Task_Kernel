@@ -38,6 +38,7 @@ typedef struct _FS_FILE_SYSTEM_CONFIG{
 	u64 (*read)(struct _PARTITION*,fs_node_t*,u64,u8*,u64);
 	u64 (*write)(struct _PARTITION*,fs_node_t*,u64,const u8*,u64);
 	u64 (*get_size)(struct _PARTITION*,fs_node_t*);
+	_Bool (*set_size)(struct _PARTITION*,fs_node_t*,u64);
 	void (*flush_cache)(struct _PARTITION*);
 } fs_file_system_config_t;
 

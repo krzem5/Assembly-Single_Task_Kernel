@@ -1,276 +1,53 @@
-global _syscall_serial_send
-global _syscall_serial_recv
-global _syscall_elf_load
-global _syscall_cpu_core_count
-global _syscall_cpu_core_start
-global _syscall_cpu_core_stop
-global _syscall_drive_list_length
-global _syscall_drive_list_get
-global _syscall_partition_count
-global _syscall_partition_get
-global _syscall_fd_open
-global _syscall_fd_close
-global _syscall_fd_delete
-global _syscall_fd_read
-global _syscall_fd_write
-global _syscall_fd_seek
-global _syscall_fd_stat
-global _syscall_fd_get_relative
-global _syscall_fd_move
-global _syscall_network_layer1_config
-global _syscall_network_layer2_send
-global _syscall_network_layer2_poll
-global _syscall_system_shutdown
-global _syscall_system_config
-global _syscall_memory_map
-global _syscall_memory_unmap
-global _syscall_memory_stats
-global _syscall_clock_get_converion
-global _syscall_drive_format
-global _syscall_drive_stats
-global _syscall_network_layer3_refresh
-global _syscall_network_layer3_device_count
-global _syscall_network_layer3_device_get
-global _syscall_network_layer3_device_delete
 section .text
 
 
 
+%macro DECL_SYSCALL 3
+global _syscall_%1
+_syscall_%1:
+	mov rax, %2
+%if %3==4
+	mov r8, rcx
+%endif
+	syscall
+	ret
+%endmacro
+
+
+
 [bits 64]
-_syscall_serial_send:
-	mov rax, 0
-	syscall
-	ret
-
-
-
-_syscall_serial_recv:
-	mov rax, 1
-	syscall
-	ret
-
-
-
-_syscall_elf_load:
-	mov rax, 2
-	syscall
-	ret
-
-
-
-_syscall_cpu_core_count:
-	mov rax, 3
-	syscall
-	ret
-
-
-
-_syscall_cpu_core_start:
-	mov r8, rcx
-	mov rax, 4
-	syscall
-	ret
-
-
-
-_syscall_cpu_core_stop:
-	mov rax, 5
-	syscall
-	ret
-
-
-
-_syscall_drive_list_length:
-	mov rax, 6
-	syscall
-	ret
-
-
-
-_syscall_drive_list_get:
-	mov rax, 7
-	syscall
-	ret
-
-
-
-_syscall_partition_count:
-	mov rax, 8
-	syscall
-	ret
-
-
-
-_syscall_partition_get:
-	mov rax, 9
-	syscall
-	ret
-
-
-
-_syscall_fd_open:
-	mov r8, rcx
-	mov rax, 10
-	syscall
-	ret
-
-
-
-_syscall_fd_close:
-	mov rax, 11
-	syscall
-	ret
-
-
-
-_syscall_fd_delete:
-	mov rax, 12
-	syscall
-	ret
-
-
-
-_syscall_fd_read:
-	mov rax, 13
-	syscall
-	ret
-
-
-
-_syscall_fd_write:
-	mov rax, 14
-	syscall
-	ret
-
-
-
-_syscall_fd_seek:
-	mov rax, 15
-	syscall
-	ret
-
-
-
-_syscall_fd_stat:
-	mov rax, 16
-	syscall
-	ret
-
-
-
-_syscall_fd_get_relative:
-	mov rax, 17
-	syscall
-	ret
-
-
-
-_syscall_fd_move:
-	mov rax, 18
-	syscall
-	ret
-
-
-
-_syscall_network_layer1_config:
-	mov rax, 19
-	syscall
-	ret
-
-
-
-_syscall_network_layer2_send:
-	mov rax, 20
-	syscall
-	ret
-
-
-
-_syscall_network_layer2_poll:
-	mov rax, 21
-	syscall
-	ret
-
-
-
-_syscall_system_shutdown:
-	mov rax, 22
-	syscall
-	ret
-
-
-
-_syscall_system_config:
-	mov rax, 23
-	syscall
-	ret
-
-
-
-_syscall_memory_map:
-	mov rax, 24
-	syscall
-	ret
-
-
-
-_syscall_memory_unmap:
-	mov rax, 25
-	syscall
-	ret
-
-
-
-_syscall_memory_stats:
-	mov rax, 26
-	syscall
-	ret
-
-
-
-_syscall_clock_get_converion:
-	mov rax, 27
-	syscall
-	ret
-
-
-
-_syscall_drive_format:
-	mov rax, 28
-	syscall
-	ret
-
-
-
-_syscall_drive_stats:
-	mov rax, 29
-	syscall
-	ret
-
-
-
-_syscall_network_layer3_refresh:
-	mov rax, 30
-	syscall
-	ret
-
-
-
-_syscall_network_layer3_device_count:
-	mov rax, 31
-	syscall
-	ret
-
-
-
-_syscall_network_layer3_device_get:
-	mov rax, 32
-	syscall
-	ret
-
-
-
-_syscall_network_layer3_device_delete:
-	mov rax, 33
-	syscall
-	ret
+DECL_SYSCALL serial_send,0,2
+DECL_SYSCALL serial_recv,1,3
+DECL_SYSCALL elf_load,2,2
+DECL_SYSCALL cpu_core_count,3,0
+DECL_SYSCALL cpu_core_start,4,4
+DECL_SYSCALL cpu_core_stop,5,0
+DECL_SYSCALL drive_list_length,6,0
+DECL_SYSCALL drive_list_get,7,3
+DECL_SYSCALL partition_count,8,0
+DECL_SYSCALL partition_get,9,3
+DECL_SYSCALL fd_open,10,4
+DECL_SYSCALL fd_close,11,1
+DECL_SYSCALL fd_delete,12,1
+DECL_SYSCALL fd_read,13,3
+DECL_SYSCALL fd_write,14,3
+DECL_SYSCALL fd_seek,15,3
+DECL_SYSCALL fd_resize,16,2
+DECL_SYSCALL fd_stat,17,3
+DECL_SYSCALL fd_get_relative,18,3
+DECL_SYSCALL fd_move,19,2
+DECL_SYSCALL network_layer1_config,20,2
+DECL_SYSCALL network_layer2_send,21,2
+DECL_SYSCALL network_layer2_poll,22,2
+DECL_SYSCALL network_layer3_refresh,23,0
+DECL_SYSCALL network_layer3_device_count,24,0
+DECL_SYSCALL network_layer3_device_get,25,3
+DECL_SYSCALL network_layer3_device_delete,26,3
+DECL_SYSCALL system_shutdown,27,1
+DECL_SYSCALL system_config,28,2
+DECL_SYSCALL memory_map,29,2
+DECL_SYSCALL memory_unmap,30,2
+DECL_SYSCALL memory_stats,31,2
+DECL_SYSCALL clock_get_converion,32,0
+DECL_SYSCALL drive_format,33,3
+DECL_SYSCALL drive_stats,34,3

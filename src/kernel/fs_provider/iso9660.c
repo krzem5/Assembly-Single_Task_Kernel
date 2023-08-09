@@ -205,6 +205,12 @@ static u64 _iso9660_get_size(partition_t* fs,fs_node_t* node){
 
 
 
+static _Bool _iso9660_set_size(partition_t* fs,fs_node_t* node,u64 size){
+	return 0;
+}
+
+
+
 static void _iso9660_flush_cache(partition_t* fs){
 	return;
 }
@@ -222,6 +228,7 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
 	_iso9660_read,
 	_iso9660_write,
 	_iso9660_get_size,
+	_iso9660_set_size,
 	_iso9660_flush_cache
 };
 

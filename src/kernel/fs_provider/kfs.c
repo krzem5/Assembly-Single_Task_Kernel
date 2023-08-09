@@ -35,7 +35,7 @@
 #define KFS_NODE_ID_NONE 0xffffffff
 
 #define Kfs_MASK_NAME_LENGTH 0x7f
-#define KFS_NODE_FLAGAG_DIRECTORY 0x80
+#define KFS_NODE_FLAG_DIRECTORY 0x80
 
 
 
@@ -409,11 +409,11 @@ _nda2_found:
 
 
 static void KERNEL_CORE_CODE _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
-	out->header.type=((node->flags&KFS_NODE_FLAGAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
+	out->header.type=((node->flags&KFS_NODE_FLAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
 	out->header.parent=(node->parent==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->header.next_sibling=(node->next_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
-	out->header.first_child=(!(node->flags&KFS_NODE_FLAGAG_DIRECTORY)||node->data.directory.first_child==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->header.first_child=(!(node->flags&KFS_NODE_FLAG_DIRECTORY)||node->data.directory.first_child==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
 	out->block_index=node->block_index;
 	out->id=node->index;
 }
@@ -526,7 +526,7 @@ _nda2_found:
 	}
 	out->flags=type|name_length;
 	memcpy(out->name,name,name_length);
-	if (type==KFS_NODE_FLAGAG_DIRECTORY){
+	if (type==KFS_NODE_FLAG_DIRECTORY){
 		out->data.directory.first_child=KFS_NODE_ID_NONE;
 	}
 	else{
@@ -563,8 +563,65 @@ static u64 KERNEL_CORE_CODE _get_nfda_and_range_index(kfs_block_cache_t* block_c
 
 
 
+static _Bool _resize_node_down(kfs_block_cache_t* block_cache,kfs_node_t* node,u64 size){
+	u64 underflow=((size+4095)>>12)-((node->data.file.length+4095)>>12);
+	if (!underflow){
+		return 1;
+	}
+	ERROR("Unimplemented: _resize_node_down");
+	return 0;
+}
+
+
+
+static _Bool _resize_node_up(kfs_block_cache_t* block_cache,kfs_node_t* node,u64 size){
+	u64 overflow=((size+4095)>>12)-((node->data.file.length+4095)>>12);
+	if (!overflow){
+		return 1;
+	}
+	block_cache->root.data_block_count+=overflow<<(12-DRIVE_BLOCK_SIZE_SHIFT);
+	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
+	if (!(node->data.file.nfda_tail)){
+		node->data.file.nfda_head=_block_cache_alloc_block(block_cache);
+		node->data.file.nfda_tail=node->data.file.nfda_head;
+		_block_cache_init_nfda(block_cache,node->data.file.nfda_tail);
+	}
+	else{
+		_block_cache_load_nfda(block_cache,node->data.file.nfda_tail);
+	}
+	u16 range_index=0;
+	while (range_index<510&&block_cache->nfda.ranges[range_index+1].block_index){
+		range_index++;
+	}
+	kfs_large_block_index_t new_block_index;
+	do{
+		overflow--;
+		new_block_index=_block_cache_alloc_block(block_cache);
+		if (new_block_index==block_cache->nfda.ranges[range_index].block_index+block_cache->nfda.ranges[range_index].block_count){
+			block_cache->nfda.ranges[range_index].block_count++;
+		}
+		else{
+			if (block_cache->nfda.ranges[range_index].block_index){
+				range_index++;
+				if (range_index==510){
+					ERROR("Unimplemented: allocate new NFDA block");
+					return 0;
+				}
+			}
+			block_cache->nfda.ranges[range_index].block_index=new_block_index;
+			block_cache->nfda.ranges[range_index].block_count=1;
+		}
+		block_cache->nfda.data_length++;
+		block_cache->flags|=KFS_BLOCK_CACHE_NFDA_DIRTY;
+	} while (overflow);
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA1_DIRTY;
+	return 1;
+}
+
+
+
 static fs_node_t* _kfs_create(partition_t* fs,_Bool is_directory,const char* name,u8 name_length){
-	kfs_node_t* kfs_node=_alloc_node(fs->extra_data,(is_directory?KFS_NODE_FLAGAG_DIRECTORY:0),name,name_length);
+	kfs_node_t* kfs_node=_alloc_node(fs->extra_data,(is_directory?KFS_NODE_FLAG_DIRECTORY:0),name,name_length);
 	if (!kfs_node){
 		return NULL;
 	}
@@ -582,7 +639,7 @@ static _Bool _kfs_delete(partition_t* fs,fs_node_t* node){
 	if (!kfs_node){
 		return 0;
 	}
-	if (!(kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY)&&kfs_node->data.file.nfda_head){
+	if (!(kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)&&kfs_node->data.file.nfda_head){
 		kfs_large_block_index_t block_index=kfs_node->data.file.nfda_head;
 		do{
 			_block_cache_load_nfda(block_cache,block_index);
@@ -638,7 +695,7 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,fs_node_t* 
 			out_id=kfs_node->next_sibling;
 			break;
 		case FS_RELATIVE_FIRST_CHILD:
-			if (!(kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY)){
+			if (!(kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)){
 				return NULL;
 			}
 			out_id=kfs_node->data.directory.first_child;
@@ -675,7 +732,7 @@ static _Bool _kfs_set_relative(partition_t* fs,fs_node_t* node,u8 relative,fs_no
 			kfs_node->next_sibling=other_id;
 			break;
 		case FS_RELATIVE_FIRST_CHILD:
-			if (!(kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY)){
+			if (!(kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)){
 				return 0;
 			}
 			kfs_node->data.directory.first_child=other_id;
@@ -715,7 +772,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,fs_node_t* node,u64 offset
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
-	if ((kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY)||offset>=kfs_node->data.file.length){
+	if ((kfs_node->flags&KFS_NODE_FLAG_DIRECTORY)||offset>=kfs_node->data.file.length){
 		return 0;
 	}
 	if (offset+count>kfs_node->data.file.length){
@@ -781,50 +838,13 @@ static u64 _kfs_write(partition_t* fs,fs_node_t* node,u64 offset,const u8* buffe
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
-	if (kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY){
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
 		return 0;
 	}
 	if (offset+count>kfs_node->data.file.length){
-		u64 overflow=((offset+count+4095)>>12)-((kfs_node->data.file.length+4095)>>12);
-		if (!overflow){
-			goto _skip_nfda_resize;
+		if (!_resize_node_up(block_cache,kfs_node,offset+count)){
+			return 0;
 		}
-		block_cache->root.data_block_count+=overflow<<(12-DRIVE_BLOCK_SIZE_SHIFT);
-		block_cache->flags|=KFS_BLOCK_CACHE_ROOT_DIRTY;
-		if (!(kfs_node->data.file.nfda_tail)){
-			kfs_node->data.file.nfda_head=_block_cache_alloc_block(block_cache);
-			kfs_node->data.file.nfda_tail=kfs_node->data.file.nfda_head;
-			_block_cache_init_nfda(block_cache,kfs_node->data.file.nfda_tail);
-		}
-		else{
-			_block_cache_load_nfda(block_cache,kfs_node->data.file.nfda_tail);
-		}
-		u16 range_index=0;
-		while (range_index<510&&block_cache->nfda.ranges[range_index+1].block_index){
-			range_index++;
-		}
-		kfs_large_block_index_t new_block_index;
-		do{
-			overflow--;
-			new_block_index=_block_cache_alloc_block(block_cache);
-			if (new_block_index==block_cache->nfda.ranges[range_index].block_index+block_cache->nfda.ranges[range_index].block_count){
-				block_cache->nfda.ranges[range_index].block_count++;
-			}
-			else{
-				if (block_cache->nfda.ranges[range_index].block_index){
-					range_index++;
-					if (range_index==510){
-						ERROR("Unimplemented: allocate new NFDA block");
-						return 0;
-					}
-				}
-				block_cache->nfda.ranges[range_index].block_index=new_block_index;
-				block_cache->nfda.ranges[range_index].block_count=1;
-			}
-			block_cache->nfda.data_length++;
-			block_cache->flags|=KFS_BLOCK_CACHE_NFDA_DIRTY;
-		} while (overflow);
-_skip_nfda_resize:
 		kfs_node->data.file.length=offset+count;
 		block_cache->flags|=KFS_BLOCK_CACHE_NDA1_DIRTY;
 	}
@@ -896,10 +916,39 @@ static u64 _kfs_get_size(partition_t* fs,fs_node_t* node){
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
-	if (kfs_node->flags&KFS_NODE_FLAGAG_DIRECTORY){
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
 		return 0;
 	}
 	return kfs_node->data.file.length;
+}
+
+
+
+static _Bool _kfs_set_size(partition_t* fs,fs_node_t* node,u64 size){
+	kfs_block_cache_t* block_cache=fs->extra_data;
+	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
+	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
+	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
+	if (kfs_node->flags&KFS_NODE_FLAG_DIRECTORY){
+		return 0;
+	}
+	if (((size+4095)>>12)!=((kfs_node->data.file.length+4095)>>12)){
+		goto _change_size;
+	}
+	if (size>kfs_node->data.file.length){
+		if (!_resize_node_up(block_cache,kfs_node,size)){
+			return 0;
+		}
+	}
+	else{
+		if (!_resize_node_down(block_cache,kfs_node,size)){
+			return 0;
+		}
+	}
+_change_size:
+	kfs_node->data.file.length=size;
+	block_cache->flags|=KFS_BLOCK_CACHE_NDA1_DIRTY;
+	return 1;
 }
 
 
@@ -934,6 +983,7 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	_kfs_read,
 	_kfs_write,
 	_kfs_get_size,
+	_kfs_set_size,
 	_kpartition_flush_cache
 };
 
@@ -954,7 +1004,7 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const partition_config_t* pa
 	kfs_fs_node_t* root=partition_add(drive,partition_config,&_kfs_fs_config,block_cache);
 	kfs_node_t* kfs_root=_get_node_by_index(block_cache,0);
 	if (!kfs_root){
-		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAGAG_DIRECTORY,NULL,0);
+		kfs_root=_alloc_node(block_cache,KFS_NODE_FLAG_DIRECTORY,NULL,0);
 	}
 	_node_to_fs_node(kfs_root,root);
 	drive->stats->root_block_count=block_cache->root.root_block_count;

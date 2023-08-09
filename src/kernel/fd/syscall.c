@@ -81,6 +81,16 @@ void syscall_fd_seek(syscall_registers_t* regs){
 
 
 
+void syscall_fd_resize(syscall_registers_t* regs){
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	regs->rax=fd_resize(regs->rdi,regs->rsi);
+}
+
+
+
 void syscall_fd_stat(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;

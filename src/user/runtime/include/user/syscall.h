@@ -68,6 +68,10 @@ s64 _syscall_fd_seek(s32 fd,u64 offset,u32 type);
 
 
 
+s32 _syscall_fd_resize(s32 fd,u64 size);
+
+
+
 s32 _syscall_fd_stat(s32 fd,void* ptr,u32 size);
 
 

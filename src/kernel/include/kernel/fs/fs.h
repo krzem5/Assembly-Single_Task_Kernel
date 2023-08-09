@@ -88,4 +88,8 @@ u64 fs_get_size(fs_node_t* node);
 
 
 
+_Bool fs_set_size(fs_node_t* node,u64 size);
+
+
+
 #endif

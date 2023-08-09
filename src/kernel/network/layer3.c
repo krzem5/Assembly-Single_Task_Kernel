@@ -45,6 +45,7 @@ static void _flush_device_list_cache(void){
 		lock_release(&_layer3_lock);
 		return;
 	}
+	fs_set_size(node,sizeof(u32)+56*_layer3_device_count);
 	fs_write(node,0,&_layer3_device_count,sizeof(u32));
 	for (u32 i=0;i<_layer3_device_count;i++){
 		fs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
@@ -279,6 +280,7 @@ _Bool network_layer3_delete_device(const u8* address){
 		if (i!=_layer3_device_count){
 			*(_layer3_devices+i)=*(_layer3_devices+_layer3_device_count);
 		}
+		_layer3_cache_is_dirty=1;
 		break;
 _next_device:
 	}

@@ -55,6 +55,12 @@ static u64 _emptyfs_get_size(partition_t* fs,fs_node_t* node){
 
 
 
+static _Bool _emptyfs_set_size(partition_t* fs,fs_node_t* node,u64 size){
+	return 0;
+}
+
+
+
 static void _emptypartition_flush_cache(partition_t* fs){
 	return;
 }
@@ -72,6 +78,7 @@ static const fs_file_system_config_t KERNEL_CORE_DATA _emptyfs_fs_config={
 	_emptyfs_read,
 	_emptyfs_write,
 	_emptyfs_get_size,
+	_emptyfs_set_size,
 	_emptypartition_flush_cache
 };
 

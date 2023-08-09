@@ -20,6 +20,7 @@
 #define FD_ERROR_NOT_EMPTY -8
 #define FD_ERROR_DIFFERENT_FS -9
 #define FD_ERROR_DIFFERENT_TYPE -10
+#define FD_ERROR_NO_SPACE -11
 
 #define FD_FLAG_READ 1
 #define FD_FLAG_WRITE 2
@@ -97,6 +98,10 @@ s64 fd_write(fd_t fd,const void* buffer,u64 count);
 
 
 s64 fd_seek(fd_t fd,u64 offset,u8 type);
+
+
+
+int fd_resize(fd_t fd,u64 size);
 
 
 

@@ -418,3 +418,13 @@ u64 fs_get_size(fs_node_t* node){
 	lock_release(&(fs->lock));
 	return out;
 }
+
+
+
+_Bool fs_set_size(fs_node_t* node,u64 size){
+	partition_t* fs=partition_data+node->fs_index;
+	lock_acquire(&(fs->lock));
+	_Bool out=fs->config->set_size(fs,node,size);
+	lock_release(&(fs->lock));
+	return out;
+}

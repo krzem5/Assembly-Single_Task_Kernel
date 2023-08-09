@@ -99,7 +99,6 @@ syscall_handler:
 	push rbx
 	push rax
 	mov rdi, rsp
-	mov r15, rax;;;;;;;;;;;;;
 	cmp rax, SYSCALL_COUNT
 	jl ._valid_syscall
 	mov rsi, rax

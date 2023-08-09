@@ -28,6 +28,10 @@ void syscall_fd_seek(syscall_registers_t* regs);
 
 
 
+void syscall_fd_resize(syscall_registers_t* regs);
+
+
+
 void syscall_fd_stat(syscall_registers_t* regs);
 
 
