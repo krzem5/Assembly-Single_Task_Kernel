@@ -36,7 +36,7 @@ static void _flush_device_list_cache(void){
 	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
 		return;
 	}
-	netork_layer3_flush_cache();
+	network_layer3_flush_cache();
 }
 
 
@@ -167,15 +167,20 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				for (u8 i=0;i<6;i++){
 					device->address[i]=address[i];
 				}
+				u8 changes=0;
 				for (u8 i=0;i<16;i++){
+					changes|=device->uuid[i]^buffer[i+1];
 					device->uuid[i]=buffer[i+1];
 				}
 				for (u8 i=0;i<32;i++){
+					changes|=device->serial_number[i]^buffer[i+17];
 					device->serial_number[i]=buffer[i+17];
 				}
 				device->serial_number[32]=0;
 				_update_ping_time(device);
-				_layer3_cache_is_dirty=1;
+				if (changes){
+					_layer3_cache_is_dirty=1;
+				}
 				lock_release(&_layer3_lock);
 			}
 			else{
@@ -276,9 +281,9 @@ _next_device:
 
 
 
-void netork_layer3_flush_cache(void){
+void network_layer3_flush_cache(void){
 	LOG("Flushing layer3 device cache...");
-	if (!_layer3_cache_is_dirty){
+	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty){
 		return;
 	}
 	lock_acquire(&_layer3_lock);

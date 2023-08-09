@@ -49,7 +49,7 @@ _Bool network_layer3_delete_device(const u8* address);
 
 
 
-void netork_layer3_flush_cache(void);
+void network_layer3_flush_cache(void);
 
 
 
