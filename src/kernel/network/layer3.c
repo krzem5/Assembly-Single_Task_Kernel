@@ -36,21 +36,7 @@ static void _flush_device_list_cache(void){
 	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
 		return;
 	}
-	lock_acquire(&_layer3_lock);
-	_layer3_cache_is_dirty=0;
-	_layer3_next_cache_flush_time=clock_get_time()+CACHE_FLUSH_INTERVAL;
-	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
-	if (!node){
-		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
-		lock_release(&_layer3_lock);
-		return;
-	}
-	fs_set_size(node,sizeof(u32)+56*_layer3_device_count);
-	fs_write(node,0,&_layer3_device_count,sizeof(u32));
-	for (u32 i=0;i<_layer3_device_count;i++){
-		fs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
-	}
-	lock_release(&_layer3_lock);
+	netork_layer3_flush_cache();
 }
 
 
@@ -286,4 +272,28 @@ _next_device:
 	}
 	lock_release(&_layer3_lock);
 	return out;
+}
+
+
+
+void netork_layer3_flush_cache(void){
+	LOG("Flushing layer3 device cache...");
+	if (!_layer3_cache_is_dirty){
+		return;
+	}
+	lock_acquire(&_layer3_lock);
+	_layer3_cache_is_dirty=0;
+	_layer3_next_cache_flush_time=clock_get_time()+CACHE_FLUSH_INTERVAL;
+	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
+	if (!node){
+		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
+		lock_release(&_layer3_lock);
+		return;
+	}
+	fs_set_size(node,sizeof(u32)+56*_layer3_device_count);
+	fs_write(node,0,&_layer3_device_count,sizeof(u32));
+	for (u32 i=0;i<_layer3_device_count;i++){
+		fs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
+	}
+	lock_release(&_layer3_lock);
 }

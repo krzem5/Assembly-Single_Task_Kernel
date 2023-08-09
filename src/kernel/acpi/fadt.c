@@ -1,8 +1,9 @@
 #include <kernel/acpi/fadt.h>
-#include <kernel/partition/partition.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/network/layer3.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "fadt"
@@ -85,6 +86,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 
 void KERNEL_NORETURN acpi_fadt_shutdown(_Bool restart){
+	netork_layer3_flush_cache();
 	partition_flush_cache();
 	for (u64 i=0;i<0xffff;i++){
 		__pause(); // ensure cache flushes properly
