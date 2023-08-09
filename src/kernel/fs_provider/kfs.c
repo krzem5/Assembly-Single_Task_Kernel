@@ -1,13 +1,12 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
-#include <kernel/partition/partition.h>
 #include <kernel/fs_provider/kfs.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/memcpy.h>
-#include <kernel/memory/memset.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "kfs"
 
 

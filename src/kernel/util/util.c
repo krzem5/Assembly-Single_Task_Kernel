@@ -12,3 +12,14 @@ void* KERNEL_CORE_CODE KERNEL_NOOPT memcpy(void* dst,const void* src,u64 length)
 	}
 	return dst;
 }
+
+
+
+void* KERNEL_CORE_CODE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
+	for (u8* ptr=dst;length;length--){
+		*ptr=value;
+		ptr++;
+	}
+	return dst;
+}
+

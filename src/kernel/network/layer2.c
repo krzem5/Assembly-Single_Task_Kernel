@@ -1,12 +1,12 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "layer2"
 
 

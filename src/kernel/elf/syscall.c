@@ -1,9 +1,9 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
-#include <kernel/memory/memcpy.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 
 
 

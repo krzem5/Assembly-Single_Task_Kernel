@@ -9,4 +9,12 @@ static inline void __pause(void){
 
 
 
+void* memcpy(void* dst,const void* src,u64 length);
+
+
+
+void* memset(void* dst,u8 value,u64 length);
+
+
+
 #endif

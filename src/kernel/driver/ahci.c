@@ -2,7 +2,6 @@
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>

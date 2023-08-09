@@ -1,7 +1,6 @@
 #include <kernel/driver/i82540.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/memcpy.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
