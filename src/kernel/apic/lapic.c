@@ -30,13 +30,10 @@ void lapic_init(u64 base){
 
 
 
-void lapic_send_ipi(u8 apic_id,u16 vector,_Bool wait_for_delivery){
+void lapic_send_ipi(u8 apic_id,u16 vector){
 	_lapic_registers[REGISTER_ESR]=0;
 	_lapic_registers[REGISTER_ICR1]=apic_id<<24;
 	_lapic_registers[REGISTER_ICR0]=vector;
-	if (!wait_for_delivery){
-		return;
-	}
 	while (_lapic_registers[REGISTER_ICR0]&APIC_ICR0_DELIVERY_STATUS_PENDING){
 		__pause();
 	}

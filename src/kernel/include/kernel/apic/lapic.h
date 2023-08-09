@@ -16,7 +16,7 @@ void lapic_init(u64 base);
 
 
 
-void lapic_send_ipi(u8 apic_id,u16 vector,_Bool wait_for_delivery);
+void lapic_send_ipi(u8 apic_id,u16 vector);
 
 
 
