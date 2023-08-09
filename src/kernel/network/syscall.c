@@ -114,3 +114,18 @@ void syscall_network_layer3_device_get(syscall_registers_t* regs){
 	*((network_layer3_device_t*)VMM_TRANSLATE_ADDRESS(address))=*device;
 	regs->rax=1;
 }
+
+
+
+void syscall_network_layer3_device_delete(syscall_registers_t* regs){
+	if (regs->rsi!=6){
+		regs->rax=0;
+		return;
+	}
+	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
+	if (!address){
+		regs->rax=0;
+		return;
+	}
+	regs->rax=network_layer3_delete_device(VMM_TRANSLATE_ADDRESS(address));
+}

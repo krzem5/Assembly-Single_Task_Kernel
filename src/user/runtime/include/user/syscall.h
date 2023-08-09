@@ -136,4 +136,8 @@ _Bool _syscall_network_layer3_device_get(u32 index,void* buffer,u32 size);
 
 
 
+_Bool _syscall_network_layer3_device_delete(const void* buffer,u32 size);
+
+
+
 #endif

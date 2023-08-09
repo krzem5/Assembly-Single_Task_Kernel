@@ -28,4 +28,8 @@ void syscall_network_layer3_device_get(syscall_registers_t* regs);
 
 
 
+void syscall_network_layer3_device_delete(syscall_registers_t* regs);
+
+
+
 #endif

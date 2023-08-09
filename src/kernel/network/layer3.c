@@ -21,7 +21,7 @@
 
 
 
-static _Bool _layer3_enabled;
+static _Bool _layer3_cache_enabled;
 static lock_t _layer3_lock;
 static network_layer3_device_t* _layer3_devices;
 static u32 _layer3_device_count;
@@ -33,7 +33,7 @@ static _Bool _layer3_cache_is_dirty;
 
 
 static void _flush_device_list_cache(void){
-	if (!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
+	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty||clock_get_time()<_layer3_next_cache_flush_time){
 		return;
 	}
 	lock_acquire(&_layer3_lock);
@@ -55,6 +55,9 @@ static void _flush_device_list_cache(void){
 
 
 static void _load_device_list_cache(void){
+	if (!_layer3_cache_enabled){
+		return;
+	}
 	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
 	if (!node){
 		INFO("Device cache file not found");
@@ -71,6 +74,7 @@ static void _load_device_list_cache(void){
 		if (fs_read(node,sizeof(u32)+56*i,_layer3_devices+i,56)!=56){
 			goto _error;
 		}
+		(_layer3_devices+i)->flags&=~NETWORK_LAYER3_DEVICE_FLAG_ONLINE;
 		(_layer3_devices+i)->ping=0;
 		(_layer3_devices+i)->last_ping_time=0;
 	}
@@ -97,14 +101,23 @@ _next_device:
 
 
 
+static void _update_ping_time(network_layer3_device_t* device){
+	device->flags|=NETWORK_LAYER3_DEVICE_FLAG_ONLINE;
+	device->ping=clock_get_time()-_layer3_last_ping_time;
+	device->last_ping_time=clock_get_time();
+}
+
+
+
 void network_layer3_init(void){
 	LOG("Initializing layer3 network...");
 	if ((partition_data+partition_boot_index)->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
-		_layer3_enabled=0;
-		ERROR("Layer3 network disabled, boot partition not formatted as KFS");
-		return;
+		_layer3_cache_enabled=0;
+		WARN("Layer3 network device cache disabled, boot partition not formatted as KFS");
 	}
-	_layer3_enabled=1;
+	else{
+		_layer3_cache_enabled=1;
+	}
 	lock_init(&_layer3_lock);
 	_layer3_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK));
 	_layer3_device_count=0;
@@ -119,7 +132,7 @@ void network_layer3_init(void){
 
 
 void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8* buffer){
-	if (!buffer_length||!_layer3_enabled){
+	if (!buffer_length){
 		return;
 	}
 	_Bool is_response=buffer[0]&1;
@@ -129,8 +142,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				lock_acquire(&_layer3_lock);
 				u32 index=_get_device_index(address);
 				if (index!=0xffffffff){
-					(_layer3_devices+index)->ping=clock_get_time()-_layer3_last_ping_time;
-					(_layer3_devices+index)->last_ping_time=clock_get_time();
+					_update_ping_time(_layer3_devices+index);
 				}
 				lock_release(&_layer3_lock);
 			}
@@ -164,6 +176,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 					_layer3_device_count++;
 				}
 				network_layer3_device_t* device=_layer3_devices+index;
+				device->flags=0;
 				for (u8 i=0;i<6;i++){
 					device->address[i]=address[i];
 				}
@@ -174,8 +187,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 					device->serial_number[i]=buffer[i+17];
 				}
 				device->serial_number[32]=0;
-				device->ping=clock_get_time()-_layer3_last_ping_time;
-				device->last_ping_time=clock_get_time();
+				_update_ping_time(device);
 				_layer3_cache_is_dirty=1;
 				lock_release(&_layer3_lock);
 			}
@@ -208,9 +220,6 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 
 
 void network_layer3_refresh_device_list(void){
-	if (!_layer3_enabled){
-		return;
-	}
 	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
 	lock_acquire(&_layer3_lock);
 	for (u32 i=0;i<_layer3_device_count;i++){
@@ -250,6 +259,29 @@ u32 network_layer3_get_device_count(void){
 const network_layer3_device_t* network_layer3_get_device(u32 index){
 	lock_acquire(&_layer3_lock);
 	const network_layer3_device_t* out=(index>=_layer3_device_count?NULL:_layer3_devices+index);
+	lock_release(&_layer3_lock);
+	return out;
+}
+
+
+
+_Bool network_layer3_delete_device(const u8* address){
+	lock_acquire(&_layer3_lock);
+	_Bool out=0;
+	for (u32 i=0;i<_layer3_device_count;i++){
+		for (u8 j=0;j<6;j++){
+			if ((_layer3_devices+i)->address[j]!=address[j]){
+				goto _next_device;
+			}
+		}
+		out=1;
+		_layer3_device_count--;
+		if (i!=_layer3_device_count){
+			*(_layer3_devices+i)=*(_layer3_devices+_layer3_device_count);
+		}
+		break;
+_next_device:
+	}
 	lock_release(&_layer3_lock);
 	return out;
 }

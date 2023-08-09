@@ -4,6 +4,10 @@
 
 
 
+#define NETWORK_DEVICE_FLAG_ONLINE 0x01
+
+
+
 typedef struct _NETWORK_PACKET{
 	u8 address[6];
 	u16 protocol;
@@ -21,10 +25,10 @@ typedef struct _NETWORK_CONFIG{
 
 
 typedef struct _NETWORK_DEVICE{
+	u8 flags;
 	u8 address[6];
 	u8 uuid[16];
 	char serial_number[33];
-	u8 _padding;
 	u64 ping;
 	u64 last_ping_time;
 } network_device_t;
@@ -52,6 +56,10 @@ u32 network_device_count(void);
 
 
 _Bool network_device_get(u32 index,network_device_t* device);
+
+
+
+_Bool network_device_delete(const u8* address);
 
 
 

@@ -18,7 +18,7 @@
 
 
 
-#define SYSCALL_COUNT 33
+#define SYSCALL_COUNT 34
 
 
 
@@ -68,6 +68,7 @@ void syscall_init(void){
 	_syscall_handlers[30]=syscall_network_layer3_refresh;
 	_syscall_handlers[31]=syscall_network_layer3_device_count;
 	_syscall_handlers[32]=syscall_network_layer3_device_get;
+	_syscall_handlers[33]=syscall_network_layer3_device_delete;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }
 

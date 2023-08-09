@@ -37,3 +37,9 @@ u32 network_device_count(void){
 _Bool network_device_get(u32 index,network_device_t* device){
 	return _syscall_network_layer3_device_get(index,device,sizeof(network_device_t));
 }
+
+
+
+_Bool network_device_delete(const u8* address){
+	return _syscall_network_layer3_device_delete(address,6);
+}

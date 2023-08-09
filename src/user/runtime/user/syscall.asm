@@ -31,6 +31,7 @@ global _syscall_drive_stats
 global _syscall_network_layer3_refresh
 global _syscall_network_layer3_device_count
 global _syscall_network_layer3_device_get
+global _syscall_network_layer3_device_delete
 section .text
 
 
@@ -264,5 +265,12 @@ _syscall_network_layer3_device_count:
 
 _syscall_network_layer3_device_get:
 	mov rax, 32
+	syscall
+	ret
+
+
+
+_syscall_network_layer3_device_delete:
+	mov rax, 33
 	syscall
 	ret
