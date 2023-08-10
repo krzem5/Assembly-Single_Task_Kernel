@@ -164,6 +164,7 @@ static void _i82540_irq_init(void* extra_data){
 	i82540_device_t* device=extra_data;
 	device->irq=isr_allocate();
 	ioapic_redirect_irq(device->pci_irq,device->irq);
+	device->mmio[REG_ITR]=0x0000;
 	device->mmio[REG_IMS]=0x0084;
 	(void)device->mmio[REG_ICR];
 }
