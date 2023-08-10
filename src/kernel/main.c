@@ -28,8 +28,8 @@
 
 
 void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
-	LOG_CORE("Starting kernel...");
 	cpu_check_features();
+	LOG_CORE("Starting kernel...");
 	const kernel_data_t* kernel_data=kernel_init();
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
