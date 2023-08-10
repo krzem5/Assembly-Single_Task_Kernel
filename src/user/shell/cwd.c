@@ -26,5 +26,6 @@ _Bool cwd_change(const char* path){
 	}
 	fs_close(cwd_fd);
 	cwd_fd=new_cwd_fd;
+	cwd_length=fs_absolute_path(cwd_fd,cwd,4096);
 	return 1;
 }

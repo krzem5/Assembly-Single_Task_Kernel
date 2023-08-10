@@ -428,3 +428,17 @@ _Bool fs_set_size(fs_node_t* node,u64 size){
 	lock_release(&(fs->lock));
 	return out;
 }
+
+
+
+u32 fs_get_full_path(fs_node_t* node,char* buffer,u32 buffer_length){
+	if (!buffer_length){
+		return 0;
+	}
+	u32 out=0;
+	while (node){
+		node=fs_get_relative(node,FS_RELATIVE_PARENT);
+	}
+	buffer[out]=0;
+	return out;
+}

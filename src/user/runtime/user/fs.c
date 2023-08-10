@@ -51,7 +51,7 @@ int fs_resize(int fd,u64 size){
 
 
 int fs_absolute_path(int fd,char* buffer,u32 buffer_length){
-	return 0;
+	return _syscall_fd_absolute_path(fd,buffer,buffer_length);
 }
 
 

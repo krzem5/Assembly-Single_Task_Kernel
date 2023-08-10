@@ -91,6 +91,21 @@ void syscall_fd_resize(syscall_registers_t* regs){
 
 
 
+void syscall_fd_absolute_path(syscall_registers_t* regs){
+	if (FD_OUT_OF_RANGE(regs->rdi)){
+		regs->rax=FD_ERROR_INVALID_FD;
+		return;
+	}
+	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
+	if (!address){
+		regs->rax=FD_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd_absolute_path(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
+}
+
+
+
 void syscall_fd_stat(syscall_registers_t* regs){
 	if (FD_OUT_OF_RANGE(regs->rdi)){
 		regs->rax=FD_ERROR_INVALID_FD;

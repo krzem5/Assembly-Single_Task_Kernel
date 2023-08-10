@@ -105,6 +105,10 @@ int fd_resize(fd_t fd,u64 size);
 
 
 
+int fd_absolute_path(fd_t fd,char* buffer,u32 buffer_length);
+
+
+
 int fd_stat(fd_t fd,fd_stat_t* out);
 
 

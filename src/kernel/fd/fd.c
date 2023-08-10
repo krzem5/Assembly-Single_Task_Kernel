@@ -246,6 +246,25 @@ int fd_resize(fd_t fd,u64 size){
 
 
 
+int fd_absolute_path(fd_t fd,char* buffer,u32 buffer_length){
+	lock_acquire(&_fd_lock);
+	if (_is_invalid_fd(fd)){
+		lock_release(&_fd_lock);
+		return FD_ERROR_INVALID_FD;
+	}
+	fd_data_t* data=_get_fd_data(fd);
+	fs_node_t* node=fs_get_by_id(data->node_id);
+	if (!node){
+		lock_release(&_fd_lock);
+		return FD_ERROR_NOT_FOUND;
+	}
+	int out=fs_get_full_path(node,buffer,buffer_length);
+	lock_release(&_fd_lock);
+	return out;
+}
+
+
+
 int fd_stat(fd_t fd,fd_stat_t* out){
 	lock_acquire(&_fd_lock);
 	if (_is_invalid_fd(fd)){

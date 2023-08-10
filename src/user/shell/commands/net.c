@@ -100,7 +100,7 @@ void net_main(int argc,const char*const* argv){
 		printf("Device #%u:\n  Flags:\x1b[1m%s%s\x1b[0m\n  MAC: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n  UUID: \x1b[1m%X%X%X%X-%X%X-%X%X-%X%X-%X%X%X%X%X%X\x1b[0m\n  SN: \x1b[1m%s\x1b[0m\n  Ping: \x1b[1m%lu\x1b[0mms (\x1b[1m%lu\x1b[0ms ago)\n",
 			i,
 			((device.flags&NETWORK_DEVICE_FLAG_ONLINE)?" Online":""),
-			((device.flags&NETWORK_DEVICE_FLAG_LOG_TARGET)?" Log target":""),
+			((device.flags&NETWORK_DEVICE_FLAG_LOG_TARGET)?" Log":""),
 			device.address[0],device.address[1],device.address[2],device.address[3],device.address[4],device.address[5],
 			device.uuid[0],device.uuid[1],device.uuid[2],device.uuid[3],
 			device.uuid[4],device.uuid[5],

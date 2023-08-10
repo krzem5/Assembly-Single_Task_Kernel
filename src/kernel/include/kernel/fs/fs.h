@@ -92,4 +92,8 @@ _Bool fs_set_size(fs_node_t* node,u64 size);
 
 
 
+u32 fs_get_full_path(fs_node_t* node,char* buffer,u32 buffer_length);
+
+
+
 #endif
