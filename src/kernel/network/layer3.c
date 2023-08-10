@@ -135,7 +135,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 			break;
 		case NETWORK_LAYER3_PACKET_TYPE_ENUMERATION:
 			if (is_response){
-				if (buffer_length<49){
+				if (buffer_length<50){
 					break;
 				}
 				lock_acquire(&_layer3_lock);
@@ -150,18 +150,19 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 					_layer3_device_count++;
 				}
 				network_layer3_device_t* device=_layer3_devices+index;
-				device->flags=0;
+				device->flags&=~NETWORK_LAYER3_DEVICE_FLAG_ONLINE;
+				u8 changes=device->flags^buffer[1];
+				device->flags=buffer[1];
 				for (u8 i=0;i<6;i++){
 					device->address[i]=address[i];
 				}
-				u8 changes=0;
 				for (u8 i=0;i<16;i++){
-					changes|=device->uuid[i]^buffer[i+1];
-					device->uuid[i]=buffer[i+1];
+					changes|=device->uuid[i]^buffer[i+2];
+					device->uuid[i]=buffer[i+2];
 				}
 				for (u8 i=0;i<32;i++){
-					changes|=device->serial_number[i]^buffer[i+17];
-					device->serial_number[i]=buffer[i+17];
+					changes|=device->serial_number[i]^buffer[i+18];
+					device->serial_number[i]=buffer[i+18];
 				}
 				device->serial_number[32]=0;
 				_update_ping_time(device);
