@@ -10,6 +10,8 @@
 #define APIC_ICR0_LEVEL_ASSERT 0x4000
 #define APIC_ICR0_TRIGGER_MODE_LEVEL 0x8000
 
+#define LAPIC_SPURIOUS_VECTOR 0xff
+
 
 
 void lapic_init(u64 base);

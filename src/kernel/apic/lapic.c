@@ -7,6 +7,7 @@
 
 
 
+#define REGISTER_TPR 0x20
 #define REGISTER_EOI 0x2c
 #define REGISTER_SVR 0x3c
 #define REGISTER_ESR 0xa0
@@ -29,6 +30,7 @@ void lapic_init(u64 base){
 
 void lapic_send_ipi(u8 lapic_id,u16 vector){
 	_lapic_registers[REGISTER_ESR]=0;
+	_lapic_registers[REGISTER_ESR]=0;
 	_lapic_registers[REGISTER_ICR1]=lapic_id<<24;
 	_lapic_registers[REGISTER_ICR0]=vector;
 	while (_lapic_registers[REGISTER_ICR0]&APIC_ICR0_DELIVERY_STATUS_PENDING){
@@ -39,5 +41,8 @@ void lapic_send_ipi(u8 lapic_id,u16 vector){
 
 
 void lapic_enable(void){
-	_lapic_registers[REGISTER_SVR]=0x1ff;
+	_lapic_registers[REGISTER_SVR]=0x100|LAPIC_SPURIOUS_VECTOR;
+	_lapic_registers[REGISTER_ESR]=0;
+	_lapic_registers[REGISTER_ESR]=0;
+	_lapic_registers[REGISTER_TPR]=0;
 }

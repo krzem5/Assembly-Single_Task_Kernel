@@ -66,9 +66,12 @@ isr_wait:
 %assign idx 32
 %rep 222
 isr%+idx:
-	mov dword [_lapic_registers+0x0b0], 0
-	mov dword [_lapic_registers+0x300], 0x000c00fe
+	push rax
+	mov rax, qword [_lapic_registers]
+	mov dword [rax+0x0b0], 0
+	mov dword [rax+0x300], 0x000c00fe
 	lock bts qword [_isr_mask+(idx>>5)*4], (idx&31)
+	pop rax
 	iretq
 %assign idx idx+1
 %endrep
@@ -76,7 +79,10 @@ isr%+idx:
 
 
 isr254:
-	mov dword [_lapic_registers+0x0b0], 0
+	push rax
+	mov rax, qword [_lapic_registers]
+	mov dword [rax+0x0b0], 0
+	pop rax
 	iretq
 
 
