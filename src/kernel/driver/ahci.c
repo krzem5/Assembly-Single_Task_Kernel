@@ -65,21 +65,11 @@ static u32 KERNEL_CORE_DATA _ahci_device_count;
 
 
 static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device){
-	u8 i=0;
-	while (1){
-		if (!((device->registers->sact|device->registers->ci)&(1<<i))){
-			return i;
-		}
-		i++;
-		if (i==device->controller->command_slot_count){
-			i=0;
-		}
-	}
-	// u32 mask;
-	// do{
-	// 	mask=~(device->registers->sact|device->registers->ci);
-	// } while (!mask);
-	// return __builtin_ctz(mask);
+	u32 mask;
+	do{
+		mask=(~(device->registers->sact|device->registers->ci))&((1ull<<device->controller->command_slot_count)-1);
+	} while (!mask);
+	return __builtin_ctz(mask);
 }
 
 
