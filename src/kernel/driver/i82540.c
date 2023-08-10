@@ -147,6 +147,14 @@ static void _i82540_wait(void* extra_data){
 	i82540_rx_descriptor_t* desc=GET_DESCRIPTOR(device,rx,tail);
 	while (!(desc->status&RDESC_DD)){
 		isr_wait(device->irq);
+		u32 icr=device->mmio[REG_ICR];
+		if (icr&0x0004){
+			device->mmio[REG_CTRL]|=CTRL_SLU;
+		}
+		else if (icr&0x0080){
+			break;
+		}
+		(void)device->mmio[REG_ICR];
 	}
 }
 
@@ -156,6 +164,8 @@ static void _i82540_irq_init(void* extra_data){
 	i82540_device_t* device=extra_data;
 	device->irq=isr_allocate();
 	ioapic_redirect_irq(device->pci_irq,device->irq);
+	device->mmio[REG_IMS]=0x0084;
+	(void)device->mmio[REG_ICR];
 }
 
 
