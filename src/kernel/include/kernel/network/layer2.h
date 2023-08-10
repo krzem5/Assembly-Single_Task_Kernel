@@ -22,7 +22,7 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet);
 
 
 
-_Bool network_layer2_poll(network_layer2_packet_t* packet);
+_Bool network_layer2_poll(network_layer2_packet_t* packet,_Bool block);
 
 
 

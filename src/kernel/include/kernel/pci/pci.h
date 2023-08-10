@@ -20,6 +20,7 @@ typedef struct _PCI_DEVICE{
 	u8 progif;
 	u8 revision_id;
 	u8 header_type;
+	u8 interrupt_line;
 } pci_device_t;
 
 

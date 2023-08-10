@@ -77,7 +77,7 @@ void syscall_network_layer2_poll(syscall_registers_t* regs){
 		return;
 	}
 	packet.buffer=VMM_TRANSLATE_ADDRESS(buffer_address);
-	regs->rax=network_layer2_poll(&packet);
+	regs->rax=network_layer2_poll(&packet,!!regs->rdx);
 	packet.buffer=user_buffer;
 	*((network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address))=packet;
 }

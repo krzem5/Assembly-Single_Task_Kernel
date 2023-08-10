@@ -16,7 +16,7 @@ static void _network_thread(void){
 	while (1){
 		packet.buffer_length=64;
 		packet.buffer=buffer;
-		network_poll(&packet);
+		network_poll(&packet,1);
 	}
 }
 

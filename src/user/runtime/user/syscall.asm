@@ -35,7 +35,7 @@ DECL_SYSCALL fd_get_relative,18,3
 DECL_SYSCALL fd_move,19,2
 DECL_SYSCALL network_layer1_config,20,2
 DECL_SYSCALL network_layer2_send,21,2
-DECL_SYSCALL network_layer2_poll,22,2
+DECL_SYSCALL network_layer2_poll,22,3
 DECL_SYSCALL network_layer3_refresh,23,0
 DECL_SYSCALL network_layer3_device_count,24,0
 DECL_SYSCALL network_layer3_device_get,25,3

@@ -1,4 +1,6 @@
+#include <kernel/apic/ioapic.h>
 #include <kernel/driver/i82540.h>
+#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -23,12 +25,12 @@
 #define REG_FCAL 0x000a
 #define REG_FCAH 0x000b
 #define REG_FCT 0x000c
-#define REG_FCTTV 0x005c
+#define REG_ICR 0x0030
+#define REG_ITR 0x0031
+#define REG_IMS 0x0034
 #define REG_IMC 0x0036
-#define REG_GCR 0x16c0
-#define REG_RAL0 0x1500
-#define REG_RAH0 0x1501
 #define REG_RCTL 0x0040
+#define REG_FCTTV 0x005c
 #define REG_TCTL 0x0100
 #define REG_RDBAL 0x0a00
 #define REG_RDBAH 0x0a01
@@ -40,6 +42,9 @@
 #define REG_TDLEN 0x0e02
 #define REG_TDH 0x0e04
 #define REG_TDT 0x0e06
+#define REG_RAL0 0x1500
+#define REG_RAH0 0x1501
+#define REG_GCR 0x16c0
 
 // CTRL flags
 #define CTRL_FD 0x00000001
@@ -132,6 +137,29 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 
 
 
+static void _i82540_wait(void* extra_data){
+	i82540_device_t* device=extra_data;
+	u16 tail=device->mmio[REG_RDT];
+	tail++;
+	if (tail==NUM_RX_DESCRIPTORS){
+		tail=0;
+	}
+	i82540_rx_descriptor_t* desc=GET_DESCRIPTOR(device,rx,tail);
+	while (!(desc->status&RDESC_DD)){
+		isr_wait(device->irq);
+	}
+}
+
+
+
+static void _i82540_irq_init(void* extra_data){
+	i82540_device_t* device=extra_data;
+	device->irq=isr_allocate();
+	ioapic_redirect_irq(device->pci_irq,device->irq);
+}
+
+
+
 void KERNEL_CORE_CODE driver_i82540_init(void){
 	_i82540_device_count=0;
 }
@@ -199,6 +227,8 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_TDH]=0;
 	i82540_device->mmio[REG_TDT]=0;
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
+	i82540_device->pci_irq=device->interrupt_line;
+	i82540_device->irq=0;
 	u32 rah=i82540_device->mmio[REG_RAH0];
 	u32 ral=i82540_device->mmio[REG_RAL0];
 	network_layer1_device_t layer1_device={
@@ -213,6 +243,8 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 		},
 		_i82540_tx,
 		_i82540_rx,
+		_i82540_wait,
+		_i82540_irq_init,
 		i82540_device
 	};
 	network_layer1_set_device(&layer1_device);

@@ -47,6 +47,7 @@ void KERNEL_CORE_CODE pci_init(void){
 				device.progif=data[2]>>8;
 				device.revision_id=data[2];
 				device.header_type=data[3]>>16;
+				device.interrupt_line=pci_device_read_data(&device,60);
 				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 				driver_ahci_init_device(&device);
 				driver_ata_init_device(&device);

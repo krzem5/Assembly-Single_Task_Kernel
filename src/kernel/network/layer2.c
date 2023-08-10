@@ -43,7 +43,10 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 
 
 
-_Bool network_layer2_poll(network_layer2_packet_t* packet){
+_Bool network_layer2_poll(network_layer2_packet_t* packet,_Bool block){
+	if (block){
+		network_layer1_wait();
+	}
 	u8 layer1_buffer[4096];
 	lock_acquire(&_layer2_lock);
 	u16 layer1_buffer_length=network_layer1_poll(layer1_buffer,4096);

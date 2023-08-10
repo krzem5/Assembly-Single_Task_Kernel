@@ -92,7 +92,7 @@ _Bool _syscall_network_layer2_send(const void* packet,u32 length);
 
 
 
-_Bool _syscall_network_layer2_poll(void* packet,u32 length);
+_Bool _syscall_network_layer2_poll(void* packet,u32 length,_Bool block);
 
 
 

@@ -6,7 +6,8 @@
 
 
 
-static network_layer1_device_t KERNEL_CORE_DATA _network_layer1_device;
+static network_layer1_device_t KERNEL_CORE_DATA _layer1_device;
+static _Bool _layer1_irq_initialized;
 
 const char* KERNEL_CORE_DATA network_layer1_name;
 mac_address_t KERNEL_CORE_DATA network_layer1_mac_address;
@@ -15,41 +16,53 @@ mac_address_t KERNEL_CORE_DATA network_layer1_mac_address;
 
 void KERNEL_CORE_CODE network_layer1_init(void){
 	LOG_CORE("Initializing layer1 network...");
-	_network_layer1_device.name=NULL;
+	_layer1_device.name=NULL;
 	network_layer1_name=NULL;
 	mac_address_init(&network_layer1_mac_address);
+	_layer1_irq_initialized=0;
 }
 
 
 
 void KERNEL_CORE_CODE network_layer1_set_device(const network_layer1_device_t* device){
-	if (_network_layer1_device.name){
+	if (_layer1_device.name){
 		WARN_CORE("Layer1 network device already installed");
 		return;
 	}
 	LOG_CORE("Enabling layer1 network device '%s'...",device->name);
-	_network_layer1_device=*device;
-	network_layer1_name=_network_layer1_device.name;
+	_layer1_device=*device;
+	network_layer1_name=_layer1_device.name;
 	for (u8 i=0;i<6;i++){
-		network_layer1_mac_address[i]=_network_layer1_device.mac_address[i];
+		network_layer1_mac_address[i]=_layer1_device.mac_address[i];
 	}
-	INFO_CORE("Layer1 network MAC address: %x:%x:%x:%x:%x:%x",_network_layer1_device.mac_address[0],_network_layer1_device.mac_address[1],_network_layer1_device.mac_address[2],_network_layer1_device.mac_address[3],_network_layer1_device.mac_address[4],_network_layer1_device.mac_address[5]);
+	INFO_CORE("Layer1 network MAC address: %x:%x:%x:%x:%x:%x",_layer1_device.mac_address[0],_layer1_device.mac_address[1],_layer1_device.mac_address[2],_layer1_device.mac_address[3],_layer1_device.mac_address[4],_layer1_device.mac_address[5]);
 }
 
 
 
 void network_layer1_send(u64 packet,u16 length){
-	if (!_network_layer1_device.name){
+	if (!_layer1_device.name){
 		return;
 	}
-	_network_layer1_device.tx(_network_layer1_device.extra_data,packet,length);
+	_layer1_device.tx(_layer1_device.extra_data,packet,length);
 }
 
 
 
 u16 network_layer1_poll(void* buffer,u16 buffer_length){
-	if (!_network_layer1_device.name){
+	if (!_layer1_device.name){
 		return 0;
 	}
-	return _network_layer1_device.rx(_network_layer1_device.extra_data,buffer,buffer_length);
+	return _layer1_device.rx(_layer1_device.extra_data,buffer,buffer_length);
+}
+
+
+
+void network_layer1_wait(void){
+	if (!_layer1_irq_initialized){
+		LOG("Initializing layer1 device IRQ...");
+		_layer1_device.irq_init(_layer1_device.extra_data);
+		_layer1_irq_initialized=1;
+	}
+	_layer1_device.wait(_layer1_device.extra_data);
 }

@@ -44,7 +44,7 @@ _Bool network_send(const network_packet_t* packet);
 
 
 
-_Bool network_poll(network_packet_t* packet);
+_Bool network_poll(network_packet_t* packet,_Bool block);
 
 
 
