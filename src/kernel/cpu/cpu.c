@@ -137,6 +137,9 @@ void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2){
 	if (CPU_DATA->index==index){
 		syscall_jump_to_user_mode();
 	}
+	else{
+		lapic_send_ipi(index,LAPIC_WAKEUP_VECTOR);
+	}
 }
 
 
