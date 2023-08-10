@@ -39,12 +39,11 @@ section .common
 
 
 syscall_jump_to_user_mode:
-	sti
-._check_function:
 	cmp qword [gs:32], 0
 	jnz ._function_found
+	sti
 	hlt
-	jmp ._check_function
+	jmp syscall_jump_to_user_mode
 ._function_found:
 	cli
 	mov rcx, qword [gs:32]
