@@ -743,6 +743,9 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,fs_node_t* 
 	if (out_id==KFS_NODE_ID_NONE){
 		return NULL;
 	}
+	if (!out_id){
+		return fs->root;
+	}
 	kfs_node_t* kfs_out=_get_node_by_index(block_cache,out_id);
 	fs_node_t* out=fs_alloc(fs->index,kfs_out->name,kfs_out->flags&KFS_MASK_NAME_LENGTH);
 	_node_to_fs_node(kfs_out,(kfs_fs_node_t*)out);

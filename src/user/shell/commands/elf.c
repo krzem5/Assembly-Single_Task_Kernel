@@ -1,5 +1,6 @@
 #include <command.h>
 #include <cwd.h>
+#include <user/elf.h>
 #include <user/fs.h>
 #include <user/io.h>
 #include <user/types.h>
@@ -20,8 +21,15 @@ void elf_main(int argc,const char*const* argv){
 		printf("elf: unable to open file '%s': error %d\n",argv[1],fd);
 		return;
 	}
+	char buffer[4096];
+	int error=fs_absolute_path(fd,buffer,4096);
+	if (error<0){
+		printf("elf: unable resolve file path: error %d\n",error);
+		return;
+	}
 	fs_close(fd);
-	// elf_load();
+	elf_load(buffer);
+	printf("elf: unable to load '%s' as an ELF executable\n",argv[1]);
 }
 
 

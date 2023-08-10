@@ -435,10 +435,45 @@ u32 fs_get_full_path(fs_node_t* node,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return 0;
 	}
-	u32 out=0;
-	while (node){
-		node=fs_get_relative(node,FS_RELATIVE_PARENT);
+	u32 i=buffer_length-1;
+	buffer[i]=0;
+	for (;1;node=fs_get_relative(node,FS_RELATIVE_PARENT)){
+		if (i<node->name_length){
+			return 0;
+		}
+		i-=node->name_length;
+		for (u8 j=0;j<node->name_length;j++){
+			buffer[i+j]=node->name[j];
+		}
+		if (node->flags&FS_NODE_FLAG_ROOT){
+			break;
+		}
+		if (!i){
+			return 0;
+		}
+		i--;
+		buffer[i]='/';
 	}
-	buffer[out]=0;
-	return out;
+	if (i==buffer_length-1){
+		i--;
+		buffer[i]='/';
+	}
+	if (node->fs_index!=partition_boot_index){
+		const partition_t* partition=partition_data+node->fs_index;
+		if (i<partition->name_length+1){
+			return 0;
+		}
+		i-=partition->name_length+1;
+		for (u8 j=0;j<partition->name_length;j++){
+			buffer[i+j]=partition->name[j];
+		}
+		buffer[i+partition->name_length]=':';
+	}
+	if (!i){
+		return buffer_length-2;
+	}
+	for (u32 j=0;j<buffer_length-i;j++){
+		buffer[j]=buffer[i+j];
+	}
+	return buffer_length-i-1;
 }
