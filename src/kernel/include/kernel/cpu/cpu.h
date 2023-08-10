@@ -45,6 +45,10 @@ extern u8 cpu_bsp_core_id;
 
 
 
+void cpu_check_features(void);
+
+
+
 void cpu_init(u16 count);
 
 
