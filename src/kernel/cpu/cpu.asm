@@ -81,4 +81,4 @@ section .cdata
 
 
 _feature_not_present_str:
-	db "Feature not present: %s",10,0
+	db 27,"[1m",27,"[38;2;231;72;86mFeature not present: %s",27,"[0m",10,0
