@@ -4,6 +4,10 @@
 
 
 
+void serial_init_irq(void);
+
+
+
 void serial_send(const void* buffer,u32 length);
 
 

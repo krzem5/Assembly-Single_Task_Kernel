@@ -42,6 +42,7 @@ syscall_jump_to_user_mode:
 	cmp qword [gs:32], 0
 	pause
 	jz syscall_jump_to_user_mode
+	cli
 	mov rcx, qword [gs:32]
 	mov rdi, qword [gs:40]
 	mov rsi, qword [gs:48]
@@ -106,7 +107,9 @@ syscall_handler:
 ._valid_syscall:
 	mov rax, qword [_syscall_handlers+rax*8]
 	cld
+	sti
 	call rax
+	cli
 	pop rax
 	pop rbx
 	pop rdx

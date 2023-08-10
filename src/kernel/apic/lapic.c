@@ -15,9 +15,7 @@
 
 
 
-static volatile u32* _lapic_registers;
-
-volatile u32* _lapic_eoi_register;
+volatile u32* _lapic_registers;
 
 
 
@@ -25,14 +23,13 @@ void lapic_init(u64 base){
 	LOG("Initializing lAPIC controller...");
 	INFO("lAPIC base: %p",base);
 	_lapic_registers=VMM_TRANSLATE_ADDRESS(base);
-	_lapic_eoi_register=_lapic_registers+REGISTER_EOI;
 }
 
 
 
-void lapic_send_ipi(u8 apic_id,u16 vector){
+void lapic_send_ipi(u8 lapic_id,u16 vector){
 	_lapic_registers[REGISTER_ESR]=0;
-	_lapic_registers[REGISTER_ICR1]=apic_id<<24;
+	_lapic_registers[REGISTER_ICR1]=lapic_id<<24;
 	_lapic_registers[REGISTER_ICR0]=vector;
 	while (_lapic_registers[REGISTER_ICR0]&APIC_ICR0_DELIVERY_STATUS_PENDING){
 		__pause();

@@ -25,7 +25,7 @@ typedef struct __attribute__((packed)) _MADT_ENTRY{
 	union{
 		struct __attribute__((packed)){
 			u8 processor_id;
-			u8 apic_id;
+			u8 lapic_id;
 			u32 flags;
 		} lapic;
 		struct __attribute__((packed)){
@@ -34,6 +34,12 @@ typedef struct __attribute__((packed)) _MADT_ENTRY{
 			u32 address;
 			u32 gsi_base;
 		} io_apic;
+		struct __attribute__((packed)){
+			u8 _padding;
+			u8 irq;
+			u32 gsi;
+			u16 flags;
+		} iso;
 		struct __attribute__((packed)){
 			u8 _padding[2];
 			u64 lapic;
@@ -48,11 +54,12 @@ void acpi_madt_load(const void* madt_ptr){
 	const madt_t* madt=madt_ptr;
 	u16 cpu_count=0;
 	u16 ioapic_count=0;
+	u16 iso_count=0;
 	u64 lapic_address=madt->lapic;
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
 		if (!madt_entry->type){
-			if (madt_entry->lapic.processor_id!=madt_entry->lapic.apic_id){
+			if (madt_entry->lapic.processor_id!=madt_entry->lapic.lapic_id){
 				WARN("CPU code id does not match CPU APIC id");
 			}
 			else if (!(madt_entry->lapic.flags&1)){
@@ -65,21 +72,27 @@ void acpi_madt_load(const void* madt_ptr){
 		else if (madt_entry->type==1){
 			ioapic_count++;
 		}
+		else if (madt_entry->type==2){
+			iso_count++;
+		}
 		else if (madt_entry->type==5){
 			lapic_address=madt_entry->lapic_override.lapic;
 		}
 		i+=madt_entry->length;
 	}
 	lapic_init(lapic_address);
-	ioapic_init(ioapic_count);
+	ioapic_init(ioapic_count,iso_count);
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
 		if (!madt_entry->type&&(madt_entry->lapic.flags&1)){
-			cpu_register_core(madt_entry->lapic.apic_id);
+			cpu_register_core(madt_entry->lapic.lapic_id);
 		}
 		else if (madt_entry->type==1){
 			ioapic_add(madt_entry->io_apic.apic_id,madt_entry->io_apic.address,madt_entry->io_apic.gsi_base);
+		}
+		else if (madt_entry->type==2){
+			ioapic_add_override(madt_entry->iso.irq,madt_entry->iso.gsi,madt_entry->iso.flags);
 		}
 		i+=madt_entry->length;
 	}

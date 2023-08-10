@@ -1,6 +1,6 @@
 extern _isr_handler
 extern _isr_handler_inside_kernel
-extern _lapic_eoi_register
+extern _lapic_registers
 extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
@@ -31,14 +31,14 @@ isr_init:
 	call idt_set_entry
 %assign idx idx+1
 %endrep
-	mov byte [_next_isr_index],0
+	mov byte [_next_isr_index],32
 	ret
 
 
 
 isr_allocate:
 	movzx ecx, byte [_next_isr_index]
-	cmp ecx, 0xff
+	cmp ecx, 0xfe
 	jge $
 	mov eax, ecx
 	add ecx, 1
@@ -48,12 +48,13 @@ isr_allocate:
 
 
 isr_wait:
+	mov dl, dl
 	mov rsi, rdi
 	and edi, 31
 	shr rsi, 5
-	lea rsi, [gs:64+rsi*4]
+	lea rsi, [_isr_mask+rsi*4]
 ._retry:
-	btr dword [rsi], edi
+	lock btr dword [rsi], edi
 	jc ._end
 	hlt
 	jmp ._retry
@@ -63,13 +64,20 @@ isr_wait:
 
 
 %assign idx 32
-%rep 223
+%rep 222
 isr%+idx:
-	mov qword [_lapic_eoi_register], 0
-	bts qword [gs:64+(idx>>5)*4], (idx&31)
+	mov dword [_lapic_registers+0x0b0], 0
+	mov dword [_lapic_registers+0x300], 0x000c00fe
+	lock bts qword [_isr_mask+(idx>>5)*4], (idx&31)
 	iretq
 %assign idx idx+1
 %endrep
+
+
+
+isr254:
+	mov dword [_lapic_registers+0x0b0], 0
+	iretq
 
 
 
@@ -84,6 +92,9 @@ section .data
 
 _next_isr_index:
 	db 0
+align 4
+_isr_mask:
+	times 8 dd 0
 
 
 
@@ -92,6 +103,8 @@ section .common
 
 
 _isr_common_handler:
+	pop rax
+	jmp $
 	mov rsp, cr3
 	cmp rsp, qword [vmm_common_kernel_pagemap]
 	je ._inside_kernel
@@ -134,6 +147,7 @@ _isr_common_handler:
 	cld
 	jmp _isr_handler
 ._inside_kernel:
+	jmp $
 	mov rsp, qword [gs:8]
 	cld
 	jmp _isr_handler_inside_kernel
