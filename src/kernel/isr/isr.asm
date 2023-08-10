@@ -53,42 +53,51 @@ isr_wait:
 	and edi, 31
 	shr rsi, 5
 	lea rsi, [_isr_mask+rsi*4]
+	lea r8, [_isr_mask+rsi*4]
 ._retry:
 	lock btr dword [rsi], edi
 	jc ._end
+	cmp qword [gs:32], 0
+	jnz ._fail
 	hlt
 	jmp ._retry
 ._end:
+	mov eax, 1
+	ret
+._fail:
+	xor eax, eax
 	ret
 
 
 
-%assign idx 32
-%rep 222
-isr%+idx:
+_irq_common_handler:
 	push rax
 	mov rax, qword [_lapic_registers]
 	mov dword [rax+0x0b0], 0
+	cmp qword [rsp+8], 0xfe
+	je ._skip_ipi
 	mov dword [rax+0x300], 0x000c00fe
-	lock bts qword [_isr_mask+(idx>>5)*4], (idx&31)
+._skip_ipi:
+	mov rax, qword [rsp+8]
+	mov qword [rsp+8], rbx
+	mov rbx, rax
+	shr rbx, 5
+	and rax, 31
+	lock bts qword [_isr_mask+rbx*4], rax
 	pop rax
-	iretq
-%assign idx idx+1
-%endrep
-
-
-
-isr254:
-	push rax
-	mov rax, qword [_lapic_registers]
-	mov dword [rax+0x0b0], 0
-	pop rax
-	iretq
-
-
-
+	pop rbx
 isr255:
 	iretq
+
+
+
+%assign idx 32
+%rep 223
+isr%+idx:
+	push qword idx
+	jmp _irq_common_handler
+%assign idx idx+1
+%endrep
 
 
 

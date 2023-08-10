@@ -83,7 +83,7 @@ syscall_handler:
 	mov rsp, qword [vmm_common_kernel_pagemap]
 	mov cr3, rsp
 	cmp qword [gs:32], 0
-	jnz syscall_jump_to_user_mode
+	jnz syscall_jump_to_user_mode._function_found
 	mov rsp, cr2
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
@@ -112,6 +112,8 @@ syscall_handler:
 	cld
 	sti
 	call rax
+	cmp qword [gs:32], 0
+	jnz syscall_jump_to_user_mode._function_found
 	cli
 	pop rax
 	pop rbx

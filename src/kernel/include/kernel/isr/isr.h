@@ -16,7 +16,7 @@ u8 isr_allocate(void);
 
 
 
-void isr_wait(u8 irq);
+_Bool isr_wait(u8 irq);
 
 
 
