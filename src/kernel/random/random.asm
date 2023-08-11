@@ -1,4 +1,4 @@
-%define MIN_ENTROPY_POOL_SIZE 512
+%define MIN_ENTROPY_POOL_SIZE 128
 
 
 
