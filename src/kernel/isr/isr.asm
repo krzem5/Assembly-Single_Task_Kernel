@@ -71,21 +71,28 @@ isr_wait:
 
 
 _irq_common_handler:
+	cli
+	push rdx
 	push rax
 	mov rax, qword [_lapic_registers]
+	mov rdx, qword [rsp+16]
 	mov dword [rax+0x0b0], 0
-	cmp qword [rsp+8], 0xfe
-	je ._skip_ipi
+	cmp edx, 0xfe
+	je ._skip_ipi_wakeup
 	mov dword [rax+0x300], 0x000c00fe
-._skip_ipi:
-	mov rax, qword [rsp+8]
-	mov qword [rsp+8], rbx
-	mov rbx, rax
-	shr rbx, 5
+	mov rax, rdx
+	shr rdx, 5
 	and rax, 31
-	lock bts qword [_isr_mask+rbx*4], rax
+	lock bts qword [_isr_mask+rdx*4], rax
+	rdtsc
+	xor eax, dword [rsp+24] ; rip
+	xor eax, dword [rsp+48] ; rsp
+	;;; Add eax to entropy pool
+._skip_ipi_wakeup:
 	pop rax
-	pop rbx
+	pop rdx
+	add rsp, 8
+	sti
 isr255:
 	iretq
 
