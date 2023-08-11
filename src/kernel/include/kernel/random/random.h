@@ -8,11 +8,15 @@ void random_init(void);
 
 
 
+void random_generate(void* buffer,u64 length);
+
+
+
 void _random_init_entropy_pool(void);
 
 
 
-void _random_get_entropy(u64* buffer);
+void _random_get_entropy(void* buffer);
 
 
 

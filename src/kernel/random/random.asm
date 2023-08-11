@@ -1,10 +1,11 @@
-%define MIN_ENTROPY_POOL_SIZE 256
+%define MIN_ENTROPY_POOL_SIZE 512
 
 
 
 global _random_entropy_pool
 global _random_entropy_pool_length
 global _random_init_entropy_pool
+global _random_get_entropy
 section .text
 
 
@@ -31,15 +32,12 @@ _random_init_entropy_pool:
 
 _random_get_entropy:
 	cmp qword [_random_entropy_pool_length], MIN_ENTROPY_POOL_SIZE
-	jge ._enough_entropy
-	xor eax, eax
-	ret
-._enough_entropy:
+	jl ._not_enough_entropy
 	mov qword [_random_entropy_pool_length], 0
 	mov ecx, 32
 	lea rsi, _random_entropy_pool
 	rep movsq
-	mov eax, 1
+._not_enough_entropy:
 	ret
 
 
