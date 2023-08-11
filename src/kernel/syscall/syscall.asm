@@ -2,11 +2,13 @@
 
 
 
-global syscall_enable
-global syscall_jump_to_user_mode
+extern _random_entropy_pool
+extern _random_entropy_pool_length
+extern _syscall_handlers
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
-extern _syscall_handlers
+global syscall_enable
+global syscall_jump_to_user_mode
 section .text
 
 
@@ -115,6 +117,11 @@ syscall_handler:
 	cmp qword [gs:32], 0
 	jnz syscall_jump_to_user_mode._function_found
 	cli
+	rdtsc
+	xor rax, rdx
+	mov edx, dword [_random_entropy_pool_length]
+	and edx, 0x3c
+	lock xor dword [_random_entropy_pool+rdx], eax
 	pop rax
 	pop rbx
 	pop rdx
