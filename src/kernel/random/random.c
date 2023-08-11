@@ -7,7 +7,7 @@
 
 
 static inline u32 _rotate_bits(u32 a,u8 b){
-	__asm__("rol %1,%0":"+r"(a):"c"(b));
+	asm("rol %1,%0":"+r"(a):"c"(b));
 	return a;
 }
 
@@ -44,7 +44,7 @@ static inline void _chacha_block(u32* state,u32* out){
 		_chacha_block_quarter(out,2,7,8,13);
 		_chacha_block_quarter(out,3,4,9,14);
 	}
-	state[4]++;
+	(*((u64*)(state+4)))++;
 }
 
 
