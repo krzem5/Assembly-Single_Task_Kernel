@@ -40,6 +40,10 @@ void network_layer1_init(void);
 
 
 
+void network_layer1_init_irq(void);
+
+
+
 void network_layer1_set_device(const network_layer1_device_t* device);
 
 

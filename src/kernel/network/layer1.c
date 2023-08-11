@@ -7,7 +7,6 @@
 
 
 static network_layer1_device_t KERNEL_CORE_DATA _layer1_device;
-static _Bool _layer1_irq_initialized;
 
 const char* KERNEL_CORE_DATA network_layer1_name;
 mac_address_t KERNEL_CORE_DATA network_layer1_mac_address;
@@ -19,7 +18,13 @@ void KERNEL_CORE_CODE network_layer1_init(void){
 	_layer1_device.name=NULL;
 	network_layer1_name=NULL;
 	mac_address_init(&network_layer1_mac_address);
-	_layer1_irq_initialized=0;
+}
+
+
+
+void network_layer1_init_irq(void){
+	LOG("Initializing layer1 network device IRQ...");
+	_layer1_device.irq_init(_layer1_device.extra_data);
 }
 
 
@@ -59,10 +64,5 @@ u16 network_layer1_poll(void* buffer,u16 buffer_length){
 
 
 void network_layer1_wait(void){
-	if (!_layer1_irq_initialized){
-		LOG("Initializing layer1 device IRQ...");
-		_layer1_device.irq_init(_layer1_device.extra_data);
-		_layer1_irq_initialized=1;
-	}
 	_layer1_device.wait(_layer1_device.extra_data);
 }

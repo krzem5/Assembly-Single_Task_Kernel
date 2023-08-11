@@ -55,6 +55,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	isr_init();
 	acpi_load();
 	bios_get_system_data();
+	network_layer1_init_irq();
 	network_layer2_init();
 	network_layer3_init();
 	random_init();
