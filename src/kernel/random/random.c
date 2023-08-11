@@ -66,9 +66,7 @@ void random_init(void){
 
 void random_generate(void* buffer,u64 length){
 	lock_acquire(&_random_chacha_lock);
-	if (_random_has_entropy()){
-		_random_get_entropy(_random_chacha_state);
-	}
+	_random_get_entropy(_random_chacha_state);
 	u32* buffer_ptr=buffer;
 	while (length){
 		_chacha_block(_random_chacha_state,_random_chacha_buffer);

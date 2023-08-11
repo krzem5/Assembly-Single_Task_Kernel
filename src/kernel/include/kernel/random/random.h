@@ -16,10 +16,6 @@ void _random_init_entropy_pool(void);
 
 
 
-_Bool _random_has_entropy(void);
-
-
-
 void _random_get_entropy(void* buffer);
 
 

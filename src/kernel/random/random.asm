@@ -5,7 +5,6 @@
 global _random_entropy_pool
 global _random_entropy_pool_length
 global _random_init_entropy_pool
-global _random_has_entropy
 global _random_get_entropy
 section .text
 
@@ -31,21 +30,14 @@ _random_init_entropy_pool:
 
 
 
-_random_has_entropy:
-	xor eax, eax
-	cmp qword [_random_entropy_pool_length], MIN_ENTROPY_POOL_SIZE
-	jl ._no_entropy
-	mov eax, 1
-._no_entropy:
-	ret
-
-
-
 _random_get_entropy:
+	cmp qword [_random_entropy_pool_length], MIN_ENTROPY_POOL_SIZE
+	jl ._not_enough_entropy
 	mov qword [_random_entropy_pool_length], 0
 	mov ecx, 8
 	lea rsi, _random_entropy_pool
 	rep movsq
+._not_enough_entropy:
 	ret
 
 
