@@ -100,6 +100,22 @@ _Bool _syscall_network_layer2_poll(void* packet,u32 length,_Bool block);
 
 
 
+void _syscall_network_layer3_refresh(void);
+
+
+
+u32 _syscall_network_layer3_device_count(void);
+
+
+
+_Bool _syscall_network_layer3_device_get(u32 index,void* buffer,u32 size);
+
+
+
+_Bool _syscall_network_layer3_device_delete(const void* buffer,u32 size);
+
+
+
 void _syscall_system_shutdown(u32 flags);
 
 
@@ -132,19 +148,7 @@ _Bool _syscall_drive_stats(u32 index,void* buffer,u32 size);
 
 
 
-void _syscall_network_layer3_refresh(void);
-
-
-
-u32 _syscall_network_layer3_device_count(void);
-
-
-
-_Bool _syscall_network_layer3_device_get(u32 index,void* buffer,u32 size);
-
-
-
-_Bool _syscall_network_layer3_device_delete(const void* buffer,u32 size);
+_Bool _syscall_random_generate(void* buffer,u64 size);
 
 
 

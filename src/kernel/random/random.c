@@ -6,29 +6,86 @@
 
 
 
-#define BLAKE2B_INIT_STRUCT {{0x6a09e667f3bcc908ull,0xbb67ae8584caa73bull,0x3c6ef372fe94f82bull,0xa54ff53a5f1d36f1ull,0x510e527fade682d1ull,0x9b05688c2b3e6c1full,0x1f83d9abfb41bd6bull,0x5be0cd19137e2179ull}}
+static inline u32 _rotate_bits(u32 a,u8 b){
+	__asm__("rol %1,%0":"+r"(a):"c"(b));
+	return a;
+}
 
 
 
-typedef struct _BLAKE2B_STATE{
-	u64 data[8];
-} blake2b_state_t;
+static inline void _chacha_block_quarter(u32* out,u8 a,u8 b,u8 c,u8 d){
+	out[a]+=out[b];
+	out[d]^=out[a];
+	out[d]=_rotate_bits(out[d],16);
+	out[c]+=out[d];
+	out[b]^=out[c];
+	out[b]=_rotate_bits(out[b],12);
+	out[a]+=out[b];
+	out[d]^=out[a];
+	out[d]=_rotate_bits(out[d],8);
+	out[c]+=out[d];
+	out[b]^=out[c];
+	out[b]=_rotate_bits(out[b],7);
+}
 
 
 
-static u64 _random_entropy_buffer[16];
+static inline void _chacha_block(u32* state,u32* out){
+	for (u8 i=0;i<16;i++){
+		out[i]=state[i];
+	}
+	for (u8 i=0;i<10;i++){
+		_chacha_block_quarter(out,0,4,8,12);
+		_chacha_block_quarter(out,1,5,9,13);
+		_chacha_block_quarter(out,2,6,10,14);
+		_chacha_block_quarter(out,3,7,11,15);
+		_chacha_block_quarter(out,0,5,10,15);
+		_chacha_block_quarter(out,1,6,11,12);
+		_chacha_block_quarter(out,2,7,8,13);
+		_chacha_block_quarter(out,3,4,9,14);
+	}
+	state[4]++;
+}
+
+
+
+static lock_t _random_chacha_lock;
+static u32 _random_chacha_state[16];
+static u32 _random_chacha_buffer[16];
 
 
 
 void random_init(void){
 	LOG("Initializing PRNG...");
+	lock_init(&_random_chacha_lock);
 	_random_init_entropy_pool();
+	_random_get_entropy(_random_chacha_state);
 }
 
 
 
 void random_generate(void* buffer,u64 length){
+	lock_acquire(&_random_chacha_lock);
 	if (_random_has_entropy()){
-		_random_get_entropy(_random_entropy_buffer);
+		INFO("Reseeding PRNG...");
+		_random_get_entropy(_random_chacha_state);
 	}
+	u32* buffer_ptr=buffer;
+	while (length){
+		_chacha_block(_random_chacha_state,_random_chacha_buffer);
+		if (length<32){
+			u8* buffer_ptr8=(u8*)buffer_ptr;
+			const u8* chacha_buffer8=(const u8*)_random_chacha_buffer;
+			for (u8 i=0;i<length;i++){
+				buffer_ptr8[i]=chacha_buffer8[i];
+			}
+			break;
+		}
+		for (u8 i=0;i<8;i++){
+			buffer_ptr[i]=_random_chacha_buffer[i];
+		}
+		length-=32;
+		buffer_ptr+=8;
+	}
+	lock_release(&_random_chacha_lock);
 }

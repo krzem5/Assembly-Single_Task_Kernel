@@ -41,7 +41,7 @@ void hexdump_main(int argc,const char*const* argv){
 		printf("hexdump: unable to open file '%s': error %d\n",file,fd);
 		return;
 	}
-	char buffer[512];
+	u8 buffer[512];
 	u32 i=0;
 	while (1){
 		s64 length=fs_read(fd,buffer,512);

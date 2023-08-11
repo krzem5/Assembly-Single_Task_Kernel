@@ -49,3 +49,4 @@ DECL_SYSCALL memory_stats, 32, 2
 DECL_SYSCALL clock_get_converion, 33, 0
 DECL_SYSCALL drive_format, 34, 3
 DECL_SYSCALL drive_stats, 35, 3
+DECL_SYSCALL random_generate, 36, 2

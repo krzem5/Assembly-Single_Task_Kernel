@@ -11,6 +11,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/syscall.h>
 #include <kernel/partition/syscall.h>
+#include <kernel/random/syscall.h>
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -18,7 +19,7 @@
 
 
 
-#define SYSCALL_COUNT 36
+#define SYSCALL_COUNT 37
 
 
 
@@ -71,6 +72,7 @@ void syscall_init(void){
 	_syscall_handlers[33]=syscall_clock_get_converion;
 	_syscall_handlers[34]=syscall_drive_format;
 	_syscall_handlers[35]=syscall_drive_stats;
+	_syscall_handlers[36]=syscall_random_generate;
 	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
 }
 

@@ -23,7 +23,7 @@ _random_init_entropy_pool:
 	xor rax, r8
 	xor qword [_random_entropy_pool+rcx], rax
 	add ecx, 1
-	cmp ecx, 128
+	cmp ecx, 64
 	jl ._next_entry
 	;;; The loop above overruns into _random_entropy_pool_length, therefore it has to be initialized afterwards
 	mov qword [_random_entropy_pool_length], MIN_ENTROPY_POOL_SIZE
@@ -43,7 +43,7 @@ _random_has_entropy:
 
 _random_get_entropy:
 	mov qword [_random_entropy_pool_length], 0
-	mov ecx, 16
+	mov ecx, 8
 	lea rsi, _random_entropy_pool
 	rep movsq
 	ret
@@ -56,6 +56,6 @@ section .data
 
 align 8
 _random_entropy_pool:
-	times 16 dq 0
+	times 8 dq 0
 _random_entropy_pool_length:
 	dq 0
