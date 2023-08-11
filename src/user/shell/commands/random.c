@@ -1,5 +1,4 @@
 #include <command.h>
-#include <cwd.h>
 #include <string.h>
 #include <user/io.h>
 #include <user/random.h>
