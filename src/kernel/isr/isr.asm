@@ -1,6 +1,8 @@
 extern _isr_handler
 extern _isr_handler_inside_kernel
 extern _lapic_registers
+extern _random_entropy_pool
+extern _random_entropy_pool_length
 extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
@@ -87,7 +89,10 @@ _irq_common_handler:
 	rdtsc
 	xor eax, dword [rsp+24] ; rip
 	xor eax, dword [rsp+48] ; rsp
-	;;; Add eax to entropy pool
+	mov rdx, 4
+	lock xadd qword [_random_entropy_pool_length], rdx
+	and rdx, 255
+	lock xor dword [_random_entropy_pool+rdx], eax
 ._skip_ipi_wakeup:
 	pop rax
 	pop rdx

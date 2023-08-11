@@ -20,6 +20,7 @@
 #include <kernel/network/layer3.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
+#include <kernel/random/random.h>
 #include <kernel/serial/serial.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -56,6 +57,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	bios_get_system_data();
 	network_layer2_init();
 	network_layer3_init();
+	random_init();
 	serial_init_irq();
 	cpu_start_all_cores();
 }
