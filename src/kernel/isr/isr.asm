@@ -91,7 +91,7 @@ _irq_common_handler:
 	xor eax, dword [rsp+48] ; rsp
 	mov rdx, 4
 	lock xadd qword [_random_entropy_pool_length], rdx
-	and rdx, 255
+	and rdx, 0x7c
 	lock xor dword [_random_entropy_pool+rdx], eax
 ._skip_ipi_wakeup:
 	pop rax
