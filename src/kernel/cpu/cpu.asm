@@ -60,6 +60,7 @@ cpu_check_features:
 	TEST_FEATURE ebx, 3, bmi1
 	TEST_FEATURE ebx, 5, avx2
 	TEST_FEATURE ebx, 8, bmi2
+	TEST_FEATURE ebx, 18, rdseed
 	mov eax, 0x80000001
 	cpuid
 	TEST_FEATURE edx, 11, syscall
