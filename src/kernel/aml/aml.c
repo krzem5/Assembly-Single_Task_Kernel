@@ -3,127 +3,258 @@
 #define KERNEL_LOG_NAME "aml"
 
 
-#define OP_ZERO
-#define OP_ONE
-#define OP_ALIAS
-#define OP_NAME
-#define OP_BYTE_PREF
-#define OP_WORD_PREF
-#define OP_D_WORD_PREF
-#define OP_STRING_PREF
-#define OP_Q_WORD_PREF
-#define OP_SCOPE
-#define OP_BUFFER
-#define OP_PACKAGE
-#define OP_VAR_PACKAGE
-#define OP_METHOD
-#define OP_DUAL_NAME_PREF
-#define OP_MULTI_NAME_PREF
-#define OP_ROOT_CH
-#define OP_PARENT_PREFIX_CH
-#define OP_NAME_CH
-#define OP_LOCAL0
-#define OP_LOCAL1
-#define OP_LOCAL2
-#define OP_LOCAL3
-#define OP_LOCAL4
-#define OP_LOCAL5
-#define OP_LOCAL6
-#define OP_LOCAL7
-#define OP_ARG0
-#define OP_ARG1
-#define OP_ARG2
-#define OP_ARG3
-#define OP_ARG4
-#define OP_ARG5
-#define OP_ARG6
-#define OP_STORE
-#define OP_REF_OF
-#define OP_ADD
-#define OP_CONCAT
-#define OP_SUBTRACT
-#define OP_INCREMENT
-#define OP_DECREMENT
-#define OP_MULTIPLY
-#define OP_DIVIDE
-#define OP_SHIFT_LEFT
-#define OP_SHIFT_RIGHT
-#define OP_AND
-#define OP_NAND
-#define OP_OR
-#define OP_NOR
-#define OP_XOR
-#define OP_NOT
-#define OP_FIND_SET_LEFT_BIT
-#define OP_FIND_SET_RIGHT_BIT
-#define OP_DEREF_OF
-#define OP_CONCAT_RES
-#define OP_MOD
-#define OP_NOTIFY
-#define OP_SIZE_OF
-#define OP_INDEX
-#define OP_MATCH
-#define OP_CREATE_D_WORD_FIELD
-#define OP_CREATE_WORD_FIELD
-#define OP_CREATE_BYTE_FIELD
-#define OP_CREATE_BIT_FIELD
-#define OP_TYPE
-#define OP_CREATE_Q_WORD_FIELD
-#define OP_LAND
-#define OP_LOR
-#define OP_L_NOT_EQUAL
-#define OP_L_NOT_EQUAL
-#define OP_L_NOT_EQUAL
-#define OP_LNOT
-#define OP_L_EQUAL
-#define OP_L_GREATER
-#define OP_L_LESS
-#define OP_TO_BUFFER
-#define OP_TO_DECIMAL_STRING
-#define OP_TO_HEX_STRING
-#define OP_TO_INTEGER
-#define OP_TO_STRING
-#define OP_COPY_OBJECT
-#define OP_MID
-#define OP_CONTINUE
-#define OP_IF
-#define OP_ELSE
-#define OP_WHILE
-#define OP_NOOP
-#define OP_RETURN
-#define OP_BREAK
-#define OP_BREAK_POINT
-#define OP_ONES
 
-#define OP_EXT_MUTEX
-#define OP_EXT_EVENT
-#define OP_EXT_COND_REF_OF
-#define OP_EXT_CREATE_FIELD
-#define OP_EXT_LOAD_TABLE
-#define OP_EXT_LOAD
-#define OP_EXT_STALL
-#define OP_EXT_SLEEP
-#define OP_EXT_ACQUIRE
-#define OP_EXT_SIGNAL
-#define OP_EXT_WAIT
-#define OP_EXT_RESET
-#define OP_EXT_RELEASE
-#define OP_EXT_FROM_BCD
-#define OP_EXT_TO_B
-#define OP_EXT_UNLOAD
-#define OP_EXT_REVISION
-#define OP_EXT_DEBUG
-#define OP_EXT_FATAL
-#define OP_EXT_TIMER
-#define OP_EXT_OP_REGION
-#define OP_EXT_FIELD
-#define OP_EXT_DEVICE
-#define OP_EXT_PROCESSOR
-#define OP_EXT_POWER_RES
-#define OP_EXT_THERMAL_ZONE
-#define OP_EXT_INDEX_FIELD
-#define OP_EXT_BANK_FIELD
-#define OP_EXT_DATA_REGION
+#define DECL_TRANSLATION(type,arg_count) ((type)|((arg_count)<<8))
+
+
+
+#define OP_ZERO 0x01
+#define OP_ONE 0x02
+#define OP_ALIAS 0x03
+#define OP_NAME 0x04
+#define OP_BYTE_PREF 0x05
+#define OP_WORD_PREF 0x06
+#define OP_D_WORD_PREF 0x07
+#define OP_STRING_PREF 0x08
+#define OP_Q_WORD_PREF 0x09
+#define OP_SCOPE 0x0a
+#define OP_BUFFER 0x0b
+#define OP_PACKAGE 0x0c
+#define OP_VAR_PACKAGE 0x0d
+#define OP_METHOD 0x0e
+#define OP_DUAL_NAME_PREF 0x0f
+#define OP_MULTI_NAME_PREF 0x10
+#define OP_ROOT_CH 0x11
+#define OP_PARENT_PREFIX_CH 0x12
+#define OP_NAME_CH 0x13
+#define OP_LOCAL0 0x14
+#define OP_LOCAL1 0x15
+#define OP_LOCAL2 0x16
+#define OP_LOCAL3 0x17
+#define OP_LOCAL4 0x18
+#define OP_LOCAL5 0x19
+#define OP_LOCAL6 0x1a
+#define OP_LOCAL7 0x1b
+#define OP_ARG0 0x1c
+#define OP_ARG1 0x1d
+#define OP_ARG2 0x1e
+#define OP_ARG3 0x1f
+#define OP_ARG4 0x20
+#define OP_ARG5 0x21
+#define OP_ARG6 0x22
+#define OP_STORE 0x23
+#define OP_REF_OF 0x24
+#define OP_ADD 0x25
+#define OP_CONCAT 0x26
+#define OP_SUBTRACT 0x27
+#define OP_INCREMENT 0x28
+#define OP_DECREMENT 0x29
+#define OP_MULTIPLY 0x2a
+#define OP_DIVIDE 0x2b
+#define OP_SHIFT_LEFT 0x2c
+#define OP_SHIFT_RIGHT 0x2d
+#define OP_AND 0x2e
+#define OP_NAND 0x2f
+#define OP_OR 0x30
+#define OP_NOR 0x31
+#define OP_XOR 0x32
+#define OP_NOT 0x33
+#define OP_FIND_SET_LEFT_BIT 0x34
+#define OP_FIND_SET_RIGHT_BIT 0x35
+#define OP_DEREF_OF 0x36
+#define OP_CONCAT_RES 0x37
+#define OP_MOD 0x38
+#define OP_NOTIFY 0x39
+#define OP_SIZE_OF 0x3a
+#define OP_INDEX 0x3b
+#define OP_MATCH 0x3c
+#define OP_CREATE_D_WORD_FIELD 0x3d
+#define OP_CREATE_WORD_FIELD 0x3e
+#define OP_CREATE_BYTE_FIELD 0x3f
+#define OP_CREATE_BIT_FIELD 0x40
+#define OP_TYPE 0x41
+#define OP_CREATE_Q_WORD_FIELD 0x42
+#define OP_L_AND 0x43
+#define OP_L_OR 0x44
+#define OP_L_NOT_EQUAL 0x45
+#define OP_L_LESS_EQUAL 0x46
+#define OP_L_GREATER_EQUAL 0x47
+#define OP_L_NOT 0x48
+#define OP_L_EQUAL 0x49
+#define OP_L_GREATER 0x4a
+#define OP_L_LESS 0x4b
+#define OP_TO_BUFFER 0x4c
+#define OP_TO_DECIMAL_STRING 0x4d
+#define OP_TO_HEX_STRING 0x4e
+#define OP_TO_INTEGER 0x4f
+#define OP_TO_STRING 0x50
+#define OP_COPY_OBJECT 0x51
+#define OP_MID 0x52
+#define OP_CONTINUE 0x53
+#define OP_IF 0x54
+#define OP_ELSE 0x55
+#define OP_WHILE 0x56
+#define OP_NOOP 0x57
+#define OP_RETURN 0x58
+#define OP_BREAK 0x59
+#define OP_BREAK_POINT 0x5a
+#define OP_ONES 0x5b
+
+#define OP_EXT_MUTEX 0x81
+#define OP_EXT_EVENT 0x82
+#define OP_EXT_COND_REF_OF 0x83
+#define OP_EXT_CREATE_FIELD 0x84
+#define OP_EXT_LOAD_TABLE 0x85
+#define OP_EXT_LOAD 0x86
+#define OP_EXT_STALL 0x87
+#define OP_EXT_SLEEP 0x88
+#define OP_EXT_ACQUIRE 0x89
+#define OP_EXT_SIGNAL 0x8a
+#define OP_EXT_WAIT 0x8b
+#define OP_EXT_RESET 0x8c
+#define OP_EXT_RELEASE 0x8d
+#define OP_EXT_FROM_BCD 0x8e
+#define OP_EXT_TO_B 0x8f
+#define OP_EXT_UNLOAD 0x90
+#define OP_EXT_REVISION 0x91
+#define OP_EXT_DEBUG 0x92
+#define OP_EXT_FATAL 0x93
+#define OP_EXT_TIMER 0x94
+#define OP_EXT_OP_REGION 0x95
+#define OP_EXT_FIELD 0x96
+#define OP_EXT_DEVICE 0x97
+#define OP_EXT_PROCESSOR 0x98
+#define OP_EXT_POWER_RES 0x99
+#define OP_EXT_THERMAL_ZONE 0x9a
+#define OP_EXT_INDEX_FIELD 0x9b
+#define OP_EXT_BANK_FIELD 0x9c
+#define OP_EXT_DATA_REGION 0x9d
+
+
+
+static const u16 aml_translation_table[256]={
+	[0x00]=DECL_TRANSLATION(OP_ZERO,0),
+	[0x01]=DECL_TRANSLATION(OP_ONE,0),
+	[0x06]=DECL_TRANSLATION(OP_ALIAS,2),
+	[0x08]=DECL_TRANSLATION(OP_NAME,2),
+	[0x0a]=DECL_TRANSLATION(OP_BYTE_PREF,0),
+	[0x0b]=DECL_TRANSLATION(OP_WORD_PREF,0),
+	[0x0c]=DECL_TRANSLATION(OP_D_WORD_PREF,0),
+	[0x0d]=DECL_TRANSLATION(OP_STRING_PREF,0),
+	[0x0e]=DECL_TRANSLATION(OP_Q_WORD_PREF,0),
+	[0x10]=DECL_TRANSLATION(OP_SCOPE,0),
+	[0x11]=DECL_TRANSLATION(OP_BUFFER,0),
+	[0x12]=DECL_TRANSLATION(OP_PACKAGE,0),
+	[0x13]=DECL_TRANSLATION(OP_VAR_PACKAGE,0),
+	[0x14]=DECL_TRANSLATION(OP_METHOD,0),
+	[0x2e]=DECL_TRANSLATION(OP_DUAL_NAME_PREF,0),
+	[0x2f]=DECL_TRANSLATION(OP_MULTI_NAME_PREF,0),
+	[0x5c]=DECL_TRANSLATION(OP_ROOT_CH,0),
+	[0x5e]=DECL_TRANSLATION(OP_PARENT_PREFIX_CH,0),
+	[0x5f]=DECL_TRANSLATION(OP_NAME_CH,0),
+	[0x60]=DECL_TRANSLATION(OP_LOCAL0,0),
+	[0x61]=DECL_TRANSLATION(OP_LOCAL1,0),
+	[0x62]=DECL_TRANSLATION(OP_LOCAL2,0),
+	[0x63]=DECL_TRANSLATION(OP_LOCAL3,0),
+	[0x64]=DECL_TRANSLATION(OP_LOCAL4,0),
+	[0x65]=DECL_TRANSLATION(OP_LOCAL5,0),
+	[0x66]=DECL_TRANSLATION(OP_LOCAL6,0),
+	[0x67]=DECL_TRANSLATION(OP_LOCAL7,0),
+	[0x68]=DECL_TRANSLATION(OP_ARG0,0),
+	[0x69]=DECL_TRANSLATION(OP_ARG1,0),
+	[0x6a]=DECL_TRANSLATION(OP_ARG2,0),
+	[0x6b]=DECL_TRANSLATION(OP_ARG3,0),
+	[0x6c]=DECL_TRANSLATION(OP_ARG4,0),
+	[0x6d]=DECL_TRANSLATION(OP_ARG5,0),
+	[0x6e]=DECL_TRANSLATION(OP_ARG6,0),
+	[0x70]=DECL_TRANSLATION(OP_STORE,0),
+	[0x71]=DECL_TRANSLATION(OP_REF_OF,0),
+	[0x72]=DECL_TRANSLATION(OP_ADD,0),
+	[0x73]=DECL_TRANSLATION(OP_CONCAT,0),
+	[0x74]=DECL_TRANSLATION(OP_SUBTRACT,0),
+	[0x75]=DECL_TRANSLATION(OP_INCREMENT,0),
+	[0x76]=DECL_TRANSLATION(OP_DECREMENT,0),
+	[0x77]=DECL_TRANSLATION(OP_MULTIPLY,0),
+	[0x78]=DECL_TRANSLATION(OP_DIVIDE,0),
+	[0x79]=DECL_TRANSLATION(OP_SHIFT_LEFT,0),
+	[0x7a]=DECL_TRANSLATION(OP_SHIFT_RIGHT,0),
+	[0x7b]=DECL_TRANSLATION(OP_AND,0),
+	[0x7c]=DECL_TRANSLATION(OP_NAND,0),
+	[0x7d]=DECL_TRANSLATION(OP_OR,0),
+	[0x7e]=DECL_TRANSLATION(OP_NOR,0),
+	[0x7f]=DECL_TRANSLATION(OP_XOR,0),
+	[0x80]=DECL_TRANSLATION(OP_NOT,0),
+	[0x81]=DECL_TRANSLATION(OP_FIND_SET_LEFT_BIT,0),
+	[0x82]=DECL_TRANSLATION(OP_FIND_SET_RIGHT_BIT,0),
+	[0x83]=DECL_TRANSLATION(OP_DEREF_OF,0),
+	[0x84]=DECL_TRANSLATION(OP_CONCAT_RES,0),
+	[0x85]=DECL_TRANSLATION(OP_MOD,0),
+	[0x86]=DECL_TRANSLATION(OP_NOTIFY,0),
+	[0x87]=DECL_TRANSLATION(OP_SIZE_OF,0),
+	[0x88]=DECL_TRANSLATION(OP_INDEX,0),
+	[0x89]=DECL_TRANSLATION(OP_MATCH,0),
+	[0x8a]=DECL_TRANSLATION(OP_CREATE_D_WORD_FIELD,0),
+	[0x8b]=DECL_TRANSLATION(OP_CREATE_WORD_FIELD,0),
+	[0x8c]=DECL_TRANSLATION(OP_CREATE_BYTE_FIELD,0),
+	[0x8d]=DECL_TRANSLATION(OP_CREATE_BIT_FIELD,0),
+	[0x8e]=DECL_TRANSLATION(OP_TYPE,0),
+	[0x8f]=DECL_TRANSLATION(OP_CREATE_Q_WORD_FIELD,0),
+	[0x90]=DECL_TRANSLATION(OP_L_AND,0),
+	[0x91]=DECL_TRANSLATION(OP_L_OR,0),
+	[0x93]=DECL_TRANSLATION(OP_L_EQUAL,0),
+	[0x94]=DECL_TRANSLATION(OP_L_GREATER,0),
+	[0x95]=DECL_TRANSLATION(OP_L_LESS,0),
+	[0x96]=DECL_TRANSLATION(OP_TO_BUFFER,0),
+	[0x97]=DECL_TRANSLATION(OP_TO_DECIMAL_STRING,0),
+	[0x98]=DECL_TRANSLATION(OP_TO_HEX_STRING,0),
+	[0x99]=DECL_TRANSLATION(OP_TO_INTEGER,0),
+	[0x9c]=DECL_TRANSLATION(OP_TO_STRING,0),
+	[0x9d]=DECL_TRANSLATION(OP_COPY_OBJECT,0),
+	[0x9e]=DECL_TRANSLATION(OP_MID,0),
+	[0x9f]=DECL_TRANSLATION(OP_CONTINUE,0),
+	[0xa0]=DECL_TRANSLATION(OP_IF,0),
+	[0xa1]=DECL_TRANSLATION(OP_ELSE,0),
+	[0xa2]=DECL_TRANSLATION(OP_WHILE,0),
+	[0xa3]=DECL_TRANSLATION(OP_NOOP,0),
+	[0xa4]=DECL_TRANSLATION(OP_RETURN,0),
+	[0xa5]=DECL_TRANSLATION(OP_BREAK,0),
+	[0xcc]=DECL_TRANSLATION(OP_BREAK_POINT,0),
+	[0xff]=DECL_TRANSLATION(OP_ONES,0),
+};
+
+
+
+static const u16 aml_translation_table_ext[256]={
+	[0x01]=DECL_TRANSLATION(OP_EXT_MUTEX,0),
+	[0x02]=DECL_TRANSLATION(OP_EXT_EVENT,0),
+	[0x12]=DECL_TRANSLATION(OP_EXT_COND_REF_OF,0),
+	[0x13]=DECL_TRANSLATION(OP_EXT_CREATE_FIELD,0),
+	[0x1f]=DECL_TRANSLATION(OP_EXT_LOAD_TABLE,0),
+	[0x20]=DECL_TRANSLATION(OP_EXT_LOAD,0),
+	[0x21]=DECL_TRANSLATION(OP_EXT_STALL,0),
+	[0x22]=DECL_TRANSLATION(OP_EXT_SLEEP,0),
+	[0x23]=DECL_TRANSLATION(OP_EXT_ACQUIRE,0),
+	[0x24]=DECL_TRANSLATION(OP_EXT_SIGNAL,0),
+	[0x25]=DECL_TRANSLATION(OP_EXT_WAIT,0),
+	[0x26]=DECL_TRANSLATION(OP_EXT_RESET,0),
+	[0x27]=DECL_TRANSLATION(OP_EXT_RELEASE,0),
+	[0x28]=DECL_TRANSLATION(OP_EXT_FROM_BCD,0),
+	[0x29]=DECL_TRANSLATION(OP_EXT_TO_B,0),
+	[0x2a]=DECL_TRANSLATION(OP_EXT_UNLOAD,0),
+	[0x30]=DECL_TRANSLATION(OP_EXT_REVISION,0),
+	[0x31]=DECL_TRANSLATION(OP_EXT_DEBUG,0),
+	[0x32]=DECL_TRANSLATION(OP_EXT_FATAL,0),
+	[0x33]=DECL_TRANSLATION(OP_EXT_TIMER,0),
+	[0x80]=DECL_TRANSLATION(OP_EXT_OP_REGION,0),
+	[0x81]=DECL_TRANSLATION(OP_EXT_FIELD,0),
+	[0x82]=DECL_TRANSLATION(OP_EXT_DEVICE,0),
+	[0x83]=DECL_TRANSLATION(OP_EXT_PROCESSOR,0),
+	[0x84]=DECL_TRANSLATION(OP_EXT_POWER_RES,0),
+	[0x85]=DECL_TRANSLATION(OP_EXT_THERMAL_ZONE,0),
+	[0x86]=DECL_TRANSLATION(OP_EXT_INDEX_FIELD,0),
+	[0x87]=DECL_TRANSLATION(OP_EXT_BANK_FIELD,0),
+	[0x88]=DECL_TRANSLATION(OP_EXT_DATA_REGION,0),
+};
 
 
 
@@ -134,382 +265,33 @@ void aml_load(const u8* data,u32 length){
 	}
 	u32 offset=36;
 	while (offset<length){
-		if (data[offset]!=0x5b){
-			switch (data[offset]){
-				case 0x00:
-					ERROR("ZeroOp => OP_ZERO");return;
-					break;
-				case 0x01:
-					ERROR("OneOp => OP_ONE");return;
-					break;
-				case 0x06:
-					ERROR("AliasOp => OP_ALIAS");return;
-					break;
-				case 0x08:
-					ERROR("NameOp => OP_NAME");return;
-					break;
-				case 0x0a:
-					ERROR("BytePrefix => OP_BYTE_PREF");return;
-					break;
-				case 0x0b:
-					ERROR("WordPrefix => OP_WORD_PREF");return;
-					break;
-				case 0x0c:
-					ERROR("DWordPrefix => OP_D_WORD_PREF");return;
-					break;
-				case 0x0d:
-					ERROR("StringPrefix => OP_STRING_PREF");return;
-					break;
-				case 0x0e:
-					ERROR("QWordPrefix => OP_Q_WORD_PREF");return;
-					break;
-				case 0x10:
-					ERROR("ScopeOp => OP_SCOPE");return;
-					break;
-				case 0x11:
-					ERROR("BufferOp => OP_BUFFER");return;
-					break;
-				case 0x12:
-					ERROR("PackageOp => OP_PACKAGE");return;
-					break;
-				case 0x13:
-					ERROR("VarPackageOp => OP_VAR_PACKAGE");return;
-					break;
-				case 0x14:
-					ERROR("MethodOp => OP_METHOD");return;
-					break;
-				case 0x2e:
-					ERROR("DualNamePrefix => OP_DUAL_NAME_PREF");return;
-					break;
-				case 0x2f:
-					ERROR("MultiNamePrefix => OP_MULTI_NAME_PREF");return;
-					break;
-				case 0x5c:
-					ERROR("RootChar => OP_ROOT_CH");return;
-					break;
-				case 0x5e:
-					ERROR("ParentPrefixChar => OP_PARENT_PREFIX_CH");return;
-					break;
-				case 0x5f:
-					ERROR("NameChar => OP_NAME_CH");return;
-					break;
-				case 0x60:
-					ERROR("Local0Op => OP_LOCAL0");return;
-					break;
-				case 0x61:
-					ERROR("Local1Op => OP_LOCAL1");return;
-					break;
-				case 0x62:
-					ERROR("Local2Op => OP_LOCAL2");return;
-					break;
-				case 0x63:
-					ERROR("Local3Op => OP_LOCAL3");return;
-					break;
-				case 0x64:
-					ERROR("Local4Op => OP_LOCAL4");return;
-					break;
-				case 0x65:
-					ERROR("Local5Op => OP_LOCAL5");return;
-					break;
-				case 0x66:
-					ERROR("Local6Op => OP_LOCAL6");return;
-					break;
-				case 0x67:
-					ERROR("Local7Op => OP_LOCAL7");return;
-					break;
-				case 0x68:
-					ERROR("Arg0Op => OP_ARG0");return;
-					break;
-				case 0x69:
-					ERROR("Arg1Op => OP_ARG1");return;
-					break;
-				case 0x6a:
-					ERROR("Arg2Op => OP_ARG2");return;
-					break;
-				case 0x6b:
-					ERROR("Arg3Op => OP_ARG3");return;
-					break;
-				case 0x6c:
-					ERROR("Arg4Op => OP_ARG4");return;
-					break;
-				case 0x6d:
-					ERROR("Arg5Op => OP_ARG5");return;
-					break;
-				case 0x6e:
-					ERROR("Arg6Op => OP_ARG6");return;
-					break;
-				case 0x70:
-					ERROR("StoreOp => OP_STORE");return;
-					break;
-				case 0x71:
-					ERROR("RefOfOp => OP_REF_OF");return;
-					break;
-				case 0x72:
-					ERROR("AddOp => OP_ADD");return;
-					break;
-				case 0x73:
-					ERROR("ConcatOp => OP_CONCAT");return;
-					break;
-				case 0x74:
-					ERROR("SubtractOp => OP_SUBTRACT");return;
-					break;
-				case 0x75:
-					ERROR("IncrementOp => OP_INCREMENT");return;
-					break;
-				case 0x76:
-					ERROR("DecrementOp => OP_DECREMENT");return;
-					break;
-				case 0x77:
-					ERROR("MultiplyOp => OP_MULTIPLY");return;
-					break;
-				case 0x78:
-					ERROR("DivideOp => OP_DIVIDE");return;
-					break;
-				case 0x79:
-					ERROR("ShiftLeftOp => OP_SHIFT_LEFT");return;
-					break;
-				case 0x7a:
-					ERROR("ShiftRightOp => OP_SHIFT_RIGHT");return;
-					break;
-				case 0x7b:
-					ERROR("AndOp => OP_AND");return;
-					break;
-				case 0x7c:
-					ERROR("NandOp => OP_NAND");return;
-					break;
-				case 0x7d:
-					ERROR("OrOp => OP_OR");return;
-					break;
-				case 0x7e:
-					ERROR("NorOp => OP_NOR");return;
-					break;
-				case 0x7f:
-					ERROR("XorOp => OP_XOR");return;
-					break;
-				case 0x80:
-					ERROR("NotOp => OP_NOT");return;
-					break;
-				case 0x81:
-					ERROR("FindSetLeftBitOp => OP_FIND_SET_LEFT_BIT");return;
-					break;
-				case 0x82:
-					ERROR("FindSetRightBitOp => OP_FIND_SET_RIGHT_BIT");return;
-					break;
-				case 0x83:
-					ERROR("DerefOfOp => OP_DEREF_OF");return;
-					break;
-				case 0x84:
-					ERROR("ConcatResOp => OP_CONCAT_RES");return;
-					break;
-				case 0x85:
-					ERROR("ModOp => OP_MOD");return;
-					break;
-				case 0x86:
-					ERROR("NotifyOp => OP_NOTIFY");return;
-					break;
-				case 0x87:
-					ERROR("SizeOfOp => OP_SIZE_OF");return;
-					break;
-				case 0x88:
-					ERROR("IndexOp => OP_INDEX");return;
-					break;
-				case 0x89:
-					ERROR("MatchOp => OP_MATCH");return;
-					break;
-				case 0x8a:
-					ERROR("CreateDWordFieldOp => OP_CREATE_D_WORD_FIELD");return;
-					break;
-				case 0x8b:
-					ERROR("CreateWordFieldOp => OP_CREATE_WORD_FIELD");return;
-					break;
-				case 0x8c:
-					ERROR("CreateByteFieldOp => OP_CREATE_BYTE_FIELD");return;
-					break;
-				case 0x8d:
-					ERROR("CreateBitFieldOp => OP_CREATE_BIT_FIELD");return;
-					break;
-				case 0x8e:
-					ERROR("TypeOp => OP_TYPE");return;
-					break;
-				case 0x8f:
-					ERROR("CreateQWordFieldOp => OP_CREATE_Q_WORD_FIELD");return;
-					break;
-				case 0x90:
-					ERROR("LandOp => OP_LAND");return;
-					break;
-				case 0x91:
-					ERROR("LorOp => OP_LOR");return;
-					break;
-				case 0x92:
-					if (data[offset+1]==0x93){
-						offset++;
-						ERROR("LNotEqualOp => OP_L_NOT_EQUAL");return;
-						break;
-					}
-					if (data[offset+1]==0x94){
-						offset++;
-						ERROR("LNotEqualOp => OP_L_NOT_EQUAL");return;
-						break;
-					}
-					if (data[offset+1]==0x95){
-						offset++;
-						ERROR("LNotEqualOp => OP_L_NOT_EQUAL");return;
-						break;
-					}
-					ERROR("LnotOp => OP_LNOT");return;
-					break;
-				case 0x93:
-					ERROR("LEqualOp => OP_L_EQUAL");return;
-					break;
-				case 0x94:
-					ERROR("LGreaterOp => OP_L_GREATER");return;
-					break;
-				case 0x95:
-					ERROR("LLessOp => OP_L_LESS");return;
-					break;
-				case 0x96:
-					ERROR("ToBufferOp => OP_TO_BUFFER");return;
-					break;
-				case 0x97:
-					ERROR("ToDecimalStringOp => OP_TO_DECIMAL_STRING");return;
-					break;
-				case 0x98:
-					ERROR("ToHexStringOp => OP_TO_HEX_STRING");return;
-					break;
-				case 0x99:
-					ERROR("ToIntegerOp => OP_TO_INTEGER");return;
-					break;
-				case 0x9c:
-					ERROR("ToStringOp => OP_TO_STRING");return;
-					break;
-				case 0x9d:
-					ERROR("CopyObjectOp => OP_COPY_OBJECT");return;
-					break;
-				case 0x9e:
-					ERROR("MidOp => OP_MID");return;
-					break;
-				case 0x9f:
-					ERROR("ContinueOp => OP_CONTINUE");return;
-					break;
-				case 0xa0:
-					ERROR("IfOp => OP_IF");return;
-					break;
-				case 0xa1:
-					ERROR("ElseOp => OP_ELSE");return;
-					break;
-				case 0xa2:
-					ERROR("WhileOp => OP_WHILE");return;
-					break;
-				case 0xa3:
-					ERROR("NoopOp => OP_NOOP");return;
-					break;
-				case 0xa4:
-					ERROR("ReturnOp => OP_RETURN");return;
-					break;
-				case 0xa5:
-					ERROR("BreakOp => OP_BREAK");return;
-					break;
-				case 0xcc:
-					ERROR("BreakPointOp => OP_BREAK_POINT");return;
-					break;
-				case 0xff:
-					ERROR("OnesOp => OP_ONES");return;
-					break;
+		u16 op_data=0;
+		if (data[offset]==0x5b){
+			offset++;
+			op_data=aml_translation_table_ext[data[offset]];
+		}
+		else if (data[offset]==0x92){
+			if (data[offset+1]==0x93){
+				offset++;
+				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,0);
+			}
+			else if (data[offset+1]==0x94){
+				offset++;
+				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,0);
+			}
+			else if (data[offset+1]==0x95){
+				offset++;
+				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,0);
+			}
+			else{
+				op_data=DECL_TRANSLATION(OP_L_NOT,0);
 			}
 		}
-		// 0x30-0x39 ('0'-'9')	DigitChar
-		// 0x41-0x5A (‘A’-‘Z’)	NameChar
 		else{
-			offset++;
-			switch (data[offset]){
-				case 0x01:
-					ERROR("MutexOp => OP_EXT_MUTEX");return;
-					break;
-				case 0x02:
-					ERROR("EventOp => OP_EXT_EVENT");return;
-					break;
-				case 0x12:
-					ERROR("CondRefOfOp => OP_EXT_COND_REF_OF");return;
-					break;
-				case 0x13:
-					ERROR("CreateFieldOp => OP_EXT_CREATE_FIELD");return;
-					break;
-				case 0x1f:
-					ERROR("LoadTableOp => OP_EXT_LOAD_TABLE");return;
-					break;
-				case 0x20:
-					ERROR("LoadOp => OP_EXT_LOAD");return;
-					break;
-				case 0x21:
-					ERROR("StallOp => OP_EXT_STALL");return;
-					break;
-				case 0x22:
-					ERROR("SleepOp => OP_EXT_SLEEP");return;
-					break;
-				case 0x23:
-					ERROR("AcquireOp => OP_EXT_ACQUIRE");return;
-					break;
-				case 0x24:
-					ERROR("SignalOp => OP_EXT_SIGNAL");return;
-					break;
-				case 0x25:
-					ERROR("WaitOp => OP_EXT_WAIT");return;
-					break;
-				case 0x26:
-					ERROR("ResetOp => OP_EXT_RESET");return;
-					break;
-				case 0x27:
-					ERROR("ReleaseOp => OP_EXT_RELEASE");return;
-					break;
-				case 0x28:
-					ERROR("FromBCDOp => OP_EXT_FROM_BCD");return;
-					break;
-				case 0x29:
-					ERROR("ToBCD => OP_EXT_TO_B");return;
-					break;
-				case 0x2a:
-					ERROR("UnloadOp => OP_EXT_UNLOAD");return;
-					break;
-				case 0x30:
-					ERROR("RevisionOp => OP_EXT_REVISION");return;
-					break;
-				case 0x31:
-					ERROR("DebugOp => OP_EXT_DEBUG");return;
-					break;
-				case 0x32:
-					ERROR("FatalOp => OP_EXT_FATAL");return;
-					break;
-				case 0x33:
-					ERROR("TimerOp => OP_EXT_TIMER");return;
-					break;
-				case 0x80:
-					ERROR("OpRegionOp => OP_EXT_OP_REGION");return;
-					break;
-				case 0x81:
-					ERROR("FieldOp => OP_EXT_FIELD");return;
-					break;
-				case 0x82:
-					ERROR("DeviceOp => OP_EXT_DEVICE");return;
-					break;
-				case 0x83:
-					ERROR("ProcessorOp => OP_EXT_PROCESSOR");return;
-					break;
-				case 0x84:
-					ERROR("PowerResOp => OP_EXT_POWER_RES");return;
-					break;
-				case 0x85:
-					ERROR("ThermalZoneOp => OP_EXT_THERMAL_ZONE");return;
-					break;
-				case 0x86:
-					ERROR("IndexFieldOp => OP_EXT_INDEX_FIELD");return;
-					break;
-				case 0x87:
-					ERROR("BankFieldOp => OP_EXT_BANK_FIELD");return;
-					break;
-				case 0x88:
-					ERROR("DataRegionOp => OP_EXT_DATA_REGION");return;
-					break;
-			}
+			op_data=aml_translation_table[data[offset]];
+		}
+		if (!op_data){
+			ERROR("Unknown AML opcode '%x'",data[offset]);
 		}
 		offset++;
 	}
