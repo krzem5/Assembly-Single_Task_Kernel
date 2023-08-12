@@ -1,10 +1,8 @@
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "aml"
-
-
-
-#define DECL_TRANSLATION(type,arg_count) ((type)|((arg_count)<<8))
 
 
 
@@ -128,183 +126,233 @@
 #define OP_EXT_BANK_FIELD 0x9a
 #define OP_EXT_DATA_REGION 0x9b
 
+#define STACK_SIZE 128
 
 
-static const u16 _aml_opcode_translation_table[256]={
-	[0x00]=DECL_TRANSLATION(OP_ZERO,0),
-	[0x01]=DECL_TRANSLATION(OP_ONE,0),
-	[0x06]=DECL_TRANSLATION(OP_ALIAS,2),
-	[0x08]=DECL_TRANSLATION(OP_NAME,2),
-	[0x0a]=DECL_TRANSLATION(OP_BYTE_PREFIX,0),
-	[0x0b]=DECL_TRANSLATION(OP_WORD_PREFIX,0),
-	[0x0c]=DECL_TRANSLATION(OP_DWORD_PREFIX,0),
-	[0x0d]=DECL_TRANSLATION(OP_STRING_PREFIX,0),
-	[0x0e]=DECL_TRANSLATION(OP_QWORD_PREFIX,0),
-	[0x10]=DECL_TRANSLATION(OP_SCOPE,1),
-	[0x11]=DECL_TRANSLATION(OP_BUFFER,1),
-	[0x12]=DECL_TRANSLATION(OP_PACKAGE,1),
-	[0x13]=DECL_TRANSLATION(OP_VAR_PACKAGE,1),
-	[0x14]=DECL_TRANSLATION(OP_METHOD,2),
-	[0x2e]=DECL_TRANSLATION(OP_DUAL_NAME_PREFIX,2),
-	[0x2f]=DECL_TRANSLATION(OP_MULTI_NAME_PREFIX,2),
-	[0x5c]=DECL_TRANSLATION(OP_ROOT_CH,0),
-	[0x5e]=DECL_TRANSLATION(OP_PARENT_PREFIX_CH,0),
-	[0x5f]=DECL_TRANSLATION(OP_NAME_CH,0),
-	[0x60]=DECL_TRANSLATION(OP_LOCAL0,0),
-	[0x61]=DECL_TRANSLATION(OP_LOCAL1,0),
-	[0x62]=DECL_TRANSLATION(OP_LOCAL2,0),
-	[0x63]=DECL_TRANSLATION(OP_LOCAL3,0),
-	[0x64]=DECL_TRANSLATION(OP_LOCAL4,0),
-	[0x65]=DECL_TRANSLATION(OP_LOCAL5,0),
-	[0x66]=DECL_TRANSLATION(OP_LOCAL6,0),
-	[0x67]=DECL_TRANSLATION(OP_LOCAL7,0),
-	[0x68]=DECL_TRANSLATION(OP_ARG0,0),
-	[0x69]=DECL_TRANSLATION(OP_ARG1,0),
-	[0x6a]=DECL_TRANSLATION(OP_ARG2,0),
-	[0x6b]=DECL_TRANSLATION(OP_ARG3,0),
-	[0x6c]=DECL_TRANSLATION(OP_ARG4,0),
-	[0x6d]=DECL_TRANSLATION(OP_ARG5,0),
-	[0x6e]=DECL_TRANSLATION(OP_ARG6,0),
-	[0x70]=DECL_TRANSLATION(OP_STORE,2),
-	[0x71]=DECL_TRANSLATION(OP_REF_OF,1),
-	[0x72]=DECL_TRANSLATION(OP_ADD,3),
-	[0x73]=DECL_TRANSLATION(OP_CONCAT,3),
-	[0x74]=DECL_TRANSLATION(OP_SUBTRACT,3),
-	[0x75]=DECL_TRANSLATION(OP_INCREMENT,1),
-	[0x76]=DECL_TRANSLATION(OP_DECREMENT,1),
-	[0x77]=DECL_TRANSLATION(OP_MULTIPLY,3),
-	[0x78]=DECL_TRANSLATION(OP_DIVIDE,4),
-	[0x79]=DECL_TRANSLATION(OP_SHIFT_LEFT,3),
-	[0x7a]=DECL_TRANSLATION(OP_SHIFT_RIGHT,3),
-	[0x7b]=DECL_TRANSLATION(OP_AND,3),
-	[0x7c]=DECL_TRANSLATION(OP_NAND,3),
-	[0x7d]=DECL_TRANSLATION(OP_OR,3),
-	[0x7e]=DECL_TRANSLATION(OP_NOR,3),
-	[0x7f]=DECL_TRANSLATION(OP_XOR,3),
-	[0x80]=DECL_TRANSLATION(OP_NOT,2),
-	[0x81]=DECL_TRANSLATION(OP_FIND_SET_LEFT_BIT,2),
-	[0x82]=DECL_TRANSLATION(OP_FIND_SET_RIGHT_BIT,2),
-	[0x83]=DECL_TRANSLATION(OP_DEREF_OF,1),
-	[0x84]=DECL_TRANSLATION(OP_CONCAT_RES,3),
-	[0x85]=DECL_TRANSLATION(OP_MOD,3),
-	[0x86]=DECL_TRANSLATION(OP_NOTIFY,2),
-	[0x87]=DECL_TRANSLATION(OP_SIZE_OF,1),
-	[0x88]=DECL_TRANSLATION(OP_INDEX,3),
-	[0x89]=DECL_TRANSLATION(OP_MATCH,6),
-	[0x8a]=DECL_TRANSLATION(OP_CREATE_D_WORD_FIELD,3),
-	[0x8b]=DECL_TRANSLATION(OP_CREATE_WORD_FIELD,3),
-	[0x8c]=DECL_TRANSLATION(OP_CREATE_BYTE_FIELD,3),
-	[0x8d]=DECL_TRANSLATION(OP_CREATE_BIT_FIELD,3),
-	[0x8e]=DECL_TRANSLATION(OP_OBJECT_TYPE,1),
-	[0x8f]=DECL_TRANSLATION(OP_CREATE_Q_WORD_FIELD,3),
-	[0x90]=DECL_TRANSLATION(OP_L_AND,2),
-	[0x91]=DECL_TRANSLATION(OP_L_OR,2),
-	[0x93]=DECL_TRANSLATION(OP_L_EQUAL,2),
-	[0x94]=DECL_TRANSLATION(OP_L_GREATER,2),
-	[0x95]=DECL_TRANSLATION(OP_L_LESS,2),
-	[0x96]=DECL_TRANSLATION(OP_TO_BUFFER,2),
-	[0x97]=DECL_TRANSLATION(OP_TO_DECIMAL_STRING,2),
-	[0x98]=DECL_TRANSLATION(OP_TO_HEX_STRING,2),
-	[0x99]=DECL_TRANSLATION(OP_TO_INTEGER,2),
-	[0x9c]=DECL_TRANSLATION(OP_TO_STRING,3),
-	[0x9d]=DECL_TRANSLATION(OP_COPY_OBJECT,2),
-	[0x9e]=DECL_TRANSLATION(OP_MID,4),
-	[0x9f]=DECL_TRANSLATION(OP_CONTINUE,0),
-	[0xa0]=DECL_TRANSLATION(OP_IF,1),
-	[0xa1]=DECL_TRANSLATION(OP_ELSE,0),
-	[0xa2]=DECL_TRANSLATION(OP_WHILE,1),
-	[0xa3]=DECL_TRANSLATION(OP_NOOP,0),
-	[0xa4]=DECL_TRANSLATION(OP_RETURN,1),
-	[0xa5]=DECL_TRANSLATION(OP_BREAK,0),
-	[0xcc]=DECL_TRANSLATION(OP_BREAK_POINT,0),
-	[0xff]=DECL_TRANSLATION(OP_ONES,0),
+
+#define OBJECT_TYPE_SCOPE 0x01
+
+
+
+typedef struct _OBJECT_HEADER{
+	u8 type;
+} object_header_t;
+
+
+typedef struct _OBJECT_SCOPE{
+	object_header_t header;
+	u32 data;
+} object_scope_t;
+
+
+
+typedef struct _STACK_ENTRY{
+	u8 op_type;
+	u32 count;
+	u32 length;
+} stack_entry_t;
+
+
+
+typedef struct _STACK{
+	stack_entry_t data[STACK_SIZE];
+	u32 size;
+} stack_t;
+
+
+
+static const u8 _aml_opcode_translation_table[256]={
+	[0x00]=OP_ZERO,
+	[0x01]=OP_ONE,
+	[0x06]=OP_ALIAS,
+	[0x08]=OP_NAME,
+	[0x0a]=OP_BYTE_PREFIX,
+	[0x0b]=OP_WORD_PREFIX,
+	[0x0c]=OP_DWORD_PREFIX,
+	[0x0d]=OP_STRING_PREFIX,
+	[0x0e]=OP_QWORD_PREFIX,
+	[0x10]=OP_SCOPE,
+	[0x11]=OP_BUFFER,
+	[0x12]=OP_PACKAGE,
+	[0x13]=OP_VAR_PACKAGE,
+	[0x14]=OP_METHOD,
+	[0x2e]=OP_DUAL_NAME_PREFIX,
+	[0x2f]=OP_MULTI_NAME_PREFIX,
+	[0x5c]=OP_ROOT_CH,
+	[0x5e]=OP_PARENT_PREFIX_CH,
+	[0x5f]=OP_NAME_CH,
+	[0x60]=OP_LOCAL0,
+	[0x61]=OP_LOCAL1,
+	[0x62]=OP_LOCAL2,
+	[0x63]=OP_LOCAL3,
+	[0x64]=OP_LOCAL4,
+	[0x65]=OP_LOCAL5,
+	[0x66]=OP_LOCAL6,
+	[0x67]=OP_LOCAL7,
+	[0x68]=OP_ARG0,
+	[0x69]=OP_ARG1,
+	[0x6a]=OP_ARG2,
+	[0x6b]=OP_ARG3,
+	[0x6c]=OP_ARG4,
+	[0x6d]=OP_ARG5,
+	[0x6e]=OP_ARG6,
+	[0x70]=OP_STORE,
+	[0x71]=OP_REF_OF,
+	[0x72]=OP_ADD,
+	[0x73]=OP_CONCAT,
+	[0x74]=OP_SUBTRACT,
+	[0x75]=OP_INCREMENT,
+	[0x76]=OP_DECREMENT,
+	[0x77]=OP_MULTIPLY,
+	[0x78]=OP_DIVIDE,
+	[0x79]=OP_SHIFT_LEFT,
+	[0x7a]=OP_SHIFT_RIGHT,
+	[0x7b]=OP_AND,
+	[0x7c]=OP_NAND,
+	[0x7d]=OP_OR,
+	[0x7e]=OP_NOR,
+	[0x7f]=OP_XOR,
+	[0x80]=OP_NOT,
+	[0x81]=OP_FIND_SET_LEFT_BIT,
+	[0x82]=OP_FIND_SET_RIGHT_BIT,
+	[0x83]=OP_DEREF_OF,
+	[0x84]=OP_CONCAT_RES,
+	[0x85]=OP_MOD,
+	[0x86]=OP_NOTIFY,
+	[0x87]=OP_SIZE_OF,
+	[0x88]=OP_INDEX,
+	[0x89]=OP_MATCH,
+	[0x8a]=OP_CREATE_D_WORD_FIELD,
+	[0x8b]=OP_CREATE_WORD_FIELD,
+	[0x8c]=OP_CREATE_BYTE_FIELD,
+	[0x8d]=OP_CREATE_BIT_FIELD,
+	[0x8e]=OP_OBJECT_TYPE,
+	[0x8f]=OP_CREATE_Q_WORD_FIELD,
+	[0x90]=OP_L_AND,
+	[0x91]=OP_L_OR,
+	[0x93]=OP_L_EQUAL,
+	[0x94]=OP_L_GREATER,
+	[0x95]=OP_L_LESS,
+	[0x96]=OP_TO_BUFFER,
+	[0x97]=OP_TO_DECIMAL_STRING,
+	[0x98]=OP_TO_HEX_STRING,
+	[0x99]=OP_TO_INTEGER,
+	[0x9c]=OP_TO_STRING,
+	[0x9d]=OP_COPY_OBJECT,
+	[0x9e]=OP_MID,
+	[0x9f]=OP_CONTINUE,
+	[0xa0]=OP_IF,
+	[0xa1]=OP_ELSE,
+	[0xa2]=OP_WHILE,
+	[0xa3]=OP_NOOP,
+	[0xa4]=OP_RETURN,
+	[0xa5]=OP_BREAK,
+	[0xcc]=OP_BREAK_POINT,
+	[0xff]=OP_ONES,
 };
 
 
 
-static const u16 _aml_extended_opcode_translation_table[256]={
-	[0x01]=DECL_TRANSLATION(OP_EXT_MUTEX,2),
-	[0x02]=DECL_TRANSLATION(OP_EXT_EVENT,1),
-	[0x12]=DECL_TRANSLATION(OP_EXT_COND_REF_OF,2),
-	[0x13]=DECL_TRANSLATION(OP_EXT_CREATE_FIELD,4),
-	[0x1f]=DECL_TRANSLATION(OP_EXT_LOAD_TABLE,6),
-	[0x20]=DECL_TRANSLATION(OP_EXT_LOAD,2),
-	[0x21]=DECL_TRANSLATION(OP_EXT_STALL,1),
-	[0x22]=DECL_TRANSLATION(OP_EXT_SLEEP,1),
-	[0x23]=DECL_TRANSLATION(OP_EXT_ACQUIRE,2),
-	[0x24]=DECL_TRANSLATION(OP_EXT_SIGNAL,1),
-	[0x25]=DECL_TRANSLATION(OP_EXT_WAIT,2),
-	[0x26]=DECL_TRANSLATION(OP_EXT_RESET,1),
-	[0x27]=DECL_TRANSLATION(OP_EXT_RELEASE,1),
-	[0x28]=DECL_TRANSLATION(OP_EXT_FROM_BCD,2),
-	[0x29]=DECL_TRANSLATION(OP_EXT_TO_BCD,2),
-	[0x30]=DECL_TRANSLATION(OP_EXT_REVISION,0),
-	[0x31]=DECL_TRANSLATION(OP_EXT_DEBUG,0),
-	[0x32]=DECL_TRANSLATION(OP_EXT_FATAL,3),
-	[0x33]=DECL_TRANSLATION(OP_EXT_TIMER,0),
-	[0x80]=DECL_TRANSLATION(OP_EXT_OP_REGION,4),
-	[0x81]=DECL_TRANSLATION(OP_EXT_FIELD,2),
-	[0x82]=DECL_TRANSLATION(OP_EXT_DEVICE,1),
-	[0x84]=DECL_TRANSLATION(OP_EXT_POWER_RES,3),
-	[0x85]=DECL_TRANSLATION(OP_EXT_THERMAL_ZONE,1),
-	[0x86]=DECL_TRANSLATION(OP_EXT_INDEX_FIELD,3),
-	[0x87]=DECL_TRANSLATION(OP_EXT_BANK_FIELD,4),
-	[0x88]=DECL_TRANSLATION(OP_EXT_DATA_REGION,4),
+static const u8 _aml_extended_opcode_translation_table[256]={
+	[0x01]=OP_EXT_MUTEX,
+	[0x02]=OP_EXT_EVENT,
+	[0x12]=OP_EXT_COND_REF_OF,
+	[0x13]=OP_EXT_CREATE_FIELD,
+	[0x1f]=OP_EXT_LOAD_TABLE,
+	[0x20]=OP_EXT_LOAD,
+	[0x21]=OP_EXT_STALL,
+	[0x22]=OP_EXT_SLEEP,
+	[0x23]=OP_EXT_ACQUIRE,
+	[0x24]=OP_EXT_SIGNAL,
+	[0x25]=OP_EXT_WAIT,
+	[0x26]=OP_EXT_RESET,
+	[0x27]=OP_EXT_RELEASE,
+	[0x28]=OP_EXT_FROM_BCD,
+	[0x29]=OP_EXT_TO_BCD,
+	[0x30]=OP_EXT_REVISION,
+	[0x31]=OP_EXT_DEBUG,
+	[0x32]=OP_EXT_FATAL,
+	[0x33]=OP_EXT_TIMER,
+	[0x80]=OP_EXT_OP_REGION,
+	[0x81]=OP_EXT_FIELD,
+	[0x82]=OP_EXT_DEVICE,
+	[0x84]=OP_EXT_POWER_RES,
+	[0x85]=OP_EXT_THERMAL_ZONE,
+	[0x86]=OP_EXT_INDEX_FIELD,
+	[0x87]=OP_EXT_BANK_FIELD,
+	[0x88]=OP_EXT_DATA_REGION,
 };
+
+
+
+static u32 _parse_pkglength(const u8* data,u32* offset){
+	u32 out=data[*offset]&0x3f;
+	for (u8 i=0;i<(data[*offset]>>6);i++){
+		out=(out<<8)|data[*offset+i+1];
+	}
+	(*offset)+=(data[*offset]>>6)+1;
+	return out;
+}
+
+
+
+static u32 _parse_string(const u8* data,u32* offset){
+	u32 out=*offset;
+	while (data[out]){
+		out++;
+	}
+	out-=*offset;
+	(*offset)+=out;
+	return out;
+}
 
 
 
 void aml_load(const u8* data,u32 length){
 	LOG("Loading AML...");
+	stack_t stack={
+		.size=0
+	};
 	u32 offset=0;
 	while (offset<length){
-		u16 op_data=0;
+		u8 op_type=0;
 		if (data[offset]==0x5b){
 			offset++;
-			op_data=_aml_extended_opcode_translation_table[data[offset]];
+			op_type=_aml_extended_opcode_translation_table[data[offset]];
 		}
 		else if (data[offset]==0x92){
 			if (data[offset+1]==0x93){
 				offset++;
-				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,2);
+				op_type=OP_L_NOT_EQUAL;
 			}
 			else if (data[offset+1]==0x94){
 				offset++;
-				op_data=DECL_TRANSLATION(OP_L_LESS_EQUAL,2);
+				op_type=OP_L_LESS_EQUAL;
 			}
 			else if (data[offset+1]==0x95){
 				offset++;
-				op_data=DECL_TRANSLATION(OP_L_GREATER_EQUAL,2);
+				op_type=OP_L_GREATER_EQUAL;
 			}
 			else{
-				op_data=DECL_TRANSLATION(OP_L_NOT,2);
+				op_type=OP_L_NOT;
 			}
 		}
 		else{
-			op_data=_aml_opcode_translation_table[data[offset]];
+			op_type=_aml_opcode_translation_table[data[offset]];
 		}
-		LOG("%x (%u)",op_data&0xff,op_data>>8);
-		if (!op_data){
+		if (!op_type){
 			ERROR("Unknown AML opcode '%x'",data[offset]);
 			return;
 		}
 		offset++;
-		switch (op_data&0xff){
-			case OP_BYTE_PREFIX:
-				ERROR("Unimplemented: OP_BYTE_PREFIX");
-				break;
-			case OP_WORD_PREFIX:
-				ERROR("Unimplemented: OP_WORD_PREFIX");
-				break;
-			case OP_DWORD_PREFIX:
-				ERROR("Unimplemented: OP_DWORD_PREFIX");
-				break;
-			case OP_STRING_PREFIX:
-				ERROR("Unimplemented: OP_STRING_PREFIX");
-				break;
-			case OP_QWORD_PREFIX:
-				ERROR("Unimplemented: OP_QWORD_PREFIX");
+		switch (op_type){
+			case OP_SCOPE:
+				u32 length=_parse_pkglength(data,&offset);
+				const u8* name=data+offset;
+				u32 name_length=_parse_string(data,&offset);
+				ERROR("%u %s",length,name);for (;;);
 				break;
 		}
 	}
+	for (;;);
 }
