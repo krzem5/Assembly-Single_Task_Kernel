@@ -350,9 +350,11 @@ void aml_load(const u8* data,u32 length){
 				u32 length=_parse_pkglength(data,&offset);
 				const u8* name=data+offset;
 				u32 name_length=_parse_string(data,&offset);
+				(void)name_length;
 				ERROR("%u %s",length,name);for (;;);
 				break;
 		}
 	}
+	(void)stack;
 	for (;;);
 }
