@@ -5,7 +5,27 @@
 
 
 
+#define INTERRUPT_STATE_NONE 0
+#define INTERRUPT_STATE_MSI 1
+#define INTERRUPT_STATE_MSIX 2
+
 #define PCI_BAR_FLAG_MEMORY 1
+
+
+
+typedef struct _PCI_INTERRUPT_STATE{
+	u8 state;
+	union{
+		struct{
+			u8 offset;
+		} msi;
+		struct{
+			u8 offset;
+			u8 next_table_index;
+			u16 table_size;
+		} msix;
+	};
+} pci_interrupt_state_t;
 
 
 
@@ -21,6 +41,7 @@ typedef struct _PCI_DEVICE{
 	u8 revision_id;
 	u8 header_type;
 	u8 interrupt_line;
+	pci_interrupt_state_t interrupt_state;
 } pci_device_t;
 
 

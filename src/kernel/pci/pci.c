@@ -48,17 +48,24 @@ void KERNEL_CORE_CODE pci_init(void){
 				device.revision_id=data[2];
 				device.header_type=data[3]>>16;
 				device.interrupt_line=pci_device_read_data(&device,60);
+				device.interrupt_state.state=INTERRUPT_STATE_NONE;
 				if (data[1]&0x100000){
 					u8 offset=pci_device_read_data(&device,52);
 					while (offset){
-						u8 id=pci_device_read_data(&device,offset)>>((offset&3)<<3);
-						if (id==5){
-							ERROR_CORE("MSI");
+						u32 cap=pci_device_read_data(&device,offset);
+						if ((cap&0xff)==5){
+							device.interrupt_state.state=INTERRUPT_STATE_MSI;
+							device.interrupt_state.msi.offset=offset;
+							break;
 						}
-						else if (id==17){
-							ERROR_CORE("MSI-X");
+						if ((cap&0xff)==17){
+							device.interrupt_state.state=INTERRUPT_STATE_MSIX;
+							device.interrupt_state.msix.offset=offset;
+							device.interrupt_state.msix.next_table_index=0;
+							device.interrupt_state.msix.table_size=(cap>>16)&0x1ff;
+							break;
 						}
-						offset=pci_device_read_data(&device,offset+1)>>(((offset+1)&3)<<3);
+						offset=(cap>>8);
 					}
 				}
 				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
