@@ -14,9 +14,9 @@
 #define OP_NAME 0x04
 #define OP_BYTE_PREFIX 0x05
 #define OP_WORD_PREFIX 0x06
-#define OP_D_WORD_PREFIX 0x07
+#define OP_DWORD_PREFIX 0x07
 #define OP_STRING_PREFIX 0x08
-#define OP_Q_WORD_PREFIX 0x09
+#define OP_QWORD_PREFIX 0x09
 #define OP_SCOPE 0x0a
 #define OP_BUFFER 0x0b
 #define OP_PACKAGE 0x0c
@@ -130,16 +130,16 @@
 
 
 
-static const u16 aml_translation_table[256]={
+static const u16 _aml_opcode_translation_table[256]={
 	[0x00]=DECL_TRANSLATION(OP_ZERO,0),
 	[0x01]=DECL_TRANSLATION(OP_ONE,0),
 	[0x06]=DECL_TRANSLATION(OP_ALIAS,2),
 	[0x08]=DECL_TRANSLATION(OP_NAME,2),
 	[0x0a]=DECL_TRANSLATION(OP_BYTE_PREFIX,0),
 	[0x0b]=DECL_TRANSLATION(OP_WORD_PREFIX,0),
-	[0x0c]=DECL_TRANSLATION(OP_D_WORD_PREFIX,0),
+	[0x0c]=DECL_TRANSLATION(OP_DWORD_PREFIX,0),
 	[0x0d]=DECL_TRANSLATION(OP_STRING_PREFIX,0),
-	[0x0e]=DECL_TRANSLATION(OP_Q_WORD_PREFIX,0),
+	[0x0e]=DECL_TRANSLATION(OP_QWORD_PREFIX,0),
 	[0x10]=DECL_TRANSLATION(OP_SCOPE,1),
 	[0x11]=DECL_TRANSLATION(OP_BUFFER,1),
 	[0x12]=DECL_TRANSLATION(OP_PACKAGE,1),
@@ -222,7 +222,7 @@ static const u16 aml_translation_table[256]={
 
 
 
-static const u16 aml_translation_table_ext[256]={
+static const u16 _aml_extended_opcode_translation_table[256]={
 	[0x01]=DECL_TRANSLATION(OP_EXT_MUTEX,2),
 	[0x02]=DECL_TRANSLATION(OP_EXT_EVENT,1),
 	[0x12]=DECL_TRANSLATION(OP_EXT_COND_REF_OF,2),
@@ -256,15 +256,12 @@ static const u16 aml_translation_table_ext[256]={
 
 void aml_load(const u8* data,u32 length){
 	LOG("Loading AML...");
-	if (length<36){
-		return;
-	}
-	u32 offset=36;
+	u32 offset=0;
 	while (offset<length){
 		u16 op_data=0;
 		if (data[offset]==0x5b){
 			offset++;
-			op_data=aml_translation_table_ext[data[offset]];
+			op_data=_aml_extended_opcode_translation_table[data[offset]];
 		}
 		else if (data[offset]==0x92){
 			if (data[offset+1]==0x93){
@@ -284,8 +281,9 @@ void aml_load(const u8* data,u32 length){
 			}
 		}
 		else{
-			op_data=aml_translation_table[data[offset]];
+			op_data=_aml_opcode_translation_table[data[offset]];
 		}
+		LOG("%x (%u)",op_data&0xff,op_data>>8);
 		if (!op_data){
 			ERROR("Unknown AML opcode '%x'",data[offset]);
 			return;
@@ -293,14 +291,19 @@ void aml_load(const u8* data,u32 length){
 		offset++;
 		switch (op_data&0xff){
 			case OP_BYTE_PREFIX:
+				ERROR("Unimplemented: OP_BYTE_PREFIX");
 				break;
 			case OP_WORD_PREFIX:
+				ERROR("Unimplemented: OP_WORD_PREFIX");
 				break;
-			case OP_D_WORD_PREFIX:
+			case OP_DWORD_PREFIX:
+				ERROR("Unimplemented: OP_DWORD_PREFIX");
 				break;
 			case OP_STRING_PREFIX:
+				ERROR("Unimplemented: OP_STRING_PREFIX");
 				break;
-			case OP_Q_WORD_PREFIX:
+			case OP_QWORD_PREFIX:
+				ERROR("Unimplemented: OP_QWORD_PREFIX");
 				break;
 		}
 	}
