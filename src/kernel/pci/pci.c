@@ -37,7 +37,7 @@ void KERNEL_CORE_CODE pci_init(void){
 				data[1]=pci_device_read_data(&device,4);
 				data[2]=pci_device_read_data(&device,8);
 				data[3]=pci_device_read_data(&device,12);
-				if ((data[3]>>16)&0xff){ // PCI-to-??? bridge
+				if ((data[3]>>16)&0xff){ // PCI-to-XXX bridge
 					continue;
 				}
 				device.device_id=data[0]>>16;
@@ -48,6 +48,19 @@ void KERNEL_CORE_CODE pci_init(void){
 				device.revision_id=data[2];
 				device.header_type=data[3]>>16;
 				device.interrupt_line=pci_device_read_data(&device,60);
+				if (data[1]&0x100000){
+					u8 offset=pci_device_read_data(&device,52);
+					while (offset){
+						u8 id=pci_device_read_data(&device,offset)>>((offset&3)<<3);
+						if (id==5){
+							ERROR_CORE("MSI");
+						}
+						else if (id==17){
+							ERROR_CORE("MSI-X");
+						}
+						offset=pci_device_read_data(&device,offset+1)>>(((offset+1)&3)<<3);
+					}
+				}
 				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 				driver_ahci_init_device(&device);
 				driver_ata_init_device(&device);
