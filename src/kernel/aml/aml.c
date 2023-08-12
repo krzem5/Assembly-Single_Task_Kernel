@@ -277,11 +277,11 @@ void aml_load(const u8* data,u32 length){
 			}
 			else if (data[offset+1]==0x94){
 				offset++;
-				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,0);
+				op_data=DECL_TRANSLATION(OP_L_LESS_EQUAL,0);
 			}
 			else if (data[offset+1]==0x95){
 				offset++;
-				op_data=DECL_TRANSLATION(OP_L_NOT_EQUAL,0);
+				op_data=DECL_TRANSLATION(OP_L_GREATER_EQUAL,0);
 			}
 			else{
 				op_data=DECL_TRANSLATION(OP_L_NOT,0);
