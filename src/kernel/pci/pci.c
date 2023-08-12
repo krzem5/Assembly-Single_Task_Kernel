@@ -48,18 +48,18 @@ void KERNEL_CORE_CODE pci_init(void){
 				device.revision_id=data[2];
 				device.header_type=data[3]>>16;
 				device.interrupt_line=pci_device_read_data(&device,60);
-				device.interrupt_state.state=INTERRUPT_STATE_NONE;
+				device.interrupt_state.state=PCI_INTERRUPT_STATE_NONE;
 				if (data[1]&0x100000){
 					u8 offset=pci_device_read_data(&device,52);
 					while (offset){
 						u32 cap=pci_device_read_data(&device,offset);
 						if ((cap&0xff)==5){
-							device.interrupt_state.state=INTERRUPT_STATE_MSI;
+							device.interrupt_state.state=PCI_INTERRUPT_STATE_MSI;
 							device.interrupt_state.msi.offset=offset;
 							break;
 						}
 						if ((cap&0xff)==17){
-							device.interrupt_state.state=INTERRUPT_STATE_MSIX;
+							device.interrupt_state.state=PCI_INTERRUPT_STATE_MSIX;
 							device.interrupt_state.msix.offset=offset;
 							device.interrupt_state.msix.next_table_index=0;
 							device.interrupt_state.msix.table_size=(cap>>16)&0x1ff;
