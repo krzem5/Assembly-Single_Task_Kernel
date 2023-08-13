@@ -47,6 +47,7 @@ typedef u16 fd_t;
 
 typedef struct _FD_DATA{
 	vfs_node_id_t node_id;
+	lock_t lock;
 	u64 offset;
 	u8 flags;
 } fd_data_t;
