@@ -1,6 +1,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/kernel.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "aml"
 
@@ -130,7 +131,18 @@
 
 
 
+#define OBJECT_NO_ARRAY_SIZE 0xffffffff
+
+
+
 #define OBJECT_TYPE_SCOPE 0x01
+#define OBJECT_TYPE_OP_REGION 0x02
+#define OBJECT_TYPE_WHILE 0x03
+#define OBJECT_TYPE_LESS 0x04
+#define OBJECT_TYPE_LOCAL_VAR 0x05
+#define OBJECT_TYPE_STORE 0x06
+#define OBJECT_TYPE_DEREF 0x07
+#define OBJECT_TYPE_INDEX 0x08
 
 
 
@@ -139,17 +151,71 @@ typedef struct _OBJECT_HEADER{
 } object_header_t;
 
 
-typedef struct _OBJECT_SCOPE{
+
+typedef struct _OBJECT_ARRAY_HEADER{
+	u8 type;
+	u32 length;
+	object_header_t** data;
+} object_array_header_t;
+
+
+
+typedef struct _OBJECT_NAMED_ARRAY_HEADER{
+	object_array_header_t header;
+	u32 name_length;
+	const char* name;
+} object_named_array_header_t;
+
+
+
+typedef object_named_array_header_t object_scope_t;
+
+
+
+typedef object_array_header_t object_while_t;
+
+
+
+typedef object_array_header_t object_less_t;
+
+
+
+typedef struct _OBJECT_LOCAL_VAR{
 	object_header_t header;
-	u32 data;
-} object_scope_t;
+	u8 index;
+} object_local_var_t;
+
+
+
+typedef object_named_array_header_t object_store_t;
+
+
+
+typedef object_named_array_header_t object_index_t;
+
+
+
+typedef object_array_header_t object_deref_t;
+
+
+
+typedef struct _OBJECT_OP_REGION{
+	object_named_array_header_t header;
+	u8 type;
+} object_op_region_t;
+
+
+
+typedef struct _ALLOCATOR{
+	u64 top;
+	u64 max_top;
+} allocator_t;
 
 
 
 typedef struct _STACK_ENTRY{
-	u8 op_type;
+	object_array_header_t* object;
 	u32 count;
-	u32 length;
 } stack_entry_t;
 
 
@@ -285,6 +351,32 @@ static const u8 _aml_extended_opcode_translation_table[256]={
 
 
 
+static void* _allocate_data(allocator_t* allocator,u32 size){
+	size=(size+7)&0xfffffffffffffff8ull;
+	while (allocator->top+size>allocator->max_top){
+		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_USER);
+		allocator->max_top+=PAGE_SIZE;
+	}
+	void* out=(void*)(allocator->top);
+	allocator->top+=size;
+	return out;
+}
+
+
+
+static void* _allocate_object(allocator_t* allocator,u8 type,u32 size,u32 array_size){
+	object_header_t* out=_allocate_data(allocator,size);
+	out->type=type;
+	if (array_size!=OBJECT_NO_ARRAY_SIZE){
+		object_array_header_t* array=(object_array_header_t*)out;
+		array->length=array_size;
+		array->data=_allocate_data(allocator,array_size*sizeof(object_header_t*));
+	}
+	return out;
+}
+
+
+
 static u32 _parse_pkglength(const u8* data,u32* offset){
 	u32 out=data[*offset]&0x3f;
 	for (u8 i=0;i<(data[*offset]>>6);i++){
@@ -298,9 +390,9 @@ static u32 _parse_pkglength(const u8* data,u32* offset){
 
 static u32 _parse_string(const u8* data,u32* offset){
 	u32 out=*offset;
-	while (data[out]){
+	do{
 		out++;
-	}
+	} while (data[out-1]);
 	out-=*offset;
 	(*offset)+=out;
 	return out;
@@ -308,8 +400,55 @@ static u32 _parse_string(const u8* data,u32* offset){
 
 
 
+static void _push_stack_value(stack_t* stack,void* object){
+	stack_entry_t* entry=stack->data+stack->size;
+	while (stack->size){
+		entry--;
+		entry->object->data[entry->count]=object;
+		entry->count++;
+		if (entry->count<entry->object->length){
+			return;
+		}
+		if (entry->object->type==OBJECT_TYPE_STORE){
+			*
+			ERROR("Unimplemented ~ AAA");for (;;);
+		}
+		else if (entry->object->type==OBJECT_TYPE_INDEX){
+			ERROR("Unimplemented ~ BBB");for (;;);
+		}
+		object=(object_header_t*)(entry->object);
+		stack->size--;
+	}
+	if (!stack->size){
+		WARN("Output object: %p",object);
+		return;
+	}
+}
+
+
+
+static void _push_stack_array(stack_t* stack,void* object){
+	if (!((object_array_header_t*)object)->length){
+		_push_stack_value(stack,object);
+		return;
+	}
+	if (stack->size==STACK_SIZE){
+		ERROR("Stack overflow");
+		return;
+	}
+	(stack->data+stack->size)->object=object;
+	(stack->data+stack->size)->count=0;
+	stack->size++;
+}
+
+
+
 void aml_load(const u8* data,u32 length){
 	LOG("Loading AML...");
+	allocator_t allocator={
+		pmm_align_up_address(kernel_get_end()+kernel_get_offset()),
+		pmm_align_up_address(kernel_get_end()+kernel_get_offset())
+	};
 	stack_t stack={
 		.size=0
 	};
@@ -346,12 +485,364 @@ void aml_load(const u8* data,u32 length){
 		}
 		offset++;
 		switch (op_type){
+			default:
+				ERROR("Unimplemented: %x",op_type);for (;;);
+				break;
+			case OP_ZERO:
+				ERROR("Unimplemented: OP_ZERO");for (;;);
+				break;
+			case OP_ONE:
+				ERROR("Unimplemented: OP_ONE");for (;;);
+				break;
+			case OP_ALIAS:
+				ERROR("Unimplemented: OP_ALIAS");for (;;);
+				break;
+			case OP_NAME:
+				ERROR("Unimplemented: OP_NAME");for (;;);
+				break;
+			case OP_BYTE_PREFIX:
+				ERROR("Unimplemented: OP_BYTE_PREFIX");for (;;);
+				break;
+			case OP_WORD_PREFIX:
+				ERROR("Unimplemented: OP_WORD_PREFIX");for (;;);
+				break;
+			case OP_DWORD_PREFIX:
+				ERROR("Unimplemented: OP_DWORD_PREFIX");for (;;);
+				break;
+			case OP_STRING_PREFIX:
+				ERROR("Unimplemented: OP_STRING_PREFIX");for (;;);
+				break;
+			case OP_QWORD_PREFIX:
+				ERROR("Unimplemented: OP_QWORD_PREFIX");for (;;);
+				break;
 			case OP_SCOPE:
-				u32 length=_parse_pkglength(data,&offset);
-				const u8* name=data+offset;
-				u32 name_length=_parse_string(data,&offset);
-				(void)name_length;
-				ERROR("%u %s",length,name);for (;;);
+				{
+					object_scope_t* scope=_allocate_object(&allocator,OBJECT_TYPE_SCOPE,sizeof(object_scope_t),_parse_pkglength(data,&offset));
+					scope->name=(const char*)(data+offset);
+					scope->name_length=_parse_string(data,&offset);
+					_push_stack_array(&stack,scope);
+					break;
+				}
+			case OP_BUFFER:
+				ERROR("Unimplemented: OP_BUFFER");for (;;);
+				break;
+			case OP_PACKAGE:
+				ERROR("Unimplemented: OP_PACKAGE");for (;;);
+				break;
+			case OP_VAR_PACKAGE:
+				ERROR("Unimplemented: OP_VAR_PACKAGE");for (;;);
+				break;
+			case OP_METHOD:
+				ERROR("Unimplemented: OP_METHOD");for (;;);
+				break;
+			case OP_DUAL_NAME_PREFIX:
+				ERROR("Unimplemented: OP_DUAL_NAME_PREFIX");for (;;);
+				break;
+			case OP_MULTI_NAME_PREFIX:
+				ERROR("Unimplemented: OP_MULTI_NAME_PREFIX");for (;;);
+				break;
+			case OP_ROOT_CH:
+				ERROR("Unimplemented: OP_ROOT_CH");for (;;);
+				break;
+			case OP_PARENT_PREFIX_CH:
+				ERROR("Unimplemented: OP_PARENT_PREFIX_CH");for (;;);
+				break;
+			case OP_NAME_CH:
+				ERROR("Unimplemented: OP_NAME_CH");for (;;);
+				break;
+			case OP_LOCAL0:
+			case OP_LOCAL1:
+			case OP_LOCAL2:
+			case OP_LOCAL3:
+			case OP_LOCAL4:
+			case OP_LOCAL5:
+			case OP_LOCAL6:
+			case OP_LOCAL7:
+				{
+					object_local_var_t* local_var=_allocate_object(&allocator,OBJECT_TYPE_LOCAL_VAR,sizeof(object_local_var_t),OBJECT_NO_ARRAY_SIZE);
+					local_var->index=op_type-OP_LOCAL0;
+					_push_stack_value(&stack,local_var);
+					break;
+				}
+			case OP_ARG0:
+				ERROR("Unimplemented: OP_ARG0");for (;;);
+				break;
+			case OP_ARG1:
+				ERROR("Unimplemented: OP_ARG1");for (;;);
+				break;
+			case OP_ARG2:
+				ERROR("Unimplemented: OP_ARG2");for (;;);
+				break;
+			case OP_ARG3:
+				ERROR("Unimplemented: OP_ARG3");for (;;);
+				break;
+			case OP_ARG4:
+				ERROR("Unimplemented: OP_ARG4");for (;;);
+				break;
+			case OP_ARG5:
+				ERROR("Unimplemented: OP_ARG5");for (;;);
+				break;
+			case OP_ARG6:
+				ERROR("Unimplemented: OP_ARG6");for (;;);
+				break;
+			case OP_STORE:
+				_push_stack_array(&stack,_allocate_object(&allocator,OBJECT_TYPE_STORE,sizeof(object_store_t),1));
+				break;
+			case OP_REF_OF:
+				ERROR("Unimplemented: OP_REF_OF");for (;;);
+				break;
+			case OP_ADD:
+				ERROR("Unimplemented: OP_ADD");for (;;);
+				break;
+			case OP_CONCAT:
+				ERROR("Unimplemented: OP_CONCAT");for (;;);
+				break;
+			case OP_SUBTRACT:
+				ERROR("Unimplemented: OP_SUBTRACT");for (;;);
+				break;
+			case OP_INCREMENT:
+				ERROR("Unimplemented: OP_INCREMENT");for (;;);
+				break;
+			case OP_DECREMENT:
+				ERROR("Unimplemented: OP_DECREMENT");for (;;);
+				break;
+			case OP_MULTIPLY:
+				ERROR("Unimplemented: OP_MULTIPLY");for (;;);
+				break;
+			case OP_DIVIDE:
+				ERROR("Unimplemented: OP_DIVIDE");for (;;);
+				break;
+			case OP_SHIFT_LEFT:
+				ERROR("Unimplemented: OP_SHIFT_LEFT");for (;;);
+				break;
+			case OP_SHIFT_RIGHT:
+				ERROR("Unimplemented: OP_SHIFT_RIGHT");for (;;);
+				break;
+			case OP_AND:
+				ERROR("Unimplemented: OP_AND");for (;;);
+				break;
+			case OP_NAND:
+				ERROR("Unimplemented: OP_NAND");for (;;);
+				break;
+			case OP_OR:
+				ERROR("Unimplemented: OP_OR");for (;;);
+				break;
+			case OP_NOR:
+				ERROR("Unimplemented: OP_NOR");for (;;);
+				break;
+			case OP_XOR:
+				ERROR("Unimplemented: OP_XOR");for (;;);
+				break;
+			case OP_NOT:
+				ERROR("Unimplemented: OP_NOT");for (;;);
+				break;
+			case OP_FIND_SET_LEFT_BIT:
+				ERROR("Unimplemented: OP_FIND_SET_LEFT_BIT");for (;;);
+				break;
+			case OP_FIND_SET_RIGHT_BIT:
+				ERROR("Unimplemented: OP_FIND_SET_RIGHT_BIT");for (;;);
+				break;
+			case OP_DEREF_OF:
+				_push_stack_array(&stack,_allocate_object(&allocator,OBJECT_TYPE_DEREF,sizeof(object_deref_t),1));
+				break;
+			case OP_CONCAT_RES:
+				ERROR("Unimplemented: OP_CONCAT_RES");for (;;);
+				break;
+			case OP_MOD:
+				ERROR("Unimplemented: OP_MOD");for (;;);
+				break;
+			case OP_NOTIFY:
+				ERROR("Unimplemented: OP_NOTIFY");for (;;);
+				break;
+			case OP_SIZE_OF:
+				ERROR("Unimplemented: OP_SIZE_OF");for (;;);
+				break;
+			case OP_INDEX:
+				_push_stack_array(&stack,_allocate_object(&allocator,OBJECT_TYPE_INDEX,sizeof(object_index_t),2));
+				break;
+			case OP_MATCH:
+				ERROR("Unimplemented: OP_MATCH");for (;;);
+				break;
+			case OP_CREATE_D_WORD_FIELD:
+				ERROR("Unimplemented: OP_CREATE_D_WORD_FIELD");for (;;);
+				break;
+			case OP_CREATE_WORD_FIELD:
+				ERROR("Unimplemented: OP_CREATE_WORD_FIELD");for (;;);
+				break;
+			case OP_CREATE_BYTE_FIELD:
+				ERROR("Unimplemented: OP_CREATE_BYTE_FIELD");for (;;);
+				break;
+			case OP_CREATE_BIT_FIELD:
+				ERROR("Unimplemented: OP_CREATE_BIT_FIELD");for (;;);
+				break;
+			case OP_OBJECT_TYPE:
+				ERROR("Unimplemented: OP_OBJECT_TYPE");for (;;);
+				break;
+			case OP_CREATE_Q_WORD_FIELD:
+				ERROR("Unimplemented: OP_CREATE_Q_WORD_FIELD");for (;;);
+				break;
+			case OP_L_AND:
+				ERROR("Unimplemented: OP_L_AND");for (;;);
+				break;
+			case OP_L_OR:
+				ERROR("Unimplemented: OP_L_OR");for (;;);
+				break;
+			case OP_L_NOT_EQUAL:
+				ERROR("Unimplemented: OP_L_NOT_EQUAL");for (;;);
+				break;
+			case OP_L_LESS_EQUAL:
+				ERROR("Unimplemented: OP_L_LESS_EQUAL");for (;;);
+				break;
+			case OP_L_GREATER_EQUAL:
+				ERROR("Unimplemented: OP_L_GREATER_EQUAL");for (;;);
+				break;
+			case OP_L_NOT:
+				ERROR("Unimplemented: OP_L_NOT");for (;;);
+				break;
+			case OP_L_EQUAL:
+				ERROR("Unimplemented: OP_L_EQUAL");for (;;);
+				break;
+			case OP_L_GREATER:
+				ERROR("Unimplemented: OP_L_GREATER");for (;;);
+				break;
+			case OP_L_LESS:
+				_push_stack_array(&stack,_allocate_object(&allocator,OBJECT_TYPE_LESS,sizeof(object_less_t),2));
+				break;
+			case OP_TO_BUFFER:
+				ERROR("Unimplemented: OP_TO_BUFFER");for (;;);
+				break;
+			case OP_TO_DECIMAL_STRING:
+				ERROR("Unimplemented: OP_TO_DECIMAL_STRING");for (;;);
+				break;
+			case OP_TO_HEX_STRING:
+				ERROR("Unimplemented: OP_TO_HEX_STRING");for (;;);
+				break;
+			case OP_TO_INTEGER:
+				ERROR("Unimplemented: OP_TO_INTEGER");for (;;);
+				break;
+			case OP_TO_STRING:
+				ERROR("Unimplemented: OP_TO_STRING");for (;;);
+				break;
+			case OP_COPY_OBJECT:
+				ERROR("Unimplemented: OP_COPY_OBJECT");for (;;);
+				break;
+			case OP_MID:
+				ERROR("Unimplemented: OP_MID");for (;;);
+				break;
+			case OP_CONTINUE:
+				ERROR("Unimplemented: OP_CONTINUE");for (;;);
+				break;
+			case OP_IF:
+				ERROR("Unimplemented: OP_IF");for (;;);
+				break;
+			case OP_ELSE:
+				ERROR("Unimplemented: OP_ELSE");for (;;);
+				break;
+			case OP_WHILE:
+				_push_stack_array(&stack,_allocate_object(&allocator,OBJECT_TYPE_WHILE,sizeof(object_while_t),_parse_pkglength(data,&offset)+1));
+				break;
+			case OP_NOOP:
+				ERROR("Unimplemented: OP_NOOP");for (;;);
+				break;
+			case OP_RETURN:
+				ERROR("Unimplemented: OP_RETURN");for (;;);
+				break;
+			case OP_BREAK:
+				ERROR("Unimplemented: OP_BREAK");for (;;);
+				break;
+			case OP_BREAK_POINT:
+				ERROR("Unimplemented: OP_BREAK_POINT");for (;;);
+				break;
+			case OP_ONES:
+				ERROR("Unimplemented: OP_ONES");for (;;);
+				break;
+			case OP_EXT_MUTEX:
+				ERROR("Unimplemented: OP_EXT_MUTEX");for (;;);
+				break;
+			case OP_EXT_EVENT:
+				ERROR("Unimplemented: OP_EXT_EVENT");for (;;);
+				break;
+			case OP_EXT_COND_REF_OF:
+				ERROR("Unimplemented: OP_EXT_COND_REF_OF");for (;;);
+				break;
+			case OP_EXT_CREATE_FIELD:
+				ERROR("Unimplemented: OP_EXT_CREATE_FIELD");for (;;);
+				break;
+			case OP_EXT_LOAD_TABLE:
+				ERROR("Unimplemented: OP_EXT_LOAD_TABLE");for (;;);
+				break;
+			case OP_EXT_LOAD:
+				ERROR("Unimplemented: OP_EXT_LOAD");for (;;);
+				break;
+			case OP_EXT_STALL:
+				ERROR("Unimplemented: OP_EXT_STALL");for (;;);
+				break;
+			case OP_EXT_SLEEP:
+				ERROR("Unimplemented: OP_EXT_SLEEP");for (;;);
+				break;
+			case OP_EXT_ACQUIRE:
+				ERROR("Unimplemented: OP_EXT_ACQUIRE");for (;;);
+				break;
+			case OP_EXT_SIGNAL:
+				ERROR("Unimplemented: OP_EXT_SIGNAL");for (;;);
+				break;
+			case OP_EXT_WAIT:
+				ERROR("Unimplemented: OP_EXT_WAIT");for (;;);
+				break;
+			case OP_EXT_RESET:
+				ERROR("Unimplemented: OP_EXT_RESET");for (;;);
+				break;
+			case OP_EXT_RELEASE:
+				ERROR("Unimplemented: OP_EXT_RELEASE");for (;;);
+				break;
+			case OP_EXT_FROM_BCD:
+				ERROR("Unimplemented: OP_EXT_FROM_BCD");for (;;);
+				break;
+			case OP_EXT_TO_BCD:
+				ERROR("Unimplemented: OP_EXT_TO_BCD");for (;;);
+				break;
+			case OP_EXT_REVISION:
+				ERROR("Unimplemented: OP_EXT_REVISION");for (;;);
+				break;
+			case OP_EXT_DEBUG:
+				ERROR("Unimplemented: OP_EXT_DEBUG");for (;;);
+				break;
+			case OP_EXT_FATAL:
+				ERROR("Unimplemented: OP_EXT_FATAL");for (;;);
+				break;
+			case OP_EXT_TIMER:
+				ERROR("Unimplemented: OP_EXT_TIMER");for (;;);
+				break;
+			case OP_EXT_OP_REGION:
+				{
+					object_op_region_t* op_region=_allocate_object(&allocator,OBJECT_TYPE_OP_REGION,sizeof(object_op_region_t),2);
+					op_region->name=(const char*)(data+offset);
+					op_region->name_length=_parse_string(data,&offset);
+					op_region->type=data[offset];
+					offset++;
+					_push_stack_array(&stack,op_region);
+					break;
+				}
+			case OP_EXT_FIELD:
+				ERROR("Unimplemented: OP_EXT_FIELD");for (;;);
+				break;
+			case OP_EXT_DEVICE:
+				ERROR("Unimplemented: OP_EXT_DEVICE");for (;;);
+				break;
+			case OP_EXT_POWER_RES:
+				ERROR("Unimplemented: OP_EXT_POWER_RES");for (;;);
+				break;
+			case OP_EXT_THERMAL_ZONE:
+				ERROR("Unimplemented: OP_EXT_THERMAL_ZONE");for (;;);
+				break;
+			case OP_EXT_INDEX_FIELD:
+				ERROR("Unimplemented: OP_EXT_INDEX_FIELD");for (;;);
+				break;
+			case OP_EXT_BANK_FIELD:
+				ERROR("Unimplemented: OP_EXT_BANK_FIELD");for (;;);
+				break;
+			case OP_EXT_DATA_REGION:
+				ERROR("Unimplemented: OP_EXT_DATA_REGION");for (;;);
 				break;
 		}
 	}
