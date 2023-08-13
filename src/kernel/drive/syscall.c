@@ -1,6 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
-#include <kernel/fs_provider/kfs.h>
+#include <kernel/fs/kfs.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/syscall/syscall.h>

@@ -1,5 +1,5 @@
-#ifndef _KERNEL_FS_PROVIDER_ISO9660_H_
-#define _KERNEL_FS_PROVIDER_ISO9660_H_ 1
+#ifndef _KERNEL_FS_ISO9660_H_
+#define _KERNEL_FS_ISO9660_H_ 1
 #include <kernel/drive/drive.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>

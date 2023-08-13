@@ -1,10 +1,10 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/fs.h>
-#include <kernel/fs/allocator.h>
+#include <kernel/vfs/vfs.h>
+#include <kernel/vfs/allocator.h>
 #include <kernel/partition/partition.h>
-#include <kernel/fs_provider/emptyfs.h>
-#include <kernel/fs_provider/iso9660.h>
-#include <kernel/fs_provider/kfs.h>
+#include <kernel/fs/emptyfs.h>
+#include <kernel/fs/iso9660.h>
+#include <kernel/fs/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -118,15 +118,15 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 void KERNEL_CORE_CODE partition_init(void){
 	LOG_CORE("Initializing partition list...");
-	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FS_MAX_PARTITIONS*sizeof(partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
+	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_PARTITIONS*sizeof(partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
 	partition_count=0;
-	partition_boot_index=FS_INVALID_PARTITION_INDEX;
+	partition_boot_index=PARTITION_INVALID_INDEX;
 }
 
 
 
-void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const fs_file_system_config_t* config,void* extra_data){
-	if (partition_count>=FS_MAX_PARTITIONS){
+void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
+	if (partition_count>=MAX_PARTITIONS){
 		ERROR_CORE("Too many partitions!");
 		return NULL;
 	}
@@ -169,11 +169,11 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	}
 	fs->drive=drive;
 	fs->extra_data=extra_data;
-	fs_allocator_init(partition_count-1,config->node_size,&(fs->allocator));
+	vfs_allocator_init(partition_count-1,config->node_size,&(fs->allocator));
 	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
-	fs->root=fs_alloc(fs->index,"",0);
-	fs->root->type=FS_NODE_TYPE_DIRECTORY;
-	fs->root->flags|=FS_NODE_FLAG_ROOT;
+	fs->root=vfs_alloc(fs->index,"",0);
+	fs->root->type=VFS_NODE_TYPE_DIRECTORY;
+	fs->root->flags|=VFS_NODE_FLAG_ROOT;
 	fs->root->parent=fs->root->id;
 	fs->root->prev_sibling=fs->root->id;
 	fs->root->next_sibling=fs->root->id;

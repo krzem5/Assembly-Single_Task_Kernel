@@ -24,4 +24,12 @@ void lock_release(lock_t* lock);
 
 
 
+void lock_acquire_multiple(lock_t* lock);
+
+
+
+void lock_release_multiple(lock_t* lock);
+
+
+
 #endif

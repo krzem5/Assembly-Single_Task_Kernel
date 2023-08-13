@@ -1,12 +1,12 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/fs.h>
-#include <kernel/fs_provider/kfs.h>
+#include <kernel/fs/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "kfs"
 
 
@@ -168,7 +168,7 @@ typedef struct _KFS_BLOCK_CACHE{ // all of the blocks are aligned on a page boun
 
 
 typedef struct _KFS_FS_NODE{
-	fs_node_t header;
+	vfs_node_t header;
 	kfs_large_block_index_t block_index;
 	kfs_index_t id;
 } kfs_fs_node_t;
@@ -409,11 +409,11 @@ _nda2_found:
 
 
 static void KERNEL_CORE_CODE _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
-	out->header.type=((node->flags&KFS_FLAG_DIRECTORY)?FS_NODE_TYPE_DIRECTORY:FS_NODE_TYPE_FILE);
-	out->header.parent=(node->parent==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
-	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
-	out->header.next_sibling=(node->next_sibling==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
-	out->header.first_child=(!(node->flags&KFS_FLAG_DIRECTORY)||node->data.directory.first_child==KFS_NODE_ID_NONE?FS_NODE_ID_EMPTY:FS_NODE_ID_UNKNOWN);
+	out->header.type=((node->flags&KFS_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
+	out->header.parent=(node->parent==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
+	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
+	out->header.next_sibling=(node->next_sibling==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
+	out->header.first_child=(!(node->flags&KFS_FLAG_DIRECTORY)||node->data.directory.first_child==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
 	out->block_index=node->block_index;
 	out->id=node->index;
 }
@@ -657,19 +657,19 @@ static _Bool _resize_node_up(kfs_block_cache_t* block_cache,kfs_node_t* node,u64
 
 
 
-static fs_node_t* _kfs_create(partition_t* fs,_Bool is_directory,const char* name,u8 name_length){
+static vfs_node_t* _kfs_create(partition_t* fs,_Bool is_directory,const char* name,u8 name_length){
 	kfs_node_t* kfs_node=_alloc_node(fs->extra_data,(is_directory?KFS_FLAG_DIRECTORY:0),name,name_length);
 	if (!kfs_node){
 		return NULL;
 	}
-	fs_node_t* out=fs_alloc(fs->index,name,name_length);
+	vfs_node_t* out=vfs_alloc(fs->index,name,name_length);
 	_node_to_fs_node(kfs_node,(kfs_fs_node_t*)out);
 	return out;
 }
 
 
 
-static _Bool _kfs_delete(partition_t* fs,fs_node_t* node){
+static _Bool _kfs_delete(partition_t* fs,vfs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_node_t* kfs_node=_get_node_by_index(block_cache,kfs_fs_node->id); // loads both NDA1 and NDA2
@@ -715,23 +715,23 @@ static _Bool _kfs_delete(partition_t* fs,fs_node_t* node){
 
 
 
-static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,fs_node_t* node,u8 relative){
+static vfs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
 	kfs_index_t out_id;
 	switch (relative){
-		case FS_RELATIVE_PARENT:
+		case VFS_RELATIVE_PARENT:
 			out_id=kfs_node->parent;
 			break;
-		case FS_RELATIVE_PREV_SIBLING:
+		case VFS_RELATIVE_PREV_SIBLING:
 			out_id=kfs_node->prev_sibling;
 			break;
-		case FS_RELATIVE_NEXT_SIBLING:
+		case VFS_RELATIVE_NEXT_SIBLING:
 			out_id=kfs_node->next_sibling;
 			break;
-		case FS_RELATIVE_FIRST_CHILD:
+		case VFS_RELATIVE_FIRST_CHILD:
 			if (!(kfs_node->flags&KFS_FLAG_DIRECTORY)){
 				return NULL;
 			}
@@ -747,14 +747,14 @@ static fs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,fs_node_t* 
 		return fs->root;
 	}
 	kfs_node_t* kfs_out=_get_node_by_index(block_cache,out_id);
-	fs_node_t* out=fs_alloc(fs->index,kfs_out->name,kfs_out->flags&KFS_MASK_NAME_LENGTH);
+	vfs_node_t* out=vfs_alloc(fs->index,kfs_out->name,kfs_out->flags&KFS_MASK_NAME_LENGTH);
 	_node_to_fs_node(kfs_out,(kfs_fs_node_t*)out);
 	return out;
 }
 
 
 
-static _Bool _kfs_set_relative(partition_t* fs,fs_node_t* node,u8 relative,fs_node_t* other){
+static _Bool _kfs_set_relative(partition_t* fs,vfs_node_t* node,u8 relative,vfs_node_t* other){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	kfs_index_t other_id=(other?((kfs_fs_node_t*)other)->id:KFS_NODE_ID_NONE);
@@ -762,16 +762,16 @@ static _Bool _kfs_set_relative(partition_t* fs,fs_node_t* node,u8 relative,fs_no
 	block_cache->flags|=KFS_BLOCK_CACHE_NDA1_DIRTY;
 	kfs_node_t* kfs_node=block_cache->nda1.nodes+(kfs_fs_node->id&63);
 	switch (relative){
-		case FS_RELATIVE_PARENT:
+		case VFS_RELATIVE_PARENT:
 			kfs_node->parent=other_id;
 			break;
-		case FS_RELATIVE_PREV_SIBLING:
+		case VFS_RELATIVE_PREV_SIBLING:
 			kfs_node->prev_sibling=other_id;
 			break;
-		case FS_RELATIVE_NEXT_SIBLING:
+		case VFS_RELATIVE_NEXT_SIBLING:
 			kfs_node->next_sibling=other_id;
 			break;
-		case FS_RELATIVE_FIRST_CHILD:
+		case VFS_RELATIVE_FIRST_CHILD:
 			if (!(kfs_node->flags&KFS_FLAG_DIRECTORY)){
 				return 0;
 			}
@@ -785,7 +785,7 @@ static _Bool _kfs_set_relative(partition_t* fs,fs_node_t* node,u8 relative,fs_no
 
 
 
-static _Bool _kfs_move_file(partition_t* fs,fs_node_t* src_node,fs_node_t* dst_node){
+static _Bool _kfs_move_file(partition_t* fs,vfs_node_t* src_node,vfs_node_t* dst_node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_src_node=(kfs_fs_node_t*)src_node;
 	_block_cache_load_nda1(block_cache,kfs_fs_src_node->block_index);
@@ -807,7 +807,7 @@ static _Bool _kfs_move_file(partition_t* fs,fs_node_t* src_node,fs_node_t* dst_n
 
 
 
-static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,fs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -873,7 +873,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,fs_node_t* node,u64 offset
 
 
 
-static u64 _kfs_write(partition_t* fs,fs_node_t* node,u64 offset,const u8* buffer,u64 count){
+static u64 _kfs_write(partition_t* fs,vfs_node_t* node,u64 offset,const u8* buffer,u64 count){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -951,7 +951,7 @@ static u64 _kfs_write(partition_t* fs,fs_node_t* node,u64 offset,const u8* buffe
 
 
 
-static u64 _kfs_get_size(partition_t* fs,fs_node_t* node){
+static u64 _kfs_get_size(partition_t* fs,vfs_node_t* node){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -964,7 +964,7 @@ static u64 _kfs_get_size(partition_t* fs,fs_node_t* node){
 
 
 
-static _Bool _kfs_set_size(partition_t* fs,fs_node_t* node,u64 size){
+static _Bool _kfs_set_size(partition_t* fs,vfs_node_t* node,u64 size){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -1012,7 +1012,7 @@ static void _kpartition_flush_cache(partition_t* fs){
 
 
 
-static const fs_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
+static const partition_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	0,
 	_kfs_create,

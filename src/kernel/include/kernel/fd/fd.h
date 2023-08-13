@@ -1,6 +1,6 @@
 #ifndef _KERNEL_FD_FD_H_
 #define _KERNEL_FD_FD_H_ 1
-#include <kernel/fs/allocator.h>
+#include <kernel/vfs/allocator.h>
 #include <kernel/types.h>
 
 
@@ -46,7 +46,7 @@ typedef u16 fd_t;
 
 
 typedef struct _FD_DATA{
-	fs_node_id_t node_id;
+	vfs_node_id_t node_id;
 	u64 offset;
 	u8 flags;
 } fd_data_t;
@@ -54,9 +54,9 @@ typedef struct _FD_DATA{
 
 
 typedef struct _FD_STAT{
-	fs_node_id_t node_id;
+	vfs_node_id_t node_id;
 	u8 type;
-	u8 fs_index;
+	u8 vfs_index;
 	u8 name_length;
 	char name[64];
 	u64 size;

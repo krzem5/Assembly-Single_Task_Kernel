@@ -1,6 +1,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -33,12 +33,12 @@ static void _load_device_list_cache(void){
 	if (!_layer3_cache_enabled){
 		return;
 	}
-	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
+	vfs_node_t* node=vfs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,0);
 	if (!node){
 		INFO("Device cache file not found");
 		return;
 	}
-	if (fs_read(node,0,&_layer3_device_count,sizeof(u32))!=sizeof(u32)){
+	if (vfs_read(node,0,&_layer3_device_count,sizeof(u32))!=sizeof(u32)){
 		goto _error;
 	}
 	if (_layer3_device_count>_layer3_device_max_count){
@@ -46,7 +46,7 @@ static void _load_device_list_cache(void){
 		_layer3_device_count=_layer3_device_max_count;
 	}
 	for (u32 i=0;i<_layer3_device_count;i++){
-		if (fs_read(node,sizeof(u32)+56*i,_layer3_devices+i,56)!=56){
+		if (vfs_read(node,sizeof(u32)+56*i,_layer3_devices+i,56)!=56){
 			goto _error;
 		}
 		(_layer3_devices+i)->flags&=~NETWORK_LAYER3_DEVICE_FLAG_ONLINE;
@@ -275,16 +275,16 @@ void network_layer3_flush_cache(void){
 	}
 	lock_acquire(&_layer3_lock);
 	_layer3_cache_is_dirty=0;
-	fs_node_t* node=fs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,FS_NODE_TYPE_FILE);
+	vfs_node_t* node=vfs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,VFS_NODE_TYPE_FILE);
 	if (!node){
 		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
 		lock_release(&_layer3_lock);
 		return;
 	}
-	fs_set_size(node,sizeof(u32)+56*_layer3_device_count);
-	fs_write(node,0,&_layer3_device_count,sizeof(u32));
+	vfs_set_size(node,sizeof(u32)+56*_layer3_device_count);
+	vfs_write(node,0,&_layer3_device_count,sizeof(u32));
 	for (u32 i=0;i<_layer3_device_count;i++){
-		fs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
+		vfs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
 	}
 	lock_release(&_layer3_lock);
 }
