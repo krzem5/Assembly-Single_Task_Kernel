@@ -103,6 +103,15 @@ def _split_file(src_file_path,dst_low_file_path,dst_high_file_path,offset):
 
 
 
+def _build_static_idt(file_path,kernel_symbols):
+	with open(file_path,"r+b") as wf:
+		wf.seek(kernel_symbols["_idt_data"]-kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_OFFSET__"])
+		for i in range(0,256):
+			address=kernel_symbols[f"_isr_entry_{i}"]
+			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008,(address>>16)&0xffff,address>>32))
+
+
+
 def _get_file_size(file_path):
 	return os.stat(file_path).st_size
 
@@ -231,6 +240,7 @@ if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","s
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
+_build_static_idt("build/iso/kernel/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stages/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)

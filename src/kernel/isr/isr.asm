@@ -6,7 +6,6 @@ extern _random_entropy_pool_length
 extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
-global isr_init
 global isr_allocate
 global isr_wait
 section .text
@@ -14,28 +13,13 @@ section .text
 
 
 [bits 64]
-isr_init:
-%assign idx 0
-%rep 256
-	mov edi, idx
-	lea rsi, isr%+idx
-	mov ecx, 0x8e
-	xor edx, edx
-	call idt_set_entry
-%assign idx idx+1
-%endrep
-	mov byte [_next_isq_index], 32
-	ret
-
-
-
 isr_allocate:
-	movzx ecx, byte [_next_isq_index]
+	movzx ecx, byte [_next_irq_index]
 	cmp ecx, 0xfe
 	jge $
 	mov eax, ecx
 	add ecx, 1
-	mov byte [_next_isq_index], cl
+	mov byte [_next_irq_index], cl
 	ret
 
 
@@ -89,14 +73,14 @@ _irq_common_handler:
 	pop rdx
 	add rsp, 8
 	sti
-isr255:
+_isr_entry_255:
 	iretq
 
 
 
 %assign idx 32
 %rep 223
-isr%+idx:
+_isr_entry_%+idx:
 	push qword idx
 	jmp _irq_common_handler
 %assign idx idx+1
@@ -104,12 +88,19 @@ isr%+idx:
 
 
 
+section .data
+
+
+align 4
+_next_irq_index:
+	dd 32
+
+
+
 section .bss
 
 
 
-_next_isq_index:
-	resb 0
 align 4
 _isr_mask:
 	resd 8
@@ -173,7 +164,7 @@ _isr_common_handler:
 
 %assign idx 0
 %rep 32
-isr%+idx:
+_isr_entry_%+idx:
 	and rsp, 0xfffffffffffffff0
 	push qword idx
 	jmp _isr_common_handler

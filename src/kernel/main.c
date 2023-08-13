@@ -3,7 +3,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive_list.h>
-#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -32,7 +31,6 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
 	clock_init();
-	isr_init();
 	acpi_load();
 	bios_get_system_data();
 	network_layer1_init_irq();

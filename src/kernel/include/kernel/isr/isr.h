@@ -8,10 +8,6 @@
 
 
 
-void isr_init(void);
-
-
-
 u8 isr_allocate(void);
 
 
