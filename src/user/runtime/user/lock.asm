@@ -3,6 +3,8 @@ global lock_acquire_exclusive
 global lock_release_exclusive
 global lock_acquire_shared
 global lock_release_shared
+global lock_exclusive_to_shared
+global lock_shared_to_exclusive
 
 
 
@@ -75,3 +77,35 @@ lock_release_shared:
 ._still_used:
 	btr dword [rdi], 1
 	ret
+
+
+
+section .text.lock_exclusive_to_shared
+_lock_exclusive_to_shared_multiaccess_wait:
+	pause
+	test dword [rdi], 2
+	jnz _lock_exclusive_to_shared_multiaccess_wait
+lock_exclusive_to_shared:
+	lock bts dword [rdi], 1
+	jc _lock_exclusive_to_shared_multiaccess_wait
+	mov dword [rdi], 0b1101
+	ret
+
+
+
+section .text.lock_shared_to_exclusive
+_lock_shared_to_exclusive_multiaccess_wait:
+	pause
+	test dword [rdi], 2
+	jnz _lock_shared_to_exclusive_multiaccess_wait
+lock_shared_to_exclusive:
+	lock bts dword [rdi], 1
+	jc _lock_shared_to_exclusive_multiaccess_wait
+	sub dword [rdi], 8
+	cmp dword [rdi], 8
+	jge ._still_used
+	mov dword [rdi], 1
+	ret
+._still_used:
+	btr dword [rdi], 1
+	jmp lock_acquire_exclusive

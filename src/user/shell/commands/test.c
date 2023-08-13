@@ -26,6 +26,7 @@ static void core2(void* arg){
 	while (counter2<2);
 	printf("core2.acq--\n");
 	lock_release_shared(&_test_lock);
+	counter2--;
 }
 
 
@@ -42,8 +43,11 @@ static void core3(void* arg){
 	printf("core3.acq++ [%x]\n",_test_lock);
 	counter2++;
 	while (counter2<2);
-	printf("core3.acq--\n");
-	lock_release_shared(&_test_lock);
+	lock_shared_to_exclusive(&_test_lock);
+	printf("core3.acq-- => core3.acq\n");
+	printf("core3.rel\n");
+	lock_release_exclusive(&_test_lock);
+	counter2--;
 }
 
 
@@ -65,6 +69,7 @@ void test_main(int argc,const char*const* argv){
 	printf("core1.acq\n");
 	printf("core1.rel\n");
 	lock_release_exclusive(&_test_lock);
+	while (counter2);
 }
 
 
