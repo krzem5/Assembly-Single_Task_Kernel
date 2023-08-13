@@ -8,39 +8,33 @@ section .ctext
 
 
 [bits 64]
+_lock_acquire_wait:
+	pause
+	cmp dword [rdi], 0
+	jnz _lock_acquire_wait
 lock_acquire:
-	xor eax, eax
-	movzx edx, byte [gs:0]
-	add edx, 1
-._retry:
-	lock cmpxchg dword [rdi], edx
-	test eax, eax
-	jnz ._retry
+	lock bts dword [rdi], 0
+	jc _lock_acquire_wait
 	ret
 
 
 
 lock_init:
 lock_release:
-	xor eax, eax
-	lock xchg dword [rdi], eax
+	mov dword [rdi], 0
 	ret
 
 
 
 lock_acquire_multiple:
-	xor eax, eax
-	mov edx, 0x80000001
+	xor ecx, ecx
 ._retry:
-	lock cmpxchg dword [rdi], edx
+	mov eax, dword [rdi]
+	lea edx, [eax+1]
 	bt eax, 31
-	jc ._increase
-	test eax, eax
-	jnz ._retry
-	ret
-._increase:
-	lock bts dword [rdi], 31
-	lock add dword [rdi], 1
+	cmovnc eax, ecx
+	lock cmpxchg dword [rdi], edx
+	jz ._retry
 	ret
 
 

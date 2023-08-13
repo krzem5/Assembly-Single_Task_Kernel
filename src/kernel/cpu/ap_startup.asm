@@ -82,12 +82,6 @@ _start64:
 	;;; Setup stack
 	mov rbp, qword [cpu_stack_top+OFFSET]
 	mov rsp, rbp
-	;;; Initialize GS base (required for lock_acquire)
-	lea rdx, cpu_data
-	mov eax, edx
-	mov ecx, 0xc0000101
-	shr rdx, 32
-	wrmsr
 	;;; Start the kernel
 	lea rax, _cpu_init_core
 	jmp rax
@@ -119,9 +113,6 @@ gdt64_data:
 gdt64_pointer:
 	dw $-gdt64_start-1
 	dq gdt64_start+OFFSET
-align 8
-cpu_data:
-	db 0x00
 
 
 

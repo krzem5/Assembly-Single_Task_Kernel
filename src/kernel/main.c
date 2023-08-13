@@ -18,7 +18,7 @@
 
 
 
-void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
+void KERNEL_ENTRY_CODE KERNEL_NORETURN main(void){
 	cpu_check_features();
 	LOG_CORE("Starting kernel...");
 	const kernel_data_t* kernel_data=kernel_init();

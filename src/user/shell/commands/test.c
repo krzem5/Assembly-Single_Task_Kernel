@@ -1,25 +1,70 @@
 #include <command.h>
-#include <cwd.h>
-#include <user/fs.h>
+#include <user/cpu.h>
+#include <user/io.h>
+#include <user/lock.h>
 #include <user/types.h>
 
 
 
-u8 buffer[512];
+static lock_t _test_lock;
+static volatile u8 counter;
+static volatile u8 counter2;
+
+
+
+static void core2(void* arg){
+	counter++;
+	lock_acquire(&_test_lock);
+	printf("core2.acq [%x]\n",_test_lock);
+	printf("core2.rel\n");
+	lock_release(&_test_lock);
+	counter--;
+	while (counter);
+	lock_acquire_multiple(&_test_lock);
+	printf("core2.acq++ [%x]\n",_test_lock);
+	counter2++;
+	while (counter2<2);
+	printf("core2.acq--\n");
+	lock_release_multiple(&_test_lock);
+}
+
+
+
+static void core3(void* arg){
+	counter++;
+	lock_acquire(&_test_lock);
+	printf("core3.acq [%x]\n",_test_lock);
+	printf("core3.rel\n");
+	lock_release(&_test_lock);
+	counter--;
+	while (counter);
+	lock_acquire_multiple(&_test_lock);
+	printf("core3.acq++ [%x]\n",_test_lock);
+	counter2++;
+	while (counter2<2);
+	printf("core3.acq--\n");
+	lock_release_multiple(&_test_lock);
+}
 
 
 
 void test_main(int argc,const char*const* argv){
-	cwd_change("ahci0p0:/");
-	int fd=fs_open(0,"ahci0p0:a",FS_FLAG_WRITE|FS_FLAG_CREATE);
-	for (u16 i=0;i<512;i++){
-		buffer[i]=((i&7)<7?(i&7)+48:'\n');
-	}
-	fs_write(fd,buffer,512);
-	fs_write(fd,"Hello $$$",9);
-	fs_seek(fd,6,FS_SEEK_SET);
-	fs_write(fd,"world!\n",7);
-	fs_close(fd);
+	lock_init(&_test_lock);
+	counter=0;
+	counter2=0;
+	lock_acquire(&_test_lock);
+	printf("core1.acq\n");
+	cpu_core_start(2,core2,NULL);
+	cpu_core_start(3,core3,NULL);
+	while (counter<2);
+	printf("core1.rel\n");
+	lock_release(&_test_lock);
+	while (counter);
+	while (counter2<2);
+	lock_acquire(&_test_lock);
+	printf("core1.acq\n");
+	printf("core1.rel\n");
+	lock_release(&_test_lock);
 }
 
 

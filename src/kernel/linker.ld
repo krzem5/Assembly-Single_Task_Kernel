@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(main)
 SECTIONS{
     . = 0xffffffffc0100000;
     __KERNEL_OFFSET__ = 0xffffffffc0000000;
