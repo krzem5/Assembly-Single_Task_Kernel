@@ -1,7 +1,3 @@
-;;; bit 0 - global lock, bit 1 - multiaccess lock, bit 2 - multiaccess active, bit 3-31 multiaccess counter
-
-
-
 global lock_init
 global lock_acquire
 global lock_release
