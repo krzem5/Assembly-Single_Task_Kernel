@@ -25,8 +25,4 @@ void umm_set_cpu_common_data(u64 base,u64 length);
 
 
 
-void umm_set_idt_data(u64 base);
-
-
-
 #endif

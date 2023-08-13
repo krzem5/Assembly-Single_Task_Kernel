@@ -1,22 +1,13 @@
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "idt"
 
 
 
-u64* _idt_data;
-
-
-
-void idt_init(void){
-	LOG("Initializing IDT...");
-	u64 idt_data_raw=pmm_alloc_zero(1,PMM_COUNTER_CPU);
-	_idt_data=VMM_TRANSLATE_ADDRESS(idt_data_raw);
-	umm_set_idt_data(idt_data_raw);
-}
+extern u64 _idt_data[];
 
 
 

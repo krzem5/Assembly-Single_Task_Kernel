@@ -1,4 +1,4 @@
-extern _idt_data
+global _idt_data
 global idt_enable
 section .text
 
@@ -6,8 +6,6 @@ section .text
 
 [bits 64]
 idt_enable:
-	mov rax, qword [_idt_data]
-	mov qword [idt_pointer._data], rax
 	lidt [idt_pointer]
 	ret
 
@@ -21,4 +19,14 @@ align 16
 idt_pointer:
 	dw 0x0fff
 ._data:
-	dq 0
+	dq _idt_data
+
+
+
+section .common
+
+
+
+align 8
+_idt_data:
+	times 512 dq 0
