@@ -13,8 +13,8 @@
 
 
 u64 KERNEL_CORE_DATA vmm_address_offset=KERNEL_OFFSET;
-vmm_pagemap_t KERNEL_CORE_DATA vmm_kernel_pagemap;
-vmm_pagemap_t KERNEL_CORE_DATA vmm_user_pagemap;
+vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
+vmm_pagemap_t KERNEL_CORE_BSS vmm_user_pagemap;
 
 
 
@@ -115,7 +115,7 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
-	u64 kernel_length=pmm_align_up_address(kernel_get_end());
+	u64 kernel_length=pmm_align_up_address(kernel_get_bss_end());
 	INFO_CORE("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
 	for (u64 i=0;i<kernel_length;i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);

@@ -42,12 +42,12 @@ _random_get_entropy:
 
 
 
-section .data
+section .bss
 
 
 
 align 8
 _random_entropy_pool:
-	times 8 dq 0
+	resq 8
 _random_entropy_pool_length:
-	dq 0
+	resq 1

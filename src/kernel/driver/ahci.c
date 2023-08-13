@@ -57,10 +57,10 @@
 
 
 
-static ahci_controller_t KERNEL_CORE_DATA _ahci_controllers[MAX_CONTROLLER_COUNT];
-static u32 KERNEL_CORE_DATA _ahci_controller_count=0;
-static ahci_device_t* KERNEL_CORE_DATA _ahci_devices;
-static u32 KERNEL_CORE_DATA _ahci_device_count=0;
+static ahci_controller_t KERNEL_CORE_BSS _ahci_controllers[MAX_CONTROLLER_COUNT];
+static u32 KERNEL_CORE_BSS _ahci_controller_count;
+static ahci_device_t KERNEL_CORE_BSS _ahci_devices[MAX_DEVICE_COUNT];
+static u32 KERNEL_CORE_BSS _ahci_device_count;
 
 
 
@@ -225,12 +225,6 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);
 	pmm_dealloc(buffer_raw,1,PMM_COUNTER_DRIVER_AHCI);
-}
-
-
-
-void KERNEL_CORE_CODE driver_ahci_init(void){
-	_ahci_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(ahci_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_AHCI));
 }
 
 

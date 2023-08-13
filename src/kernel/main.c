@@ -3,8 +3,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive_list.h>
-#include <kernel/driver/ahci.h>
-#include <kernel/fd/fd.h>
 #include <kernel/idt/idt.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
@@ -14,7 +12,6 @@
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
-#include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/serial/serial.h>
@@ -30,16 +27,12 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
-	driver_ahci_init();
-	partition_init();
-	drive_list_init();
 	pci_init();
 	drive_list_load_partitions();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
 	clock_init();
-	fd_init();
 	idt_init();
 	isr_init();
 	acpi_load();

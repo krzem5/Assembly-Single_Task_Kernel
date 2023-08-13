@@ -6,10 +6,10 @@
 
 
 
-static network_layer1_device_t KERNEL_CORE_DATA _layer1_device;
+static network_layer1_device_t KERNEL_CORE_BSS _layer1_device;
 
-const char* KERNEL_CORE_DATA network_layer1_name=NULL;
-mac_address_t KERNEL_CORE_DATA network_layer1_mac_address={0,0,0,0,0,0};
+const char* KERNEL_CORE_BSS network_layer1_name;
+mac_address_t KERNEL_CORE_BSS network_layer1_mac_address;
 
 
 

@@ -18,7 +18,6 @@ SECTIONS{
         *(.text .text*)
         *(.rodata .rodata* .rdata .rdata*)
         *(.data .data*)
-        *(.bss .bss*)
         *(.ap_startup)
         . = ALIGN(0x1000);
     }
@@ -28,6 +27,13 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     __KERNEL_END__ = . - __KERNEL_OFFSET__;
+    __KERNEL_BSS_START__ = . - __KERNEL_OFFSET__;
+    .bss : AT(ADDR(.bss) - __KERNEL_OFFSET__){
+        *(.cbss)
+        *(.bss)
+        . = ALIGN(0x1000);
+    }
+    __KERNEL_BSS_END__ = . - __KERNEL_OFFSET__;
     /DISCARD/ : {
         *(*)
     }

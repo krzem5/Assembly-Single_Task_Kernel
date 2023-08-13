@@ -993,7 +993,7 @@ _change_size:
 
 
 
-static void _kpartition_flush_cache(partition_t* fs){
+static void _kfs_flush_cache(partition_t* fs){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	_block_cache_flush_nfda(block_cache);
 	_block_cache_flush_nda1(block_cache);
@@ -1024,7 +1024,7 @@ static const partition_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 	_kfs_write,
 	_kfs_get_size,
 	_kfs_set_size,
-	_kpartition_flush_cache
+	_kfs_flush_cache
 };
 
 

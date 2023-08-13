@@ -28,18 +28,10 @@ static const char* KERNEL_CORE_DATA _drive_type_names[]={
 
 
 
-static drive_stats_t* KERNEL_CORE_DATA _drive_stats;
+static drive_stats_t KERNEL_CORE_BSS _drive_stats[MAX_DRIVE_COUNT];
 
-drive_t* KERNEL_CORE_DATA drive_data;
-u32 KERNEL_CORE_DATA drive_count=0;
-
-
-
-void KERNEL_CORE_CODE drive_list_init(void){
-	LOG_CORE("Initializing drive list...");
-	_drive_stats=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_stats_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVE_LIST));
-	drive_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DRIVE_COUNT*sizeof(drive_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVE_LIST));
-}
+drive_t KERNEL_CORE_BSS drive_data[MAX_DRIVE_COUNT];
+u32 KERNEL_CORE_BSS drive_count;
 
 
 

@@ -12,6 +12,8 @@ extern u64 __KERNEL_START__[1];
 extern u64 __KERNEL_CORE_END__[1];
 extern u64 __KERNEL_COMMON_START__[1];
 extern u64 __KERNEL_END__[1];
+extern u64 __KERNEL_BSS_START__[1];
+extern u64 __KERNEL_BSS_END__[1];
 
 extern const u64 __core_version;
 
@@ -43,6 +45,18 @@ static inline u64 kernel_get_common_start(void){
 
 static inline u64 kernel_get_end(void){
 	return (u64)__KERNEL_END__;
+}
+
+
+
+static inline u64 kernel_get_bss_start(void){
+	return (u64)__KERNEL_BSS_START__;
+}
+
+
+
+static inline u64 kernel_get_bss_end(void){
+	return (u64)__KERNEL_BSS_END__;
 }
 
 

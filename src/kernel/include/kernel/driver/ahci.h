@@ -139,10 +139,6 @@ typedef struct _AHCI_DEVICE{
 
 
 
-void driver_ahci_init(void);
-
-
-
 void driver_ahci_init_device(pci_device_t* device);
 
 

@@ -5,12 +5,8 @@
 
 
 
-extern drive_t* KERNEL_CORE_DATA drive_data;
-extern u32 KERNEL_CORE_DATA drive_count;
-
-
-
-void drive_list_init(void);
+extern drive_t drive_data[];
+extern u32 drive_count;
 
 
 

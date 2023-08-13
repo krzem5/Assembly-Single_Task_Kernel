@@ -64,12 +64,8 @@ typedef struct _FD_STAT{
 
 
 
-extern fd_data_t* fd_data;
+extern fd_data_t fd_data[];
 extern u16 fd_count;
-
-
-
-void fd_init(void);
 
 
 

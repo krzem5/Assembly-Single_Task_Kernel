@@ -14,7 +14,7 @@
 static lock_t _fd_lock=LOCK_INIT_STRUCT;
 static u64 _fd_bitmap[FD_MAX_COUNT>>6];
 
-fd_data_t* fd_data;
+fd_data_t fd_data[FD_MAX_COUNT];
 u16 fd_count;
 
 
@@ -49,13 +49,6 @@ static int _node_to_fd(vfs_node_t* node,u8 flags){
 	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
 	lock_release(&_fd_lock);
 	return idx+1;
-}
-
-
-
-void fd_init(void){
-	LOG("Initializing file descriptor list...");
-	fd_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(FD_MAX_COUNT*sizeof(fd_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FD));
 }
 
 

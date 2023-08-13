@@ -23,6 +23,7 @@ const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 	INFO_CORE("Version: %lx",kernel_get_version());
 	INFO_CORE("Core kernel range: %p - %p",kernel_get_start(),kernel_get_core_end());
 	INFO_CORE("Full kernel range: %p - %p",kernel_get_start(),kernel_get_end());
+	INFO_CORE("BSS kernel range: %p - %p",kernel_get_bss_start(),kernel_get_bss_end());
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
@@ -41,6 +42,10 @@ const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 		}
 	}
 	INFO_CORE("Total: %v",total);
+	LOG_CORE("Clearing .bss section...");
+	for (u64* bss=(u64*)kernel_get_bss_start();bss<(u64*)kernel_get_bss_end();bss++){
+		*bss=0;
+	}
 	return kernel_data;
 }
 

@@ -79,8 +79,8 @@
 
 static KERNEL_CORE_RDATA const char _i82540_device_name[]="i82540";
 
-static i82540_device_t KERNEL_CORE_DATA _i82540_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_DATA _i82540_device_count=0;
+static i82540_device_t KERNEL_CORE_BSS _i82540_devices[MAX_DEVICE_COUNT];
+static u32 KERNEL_CORE_BSS _i82540_device_count;
 
 
 

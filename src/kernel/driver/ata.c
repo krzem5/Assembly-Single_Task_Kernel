@@ -47,8 +47,8 @@
 
 
 
-static ata_device_t KERNEL_CORE_DATA _ata_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_DATA _ata_device_count=0;
+static ata_device_t KERNEL_CORE_BSS _ata_devices[MAX_DEVICE_COUNT];
+static u32 KERNEL_CORE_BSS _ata_device_count;
 
 
 

@@ -13,15 +13,6 @@ section .text
 
 
 
-%macro ISR_HANDLER 1
-isr%1:
-	and rsp, 0xfffffffffffffff0
-	push qword %1
-	jmp _isr_common_handler
-%endmacro
-
-
-
 [bits 64]
 isr_init:
 %assign idx 0
@@ -33,18 +24,18 @@ isr_init:
 	call idt_set_entry
 %assign idx idx+1
 %endrep
-	mov byte [_next_isr_index],32
+	mov byte [_next_isq_index], 32
 	ret
 
 
 
 isr_allocate:
-	movzx ecx, byte [_next_isr_index]
+	movzx ecx, byte [_next_isq_index]
 	cmp ecx, 0xfe
 	jge $
 	mov eax, ecx
 	add ecx, 1
-	mov byte [_next_isr_index], cl
+	mov byte [_next_isq_index], cl
 	ret
 
 
@@ -113,15 +104,15 @@ isr%+idx:
 
 
 
-section .data
+section .bss
 
 
 
-_next_isr_index:
-	db 0
+_next_isq_index:
+	resb 0
 align 4
 _isr_mask:
-	times 8 dd 0
+	resd 8
 
 
 
@@ -174,42 +165,17 @@ _isr_common_handler:
 	cld
 	jmp _isr_handler
 ._inside_kernel:
-	jmp $
 	mov rsp, qword [gs:8]
 	cld
 	jmp _isr_handler_inside_kernel
 
 
 
-ISR_HANDLER 0
-ISR_HANDLER 1
-ISR_HANDLER 2
-ISR_HANDLER 3
-ISR_HANDLER 4
-ISR_HANDLER 5
-ISR_HANDLER 6
-ISR_HANDLER 7
-ISR_HANDLER 8
-ISR_HANDLER 9
-ISR_HANDLER 10
-ISR_HANDLER 11
-ISR_HANDLER 12
-ISR_HANDLER 13
-ISR_HANDLER 14
-ISR_HANDLER 15
-ISR_HANDLER 16
-ISR_HANDLER 17
-ISR_HANDLER 18
-ISR_HANDLER 19
-ISR_HANDLER 20
-ISR_HANDLER 21
-ISR_HANDLER 22
-ISR_HANDLER 23
-ISR_HANDLER 24
-ISR_HANDLER 25
-ISR_HANDLER 26
-ISR_HANDLER 27
-ISR_HANDLER 28
-ISR_HANDLER 29
-ISR_HANDLER 30
-ISR_HANDLER 31
+%assign idx 0
+%rep 32
+isr%+idx:
+	and rsp, 0xfffffffffffffff0
+	push qword idx
+	jmp _isr_common_handler
+%assign idx idx+1
+%endrep

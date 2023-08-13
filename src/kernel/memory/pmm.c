@@ -7,7 +7,7 @@
 
 
 
-static pmm_allocator_t KERNEL_CORE_DATA _pmm_allocator;
+static pmm_allocator_t KERNEL_CORE_BSS _pmm_allocator;
 
 
 
@@ -74,8 +74,8 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 		if (!address){
 			address+=PAGE_SIZE;
 		}
-		if (address<pmm_align_up_address(kernel_get_end())){
-			address=pmm_align_up_address(kernel_get_end());
+		if (address<pmm_align_up_address(kernel_get_bss_end())){
+			address=pmm_align_up_address(kernel_get_bss_end());
 		}
 		u64 end=pmm_align_down_address((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
 		if (end>last_memory_address){
