@@ -38,7 +38,7 @@ void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator
 
 vfs_node_t* KERNEL_CORE_CODE vfs_allocator_get(vfs_allocator_t* allocator,vfs_node_id_t id,_Bool allocate_if_not_present){
 	vfs_node_t* out=NULL;
-	lock_acquire(&(allocator->lock));
+	lock_acquire_exclusive(&(allocator->lock));
 	if (allocate_if_not_present&&id==VFS_NODE_ID_EMPTY){
 		if (allocator->root_node->type==VFS_NODE_TYPE_INVALID){
 			out=allocator->root_node;
@@ -111,6 +111,6 @@ vfs_node_t* KERNEL_CORE_CODE vfs_allocator_get(vfs_allocator_t* allocator,vfs_no
 	allocator->last=entry->prev;
 	out=entry->node;
 _return:
-	lock_release(&(allocator->lock));
+	lock_release_exclusive(&(allocator->lock));
 	return out;
 }

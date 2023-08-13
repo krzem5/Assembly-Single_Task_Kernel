@@ -108,12 +108,12 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 	switch (buffer[0]>>1){
 		case NETWORK_LAYER3_PACKET_TYPE_PING_PONG:
 			if (is_response){
-				lock_acquire(&_layer3_lock);
+				lock_acquire_exclusive(&_layer3_lock);
 				u32 index=_get_device_index(address);
 				if (index!=0xffffffff){
 					_update_ping_time(_layer3_devices+index);
 				}
-				lock_release(&_layer3_lock);
+				lock_release_exclusive(&_layer3_lock);
 			}
 			else{
 				u8 packet_buffer[1]={(NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1)|1};
@@ -133,9 +133,9 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				if (buffer_length<50){
 					break;
 				}
-				lock_acquire(&_layer3_lock);
+				lock_acquire_exclusive(&_layer3_lock);
 				if (_layer3_device_count>=_layer3_device_max_count){
-					lock_release(&_layer3_lock);
+					lock_release_exclusive(&_layer3_lock);
 					ERROR("Too many devices");
 					break;
 				}
@@ -164,7 +164,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				if (changes){
 					_layer3_cache_is_dirty=1;
 				}
-				lock_release(&_layer3_lock);
+				lock_release_exclusive(&_layer3_lock);
 			}
 			else{
 				u8 packet_buffer[49]={(NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1)|1};
@@ -195,7 +195,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 
 void network_layer3_refresh_device_list(void){
 	u8 packet_buffer[1]={NETWORK_LAYER3_PACKET_TYPE_PING_PONG<<1};
-	lock_acquire_multiple(&_layer3_lock);
+	lock_acquire_shared(&_layer3_lock);
 	for (u32 i=0;i<_layer3_device_count;i++){
 		network_layer2_packet_t packet={
 			.protocol=NETWORK_LAYER3_PROTOCOL_TYPE,
@@ -207,7 +207,7 @@ void network_layer3_refresh_device_list(void){
 		}
 		network_layer2_send(&packet);
 	}
-	lock_release_multiple(&_layer3_lock);
+	lock_release_shared(&_layer3_lock);
 	packet_buffer[0]=NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1;
 	network_layer2_packet_t packet={
 		{0xff,0xff,0xff,0xff,0xff,0xff},
@@ -222,25 +222,25 @@ void network_layer3_refresh_device_list(void){
 
 
 u32 network_layer3_get_device_count(void){
-	lock_acquire_multiple(&_layer3_lock);
+	lock_acquire_shared(&_layer3_lock);
 	u32 out=_layer3_device_count;
-	lock_release_multiple(&_layer3_lock);
+	lock_release_shared(&_layer3_lock);
 	return out;
 }
 
 
 
 const network_layer3_device_t* network_layer3_get_device(u32 index){
-	lock_acquire_multiple(&_layer3_lock);
+	lock_acquire_shared(&_layer3_lock);
 	const network_layer3_device_t* out=(index>=_layer3_device_count?NULL:_layer3_devices+index);
-	lock_release_multiple(&_layer3_lock);
+	lock_release_shared(&_layer3_lock);
 	return out;
 }
 
 
 
 _Bool network_layer3_delete_device(const u8* address){
-	lock_acquire(&_layer3_lock);
+	lock_acquire_exclusive(&_layer3_lock);
 	_Bool out=0;
 	for (u32 i=0;i<_layer3_device_count;i++){
 		for (u8 j=0;j<6;j++){
@@ -257,7 +257,7 @@ _Bool network_layer3_delete_device(const u8* address){
 		break;
 _next_device:
 	}
-	lock_release(&_layer3_lock);
+	lock_release_exclusive(&_layer3_lock);
 	return out;
 }
 
@@ -268,12 +268,12 @@ void network_layer3_flush_cache(void){
 	if (!_layer3_cache_enabled||!_layer3_cache_is_dirty){
 		return;
 	}
-	lock_acquire_multiple(&_layer3_lock);
+	lock_acquire_shared(&_layer3_lock);
 	_layer3_cache_is_dirty=0;
 	vfs_node_t* node=vfs_get_by_path(NULL,DEVICE_LIST_CACHE_FILE_PATH,VFS_NODE_TYPE_FILE);
 	if (!node){
 		ERROR("Unable to open device cache file '%s'",DEVICE_LIST_CACHE_FILE_PATH);
-		lock_release_multiple(&_layer3_lock);
+		lock_release_shared(&_layer3_lock);
 		return;
 	}
 	vfs_set_size(node,sizeof(u32)+56*_layer3_device_count);
@@ -281,5 +281,5 @@ void network_layer3_flush_cache(void){
 	for (u32 i=0;i<_layer3_device_count;i++){
 		vfs_write(node,sizeof(u32)+56*i,_layer3_devices+i,56);
 	}
-	lock_release_multiple(&_layer3_lock);
+	lock_release_shared(&_layer3_lock);
 }

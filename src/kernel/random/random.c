@@ -64,7 +64,7 @@ void random_init(void){
 
 
 void random_generate(void* buffer,u64 length){
-	lock_acquire(&_random_chacha_lock);
+	lock_acquire_exclusive(&_random_chacha_lock);
 	_random_get_entropy(_random_chacha_state);
 	u32* buffer_ptr=buffer;
 	while (length){
@@ -83,5 +83,5 @@ void random_generate(void* buffer,u64 length){
 		length-=32;
 		buffer_ptr+=8;
 	}
-	lock_release(&_random_chacha_lock);
+	lock_release_exclusive(&_random_chacha_lock);
 }

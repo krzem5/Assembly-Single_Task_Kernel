@@ -1,8 +1,8 @@
 global lock_init
-global lock_acquire
-global lock_release
-global lock_acquire_multiple
-global lock_release_multiple
+global lock_acquire_exclusive
+global lock_release_exclusive
+global lock_acquire_shared
+global lock_release_shared
 
 
 
@@ -14,33 +14,33 @@ lock_init:
 
 
 
-section .text.lock_acquire
-_lock_acquire_global_wait:
+section .text.lock_acquire_exclusive
+_lock_acquire_exclusive_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz _lock_acquire_global_wait
-lock_acquire:
+	jnz _lock_acquire_exclusive_global_wait
+lock_acquire_exclusive:
 	lock bts dword [rdi], 0
-	jc _lock_acquire_global_wait
+	jc _lock_acquire_exclusive_global_wait
 	ret
 
 
 
-section .text.lock_release
-lock_release:
+section .text.lock_release_exclusive
+lock_release_exclusive:
 	btr dword [rdi], 0
 	ret
 
 
 
-section .text.lock_acquire_multiple
-_lock_acquire_multiple_multiaccess_wait:
+section .text.lock_acquire_shared
+_lock_acquire_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _lock_acquire_multiple_multiaccess_wait
-lock_acquire_multiple:
+	jnz _lock_acquire_shared_multiaccess_wait
+lock_acquire_shared:
 	lock bts dword [rdi], 1
-	jc _lock_acquire_multiple_multiaccess_wait
+	jc _lock_acquire_shared_multiaccess_wait
 	test dword [rdi], 4
 	jnz ._multiaccess_active
 	jmp ._global_test
@@ -59,14 +59,14 @@ lock_acquire_multiple:
 
 
 
-section .text.lock_release_multiple
-_lock_release_multiple_multiaccess_wait:
+section .text.lock_release_shared
+_lock_release_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _lock_release_multiple_multiaccess_wait
-lock_release_multiple:
+	jnz _lock_release_shared_multiaccess_wait
+lock_release_shared:
 	lock bts dword [rdi], 1
-	jc _lock_release_multiple_multiaccess_wait
+	jc _lock_release_shared_multiaccess_wait
 	sub dword [rdi], 8
 	cmp dword [rdi], 8
 	jge ._still_used

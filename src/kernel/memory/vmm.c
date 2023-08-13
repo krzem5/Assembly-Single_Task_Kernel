@@ -155,7 +155,7 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
 	u64 l=(virtual_address>>12)&0x1ff;
-	lock_acquire(&(pagemap->lock));
+	lock_acquire_exclusive(&(pagemap->lock));
 	u64* pml4=&(pagemap->toplevel);
 	u64* pml3=_get_child_table(pml4,i,1);
 	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
@@ -197,7 +197,7 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	_increase_length_if_entry_empty(pml1,l);
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));
 _cleanup:
-	lock_release(&(pagemap->lock));
+	lock_release_exclusive(&(pagemap->lock));
 }
 
 
@@ -235,7 +235,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 		return 0;
 	}
 	u64 out=0;
-	lock_acquire(&(pagemap->lock));
+	lock_acquire_exclusive(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -299,7 +299,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	}
 	out=PAGE_SIZE;
 _cleanup:
-	lock_release(&(pagemap->lock));
+	lock_release_exclusive(&(pagemap->lock));
 	return out;
 }
 
@@ -307,7 +307,7 @@ _cleanup:
 
 u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 out=0;
-	lock_acquire(&(pagemap->lock));
+	lock_acquire_exclusive(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -338,6 +338,6 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	entry=_get_table(pml1)->entries[l];
 	out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
 _cleanup:
-	lock_release(&(pagemap->lock));
+	lock_release_exclusive(&(pagemap->lock));
 	return out;
 }

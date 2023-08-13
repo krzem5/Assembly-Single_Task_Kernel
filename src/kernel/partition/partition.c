@@ -192,8 +192,8 @@ void partition_flush_cache(void){
 	LOG("Flushing partition cache...");
 	for (u8 i=0;i<partition_count;i++){
 		partition_t* fs=partition_data+i;
-		lock_acquire(&(fs->lock));
+		lock_acquire_exclusive(&(fs->lock));
 		fs->config->flush_cache(fs);
-		lock_release(&(fs->lock));
+		lock_release_exclusive(&(fs->lock));
 	}
 }

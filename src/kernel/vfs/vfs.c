@@ -42,12 +42,12 @@ _Bool vfs_dealloc(vfs_node_t* node){
 		return 1;
 	}
 	partition_t* fs=partition_data+node->vfs_index;
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	_Bool out=fs->config->delete(fs,node);
 	if (out){
 		node->type=VFS_NODE_TYPE_INVALID;
 	}
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 
@@ -137,9 +137,9 @@ _check_next_fs:
 		return node;
 	}
 	partition_t* fs=partition_data+node_parent->vfs_index;
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	node=fs->config->create(fs,type==VFS_NODE_TYPE_DIRECTORY,name,name_length);
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	if (!node){
 		return NULL;
 	}
@@ -188,10 +188,10 @@ vfs_node_t* KERNEL_CORE_CODE vfs_get_relative(vfs_node_t* node,u8 relative){
 	partition_t* fs=partition_data+node->vfs_index;
 	vfs_node_t* out=vfs_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
-		lock_acquire(&(fs->lock));
+		lock_acquire_exclusive(&(fs->lock));
 		out=fs->config->get_relative(fs,node,relative);
 		*id=(out?out->id:VFS_NODE_ID_EMPTY);
-		lock_release(&(fs->lock));
+		lock_release_exclusive(&(fs->lock));
 	}
 	return out;
 }
@@ -227,12 +227,12 @@ _Bool vfs_set_relative(vfs_node_t* node,u8 relative,vfs_node_t* other){
 	if (*id==other_id){
 		return 1;
 	}
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	_Bool out=fs->config->set_relative(fs,node,relative,other);
 	if (out){
 		*id=other_id;
 	}
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 
@@ -254,9 +254,9 @@ _Bool vfs_move(vfs_node_t* src_node,vfs_node_t* dst_node){
 		}
 	}
 	else{
-		lock_acquire(&(fs->lock));
+		lock_acquire_exclusive(&(fs->lock));
 		out=fs->config->move_file(fs,src_node,dst_node);
-		lock_release(&(fs->lock));
+		lock_release_exclusive(&(fs->lock));
 	}
 	return out;
 }
@@ -314,14 +314,14 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 	}
 	partition_t* fs=partition_data+node->vfs_index;
 	if (!(fs->config->flags&PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
-		lock_acquire(&(fs->lock));
+		lock_acquire_exclusive(&(fs->lock));
 		u64 out=fs->config->read(fs,node,offset,buffer,count);
-		lock_release(&(fs->lock));
+		lock_release_exclusive(&(fs->lock));
 		return out;
 	}
 	u64 out=0;
 	u16 extra=offset&(fs->drive->block_size-1);
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
@@ -330,7 +330,7 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset-extra,chunk,fs->drive->block_size);
 		if (chunk_length<fs->drive->block_size){
-			lock_release(&(fs->lock));
+			lock_release_exclusive(&(fs->lock));
 			return 0;
 		}
 		extra=fs->drive->block_size-extra;
@@ -360,7 +360,7 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 		memcpy(buffer+count-extra,chunk,chunk_length);
 		out+=chunk_length;
 	}
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 
@@ -372,14 +372,14 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 	}
 	partition_t* fs=partition_data+node->vfs_index;
 	if (!(fs->config->flags&PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
-		lock_acquire(&(fs->lock));
+		lock_acquire_exclusive(&(fs->lock));
 		u64 out=fs->config->write(fs,node,offset,buffer,count);
-		lock_release(&(fs->lock));
+		lock_release_exclusive(&(fs->lock));
 		return out;
 	}
 	u64 out=0;
 	u16 extra=offset&(fs->drive->block_size-1);
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	if (extra){
 		ERROR("Unimplemented: vfs_write.offset_extra");
 		return 0;
@@ -405,7 +405,7 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 		}
 		out+=chunk_length;
 	}
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 
@@ -413,9 +413,9 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 
 u64 vfs_get_size(vfs_node_t* node){
 	partition_t* fs=partition_data+node->vfs_index;
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	u64 out=fs->config->get_size(fs,node);
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 
@@ -423,9 +423,9 @@ u64 vfs_get_size(vfs_node_t* node){
 
 _Bool vfs_set_size(vfs_node_t* node,u64 size){
 	partition_t* fs=partition_data+node->vfs_index;
-	lock_acquire(&(fs->lock));
+	lock_acquire_exclusive(&(fs->lock));
 	_Bool out=fs->config->set_size(fs,node,size);
-	lock_release(&(fs->lock));
+	lock_release_exclusive(&(fs->lock));
 	return out;
 }
 

@@ -16,19 +16,19 @@ void lock_init(lock_t* out);
 
 
 
-void lock_acquire(lock_t* lock);
+void lock_acquire_exclusive(lock_t* lock);
 
 
 
-void lock_release(lock_t* lock);
+void lock_release_exclusive(lock_t* lock);
 
 
 
-void lock_acquire_multiple(lock_t* lock);
+void lock_acquire_shared(lock_t* lock);
 
 
 
-void lock_release_multiple(lock_t* lock);
+void lock_release_shared(lock_t* lock);
 
 
 

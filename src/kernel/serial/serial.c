@@ -30,7 +30,7 @@ void serial_init_irq(void){
 
 
 void KERNEL_CORE_CODE serial_send(const void* buffer,u32 length){
-	lock_acquire(&_serial_read_lock);
+	lock_acquire_exclusive(&_serial_read_lock);
 	for (;length;length--){
 		while (!(io_port_in8(0x3fd)&0x20)){
 			__pause();
@@ -38,13 +38,13 @@ void KERNEL_CORE_CODE serial_send(const void* buffer,u32 length){
 		io_port_out8(0x3f8,*((const u8*)buffer));
 		buffer++;
 	}
-	lock_release(&_serial_read_lock);
+	lock_release_exclusive(&_serial_read_lock);
 }
 
 
 
 u32 serial_recv(void* buffer,u32 length,u64 timeout){
-	lock_acquire(&_serial_write_lock);
+	lock_acquire_exclusive(&_serial_write_lock);
 	u32 out=0;
 	if (!timeout){
 		for (;out<length;out++){
@@ -71,6 +71,6 @@ u32 serial_recv(void* buffer,u32 length,u64 timeout){
 			buffer++;
 		}
 	}
-	lock_release(&_serial_write_lock);
+	lock_release_exclusive(&_serial_write_lock);
 	return out;
 }

@@ -16,10 +16,10 @@ static u64 _mmap_end_address;
 
 void mmap_set_range(u64 from,u64 to){
 	LOG("Resetting user mmap range to %p - %p...",from,to);
-	lock_acquire(&_mmap_lock);
+	lock_acquire_exclusive(&_mmap_lock);
 	_mmap_start_address=pmm_align_up_address(from);
 	_mmap_end_address=pmm_align_up_address(to);
-	lock_release(&_mmap_lock);
+	lock_release_exclusive(&_mmap_lock);
 }
 
 
@@ -42,16 +42,16 @@ u64 mmap_alloc(u64 length,u8 flags){
 	else{
 		length=pmm_align_up_address(length);
 	}
-	lock_acquire(&_mmap_lock);
+	lock_acquire_exclusive(&_mmap_lock);
 	if (_mmap_start_address+length>_mmap_end_address){
 		ERROR("MMAP: Out of linear memory");
-		lock_release(&_mmap_lock);
+		lock_release_exclusive(&_mmap_lock);
 		return 0;
 	}
 	vmm_map_pages(&vmm_user_pagemap,pmm_alloc(length>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER),_mmap_start_address,page_flags,length>>PAGE_SIZE_SHIFT);
 	u64 out=_mmap_start_address;
 	_mmap_start_address+=length*(size>>PAGE_SIZE_SHIFT);
-	lock_release(&_mmap_lock);
+	lock_release_exclusive(&_mmap_lock);
 	return out;
 }
 

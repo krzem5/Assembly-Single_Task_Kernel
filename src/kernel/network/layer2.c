@@ -27,7 +27,7 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 	if (packet->buffer_length>4082){
 		return 0;
 	}
-	lock_acquire(&_layer2_lock);
+	lock_acquire_exclusive(&_layer2_lock);
 	u8* layer1_buffer=VMM_TRANSLATE_ADDRESS(_layer2_physical_send_buffer);
 	for (u8 i=0;i<6;i++){
 		layer1_buffer[i]=packet->address[i];
@@ -37,7 +37,7 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 	layer1_buffer[13]=packet->protocol;
 	memcpy(layer1_buffer+14,packet->buffer,packet->buffer_length);
 	network_layer1_send(_layer2_physical_send_buffer,packet->buffer_length+14);
-	lock_release(&_layer2_lock);
+	lock_release_exclusive(&_layer2_lock);
 	return 1;
 }
 
@@ -48,9 +48,9 @@ _Bool network_layer2_poll(network_layer2_packet_t* packet,_Bool block){
 		network_layer1_wait();
 	}
 	u8 layer1_buffer[4096];
-	lock_acquire(&_layer2_lock);
+	lock_acquire_exclusive(&_layer2_lock);
 	u16 layer1_buffer_length=network_layer1_poll(layer1_buffer,4096);
-	lock_release(&_layer2_lock);
+	lock_release_exclusive(&_layer2_lock);
 	if (layer1_buffer_length<14){
 		return 0;
 	}
