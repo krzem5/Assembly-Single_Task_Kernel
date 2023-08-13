@@ -10,7 +10,7 @@
 
 
 
-void KERNEL_CORE_CODE pci_init(void){
+void KERNEL_CORE_CODE pci_enumerate(void){
 	LOG_CORE("Scanning PCI devices...");
 	pci_device_t device={
 		0,

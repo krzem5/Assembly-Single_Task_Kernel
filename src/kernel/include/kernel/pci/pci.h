@@ -86,7 +86,7 @@ static inline void pci_device_enable_bus_mastering(const pci_device_t* device){
 
 
 
-void pci_init(void);
+void pci_enumerate(void);
 
 
 

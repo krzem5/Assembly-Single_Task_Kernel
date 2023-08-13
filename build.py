@@ -88,18 +88,17 @@ def _read_kernel_symbols(file_path):
 
 
 
-def _split_file(src_file_path,dst_low_file_path,dst_high_file_path,offset):
-	if (offset&4095):
-		raise RuntimeError("'offset' must be page-aligned")
-	with open(src_file_path,"rb") as rf,open(dst_low_file_path,"wb") as wf_low,open(dst_high_file_path,"wb") as wf_high:
-		while (offset):
-			wf_low.write(rf.read(4096))
-			offset-=4096
-		while (True):
-			chunk=rf.read(4096)
-			if (not chunk):
-				break
-			wf_high.write(chunk)
+def _split_kernel_file(src_file_path,core_file_path,kernel_file_path,core_end,end):
+	if ((core_end|end)&4095):
+		raise RuntimeError("'core_end' and 'end' must be page-aligned")
+	end-=core_end
+	with open(src_file_path,"rb") as rf,open(core_file_path,"wb") as wf_core,open(kernel_file_path,"wb") as wf:
+		while (core_end):
+			wf_core.write(rf.read(4096))
+			core_end-=4096
+		while (end):
+			wf.write(rf.read(4096))
+			end-=4096
 
 
 
@@ -239,7 +238,7 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel/linker.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"])
+_split_kernel_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
 _build_static_idt("build/iso/kernel/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stages/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):

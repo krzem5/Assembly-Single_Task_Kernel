@@ -25,7 +25,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN main(void){
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
-	pci_init();
+	pci_enumerate();
 	drive_list_load_partitions();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
