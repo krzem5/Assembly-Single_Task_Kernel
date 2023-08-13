@@ -24,10 +24,6 @@ typedef struct _SYSCALL_REGISTERS{
 
 
 
-void syscall_init(void);
-
-
-
 u64 syscall_sanatize_user_memory(u64 start,u64 size);
 
 

@@ -48,7 +48,7 @@
 
 
 static ata_device_t KERNEL_CORE_DATA _ata_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_DATA _ata_device_count;
+static u32 KERNEL_CORE_DATA _ata_device_count=0;
 
 
 
@@ -230,12 +230,6 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	drive.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
 	drive_list_add_drive(&drive);
 	return 1;
-}
-
-
-
-void KERNEL_CORE_CODE driver_ata_init(void){
-	_ata_device_count=0;
 }
 
 

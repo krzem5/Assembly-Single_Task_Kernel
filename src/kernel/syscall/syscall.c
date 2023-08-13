@@ -23,10 +23,6 @@
 
 
 
-void* _syscall_handlers[SYSCALL_COUNT+1];
-
-
-
 static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 	ERROR("Invalid SYSCALL number: %lu",number);
 	for (;;);
@@ -34,47 +30,46 @@ static void _syscall_invalid(syscall_registers_t* regs,u64 number){
 
 
 
-void syscall_init(void){
-	LOG("Initializing SYSCALL table...");
-	_syscall_handlers[0]=syscall_serial_send;
-	_syscall_handlers[1]=syscall_serial_recv;
-	_syscall_handlers[2]=syscall_elf_load;
-	_syscall_handlers[3]=syscall_cpu_core_count;
-	_syscall_handlers[4]=syscall_cpu_core_start;
-	_syscall_handlers[5]=syscall_cpu_core_stop;
-	_syscall_handlers[6]=syscall_drive_list_length;
-	_syscall_handlers[7]=syscall_drive_list_get;
-	_syscall_handlers[8]=syscall_partition_count;
-	_syscall_handlers[9]=syscall_partition_get;
-	_syscall_handlers[10]=syscall_fd_open;
-	_syscall_handlers[11]=syscall_fd_close;
-	_syscall_handlers[12]=syscall_fd_delete;
-	_syscall_handlers[13]=syscall_fd_read;
-	_syscall_handlers[14]=syscall_fd_write;
-	_syscall_handlers[15]=syscall_fd_seek;
-	_syscall_handlers[16]=syscall_fd_resize;
-	_syscall_handlers[17]=syscall_fd_absolute_path;
-	_syscall_handlers[18]=syscall_fd_stat;
-	_syscall_handlers[19]=syscall_fd_get_relative;
-	_syscall_handlers[20]=syscall_fd_move;
-	_syscall_handlers[21]=syscall_network_layer1_config;
-	_syscall_handlers[22]=syscall_network_layer2_send;
-	_syscall_handlers[23]=syscall_network_layer2_poll;
-	_syscall_handlers[24]=syscall_network_layer3_refresh;
-	_syscall_handlers[25]=syscall_network_layer3_device_count;
-	_syscall_handlers[26]=syscall_network_layer3_device_get;
-	_syscall_handlers[27]=syscall_network_layer3_device_delete;
-	_syscall_handlers[28]=syscall_system_shutdown;
-	_syscall_handlers[29]=syscall_system_config;
-	_syscall_handlers[30]=syscall_memory_map;
-	_syscall_handlers[31]=syscall_memory_unmap;
-	_syscall_handlers[32]=syscall_memory_stats;
-	_syscall_handlers[33]=syscall_clock_get_converion;
-	_syscall_handlers[34]=syscall_drive_format;
-	_syscall_handlers[35]=syscall_drive_stats;
-	_syscall_handlers[36]=syscall_random_generate;
-	_syscall_handlers[SYSCALL_COUNT]=_syscall_invalid;
-}
+void* _syscall_handlers[SYSCALL_COUNT+1]={
+	[0]=syscall_serial_send,
+	[1]=syscall_serial_recv,
+	[2]=syscall_elf_load,
+	[3]=syscall_cpu_core_count,
+	[4]=syscall_cpu_core_start,
+	[5]=syscall_cpu_core_stop,
+	[6]=syscall_drive_list_length,
+	[7]=syscall_drive_list_get,
+	[8]=syscall_partition_count,
+	[9]=syscall_partition_get,
+	[10]=syscall_fd_open,
+	[11]=syscall_fd_close,
+	[12]=syscall_fd_delete,
+	[13]=syscall_fd_read,
+	[14]=syscall_fd_write,
+	[15]=syscall_fd_seek,
+	[16]=syscall_fd_resize,
+	[17]=syscall_fd_absolute_path,
+	[18]=syscall_fd_stat,
+	[19]=syscall_fd_get_relative,
+	[20]=syscall_fd_move,
+	[21]=syscall_network_layer1_config,
+	[22]=syscall_network_layer2_send,
+	[23]=syscall_network_layer2_poll,
+	[24]=syscall_network_layer3_refresh,
+	[25]=syscall_network_layer3_device_count,
+	[26]=syscall_network_layer3_device_get,
+	[27]=syscall_network_layer3_device_delete,
+	[28]=syscall_system_shutdown,
+	[29]=syscall_system_config,
+	[30]=syscall_memory_map,
+	[31]=syscall_memory_unmap,
+	[32]=syscall_memory_stats,
+	[33]=syscall_clock_get_converion,
+	[34]=syscall_drive_format,
+	[35]=syscall_drive_stats,
+	[36]=syscall_random_generate,
+	[SYSCALL_COUNT]=_syscall_invalid
+};
 
 
 

@@ -80,7 +80,7 @@
 static KERNEL_CORE_RDATA const char _i82540_device_name[]="i82540";
 
 static i82540_device_t KERNEL_CORE_DATA _i82540_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_DATA _i82540_device_count;
+static u32 KERNEL_CORE_DATA _i82540_device_count=0;
 
 
 
@@ -169,12 +169,6 @@ static void _i82540_irq_init(void* extra_data){
 	device->mmio[REG_ITR]=0x0000;
 	device->mmio[REG_IMS]=0x0084;
 	(void)device->mmio[REG_ICR];
-}
-
-
-
-void KERNEL_CORE_CODE driver_i82540_init(void){
-	_i82540_device_count=0;
 }
 
 

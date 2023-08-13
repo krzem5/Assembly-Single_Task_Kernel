@@ -43,10 +43,6 @@ typedef struct _I82540_DEVICE{
 
 
 
-void driver_i82540_init(void);
-
-
-
 void driver_i82540_init_device(pci_device_t* device);
 
 

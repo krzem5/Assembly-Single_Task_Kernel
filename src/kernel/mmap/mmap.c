@@ -14,14 +14,6 @@ static u64 _mmap_end_address;
 
 
 
-void mmap_init(void){
-	LOG("Initializing user mmap...");
-	_mmap_start_address=0;
-	_mmap_end_address=0;
-}
-
-
-
 void mmap_set_range(u64 from,u64 to){
 	LOG("Resetting user mmap range to %p - %p...",from,to);
 	lock_acquire(&_mmap_lock);

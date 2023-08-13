@@ -49,7 +49,7 @@ static inline void _chacha_block(u32* state,u32* out){
 
 
 
-static lock_t _random_chacha_lock;
+static lock_t _random_chacha_lock=LOCK_INIT_STRUCT;
 static u32 _random_chacha_state[16];
 static u32 _random_chacha_buffer[16];
 
@@ -57,7 +57,6 @@ static u32 _random_chacha_buffer[16];
 
 void random_init(void){
 	LOG("Initializing PRNG...");
-	lock_init(&_random_chacha_lock);
 	_random_init_entropy_pool();
 	_random_get_entropy(_random_chacha_state);
 }

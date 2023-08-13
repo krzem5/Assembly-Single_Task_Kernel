@@ -9,10 +9,6 @@
 
 
 
-void mmap_init(void);
-
-
-
 void mmap_set_range(u64 from,u64 to);
 
 

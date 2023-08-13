@@ -26,8 +26,10 @@ void syscall_network_layer1_config(syscall_registers_t* regs){
 	}
 	user_network_config_t* config=VMM_TRANSLATE_ADDRESS(address);
 	u8 i=0;
-	for (;network_layer1_name[i];i++){
-		config->name[i]=network_layer1_name[i];
+	if (network_layer1_name){
+		for (;network_layer1_name[i];i++){
+			config->name[i]=network_layer1_name[i];
+		}
 	}
 	config->name[i]=0;
 	for (i=0;i<6;i++){

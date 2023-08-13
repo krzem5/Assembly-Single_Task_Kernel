@@ -13,10 +13,6 @@ typedef struct _ATA_DEVICE{
 
 
 
-void driver_ata_init(void);
-
-
-
 void driver_ata_init_device(pci_device_t* device);
 
 

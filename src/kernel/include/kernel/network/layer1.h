@@ -20,23 +20,8 @@ typedef struct _NETWORK_LAYER1_DEVICE{
 
 
 
-static inline void mac_address_init(mac_address_t* mac_address){
-	(*mac_address)[0]=0x00;
-	(*mac_address)[1]=0x00;
-	(*mac_address)[2]=0x00;
-	(*mac_address)[3]=0x00;
-	(*mac_address)[4]=0x00;
-	(*mac_address)[5]=0x00;
-}
-
-
-
 extern const char* network_layer1_name;
 extern mac_address_t network_layer1_mac_address;
-
-
-
-void network_layer1_init(void);
 
 
 

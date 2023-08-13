@@ -19,13 +19,13 @@
 
 
 
-static _Bool _layer3_cache_enabled;
-static lock_t _layer3_lock;
+static _Bool _layer3_cache_enabled=0;
+static lock_t _layer3_lock=LOCK_INIT_STRUCT;
 static network_layer3_device_t* _layer3_devices;
-static u32 _layer3_device_count;
-static u32 _layer3_device_max_count;
-static u64 _layer3_last_ping_time;
-static _Bool _layer3_cache_is_dirty;
+static u32 _layer3_device_count=0;
+static u32 _layer3_device_max_count=MAX_DEVICE_COUNT;
+static u64 _layer3_last_ping_time=0;
+static _Bool _layer3_cache_is_dirty=0;
 
 
 
@@ -93,12 +93,7 @@ void network_layer3_init(void){
 	else{
 		_layer3_cache_enabled=1;
 	}
-	lock_init(&_layer3_lock);
 	_layer3_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK));
-	_layer3_device_count=0;
-	_layer3_device_max_count=MAX_DEVICE_COUNT;
-	_layer3_last_ping_time=0;
-	_layer3_cache_is_dirty=0;
 	_load_device_list_cache();
 	network_layer3_refresh_device_list();
 }

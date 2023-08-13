@@ -36,8 +36,8 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 partition_t* KERNEL_CORE_DATA partition_data;
-u8 KERNEL_CORE_DATA partition_count;
-u8 KERNEL_CORE_DATA partition_boot_index;
+u8 KERNEL_CORE_DATA partition_count=0;
+u8 KERNEL_CORE_DATA partition_boot_index=PARTITION_INVALID_INDEX;
 
 
 
@@ -119,8 +119,6 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 void KERNEL_CORE_CODE partition_init(void){
 	LOG_CORE("Initializing partition list...");
 	partition_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_PARTITIONS*sizeof(partition_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_FS));
-	partition_count=0;
-	partition_boot_index=PARTITION_INVALID_INDEX;
 }
 
 

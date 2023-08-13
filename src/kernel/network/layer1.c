@@ -8,17 +8,8 @@
 
 static network_layer1_device_t KERNEL_CORE_DATA _layer1_device;
 
-const char* KERNEL_CORE_DATA network_layer1_name;
-mac_address_t KERNEL_CORE_DATA network_layer1_mac_address;
-
-
-
-void KERNEL_CORE_CODE network_layer1_init(void){
-	LOG_CORE("Initializing layer1 network...");
-	_layer1_device.name=NULL;
-	network_layer1_name=NULL;
-	mac_address_init(&network_layer1_mac_address);
-}
+const char* KERNEL_CORE_DATA network_layer1_name=NULL;
+mac_address_t KERNEL_CORE_DATA network_layer1_mac_address={0,0,0,0,0,0};
 
 
 
@@ -30,7 +21,7 @@ void network_layer1_init_irq(void){
 
 
 void KERNEL_CORE_CODE network_layer1_set_device(const network_layer1_device_t* device){
-	if (_layer1_device.name){
+	if (network_layer1_name){
 		WARN_CORE("Layer1 network device already installed");
 		return;
 	}
@@ -46,7 +37,7 @@ void KERNEL_CORE_CODE network_layer1_set_device(const network_layer1_device_t* d
 
 
 void network_layer1_send(u64 packet,u16 length){
-	if (!_layer1_device.name){
+	if (!network_layer1_name){
 		return;
 	}
 	_layer1_device.tx(_layer1_device.extra_data,packet,length);
@@ -55,7 +46,7 @@ void network_layer1_send(u64 packet,u16 length){
 
 
 u16 network_layer1_poll(void* buffer,u16 buffer_length){
-	if (!_layer1_device.name){
+	if (!network_layer1_name){
 		return 0;
 	}
 	return _layer1_device.rx(_layer1_device.extra_data,buffer,buffer_length);
@@ -64,5 +55,8 @@ u16 network_layer1_poll(void* buffer,u16 buffer_length){
 
 
 void network_layer1_wait(void){
+	if (!network_layer1_name){
+		return;
+	}
 	_layer1_device.wait(_layer1_device.extra_data);
 }

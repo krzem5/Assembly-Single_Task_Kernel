@@ -20,10 +20,6 @@ typedef volatile struct _NVME_REGISTERS{
 
 
 
-void driver_nvme_init(void);
-
-
-
 void driver_nvme_init_device(pci_device_t* device);
 
 
