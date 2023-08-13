@@ -1,5 +1,4 @@
 #include <kernel/acpi/fadt.h>
-#include <kernel/aml/aml.h>
 #include <kernel/cache/cache.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
@@ -65,7 +64,6 @@ void acpi_fadt_load(const void* fadt_ptr){
 	_dsdt_s5_slp_typa=0;
 	_dsdt_s5_slp_typb=0;
 	const dsdt_t* dsdt=(void*)VMM_TRANSLATE_ADDRESS(fadt->dsdt);
-	aml_load(dsdt->data,dsdt->length-sizeof(dsdt_t));
 	for (u32 offset=2;offset<dsdt->length-sizeof(dsdt_t);offset++){
 		if ((dsdt->data[offset-1]==0x08||(dsdt->data[offset-2]==0x08&&dsdt->data[offset-1]=='\\'))&&dsdt->data[offset]=='_'&&dsdt->data[offset+1]=='S'&&dsdt->data[offset+2]=='5'&&dsdt->data[offset+3]=='_'&&dsdt->data[offset+4]==0x12){
 			INFO("Found \\_S5 object at offset %u",offset);
