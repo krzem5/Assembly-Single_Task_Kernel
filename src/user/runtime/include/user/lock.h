@@ -8,7 +8,7 @@
 
 
 
-typedef volatile u32 lock_t;
+typedef u32 lock_t;
 
 
 
