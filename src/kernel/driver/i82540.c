@@ -72,8 +72,10 @@
 
 // TXDESC command flags
 #define TXDESC_EOP 0x01
-#define TXDESC_IFCS 0x02
 #define TXDESC_RS 0x08
+
+// TXDESC status flags
+#define TXDESC_DD 0x01
 
 
 
@@ -99,13 +101,13 @@ static void _i82540_tx(void* extra_data,u64 packet,u16 length){
 	i82540_tx_descriptor_t* desc=GET_DESCRIPTOR(device,tx,tail);
 	desc->address=packet;
 	desc->length=length;
-	desc->cmd=TXDESC_EOP|TXDESC_IFCS|TXDESC_RS;
+	desc->cmd=TXDESC_EOP|TXDESC_RS;
 	tail++;
 	if (tail==NUM_TX_DESCRIPTORS){
 		tail=0;
 	}
 	device->mmio[REG_TDT]=tail;
-	while (!(desc->sta&0x0f)){
+	while (!(desc->status&0x0f)){
 		__pause();
 	}
 }
@@ -227,12 +229,13 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 		i82540_tx_descriptor_t* desc=GET_DESCRIPTOR(i82540_device,tx,i);
 		desc->address=0;
 		desc->cmd=0;
+		desc->status=0;
 	}
 	i82540_device->mmio[REG_TDBAH]=i82540_device->tx_desc_base>>32;
 	i82540_device->mmio[REG_TDBAL]=i82540_device->tx_desc_base;
 	i82540_device->mmio[REG_TDLEN]=NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t);
 	i82540_device->mmio[REG_TDH]=0;
-	i82540_device->mmio[REG_TDT]=0;
+	i82540_device->mmio[REG_TDT]=1;
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
 	i82540_device->pci_irq=device->interrupt_line;
 	i82540_device->irq=0;

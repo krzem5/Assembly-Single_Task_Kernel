@@ -13,10 +13,10 @@
 typedef volatile struct __attribute__((packed)) _I82540_RX_DESCRIPTOR{
 	u64 address;
 	u16 length;
-	u16 checksum;
+	u8 _padding[2];
 	u8 status;
 	u8 errors;
-	u8 _padding[2];
+	u8 _padding2[2];
 } i82540_rx_descriptor_t;
 
 
@@ -24,11 +24,10 @@ typedef volatile struct __attribute__((packed)) _I82540_RX_DESCRIPTOR{
 typedef volatile struct __attribute__((packed)) _I82540_TX_DESCRIPTOR{
 	u64 address;
 	u16 length;
-	u8 cso;
+	u8 _padding[1];
 	u8 cmd;
-	u8 sta;
-	u8 css;
-	u8 _padding[2];
+	u8 status;
+	u8 _padding2[3];
 } i82540_tx_descriptor_t;
 
 
