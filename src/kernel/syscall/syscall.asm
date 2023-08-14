@@ -86,6 +86,8 @@ syscall_handler:
 	mov cr3, rsp
 	cmp qword [gs:32], 0
 	jnz syscall_jump_to_user_mode._function_found
+	test rax, rax
+	jz ._empty_syscall
 	mov rsp, cr2
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
@@ -105,6 +107,7 @@ syscall_handler:
 	push rbx
 	push rax
 	mov rdi, rsp
+	sub rax, 1
 	cmp rax, SYSCALL_COUNT
 	jl ._valid_syscall
 	mov rsi, rax
@@ -139,6 +142,7 @@ syscall_handler:
 	pop rcx
 	mov rsp, qword [gs:16]
 	mov cr2, rsp
+._empty_syscall:
 	mov rsp, qword [vmm_user_pagemap]
 	mov cr3, rsp
 	mov sp, 0x18

@@ -4,6 +4,10 @@
 
 
 
+void _syscall_empty(void);
+
+
+
 void _syscall_serial_send(const void* buffer,u32 length);
 
 
