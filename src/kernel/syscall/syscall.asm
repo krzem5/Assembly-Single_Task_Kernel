@@ -117,9 +117,9 @@ syscall_handler:
 	cld
 	sti
 	call rax
+	cli
 	cmp qword [gs:32], 0
 	jnz syscall_jump_to_user_mode._function_found
-	cli
 	rdtsc
 	xor rax, rdx
 	mov edx, dword [_random_entropy_pool_length]
