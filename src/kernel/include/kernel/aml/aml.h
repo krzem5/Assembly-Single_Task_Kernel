@@ -124,6 +124,8 @@
 #define AML_OPCODE_EXT_BANK_FIELD 0x87
 #define AML_OPCODE_EXT_DATA_REGION 0x88
 
+#define AML_OBJECT_FLAG_BYTE_DATA 0x01
+
 #define AML_OBJECT_ARG_TYPE_UINT8 1
 #define AML_OBJECT_ARG_TYPE_UINT16 2
 #define AML_OBJECT_ARG_TYPE_UINT32 3
@@ -137,6 +139,7 @@
 typedef struct _AML_OBJECT{
 	u8 opcode[2];
 	u8 arg_count;
+	u8 flags;
 	u32 data_length;
 	struct{
 		u8 type;
@@ -155,7 +158,11 @@ typedef struct _AML_OBJECT{
 
 
 
-void aml_load(const u8* data,u32 length);
+aml_object_t* aml_parse(const u8* data,u32 length);
+
+
+
+void aml_build_runtime(aml_object_t* root);
 
 
 

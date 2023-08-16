@@ -4,7 +4,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/kernel.h>
 #include <kernel/types.h>
-#define KERNEL_LOG_NAME "aml"
+#define KERNEL_LOG_NAME "aml_parser"
 
 
 
@@ -267,14 +267,11 @@ static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* 
 	char* out=_allocator_allocate_buffer(allocator);
 	u16 length=0;
 	u32 index=0;
-	if (data[index]=='\\'){
+	while (data[index]=='\\'||data[index]=='^'){
 		_allocator_enlarge_buffer(allocator,1);
-		out[length]='\\';
+		out[length]=data[index];
 		length++;
 		index++;
-	}
-	if (data[index]=='^'){
-		ERROR("AML parent prefix names are unimplemented!");for (;;);
 	}
 	u8 segment_count=1;
 	if (data[index]=='.'){
@@ -292,18 +289,10 @@ static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* 
 	}
 	while (segment_count){
 		segment_count--;
-		u8 padding_count=0;
+		_allocator_enlarge_buffer(allocator,(segment_count?5:4));
 		for (u8 i=0;i<4;i++){
-			if (data[index+i]=='_'){
-				padding_count++;
-			}
-		}
-		_allocator_enlarge_buffer(allocator,(segment_count?5:4)-padding_count);
-		for (u8 i=0;i<4;i++){
-			if (data[index]!='_'){
-				out[length]=data[index];
-				length++;
-			}
+			out[length]=data[index];
+			length++;
 			index++;
 		}
 		if (segment_count){
@@ -372,6 +361,7 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 	}
 	if (opcode->opcode==AML_OPCODE_STRING){
 		target->arg_count=1;
+		target->flags=0;
 		target->args[0].string=_get_decoded_name(data,allocator,&(target->args[0].string_length));
 		return _get_name_encoding_length(data);
 	}
@@ -381,6 +371,7 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 		data+=_get_pkglength_encoding_length(data);
 	}
 	target->arg_count=opcode->arg_count;
+	target->flags=((opcode->flags&OPCODE_FLAG_EXTRA_BYTES)?AML_OBJECT_FLAG_BYTE_DATA:0);
 	for (u8 i=0;i<opcode->arg_count;i++){
 		target->args[i].type=opcode->args[i];
 		if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT8){
@@ -439,7 +430,7 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 
 
 
-void aml_load(const u8* data,u32 length){
+aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",VMM_TRANSLATE_ADDRESS_REVERSE(data),length);
 	allocator_t allocator={
@@ -450,6 +441,7 @@ void aml_load(const u8* data,u32 length){
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;
 	root->arg_count=0;
+	root->flags=0;
 	root->data_length=0;
 	for (u32 offset=0;offset<length;){
 		root->data_length++;
@@ -460,4 +452,5 @@ void aml_load(const u8* data,u32 length){
 	for (u32 i=0;i<root->data_length;i++){
 		offset+=_parse_object(data+offset,&allocator,root->data.objects+i);
 	}
+	return root;
 }
