@@ -275,7 +275,7 @@ typedef struct _OBJECT{
 		u64 u64;
 		struct{
 			const char* data;
-			u8 length;
+			u16 length;
 		} string;
 		struct _OBJECT* object;
 	} args[6];
@@ -294,33 +294,80 @@ typedef struct _ALLOCATOR{
 
 
 
-// static void* _allocate_data(allocator_t* allocator,u32 size){
-// 	size=(size+7)&0xfffffffffffffff8ull;
-// 	while (allocator->top+size>allocator->max_top){
-// 		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_USER);
-// 		allocator->max_top+=PAGE_SIZE;
-// 	}
-// 	void* out=(void*)(allocator->top);
-// 	allocator->top+=size;
-// 	return out;
-// }
+static void* _allocator_allocate_data(allocator_t* allocator,u32 size){
+	size=(size+7)&0xfffffffffffffff8ull;
+	while (allocator->top+size>allocator->max_top){
+		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_AML),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
+		allocator->max_top+=PAGE_SIZE;
+	}
+	void* out=(void*)(allocator->top);
+	allocator->top+=size;
+	return out;
+}
 
 
 
-// static void* _allocate_object(allocator_t* allocator,u8 type,u32 size,u32 array_size){
-// 	object_header_t* out=_allocate_data(allocator,size);
-// 	out->type=type;
-// 	if (array_size!=OBJECT_NO_ARRAY_SIZE){
-// 		object_array_header_t* array=(object_array_header_t*)out;
-// 		array->length=array_size;
-// 		array->data=_allocate_data(allocator,array_size*sizeof(object_header_t*));
-// 	}
-// 	return out;
-// }
+static void* _allocator_allocate_buffer(allocator_t* allocator){
+	return (void*)(allocator->top);
+}
 
 
 
-static u32 _get_name_length(const u8* data){
+static void _allocator_enlarge_buffer(allocator_t* allocator,u8 size){
+	allocator->top+=size;
+	if (allocator->top>allocator->max_top){
+		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
+		allocator->max_top+=PAGE_SIZE;
+	}
+}
+
+
+
+static void _allocator_end_buffer(allocator_t* allocator){
+	allocator->top=(allocator->top+7)&0xfffffffffffffff8ull;
+	if (allocator->top>allocator->max_top){
+		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
+		allocator->max_top+=PAGE_SIZE;
+	}
+}
+
+
+
+static const aml_opcode_t* _parse_opcode(const u8* data){
+	u8 type=data[0];
+	u8 extended=0;
+	if (type==0x5b){
+		extended=OPCODE_FLAG_EXTENDED;
+		type=data[1];
+	}
+	const aml_opcode_t* out=_aml_opcodes;
+	for (;out->opcode!=OPCODE_STRING;out++){
+		if ((out->flags&OPCODE_FLAG_EXTENDED)==extended&&out->opcode==type){
+			return out;
+		}
+	}
+	if (!extended&&(type=='\\'||type=='^'||type=='.'||type=='/'||(type>47&&type<58)||type=='_'||(type>64&&type<91))){
+		return out;
+	}
+	ERROR("Unknown AML opcode '%s%x'",(extended?"5b ":""),type);
+	for (;;);
+}
+
+
+
+static u32 _get_opcode_encoding_length(const aml_opcode_t* opcode){
+	return ((opcode->flags&OPCODE_FLAG_EXTENDED)?2:1);
+}
+
+
+
+static u32 _get_pkglength_encoding_length(const u8* data){
+	return (data[0]>>6)+1;
+}
+
+
+
+static u32 _get_name_encoding_length(const u8* data){
 	u32 out=0;
 	if (data[out]=='\\'){
 		out++;
@@ -347,40 +394,6 @@ static u32 _get_name_length(const u8* data){
 
 
 
-static const aml_opcode_t* _parse_opcode(const u8* data){
-	u8 type=data[0];
-	u8 extended=0;
-	if (type==0x5b){
-		extended=OPCODE_FLAG_EXTENDED;
-		type=data[1];
-	}
-	const aml_opcode_t* out=_aml_opcodes;
-	for (;out->opcode!=OPCODE_STRING;out++){
-		if ((out->flags&OPCODE_FLAG_EXTENDED)==extended&&out->opcode==type){
-			return out;
-		}
-	}
-	if (!extended&&(type=='\\'||type=='^'||type=='.'||type=='/'||(type>47&&type<58)||type=='_'||(type>64&&type<91))){
-		return out;
-	}
-	ERROR("Unknown opcode '%s%x'",(extended?"5b ":""),type);
-	for (;;);
-}
-
-
-
-static u32 _get_opcode_encoding_length(const aml_opcode_t* opcode){
-	return ((opcode->flags&OPCODE_FLAG_EXTENDED)?2:1);
-}
-
-
-
-static u32 _get_pkglength_encoding_length(const u8* data){
-	return 1+(data[0]>>6);
-}
-
-
-
 static u32 _get_pkglength(const u8* data){
 	u32 out=data[0]&0x3f;
 	for (u8 i=0;i<(data[0]>>6);i++){
@@ -391,9 +404,66 @@ static u32 _get_pkglength(const u8* data){
 
 
 
-static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
+static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* out_length){
+	char* out=_allocator_allocate_buffer(allocator);
+	u16 length=0;
+	u32 index=0;
+	if (data[index]=='\\'){
+		_allocator_enlarge_buffer(allocator,1);
+		out[length]='\\';
+		length++;
+		index++;
+	}
+	if (data[index]=='^'){
+		ERROR("Parent namespace");for (;;);
+	}
+	u8 segment_count=1;
+	if (data[index]=='.'){
+		index++;
+		segment_count=2;
+	}
+	else if (data[index]=='/'){
+		index++;
+		segment_count=data[index];
+		index++;
+	}
+	else if (!data[index]){
+		index++;
+		segment_count=0;
+	}
+	while (segment_count){
+		segment_count--;
+		u8 padding_count=0;
+		for (u8 i=0;i<4;i++){
+			if (data[index+i]=='_'){
+				padding_count++;
+			}
+		}
+		_allocator_enlarge_buffer(allocator,(segment_count?5:4)-padding_count);
+		for (u8 i=0;i<4;i++){
+			if (data[index]!='_'){
+				out[length]=data[index];
+				length++;
+			}
+			index++;
+		}
+		if (segment_count){
+			out[length]='.';
+			length++;
+		}
+	}
+	_allocator_enlarge_buffer(allocator,1);
+	_allocator_end_buffer(allocator);
+	out[length]=0;
+	*out_length=length;
+	return out;
+}
+
+
+
+static u32 _get_full_opcode_length(const u8* data,const aml_opcode_t* opcode){
 	if (opcode->opcode==OPCODE_STRING){
-		return _get_name_length(data);
+		return _get_name_encoding_length(data);
 	}
 	u32 out=_get_opcode_encoding_length(opcode);
 	if (opcode->flags&OPCODE_FLAG_PKGLENGTH){
@@ -418,10 +488,10 @@ static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
 			} while (data[out-1]);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_NAME){
-			out+=_get_name_length(data+out);
+			out+=_get_name_encoding_length(data+out);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
-			out+=_get_opcode_size(data+out,_parse_opcode(data+out));
+			out+=_get_full_opcode_length(data+out,_parse_opcode(data+out));
 		}
 	}
 	return out;
@@ -442,12 +512,9 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 		target->opcode[1]=0;
 	}
 	if (opcode->opcode==OPCODE_STRING){
-		u32 length=_get_name_length(data);
-		target->args[0].string.data=(const char*)data;
-		target->args[0].string.length=length;
-		return length;
+		target->args[0].string.data=_get_decoded_name(data,allocator,&(target->args[0].string.length));
+		return _get_name_encoding_length(data);
 	}
-	WARN("~ %x",opcode->opcode);
 	data+=_get_opcode_encoding_length(opcode);
 	if (opcode->flags&OPCODE_FLAG_PKGLENGTH){
 		data_end=data+_get_pkglength(data);
@@ -480,13 +547,12 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 			data+=length;
 		}
 		else if (opcode->args[i]==OPCODE_ARG_NAME){
-			u32 length=_get_name_length(data);
-			target->args[i].string.data=(const char*)data;
-			target->args[i].string.length=length;
-			data+=length;
+			target->args[i].string.data=_get_decoded_name(data,allocator,&(target->args[i].string.length));
+			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
-			data+=_get_opcode_size(data,_parse_opcode(data));
+			target->args[i].object=_allocator_allocate_data(allocator,sizeof(object_t));
+			data+=_parse_object(data,allocator,target->args[i].object);
 		}
 	}
 	if (!data_end){
@@ -500,11 +566,11 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 	target->data_length=0;
 	for (u32 i=0;data+i<data_end;){
 		target->data_length++;
-		i+=_get_opcode_size(data+i,_parse_opcode(data+i));
+		i+=_get_full_opcode_length(data+i,_parse_opcode(data+i));
 	}
-	while (data<data_end){
-		object_t tmp;
-		data+=_parse_object(data,allocator,&tmp);
+	target->data.objects=_allocator_allocate_data(allocator,target->data_length*sizeof(object_t));
+	for (u32 i=0;i<target->data_length;i++){
+		data+=_parse_object(data,allocator,target->data.objects+i);
 	}
 	return data_end-data_start;
 }
@@ -518,9 +584,6 @@ void aml_load(const u8* data,u32 length){
 		pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset())
 	};
 	for (u32 offset=0;offset<length;){
-		object_t tmp;
-		offset+=_parse_object(data+offset,&allocator,&tmp);
+		offset+=_parse_object(data+offset,&allocator,_allocator_allocate_data(&allocator,sizeof(object_t)));
 	}
-	LOG("End!");
-	for (;;);
 }

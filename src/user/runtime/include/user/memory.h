@@ -11,6 +11,7 @@
 
 typedef struct _MEMORY_STATS{
 	u64 counter_total;
+	u64 counter_aml;
 	u64 counter_cpu;
 	u64 counter_driver_ahci;
 	u64 counter_driver_i82540;
