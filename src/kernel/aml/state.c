@@ -12,9 +12,11 @@
 
 
 typedef struct _NAMESPACE{
-	char name[4];
+	char name[5];
+	struct _NAMESPACE* parent;
+	struct _NAMESPACE* child;
+	struct _NAMESPACE* next;
 } namespace_t;
-
 
 
 typedef struct _RUNTIME_GLOBAL_STATE{
@@ -24,16 +26,58 @@ typedef struct _RUNTIME_GLOBAL_STATE{
 
 
 typedef struct _RUNTIME_LOCAL_STATE{
-	u64 args[6];
+	namespace_t* namespace;
+	u64 args[7];
 	u64 locals[8];
 } runtime_local_state_t;
 
 
 
-static namespace_t* _alloc_namespace(const char* name){
+static namespace_t* _alloc_namespace(const char* name,namespace_t* parent){
 	namespace_t* out=kmm_allocate(sizeof(namespace_t));
 	for (u8 i=0;i<4;i++){
 		out->name[i]=name[i];
+	}
+	out->name[4]=0;
+	out->parent=parent;
+	out->child=NULL;
+	if (parent){
+		out->next=parent->child;
+		parent->child=out;
+	}
+	else{
+		out->next=NULL;
+	}
+	return out;
+}
+
+
+
+static namespace_t* _get_namespace(runtime_global_state_t* global,runtime_local_state_t* local,const char* namespace){
+	namespace_t* out=local->namespace;
+	if (namespace[0]=='\\'){
+		out=global->root_namespace;
+		namespace++;
+	}
+	while (namespace[0]){
+		if (namespace[0]=='^'){
+			out=out->parent;
+			namespace++;
+		}
+		else if (namespace[0]=='.'){
+			namespace++;
+		}
+		else{
+			for (namespace_t* child=out->child;child;child=child->next){
+				if (*((const u32*)(child->name))==*((const u32*)namespace)){
+					out=child;
+					goto _namespace_found;
+				}
+			}
+			out=_alloc_namespace(namespace,out);
+_namespace_found:
+			namespace+=4;
+		}
 	}
 	return out;
 }
@@ -41,7 +85,6 @@ static namespace_t* _alloc_namespace(const char* name){
 
 
 static void _execute(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* objects,u32 object_count){
-	return;
 	for (u32 i=0;i<object_count;i++){
 		const aml_object_t* object=objects+i;
 		switch (MAKE_OPCODE(object->opcode[0],object->opcode[1])){
@@ -73,8 +116,13 @@ static void _execute(runtime_global_state_t* global,runtime_local_state_t* local
 				ERROR("Unimplemented: AML_OPCODE_QWORD_PREFIX");for (;;);
 				break;
 			case MAKE_OPCODE(AML_OPCODE_SCOPE,0):
-				ERROR("Unimplemented: AML_OPCODE_SCOPE");for (;;);
-				break;
+				{
+					namespace_t* prev_namespace=local->namespace;
+					local->namespace=_get_namespace(global,local,object->args[0].string);
+					_execute(global,local,object->data.objects,object->data_length);
+					local->namespace=prev_namespace;
+					break;
+				}
 			case MAKE_OPCODE(AML_OPCODE_BUFFER,0):
 				ERROR("Unimplemented: AML_OPCODE_BUFFER");for (;;);
 				break;
@@ -393,9 +441,12 @@ static void _execute(runtime_global_state_t* global,runtime_local_state_t* local
 void aml_build_runtime(aml_object_t* root){
 	LOG("Building AML runtime...");
 	runtime_global_state_t global={
-		_alloc_namespace("\\\x00\x00\x00")
+		_alloc_namespace("\\\x00\x00\x00",NULL)
 	};
-	runtime_local_state_t local;
+	global.root_namespace->parent=global.root_namespace;
+	runtime_local_state_t local={
+		global.root_namespace
+	};
 	_execute(&global,&local,root->data.objects,root->data_length);
-	// for (;;);
+	for (;;);
 }
