@@ -62,7 +62,7 @@
 #define OPCODE_SIZE_OF 0x87
 #define OPCODE_INDEX 0x88
 #define OPCODE_MATCH 0x89
-#define OPCODE_CREATE_D_WORD_FIELD 0x8a
+#define OPCODE_CREATE_DWORD_FIELD 0x8a
 #define OPCODE_CREATE_WORD_FIELD 0x8b
 #define OPCODE_CREATE_BYTE_FIELD 0x8c
 #define OPCODE_CREATE_BIT_FIELD 0x8d
@@ -205,12 +205,12 @@ static const aml_opcode_t _aml_opcodes[]={
 	DECL_OPCODE(OPCODE_SIZE_OF,0,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_INDEX,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_MATCH,0,OPCODE_ARG_OBJECT,OPCODE_ARG_UINT8,OPCODE_ARG_OBJECT,OPCODE_ARG_UINT8,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
-	DECL_OPCODE(OPCODE_CREATE_D_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME,  ),
-	DECL_OPCODE(OPCODE_CREATE_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME,  ),
-	DECL_OPCODE(OPCODE_CREATE_BYTE_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME,  ),
-	DECL_OPCODE(OPCODE_CREATE_BIT_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME,  ),
+	DECL_OPCODE(OPCODE_CREATE_DWORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
+	DECL_OPCODE(OPCODE_CREATE_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
+	DECL_OPCODE(OPCODE_CREATE_BYTE_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
+	DECL_OPCODE(OPCODE_CREATE_BIT_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
 	DECL_OPCODE(OPCODE_OBJECT_TYPE,0,OPCODE_ARG_OBJECT),
-	DECL_OPCODE(OPCODE_CREATE_Q_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME,  ),
+	DECL_OPCODE(OPCODE_CREATE_Q_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
 	DECL_OPCODE(OPCODE_L_AND,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_L_OR,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_L_NOT,0,OPCODE_ARG_OBJECT),
@@ -272,11 +272,10 @@ typedef struct _OBJECT{
 	u32 data_length;
 	union{
 		u64 u64;
-		const char* str;
 		struct{
 			const char* data;
 			u8 length;
-		} name;
+		} string;
 		struct _OBJECT* object;
 	} args[6];
 	union{
@@ -291,13 +290,6 @@ typedef struct _ALLOCATOR{
 	u64 top;
 	u64 max_top;
 } allocator_t;
-
-
-
-typedef struct _OBJECT_TARGET{
-	object_t* object;
-	u8 arg_index;
-} object_target_t;
 
 
 
@@ -354,9 +346,22 @@ static u32 _get_name_length(const u8* data){
 
 
 
+static u32 _skip_static_names(const u8* data){
+	u32 out=0;
+	INFO("A");
+	while (data[out]=='\\'||data[out]=='^'||data[out]=='.'||data[out]=='/'||(data[out]>47&&data[out]<58)||data[out]=='_'||(data[out]>64&&data[out]<91)){
+		LOG("@ [%u:%x] %c%c%c%c",_get_name_length(data+out),data[out+_get_name_length(data+out)],data[out],data[out+1],data[out+2],data[out+3]);
+		out+=_get_name_length(data+out);
+	}
+	INFO("B");
+	return out;
+}
+
+
+
 static const aml_opcode_t* _parse_opcode(const u8* data){
-	u8 extended=0;
 	u8 type=data[0];
+	u8 extended=0;
 	if (type==0x5b){
 		extended=OPCODE_FLAG_EXTENDED;
 		type=data[1];
@@ -419,11 +424,12 @@ static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
 			} while (data[out-1]);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_NAME){
+			ERROR("SKIP: %x %s",data[out],data+out);
 			out+=_get_name_length(data+out);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
+			out+=_skip_static_names(data+out);
 			out+=_get_opcode_size(data+out,_parse_opcode(data+out));
-			ERROR("OPCODE_ARG_OBJECT");
 		}
 	}
 	return out;
@@ -431,44 +437,73 @@ static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
 
 
 
-static u32 _parse_object(const u8* data,allocator_t* allocator,object_target_t* target){
+static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target){
 	const u8* data_start=data;
 	const u8* data_end=NULL;
 	const aml_opcode_t* opcode=_parse_opcode(data);
+	WARN("~ %x",opcode->opcode);
 	data+=_get_opcode_encoding_length(opcode);
 	if (opcode->flags&OPCODE_FLAG_PKGLENGTH){
 		data_end=data+_get_pkglength(data);
 		data+=_get_pkglength_encoding_length(data);
 	}
-	if (target->arg_index!=0xff&&!(opcode->flags&OPCODE_FLAG_EXTENDED)){
-		switch (opcode->opcode){
-			case OPCODE_ZERO:
-				target->object->args[target->arg_index].u64=0;
-				return data-data_start;
-			case OPCODE_ONE:
-				target->object->args[target->arg_index].u64=1;
-				return data-data_start;
-			case OPCODE_BYTE_PREFIX:
-				target->object->args[target->arg_index].u64=data[0];
-				return data-data_start+1;
-			case OPCODE_WORD_PREFIX:
-				ERROR("OPCODE_WORD_PREFIX");for (;;);
-				return data-data_start+2;
-			case OPCODE_DWORD_PREFIX:
-				ERROR("OPCODE_DWORD_PREFIX");for (;;);
-				return data-data_start+4;
-			case OPCODE_STRING_PREFIX:
-				ERROR("OPCODE_STRING_PREFIX");for (;;);
-				return data-data_start;
-			case OPCODE_QWORD_PREFIX:
-				ERROR("OPCODE_QWORD_PREFIX");for (;;);
-				return data-data_start+8;
-			case OPCODE_ONES:
-				target->object->args[target->arg_index].u64=0xffffffffffffffffull;
-				return data-data_start;
+	target->opcode=opcode-_aml_opcodes;
+	for (u8 i=0;i<opcode->arg_count;i++){
+		if (opcode->args[i]==OPCODE_ARG_UINT8){
+			target->args[i].u64=data[0];
+			data++;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_UINT16){
+			target->args[i].u64=(data[0]<<8)|data[1];
+			data+=2;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_UINT32){
+			target->args[i].u64=(data[0]<<24)|(data[1]<<16)|(data[2]<<8)|data[3];
+			data+=4;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_UINT64){
+			ERROR("OPCODE_QWORD_PREFIX");for (;;);
+			data+=8;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_STRING){
+			u32 length=0;
+			do{
+				length++;
+			} while (data[length-1]);
+			target->args[i].string.data=(const char*)data;
+			target->args[i].string.length=length-1;
+			data+=length;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_NAME){
+			u32 length=_get_name_length(data);
+			ERROR("%s",data);
+			target->args[i].string.data=(const char*)data;
+			target->args[i].string.length=length;
+			data+=length;
+		}
+		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
+			data+=_skip_static_names(data);
+			data+=_get_opcode_size(data,_parse_opcode(data));
 		}
 	}
-	WARN("~ %x",opcode->opcode);
+	if (opcode->flags&OPCODE_FLAG_EXTRA_BYTES){
+		target->data.bytes=data;
+		target->data_length=data_end-data;
+		return data_end-data_start;
+	}
+	target->data_length=0;
+	for (u32 i=0;data+i<data_end;){
+		target->data_length++;
+		INFO("!!! [%x:%u %u]",opcode->opcode,i,data_end-data);
+		i+=_skip_static_names(data+i);
+		LOG("-> %x",_parse_opcode(data+i)->opcode);
+		i+=_get_opcode_size(data+i,_parse_opcode(data+i));
+	}
+	while (data<data_end){
+		object_t tmp;
+		data+=_skip_static_names(data);
+		data+=_parse_object(data,allocator,&tmp);
+	}
 	return _get_opcode_size(data_start,opcode);
 	return data_end-data_start;
 }
@@ -483,11 +518,7 @@ void aml_load(const u8* data,u32 length){
 	};
 	for (u32 offset=0;offset<length;){
 		object_t tmp;
-		object_target_t target={
-			&tmp,
-			0xff
-		};
-		offset+=_parse_object(data+offset,&allocator,&target);
+		offset+=_parse_object(data+offset,&allocator,&tmp);
 	}
 	for (;;);
 }
