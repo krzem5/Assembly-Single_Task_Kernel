@@ -274,7 +274,7 @@ static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* 
 		index++;
 	}
 	if (data[index]=='^'){
-		ERROR("Parent namespace");for (;;);
+		ERROR("AML parent prefix names are unimplemented!");for (;;);
 	}
 	u8 segment_count=1;
 	if (data[index]=='.'){
