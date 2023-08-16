@@ -67,7 +67,7 @@
 #define OPCODE_CREATE_BYTE_FIELD 0x8c
 #define OPCODE_CREATE_BIT_FIELD 0x8d
 #define OPCODE_OBJECT_TYPE 0x8e
-#define OPCODE_CREATE_Q_WORD_FIELD 0x8f
+#define OPCODE_CREATE_QWORD_FIELD 0x8f
 #define OPCODE_L_AND 0x90
 #define OPCODE_L_OR 0x91
 #define OPCODE_L_NOT 0x92
@@ -89,6 +89,7 @@
 #define OPCODE_RETURN 0xa4
 #define OPCODE_BREAK 0xa5
 #define OPCODE_BREAK_POINT 0xcc
+#define OPCODE_STRING 0xfe
 #define OPCODE_ONES 0xff
 
 #define OPCODE_EXT_MUTEX 0x01
@@ -210,7 +211,7 @@ static const aml_opcode_t _aml_opcodes[]={
 	DECL_OPCODE(OPCODE_CREATE_BYTE_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
 	DECL_OPCODE(OPCODE_CREATE_BIT_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
 	DECL_OPCODE(OPCODE_OBJECT_TYPE,0,OPCODE_ARG_OBJECT),
-	DECL_OPCODE(OPCODE_CREATE_Q_WORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
+	DECL_OPCODE(OPCODE_CREATE_QWORD_FIELD,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_NAME),
 	DECL_OPCODE(OPCODE_L_AND,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_L_OR,0,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
 	DECL_OPCODE(OPCODE_L_NOT,0,OPCODE_ARG_OBJECT),
@@ -262,13 +263,13 @@ static const aml_opcode_t _aml_opcodes[]={
 	DECL_OPCODE(OPCODE_EXT_INDEX_FIELD,OPCODE_FLAG_EXTENDED|OPCODE_FLAG_PKGLENGTH|OPCODE_FLAG_EXTRA_BYTES,OPCODE_ARG_NAME,OPCODE_ARG_NAME,OPCODE_ARG_UINT8),
 	DECL_OPCODE(OPCODE_EXT_BANK_FIELD,OPCODE_FLAG_EXTENDED|OPCODE_FLAG_PKGLENGTH|OPCODE_FLAG_EXTRA_BYTES,OPCODE_ARG_NAME,OPCODE_ARG_NAME,OPCODE_ARG_OBJECT,OPCODE_ARG_UINT8),
 	DECL_OPCODE(OPCODE_EXT_DATA_REGION,OPCODE_FLAG_EXTENDED,OPCODE_ARG_NAME,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT,OPCODE_ARG_OBJECT),
-	{0xff,0xff}
+	DECL_OPCODE(OPCODE_STRING,0)
 };
 
 
 
 typedef struct _OBJECT{
-	u8 opcode;
+	u8 opcode[2];
 	u32 data_length;
 	union{
 		u64 u64;
@@ -346,19 +347,6 @@ static u32 _get_name_length(const u8* data){
 
 
 
-static u32 _skip_static_names(const u8* data){
-	u32 out=0;
-	INFO("A");
-	while (data[out]=='\\'||data[out]=='^'||data[out]=='.'||data[out]=='/'||(data[out]>47&&data[out]<58)||data[out]=='_'||(data[out]>64&&data[out]<91)){
-		LOG("@ [%u:%x] %c%c%c%c",_get_name_length(data+out),data[out+_get_name_length(data+out)],data[out],data[out+1],data[out+2],data[out+3]);
-		out+=_get_name_length(data+out);
-	}
-	INFO("B");
-	return out;
-}
-
-
-
 static const aml_opcode_t* _parse_opcode(const u8* data){
 	u8 type=data[0];
 	u8 extended=0;
@@ -366,13 +354,16 @@ static const aml_opcode_t* _parse_opcode(const u8* data){
 		extended=OPCODE_FLAG_EXTENDED;
 		type=data[1];
 	}
-	for (const aml_opcode_t* out=_aml_opcodes;out->flags!=0xff;out++){
+	const aml_opcode_t* out=_aml_opcodes;
+	for (;out->opcode!=OPCODE_STRING;out++){
 		if ((out->flags&OPCODE_FLAG_EXTENDED)==extended&&out->opcode==type){
 			return out;
 		}
 	}
+	if (!extended&&(type=='\\'||type=='^'||type=='.'||type=='/'||(type>47&&type<58)||type=='_'||(type>64&&type<91))){
+		return out;
+	}
 	ERROR("Unknown opcode '%s%x'",(extended?"5b ":""),type);
-	WARN("%x %x %x %x",data[0],data[1],data[2],data[3]);
 	for (;;);
 }
 
@@ -401,6 +392,9 @@ static u32 _get_pkglength(const u8* data){
 
 
 static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
+	if (opcode->opcode==OPCODE_STRING){
+		return _get_name_length(data);
+	}
 	u32 out=_get_opcode_encoding_length(opcode);
 	if (opcode->flags&OPCODE_FLAG_PKGLENGTH){
 		return out+_get_pkglength(data+out);
@@ -424,11 +418,9 @@ static u32 _get_opcode_size(const u8* data,const aml_opcode_t* opcode){
 			} while (data[out-1]);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_NAME){
-			ERROR("SKIP: %x %s",data[out],data+out);
 			out+=_get_name_length(data+out);
 		}
 		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
-			out+=_skip_static_names(data+out);
 			out+=_get_opcode_size(data+out,_parse_opcode(data+out));
 		}
 	}
@@ -441,13 +433,26 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 	const u8* data_start=data;
 	const u8* data_end=NULL;
 	const aml_opcode_t* opcode=_parse_opcode(data);
+	if (opcode->flags&OPCODE_FLAG_EXTENDED){
+		target->opcode[0]=0x5b;
+		target->opcode[1]=opcode->opcode;
+	}
+	else{
+		target->opcode[0]=opcode->opcode;
+		target->opcode[1]=0;
+	}
+	if (opcode->opcode==OPCODE_STRING){
+		u32 length=_get_name_length(data);
+		target->args[0].string.data=(const char*)data;
+		target->args[0].string.length=length;
+		return length;
+	}
 	WARN("~ %x",opcode->opcode);
 	data+=_get_opcode_encoding_length(opcode);
 	if (opcode->flags&OPCODE_FLAG_PKGLENGTH){
 		data_end=data+_get_pkglength(data);
 		data+=_get_pkglength_encoding_length(data);
 	}
-	target->opcode=opcode-_aml_opcodes;
 	for (u8 i=0;i<opcode->arg_count;i++){
 		if (opcode->args[i]==OPCODE_ARG_UINT8){
 			target->args[i].u64=data[0];
@@ -462,7 +467,7 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 			data+=4;
 		}
 		else if (opcode->args[i]==OPCODE_ARG_UINT64){
-			ERROR("OPCODE_QWORD_PREFIX");for (;;);
+			target->args[i].u64=(((u64)(data[0]))<<56)|(((u64)(data[1]))<<48)|(((u64)(data[2]))<<40)|(((u64)(data[3]))<<32)|(((u64)(data[4]))<<24)|(((u64)(data[5]))<<16)|(((u64)(data[6]))<<8)|((u64)(data[7]));
 			data+=8;
 		}
 		else if (opcode->args[i]==OPCODE_ARG_STRING){
@@ -476,15 +481,16 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 		}
 		else if (opcode->args[i]==OPCODE_ARG_NAME){
 			u32 length=_get_name_length(data);
-			ERROR("%s",data);
 			target->args[i].string.data=(const char*)data;
 			target->args[i].string.length=length;
 			data+=length;
 		}
 		else if (opcode->args[i]==OPCODE_ARG_OBJECT){
-			data+=_skip_static_names(data);
 			data+=_get_opcode_size(data,_parse_opcode(data));
 		}
+	}
+	if (!data_end){
+		return data-data_start;
 	}
 	if (opcode->flags&OPCODE_FLAG_EXTRA_BYTES){
 		target->data.bytes=data;
@@ -494,17 +500,12 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,object_t* target)
 	target->data_length=0;
 	for (u32 i=0;data+i<data_end;){
 		target->data_length++;
-		INFO("!!! [%x:%u %u]",opcode->opcode,i,data_end-data);
-		i+=_skip_static_names(data+i);
-		LOG("-> %x",_parse_opcode(data+i)->opcode);
 		i+=_get_opcode_size(data+i,_parse_opcode(data+i));
 	}
 	while (data<data_end){
 		object_t tmp;
-		data+=_skip_static_names(data);
 		data+=_parse_object(data,allocator,&tmp);
 	}
-	return _get_opcode_size(data_start,opcode);
 	return data_end-data_start;
 }
 
@@ -520,5 +521,6 @@ void aml_load(const u8* data,u32 length){
 		object_t tmp;
 		offset+=_parse_object(data+offset,&allocator,&tmp);
 	}
+	LOG("End!");
 	for (;;);
 }
