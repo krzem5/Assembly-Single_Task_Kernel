@@ -107,13 +107,12 @@ syscall_handler:
 	push rbx
 	push rax
 	mov rdi, rsp
-	sub rax, 1
-	cmp rax, SYSCALL_COUNT
+	cmp rax, SYSCALL_COUNT+1
 	jl ._valid_syscall
 	mov rsi, rax
-	mov rax, SYSCALL_COUNT
+	mov rax, SYSCALL_COUNT+1
 ._valid_syscall:
-	mov rax, qword [_syscall_handlers+rax*8]
+	mov rax, qword [_syscall_handlers+rax*8-8]
 	cld
 	sti
 	call rax
