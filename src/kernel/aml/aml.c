@@ -441,11 +441,23 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 
 void aml_load(const u8* data,u32 length){
 	LOG("Loading AML...");
+	INFO("Found AML code at %p (%v)",VMM_TRANSLATE_ADDRESS_REVERSE(data),length);
 	allocator_t allocator={
 		pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset()),
 		pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset())
 	};
+	aml_object_t* root=_allocator_allocate_data(&allocator,sizeof(aml_object_t));
+	root->opcode[0]=AML_OPCODE_ROOT;
+	root->opcode[1]=0;
+	root->arg_count=0;
+	root->data_length=0;
 	for (u32 offset=0;offset<length;){
-		offset+=_parse_object(data+offset,&allocator,_allocator_allocate_data(&allocator,sizeof(aml_object_t)));
+		root->data_length++;
+		offset+=_get_full_opcode_length(data+offset,_parse_opcode(data+offset));
+	}
+	root->data.objects=_allocator_allocate_data(&allocator,root->data_length*sizeof(aml_object_t));
+	u32 offset=0;
+	for (u32 i=0;i<root->data_length;i++){
+		offset+=_parse_object(data+offset,&allocator,root->data.objects+i);
 	}
 }
