@@ -90,8 +90,8 @@
 #define AML_OPCODE_RETURN 0xa4
 #define AML_OPCODE_BREAK 0xa5
 #define AML_OPCODE_BREAK_POINT 0xcc
-#define AML_OPCODE_ROOT 0xfd
-#define AML_OPCODE_STRING 0xfe
+#define AML_OPCODE_STRING 0xfd
+#define AML_OPCODE_ROOT 0xfe
 #define AML_OPCODE_ONES 0xff
 
 #define AML_OPCODE_EXT_MUTEX 0x01

@@ -1,8 +1,8 @@
 #include <kernel/aml/aml.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/kernel.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "aml_parser"
 
@@ -16,13 +16,6 @@
 
 #define _DECL_OPCODE_ARG_COUNT(_,_0,_1,_2,_3,_4,_5,n,...) n
 #define DECL_OPCODE(opcode,flags,...) {opcode,flags,_DECL_OPCODE_ARG_COUNT(_,##__VA_ARGS__,6,5,4,3,2,1,0),{__VA_ARGS__}}
-
-
-
-typedef struct _ALLOCATOR{
-	u64 top;
-	u64 max_top;
-} allocator_t;
 
 
 
@@ -153,45 +146,6 @@ static const opcode_t _aml_opcodes[]={
 
 
 
-static void* _allocator_allocate_data(allocator_t* allocator,u32 size){
-	size=(size+7)&0xfffffffffffffff8ull;
-	while (allocator->top+size>allocator->max_top){
-		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_AML),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
-		allocator->max_top+=PAGE_SIZE;
-	}
-	void* out=(void*)(allocator->top);
-	allocator->top+=size;
-	return out;
-}
-
-
-
-static void* _allocator_allocate_buffer(allocator_t* allocator){
-	return (void*)(allocator->top);
-}
-
-
-
-static void _allocator_enlarge_buffer(allocator_t* allocator,u8 size){
-	allocator->top+=size;
-	if (allocator->top>allocator->max_top){
-		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
-		allocator->max_top+=PAGE_SIZE;
-	}
-}
-
-
-
-static void _allocator_end_buffer(allocator_t* allocator){
-	allocator->top=(allocator->top+7)&0xfffffffffffffff8ull;
-	if (allocator->top>allocator->max_top){
-		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_CPU),allocator->max_top,VMM_PAGE_FLAG_PRESENT|VMM_PAGE_FLAG_READWRITE);
-		allocator->max_top+=PAGE_SIZE;
-	}
-}
-
-
-
 static const opcode_t* _parse_opcode(const u8* data){
 	u8 type=data[0];
 	u8 extended=0;
@@ -263,12 +217,12 @@ static u32 _get_pkglength(const u8* data){
 
 
 
-static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* out_length){
-	char* out=_allocator_allocate_buffer(allocator);
+static const char* _get_decoded_name(const u8* data,u16* out_length){
+	char* out=kmm_allocate_buffer();
 	u16 length=0;
 	u32 index=0;
 	while (data[index]=='\\'||data[index]=='^'){
-		_allocator_enlarge_buffer(allocator,1);
+		kmm_grow_buffer(1);
 		out[length]=data[index];
 		length++;
 		index++;
@@ -289,7 +243,7 @@ static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* 
 	}
 	while (segment_count){
 		segment_count--;
-		_allocator_enlarge_buffer(allocator,(segment_count?5:4));
+		kmm_grow_buffer((segment_count?5:4));
 		for (u8 i=0;i<4;i++){
 			out[length]=data[index];
 			length++;
@@ -300,8 +254,8 @@ static const char* _get_decoded_name(const u8* data,allocator_t* allocator,u16* 
 			length++;
 		}
 	}
-	_allocator_enlarge_buffer(allocator,1);
-	_allocator_end_buffer(allocator);
+	kmm_grow_buffer(1);
+	kmm_end_buffer();
 	out[length]=0;
 	*out_length=length;
 	return out;
@@ -347,22 +301,22 @@ static u32 _get_full_opcode_length(const u8* data,const opcode_t* opcode){
 
 
 
-static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* target){
+static u32 _parse_object(const u8* data,aml_object_t* out){
 	const u8* data_start=data;
 	const u8* data_end=NULL;
 	const opcode_t* opcode=_parse_opcode(data);
 	if (opcode->flags&OPCODE_FLAG_EXTENDED){
-		target->opcode[0]=AML_EXTENDED_OPCODE;
-		target->opcode[1]=opcode->opcode;
+		out->opcode[0]=AML_EXTENDED_OPCODE;
+		out->opcode[1]=opcode->opcode;
 	}
 	else{
-		target->opcode[0]=opcode->opcode;
-		target->opcode[1]=0;
+		out->opcode[0]=opcode->opcode;
+		out->opcode[1]=0;
 	}
 	if (opcode->opcode==AML_OPCODE_STRING){
-		target->arg_count=1;
-		target->flags=0;
-		target->args[0].string=_get_decoded_name(data,allocator,&(target->args[0].string_length));
+		out->arg_count=1;
+		out->flags=0;
+		out->args[0].string=_get_decoded_name(data,&(out->args[0].string_length));
 		return _get_name_encoding_length(data);
 	}
 	data+=_get_opcode_encoding_length(opcode);
@@ -370,24 +324,24 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 		data_end=data+_get_pkglength(data);
 		data+=_get_pkglength_encoding_length(data);
 	}
-	target->arg_count=opcode->arg_count;
-	target->flags=((opcode->flags&OPCODE_FLAG_EXTRA_BYTES)?AML_OBJECT_FLAG_BYTE_DATA:0);
+	out->arg_count=opcode->arg_count;
+	out->flags=((opcode->flags&OPCODE_FLAG_EXTRA_BYTES)?AML_OBJECT_FLAG_BYTE_DATA:0);
 	for (u8 i=0;i<opcode->arg_count;i++){
-		target->args[i].type=opcode->args[i];
+		out->args[i].type=opcode->args[i];
 		if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT8){
-			target->args[i].number=data[0];
+			out->args[i].number=data[0];
 			data++;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT16){
-			target->args[i].number=(data[0]<<8)|data[1];
+			out->args[i].number=(data[0]<<8)|data[1];
 			data+=2;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT32){
-			target->args[i].number=(data[0]<<24)|(data[1]<<16)|(data[2]<<8)|data[3];
+			out->args[i].number=(data[0]<<24)|(data[1]<<16)|(data[2]<<8)|data[3];
 			data+=4;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT64){
-			target->args[i].number=(((u64)(data[0]))<<56)|(((u64)(data[1]))<<48)|(((u64)(data[2]))<<40)|(((u64)(data[3]))<<32)|(((u64)(data[4]))<<24)|(((u64)(data[5]))<<16)|(((u64)(data[6]))<<8)|((u64)(data[7]));
+			out->args[i].number=(((u64)(data[0]))<<56)|(((u64)(data[1]))<<48)|(((u64)(data[2]))<<40)|(((u64)(data[3]))<<32)|(((u64)(data[4]))<<24)|(((u64)(data[5]))<<16)|(((u64)(data[6]))<<8)|((u64)(data[7]));
 			data+=8;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_STRING){
@@ -395,35 +349,35 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 			do{
 				length++;
 			} while (data[length-1]);
-			target->args[i].string=(const char*)data;
-			target->args[i].string_length=length-1;
+			out->args[i].string=(const char*)data;
+			out->args[i].string_length=length-1;
 			data+=length;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_NAME){
-			target->args[i].string=_get_decoded_name(data,allocator,&(target->args[i].string_length));
+			out->args[i].string=_get_decoded_name(data,&(out->args[i].string_length));
 			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_OBJECT){
-			target->args[i].object=_allocator_allocate_data(allocator,sizeof(aml_object_t));
-			data+=_parse_object(data,allocator,target->args[i].object);
+			out->args[i].object=kmm_allocate(sizeof(aml_object_t));
+			data+=_parse_object(data,out->args[i].object);
 		}
 	}
 	if (!data_end){
 		return data-data_start;
 	}
 	if (opcode->flags&OPCODE_FLAG_EXTRA_BYTES){
-		target->data.bytes=data;
-		target->data_length=data_end-data;
+		out->data.bytes=data;
+		out->data_length=data_end-data;
 		return data_end-data_start;
 	}
-	target->data_length=0;
+	out->data_length=0;
 	for (u32 i=0;data+i<data_end;){
-		target->data_length++;
+		out->data_length++;
 		i+=_get_full_opcode_length(data+i,_parse_opcode(data+i));
 	}
-	target->data.objects=_allocator_allocate_data(allocator,target->data_length*sizeof(aml_object_t));
-	for (u32 i=0;i<target->data_length;i++){
-		data+=_parse_object(data,allocator,target->data.objects+i);
+	out->data.objects=kmm_allocate(out->data_length*sizeof(aml_object_t));
+	for (u32 i=0;i<out->data_length;i++){
+		data+=_parse_object(data,out->data.objects+i);
 	}
 	return data_end-data_start;
 }
@@ -433,11 +387,7 @@ static u32 _parse_object(const u8* data,allocator_t* allocator,aml_object_t* tar
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",VMM_TRANSLATE_ADDRESS_REVERSE(data),length);
-	allocator_t allocator={
-		pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset()),
-		pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset())
-	};
-	aml_object_t* root=_allocator_allocate_data(&allocator,sizeof(aml_object_t));
+	aml_object_t* root=kmm_allocate(sizeof(aml_object_t));
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;
 	root->arg_count=0;
@@ -447,10 +397,10 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 		root->data_length++;
 		offset+=_get_full_opcode_length(data+offset,_parse_opcode(data+offset));
 	}
-	root->data.objects=_allocator_allocate_data(&allocator,root->data_length*sizeof(aml_object_t));
+	root->data.objects=kmm_allocate(root->data_length*sizeof(aml_object_t));
 	u32 offset=0;
 	for (u32 i=0;i<root->data_length;i++){
-		offset+=_parse_object(data+offset,&allocator,root->data.objects+i);
+		offset+=_parse_object(data+offset,root->data.objects+i);
 	}
 	return root;
 }

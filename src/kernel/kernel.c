@@ -42,7 +42,7 @@ const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
 		}
 	}
 	INFO_CORE("Total: %v",total);
-	LOG_CORE("Clearing .bss section...");
+	LOG_CORE("Clearing .bss section (%v)...",kernel_get_bss_end()-kernel_get_bss_start());
 	for (u64* bss=(u64*)kernel_get_bss_start();bss<(u64*)kernel_get_bss_end();bss++){
 		*bss=0;
 	}
