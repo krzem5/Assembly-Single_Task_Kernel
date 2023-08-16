@@ -20,6 +20,10 @@ void kmm_grow_buffer(u32 size);
 
 
 
+void kmm_shrink_buffer(u32 size);
+
+
+
 void kmm_end_buffer(void);
 
 

@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/partition/partition.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -28,8 +29,6 @@ static const char* KERNEL_CORE_DATA _drive_type_names[]={
 
 
 
-static drive_stats_t KERNEL_CORE_BSS _drive_stats[MAX_DRIVE_COUNT];
-
 drive_t KERNEL_CORE_BSS drive_data[MAX_DRIVE_COUNT];
 u32 KERNEL_CORE_BSS drive_count;
 
@@ -46,7 +45,7 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	(drive_data+drive_count)->index=drive_count;
 	(drive_data+drive_count)->index=drive_count;
 	(drive_data+drive_count)->block_size_shift=__builtin_ctzll(drive->block_size);
-	(drive_data+drive_count)->stats=_drive_stats+drive_count;
+	(drive_data+drive_count)->stats=kmm_allocate(sizeof(drive_stats_t));
 	(drive_data+drive_count)->stats->root_block_count=0;
 	(drive_data+drive_count)->stats->batc_block_count=0;
 	(drive_data+drive_count)->stats->nda3_block_count=0;

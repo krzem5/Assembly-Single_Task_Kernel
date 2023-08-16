@@ -3,6 +3,7 @@
 #include <kernel/driver/ata.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "ata"
@@ -43,12 +44,6 @@
 
 // DEV_CTL flags
 #define DEV_CTL_SRST 0x04
-
-
-
-
-static ata_device_t KERNEL_CORE_BSS _ata_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_BSS _ata_device_count;
 
 
 
@@ -246,16 +241,14 @@ void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 	}
 	LOG_CORE("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	for (u8 i=0;i<4;i++){
-		if (_ata_device_count>=MAX_DEVICE_COUNT){
-			ERROR_CORE("Too many ATA devices");
-			return;
-		}
-		ata_device_t* ata_device=_ata_devices+_ata_device_count;
+		ata_device_t* ata_device=kmm_allocate_buffer();
+		kmm_grow_buffer(sizeof(ata_device_t));
 		ata_device->dma_address=pci_bar.address;
 		ata_device->is_slave=i&1;
 		ata_device->port=((i>>1)?0x170:0x1f0);
-		if (_ata_init(ata_device,i)){
-			_ata_device_count++;
+		if (!_ata_init(ata_device,i)){
+			kmm_shrink_buffer(sizeof(ata_device_t));
 		}
+		kmm_end_buffer();
 	}
 }

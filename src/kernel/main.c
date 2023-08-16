@@ -26,12 +26,12 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN main(void){
 	pmm_init(kernel_data);
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
+	kmm_init();
 	pci_enumerate();
 	drive_list_load_partitions();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
-	kmm_init();
 	clock_init();
 	acpi_load();
 	bios_get_system_data();

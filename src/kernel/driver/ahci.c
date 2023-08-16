@@ -2,6 +2,7 @@
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
@@ -54,13 +55,6 @@
 #define ATA_CMD_IDENTIFY 0xec
 #define ATA_CMD_READ 0x25
 #define ATA_CMD_WRITE 0x35
-
-
-
-static ahci_controller_t KERNEL_CORE_BSS _ahci_controllers[MAX_CONTROLLER_COUNT];
-static u32 KERNEL_CORE_BSS _ahci_controller_count;
-static ahci_device_t KERNEL_CORE_BSS _ahci_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_BSS _ahci_device_count;
 
 
 
@@ -239,12 +233,8 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 		return;
 	}
 	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
-	if (_ahci_controller_count>=MAX_CONTROLLER_COUNT){
-		ERROR_CORE("Too many AHCI controllers");
-		return;
-	}
-	ahci_controller_t* controller=_ahci_controllers+_ahci_controller_count;
-	_ahci_controller_count++;
+
+	ahci_controller_t* controller=kmm_allocate(sizeof(ahci_controller_t));
 	controller->registers=VMM_TRANSLATE_ADDRESS(pci_bar.address);
 	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
@@ -272,12 +262,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 		if (port_registers->sig!=0x00000101){
 			continue;
 		}
-		if (_ahci_device_count>=MAX_DEVICE_COUNT){
-			ERROR_CORE("Too many AHCI devices");
-			return;
-		}
-		ahci_device_t* ahci_device=_ahci_devices+_ahci_device_count;
-		_ahci_device_count++;
+		ahci_device_t* ahci_device=kmm_allocate(sizeof(ahci_device_t));
 		ahci_device->controller=controller;
 		ahci_device->registers=port_registers;
 		_ahci_init(ahci_device,i);

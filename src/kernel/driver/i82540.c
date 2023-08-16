@@ -3,6 +3,7 @@
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
@@ -80,9 +81,6 @@
 
 
 static KERNEL_CORE_RDATA const char _i82540_device_name[]="i82540";
-
-static i82540_device_t KERNEL_CORE_BSS _i82540_devices[MAX_DEVICE_COUNT];
-static u32 KERNEL_CORE_BSS _i82540_device_count;
 
 
 
@@ -186,12 +184,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	if (_i82540_device_count>=MAX_DEVICE_COUNT){
-		ERROR_CORE("Too many i82540 devices");
-		return;
-	}
-	i82540_device_t* i82540_device=_i82540_devices+_i82540_device_count;
-	_i82540_device_count++;
+	i82540_device_t* i82540_device=kmm_allocate(sizeof(i82540_device_t));
 	i82540_device->mmio=VMM_TRANSLATE_ADDRESS(pci_bar.address);
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
