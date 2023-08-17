@@ -136,8 +136,9 @@ static void _enumerate_bus(aml_node_t* bus){
 		if (status_node){
 			status=status_node->data.integer;
 		}
+		LOG("%s: %x",device,status);
 		if (!(status&8)){
-			continue;;
+			continue;
 		}
 		if (status&1){
 			_parse_device(device);
@@ -151,4 +152,5 @@ static void _enumerate_bus(aml_node_t* bus){
 void aml_bus_enumerate(void){
 	LOG("Enumerating AML bus devices...");
 	_enumerate_bus(aml_runtime_get_node(aml_root_node,"\\_SB_"));
+	aml_runtime_print_node(aml_root_node);
 }
