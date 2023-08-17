@@ -1,5 +1,8 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/acpi/hmat.h>
 #include <kernel/acpi/madt.h>
+#include <kernel/acpi/slit.h>
+#include <kernel/acpi/srat.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -21,8 +24,6 @@ typedef struct __attribute__((packed)) _RSDP{
 typedef struct __attribute__((packed)) _SDT{
 	u32 signature;
 	u32 length;
-	u8 revision;
-	u8 _padding[27];
 } sdt_t;
 
 
@@ -90,12 +91,15 @@ _rsdp_found:
 		}
 		else if (sdt->signature==0x54414d48){
 			INFO("Found HMAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			acpi_hmat_load(sdt);
 		}
 		else if (sdt->signature==0x54415253){
 			INFO("Found SRAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			acpi_srat_load(sdt);
 		}
 		else if (sdt->signature==0x54494c53){
 			INFO("Found SLIT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			acpi_slit_load(sdt);
 		}
 	}
 }

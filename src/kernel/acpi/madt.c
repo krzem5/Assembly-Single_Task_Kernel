@@ -10,8 +10,7 @@
 typedef struct __attribute__((packed)) _MADT{
 	u32 signature;
 	u32 length;
-	u8 revision;
-	u8 _padding[27];
+	u8 _padding[28];
 	u32 lapic;
 	u8 _padding2[4];
 	u8 entries[];
