@@ -1,5 +1,6 @@
 #ifndef _KERNEL_AML_AML_H_
 #define _KERNEL_AML_AML_H_ 1
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
 
 
@@ -15,7 +16,7 @@
 #define AML_OPCODE_BYTE_PREFIX 0x0a
 #define AML_OPCODE_WORD_PREFIX 0x0b
 #define AML_OPCODE_DWORD_PREFIX 0x0c
-#define AML_OPCODE_STRING_PREFIX 0x0d
+#define AML_OPCODE_NAME_REFERENCE_PREFIX 0x0d
 #define AML_OPCODE_QWORD_PREFIX 0x0e
 #define AML_OPCODE_SCOPE 0x10
 #define AML_OPCODE_BUFFER 0x11
@@ -90,7 +91,7 @@
 #define AML_OPCODE_RETURN 0xa4
 #define AML_OPCODE_BREAK 0xa5
 #define AML_OPCODE_BREAK_POINT 0xcc
-#define AML_OPCODE_STRING 0xfd
+#define AML_OPCODE_NAME_REFERENCE 0xfd
 #define AML_OPCODE_ROOT 0xfe
 #define AML_OPCODE_ONES 0xff
 
@@ -201,14 +202,16 @@ typedef struct _AML_NODE{
 		struct{
 			u8 type;
 			u8 access_type;
+			lock_t lock;
 			u64 address;
 			u64 size;
 		} field_unit;
 		u64 integer;
 		struct{
 			u8 flags;
-			const aml_object_t* objects;
 			u32 object_count;
+			const aml_object_t* objects;
+			struct _AML_NODE* namespace;
 		} method;
 		struct{
 			// Unimplemented

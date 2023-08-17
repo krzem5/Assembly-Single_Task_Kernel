@@ -2,8 +2,10 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aml"
@@ -16,9 +18,13 @@
 
 typedef struct _RUNTIME_LOCAL_STATE{
 	aml_node_t* namespace;
-	u64 args[7];
-	u64 locals[8];
+	aml_node_t* args[7];
+	aml_node_t* locals[8];
+	aml_node_t arg_simple_values[7];
+	aml_node_t local_simple_values[8];
 	aml_node_t simple_return_value;
+	aml_node_t* return_value;
+	_Bool was_branch_taken;
 } runtime_local_state_t;
 
 
@@ -35,6 +41,73 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 
 
 static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count);
+
+
+
+static u64 _read_field_unit(aml_node_t* node){
+	u64 out=0;
+	switch (node->data.field_unit.type){
+		case 0x00:
+			if (node->data.field_unit.access_type&16){
+				lock_acquire_exclusive(&(node->data.field_unit.lock));
+			}
+			switch (node->data.field_unit.access_type&15){
+				case 0:
+					ERROR("Unimplemented: _read_field_unit(SystemMemory,AnyAcc)");for (;;);
+					break;
+				case 1:
+					ERROR("Unimplemented: _read_field_unit(SystemMemory,ByteAcc)");for (;;);
+					break;
+				case 2:
+					ERROR("Unimplemented: _read_field_unit(SystemMemory,WordAcc)");for (;;);
+					break;
+				case 3:
+					out=*((const u32*)VMM_TRANSLATE_ADDRESS(node->data.field_unit.address));
+					break;
+				case 4:
+					ERROR("Unimplemented: _read_field_unit(SystemMemory,QWordAcc)");for (;;);
+					break;
+				case 5:
+					ERROR("Unimplemented: _read_field_unit(SystemMemory,BufferAcc)");for (;;);
+					break;
+			}
+			if (node->data.field_unit.access_type&16){
+				lock_release_exclusive(&(node->data.field_unit.lock));
+			}
+			break;
+		case 0x01:
+			ERROR("Unimplemented: _read_field_unit(SystemIO)");for (;;);
+			break;
+		case 0x02:
+			ERROR("Unimplemented: _read_field_unit(PCI_Config)");for (;;);
+			break;
+		case 0x03:
+			ERROR("Unimplemented: _read_field_unit(EmbeddedControl)");for (;;);
+			break;
+		case 0x04:
+			ERROR("Unimplemented: _read_field_unit(SMBus)");for (;;);
+			break;
+		case 0x05:
+			ERROR("Unimplemented: _read_field_unit(System CMOS)");for (;;);
+			break;
+		case 0x06:
+			ERROR("Unimplemented: _read_field_unit(PciBarTarget)");for (;;);
+			break;
+		case 0x07:
+			ERROR("Unimplemented: _read_field_unit(IPMI)");for (;;);
+			break;
+		case 0x08:
+			ERROR("Unimplemented: _read_field_unit(GeneralPurposeIO)");for (;;);
+			break;
+		case 0x09:
+			ERROR("Unimplemented: _read_field_unit(GenericSerialBus)");for (;;);
+			break;
+		case 0x0a:
+			ERROR("Unimplemented: _read_field_unit(PCC)");for (;;);
+			break;
+	}
+	return out;
+}
 
 
 
@@ -127,9 +200,12 @@ static u64 _get_arg_as_int(runtime_local_state_t* local,const aml_object_t* obje
 		return object->args[arg_index].number;
 	}
 	aml_node_t* ret=_execute(local,object->args[arg_index].object);
-	if (!ret||ret->type!=AML_NODE_TYPE_INTEGER){
+	if (!ret||(ret->type!=AML_NODE_TYPE_FIELD_UNIT&&ret->type!=AML_NODE_TYPE_INTEGER)){
 		ERROR("Expected integer return value");
 		for (;;);
+	}
+	if (ret->type==AML_NODE_TYPE_FIELD_UNIT){
+		return _read_field_unit(ret);
 	}
 	return ret->data.integer;
 }
@@ -164,6 +240,7 @@ static aml_node_t* _get_arg_as_node(runtime_local_state_t* local,const aml_objec
 
 
 static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* object){
+	// INFO("~ %x",MAKE_OPCODE(object->opcode[0],object->opcode[1]));
 	switch (MAKE_OPCODE(object->opcode[0],object->opcode[1])){
 		case MAKE_OPCODE(AML_OPCODE_ZERO,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -178,6 +255,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME,0):
 			{
+				WARN("Name: %s",object->args[0].string);
 				aml_node_t* value=_get_arg_as_node(local,object,1);
 				if (!(value->flags&AML_NODE_FLAG_LOCAL)&&value->parent!=value){
 					ERROR("Unimplemented: Name as reference?");
@@ -199,7 +277,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
 			local->simple_return_value.data.integer=object->args[0].number;
 			return &(local->simple_return_value);
-		case MAKE_OPCODE(AML_OPCODE_STRING_PREFIX,0):
+		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
 			local->simple_return_value.data.string.length=object->args[0].string_length;
 			local->simple_return_value.data.string.data=object->args[0].string;
@@ -253,8 +331,9 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			{
 				aml_node_t* method=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_METHOD,1);
 				method->data.method.flags=object->args[1].number;
-				method->data.method.objects=object->data.objects;
 				method->data.method.object_count=object->data_length;
+				method->data.method.objects=object->data.objects;
+				method->data.method.namespace=local->namespace;
 				return method;
 			}
 		case MAKE_OPCODE(AML_OPCODE_LOCAL0,0):
@@ -265,8 +344,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_LOCAL5,0):
 		case MAKE_OPCODE(AML_OPCODE_LOCAL6,0):
 		case MAKE_OPCODE(AML_OPCODE_LOCAL7,0):
-			ERROR("Unimplemented: AML_OPCODE_LOCAL%u",object->opcode[0]-AML_OPCODE_LOCAL0);for (;;);
-			return NULL;
+			return local->locals[object->opcode[0]-AML_OPCODE_LOCAL0];
 		case MAKE_OPCODE(AML_OPCODE_ARG0,0):
 		case MAKE_OPCODE(AML_OPCODE_ARG1,0):
 		case MAKE_OPCODE(AML_OPCODE_ARG2,0):
@@ -277,8 +355,36 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_ARG%u",object->opcode[0]-AML_OPCODE_ARG0);for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_STORE,0):
-			ERROR("Unimplemented: AML_OPCODE_STORE");for (;;);
-			return NULL;
+			{
+				aml_node_t* value=_get_arg_as_node(local,object,0);
+				if (object->args[1].type==AML_OBJECT_ARG_TYPE_NAME){
+					ERROR("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_NAME");for (;;);
+					return NULL;
+				}
+				if (object->args[1].type!=AML_OBJECT_ARG_TYPE_OBJECT){
+					return NULL;
+				}
+				aml_object_t* target=object->args[1].object;
+				switch (MAKE_OPCODE(target->opcode[0],target->opcode[1])){
+					case MAKE_OPCODE(AML_OPCODE_LOCAL0,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL1,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL2,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL3,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL4,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL5,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL6,0):
+					case MAKE_OPCODE(AML_OPCODE_LOCAL7,0):
+						if (value->flags&AML_NODE_FLAG_LOCAL){
+							local->local_simple_values[target->opcode[0]-AML_OPCODE_LOCAL0]=*value;
+							value=local->local_simple_values+target->opcode[0]-AML_OPCODE_LOCAL0;
+							value->flags&=~AML_NODE_FLAG_LOCAL;
+						}
+						local->locals[target->opcode[0]-AML_OPCODE_LOCAL0]=value;
+						return NULL;
+				}
+				ERROR("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_OBJECT");for (;;);
+				return NULL;
+			}
 		case MAKE_OPCODE(AML_OPCODE_REF_OF,0):
 			ERROR("Unimplemented: AML_OPCODE_REF_OF");for (;;);
 			return NULL;
@@ -307,8 +413,9 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_SHIFT_LEFT");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_SHIFT_RIGHT,0):
-			ERROR("Unimplemented: AML_OPCODE_SHIFT_RIGHT");for (;;);
-			return NULL;
+			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
+			local->simple_return_value.data.integer=_get_arg_as_int(local,object,0)>>_get_arg_as_int(local,object,1);
+			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_AND,0):
 			ERROR("Unimplemented: AML_OPCODE_AND");for (;;);
 			return NULL;
@@ -376,14 +483,16 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_L_AND");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_OR,0):
-			ERROR("Unimplemented: AML_OPCODE_L_OR");for (;;);
-			return NULL;
+			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
+			local->simple_return_value.data.integer=(!!_get_arg_as_int(local,object,0))||(!!_get_arg_as_int(local,object,1));
+			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_L_NOT,0):
 			ERROR("Unimplemented: AML_OPCODE_L_NOT");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_EQUAL,0):
-			ERROR("Unimplemented: AML_OPCODE_L_EQUAL");for (;;);
-			return NULL;
+			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
+			local->simple_return_value.data.integer=(_get_arg_as_int(local,object,0)==_get_arg_as_int(local,object,1));
+			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_L_GREATER,0):
 			ERROR("Unimplemented: AML_OPCODE_L_GREATER");for (;;);
 			return NULL;
@@ -415,9 +524,15 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_CONTINUE");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_IF,0):
-			ERROR("Unimplemented: AML_OPCODE_IF");for (;;);
+			local->was_branch_taken=!!_get_arg_as_int(local,object,0);
+			if (local->was_branch_taken){
+				_execute_multiple(local,object->data.objects,object->data_length);
+			}
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_ELSE,0):
+			if (!local->was_branch_taken){
+				_execute_multiple(local,object->data.objects,object->data_length);
+			}
 			ERROR("Unimplemented: AML_OPCODE_ELSE");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_WHILE,0):
@@ -427,8 +542,13 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_NOOP");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_RETURN,0):
-			ERROR("Unimplemented: AML_OPCODE_RETURN");for (;;);
-			return NULL;
+			{
+				aml_node_t* value=_get_arg_as_node(local,object,0);
+				if (!local->return_value){
+					local->return_value=value;
+				}
+				return NULL;
+			}
 		case MAKE_OPCODE(AML_OPCODE_BREAK,0):
 			ERROR("Unimplemented: AML_OPCODE_BREAK");for (;;);
 			return NULL;
@@ -528,12 +648,13 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 						ERROR("Unimplemented special field type: %x",object->data.bytes[i]);
 						for (;;);
 					}
-					aml_node_t* field_unit=_alloc_node((const char*)(object->data.bytes+i),AML_NODE_TYPE_FIELD_UNIT,region);
+					aml_node_t* field_unit=_alloc_node((const char*)(object->data.bytes+i),AML_NODE_TYPE_FIELD_UNIT,local->namespace);
 					i+=4;
 					u32 size;
 					i+=aml_parse_pkglength(object->data.bytes+i,&size);
 					field_unit->data.field_unit.type=region_type;
 					field_unit->data.field_unit.access_type=object->args[1].number;
+					lock_init(&(field_unit->data.field_unit.lock));
 					field_unit->data.field_unit.address=region_start+offset;
 					field_unit->data.field_unit.size=size;
 					offset+=size;
@@ -579,9 +700,20 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_DATA_REGION):
 			ERROR("Unimplemented: AML_OPCODE_EXT_DATA_REGION");for (;;);
 			return NULL;
-		case MAKE_OPCODE(AML_OPCODE_STRING,0):
-			ERROR("Unimplemented: AML_OPCODE_STRING");for (;;);
-			return NULL;
+		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE,0):
+			{
+				for (aml_node_t* namespace=local->namespace;1;namespace=namespace->parent){
+					aml_node_t* out=_get_node(namespace,object->args[0].string,0,0);
+					if (out){
+						return out;
+					}
+					if (namespace==namespace->parent){
+						break;
+					}
+				}
+				ERROR("Object not found: %s",object->args[0].string);for (;;);
+				return NULL;
+			}
 	}
 	return NULL;
 }
@@ -589,9 +721,12 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 
 
 static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count){
-	for (u32 i=0;i<object_count;i++){
+	_Bool prev_was_branch_taken=local->was_branch_taken;
+	local->was_branch_taken=0;
+	for (u32 i=0;i<object_count&&!local->return_value;i++){
 		_execute(local,objects+i);
 	}
+	local->was_branch_taken=prev_was_branch_taken;
 }
 
 
@@ -606,11 +741,11 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 	switch (node->type){
 		case AML_NODE_TYPE_UNDEFINED:
 			log("<undefined>");
-			return;
+			goto _end;
 		case AML_NODE_TYPE_BUFFER:
 			log("buffer<size=%u>",node->data.buffer.length);
 			if (node->data.buffer.length>16){
-				return;
+				goto _end;
 			}
 			log("{",node->data.buffer.length);
 			for (u8 i=0;i<node->data.buffer.length;i++){
@@ -620,7 +755,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 				log("%x",node->data.buffer.data[i]);
 			}
 			log("}");
-			return;
+			goto _end;
 		case AML_NODE_TYPE_BUFFER_FIELD:
 			log("buffer_field<...>");
 			break;
@@ -632,22 +767,22 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 			break;
 		case AML_NODE_TYPE_EVENT:
 			log("event<...>");
-			return;
+			goto _end;
 		case AML_NODE_TYPE_FIELD_UNIT:
 			log("field_unit<address=%p, size=%u>",node->data.field_unit.address,node->data.field_unit.size);
-			return;
+			goto _end;
 		case AML_NODE_TYPE_INTEGER:
 			log("0x%lx",node->data.integer);
-			return;
+			goto _end;
 		case AML_NODE_TYPE_METHOD:
 			log("method<arg_count=%u>",node->data.method.flags&7);
-			return;
+			goto _end;
 		case AML_NODE_TYPE_MUTEX:
 			log("mutex<...>");
-			return;
+			goto _end;
 		case AML_NODE_TYPE_REFERENCE:
 			log("reference<...>");
-			return;
+			goto _end;
 		case AML_NODE_TYPE_REGION:
 			log("region<type=");
 			switch (node->data.region.type){
@@ -689,7 +824,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 					break;
 			}
 			log(", offset=%u, length=%u>",node->data.region.offset,node->data.region.length);
-			break;
+			goto _end;
 		case AML_NODE_TYPE_POWER_RESOURCE:
 			log("power_resource<...>");
 			break;
@@ -698,14 +833,14 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 			break;
 		case AML_NODE_TYPE_STRING:
 			log("'%s'",node->data.string.data);
-			return;
+			goto _end;
 		case AML_NODE_TYPE_THERMAL_ZONE:
 			log("thermal_zone<...>");
 			break;
 	}
 	if ((node->type==AML_NODE_TYPE_PACKAGE?!node->data.package.length:!node->child)){
 		log("{}");
-		return;
+		goto _end;
 	}
 	log("{\n");
 	if (node->type==AML_NODE_TYPE_PACKAGE){
@@ -734,6 +869,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 		log("    ");
 	}
 	log("}");
+_end:
 	if (!indent){
 		log("\n");
 	}
@@ -756,7 +892,55 @@ void aml_build_runtime(aml_object_t* root,u16 irq){
 	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
 	_execute_multiple(&local,root->data.objects,root->data_length);
-	(void)_print_node;_print_node(aml_root_node,0,0);
+	// (void)_print_node;_print_node(aml_root_node,0,0);
+}
+
+
+
+static aml_node_t* _evaluate_node(runtime_local_state_t* local,aml_node_t* node){
+	if (!node||node->type!=AML_NODE_TYPE_METHOD){
+		return node;
+	}
+	local->namespace=node;
+	local->return_value=NULL;
+	_execute_multiple(local,node->data.method.objects,node->data.method.object_count);
+	return local->return_value;
+}
+
+
+
+static void _enumerate_bus(runtime_local_state_t* local,aml_node_t* bus){
+	for (aml_node_t* device=bus->child;device;device=device->next){
+		if (device->type!=AML_NODE_TYPE_DEVICE){
+			continue;
+		}
+		u64 status=0xf;
+		aml_node_t* status_node=_evaluate_node(local,_get_node(device,"_STA",0,0));
+		if (status_node){
+			status=status_node->data.integer;
+		}
+		if (!(status&8)){
+			continue;;
+		}
+		if (status&1){
+			LOG("%s: %x",device,status);
+			aml_node_t* hid=_evaluate_node(local,_get_node(device,"_HID",0,0));
+			if (hid){
+				_print_node(hid,0,0);
+			}
+			aml_node_t* adr=_evaluate_node(local,_get_node(device,"_ADR",0,0));
+			if (adr){
+				_print_node(adr,0,0);
+			}
+			aml_node_t* crs=_get_node(device,"_CRS",0,0);
+			if (crs){
+				crs=_evaluate_node(local,crs);
+				_print_node(crs,0,0);
+			}
+			// _print_node(device,0,0);
+		}
+		_enumerate_bus(local,device);
+	}
 }
 
 
@@ -765,10 +949,14 @@ void aml_init_irq(void){
 	LOG("Registering AML IRQ...");
 	_aml_interrupt_vector=isr_allocate();
 	ioapic_redirect_irq(_aml_irq,_aml_interrupt_vector);
+	// enumerate system bus
+	runtime_local_state_t local;
+	_enumerate_bus(&local,_get_node(aml_root_node,"\\_SB_",0,0));
+	for (;;);
 }
 
 
 
 aml_node_t* aml_get_node(aml_node_t* root,const char* path){
-	return _get_node((root?root:aml_root_node),path,AML_NODE_TYPE_UNDEFINED,0);
+	return _get_node((root?root:aml_root_node),path,0,0);
 }

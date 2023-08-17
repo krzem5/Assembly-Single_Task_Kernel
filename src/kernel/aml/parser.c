@@ -36,7 +36,7 @@ static const opcode_t _aml_opcodes[]={
 	DECL_OPCODE(AML_OPCODE_BYTE_PREFIX,0,AML_OBJECT_ARG_TYPE_UINT8),
 	DECL_OPCODE(AML_OPCODE_WORD_PREFIX,0,AML_OBJECT_ARG_TYPE_UINT16),
 	DECL_OPCODE(AML_OPCODE_DWORD_PREFIX,0,AML_OBJECT_ARG_TYPE_UINT32),
-	DECL_OPCODE(AML_OPCODE_STRING_PREFIX,0,AML_OBJECT_ARG_TYPE_STRING),
+	DECL_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0,AML_OBJECT_ARG_TYPE_STRING),
 	DECL_OPCODE(AML_OPCODE_QWORD_PREFIX,0,AML_OBJECT_ARG_TYPE_UINT64),
 	DECL_OPCODE(AML_OPCODE_SCOPE,OPCODE_FLAG_PKGLENGTH,AML_OBJECT_ARG_TYPE_NAME),
 	DECL_OPCODE(AML_OPCODE_BUFFER,OPCODE_FLAG_PKGLENGTH|OPCODE_FLAG_EXTRA_BYTES,AML_OBJECT_ARG_TYPE_OBJECT),
@@ -141,7 +141,7 @@ static const opcode_t _aml_opcodes[]={
 	DECL_OPCODE(AML_OPCODE_EXT_INDEX_FIELD,OPCODE_FLAG_EXTENDED|OPCODE_FLAG_PKGLENGTH|OPCODE_FLAG_EXTRA_BYTES,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_UINT8),
 	DECL_OPCODE(AML_OPCODE_EXT_BANK_FIELD,OPCODE_FLAG_EXTENDED|OPCODE_FLAG_PKGLENGTH|OPCODE_FLAG_EXTRA_BYTES,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_OBJECT,AML_OBJECT_ARG_TYPE_UINT8),
 	DECL_OPCODE(AML_OPCODE_EXT_DATA_REGION,OPCODE_FLAG_EXTENDED,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_OBJECT,AML_OBJECT_ARG_TYPE_OBJECT,AML_OBJECT_ARG_TYPE_OBJECT),
-	DECL_OPCODE(AML_OPCODE_STRING,0)
+	DECL_OPCODE(AML_OPCODE_NAME_REFERENCE,0)
 };
 
 
@@ -154,7 +154,7 @@ static const opcode_t* _parse_opcode(const u8* data){
 		type=data[1];
 	}
 	const opcode_t* out=_aml_opcodes;
-	for (;out->opcode!=AML_OPCODE_STRING;out++){
+	for (;out->opcode!=AML_OPCODE_NAME_REFERENCE;out++){
 		if ((out->flags&OPCODE_FLAG_EXTENDED)==extended&&out->opcode==type){
 			return out;
 		}
@@ -264,7 +264,7 @@ static const char* _get_decoded_name(const u8* data,u16* out_length){
 
 
 static u32 _get_full_opcode_length(const u8* data,const opcode_t* opcode){
-	if (opcode->opcode==AML_OPCODE_STRING){
+	if (opcode->opcode==AML_OPCODE_NAME_REFERENCE){
 		return _get_name_encoding_length(data);
 	}
 	u32 out=_get_opcode_encoding_length(opcode);
@@ -313,7 +313,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 		out->opcode[0]=opcode->opcode;
 		out->opcode[1]=0;
 	}
-	if (opcode->opcode==AML_OPCODE_STRING){
+	if (opcode->opcode==AML_OPCODE_NAME_REFERENCE){
 		out->arg_count=1;
 		out->flags=0;
 		out->args[0].string=_get_decoded_name(data,&(out->args[0].string_length));
