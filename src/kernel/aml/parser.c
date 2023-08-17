@@ -1,4 +1,4 @@
-#include <kernel/aml/aml.h>
+#include <kernel/aml/parser.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>

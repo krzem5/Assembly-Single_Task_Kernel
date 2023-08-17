@@ -1,5 +1,6 @@
 #include <kernel/acpi/fadt.h>
-#include <kernel/aml/aml.h>
+#include <kernel/aml/parser.h>
+#include <kernel/aml/runtime.h>
 #include <kernel/cache/cache.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
@@ -68,7 +69,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
 	const dsdt_t* dsdt=(void*)VMM_TRANSLATE_ADDRESS(fadt->dsdt);
-	aml_build_runtime(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)),fadt->sci_int);
+	aml_runtime_init(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)),fadt->sci_int);
 }
 
 
@@ -82,8 +83,8 @@ void KERNEL_NORETURN acpi_fadt_shutdown(_Bool restart){
 	if (restart){
 		_acpi_fadt_reboot();
 	}
-	u16 pm1a_value=(aml_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	u16 pm1b_value=(aml_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
+	u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
+	u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	io_port_out16(_fadt_pm1a_control_block,pm1a_value);
 	if (_fadt_pm1b_control_block){
 		io_port_out16(_fadt_pm1b_control_block,pm1b_value);

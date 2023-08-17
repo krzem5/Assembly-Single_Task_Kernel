@@ -1,4 +1,5 @@
-#include <kernel/aml/aml.h>
+#include <kernel/aml/parser.h>
+#include <kernel/aml/runtime.h>
 #include <kernel/apic/ioapic.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
@@ -877,7 +878,7 @@ void _aml_handle_interrupt(void){
 
 
 
-void aml_build_runtime(aml_object_t* root,u16 irq){
+void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
 	_aml_irq=irq;
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
@@ -890,13 +891,13 @@ void aml_build_runtime(aml_object_t* root,u16 irq){
 
 
 
-aml_node_t* aml_get_node(aml_node_t* root,const char* path){
+aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path){
 	return _get_node((root?root:aml_root_node),path,0,0);
 }
 
 
 
-void aml_init_irq(void){
+void aml_runtime_init_irq(void){
 	LOG("Registering AML IRQ...");
 	_aml_interrupt_vector=isr_allocate();
 	ioapic_redirect_irq(_aml_irq,_aml_interrupt_vector);
@@ -904,7 +905,7 @@ void aml_init_irq(void){
 
 
 
-aml_node_t* aml_runtime_evaluate(aml_node_t* node){
+aml_node_t* aml_runtime_evaluate_node(aml_node_t* node){
 	if (!node||node->type!=AML_NODE_TYPE_METHOD){
 		return node;
 	}
@@ -917,6 +918,6 @@ aml_node_t* aml_runtime_evaluate(aml_node_t* node){
 
 
 
-void aml_print_node(aml_node_t* node){
+void aml_runtime_print_node(aml_node_t* node){
 	_print_node(node,0,0);
 }

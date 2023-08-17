@@ -1,6 +1,5 @@
-#ifndef _KERNEL_AML_AML_H_
-#define _KERNEL_AML_AML_H_ 1
-#include <kernel/lock/lock.h>
+#ifndef _KERNEL_AML_PARSER_H_
+#define _KERNEL_AML_PARSER_H_ 1
 #include <kernel/types.h>
 
 
@@ -135,27 +134,6 @@
 #define AML_OBJECT_ARG_TYPE_NAME 6
 #define AML_OBJECT_ARG_TYPE_OBJECT 7
 
-#define AML_NODE_TYPE_UNDEFINED 0
-#define AML_NODE_TYPE_BUFFER 1
-#define AML_NODE_TYPE_BUFFER_FIELD 2
-#define AML_NODE_TYPE_DEBUG 3
-#define AML_NODE_TYPE_DEVICE 4
-#define AML_NODE_TYPE_EVENT 5
-#define AML_NODE_TYPE_FIELD_UNIT 6
-#define AML_NODE_TYPE_INTEGER 7
-#define AML_NODE_TYPE_METHOD 8
-#define AML_NODE_TYPE_MUTEX 9
-#define AML_NODE_TYPE_REFERENCE 10
-#define AML_NODE_TYPE_REGION 11
-#define AML_NODE_TYPE_PACKAGE 12
-#define AML_NODE_TYPE_POWER_RESOURCE 13
-#define AML_NODE_TYPE_PROCESSOR 14
-#define AML_NODE_TYPE_STRING 15
-#define AML_NODE_TYPE_THERMAL_ZONE 16
-#define AML_NODE_TYPE_SCOPE 17
-
-#define AML_NODE_FLAG_LOCAL 1
-
 
 
 typedef struct _AML_OBJECT{
@@ -180,107 +158,11 @@ typedef struct _AML_OBJECT{
 
 
 
-typedef struct _AML_NODE{
-	char name[5];
-	u8 type;
-	u8 flags;
-	struct _AML_NODE* parent;
-	struct _AML_NODE* next;
-	struct _AML_NODE* child;
-	union{
-		struct{
-			u64 length;
-			u8* data;
-		} buffer;
-		struct{
-			u64 size;
-			void* pointer;
-		} buffer_field;
-		struct{
-			// Unimplemented
-		} event;
-		struct{
-			u8 type;
-			u8 access_type;
-			lock_t lock;
-			u64 address;
-			u64 size;
-		} field_unit;
-		u64 integer;
-		struct{
-			u8 flags;
-			u32 object_count;
-			const aml_object_t* objects;
-			struct _AML_NODE* namespace;
-		} method;
-		struct{
-			// Unimplemented
-		} mutex;
-		struct{
-			// Unimplemented
-		} reference;
-		struct{
-			u8 type;
-			u64 offset;
-			u64 length;
-		} region;
-		struct{
-			u8 length;
-			struct _AML_NODE* elements;
-		} package;
-		struct{
-			// Unimplemented
-		} power_resource;
-		struct{
-			u8 id;
-			u64 block_address;
-			u8 block_length;
-		} processor;
-		struct{
-			u64 length;
-			const char* data;
-		} string;
-		struct{
-			// Unimplemented
-		} thermal_zone;
-	} data;
-} aml_node_t;
-
-
-
-extern aml_node_t* aml_root_node;
-
-
-
 aml_object_t* aml_parse(const u8* data,u32 length);
 
 
 
 u32 aml_parse_pkglength(const u8* data,u32* out);
-
-
-
-void aml_build_runtime(aml_object_t* root,u16 irq);
-
-
-
-aml_node_t* aml_get_node(aml_node_t* root,const char* path);
-
-
-
-void aml_init_irq(void);
-
-
-
-aml_node_t* aml_runtime_evaluate(aml_node_t* node);
-
-
-
-void aml_print_node(aml_node_t* node);
-
-
-
-void aml_enumerate_bus(void);
 
 
 

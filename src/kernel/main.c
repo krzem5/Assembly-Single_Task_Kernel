@@ -1,5 +1,6 @@
 #include <kernel/acpi/acpi.h>
-#include <kernel/aml/aml.h>
+#include <kernel/aml/bus.h>
+#include <kernel/aml/runtime.h>
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
@@ -35,8 +36,8 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN main(void){
 	vmm_set_common_kernel_pagemap();
 	clock_init();
 	acpi_load();
-	aml_init_irq();
-	aml_enumerate_bus();
+	aml_runtime_init_irq();
+	aml_bus_enumerate();
 	bios_get_system_data();
 	network_layer1_init_irq();
 	network_layer2_init();
