@@ -151,5 +151,4 @@ static void _enumerate_bus(aml_node_t* bus){
 void aml_bus_enumerate(void){
 	LOG("Enumerating AML bus devices...");
 	_enumerate_bus(aml_runtime_get_node(aml_root_node,"\\_SB_"));
-	for (;;);
 }
