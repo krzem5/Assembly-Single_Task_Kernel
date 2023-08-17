@@ -1,7 +1,6 @@
 #include <kernel/aml/aml.h>
 #include <kernel/apic/ioapic.h>
 #include <kernel/isr/isr.h>
-#include <kernel/kernel.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -891,72 +890,8 @@ void aml_build_runtime(aml_object_t* root,u16 irq){
 
 
 
-static aml_node_t* _evaluate_node(runtime_local_state_t* local,aml_node_t* node){
-	if (!node||node->type!=AML_NODE_TYPE_METHOD){
-		return node;
-	}
-	local->namespace=node;
-	local->return_value=NULL;
-	_execute_multiple(local,node->data.method.objects,node->data.method.object_count);
-	return local->return_value;
-}
-
-
-
-static void _enumerate_bus(runtime_local_state_t* local,aml_node_t* bus){
-	for (aml_node_t* device=bus->child;device;device=device->next){
-		if (device->type!=AML_NODE_TYPE_DEVICE){
-			continue;
-		}
-		u64 status=0xf;
-		aml_node_t* status_node=_evaluate_node(local,_get_node(device,"_STA",0,0));
-		if (status_node){
-			status=status_node->data.integer;
-		}
-		if (!(status&8)){
-			continue;;
-		}
-		if (status&1){
-			LOG("%s: %x",device,status);
-			aml_node_t* hid=_evaluate_node(local,_get_node(device,"_HID",0,0));
-			if (hid){
-				_print_node(hid,0,0);
-			}
-			aml_node_t* adr=_evaluate_node(local,_get_node(device,"_ADR",0,0));
-			if (adr){
-				_print_node(adr,0,0);
-			}
-			aml_node_t* crs=_evaluate_node(local,_get_node(device,"_CRS",0,0));
-			if (crs&&crs->type==AML_NODE_TYPE_BUFFER){
-				for (u32 i=0;i<crs->data.buffer.length;){
-					u8 type=crs->data.buffer.data[i];
-					u8 code;
-					u16 length;
-					if (type>>7){
-						code=(type<<1)|1;
-						length=crs->data.buffer.data[i+1]|(crs->data.buffer.data[i+2]<<1);
-						i+=3;
-						// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#large-resource-data-type
-					}
-					else{
-						code=(type&0x78)>>2;
-						length=type&7;
-						i++;
-						// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#small-resource-data-type
-					}
-					switch (code){
-						default:
-							WARN("Unknon _CRS code '%x'",code);
-							break;
-					}
-					i+=length;
-				}
-				_print_node(crs,0,0);
-			}
-			// _print_node(device,0,0);
-		}
-		_enumerate_bus(local,device);
-	}
+aml_node_t* aml_get_node(aml_node_t* root,const char* path){
+	return _get_node((root?root:aml_root_node),path,0,0);
 }
 
 
@@ -965,14 +900,23 @@ void aml_init_irq(void){
 	LOG("Registering AML IRQ...");
 	_aml_interrupt_vector=isr_allocate();
 	ioapic_redirect_irq(_aml_irq,_aml_interrupt_vector);
-	// enumerate system bus
-	runtime_local_state_t local;
-	_enumerate_bus(&local,_get_node(aml_root_node,"\\_SB_",0,0));
-	for (;;);
 }
 
 
 
-aml_node_t* aml_get_node(aml_node_t* root,const char* path){
-	return _get_node((root?root:aml_root_node),path,0,0);
+aml_node_t* aml_runtime_evaluate(aml_node_t* node){
+	if (!node||node->type!=AML_NODE_TYPE_METHOD){
+		return node;
+	}
+	runtime_local_state_t local;
+	local.namespace=node;
+	local.return_value=NULL;
+	_execute_multiple(&local,node->data.method.objects,node->data.method.object_count);
+	return local.return_value; // Can return stack-local pointer!
+}
+
+
+
+void aml_print_node(aml_node_t* node){
+	_print_node(node,0,0);
 }

@@ -264,11 +264,23 @@ void aml_build_runtime(aml_object_t* root,u16 irq);
 
 
 
+aml_node_t* aml_get_node(aml_node_t* root,const char* path);
+
+
+
 void aml_init_irq(void);
 
 
 
-aml_node_t* aml_get_node(aml_node_t* root,const char* path);
+aml_node_t* aml_runtime_evaluate(aml_node_t* node);
+
+
+
+void aml_print_node(aml_node_t* node);
+
+
+
+void aml_enumerate_bus(void);
 
 
 
