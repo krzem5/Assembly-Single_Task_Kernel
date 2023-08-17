@@ -240,7 +240,6 @@ static aml_node_t* _get_arg_as_node(runtime_local_state_t* local,const aml_objec
 
 
 static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* object){
-	// INFO("~ %x",MAKE_OPCODE(object->opcode[0],object->opcode[1]));
 	switch (MAKE_OPCODE(object->opcode[0],object->opcode[1])){
 		case MAKE_OPCODE(AML_OPCODE_ZERO,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -255,7 +254,6 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME,0):
 			{
-				WARN("Name: %s",object->args[0].string);
 				aml_node_t* value=_get_arg_as_node(local,object,1);
 				if (!(value->flags&AML_NODE_FLAG_LOCAL)&&value->parent!=value){
 					ERROR("Unimplemented: Name as reference?");
@@ -533,7 +531,6 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			if (!local->was_branch_taken){
 				_execute_multiple(local,object->data.objects,object->data_length);
 			}
-			ERROR("Unimplemented: AML_OPCODE_ELSE");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_WHILE,0):
 			ERROR("Unimplemented: AML_OPCODE_WHILE");for (;;);
@@ -701,19 +698,17 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			ERROR("Unimplemented: AML_OPCODE_EXT_DATA_REGION");for (;;);
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE,0):
-			{
-				for (aml_node_t* namespace=local->namespace;1;namespace=namespace->parent){
-					aml_node_t* out=_get_node(namespace,object->args[0].string,0,0);
-					if (out){
-						return out;
-					}
-					if (namespace==namespace->parent){
-						break;
-					}
+			for (aml_node_t* namespace=local->namespace;1;namespace=namespace->parent){
+				aml_node_t* out=_get_node(namespace,object->args[0].string,0,0);
+				if (out){
+					return out;
 				}
-				ERROR("Object not found: %s",object->args[0].string);for (;;);
-				return NULL;
+				if (namespace==namespace->parent){
+					break;
+				}
 			}
+			ERROR("Object not found: %s",object->args[0].string);for (;;);
+			return NULL;
 	}
 	return NULL;
 }
@@ -892,7 +887,6 @@ void aml_build_runtime(aml_object_t* root,u16 irq){
 	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
 	_execute_multiple(&local,root->data.objects,root->data_length);
-	// (void)_print_node;_print_node(aml_root_node,0,0);
 }
 
 
@@ -932,9 +926,31 @@ static void _enumerate_bus(runtime_local_state_t* local,aml_node_t* bus){
 			if (adr){
 				_print_node(adr,0,0);
 			}
-			aml_node_t* crs=_get_node(device,"_CRS",0,0);
-			if (crs){
-				crs=_evaluate_node(local,crs);
+			aml_node_t* crs=_evaluate_node(local,_get_node(device,"_CRS",0,0));
+			if (crs&&crs->type==AML_NODE_TYPE_BUFFER){
+				for (u32 i=0;i<crs->data.buffer.length;){
+					u8 type=crs->data.buffer.data[i];
+					u8 code;
+					u16 length;
+					if (type>>7){
+						code=(type<<1)|1;
+						length=crs->data.buffer.data[i+1]|(crs->data.buffer.data[i+2]<<1);
+						i+=3;
+						// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#large-resource-data-type
+					}
+					else{
+						code=(type&0x78)>>2;
+						length=type&7;
+						i++;
+						// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#small-resource-data-type
+					}
+					switch (code){
+						default:
+							WARN("Unknon _CRS code '%x'",code);
+							break;
+					}
+					i+=length;
+				}
 				_print_node(crs,0,0);
 			}
 			// _print_node(device,0,0);
