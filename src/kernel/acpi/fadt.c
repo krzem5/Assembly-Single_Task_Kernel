@@ -10,6 +10,13 @@
 
 
 
+// PM1 flags
+#define SCI_EN 0x0001
+#define SLP_TYP_SHIFT 10
+#define SLP_EN 0x2000
+
+
+
 typedef struct __attribute__((packed)) _FADT{
 	u8 _padding[40];
 	u32 dsdt;
@@ -44,16 +51,16 @@ void acpi_fadt_load(const void* fadt_ptr){
 	LOG("Loading FADT...");
 	const fadt_t* fadt=fadt_ptr;
 	LOG("Enabling ACPI...");
-	if (io_port_in16(fadt->pm1a_control_block)&1){
+	if (io_port_in16(fadt->pm1a_control_block)&SCI_EN){
 		INFO("ACPI already enabled");
 	}
 	else{
 		io_port_out8(fadt->smi_command_port,fadt->acpi_enable);
-		while (!(io_port_in16(fadt->pm1a_control_block)&1)){
+		while (!(io_port_in16(fadt->pm1a_control_block)&SCI_EN)){
 			__pause();
 		}
 		if (fadt->pm1b_control_block){
-			while (!(io_port_in16(fadt->pm1b_control_block)&1)){
+			while (!(io_port_in16(fadt->pm1b_control_block)&SCI_EN)){
 				__pause();
 			}
 		}
@@ -73,12 +80,12 @@ void acpi_fadt_load(const void* fadt_ptr){
 			if (dsdt->data[offset]==0x0a){
 				offset++;
 			}
-			_dsdt_s5_slp_typa=dsdt->data[offset]<<10;
+			_dsdt_s5_slp_typa=dsdt->data[offset];
 			offset++;
 			if (dsdt->data[offset]==0x0a){
 				offset++;
 			}
-			_dsdt_s5_slp_typb=dsdt->data[offset]<<10;
+			_dsdt_s5_slp_typb=dsdt->data[offset];
 			break;
 		}
 	}
@@ -95,9 +102,9 @@ void KERNEL_NORETURN acpi_fadt_shutdown(_Bool restart){
 	if (restart){
 		_acpi_fadt_reboot();
 	}
-	io_port_out16(_fadt_pm1a_control_block,_dsdt_s5_slp_typa|0x2000);
+	io_port_out16(_fadt_pm1a_control_block,(_dsdt_s5_slp_typa<<SLP_TYP_SHIFT)|SLP_EN);
 	if (_fadt_pm1b_control_block){
-		io_port_out16(_fadt_pm1b_control_block,_dsdt_s5_slp_typb|0x2000);
+		io_port_out16(_fadt_pm1b_control_block,(_dsdt_s5_slp_typb<<SLP_TYP_SHIFT)|SLP_EN);
 	}
 	for (;;);
 }
