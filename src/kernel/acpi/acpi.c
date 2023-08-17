@@ -88,5 +88,14 @@ _rsdp_found:
 			INFO("Found FADT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
 			acpi_fadt_load(sdt);
 		}
+		else if (sdt->signature==0x54414d48){
+			INFO("Found HMAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+		}
+		else if (sdt->signature==0x54415253){
+			INFO("Found SRAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+		}
+		else if (sdt->signature==0x54494c53){
+			INFO("Found SLIT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+		}
 	}
 }

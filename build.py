@@ -275,18 +275,43 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
+		# Boot
 		"-boot","order=dc",
+		# Drive files
 		"-drive","file=build/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/ssd.qcow2,if=none,id=ssd",
 		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
+		# Drives
 		"-device","ahci,id=ahci",
 		"-device","ide-hd,drive=hdd,bus=ahci.0",
 		"-device","nvme,serial=00112233,drive=ssd",
-		"-m","1G",
+		# Network
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
-		"-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2","-smp","4","-accel","kvm",
+		# Memory
+		"-m","1G",
+		"-object","memory-backend-ram,size=512M,id=mem0",
+		"-object","memory-backend-ram,size=512M,id=mem1",
+		# CPU
+		"-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2",
+		"-smp","4,sockets=2,maxcpus=4",
+		"-accel","kvm",
+		# NUMA
+		"-numa","node,nodeid=0,memdev=mem0",
+		"-numa","node,nodeid=1,memdev=mem1,initiator=0",
+		"-numa","cpu,node-id=0,socket-id=0",
+		"-numa","cpu,node-id=0,socket-id=1",
+		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
+		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=256M",
+		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
+		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+		"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+		"-numa","dist,src=0,dst=1,val=10",
+		# Graphics
 		"-nographic","-display","none",
+		# Config
+		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
