@@ -109,14 +109,14 @@ static void _parse_crs(const u8* data,u32 length){
 
 
 static void _parse_device(aml_node_t* device){
-	LOG("%s",device);
+	// LOG("%s",device);
 	aml_node_t* hid=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_HID"));
 	if (hid){
-		aml_runtime_print_node(hid);
+		// aml_runtime_print_node(hid);
 	}
 	aml_node_t* adr=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_ADR"));
 	if (adr){
-		aml_runtime_print_node(adr);
+		// aml_runtime_print_node(adr);
 	}
 	aml_node_t* crs=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_CRS"));
 	if (crs&&crs->type==AML_NODE_TYPE_BUFFER){
