@@ -404,3 +404,10 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 	}
 	return root;
 }
+
+
+
+u32 aml_parse_pkglength(const u8* data,u32* out){
+	*out=_get_pkglength(data);
+	return _get_pkglength_encoding_length(data);
+}

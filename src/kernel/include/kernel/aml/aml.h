@@ -162,6 +162,10 @@ aml_object_t* aml_parse(const u8* data,u32 length);
 
 
 
+u32 aml_parse_pkglength(const u8* data,u32* out);
+
+
+
 void aml_build_runtime(aml_object_t* root);
 
 

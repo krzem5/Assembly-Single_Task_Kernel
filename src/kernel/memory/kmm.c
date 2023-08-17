@@ -31,6 +31,10 @@ void KERNEL_CORE_CODE kmm_init(void){
 
 
 void* KERNEL_CORE_CODE kmm_allocate(u32 size){
+	if (_kmm_buffer_not_ended){
+		ERROR_CORE("Buffer in use");
+		for (;;);
+	}
 	void* out=(void*)_kmm_top;
 	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
 	_resize_stack();
@@ -52,7 +56,7 @@ void* KERNEL_CORE_CODE kmm_allocate_buffer(void){
 
 void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 	if (!_kmm_buffer_not_ended){
-		ERROR_CORE("KMM buffer not in use");
+		ERROR_CORE("Buffer not in use");
 		for (;;);
 	}
 	_kmm_top+=size;
@@ -63,7 +67,7 @@ void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 
 void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
 	if (!_kmm_buffer_not_ended){
-		ERROR_CORE("KMM buffer not in use");
+		ERROR_CORE("Buffer not in use");
 		for (;;);
 	}
 	_kmm_top-=size;

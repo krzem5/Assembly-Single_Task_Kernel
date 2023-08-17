@@ -144,12 +144,12 @@ static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* bu
 
 
 
-static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
+static void KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	io_port_out8(device->port+ATA_REG_DEV_CTL,DEV_CTL_SRST);
 	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_DEV_CTL,0);
 	if (!_wait_for_device(device,STATUS_BSY,0,TIMEOUT)){
-		return 0;
+		goto _error;
 	}
 	io_port_out8(device->port+ATA_REG_DRV_HEAD,0xa0|(device->is_slave<<4));
 	_delay_400ns(device);
@@ -158,10 +158,10 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	io_port_out8(device->port+ATA_REG_LBA2,0);
 	io_port_out8(device->port+ATA_REG_COMMAND,ATA_CMD_IDENTIFY);
 	if (!io_port_in8(device->port+7)){
-		return 0;
+		goto _error;
 	}
 	if (!_wait_for_device(device,STATUS_BSY,0,TIMEOUT)){
-		return 0;
+		goto _error;
 	}
 	u16 signature=(io_port_in8(device->port+ATA_REG_LBA1)<<8)|io_port_in8(device->port+ATA_REG_LBA2);
 	switch (signature){
@@ -171,16 +171,16 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		case 0x14eb:
 			io_port_out8(device->port+ATA_REG_COMMAND,ATA_CMD_ATAPI_IDENTIFY);
 			if (!_wait_for_device(device,STATUS_BSY,0,TIMEOUT)){
-				return 0;
+				goto _error;
 			}
 			device->is_atapi=1;
 			break;
 		case 0x3cc3:
 		case 0x6996:
-			return 0;
+			goto _error;
 		default:
 			WARN_CORE("Invalid ATA signature '%x'; ignoring drive",signature);
-			return 0;
+			goto _error;
 	}
 	u16 buffer[256];
 	for (u16 i=0;i<256;i++){
@@ -188,7 +188,7 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	}
 	if (!(buffer[49]&0x0200)){
 		WARN_CORE("ATA/ATAPI drive does not support LBA; ignoring drive");
-		return 0;
+		goto _error;
 	}
 	drive_t drive={
 		.type=(device->is_atapi?DRIVE_TYPE_ATAPI:DRIVE_TYPE_ATA),
@@ -202,9 +202,10 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	drive_change_byte_order_and_truncate_spaces(buffer+10,10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces(buffer+27,20,drive.model_number);
 	if (!device->is_atapi){
-		WARN_CORE("ATA drive; Unimplemented");
-		return 0;
+		WARN_CORE("Unimplemented: ATA drive");
+		goto _error;
 	}
+	kmm_end_buffer();
 	const u8 atapi_command[12]={
 		ATAPI_CMD_READ_CAPACITY,
 		0x00,
@@ -224,7 +225,10 @@ static _Bool KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	drive.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1;
 	drive.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
 	drive_list_add_drive(&drive);
-	return 1;
+	return;
+_error:
+	kmm_shrink_buffer(sizeof(ata_device_t));
+	kmm_end_buffer();
 }
 
 
@@ -246,9 +250,6 @@ void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 		ata_device->dma_address=pci_bar.address;
 		ata_device->is_slave=i&1;
 		ata_device->port=((i>>1)?0x170:0x1f0);
-		if (!_ata_init(ata_device,i)){
-			kmm_shrink_buffer(sizeof(ata_device_t));
-		}
-		kmm_end_buffer();
+		_ata_init(ata_device,i);
 	}
 }
