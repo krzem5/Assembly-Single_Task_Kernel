@@ -10,7 +10,7 @@
 
 
 
-// PM1 flags
+// PM1x flags
 #define SCI_EN 0x0001
 #define SLP_TYP_SHIFT 10
 #define SLP_EN 0x2000
@@ -20,7 +20,8 @@
 typedef struct __attribute__((packed)) _FADT{
 	u8 _padding[40];
 	u32 dsdt;
-	u8 _padding2[4];
+	u8 _padding2[2];
+	u16 sci_int;
 	u32 smi_command_port;
 	u8 acpi_enable;
 	u8 acpi_disable;
@@ -67,7 +68,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
 	const dsdt_t* dsdt=(void*)VMM_TRANSLATE_ADDRESS(fadt->dsdt);
-	aml_build_runtime(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)));
+	aml_build_runtime(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)),fadt->sci_int);
 }
 
 

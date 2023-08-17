@@ -12,6 +12,10 @@ u8 isr_allocate(void);
 
 
 
+_Bool isr_was_triggered(u8 irq);
+
+
+
 _Bool isr_wait(u8 irq);
 
 

@@ -257,7 +257,11 @@ u32 aml_parse_pkglength(const u8* data,u32* out);
 
 
 
-void aml_build_runtime(aml_object_t* root);
+void aml_build_runtime(aml_object_t* root,u16 irq);
+
+
+
+void aml_init_irq(void);
 
 
 

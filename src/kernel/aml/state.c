@@ -1,4 +1,6 @@
 #include <kernel/aml/aml.h>
+#include <kernel/apic/ioapic.h>
+#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -21,6 +23,9 @@ typedef struct _RUNTIME_LOCAL_STATE{
 
 
 
+static u16 _aml_irq;
+
+u8 _aml_interrupt_vector;
 aml_node_t* aml_root_node;
 
 
@@ -736,15 +741,30 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 
 
 
-void aml_build_runtime(aml_object_t* root){
+void _aml_handle_interrupt(void){
+	ERROR("AML interrupt received!");
+}
+
+
+
+void aml_build_runtime(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
+	_aml_irq=irq;
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
 	runtime_local_state_t local={
 		aml_root_node
 	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
 	_execute_multiple(&local,root->data.objects,root->data_length);
-	(void)_print_node;//_print_node(global.root_namespace,0,0);
+	(void)_print_node;_print_node(aml_root_node,0,0);
+}
+
+
+
+void aml_init_irq(void){
+	LOG("Registering AML IRQ...");
+	_aml_interrupt_vector=isr_allocate();
+	ioapic_redirect_irq(_aml_irq,_aml_interrupt_vector);
 }
 
 

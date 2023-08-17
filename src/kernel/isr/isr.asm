@@ -7,6 +7,7 @@ extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global isr_allocate
+global isr_was_triggered
 global isr_wait
 section .text
 
@@ -24,18 +25,29 @@ isr_allocate:
 
 
 
-isr_wait:
-	mov dl, dl
+isr_was_triggered:
+	xor eax, eax
+	mov edx, 1
 	mov rsi, rdi
 	and edi, 31
 	shr rsi, 5
 	lea rsi, [_isr_mask+rsi*4]
-	lea r8, [_isr_mask+rsi*4]
+	lock btr dword [rsi], edi
+	cmovc eax, edx
+	ret
+
+
+
+isr_wait:
+	mov rsi, rdi
+	and edi, 31
+	shr rsi, 5
+	lea rsi, [_isr_mask+rsi*4]
 ._retry:
 	lock btr dword [rsi], edi
 	jc ._end
 	cmp qword [gs:32], 0
-	jnz ._fail
+	jne ._fail
 	hlt
 	jmp ._retry
 ._end:
