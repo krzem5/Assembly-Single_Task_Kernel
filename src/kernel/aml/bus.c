@@ -136,7 +136,6 @@ static void _enumerate_bus(aml_node_t* bus){
 		if (status_node){
 			status=status_node->data.integer;
 		}
-		LOG("%s: %x",device,status);
 		if (!(status&8)){
 			continue;
 		}
