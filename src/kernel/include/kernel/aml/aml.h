@@ -261,4 +261,8 @@ void aml_build_runtime(aml_object_t* root);
 
 
 
+aml_node_t* aml_get_node(aml_node_t* root,const char* path);
+
+
+
 #endif

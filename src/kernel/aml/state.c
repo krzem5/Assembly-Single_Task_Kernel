@@ -12,12 +12,6 @@
 
 
 
-typedef struct _RUNTIME_GLOBAL_STATE{
-	aml_node_t* root_namespace;
-} runtime_global_state_t;
-
-
-
 typedef struct _RUNTIME_LOCAL_STATE{
 	aml_node_t* namespace;
 	u64 args[7];
@@ -31,11 +25,11 @@ aml_node_t* aml_root_node;
 
 
 
-static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* object);
+static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* object);
 
 
 
-static void _execute_multiple(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* objects,u32 object_count);
+static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count);
 
 
 
@@ -67,10 +61,10 @@ static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
 
 
 
-static aml_node_t* _get_node(runtime_global_state_t* global,runtime_local_state_t* local,const char* namespace,u8 type){
-	aml_node_t* out=local->namespace;
+static aml_node_t* _get_node(aml_node_t* local_namespace,const char* namespace,u8 type,_Bool create_if_not_found){
+	aml_node_t* out=local_namespace;
 	if (namespace[0]=='\\'){
-		out=global->root_namespace;
+		out=aml_root_node;
 		namespace++;
 	}
 	while (namespace[0]){
@@ -81,12 +75,33 @@ static aml_node_t* _get_node(runtime_global_state_t* global,runtime_local_state_
 		else if (namespace[0]=='.'){
 			namespace++;
 		}
+		else if (namespace[0]=='['){
+			u64 index=0;
+			for (namespace++;namespace[0]!=']';namespace++){
+				if (namespace[0]<48||namespace[0]>57){
+					WARN("Invalid index character: %c",namespace[0]);
+					continue;
+				}
+				index=index*10+namespace[0]-48;
+			}
+			namespace++;
+			if (out->type!=AML_NODE_TYPE_PACKAGE||index>=out->data.package.length){
+				if (create_if_not_found){
+					ERROR("Unable to create package entry");for (;;);
+				}
+				return NULL;
+			}
+			out=out->data.package.elements+index;
+		}
 		else{
 			for (aml_node_t* child=out->child;child;child=child->next){
 				if (*((const u32*)(child->name))==*((const u32*)namespace)){
 					out=child;
 					goto _namespace_found;
 				}
+			}
+			if (!create_if_not_found){
+				return NULL;
 			}
 			out=_alloc_node(namespace,(namespace[4]?AML_NODE_TYPE_SCOPE:type),out);
 _namespace_found:
@@ -98,7 +113,7 @@ _namespace_found:
 
 
 
-static u64 _get_arg_as_int(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
+static u64 _get_arg_as_int(runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
 	if (arg_index>=object->arg_count||object->args[arg_index].type==AML_OBJECT_ARG_TYPE_STRING||object->args[arg_index].type==AML_OBJECT_ARG_TYPE_NAME){
 		ERROR("Invalid argument");
 		for (;;);
@@ -106,7 +121,7 @@ static u64 _get_arg_as_int(runtime_global_state_t* global,runtime_local_state_t*
 	if (object->args[arg_index].type!=AML_OBJECT_ARG_TYPE_OBJECT){
 		return object->args[arg_index].number;
 	}
-	aml_node_t* ret=_execute(global,local,object->args[arg_index].object);
+	aml_node_t* ret=_execute(local,object->args[arg_index].object);
 	if (!ret||ret->type!=AML_NODE_TYPE_INTEGER){
 		ERROR("Expected integer return value");
 		for (;;);
@@ -116,7 +131,7 @@ static u64 _get_arg_as_int(runtime_global_state_t* global,runtime_local_state_t*
 
 
 
-static aml_node_t* _get_arg_as_node(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
+static aml_node_t* _get_arg_as_node(runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
 	if (arg_index>=object->arg_count){
 		ERROR("Invalid argument");
 		for (;;);
@@ -136,14 +151,14 @@ static aml_node_t* _get_arg_as_node(runtime_global_state_t* global,runtime_local
 			ERROR("Unimplemented: AML_OBJECT_ARG_TYPE_NAME");for (;;);
 			return NULL;
 		case AML_OBJECT_ARG_TYPE_OBJECT:
-			return _execute(global,local,object->args[arg_index].object);
+			return _execute(local,object->args[arg_index].object);
 	}
 	return NULL;
 }
 
 
 
-static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* object){
+static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* object){
 	switch (MAKE_OPCODE(object->opcode[0],object->opcode[1])){
 		case MAKE_OPCODE(AML_OPCODE_ZERO,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -158,12 +173,12 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME,0):
 			{
-				aml_node_t* value=_get_arg_as_node(global,local,object,1);
+				aml_node_t* value=_get_arg_as_node(local,object,1);
 				if (!(value->flags&AML_NODE_FLAG_LOCAL)&&value->parent!=value){
 					ERROR("Unimplemented: Name as reference?");
 					for (;;);
 				}
-				aml_node_t* out=_get_node(global,local,object->args[0].string,value->type);
+				aml_node_t* out=_get_node(local->namespace,object->args[0].string,value->type,1);
 				out->data=value->data;
 				return out;
 			}
@@ -190,16 +205,16 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_SCOPE,0):
 			{
+				aml_node_t* scope=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_SCOPE,1);
 				aml_node_t* prev_namespace=local->namespace;
-				aml_node_t* scope=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_SCOPE);
 				local->namespace=scope;
-				_execute_multiple(global,local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.objects,object->data_length);
 				local->namespace=prev_namespace;
 				return scope;
 			}
 		case MAKE_OPCODE(AML_OPCODE_BUFFER,0):
 			{
-				u64 size=_get_arg_as_int(global,local,object,0);
+				u64 size=_get_arg_as_int(local,object,0);
 				u8* buffer_data=kmm_allocate(size);
 				memset(buffer_data,0,size);
 				memcpy(buffer_data,object->data.bytes,(size<object->data_length?size:object->data_length));
@@ -212,10 +227,10 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 		case MAKE_OPCODE(AML_OPCODE_VAR_PACKAGE,0):
 			{
 				aml_node_t* package=_alloc_node(NULL,AML_NODE_TYPE_PACKAGE,NULL);
-				package->data.package.length=_get_arg_as_int(global,local,object,0);
+				package->data.package.length=_get_arg_as_int(local,object,0);
 				package->data.package.elements=kmm_allocate(package->data.package.length*sizeof(aml_node_t));
 				for (u8 i=0;i<(object->data_length<package->data.package.length?object->data_length:package->data.package.length);i++){
-					aml_node_t* value=_execute(global,local,object->data.objects+i);
+					aml_node_t* value=_execute(local,object->data.objects+i);
 					if (value->flags&AML_NODE_FLAG_LOCAL){
 						*(package->data.package.elements+i)=*value;
 					}
@@ -231,7 +246,7 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			}
 		case MAKE_OPCODE(AML_OPCODE_METHOD,0):
 			{
-				aml_node_t* method=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_METHOD);
+				aml_node_t* method=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_METHOD,1);
 				method->data.method.flags=object->args[1].number;
 				method->data.method.objects=object->data.objects;
 				method->data.method.object_count=object->data_length;
@@ -421,7 +436,7 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_MUTEX):
 			{
-				aml_node_t* mutex=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_MUTEX);
+				aml_node_t* mutex=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_MUTEX,1);
 				return mutex;
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_EVENT):
@@ -483,15 +498,15 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_REGION):
 			{
-				aml_node_t* region=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_REGION);
+				aml_node_t* region=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_REGION,1);
 				region->data.region.type=object->args[1].number;
-				region->data.region.offset=_get_arg_as_int(global,local,object,2);
-				region->data.region.length=_get_arg_as_int(global,local,object,3);
+				region->data.region.offset=_get_arg_as_int(local,object,2);
+				region->data.region.length=_get_arg_as_int(local,object,3);
 				return region;
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_FIELD):
 			{
-				aml_node_t* region=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_REGION);
+				aml_node_t* region=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_REGION,1);
 				u8 region_type=region->data.region.type;
 				u64 region_start=region->data.region.offset;
 				u64 region_end=region_start+region->data.region.length;
@@ -525,22 +540,22 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_DEVICE):
 			{
+				aml_node_t* device=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_DEVICE,1);
 				aml_node_t* prev_namespace=local->namespace;
-				aml_node_t* device=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_DEVICE);
 				local->namespace=device;
-				_execute_multiple(global,local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.objects,object->data_length);
 				local->namespace=prev_namespace;
 				return device;
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_PROCESSOR):
 			{
-				aml_node_t* prev_namespace=local->namespace;
-				aml_node_t* processor=_get_node(global,local,object->args[0].string,AML_NODE_TYPE_PROCESSOR);
+				aml_node_t* processor=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_PROCESSOR,1);
 				processor->data.processor.id=object->args[1].number;
 				processor->data.processor.block_address=object->args[2].number;
 				processor->data.processor.block_length=object->args[3].number;
+				aml_node_t* prev_namespace=local->namespace;
 				local->namespace=processor;
-				_execute_multiple(global,local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.objects,object->data_length);
 				local->namespace=prev_namespace;
 				return processor;
 			}
@@ -568,9 +583,9 @@ static aml_node_t* _execute(runtime_global_state_t* global,runtime_local_state_t
 
 
 
-static void _execute_multiple(runtime_global_state_t* global,runtime_local_state_t* local,const aml_object_t* objects,u32 object_count){
+static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count){
 	for (u32 i=0;i<object_count;i++){
-		_execute(global,local,objects+i);
+		_execute(local,objects+i);
 	}
 }
 
@@ -724,13 +739,16 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 void aml_build_runtime(aml_object_t* root){
 	LOG("Building AML runtime...");
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
-	runtime_global_state_t global={
+	runtime_local_state_t local={
 		aml_root_node
 	};
-	runtime_local_state_t local={
-		global.root_namespace
-	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
-	_execute_multiple(&global,&local,root->data.objects,root->data_length);
+	_execute_multiple(&local,root->data.objects,root->data_length);
 	(void)_print_node;//_print_node(global.root_namespace,0,0);
+}
+
+
+
+aml_node_t* aml_get_node(aml_node_t* root,const char* path){
+	return _get_node((root?root:aml_root_node),path,AML_NODE_TYPE_UNDEFINED,0);
 }
