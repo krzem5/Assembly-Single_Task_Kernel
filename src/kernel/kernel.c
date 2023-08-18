@@ -17,7 +17,7 @@ static KERNEL_CORE_RDATA const char _kernel_file_path[]="/kernel/kernel.bin";
 
 
 
-const kernel_data_t* KERNEL_CORE_CODE kernel_init(void){
+const kernel_data_t* KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
 	const kernel_data_t* kernel_data=(const kernel_data_t*)0xffffffffc0007000;
 	INFO_CORE("Version: %lx",kernel_get_version());

@@ -1,13 +1,10 @@
-%define SYSCALL_COUNT 37
-
-
-
 extern _aml_handle_interrupt
 extern _aml_interrupt_vector
 extern _random_entropy_pool
 extern _random_entropy_pool_length
 extern _syscall_handlers
 extern isr_was_triggered
+extern syscall_invalid
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global syscall_enable
@@ -18,6 +15,15 @@ section .text
 
 [bits 64]
 syscall_enable:
+	cmp qword [_syscall_count], 0
+	jnz ._syscalls_counted
+	mov rax, 0
+._next_handler:
+	add rax, 1
+	cmp qword [_syscall_handlers+rax*8], 0
+	jne ._next_handler
+	mov qword [_syscall_count], rax
+._syscalls_counted:
 	mov ecx, 0xc0000080
 	rdmsr
 	or eax, 1
@@ -115,15 +121,11 @@ syscall_handler:
 	call _aml_handle_interrupt
 ._no_aml_interrupt:
 	mov rax, qword [rsp]
-	test rax, rax
-	jz ._empty_syscall
 	mov rdi, rsp
-	cmp rax, SYSCALL_COUNT+1
-	jl ._valid_syscall
-	mov rsi, rax
-	mov rax, SYSCALL_COUNT+1
-._valid_syscall:
-	mov rax, qword [_syscall_handlers+rax*8-8]
+	cmp rax, qword [_syscall_count]
+	jge ._invalid_syscall
+	mov rax, qword [_syscall_handlers+rax*8]
+._call_syscall_handler:
 	cld
 	call rax
 	cmp qword [gs:32], 0
@@ -133,7 +135,6 @@ syscall_handler:
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
-._empty_syscall:
 	cli
 	pop rax
 	pop rbx
@@ -160,3 +161,11 @@ syscall_handler:
 	mov rsp, cr2
 	swapgs
 	o64 sysret
+._invalid_syscall:
+	mov rax, syscall_invalid
+	jmp ._call_syscall_handler
+
+
+
+_syscall_count:
+	dq 0

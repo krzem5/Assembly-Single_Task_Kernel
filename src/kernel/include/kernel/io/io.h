@@ -4,7 +4,7 @@
 
 
 
-static inline u8 io_port_in8(u16 port){
+static inline u8 KERNEL_NOCOVERAGE io_port_in8(u16 port){
 	u8 out;
 	asm volatile("in %1, %0":"=a"(out):"Nd"(port):"memory");
 	return out;
@@ -12,7 +12,7 @@ static inline u8 io_port_in8(u16 port){
 
 
 
-static inline u16 io_port_in16(u16 port){
+static inline u16 KERNEL_NOCOVERAGE io_port_in16(u16 port){
 	u16 out;
 	asm volatile("inw %1, %0":"=a"(out):"Nd"(port):"memory");
 	return out;
@@ -20,7 +20,7 @@ static inline u16 io_port_in16(u16 port){
 
 
 
-static inline u32 io_port_in32(u16 port){
+static inline u32 KERNEL_NOCOVERAGE io_port_in32(u16 port){
 	u32 out;
 	asm volatile("inl %1, %0":"=a"(out):"Nd"(port):"memory");
 	return out;
@@ -28,19 +28,19 @@ static inline u32 io_port_in32(u16 port){
 
 
 
-static inline void io_port_out8(u16 port,u8 value){
+static inline void KERNEL_NOCOVERAGE io_port_out8(u16 port,u8 value){
 	asm volatile("outb %0, %1"::"a"(value),"Nd"(port):"memory");
 }
 
 
 
-static inline void io_port_out16(u16 port,u16 value){
+static inline void KERNEL_NOCOVERAGE io_port_out16(u16 port,u16 value){
 	asm volatile("outw %0, %1"::"a"(value),"Nd"(port):"memory");
 }
 
 
 
-static inline void io_port_out32(u16 port,u32 value){
+static inline void KERNEL_NOCOVERAGE io_port_out32(u16 port,u32 value){
 	asm volatile("outl %0, %1"::"a"(value),"Nd"(port):"memory");
 }
 

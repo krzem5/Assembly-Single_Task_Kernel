@@ -56,7 +56,7 @@ static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
 
 
 
-static inline _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
+static _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
 	for (;timeout&&(io_port_in8(device->port+ATA_REG_STATUS)&mask)!=value;timeout--){
 		if (io_port_in8(device->port+ATA_REG_STATUS)&STATUS_ERR){
 			WARN_CORE("ATA/ATAPI device returned an error");
@@ -69,7 +69,7 @@ static inline _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device
 
 
 
-static inline void KERNEL_CORE_CODE _send_atapi_command(const ata_device_t* device,const u16* command,u16 return_length,u16* output_buffer){
+static void KERNEL_CORE_CODE _send_atapi_command(const ata_device_t* device,const u16* command,u16 return_length,u16* output_buffer){
 	io_port_out8(device->port+ATA_REG_DRV_HEAD,0xa0|(device->is_slave<<4));
 	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_ERROR,0x00);

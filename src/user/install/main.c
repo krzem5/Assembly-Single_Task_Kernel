@@ -133,6 +133,9 @@ _copy_kernel_files:
 	out&=_copy_file("/kernel/kernel.bin",path,offset);
 	out&=_copy_file("/kernel/loader.elf",path,offset);
 	out&=_copy_file("/kernel/shell.elf",path,offset);
+#if KERNEL_COVERAGE_ENABLED
+	out&=_copy_file("/kernel/coverage.elf",path,offset);
+#endif
 	if (!out){
 		goto _start_shell;
 	}

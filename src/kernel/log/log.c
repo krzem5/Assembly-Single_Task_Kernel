@@ -36,9 +36,7 @@ static KERNEL_CORE_RDATA const char _log_base16_chars[]="0123456789abcdef";
 
 static inline void KERNEL_CORE_CODE _buffer_state_add(buffer_state_t* buffer_state,char c){
 	buffer_state->buffer[buffer_state->offset]=c;
-	if (buffer_state->offset<BUFFER_SIZE){
-		buffer_state->offset++;
-	}
+	buffer_state->offset++;
 }
 
 

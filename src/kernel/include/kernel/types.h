@@ -10,6 +10,7 @@
 #define KERNEL_CORE_BSS __attribute__((section(".cbss")))
 #define KERNEL_NORETURN __attribute__((noreturn))
 #define KERNEL_NOOPT __attribute__((noipa,optimize("O0")))
+#define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 
 
 

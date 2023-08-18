@@ -19,56 +19,65 @@
 
 
 
-#define SYSCALL_COUNT 37
+void syscall_empty(syscall_registers_t* regs){
+}
 
 
 
-static void _syscall_invalid(syscall_registers_t* regs,u64 number){
-	ERROR("Invalid SYSCALL number: %lu",number);
+void syscall_dump_coverage_data(syscall_registers_t* regs);
+
+
+
+void KERNEL_NORETURN syscall_invalid(syscall_registers_t* regs){
+	ERROR("Invalid SYSCALL number: %lu",regs->rax);
 	for (;;);
 }
 
 
 
-void* _syscall_handlers[SYSCALL_COUNT+1]={
-	[0]=syscall_serial_send,
-	[1]=syscall_serial_recv,
-	[2]=syscall_elf_load,
-	[3]=syscall_cpu_core_count,
-	[4]=syscall_cpu_core_start,
-	[5]=syscall_cpu_core_stop,
-	[6]=syscall_drive_list_length,
-	[7]=syscall_drive_list_get,
-	[8]=syscall_partition_count,
-	[9]=syscall_partition_get,
-	[10]=syscall_fd_open,
-	[11]=syscall_fd_close,
-	[12]=syscall_fd_delete,
-	[13]=syscall_fd_read,
-	[14]=syscall_fd_write,
-	[15]=syscall_fd_seek,
-	[16]=syscall_fd_resize,
-	[17]=syscall_fd_absolute_path,
-	[18]=syscall_fd_stat,
-	[19]=syscall_fd_get_relative,
-	[20]=syscall_fd_move,
-	[21]=syscall_network_layer1_config,
-	[22]=syscall_network_layer2_send,
-	[23]=syscall_network_layer2_poll,
-	[24]=syscall_network_layer3_refresh,
-	[25]=syscall_network_layer3_device_count,
-	[26]=syscall_network_layer3_device_get,
-	[27]=syscall_network_layer3_device_delete,
-	[28]=syscall_system_shutdown,
-	[29]=syscall_system_config,
-	[30]=syscall_memory_map,
-	[31]=syscall_memory_unmap,
-	[32]=syscall_memory_stats,
-	[33]=syscall_clock_get_converion,
-	[34]=syscall_drive_format,
-	[35]=syscall_drive_stats,
-	[36]=syscall_random_generate,
-	[SYSCALL_COUNT]=_syscall_invalid
+void* _syscall_handlers[]={
+	[0]=syscall_empty,
+	[1]=syscall_serial_send,
+	[2]=syscall_serial_recv,
+	[3]=syscall_elf_load,
+	[4]=syscall_cpu_core_count,
+	[5]=syscall_cpu_core_start,
+	[6]=syscall_cpu_core_stop,
+	[7]=syscall_drive_list_length,
+	[8]=syscall_drive_list_get,
+	[9]=syscall_partition_count,
+	[10]=syscall_partition_get,
+	[11]=syscall_fd_open,
+	[12]=syscall_fd_close,
+	[13]=syscall_fd_delete,
+	[14]=syscall_fd_read,
+	[15]=syscall_fd_write,
+	[16]=syscall_fd_seek,
+	[17]=syscall_fd_resize,
+	[18]=syscall_fd_absolute_path,
+	[19]=syscall_fd_stat,
+	[20]=syscall_fd_get_relative,
+	[21]=syscall_fd_move,
+	[22]=syscall_network_layer1_config,
+	[23]=syscall_network_layer2_send,
+	[24]=syscall_network_layer2_poll,
+	[25]=syscall_network_layer3_refresh,
+	[26]=syscall_network_layer3_device_count,
+	[27]=syscall_network_layer3_device_get,
+	[28]=syscall_network_layer3_device_delete,
+	[29]=syscall_system_shutdown,
+	[30]=syscall_system_config,
+	[31]=syscall_memory_map,
+	[32]=syscall_memory_unmap,
+	[33]=syscall_memory_stats,
+	[34]=syscall_clock_get_converion,
+	[35]=syscall_drive_format,
+	[36]=syscall_drive_stats,
+	[37]=syscall_random_generate,
+#if KERNEL_COVERAGE_ENABLED
+	[38]=syscall_dump_coverage_data,
+#endif
+	NULL
 };
 
 

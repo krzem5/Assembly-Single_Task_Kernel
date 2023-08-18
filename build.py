@@ -9,12 +9,65 @@ import time
 
 
 
-OBJECT_FILE_SUFFIX=(".release.o" if "--release" in sys.argv else ".o")
-EXTRA_COMPILER_OPTIONS=(["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"] if "--release" in sys.argv else ["-O0","-g","-fno-omit-frame-pointer"])
-EXTRA_ASSEMBLY_COMPILER_OPTIONS=(["-O3"] if "--release" in sys.argv else ["-O0","-g"])
-EXTRA_LINKER_OPTIONS=(["-O3","--gc-sections"] if "--release" in sys.argv else ["-O0","-g"])
-HASH_FILE_PATH="build/hashes.txt"
-USER_HASH_FILE_SUFFIX=(".release.txt" if "--release" in sys.argv else ".txt")
+MODE_NORMAL=0
+MODE_COVERAGE=1
+MODE_RELEASE=2
+
+
+
+mode=MODE_NORMAL
+if ("--release" in sys.argv):
+	mode=MODE_RELEASE
+if ("--coverage" in sys.argv):
+	mode=MODE_COVERAGE
+
+
+
+KERNEL_OBJECT_FILE_SUFFIX={
+	MODE_NORMAL: ".kernel.o",
+	MODE_COVERAGE: ".kernel.coverage.o",
+	MODE_RELEASE: ".kernel.o"
+}[mode]
+KERNEL_EXTRA_COMPILER_OPTIONS={
+	MODE_NORMAL: [],
+	MODE_COVERAGE: ["-g","--coverage","-fprofile-arcs","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_RELEASE: []
+}[mode]
+KERNEL_EXTRA_LINKER_OPTIONS={
+	MODE_NORMAL: ["-T","src/kernel/linker.ld"],
+	MODE_COVERAGE: ["-T","src/kernel/linker_coverage.ld","-g"],
+	MODE_RELEASE: ["-T","src/kernel/linker.ld"]
+}[mode]
+USER_OBJECT_FILE_SUFFIX={
+	MODE_NORMAL: ".user.o",
+	MODE_COVERAGE: ".user.o",
+	MODE_RELEASE: ".user.release.o"
+}[mode]
+USER_EXTRA_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-g","-fno-omit-frame-pointer","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
+}[mode]
+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3"]
+}[mode]
+USER_EXTRA_LINKER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3","--gc-sections"]
+}[mode]
+KERNEL_HASH_FILE_PATH={
+	MODE_NORMAL: "build/hashes.txt",
+	MODE_COVERAGE: "build/hashes.coverage.txt",
+	MODE_RELEASE: "build/hashes.txt"
+}[mode]
+USER_HASH_FILE_SUFFIX={
+	MODE_NORMAL: ".txt",
+	MODE_COVERAGE: ".txt",
+	MODE_RELEASE: ".release.txt"
+}[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
@@ -145,15 +198,15 @@ def _compile_user_files(program):
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
-			object_file=f"build/objects/{file.replace('/','#')}"+OBJECT_FILE_SUFFIX
+			object_file=f"build/objects/{file.replace('/','#')}"+USER_OBJECT_FILE_SUFFIX
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".d")):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+EXTRA_COMPILER_OPTIONS
+				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
 			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
+				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
@@ -212,7 +265,7 @@ if (not os.path.exists("build/objects")):
 if (not os.path.exists("build/stages")):
 	os.mkdir("build/stages")
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
-changed_files,file_hash_list=_load_changed_files(HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
+changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
 error=False
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
@@ -221,21 +274,21 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (suffix not in SOURCE_FILE_SUFFIXES):
 			continue
 		file=os.path.join(root,file_name)
-		object_file=f"build/objects/{file.replace('/','#')}.o"
+		object_file=f"build/objects/{file.replace('/','#')}"+KERNEL_OBJECT_FILE_SUFFIX
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".d")):
 			continue
 		command=None
 		if (suffix==".c"):
-			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]
+			command=["gcc","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
-			command=["nasm","-f","elf64","-Wall","-Werror","-o",object_file,file]+EXTRA_ASSEMBLY_COMPILER_OPTIONS
+			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
-_save_file_hash_list(file_hash_list,HASH_FILE_PATH)
+_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 os.remove(KERNEL_VERSION_FILE_PATH)
-if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-T","src/kernel/linker.ld","-O3"]+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
@@ -259,10 +312,10 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
 		continue
 	object_files=runtime_object_files+_compile_user_files(program)
-	if (subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/kernel/{program}.elf"]+object_files+EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 with open("build/iso/kernel/startup.txt","w") as wf:
-	wf.write("/kernel/install.elf\n")
+	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/iso"]).returncode!=0):
 	sys.exit(1)
 if ("--run" in sys.argv):
@@ -312,7 +365,11 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		"-nographic","-display","none",
+		"-nographic",
+		"-display","none",
+		# Serial
+		"-serial","mon:stdio",
+		"-serial",("file:build/coverage_info.gcda" if mode==MODE_COVERAGE else "null"),
 		# Config
 		"-accel","kvm",
 		"-machine","hmat=on",

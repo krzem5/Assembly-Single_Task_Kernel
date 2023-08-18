@@ -31,7 +31,7 @@ static inline u64 KERNEL_CORE_CODE _get_block_size(u8 index){
 
 
 
-static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
+static void KERNEL_CORE_CODE KERNEL_NOCOVERAGE _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
@@ -54,7 +54,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 
 
 
-void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE KERNEL_NOCOVERAGE pmm_init(const kernel_data_t* kernel_data){
 	LOG_CORE("Initializing physical memory manager...");
 	INFO_CORE("Initializing allocator...");
 	_pmm_allocator.bitmap=0;
@@ -94,7 +94,7 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 
 
 
-void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE KERNEL_NOCOVERAGE pmm_init_high_mem(const kernel_data_t* kernel_data){
 	LOG_CORE("Registering high memory...");
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
 		if ((kernel_data->mmap+i)->type!=1){
