@@ -19,9 +19,10 @@ SECTIONS{
         *(.rodata .rodata* .rdata .rdata*)
         *(.data .data*)
         *(.ap_startup)
-        __KERNEL_GCOV_INFO_START__ = . - __KERNEL_OFFSET__;
+        . = ALIGN(8);
+        __KERNEL_GCOV_INFO_START__ = .;
         *(.gcov_info)
-        __KERNEL_GCOV_INFO_END__ = . - __KERNEL_OFFSET__;
+        __KERNEL_GCOV_INFO_END__ = .;
         . = ALIGN(0x1000);
     }
     __KERNEL_COMMON_START__ = . - __KERNEL_OFFSET__;

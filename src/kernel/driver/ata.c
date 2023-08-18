@@ -47,6 +47,10 @@
 
 
 
+static KERNEL_CORE_RDATA const char _ata_drive_name[]="ata";
+
+
+
 static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
@@ -106,7 +110,7 @@ static u64 KERNEL_CORE_CODE _ata_read_write(void* extra_data,u64 offset,void* bu
 	if (count>0xffffffff){
 		count=0xffffffff;
 	}
-	const u8 atapi_command[12]={
+	u8 atapi_command[12]={
 		ATAPI_CMD_READ_SECTORS,
 		0x00,
 		offset>>24,
@@ -195,10 +199,7 @@ static void KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		.read_write=_ata_read_write,
 		.extra_data=device
 	};
-	drive.name[0]='a';
-	drive.name[1]='t';
-	drive.name[2]='a';
-	drive.name[3]=index+48;
+	drive_insert_index_into_name(_ata_drive_name,index,drive.name);
 	drive_change_byte_order_and_truncate_spaces(buffer+10,10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces(buffer+27,20,drive.model_number);
 	if (!device->is_atapi){

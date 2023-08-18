@@ -58,6 +58,10 @@
 
 
 
+static KERNEL_CORE_RDATA const char _ahci_drive_name[]="ahci";
+
+
+
 static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device){
 	u32 mask;
 	do{
@@ -203,18 +207,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 		.block_size=512,
 		.extra_data=device
 	};
-	drive.name[0]='a';
-	drive.name[1]='h';
-	drive.name[2]='c';
-	drive.name[3]='i';
-	if (port_index<10){
-		drive.name[4]=port_index+48;
-		drive.name[5]=0;
-	}
-	else{
-		drive.name[4]=port_index/10+48;
-		drive.name[5]=(port_index%10)+48;
-	}
+	drive_insert_index_into_name(_ahci_drive_name,port_index,drive.name);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+20),10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);

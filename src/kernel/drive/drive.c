@@ -1,5 +1,29 @@
 #include <kernel/types.h>
-#define KERNEL_LOG_NAME "drive"
+
+
+
+void KERNEL_CORE_CODE drive_insert_index_into_name(const char* name,u8 index,char* dst){
+	while (*name){
+		*dst=*name;
+		name++;
+		dst++;
+	}
+	if (index>99){
+		dst[0]=index/100+48;
+		dst[1]=((index/10)%10)+48;
+		dst[2]=(index%10)+48;
+		dst[3]=0;
+	}
+	else if (index>9){
+		dst[0]=index/10+48;
+		dst[1]=(index%10)+48;
+		dst[2]=0;
+	}
+	else{
+		dst[0]=index+48;
+		dst[1]=0;
+	}
+}
 
 
 

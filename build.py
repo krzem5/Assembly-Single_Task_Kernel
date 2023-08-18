@@ -30,7 +30,7 @@ KERNEL_OBJECT_FILE_SUFFIX={
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: [],
-	MODE_COVERAGE: ["-g","--coverage","-fprofile-arcs","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_COVERAGE: ["-g","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
@@ -64,9 +64,9 @@ KERNEL_HASH_FILE_PATH={
 	MODE_RELEASE: "build/hashes.txt"
 }[mode]
 USER_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".txt",
-	MODE_RELEASE: ".release.txt"
+	MODE_NORMAL: ".user.txt",
+	MODE_COVERAGE: ".user.txt",
+	MODE_RELEASE: ".user.release.txt"
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
@@ -288,7 +288,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			error=True
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 os.remove(KERNEL_VERSION_FILE_PATH)
-if (error or subprocess.run(["ld","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
@@ -312,7 +312,7 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
 		continue
 	object_files=runtime_object_files+_compile_user_files(program)
-	if (subprocess.run(["ld","-melf_x86_64","-o",f"build/iso/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o",f"build/iso/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 with open("build/iso/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))

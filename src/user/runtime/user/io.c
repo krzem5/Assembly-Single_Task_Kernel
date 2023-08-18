@@ -24,9 +24,7 @@ typedef struct _BUFFER_STATE{
 
 static inline void _buffer_state_add(buffer_state_t* buffer_state,char c){
 	buffer_state->buffer[buffer_state->offset]=c;
-	if (buffer_state->offset<BUFFER_SIZE){
-		buffer_state->offset++;
-	}
+	buffer_state->offset+=(buffer_state->offset<BUFFER_SIZE);
 }
 
 
