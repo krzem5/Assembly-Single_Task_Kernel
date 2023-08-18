@@ -20,6 +20,7 @@ static void _parse_crs(const u8* data,u32 length){
 			length=type&7;
 			i++;
 		}
+		// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#resource-data-types-for-acpi
 		switch (code){
 			case 0x08:
 				WARN("Unimplemented _CRS tag: IRQ Format Descriptor");
@@ -110,6 +111,7 @@ static void _parse_crs(const u8* data,u32 length){
 
 static void _parse_device(aml_node_t* device){
 	// LOG("%s",device);
+	aml_runtime_evaluate_node(aml_runtime_get_node(device,"_INI"));
 	aml_node_t* hid=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_HID"));
 	if (hid){
 		// aml_runtime_print_node(hid);

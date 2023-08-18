@@ -1,6 +1,7 @@
 #include <kernel/aml/parser.h>
 #include <kernel/aml/runtime.h>
 #include <kernel/apic/ioapic.h>
+#include <kernel/io/io.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
@@ -107,6 +108,93 @@ static u64 _read_field_unit(aml_node_t* node){
 			break;
 	}
 	return out;
+}
+
+
+
+static void _write_field_unit(aml_node_t* node,aml_node_t* value){
+	if (node->data.field_unit.access_type&16){
+		lock_acquire_exclusive(&(node->data.field_unit.lock));
+	}
+	if (value->type!=AML_NODE_TYPE_INTEGER){
+		ERROR("Unable to convert %u to %u",value->type,AML_NODE_TYPE_INTEGER);for (;;);
+	}
+	switch (node->data.field_unit.type){
+		case 0x00:
+			switch (node->data.field_unit.access_type&15){
+				case 0:
+					ERROR("Unimplemented: _write_field_unit(SystemMemory,AnyAcc)");for (;;);
+					break;
+				case 1:
+					ERROR("Unimplemented: _write_field_unit(SystemMemory,ByteAcc)");for (;;);
+					break;
+				case 2:
+					ERROR("Unimplemented: _write_field_unit(SystemMemory,WordAcc)");for (;;);
+					break;
+				case 3:
+					*((u32*)VMM_TRANSLATE_ADDRESS(node->data.field_unit.address))=value->data.integer;
+					break;
+				case 4:
+					ERROR("Unimplemented: _write_field_unit(SystemMemory,QWordAcc)");for (;;);
+					break;
+				case 5:
+					ERROR("Unimplemented: _write_field_unit(SystemMemory,BufferAcc)");for (;;);
+					break;
+			}
+			break;
+		case 0x01:
+			switch (node->data.field_unit.access_type&15){
+				case 0:
+					ERROR("Unimplemented: _write_field_unit(SystemIO,AnyAcc)");for (;;);
+					break;
+				case 1:
+					ERROR("Unimplemented: _write_field_unit(SystemIO,ByteAcc)");for (;;);
+					break;
+				case 2:
+					ERROR("Unimplemented: _write_field_unit(SystemIO,WordAcc)");for (;;);
+					break;
+				case 3:
+					io_port_out32(node->data.field_unit.address,value->data.integer);
+					break;
+				case 4:
+					ERROR("Unimplemented: _write_field_unit(SystemIO,QWordAcc)");for (;;);
+					break;
+				case 5:
+					ERROR("Unimplemented: _write_field_unit(SystemIO,BufferAcc)");for (;;);
+					break;
+			}
+			break;
+		case 0x02:
+			ERROR("Unimplemented: _write_field_unit(PCI_Config)");for (;;);
+			break;
+		case 0x03:
+			ERROR("Unimplemented: _write_field_unit(EmbeddedControl)");for (;;);
+			break;
+		case 0x04:
+			ERROR("Unimplemented: _write_field_unit(SMBus)");for (;;);
+			break;
+		case 0x05:
+			ERROR("Unimplemented: _write_field_unit(System CMOS)");for (;;);
+			break;
+		case 0x06:
+			ERROR("Unimplemented: _write_field_unit(PciBarTarget)");for (;;);
+			break;
+		case 0x07:
+			ERROR("Unimplemented: _write_field_unit(IPMI)");for (;;);
+			break;
+		case 0x08:
+			ERROR("Unimplemented: _write_field_unit(GeneralPurposeIO)");for (;;);
+			break;
+		case 0x09:
+			ERROR("Unimplemented: _write_field_unit(GenericSerialBus)");for (;;);
+			break;
+		case 0x0a:
+			ERROR("Unimplemented: _write_field_unit(PCC)");for (;;);
+			break;
+	}
+	if (node->data.field_unit.access_type&16){
+		lock_release_exclusive(&(node->data.field_unit.lock));
+	}
 }
 
 
@@ -379,8 +467,26 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 						}
 						local->locals[target->opcode[0]-AML_OPCODE_LOCAL0]=value;
 						return NULL;
+					case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE,0):
+						for (aml_node_t* namespace=local->namespace;1;namespace=namespace->parent){
+							aml_node_t* out=_get_node(namespace,target->args[0].string,0,0);
+							if (out){
+								if (out->type==AML_NODE_TYPE_FIELD_UNIT){
+									_write_field_unit(out,value);
+								}
+								else{
+									ERROR("Unimplemented: AML_OPCODE_STORE / %x",out->type);for (;;);
+								}
+								return NULL;
+							}
+							if (namespace==namespace->parent){
+								break;
+							}
+						}
+						ERROR("Object not found: %s",target->args[0].string);for (;;);
+						return NULL;
 				}
-				ERROR("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_OBJECT");for (;;);
+				ERROR("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_OBJECT (%x)",target->opcode[0]);for (;;);
 				return NULL;
 			}
 		case MAKE_OPCODE(AML_OPCODE_REF_OF,0):
