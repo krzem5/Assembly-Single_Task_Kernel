@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup environment
-        run: sudo apt install nasm gcc qemu lcov gcovr
+        run: sudo apt install nasm gcc qemu lcov gcovr genisoimage
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
