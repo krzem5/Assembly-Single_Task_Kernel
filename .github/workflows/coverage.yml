@@ -1,0 +1,35 @@
+name: Coverage
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions: read-all
+jobs:
+  coverage-test:
+    name: Test & Report coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup environment
+        run: sudo apt install nasm gcc qemu qemu-utils qemu-system-x86 lcov gcovr genisoimage
+      - name: Build
+        run: ./build.sh --coverage
+      - name: Delete previous coverage
+        run: rm -f build/objects/*.gcda
+      - name: Execute tests
+        run: ./build.sh --coverage --run
+      - name: Generate coverage report
+        run: |
+          cat build/coverage_info.gcda|gcov-tool merge-stream
+          lcov -c -d build/objects -o build/coverage.info
+      - name: Upload coverage
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          file: build/coverage.info

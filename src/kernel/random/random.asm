@@ -14,7 +14,6 @@ section .text
 _random_init_entropy_pool:
 	xor ecx, ecx
 ._next_entry:
-	rdseed r8
 	rdtsc
 	mov rdx, rax
 	shl rdx, 32

@@ -346,7 +346,8 @@ if ("--run" in sys.argv):
 		"-object","memory-backend-ram,size=512M,id=mem0",
 		"-object","memory-backend-ram,size=512M,id=mem1",
 		# CPU
-		"-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2",
+		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
+		# "-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2",
 		"-smp","4,sockets=2,maxcpus=4",
 		# NUMA
 		"-numa","node,nodeid=0,memdev=mem0",
@@ -365,13 +366,12 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		"-nographic",
 		"-display","none",
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/coverage_info.gcda" if mode==MODE_COVERAGE else "null"),
 		# Config
-		"-accel","kvm",
+		# "-accel","kvm",
 		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
