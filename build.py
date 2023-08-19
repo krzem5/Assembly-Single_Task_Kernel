@@ -1,3 +1,4 @@
+import array
 import hashlib
 import os
 import socket
@@ -217,6 +218,92 @@ def _compile_user_files(program):
 
 
 
+def _read_file_coverage_info(rf):
+	magic,version,stamp,checksum=struct.unpack("4sIII",rf.read(16))
+	if (magic!=b"adcg"):
+		raise RuntimeError("Invalid file magic")
+	out={
+		"version": version,
+		"stamp": stamp,
+		"checksum": checksum,
+		"functions": []
+	}
+	if (struct.unpack("I",rf.read(4))[0]==0):
+		return out
+	while (True):
+		length=struct.unpack("I",rf.read(4))[0]
+		if (not length):
+			out["functions"].append(None)
+			continue
+		ident,lineno_checksum,cfg_checksum=struct.unpack("III",rf.read(12))
+		function={
+			"ident": ident,
+			"lineno_checksum": lineno_checksum,
+			"cfg_checksum": cfg_checksum,
+			"counters": {}
+		}
+		out["functions"].append(function)
+		while (True):
+			type_=struct.unpack("I",rf.read(4))[0]
+			if (type_==0):
+				return out
+			if (type_==0x01000000):
+				break
+			idx=(type_-0x01a10000)>>17
+			count=struct.unpack("i",rf.read(4))[0]>>3
+			function["counters"][idx]=array.array("Q")
+			if (count>0):
+				function["counters"][idx].frombytes(rf.read(count<<3))
+			else:
+				function["counters"][idx].fromlist([0 for _ in range(0,count)])
+
+
+
+def _add_coverage(src,dst):
+	if ("version" not in dst):
+		for k,v in src.items():
+			dst[k]=v
+		return
+	raise RuntimeError
+
+
+
+def _write_file_coverage_info(wf,coverage):
+	wf.write(b"adcg")
+	wf.write(struct.pack("III",coverage["version"],coverage["stamp"],coverage["checksum"]))
+	for function in coverage["functions"]:
+		wf.write(struct.pack("I",0x01000000))
+		if (function is None):
+			wf.write(struct.pack("I",0))
+			continue
+		wf.write(struct.pack("IIII",12,function["ident"],function["lineno_checksum"],function["cfg_checksum"]))
+		for idx,counters in function["counters"].items():
+			wf.write(struct.pack("II",0x01a10000+(idx<<17),len(counters)<<3))
+			wf.write(counters.tobytes())
+	wf.write(struct.pack("I",0))
+
+
+
+def _merge_coverage_info(vm_output_file_path,output_file_path):
+	with open(vm_output_file_path,"rb") as rf:
+		while (True):
+			buffer=rf.read(4)
+			if (not buffer):
+				return
+			name=rf.read(struct.unpack("I",buffer)[0])[:-1].decode("utf-8")
+			if (os.path.exists(name) and 0):
+				with open(name,"rb") as gcda_rf:
+					current_coverage=_read_file_coverage_info(gcda_rf)
+			else:
+				current_coverage={}
+			_add_coverage(_read_file_coverage_info(rf),current_coverage)
+			with open(name[:-4]+"gcno","rb") as gcno_rf:
+				current_coverage["stamp"]=struct.unpack("III",gcno_rf.read(12))[2]
+			with open(name,"wb") as gcda_wf:
+				_write_file_coverage_info(gcda_wf,current_coverage)
+
+
+
 def _process_packet(buffer):
 	if (buffer[0]&1):
 		return None
@@ -376,3 +463,4 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
+	_merge_coverage_info("build/coverage_info.gcda","build/objects/")

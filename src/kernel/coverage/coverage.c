@@ -106,11 +106,10 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 	INFO("Writing coverage data...");
 	for (const gcov_info_t*const* info_ptr=(void*)(&__KERNEL_GCOV_INFO_START__);(void*)info_ptr<(void*)(&__KERNEL_GCOV_INFO_END__);info_ptr++){
 		const gcov_info_t* info=*info_ptr;
-		_output_bytes("nfcg",4);
-		_output_int(info->version);
 		_output_string(info->filename);
 		_output_bytes("adcg",4);
 		_output_int(info->version);
+		LOG("%u",info->stamp);
 		_output_int(info->stamp);
 		_output_int(info->checksum);
 		for (u32 i=0;i<info->n_functions;i++){

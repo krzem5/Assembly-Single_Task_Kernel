@@ -45,12 +45,9 @@ jobs:
       - name: Execute tests
         run: ./build.sh --coverage --run
       - name: Generate coverage report
-        run: |
-          hexdump build/coverage_info.gcda
-          cat build/coverage_info.gcda | gcov-tool merge-stream
-          lcov -c -d build/objects -o build/coverage.info
+        run:
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
-        with:
+        with:lcov -c -d build/objects -o build/coverage.info
           github-token: ${{secrets.GITHUB_TOKEN}}
           file: build/coverage.info
