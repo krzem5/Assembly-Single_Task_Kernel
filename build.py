@@ -346,7 +346,7 @@ if ("--run" in sys.argv):
 		"-object","memory-backend-ram,size=512M,id=mem0",
 		"-object","memory-backend-ram,size=512M,id=mem1",
 		# CPU
-		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
+		"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
 		# "-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2",
 		"-smp","4,sockets=2,maxcpus=4",
 		# NUMA

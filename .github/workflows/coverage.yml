@@ -12,7 +12,7 @@ jobs:
   coverage-test:
     name: Test & Report coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
-        run: rm -f build/objects/*.gcda
+        run: rm -f build/objects/*.gcda&&cat /proc/cpuinfo
       - name: Execute tests
         run: ./build.sh --coverage --run
       - name: Generate coverage report
