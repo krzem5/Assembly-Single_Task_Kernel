@@ -261,28 +261,34 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 					elif (tag==0x01450000):
 						length,index=struct.unpack("II",gcno_rf.read(8))
 						length-=4
+						is_current_file=False
 						while (length):
 							line=struct.unpack("I",gcno_rf.read(4))[0]
 							length-=4
 							if (not line):
 								name_length=struct.unpack("I",gcno_rf.read(4))[0]
-								if (name_length):
-									function_data["blocks"][index].append(gcno_rf.read(name_length)[:-1].decode("utf-8"))
+								is_current_file=(gcno_rf.read(name_length)[:-1].decode("utf-8")==function_data["file"])
 								length-=4+name_length
-							else:
+							elif (is_current_file):
 								function_data["blocks"][index].append(line)
 			# "TN:\n"
 			# f"SF:{path}\n" ... "end_of_record\n"
 			# f"DA:{line_number},{count}"
 			# f"FN:{line_number},{name}
 			# f"FNDA:{count},{func_name}"
-			wf.write(f"TN:\nSF:{name}\n")
 			for i in range(0,struct.unpack("I",rf.read(4))[0]):
 				id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 				function=functions[(id_,lineno_checksum,cfg_checksum)]
+				wf.write(f"TN:\nSF:{function['file']}\nFN:{function['line_number']},{function['name']}\n")
 				for j in range(0,counter_count):
 					counter=struct.unpack("Q",rf.read(8))[0]
-					# print(j,counter,function)
+					if (j not in function["blocks"]):
+						continue
+					if (j==0):
+						wf.write(f"FNDA:{counter},{function['name']}\n")
+					for line in function["blocks"][j]:
+						wf.write(f"DA:{line},{counter}\n")
+				wf.write("end_of_record\n")
 			rf.read(4)
 
 
@@ -446,4 +452,4 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage2.info")
+_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.info")
