@@ -62,10 +62,10 @@ void acpi_srat_load(const void* srat_ptr){
 		const srat_entry_t* entry=(const srat_entry_t*)(srat->data+offset);
 		if (!entry->type&&(entry->processor.flags&1)){
 			u32 proximity_domain=(entry->processor.proximity_domain_high[0]<<24)|(entry->processor.proximity_domain_high[1]<<16)|(entry->processor.proximity_domain_high[2]<<8)|entry->processor.proximity_domain_low;
-			INFO("CPU [%u] -> [%u] #%u",entry->processor.apic_id,entry->processor.sapic_eid,proximity_domain);
+			numa_add_cpu(proximity_domain,entry->processor.apic_id,entry->processor.sapic_eid);
 		}
 		else if (entry->type==1&&(entry->memory.flags&1)){
-			INFO("MEM %p - %p #%u%s",entry->memory.base_address,entry->memory.base_address+entry->memory.length,entry->memory.proximity_domain,((entry->memory.flags&2)?" Hot-pluggable":""));
+			numa_add_memory_range(entry->memory.proximity_domain,entry->memory.base_address,entry->memory.base_address+entry->memory.length,!!(entry->memory.flags&2));
 		}
 		else if (entry->type>1){
 			WARN("Unknown SRAT table entry: %u",entry->type);
