@@ -45,9 +45,9 @@ jobs:
       - name: Execute tests
         run: ./build.sh --coverage --run
       - name: Generate coverage report
-        run:
+        run: lcov -c -d build/objects -o build/coverage.info
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
-        with:lcov -c -d build/objects -o build/coverage.info
+        with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           file: build/coverage.info
