@@ -74,7 +74,7 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 
 
-void KERNEL_NORETURN acpi_fadt_shutdown(_Bool restart){
+void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
 	asm volatile ("cli":::"memory");
 	cache_flush();
 	for (u64 i=0;i<0xffff;i++){

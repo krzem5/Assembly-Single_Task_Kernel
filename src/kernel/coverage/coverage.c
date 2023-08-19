@@ -16,33 +16,33 @@
 
 
 
-struct gcov_ctr_info{
+typedef struct _GCOV_CTR_INFO{
 	u32 num;
 	s64* values;
-};
+} gcov_ctr_info_t;
 
 
 
-struct gcov_fn_info{
-	const struct gcov_info* key;
+typedef struct _GCOV_FN_INFO{
+	const struct _GCOV_INFO* key;
 	u32 ident;
 	u32 lineno_checksum;
 	u32 cfg_checksum;
-	struct gcov_ctr_info ctrs[0];
-};
+	gcov_ctr_info_t ctrs[];
+} gcov_fn_info_t;
 
 
 
-struct gcov_info{
+typedef struct _GCOV_INFO{
 	u32 version;
-	struct gcov_info* next;
+	u8 _padding[8];
 	u32 stamp;
 	u32 checksum;
 	const char* filename;
 	void* merge[GCOV_COUNTER_COUNT];
 	u32 n_functions;
-	const struct gcov_fn_info*const* functions;
-};
+	const gcov_fn_info_t*const* functions;
+} gcov_info_t;
 
 
 
@@ -104,8 +104,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 	io_port_out8(0x2fa,0xc7);
 	io_port_out8(0x2fc,0x03);
 	INFO("Writing coverage data...");
-	for (const struct gcov_info*const* info_ptr=(void*)(&__KERNEL_GCOV_INFO_START__);(void*)info_ptr<(void*)(&__KERNEL_GCOV_INFO_END__);info_ptr++){
-		const struct gcov_info* info=*info_ptr;
+	for (const gcov_info_t*const* info_ptr=(void*)(&__KERNEL_GCOV_INFO_START__);(void*)info_ptr<(void*)(&__KERNEL_GCOV_INFO_END__);info_ptr++){
+		const gcov_info_t* info=*info_ptr;
 		_output_bytes("nfcg",4);
 		_output_int(info->version);
 		_output_string(info->filename);
@@ -114,7 +114,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 		_output_int(info->stamp);
 		_output_int(info->checksum);
 		for (u32 i=0;i<info->n_functions;i++){
-			const struct gcov_fn_info* gfi_ptr=info->functions[i];
+			const gcov_fn_info_t* gfi_ptr=info->functions[i];
 			u32 length=(gfi_ptr&&gfi_ptr->key==info?3*sizeof(u32):0);
 			_output_int(0x01000000);
 			_output_int(length);
@@ -128,7 +128,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 				if (!info->merge[j]){
 					continue;
 				}
-				const struct gcov_ctr_info* ci_ptr=gfi_ptr->ctrs+j;
+				const gcov_ctr_info_t* ci_ptr=gfi_ptr->ctrs+j;
 				if (j==GCOV_COUNTER_V_TOPN||j==GCOV_COUNTER_V_INDIR){
 					ERROR("Unimplemented");
 					continue;
