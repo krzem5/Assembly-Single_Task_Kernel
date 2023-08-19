@@ -68,8 +68,8 @@ void KERNEL_CORE_CODE pci_enumerate(_Bool early_boot){
 						offset=(cap>>8);
 					}
 				}
-				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 				if (early_boot){
+					INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 					driver_ahci_init_device(&device);
 					driver_ata_init_device(&device);
 					driver_nvme_init_device(&device);
