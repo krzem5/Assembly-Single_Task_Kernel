@@ -26,6 +26,27 @@ section .ctext
 
 
 
+%macro TEST_FEATURE_WARN 3
+%defstr name %3
+	bt %1, %2
+	jc ._%3%+_ok
+	push rcx
+	push rdx
+	push r8
+	lea rdi, _feature_not_present_warn_str
+	lea rsi, ._%3%+_str
+	call log
+	pop r8
+	pop rdx
+	pop rcx
+	jmp ._%3%+_ok
+._%3%+_str:
+	db name,0
+._%3%+_ok:
+%endmacro
+
+
+
 [bits 64]
 cpu_check_features:
 	push rbx
@@ -35,13 +56,13 @@ cpu_check_features:
 	TEST_FEATURE ecx, 0, sse3
 	TEST_FEATURE ecx, 1, pclmulqdq
 	TEST_FEATURE ecx, 9, ssse3
-	TEST_FEATURE ecx, 12, fma
+	TEST_FEATURE_WARN ecx, 12, fma
 	TEST_FEATURE ecx, 19, sse4_1
 	TEST_FEATURE ecx, 20, sse4_2
 	TEST_FEATURE ecx, 23, popcnt
 	TEST_FEATURE ecx, 26, xsave
-	TEST_FEATURE ecx, 28, avx
-	TEST_FEATURE ecx, 29, f16c
+	TEST_FEATURE_WARN ecx, 28, avx
+	TEST_FEATURE_WARN ecx, 29, f16c
 	TEST_FEATURE edx, 0, fpu
 	TEST_FEATURE edx, 3, pse
 	TEST_FEATURE edx, 4, tsc
@@ -58,7 +79,7 @@ cpu_check_features:
 	cpuid
 	TEST_FEATURE ebx, 0, fsgsbase
 	TEST_FEATURE ebx, 3, bmi1
-	TEST_FEATURE ebx, 5, avx2
+	TEST_FEATURE_WARN ebx, 5, avx2
 	TEST_FEATURE ebx, 8, bmi2
 	mov eax, 0x80000001
 	cpuid
@@ -68,7 +89,7 @@ cpu_check_features:
 	TEST_FEATURE edx, 27, rdtscp
 	mov eax, 0x80000007
 	cpuid
-	TEST_FEATURE edx, 8, invtsc
+	TEST_FEATURE_WARN edx, 8, invtsc
 	pop rbx
 	test r8, r8
 	jnz $
@@ -82,3 +103,5 @@ section .cdata
 
 _feature_not_present_str:
 	db 27,"[1m",27,"[38;2;231;72;86mFeature not present: %s",27,"[0m",10,0
+_feature_not_present_warn_str:
+	db 27,"[38;2;231;211;72mFeature not present: %s",27,"[0m",10,0

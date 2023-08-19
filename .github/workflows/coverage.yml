@@ -21,7 +21,7 @@ jobs:
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
-        run: rm -f build/objects/*.gcda&&cat /proc/cpuinfo
+        run: rm -f build/objects/*.gcda
       - name: Execute tests
         run: ./build.sh --coverage --run
       - name: Generate coverage report

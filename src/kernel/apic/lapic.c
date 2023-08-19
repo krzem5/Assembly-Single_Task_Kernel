@@ -14,6 +14,8 @@
 #define REGISTER_ICR0 0xc0
 #define REGISTER_ICR1 0xc4
 
+#define REGISTER_MAX REGISTER_ICR1
+
 
 
 volatile u32* _lapic_registers;
@@ -24,6 +26,7 @@ void lapic_init(u64 base){
 	LOG("Initializing lAPIC controller...");
 	INFO("lAPIC base: %p",base);
 	_lapic_registers=VMM_TRANSLATE_ADDRESS(base);
+	vmm_ensure_memory_mapped(base,(REGISTER_MAX+1)*sizeof(u32));
 }
 
 

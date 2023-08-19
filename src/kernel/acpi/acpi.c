@@ -24,6 +24,7 @@ typedef struct __attribute__((packed)) _RSDP{
 typedef struct __attribute__((packed)) _SDT{
 	u32 signature;
 	u32 length;
+	u8 _padding[28];
 } sdt_t;
 
 
@@ -70,17 +71,21 @@ _rsdp_found:
 	_Bool is_xsdt=0;
 	const rsdt_t* rsdt;
 	if (!rsdp->revision||!rsdp->xsdt_address){
-		INFO("Found RSDT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(rsdp->rsdt_address));
+		INFO("Found RSDT at %p",rsdp->rsdt_address);
 		rsdt=VMM_TRANSLATE_ADDRESS(rsdp->rsdt_address);
 	}
 	else{
 		is_xsdt=1;
-		INFO("Found XSDT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(rsdp->xsdt_address));
+		INFO("Found XSDT at %p",rsdp->xsdt_address);
 		rsdt=VMM_TRANSLATE_ADDRESS(rsdp->xsdt_address);
 	}
+	vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(rsdt),sizeof(rsdt_t));
 	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
+	vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(rsdt),rsdt->header.length);
 	for (u32 i=0;i<entry_count;i++){
 		const sdt_t* sdt=VMM_TRANSLATE_ADDRESS((is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]));
+		vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(sdt),sizeof(sdt_t));
+		vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(sdt),sdt->length);
 		if (sdt->signature==0x43495041){
 			INFO("Found MADT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
 			acpi_madt_load(sdt);

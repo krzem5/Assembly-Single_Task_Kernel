@@ -305,6 +305,22 @@ _cleanup:
 
 
 
+void KERNEL_CORE_CODE vmm_ensure_memory_mapped(u64 address,u64 size){
+	if (!size){
+		return;
+	}
+	size=pmm_align_up_address(size+address-pmm_align_down_address(address));
+	address=pmm_align_down_address(address);
+	while (size){
+		size-=PAGE_SIZE;
+		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,address+size+VMM_HIGHER_HALF_ADDRESS_OFFSET)){
+			vmm_map_page(&vmm_kernel_pagemap,address+size,address+size+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		}
+	}
+}
+
+
+
 u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 out=0;
 	lock_acquire_exclusive(&(pagemap->lock));
