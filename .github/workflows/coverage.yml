@@ -16,16 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup environment
-        run: sudo apt install nasm gcc qemu qemu-utils qemu-system-x86 lcov gcovr genisoimage
+        run: sudo apt install nasm gcc qemu qemu-utils qemu-system-x86 lcov gcovr-13 genisoimage
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
         run: rm -f build/objects/*.gcda
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - name: Execute tests
         run: ./build.sh --coverage --run
       - name: Generate coverage report
         run: |
-          cat build/coverage_info.gcda|gcov-tool merge-stream
+          cat build/coverage_info.gcda|gcov-tool-13 merge-stream
           lcov -c -d build/objects -o build/coverage.info
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
