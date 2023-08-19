@@ -30,7 +30,7 @@ KERNEL_OBJECT_FILE_SUFFIX={
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: [],
-	MODE_COVERAGE: ["-g","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
