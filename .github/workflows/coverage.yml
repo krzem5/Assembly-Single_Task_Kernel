@@ -34,7 +34,7 @@ jobs:
       - name: Setup environment
         run: |
           sudo dpkg -i gcc-latest.deb
-          sudo apt install -y nasm qemu qemu-utils qemu-system-x86 lcov genisoimage
+          sudo apt install -y nasm qemu qemu-utils qemu-system-x86 genisoimage
       - name: Build
         run: |
           export PATH=/opt/gcc-latest/bin:$PATH
@@ -48,4 +48,5 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
-          file: build/coverage.info
+          file: build/coverage.lcov
+          format: lcov
