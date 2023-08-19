@@ -29,11 +29,12 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	vmm_init(kernel_data);
 	pmm_init_high_mem(kernel_data);
 	kmm_init();
-	pci_enumerate();
+	pci_enumerate(1);
 	drive_list_load_partitions();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
+	pci_enumerate(0);
 	clock_init();
 	acpi_load();
 	aml_runtime_init_irq();

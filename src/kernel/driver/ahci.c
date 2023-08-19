@@ -12,11 +12,6 @@
 
 
 
-#define MAX_CONTROLLER_COUNT 1
-#define MAX_DEVICE_COUNT 32
-
-
-
 // Controller
 #define CAP_NP 0x0000001f
 #define CAP_NCS 0x00001f00

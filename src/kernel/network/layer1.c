@@ -6,21 +6,24 @@
 
 
 
-static network_layer1_device_t KERNEL_CORE_BSS _layer1_device;
+static network_layer1_device_t _layer1_device;
 
-const char* KERNEL_CORE_BSS network_layer1_name;
-mac_address_t KERNEL_CORE_BSS network_layer1_mac_address;
+const char* network_layer1_name;
+mac_address_t network_layer1_mac_address;
 
 
 
 void network_layer1_init_irq(void){
+	if (!network_layer1_name){
+		return;
+	}
 	LOG("Initializing layer1 network device IRQ...");
 	_layer1_device.irq_init(_layer1_device.extra_data);
 }
 
 
 
-void KERNEL_CORE_CODE network_layer1_set_device(const network_layer1_device_t* device){
+void network_layer1_set_device(const network_layer1_device_t* device){
 	if (network_layer1_name){
 		WARN_CORE("Layer1 network device already installed");
 		return;

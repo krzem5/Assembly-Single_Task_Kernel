@@ -10,8 +10,6 @@
 
 
 
-#define MAX_DEVICE_COUNT 4
-
 #define TIMEOUT 0xffffff
 
 

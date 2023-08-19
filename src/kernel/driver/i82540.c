@@ -14,8 +14,6 @@
 
 
 
-#define MAX_DEVICE_COUNT 1
-
 #define GET_DESCRIPTOR(device,type,index) VMM_TRANSLATE_ADDRESS((device)->type##_desc_base+((index)<<4))
 
 
@@ -77,10 +75,6 @@
 
 // TXDESC status flags
 #define TXDESC_DD 0x01
-
-
-
-static KERNEL_CORE_RDATA const char _i82540_device_name[]="i82540";
 
 
 
@@ -173,7 +167,7 @@ static void _i82540_irq_init(void* extra_data){
 
 
 
-void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
+void driver_i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
 	}
@@ -235,7 +229,7 @@ void KERNEL_CORE_CODE driver_i82540_init_device(pci_device_t* device){
 	u32 rah=i82540_device->mmio[REG_RAH0];
 	u32 ral=i82540_device->mmio[REG_RAL0];
 	network_layer1_device_t layer1_device={
-		_i82540_device_name,
+		"i82540",
 		{
 			ral,
 			ral>>8,

@@ -9,8 +9,8 @@
 
 
 static lock_t _kmm_lock=LOCK_INIT_STRUCT;
-static u64 KERNEL_CORE_DATA _kmm_top=0;
-static u64 KERNEL_CORE_DATA _kmm_max_top=0;
+static u64 KERNEL_CORE_DATA _kmm_top;
+static u64 KERNEL_CORE_DATA _kmm_max_top;
 static _Bool KERNEL_CORE_DATA _kmm_buffer_not_ended=0;
 
 

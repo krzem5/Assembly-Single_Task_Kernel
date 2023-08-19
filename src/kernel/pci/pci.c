@@ -10,7 +10,7 @@
 
 
 
-void KERNEL_CORE_CODE pci_enumerate(void){
+void KERNEL_CORE_CODE pci_enumerate(_Bool early_boot){
 	LOG_CORE("Scanning PCI devices...");
 	pci_device_t device={
 		0,
@@ -69,10 +69,14 @@ void KERNEL_CORE_CODE pci_enumerate(void){
 					}
 				}
 				INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
-				driver_ahci_init_device(&device);
-				driver_ata_init_device(&device);
-				driver_i82540_init_device(&device);
-				driver_nvme_init_device(&device);
+				if (early_boot){
+					driver_ahci_init_device(&device);
+					driver_ata_init_device(&device);
+					driver_nvme_init_device(&device);
+				}
+				else{
+					driver_i82540_init_device(&device);
+				}
 			}
 		}
 	}
