@@ -219,44 +219,45 @@ def _compile_user_files(program):
 
 
 def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_file_path):
-	# "TN:\n"
-	# f"SF:{path}\n" ... "end_of_record\n"
-	# f"DA:{line_number},{count}"
-	# f"FN:{line_number},{name}
-	# f"FNDA:{count},{func_name}"
 	with open(vm_output_file_path,"rb") as rf,open(output_file_path,"w") as wf:
 		while (True):
 			buffer=rf.read(4)
 			if (not buffer):
 				break
 			name=rf.read(struct.unpack("I",buffer)[0]).decode("utf-8")
+			functions={}
 			with open(name[:-4]+"gcno","rb") as gcno_rf:
 				gcno_rf.seek(16)
 				gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])
 				gcno_rf.read(4)
+				function_data=None
 				while (True):
 					tag_buffer=gcno_rf.read(4)
 					if (not tag_buffer):
 						break
 					tag=struct.unpack("I",tag_buffer)[0]
 					if (tag==0x01000000):
-						length,id_,lineno_checksum,cfg_checksum=struct.unpack("IIII",gcno_rf.read(16))
-						print(length,id_,gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1])
+						_,id_,lineno_checksum,cfg_checksum=struct.unpack("IIII",gcno_rf.read(16))
+						function_data={
+							"name": gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1].decode("utf-8"),
+							"blocks": {}
+						}
 						gcno_rf.read(4)
-						print("File:",gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1])
+						function_data["file"]=gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1].decode("utf-8")
 						start_line,start_column,end_line,end_column=struct.unpack("IIII",gcno_rf.read(16))
-						print(start_line,start_column,end_line,end_column)
+						function_data["line_number"]=start_line
+						functions[(id_,lineno_checksum,cfg_checksum)]=function_data
 					elif (tag==0x01410000):
 						gcno_rf.read(8)
 					elif (tag==0x01430000):
 						length,index=struct.unpack("II",gcno_rf.read(8))
-						print("@@",length,index)
+						function_data["blocks"][index]=[]
 						length-=4
 						while (length):
 							# Flag description: https://github.com/gcc-mirror/gcc/blob/fab08d12b40ad637c5a4ce8e026fb43cd3f0fad1/gcc/profile.cc#L1427C20-L1427C36
 							next_index,flags=struct.unpack("II",gcno_rf.read(8))
 							length-=8
-							print(f"<{index}> => <{next_index}>",flags)
+							# print(f"<{index}> => <{next_index}>",flags)
 					elif (tag==0x01450000):
 						length,index=struct.unpack("II",gcno_rf.read(8))
 						length-=4
@@ -266,25 +267,23 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 							if (not line):
 								name_length=struct.unpack("I",gcno_rf.read(4))[0]
 								if (name_length):
-									print(f"[{index}]","Filename:",gcno_rf.read(name_length)[:-1])
+									function_data["blocks"][index].append(gcno_rf.read(name_length)[:-1].decode("utf-8"))
 								length-=4+name_length
 							else:
-								print(f"[{index}]","Line:",line)
-					else:
-						print("@@@@",hex(tag))
-						gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])
-					# tag,length,ident,lineno_checksum,cfg_checksum=struct.unpack("IIIII",gcno_rf.read(20))
-					# print(tag,length,hex(ident),hex(lineno_checksum),hex(cfg_checksum))
-					# gcno_rf.seek(16)
-					# print(gcno_rf.)
-					# for _ in range(0,2): # inf
-					# 	name_length=struct.unpack("I",gcno_rf.read(4))[0]
-					# 	print(name_length)
-					# 	name=gcno_rf.read(name_length)[:-1].decode("utf-8")
-					# 	print(name)
-					# 	break
+								function_data["blocks"][index].append(line)
+			# "TN:\n"
+			# f"SF:{path}\n" ... "end_of_record\n"
+			# f"DA:{line_number},{count}"
+			# f"FN:{line_number},{name}
+			# f"FNDA:{count},{func_name}"
 			wf.write(f"TN:\nSF:{name}\n")
-			quit()
+			for i in range(0,struct.unpack("I",rf.read(4))[0]):
+				id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
+				function=functions[(id_,lineno_checksum,cfg_checksum)]
+				for j in range(0,counter_count):
+					counter=struct.unpack("Q",rf.read(8))[0]
+					# print(j,counter,function)
+			rf.read(4)
 
 
 
