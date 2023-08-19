@@ -4,7 +4,7 @@
 
 
 #define KERNEL_ENTRY_CODE __attribute__((section(".entry")))
-#define KERNEL_CORE_CODE __attribute__((section(".ctext")))
+#define KERNEL_CORE_CODE __attribute__((section(".ctext"),optimize("-fno-tree-slp-vectorize")))
 #define KERNEL_CORE_DATA __attribute__((section(".cdata")))
 #define KERNEL_CORE_RDATA __attribute__((section(".crdata")))
 #define KERNEL_CORE_BSS __attribute__((section(".cbss")))

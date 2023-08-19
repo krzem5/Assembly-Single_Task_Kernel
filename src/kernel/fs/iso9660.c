@@ -83,7 +83,7 @@ static vfs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(partition_t* fs,vfs_no
 		u32 data_offset=iso9660_node->data_offset;
 		u32 data_length=iso9660_node->data_length;
 		u16 buffer_space=0;
-		iso9660_directory_t* directory;
+		iso9660_directory_t* directory=NULL;
 		while (data_length){
 			if (buffer_space&&!directory->length){
 				data_length-=buffer_space;
