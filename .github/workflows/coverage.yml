@@ -34,12 +34,11 @@ jobs:
       - name: Setup environment
         run: |
           sudo dpkg -i gcc-latest.deb
-          export PATH=/opt/gcc-latest/bin:$PATH
-          export LD_RUN_PATH=/opt/gcc-latest/lib64
           sudo apt install -y nasm qemu qemu-utils qemu-system-x86 lcov genisoimage
       - name: Build
         run: |
-          gcc --version
+          export PATH=/opt/gcc-latest/bin:$PATH
+          export LD_RUN_PATH=/opt/gcc-latest/lib64
           ./build.sh --coverage
       - name: Delete previous coverage
         run: rm -f build/objects/*.gcda
