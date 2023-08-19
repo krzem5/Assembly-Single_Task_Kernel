@@ -225,6 +225,7 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 			if (not buffer):
 				break
 			name=rf.read(struct.unpack("I",buffer)[0]).decode("utf-8")
+			print(name)
 			functions={}
 			with open(name[:-4]+"gcno","rb") as gcno_rf:
 				gcno_rf.seek(16)
