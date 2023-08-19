@@ -28,7 +28,7 @@ jobs:
           cat build/coverage_info.gcda|gcov-tool merge-stream
           lcov -c -d build/objects -o build/coverage.info
       - name: Upload coverage
-        uses: coverallsapp/github-action@2.2.1
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           file: build/coverage.info
