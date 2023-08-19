@@ -1,4 +1,5 @@
 #include <kernel/kernel.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -7,6 +8,7 @@
 
 
 
+static lock_t _kmm_lock=LOCK_INIT_STRUCT;
 static u64 KERNEL_CORE_DATA _kmm_top=0;
 static u64 KERNEL_CORE_DATA _kmm_max_top=0;
 static _Bool KERNEL_CORE_DATA _kmm_buffer_not_ended=0;
@@ -31,6 +33,7 @@ void KERNEL_CORE_CODE kmm_init(void){
 
 
 void* KERNEL_CORE_CODE kmm_allocate(u32 size){
+	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer in use");
 		for (;;);
@@ -38,44 +41,52 @@ void* KERNEL_CORE_CODE kmm_allocate(u32 size){
 	void* out=(void*)_kmm_top;
 	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
 	_resize_stack();
+	lock_release_exclusive(&_kmm_lock);
 	return out;
 }
 
 
 
 void* KERNEL_CORE_CODE kmm_allocate_buffer(void){
+	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer already in use");
 		for (;;);
 	}
 	_kmm_buffer_not_ended=1;
+	lock_release_exclusive(&_kmm_lock);
 	return (void*)_kmm_top;
 }
 
 
 
 void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
+	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer not in use");
 		for (;;);
 	}
 	_kmm_top+=size;
 	_resize_stack();
+	lock_release_exclusive(&_kmm_lock);
 }
 
 
 
 void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
+	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer not in use");
 		for (;;);
 	}
 	_kmm_top-=size;
+	lock_release_exclusive(&_kmm_lock);
 }
 
 
 
 void KERNEL_CORE_CODE kmm_end_buffer(void){
+	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
 		ERROR_CORE("KMM buffer not in use");
 		for (;;);
@@ -83,4 +94,5 @@ void KERNEL_CORE_CODE kmm_end_buffer(void){
 	_kmm_buffer_not_ended=0;
 	_kmm_top=(_kmm_top+7)&0xfffffffffffffff8ull;
 	_resize_stack();
+	lock_release_exclusive(&_kmm_lock);
 }
