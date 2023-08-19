@@ -18,9 +18,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup environment
         run: |
-          echo "deb http://us.archive.ubuntu.com/ubuntu lunar main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          sudo apt update
-          sudo apt install -t lunar -y nasm gcc-13 qemu qemu-utils qemu-system-x86 lcov gcovr-13 genisoimage
+          wget https://kayari.org/gcc-latest/gcc-latest.deb
+          sudo dpkg -i gcc-latest.deb
+          export PATH=/opt/gcc-latest/bin:$PATH
+          export LD_RUN_PATH=/opt/gcc-latest/lib64
+          sudo apt install -y nasm qemu qemu-utils qemu-system-x86 lcov genisoimage
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
@@ -29,7 +31,8 @@ jobs:
         run: ./build.sh --coverage --run
       - name: Generate coverage report
         run: |
-          cat build/coverage_info.gcda|gcov-tool merge-stream
+          hexdump build/coverage_info.gcda
+          cat build/coverage_info.gcda | gcov-tool merge-stream
           lcov -c -d build/objects -o build/coverage.info
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
