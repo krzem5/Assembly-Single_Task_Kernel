@@ -17,7 +17,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup environment
-        run: sudo apt install -t lunar -y nasm gcc-13 qemu qemu-utils qemu-system-x86 lcov gcovr-13 genisoimage
+        run: |
+          echo "deb http://us.archive.ubuntu.com/ubuntu lunar main restricted universe multiverse" >> /etc/apt/sources.list
+          sudo apt update
+          sudo apt install -t lunar -y nasm gcc-13 qemu qemu-utils qemu-system-x86 lcov gcovr-13 genisoimage
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
