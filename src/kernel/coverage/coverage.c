@@ -109,7 +109,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 		_output_string(info->filename);
 		_output_bytes("adcg",4);
 		_output_int(info->version);
-		LOG("%u",info->stamp);
 		_output_int(info->stamp);
 		_output_int(info->checksum);
 		for (u32 i=0;i<info->n_functions;i++){
