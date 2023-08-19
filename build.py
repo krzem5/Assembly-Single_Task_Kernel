@@ -452,4 +452,4 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.info")
+	_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.info")
