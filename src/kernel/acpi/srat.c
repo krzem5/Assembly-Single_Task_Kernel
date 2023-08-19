@@ -1,4 +1,5 @@
 #include <kernel/log/log.h>
+#include <kernel/numa/numa.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "srat"
 
@@ -41,6 +42,22 @@ typedef struct __attribute__((packed)) _SRAT_ENTRY{
 void acpi_srat_load(const void* srat_ptr){
 	LOG("Loading SRAT...");
 	const srat_t* srat=srat_ptr;
+	u32 max_proximity_domain=0;
+	for (u32 offset=0;offset<srat->length-sizeof(srat_t);){
+		const srat_entry_t* entry=(const srat_entry_t*)(srat->data+offset);
+		u32 proximity_domain=0;
+		if (!entry->type&&(entry->processor.flags&1)){
+			proximity_domain=(entry->processor.proximity_domain_high[0]<<24)|(entry->processor.proximity_domain_high[1]<<16)|(entry->processor.proximity_domain_high[2]<<8)|entry->processor.proximity_domain_low;
+		}
+		else if (entry->type==1&&(entry->memory.flags&1)){
+			proximity_domain=entry->memory.proximity_domain;
+		}
+		if (proximity_domain>max_proximity_domain){
+			max_proximity_domain=proximity_domain;
+		}
+		offset+=entry->length;
+	}
+	numa_init(max_proximity_domain+1);
 	for (u32 offset=0;offset<srat->length-sizeof(srat_t);){
 		const srat_entry_t* entry=(const srat_entry_t*)(srat->data+offset);
 		if (!entry->type&&(entry->processor.flags&1)){
