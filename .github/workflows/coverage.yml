@@ -12,13 +12,13 @@ jobs:
   coverage-test:
     name: Test & Report coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup environment
         run: |
-          wget https://kayari.org/gcc-latest/gcc-latest.deb
+          wget -q https://kayari.org/gcc-latest/gcc-latest.deb
           sudo dpkg -i gcc-latest.deb
           export PATH=/opt/gcc-latest/bin:$PATH
           export LD_RUN_PATH=/opt/gcc-latest/lib64
