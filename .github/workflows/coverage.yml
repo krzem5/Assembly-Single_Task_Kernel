@@ -16,13 +16,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Load cached GCC package
+        id: cache-gcc-package
+        uses: actions/cache@v3
+        with:
+          path: gcc-latest.deb
+          key: gcc-package
+      - name: Download GCC package
+        if: steps.cache-gcc-package.outputs.cache-hit != 'true'
+        run: wget -q https://kayari.org/gcc-latest/gcc-latest.deb
+      - name: Save cached GCC package
+        if: steps.cache-gcc-package.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: gcc-latest.deb
+          key: gcc-package
       - name: Setup environment
         run: |
-          wget -q https://kayari.org/gcc-latest/gcc-latest.deb
           sudo dpkg -i gcc-latest.deb
           export PATH=/opt/gcc-latest/bin:$PATH
           export LD_RUN_PATH=/opt/gcc-latest/lib64
           sudo apt install -y nasm qemu qemu-utils qemu-system-x86 lcov genisoimage
+          gcc --version
       - name: Build
         run: ./build.sh --coverage
       - name: Delete previous coverage
