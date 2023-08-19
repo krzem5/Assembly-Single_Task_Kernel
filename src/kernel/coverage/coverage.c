@@ -64,18 +64,11 @@ static void KERNEL_NOCOVERAGE _output_int(u32 value){
 
 
 
-static void KERNEL_NOCOVERAGE _output_counter(s64 counter){
-	_output_int(counter);
-	_output_int(counter>>32);
-}
-
-
-
 static void KERNEL_NOCOVERAGE _output_string(const char* str){
 	u32 length=0;
-	do{
+	while (str[length]){
 		length++;
-	} while (str[length-1]);
+	}
 	_output_int(length);
 	_output_bytes(str,length);
 }
@@ -106,47 +99,28 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 	INFO("Writing coverage data...");
 	for (const gcov_info_t*const* info_ptr=(void*)(&__KERNEL_GCOV_INFO_START__);(void*)info_ptr<(void*)(&__KERNEL_GCOV_INFO_END__);info_ptr++){
 		const gcov_info_t* info=*info_ptr;
-		_output_string(info->filename);
-		_output_bytes("adcg",4);
-		_output_int(info->version);
-		_output_int(info->stamp);
-		_output_int(info->checksum);
-		for (u32 i=0;i<info->n_functions;i++){
-			const gcov_fn_info_t* gfi_ptr=info->functions[i];
-			u32 length=(gfi_ptr&&gfi_ptr->key==info?3*sizeof(u32):0);
-			_output_int(0x01000000);
-			_output_int(length);
-			if (!length){
-				continue;
-			}
-			_output_int(gfi_ptr->ident);
-			_output_int(gfi_ptr->lineno_checksum);
-			_output_int(gfi_ptr->cfg_checksum);
-			for (u32 j=0;j<GCOV_COUNTER_COUNT;j++){
-				if (!info->merge[j]){
-					continue;
-				}
-				const gcov_ctr_info_t* ci_ptr=gfi_ptr->ctrs+j;
-				if (j==GCOV_COUNTER_V_TOPN||j==GCOV_COUNTER_V_INDIR){
-					ERROR("Unimplemented");
-					continue;
-				}
-				_output_int(0x01a10000+(j<<17));
-				for (u32 k=0;k<ci_ptr->num;k++){
-					if (ci_ptr->values[k]){
-						goto _counter_data_exists;
-					}
-				}
-				_output_int(-ci_ptr->num*sizeof(u64));
-				continue;
-_counter_data_exists:
-				_output_int(ci_ptr->num*sizeof(u64));
-				for (u32 k=0;k<ci_ptr->num;k++){
-					_output_counter(ci_ptr->values[k]);
-				}
-			}
+		if (!info->merge[0]){
+			continue;
 		}
-		_output_int(0);
+		_output_string(info->filename);
+		u32 function_count=0;
+		for (u32 i=0;i<info->n_functions;i++){
+			const gcov_fn_info_t* fn_info=info->functions[i];
+			function_count+=(fn_info&&fn_info->key==info);
+		}
+		_output_int(function_count);
+		for (u32 i=0;i<info->n_functions;i++){
+			const gcov_fn_info_t* fn_info=info->functions[i];
+			if (!fn_info||fn_info->key!=info){
+				continue;
+			}
+			_output_int(fn_info->ident);
+			_output_int(fn_info->lineno_checksum);
+			_output_int(fn_info->cfg_checksum);
+			const gcov_ctr_info_t* ctr_info=fn_info->ctrs;
+			_output_int(ctr_info->num);
+			_output_bytes(ctr_info->values,ctr_info->num*sizeof(u64));
+		}
 	}
 	acpi_fadt_shutdown(0);
 }

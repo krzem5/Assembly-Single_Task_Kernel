@@ -44,8 +44,6 @@ jobs:
         run: rm -f build/objects/*.gcda
       - name: Execute tests
         run: ./build.sh --coverage --run
-      - name: Generate coverage report
-        run: lcov -c -d build/objects -o build/coverage.info
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
         with:

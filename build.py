@@ -218,89 +218,73 @@ def _compile_user_files(program):
 
 
 
-def _read_file_coverage_info(rf):
-	magic,version,stamp,checksum=struct.unpack("4sIII",rf.read(16))
-	if (magic!=b"adcg"):
-		raise RuntimeError("Invalid file magic")
-	out={
-		"version": version,
-		"stamp": stamp,
-		"checksum": checksum,
-		"functions": []
-	}
-	if (struct.unpack("I",rf.read(4))[0]==0):
-		return out
-	while (True):
-		length=struct.unpack("I",rf.read(4))[0]
-		if (not length):
-			out["functions"].append(None)
-			continue
-		ident,lineno_checksum,cfg_checksum=struct.unpack("III",rf.read(12))
-		function={
-			"ident": ident,
-			"lineno_checksum": lineno_checksum,
-			"cfg_checksum": cfg_checksum,
-			"counters": {}
-		}
-		out["functions"].append(function)
-		while (True):
-			type_=struct.unpack("I",rf.read(4))[0]
-			if (type_==0):
-				return out
-			if (type_==0x01000000):
-				break
-			idx=(type_-0x01a10000)>>17
-			count=struct.unpack("i",rf.read(4))[0]>>3
-			function["counters"][idx]=array.array("Q")
-			if (count>0):
-				function["counters"][idx].frombytes(rf.read(count<<3))
-			else:
-				function["counters"][idx].fromlist([0 for _ in range(0,count)])
-
-
-
-def _add_coverage(src,dst):
-	if ("version" not in dst):
-		for k,v in src.items():
-			dst[k]=v
-		return
-	raise RuntimeError
-
-
-
-def _write_file_coverage_info(wf,coverage):
-	wf.write(b"adcg")
-	wf.write(struct.pack("III",coverage["version"],coverage["stamp"],coverage["checksum"]))
-	for function in coverage["functions"]:
-		wf.write(struct.pack("I",0x01000000))
-		if (function is None):
-			wf.write(struct.pack("I",0))
-			continue
-		wf.write(struct.pack("IIII",12,function["ident"],function["lineno_checksum"],function["cfg_checksum"]))
-		for idx,counters in function["counters"].items():
-			wf.write(struct.pack("II",0x01a10000+(idx<<17),len(counters)<<3))
-			wf.write(counters.tobytes())
-	wf.write(struct.pack("I",0))
-
-
-
-def _merge_coverage_info(vm_output_file_path,output_file_path):
-	with open(vm_output_file_path,"rb") as rf:
+def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_file_path):
+	# "TN:\n"
+	# f"SF:{path}\n" ... "end_of_record\n"
+	# f"DA:{line_number},{count}"
+	# f"FN:{line_number},{name}
+	# f"FNDA:{count},{func_name}"
+	with open(vm_output_file_path,"rb") as rf,open(output_file_path,"w") as wf:
 		while (True):
 			buffer=rf.read(4)
 			if (not buffer):
-				return
-			name=rf.read(struct.unpack("I",buffer)[0])[:-1].decode("utf-8")
-			if (os.path.exists(name) and 0):
-				with open(name,"rb") as gcda_rf:
-					current_coverage=_read_file_coverage_info(gcda_rf)
-			else:
-				current_coverage={}
-			_add_coverage(_read_file_coverage_info(rf),current_coverage)
+				break
+			name=rf.read(struct.unpack("I",buffer)[0]).decode("utf-8")
 			with open(name[:-4]+"gcno","rb") as gcno_rf:
-				current_coverage["stamp"]=struct.unpack("III",gcno_rf.read(12))[2]
-			with open(name,"wb") as gcda_wf:
-				_write_file_coverage_info(gcda_wf,current_coverage)
+				gcno_rf.seek(16)
+				gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])
+				gcno_rf.read(4)
+				while (True):
+					tag_buffer=gcno_rf.read(4)
+					if (not tag_buffer):
+						break
+					tag=struct.unpack("I",tag_buffer)[0]
+					if (tag==0x01000000):
+						length,id_,lineno_checksum,cfg_checksum=struct.unpack("IIII",gcno_rf.read(16))
+						print(length,id_,gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1])
+						gcno_rf.read(4)
+						print("File:",gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1])
+						start_line,start_column,end_line,end_column=struct.unpack("IIII",gcno_rf.read(16))
+						print(start_line,start_column,end_line,end_column)
+					elif (tag==0x01410000):
+						gcno_rf.read(8)
+					elif (tag==0x01430000):
+						length,index=struct.unpack("II",gcno_rf.read(8))
+						print("@@",length,index)
+						length-=4
+						while (length):
+							# Flag description: https://github.com/gcc-mirror/gcc/blob/fab08d12b40ad637c5a4ce8e026fb43cd3f0fad1/gcc/profile.cc#L1427C20-L1427C36
+							next_index,flags=struct.unpack("II",gcno_rf.read(8))
+							length-=8
+							print(f"<{index}> => <{next_index}>",flags)
+					elif (tag==0x01450000):
+						length,index=struct.unpack("II",gcno_rf.read(8))
+						length-=4
+						while (length):
+							line=struct.unpack("I",gcno_rf.read(4))[0]
+							length-=4
+							if (not line):
+								name_length=struct.unpack("I",gcno_rf.read(4))[0]
+								if (name_length):
+									print(f"[{index}]","Filename:",gcno_rf.read(name_length)[:-1])
+								length-=4+name_length
+							else:
+								print(f"[{index}]","Line:",line)
+					else:
+						print("@@@@",hex(tag))
+						gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])
+					# tag,length,ident,lineno_checksum,cfg_checksum=struct.unpack("IIIII",gcno_rf.read(20))
+					# print(tag,length,hex(ident),hex(lineno_checksum),hex(cfg_checksum))
+					# gcno_rf.seek(16)
+					# print(gcno_rf.)
+					# for _ in range(0,2): # inf
+					# 	name_length=struct.unpack("I",gcno_rf.read(4))[0]
+					# 	print(name_length)
+					# 	name=gcno_rf.read(name_length)[:-1].decode("utf-8")
+					# 	print(name)
+					# 	break
+			wf.write(f"TN:\nSF:{name}\n")
+			quit()
 
 
 
@@ -463,4 +447,4 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-	_merge_coverage_info("build/coverage_info.gcda","build/objects/")
+_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage2.info")
