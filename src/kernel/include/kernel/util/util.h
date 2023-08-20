@@ -1,9 +1,10 @@
 #ifndef _KERNEL_UTIL_UTIL_H_
 #define _KERNEL_UTIL_UTIL_H_ 1
+#include <kernel/types.h>
 
 
 
-static inline void __pause(void){
+static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
 	asm volatile("pause":::"memory");
 }
 
