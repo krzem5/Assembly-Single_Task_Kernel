@@ -276,6 +276,16 @@ def _start_l2tpv3_thread():
 
 
 
+def _kvm_flags():
+	if (not os.path.exists("/dev/kvm")):
+		return []
+	with open("/proc/cpuinfo","r") as rf:
+		if ("vmx" not in rf.read()):
+			return []
+	return ["-accel","kvm"]
+
+
+
 if (not os.path.exists("build")):
 	os.mkdir("build")
 if (not os.path.exists("build/iso")):
@@ -392,10 +402,9 @@ if ("--run" in sys.argv):
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
-		# "-accel","kvm",
 		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
-	])
+	]+_kvm_flags())
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
