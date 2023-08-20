@@ -102,4 +102,8 @@ void ls_main(int argc,const char*const* argv){
 
 
 
-DECLARE_COMMAND(ls,"ls [<directory>|-d|-p]");
+DECLARE_COMMAND(ls,"ls [<directory>|-d|-p]",
+	{OPTION_TYPE_SWITCH,1,'d',"--drives"},
+	{OPTION_TYPE_SWITCH,1,'p',"--partitions"},
+	{OPTION_TYPE_ARG,1,0},
+);
