@@ -397,5 +397,5 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-	# if (mode==MODE_COVERAGE):
-_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
+	if (mode==MODE_COVERAGE):
+		_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
