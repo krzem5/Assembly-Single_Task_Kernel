@@ -277,16 +277,22 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 					elif (tag==0x01450000):
 						length,index=struct.unpack("II",gcno_rf.read(8))
 						length-=4
+						file_name=None
 						while (length):
 							line=struct.unpack("I",gcno_rf.read(4))[0]
 							length-=4
 							if (not line):
 								name_length=struct.unpack("I",gcno_rf.read(4))[0]
 								if (name_length):
-									function_data["blocks"][index]["lines"].append(gcno_rf.read(name_length)[:-1].decode("utf-8"))
+									file_name=gcno_rf.read(name_length)[:-1].decode("utf-8")
+									function_data["blocks"][index]["lines"].append(file_name)
 								length-=4+name_length
 							else:
 								function_data["blocks"][index]["lines"].append(line)
+								if (file_name not in line_offsets):
+									line_offsets[file_name]={}
+								if (line not in line_offsets[file_name]):
+									line_offsets[file_name][line]=0
 			# "TN:\n"
 			# f"SF:{path}\n" ... "end_of_record\n"
 			# f"DA:{line_number},{count}"
@@ -309,49 +315,17 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 						for line in block["lines"]:
 							if (isinstance(line,str)):
 								file_name=line
-							elif (file_name!=function["file"]):
-								if (file_name not in line_offsets):
-									line_offsets[file_name]={}
-								if (line not in line_offsets[file_name]):
-									line_offsets[file_name][line]=counter
-								else:
-									line_offsets[file_name][line]+=counter
+							else:
+								line_offsets[file_name][line]+=counter
 						block=block["next_block"]
 	with open(output_file_path,"w") as wf:
 		for file_name,functions in sorted(functions_per_file.items(),key=lambda e:e[0]):
 			wf.write(f"TN:\nSF:{file_name}\n")
 			for function in functions:
 				wf.write(f"FN:{function['line_number']},{function['name']}\nFNDA:{function['counter']},{function['name']}\n")
-				for block in function["blocks"].values():
-					is_current_file=False
-					for line in block["lines"]:
-						if (isinstance(line,str)):
-							is_current_file=(line==file_name)
-						elif (is_current_file):
-							wf.write(f"DA:{line},{block['counter']}\n")
 			for line,counter in line_offsets.get(file_name,{}).items():
 				wf.write(f"DA:{line},{counter}\n")
 			wf.write(f"end_of_record\n")
-		# for function in functions.values():
-		# 	current_file=function["file"]
-		# 	wf.write(f"TN:\nSF:{current_file}\nFN:{function['line_number']},{function['name']}\nFNDA:{function['counter']},{function['name']}\n")
-		# 	wf.write("end_of_record\n")
-			# for i in range(0,struct.unpack("I",rf.read(4))[0]):
-			# 	id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
-			# 	function=functions[(id_,lineno_checksum,cfg_checksum)]
-			# 	wf.write(f"TN:\nSF:{function['file']}\nFN:{function['line_number']},{function['name']}\n")
-			# 	for j in range(0,counter_count):
-			# 		counter=struct.unpack("Q",rf.read(8))[0]
-			# 		if (function["name"]=="_emptyfs_flush_cache"):
-			# 			print(j,counter,function["blocks"])
-			# 		if (j in function["blocks"]):
-			# 			function["blocks"]["counter"]=counter
-			# 		if (j==0):
-			# 			function["blocks"]["counter"]=counter
-			# 			wf.write(f"FNDA:{counter},{function['name']}\n")
-			# 		for line in function["blocks"][j]:
-			# 			wf.write(f"DA:{line},{counter}\n")
-			# 	wf.write("end_of_record\n")
 
 
 
