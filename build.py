@@ -422,7 +422,6 @@ if ("--run" in sys.argv):
 		"-object","memory-backend-ram,size=512M,id=mem1",
 		# CPU
 		"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
-		# "-cpu","host,tsc,invtsc,avx,avx2,bmi1,bmi2",
 		"-smp","4,sockets=2,maxcpus=4",
 		# NUMA
 		"-numa","node,nodeid=0,memdev=mem0",
@@ -451,4 +450,5 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-	_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.lcov")
+	if (mode==MODE_COVERAGE):
+		_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.lcov")
