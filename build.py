@@ -293,11 +293,6 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 									line_offsets[file_name]={}
 								if (line not in line_offsets[file_name]):
 									line_offsets[file_name][line]=0
-			# "TN:\n"
-			# f"SF:{path}\n" ... "end_of_record\n"
-			# f"DA:{line_number},{count}"
-			# f"FN:{line_number},{name}
-			# f"FNDA:{count},{func_name}"
 			for i in range(0,struct.unpack("I",rf.read(4))[0]):
 				id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 				function=functions[(id_,lineno_checksum,cfg_checksum)]
@@ -316,8 +311,11 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 							if (isinstance(line,str)):
 								file_name=line
 							else:
+								if (function["name"]=="acpi_fadt_load"):
+									print(file_name,line,counter)
 								line_offsets[file_name][line]+=counter
 						block=block["next_block"]
+						break
 	with open(output_file_path,"w") as wf:
 		for file_name,functions in sorted(functions_per_file.items(),key=lambda e:e[0]):
 			wf.write(f"TN:\nSF:{file_name}\n")
@@ -487,5 +485,5 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.lcov")
+	# if (mode==MODE_COVERAGE):
+_generate_coverage_report("build/coverage_info.gcda","build/objects/","build/coverage.lcov")
