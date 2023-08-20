@@ -160,4 +160,8 @@ u32 _syscall_numa_node_count(void);
 
 
 
+u32 _syscall_numa_node_locality(u32 from,u32 to);
+
+
+
 #endif
