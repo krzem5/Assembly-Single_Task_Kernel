@@ -75,10 +75,13 @@ void* _syscall_handlers[]={
 	[35]=syscall_drive_format,
 	[36]=syscall_drive_stats,
 	[37]=syscall_random_generate,
-	[38]=syscall_numa_node_count,
 #if KERNEL_COVERAGE_ENABLED
-	[39]=syscall_dump_coverage_data,
+	[38]=syscall_dump_coverage_data,
+#else
+	[38]=syscall_empty,
 #endif
+	[39]=syscall_numa_node_count,
+	[40]=syscall_numa_node_locality,
 	NULL
 };
 

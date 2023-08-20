@@ -1,3 +1,4 @@
+extern _syscall_report_coverage
 global main
 section .text
 
@@ -5,6 +6,4 @@ section .text
 
 [bits 64]
 main:
-	mov rax, 39
-	syscall
-	ret
+	jmp _syscall_report_coverage

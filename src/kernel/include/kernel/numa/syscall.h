@@ -9,4 +9,8 @@ void syscall_numa_node_count(syscall_registers_t* regs);
 
 
 
+void syscall_numa_node_locality(syscall_registers_t* regs);
+
+
+
 #endif
