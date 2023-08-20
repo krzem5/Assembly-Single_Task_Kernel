@@ -102,6 +102,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 		if (!info->merge[0]){
 			continue;
 		}
+		_output_int(info->version);
+		_output_int(info->checksum);
 		_output_string(info->filename);
 		u32 function_count=0;
 		for (u32 i=0;i<info->n_functions;i++){

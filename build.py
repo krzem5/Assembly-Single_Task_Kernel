@@ -219,111 +219,23 @@ def _compile_user_files(program):
 
 
 def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_file_path):
-	functions={}
-	functions_per_file={}
-	line_offsets={}
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
-			buffer=rf.read(4)
+			buffer=rf.read(12)
 			if (not buffer):
 				break
-			name=rf.read(struct.unpack("I",buffer)[0]).decode("utf-8")
-			with open(name[:-4]+"gcno","rb") as gcno_rf:
-				gcno_rf.seek(16)
-				gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])
-				gcno_rf.read(4)
-				function_data=None
-				while (True):
-					tag_buffer=gcno_rf.read(4)
-					if (not tag_buffer):
-						break
-					tag=struct.unpack("I",tag_buffer)[0]
-					if (tag==0x01000000):
-						_,id_,lineno_checksum,cfg_checksum=struct.unpack("IIII",gcno_rf.read(16))
-						function_data={
-							"name": gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1].decode("utf-8"),
-							"file": None,
-							"line_number": None,
-							"blocks": {},
-							"counter": 0
-						}
-						gcno_rf.read(4)
-						file=gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1].decode("utf-8")
-						function_data["file"]=file
-						if (file not in functions_per_file):
-							functions_per_file[file]=[]
-						functions_per_file[file].append(function_data)
-						start_line,start_column,end_line,end_column=struct.unpack("IIII",gcno_rf.read(16))
-						function_data["line_number"]=start_line
-						if ((id_,lineno_checksum,cfg_checksum) in functions):
-							raise KeyError
-						functions[(id_,lineno_checksum,cfg_checksum)]=function_data
-					elif (tag==0x01410000):
-						gcno_rf.read(8)
-					elif (tag==0x01430000):
-						length,index=struct.unpack("II",gcno_rf.read(8))
-						function_data["blocks"][index]={
-							"lines": [],
-							"next_block": None,
-							"counter": 0
-						}
-						length-=4
-						while (length):
-							# Flag description: https://github.com/gcc-mirror/gcc/blob/fab08d12b40ad637c5a4ce8e026fb43cd3f0fad1/gcc/profile.cc#L1427C20-L1427C36
-							next_index,flags=struct.unpack("II",gcno_rf.read(8))
-							length-=8
-							if (flags==4 and next_index!=index):
-								function_data["blocks"][index]["next_block"]=next_index
-					elif (tag==0x01450000):
-						length,index=struct.unpack("II",gcno_rf.read(8))
-						length-=4
-						file_name=None
-						while (length):
-							line=struct.unpack("I",gcno_rf.read(4))[0]
-							length-=4
-							if (not line):
-								name_length=struct.unpack("I",gcno_rf.read(4))[0]
-								if (name_length):
-									file_name=gcno_rf.read(name_length)[:-1].decode("utf-8")
-									function_data["blocks"][index]["lines"].append(file_name)
-								length-=4+name_length
-							else:
-								function_data["blocks"][index]["lines"].append(line)
-								if (file_name not in line_offsets):
-									line_offsets[file_name]={}
-								if (line not in line_offsets[file_name]):
-									line_offsets[file_name][line]=0
-			for i in range(0,struct.unpack("I",rf.read(4))[0]):
-				id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
-				function=functions[(id_,lineno_checksum,cfg_checksum)]
-				for j in range(0,counter_count):
-					counter=struct.unpack("Q",rf.read(8))[0]
-					if (not counter):
-						continue
-					if (j==0):
-						function["counter"]=counter
-					block=j
-					while (block is not None and block in function["blocks"]):
-						block=function["blocks"][block]
-						block["counter"]+=counter
-						file_name=None
-						for line in block["lines"]:
-							if (isinstance(line,str)):
-								file_name=line
-							else:
-								if (function["name"]=="acpi_fadt_load"):
-									print(file_name,line,counter)
-								line_offsets[file_name][line]+=counter
-						block=block["next_block"]
-						break
-	with open(output_file_path,"w") as wf:
-		for file_name,functions in sorted(functions_per_file.items(),key=lambda e:e[0]):
-			wf.write(f"TN:\nSF:{file_name}\n")
-			for function in functions:
-				wf.write(f"FN:{function['line_number']},{function['name']}\nFNDA:{function['counter']},{function['name']}\n")
-			for line,counter in line_offsets.get(file_name,{}).items():
-				wf.write(f"DA:{line},{counter}\n")
-			wf.write(f"end_of_record\n")
+			version,checksum,file_name_length=struct.unpack("III",buffer)
+			file_name=rf.read(file_name_length).decode("utf-8")
+			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
+				stamp=struct.unpack("III",gcno_rf.read(12))[2]
+			with open(file_name,"wb") as wf:
+				wf.write(b"adcg")
+				wf.write(struct.pack("III",version,stamp,checksum))
+				for i in range(0,struct.unpack("I",rf.read(4))[0]):
+					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
+					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
+					wf.write(rf.read(counter_count<<3))
+	subprocess.run(["lcov","-c","-d","build/objects","--gcov-tool","gcov-12","-o",output_file_path])
 
 
 
@@ -485,5 +397,5 @@ if ("--run" in sys.argv):
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	])
-	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
+	# if (mode==MODE_COVERAGE):
+_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
