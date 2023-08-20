@@ -10,6 +10,7 @@
 #include <kernel/memory/syscall.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/syscall.h>
+#include <kernel/numa/syscall.h>
 #include <kernel/partition/syscall.h>
 #include <kernel/random/syscall.h>
 #include <kernel/serial/syscall.h>
@@ -74,8 +75,9 @@ void* _syscall_handlers[]={
 	[35]=syscall_drive_format,
 	[36]=syscall_drive_stats,
 	[37]=syscall_random_generate,
+	[38]=syscall_numa_node_count,
 #if KERNEL_COVERAGE_ENABLED
-	[38]=syscall_dump_coverage_data,
+	[39]=syscall_dump_coverage_data,
 #endif
 	NULL
 };

@@ -51,3 +51,4 @@ DECL_SYSCALL clock_get_converion, 34, 0
 DECL_SYSCALL drive_format, 35, 3
 DECL_SYSCALL drive_stats, 36, 3
 DECL_SYSCALL random_generate, 37, 2
+DECL_SYSCALL numa_node_count, 38, 0

@@ -156,4 +156,8 @@ _Bool _syscall_random_generate(void* buffer,u64 size);
 
 
 
+u32 _syscall_numa_node_count(void);
+
+
+
 #endif
