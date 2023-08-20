@@ -9,7 +9,6 @@
 
 
 typedef struct _NUMA_NODE{
-	u32 index;
 } numa_node_t;
 
 
