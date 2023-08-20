@@ -11,13 +11,6 @@ extern const command_t* __stop_commands;
 
 
 
-static void _parse_options(int argc,const char*const* argv,const option_t* options){
-	for (const option_t* option=options;option->type!=OPTION_TYPE_END;option++){
-	}
-}
-
-
-
 void command_execute(const char* command){
 	char buffer[INPUT_BUFFER_SIZE+1];
 	char* buffer_ptr=buffer;
@@ -40,7 +33,6 @@ void command_execute(const char* command){
 	*buffer_ptr=0;
 	for (const command_t*const* ptr=&__start_commands;ptr<&__stop_commands;ptr++){
 		if (*ptr&&string_equal(buffer,(*ptr)->name)){
-			_parse_options(argc,argv,(*ptr)->options);
 			(*ptr)->func(argc,argv);
 			return;
 		}
