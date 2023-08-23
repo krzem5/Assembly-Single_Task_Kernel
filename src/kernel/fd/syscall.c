@@ -16,7 +16,7 @@ void syscall_fd_open(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_open(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx,regs->r8);
+	regs->rax=fd_open(regs->rdi,(void*)address,regs->rdx,regs->r8);
 }
 
 
@@ -51,7 +51,7 @@ void syscall_fd_read(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_read(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
+	regs->rax=fd_read(regs->rdi,(void*)address,regs->rdx);
 }
 
 
@@ -66,7 +66,7 @@ void syscall_fd_write(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_write(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
+	regs->rax=fd_write(regs->rdi,(void*)address,regs->rdx);
 }
 
 
@@ -101,7 +101,7 @@ void syscall_fd_absolute_path(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_absolute_path(regs->rdi,VMM_TRANSLATE_ADDRESS(address),regs->rdx);
+	regs->rax=fd_absolute_path(regs->rdi,(void*)address,regs->rdx);
 }
 
 
@@ -120,7 +120,7 @@ void syscall_fd_stat(syscall_registers_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_stat(regs->rdi,VMM_TRANSLATE_ADDRESS(address));
+	regs->rax=fd_stat(regs->rdi,(void*)address);
 }
 
 

@@ -8,18 +8,15 @@
 
 
 
-#define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
+static u64 KERNEL_CORE_DATA _vmm_address_offset=KERNEL_OFFSET;
 
-
-
-u64 KERNEL_CORE_DATA vmm_address_offset=KERNEL_OFFSET;
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
 vmm_pagemap_t KERNEL_CORE_BSS vmm_user_pagemap;
 
 
 
 static inline vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
-	return (vmm_pagemap_table_t*)VMM_TRANSLATE_ADDRESS((*entry)&VMM_PAGE_ADDRESS_MASK);
+	return (vmm_pagemap_table_t*)(((*entry)&VMM_PAGE_ADDRESS_MASK)+_vmm_address_offset);
 }
 
 
@@ -132,7 +129,7 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 		vmm_map_page(&vmm_kernel_pagemap,i,i,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
-	vmm_address_offset=0;
+	_vmm_address_offset=0;
 }
 
 

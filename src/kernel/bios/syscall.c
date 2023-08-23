@@ -15,6 +15,6 @@ void syscall_system_config(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((bios_data_t*)VMM_TRANSLATE_ADDRESS(address))=bios_data;
+	*((bios_data_t*)address)=bios_data;
 	regs->rax=1;
 }

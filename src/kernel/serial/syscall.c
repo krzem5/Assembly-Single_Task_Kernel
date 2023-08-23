@@ -9,7 +9,7 @@ void syscall_serial_send(syscall_registers_t* regs){
 	if (!address){
 		return;
 	}
-	serial_send(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	serial_send((void*)address,regs->rsi);
 }
 
 
@@ -20,5 +20,5 @@ void syscall_serial_recv(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=serial_recv(VMM_TRANSLATE_ADDRESS(address),regs->rsi,regs->rdx);
+	regs->rax=serial_recv((void*)address,regs->rsi,regs->rdx);
 }

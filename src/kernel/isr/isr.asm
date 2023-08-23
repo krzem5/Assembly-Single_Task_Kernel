@@ -124,8 +124,6 @@ section .common
 
 
 _isr_common_handler:
-	pop rax
-	jmp $
 	mov rsp, cr3
 	cmp rsp, qword [vmm_common_kernel_pagemap]
 	je ._inside_kernel

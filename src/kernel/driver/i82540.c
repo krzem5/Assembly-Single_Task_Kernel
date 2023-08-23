@@ -14,7 +14,7 @@
 
 
 
-#define GET_DESCRIPTOR(device,type,index) VMM_TRANSLATE_ADDRESS((device)->type##_desc_base+((index)<<4))
+#define GET_DESCRIPTOR(device,type,index) ((void*)((device)->type##_desc_base+((index)<<4)))
 
 
 
@@ -126,7 +126,7 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	if (desc->length<buffer_length){
 		buffer_length=desc->length;
 	}
-	memcpy(buffer,VMM_TRANSLATE_ADDRESS(desc->address),buffer_length);
+	memcpy(buffer,(void*)(desc->address),buffer_length);
 	_consume_packet(device,tail,desc);
 	return buffer_length;
 }

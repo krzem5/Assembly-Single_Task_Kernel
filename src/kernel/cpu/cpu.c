@@ -7,6 +7,7 @@
 #include <kernel/gdt/gdt.h>
 #include <kernel/idt/idt.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
@@ -59,16 +60,15 @@ void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
-	_cpu_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(count*sizeof(cpu_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU));
-	u64 cpu_common_data_raw=pmm_alloc(pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
-	_cpu_common_data=VMM_TRANSLATE_ADDRESS(cpu_common_data_raw);
+	_cpu_data=kmm_allocate(count*sizeof(cpu_data_t));
+	_cpu_common_data=umm_allocate(count*sizeof(cpu_common_data_t));
 	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
 	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
 	for (u16 i=0;i<count;i++){
 		kernel_stacks+=CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 		(_cpu_data+i)->index=i;
 		(_cpu_data+i)->flags=0;
-		(_cpu_data+i)->kernel_rsp=(u64)VMM_TRANSLATE_ADDRESS(kernel_stacks);
+		(_cpu_data+i)->kernel_rsp=kernel_stacks;
 		(_cpu_data+i)->isr_rsp=(u64)((_cpu_common_data+i)->isr_stack+ISR_STACK_SIZE);
 		(_cpu_data+i)->user_func=0;
 		(_cpu_data+i)->user_func_arg[0]=0;
@@ -81,7 +81,6 @@ void cpu_init(u16 count){
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
-	umm_set_cpu_common_data(cpu_common_data_raw,pmm_align_up_address(count*sizeof(cpu_common_data_t))>>PAGE_SIZE_SHIFT);
 	umm_set_user_stacks(user_stacks,cpu_count*CPU_USER_STACK_PAGE_COUNT);
 }
 

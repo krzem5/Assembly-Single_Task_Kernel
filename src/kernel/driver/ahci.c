@@ -100,26 +100,24 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;
 	}
-	u64 aligned_buffer_raw=0;
 	u8* aligned_buffer=NULL;
 	_Bool alignment_required=!!(((u64)buffer)&(PAGE_SIZE-1));
 	if (alignment_required){
-		aligned_buffer_raw=pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
-		aligned_buffer=VMM_TRANSLATE_ADDRESS(aligned_buffer_raw);
+		aligned_buffer=(void*)pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 		if (offset&DRIVE_OFFSET_FLAG_WRITE){
 			memcpy(aligned_buffer,buffer,dbc+1);
 		}
 	}
 	else{
-		aligned_buffer_raw=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)buffer);
+		aligned_buffer=(void*)vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)buffer);
 	}
 	u8 cmd_slot=_device_get_command_slot(device);
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
-	command_table->prdt_entry->dba=aligned_buffer_raw;
-	command_table->prdt_entry->dbau=aligned_buffer_raw>>32;
+	command_table->prdt_entry->dba=((u64)aligned_buffer);
+	command_table->prdt_entry->dbau=((u64)aligned_buffer)>>32;
 	command_table->prdt_entry->dbc=dbc;
 	ahci_fis_reg_h2d_t* fis=(ahci_fis_reg_h2d_t*)(command_table->cfis);
 	fis->fis_type=FIS_TYPE_REG_H2D;
@@ -144,7 +142,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 		if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
 			memcpy(buffer,aligned_buffer,dbc+1);
 		}
-		pmm_dealloc(aligned_buffer_raw,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
+		pmm_dealloc((u64)aligned_buffer,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 	}
 	return (dbc+1)>>9;
 }
@@ -152,15 +150,13 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 
 
 static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
-	u64 command_list=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
-	device->registers->clb=command_list;
-	device->registers->clbu=command_list>>32;
-	device->command_list=VMM_TRANSLATE_ADDRESS(command_list);
+	device->command_list=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+	device->registers->clb=((u64)(device->command_list));
+	device->registers->clbu=((u64)(device->command_list))>>32;
 	for (u8 i=0;i<32;i++){
-		u64 command_table=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
-		device->command_tables[i]=VMM_TRANSLATE_ADDRESS(command_table);
-		(device->command_list->commands+i)->ctba=command_table;
-		(device->command_list->commands+i)->ctbau=command_table>>32;
+		device->command_tables[i]=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+		(device->command_list->commands+i)->ctba=((u64)(device->command_tables[i]));
+		(device->command_list->commands+i)->ctbau=((u64)(device->command_tables[i]))>>32;
 	}
 	u64 fis_base=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 	device->registers->fb=fis_base;
@@ -170,10 +166,10 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
-	u64 buffer_raw=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+	const u8* buffer=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
-	command_table->prdt_entry->dba=buffer_raw;
-	command_table->prdt_entry->dbau=buffer_raw>>32;
+	command_table->prdt_entry->dba=((u64)buffer);
+	command_table->prdt_entry->dbau=((u64)buffer)>>32;
 	command_table->prdt_entry->dbc=512;
 	ahci_fis_reg_h2d_t* fis=(ahci_fis_reg_h2d_t*)(command_table->cfis);
 	fis->fis_type=FIS_TYPE_REG_H2D;
@@ -194,7 +190,6 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
-	const u8* buffer=VMM_TRANSLATE_ADDRESS(buffer_raw);
 	drive_t drive={
 		.type=DRIVE_TYPE_AHCI,
 		.read_write=_ahci_read_write,
@@ -206,7 +201,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+20),10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);
-	pmm_dealloc(buffer_raw,1,PMM_COUNTER_DRIVER_AHCI);
+	pmm_dealloc((u64)buffer,1,PMM_COUNTER_DRIVER_AHCI);
 }
 
 

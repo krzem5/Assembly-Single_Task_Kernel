@@ -42,7 +42,7 @@ void syscall_partition_get(syscall_registers_t* regs){
 		return;
 	}
 	const partition_t* partition=partition_data+regs->rdi;
-	user_partition_t* user_partition=VMM_TRANSLATE_ADDRESS(address);
+	user_partition_t* user_partition=(void*)address;
 	user_partition->flags=USER_PARTITION_FLAG_PRESENT|((partition->flags&PARTITION_FLAG_BOOT)?USER_PARTITION_FLAG_BOOT:0)|((partition->flags&PARTITION_FLAG_HALF_INSTALLED)?USER_PARTITION_FLAG_HALF_INSTALLED:0)|((partition->flags&PARTITION_FLAG_PREVIOUS_BOOT)?USER_PARTITION_FLAG_PREVIOUS_BOOT:0);
 	user_partition->type=partition->partition_config.type;
 	user_partition->index=partition->partition_config.index;

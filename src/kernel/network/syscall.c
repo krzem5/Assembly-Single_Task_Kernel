@@ -24,7 +24,7 @@ void syscall_network_layer1_config(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	user_network_config_t* config=VMM_TRANSLATE_ADDRESS(address);
+	user_network_config_t* config=(void*)address;
 	u8 i=0;
 	if (network_layer1_name){
 		for (;network_layer1_name[i];i++){
@@ -49,13 +49,13 @@ void syscall_network_layer2_send(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	network_layer2_packet_t packet=*((const network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address));
+	network_layer2_packet_t packet=*((const network_layer2_packet_t*)address);
 	u64 buffer_address=syscall_sanatize_user_memory((u64)(packet.buffer),packet.buffer_length);
 	if (!buffer_address){
 		regs->rax=0;
 		return;
 	}
-	packet.buffer=VMM_TRANSLATE_ADDRESS(buffer_address);
+	packet.buffer=(void*)buffer_address;
 	regs->rax=network_layer2_send(&packet);
 }
 
@@ -71,17 +71,17 @@ void syscall_network_layer2_poll(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	network_layer2_packet_t packet=*((network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address));
+	network_layer2_packet_t packet=*((network_layer2_packet_t*)address);
 	void* user_buffer=packet.buffer;
 	u64 buffer_address=syscall_sanatize_user_memory((u64)user_buffer,packet.buffer_length);
 	if (!buffer_address){
 		regs->rax=0;
 		return;
 	}
-	packet.buffer=VMM_TRANSLATE_ADDRESS(buffer_address);
+	packet.buffer=(void*)buffer_address;
 	regs->rax=network_layer2_poll(&packet,!!regs->rdx);
 	packet.buffer=user_buffer;
-	*((network_layer2_packet_t*)VMM_TRANSLATE_ADDRESS(address))=packet;
+	*((network_layer2_packet_t*)address)=packet;
 }
 
 
@@ -113,7 +113,7 @@ void syscall_network_layer3_device_get(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((network_layer3_device_t*)VMM_TRANSLATE_ADDRESS(address))=*device;
+	*((network_layer3_device_t*)address)=*device;
 	regs->rax=1;
 }
 
@@ -129,5 +129,5 @@ void syscall_network_layer3_device_delete(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=network_layer3_delete_device(VMM_TRANSLATE_ADDRESS(address));
+	regs->rax=network_layer3_delete_device((void*)address);
 }

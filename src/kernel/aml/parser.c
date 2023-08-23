@@ -386,7 +386,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
-	INFO("Found AML code at %p (%v)",VMM_TRANSLATE_ADDRESS_REVERSE(data),length);
+	INFO("Found AML code at %p (%v)",data,length);
 	aml_object_t* root=kmm_allocate(sizeof(aml_object_t));
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;

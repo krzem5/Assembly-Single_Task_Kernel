@@ -29,8 +29,4 @@ void umm_set_user_stacks(u64 base,u64 length);
 
 
 
-void umm_set_cpu_common_data(u64 base,u64 length);
-
-
-
 #endif

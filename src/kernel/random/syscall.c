@@ -11,6 +11,6 @@ void syscall_random_generate(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	random_generate(VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	random_generate((void*)address,regs->rsi);
 	regs->rax=1;
 }

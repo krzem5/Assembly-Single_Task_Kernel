@@ -63,7 +63,7 @@ static u64 _read_field_unit(aml_node_t* node){
 					ERROR("Unimplemented: _read_field_unit(SystemMemory,WordAcc)");for (;;);
 					break;
 				case 3:
-					out=*((const u32*)VMM_TRANSLATE_ADDRESS(node->data.field_unit.address));
+					out=*((const u32*)(node->data.field_unit.address));
 					break;
 				case 4:
 					ERROR("Unimplemented: _read_field_unit(SystemMemory,QWordAcc)");for (;;);
@@ -132,7 +132,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 					ERROR("Unimplemented: _write_field_unit(SystemMemory,WordAcc)");for (;;);
 					break;
 				case 3:
-					*((u32*)VMM_TRANSLATE_ADDRESS(node->data.field_unit.address))=value->data.integer;
+					*((u32*)(node->data.field_unit.address))=value->data.integer;
 					break;
 				case 4:
 					ERROR("Unimplemented: _write_field_unit(SystemMemory,QWordAcc)");for (;;);

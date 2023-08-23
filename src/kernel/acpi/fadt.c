@@ -68,7 +68,8 @@ void acpi_fadt_load(const void* fadt_ptr){
 	_fadt_pm1a_control_block=fadt->pm1a_control_block;
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
-	const dsdt_t* dsdt=(void*)VMM_TRANSLATE_ADDRESS(fadt->dsdt);
+	const dsdt_t* dsdt=(void*)(u64)(fadt->dsdt);
+	vmm_identity_map(dsdt,dsdt->length);
 	aml_runtime_init(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)),fadt->sci_int);
 }
 

@@ -93,7 +93,7 @@ void network_layer3_init(void){
 	else{
 		_layer3_cache_enabled=1;
 	}
-	_layer3_devices=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK));
+	_layer3_devices=(void*)pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK);
 	_load_device_list_cache();
 	network_layer3_refresh_device_list();
 }

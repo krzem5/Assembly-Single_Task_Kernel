@@ -16,10 +16,10 @@ void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator
 	out->first=0;
 	out->last=(1<<VFS_ALLOCATOR_SIZE_SHIFT)-2;
 	out->next_id=1;
-	out->data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR));
-	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t)),VMM_TRANSLATE_ADDRESS_REVERSE(out->data));
-	void* node_data=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address((1<<VFS_ALLOCATOR_SIZE_SHIFT)*node_size)>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR));
-	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*node_size),VMM_TRANSLATE_ADDRESS_REVERSE(node_data));
+	out->data=(void*)pmm_alloc(pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR);
+	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t)),out->data);
+	void* node_data=(void*)pmm_alloc(pmm_align_up_address((1<<VFS_ALLOCATOR_SIZE_SHIFT)*node_size)>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR);
+	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*node_size),node_data);
 	for (vfs_allocator_index_t i=0;i<(1<<VFS_ALLOCATOR_SIZE_SHIFT)-1;i++){
 		(out->data+i)->id=i;
 		(out->data+i)->node=node_data;

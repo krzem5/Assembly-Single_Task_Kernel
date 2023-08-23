@@ -17,7 +17,7 @@ void syscall_elf_load(syscall_registers_t* regs){
 	if (regs->rsi>4095){
 		return;
 	}
-	memcpy(buffer,VMM_TRANSLATE_ADDRESS(address),regs->rsi);
+	memcpy(buffer,(void*)address,regs->rsi);
 	buffer[regs->rsi]=0;
 	u64 start_address=elf_load(buffer);
 	if (!start_address){

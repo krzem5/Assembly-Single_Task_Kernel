@@ -29,6 +29,6 @@ void syscall_memory_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((pmm_counters_t*)VMM_TRANSLATE_ADDRESS(address))=*pmm_get_counters();
+	*((pmm_counters_t*)address)=*pmm_get_counters();
 	regs->rax=1;
 }

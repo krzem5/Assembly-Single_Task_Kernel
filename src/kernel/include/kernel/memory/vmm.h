@@ -5,9 +5,6 @@
 
 
 
-#define VMM_TRANSLATE_ADDRESS(address) ((void*)(((u64)(address))+vmm_address_offset))
-#define VMM_TRANSLATE_ADDRESS_REVERSE(address) (((u64)(address))-vmm_address_offset)
-
 #define VMM_PAGE_FLAG_PRESENT 0x01
 #define VMM_PAGE_FLAG_READWRITE 0x02
 #define VMM_PAGE_FLAG_USER 0x04
@@ -37,7 +34,6 @@ typedef struct _VMM_PAGEMAP{
 
 
 
-extern u64 vmm_address_offset;
 extern vmm_pagemap_t vmm_kernel_pagemap;
 extern vmm_pagemap_t vmm_user_pagemap;
 

@@ -44,7 +44,7 @@ void syscall_drive_list_get(syscall_registers_t* regs){
 		return;
 	}
 	const drive_t* drive=drive_data+regs->rdi;
-	user_drive_t* user_drive=VMM_TRANSLATE_ADDRESS(address);
+	user_drive_t* user_drive=(void*)address;
 	user_drive->flags=USER_DRIVE_FLAG_PRESENT|((drive->flags&DRIVE_FLAG_BOOT)?USER_DRIVE_FLAG_BOOT:0);
 	user_drive->type=drive->type;
 	user_drive->index=regs->rdi;
@@ -70,7 +70,6 @@ void syscall_drive_format(syscall_registers_t* regs){
 			regs->rax=0;
 			return;
 		}
-		address=(u64)VMM_TRANSLATE_ADDRESS(address);
 	}
 	regs->rax=kfs_format_drive(drive_data+regs->rdi,(void*)address,regs->rdx);
 }
@@ -88,6 +87,6 @@ void syscall_drive_stats(syscall_registers_t* regs){
 		return;
 	}
 	partition_flush_cache();
-	*((drive_stats_t*)VMM_TRANSLATE_ADDRESS(address))=*((drive_data+regs->rdi)->stats);
+	*((drive_stats_t*)address)=*((drive_data+regs->rdi)->stats);
 	regs->rax=1;
 }

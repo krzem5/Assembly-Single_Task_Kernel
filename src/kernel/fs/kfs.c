@@ -1032,7 +1032,7 @@ static const partition_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
 void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const partition_config_t* partition_config){
 	LOG_CORE("Loading KFS file system from drive '%s'...",drive->model_number);
 	INFO_CORE("Allocating block cache...");
-	kfs_block_cache_t* block_cache=VMM_TRANSLATE_ADDRESS(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS));
+	kfs_block_cache_t* block_cache=(void*)pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS);
 	block_cache->flags=0;
 	block_cache->drive=drive;
 	INFO_CORE("Reading ROOT block...");
@@ -1077,14 +1077,14 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		}
 	}
 	kfs_large_block_index_t first_free_block_index=DRIVE_FIRST_FREE_BLOCK_INDEX;
-	kfs_root_block_t* root=VMM_TRANSLATE_ADDRESS(pmm_alloc_zero(1,PMM_COUNTER_KFS));
+	kfs_root_block_t* root=(void*)pmm_alloc_zero(1,PMM_COUNTER_KFS);
 	root->signature=KFS_SIGNATURE;
 	root->block_count=block_count;
 	root->batc_block_index=first_free_block_index;
 	root->root_block_count=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	root->batc_block_count=((block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT)<<(15-DRIVE_BLOCK_SIZE_SHIFT);
 	INFO("Writing BATC blocks...");
-	kfs_batc_block_t* batc=VMM_TRANSLATE_ADDRESS(pmm_alloc_zero(8,PMM_COUNTER_KFS));
+	kfs_batc_block_t* batc=(void*)pmm_alloc_zero(8,PMM_COUNTER_KFS);
 	batc->bitmap3=0x7fffffffffffffffull;
 	for (u8 i=0;i<62;i++){
 		batc->bitmap2[i]=0xffffffffffffffffull;
@@ -1142,10 +1142,10 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		batc->bitmap3&=~(1ull<<i);
 	}
 	_drive_write(drive,root->batc_block_index,batc,8);
-	pmm_dealloc(VMM_TRANSLATE_ADDRESS_REVERSE(batc),8,PMM_COUNTER_KFS);
+	pmm_dealloc((u64)batc,8,PMM_COUNTER_KFS);
 	INFO("Writing ROOT block...");
 	u64 write_count=drive->read_write(drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,root,sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT);
-	pmm_dealloc(VMM_TRANSLATE_ADDRESS_REVERSE(root),1,PMM_COUNTER_KFS);
+	pmm_dealloc((u64)root,1,PMM_COUNTER_KFS);
 	if (write_count!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR("Error writing data to drive");
 		return 0;
