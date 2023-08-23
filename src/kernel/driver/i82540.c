@@ -181,7 +181,7 @@ void driver_i82540_init_device(pci_device_t* device){
 		return;
 	}
 	vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
-	i82540_device_t* i82540_device=kmm_allocate(sizeof(i82540_device_t));
+	i82540_device_t* i82540_device=kmm_alloc(sizeof(i82540_device_t));
 	i82540_device->mmio=pci_bar.address;
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;

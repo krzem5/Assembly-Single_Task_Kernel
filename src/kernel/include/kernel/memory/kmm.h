@@ -8,11 +8,11 @@ void kmm_init(void);
 
 
 
-void* kmm_allocate(u32 size);
+void* kmm_alloc(u32 size);
 
 
 
-void* kmm_allocate_buffer(void);
+void* kmm_alloc_buffer(void);
 
 
 

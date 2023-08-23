@@ -244,7 +244,7 @@ void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 	}
 	LOG_CORE("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	for (u8 i=0;i<4;i++){
-		ata_device_t* ata_device=kmm_allocate_buffer();
+		ata_device_t* ata_device=kmm_alloc_buffer();
 		kmm_grow_buffer(sizeof(ata_device_t));
 		ata_device->dma_address=pci_bar.address;
 		ata_device->is_slave=i&1;

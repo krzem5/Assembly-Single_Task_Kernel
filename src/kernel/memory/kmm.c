@@ -32,7 +32,7 @@ void KERNEL_CORE_CODE kmm_init(void){
 
 
 
-void* KERNEL_CORE_CODE kmm_allocate(u32 size){
+void* KERNEL_CORE_CODE kmm_alloc(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer in use");
@@ -47,7 +47,7 @@ void* KERNEL_CORE_CODE kmm_allocate(u32 size){
 
 
 
-void* KERNEL_CORE_CODE kmm_allocate_buffer(void){
+void* KERNEL_CORE_CODE kmm_alloc_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
 		ERROR_CORE("Buffer already in use");

@@ -17,7 +17,7 @@ void umm_init(void);
 
 
 
-void* umm_allocate(u32 size);
+void* umm_alloc(u32 size);
 
 
 

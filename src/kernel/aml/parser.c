@@ -218,7 +218,7 @@ static u32 _get_pkglength(const u8* data){
 
 
 static const char* _get_decoded_name(const u8* data,u16* out_length){
-	char* out=kmm_allocate_buffer();
+	char* out=kmm_alloc_buffer();
 	u16 length=0;
 	u32 index=0;
 	while (data[index]=='\\'||data[index]=='^'){
@@ -358,7 +358,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_OBJECT){
-			out->args[i].object=kmm_allocate(sizeof(aml_object_t));
+			out->args[i].object=kmm_alloc(sizeof(aml_object_t));
 			data+=_parse_object(data,out->args[i].object);
 		}
 	}
@@ -375,7 +375,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 		out->data_length++;
 		i+=_get_full_opcode_length(data+i,_parse_opcode(data+i));
 	}
-	out->data.objects=kmm_allocate(out->data_length*sizeof(aml_object_t));
+	out->data.objects=kmm_alloc(out->data_length*sizeof(aml_object_t));
 	for (u32 i=0;i<out->data_length;i++){
 		data+=_parse_object(data,out->data.objects+i);
 	}
@@ -387,7 +387,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",data,length);
-	aml_object_t* root=kmm_allocate(sizeof(aml_object_t));
+	aml_object_t* root=kmm_alloc(sizeof(aml_object_t));
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;
 	root->arg_count=0;
@@ -397,7 +397,7 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 		root->data_length++;
 		offset+=_get_full_opcode_length(data+offset,_parse_opcode(data+offset));
 	}
-	root->data.objects=kmm_allocate(root->data_length*sizeof(aml_object_t));
+	root->data.objects=kmm_alloc(root->data_length*sizeof(aml_object_t));
 	u32 offset=0;
 	for (u32 i=0;i<root->data_length;i++){
 		offset+=_parse_object(data+offset,root->data.objects+i);

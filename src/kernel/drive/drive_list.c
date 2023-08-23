@@ -45,7 +45,7 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	(drive_data+drive_count)->index=drive_count;
 	(drive_data+drive_count)->index=drive_count;
 	(drive_data+drive_count)->block_size_shift=__builtin_ctzll(drive->block_size);
-	(drive_data+drive_count)->stats=kmm_allocate(sizeof(drive_stats_t));
+	(drive_data+drive_count)->stats=kmm_alloc(sizeof(drive_stats_t));
 	(drive_data+drive_count)->stats->root_block_count=0;
 	(drive_data+drive_count)->stats->batc_block_count=0;
 	(drive_data+drive_count)->stats->nda3_block_count=0;

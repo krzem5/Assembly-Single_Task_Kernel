@@ -60,8 +60,8 @@ void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
-	_cpu_data=kmm_allocate(count*sizeof(cpu_data_t));
-	_cpu_common_data=umm_allocate(count*sizeof(cpu_common_data_t));
+	_cpu_data=kmm_alloc(count*sizeof(cpu_data_t));
+	_cpu_common_data=umm_alloc(count*sizeof(cpu_common_data_t));
 	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
 	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
 	for (u16 i=0;i<count;i++){

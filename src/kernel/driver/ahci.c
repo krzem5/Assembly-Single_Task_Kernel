@@ -217,7 +217,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	}
 	vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
-	ahci_controller_t* controller=kmm_allocate(sizeof(ahci_controller_t));
+	ahci_controller_t* controller=kmm_alloc(sizeof(ahci_controller_t));
 	controller->registers=pci_bar.address;
 	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
@@ -245,7 +245,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 		if (port_registers->sig!=0x00000101){
 			continue;
 		}
-		ahci_device_t* ahci_device=kmm_allocate(sizeof(ahci_device_t));
+		ahci_device_t* ahci_device=kmm_alloc(sizeof(ahci_device_t));
 		ahci_device->controller=controller;
 		ahci_device->registers=port_registers;
 		_ahci_init(ahci_device,i);
