@@ -10,12 +10,6 @@
 
 
 
-#define GCOV_COUNTER_V_TOPN 3
-#define GCOV_COUNTER_V_INDIR 4
-#define GCOV_COUNTER_COUNT 8
-
-
-
 typedef struct _GCOV_CTR_INFO{
 	u32 num;
 	s64* values;
@@ -28,18 +22,17 @@ typedef struct _GCOV_FN_INFO{
 	u32 ident;
 	u32 lineno_checksum;
 	u32 cfg_checksum;
-	gcov_ctr_info_t ctrs[];
+	gcov_ctr_info_t ctrs[8];
 } gcov_fn_info_t;
 
 
 
 typedef struct _GCOV_INFO{
 	u32 version;
-	u8 _padding[8];
-	u32 stamp;
+	u8 _padding[12];
 	u32 checksum;
 	const char* filename;
-	void* merge[GCOV_COUNTER_COUNT];
+	void* merge[8];
 	u32 n_functions;
 	const gcov_fn_info_t*const* functions;
 } gcov_info_t;
