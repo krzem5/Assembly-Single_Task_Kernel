@@ -220,7 +220,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	vmm_ensure_memory_mapped(pci_bar.address,sizeof(ahci_registers_t));
+	vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	ahci_controller_t* controller=kmm_allocate(sizeof(ahci_controller_t));
 	controller->registers=pci_bar.address;

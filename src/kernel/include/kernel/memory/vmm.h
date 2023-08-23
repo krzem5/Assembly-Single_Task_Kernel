@@ -67,7 +67,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
-void vmm_ensure_memory_mapped(const void* address,u64 size);
+void vmm_identity_map(const void* address,u64 size);
 
 
 

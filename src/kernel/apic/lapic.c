@@ -26,7 +26,7 @@ void lapic_init(u64 base){
 	LOG("Initializing lAPIC controller...");
 	INFO("lAPIC base: %p",base);
 	_lapic_registers=(void*)base;
-	vmm_ensure_memory_mapped((void*)base,(REGISTER_MAX+1)*sizeof(u32));
+	vmm_identity_map((void*)base,(REGISTER_MAX+1)*sizeof(u32));
 }
 
 

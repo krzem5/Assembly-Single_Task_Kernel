@@ -305,7 +305,7 @@ _cleanup:
 
 
 
-void KERNEL_CORE_CODE vmm_ensure_memory_mapped(const void* address,u64 size){
+void KERNEL_CORE_CODE vmm_identity_map(const void* address,u64 size){
 	if (!size){
 		return;
 	}
