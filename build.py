@@ -219,6 +219,9 @@ def _compile_user_files(program):
 
 
 def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_file_path):
+	for file in os.listdir(gcno_file_directory):
+		if (file.endswith(".gcda")):
+			os.remove(os.path.join(gcno_file_directory,file))
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(12)

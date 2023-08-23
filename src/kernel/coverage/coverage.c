@@ -46,8 +46,8 @@ typedef struct _GCOV_INFO{
 
 
 
-extern u64 __KERNEL_GCOV_INFO_START__[];
-extern u64 __KERNEL_GCOV_INFO_END__[];
+extern const gcov_info_t* __KERNEL_GCOV_INFO_START__;
+extern const gcov_info_t* __KERNEL_GCOV_INFO_END__;
 
 
 
@@ -86,7 +86,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 	io_port_out8(0x2fa,0xc7);
 	io_port_out8(0x2fc,0x03);
 	INFO("Writing coverage data...");
-	for (const gcov_info_t*const* info_ptr=(void*)(&__KERNEL_GCOV_INFO_START__);(void*)info_ptr<(void*)(&__KERNEL_GCOV_INFO_END__);info_ptr++){
+	for (const gcov_info_t*const* info_ptr=&__KERNEL_GCOV_INFO_START__;info_ptr<&__KERNEL_GCOV_INFO_END__;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
 		if (!info->merge[0]){
 			continue;
@@ -113,9 +113,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 			_output_int(fn_info->ident);
 			_output_int(fn_info->lineno_checksum);
 			_output_int(fn_info->cfg_checksum);
-			const gcov_ctr_info_t* ctr_info=fn_info->ctrs;
-			_output_int(ctr_info->num);
-			_output_bytes(ctr_info->values,ctr_info->num*sizeof(u64));
+			_output_int(fn_info->ctrs->num);
+			_output_bytes(fn_info->ctrs->values,fn_info->ctrs->num*sizeof(u64));
 		}
 	}
 	acpi_fadt_shutdown(0);
