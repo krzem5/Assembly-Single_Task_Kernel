@@ -19,49 +19,49 @@ extern const u64 __core_version;
 
 
 
-static inline u64 kernel_get_version(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_version(void){
 	return __core_version;
 }
 
 
 
-static inline u64 kernel_get_start(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_start(void){
 	return (u64)__KERNEL_START__;
 }
 
 
 
-static inline u64 kernel_get_core_end(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_core_end(void){
 	return (u64)__KERNEL_CORE_END__;
 }
 
 
 
-static inline u64 kernel_get_common_start(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_common_start(void){
 	return (u64)__KERNEL_COMMON_START__;
 }
 
 
 
-static inline u64 kernel_get_end(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_end(void){
 	return (u64)__KERNEL_END__;
 }
 
 
 
-static inline u64 kernel_get_bss_start(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_bss_start(void){
 	return (u64)__KERNEL_BSS_START__;
 }
 
 
 
-static inline u64 kernel_get_bss_end(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_bss_end(void){
 	return (u64)__KERNEL_BSS_END__;
 }
 
 
 
-static inline u64 kernel_get_offset(void){
+static inline u64 KERNEL_CORE_CODE kernel_get_offset(void){
 	return KERNEL_OFFSET;
 }
 
