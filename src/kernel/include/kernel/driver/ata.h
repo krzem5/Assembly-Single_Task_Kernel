@@ -8,7 +8,7 @@ typedef struct _ATA_DEVICE{
 	_Bool is_slave;
 	_Bool is_atapi;
 	u16 port;
-	u64 dma_address;
+	void* dma_address;
 } ata_device_t;
 
 

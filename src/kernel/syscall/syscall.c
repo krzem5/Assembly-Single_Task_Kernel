@@ -25,7 +25,7 @@ void syscall_empty(syscall_registers_t* regs){
 
 
 
-void syscall_dump_coverage_data(syscall_registers_t* regs);
+void syscall_coverage_dump_data(syscall_registers_t* regs);
 
 
 
@@ -76,7 +76,7 @@ void* _syscall_handlers[]={
 	[36]=syscall_drive_stats,
 	[37]=syscall_random_generate,
 #if KERNEL_COVERAGE_ENABLED
-	[38]=syscall_dump_coverage_data,
+	[38]=syscall_coverage_dump_data,
 #else
 	[38]=syscall_empty,
 #endif

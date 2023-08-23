@@ -223,7 +223,7 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	vmm_ensure_memory_mapped(pci_bar.address,sizeof(ahci_registers_t));
 	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	ahci_controller_t* controller=kmm_allocate(sizeof(ahci_controller_t));
-	controller->registers=VMM_TRANSLATE_ADDRESS(pci_bar.address);
+	controller->registers=pci_bar.address;
 	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
 		ERROR_CORE("AHCI controller does not support 64-bit addressing");

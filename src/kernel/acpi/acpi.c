@@ -53,8 +53,9 @@ void acpi_load(void){
 	const rsdp_t* rsdp=NULL;
 	while (range[0]){
 		INFO("Searching memory range %p - %p...",range[0],range[1]);
-		const u64* start=VMM_TRANSLATE_ADDRESS(range[0]);
-		const u64* end=VMM_TRANSLATE_ADDRESS(range[1]);
+		vmm_ensure_memory_mapped((void*)(range[0]),range[1]-range[0]);
+		const u64* start=(void*)(range[0]);
+		const u64* end=(void*)(range[1]);
 		while (start!=end){
 			if (start[0]==0x2052545020445352ull){
 				rsdp=(void*)start;
@@ -67,43 +68,43 @@ void acpi_load(void){
 	ERROR("Unable to locate the RSDP");
 	for (;;);
 _rsdp_found:
-	INFO("Found RSDP at %p (revision %u)",VMM_TRANSLATE_ADDRESS_REVERSE(rsdp),rsdp->revision);
+	INFO("Found RSDP at %p (revision %u)",rsdp,rsdp->revision);
 	_Bool is_xsdt=0;
 	const rsdt_t* rsdt;
 	if (!rsdp->revision||!rsdp->xsdt_address){
 		INFO("Found RSDT at %p",rsdp->rsdt_address);
-		rsdt=VMM_TRANSLATE_ADDRESS(rsdp->rsdt_address);
+		rsdt=(void*)(u64)(rsdp->rsdt_address);
 	}
 	else{
 		is_xsdt=1;
 		INFO("Found XSDT at %p",rsdp->xsdt_address);
-		rsdt=VMM_TRANSLATE_ADDRESS(rsdp->xsdt_address);
+		rsdt=(void*)(rsdp->xsdt_address);
 	}
-	vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(rsdt),sizeof(rsdt_t));
+	vmm_ensure_memory_mapped(rsdt,sizeof(rsdt_t));
 	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
-	vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(rsdt),rsdt->header.length);
+	vmm_ensure_memory_mapped(rsdt,rsdt->header.length);
 	for (u32 i=0;i<entry_count;i++){
-		const sdt_t* sdt=VMM_TRANSLATE_ADDRESS((is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]));
-		vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(sdt),sizeof(sdt_t));
-		vmm_ensure_memory_mapped(VMM_TRANSLATE_ADDRESS_REVERSE(sdt),sdt->length);
+		const sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
+		vmm_ensure_memory_mapped(sdt,sizeof(sdt_t));
+		vmm_ensure_memory_mapped(sdt,sdt->length);
 		if (sdt->signature==0x43495041){
-			INFO("Found MADT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			INFO("Found MADT at %p",sdt);
 			acpi_madt_load(sdt);
 		}
 		else if (sdt->signature==0x50434146){
-			INFO("Found FADT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			INFO("Found FADT at %p",sdt);
 			acpi_fadt_load(sdt);
 		}
 		else if (sdt->signature==0x54414d48){
-			INFO("Found HMAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			INFO("Found HMAT at %p",sdt);
 			acpi_hmat_load(sdt);
 		}
 		else if (sdt->signature==0x54415253){
-			INFO("Found SRAT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			INFO("Found SRAT at %p",sdt);
 			acpi_srat_load(sdt);
 		}
 		else if (sdt->signature==0x54494c53){
-			INFO("Found SLIT at %p",VMM_TRANSLATE_ADDRESS_REVERSE(sdt));
+			INFO("Found SLIT at %p",sdt);
 			acpi_slit_load(sdt);
 		}
 	}

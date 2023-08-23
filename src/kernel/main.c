@@ -34,6 +34,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
+	umm_init();
 	pci_enumerate(0);
 	clock_init();
 	acpi_load();

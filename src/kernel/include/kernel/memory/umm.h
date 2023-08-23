@@ -13,6 +13,10 @@ extern u64 umm_highest_free_address;
 
 
 
+void umm_init(void);
+
+
+
 void umm_init_pagemap(vmm_pagemap_t* pagemap);
 
 

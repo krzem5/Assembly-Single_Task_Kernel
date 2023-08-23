@@ -129,7 +129,7 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 	}
 	INFO_CORE("Mapping %v from %p to %p",highest_address,0,VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
-		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	vmm_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
@@ -305,16 +305,16 @@ _cleanup:
 
 
 
-void KERNEL_CORE_CODE vmm_ensure_memory_mapped(u64 address,u64 size){
+void KERNEL_CORE_CODE vmm_ensure_memory_mapped(const void* address,u64 size){
 	if (!size){
 		return;
 	}
-	size=pmm_align_up_address(size+address-pmm_align_down_address(address));
-	address=pmm_align_down_address(address);
+	size=pmm_align_up_address(size+((u64)address)-pmm_align_down_address((u64)address));
+	u64 address_aligned=pmm_align_down_address((u64)address);
 	while (size){
 		size-=PAGE_SIZE;
-		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,address+size+VMM_HIGHER_HALF_ADDRESS_OFFSET)){
-			vmm_map_page(&vmm_kernel_pagemap,address+size,address+size+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,address_aligned+size)){
+			vmm_map_page(&vmm_kernel_pagemap,address_aligned+size,address_aligned+size,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		}
 	}
 }

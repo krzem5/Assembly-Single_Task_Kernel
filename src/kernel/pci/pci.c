@@ -108,7 +108,7 @@ _Bool KERNEL_CORE_CODE pci_device_get_bar(const pci_device_t* device,u8 bar_inde
 		}
 		mask=0xfffffff0;
 	}
-	out->address=(((u64)bar_high)<<32)|(bar&mask);
+	out->address=(void*)((((u64)bar_high)<<32)|(bar&mask));
 	pci_device_write_data(device,register_index,0xffffffff);
 	out->size=-((((u64)size_high)<<32)|(pci_device_read_data(device,register_index)&mask));
 	pci_device_write_data(device,register_index,bar);

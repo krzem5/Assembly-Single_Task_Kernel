@@ -68,7 +68,7 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __gcov_merge_add(void){
 
 
 
-void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_registers_t* regs){
+void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_registers_t* regs){
 	LOG("Dumping coverage information...");
 	INFO("Initializing serial port...");
 	io_port_out8(0x2f9,0x00);

@@ -68,12 +68,12 @@ void ioapic_init(u16 count,u16 override_count){
 
 
 void ioapic_add(u8 apic_id,u32 address,u32 gsi_base){
-	vmm_ensure_memory_mapped(address,20);
+	vmm_ensure_memory_mapped((void*)(u64)address,20);
 	ioapic_t* ioapic=_ioapic_data+_ioapic_index;
 	_ioapic_index++;
 	ioapic->apic_id=apic_id;
 	ioapic->gsi_base=gsi_base;
-	ioapic->registers=VMM_TRANSLATE_ADDRESS(address);
+	ioapic->registers=(void*)(u64)address;
 	ioapic->gsi_count=(_read_register(ioapic,REGISTER_VER)>>16)+1;
 	for (u16 i=0;i<ioapic->gsi_count;i++){
 		_write_register(ioapic,(i+8)<<1,0x10000);
