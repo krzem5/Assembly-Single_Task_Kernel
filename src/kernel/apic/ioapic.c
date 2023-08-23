@@ -1,7 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "ioapic"
@@ -54,10 +54,10 @@ static void _write_register(ioapic_t* ioapic,u32 reg,u32 value){
 
 void ioapic_init(u16 count,u16 override_count){
 	LOG("Initializing IOAPIC controller...");
-	_ioapic_data=(void*)pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
+	_ioapic_data=kmm_alloc(count*sizeof(ioapic_t));
 	_ioapic_count=count;
 	_ioapic_index=0;
-	_ioapic_override_data=(void*)pmm_alloc(pmm_align_up_address(override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_CPU);
+	_ioapic_override_data=kmm_alloc(override_count*sizeof(ioapic_override_t));
 	_ioapic_override_count=override_count;
 	_ioapic_override_index=0;
 	INFO("Disabling PIC...");

@@ -3,7 +3,7 @@
 #include <kernel/vfs/vfs.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
@@ -93,7 +93,7 @@ void network_layer3_init(void){
 	else{
 		_layer3_cache_enabled=1;
 	}
-	_layer3_devices=(void*)pmm_alloc(pmm_align_up_address(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NETWORK);
+	_layer3_devices=kmm_alloc(MAX_DEVICE_COUNT*sizeof(network_layer3_device_t));
 	_load_device_list_cache();
 	network_layer3_refresh_device_list();
 }

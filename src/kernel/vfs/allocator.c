@@ -2,7 +2,7 @@
 #include <kernel/vfs/vfs.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "vfs_allocator"
@@ -16,10 +16,8 @@ void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator
 	out->first=0;
 	out->last=(1<<VFS_ALLOCATOR_SIZE_SHIFT)-2;
 	out->next_id=1;
-	out->data=(void*)pmm_alloc(pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR);
-	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t)),out->data);
-	void* node_data=(void*)pmm_alloc(pmm_align_up_address((1<<VFS_ALLOCATOR_SIZE_SHIFT)*node_size)>>PAGE_SIZE_SHIFT,PMM_COUNTER_NODE_ALLOCATOR);
-	INFO_CORE("Allocated %v of allocator data at %p",pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*node_size),node_data);
+	out->data=kmm_alloc(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t));
+	void* node_data=kmm_alloc((1<<VFS_ALLOCATOR_SIZE_SHIFT)*node_size);
 	for (vfs_allocator_index_t i=0;i<(1<<VFS_ALLOCATOR_SIZE_SHIFT)-1;i++){
 		(out->data+i)->id=i;
 		(out->data+i)->node=node_data;
