@@ -45,7 +45,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 			size=_get_block_size(idx);
 		}
 		_pmm_allocator.counters.data[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
-		pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
+		pmm_allocator_page_header_t* header=(void*)address;
 		header->next=_pmm_allocator.blocks[idx];
 		_pmm_allocator.blocks[idx]=address;
 		address+=size;
@@ -89,7 +89,7 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 	LOG_CORE("Allocating allocator bitmap...");
 	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
 	INFO_CORE("Bitmap size: %v",bitmap_size);
-	_pmm_allocator.bitmap=pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_PMM);
+	_pmm_allocator.bitmap=(void*)pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_PMM);
 }
 
 
@@ -129,7 +129,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 	u64 out=0;
 	if (_pmm_allocator.blocks[i]){
 		out=_pmm_allocator.blocks[i];
-		const pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(out);
+		const pmm_allocator_page_header_t* header=(void*)out;
 		_pmm_allocator.blocks[i]=header->next;
 		goto _toggle_bitmap;
 	}
@@ -146,18 +146,18 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		}
 	} while (!_pmm_allocator.blocks[j]);
 	out=_pmm_allocator.blocks[j];
-	pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(out);
+	pmm_allocator_page_header_t* header=(void*)out;
 	_pmm_allocator.blocks[j]=header->next;
 	do{
 		j--;
 		u64 child_block=out+_get_block_size(j);
-		header=VMM_TRANSLATE_ADDRESS(child_block);
+		header=(void*)child_block;
 		header->next=_pmm_allocator.blocks[j];
 		_pmm_allocator.blocks[j]=child_block;
 	} while (j>i);
 _toggle_bitmap:
 	if (_pmm_allocator.bitmap){
-		u64* bitmap=VMM_TRANSLATE_ADDRESS(_pmm_allocator.bitmap);
+		u64* bitmap=_pmm_allocator.bitmap;
 		u64 k=out>>PAGE_SIZE_SHIFT;
 		bitmap[k>>6]^=1ull<<(k&63);
 	}
@@ -172,7 +172,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
 	if (!out){
 		return 0;
 	}
-	u64* data=VMM_TRANSLATE_ADDRESS(out);
+	u64* data=(void*)out;
 	count<<=PAGE_SIZE_SHIFT-3;
 	do{
 		*data=0;
@@ -197,7 +197,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 			return;
 		}
 	}
-	u64* bitmap=VMM_TRANSLATE_ADDRESS(_pmm_allocator.bitmap);
+	u64* bitmap=_pmm_allocator.bitmap;
 	u64 j=address>>PAGE_SIZE_SHIFT;
 	u64 mask=1ull<<(j&63);
 	bitmap[j>>6]^=mask;
@@ -205,7 +205,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		// implement block coalescing
 		break;
 	}
-	pmm_allocator_page_header_t* header=VMM_TRANSLATE_ADDRESS(address);
+	pmm_allocator_page_header_t* header=(void*)address;
 	header->next=_pmm_allocator.blocks[i];
 	_pmm_allocator.blocks[i]=address;
 	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;

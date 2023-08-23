@@ -97,8 +97,9 @@ void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	INFO("Searching memory range %p - %p...",SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END);
 	const smbios_t* smbios=NULL;
-	const u32* start=VMM_TRANSLATE_ADDRESS(SMBIOS_MEMORY_REGION_START);
-	const u32* end=VMM_TRANSLATE_ADDRESS(SMBIOS_MEMORY_REGION_END);
+	vmm_identity_map((void*)SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END-SMBIOS_MEMORY_REGION_START);
+	const u32* start=(void*)SMBIOS_MEMORY_REGION_START;
+	const u32* end=(void*)SMBIOS_MEMORY_REGION_END;
 	while (start!=end){
 		if (start[0]==0x5f4d535f){
 			smbios=(const smbios_t*)start;
@@ -109,7 +110,8 @@ void bios_get_system_data(void){
 	ERROR("SMBIOS not found");
 	for (;;);
 _smbios_found:
-	INFO("Found SMBIOS at %p (revision %u.%u)",VMM_TRANSLATE_ADDRESS_REVERSE(smbios),smbios->major_version,smbios->minor_version);
+	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
+	vmm_identity_map((void*)(u64)(smbios->table_address),smbios->table_length);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
 	bios_data.bios_vendor[0]=0;
 	bios_data.bios_version[0]=0;
@@ -123,7 +125,7 @@ _smbios_found:
 	bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
 	_Bool serial_number_found=0;
 	for (u64 offset=smbios->table_address;offset<smbios->table_address+smbios->table_length;){
-		const smbios_header_t* header=VMM_TRANSLATE_ADDRESS(offset);
+		const smbios_header_t* header=(void*)offset;
 		switch (header->type){
 			case 0:
 				_copy_string(_get_header_string(header,header->bios_information.vendor),bios_data.bios_vendor);

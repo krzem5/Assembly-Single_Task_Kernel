@@ -119,7 +119,6 @@ void cpu_start_all_cores(void){
 			__pause();
 		}
 	}
-	cpu_ap_startup_deinit();
 	cpu_data_t* cpu_data=_cpu_data+cpu_bsp_core_id;
 	cpu_data->user_func_arg[0]=0;
 	cpu_data->user_func_arg[1]=0;

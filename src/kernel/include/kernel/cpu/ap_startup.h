@@ -12,10 +12,6 @@ void cpu_ap_startup_init(void);
 
 
 
-void cpu_ap_startup_deinit(void);
-
-
-
 void cpu_ap_startup_set_stack_top(u64 stack_top);
 
 

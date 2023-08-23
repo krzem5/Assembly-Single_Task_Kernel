@@ -121,7 +121,6 @@ times 4096-($-$$) db 0
 
 
 global cpu_ap_startup_init
-global cpu_ap_startup_deinit
 global cpu_ap_startup_set_stack_top
 extern vmm_kernel_pagemap
 extern vmm_map_page
@@ -134,23 +133,11 @@ section .text
 cpu_ap_startup_init:
 	mov rax, qword [vmm_kernel_pagemap]
 	mov dword [kernel_toplevel_pagemap], eax
-	lea rdi, vmm_kernel_pagemap
-	mov rsi, CPU_AP_STARTUP_MEMORY_ADDRESS
-	mov rdx, CPU_AP_STARTUP_MEMORY_ADDRESS
-	mov rcx, 3
-	call vmm_map_page
 	mov rdi, CPU_AP_STARTUP_MEMORY_ADDRESS
 	mov rsi, __AP_STARTUP_START__
 	mov rcx, 512
 	rep movsq
 	ret
-
-
-
-cpu_ap_startup_deinit:
-	lea rdi, vmm_kernel_pagemap
-	mov rsi, CPU_AP_STARTUP_MEMORY_ADDRESS
-	jmp vmm_unmap_page
 
 
 

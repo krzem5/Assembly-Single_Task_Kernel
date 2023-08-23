@@ -44,7 +44,7 @@ typedef struct _PMM_COUNTERS{
 
 
 typedef struct _PMM_ALLOCATOR{
-	u64 bitmap;
+	u64* bitmap;
 	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
 	pmm_counters_t counters;
 } pmm_allocator_t;

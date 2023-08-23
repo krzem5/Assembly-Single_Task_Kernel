@@ -9,7 +9,7 @@
 
 
 
-static lock_t _umm_stack_lock;
+static lock_t _umm_stack_lock=LOCK_INIT_STRUCT;
 static u64 _umm_stack_top;
 static u64 _umm_stack_max_top;
 static u64 _umm_user_stacks_base;
