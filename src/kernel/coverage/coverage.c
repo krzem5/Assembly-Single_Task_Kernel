@@ -46,6 +46,11 @@ typedef struct _GCOV_INFO{
 
 
 
+extern u64 __KERNEL_GCOV_INFO_START__[];
+extern u64 __KERNEL_GCOV_INFO_END__[];
+
+
+
 static void KERNEL_NOCOVERAGE _output_bytes(const void* buffer,u32 length){
 	for (;length;length--){
 		while (!(io_port_in8(0x2fd)&0x20)){
@@ -58,25 +63,9 @@ static void KERNEL_NOCOVERAGE _output_bytes(const void* buffer,u32 length){
 
 
 
-static void KERNEL_NOCOVERAGE _output_int(u32 value){
+static inline void KERNEL_NOCOVERAGE _output_int(u32 value){
 	_output_bytes(&value,sizeof(u32));
 }
-
-
-
-static void KERNEL_NOCOVERAGE _output_string(const char* str){
-	u32 length=0;
-	while (str[length]){
-		length++;
-	}
-	_output_int(length);
-	_output_bytes(str,length);
-}
-
-
-
-extern u64 __KERNEL_GCOV_INFO_START__[];
-extern u64 __KERNEL_GCOV_INFO_END__[];
 
 
 
@@ -104,7 +93,12 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_dump_coverage_data(syscall_regist
 		}
 		_output_int(info->version);
 		_output_int(info->checksum);
-		_output_string(info->filename);
+		u32 filename_length=0;
+		while (info->filename[filename_length]){
+			filename_length++;
+		}
+		_output_int(filename_length);
+		_output_bytes(info->filename,filename_length);
 		u32 function_count=0;
 		for (u32 i=0;i<info->n_functions;i++){
 			const gcov_fn_info_t* fn_info=info->functions[i];
