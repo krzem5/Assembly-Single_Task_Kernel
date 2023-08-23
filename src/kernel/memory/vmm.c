@@ -105,7 +105,7 @@ static u64* KERNEL_CORE_CODE _get_child_table(u64* table,u64 index,_Bool allocat
 
 
 
-void KERNEL_CORE_CODE KERNEL_NOCOVERAGE vmm_init(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM);
 	lock_init(&(vmm_kernel_pagemap.lock));

@@ -4,7 +4,7 @@
 
 
 
-static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
+static inline void KERNEL_CORE_CODE __pause(void){
 	asm volatile("pause":::"memory");
 }
 
