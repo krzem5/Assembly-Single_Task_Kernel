@@ -162,27 +162,25 @@ partition_t* KERNEL_CORE_CODE partition_get(u8 index){
 
 
 
-void KERNEL_CORE_CODE partition_build_lookup_table(void){
+void KERNEL_CORE_CODE partition_load(void){
+	LOG_CORE("Loading drive partitions...");
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		INFO_CORE("Loading partitions from drive '%s'...",drive->model_number);
+		_load_iso9660(drive);
+		_load_kfs(drive);
+		const partition_config_t partition_config={
+			PARTITION_CONFIG_TYPE_DRIVE,
+			0,
+			0,
+			drive->block_count
+		};
+		emptyfs_load(drive,&partition_config);
+	}
 	LOG_CORE("Building partition lookup table...");
 	_partition_lookup_table=kmm_alloc(_partition_count*sizeof(partition_t*));
 	for (partition_t* partition=partition_data;partition;partition=partition->next){
 		_partition_lookup_table[partition->index]=partition;
 	}
-}
-
-
-
-void KERNEL_CORE_CODE partition_load_from_drive(drive_t* drive){
-	LOG_CORE("Loading partitions from drive '%s'...",drive->model_number);
-	_load_iso9660(drive);
-	_load_kfs(drive);
-	const partition_config_t partition_config={
-		PARTITION_CONFIG_TYPE_DRIVE,
-		0,
-		0,
-		drive->block_count
-	};
-	emptyfs_load(drive,&partition_config);
 }
 
 

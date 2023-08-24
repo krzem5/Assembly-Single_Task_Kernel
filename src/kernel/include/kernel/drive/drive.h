@@ -46,4 +46,12 @@ typedef struct _DRIVE{
 
 
 
+extern drive_t* drive_data;
+
+
+
+void drive_create(const drive_t* drive);
+
+
+
 #endif

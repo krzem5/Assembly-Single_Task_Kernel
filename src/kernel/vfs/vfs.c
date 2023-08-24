@@ -1,5 +1,4 @@
 #include <kernel/drive/drive.h>
-#include <kernel/drive/drive_list.h>
 #include <kernel/vfs/allocator.h>
 #include <kernel/vfs/vfs.h>
 #include <kernel/lock/lock.h>

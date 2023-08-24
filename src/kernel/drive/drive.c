@@ -3,7 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/types.h>
-#define KERNEL_LOG_NAME "drive_list"
+#define KERNEL_LOG_NAME "drive"
 
 
 
@@ -29,8 +29,8 @@ drive_t* KERNEL_CORE_BSS drive_data;
 
 
 
-void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
-	LOG_CORE("Installing drive '%s/%s' as '%s'",_drive_type_names[drive->type],drive->model_number,drive->name);
+void KERNEL_CORE_CODE drive_create(const drive_t* drive){
+	LOG_CORE("Creating drive '%s' as '%s/%s'...",drive->name,_drive_type_names[drive->type],drive->model_number);
 	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
 	*new_drive=*drive;
 	new_drive->next=drive_data;
@@ -50,14 +50,5 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	INFO_CORE("Drive serial number: '%s', Drive size: %v (%lu * %lu)",drive->serial_number,drive->block_count*drive->block_size,drive->block_count,drive->block_size);
 	if (drive->block_size>>(new_drive->block_size_shift+1)){
 		WARN_CORE("Drive block size is not a power of 2");
-	}
-}
-
-
-
-void KERNEL_CORE_CODE drive_list_load_partitions(void){
-	LOG_CORE("Loading drive partitions...");
-	for (drive_t* drive=drive_data;drive;drive=drive->next){
-		partition_load_from_drive(drive);
 	}
 }

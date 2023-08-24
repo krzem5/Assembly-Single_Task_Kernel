@@ -4,7 +4,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/drive/drive_list.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -32,8 +31,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	pmm_init_high_mem(kernel_data);
 	kmm_init();
 	pci_enumerate(1);
-	drive_list_load_partitions();
-	partition_build_lookup_table();
+	partition_load();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();

@@ -1,5 +1,4 @@
 #include <kernel/drive/drive.h>
-#include <kernel/drive/drive_list.h>
 #include <kernel/driver/ata.h>
 #include <kernel/format/format.h>
 #include <kernel/io/io.h>
@@ -225,7 +224,7 @@ static void KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 	_send_atapi_command(device,(const u16*)atapi_command,8,(u16*)output_buffer);
 	drive.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1;
 	drive.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
-	drive_list_add_drive(&drive);
+	drive_create(&drive);
 	return;
 _error:
 	kmm_shrink_buffer(sizeof(ata_device_t));

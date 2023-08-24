@@ -80,11 +80,7 @@ partition_t* partition_get(u8 index);
 
 
 
-void partition_build_lookup_table(void);
-
-
-
-void partition_load_from_drive(drive_t* drive);
+void partition_load(void);
 
 
 
