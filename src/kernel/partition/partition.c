@@ -6,7 +6,7 @@
 #include <kernel/fs/iso9660.h>
 #include <kernel/fs/kfs.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "partition"
@@ -35,8 +35,8 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 
-static partition_t KERNEL_CORE_BSS _partition_data_raw[MAX_PARTITIONS];
 static u8 KERNEL_CORE_BSS _partition_count;
+static partition_t** KERNEL_CORE_BSS _partition_lookup_table;
 
 partition_t* KERNEL_CORE_BSS partition_data;
 partition_t* KERNEL_CORE_BSS partition_boot;
@@ -119,18 +119,17 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
-	if (_partition_count>=MAX_PARTITIONS){
-		ERROR_CORE("Too many partitions!");
+	if (_partition_lookup_table){
+		ERROR_CORE("Unable to add partition");
 		return NULL;
 	}
-	partition_t* fs=_partition_data_raw+_partition_count;
-	_partition_count++;
+	partition_t* fs=kmm_alloc(sizeof(partition_t));
 	fs->next=partition_data;
 	partition_data=fs;
 	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
-	fs->index=_partition_count-1;
+	fs->index=_partition_count;
 	fs->flags=0;
 	u8 i=0;
 	while (drive->name[i]){
@@ -164,7 +163,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	}
 	fs->drive=drive;
 	fs->extra_data=extra_data;
-	vfs_allocator_init(_partition_count-1,config->node_size,&(fs->allocator));
+	vfs_allocator_init(_partition_count,config->node_size,&(fs->allocator));
 	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=vfs_alloc(fs,"",0);
 	fs->root->type=VFS_NODE_TYPE_DIRECTORY;
@@ -172,13 +171,28 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	fs->root->parent=fs->root->id;
 	fs->root->prev_sibling=fs->root->id;
 	fs->root->next_sibling=fs->root->id;
+	_partition_count++;
 	return fs->root;
 }
 
 
 
 partition_t* KERNEL_CORE_CODE partition_get(u8 index){
-	return (index>=_partition_count?NULL:_partition_data_raw+index);
+	if (!_partition_lookup_table){
+		ERROR_CORE("Unable to get partition");
+		return NULL;
+	}
+	return (index>=_partition_count?NULL:_partition_lookup_table[index]);
+}
+
+
+
+void KERNEL_CORE_CODE partition_build_lookup_table(void){
+	LOG_CORE("Building partition lookup table...");
+	_partition_lookup_table=kmm_alloc(_partition_count*sizeof(partition_t*));
+	for (partition_t* partition=partition_data;partition;partition=partition->next){
+		_partition_lookup_table[partition->index]=partition;
+	}
 }
 
 

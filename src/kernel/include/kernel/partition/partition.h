@@ -13,9 +13,6 @@
 #define PARTITION_FLAG_HALF_INSTALLED 2
 #define PARTITION_FLAG_PREVIOUS_BOOT 4
 
-#define MAX_PARTITIONS 64
-#define PARTITION_INVALID_INDEX MAX_PARTITIONS
-
 #define PARTITION_CONFIG_TYPE_DRIVE 0
 #define PARTITION_CONFIG_TYPE_EMPTY 1
 #define PARTITION_CONFIG_TYPE_ISO9660 2
@@ -81,6 +78,10 @@ void* partition_add(const drive_t* drive,const partition_config_t* partition_con
 
 
 partition_t* partition_get(u8 index);
+
+
+
+void partition_build_lookup_table(void);
 
 
 

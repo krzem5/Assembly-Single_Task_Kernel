@@ -13,6 +13,7 @@
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
+#include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/serial/serial.h>
@@ -31,6 +32,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	kmm_init();
 	pci_enumerate(1);
 	drive_list_load_partitions();
+	partition_build_lookup_table();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	vmm_set_common_kernel_pagemap();
