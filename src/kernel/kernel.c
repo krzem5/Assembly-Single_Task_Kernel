@@ -1,10 +1,11 @@
 #include <kernel/drive/drive_list.h>
-#include <kernel/vfs/vfs.h>
-#include <kernel/partition/partition.h>
+#include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "kernel"
 
 
@@ -13,7 +14,7 @@ static KERNEL_CORE_RDATA const char _kernel_memory_unusable[]=" (Unusable)";
 static KERNEL_CORE_RDATA const char _kernel_memory_normal[]="";
 static KERNEL_CORE_RDATA const char _kernel_memory_acpi[]=" (ACPI tables)";
 
-static KERNEL_CORE_RDATA const char _kernel_file_path[]="/kernel/kernel.bin";
+static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/kernel/kernel.bin";
 
 
 
@@ -88,18 +89,7 @@ _check_every_drive:
 		if (boot_drive&&partition->drive!=boot_drive){
 			continue;
 		}
-		u8 i=0;
-		while (partition->name[i]){
-			path[i]=partition->name[i];
-			i++;
-		}
-		path[i]=':';
-		i++;
-		for (u8 j=0;_kernel_file_path[j];j++){
-			path[i]=_kernel_file_path[j];
-			i++;
-		}
-		path[i]=0;
+		format_string(path,64,_kernel_file_path_format_template,partition->name);
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
 		vfs_node_t* kernel=vfs_get_by_path(NULL,path,0);
 		if (!kernel){
@@ -135,7 +125,7 @@ _check_every_drive:
 _load_kernel:
 	LOG_CORE("Loading kernel...");
 	INFO_CORE("Opening kernel file...");
-	vfs_node_t* kernel_file=vfs_get_by_path(NULL,_kernel_file_path,0);
+	vfs_node_t* kernel_file=vfs_get_by_path(NULL,path,0);
 	if (!kernel_file){
 		goto _error;
 	}
