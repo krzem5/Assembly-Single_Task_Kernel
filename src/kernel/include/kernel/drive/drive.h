@@ -50,7 +50,7 @@ extern drive_t* drive_data;
 
 
 
-void drive_create(const drive_t* drive);
+void drive_add(const drive_t* drive);
 
 
 

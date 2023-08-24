@@ -192,7 +192,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	format_string(drive.name,16,_ahci_drive_name_format_template,port_index);
 	bswap16_trunc_spaces((const u16*)(buffer+20),10,drive.serial_number);
 	bswap16_trunc_spaces((const u16*)(buffer+54),20,drive.model_number);
-	drive_create(&drive);
+	drive_add(&drive);
 	pmm_dealloc((u64)buffer,1,PMM_COUNTER_DRIVER_AHCI);
 }
 

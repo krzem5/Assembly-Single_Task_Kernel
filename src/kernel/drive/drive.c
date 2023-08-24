@@ -29,7 +29,7 @@ drive_t* KERNEL_CORE_BSS drive_data;
 
 
 
-void KERNEL_CORE_CODE drive_create(const drive_t* drive){
+void KERNEL_CORE_CODE drive_add(const drive_t* drive){
 	LOG_CORE("Creating drive '%s' as '%s/%s'...",drive->name,_drive_type_names[drive->type],drive->model_number);
 	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
 	*new_drive=*drive;

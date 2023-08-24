@@ -24,10 +24,15 @@ if ("--coverage" in sys.argv):
 
 
 
-KERNEL_OBJECT_FILE_SUFFIX={
-	MODE_NORMAL: ".kernel.o",
-	MODE_COVERAGE: ".kernel.coverage.o",
-	MODE_RELEASE: ".kernel.o"
+KERNEL_HASH_FILE_PATH={
+	MODE_NORMAL: "build/hashes/kernel/release.txt",
+	MODE_COVERAGE: "build/hashes/kernel/coverage.txt",
+	MODE_RELEASE: "build/hashes/kernel/release.txt"
+}[mode]
+KERNEL_OBJECT_FILE_DIRECTORY={
+	MODE_NORMAL: "build/objects/kernel/",
+	MODE_COVERAGE: "build/objects/kernel_coverage/",
+	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: [],
@@ -39,10 +44,15 @@ KERNEL_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-T","src/kernel/linker_coverage.ld","-g"],
 	MODE_RELEASE: ["-T","src/kernel/linker.ld"]
 }[mode]
-USER_OBJECT_FILE_SUFFIX={
-	MODE_NORMAL: ".user.o",
-	MODE_COVERAGE: ".user.o",
-	MODE_RELEASE: ".user.release.o"
+USER_HASH_FILE_SUFFIX={
+	MODE_NORMAL: ".txt",
+	MODE_COVERAGE: ".release.txt",
+	MODE_RELEASE: ".release.txt"
+}[mode]
+USER_OBJECT_FILE_DIRECTORY={
+	MODE_NORMAL: "build/objects/user_debug/",
+	MODE_COVERAGE: "build/objects/user/",
+	MODE_RELEASE: "build/objects/user/"
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g","-fno-omit-frame-pointer"],
@@ -58,16 +68,6 @@ USER_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections"]
-}[mode]
-KERNEL_HASH_FILE_PATH={
-	MODE_NORMAL: "build/hashes.txt",
-	MODE_COVERAGE: "build/hashes.coverage.txt",
-	MODE_RELEASE: "build/hashes.txt"
-}[mode]
-USER_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".user.txt",
-	MODE_COVERAGE: ".user.txt",
-	MODE_RELEASE: ".user.release.txt"
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
@@ -189,7 +189,7 @@ def _pad_file(wf,count):
 
 
 def _compile_user_files(program):
-	hash_file_path=f"build/hashes."+program+USER_HASH_FILE_SUFFIX
+	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
 	error=False
@@ -199,16 +199,16 @@ def _compile_user_files(program):
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
-			object_file=f"build/objects/{file.replace('/','#')}"+USER_OBJECT_FILE_SUFFIX
+			object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".d")):
+			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
 			command=None
 			if (suffix==".c"):
 				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
@@ -218,10 +218,10 @@ def _compile_user_files(program):
 
 
 
-def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_file_path):
-	for file in os.listdir(gcno_file_directory):
+def _generate_coverage_report(vm_output_file_path,output_file_path):
+	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
-			os.remove(os.path.join(gcno_file_directory,file))
+			os.remove(os.path.join(KERNEL_OBJECT_FILE_DIRECTORY,file))
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(12)
@@ -238,7 +238,7 @@ def _generate_coverage_report(vm_output_file_path,gcno_file_directory,output_fil
 					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
 					wf.write(rf.read(counter_count<<3))
-	subprocess.run(["lcov","-c","-d","build/objects","--gcov-tool","gcov-12","-o",output_file_path])
+	subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
 
 
 
@@ -299,8 +299,22 @@ if (not os.path.exists("build/iso")):
 	os.mkdir("build/iso")
 if (not os.path.exists("build/iso/kernel")):
 	os.mkdir("build/iso/kernel")
+if (not os.path.exists("build/hashes")):
+	os.mkdir("build/hashes")
+if (not os.path.exists("build/hashes/kernel")):
+	os.mkdir("build/hashes/kernel")
+if (not os.path.exists("build/hashes/user")):
+	os.mkdir("build/hashes/user")
 if (not os.path.exists("build/objects")):
 	os.mkdir("build/objects")
+if (not os.path.exists("build/objects/kernel")):
+	os.mkdir("build/objects/kernel")
+if (not os.path.exists("build/objects/kernel_coverage")):
+	os.mkdir("build/objects/kernel_coverage")
+if (not os.path.exists("build/objects/user_debug")):
+	os.mkdir("build/objects/user_debug")
+if (not os.path.exists("build/objects/user")):
+	os.mkdir("build/objects/user")
 if (not os.path.exists("build/stages")):
 	os.mkdir("build/stages")
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
@@ -313,16 +327,16 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (suffix not in SOURCE_FILE_SUFFIXES):
 			continue
 		file=os.path.join(root,file_name)
-		object_file=f"build/objects/{file.replace('/','#')}"+KERNEL_OBJECT_FILE_SUFFIX
+		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".d")):
+		if (_file_not_changed(changed_files,object_file+".deps")):
 			continue
 		command=None
 		if (suffix==".c"):
 			command=["gcc-12","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fomit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".d"]).returncode!=0):
+		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
@@ -414,4 +428,4 @@ if ("--run" in sys.argv):
 		"-smbios","type=2,serial=SERIAL_NUMBER"
 	]+_kvm_flags())
 	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/raw_coverage","build/objects/","build/coverage.lcov")
+		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
