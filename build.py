@@ -309,7 +309,7 @@ def _kvm_flags():
 
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
-		os.mkdir(BUILD_DIRECTORIES)
+		os.mkdir(dir)
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
