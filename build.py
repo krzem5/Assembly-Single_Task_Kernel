@@ -315,8 +315,8 @@ if (not os.path.exists("build/objects/user_debug")):
 	os.mkdir("build/objects/user_debug")
 if (not os.path.exists("build/objects/user")):
 	os.mkdir("build/objects/user")
-if (not os.path.exists("build/stages")):
-	os.mkdir("build/stages")
+if (not os.path.exists("build/vm")):
+	os.mkdir("build/vm")
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
@@ -344,22 +344,26 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_kernel_file("build/kernel.bin","build/stages/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
+_split_kernel_file("build/kernel.bin","build/stage3.bin","build/iso/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
+os.remove("build/kernel.bin")
 _build_static_idt("build/iso/kernel/kernel.bin",kernel_symbols)
-kernel_core_size=_get_file_size("build/stages/stage3.bin")
-if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
+kernel_core_size=_get_file_size("build/stage3.bin")
+if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)
-stage2_size=_get_file_size("build/stages/stage2.bin")
-if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stages/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}",f"-D__BOOTLOADER_VERSION__={version}"]).returncode!=0):
+stage2_size=_get_file_size("build/stage2.bin")
+if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}",f"-D__BOOTLOADER_VERSION__={version}"]).returncode!=0):
 	sys.exit(1)
-stage1_size=_get_file_size("build/stages/stage1.bin")
+stage1_size=_get_file_size("build/stage1.bin")
 with open("build/iso/kernel/core.bin","wb") as wf:
-	_copy_file("build/stages/stage1.bin",wf)
-	_copy_file("build/stages/stage2.bin",wf)
-	_copy_file("build/stages/stage3.bin",wf)
+	_copy_file("build/stage1.bin",wf)
+	_copy_file("build/stage2.bin",wf)
+	_copy_file("build/stage3.bin",wf)
 with open("build/iso/os.img","wb") as wf:
 	_copy_file("build/iso/kernel/core.bin",wf)
 	_pad_file(wf,OS_IMAGE_SIZE-kernel_core_size-stage2_size-stage1_size)
+os.remove("build/stage1.bin")
+os.remove("build/stage2.bin")
+os.remove("build/stage3.bin")
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
@@ -372,11 +376,11 @@ with open("build/iso/kernel/startup.txt","w") as wf:
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/iso"]).returncode!=0):
 	sys.exit(1)
 if ("--run" in sys.argv):
-	if (not os.path.exists("build/hdd.qcow2")):
-		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/hdd.qcow2","16G"]).returncode!=0):
+	if (not os.path.exists("build/vm/hdd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
-	if (not os.path.exists("build/ssd.qcow2")):
-		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/ssd.qcow2","8G"]).returncode!=0):
+	if (not os.path.exists("build/vm/ssd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
 			sys.exit(1)
 	_start_l2tpv3_thread()
 	subprocess.run([
@@ -384,8 +388,8 @@ if ("--run" in sys.argv):
 		# Boot
 		"-boot","order=dc",
 		# Drive files
-		"-drive","file=build/hdd.qcow2,if=none,id=hdd",
-		"-drive","file=build/ssd.qcow2,if=none,id=ssd",
+		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
+		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
 		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
 		# Drives
 		"-device","ahci,id=ahci",
@@ -429,3 +433,4 @@ if ("--run" in sys.argv):
 	]+_kvm_flags())
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
+		os.remove("build/raw_coverage")
