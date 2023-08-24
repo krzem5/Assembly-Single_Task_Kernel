@@ -1,41 +1,8 @@
 #include <kernel/memory/vmm.h>
-#include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/network/layer3.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
-
-
-
-typedef struct _USER_NETWORK_CONFIG{
-	char name[16];
-	u8 address[6];
-} user_network_config_t;
-
-
-
-void syscall_network_layer1_config(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(user_network_config_t)){
-		regs->rax=0;
-		return;
-	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	user_network_config_t* config=(void*)address;
-	u8 i=0;
-	if (network_layer1_name){
-		for (;network_layer1_name[i];i++){
-			config->name[i]=network_layer1_name[i];
-		}
-	}
-	config->name[i]=0;
-	for (i=0;i<6;i++){
-		config->address[i]=network_layer1_mac_address[i];
-	}
-}
 
 
 

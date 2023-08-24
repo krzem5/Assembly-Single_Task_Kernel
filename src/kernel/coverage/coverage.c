@@ -115,4 +115,15 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 
 
 
+#else
+#include <kernel/syscall/syscall.h>
+
+
+
+void syscall_coverage_dump_data(syscall_registers_t* regs){
+	return;
+}
+
+
+
 #endif

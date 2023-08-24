@@ -80,14 +80,9 @@ void net_main(int argc,const char*const* argv){
 		network_refresh_device_list();
 	}
 	if (flags&FLAG_INFO){
-		network_config_t config;
-		if (!network_config(&config)){
-			printf("net: unable to read network configuration\n");
-			return;
-		}
 		printf("Driver: \x1b[1m%s\x1b[0m\nAddress: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n",
-			config.name,
-			config.address[0],config.address[1],config.address[2],config.address[3],config.address[4],config.address[5]
+			network_config->name,
+			network_config->mac_address[0],network_config->mac_address[1],network_config->mac_address[2],network_config->mac_address[3],network_config->mac_address[4],network_config->mac_address[5]
 		);
 		return;
 	}

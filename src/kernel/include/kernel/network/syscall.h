@@ -4,10 +4,6 @@
 
 
 
-void syscall_network_layer1_config(syscall_registers_t* regs);
-
-
-
 void syscall_network_layer2_send(syscall_registers_t* regs);
 
 

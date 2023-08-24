@@ -1,16 +1,10 @@
 #include <user/drive.h>
+#include <user/network.h>
 #include <user/numa.h>
 #include <user/partition.h>
 #include <user/syscall.h>
 #include <user/system.h>
 #include <user/types.h>
-
-
-
-typedef struct _USER_LAYER1_NETWORK_DEVICE{
-	const char* name;
-	u8 mac_address[6];
-} user_layer1_network_device_t;
 
 
 
@@ -25,7 +19,7 @@ typedef struct _USER_DATA_HEADER{
 	u32 numa_node_count;
 	const numa_node_t* numa_nodes;
 	const u8* numa_node_locality_matrix;
-	const user_layer1_network_device_t* layer1_network_device;
+	const network_config_t* layer1_network_device;
 } user_data_header_t;
 
 
@@ -40,6 +34,7 @@ const partition_t* partitions;
 u32 numa_node_count;
 const numa_node_t* numa_nodes;
 const u8* numa_node_locality_matrix;
+const network_config_t* network_config;
 
 
 
@@ -55,4 +50,5 @@ void _user_data_init(void){
 	numa_node_count=header->numa_node_count;
 	numa_nodes=header->numa_nodes;
 	numa_node_locality_matrix=header->numa_node_locality_matrix;
+	network_config=header->layer1_network_device;
 }
