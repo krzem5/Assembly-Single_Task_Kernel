@@ -18,11 +18,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup environment
         run: sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 genisoimage lcov
-      - name: Build
-        run: ./build.sh --coverage
-      - name: Delete previous coverage
-        run: rm -f build/objects/*.gcda
-      - name: Execute tests
+      - name: Build & Test
         run: ./build.sh --coverage --run
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
