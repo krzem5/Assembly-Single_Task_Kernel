@@ -41,7 +41,7 @@ typedef struct _ISO9660_FS_NODE{
 
 
 
-static vfs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(const iso9660_fs_node_t* parent,iso9660_directory_t* directory_entry,u64 current_offset){
+static vfs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(partition_t* fs,const iso9660_fs_node_t* parent,iso9660_directory_t* directory_entry,u64 current_offset){
 	u8 length=directory_entry->identifier_length;
 	if (!(directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)){
 		length-=2;
@@ -49,7 +49,7 @@ static vfs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(co
 	for (u8 i=0;i<length;i++){
 		directory_entry->identifier[i]+=(directory_entry->identifier[i]>64&&directory_entry->identifier[i]<91)<<5;
 	}
-	iso9660_fs_node_t* out=vfs_alloc(parent->header.vfs_index,directory_entry->identifier,length);
+	iso9660_fs_node_t* out=vfs_alloc(fs,directory_entry->identifier,length);
 	out->header.type=((directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 	out->header.parent=parent->header.id;
 	out->parent_offset=parent->current_offset;
@@ -105,7 +105,7 @@ static vfs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(partition_t* fs,vfs_no
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
 				goto _skip_directory_entry;
 			}
-			vfs_node_t* out=_iso9660_create_node_from_directory_entry(iso9660_node,directory,(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length);
+			vfs_node_t* out=_iso9660_create_node_from_directory_entry(fs,iso9660_node,directory,(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length);
 			out->prev_sibling=VFS_NODE_ID_EMPTY;
 			return (vfs_node_t*)out;
 _skip_directory_entry:
@@ -153,7 +153,7 @@ _skip_directory_entry:
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
 				goto _skip_directory_entry2;
 			}
-			vfs_node_t* out=_iso9660_create_node_from_directory_entry(iso9660_parent,directory,(iso9660_parent->data_offset<<11)+iso9660_parent->data_length-data_length);
+			vfs_node_t* out=_iso9660_create_node_from_directory_entry(fs,iso9660_parent,directory,(iso9660_parent->data_offset<<11)+iso9660_parent->data_length-data_length);
 			out->prev_sibling=VFS_NODE_ID_EMPTY;
 			return (vfs_node_t*)out;
 _skip_directory_entry2:

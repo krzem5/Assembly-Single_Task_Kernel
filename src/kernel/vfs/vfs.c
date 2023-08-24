@@ -13,15 +13,14 @@
 
 
 
-void* KERNEL_CORE_CODE vfs_alloc(u8 vfs_index,const char* name,u8 name_length){
-	partition_t* fs=partition_data+vfs_index;
+void* KERNEL_CORE_CODE vfs_alloc(partition_t* fs,const char* name,u8 name_length){
 	if (name_length>63){
 		name_length=63;
 		ERROR_CORE("vfs_node_t.name_length too long");
 	}
 	vfs_node_t* out=vfs_allocator_get(&(fs->allocator),VFS_NODE_ID_EMPTY,1);
 	out->type=VFS_NODE_TYPE_FILE;
-	out->vfs_index=fs-partition_data;
+	out->vfs_index=fs->index;
 	out->name_length=name_length;
 	out->flags=0;
 	for (u8 i=0;i<name_length;i++){
@@ -41,7 +40,7 @@ _Bool vfs_dealloc(vfs_node_t* node){
 	if (!node){
 		return 1;
 	}
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	lock_acquire_exclusive(&(fs->lock));
 	_Bool out=fs->config->delete(fs,node);
 	if (out){
@@ -54,7 +53,7 @@ _Bool vfs_dealloc(vfs_node_t* node){
 
 
 vfs_node_t* vfs_get_by_id(vfs_node_id_t id){
-	return vfs_allocator_get(&((partition_data+(id>>56))->allocator),id,0);
+	return vfs_allocator_get(&(partition_get(id>>56)->allocator),id,0);
 }
 
 
@@ -136,7 +135,7 @@ _check_next_fs:
 	if (node||type==VFS_NODE_TYPE_INVALID||!name_length){
 		return node;
 	}
-	partition_t* fs=partition_data+node_parent->vfs_index;
+	partition_t* fs=partition_get(node_parent->vfs_index);
 	lock_release_exclusive(&(fs->lock));
 	node=fs->config->create(fs,type==VFS_NODE_TYPE_DIRECTORY,name,name_length);
 	lock_release_exclusive(&(fs->lock));
@@ -185,7 +184,7 @@ vfs_node_t* KERNEL_CORE_CODE vfs_get_relative(vfs_node_t* node,u8 relative){
 	if (*id==VFS_NODE_ID_EMPTY){
 		return NULL;
 	}
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	vfs_node_t* out=vfs_allocator_get(&(fs->allocator),*id,0);
 	if (!out){
 		lock_acquire_exclusive(&(fs->lock));
@@ -202,7 +201,7 @@ _Bool vfs_set_relative(vfs_node_t* node,u8 relative,vfs_node_t* other){
 	if (!node){
 		return 0;
 	}
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	vfs_node_id_t* id;
 	switch (relative){
 		case VFS_RELATIVE_PARENT:
@@ -242,7 +241,7 @@ _Bool vfs_move(vfs_node_t* src_node,vfs_node_t* dst_node){
 	if (!src_node||!dst_node||src_node->vfs_index!=dst_node->vfs_index||src_node->type!=dst_node->type){
 		return 0;
 	}
-	partition_t* fs=partition_data+src_node->vfs_index;
+	partition_t* fs=partition_get(src_node->vfs_index);
 	_Bool out=1;
 	if (src_node->type==VFS_NODE_TYPE_DIRECTORY){
 		vfs_node_t* child=vfs_get_relative(src_node,VFS_RELATIVE_FIRST_CHILD);
@@ -312,7 +311,7 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 	if (node->type!=VFS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	if (!(fs->config->flags&PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
 		lock_acquire_exclusive(&(fs->lock));
 		u64 out=fs->config->read(fs,node,offset,buffer,count);
@@ -370,7 +369,7 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 	if (node->type!=VFS_NODE_TYPE_FILE||!count){
 		return 0;
 	}
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	if (!(fs->config->flags&PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO)){
 		lock_acquire_exclusive(&(fs->lock));
 		u64 out=fs->config->write(fs,node,offset,buffer,count);
@@ -412,7 +411,7 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 
 
 u64 vfs_get_size(vfs_node_t* node){
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	lock_acquire_exclusive(&(fs->lock));
 	u64 out=fs->config->get_size(fs,node);
 	lock_release_exclusive(&(fs->lock));
@@ -422,7 +421,7 @@ u64 vfs_get_size(vfs_node_t* node){
 
 
 _Bool vfs_set_size(vfs_node_t* node,u64 size){
-	partition_t* fs=partition_data+node->vfs_index;
+	partition_t* fs=partition_get(node->vfs_index);
 	lock_acquire_exclusive(&(fs->lock));
 	_Bool out=fs->config->set_size(fs,node,size);
 	lock_release_exclusive(&(fs->lock));
@@ -459,7 +458,7 @@ u32 vfs_get_full_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 		buffer[i]='/';
 	}
 	if (node->vfs_index!=partition_boot->index){
-		const partition_t* partition=partition_data+node->vfs_index;
+		const partition_t* partition=partition_get(node->vfs_index);
 		if (i<partition->name_length+1){
 			return 0;
 		}

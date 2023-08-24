@@ -77,36 +77,31 @@ void KERNEL_CORE_CODE kernel_load(void){
 	}
 	if (prev_boot_drive){
 		LOG_CORE("Searching for previous boot drive partition...");
-		partition_t* partition=partition_data;
-		for (u8 i=0;i<partition_count;i++){
+		for (partition_t* partition=partition_data2;partition;partition=partition->next){
 			if (partition->drive==prev_boot_drive&&partition->partition_config.type==PARTITION_CONFIG_TYPE_KFS){
 				partition->flags|=PARTITION_FLAG_PREVIOUS_BOOT;
 				break;
 			}
-			partition++;
 		}
 	}
 	char path[64];
 _check_every_drive:
-	for (u8 i=0;i<partition_count;i++){
-		partition_t* partition=partition_data+i;
-		if (boot_drive){
-			if (partition->drive!=boot_drive){
-				continue;
-			}
+	for (partition_t* partition=partition_data2;partition;partition=partition->next){
+		if (boot_drive&&partition->drive!=boot_drive){
+			continue;
 		}
-		u8 j=0;
-		while (partition->name[j]){
-			path[j]=partition->name[j];
-			j++;
+		u8 i=0;
+		while (partition->name[i]){
+			path[i]=partition->name[i];
+			i++;
 		}
-		path[j]=':';
-		j++;
-		for (u8 k=0;_kernel_file_path[k];k++){
-			path[j]=_kernel_file_path[k];
-			j++;
+		path[i]=':';
+		i++;
+		for (u8 j=0;_kernel_file_path[j];j++){
+			path[i]=_kernel_file_path[j];
+			i++;
 		}
-		path[j]=0;
+		path[i]=0;
 		INFO_CORE("Trying to load the kernel from '%s'...",path);
 		vfs_node_t* kernel=vfs_get_by_path(NULL,path,0);
 		if (!kernel){

@@ -20,6 +20,10 @@
 
 
 
+struct _PARTITION;
+
+
+
 typedef u64 vfs_node_id_t;
 
 
@@ -40,7 +44,7 @@ typedef struct _VFS_NODE{
 
 
 
-void* vfs_alloc(u8 vfs_index,const char* name,u8 name_length);
+void* vfs_alloc(struct _PARTITION* fs,const char* name,u8 name_length);
 
 
 

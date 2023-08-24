@@ -36,6 +36,7 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 partition_t KERNEL_CORE_BSS partition_data[MAX_PARTITIONS];
+partition_t* KERNEL_CORE_BSS partition_data2;
 u8 KERNEL_CORE_BSS partition_count;
 partition_t* KERNEL_CORE_BSS partition_boot;
 
@@ -123,6 +124,8 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	}
 	partition_t* fs=partition_data+partition_count;
 	partition_count++;
+	fs->next=partition_data2;
+	partition_data2=fs;
 	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
@@ -162,13 +165,19 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	fs->extra_data=extra_data;
 	vfs_allocator_init(partition_count-1,config->node_size,&(fs->allocator));
 	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
-	fs->root=vfs_alloc(fs->index,"",0);
+	fs->root=vfs_alloc(fs,"",0);
 	fs->root->type=VFS_NODE_TYPE_DIRECTORY;
 	fs->root->flags|=VFS_NODE_FLAG_ROOT;
 	fs->root->parent=fs->root->id;
 	fs->root->prev_sibling=fs->root->id;
 	fs->root->next_sibling=fs->root->id;
 	return fs->root;
+}
+
+
+
+partition_t* KERNEL_CORE_CODE partition_get(u8 index){
+	return partition_data+index;
 }
 
 
@@ -190,8 +199,7 @@ void KERNEL_CORE_CODE partition_load_from_drive(drive_t* drive){
 
 void partition_flush_cache(void){
 	LOG("Flushing partition cache...");
-	for (u8 i=0;i<partition_count;i++){
-		partition_t* fs=partition_data+i;
+	for (partition_t* fs=partition_data2;fs;fs=fs->next){
 		lock_acquire_exclusive(&(fs->lock));
 		fs->config->flush_cache(fs);
 		lock_release_exclusive(&(fs->lock));

@@ -54,6 +54,7 @@ typedef struct _PARTITION_CONFIG{
 
 
 typedef struct _PARTITION{
+	struct _PARTITION* next;
 	lock_t lock;
 	const partition_file_system_config_t* config;
 	partition_config_t partition_config;
@@ -70,12 +71,17 @@ typedef struct _PARTITION{
 
 
 extern partition_t partition_data[];
+extern partition_t* partition_data2;
 extern u8 partition_count;
 extern partition_t* partition_boot;
 
 
 
 void* partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data);
+
+
+
+partition_t* partition_get(u8 index);
 
 
 

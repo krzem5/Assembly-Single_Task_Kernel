@@ -662,7 +662,7 @@ static vfs_node_t* _kfs_create(partition_t* fs,_Bool is_directory,const char* na
 	if (!kfs_node){
 		return NULL;
 	}
-	vfs_node_t* out=vfs_alloc(fs->index,name,name_length);
+	vfs_node_t* out=vfs_alloc(fs,name,name_length);
 	_node_to_fs_node(kfs_node,(kfs_fs_node_t*)out);
 	return out;
 }
@@ -747,7 +747,7 @@ static vfs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,vfs_node_t
 		return fs->root;
 	}
 	kfs_node_t* kfs_out=_get_node_by_index(block_cache,out_id);
-	vfs_node_t* out=vfs_alloc(fs->index,kfs_out->name,kfs_out->flags&KFS_MASK_NAME_LENGTH);
+	vfs_node_t* out=vfs_alloc(fs,kfs_out->name,kfs_out->flags&KFS_MASK_NAME_LENGTH);
 	_node_to_fs_node(kfs_out,(kfs_fs_node_t*)out);
 	return out;
 }
