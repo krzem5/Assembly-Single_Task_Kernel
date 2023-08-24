@@ -37,9 +37,7 @@ void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
 	INFO_CORE("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
 	INFO_CORE("Min page size: %lu, Max page size: %lu",1<<(12+((registers->cap>>48)&15)),1<<(12+((registers->cap>>52)&15)));
 	registers->cc&=~CC_EN;
-	while (registers->csts&CSTS_RDY){
-		__pause();
-	}
+	SPINLOOP(registers->csts&CSTS_RDY);
 	u32 queue_entries=(registers->cap&0xffff)+1;
 	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
 	INFO_CORE("Queue entry count: %u, Doorbell stride: %v",queue_entries,doorbell_stride);

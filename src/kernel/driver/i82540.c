@@ -101,9 +101,7 @@ static void _i82540_tx(void* extra_data,u64 packet,u16 length){
 		tail=0;
 	}
 	device->mmio[REG_TDT]=tail;
-	while (!(desc->status&0x0f)){
-		__pause();
-	}
+	SPINLOOP(!(desc->status&0x0f));
 }
 
 

@@ -56,13 +56,9 @@ void acpi_fadt_load(const void* fadt_ptr){
 	}
 	else{
 		io_port_out8(fadt->smi_command_port,fadt->acpi_enable);
-		while (!(io_port_in16(fadt->pm1a_control_block)&SCI_EN)){
-			__pause();
-		}
+		SPINLOOP(!(io_port_in16(fadt->pm1a_control_block)&SCI_EN));
 		if (fadt->pm1b_control_block){
-			while (!(io_port_in16(fadt->pm1b_control_block)&SCI_EN)){
-				__pause();
-			}
+			SPINLOOP(!(io_port_in16(fadt->pm1b_control_block)&SCI_EN));
 		}
 	}
 	_fadt_pm1a_control_block=fadt->pm1a_control_block;

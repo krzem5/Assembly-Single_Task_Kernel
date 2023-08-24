@@ -9,6 +9,18 @@
 
 
 
+#define SPINLOOP(cond) \
+	do{ \
+		inline void KERNEL_NOCOVERAGE __tmp(void){ \
+			while (cond){ \
+				__pause(); \
+			} \
+		} \
+		__tmp(); \
+	} while(0)
+
+
+
 static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
 	asm volatile("pause":::"memory");
 }

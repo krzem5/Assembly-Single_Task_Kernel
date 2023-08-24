@@ -46,9 +46,7 @@ extern const gcov_info_t* __KERNEL_GCOV_INFO_END__;
 
 static void KERNEL_NOCOVERAGE _output_bytes(const void* buffer,u32 length){
 	for (;length;length--){
-		while (!(io_port_in8(0x2fd)&0x20)){
-			__pause();
-		}
+		SPINLOOP(!(io_port_in8(0x2fd)&0x20));
 		io_port_out8(0x2f8,*((const u8*)buffer));
 		buffer++;
 	}

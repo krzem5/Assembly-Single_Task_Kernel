@@ -36,9 +36,7 @@ void lapic_send_ipi(u8 lapic_id,u16 vector){
 	_lapic_registers[REGISTER_ESR]=0;
 	_lapic_registers[REGISTER_ICR1]=lapic_id<<24;
 	_lapic_registers[REGISTER_ICR0]=vector;
-	while (_lapic_registers[REGISTER_ICR0]&APIC_ICR0_DELIVERY_STATUS_PENDING){
-		__pause();
-	}
+	SPINLOOP(_lapic_registers[REGISTER_ICR0]&APIC_ICR0_DELIVERY_STATUS_PENDING);
 }
 
 

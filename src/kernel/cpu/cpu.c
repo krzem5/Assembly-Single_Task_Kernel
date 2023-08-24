@@ -114,9 +114,7 @@ void cpu_start_all_cores(void){
 			lapic_send_ipi(i,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
 		}
 		const volatile u8* flags=&((_cpu_data+i)->flags);
-		while (!((*flags)&CPU_FLAG_ONLINE)){
-			__pause();
-		}
+		SPINLOOP(!((*flags)&CPU_FLAG_ONLINE));
 	}
 	cpu_data_t* cpu_data=_cpu_data+cpu_bsp_core_id;
 	cpu_data->user_func_arg[0]=0;
