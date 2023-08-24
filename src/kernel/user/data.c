@@ -25,7 +25,6 @@ typedef struct _USER_BIOS_DATA{
 
 
 typedef struct _USER_DRIVE{
-	struct _USER_DRIVE* next;
 	u8 flags;
 	u8 type;
 	u8 index;
@@ -39,7 +38,6 @@ typedef struct _USER_DRIVE{
 
 
 typedef struct _USER_PARTITION{
-	struct _USER_PARTITION* next;
 	u8 flags;
 	u8 type;
 	u8 index;
@@ -52,7 +50,6 @@ typedef struct _USER_PARTITION{
 
 
 typedef struct _USER_NUMA_CPU{
-	struct _USER_NUMA_CPU* next;
 	u8 apic_id;
 	u32 sapic_eid;
 } user_numa_cpu_t;
@@ -60,7 +57,6 @@ typedef struct _USER_NUMA_CPU{
 
 
 typedef struct _USER_NUMA_MEMORY_RANGE{
-	struct _USER_NUMA_MEMORY_RANGE* next;
 	u64 base_address;
 	u64 length;
 	_Bool hot_pluggable;
@@ -112,29 +108,78 @@ static char* _duplicate_string(const char* str){
 
 
 static void _generate_bios_data(user_data_header_t* header){
-	header->bios_data=NULL;
+	user_bios_data_t* user_bios_data=umm_alloc(sizeof(user_bios_data_t));
+	user_bios_data->bios_vendor=_duplicate_string(bios_data.bios_vendor);
+	user_bios_data->bios_version=_duplicate_string(bios_data.bios_version);
+	user_bios_data->manufacturer=_duplicate_string(bios_data.manufacturer);
+	user_bios_data->product=_duplicate_string(bios_data.product);
+	user_bios_data->version=_duplicate_string(bios_data.version);
+	user_bios_data->serial_number=_duplicate_string(bios_data.serial_number);
+	memcpy(user_bios_data->uuid,bios_data.uuid,16);
+	user_bios_data->wakeup_type=bios_data.wakeup_type;
+	header->bios_data=user_bios_data;
 }
 
 
 
 static void _generate_drives(user_data_header_t* header){
 	header->drive_count=0;
-	header->drives=NULL;
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		header->drive_count++;
+	}
+	header->drives=umm_alloc(header->drive_count*sizeof(user_drive_t));
+	user_drive_t* user_drive=header->drives;
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		user_drive->flags=drive->flags;
+		user_drive->type=drive->type;
+		user_drive->index=drive->index;
+		user_drive->name=_duplicate_string(drive->name);
+		user_drive->serial_number=_duplicate_string(drive->serial_number);
+		user_drive->model_number=_duplicate_string(drive->model_number);
+		user_drive->block_count=drive->block_count;
+		user_drive->block_size=drive->block_size;
+		user_drive++;
+	}
 }
 
 
 
 static void _generate_partitions(user_data_header_t* header){
 	header->partition_count=0;
-	header->partitions=NULL;
+	for (partition_t* partition=partition_data;partition;partition=partition->next){
+		header->partition_count++;
+	}
+	header->partitions=umm_alloc(header->partition_count*sizeof(user_partition_t));
+	user_partition_t* user_partition=header->partitions;
+	for (partition_t* partition=partition_data;partition;partition=partition->next){
+		user_partition->flags=partition->flags;
+		user_partition->type=partition->partition_config.type;
+		user_partition->index=partition->index;
+		user_partition->first_block_index=partition->partition_config.first_block_index;
+		user_partition->last_block_index=partition->partition_config.last_block_index;
+		user_partition->name=_duplicate_string(partition->name);
+		user_partition->drive_index=partition->drive->index;
+		user_partition++;
+	}
 }
 
 
 
 static void _generate_numa_nodes(user_data_header_t* header){
-	header->numa_node_count=0;
-	header->numa_nodes=NULL;
-	header->numa_node_locality_matrix=NULL;
+	header->numa_node_count=numa_node_count;
+	header->numa_nodes=umm_alloc(numa_node_count*sizeof(user_numa_node_t));
+	user_numa_node_t* user_numa_node=header->numa_nodes;
+	for (u32 i=0;i<numa_node_count;i++){
+		numa_node_t* numa_node=numa_nodes+i;
+		user_numa_node->index=numa_node->index;
+		user_numa_node->cpu_count=numa_node->cpu_count;
+		user_numa_node->memory_range_count=numa_node->memory_range_count;
+		user_numa_node->cpus=umm_alloc(numa_node->cpu_count*sizeof(user_numa_cpu_t));
+		user_numa_node->memory_ranges=umm_alloc(numa_node->memory_range_count*sizeof(user_numa_memory_range_t));
+		user_numa_node++;
+	}
+	header->numa_node_locality_matrix=umm_alloc(numa_node_count*numa_node_count);
+	memcpy(header->numa_node_locality_matrix,numa_node_locality_matrix,numa_node_count*numa_node_count);
 }
 
 
@@ -144,10 +189,10 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 		header->layer1_network_device=NULL;
 		return;
 	}
-	user_layer1_network_device_t* layer1_network_device=umm_alloc(sizeof(user_layer1_network_device_t));
-	layer1_network_device->name=_duplicate_string(network_layer1_name);
-	memcpy(layer1_network_device->mac_address,network_layer1_mac_address,6);
-	header->layer1_network_device=layer1_network_device;
+	user_layer1_network_device_t* user_layer1_network_device=umm_alloc(sizeof(user_layer1_network_device_t));
+	user_layer1_network_device->name=_duplicate_string(network_layer1_name);
+	memcpy(user_layer1_network_device->mac_address,network_layer1_mac_address,6);
+	header->layer1_network_device=user_layer1_network_device;
 }
 
 
