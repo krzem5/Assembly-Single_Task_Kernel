@@ -840,7 +840,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,vfs_node_t* node,u64 offse
 		offset+=(1<<DRIVE_BLOCK_SIZE_SHIFT)-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
-	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
+	while (1){
 		if (offset>=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 			offset=0;
 			range_index++;
@@ -848,6 +848,9 @@ static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,vfs_node_t* node,u64 offse
 				ERROR("Unimplemented: load next NFDA block");
 				return 0;
 			}
+		}
+		if (count<(1<<DRIVE_BLOCK_SIZE_SHIFT)){
+			break;
 		}
 		u32 transfer_size=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))-offset;
 		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){
@@ -914,7 +917,7 @@ static u64 _kfs_write(partition_t* fs,vfs_node_t* node,u64 offset,const u8* buff
 		offset+=(1<<DRIVE_BLOCK_SIZE_SHIFT)-1;
 	}
 	offset>>=DRIVE_BLOCK_SIZE_SHIFT;
-	while (count>=(1<<DRIVE_BLOCK_SIZE_SHIFT)){
+	while (1){
 		if (offset>=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 			offset=0;
 			range_index++;
@@ -922,6 +925,9 @@ static u64 _kfs_write(partition_t* fs,vfs_node_t* node,u64 offset,const u8* buff
 				ERROR("Unimplemented: load next NFDA block");
 				return 0;
 			}
+		}
+		if (count<(1<<DRIVE_BLOCK_SIZE_SHIFT)){
+			break;
 		}
 		u32 transfer_size=(block_cache->nfda.ranges[range_index].block_count<<(12-DRIVE_BLOCK_SIZE_SHIFT))-offset;
 		if ((count>>DRIVE_BLOCK_SIZE_SHIFT)<transfer_size){

@@ -6,6 +6,13 @@
 
 
 
+#define FEATURE(reg,bit,name) \
+	if (cpuid.reg&(1<<bit)){ \
+		printf(" %s",name); \
+	}
+
+
+
 typedef struct _CPUID_DATA{
 	u32 eax;
 	u32 ebx;
@@ -80,6 +87,183 @@ void cpu_main(int argc,const char*const* argv){
 		_execute_cpuid(0x80000008,&cpuid);
 		printf("CPU physical/virtual address size: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m bits\n",cpuid.eax&0xff,(cpuid.eax>>8)&0xff);
 	}
+	printf("CPU flags:\x1b[1m");
+	if (max_level>=1){
+		_execute_cpuid(1,&cpuid);
+		FEATURE(ecx,0,"sse3");
+		FEATURE(ecx,1,"pclmulqdq");
+		FEATURE(ecx,2,"dtes64");
+		FEATURE(ecx,3,"monitor");
+		FEATURE(ecx,4,"ds_cpl");
+		FEATURE(ecx,5,"vmx");
+		FEATURE(ecx,6,"smx");
+		FEATURE(ecx,7,"eist");
+		FEATURE(ecx,8,"tm2");
+		FEATURE(ecx,9,"ssse3");
+		FEATURE(ecx,10,"cnxt_id");
+		FEATURE(ecx,11,"sdbg");
+		FEATURE(ecx,12,"fma");
+		FEATURE(ecx,13,"cmpxchg16b");
+		FEATURE(ecx,14,"xtpr");
+		FEATURE(ecx,15,"pdcm");
+		FEATURE(ecx,17,"pcid");
+		FEATURE(ecx,18,"dca");
+		FEATURE(ecx,19,"sse4_1");
+		FEATURE(ecx,20,"sse4_2");
+		FEATURE(ecx,21,"x2apic");
+		FEATURE(ecx,22,"movbe");
+		FEATURE(ecx,23,"popcnt");
+		FEATURE(ecx,24,"tsc_deadline_timer");
+		FEATURE(ecx,25,"aesni");
+		FEATURE(ecx,26,"xsave");
+		FEATURE(ecx,27,"osxsave");
+		FEATURE(ecx,28,"avx");
+		FEATURE(ecx,29,"f16c");
+		FEATURE(ecx,30,"rdrand");
+		FEATURE(edx,0,"fpu");
+		FEATURE(edx,1,"vme");
+		FEATURE(edx,2,"de");
+		FEATURE(edx,3,"pse");
+		FEATURE(edx,4,"tsc");
+		FEATURE(edx,5,"msr");
+		FEATURE(edx,6,"pae");
+		FEATURE(edx,7,"mce");
+		FEATURE(edx,8,"cx8");
+		FEATURE(edx,9,"apic");
+		FEATURE(edx,11,"sep");
+		FEATURE(edx,12,"mtrr");
+		FEATURE(edx,13,"pge");
+		FEATURE(edx,14,"mca");
+		FEATURE(edx,15,"cmov");
+		FEATURE(edx,16,"pat");
+		FEATURE(edx,17,"pse36");
+		FEATURE(edx,18,"psn");
+		FEATURE(edx,19,"clfsh");
+		FEATURE(edx,21,"ds");
+		FEATURE(edx,22,"acpi");
+		FEATURE(edx,23,"mmx");
+		FEATURE(edx,24,"fxsr");
+		FEATURE(edx,25,"sse");
+		FEATURE(edx,26,"sse2");
+		FEATURE(edx,27,"ss");
+		FEATURE(edx,28,"htt");
+		FEATURE(edx,29,"tm");
+		FEATURE(edx,31,"pbe");
+	}
+	if (max_level>=7){
+		_execute_cpuid_count(7,0,&cpuid);
+		FEATURE(ebx,0,"fsgsbase");
+		FEATURE(ebx,1,"ia32_tsc_adjust_msr");
+		FEATURE(ebx,2,"sgx");
+		FEATURE(ebx,3,"bmi1");
+		FEATURE(ebx,4,"hle");
+		FEATURE(ebx,5,"avx2");
+		FEATURE(ebx,6,"fdp_excptn_only");
+		FEATURE(ebx,7,"smep");
+		FEATURE(ebx,8,"bmi2");
+		FEATURE(ebx,9,"enhanced_rep_mov");
+		FEATURE(ebx,10,"invpcid");
+		FEATURE(ebx,11,"rtm");
+		FEATURE(ebx,12,"rdt_m");
+		FEATURE(ebx,13,"deprecated_fpu_cs_ds");
+		FEATURE(ebx,14,"mpx");
+		FEATURE(ebx,15,"rdt_a");
+		FEATURE(ebx,16,"avx512f");
+		FEATURE(ebx,17,"avx512dq");
+		FEATURE(ebx,18,"rdseed");
+		FEATURE(ebx,19,"adx");
+		FEATURE(ebx,20,"smap");
+		FEATURE(ebx,21,"avx512_ifma");
+		FEATURE(ebx,23,"clflushopt");
+		FEATURE(ebx,24,"clwb");
+		FEATURE(ebx,25,"ptrace");
+		FEATURE(ebx,26,"avx512pf");
+		FEATURE(ebx,27,"avx512er");
+		FEATURE(ebx,28,"avx512cd");
+		FEATURE(ebx,29,"sha");
+		FEATURE(ebx,30,"avx512bw");
+		FEATURE(ebx,31,"avx512vl");
+		FEATURE(ecx,0,"prefetchwt1");
+		FEATURE(ecx,1,"avx512_vbmi");
+		FEATURE(ecx,2,"umip");
+		FEATURE(ecx,3,"pku");
+		FEATURE(ecx,4,"ospke");
+		FEATURE(ecx,5,"waitpkg");
+		FEATURE(ecx,6,"avx512_vbmi2");
+		FEATURE(ecx,7,"cet_ss");
+		FEATURE(ecx,8,"gfni");
+		FEATURE(ecx,9,"vaes");
+		FEATURE(ecx,10,"vpclmulqdq");
+		FEATURE(ecx,11,"avx512_vnni");
+		FEATURE(ecx,12,"avx512_bitalg");
+		FEATURE(ecx,14,"avx512_vpopcntdq");
+		FEATURE(ecx,16,"la57");
+		FEATURE(ecx,22,"rdpid");
+		FEATURE(ecx,23,"kl");
+		FEATURE(ecx,24,"bus_lock_detect");
+		FEATURE(ecx,25,"cldemote");
+		FEATURE(ecx,27,"movdiri");
+		FEATURE(ecx,28,"movdir64b");
+		FEATURE(ecx,29,"enqcmd");
+		FEATURE(ecx,30,"sgx_lc");
+		FEATURE(ecx,31,"pks");
+		FEATURE(edx,1,"sgx_keys");
+		FEATURE(edx,2,"avx512_4vnniw");
+		FEATURE(edx,3,"avx512_4fmaps");
+		FEATURE(edx,4,"fast_rep_mov");
+		FEATURE(edx,5,"uintr");
+		FEATURE(edx,8,"avx512_vp2intersect");
+		FEATURE(edx,9,"srbds_ctrl");
+		FEATURE(edx,10,"md_clear");
+		FEATURE(edx,11,"rtm_always_abort");
+		FEATURE(edx,13,"rtm_force_abort");
+		FEATURE(edx,14,"serialize");
+		FEATURE(edx,15,"hybrid");
+		FEATURE(edx,16,"tsxldtrk");
+		FEATURE(edx,18,"pconfig");
+		FEATURE(edx,19,"architectural_lbr");
+		FEATURE(edx,20,"cet_ibt");
+		FEATURE(edx,22,"amx_bf16");
+		FEATURE(edx,23,"avx512_fp16");
+		FEATURE(edx,24,"amx_tile");
+		FEATURE(edx,25,"amx_int8");
+		FEATURE(edx,26,"ibrs");
+		FEATURE(edx,27,"stibp");
+		FEATURE(edx,28,"l1d_flush");
+		FEATURE(edx,29,"arch_capabilities");
+		FEATURE(edx,30,"core_capabilities");
+		_execute_cpuid_count(7,1,&cpuid);
+		FEATURE(eax,4,"avx_vnni");
+		FEATURE(eax,5,"avx512_bf16");
+		FEATURE(eax,10,"fast_zero_rep_movsb");
+		FEATURE(eax,11,"fast_short_rep_stosb");
+		FEATURE(eax,12,"fast_short_rep_cmpsb");
+		FEATURE(eax,22,"hreset");
+		FEATURE(edx,18,"cet_sss");
+		_execute_cpuid_count(7,2,&cpuid);
+		FEATURE(edx,0,"psfd");
+		FEATURE(edx,1,"ipred_ctrl");
+		FEATURE(edx,2,"rrsba_ctrl");
+		FEATURE(edx,3,"ddpd_u");
+		FEATURE(edx,4,"bhi_ctrl");
+		FEATURE(edx,5,"mcdt_no");
+	}
+	if (max_extended_level>=1){
+		_execute_cpuid(0x80000001,&cpuid);
+		FEATURE(ecx,0,"lahf_sahf");
+		FEATURE(ecx,5,"lzcnt");
+		FEATURE(ecx,8,"prefetchw");
+		FEATURE(edx,11,"syscall");
+		FEATURE(edx,20,"nx");
+		FEATURE(edx,26,"pg1gb");
+		FEATURE(edx,27,"rdtscp");
+		FEATURE(edx,29,"intel64");
+	}
+	if (max_extended_level>=8){
+		_execute_cpuid(0x80000008,&cpuid);
+		FEATURE(ebx,8,"wbnoinvd");
+	}
+	printf("\x1b[0m\n");
 }
 
 

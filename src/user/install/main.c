@@ -11,8 +11,6 @@
 
 #define BUFFER_SIZE 4096
 
-
-
 #define BOOT_CODE_FILE_NAME "/kernel/core.bin"
 
 
