@@ -11,11 +11,11 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/syscall.h>
 #include <kernel/numa/syscall.h>
-#include <kernel/partition/syscall.h>
 #include <kernel/random/syscall.h>
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/user/syscall.h>
 #define KERNEL_LOG_NAME "syscall"
 
 
@@ -44,44 +44,38 @@ void* _syscall_handlers[]={
 	[4]=syscall_cpu_core_count,
 	[5]=syscall_cpu_core_start,
 	[6]=syscall_cpu_core_stop,
-	[7]=syscall_drive_list_length,
-	[8]=syscall_drive_list_get,
-	[9]=syscall_partition_count,
-	[10]=syscall_partition_get,
-	[11]=syscall_fd_open,
-	[12]=syscall_fd_close,
-	[13]=syscall_fd_delete,
-	[14]=syscall_fd_read,
-	[15]=syscall_fd_write,
-	[16]=syscall_fd_seek,
-	[17]=syscall_fd_resize,
-	[18]=syscall_fd_absolute_path,
-	[19]=syscall_fd_stat,
-	[20]=syscall_fd_get_relative,
-	[21]=syscall_fd_move,
-	[22]=syscall_network_layer1_config,
-	[23]=syscall_network_layer2_send,
-	[24]=syscall_network_layer2_poll,
-	[25]=syscall_network_layer3_refresh,
-	[26]=syscall_network_layer3_device_count,
-	[27]=syscall_network_layer3_device_get,
-	[28]=syscall_network_layer3_device_delete,
-	[29]=syscall_system_shutdown,
-	[30]=syscall_system_config,
-	[31]=syscall_memory_map,
-	[32]=syscall_memory_unmap,
-	[33]=syscall_memory_stats,
-	[34]=syscall_clock_get_converion,
-	[35]=syscall_drive_format,
-	[36]=syscall_drive_stats,
-	[37]=syscall_random_generate,
+	[7]=syscall_fd_open,
+	[8]=syscall_fd_close,
+	[9]=syscall_fd_delete,
+	[10]=syscall_fd_read,
+	[11]=syscall_fd_write,
+	[12]=syscall_fd_seek,
+	[13]=syscall_fd_resize,
+	[14]=syscall_fd_absolute_path,
+	[15]=syscall_fd_stat,
+	[16]=syscall_fd_get_relative,
+	[17]=syscall_fd_move,
+	[18]=syscall_network_layer1_config,
+	[19]=syscall_network_layer2_send,
+	[20]=syscall_network_layer2_poll,
+	[21]=syscall_network_layer3_refresh,
+	[22]=syscall_network_layer3_device_count,
+	[23]=syscall_network_layer3_device_get,
+	[24]=syscall_network_layer3_device_delete,
+	[25]=syscall_system_shutdown,
+	[26]=syscall_memory_map,
+	[27]=syscall_memory_unmap,
+	[28]=syscall_memory_stats,
+	[29]=syscall_clock_get_converion,
+	[30]=syscall_drive_format,
+	[31]=syscall_drive_stats,
+	[32]=syscall_random_generate,
 #if KERNEL_COVERAGE_ENABLED
-	[38]=syscall_coverage_dump_data,
+	[33]=syscall_coverage_dump_data,
 #else
-	[38]=syscall_empty,
+	[33]=syscall_empty,
 #endif
-	[39]=syscall_numa_node_count,
-	[40]=syscall_numa_node_locality,
+	[34]=syscall_user_data_pointer,
 	NULL
 };
 

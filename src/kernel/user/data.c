@@ -84,14 +84,20 @@ typedef struct _USER_LAYER1_NETWORK_DEVICE{
 typedef struct _USER_DATA_HEADER{
 	user_bios_data_t* bios_data;
 	u32 drive_count;
+	u32 drive_boot_index;
 	user_drive_t* drives;
 	u32 partition_count;
+	u32 partition_boot_index;
 	user_partition_t* partitions;
 	u32 numa_node_count;
 	user_numa_node_t* numa_nodes;
 	u8* numa_node_locality_matrix;
 	user_layer1_network_device_t* layer1_network_device;
 } user_data_header_t;
+
+
+
+void* user_data_pointer;
 
 
 
@@ -128,8 +134,8 @@ static void _generate_drives(user_data_header_t* header){
 		header->drive_count++;
 	}
 	header->drives=umm_alloc(header->drive_count*sizeof(user_drive_t));
-	user_drive_t* user_drive=header->drives;
 	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		user_drive_t* user_drive=header->drives+drive->index;
 		user_drive->flags=drive->flags;
 		user_drive->type=drive->type;
 		user_drive->index=drive->index;
@@ -138,7 +144,9 @@ static void _generate_drives(user_data_header_t* header){
 		user_drive->model_number=_duplicate_string(drive->model_number);
 		user_drive->block_count=drive->block_count;
 		user_drive->block_size=drive->block_size;
-		user_drive++;
+		if (drive->flags&DRIVE_FLAG_BOOT){
+			header->drive_boot_index=drive->index;
+		}
 	}
 }
 
@@ -149,17 +157,17 @@ static void _generate_partitions(user_data_header_t* header){
 	for (partition_t* partition=partition_data;partition;partition=partition->next){
 		header->partition_count++;
 	}
+	header->partition_boot_index=partition_boot->index;
 	header->partitions=umm_alloc(header->partition_count*sizeof(user_partition_t));
-	user_partition_t* user_partition=header->partitions;
 	for (partition_t* partition=partition_data;partition;partition=partition->next){
+		user_partition_t* user_partition=header->partitions+partition->index;
 		user_partition->flags=partition->flags;
 		user_partition->type=partition->partition_config.type;
-		user_partition->index=partition->index;
+		user_partition->index=partition->partition_config.index;
 		user_partition->first_block_index=partition->partition_config.first_block_index;
 		user_partition->last_block_index=partition->partition_config.last_block_index;
 		user_partition->name=_duplicate_string(partition->name);
 		user_partition->drive_index=partition->drive->index;
-		user_partition++;
 	}
 }
 
@@ -218,4 +226,5 @@ void user_data_generate(void){
 	_generate_partitions(header);
 	_generate_numa_nodes(header);
 	_generate_layer1_network_device(header);
+	user_data_pointer=header;
 }

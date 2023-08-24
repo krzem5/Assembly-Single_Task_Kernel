@@ -13,6 +13,7 @@ extern _syscall_cpu_core_count
 extern _syscall_cpu_core_start
 extern _syscall_cpu_core_stop
 extern _syscall_memory_map
+extern _user_data_init
 extern main
 global _start
 section .text
@@ -60,6 +61,8 @@ _start:
 	cmp dword [_start_core_count], r12d
 	pause
 	jne ._wait_for_cores
+	;;; Initialize system data
+	call _user_data_init
 	;;; Start user code
 	call main
 	;;; Shutdown CPU

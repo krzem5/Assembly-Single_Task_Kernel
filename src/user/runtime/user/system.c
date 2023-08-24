@@ -1,16 +1,5 @@
 #include <user/syscall.h>
-#include <user/system.h>
 #include <user/types.h>
-
-
-
-system_data_t system_data;
-
-
-
-void system_init(void){
-	_syscall_system_config(&system_data,sizeof(system_data_t));
-}
 
 
 

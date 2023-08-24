@@ -3,11 +3,7 @@
 #include <input.h>
 #include <user/clock.h>
 #include <user/cpu.h>
-#include <user/drive.h>
 #include <user/network.h>
-#include <user/numa.h>
-#include <user/partition.h>
-#include <user/system.h>
 
 
 
@@ -26,10 +22,6 @@ static void _network_thread(void){
 void main(void){
 	clock_init();
 	cpu_init();
-	drive_init();
-	numa_init();
-	partition_init();
-	system_init();
 	cpu_core_start((cpu_bsp_id?0:1),_network_thread,NULL);
 	cwd_init();
 	while (1){

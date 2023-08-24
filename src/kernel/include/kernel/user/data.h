@@ -3,6 +3,10 @@
 
 
 
+extern void* user_data_pointer;
+
+
+
 void user_data_generate(void);
 
 

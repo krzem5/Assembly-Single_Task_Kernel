@@ -4,14 +4,9 @@
 
 
 
-#define MAX_PARTITIONS 32
-
-
-
-#define PARTITION_FLAG_PRESENT 1
-#define PARTITION_FLAG_BOOT 2
-#define PARTITION_FLAG_HALF_INSTALLED 4
-#define PARTITION_FLAG_PREVIOUS_BOOT 8
+#define PARTITION_FLAG_BOOT 1
+#define PARTITION_FLAG_HALF_INSTALLED 2
+#define PARTITION_FLAG_PREVIOUS_BOOT 4
 
 #define PARTITION_TYPE_DRIVE 0
 #define PARTITION_TYPE_EMPTY 1
@@ -26,19 +21,15 @@ typedef struct _PARTITION{
 	u8 index;
 	u64 first_block_index;
 	u64 last_block_index;
-	char name[16];
+	const char* name;
 	u32 drive_index;
 } partition_t;
 
 
 
-extern partition_t partitions[MAX_PARTITIONS];
 extern u32 partition_count;
 extern u32 partition_boot_index;
-
-
-
-void partition_init(void);
+extern const partition_t* partitions;
 
 
 

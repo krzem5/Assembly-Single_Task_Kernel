@@ -32,22 +32,6 @@ void _syscall_cpu_core_stop(void);
 
 
 
-u32 _syscall_drive_list_length(void);
-
-
-
-s32 _syscall_drive_list_get(u32 index,void* ptr,u32 size);
-
-
-
-u32 _syscall_partition_count(void);
-
-
-
-s32 _syscall_partition_get(u32 index,void* ptr,u32 size);
-
-
-
 s32 _syscall_fd_open(s32 fd,const char* path,u32 length,u32 flags);
 
 
@@ -124,10 +108,6 @@ void _syscall_system_shutdown(u32 flags);
 
 
 
-_Bool _syscall_system_config(void* buffer,u32 size);
-
-
-
 void* _syscall_memory_map(u64 length,u32 flags);
 
 
@@ -156,11 +136,7 @@ _Bool _syscall_random_generate(void* buffer,u64 size);
 
 
 
-u32 _syscall_numa_node_count(void);
-
-
-
-u32 _syscall_numa_node_locality(u32 from,u32 to);
+const void* _syscall_user_data_pointer(void);
 
 
 

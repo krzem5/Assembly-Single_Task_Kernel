@@ -4,12 +4,7 @@
 
 
 
-#define MAX_DRIVES 32
-
-
-
-#define DRIVE_FLAG_PRESENT 1
-#define DRIVE_FLAG_BOOT 2
+#define DRIVE_FLAG_BOOT 1
 
 #define DRIVE_TYPE_AHCI 0
 #define DRIVE_TYPE_ATA 1
@@ -34,22 +29,18 @@ typedef struct _DRIVE{
 	u8 flags;
 	u8 type;
 	u8 index;
-	char name[16];
-	char serial_number[32];
-	char model_number[64];
+	const char* name;
+	const char* serial_number;
+	const char* model_number;
 	u64 block_count;
 	u64 block_size;
 } drive_t;
 
 
 
-extern drive_t drives[MAX_DRIVES];
 extern u32 drive_count;
 extern u32 drive_boot_index;
-
-
-
-void drive_init(void);
+extern const drive_t* drives;
 
 
 
