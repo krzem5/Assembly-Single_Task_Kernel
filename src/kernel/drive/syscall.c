@@ -38,44 +38,6 @@ static drive_t* _get_drive(u64 index){
 
 
 
-void syscall_drive_list_length(syscall_registers_t* regs){
-	regs->rax=0;
-	for (drive_t* drive=drive_data;drive;drive=drive->next){
-		regs->rax++;
-	}
-}
-
-
-
-void syscall_drive_list_get(syscall_registers_t* regs){
-	if (regs->rdx!=sizeof(user_drive_t)){
-		regs->rax=-1;
-		return;
-	}
-	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
-	if (!address){
-		regs->rax=-1;
-		return;
-	}
-	const drive_t* drive=_get_drive(regs->rdi);
-	if (!drive){
-		regs->rax=-1;
-		return;
-	}
-	user_drive_t* user_drive=(void*)address;
-	user_drive->flags=USER_DRIVE_FLAG_PRESENT|((drive->flags&DRIVE_FLAG_BOOT)?USER_DRIVE_FLAG_BOOT:0);
-	user_drive->type=drive->type;
-	user_drive->index=regs->rdi;
-	memcpy(user_drive->name,drive->name,16);
-	memcpy(user_drive->serial_number,drive->serial_number,32);
-	memcpy(user_drive->model_number,drive->model_number,64);
-	user_drive->block_count=drive->block_count;
-	user_drive->block_size=drive->block_size;
-	regs->rax=0;
-}
-
-
-
 void syscall_drive_format(syscall_registers_t* regs){
 	u64 address=0;
 	if (regs->rdx){

@@ -4,14 +4,6 @@
 
 
 
-void syscall_drive_list_length(syscall_registers_t* regs);
-
-
-
-void syscall_drive_list_get(syscall_registers_t* regs);
-
-
-
 void syscall_drive_format(syscall_registers_t* regs);
 
 
