@@ -175,7 +175,20 @@ static void _generate_numa_nodes(user_data_header_t* header){
 		user_numa_node->cpu_count=numa_node->cpu_count;
 		user_numa_node->memory_range_count=numa_node->memory_range_count;
 		user_numa_node->cpus=umm_alloc(numa_node->cpu_count*sizeof(user_numa_cpu_t));
+		user_numa_cpu_t* user_numa_cpu=user_numa_node->cpus;
+		for (numa_cpu_t* cpu=numa_node->cpus;cpu;cpu=cpu->next){
+			user_numa_cpu->apic_id=cpu->apic_id;
+			user_numa_cpu->sapic_eid=cpu->sapic_eid;
+			user_numa_cpu++;
+		}
 		user_numa_node->memory_ranges=umm_alloc(numa_node->memory_range_count*sizeof(user_numa_memory_range_t));
+		user_numa_memory_range_t* user_numa_memory_range=user_numa_node->memory_ranges;
+		for (numa_memory_range_t* memory_range=numa_node->memory_ranges;memory_range;memory_range=memory_range->next){
+			user_numa_memory_range->base_address=memory_range->base_address;
+			user_numa_memory_range->length=memory_range->length;
+			user_numa_memory_range->hot_pluggable=memory_range->hot_pluggable;
+			user_numa_memory_range++;
+		}
 		user_numa_node++;
 	}
 	header->numa_node_locality_matrix=umm_alloc(numa_node_count*numa_node_count);
