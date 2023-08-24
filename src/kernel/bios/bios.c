@@ -104,7 +104,6 @@ void bios_get_system_data(void){
 			smbios=(const smbios_t*)start;
 			goto _smbios_found;
 		}
-		start+=4;
 	}
 	ERROR("SMBIOS not found");
 	for (;;);
