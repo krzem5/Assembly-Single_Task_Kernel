@@ -36,9 +36,9 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 static partition_t KERNEL_CORE_BSS _partition_data_raw[MAX_PARTITIONS];
+static u8 KERNEL_CORE_BSS _partition_count;
 
 partition_t* KERNEL_CORE_BSS partition_data;
-u8 KERNEL_CORE_BSS partition_count;
 partition_t* KERNEL_CORE_BSS partition_boot;
 
 
@@ -119,18 +119,18 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
-	if (partition_count>=MAX_PARTITIONS){
+	if (_partition_count>=MAX_PARTITIONS){
 		ERROR_CORE("Too many partitions!");
 		return NULL;
 	}
-	partition_t* fs=_partition_data_raw+partition_count;
-	partition_count++;
+	partition_t* fs=_partition_data_raw+_partition_count;
+	_partition_count++;
 	fs->next=partition_data;
 	partition_data=fs;
 	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
-	fs->index=partition_count-1;
+	fs->index=_partition_count-1;
 	fs->flags=0;
 	u8 i=0;
 	while (drive->name[i]){
@@ -164,7 +164,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	}
 	fs->drive=drive;
 	fs->extra_data=extra_data;
-	vfs_allocator_init(partition_count-1,config->node_size,&(fs->allocator));
+	vfs_allocator_init(_partition_count-1,config->node_size,&(fs->allocator));
 	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=vfs_alloc(fs,"",0);
 	fs->root->type=VFS_NODE_TYPE_DIRECTORY;
@@ -178,7 +178,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 
 
 partition_t* KERNEL_CORE_CODE partition_get(u8 index){
-	return _partition_data_raw+index;
+	return (index>=_partition_count?NULL:_partition_data_raw+index);
 }
 
 
