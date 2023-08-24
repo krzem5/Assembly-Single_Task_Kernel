@@ -29,6 +29,7 @@ typedef struct _DRIVE_STATS{
 
 
 typedef struct _DRIVE{
+	struct _DRIVE* next;
 	u8 type;
 	u8 flags;
 	u8 index;

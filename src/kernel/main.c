@@ -18,6 +18,7 @@
 #include <kernel/random/random.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
+#include <kernel/user/data.h>
 #define KERNEL_LOG_NAME "main"
 
 
@@ -48,5 +49,6 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	network_layer3_init();
 	random_init();
 	serial_init_irq();
+	user_data_generate();
 	cpu_start_all_cores();
 }

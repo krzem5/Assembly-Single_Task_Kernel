@@ -2,14 +2,8 @@
 #include <kernel/partition/partition.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
-#include <kernel/memory/pmm.h>
-#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "drive_list"
-
-
-
-#define MAX_DRIVE_COUNT 32
 
 
 
@@ -29,33 +23,32 @@ static const char*const KERNEL_CORE_RDATA _drive_type_names[]={
 
 
 
-drive_t KERNEL_CORE_BSS drive_data[MAX_DRIVE_COUNT];
-u32 KERNEL_CORE_BSS drive_count;
+static u32 KERNEL_CORE_BSS _drive_count;
+
+drive_t* KERNEL_CORE_BSS drive_data;
 
 
 
 void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 	LOG_CORE("Installing drive '%s/%s' as '%s'",_drive_type_names[drive->type],drive->model_number,drive->name);
-	if (drive_count>=MAX_DRIVE_COUNT){
-		ERROR_CORE("Too many drives");
-		return;
-	}
-	drive_data[drive_count]=*drive;
-	(drive_data+drive_count)->flags=0;
-	(drive_data+drive_count)->index=drive_count;
-	(drive_data+drive_count)->index=drive_count;
-	(drive_data+drive_count)->block_size_shift=__builtin_ctzll(drive->block_size);
-	(drive_data+drive_count)->stats=kmm_alloc(sizeof(drive_stats_t));
-	(drive_data+drive_count)->stats->root_block_count=0;
-	(drive_data+drive_count)->stats->batc_block_count=0;
-	(drive_data+drive_count)->stats->nda3_block_count=0;
-	(drive_data+drive_count)->stats->nda2_block_count=0;
-	(drive_data+drive_count)->stats->nda1_block_count=0;
-	(drive_data+drive_count)->stats->nfda_block_count=0;
-	(drive_data+drive_count)->stats->data_block_count=0;
-	drive_count++;
+	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
+	*new_drive=*drive;
+	new_drive->next=drive_data;
+	drive_data=new_drive;
+	new_drive->flags=0;
+	new_drive->index=_drive_count;
+	new_drive->block_size_shift=__builtin_ctzll(drive->block_size);
+	new_drive->stats=kmm_alloc(sizeof(drive_stats_t));
+	new_drive->stats->root_block_count=0;
+	new_drive->stats->batc_block_count=0;
+	new_drive->stats->nda3_block_count=0;
+	new_drive->stats->nda2_block_count=0;
+	new_drive->stats->nda1_block_count=0;
+	new_drive->stats->nfda_block_count=0;
+	new_drive->stats->data_block_count=0;
+	_drive_count++;
 	INFO_CORE("Drive serial number: '%s', Drive size: %v (%lu * %lu)",drive->serial_number,drive->block_count*drive->block_size,drive->block_count,drive->block_size);
-	if (drive->block_size>>((drive_data+drive_count-1)->block_size_shift+1)){
+	if (drive->block_size>>(new_drive->block_size_shift+1)){
 		WARN_CORE("Drive block size is not a power of 2");
 	}
 }
@@ -64,7 +57,7 @@ void KERNEL_CORE_CODE drive_list_add_drive(const drive_t* drive){
 
 void KERNEL_CORE_CODE drive_list_load_partitions(void){
 	LOG_CORE("Loading drive partitions...");
-	for (u32 i=0;i<drive_count;i++){
-		partition_load_from_drive(drive_data+i);
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		partition_load_from_drive(drive);
 	}
 }

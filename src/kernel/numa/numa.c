@@ -24,6 +24,8 @@ void numa_init(u32 proximity_domain_count){
 	numa_node_locality_matrix=kmm_alloc(numa_node_count*numa_node_count*sizeof(u8));
 	for (u32 i=0;i<numa_node_count;i++){
 		(numa_nodes+i)->index=i;
+		(numa_nodes+i)->cpu_count=0;
+		(numa_nodes+i)->memory_range_count=0;
 		(numa_nodes+i)->cpus=NULL;
 		(numa_nodes+i)->memory_ranges=NULL;
 		for (u32 j=0;j<numa_node_count*numa_node_count;j++){
@@ -53,6 +55,7 @@ void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 	cpu->next=(numa_nodes+node_index)->cpus;
 	cpu->apic_id=apic_id;
 	cpu->sapic_eid=sapic_eid;
+	(numa_nodes+node_index)->cpu_count++;
 	(numa_nodes+node_index)->cpus=cpu;
 }
 
@@ -68,5 +71,6 @@ void numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_
 	memory_range->base_address=base_address;
 	memory_range->length=length;
 	memory_range->hot_pluggable=hot_pluggable;
+	(numa_nodes+node_index)->memory_range_count++;
 	(numa_nodes+node_index)->memory_ranges=memory_range;
 }

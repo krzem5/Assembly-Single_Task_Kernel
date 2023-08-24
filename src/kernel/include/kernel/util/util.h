@@ -4,17 +4,43 @@
 
 
 
+#define memcpy(dst,src,length) ((__builtin_constant_p(length)?__memcpy_inline:(memcpy))((dst),(src),(length)))
+#define memset(dst,src,length) ((__builtin_constant_p(length)?__memset_inline:(memset))((dst),(src),(length)))
+
+
+
 static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
 	asm volatile("pause":::"memory");
 }
 
 
 
-void* memcpy(void* dst,const void* src,u64 length);
+static inline void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
+	u8* dst_ptr=dst;
+	const u8* src_ptr=src;
+	for (u64 i=0;i<length;i++){
+		dst_ptr[i]=src_ptr[i];
+	}
+	return dst;
+}
 
 
 
-void* memset(void* dst,u8 value,u64 length);
+static inline void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
+	u8* ptr=dst;
+	for (u64 i=0;i<length;i++){
+		ptr[i]=value;
+	}
+	return dst;
+}
+
+
+
+void* (memcpy)(void* dst,const void* src,u64 length);
+
+
+
+void* (memset)(void* dst,u8 value,u64 length);
 
 
 

@@ -27,6 +27,8 @@ typedef struct _NUMA_MEMORY_RANGE{
 
 typedef struct _NUMA_NODE{
 	u32 index;
+	u32 cpu_count;
+	u32 memory_range_count;
 	numa_cpu_t* cpus;
 	numa_memory_range_t* memory_ranges;
 } numa_node_t;

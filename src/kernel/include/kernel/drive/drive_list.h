@@ -5,8 +5,7 @@
 
 
 
-extern drive_t drive_data[];
-extern u32 drive_count;
+extern drive_t* drive_data;
 
 
 

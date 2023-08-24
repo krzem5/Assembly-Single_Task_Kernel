@@ -27,14 +27,28 @@ typedef struct _USER_DRIVE{
 
 
 
+static drive_t* _get_drive(u64 index){
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		if (drive->index==index){
+			return drive;
+		}
+	}
+	return NULL;
+}
+
+
+
 void syscall_drive_list_length(syscall_registers_t* regs){
-	regs->rax=drive_count;
+	regs->rax=0;
+	for (drive_t* drive=drive_data;drive;drive=drive->next){
+		regs->rax++;
+	}
 }
 
 
 
 void syscall_drive_list_get(syscall_registers_t* regs){
-	if (regs->rdi>=drive_count||regs->rdx!=sizeof(user_drive_t)){
+	if (regs->rdx!=sizeof(user_drive_t)){
 		regs->rax=-1;
 		return;
 	}
@@ -43,7 +57,11 @@ void syscall_drive_list_get(syscall_registers_t* regs){
 		regs->rax=-1;
 		return;
 	}
-	const drive_t* drive=drive_data+regs->rdi;
+	const drive_t* drive=_get_drive(regs->rdi);
+	if (!drive){
+		regs->rax=-1;
+		return;
+	}
 	user_drive_t* user_drive=(void*)address;
 	user_drive->flags=USER_DRIVE_FLAG_PRESENT|((drive->flags&DRIVE_FLAG_BOOT)?USER_DRIVE_FLAG_BOOT:0);
 	user_drive->type=drive->type;
@@ -59,10 +77,6 @@ void syscall_drive_list_get(syscall_registers_t* regs){
 
 
 void syscall_drive_format(syscall_registers_t* regs){
-	if (regs->rdi>=drive_count){
-		regs->rax=0;
-		return;
-	}
 	u64 address=0;
 	if (regs->rdx){
 		address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
@@ -71,13 +85,18 @@ void syscall_drive_format(syscall_registers_t* regs){
 			return;
 		}
 	}
-	regs->rax=kfs_format_drive(drive_data+regs->rdi,(void*)address,regs->rdx);
+	const drive_t* drive=_get_drive(regs->rdi);
+	if (!drive){
+		regs->rax=0;
+		return;
+	}
+	regs->rax=kfs_format_drive(drive,(void*)address,regs->rdx);
 }
 
 
 
 void syscall_drive_stats(syscall_registers_t* regs){
-	if (regs->rdi>=drive_count||regs->rdx!=sizeof(drive_stats_t)){
+	if (regs->rdx!=sizeof(drive_stats_t)){
 		regs->rax=0;
 		return;
 	}
@@ -86,7 +105,12 @@ void syscall_drive_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
+	const drive_t* drive=_get_drive(regs->rdi);
+	if (!drive){
+		regs->rax=0;
+		return;
+	}
 	partition_flush_cache();
-	*((drive_stats_t*)address)=*((drive_data+regs->rdi)->stats);
+	*((drive_stats_t*)address)=*(drive->stats);
 	regs->rax=1;
 }

@@ -285,6 +285,10 @@ def _kvm_flags():
 	with open("/proc/cpuinfo","r") as rf:
 		if ("vmx" not in rf.read()):
 			return []
+	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
+		if ("tsc" in rf.read()):
+			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
+			return []
 	return ["-accel","kvm"]
 
 
