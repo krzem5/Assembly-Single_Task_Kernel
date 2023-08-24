@@ -50,7 +50,7 @@ static KERNEL_CORE_RDATA const char _ata_drive_name_format_template[]="ata%u";
 
 
 
-static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
+static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE _delay_400ns(const ata_device_t* device){
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
@@ -59,7 +59,7 @@ static inline void KERNEL_CORE_CODE _delay_400ns(const ata_device_t* device){
 
 
 
-static _Bool KERNEL_CORE_CODE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
+static _Bool KERNEL_CORE_CODE KERNEL_NOCOVERAGE _wait_for_device(const ata_device_t* device,u8 mask,u8 value,u32 timeout){
 	for (;timeout&&(io_port_in8(device->port+ATA_REG_STATUS)&mask)!=value;timeout--){
 		if (io_port_in8(device->port+ATA_REG_STATUS)&STATUS_ERR){
 			WARN_CORE("ATA/ATAPI device returned an error");

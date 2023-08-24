@@ -9,15 +9,22 @@
 
 
 
+#if KERNEL_COVERAGE_ENABLED
 #define SPINLOOP(cond) \
 	do{ \
-		inline void KERNEL_NOCOVERAGE __tmp(void){ \
+		inline void KERNEL_NOCOVERAGE __nocoverage_spinloop(void){ \
 			while (cond){ \
 				__pause(); \
 			} \
 		} \
-		__tmp(); \
+		__nocoverage_spinloop(); \
 	} while(0)
+#else
+#define SPINLOOP(cond) \
+	while (cond){ \
+		__pause(); \
+	}
+#endif
 
 
 
