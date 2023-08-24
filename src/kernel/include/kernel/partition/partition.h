@@ -70,8 +70,7 @@ typedef struct _PARTITION{
 
 
 
-extern partition_t partition_data[];
-extern partition_t* partition_data2;
+extern partition_t* partition_data;
 extern u8 partition_count;
 extern partition_t* partition_boot;
 

@@ -77,7 +77,7 @@ void KERNEL_CORE_CODE kernel_load(void){
 	}
 	if (prev_boot_drive){
 		LOG_CORE("Searching for previous boot drive partition...");
-		for (partition_t* partition=partition_data2;partition;partition=partition->next){
+		for (partition_t* partition=partition_data;partition;partition=partition->next){
 			if (partition->drive==prev_boot_drive&&partition->partition_config.type==PARTITION_CONFIG_TYPE_KFS){
 				partition->flags|=PARTITION_FLAG_PREVIOUS_BOOT;
 				break;
@@ -86,7 +86,7 @@ void KERNEL_CORE_CODE kernel_load(void){
 	}
 	char path[64];
 _check_every_drive:
-	for (partition_t* partition=partition_data2;partition;partition=partition->next){
+	for (partition_t* partition=partition_data;partition;partition=partition->next){
 		if (boot_drive&&partition->drive!=boot_drive){
 			continue;
 		}

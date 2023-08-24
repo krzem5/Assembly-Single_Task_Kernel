@@ -26,13 +26,16 @@ typedef struct _USER_PARTITION{
 
 
 void syscall_partition_count(syscall_registers_t* regs){
-	regs->rax=partition_count;
+	regs->rax=0;
+	for (const partition_t* partition=partition_data;partition;partition=partition->next){
+		regs->rax++;
+	}
 }
 
 
 
 void syscall_partition_get(syscall_registers_t* regs){
-	if (regs->rdi>=partition_count||regs->rdx!=sizeof(user_partition_t)){
+	if (regs->rdx!=sizeof(user_partition_t)){
 		regs->rax=-1;
 		return;
 	}
@@ -41,7 +44,7 @@ void syscall_partition_get(syscall_registers_t* regs){
 		regs->rax=-1;
 		return;
 	}
-	const partition_t* partition=partition_data2;
+	const partition_t* partition=partition_data;
 	for (u64 i=0;i<regs->rdi;i++){
 		partition=partition->next;
 		if (!partition){

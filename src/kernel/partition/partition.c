@@ -35,8 +35,9 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 
-partition_t KERNEL_CORE_BSS partition_data[MAX_PARTITIONS];
-partition_t* KERNEL_CORE_BSS partition_data2;
+static partition_t KERNEL_CORE_BSS _partition_data_raw[MAX_PARTITIONS];
+
+partition_t* KERNEL_CORE_BSS partition_data;
 u8 KERNEL_CORE_BSS partition_count;
 partition_t* KERNEL_CORE_BSS partition_boot;
 
@@ -122,10 +123,10 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 		ERROR_CORE("Too many partitions!");
 		return NULL;
 	}
-	partition_t* fs=partition_data+partition_count;
+	partition_t* fs=_partition_data_raw+partition_count;
 	partition_count++;
-	fs->next=partition_data2;
-	partition_data2=fs;
+	fs->next=partition_data;
+	partition_data=fs;
 	lock_init(&(fs->lock));
 	fs->config=config;
 	fs->partition_config=*partition_config;
@@ -177,7 +178,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 
 
 partition_t* KERNEL_CORE_CODE partition_get(u8 index){
-	return partition_data+index;
+	return _partition_data_raw+index;
 }
 
 
@@ -199,7 +200,7 @@ void KERNEL_CORE_CODE partition_load_from_drive(drive_t* drive){
 
 void partition_flush_cache(void){
 	LOG("Flushing partition cache...");
-	for (partition_t* fs=partition_data2;fs;fs=fs->next){
+	for (partition_t* fs=partition_data;fs;fs=fs->next){
 		lock_acquire_exclusive(&(fs->lock));
 		fs->config->flush_cache(fs);
 		lock_release_exclusive(&(fs->lock));

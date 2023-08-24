@@ -73,20 +73,18 @@ vfs_node_t* KERNEL_CORE_CODE vfs_get_by_path(vfs_node_t* root,const char* path,u
 		}
 		if (path[partition_name_length]==':'){
 			root=NULL;
-			partition_t* fs=partition_data;
-			for (u8 i=0;i<partition_count;i++){
+			for (partition_t* fs=partition_data;fs;fs=fs->next){
 				if (fs->name_length!=partition_name_length){
-					goto _check_next_fs;
+					continue;
 				}
-				for (u8 j=0;j<partition_name_length;j++){
-					if (fs->name[j]!=path[j]){
+				for (u8 i=0;i<partition_name_length;i++){
+					if (fs->name[i]!=path[i]){
 						goto _check_next_fs;
 					}
 				}
 				root=fs->root;
 				break;
 _check_next_fs:
-				fs++;
 			}
 			if (!root){
 				ERROR_CORE("Partition not found");
