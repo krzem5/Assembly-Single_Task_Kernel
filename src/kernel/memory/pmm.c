@@ -3,6 +3,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "pmm"
 
 
@@ -56,14 +57,6 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 
 void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 	LOG_CORE("Initializing physical memory manager...");
-	INFO_CORE("Initializing allocator...");
-	_pmm_allocator.bitmap=0;
-	for (u8 i=0;i<PMM_ALLOCATOR_SIZE_COUNT;i++){
-		_pmm_allocator.blocks[i]=0;
-	}
-	for (u8 i=0;i<=PMM_COUNTER_MAX;i++){
-		_pmm_allocator.counters.data[i]=0;
-	}
 	LOG_CORE("Registering low memory...");
 	u64 last_memory_address=0;
 	for (u16 i=0;i<kernel_data->mmap_size;i++){
@@ -172,13 +165,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
 	if (!out){
 		return 0;
 	}
-	u64* data=(void*)out;
-	count<<=PAGE_SIZE_SHIFT-3;
-	do{
-		*data=0;
-		count--;
-		data++;
-	} while (count);
+	memset((void*)out,0,count<<PAGE_SIZE_SHIFT);
 	return out;
 }
 

@@ -15,7 +15,7 @@ u32 clock_conversion_shift;
 
 
 
-static inline u64 _wait_for_pit(u8 high){
+static inline u64 KERNEL_NOCOVERAGE _wait_for_pit(u8 high){
 	for (u32 i=0;i<500000;i++){
 		io_port_in8(0x42);
 		if (io_port_in8(0x42)<high){

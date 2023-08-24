@@ -28,10 +28,8 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 		return 0;
 	}
 	lock_acquire_exclusive(&_layer2_lock);
-	for (u8 i=0;i<6;i++){
-		_layer2_physical_send_buffer[i]=packet->address[i];
-		_layer2_physical_send_buffer[i+6]=network_layer1_mac_address[i];
-	}
+	memcpy(_layer2_physical_send_buffer,packet->address,6);
+	memcpy(_layer2_physical_send_buffer+6,network_layer1_mac_address,6);
 	_layer2_physical_send_buffer[12]=packet->protocol>>8;
 	_layer2_physical_send_buffer[13]=packet->protocol;
 	memcpy(_layer2_physical_send_buffer+14,packet->buffer,packet->buffer_length);

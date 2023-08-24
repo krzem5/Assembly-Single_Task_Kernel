@@ -2,6 +2,7 @@
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "layer1"
 
 
@@ -31,9 +32,7 @@ void network_layer1_set_device(const network_layer1_device_t* device){
 	LOG_CORE("Enabling layer1 network device '%s'...",device->name);
 	_layer1_device=*device;
 	network_layer1_name=_layer1_device.name;
-	for (u8 i=0;i<6;i++){
-		network_layer1_mac_address[i]=_layer1_device.mac_address[i];
-	}
+	memcpy(network_layer1_mac_address,_layer1_device.mac_address,6);
 	INFO_CORE("Layer1 network MAC address: %x:%x:%x:%x:%x:%x",_layer1_device.mac_address[0],_layer1_device.mac_address[1],_layer1_device.mac_address[2],_layer1_device.mac_address[3],_layer1_device.mac_address[4],_layer1_device.mac_address[5]);
 }
 

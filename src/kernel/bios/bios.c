@@ -51,7 +51,7 @@ typedef struct __attribute__((packed)) _SMBIO_HEADER{
 
 
 
-bios_data_t bios_data;
+bios_data_t KERNEL_BSS bios_data;
 
 
 
@@ -112,7 +112,6 @@ _smbios_found:
 	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
 	vmm_identity_map((void*)(u64)(smbios->table_address),smbios->table_length);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
-	memset(&bios_data,0,sizeof(bios_data_t));
 	_Bool serial_number_found=0;
 	for (u64 offset=smbios->table_address;offset<smbios->table_address+smbios->table_length;){
 		const smbios_header_t* header=(void*)offset;

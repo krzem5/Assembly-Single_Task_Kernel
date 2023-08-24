@@ -1,6 +1,5 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
-#include <kernel/vfs/vfs.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -9,6 +8,8 @@
 #include <kernel/network/layer3.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "layer3"
 
 
@@ -122,9 +123,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 					.buffer_length=1,
 					.buffer=packet_buffer
 				};
-				for (u8 i=0;i<6;i++){
-					packet.address[i]=address[i];
-				}
+				memcpy(packet.address,address,6);
 				network_layer2_send(&packet);
 			}
 			break;
@@ -148,9 +147,7 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 				device->flags&=~NETWORK_LAYER3_DEVICE_FLAG_ONLINE;
 				u8 changes=device->flags^buffer[1];
 				device->flags=buffer[1];
-				for (u8 i=0;i<6;i++){
-					device->address[i]=address[i];
-				}
+				memcpy(device->address,address,6);
 				for (u8 i=0;i<16;i++){
 					changes|=device->uuid[i]^buffer[i+2];
 					device->uuid[i]=buffer[i+2];
@@ -168,20 +165,14 @@ void network_layer3_process_packet(const u8* address,u16 buffer_length,const u8*
 			}
 			else{
 				u8 packet_buffer[49]={(NETWORK_LAYER3_PACKET_TYPE_ENUMERATION<<1)|1};
-				for (u8 i=0;i<16;i++){
-					packet_buffer[i+1]=bios_data.uuid[i];
-				}
-				for (u8 i=0;i<32;i++){
-					packet_buffer[i+17]=bios_data.serial_number[i];
-				}
+				memcpy(packet_buffer+1,bios_data.uuid,16);
+				memcpy(packet_buffer+17,bios_data.serial_number,32);
 				network_layer2_packet_t packet={
 					.protocol=NETWORK_LAYER3_PROTOCOL_TYPE,
 					.buffer_length=49,
 					.buffer=packet_buffer
 				};
-				for (u8 i=0;i<6;i++){
-					packet.address[i]=address[i];
-				}
+				memcpy(packet.address,address,6);
 				network_layer2_send(&packet);
 			}
 			break;
@@ -202,9 +193,7 @@ void network_layer3_refresh_device_list(void){
 			.buffer_length=1,
 			.buffer=packet_buffer
 		};
-		for (u8 j=0;j<6;j++){
-			packet.address[j]=(_layer3_devices+i)->address[j];
-		}
+		memcpy(packet.address,(_layer3_devices+i)->address,6);
 		network_layer2_send(&packet);
 	}
 	lock_release_shared(&_layer3_lock);

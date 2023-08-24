@@ -28,7 +28,7 @@ void numa_init(u32 proximity_domain_count){
 		(numa_nodes+i)->memory_range_count=0;
 		(numa_nodes+i)->cpus=NULL;
 		(numa_nodes+i)->memory_ranges=NULL;
-		for (u32 j=0;j<numa_node_count*numa_node_count;j++){
+		for (u32 j=0;j<numa_node_count;j++){
 			numa_node_locality_matrix[NUMA_LOCALITY_INDEX(i,j)]=0;
 		}
 	}

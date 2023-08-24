@@ -22,10 +22,7 @@ void* KERNEL_CORE_CODE vfs_alloc(partition_t* fs,const char* name,u8 name_length
 	out->vfs_index=fs->index;
 	out->name_length=name_length;
 	out->flags=0;
-	for (u8 i=0;i<name_length;i++){
-		out->name[i]=name[i];
-	}
-	out->name[name_length]=0;
+	memcpy(out->name,name,name_length+1);
 	out->parent=VFS_NODE_ID_UNKNOWN;
 	out->prev_sibling=VFS_NODE_ID_UNKNOWN;
 	out->next_sibling=VFS_NODE_ID_UNKNOWN;
@@ -438,9 +435,7 @@ u32 vfs_get_full_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 			return 0;
 		}
 		i-=node->name_length;
-		for (u8 j=0;j<node->name_length;j++){
-			buffer[i+j]=node->name[j];
-		}
+		memcpy(buffer+i,node->name,node->name_length);
 		if (node->flags&VFS_NODE_FLAG_ROOT){
 			break;
 		}
@@ -460,9 +455,7 @@ u32 vfs_get_full_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 			return 0;
 		}
 		i-=partition->name_length+1;
-		for (u8 j=0;j<partition->name_length;j++){
-			buffer[i+j]=partition->name[j];
-		}
+		memcpy(buffer+i,partition->name,partition->name_length);
 		buffer[i+partition->name_length]=':';
 	}
 	if (!i){
