@@ -20,7 +20,7 @@ static KERNEL_CORE_RDATA const char _drive_type_name_nvme[]="NVME";
 
 
 
-static const char* KERNEL_CORE_DATA _drive_type_names[]={
+static const char*const KERNEL_CORE_RDATA _drive_type_names[]={
 	[DRIVE_TYPE_AHCI]=_drive_type_name_ahci,
 	[DRIVE_TYPE_ATA]=_drive_type_name_ata,
 	[DRIVE_TYPE_ATAPI]=_drive_type_name_atapi,

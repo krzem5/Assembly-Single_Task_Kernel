@@ -127,7 +127,6 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 		vmm_map_page(&vmm_kernel_pagemap,i,i,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
-	_vmm_address_offset=0;
 }
 
 
