@@ -24,6 +24,20 @@ if ("--coverage" in sys.argv):
 
 
 
+BUILD_DIRECTORIES=[
+	"build",
+	"build/disk",
+	"build/disk/kernel",
+	"build/hashes",
+	"build/hashes/kernel",
+	"build/hashes/user",
+	"build/objects",
+	"build/objects/kernel",
+	"build/objects/kernel_coverage",
+	"build/objects/user_debug",
+	"build/objects/user",
+	"build/vm"
+]
 KERNEL_HASH_FILE_PATH={
 	MODE_NORMAL: "build/hashes/kernel/release.txt",
 	MODE_COVERAGE: "build/hashes/kernel/coverage.txt",
@@ -205,7 +219,7 @@ def _compile_user_files(program):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
@@ -293,30 +307,9 @@ def _kvm_flags():
 
 
 
-if (not os.path.exists("build")):
-	os.mkdir("build")
-if (not os.path.exists("build/disk")):
-	os.mkdir("build/disk")
-if (not os.path.exists("build/disk/kernel")):
-	os.mkdir("build/disk/kernel")
-if (not os.path.exists("build/hashes")):
-	os.mkdir("build/hashes")
-if (not os.path.exists("build/hashes/kernel")):
-	os.mkdir("build/hashes/kernel")
-if (not os.path.exists("build/hashes/user")):
-	os.mkdir("build/hashes/user")
-if (not os.path.exists("build/objects")):
-	os.mkdir("build/objects")
-if (not os.path.exists("build/objects/kernel")):
-	os.mkdir("build/objects/kernel")
-if (not os.path.exists("build/objects/kernel_coverage")):
-	os.mkdir("build/objects/kernel_coverage")
-if (not os.path.exists("build/objects/user_debug")):
-	os.mkdir("build/objects/user_debug")
-if (not os.path.exists("build/objects/user")):
-	os.mkdir("build/objects/user")
-if (not os.path.exists("build/vm")):
-	os.mkdir("build/vm")
+for dir in BUILD_DIRECTORIES:
+	if (not os.path.exists(dir)):
+		os.mkdir(BUILD_DIRECTORIES)
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]

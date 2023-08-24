@@ -1,4 +1,5 @@
 #include <user/drive.h>
+#include <user/memory.h>
 #include <user/network.h>
 #include <user/numa.h>
 #include <user/partition.h>
@@ -9,7 +10,7 @@
 
 
 typedef struct _USER_DATA_HEADER{
-	const bios_data_t* bios_data;
+	const system_bios_data_t* bios_data;
 	u32 drive_count;
 	u32 drive_boot_index;
 	const drive_t* drives;
@@ -20,11 +21,13 @@ typedef struct _USER_DATA_HEADER{
 	const numa_node_t* numa_nodes;
 	const u8* numa_node_locality_matrix;
 	const network_config_t* layer1_network_device;
+	u32 memory_range_count;
+	const memory_range_t* memory_ranges;
 } user_data_header_t;
 
 
 
-const bios_data_t* bios_data;
+const system_bios_data_t* system_bios_data;
 u32 drive_count;
 u32 drive_boot_index;
 const drive_t* drives;
@@ -35,12 +38,14 @@ u32 numa_node_count;
 const numa_node_t* numa_nodes;
 const u8* numa_node_locality_matrix;
 const network_config_t* network_config;
+u32 memory_range_count;
+const memory_range_t* memory_ranges;
 
 
 
 void _user_data_init(void){
 	const user_data_header_t* header=_syscall_user_data_pointer();
-	bios_data=header->bios_data;
+	system_bios_data=header->bios_data;
 	drive_count=header->drive_count;
 	drive_boot_index=header->drive_boot_index;
 	drives=header->drives;
@@ -51,4 +56,6 @@ void _user_data_init(void){
 	numa_nodes=header->numa_nodes;
 	numa_node_locality_matrix=header->numa_node_locality_matrix;
 	network_config=header->layer1_network_device;
+	memory_range_count=header->memory_range_count;
+	memory_ranges=header->memory_ranges;
 }

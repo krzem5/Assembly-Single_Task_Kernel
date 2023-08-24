@@ -18,18 +18,17 @@ static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/ker
 
 
 
-const kernel_data_t* KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
+void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
-	const kernel_data_t* kernel_data=(const kernel_data_t*)0xffffffffc0007000;
 	INFO_CORE("Version: %lx",kernel_get_version());
 	INFO_CORE("Core kernel range: %p - %p",kernel_get_start(),kernel_get_core_end());
 	INFO_CORE("Full kernel range: %p - %p",kernel_get_start(),kernel_get_end());
 	INFO_CORE("BSS kernel range: %p - %p",kernel_get_bss_start(),kernel_get_bss_end());
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
-	for (u16 i=0;i<kernel_data->mmap_size;i++){
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		const char* type=_kernel_memory_unusable;
-		switch ((kernel_data->mmap+i)->type){
+		switch ((KERNEL_DATA->mmap+i)->type){
 			case 1:
 				type=_kernel_memory_normal;
 				break;
@@ -37,9 +36,9 @@ const kernel_data_t* KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 				type=_kernel_memory_acpi;
 				break;
 		}
-		INFO_CORE("  %p - %p%s",(kernel_data->mmap+i)->base,(kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length,type);
-		if ((kernel_data->mmap+i)->type==1){
-			total+=(kernel_data->mmap+i)->length;
+		INFO_CORE("  %p - %p%s",(KERNEL_DATA->mmap+i)->base,(KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length,type);
+		if ((KERNEL_DATA->mmap+i)->type==1){
+			total+=(KERNEL_DATA->mmap+i)->length;
 		}
 	}
 	INFO_CORE("Total: %v",total);
@@ -47,7 +46,6 @@ const kernel_data_t* KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	for (u64* bss=(u64*)kernel_get_bss_start();bss<(u64*)kernel_get_bss_end();bss++){
 		*bss=0;
 	}
-	return kernel_data;
 }
 
 

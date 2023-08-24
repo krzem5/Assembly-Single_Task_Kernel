@@ -55,22 +55,22 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 
 
 
-void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE pmm_init(void){
 	LOG_CORE("Initializing physical memory manager...");
 	LOG_CORE("Registering low memory...");
 	u64 last_memory_address=0;
-	for (u16 i=0;i<kernel_data->mmap_size;i++){
-		if ((kernel_data->mmap+i)->type!=1){
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
+		if ((KERNEL_DATA->mmap+i)->type!=1){
 			continue;
 		}
-		u64 address=pmm_align_up_address((kernel_data->mmap+i)->base);
+		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
 		if (!address){
 			address+=PAGE_SIZE;
 		}
 		if (address<pmm_align_up_address(kernel_get_bss_end())){
 			address=pmm_align_up_address(kernel_get_bss_end());
 		}
-		u64 end=pmm_align_down_address((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
+		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
 		if (end>last_memory_address){
 			last_memory_address=end;
 		}
@@ -87,17 +87,17 @@ void KERNEL_CORE_CODE pmm_init(const kernel_data_t* kernel_data){
 
 
 
-void KERNEL_CORE_CODE pmm_init_high_mem(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE pmm_init_high_mem(void){
 	LOG_CORE("Registering high memory...");
-	for (u16 i=0;i<kernel_data->mmap_size;i++){
-		if ((kernel_data->mmap+i)->type!=1){
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
+		if ((KERNEL_DATA->mmap+i)->type!=1){
 			continue;
 		}
-		u64 address=pmm_align_up_address((kernel_data->mmap+i)->base);
+		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
 		if (address<0x3fffffffull){
 			address=0x3fffffffull;
 		}
-		u64 end=pmm_align_down_address((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
+		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
 		_add_memory_range(address,end);
 	}
 }

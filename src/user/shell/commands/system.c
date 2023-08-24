@@ -19,18 +19,18 @@ void system_main(int argc,const char*const* argv){
 		return;
 	}
 	printf("BIOS vendor: \x1b[1m%s\x1b[0m\nBIOS version: \x1b[1m%s\x1b[0m\nManufacturer: \x1b[1m%s\x1b[0m\nProduct: \x1b[1m%s\x1b[0m\nVersion: \x1b[1m%s\x1b[0m\nSerial number: \x1b[1m%s\x1b[0m\nUUID: \x1b[1m%X%X%X%X-%X%X-%X%X-%X%X-%X%X%X%X%X%X\x1b[0m\nLast wakeup: \x1b[1m%s\x1b[0m\n",
-		bios_data->bios_vendor,
-		bios_data->bios_version,
-		bios_data->manufacturer,
-		bios_data->product,
-		bios_data->version,
-		bios_data->serial_number,
-		bios_data->uuid[0],bios_data->uuid[1],bios_data->uuid[2],bios_data->uuid[3],
-		bios_data->uuid[4],bios_data->uuid[5],
-		bios_data->uuid[6],bios_data->uuid[7],
-		bios_data->uuid[8],bios_data->uuid[9],
-		bios_data->uuid[10],bios_data->uuid[11],bios_data->uuid[12],bios_data->uuid[13],bios_data->uuid[14],bios_data->uuid[15],
-		_system_wakeup_type_name[bios_data->wakeup_type]
+		system_bios_data->bios_vendor,
+		system_bios_data->bios_version,
+		system_bios_data->manufacturer,
+		system_bios_data->product,
+		system_bios_data->version,
+		system_bios_data->serial_number,
+		system_bios_data->uuid[0],system_bios_data->uuid[1],system_bios_data->uuid[2],system_bios_data->uuid[3],
+		system_bios_data->uuid[4],system_bios_data->uuid[5],
+		system_bios_data->uuid[6],system_bios_data->uuid[7],
+		system_bios_data->uuid[8],system_bios_data->uuid[9],
+		system_bios_data->uuid[10],system_bios_data->uuid[11],system_bios_data->uuid[12],system_bios_data->uuid[13],system_bios_data->uuid[14],system_bios_data->uuid[15],
+		_system_wakeup_type_name[system_bios_data->wakeup_type]
 	);
 }
 

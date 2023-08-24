@@ -100,7 +100,7 @@ static u64* KERNEL_CORE_CODE _get_child_table(u64* table,u64 index,_Bool allocat
 
 
 
-void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
+void KERNEL_CORE_CODE vmm_init(void){
 	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM);
 	lock_init(&(vmm_kernel_pagemap.lock));
@@ -116,8 +116,8 @@ void KERNEL_CORE_CODE vmm_init(const kernel_data_t* kernel_data){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	u64 highest_address=0;
-	for (u16 i=0;i<kernel_data->mmap_size;i++){
-		u64 end=pmm_align_up_address_extra_large((kernel_data->mmap+i)->base+(kernel_data->mmap+i)->length);
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
+		u64 end=pmm_align_up_address_extra_large((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
 		if (end>highest_address){
 			highest_address=end;
 		}

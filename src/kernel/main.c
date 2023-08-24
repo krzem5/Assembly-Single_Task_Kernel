@@ -25,10 +25,10 @@
 void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	cpu_check_features();
 	LOG_CORE("Starting kernel...");
-	const kernel_data_t* kernel_data=kernel_init();
-	pmm_init(kernel_data);
-	vmm_init(kernel_data);
-	pmm_init_high_mem(kernel_data);
+	kernel_init();
+	pmm_init();
+	vmm_init();
+	pmm_init_high_mem();
 	kmm_init();
 	pci_enumerate(1);
 	partition_load();

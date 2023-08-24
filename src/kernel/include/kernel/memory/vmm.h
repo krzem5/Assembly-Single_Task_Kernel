@@ -39,7 +39,7 @@ extern vmm_pagemap_t vmm_user_pagemap;
 
 
 
-void vmm_init(const kernel_data_t* kernel_data);
+void vmm_init(void);
 
 
 

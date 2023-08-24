@@ -7,6 +7,12 @@
 #define MEMORY_FLAG_LARGE 1
 #define MEMORY_FLAG_EXTRA_LARGE 2
 
+#define MEMORY_RANGE_TYPE_NORMAL 1
+#define MEMORY_RANGE_TYPE_UNUSABLE 2
+#define MEMORY_RANGE_TYPE_ACPI_TABLES 3
+#define MEMORY_RANGE_TYPE_ACPI_NVS 4
+#define MEMORY_RANGE_TYPE_BAD_MEMORY 5
+
 
 
 typedef struct _MEMORY_STATS{
@@ -23,6 +29,19 @@ typedef struct _MEMORY_STATS{
 	u64 counter_user_stack;
 	u64 counter_vmm;
 } memory_stats_t;
+
+
+
+typedef struct _MEMORY_RANGE{
+	u64 base_address;
+	u64 length;
+	u32 type;
+} memory_range_t;
+
+
+
+extern u32 memory_range_count;
+extern const memory_range_t* memory_ranges;
 
 
 

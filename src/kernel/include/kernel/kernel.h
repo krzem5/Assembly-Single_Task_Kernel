@@ -6,6 +6,21 @@
 
 #define KERNEL_OFFSET 0xffffffffc0000000ull
 
+#define KERNEL_DATA ((const kernel_data_t*)0xffffffffc0007000)
+
+
+
+typedef struct __attribute__((packed)) _KERNEL_DATA{
+	u16 mmap_size;
+	u8 _padding[6];
+	struct{
+		u64 base;
+		u64 length;
+		u32 type;
+		u8 _padding[4];
+	} mmap[42];
+} kernel_data_t;
+
 
 
 extern u64 __KERNEL_START__[1];
@@ -67,7 +82,7 @@ static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_offset(void){
 
 
 
-const kernel_data_t* kernel_init(void);
+void kernel_init(void);
 
 
 

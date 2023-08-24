@@ -27,17 +27,4 @@ typedef signed long long int s64;
 
 
 
-typedef struct __attribute__((packed)) _KERNEL_DATA{
-	u16 mmap_size;
-	u8 _padding[6];
-	struct{
-		u64 base;
-		u64 length;
-		u32 type;
-		u8 _padding[4];
-	} mmap[42];
-} kernel_data_t;
-
-
-
 #endif

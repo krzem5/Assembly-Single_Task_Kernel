@@ -1,5 +1,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/drive/drive.h>
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/umm.h>
 #include <kernel/network/layer1.h>
@@ -81,6 +82,14 @@ typedef struct _USER_LAYER1_NETWORK_DEVICE{
 
 
 
+typedef struct _USER_MEMORY_RANGE{
+	u64 base_address;
+	u64 length;
+	u32 type;
+} user_memory_range_t;
+
+
+
 typedef struct _USER_DATA_HEADER{
 	user_bios_data_t* bios_data;
 	u32 drive_count;
@@ -93,6 +102,8 @@ typedef struct _USER_DATA_HEADER{
 	user_numa_node_t* numa_nodes;
 	u8* numa_node_locality_matrix;
 	user_layer1_network_device_t* layer1_network_device;
+	u32 memory_range_count;
+	user_memory_range_t* memory_ranges;
 } user_data_header_t;
 
 
@@ -218,6 +229,18 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 
 
 
+static void _generate_memory_ranges(user_data_header_t* header){
+	header->memory_range_count=KERNEL_DATA->mmap_size;
+	header->memory_ranges=umm_alloc(KERNEL_DATA->mmap_size*sizeof(user_numa_memory_range_t));
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
+		(header->memory_ranges+i)->base_address=(KERNEL_DATA->mmap+i)->base;
+		(header->memory_ranges+i)->length=(KERNEL_DATA->mmap+i)->length;
+		(header->memory_ranges+i)->type=(KERNEL_DATA->mmap+i)->type;
+	}
+}
+
+
+
 void user_data_generate(void){
 	LOG("Generating user data structures...");
 	user_data_header_t* header=umm_alloc(sizeof(user_data_header_t));
@@ -226,5 +249,6 @@ void user_data_generate(void){
 	_generate_partitions(header);
 	_generate_numa_nodes(header);
 	_generate_layer1_network_device(header);
+	_generate_memory_ranges(header);
 	user_data_pointer=header;
 }

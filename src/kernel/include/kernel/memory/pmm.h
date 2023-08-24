@@ -85,11 +85,11 @@ static inline u64 pmm_align_down_address_extra_large(u64 base){
 
 
 
-void pmm_init(const kernel_data_t* kernel_data);
+void pmm_init(void);
 
 
 
-void pmm_init_high_mem(const kernel_data_t* kernel_data);
+void pmm_init_high_mem(void);
 
 
 

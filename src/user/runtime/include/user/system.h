@@ -11,7 +11,7 @@
 
 
 
-typedef struct _BIOS_DATA{
+typedef struct _SYSTEM_BIOS_DATA{
 	const char* bios_vendor;
 	const char* bios_version;
 	const char* manufacturer;
@@ -20,11 +20,11 @@ typedef struct _BIOS_DATA{
 	const char* serial_number;
 	u8 uuid[16];
 	u8 wakeup_type;
-} bios_data_t;
+} system_bios_data_t;
 
 
 
-extern const bios_data_t* bios_data;
+extern const system_bios_data_t* system_bios_data;
 
 
 
