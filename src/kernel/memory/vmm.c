@@ -8,15 +8,13 @@
 
 
 
-static u64 KERNEL_CORE_DATA _vmm_address_offset=KERNEL_OFFSET;
-
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
 vmm_pagemap_t KERNEL_CORE_BSS vmm_user_pagemap;
 
 
 
 static inline vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
-	return (vmm_pagemap_table_t*)(((*entry)&VMM_PAGE_ADDRESS_MASK)+_vmm_address_offset);
+	return (vmm_pagemap_table_t*)((*entry)&VMM_PAGE_ADDRESS_MASK);
 }
 
 
