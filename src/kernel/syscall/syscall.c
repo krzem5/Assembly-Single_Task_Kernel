@@ -1,5 +1,4 @@
 #include <kernel/acpi/syscall.h>
-#include <kernel/bios/syscall.h>
 #include <kernel/clock/syscall.h>
 #include <kernel/cpu/syscall.h>
 #include <kernel/drive/syscall.h>
@@ -10,7 +9,6 @@
 #include <kernel/memory/syscall.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/syscall.h>
-#include <kernel/numa/syscall.h>
 #include <kernel/random/syscall.h>
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
