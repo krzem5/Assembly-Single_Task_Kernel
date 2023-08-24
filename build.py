@@ -283,7 +283,7 @@ def _kvm_flags():
 	if (not os.path.exists("/dev/kvm")):
 		return []
 	with open("/proc/cpuinfo","r") as rf:
-		if ("vmx" not in rf.read()):
+		if (" vmx" not in rf.read()):
 			return []
 	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
 		if ("tsc" in rf.read()):

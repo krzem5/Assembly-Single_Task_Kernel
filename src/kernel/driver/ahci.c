@@ -199,8 +199,8 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 		.extra_data=device
 	};
 	format_string(drive.name,16,_ahci_drive_name_format_template,port_index);
-	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+20),10,drive.serial_number);
-	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
+	bswap16_trunc_spaces((const u16*)(buffer+20),10,drive.serial_number);
+	bswap16_trunc_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);
 	pmm_dealloc((u64)buffer,1,PMM_COUNTER_DRIVER_AHCI);
 }

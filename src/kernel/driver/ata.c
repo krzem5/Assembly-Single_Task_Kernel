@@ -7,6 +7,7 @@
 #include <kernel/memory/kmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "ata"
 
 
@@ -199,8 +200,8 @@ static void KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		.extra_data=device
 	};
 	format_string(drive.name,16,_ata_drive_name_format_template,index);
-	drive_change_byte_order_and_truncate_spaces(buffer+10,10,drive.serial_number);
-	drive_change_byte_order_and_truncate_spaces(buffer+27,20,drive.model_number);
+	bswap16_trunc_spaces(buffer+10,10,drive.serial_number);
+	bswap16_trunc_spaces(buffer+27,20,drive.model_number);
 	if (!device->is_atapi){
 		WARN_CORE("Unimplemented: ATA drive");
 		goto _error;
