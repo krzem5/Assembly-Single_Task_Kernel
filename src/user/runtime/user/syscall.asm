@@ -45,5 +45,5 @@ DECL_SYSCALL clock_get_converion, 28, 0
 DECL_SYSCALL drive_format, 29, 3
 DECL_SYSCALL drive_stats, 30, 3
 DECL_SYSCALL random_generate, 31, 2
-DECL_SYSCALL _report_coverage, 32, 0
+DECL_SYSCALL coverage_dump_data, 32, 0
 DECL_SYSCALL user_data_pointer, 33, 0
