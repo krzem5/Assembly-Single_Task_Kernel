@@ -454,9 +454,10 @@ u32 vfs_get_full_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 		if (i<partition->name_length+1){
 			return 0;
 		}
-		i-=partition->name_length+1;
+		i--;
+		buffer[i]=':';
+		i-=partition->name_length;
 		memcpy(buffer+i,partition->name,partition->name_length);
-		buffer[i+partition->name_length]=':';
 	}
 	if (!i){
 		return buffer_length-2;
