@@ -37,7 +37,7 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 partition_t KERNEL_CORE_BSS partition_data[MAX_PARTITIONS];
 u8 KERNEL_CORE_BSS partition_count;
-u8 KERNEL_CORE_DATA partition_boot_index=PARTITION_INVALID_INDEX;
+partition_t* KERNEL_CORE_BSS partition_boot;
 
 
 

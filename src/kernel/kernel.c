@@ -129,7 +129,7 @@ _check_every_drive:
 		}
 		LOG_CORE("Found boot drive: %s (%s)",partition->name,partition->drive->model_number);
 		partition->flags|=PARTITION_FLAG_BOOT;
-		partition_boot_index=i;
+		partition_boot=partition;
 		((drive_t*)(partition->drive))->flags|=DRIVE_FLAG_BOOT;
 		goto _load_kernel;
 	}

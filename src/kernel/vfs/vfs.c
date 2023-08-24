@@ -61,11 +61,11 @@ vfs_node_t* vfs_get_by_id(vfs_node_id_t id){
 
 vfs_node_t* KERNEL_CORE_CODE vfs_get_by_path(vfs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
-		if (partition_boot_index==PARTITION_INVALID_INDEX){
+		if (!partition_boot){
 			ERROR_CORE("Root file system not located yet; partition must be specified");
 			return NULL;
 		}
-		root=(partition_data+partition_boot_index)->root;
+		root=partition_boot->root;
 	}
 	else{
 		u16 partition_name_length=0;
@@ -458,7 +458,7 @@ u32 vfs_get_full_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 		i--;
 		buffer[i]='/';
 	}
-	if (node->vfs_index!=partition_boot_index){
+	if (node->vfs_index!=partition_boot->index){
 		const partition_t* partition=partition_data+node->vfs_index;
 		if (i<partition->name_length+1){
 			return 0;

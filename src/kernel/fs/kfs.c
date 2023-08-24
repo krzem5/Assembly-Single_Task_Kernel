@@ -1012,7 +1012,7 @@ static void _kfs_flush_cache(partition_t* fs){
 
 
 
-static const partition_file_system_config_t KERNEL_CORE_DATA _kfs_fs_config={
+static const partition_file_system_config_t KERNEL_CORE_RDATA _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	0,
 	_kfs_create,

@@ -217,7 +217,7 @@ static void _iso9660_flush_cache(partition_t* fs){
 
 
 
-static const partition_file_system_config_t KERNEL_CORE_DATA _iso9660_fs_config={
+static const partition_file_system_config_t KERNEL_CORE_RDATA _iso9660_fs_config={
 	sizeof(iso9660_fs_node_t),
 	PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO,
 	_iso9660_create,
