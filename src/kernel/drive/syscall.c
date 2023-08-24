@@ -8,24 +8,6 @@
 
 
 
-#define USER_DRIVE_FLAG_PRESENT 0
-#define USER_DRIVE_FLAG_BOOT 1
-
-
-
-typedef struct _USER_DRIVE{
-	u8 flags;
-	u8 type;
-	u8 index;
-	char name[16];
-	char serial_number[32];
-	char model_number[64];
-	u64 block_count;
-	u64 block_size;
-} user_drive_t;
-
-
-
 static drive_t* _get_drive(u64 index){
 	for (drive_t* drive=drive_data;drive;drive=drive->next){
 		if (drive->index==index){
