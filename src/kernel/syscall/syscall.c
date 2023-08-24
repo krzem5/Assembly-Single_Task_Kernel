@@ -1,5 +1,6 @@
 #include <kernel/acpi/syscall.h>
 #include <kernel/clock/syscall.h>
+#include <kernel/coverage/syscall.h>
 #include <kernel/cpu/syscall.h>
 #include <kernel/drive/syscall.h>
 #include <kernel/elf/syscall.h>
@@ -20,10 +21,6 @@
 
 void syscall_empty(syscall_registers_t* regs){
 }
-
-
-
-void syscall_coverage_dump_data(syscall_registers_t* regs);
 
 
 
