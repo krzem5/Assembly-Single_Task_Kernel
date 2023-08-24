@@ -23,7 +23,7 @@ typedef struct _FORMAT_BUFFER_STATE{
 
 
 
-typedef void (*format_format_t)(__builtin_va_list,u8,format_buffer_state_t*);
+typedef void (*format_format_t)(__builtin_va_list*,u8,format_buffer_state_t*);
 
 
 
@@ -61,10 +61,10 @@ static inline void KERNEL_CORE_CODE _format_int_base10(u64 value,format_buffer_s
 
 
 
-static void KERNEL_CORE_CODE _format_int(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
+static void KERNEL_CORE_CODE _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	u64 data;
 	if (flags&FLAG_SIGN){
-		s64 signed_data=((flags&FLAG_LONG)?__builtin_va_arg(va,s64):__builtin_va_arg(va,s32));
+		s64 signed_data=((flags&FLAG_LONG)?__builtin_va_arg(*va,s64):__builtin_va_arg(*va,s32));
 		if (signed_data<0){
 			_buffer_state_add(out,'-');
 			signed_data=-signed_data;
@@ -72,7 +72,7 @@ static void KERNEL_CORE_CODE _format_int(__builtin_va_list va,u8 flags,format_bu
 		data=signed_data;
 	}
 	else{
-		data=((flags&FLAG_LONG)?__builtin_va_arg(va,u64):__builtin_va_arg(va,u32));
+		data=((flags&FLAG_LONG)?__builtin_va_arg(*va,u64):__builtin_va_arg(*va,u32));
 	}
 	if (!data){
 		_buffer_state_add(out,'0');
@@ -97,14 +97,14 @@ static void KERNEL_CORE_CODE _format_int(__builtin_va_list va,u8 flags,format_bu
 
 
 
-static void KERNEL_CORE_CODE _format_format_char(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
-	_buffer_state_add(out,__builtin_va_arg(va,int));
+static void KERNEL_CORE_CODE _format_format_char(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+	_buffer_state_add(out,__builtin_va_arg(*va,int));
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_string(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
-	const char* ptr=__builtin_va_arg(va,const char*);
+static void KERNEL_CORE_CODE _format_format_string(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+	const char* ptr=__builtin_va_arg(*va,const char*);
 	if (!ptr){
 		ptr=_format_null_str;
 	}
@@ -116,26 +116,26 @@ static void KERNEL_CORE_CODE _format_format_string(__builtin_va_list va,u8 flags
 
 
 
-static void KERNEL_CORE_CODE _format_format_decimal(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
+static void KERNEL_CORE_CODE _format_format_decimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags|FLAG_SIGN,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_unsigned(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
+static void KERNEL_CORE_CODE _format_format_unsigned(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_hexadecimal(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
+static void KERNEL_CORE_CODE _format_format_hexadecimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags|FLAG_HEX,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_volume(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
-	u64 size=__builtin_va_arg(va,u64);
+static void KERNEL_CORE_CODE _format_format_volume(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+	u64 size=__builtin_va_arg(*va,u64);
 	if (!size){
 		_buffer_state_add(out,'0');
 		_buffer_state_add(out,' ');
@@ -186,8 +186,8 @@ static void KERNEL_CORE_CODE _format_format_volume(__builtin_va_list va,u8 flags
 
 
 
-static void KERNEL_CORE_CODE _format_format_pointer(__builtin_va_list va,u8 flags,format_buffer_state_t* out){
-	u64 address=__builtin_va_arg(va,u64);
+static void KERNEL_CORE_CODE _format_format_pointer(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+	u64 address=__builtin_va_arg(*va,u64);
 	u32 shift=64;
 	while (shift){
 		if (shift==32){
@@ -215,18 +215,21 @@ static KERNEL_CORE_RDATA const format_format_t _format_formats[HIGHEST_FORMAT-LO
 u32 KERNEL_CORE_CODE format_string(char* buffer,u32 length,const char* template,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,template);
-	u32 out=format_string_va(buffer,length,template,va);
+	u32 out=format_string_va(buffer,length,template,&va);
 	__builtin_va_end(va);
 	return out;
 }
 
 
 
-u32 KERNEL_CORE_CODE format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list va){
+u32 KERNEL_CORE_CODE format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va){
+	if (!length){
+		return 0;
+	}
 	format_buffer_state_t out={
 		buffer,
 		0,
-		length
+		length-1
 	};
 	while (*template){
 		if (*template!='%'){
@@ -263,5 +266,6 @@ u32 KERNEL_CORE_CODE format_string_va(char* buffer,u32 length,const char* templa
 		template++;
 	}
 _end:
+	out.buffer[out.offset]=0;
 	return out.offset;
 }

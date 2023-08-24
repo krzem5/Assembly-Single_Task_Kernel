@@ -8,7 +8,7 @@ u32 format_string(char* buffer,u32 length,const char* template,...);
 
 
 
-u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list va);
+u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va);
 
 
 

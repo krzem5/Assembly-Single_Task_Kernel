@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ahci.h>
+#include <kernel/format/format.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
@@ -53,7 +54,7 @@
 
 
 
-static KERNEL_CORE_RDATA const char _ahci_drive_name[]="ahci";
+static KERNEL_CORE_RDATA const char _ahci_drive_name_format_template[]="ahci%u";
 
 
 
@@ -197,7 +198,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 		.block_size=512,
 		.extra_data=device
 	};
-	drive_insert_index_into_name(_ahci_drive_name,port_index,drive.name);
+	format_string(drive.name,16,_ahci_drive_name_format_template,port_index);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+20),10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces((const u16*)(buffer+54),20,drive.model_number);
 	drive_list_add_drive(&drive);

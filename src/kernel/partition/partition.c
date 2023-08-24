@@ -1,14 +1,15 @@
 #include <kernel/drive/drive.h>
-#include <kernel/vfs/vfs.h>
-#include <kernel/vfs/allocator.h>
-#include <kernel/partition/partition.h>
+#include <kernel/format/format.h>
 #include <kernel/fs/emptyfs.h>
 #include <kernel/fs/iso9660.h>
 #include <kernel/fs/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/vfs/allocator.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "partition"
 
 
@@ -34,6 +35,9 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 } kfs_root_block_t;
 
 
+
+static KERNEL_CORE_RDATA const char _partition_name_index_format_template[]="%sp%u";
+static KERNEL_CORE_RDATA const char _partition_name_drive_format_template[]="%s";
 
 static u8 KERNEL_CORE_BSS _partition_count;
 static partition_t** KERNEL_CORE_BSS _partition_lookup_table;
@@ -131,36 +135,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	fs->partition_config=*partition_config;
 	fs->index=_partition_count;
 	fs->flags=0;
-	u8 i=0;
-	while (drive->name[i]){
-		fs->name[i]=drive->name[i];
-		i++;
-	}
-	if (partition_config->type==PARTITION_CONFIG_TYPE_DRIVE){
-		fs->name[i]=0;
-		fs->name_length=i;
-	}
-	else if (partition_config->index<10){
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index+48;
-		fs->name[i+2]=0;
-		fs->name_length=i+2;
-	}
-	else if (partition_config->index<100){
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index/10+48;
-		fs->name[i+2]=(partition_config->index%10)+48;
-		fs->name[i+3]=0;
-		fs->name_length=i+3;
-	}
-	else{
-		fs->name[i]='p';
-		fs->name[i+1]=partition_config->index/100+48;
-		fs->name[i+2]=((partition_config->index/10)%10)+48;
-		fs->name[i+3]=(partition_config->index%10)+48;
-		fs->name[i+4]=0;
-		fs->name_length=i+4;
-	}
+	fs->name_length=format_string(fs->name,16,(partition_config->type==PARTITION_CONFIG_TYPE_DRIVE?_partition_name_drive_format_template:_partition_name_index_format_template),drive->name,partition_config->index);
 	fs->drive=drive;
 	fs->extra_data=extra_data;
 	vfs_allocator_init(_partition_count,config->node_size,&(fs->allocator));

@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/drive/drive_list.h>
 #include <kernel/driver/ata.h>
+#include <kernel/format/format.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -45,7 +46,7 @@
 
 
 
-static KERNEL_CORE_RDATA const char _ata_drive_name[]="ata";
+static KERNEL_CORE_RDATA const char _ata_drive_name_format_template[]="ata%u";
 
 
 
@@ -197,7 +198,7 @@ static void KERNEL_CORE_CODE _ata_init(ata_device_t* device,u8 index){
 		.read_write=_ata_read_write,
 		.extra_data=device
 	};
-	drive_insert_index_into_name(_ata_drive_name,index,drive.name);
+	format_string(drive.name,16,_ata_drive_name_format_template,index);
 	drive_change_byte_order_and_truncate_spaces(buffer+10,10,drive.serial_number);
 	drive_change_byte_order_and_truncate_spaces(buffer+27,20,drive.model_number);
 	if (!device->is_atapi){

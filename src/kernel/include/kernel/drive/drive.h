@@ -46,10 +46,6 @@ typedef struct _DRIVE{
 
 
 
-void drive_insert_index_into_name(const char* name,u8 index,char* dst);
-
-
-
 void drive_change_byte_order_and_truncate_spaces(const u16* src,u8 length,char* dst);
 
 
