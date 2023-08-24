@@ -11,12 +11,12 @@
 
 
 typedef struct _BIOS_DATA{
-	char bios_vendor[65];
-	char bios_version[65];
-	char manufacturer[65];
-	char product[65];
-	char version[65];
-	char serial_number[65];
+	char* bios_vendor;
+	char* bios_version;
+	char* manufacturer;
+	char* product;
+	char* version;
+	char* serial_number;
 	u8 uuid[16];
 	u8 wakeup_type;
 } bios_data_t;

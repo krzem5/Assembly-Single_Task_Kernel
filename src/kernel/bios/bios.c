@@ -1,7 +1,9 @@
 #include <kernel/bios/bios.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "bios"
 
 
@@ -80,15 +82,14 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
-static void _copy_string(const char* src,char* dst){
-	while (1){
-		*dst=*src;
-		if (!*dst){
-			return;
-		}
-		src++;
-		dst++;
-	}
+static char* _duplicate_string(const char* str){
+	u32 length=0;
+	do{
+		length++;
+	} while (str[length-1]);
+	char* out=kmm_alloc(length);
+	memcpy(out,str,length);
+	return out;
 }
 
 
@@ -96,11 +97,9 @@ static void _copy_string(const char* src,char* dst){
 void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	INFO("Searching memory range %p - %p...",SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END);
-	const smbios_t* smbios=NULL;
 	vmm_identity_map((void*)SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END-SMBIOS_MEMORY_REGION_START);
-	const u32* start=(void*)SMBIOS_MEMORY_REGION_START;
-	const u32* end=(void*)SMBIOS_MEMORY_REGION_END;
-	while (start!=end){
+	const smbios_t* smbios=NULL;
+	for (const u32* start=(void*)SMBIOS_MEMORY_REGION_START;start<(const u32*)SMBIOS_MEMORY_REGION_END;start+=4){
 		if (start[0]==0x5f4d535f){
 			smbios=(const smbios_t*)start;
 			goto _smbios_found;
@@ -113,30 +112,21 @@ _smbios_found:
 	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
 	vmm_identity_map((void*)(u64)(smbios->table_address),smbios->table_length);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
-	bios_data.bios_vendor[0]=0;
-	bios_data.bios_version[0]=0;
-	bios_data.manufacturer[0]=0;
-	bios_data.product[0]=0;
-	bios_data.version[0]=0;
-	bios_data.serial_number[0]=0;
-	for (u8 i=0;i<16;i++){
-		bios_data.uuid[i]=0;
-	}
-	bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
+	memset(&bios_data,0,sizeof(bios_data_t));
 	_Bool serial_number_found=0;
 	for (u64 offset=smbios->table_address;offset<smbios->table_address+smbios->table_length;){
 		const smbios_header_t* header=(void*)offset;
 		switch (header->type){
 			case 0:
-				_copy_string(_get_header_string(header,header->bios_information.vendor),bios_data.bios_vendor);
-				_copy_string(_get_header_string(header,header->bios_information.bios_version),bios_data.bios_version);
+				bios_data.bios_vendor=_duplicate_string(_get_header_string(header,header->bios_information.vendor));
+				bios_data.bios_version=_duplicate_string(_get_header_string(header,header->bios_information.bios_version));
 				break;
 			case 1:
-				_copy_string(_get_header_string(header,header->system_information.manufacturer),bios_data.manufacturer);
-				_copy_string(_get_header_string(header,header->system_information.product_name),bios_data.product);
-				_copy_string(_get_header_string(header,header->system_information.version),bios_data.version);
+				bios_data.manufacturer=_duplicate_string(_get_header_string(header,header->system_information.manufacturer));
+				bios_data.product=_duplicate_string(_get_header_string(header,header->system_information.product_name));
+				bios_data.version=_duplicate_string(_get_header_string(header,header->system_information.version));
 				if (!serial_number_found){
-					_copy_string(_get_header_string(header,header->system_information.serial_number),bios_data.serial_number);
+					bios_data.serial_number=_duplicate_string(_get_header_string(header,header->system_information.serial_number));
 				}
 				for (u8 i=0;i<4;i++){
 					bios_data.uuid[i]=header->system_information.uuid[3-i];
@@ -161,7 +151,7 @@ _smbios_found:
 				}
 				break;
 			case 2:
-				_copy_string(_get_header_string(header,header->baseboard_information.serial_number),bios_data.serial_number);
+				bios_data.serial_number=_duplicate_string(_get_header_string(header,header->baseboard_information.serial_number));
 				serial_number_found=1;
 				break;
 		}
