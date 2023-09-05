@@ -1,3 +1,4 @@
+#include <kernel/aml/runtime.h>
 #include <kernel/bios/bios.h>
 #include <kernel/drive/drive.h>
 #include <kernel/kernel.h>
@@ -104,6 +105,7 @@ typedef struct _USER_DATA_HEADER{
 	user_layer1_network_device_t* layer1_network_device;
 	u32 memory_range_count;
 	user_memory_range_t* memory_ranges;
+	void* aml_root_node;
 } user_data_header_t;
 
 
@@ -240,6 +242,11 @@ static void _generate_memory_ranges(user_data_header_t* header){
 }
 
 
+static void _generate_aml_root_node(user_data_header_t* header){
+	header->aml_root_node=(AML_PROTECT_DATA?NULL:aml_root_node);
+}
+
+
 
 void user_data_generate(void){
 	LOG("Generating user data structures...");
@@ -250,5 +257,6 @@ void user_data_generate(void){
 	_generate_numa_nodes(header);
 	_generate_layer1_network_device(header);
 	_generate_memory_ranges(header);
+	_generate_aml_root_node(header);
 	user_data_pointer=header;
 }

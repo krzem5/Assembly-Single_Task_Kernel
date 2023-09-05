@@ -23,6 +23,7 @@ typedef struct _USER_DATA_HEADER{
 	const network_config_t* layer1_network_device;
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;
+	const void* aml_root_node;
 } user_data_header_t;
 
 
@@ -40,6 +41,7 @@ const u8* numa_node_locality_matrix;
 const network_config_t* network_config;
 u32 memory_range_count;
 const memory_range_t* memory_ranges;
+const void* aml_root_node;
 
 
 
@@ -58,4 +60,5 @@ void _user_data_init(void){
 	network_config=header->layer1_network_device;
 	memory_range_count=header->memory_range_count;
 	memory_ranges=header->memory_ranges;
+	aml_root_node=header->aml_root_node;
 }
