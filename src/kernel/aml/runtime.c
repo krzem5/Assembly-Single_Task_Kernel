@@ -368,7 +368,15 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
 			local->simple_return_value.data.string.length=object->args[0].string_length;
-			local->simple_return_value.data.string.data=object->args[0].string;
+			if (AML_PROTECT_DATA){
+				local->simple_return_value.data.string.data=object->args[0].string;
+			}
+			else{
+				char* user_string=umm_alloc(object->args[0].string_length+1);
+				memcpy(user_string,object->args[0].string,object->args[0].string_length);
+				user_string[object->args[0].string_length]=0;
+				local->simple_return_value.data.string.data=user_string;
+			}
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_QWORD_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -990,7 +998,7 @@ void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
 	_aml_irq=irq;
 	_aml_allocator=(AML_PROTECT_DATA?kmm_alloc:umm_alloc);
-	if (AML_PROTECT_DATA){
+	if (!AML_PROTECT_DATA){
 		WARN("AML data is exposed to user-mode");
 	}
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);

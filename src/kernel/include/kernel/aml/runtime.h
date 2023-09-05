@@ -6,7 +6,7 @@
 
 
 
-#define AML_PROTECT_DATA 1
+#define AML_PROTECT_DATA 0
 
 
 

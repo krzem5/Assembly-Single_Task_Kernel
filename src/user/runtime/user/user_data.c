@@ -1,3 +1,4 @@
+#include <user/aml.h>
 #include <user/drive.h>
 #include <user/memory.h>
 #include <user/network.h>
@@ -23,7 +24,7 @@ typedef struct _USER_DATA_HEADER{
 	const network_config_t* layer1_network_device;
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;
-	const void* aml_root_node;
+	const aml_node_t* aml_root_node;
 } user_data_header_t;
 
 
@@ -41,7 +42,7 @@ const u8* numa_node_locality_matrix;
 const network_config_t* network_config;
 u32 memory_range_count;
 const memory_range_t* memory_ranges;
-const void* aml_root_node;
+const aml_node_t* aml_root_node;
 
 
 
