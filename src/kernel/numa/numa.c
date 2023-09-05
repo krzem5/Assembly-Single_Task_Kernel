@@ -13,8 +13,10 @@ u8* numa_node_locality_matrix;
 
 
 void numa_init(u32 proximity_domain_count){
-	if (numa_node_count&&proximity_domain_count!=numa_node_count){
-		ERROR("NUMA proximity domain count mismatch between SLIT and SRAT");
+	if (numa_node_count){
+		if (proximity_domain_count!=numa_node_count){
+			ERROR("NUMA proximity domain count mismatch between SLIT and SRAT");
+		}
 		return;
 	}
 	LOG("Initializing NUMA...");
