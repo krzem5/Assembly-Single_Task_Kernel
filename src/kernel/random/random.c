@@ -72,7 +72,7 @@ void random_generate(void* buffer,u64 length){
 			memcpy((u8*)buffer_ptr,(const u8*)_random_chacha_buffer,length);
 			break;
 		}
-		memcpy(buffer_ptr,_random_chacha_buffer,8);
+		memcpy(buffer_ptr,_random_chacha_buffer,32);
 		length-=32;
 		buffer_ptr+=8;
 	}
