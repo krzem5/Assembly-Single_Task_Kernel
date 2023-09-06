@@ -65,16 +65,13 @@ void random_init(void){
 void random_generate(void* buffer,u64 length){
 	lock_acquire_exclusive(&_random_chacha_lock);
 	_random_get_entropy(_random_chacha_state);
-	u32* buffer_ptr=buffer;
+	u8* buffer_ptr=buffer;
 	while (length){
 		_chacha_block(_random_chacha_state,_random_chacha_buffer);
-		if (length<32){
-			memcpy((u8*)buffer_ptr,(const u8*)_random_chacha_buffer,length);
-			break;
-		}
-		memcpy(buffer_ptr,_random_chacha_buffer,32);
-		length-=32;
-		buffer_ptr+=8;
+		u32 chunk_size=(length>32?32:length);
+		memcpy(buffer_ptr,_random_chacha_buffer,chunk_size);
+		length-=chunk_size;
+		buffer_ptr+=chunk_size;
 	}
 	lock_release_exclusive(&_random_chacha_lock);
 }
