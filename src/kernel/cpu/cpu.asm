@@ -102,6 +102,6 @@ section .cdata
 
 
 _feature_not_present_str:
-	db 27,"[1m",27,"[38;2;231;72;86mFeature not present: %s",27,"[0m",10,0
+	db 27,"[38;2;65;65;65m[cpu] ",27,"[1m",27,"[38;2;231;72;86mFeature not present: %s",27,"[0m",10,0
 _feature_not_present_warn_str:
-	db 27,"[38;2;231;211;72mFeature not present: %s",27,"[0m",10,0
+	db 27,"[38;2;65;65;65m[cpu] ",27,"[38;2;231;211;72mFeature not present: %s",27,"[0m",10,0
