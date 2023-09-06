@@ -1,6 +1,5 @@
 #ifndef _KERNEL_CONFIG_H_
 #define _KERNEL_CONFIG_H_ 1
-#include <kernel/types.h>
 
 
 
