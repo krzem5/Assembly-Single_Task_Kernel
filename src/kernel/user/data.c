@@ -129,14 +129,27 @@ static char* _duplicate_string(const char* str){
 
 static void _generate_bios_data(user_data_header_t* header){
 	user_bios_data_t* user_bios_data=umm_alloc(sizeof(user_bios_data_t));
-	user_bios_data->bios_vendor=_duplicate_string(bios_data.bios_vendor);
-	user_bios_data->bios_version=_duplicate_string(bios_data.bios_version);
-	user_bios_data->manufacturer=_duplicate_string(bios_data.manufacturer);
-	user_bios_data->product=_duplicate_string(bios_data.product);
-	user_bios_data->version=_duplicate_string(bios_data.version);
-	user_bios_data->serial_number=_duplicate_string(bios_data.serial_number);
-	memcpy(user_bios_data->uuid,bios_data.uuid,16);
-	user_bios_data->wakeup_type=bios_data.wakeup_type;
+	if (CONFIG_DISABLE_USER_BIOS_DATA){
+		char* unknown_string=_duplicate_string("???");
+		user_bios_data->bios_vendor=unknown_string;
+		user_bios_data->bios_version=unknown_string;
+		user_bios_data->manufacturer=unknown_string;
+		user_bios_data->product=unknown_string;
+		user_bios_data->version=unknown_string;
+		user_bios_data->serial_number=unknown_string;
+		memset(user_bios_data->uuid,0,16);
+		user_bios_data->wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
+	}
+	else{
+		user_bios_data->bios_vendor=_duplicate_string(bios_data.bios_vendor);
+		user_bios_data->bios_version=_duplicate_string(bios_data.bios_version);
+		user_bios_data->manufacturer=_duplicate_string(bios_data.manufacturer);
+		user_bios_data->product=_duplicate_string(bios_data.product);
+		user_bios_data->version=_duplicate_string(bios_data.version);
+		user_bios_data->serial_number=_duplicate_string(bios_data.serial_number);
+		memcpy(user_bios_data->uuid,bios_data.uuid,16);
+		user_bios_data->wakeup_type=bios_data.wakeup_type;
+	}
 	header->bios_data=user_bios_data;
 }
 
@@ -167,7 +180,6 @@ static void _generate_drives(user_data_header_t* header){
 
 
 static void _generate_partitions(user_data_header_t* header){
-	header->partition_count=0;
 	for (const partition_t* partition=partition_data;partition;partition=partition->next){
 		header->partition_count++;
 	}
@@ -188,6 +200,12 @@ static void _generate_partitions(user_data_header_t* header){
 
 
 static void _generate_numa_nodes(user_data_header_t* header){
+	if (CONFIG_DISABLE_USER_NUMA){
+		header->numa_node_count=0;
+		header->numa_nodes=NULL;
+		header->numa_node_locality_matrix=NULL;
+		return;
+	}
 	header->numa_node_count=numa_node_count;
 	header->numa_nodes=umm_alloc(numa_node_count*sizeof(user_numa_node_t));
 	user_numa_node_t* user_numa_node=header->numa_nodes;
@@ -226,7 +244,12 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 	}
 	user_layer1_network_device_t* user_layer1_network_device=umm_alloc(sizeof(user_layer1_network_device_t));
 	user_layer1_network_device->name=_duplicate_string(network_layer1_name);
-	memcpy(user_layer1_network_device->mac_address,network_layer1_mac_address,6);
+	if (CONFIG_DISABLE_USER_MAC_ADDRESS){
+		memset(user_layer1_network_device->mac_address,0,6);
+	}
+	else{
+		memcpy(user_layer1_network_device->mac_address,network_layer1_mac_address,6);
+	}
 	header->layer1_network_device=user_layer1_network_device;
 }
 
