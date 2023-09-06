@@ -3,6 +3,22 @@
 
 
 
+static const char*const region_types[]={
+	"SystemMemory",
+	"SystemIO",
+	"PCI_Config",
+	"EmbeddedControl",
+	"SMBus",
+	"SystemCMOS",
+	"PciBarTarget",
+	"IPMI",
+	"GeneralPurposeIO",
+	"GenericSerialBus",
+	"PCC"
+};
+
+
+
 static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 	for (u32 i=0;i<indent;i+=4){
 		printf("    ");
@@ -56,46 +72,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 			printf("reference<...>");
 			goto _end;
 		case AML_NODE_TYPE_REGION:
-			printf("region<type=");
-			switch (node->data.region.type){
-				case 0:
-					printf("SystemMemory");
-					break;
-				case 1:
-					printf("SystemIO");
-					break;
-				case 2:
-					printf("PCI_Config");
-					break;
-				case 3:
-					printf("EmbeddedControl");
-					break;
-				case 4:
-					printf("SMBus");
-					break;
-				case 5:
-					printf("SystemCMOS");
-					break;
-				case 6:
-					printf("PciBarTarget");
-					break;
-				case 7:
-					printf("IPMI");
-					break;
-				case 8:
-					printf("GeneralPurposeIO");
-					break;
-				case 9:
-					printf("GenericSerialBus");
-					break;
-				case 10:
-					printf("PCC");
-					break;
-				default:
-					printf("Unknown");
-					break;
-			}
-			printf(", offset=%u, length=%u>",node->data.region.offset,node->data.region.length);
+			printf("region<type=%s, offset=%u, length=%u>",(node->data.region.type<11?region_types[node->data.region.type]:"Unknown"),node->data.region.offset,node->data.region.length);
 			goto _end;
 		case AML_NODE_TYPE_POWER_RESOURCE:
 			printf("power_resource<...>");
