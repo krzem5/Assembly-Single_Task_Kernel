@@ -40,7 +40,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 				if (i){
 					printf(" ");
 				}
-				printf("%x",node->data.buffer.data[i]);
+				printf("%X",node->data.buffer.data[i]);
 			}
 			printf("}");
 			goto _end;

@@ -47,7 +47,7 @@ _start:
 	cmp r13, r14
 	je ._skip_core
 	mov rdi, r14
-	lea rsi, _start_core
+	lea rsi, ._start_core
 	call _syscall_cpu_core_start
 ._skip_core:
 	add r14, 1
@@ -67,10 +67,8 @@ _start:
 	call main
 	;;; Shutdown CPU
 	jmp _syscall_cpu_core_stop
-
-
-
-_start_core:
+	;;; Core bootstrap callback
+._start_core:
 	wrgsbase rdi
 	lock add dword [_start_core_count], 1
 	jmp _syscall_cpu_core_stop
