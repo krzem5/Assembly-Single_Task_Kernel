@@ -23,6 +23,7 @@ void* KERNEL_CORE_CODE vfs_alloc(partition_t* fs,const char* name,u8 name_length
 	out->name_length=name_length;
 	out->flags=0;
 	memcpy(out->name,name,name_length+1);
+	out->name[name_length]=0;
 	out->parent=VFS_NODE_ID_UNKNOWN;
 	out->prev_sibling=VFS_NODE_ID_UNKNOWN;
 	out->next_sibling=VFS_NODE_ID_UNKNOWN;
