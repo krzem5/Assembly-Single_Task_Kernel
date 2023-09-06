@@ -18,6 +18,10 @@ void memory_main(int argc,const char*const* argv){
 		}
 	}
 	if (show_layout){
+		if (!memory_range_count){
+			printf("memory: unable to access memory ranges\n");
+			return;
+		}
 		printf("Memory layout: (\x1b[1m%u\x1b[0m range%s)\n",memory_range_count,(memory_range_count==1?"":"s"));
 		u64 total_size=0;
 		u64 total_usable_size=0;

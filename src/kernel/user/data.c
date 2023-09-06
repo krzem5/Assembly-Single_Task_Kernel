@@ -1,5 +1,6 @@
 #include <kernel/aml/runtime.h>
 #include <kernel/bios/bios.h>
+#include <kernel/config.h>
 #include <kernel/drive/drive.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -232,6 +233,11 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 
 
 static void _generate_memory_ranges(user_data_header_t* header){
+	if (CONFIG_DISABLE_USER_MEMORY_RANGES){
+		header->memory_range_count=0;
+		header->memory_ranges=NULL;
+		return;
+	}
 	header->memory_range_count=KERNEL_DATA->mmap_size;
 	header->memory_ranges=umm_alloc(KERNEL_DATA->mmap_size*sizeof(user_numa_memory_range_t));
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
@@ -243,7 +249,7 @@ static void _generate_memory_ranges(user_data_header_t* header){
 
 
 static void _generate_aml_root_node(user_data_header_t* header){
-	header->aml_root_node=(AML_PROTECT_DATA?NULL:aml_root_node);
+	header->aml_root_node=(CONFIG_DISABLE_USER_AML?NULL:aml_root_node);
 }
 
 

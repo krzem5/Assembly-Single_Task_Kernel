@@ -1,6 +1,7 @@
 #include <kernel/aml/parser.h>
 #include <kernel/aml/runtime.h>
 #include <kernel/apic/ioapic.h>
+#include <kernel/config.h>
 #include <kernel/io/io.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
@@ -368,7 +369,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
 			local->simple_return_value.data.string.length=object->args[0].string_length;
-			if (AML_PROTECT_DATA){
+			if (CONFIG_DISABLE_USER_AML){
 				local->simple_return_value.data.string.data=object->args[0].string;
 			}
 			else{
@@ -997,10 +998,7 @@ void _aml_handle_interrupt(void){
 void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
 	_aml_irq=irq;
-	_aml_allocator=(AML_PROTECT_DATA?kmm_alloc:umm_alloc);
-	if (!AML_PROTECT_DATA){
-		WARN("AML data is exposed to user-mode");
-	}
+	_aml_allocator=(CONFIG_DISABLE_USER_AML?kmm_alloc:umm_alloc);
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
 	runtime_local_state_t local={
 		aml_root_node

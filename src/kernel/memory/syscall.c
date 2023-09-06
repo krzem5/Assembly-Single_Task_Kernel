@@ -1,3 +1,4 @@
+#include <kernel/config.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
@@ -20,7 +21,7 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 void syscall_memory_stats(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(pmm_counters_t)){
+	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rsi!=sizeof(pmm_counters_t)){
 		regs->rax=0;
 		return;
 	}
