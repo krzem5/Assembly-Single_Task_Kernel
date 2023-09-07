@@ -180,6 +180,7 @@ static void _generate_drives(user_data_header_t* header){
 
 
 static void _generate_partitions(user_data_header_t* header){
+	header->partition_count=0;
 	for (const partition_t* partition=partition_data;partition;partition=partition->next){
 		header->partition_count++;
 	}
