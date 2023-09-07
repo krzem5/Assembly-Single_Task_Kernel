@@ -272,6 +272,7 @@ static void _generate_memory_ranges(user_data_header_t* header){
 }
 
 
+
 static void _generate_aml_root_node(user_data_header_t* header){
 	header->aml_root_node=(CONFIG_DISABLE_USER_AML?NULL:aml_root_node);
 }
