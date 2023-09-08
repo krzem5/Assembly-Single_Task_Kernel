@@ -13,6 +13,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/syscall/syscall.h>
+#include <kernel/topology/topology.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "cpu"
@@ -89,6 +90,7 @@ void cpu_init(u16 count){
 void cpu_register_core(u8 apic_id){
 	LOG("Registering CPU core #%u",apic_id);
 	(_cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
+	topology_compute(apic_id,&((_cpu_data+apic_id)->topology));
 }
 
 

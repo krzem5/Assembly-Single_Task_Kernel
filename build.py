@@ -397,7 +397,7 @@ if ("--run" in sys.argv):
 		"-object","memory-backend-ram,size=512M,id=mem1",
 		# CPU
 		"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
-		"-smp","4,sockets=2,maxcpus=4",
+		"-smp","8,sockets=2,cores=2,threads=2,maxcpus=8",
 		# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
 		# NUMA
 		"-numa","node,nodeid=0,memdev=mem0",
