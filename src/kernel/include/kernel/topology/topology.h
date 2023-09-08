@@ -8,6 +8,7 @@ typedef struct _TOPOLOGY{
 	u32 thread;
 	u32 core;
 	u32 chip;
+	u32 domain;
 } topology_t;
 
 

@@ -42,6 +42,7 @@ typedef struct _CPU_COMMON_DATA{
 
 
 
+extern cpu_data_t* cpu_data;
 extern u16 cpu_count;
 extern u8 cpu_bsp_core_id;
 

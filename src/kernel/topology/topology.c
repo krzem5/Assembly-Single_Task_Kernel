@@ -19,5 +19,5 @@ void topology_compute(u8 apic_id,topology_t* out){
 	out->thread=apic_id&((1<<_topology_thread_bits)-1);
 	out->core=(apic_id>>_topology_thread_bits)&((1<<_topology_core_bits)-1);
 	out->chip=apic_id>>(_topology_thread_bits+_topology_core_bits);
-	ERROR("%u:%u:%u",out->chip,out->core,out->thread);
+	out->domain=0;
 }

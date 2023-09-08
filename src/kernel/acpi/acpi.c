@@ -83,29 +83,49 @@ _rsdp_found:
 	vmm_identity_map(rsdt,sizeof(rsdt_t));
 	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
 	vmm_identity_map(rsdt,rsdt->header.length);
+	const sdt_t* madt=NULL;
+	const sdt_t* fadt=NULL;
+	const sdt_t* hmat=NULL;
+	const sdt_t* srat=NULL;
+	const sdt_t* slit=NULL;
 	for (u32 i=0;i<entry_count;i++){
 		const sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
 		vmm_identity_map(sdt,sizeof(sdt_t));
 		vmm_identity_map(sdt,sdt->length);
 		if (sdt->signature==0x43495041){
+			madt=sdt;
 			INFO("Found MADT at %p",sdt);
-			acpi_madt_load(sdt);
 		}
 		else if (sdt->signature==0x50434146){
+			fadt=sdt;
 			INFO("Found FADT at %p",sdt);
-			acpi_fadt_load(sdt);
 		}
 		else if (sdt->signature==0x54414d48){
+			hmat=sdt;
 			INFO("Found HMAT at %p",sdt);
-			acpi_hmat_load(sdt);
 		}
 		else if (sdt->signature==0x54415253){
+			srat=sdt;
 			INFO("Found SRAT at %p",sdt);
-			acpi_srat_load(sdt);
 		}
 		else if (sdt->signature==0x54494c53){
+			slit=sdt;
 			INFO("Found SLIT at %p",sdt);
-			acpi_slit_load(sdt);
 		}
+	}
+	if (madt){
+		acpi_madt_load(madt);
+	}
+	if (fadt){
+		acpi_fadt_load(fadt);
+	}
+	if (hmat){
+		acpi_hmat_load(hmat);
+	}
+	if (srat){
+		acpi_srat_load(srat);
+	}
+	if (slit){
+		acpi_slit_load(slit);
 	}
 }

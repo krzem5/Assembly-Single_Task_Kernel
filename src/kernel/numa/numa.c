@@ -1,3 +1,4 @@
+#include <kernel/cpu/cpu.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/numa/numa.h>
@@ -59,6 +60,7 @@ void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 	cpu->sapic_eid=sapic_eid;
 	(numa_nodes+node_index)->cpu_count++;
 	(numa_nodes+node_index)->cpus=cpu;
+	(cpu_data+apic_id)->topology.domain=node_index;
 }
 
 
