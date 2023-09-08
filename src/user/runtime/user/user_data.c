@@ -1,4 +1,5 @@
 #include <user/aml.h>
+#include <user/cpu.h>
 #include <user/drive.h>
 #include <user/memory.h>
 #include <user/network.h>
@@ -25,6 +26,7 @@ typedef struct _USER_DATA_HEADER{
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;
 	const aml_node_t* aml_root_node;
+	const cpu_t* cpus;
 } user_data_header_t;
 
 
@@ -43,6 +45,7 @@ const network_config_t* network_config;
 u32 memory_range_count;
 const memory_range_t* memory_ranges;
 const aml_node_t* aml_root_node;
+const cpu_t* cpus;
 
 
 
@@ -62,4 +65,5 @@ void _user_data_init(void){
 	memory_range_count=header->memory_range_count;
 	memory_ranges=header->memory_ranges;
 	aml_root_node=header->aml_root_node;
+	cpus=header->cpus;
 }

@@ -1,6 +1,7 @@
 #include <kernel/aml/runtime.h>
 #include <kernel/bios/bios.h>
 #include <kernel/config.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -92,6 +93,17 @@ typedef struct _USER_MEMORY_RANGE{
 
 
 
+typedef struct _USER_CPU{
+	u8 apic_id;
+	u8 flags;
+	u32 domain;
+	u32 chip;
+	u32 core;
+	u32 thread;
+} user_cpu_t;
+
+
+
 typedef struct _USER_DATA_HEADER{
 	user_bios_data_t* bios_data;
 	u32 drive_count;
@@ -107,6 +119,7 @@ typedef struct _USER_DATA_HEADER{
 	u32 memory_range_count;
 	user_memory_range_t* memory_ranges;
 	void* aml_root_node;
+	user_cpu_t* cpus;
 } user_data_header_t;
 
 
@@ -279,6 +292,20 @@ static void _generate_aml_root_node(user_data_header_t* header){
 
 
 
+static void _generate_user_cpus(user_data_header_t* header){
+	header->cpus=umm_alloc(cpu_count*sizeof(user_cpu_t));
+	for (u16 i=0;i<cpu_count;i++){
+		(header->cpus+i)->apic_id=i;
+		(header->cpus+i)->flags=(cpu_data+i)->flags;
+		(header->cpus+i)->domain=(cpu_data+i)->topology.domain;
+		(header->cpus+i)->chip=(cpu_data+i)->topology.chip;
+		(header->cpus+i)->core=(cpu_data+i)->topology.core;
+		(header->cpus+i)->thread=(cpu_data+i)->topology.thread;
+	}
+}
+
+
+
 void user_data_generate(void){
 	LOG("Generating user data structures...");
 	user_data_header_t* header=umm_alloc(sizeof(user_data_header_t));
@@ -289,5 +316,6 @@ void user_data_generate(void){
 	_generate_layer1_network_device(header);
 	_generate_memory_ranges(header);
 	_generate_aml_root_node(header);
+	_generate_user_cpus(header);
 	user_data_pointer=header;
 }
