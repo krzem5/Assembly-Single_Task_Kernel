@@ -183,9 +183,7 @@ void driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio=pci_bar.address;
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
-	for (u64 i=0;i<0xfffff;i++){
-		__pause();
-	}
+	COUNTER_SPINLOOP(0xffff);
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]|=CTRL_FD;
 	i82540_device->mmio[REG_GCR]|=0x00400000;

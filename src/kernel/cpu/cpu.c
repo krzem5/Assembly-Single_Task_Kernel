@@ -109,9 +109,7 @@ void cpu_start_all_cores(void){
 		cpu_ap_startup_set_stack_top((cpu_data+i)->kernel_rsp);
 		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
 		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
-		for (u32 j=0;j<0xfff;j++){
-			__pause();
-		}
+		COUNTER_SPINLOOP(0xfff);
 		for (u8 j=0;j<2;j++){
 			lapic_send_ipi(i,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
 		}

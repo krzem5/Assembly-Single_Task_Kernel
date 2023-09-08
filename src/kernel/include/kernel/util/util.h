@@ -19,9 +19,22 @@
 		} \
 		__nocoverage_spinloop(); \
 	} while(0)
+#define COUNTER_SPINLOOP(max) \
+	do{ \
+		inline void KERNEL_NOCOVERAGE __nocoverage_counter_spinloop(void){ \
+			for (u64 __tmp=0;__tmp<(max);__tmp++){ \
+				__pause(); \
+			} \
+		} \
+		__nocoverage_counter_spinloop(); \
+	} while(0)
 #else
 #define SPINLOOP(cond) \
 	while (cond){ \
+		__pause(); \
+	}
+#define COUNTER_SPINLOOP(max) \
+	for (u64 __tmp=0;__tmp<(max);__tmp++){ \
 		__pause(); \
 	}
 #endif
