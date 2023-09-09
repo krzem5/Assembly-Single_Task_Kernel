@@ -120,6 +120,8 @@ typedef struct _USER_DATA_HEADER{
 	u32 memory_range_count;
 	user_memory_range_t* memory_ranges;
 	void* aml_root_node;
+	u32 cpu_count;
+	u32 cpu_bsp_id;
 	user_cpu_t* cpus;
 } user_data_header_t;
 
@@ -295,6 +297,8 @@ static void _generate_aml_root_node(user_data_header_t* header){
 
 
 static void _generate_user_cpus(user_data_header_t* header){
+	header->cpu_count=cpu_count;
+	header->cpu_bsp_id=cpu_bsp_core_id;
 	header->cpus=umm_alloc(cpu_count*sizeof(user_cpu_t));
 	user_data_cpu_table=kmm_alloc(cpu_count*sizeof(const user_cpu_t*));
 	for (u16 i=0;i<cpu_count;i++){

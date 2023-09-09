@@ -26,6 +26,8 @@ typedef struct _USER_DATA_HEADER{
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;
 	const aml_node_t* aml_root_node;
+	u32 cpu_count;
+	u32 cpu_bsp_id;
 	const cpu_t* cpus;
 } user_data_header_t;
 
@@ -45,6 +47,8 @@ const network_config_t* network_config;
 u32 memory_range_count;
 const memory_range_t* memory_ranges;
 const aml_node_t* aml_root_node;
+u32 cpu_count;
+u32 cpu_bsp_id;
 const cpu_t* cpus;
 
 
@@ -65,5 +69,7 @@ void _user_data_init(void){
 	memory_range_count=header->memory_range_count;
 	memory_ranges=header->memory_ranges;
 	aml_root_node=header->aml_root_node;
+	cpu_count=header->cpu_count;
+	cpu_bsp_id=header->cpu_bsp_id;
 	cpus=header->cpus;
 }
