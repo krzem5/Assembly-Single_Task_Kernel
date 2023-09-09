@@ -24,8 +24,8 @@
 
 
 
-static cpu_common_data_t* _cpu_common_data;
 
+cpu_data_t* cpu_data;
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
@@ -37,7 +37,7 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_data+index)->topology.domain,(cpu_data+index)->topology.chip,(cpu_data+index)->topology.core,(cpu_data+index)->topology.thread);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
-	gdt_enable(&((_cpu_common_data+index)->tss));
+	gdt_enable(&((cpu_data+index)->tss));
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data+index,0);
 	msr_set_gs_base(NULL,1);
@@ -61,8 +61,7 @@ void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
-	cpu_data=kmm_alloc(count*sizeof(cpu_data_t));
-	_cpu_common_data=umm_alloc(count*sizeof(cpu_common_data_t));
+	cpu_data=umm_alloc(count*sizeof(cpu_data_t));
 	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
 	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
 	for (u16 i=0;i<count;i++){
@@ -70,7 +69,7 @@ void cpu_init(u16 count){
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
 		(cpu_data+i)->kernel_rsp=kernel_stacks;
-		(cpu_data+i)->isr_rsp=(u64)((_cpu_common_data+i)->isr_stack+ISR_STACK_SIZE);
+		(cpu_data+i)->isr_rsp=(u64)((cpu_data+i)->isr_stack+ISR_STACK_SIZE);
 		(cpu_data+i)->user_func=0;
 		(cpu_data+i)->user_func_arg[0]=0;
 		(cpu_data+i)->user_func_arg[1]=0;
@@ -78,7 +77,7 @@ void cpu_init(u16 count){
 		for (u8 j=0;j<8;j++){
 			(cpu_data+i)->irq_bitmap[j]=0;
 		}
-		(_cpu_common_data+i)->tss.rsp0=(cpu_data+i)->isr_rsp;
+		(cpu_data+i)->tss.rsp0=(cpu_data+i)->isr_rsp;
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);

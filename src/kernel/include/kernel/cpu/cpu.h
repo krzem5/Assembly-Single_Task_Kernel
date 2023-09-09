@@ -31,14 +31,9 @@ typedef struct _CPU_DATA{
 	u64 user_rsp_top;
 	u32 irq_bitmap[8];
 	topology_t topology;
-} cpu_data_t;
-
-
-
-typedef struct _CPU_COMMON_DATA{
 	tss_t tss;
 	u8 isr_stack[ISR_STACK_SIZE];
-} cpu_common_data_t;
+} cpu_data_t;
 
 
 
