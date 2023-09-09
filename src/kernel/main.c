@@ -8,6 +8,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>

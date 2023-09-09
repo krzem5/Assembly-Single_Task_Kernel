@@ -26,7 +26,6 @@
 
 
 cpu_data_t* cpu_data;
-cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
 
@@ -74,9 +73,6 @@ void cpu_init(u16 count){
 		(cpu_data+i)->user_func_arg[0]=0;
 		(cpu_data+i)->user_func_arg[1]=0;
 		(cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		for (u8 j=0;j<8;j++){
-			(cpu_data+i)->irq_bitmap[j]=0;
-		}
 		(cpu_data+i)->tss.rsp0=(cpu_data+i)->isr_rsp;
 	}
 	cpu_bsp_core_id=msr_get_apic_id();

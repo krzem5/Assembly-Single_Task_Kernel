@@ -95,7 +95,7 @@ syscall_jump_to_user_mode:
 
 syscall_handler:
 	swapgs
-	mov cr2, rsp
+	mov qword [gs:16], rsp
 	mov sp, 0x10
 	mov ds, sp
 	mov es, sp
@@ -103,8 +103,6 @@ syscall_handler:
 	mov cr3, rsp
 	cmp qword [gs:32], 0
 	jnz syscall_jump_to_user_mode._function_found
-	mov rsp, cr2
-	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
 	push rcx
 	push r11
@@ -159,14 +157,12 @@ syscall_handler:
 	pop r15
 	pop r11
 	pop rcx
-	mov rsp, qword [gs:16]
-	mov cr2, rsp
 	mov rsp, qword [vmm_user_pagemap]
 	mov cr3, rsp
 	mov sp, 0x18
 	mov ds, sp
 	mov es, sp
-	mov rsp, cr2
+	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
 ._invalid_syscall:
