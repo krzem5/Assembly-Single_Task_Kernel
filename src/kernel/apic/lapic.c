@@ -1,6 +1,7 @@
 #include <kernel/apic/lapic.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/msr/msr.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "lapic"
@@ -27,6 +28,8 @@ void lapic_init(u64 base){
 	INFO("lAPIC base: %p",base);
 	_lapic_registers=(void*)base;
 	vmm_identity_map((void*)base,(REGISTER_MAX+1)*sizeof(u32));
+	INFO("Enabling APIC...");
+	msr_enable_apic();
 }
 
 

@@ -1,4 +1,5 @@
 global msr_get_apic_id
+global msr_enable_apic
 global msr_set_fs_base
 global msr_set_gs_base
 global msr_enable_simd
@@ -16,6 +17,15 @@ msr_get_apic_id:
 	mov eax, ebx
 	shr eax, 24
 	pop rbx
+	ret
+
+
+
+msr_enable_apic:
+	mov ecx, 0x0000001b
+	rdmsr
+	bts eax, 11
+	wrmsr
 	ret
 
 

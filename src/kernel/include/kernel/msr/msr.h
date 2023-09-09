@@ -8,6 +8,10 @@ u8 msr_get_apic_id(void);
 
 
 
+void msr_enable_apic(void);
+
+
+
 void msr_set_fs_base(void* fs_base);
 
 
