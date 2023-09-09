@@ -57,6 +57,10 @@ syscall_jump_to_user_mode:
 	jmp syscall_jump_to_user_mode
 ._function_found:
 	cli
+	movzx eax, byte [gs:0]
+	mov ecx, 0xc0000102
+	xor edx, edx
+	wrmsr
 	mov rcx, qword [gs:32]
 	mov rdi, qword [gs:40]
 	mov rsi, qword [gs:48]
