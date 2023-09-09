@@ -5,6 +5,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/numa/numa.h>
@@ -125,6 +126,7 @@ typedef struct _USER_DATA_HEADER{
 
 
 void* user_data_pointer;
+const user_cpu_t** user_data_cpu_table;
 
 
 
@@ -294,7 +296,9 @@ static void _generate_aml_root_node(user_data_header_t* header){
 
 static void _generate_user_cpus(user_data_header_t* header){
 	header->cpus=umm_alloc(cpu_count*sizeof(user_cpu_t));
+	user_data_cpu_table=kmm_alloc(cpu_count*sizeof(const user_cpu_t*));
 	for (u16 i=0;i<cpu_count;i++){
+		user_data_cpu_table[i]=header->cpus+i;
 		(header->cpus+i)->apic_id=i;
 		(header->cpus+i)->flags=(cpu_data+i)->flags;
 		(header->cpus+i)->domain=(cpu_data+i)->topology.domain;

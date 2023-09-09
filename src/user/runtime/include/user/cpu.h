@@ -21,6 +21,13 @@ extern const cpu_t* cpus;
 
 
 
+
+static inline const __seg_gs cpu_t* cpu_current(void){
+	return NULL;
+}
+
+
+
 void cpu_init(void);
 
 

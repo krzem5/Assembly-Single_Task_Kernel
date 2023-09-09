@@ -5,6 +5,7 @@ extern _random_entropy_pool_length
 extern _syscall_handlers
 extern isr_was_triggered
 extern syscall_invalid
+extern user_data_cpu_table
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global syscall_enable
@@ -58,8 +59,11 @@ syscall_jump_to_user_mode:
 ._function_found:
 	cli
 	movzx eax, byte [gs:0]
+	mov rdx, qword [user_data_cpu_table]
+	mov rax, qword [rdx+rax*8]
 	mov ecx, 0xc0000102
-	xor edx, edx
+	mov rdx, rax
+	shr rdx, 32
 	wrmsr
 	mov rcx, qword [gs:32]
 	mov rdi, qword [gs:40]
