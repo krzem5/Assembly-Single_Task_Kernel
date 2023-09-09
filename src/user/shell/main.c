@@ -6,10 +6,8 @@
 #include <user/network.h>
 
 
-#include <user/cpu.h>
-#include <user/io.h>
+
 static void _network_thread(void){
-	printf("%u\n",cpu_current()->thread);
 	u8 buffer[64];
 	network_packet_t packet;
 	while (1){
