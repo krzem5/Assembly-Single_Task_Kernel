@@ -20,10 +20,6 @@ s32 _syscall_elf_load(const char* path,u32 length);
 
 
 
-u32 _syscall_cpu_core_count(void);
-
-
-
 s32 _syscall_cpu_core_start(u32 index,void* fn,void* arg1,void* arg2);
 
 

@@ -4,12 +4,6 @@
 
 
 
-void syscall_cpu_core_count(syscall_registers_t* regs){
-	regs->rax=cpu_count|(((u64)cpu_bsp_core_id)<<32);
-}
-
-
-
 void syscall_cpu_core_start(syscall_registers_t* regs){
 	cpu_core_start(regs->rdi,regs->rsi,regs->rdx,regs->r8);
 }

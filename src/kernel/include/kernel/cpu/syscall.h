@@ -4,10 +4,6 @@
 
 
 
-void syscall_cpu_core_count(syscall_registers_t* regs);
-
-
-
 void syscall_cpu_core_start(syscall_registers_t* regs);
 
 
