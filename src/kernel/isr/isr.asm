@@ -124,17 +124,7 @@ section .common
 
 
 _isr_common_handler:
-	mov rsp, cr3
-	cmp rsp, qword [vmm_common_kernel_pagemap]
-	je ._inside_kernel
 	swapgs
-	mov sp, 0x10
-	mov ds, sp
-	mov es, sp
-	mov ss, sp
-	mov rsp, qword [vmm_common_kernel_pagemap]
-	mov cr3, rsp
-	mov rsp, qword [gs:8]
 	push r15
 	push r14
 	push r13
@@ -150,32 +140,28 @@ _isr_common_handler:
 	push rcx
 	push rbx
 	push rax
-	mov rax, cr4
-	push rax
-	mov rax, cr3
-	push rax
-	mov rax, cr2
-	push rax
-	mov rax, cr0
-	push rax
-	mov rax, qword [gs:24]
-	push qword [rax-48]
+	mov rax, qword [vmm_common_kernel_pagemap]
+	mov cr3, rax
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
 	mov rdi, rsp
-	mov rsi, qword [rax-56]
-	lea rdx, [rax-40]
-	cld
-	jmp _isr_handler
-._inside_kernel:
 	mov rsp, qword [gs:8]
 	cld
-	jmp _isr_handler_inside_kernel
+	call _isr_handler
+	mov rsp, qword [gs:24]
+	sub rsp, 22*8
+	jmp $
 
 
 
 %assign idx 0
 %rep 32
 _isr_entry_%+idx:
-	and rsp, 0xfffffffffffffff0
+%if idx!=8&&idx!=10&&idx!=11&&idx!=12&&idx!=13&&idx!=14&&idx!=17&&idx!=30
+    push qword 0
+%endif
 	push qword idx
 	jmp _isr_common_handler
 %assign idx idx+1

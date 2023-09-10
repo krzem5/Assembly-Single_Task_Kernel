@@ -4,7 +4,7 @@
 
 
 
-#define ISR_STACK_SIZE 64
+#define ISR_STACK_SIZE (23*8)
 
 
 

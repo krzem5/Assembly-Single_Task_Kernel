@@ -4,31 +4,56 @@
 
 
 
-void _isr_handler(u64* vars,u8 index,u64* extra_data){
-	WARN("ISR %u:",index);
-	WARN("error=%p",vars[0]);
-	WARN("cr0=%p",vars[1]);
-	WARN("cr2=%p",vars[2]);
-	WARN("cr3=%p",vars[3]);
-	WARN("cr4=%p",vars[4]);
-	WARN("rax=%p",vars[5]);
-	WARN("rbx=%p",vars[6]);
-	WARN("rcx=%p",vars[7]);
-	WARN("rdx=%p",vars[8]);
-	WARN("rsi=%p",vars[9]);
-	WARN("rdi=%p",vars[10]);
-	WARN("rbp=%p",vars[11]);
-	WARN("r8=%p",vars[12]);
-	WARN("r9=%p",vars[13]);
-	WARN("r10=%p",vars[14]);
-	WARN("r11=%p",vars[15]);
-	WARN("r12=%p",vars[16]);
-	WARN("r13=%p",vars[17]);
-	WARN("r14=%p",vars[18]);
-	WARN("r15=%p",vars[19]);
-	WARN("rip=%p",extra_data[0]);
-	WARN("rflags=%p",extra_data[2]);
-	WARN("rsp=%p",extra_data[3]);
+typedef struct _GPR_STATE{
+	u64 rax;
+	u64 rbx;
+	u64 rcx;
+	u64 rdx;
+	u64 rsi;
+	u64 rdi;
+	u64 rbp;
+	u64 r8;
+	u64 r9;
+	u64 r10;
+	u64 r11;
+	u64 r12;
+	u64 r13;
+	u64 r14;
+	u64 r15;
+	u64 isr;
+	u64 error;
+	u64 rip;
+	u64 cs;
+	u64 rflags;
+	u64 rsp;
+	u64 ss;
+} gpr_state_t;
+
+
+
+void _isr_handler(gpr_state_t* gpr_state){
+	WARN("ISR %u:",gpr_state->isr);
+	WARN("rax    = %p",gpr_state->rax);
+	WARN("rbx    = %p",gpr_state->rbx);
+	WARN("rcx    = %p",gpr_state->rcx);
+	WARN("rdx    = %p",gpr_state->rdx);
+	WARN("rsi    = %p",gpr_state->rsi);
+	WARN("rdi    = %p",gpr_state->rdi);
+	WARN("rbp    = %p",gpr_state->rbp);
+	WARN("r8     = %p",gpr_state->r8);
+	WARN("r9     = %p",gpr_state->r9);
+	WARN("r10    = %p",gpr_state->r10);
+	WARN("r11    = %p",gpr_state->r11);
+	WARN("r12    = %p",gpr_state->r12);
+	WARN("r13    = %p",gpr_state->r13);
+	WARN("r14    = %p",gpr_state->r14);
+	WARN("r15    = %p",gpr_state->r15);
+	WARN("error  = %p",gpr_state->error);
+	WARN("rip    = %p",gpr_state->rip);
+	WARN("cs     = %p",gpr_state->cs);
+	WARN("rflags = %p",gpr_state->rflags);
+	WARN("rsp    = %p",gpr_state->rsp);
+	WARN("ss     = %p",gpr_state->ss);
 	for (;;);
 }
 
