@@ -4,6 +4,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "kmm"
 
 
@@ -35,8 +36,7 @@ void KERNEL_CORE_CODE kmm_init(void){
 void* KERNEL_CORE_CODE kmm_alloc(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
-		ERROR_CORE("Buffer in use");
-		for (;;);
+		panic("Buffer in use",0);
 	}
 	void* out=(void*)_kmm_top;
 	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
@@ -50,8 +50,7 @@ void* KERNEL_CORE_CODE kmm_alloc(u32 size){
 void* KERNEL_CORE_CODE kmm_alloc_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
-		ERROR_CORE("Buffer already in use");
-		for (;;);
+		panic("Buffer already in use",0);
 	}
 	_kmm_buffer_not_ended=1;
 	lock_release_exclusive(&_kmm_lock);
@@ -63,8 +62,7 @@ void* KERNEL_CORE_CODE kmm_alloc_buffer(void){
 void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		ERROR_CORE("Buffer not in use");
-		for (;;);
+		panic("Buffer not in use",0);
 	}
 	_kmm_top+=size;
 	_resize_stack();
@@ -76,8 +74,7 @@ void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		ERROR_CORE("Buffer not in use");
-		for (;;);
+		panic("Buffer not in use",0);
 	}
 	_kmm_top-=size;
 	lock_release_exclusive(&_kmm_lock);
@@ -88,8 +85,7 @@ void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
 void KERNEL_CORE_CODE kmm_end_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		ERROR_CORE("KMM buffer not in use");
-		for (;;);
+		panic("KMM buffer not in use",0);
 	}
 	_kmm_buffer_not_ended=0;
 	_kmm_top=(_kmm_top+7)&0xfffffffffffffff8ull;

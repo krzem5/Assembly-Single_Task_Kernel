@@ -80,4 +80,8 @@ void bswap16_trunc_spaces(const u16* src,u8 length,char* dst);
 
 
 
+void panic(const char* error,_Bool recoverable);
+
+
+
 #endif

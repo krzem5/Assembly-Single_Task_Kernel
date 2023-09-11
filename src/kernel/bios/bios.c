@@ -105,8 +105,7 @@ void bios_get_system_data(void){
 			goto _smbios_found;
 		}
 	}
-	ERROR("SMBIOS not found");
-	for (;;);
+	panic("SMBIOS not found",0);
 _smbios_found:
 	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
 	vmm_identity_map((void*)(u64)(smbios->table_address),smbios->table_length);

@@ -6,6 +6,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "acpi"
 
 
@@ -65,8 +66,7 @@ void acpi_load(void){
 		}
 		range+=2;
 	}
-	ERROR("Unable to locate the RSDP");
-	for (;;);
+	panic("Unable to locate the RSDP",0);
 _rsdp_found:
 	INFO("Found RSDP at %p (revision %u)",rsdp,rsdp->revision);
 	_Bool is_xsdt=0;

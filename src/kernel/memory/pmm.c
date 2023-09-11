@@ -103,16 +103,16 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 
 u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 	if (!count){
-		ERROR_CORE("Trying to allocate zero physical pages!");
+		panic("Trying to allocate zero physical pages",1);
 		return 0;
 	}
 	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
-		ERROR_CORE("Trying to allocate too many pages at once!");
+		panic("Trying to allocate too many pages at once",1);
 		return 0;
 	}
 	if (!(_pmm_allocator.block_bitmap>>i)){
-		ERROR_CORE("Out of memory!");
+		panic("Out of memory",1);
 		return 0;
 	}
 	u8 j=__builtin_ffs(_pmm_allocator.block_bitmap>>i)+i-1;
@@ -158,12 +158,12 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
 
 void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	if (!count){
-		ERROR_CORE("Trying to deallocate zero physical pages!");
+		panic("Trying to deallocate zero physical pages",1);
 		return;
 	}
 	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
-		ERROR_CORE("Trying to deallocate too many pages at once!");
+		panic("Trying to deallocate too many pages at once",1);
 		return;
 	}
 	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;

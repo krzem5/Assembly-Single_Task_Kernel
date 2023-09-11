@@ -1,4 +1,12 @@
+#include <kernel/io/io.h>
+#include <kernel/log/log.h>
 #include <kernel/types.h>
+
+
+
+_Bool KERNEL_CORE_CODE __attribute__((weak)) _user_panic_handler(const char* error){
+	return 0;
+}
 
 
 
@@ -33,5 +41,16 @@ void KERNEL_CORE_CODE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 		i--;
 	} while (i&&dst[i-1]==32);
 	dst[i]=0;
+}
+
+
+
+void KERNEL_CORE_CODE panic(const char* error,_Bool recoverable){
+	if (_user_panic_handler(error)&&recoverable){
+		return;
+	}
+	log("\x1b[1m\x1b[1m\x1b[38;2;192;28;40mFatal error: %u\x1b[0m\n",error);
+	io_port_out16(0x604,0x2000);
+	for (;;);
 }
 

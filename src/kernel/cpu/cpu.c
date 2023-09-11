@@ -24,7 +24,6 @@
 
 
 
-
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
@@ -96,7 +95,7 @@ void cpu_start_all_cores(void){
 	for (u16 i=0;i<cpu_count;i++){
 		if (!((cpu_data+i)->flags&CPU_FLAG_PRESENT)){
 			ERROR("Unused CPU core: #%u",i);
-			for (;;);
+			panic("Unused CPU core",0);
 		}
 		if (i==cpu_bsp_core_id){
 			continue;

@@ -3,6 +3,7 @@
 #include <kernel/partition/partition.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "iso9660"
 
 
@@ -116,7 +117,7 @@ _skip_directory_entry:
 		return NULL;
 	}
 	if (relative==VFS_RELATIVE_PARENT){
-		ERROR_CORE("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PARENT)");
+		panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PARENT)",0);
 		return NULL;
 	}
 	vfs_node_t* parent=vfs_get_relative(node,VFS_RELATIVE_PARENT);
@@ -163,7 +164,7 @@ _skip_directory_entry2:
 		}
 		return NULL;
 	}
-	ERROR_CORE("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PREV_SIBLING)");
+	panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PREV_SIBLING)",0);
 	return NULL;
 }
 

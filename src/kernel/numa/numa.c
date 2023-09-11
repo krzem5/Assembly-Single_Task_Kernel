@@ -3,6 +3,7 @@
 #include <kernel/memory/kmm.h>
 #include <kernel/numa/numa.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "numa"
 
 
@@ -16,7 +17,7 @@ u8* numa_node_locality_matrix;
 void numa_init(u32 proximity_domain_count){
 	if (numa_node_count){
 		if (proximity_domain_count!=numa_node_count){
-			ERROR("NUMA proximity domain count mismatch between SLIT and SRAT");
+			panic("NUMA proximity domain count mismatch between SLIT and SRAT",0);
 		}
 		return;
 	}
@@ -41,8 +42,7 @@ void numa_init(u32 proximity_domain_count){
 
 void numa_set_locality(u32 from,u32 to,u8 value){
 	if (from>=numa_node_count||to>=numa_node_count){
-		ERROR("NUMA node index out-of-range");
-		return;
+		panic("NUMA node index out-of-range",0);
 	}
 	numa_node_locality_matrix[NUMA_LOCALITY_INDEX(from,to)]=value;
 }
@@ -51,8 +51,7 @@ void numa_set_locality(u32 from,u32 to,u8 value){
 
 void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 	if (node_index>=numa_node_count){
-		ERROR("NUMA node index out-of-range");
-		return;
+		panic("NUMA node index out-of-range",0);
 	}
 	numa_cpu_t* cpu=kmm_alloc(sizeof(numa_cpu_t));
 	cpu->next=(numa_nodes+node_index)->cpus;
@@ -67,8 +66,7 @@ void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 
 void numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_pluggable){
 	if (node_index>=numa_node_count){
-		ERROR("NUMA node index out-of-range");
-		return;
+		panic("NUMA node index out-of-range",0);
 	}
 	numa_memory_range_t* memory_range=kmm_alloc(sizeof(numa_memory_range_t));
 	memory_range->next=(numa_nodes+node_index)->memory_ranges;

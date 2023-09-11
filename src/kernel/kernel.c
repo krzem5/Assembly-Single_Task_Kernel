@@ -5,6 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "kernel"
 
@@ -141,6 +142,5 @@ _load_kernel:
 	LOG_CORE("Kernel successfully loaded");
 	return;
 _error:
-	ERROR_CORE("Unable to load kernel");
-	for (;;);
+	panic("Unable to load kernel",0);
 }

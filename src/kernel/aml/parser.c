@@ -4,6 +4,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aml_parser"
 
 
@@ -163,7 +164,8 @@ static const opcode_t* _parse_opcode(const u8* data){
 		return out;
 	}
 	ERROR("Unknown AML opcode '%s%x'",(extended?"5b ":""),type);
-	for (;;);
+	panic("Unknown AML opcode",0);
+	return NULL;
 }
 
 

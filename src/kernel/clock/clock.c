@@ -1,6 +1,7 @@
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "clock"
 
 
@@ -69,8 +70,7 @@ static void _calculate_clock_conversion(void){
 			return;
 		}
 	}
-	ERROR("Unable to calculate clock frequency conversion factor");
-	for (;;);
+	panic("Unable to calculate clock frequency conversion factor",0);
 }
 
 

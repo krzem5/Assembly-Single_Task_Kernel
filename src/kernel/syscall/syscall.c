@@ -15,6 +15,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/user/syscall.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "syscall"
 
 
@@ -24,9 +25,9 @@ void syscall_empty(syscall_registers_t* regs){
 
 
 
-void KERNEL_NORETURN syscall_invalid(syscall_registers_t* regs){
+void syscall_invalid(syscall_registers_t* regs){
 	ERROR("Invalid SYSCALL number: %lu",regs->rax);
-	for (;;);
+	panic("Invalid SYSCALL",1);
 }
 
 

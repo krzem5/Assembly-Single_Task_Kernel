@@ -15,7 +15,7 @@
 void* KERNEL_CORE_CODE vfs_alloc(partition_t* fs,const char* name,u8 name_length){
 	if (name_length>63){
 		name_length=63;
-		ERROR_CORE("vfs_node_t.name_length too long");
+		WARN_CORE("vfs_node_t.name_length too long");
 	}
 	vfs_node_t* out=vfs_allocator_get(&(fs->allocator),VFS_NODE_ID_EMPTY,1);
 	out->type=VFS_NODE_TYPE_FILE;
@@ -58,7 +58,7 @@ vfs_node_t* vfs_get_by_id(vfs_node_id_t id){
 vfs_node_t* KERNEL_CORE_CODE vfs_get_by_path(vfs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
 		if (!partition_boot){
-			ERROR_CORE("Root file system not located yet; partition must be specified");
+			panic("Root file system not located yet; partition must be specified",1);
 			return NULL;
 		}
 		root=partition_boot->root;
@@ -319,8 +319,7 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
-			ERROR_CORE("Unimplemented");
-			return 0;
+			panic("Unimplemented",0);
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset-extra,chunk,fs->drive->block_size);
 		if (chunk_length<fs->drive->block_size){
@@ -344,8 +343,7 @@ u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
-			ERROR_CORE("Unimplemented");
-			return 0;
+			panic("Unimplemented",0);
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset+count-extra,chunk,fs->drive->block_size);
 		if (chunk_length>extra){
@@ -375,8 +373,7 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 	u16 extra=offset&(fs->drive->block_size-1);
 	lock_acquire_exclusive(&(fs->lock));
 	if (extra){
-		ERROR("Unimplemented: vfs_write.offset_extra");
-		return 0;
+		panic("Unimplemented: vfs_write.offset_extra",0);
 	}
 	extra=count&(fs->drive->block_size-1);
 	if (count-extra){
@@ -385,8 +382,7 @@ u64 vfs_write(vfs_node_t* node,u64 offset,const void* buffer,u64 count){
 	if (extra){
 		u8 chunk[4096];
 		if (fs->drive->block_size>4096){
-			ERROR_CORE("Unimplemented");
-			return 0;
+			panic("Unimplemented",0);
 		}
 		u64 chunk_length=fs->config->read(fs,node,offset+count-extra,chunk,fs->drive->block_size);
 		if (chunk_length>extra){

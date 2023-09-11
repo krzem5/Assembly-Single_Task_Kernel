@@ -557,7 +557,7 @@ static u64 KERNEL_CORE_CODE _get_nfda_and_range_index(kfs_block_cache_t* block_c
 		}
 		return out|(((offset<<12)|extra)<<9);
 	}
-	ERROR_CORE("Unreachable statement");
+	panic("Unreachable statement",0);
 	return 0xffffffffffffffffull;
 }
 
@@ -845,7 +845,7 @@ static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,vfs_node_t* node,u64 offse
 			offset=0;
 			range_index++;
 			if (range_index==510){
-				ERROR("Unimplemented: load next NFDA block");
+				panic("Unimplemented: load next NFDA block",0);
 				return 0;
 			}
 		}
@@ -922,7 +922,7 @@ static u64 _kfs_write(partition_t* fs,vfs_node_t* node,u64 offset,const u8* buff
 			offset=0;
 			range_index++;
 			if (range_index==510){
-				ERROR("Unimplemented: load next NFDA block");
+				panic("Unimplemented: load next NFDA block",0);
 				return 0;
 			}
 		}

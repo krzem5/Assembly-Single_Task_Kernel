@@ -4,6 +4,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "mmap"
 
 
@@ -44,7 +45,7 @@ u64 mmap_alloc(u64 length,u8 flags){
 	}
 	lock_acquire_exclusive(&_mmap_lock);
 	if (_mmap_start_address+length>_mmap_end_address){
-		ERROR("MMAP: Out of linear memory");
+		panic("MMAP: Out of linear memory",1);
 		lock_release_exclusive(&_mmap_lock);
 		return 0;
 	}

@@ -1,6 +1,7 @@
 #include <kernel/gpr/gpr.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
 
 
@@ -34,6 +35,5 @@ void _isr_handler(gpr_state_t* gpr_state){
 
 
 void _isr_handler_inside_kernel(void){
-	ERROR("ISR inside kernel");
-	for (;;);
+	panic("ISR inside kernel",0);
 }
