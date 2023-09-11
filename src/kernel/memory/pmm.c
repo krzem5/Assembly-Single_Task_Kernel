@@ -143,9 +143,6 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		header->prev=0;
 		header->next=_pmm_allocator.blocks[i];
 		header->idx=i;
-		if (_pmm_allocator.blocks[i]){
-			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=child_block;
-		}
 		_pmm_allocator.blocks[i]=child_block;
 		_pmm_allocator.block_bitmap|=1<<i;
 	}
