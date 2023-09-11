@@ -54,6 +54,7 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[idx]))->prev=address;
 		}
 		_pmm_allocator.blocks[idx]=address;
+		_pmm_allocator.block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
 }
@@ -113,28 +114,27 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 	if (!count){
 		ERROR_CORE("Trying to allocate zero physical pages!");
-		for (;;);
 		return 0;
 	}
 	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
 		ERROR_CORE("Trying to allocate too many pages at once!");
-		for (;;);
 		return 0;
 	}
-	u8 j=i;
-	while (!_pmm_allocator.blocks[i]&&i<PMM_ALLOCATOR_SIZE_COUNT){ // this loop can be refactored to a bitmap_size
-		i++;
-	}
-	if (i==PMM_ALLOCATOR_SIZE_COUNT){
+	if (!(_pmm_allocator.block_bitmap>>i)){
 		ERROR_CORE("Out of memory!");
 		return 0;
 	}
+	u8 j=i;
+	i=__builtin_ffs(_pmm_allocator.block_bitmap>>i)+i-1;
 	u64 out=_pmm_allocator.blocks[i];
 	pmm_allocator_page_header_t* header=(void*)out;
 	_pmm_allocator.blocks[i]=header->next;
 	if (header->next){
 		((pmm_allocator_page_header_t*)(header->next))->prev=0;
+	}
+	else{
+		_pmm_allocator.block_bitmap&=~(1<<i);
 	}
 	while (i>j){
 		i--;
@@ -147,6 +147,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=child_block;
 		}
 		_pmm_allocator.blocks[i]=child_block;
+		_pmm_allocator.block_bitmap|=1<<i;
 	}
 	if (_pmm_allocator.bitmap){
 		u64 k=out>>PAGE_SIZE_SHIFT;
@@ -179,7 +180,6 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
 		ERROR_CORE("Trying to deallocate too many pages at once!");
-		for (;;);
 		return;
 	}
 	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
@@ -200,6 +200,12 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		}
 		else{
 			_pmm_allocator.blocks[i]=header->next;
+			if (header->next){
+				_pmm_allocator.block_bitmap|=1<<i;
+			}
+			else{
+				_pmm_allocator.block_bitmap&=~(1<<i);
+			}
 		}
 		if (header->next){
 			((pmm_allocator_page_header_t*)(header->next))->prev=header->prev;
@@ -214,6 +220,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=address;
 	}
 	_pmm_allocator.blocks[i]=address;
+	_pmm_allocator.block_bitmap|=1<<i;
 }
 
 

@@ -44,10 +44,11 @@ typedef struct _PMM_COUNTERS{
 
 
 typedef struct _PMM_ALLOCATOR{
+	u64 last_memory_address;
 	u64* bitmap;
 	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	u16 block_bitmap;
 	pmm_counters_t counters;
-	u64 last_memory_address;
 } pmm_allocator_t;
 
 
