@@ -47,7 +47,12 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 		}
 		_pmm_allocator.counters.data[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=(void*)address;
+		header->prev=0;
 		header->next=_pmm_allocator.blocks[idx];
+		header->idx=idx;
+		if (_pmm_allocator.blocks[idx]){
+			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[idx]))->prev=address;
+		}
 		_pmm_allocator.blocks[idx]=address;
 		address+=size;
 	} while (address<end);
@@ -79,6 +84,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 		}
 		_add_memory_range(address,end);
 	}
+	_pmm_allocator.last_memory_address=last_memory_address;
 	LOG_CORE("Allocating allocator bitmap...");
 	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
 	INFO_CORE("Bitmap size: %v",bitmap_size);
@@ -119,42 +125,39 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		for (;;);
 		return 0;
 	}
-	u64 out=0;
-	if (_pmm_allocator.blocks[i]){
-		out=_pmm_allocator.blocks[i];
-		const pmm_allocator_page_header_t* header=(void*)out;
-		_pmm_allocator.blocks[i]=header->next;
-		goto _toggle_bitmap;
+	u8 j=i;
+	while (!_pmm_allocator.blocks[i]&&i<PMM_ALLOCATOR_SIZE_COUNT){ // this loop can be refactored to a bitmap_size
+		i++;
 	}
 	if (i==PMM_ALLOCATOR_SIZE_COUNT){
 		ERROR_CORE("Out of memory!");
 		return 0;
 	}
-	u8 j=i;
-	do{
-		j++;
-		if (j==PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR_CORE("Out of memory!");
-			return 0;
-		}
-	} while (!_pmm_allocator.blocks[j]);
-	out=_pmm_allocator.blocks[j];
+	u64 out=_pmm_allocator.blocks[i];
 	pmm_allocator_page_header_t* header=(void*)out;
-	_pmm_allocator.blocks[j]=header->next;
-	do{
-		j--;
-		u64 child_block=out+_get_block_size(j);
-		header=(void*)child_block;
-		header->next=_pmm_allocator.blocks[j];
-		_pmm_allocator.blocks[j]=child_block;
-	} while (j>i);
-_toggle_bitmap:
-	if (_pmm_allocator.bitmap){
-		u64* bitmap=_pmm_allocator.bitmap;
-		u64 k=out>>PAGE_SIZE_SHIFT;
-		bitmap[k>>6]^=1ull<<(k&63);
+	_pmm_allocator.blocks[i]=header->next;
+	if (header->next){
+		((pmm_allocator_page_header_t*)(header->next))->prev=0;
 	}
-	_pmm_allocator.counters.data[counter]+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	while (i>j){
+		i--;
+		u64 child_block=out+_get_block_size(i);
+		header=(void*)child_block;
+		header->prev=0;
+		header->next=_pmm_allocator.blocks[i];
+		header->idx=i;
+		if (_pmm_allocator.blocks[i]){
+			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=child_block;
+		}
+		_pmm_allocator.blocks[i]=child_block;
+	}
+	if (_pmm_allocator.bitmap){
+		u64 k=out>>PAGE_SIZE_SHIFT;
+		_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
+		k+=_get_block_size(j)>>PAGE_SIZE_SHIFT;
+		_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
+	}
+	_pmm_allocator.counters.data[counter]+=_get_block_size(j)>>PAGE_SIZE_SHIFT;
 	return out;
 }
 
@@ -184,18 +187,61 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 			return;
 		}
 	}
-	u64* bitmap=_pmm_allocator.bitmap;
+	ERROR("%p %u",address,_get_block_size(i));
+	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	u64 j=address>>PAGE_SIZE_SHIFT;
-	u64 mask=1ull<<(j&63);
-	bitmap[j>>6]^=mask;
-	while (i<PMM_ALLOCATOR_SIZE_COUNT-1){
-		// implement block coalescing
-		break;
+	_pmm_allocator.bitmap[j>>6]^=1ull<<(j&63);
+	j+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	_pmm_allocator.bitmap[j>>6]^=1ull<<(j&63);
+	while (i<PMM_ALLOCATOR_SIZE_COUNT){
+		u64 buddy=address^_get_block_size(i);
+		j=buddy>>PAGE_SIZE_SHIFT;
+		if (buddy>=_pmm_allocator.last_memory_address||(_pmm_allocator.bitmap[j>>6]&(1ull<<(j&63)))||((pmm_allocator_page_header_t*)buddy)->idx!=i){
+			break;
+		}
+		ERROR("%p %p %u",address,buddy,_get_block_size(i));
+		address&=~_get_block_size(i);
+		const pmm_allocator_page_header_t* header=(void*)buddy;
+		if (header->prev){
+			((pmm_allocator_page_header_t*)(header->prev))->next=header->next;
+		}
+		else{
+			_pmm_allocator.blocks[i]=header->next;
+		}
+		if (header->next){
+			((pmm_allocator_page_header_t*)(header->next))->prev=header->prev;
+		}
+		i++;
 	}
 	pmm_allocator_page_header_t* header=(void*)address;
+	header->prev=0;
 	header->next=_pmm_allocator.blocks[i];
+	header->idx=i;
+	if (_pmm_allocator.blocks[i]){
+		((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=address;
+	}
 	_pmm_allocator.blocks[i]=address;
-	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	ERROR("%p %u",address,_get_block_size(i));
+	////////////////////////////////////
+	// u64* bitmap=_pmm_allocator.bitmap;
+	// u64 j=address>>PAGE_SIZE_SHIFT;
+	// bitmap[j>>6]^=1ull<<(j&63);
+	// j+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	// bitmap[j>>6]^=1ull<<(j&63);
+	// for (;i<PMM_ALLOCATOR_SIZE_COUNT-1;i++){
+	// 	u64 mask=1ull<<(j&63);
+	// 	if (bitmap[j>>6]&mask){
+	// 		break;
+	// 	}
+	// 	ERROR_CORE("block coalescing");
+	// 	break;
+	// }
+	// pmm_allocator_page_header_t* header=(void*)address;
+	// header->next=_pmm_allocator.blocks[i];
+	// if (_pmm_allocator.blocks[i]){
+	// 	((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=address;
+	// }
+	// _pmm_allocator.blocks[i]=address;
 }
 
 

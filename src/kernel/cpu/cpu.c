@@ -39,7 +39,7 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	gdt_enable(&((cpu_data+index)->tss));
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data+index,0);
-	msr_set_gs_base(NULL,1);
+	msr_set_gs_base(cpu_data+index,1);
 	INFO("Enabling SIMD...");
 	msr_enable_simd();
 	INFO("Enabling SYSCALL/SYSRET...");
