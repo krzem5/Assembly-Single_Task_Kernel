@@ -124,6 +124,9 @@ section .common
 
 
 _isr_common_handler:
+	mov rax, 0xabababab
+	mov rbx, qword [rsp+16]
+	jmp $
 	swapgs
 	push r15
 	push r14

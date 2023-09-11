@@ -34,27 +34,28 @@ BUILD_DIRECTORIES=[
 	"build/objects",
 	"build/objects/kernel",
 	"build/objects/kernel_coverage",
+	"build/objects/kernel_debug",
 	"build/objects/user_debug",
 	"build/objects/user",
 	"build/vm"
 ]
 KERNEL_HASH_FILE_PATH={
-	MODE_NORMAL: "build/hashes/kernel/release.txt",
+	MODE_NORMAL: "build/hashes/kernel/debug.txt",
 	MODE_COVERAGE: "build/hashes/kernel/coverage.txt",
 	MODE_RELEASE: "build/hashes/kernel/release.txt"
 }[mode]
 KERNEL_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/kernel/",
+	MODE_NORMAL: "build/objects/kernel_debug/",
 	MODE_COVERAGE: "build/objects/kernel_coverage/",
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: [],
+	MODE_NORMAL: ["-ggdb","-O1"],
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-T","src/kernel/linker.ld"],
+	MODE_NORMAL: ["-T","src/kernel/linker_debug.ld"],
 	MODE_COVERAGE: ["-T","src/kernel/linker_coverage.ld","-g"],
 	MODE_RELEASE: ["-T","src/kernel/linker.ld"]
 }[mode]
