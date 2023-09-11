@@ -64,29 +64,30 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 void KERNEL_CORE_CODE pmm_init(void){
 	LOG_CORE("Initializing physical memory manager...");
 	LOG_CORE("Registering low memory...");
-	u64 last_memory_address=0;
+	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
+		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
+		if ((KERNEL_DATA->mmap+i)->type==1&&end>_pmm_allocator.last_memory_address){
+			_pmm_allocator.last_memory_address=end;
+		}
+	}
+	u64 bitmap_size=pmm_align_up_address((((_pmm_allocator.last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)*sizeof(u64)); // 64 instead of 63 to add one more bit for the end of the last memory page
+	INFO_CORE("Bitmap size: %v",bitmap_size);
+	_pmm_allocator.bitmap=(void*)pmm_align_up_address(kernel_get_bss_end());
+	u64 kernel_end=pmm_align_up_address(kernel_get_bss_end())+bitmap_size;
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		if ((KERNEL_DATA->mmap+i)->type!=1){
 			continue;
 		}
 		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
-		if (address<pmm_align_up_address(kernel_get_bss_end())){
-			address=pmm_align_up_address(kernel_get_bss_end());
+		if (address<kernel_end){
+			address=kernel_end;
 		}
 		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
-		if (end>last_memory_address){
-			last_memory_address=end;
-		}
 		if (end>=0x3fffffffull){
 			end=0x3fffffffull;
 		}
 		_add_memory_range(address,end);
 	}
-	_pmm_allocator.last_memory_address=last_memory_address;
-	LOG_CORE("Allocating allocator bitmap...");
-	u64 bitmap_size=pmm_align_up_address((((last_memory_address>>PAGE_SIZE_SHIFT)+64)>>6)<<3); // 64 instead of 63 to add one more bit for the end of the last memory page
-	INFO_CORE("Bitmap size: %v",bitmap_size);
-	_pmm_allocator.bitmap=(void*)pmm_alloc_zero(bitmap_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_PMM);
 }
 
 
@@ -122,34 +123,31 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		ERROR_CORE("Out of memory!");
 		return 0;
 	}
-	u8 j=i;
-	i=__builtin_ffs(_pmm_allocator.block_bitmap>>i)+i-1;
-	u64 out=_pmm_allocator.blocks[i];
+	u8 j=__builtin_ffs(_pmm_allocator.block_bitmap>>i)+i-1;
+	u64 out=_pmm_allocator.blocks[j];
 	pmm_allocator_page_header_t* header=(void*)out;
-	_pmm_allocator.blocks[i]=header->next;
+	_pmm_allocator.blocks[j]=header->next;
 	if (header->next){
 		((pmm_allocator_page_header_t*)(header->next))->prev=0;
 	}
 	else{
-		_pmm_allocator.block_bitmap&=~(1<<i);
+		_pmm_allocator.block_bitmap&=~(1<<j);
 	}
-	while (i>j){
-		i--;
-		u64 child_block=out+_get_block_size(i);
+	while (j>i){
+		j--;
+		u64 child_block=out+_get_block_size(j);
 		header=(void*)child_block;
 		header->prev=0;
-		header->next=_pmm_allocator.blocks[i];
-		header->idx=i;
-		_pmm_allocator.blocks[i]=child_block;
-		_pmm_allocator.block_bitmap|=1<<i;
+		header->next=_pmm_allocator.blocks[j];
+		header->idx=j;
+		_pmm_allocator.blocks[j]=child_block;
+		_pmm_allocator.block_bitmap|=1<<j;
 	}
-	if (_pmm_allocator.bitmap){
-		u64 k=out>>PAGE_SIZE_SHIFT;
-		_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
-		k+=_get_block_size(j)>>PAGE_SIZE_SHIFT;
-		_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
-	}
-	_pmm_allocator.counters.data[counter]+=_get_block_size(j)>>PAGE_SIZE_SHIFT;
+	u64 k=out>>PAGE_SIZE_SHIFT;
+	_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
+	k+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	_pmm_allocator.bitmap[k>>6]^=1ull<<(k&63);
+	_pmm_allocator.counters.data[counter]+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	return out;
 }
 
