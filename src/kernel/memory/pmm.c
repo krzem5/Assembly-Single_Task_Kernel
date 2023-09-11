@@ -70,9 +70,6 @@ void KERNEL_CORE_CODE pmm_init(void){
 			continue;
 		}
 		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
-		if (!address){
-			address+=PAGE_SIZE;
-		}
 		if (address<pmm_align_up_address(kernel_get_bss_end())){
 			address=pmm_align_up_address(kernel_get_bss_end());
 		}
