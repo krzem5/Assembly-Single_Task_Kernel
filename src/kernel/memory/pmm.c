@@ -116,10 +116,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		for (;;);
 		return 0;
 	}
-	u8 i=63-__builtin_clzll(count);
-	if ((_get_block_size(i)>>PAGE_SIZE_SHIFT)!=count){
-		i++;
-	}
+	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
 		ERROR_CORE("Trying to allocate too many pages at once!");
 		for (;;);
@@ -179,13 +176,11 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		ERROR_CORE("Trying to deallocate zero physical pages!");
 		return;
 	}
-	u8 i=63-__builtin_clzll(count);
-	if ((_get_block_size(i)>>PAGE_SIZE_SHIFT)!=count){
-		i++;
-		if (i>PMM_ALLOCATOR_SIZE_COUNT){
-			ERROR_CORE("Trying to deallocate too many pages at once!");
-			return;
-		}
+	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
+	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
+		ERROR_CORE("Trying to deallocate too many pages at once!");
+		for (;;);
+		return;
 	}
 	_pmm_allocator.counters.data[counter]-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	u64 j=address>>PAGE_SIZE_SHIFT;
