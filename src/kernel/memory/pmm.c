@@ -43,9 +43,9 @@ static void KERNEL_CORE_CODE _add_memory_range(u64 address,u64 end){
 		header->next=_pmm_allocator.blocks[idx];
 		header->idx=idx;
 		if (_pmm_allocator.blocks[idx]){
-			((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[idx]))->prev=address;
+			_pmm_allocator.blocks[idx]->prev=header;
 		}
-		_pmm_allocator.blocks[idx]=address;
+		_pmm_allocator.blocks[idx]=header;
 		_pmm_allocator.block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -116,11 +116,11 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		return 0;
 	}
 	u8 j=__builtin_ffs(_pmm_allocator.block_bitmap>>i)+i-1;
-	u64 out=_pmm_allocator.blocks[j];
+	u64 out=(u64)(_pmm_allocator.blocks[j]);
 	pmm_allocator_page_header_t* header=(void*)out;
 	_pmm_allocator.blocks[j]=header->next;
 	if (header->next){
-		((pmm_allocator_page_header_t*)(header->next))->prev=0;
+		header->next->prev=0;
 	}
 	else{
 		_pmm_allocator.block_bitmap&=~(1<<j);
@@ -132,7 +132,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		header->prev=0;
 		header->next=_pmm_allocator.blocks[j];
 		header->idx=j;
-		_pmm_allocator.blocks[j]=child_block;
+		_pmm_allocator.blocks[j]=header;
 		_pmm_allocator.block_bitmap|=1<<j;
 	}
 	u64 k=out>>PAGE_SIZE_SHIFT;
@@ -180,7 +180,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		address&=~_get_block_size(i);
 		const pmm_allocator_page_header_t* header=(void*)buddy;
 		if (header->prev){
-			((pmm_allocator_page_header_t*)(header->prev))->next=header->next;
+			header->prev->next=header->next;
 		}
 		else{
 			_pmm_allocator.blocks[i]=header->next;
@@ -189,7 +189,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 			}
 		}
 		if (header->next){
-			((pmm_allocator_page_header_t*)(header->next))->prev=header->prev;
+			header->next->prev=header->prev;
 		}
 		i++;
 	}
@@ -198,9 +198,9 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	header->next=_pmm_allocator.blocks[i];
 	header->idx=i;
 	if (_pmm_allocator.blocks[i]){
-		((pmm_allocator_page_header_t*)(_pmm_allocator.blocks[i]))->prev=address;
+		_pmm_allocator.blocks[i]->prev=header;
 	}
-	_pmm_allocator.blocks[i]=address;
+	_pmm_allocator.blocks[i]=header;
 	_pmm_allocator.block_bitmap|=1<<i;
 }
 
