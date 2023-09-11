@@ -23,7 +23,6 @@ typedef struct _MEMORY_STATS{
 	u64 counter_kfs;
 	u64 counter_kmm;
 	u64 counter_network;
-	u64 counter_pmm;
 	u64 counter_umm;
 	u64 counter_user;
 	u64 counter_user_stack;
