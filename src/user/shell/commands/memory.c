@@ -58,7 +58,7 @@ void memory_main(int argc,const char*const* argv){
 		return;
 	}
 	printf("Total:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_total<<12);
-	printf("Free:\t\t\x1b[1m%v\x1b[0m\n",(stats.counter_total-stats.counter_driver_ahci-stats.counter_driver_i82540-stats.counter_kernel_stack-stats.counter_kfs-stats.counter_kmm-stats.counter_network-stats.counter_umm-stats.counter_user_stack-stats.counter_user-stats.counter_vmm)<<12);
+	printf("Free:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_free<<12);
 	printf("AHCI:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_ahci<<12);
 	printf("i82540:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_i82540<<12);
 	printf("Kernel stack:\t\x1b[1m%v\x1b[0m\n",stats.counter_kernel_stack<<12);

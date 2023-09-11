@@ -207,5 +207,9 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 
 
 const pmm_counters_t* pmm_get_counters(void){
+	_pmm_allocator.counters.data[PMM_COUNTER_FREE]=_pmm_allocator.counters.data[PMM_COUNTER_TOTAL];
+	for (u8 i=PMM_COUNTER_FREE+1;i<=PMM_COUNTER_MAX;i++){
+		_pmm_allocator.counters.data[PMM_COUNTER_FREE]-=_pmm_allocator.counters.data[i];
+	}
 	return &(_pmm_allocator.counters);
 }
