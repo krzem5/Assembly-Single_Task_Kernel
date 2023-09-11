@@ -184,10 +184,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		}
 		else{
 			_pmm_allocator.blocks[i]=header->next;
-			if (header->next){
-				_pmm_allocator.block_bitmap|=1<<i;
-			}
-			else{
+			if (!header->next){
 				_pmm_allocator.block_bitmap&=~(1<<i);
 			}
 		}
