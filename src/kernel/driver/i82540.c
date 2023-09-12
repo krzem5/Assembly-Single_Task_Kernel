@@ -198,10 +198,10 @@ void driver_i82540_init_device(pci_device_t* device){
 			return;
 		}
 	}
-	i82540_device->rx_desc_base=pmm_alloc(pmm_align_up_address(NUM_RX_DESCRIPTORS*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540);
+	i82540_device->rx_desc_base=pmm_alloc(pmm_align_up_address(NUM_RX_DESCRIPTORS*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
 	for (u16 i=0;i<NUM_RX_DESCRIPTORS;i++){
 		i82540_rx_descriptor_t* desc=GET_DESCRIPTOR(i82540_device,rx,i);
-		desc->address=pmm_alloc(1,PMM_COUNTER_DRIVER_I82540);
+		desc->address=pmm_alloc(1,PMM_COUNTER_DRIVER_I82540,0);
 		desc->status=0;
 	}
 	i82540_device->mmio[REG_RDBAH]=i82540_device->rx_desc_base>>32;
@@ -210,7 +210,7 @@ void driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_RDH]=0;
 	i82540_device->mmio[REG_RDT]=NUM_RX_DESCRIPTORS-1;
 	i82540_device->mmio[REG_RCTL]=RCTL_EN|RCTL_SBP|RCTL_UPE|RCTL_MPE|RCTL_LPE|RCTL_BAM|RCTL_BSIZE_4096|RCTL_PMCF|RCTL_SECRC;
-	i82540_device->tx_desc_base=pmm_alloc(pmm_align_up_address(NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540);
+	i82540_device->tx_desc_base=pmm_alloc(pmm_align_up_address(NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
 	for (u16 i=0;i<NUM_TX_DESCRIPTORS;i++){
 		i82540_tx_descriptor_t* desc=GET_DESCRIPTOR(i82540_device,tx,i);
 		desc->address=0;

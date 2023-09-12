@@ -18,7 +18,7 @@ static u8* _layer2_physical_send_buffer;
 
 void network_layer2_init(void){
 	LOG("Initializing layer2 network...");
-	_layer2_physical_send_buffer=(void*)pmm_alloc(1,PMM_COUNTER_NETWORK);
+	_layer2_physical_send_buffer=(void*)pmm_alloc(1,PMM_COUNTER_NETWORK,0);
 }
 
 

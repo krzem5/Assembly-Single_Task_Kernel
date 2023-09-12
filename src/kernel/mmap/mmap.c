@@ -49,7 +49,7 @@ u64 mmap_alloc(u64 length,u8 flags){
 		lock_release_exclusive(&_mmap_lock);
 		return 0;
 	}
-	vmm_map_pages(&vmm_user_pagemap,pmm_alloc(length>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER),_mmap_start_address,page_flags,length>>PAGE_SIZE_SHIFT);
+	vmm_map_pages(&vmm_user_pagemap,pmm_alloc(length>>PAGE_SIZE_SHIFT,PMM_COUNTER_USER,0),_mmap_start_address,page_flags,length>>PAGE_SIZE_SHIFT);
 	u64 out=_mmap_start_address;
 	_mmap_start_address+=length*(size>>PAGE_SIZE_SHIFT);
 	lock_release_exclusive(&_mmap_lock);

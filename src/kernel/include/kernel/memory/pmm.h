@@ -14,6 +14,10 @@
 
 #define PMM_ALLOCATOR_SIZE_COUNT 16
 
+#define PMM_LOW_ALLOCATOR_LIMIT 0x40000000ull
+
+#define PMM_MEMORY_HINT_LOW_MEMORY 1
+
 #define PMM_COUNTER_TOTAL 0
 #define PMM_COUNTER_FREE 1
 #define PMM_COUNTER_DRIVER_AHCI 2
@@ -99,11 +103,11 @@ void pmm_init_high_mem(void);
 
 
 
-u64 pmm_alloc(u64 count,u8 counter);
+u64 pmm_alloc(u64 count,u8 counter,_Bool memory_hint);
 
 
 
-u64 pmm_alloc_zero(u64 count,u8 counter);
+u64 pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint);
 
 
 

@@ -36,7 +36,7 @@ void* umm_alloc(u32 size){
 	void* out=(void*)_umm_stack_top;
 	_umm_stack_top+=(size+7)&0xfffffffffffffff8ull;
 	while (_umm_stack_top>_umm_stack_max_top){
-		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_UMM),_umm_stack_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_UMM,0),_umm_stack_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		_umm_stack_max_top+=PAGE_SIZE;
 	}
 	lock_release_exclusive(&_umm_stack_lock);

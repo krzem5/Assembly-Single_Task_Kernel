@@ -95,7 +95,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	u8* aligned_buffer=NULL;
 	_Bool alignment_required=!!(((u64)buffer)&(PAGE_SIZE-1));
 	if (alignment_required){
-		aligned_buffer=(void*)pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
+		aligned_buffer=(void*)pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI,0);
 		if (offset&DRIVE_OFFSET_FLAG_WRITE){
 			memcpy(aligned_buffer,buffer,dbc+1);
 		}
@@ -142,15 +142,15 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 
 
 static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
-	device->command_list=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+	device->command_list=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	device->registers->clb=((u64)(device->command_list));
 	device->registers->clbu=((u64)(device->command_list))>>32;
 	for (u8 i=0;i<32;i++){
-		device->command_tables[i]=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+		device->command_tables[i]=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 		(device->command_list->commands+i)->ctba=((u64)(device->command_tables[i]));
 		(device->command_list->commands+i)->ctbau=((u64)(device->command_tables[i]))>>32;
 	}
-	u64 fis_base=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+	u64 fis_base=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	device->registers->fb=fis_base;
 	device->registers->fbu=fis_base>>32;
 	device->registers->cmd|=CMD_ST|CMD_FRE;
@@ -158,7 +158,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
-	const u8* buffer=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI);
+	const u8* buffer=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
 	command_table->prdt_entry->dba=((u64)buffer);
 	command_table->prdt_entry->dbau=((u64)buffer)>>32;

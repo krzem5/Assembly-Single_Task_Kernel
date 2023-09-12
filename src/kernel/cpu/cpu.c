@@ -60,8 +60,8 @@ void cpu_init(u16 count){
 	INFO("CPU count: %u",count);
 	cpu_count=count;
 	cpu_data=umm_alloc(count*sizeof(cpu_data_t));
-	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK);
-	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK);
+	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK,0);
+	u64 kernel_stacks=pmm_alloc(cpu_count*CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK,0);
 	for (u16 i=0;i<count;i++){
 		kernel_stacks+=CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 		(cpu_data+i)->index=i;

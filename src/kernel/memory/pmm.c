@@ -9,10 +9,6 @@
 
 
 
-#define PMM_LOW_ALLOCATOR_LIMIT 0x40000000ull
-
-
-
 static pmm_allocator_t KERNEL_CORE_BSS _pmm_low_allocator;
 static pmm_allocator_t KERNEL_CORE_BSS _pmm_high_allocator;
 static lock_t KERNEL_CORE_DATA _pmm_counter_lock=LOCK_INIT_STRUCT;
@@ -101,13 +97,15 @@ void KERNEL_CORE_CODE pmm_init(void){
 				_pmm_high_allocator.last_address=end;
 			}
 		}
-	};
+	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
 	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
 	INFO_CORE("Low bitmap size: %v",low_bitmap_size);
 	INFO_CORE("High bitmap size: %v",high_bitmap_size);
 	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_get_bss_end());
 	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size);
+	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
+	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	u64 kernel_end=pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size+high_bitmap_size;
 	LOG_CORE("Registering low memory...");
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
@@ -139,7 +137,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
+u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	if (!count){
 		panic("Trying to allocate zero physical pages",1);
 		return 0;
@@ -149,7 +147,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 		panic("Trying to allocate too many pages at once",1);
 		return 0;
 	}
-	pmm_allocator_t* allocator=(!_pmm_high_allocator.block_bitmap||__builtin_ffs(_pmm_high_allocator.block_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
+	pmm_allocator_t* allocator=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY ||!_pmm_high_allocator.block_bitmap||__builtin_ffs(_pmm_high_allocator.block_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
 	lock_acquire_exclusive(&(allocator->lock));
 	if (!(allocator->block_bitmap>>i)){
 		lock_release_exclusive(&(allocator->lock));
@@ -187,8 +185,8 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter){
-	u64 out=pmm_alloc(count,counter);
+u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
+	u64 out=pmm_alloc(count,counter,memory_hint);
 	if (!out){
 		return 0;
 	}
