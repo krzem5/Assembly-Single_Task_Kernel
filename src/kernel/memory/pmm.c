@@ -17,8 +17,8 @@ static pmm_counters_t KERNEL_CORE_BSS _pmm_counters;
 
 
 static inline u64 _get_bitmap_size(const pmm_allocator_t* allocator){
-	 // 64 instead of 63 to add one more bit for the end of the last memory address
 	return pmm_align_up_address(((((allocator->last_address-allocator->first_address)>>PAGE_SIZE_SHIFT)+64)>>6)*sizeof(u64));
+	 // 64 instead of 63 to add one more bit for the end of the last memory address
 }
 
 
