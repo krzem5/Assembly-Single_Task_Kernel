@@ -160,6 +160,7 @@ typedef struct _KFS_BLOCK_CACHE{ // all of the blocks are aligned on a page boun
 	kfs_nda3_block_t nda3;
 	kfs_batc_block_t batc;
 	kfs_root_block_t root;
+	u8 empty_block[4096];
 	kfs_large_block_index_t nda1_block_index;
 	u16 flags;
 	const drive_t* drive;
@@ -300,6 +301,12 @@ _batc_found:
 	block_cache->batc.bitmap1[block_index>>6]|=1ull<<(block_index&63);
 	block_cache->batc.bitmap2[block_index>>12]|=1ull<<((block_index>>6)&63);
 	block_cache->batc.bitmap3|=1ull<<(block_index>>12);
+}
+
+
+
+static void KERNEL_CORE_CODE _block_cache_clear_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+	_drive_write(block_cache->drive,block_index,&(block_cache->empty_block),1);
 }
 
 
@@ -634,6 +641,7 @@ static _Bool _resize_node_up(kfs_block_cache_t* block_cache,kfs_node_t* node,u64
 	do{
 		overflow--;
 		new_block_index=_block_cache_alloc_block(block_cache);
+		_block_cache_clear_block(block_cache,new_block_index);
 		if (new_block_index==block_cache->nfda.ranges[range_index].block_index+block_cache->nfda.ranges[range_index].block_count){
 			block_cache->nfda.ranges[range_index].block_count++;
 		}
@@ -1041,6 +1049,7 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const partition_config_t* pa
 	kfs_block_cache_t* block_cache=(void*)pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS,0);
 	block_cache->flags=0;
 	block_cache->drive=drive;
+	memset(block_cache->empty_block,0,4096);
 	INFO_CORE("Reading ROOT block...");
 	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
 		ERROR_CORE("Error reading ROOT block from drive");
