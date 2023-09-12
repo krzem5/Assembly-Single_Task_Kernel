@@ -1,5 +1,6 @@
 #ifndef _KERNEL_MEMORY_PMM_H_
 #define _KERNEL_MEMORY_PMM_H_ 1
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
 
 
@@ -37,19 +38,20 @@ typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 
 
 
+typedef struct _PMM_ALLOCATOR{
+	u64 first_address;
+	u64 last_address;
+	u64* bitmap;
+	pmm_allocator_page_header_t* blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	lock_t lock;
+	u16 block_bitmap;
+} pmm_allocator_t;
+
+
+
 typedef struct _PMM_COUNTERS{
 	u64 data[PMM_COUNTER_MAX+1];
 } pmm_counters_t;
-
-
-
-typedef struct _PMM_ALLOCATOR{
-	u64 last_memory_address;
-	u64* bitmap;
-	pmm_allocator_page_header_t* blocks[PMM_ALLOCATOR_SIZE_COUNT];
-	u16 block_bitmap;
-	pmm_counters_t counters;
-} pmm_allocator_t;
 
 
 
@@ -109,7 +111,7 @@ void pmm_dealloc(u64 address,u64 count,u8 counter);
 
 
 
-const pmm_counters_t* pmm_get_counters(void);
+void pmm_get_counters(pmm_counters_t* out);
 
 
 

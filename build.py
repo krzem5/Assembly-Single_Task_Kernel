@@ -393,9 +393,9 @@ if ("--run" in sys.argv):
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
 		# Memory
-		"-m","1G,slots=2,maxmem=2G",
-		"-object","memory-backend-ram,size=512M,id=mem0",
-		"-object","memory-backend-ram,size=512M,id=mem1",
+		"-m","2G,slots=2,maxmem=4G",
+		"-object","memory-backend-ram,size=1G,id=mem0",
+		"-object","memory-backend-ram,size=1G,id=mem1",
 		# CPU
 		"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
 		"-smp","8,sockets=2,cores=2,threads=2,maxcpus=8",

@@ -30,6 +30,6 @@ void syscall_memory_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((pmm_counters_t*)address)=*pmm_get_counters();
+	pmm_get_counters((pmm_counters_t*)address);
 	regs->rax=1;
 }
