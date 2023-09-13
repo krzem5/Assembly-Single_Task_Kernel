@@ -179,7 +179,7 @@ def _build_static_idt(file_path,kernel_symbols):
 			ist=0
 			if (i==14):
 				ist=1
-			else if (i==32):
+			elif (i==32):
 				ist=2
 			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
 
