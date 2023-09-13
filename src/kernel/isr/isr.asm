@@ -124,7 +124,10 @@ section .common
 
 
 _isr_common_handler:
+	cmp qword [rsp+24], 0x08
+	je ._inside_kernel
 	swapgs
+._inside_kernel:
 	push r15
 	push r14
 	push r13
@@ -147,10 +150,11 @@ _isr_common_handler:
 	mov es, ax
 	mov ss, ax
 	mov rdi, rsp
-	mov rsp, qword [gs:8]
-	xor rbp, rbp
+	mov rbp, rsp
 	cld
+	jmp $
 	call _isr_handler
+	jmp $
 	mov rsp, qword [gs:24]
 	sub rsp, 22*8
 	cmp qword [rsp+19*8], 0x10
@@ -176,7 +180,10 @@ _isr_common_handler:
 	pop r13
 	pop r14
 	pop r15
+	cmp qword [rsp+24], 0x08
+	je ._inside_kernel2
 	swapgs
+._inside_kernel2:
 	iretq
 
 

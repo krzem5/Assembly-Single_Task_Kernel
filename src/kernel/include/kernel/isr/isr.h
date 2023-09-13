@@ -4,10 +4,6 @@
 
 
 
-#define ISR_STACK_SIZE (23*8)
-
-
-
 u8 isr_allocate(void);
 
 

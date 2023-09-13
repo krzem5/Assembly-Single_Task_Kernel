@@ -1,7 +1,6 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/gdt/gdt.h>
-#include <kernel/isr/isr.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -9,6 +8,7 @@
 
 #define CPU_KERNEL_STACK_PAGE_COUNT 8
 #define CPU_USER_STACK_PAGE_COUNT 8
+#define CPU_SCHEDULER_STACK_PAGE_COUNT 2
 
 #define CPU_FLAG_PRESENT 1
 #define CPU_FLAG_ONLINE 2
@@ -29,7 +29,6 @@ typedef struct _CPU_DATA{
 	u64 user_rsp_top;
 	topology_t topology;
 	tss_t tss;
-	u8 isr_stack[ISR_STACK_SIZE];
 } cpu_data_t;
 
 
