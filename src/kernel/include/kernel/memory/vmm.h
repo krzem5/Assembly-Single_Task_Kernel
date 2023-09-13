@@ -71,6 +71,14 @@ u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
+u64 vmm_get_fault_address(void);
+
+
+
+void vmm_invalidate_tlb_entry(u64 address);
+
+
+
 void vmm_switch_to_pagemap(const vmm_pagemap_t* pagemap);
 
 

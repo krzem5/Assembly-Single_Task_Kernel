@@ -1,5 +1,6 @@
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
@@ -7,6 +8,19 @@
 
 
 void _isr_handler(isr_state_t* isr_state){
+	if (isr_state->isr==14){
+		ERROR("Page Fault");
+		ERROR("Address: %p, Error: %p",vmm_get_fault_address(),isr_state->error);
+	}
+	else if (isr_state->isr==32){
+		ERROR("Scheduler");
+	}
+	else if (isr_state->isr>32){
+		ERROR("Event interrupt");
+	}
+	else{
+		ERROR("Crash interrupt");
+	}
 	WARN("ISR %u:",isr_state->isr);
 	WARN("cr3    = %p",isr_state->cr3);
 	WARN("es     = %p",isr_state->es);
