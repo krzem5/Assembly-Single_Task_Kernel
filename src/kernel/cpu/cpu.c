@@ -64,13 +64,14 @@ void cpu_init(u16 count){
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
-		(cpu_data+i)->kernel_rsp=pmm_alloc(CPU_KERNEL_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK,0)+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->interrupt_stack))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(cpu_data+i)->user_func=0;
 		(cpu_data+i)->user_func_arg[0]=0;
 		(cpu_data+i)->user_func_arg[1]=0;
 		(cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		(cpu_data+i)->tss.rsp0=pmm_alloc(CPU_SCHEDULER_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK,0)+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		(cpu_data+i)->tss.ist1=pmm_alloc(CPU_SCHEDULER_STACK_PAGE_COUNT,PMM_COUNTER_KERNEL_STACK,0)+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->tss.rsp0=(cpu_data+i)->kernel_rsp;
+		(cpu_data+i)->tss.ist1=((u64)((cpu_data+i)->scheduler_stack))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->tss.ist2=((u64)((cpu_data+i)->page_fault_stack))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		// rsp0 = common_int_stack
 		// ist1 = scheduler_stack
 		// ist2 = pf_stack

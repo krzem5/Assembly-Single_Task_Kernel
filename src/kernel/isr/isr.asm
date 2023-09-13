@@ -143,6 +143,11 @@ _isr_common_handler:
 	push rcx
 	push rbx
 	push rax
+	xor rax, rax
+	mov ax, ds
+	push rax
+	mov ax, es
+	push rax
 	mov rax, qword [vmm_common_kernel_pagemap]
 	mov cr3, rax
 	mov ax, 0x10
@@ -152,19 +157,14 @@ _isr_common_handler:
 	mov rdi, rsp
 	mov rbp, rsp
 	cld
-	jmp $
 	call _isr_handler
 	jmp $
-	mov rsp, qword [gs:24]
-	sub rsp, 22*8
-	cmp qword [rsp+19*8], 0x10
-	jne ._keep_kernel_segments
-	mov ax, 0x18
-	mov ds, ax
-	mov es, ax
-._keep_kernel_segments:
 	mov rax, qword [vmm_user_pagemap]
 	mov cr3, rax
+	pop rax
+	mov ds, ax
+	pop rax
+	mov es, ax
 	pop rax
 	pop rbx
 	pop rcx

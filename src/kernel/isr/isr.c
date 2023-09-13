@@ -8,6 +8,8 @@
 
 void _isr_handler(gpr_state_t* gpr_state){
 	WARN("ISR %u:",gpr_state->isr);
+	WARN("ds     = %p",gpr_state->ds);
+	WARN("es     = %p",gpr_state->es);
 	WARN("rax    = %p",gpr_state->rax);
 	WARN("rbx    = %p",gpr_state->rbx);
 	WARN("rcx    = %p",gpr_state->rcx);
