@@ -7,7 +7,6 @@ extern idt_set_entry
 extern vmm_common_kernel_pagemap
 extern vmm_user_pagemap
 global isr_allocate
-global isr_was_triggered
 global isr_wait
 section .text
 
@@ -21,19 +20,6 @@ isr_allocate:
 	mov eax, ecx
 	add ecx, 1
 	mov byte [_next_irq_index], cl
-	ret
-
-
-
-isr_was_triggered:
-	xor eax, eax
-	mov edx, 1
-	mov rsi, rdi
-	and edi, 31
-	shr rsi, 5
-	lea rsi, [_isr_mask+rsi*4]
-	lock btr dword [rsi], edi
-	cmovc eax, edx
 	ret
 
 

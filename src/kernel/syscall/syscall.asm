@@ -1,9 +1,6 @@
-extern _aml_handle_interrupt
-extern _aml_interrupt_vector
 extern _random_entropy_pool
 extern _random_entropy_pool_length
 extern _syscall_handlers
-extern isr_was_triggered
 extern syscall_invalid
 extern user_data_cpu_table
 extern vmm_common_kernel_pagemap
@@ -112,26 +109,14 @@ syscall_handler:
 	push rcx
 	push rbx
 	push rax
-	xor rax, rax
-	mov ax, ds
-	push rax
-	mov ax, es
-	push rax
-	mov rax, qword [vmm_common_kernel_pagemap]
-	mov cr3, rax
-	mov ax, 0x10
-	mov ds, ax
-	mov es, ax
+	mov rbx, qword [vmm_common_kernel_pagemap]
+	mov cr3, rbx
+	mov bx, 0x10
+	mov ds, bx
+	mov es, bx
+	sti
 	cmp qword [gs:32], 0
 	jnz syscall_jump_to_user_mode._function_found
-	sti
-	movzx edi, byte [_aml_interrupt_vector]
-	call isr_was_triggered
-	test eax, eax
-	jz ._no_aml_interrupt
-	call _aml_handle_interrupt
-._no_aml_interrupt:
-	mov rax, qword [rsp+16]
 	mov rdi, rsp
 	cmp rax, qword [_syscall_count]
 	jge ._invalid_syscall
@@ -147,9 +132,10 @@ syscall_handler:
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
 	cli
-	pop rax
+	mov rax, qword [vmm_user_pagemap]
+	mov cr3, rax
+	mov ax, 0x18
 	mov ds, ax
-	pop rax
 	mov es, ax
 	pop rax
 	pop rbx
@@ -166,11 +152,6 @@ syscall_handler:
 	pop r13
 	pop r14
 	pop r15
-	mov rsp, qword [vmm_user_pagemap]
-	mov cr3, rsp
-	mov sp, 0x18
-	mov ds, sp
-	mov es, sp
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
