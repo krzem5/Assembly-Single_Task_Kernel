@@ -5,6 +5,7 @@
 
 
 typedef struct _GPR_STATE{
+	u64 cr3;
 	u64 es;
 	u64 ds;
 	u64 rax;

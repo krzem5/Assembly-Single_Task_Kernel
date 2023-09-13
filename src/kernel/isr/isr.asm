@@ -89,6 +89,7 @@ _isr_entry_%+idx:
 section .data
 
 
+
 align 4
 _next_irq_index:
 	dd 32
@@ -134,6 +135,8 @@ _isr_common_handler:
 	push rax
 	mov ax, es
 	push rax
+	mov rax, cr3
+	push rax
 	mov rax, qword [vmm_common_kernel_pagemap]
 	mov cr3, rax
 	mov ax, 0x10
@@ -144,7 +147,7 @@ _isr_common_handler:
 	mov rbp, rsp
 	cld
 	call _isr_handler
-	mov rax, qword [vmm_user_pagemap]
+	pop rax
 	mov cr3, rax
 	pop rax
 	mov es, ax
@@ -169,6 +172,7 @@ _isr_common_handler:
 	je ._kernel_exit
 	swapgs
 ._kernel_exit:
+	sti
 	iretq
 
 
@@ -176,6 +180,7 @@ _isr_common_handler:
 %assign idx 0
 %rep 32
 _isr_entry_%+idx:
+	cli
 %if idx!=8&&idx!=10&&idx!=11&&idx!=12&&idx!=13&&idx!=14&&idx!=17&&idx!=30
     push qword 0
 %endif
