@@ -223,8 +223,8 @@ _start64:
 	mov gs, ax
 	mov ss, ax
 	;;; Initialize stack
-	mov rbp, (KERNEL_OFFSET+STACK_TOP)
-	mov rsp, rbp
+	mov rsp, (KERNEL_OFFSET+STACK_TOP)
+	xor rbp, rbp
 	;;; Start kernel
 	jmp (KERNEL_OFFSET+KERNEL_MEM_ADDR)
 

@@ -144,7 +144,7 @@ _isr_common_handler:
 	mov es, ax
 	mov ss, ax
 	mov rdi, rsp
-	mov rbp, rsp
+	xor rbp, rbp
 	cld
 	call _isr_handler
 	pop rax
