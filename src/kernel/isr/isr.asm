@@ -92,7 +92,7 @@ section .data
 
 align 4
 _next_irq_index:
-	dd 32
+	dd 33
 
 
 

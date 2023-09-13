@@ -176,7 +176,12 @@ def _build_static_idt(file_path,kernel_symbols):
 		wf.seek(kernel_symbols["_idt_data"]-kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_OFFSET__"])
 		for i in range(0,256):
 			address=kernel_symbols[f"_isr_entry_{i}"]
-			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008,(address>>16)&0xffff,address>>32))
+			ist=0
+			if (i==14):
+				ist=1
+			else if (i==32):
+				ist=2
+			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
 
 
 
