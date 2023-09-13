@@ -182,7 +182,7 @@ _isr_common_handler:
 _isr_entry_%+idx:
 	cli
 %if idx!=8&&idx!=10&&idx!=11&&idx!=12&&idx!=13&&idx!=14&&idx!=17&&idx!=30
-    push qword 0
+	push qword 0
 %endif
 	push qword idx
 	jmp _isr_common_handler
