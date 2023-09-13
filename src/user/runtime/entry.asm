@@ -15,7 +15,6 @@ _start:
 	;;; Initialize system data
 	call _user_data_init
 	;;; Start user code
-	mov qword [0],0
 	call main
 	;;; Shutdown CPU
 	jmp _syscall_cpu_core_stop
