@@ -1,8 +1,8 @@
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
 
 
@@ -13,7 +13,8 @@ void _isr_handler(isr_state_t* isr_state){
 		ERROR("Address: %p, Error: %p",vmm_get_fault_address(),isr_state->error);
 	}
 	else if (isr_state->isr==32){
-		ERROR("Scheduler");
+		scheduler_isr_handler(isr_state);
+		return;
 	}
 	else if (isr_state->isr>32){
 		ERROR("Event interrupt");
@@ -47,10 +48,4 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
 	for (;;);
-}
-
-
-
-void _isr_handler_inside_kernel(void){
-	panic("ISR inside kernel",0);
 }

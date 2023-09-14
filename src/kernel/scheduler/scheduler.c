@@ -55,6 +55,7 @@ scheduler_t* scheduler_new(void){
 
 
 void scheduler_isr_handler(isr_state_t* state){
+	// lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
 	if (scheduler->current_thread){
 		scheduler->current_thread->state=*state;

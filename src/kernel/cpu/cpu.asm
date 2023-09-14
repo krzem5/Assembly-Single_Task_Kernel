@@ -60,6 +60,13 @@ cpu_check_features:
 	TEST_FEATURE ecx, 19, sse4_1
 	TEST_FEATURE ecx, 20, sse4_2
 	TEST_FEATURE ecx, 23, popcnt
+	; mov r9, rcx
+	; shr r9, 23
+	; and r9, 2
+	; or r9, 1
+	; shl r9, 17
+	; and r9, rcx
+	TEST_FEATURE ecx, 24, tsc_deadline
 	TEST_FEATURE ecx, 26, xsave
 	TEST_FEATURE_WARN ecx, 28, avx
 	TEST_FEATURE_WARN ecx, 29, f16c

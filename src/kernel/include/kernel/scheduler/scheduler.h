@@ -1,5 +1,6 @@
 #ifndef _KERNEL_SCHEDULER_SCHEDULER_H_
 #define _KERNEL_SCHEDULER_SCHEDULER_H_ 1
+#include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
@@ -38,6 +39,10 @@ void scheduler_init(void);
 
 
 scheduler_t* scheduler_new(void);
+
+
+
+void scheduler_isr_handler(isr_state_t* state);
 
 
 
