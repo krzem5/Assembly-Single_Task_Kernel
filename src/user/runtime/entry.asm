@@ -8,6 +8,7 @@ section .text
 
 [bits 64]
 _start:
+	jmp $
 	;;; Fix stack
 	sub rsp, 8
 	and rsp, 0xfffffffffffffff0

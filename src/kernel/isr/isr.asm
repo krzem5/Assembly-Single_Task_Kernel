@@ -168,9 +168,11 @@ _isr_common_handler:
 	pop r13
 	pop r14
 	pop r15
-	cmp qword [rsp+24], 0x08
+	add rsp, 16
+	cmp qword [rsp+8], 0x08
 	je ._kernel_exit
 	swapgs
+	iretq
 ._kernel_exit:
 	sti
 	iretq
