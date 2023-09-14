@@ -71,6 +71,10 @@ u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
+u64 vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 count,u64 flags);
+
+
+
 u64 vmm_get_fault_address(void);
 
 

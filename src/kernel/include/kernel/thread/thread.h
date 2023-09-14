@@ -15,12 +15,27 @@ typedef u32 tid_t;
 
 
 
+typedef struct _PROCESS_FS_GS_BASES{
+	u64 fs;
+	u64 gs;
+} process_fs_gs_bases_t;
+
+
+
+typedef struct _THREAD_LIST{
+	lock_t lock;
+	struct _THREAD* head;
+} thread_list_t;
+
+
+
 typedef struct _PROCESS{
 	pid_t id;
 	lock_t lock;
+	u8 ring;
 	vmm_pagemap_t pagemap;
-	u64* fs_bases;
-	u64* gs_bases;
+	process_fs_gs_bases_t* fs_gs_bases;
+	thread_list_t thread_list;
 } process_t;
 
 
@@ -31,11 +46,18 @@ typedef struct _THREAD{
 	process_t* process;
 	vmm_pagemap_t* pagemap;
 	isr_state_t state;
+	u64 stack_size;
+	struct _THREAD* thread_list_prev;
+	struct _THREAD* thread_list_next;
 } thread_t;
 
 
 
-process_t* process_new(void);
+extern process_t* process_kernel;
+
+
+
+process_t* process_new(_Bool is_kernel_process);
 
 
 
@@ -43,7 +65,11 @@ void process_delete(process_t* process);
 
 
 
-thread_t* thread_new(process_t* process,u64 rip,u64 rsp);
+void process_init_kernel_process(u64 entry_point);
+
+
+
+thread_t* thread_new(process_t* process,u64 rip,u64 stack_size);
 
 
 

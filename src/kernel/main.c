@@ -17,9 +17,17 @@
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/serial/serial.h>
+#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/user/data.h>
 #define KERNEL_LOG_NAME "main"
+
+
+
+static void main_thread(void){
+	extern void panic(const char*,_Bool);
+	panic("New thread started!",0);
+}
 
 
 
@@ -49,5 +57,6 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	random_init();
 	serial_init_irq();
 	user_data_generate();
+	process_init_kernel_process((u64)main_thread);
 	cpu_start_all_cores();
 }
