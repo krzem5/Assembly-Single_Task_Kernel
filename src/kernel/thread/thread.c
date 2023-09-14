@@ -7,18 +7,35 @@
 
 
 
-static tid_t _thread_next_id=1;
+static tid_t _thread_next_pid=1;
+static tid_t _thread_next_tid=1;
 
 
 
-thread_t* thread_new(process_t* process,vmm_pagemap_t* pagemap,u64 rip,u64 rsp){
+process_t* process_new(void){
+	process_t* out=kmm_alloc(sizeof(process_t));
+	out->id=_thread_next_pid;
+	_thread_next_pid++;
+	lock_init(&(out->lock));
+	vmm_pagemap_init(&(out->pagemap));
+	out->fs_bases=NULL;
+	out->gs_bases=NULL;
+	return out;
+}
+
+
+
+void process_delete(process_t* process);
+
+
+
+thread_t* thread_new(process_t* process,u64 rip,u64 rsp){
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
-	out->id=_thread_next_id;
-	_thread_next_id++;
+	out->id=_thread_next_tid;
+	_thread_next_tid++;
 	lock_init(&(out->lock));
 	out->process=process;
-	out->pagemap=pagemap;
 	out->state.rip=rip;
 	out->state.rsp=rsp;
 	return out;

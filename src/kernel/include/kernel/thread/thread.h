@@ -18,6 +18,7 @@ typedef u32 tid_t;
 typedef struct _PROCESS{
 	pid_t id;
 	lock_t lock;
+	vmm_pagemap_t pagemap;
 	u64* fs_bases;
 	u64* gs_bases;
 } process_t;
@@ -34,7 +35,15 @@ typedef struct _THREAD{
 
 
 
-thread_t* thread_new(process_t* process,vmm_pagemap_t* pagemap,u64 rip,u64 rsp);
+process_t* process_new(void);
+
+
+
+void process_delete(process_t* process);
+
+
+
+thread_t* thread_new(process_t* process,u64 rip,u64 rsp);
 
 
 
