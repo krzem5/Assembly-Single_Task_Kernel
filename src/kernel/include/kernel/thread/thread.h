@@ -7,36 +7,38 @@
 
 
 
-typedef struct _THREAD_REGISTER_STATE{
-	u64 cr3;
-	u64 es;
-	u64 ds;
-	u64 rax;
-	u64 rbx;
-	u64 rcx;
-	u64 rdx;
-	u64 rsi;
-	u64 rdi;
-	u64 rbp;
-	u64 r8;
-	u64 r9;
-	u64 r10;
-	u64 r11;
-	u64 r12;
-	u64 r13;
-	u64 r14;
-	u64 r15;
-} thread_register_state_t;
+typedef u32 pid_t;
+
+
+
+typedef u32 tid_t;
+
+
+
+typedef struct _PROCESS{
+	pid_t id;
+	lock_t lock;
+	u64* fs_bases;
+	u64* gs_bases;
+} process_t;
 
 
 
 typedef struct _THREAD{
+	tid_t id;
 	lock_t lock;
+	process_t* process;
 	vmm_pagemap_t* pagemap;
-	thread_register_state_t state;
-	u64 fs_base;
-	u64 fs_base;
+	isr_state_t state;
 } thread_t;
+
+
+
+thread_t* thread_new(process_t* process,vmm_pagemap_t* pagemap,u64 rip,u64 rsp);
+
+
+
+void thread_delete(thread_t* thread);
 
 
 
