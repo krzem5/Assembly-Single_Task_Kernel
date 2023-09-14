@@ -1,12 +1,13 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/fd/fd.h>
-#include <kernel/vfs/vfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
+#include <kernel/thread/thread.h>
 #include <kernel/types.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "elf"
 
 
@@ -55,6 +56,7 @@ u64 elf_load(const char* path){
 		ERROR("File '%s' not found",path);
 		return 0;
 	}
+	process_t* process=process_new(0);
 	vmm_pagemap_t pagemap;
 	vmm_pagemap_init(&pagemap);
 	umm_init_pagemap(&pagemap);
@@ -87,6 +89,10 @@ u64 elf_load(const char* path){
 		u64 offset=program_header.p_vaddr&(PAGE_SIZE-1);
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
 		u64 pages=pmm_alloc_zero(page_count,PMM_COUNTER_USER,0);
+		if (!vmm_memory_map_reserve(&(process->mmap),program_header.p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT)){
+			ERROR("Unable to reserve process memory");
+			goto _error;
+		}
 		vmm_map_pages(&pagemap,pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
 		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
 		if (end_address>highest_address){
@@ -96,6 +102,7 @@ u64 elf_load(const char* path){
 			goto _error;
 		}
 	}
+	thread_new(process,header.e_entry,0x200000);
 	vmm_pagemap_deinit(&vmm_user_pagemap);
 	vmm_user_pagemap=pagemap;
 	mmap_set_range(highest_address,umm_highest_free_address);
@@ -103,6 +110,7 @@ u64 elf_load(const char* path){
 	return header.e_entry;
 _error:
 	ERROR("Unable to load ELF file");
+	process_delete(process);
 	vmm_pagemap_deinit(&pagemap);
 	return 0;
 }

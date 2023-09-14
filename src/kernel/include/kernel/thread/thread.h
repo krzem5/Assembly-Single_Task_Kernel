@@ -2,6 +2,7 @@
 #define _KERNEL_THREAD_THREAD_H_ 1
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
+#include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 
@@ -32,8 +33,9 @@ typedef struct _THREAD_LIST{
 typedef struct _PROCESS{
 	pid_t id;
 	lock_t lock;
-	u8 ring;
+	_Bool is_driver;
 	vmm_pagemap_t pagemap;
+	vmm_memory_map_t mmap;
 	process_fs_gs_bases_t* fs_gs_bases;
 	thread_list_t thread_list;
 } process_t;
@@ -45,8 +47,9 @@ typedef struct _THREAD{
 	lock_t lock;
 	process_t* process;
 	vmm_pagemap_t* pagemap;
-	isr_state_t state;
+	u64 stack_bottom;
 	u64 stack_size;
+	isr_state_t state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 } thread_t;
@@ -57,15 +60,11 @@ extern process_t* process_kernel;
 
 
 
-process_t* process_new(_Bool is_kernel_process);
+process_t* process_new(_Bool is_driver);
 
 
 
 void process_delete(process_t* process);
-
-
-
-void process_init_kernel_process(u64 entry_point);
 
 
 

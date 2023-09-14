@@ -11,8 +11,6 @@ typedef struct _VMM_MEMORY_MAP_REGION{
 	u64 length;
 	struct _VMM_MEMORY_MAP_REGION* next;
 	struct _VMM_MEMORY_MAP_REGION* prev;
-	struct _VMM_MEMORY_MAP_REGION* next_buddy;
-	struct _VMM_MEMORY_MAP_REGION* prev_buddy;
 } vmm_memory_map_region_t;
 
 
@@ -20,13 +18,11 @@ typedef struct _VMM_MEMORY_MAP_REGION{
 typedef struct _VMM_MEMORY_MAP{
 	lock_t lock;
 	vmm_memory_map_region_t* first;
-	vmm_memory_map_region_t* empty_head;
-	vmm_memory_map_region_t* used_head;
 } vmm_memory_map_t;
 
 
 
-void vmm_memory_map_init(u64 offset,u64 length,vmm_memory_map_t* out);
+void vmm_memory_map_init(vmm_memory_map_t* out);
 
 
 

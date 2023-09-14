@@ -349,12 +349,10 @@ _cleanup:
 
 
 
-u64 vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 count,u64 flags){
-	u64 value=(flags&(~VMM_PAGE_FLAG_PRESENT))|0x1000;
-	u64 out=0;
-	lock_acquire_exclusive(&(pagemap->lock));
-	(void)value;
-	panic("vmm_reserve_pages is unimplemented",0);
-	lock_release_exclusive(&(pagemap->lock));
-	return out;
+void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
+	flags&=~VMM_PAGE_FLAG_PRESENT;
+	for (;count;count--){
+		vmm_map_page(pagemap,0,virtual_address,flags);
+		virtual_address+=PAGE_SIZE;
+	}
 }

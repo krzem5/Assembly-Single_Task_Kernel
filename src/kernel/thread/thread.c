@@ -2,6 +2,8 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/memory/mmap.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
@@ -38,16 +40,15 @@ static void _thread_list_add(process_t* process,thread_t* thread){
 
 
 
-process_t* process_new(_Bool is_kernel_process){
+process_t* process_new(_Bool is_driver){
 	process_t* out=kmm_alloc(sizeof(process_t));
 	out->id=_thread_next_pid;
 	_thread_next_pid++;
 	lock_init(&(out->lock));
-	out->ring=(is_kernel_process?0:3);
+	out->is_driver=is_driver;
 	vmm_pagemap_init(&(out->pagemap));
-	if (!is_kernel_process){
-		umm_init_pagemap(&(out->pagemap));
-	}
+	umm_init_pagemap(&(out->pagemap));
+	vmm_memory_map_init(&(out->mmap));
 	out->fs_gs_bases=kmm_alloc(cpu_count*sizeof(process_fs_gs_bases_t));
 	for (u16 i=0;i<cpu_count;i++){
 		(out->fs_gs_bases+i)->fs=0;
@@ -59,7 +60,9 @@ process_t* process_new(_Bool is_kernel_process){
 
 
 
-void process_delete(process_t* process);
+void process_delete(process_t* process){
+	panic("Unimplemented: process_delete",0);
+}
 
 
 
@@ -67,25 +70,32 @@ void process_init_kernel_process(u64 entry_point){
 	LOG("Initializing kernel process...");
 	process_kernel=process_new(1);
 	thread_new(process_kernel,entry_point,0x1000);
-	// panic("AAA",0);
 }
 
 
 
 thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
+	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
 	out->id=_thread_next_tid;
 	_thread_next_tid++;
 	lock_init(&(out->lock));
 	out->process=process;
-	out->state.rip=rip;
-	out->state.rsp=0;
+	out->stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
+	if (!out->stack_bottom){
+		panic("Unable to reserve thread stack",0);
+	}
+	vmm_reserve_pages(&(process->pagemap),out->stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
 	out->stack_size=stack_size;
+	out->state.rip=rip;
+	out->state.rsp=out->stack_bottom+stack_size;
 	_thread_list_add(process,out);
 	return out;
 }
 
 
 
-void thread_delete(thread_t* thread);
+void thread_delete(thread_t* thread){
+	panic("Unimplemented: thread_delete",0);
+}
