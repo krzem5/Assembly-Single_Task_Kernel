@@ -76,8 +76,8 @@ _isr_entry_255:
 
 
 
-%assign idx 32
-%rep 223
+%assign idx 33
+%rep 222
 _isr_entry_%+idx:
 	push qword idx
 	jmp _irq_common_handler
@@ -178,7 +178,7 @@ _isr_common_handler:
 
 
 %assign idx 0
-%rep 32
+%rep 33
 _isr_entry_%+idx:
 	cli
 %if idx!=8&&idx!=10&&idx!=11&&idx!=12&&idx!=13&&idx!=14&&idx!=17&&idx!=30
