@@ -51,7 +51,7 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	INFO("Enabling lAPIC...");
 	lapic_enable();
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
-	syscall_jump_to_user_mode();
+	scheduler_start();
 }
 
 

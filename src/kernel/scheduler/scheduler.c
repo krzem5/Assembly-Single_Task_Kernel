@@ -55,8 +55,15 @@ scheduler_t* scheduler_new(void){
 
 
 
+void KERNEL_NORETURN scheduler_start(void){
+	lapic_timer_start(1);
+	scheduler_task_wait_loop();
+}
+
+
+
 void scheduler_isr_handler(isr_state_t* state){
-	// lapic_timer_stop();
+	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
@@ -84,21 +91,47 @@ void scheduler_isr_handler(isr_state_t* state){
 		}
 		scheduler->current_thread=new_thread;
 		*state=new_thread->state;
-		goto _setup_timer;
 	}
 	if (scheduler->current_thread){
-		goto _setup_timer;
-	}
-_setup_timer:
-	lapic_timer_start(5000);
-	if (scheduler->current_thread){
+		lapic_timer_start(5000);
 		return;
 	}
-	ERROR("[sti + hlt] loop");
+	scheduler_task_wait_loop();
 }
 
 
 
 void scheduler_enqueue_thread(thread_t* thread){
-	ERROR("scheduler_enqueue_thread: %p",thread->id);
+	scheduler_queue_t* queue=NULL;
+	switch (thread->priority){
+		case THREAD_PRIORITY_BACKGROUND:
+			queue=&(_scheduler_queues.background_queue);
+			break;
+		case THREAD_PRIORITY_LOW:
+			queue=_scheduler_queues.priority_queues;
+			break;
+		case THREAD_PRIORITY_NORMAL:
+			queue=_scheduler_queues.priority_queues+1;
+			break;
+		case THREAD_PRIORITY_HIGH:
+			queue=_scheduler_queues.priority_queues+2;
+			break;
+		case THREAD_PRIORITY_REALTIME:
+			queue=&(_scheduler_queues.realtime_queue);
+			break;
+	}
+	if (!queue){
+		WARN("Unable to enqueue thread with priority %u",thread->priority);
+		return;
+	}
+	lock_acquire_exclusive(&(queue->lock));
+	if (queue->tail){
+		queue->tail->scheduler_queue_next=thread;
+	}
+	else{
+		queue->head=thread;
+	}
+	queue->tail=thread;
+	thread->scheduler_queue_next=NULL;
+	lock_release_exclusive(&(queue->lock));
 }

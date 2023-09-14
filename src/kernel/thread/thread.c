@@ -81,6 +81,12 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->stack_size=stack_size;
 	out->state.rip=rip;
 	out->state.rsp=out->stack_bottom+stack_size;
+	out->state.cr3=process->pagemap.toplevel;
+	out->state.cs=0x20;
+	out->state.ds=0x18;
+	out->state.es=0x18;
+	out->state.ss=0x18;
+	out->state.rflags=0x0202;
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
 	scheduler_enqueue_thread(out);
