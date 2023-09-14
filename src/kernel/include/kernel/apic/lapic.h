@@ -10,12 +10,14 @@
 #define APIC_ICR0_LEVEL_ASSERT 0x4000
 #define APIC_ICR0_TRIGGER_MODE_LEVEL 0x8000
 
+#define LAPIC_SCHEDULER_VECTOR 0x20
 #define LAPIC_WAKEUP_VECTOR 0xfe
 #define LAPIC_SPURIOUS_VECTOR 0xff
+#define LAPIC_DISABLE_TIMER 0x10000
 
 
 
-void lapic_init(u64 base);
+void lapic_init(u64 base,u16 cpu_count);
 
 
 
@@ -24,6 +26,14 @@ void lapic_send_ipi(u8 lapic_id,u16 vector);
 
 
 void lapic_enable(void);
+
+
+
+void lapic_timer_start(u32 time_us);
+
+
+
+void lapic_timer_stop(void);
 
 
 

@@ -5,6 +5,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -80,7 +81,9 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->stack_size=stack_size;
 	out->state.rip=rip;
 	out->state.rsp=out->stack_bottom+stack_size;
+	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
+	scheduler_enqueue_thread(out);
 	return out;
 }
 

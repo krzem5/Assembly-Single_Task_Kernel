@@ -1,3 +1,4 @@
+#include <kernel/apic/lapic.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
@@ -57,10 +58,6 @@ scheduler_t* scheduler_new(void){
 void scheduler_isr_handler(isr_state_t* state){
 	// lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
-	if (scheduler->current_thread){
-		scheduler->current_thread->state=*state;
-		scheduler->current_thread=NULL;
-	}
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
 		u8 priority=2;
@@ -80,11 +77,28 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (!new_thread){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
-	if (!new_thread){
-		ERROR("scheduler_isr_handler: no thread");
+	if (new_thread){
+		if (scheduler->current_thread){
+			scheduler->current_thread->state=*state;
+			scheduler_enqueue_thread(scheduler->current_thread);
+		}
+		scheduler->current_thread=new_thread;
+		*state=new_thread->state;
+		goto _setup_timer;
+	}
+	if (scheduler->current_thread){
+		goto _setup_timer;
+	}
+_setup_timer:
+	lapic_timer_start(5000);
+	if (scheduler->current_thread){
 		return;
 	}
-	scheduler->current_thread=new_thread;
-	ERROR("scheduler_isr_handler: new thread");
-	for (;;);
+	ERROR("[sti + hlt] loop");
+}
+
+
+
+void scheduler_enqueue_thread(thread_t* thread){
+	ERROR("scheduler_enqueue_thread: %p",thread->id);
 }

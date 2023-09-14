@@ -8,6 +8,19 @@
 
 
 
+#define THREAD_PRIORITY_TERMINATED 0
+#define THREAD_PRIORITY_BACKGROUND 1
+#define THREAD_PRIORITY_LOW 2
+#define THREAD_PRIORITY_NORMAL 3
+#define THREAD_PRIORITY_HIGH 4
+#define THREAD_PRIORITY_REALTIME 5
+
+
+
+typedef u8 thread_priority_t;
+
+
+
 typedef u32 pid_t;
 
 
@@ -50,6 +63,7 @@ typedef struct _THREAD{
 	u64 stack_bottom;
 	u64 stack_size;
 	isr_state_t state;
+	thread_priority_t priority;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_queue_next;

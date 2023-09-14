@@ -46,4 +46,8 @@ void scheduler_isr_handler(isr_state_t* state);
 
 
 
+void scheduler_enqueue_thread(thread_t* thread);
+
+
+
 #endif

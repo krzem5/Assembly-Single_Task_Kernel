@@ -79,7 +79,7 @@ void acpi_madt_load(const void* madt_ptr){
 		}
 		i+=madt_entry->length;
 	}
-	lapic_init(lapic_address);
+	lapic_init(lapic_address,cpu_count);
 	ioapic_init(ioapic_count,iso_count);
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
