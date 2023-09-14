@@ -52,8 +52,7 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		panic("vmm_memory_map_reserve: unaligned arguments",1);
 		return 0;
 	}
-	u64 out=0;
-	lock_acquire_exclusive(&(mmap->lock));
+	lock_acquire_shared(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
 	if (address){
 		while (region&&region->offset+region->length<=address){
@@ -66,16 +65,17 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		}
 	}
 	if (!region){
-		goto _cleanup;
+		lock_release_shared(&(mmap->lock));
+		return 0;
 	}
-	if (address){
-		if (region->is_used||address-region->offset+length>region->length){
-			goto _cleanup;
-		}
-	}
-	else{
+	if (!address){
 		address=region->offset;
 	}
+	else if (region->is_used||address-region->offset+length>region->length){
+		lock_release_shared(&(mmap->lock));
+		return 0;
+	}
+	lock_shared_to_exclusive(&(mmap->lock));
 	if (address==region->offset){
 		_insert_region_after_anchor(region,0,address+length,region->length-length);
 		region->is_used=1;
@@ -86,8 +86,6 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		_insert_region_after_anchor(region,1,address,length);
 		region->length=address-region->offset;
 	}
-	out=address;
-_cleanup:
 	lock_release_exclusive(&(mmap->lock));
-	return out;
+	return address;
 }
