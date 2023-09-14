@@ -10,7 +10,6 @@
 
 
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
-vmm_pagemap_t KERNEL_CORE_BSS vmm_user_pagemap;
 
 
 
@@ -87,7 +86,7 @@ static void _delete_pagemap_recursive(u64* table,u8 level){
 
 static u64* KERNEL_CORE_CODE _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present){
 	u64* entry=_get_table(table)->entries+index;
-	if ((*entry)&VMM_PAGE_FLAG_PRESENT){
+	if (*entry){
 		return entry;
 	}
 	if (!allocate_if_not_present){
@@ -105,8 +104,6 @@ void KERNEL_CORE_CODE vmm_init(void){
 	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
 	lock_init(&(vmm_kernel_pagemap.lock));
-	vmm_user_pagemap.toplevel=0;
-	lock_init(&(vmm_user_pagemap.lock));
 	INFO_CORE("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
@@ -324,7 +321,7 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	}
 	u64 entry=_get_table(pml3)->entries[j];
 	if (entry&VMM_PAGE_FLAG_LARGE){
-		out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1)):0);
+		out=(entry?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1)):0);
 		goto _cleanup;
 	}
 	u64* pml2=_get_child_table(pml3,j,0);
@@ -333,7 +330,7 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	}
 	entry=_get_table(pml2)->entries[k];
 	if (entry&VMM_PAGE_FLAG_LARGE){
-		out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(LARGE_PAGE_SIZE-1)):0);
+		out=(entry?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(LARGE_PAGE_SIZE-1)):0);
 		goto _cleanup;
 	}
 	u64* pml1=_get_child_table(pml2,k,0);
@@ -341,7 +338,7 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 		goto _cleanup;
 	}
 	entry=_get_table(pml1)->entries[l];
-	out=((entry&VMM_PAGE_FLAG_PRESENT)?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
+	out=(entry?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
 _cleanup:
 	lock_release_exclusive(&(pagemap->lock));
 	return out;
@@ -352,7 +349,7 @@ _cleanup:
 void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
 	flags&=~VMM_PAGE_FLAG_PRESENT;
 	for (;count;count--){
-		vmm_map_page(pagemap,0,virtual_address,flags);
+		vmm_map_page(pagemap,VMM_SHADOW_PAGE_ADDRESS,virtual_address,flags);
 		virtual_address+=PAGE_SIZE;
 	}
 }

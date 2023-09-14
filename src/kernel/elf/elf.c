@@ -57,9 +57,6 @@ u64 elf_load(const char* path){
 		return 0;
 	}
 	process_t* process=process_new(0);
-	vmm_pagemap_t pagemap;
-	vmm_pagemap_init(&pagemap);
-	umm_init_pagemap(&pagemap);
 	elf_header_t header;
 	if (vfs_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		goto _error;
@@ -93,7 +90,7 @@ u64 elf_load(const char* path){
 			ERROR("Unable to reserve process memory");
 			goto _error;
 		}
-		vmm_map_pages(&pagemap,pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
+		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
 		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
 		if (end_address>highest_address){
 			highest_address=end_address;
@@ -103,14 +100,11 @@ u64 elf_load(const char* path){
 		}
 	}
 	thread_new(process,header.e_entry,0x200000);
-	vmm_pagemap_deinit(&vmm_user_pagemap);
-	vmm_user_pagemap=pagemap;
 	mmap_set_range(highest_address,umm_highest_free_address);
 	fd_clear();
 	return header.e_entry;
 _error:
 	ERROR("Unable to load ELF file");
 	process_delete(process);
-	vmm_pagemap_deinit(&pagemap);
 	return 0;
 }

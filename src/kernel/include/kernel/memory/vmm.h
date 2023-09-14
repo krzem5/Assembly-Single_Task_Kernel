@@ -19,6 +19,8 @@
 
 #define VMM_PAGE_ADDRESS_MASK 0x0000fffffffff000ull
 
+#define VMM_SHADOW_PAGE_ADDRESS 0x1000
+
 
 
 typedef struct _VMM_PAGEMAP_TABLE{
@@ -35,7 +37,6 @@ typedef struct _VMM_PAGEMAP{
 
 
 extern vmm_pagemap_t vmm_kernel_pagemap;
-extern vmm_pagemap_t vmm_user_pagemap;
 
 
 

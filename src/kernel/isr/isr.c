@@ -1,3 +1,4 @@
+#include <kernel/cpu/cpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -9,6 +10,12 @@
 
 void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14){
+		scheduler_t* scheduler=CPU_DATA->scheduler;
+		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
+		if (!(isr_state->error&1)&&scheduler&&scheduler->current_thread&&vmm_virtual_to_physical(&(scheduler->current_thread->process->pagemap),address)==VMM_SHADOW_PAGE_ADDRESS){
+			ERROR("Shadow page access @ %p",address);
+			for (;;);
+		}
 		ERROR("Page Fault");
 		ERROR("Address: %p, Error: %p",vmm_get_fault_address(),isr_state->error);
 	}
@@ -17,7 +24,8 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 	else if (isr_state->isr>32){
-		ERROR("Event interrupt");
+		ERROR("Event interrupt (%u)",isr_state->isr);
+		return;
 	}
 	else{
 		ERROR("Crash interrupt");

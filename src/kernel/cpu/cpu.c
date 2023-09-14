@@ -120,22 +120,12 @@ void cpu_start_all_cores(void){
 
 
 void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2){
-	(((volatile cpu_data_t*)cpu_data)+index)->user_func_arg[0]=arg1;
-	(((volatile cpu_data_t*)cpu_data)+index)->user_func_arg[1]=arg2;
-	(((volatile cpu_data_t*)cpu_data)+index)->user_func=start_address;
-	if (CPU_DATA->index==index){
-		syscall_jump_to_user_mode();
-	}
-	lapic_send_ipi(index,LAPIC_WAKEUP_VECTOR);
+	ERROR("Unimplemented: cpu_core_start");
 }
 
 
 
 void KERNEL_NORETURN cpu_core_stop(void){
-	if (CPU_DATA->index==cpu_bsp_core_id){
-		CPU_DATA->user_func_arg[0]=0;
-		CPU_DATA->user_func_arg[1]=0;
-		CPU_DATA->user_func=elf_load(LOADER_FILE_PATH);
-	}
-	syscall_jump_to_user_mode();
+	ERROR("Unimplemented: cpu_core_stop");
+	for (;;);
 }
