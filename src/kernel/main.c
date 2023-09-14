@@ -16,8 +16,8 @@
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
-#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/user/data.h>
 #define KERNEL_LOG_NAME "main"
@@ -50,5 +50,6 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	random_init();
 	serial_init_irq();
 	user_data_generate();
+	scheduler_init();
 	cpu_start_all_cores();
 }

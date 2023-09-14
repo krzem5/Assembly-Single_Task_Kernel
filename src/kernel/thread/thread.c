@@ -15,8 +15,6 @@
 static tid_t _thread_next_pid=1;
 static tid_t _thread_next_tid=1;
 
-process_t* process_kernel;
-
 
 
 static void _thread_list_init(process_t* process){
@@ -62,14 +60,6 @@ process_t* process_new(_Bool is_driver){
 
 void process_delete(process_t* process){
 	panic("Unimplemented: process_delete",0);
-}
-
-
-
-void process_init_kernel_process(u64 entry_point){
-	LOG("Initializing kernel process...");
-	process_kernel=process_new(1);
-	thread_new(process_kernel,entry_point,0x1000);
 }
 
 

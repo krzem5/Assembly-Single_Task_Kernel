@@ -2,6 +2,7 @@
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/gdt/gdt.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -31,6 +32,7 @@ typedef struct _CPU_DATA{
 	u64 user_rsp_top;
 	topology_t topology;
 	tss_t tss;
+	scheduler_t* scheduler;
 	u8 interrupt_stack[CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
 	u8 scheduler_stack[CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
 	u8 page_fault_stack[CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];

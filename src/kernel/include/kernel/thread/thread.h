@@ -52,11 +52,8 @@ typedef struct _THREAD{
 	isr_state_t state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
+	struct _THREAD* scheduler_queue_next;
 } thread_t;
-
-
-
-extern process_t* process_kernel;
 
 
 

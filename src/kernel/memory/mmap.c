@@ -76,13 +76,12 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	lock_shared_to_exclusive(&(mmap->lock));
+	_insert_region_after_anchor(region,0,address+length,region->offset+region->length-length-address);
 	if (address==region->offset){
-		_insert_region_after_anchor(region,0,address+length,region->length-length);
 		region->is_used=1;
 		region->length=length;
 	}
 	else{
-		_insert_region_after_anchor(region,0,address+length,region->offset+region->length-length-address);
 		_insert_region_after_anchor(region,1,address,length);
 		region->length=address-region->offset;
 	}

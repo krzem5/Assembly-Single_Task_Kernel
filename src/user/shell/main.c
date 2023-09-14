@@ -21,7 +21,7 @@ static void _network_thread(void){
 
 void main(void){
 	clock_init();
-	cpu_core_start((cpu_bsp_id?0:1),_network_thread,NULL);
+	(void)_network_thread;// cpu_core_start((cpu_bsp_id?0:1),_network_thread,NULL);
 	cwd_init();
 	while (1){
 		input_get();

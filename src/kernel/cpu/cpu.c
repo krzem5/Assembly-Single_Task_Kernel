@@ -12,6 +12,7 @@
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
@@ -72,6 +73,7 @@ void cpu_init(u16 count){
 		(cpu_data+i)->tss.rsp0=(cpu_data+i)->kernel_rsp;
 		(cpu_data+i)->tss.ist1=((u64)((cpu_data+i)->page_fault_stack))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(cpu_data+i)->tss.ist2=((u64)((cpu_data+i)->scheduler_stack))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->scheduler=scheduler_new();
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
