@@ -21,10 +21,6 @@
 
 
 
-#define LOADER_FILE_PATH "/kernel/loader.elf"
-
-
-
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
@@ -61,15 +57,10 @@ void cpu_init(u16 count){
 	INFO("CPU count: %u",count);
 	cpu_count=count;
 	cpu_data=umm_alloc(count*sizeof(cpu_data_t));
-	u64 user_stacks=pmm_alloc(cpu_count*CPU_USER_STACK_PAGE_COUNT,PMM_COUNTER_USER_STACK,0);
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
 		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->interrupt_stack))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		(cpu_data+i)->user_func=0;
-		(cpu_data+i)->user_func_arg[0]=0;
-		(cpu_data+i)->user_func_arg[1]=0;
-		(cpu_data+i)->user_rsp_top=UMM_STACK_TOP-i*(CPU_USER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(cpu_data+i)->tss.rsp0=(cpu_data+i)->kernel_rsp;
 		(cpu_data+i)->tss.ist1=((u64)((cpu_data+i)->page_fault_stack))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		(cpu_data+i)->tss.ist2=((u64)((cpu_data+i)->scheduler_stack))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -77,7 +68,6 @@ void cpu_init(u16 count){
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
-	umm_set_user_stacks(user_stacks,cpu_count*CPU_USER_STACK_PAGE_COUNT);
 }
 
 
@@ -111,9 +101,6 @@ void cpu_start_all_cores(void){
 		const volatile u8* flags=&((cpu_data+i)->flags);
 		SPINLOOP(!((*flags)&CPU_FLAG_ONLINE));
 	}
-	(cpu_data+cpu_bsp_core_id)->user_func_arg[0]=0;
-	(cpu_data+cpu_bsp_core_id)->user_func_arg[1]=0;
-	(cpu_data+cpu_bsp_core_id)->user_func=elf_load(LOADER_FILE_PATH);
 	_cpu_init_core();
 }
 

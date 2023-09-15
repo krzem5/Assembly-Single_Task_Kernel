@@ -4,6 +4,7 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -51,5 +52,6 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	serial_init_irq();
 	user_data_generate();
 	scheduler_init();
+	elf_load("/kernel/loader.elf");
 	cpu_start_all_cores();
 }

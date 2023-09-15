@@ -26,10 +26,6 @@ typedef struct _CPU_DATA{
 	u8 _padding[5];
 	u64 kernel_rsp;
 	u64 user_rsp;
-	u8 _padding2[8];
-	u64 user_func;
-	u64 user_func_arg[2];
-	u64 user_rsp_top;
 	topology_t topology;
 	tss_t tss;
 	scheduler_t* scheduler;

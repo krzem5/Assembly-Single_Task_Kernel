@@ -19,9 +19,5 @@ void syscall_elf_load(syscall_registers_t* regs){
 	}
 	memcpy(buffer,(void*)address,regs->rsi);
 	buffer[regs->rsi]=0;
-	u64 start_address=elf_load(buffer);
-	if (!start_address){
-		return;
-	}
-	cpu_core_start(cpu_bsp_core_id,start_address,0,0);
+	elf_load(buffer);
 }
