@@ -10,6 +10,6 @@ void syscall_cpu_core_start(syscall_registers_t* regs){
 
 
 
-void KERNEL_NORETURN syscall_cpu_core_stop(syscall_registers_t* regs){
+void syscall_cpu_core_stop(syscall_registers_t* regs){
 	cpu_core_stop();
 }

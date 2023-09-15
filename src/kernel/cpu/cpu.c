@@ -46,6 +46,8 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	msr_enable_fsgsbase();
 	INFO("Enabling lAPIC...");
 	lapic_enable();
+	INFO("Calcularing topology...");
+	topology_compute(index,&((cpu_data+index)->topology));
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
 	scheduler_start();
 }
@@ -75,7 +77,6 @@ void cpu_init(u16 count){
 void cpu_register_core(u8 apic_id){
 	LOG("Registering CPU core #%u",apic_id);
 	(cpu_data+apic_id)->flags|=CPU_FLAG_PRESENT;
-	topology_compute(apic_id,&((cpu_data+apic_id)->topology));
 }
 
 
@@ -112,7 +113,6 @@ void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2){
 
 
 
-void KERNEL_NORETURN cpu_core_stop(void){
-	ERROR("Unimplemented: cpu_core_stop");
-	for (;;);
+void cpu_core_stop(void){
+	scheduler_dequeue();
 }

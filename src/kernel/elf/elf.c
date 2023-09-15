@@ -49,7 +49,7 @@ typedef struct _ELF_PROGRAM_HEADER{
 
 
 
-u64 elf_load(const char* path){
+_Bool elf_load(const char* path){
 	LOG("Loading ELF executable '%s'...",path);
 	vfs_node_t* node=vfs_get_by_path(NULL,path,0);
 	if (!node){
@@ -100,9 +100,8 @@ u64 elf_load(const char* path){
 		}
 	}
 	thread_new(process,header.e_entry,0x200000);
-	mmap_set_range(highest_address,umm_highest_free_address);
 	fd_clear();
-	return header.e_entry;
+	return 1;
 _error:
 	ERROR("Unable to load ELF file");
 	process_delete(process);

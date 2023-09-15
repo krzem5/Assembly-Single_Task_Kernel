@@ -135,3 +135,14 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->scheduler_queue_next=NULL;
 	lock_release_exclusive(&(queue->lock));
 }
+
+
+
+void KERNEL_NORETURN scheduler_dequeue(void){
+	scheduler_t* scheduler=CPU_DATA->scheduler;
+	if (scheduler->current_thread){
+		thread_delete(scheduler->current_thread);
+		scheduler->current_thread=NULL;
+	}
+	scheduler_start();
+}

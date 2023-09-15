@@ -9,19 +9,9 @@
 
 
 
-static lock_t _mmap_lock=LOCK_INIT_STRUCT;
-static u64 _mmap_start_address;
-static u64 _mmap_end_address;
-
-
-
-void mmap_set_range(u64 from,u64 to){
-	LOG("Resetting user mmap range to %p - %p...",from,to);
-	lock_acquire_exclusive(&_mmap_lock);
-	_mmap_start_address=pmm_align_up_address(from);
-	_mmap_end_address=pmm_align_up_address(to);
-	lock_release_exclusive(&_mmap_lock);
-}
+// static lock_t _mmap_lock=LOCK_INIT_STRUCT;
+// static u64 _mmap_start_address;
+// static u64 _mmap_end_address;
 
 
 

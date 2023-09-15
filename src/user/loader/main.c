@@ -19,7 +19,9 @@ void main(void){
 		length--;
 	}
 	buffer[length]=0;
-	elf_load(buffer);
+	if (elf_load(buffer)){
+		return;
+	}
 _error:
 	elf_load("/kernel/shell.elf");
 }

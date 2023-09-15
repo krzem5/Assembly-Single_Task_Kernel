@@ -8,7 +8,7 @@
 
 
 void syscall_elf_load(syscall_registers_t* regs){
-	regs->rax=-1;
+	regs->rax=0;
 	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
 	if (!address){
 		return;
@@ -19,5 +19,5 @@ void syscall_elf_load(syscall_registers_t* regs){
 	}
 	memcpy(buffer,(void*)address,regs->rsi);
 	buffer[regs->rsi]=0;
-	elf_load(buffer);
+	regs->rax=elf_load(buffer);
 }

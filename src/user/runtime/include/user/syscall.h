@@ -16,7 +16,7 @@ u32 _syscall_serial_recv(void* buffer,u32 length,u64 timeout);
 
 
 
-s32 _syscall_elf_load(const char* path,u32 length);
+_Bool _syscall_elf_load(const char* path,u32 length);
 
 
 

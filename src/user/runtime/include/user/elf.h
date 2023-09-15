@@ -3,7 +3,7 @@
 
 
 
-void elf_load(const char* path);
+_Bool elf_load(const char* path);
 
 
 

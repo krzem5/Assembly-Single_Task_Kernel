@@ -96,5 +96,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	panic("Unimplemented: thread_delete",0);
+	ERROR("Unimplemented: thread_delete");
+	// vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
+	// vmm_release_pages(&(process->pagemap),out->stack_bottom,out->stack_size>>PAGE_SIZE_SHIFT);
+	// _thread_list_remove(thread);
 }

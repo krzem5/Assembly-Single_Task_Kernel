@@ -16,10 +16,6 @@
 static lock_t _umm_stack_lock=LOCK_INIT_STRUCT;
 static u64 _umm_stack_top;
 static u64 _umm_stack_max_top;
-static u64 _umm_user_stacks_base;
-static u64 _umm_user_stacks_length;
-
-u64 umm_highest_free_address;
 
 
 
@@ -49,18 +45,8 @@ void umm_init_pagemap(vmm_pagemap_t* pagemap){
 	LOG("Initializing user pagemap at %p...",pagemap->toplevel);
 	INFO("Mapping %v from %p to %p...",kernel_get_end()-kernel_get_common_start(),kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset());
 	vmm_map_pages(pagemap,kernel_get_common_start(),kernel_get_common_start()+kernel_get_offset(),VMM_PAGE_FLAG_PRESENT,pmm_align_up_address(kernel_get_end()-kernel_get_common_start())>>PAGE_SIZE_SHIFT);
-	INFO("Mapping %v from %p to %p...",_umm_user_stacks_length<<PAGE_SIZE_SHIFT,_umm_user_stacks_base,UMM_STACK_TOP-(_umm_user_stacks_length<<PAGE_SIZE_SHIFT));
-	vmm_map_pages(pagemap,_umm_user_stacks_base,UMM_STACK_TOP-(_umm_user_stacks_length<<PAGE_SIZE_SHIFT),VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,_umm_user_stacks_length);
 	INFO("Mapping %v of user constant stack to %p...",_umm_stack_max_top-UMM_CONSTANT_STACK_START,UMM_CONSTANT_STACK_START);
 	for (u64 address=UMM_CONSTANT_STACK_START;address<_umm_stack_max_top;address+=PAGE_SIZE){
 		vmm_map_page(pagemap,vmm_virtual_to_physical(&vmm_kernel_pagemap,address),address,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT);
 	}
-}
-
-
-
-void umm_set_user_stacks(u64 base,u64 length){
-	_umm_user_stacks_base=base;
-	_umm_user_stacks_length=length;
-	umm_highest_free_address=UMM_STACK_TOP-(length<<PAGE_SIZE_SHIFT);
 }
