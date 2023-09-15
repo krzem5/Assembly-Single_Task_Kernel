@@ -1,5 +1,6 @@
 #include <command.h>
 #include <cwd.h>
+#include <user/cpu.h>
 #include <user/elf.h>
 #include <user/fs.h>
 #include <user/io.h>
@@ -28,7 +29,9 @@ void elf_main(int argc,const char*const* argv){
 		return;
 	}
 	fs_close(fd);
-	elf_load(buffer);
+	if (elf_load(buffer)){
+		cpu_core_stop();
+	}
 	printf("elf: unable to load '%s' as an ELF executable\n",argv[1]);
 }
 

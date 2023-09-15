@@ -10,7 +10,7 @@
 
 u64 mmap_alloc(u64 length,u8 flags){
 	// u64 size=PAGE_SIZE;
-	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|VMM_MAP_WITH_COUNT|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+	u64 page_flags=VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	if (flags&MMAP_FLAG_EXTRA_LARGE){
 		// size=EXTRA_LARGE_PAGE_SIZE;
 		length=pmm_align_up_address_extra_large(length);
@@ -24,11 +24,17 @@ u64 mmap_alloc(u64 length,u8 flags){
 	else{
 		length=pmm_align_up_address(length);
 	}
-	return vmm_memory_map_reserve(&(CPU_DATA->scheduler->current_thread->process->mmap),0,length);
+	u64 out=vmm_memory_map_reserve(&(CPU_DATA->scheduler->current_thread->process->mmap),0,length);
+	vmm_reserve_pages(&(CPU_DATA->scheduler->current_thread->process->user_pagemap),out,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,length>>PAGE_SIZE_SHIFT);
+	return out;
 }
 
 
 
 _Bool mmap_dealloc(u64 address,u64 length){
-	return vmm_memory_map_release(&(CPU_DATA->scheduler->current_thread->process->mmap),address,pmm_align_up_address(length));
+	if (vmm_memory_map_release(&(CPU_DATA->scheduler->current_thread->process->mmap),address,pmm_align_up_address(length))){
+		vmm_release_pages(&(CPU_DATA->scheduler->current_thread->process->user_pagemap),address,pmm_align_up_address(length)>>PAGE_SIZE_SHIFT);
+		return 1;
+	}
+	return 0;
 }
