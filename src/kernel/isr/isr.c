@@ -17,7 +17,7 @@ void _isr_handler(isr_state_t* isr_state){
 			return;
 		}
 		ERROR("Page Fault");
-		ERROR("Address: %p, Error: %p",vmm_get_fault_address(),isr_state->error);
+		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_DATA->index);
 	}
 	else if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
