@@ -72,15 +72,13 @@ void* _syscall_handlers[]={
 
 
 
-u64 syscall_sanatize_user_memory(u64 start,u64 size){
-	vmm_pagemap_t* pagemap=&(CPU_DATA->scheduler->current_thread->process->pagemap);
-	u64 address=vmm_virtual_to_physical(pagemap,start);
-	panic("temporarly copy user pagemap to access user memory",0);
+u64 syscall_sanatize_user_memory(u64 address,u64 size){
 	if (!address||!size){
 		return 0;
 	}
-	for (u64 offset=PAGE_SIZE;offset<size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(pagemap,start+offset)){
+	vmm_pagemap_t* pagemap=&(CPU_DATA->scheduler->current_thread->process->user_pagemap);
+	for (u64 offset=0;offset<size;offset+=PAGE_SIZE){
+		if (!vmm_virtual_to_physical(pagemap,address+offset)){
 			return 0;
 		}
 	}

@@ -2,8 +2,6 @@ extern _random_entropy_pool
 extern _random_entropy_pool_length
 extern _syscall_handlers
 extern syscall_invalid
-extern user_data_cpu_table
-extern vmm_common_kernel_pagemap
 global syscall_enable
 section .text
 
@@ -66,7 +64,7 @@ syscall_handler:
 	push rax
 	mov rbx, cr3
 	push rbx
-	mov rbx, qword [vmm_common_kernel_pagemap]
+	mov rbx, qword [gs:24]
 	mov cr3, rbx
 	mov bx, 0x10
 	mov ds, bx

@@ -47,7 +47,7 @@ void vmm_init(void);
 
 
 
-void vmm_pagemap_init(vmm_pagemap_t* pagemap);
+void vmm_pagemap_init(vmm_pagemap_t* pagemap,_Bool is_user);
 
 
 
@@ -96,10 +96,6 @@ void vmm_invalidate_tlb_entry(u64 address);
 
 
 void vmm_switch_to_pagemap(const vmm_pagemap_t* pagemap);
-
-
-
-void vmm_set_common_kernel_pagemap(void);
 
 
 

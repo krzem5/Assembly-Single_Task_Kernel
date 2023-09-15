@@ -47,7 +47,8 @@ typedef struct _PROCESS{
 	pid_t id;
 	lock_t lock;
 	_Bool is_driver;
-	vmm_pagemap_t pagemap;
+	vmm_pagemap_t user_pagemap;
+	vmm_pagemap_t kernel_pagemap;
 	vmm_memory_map_t mmap;
 	process_fs_gs_bases_t* fs_gs_bases;
 	thread_list_t thread_list;

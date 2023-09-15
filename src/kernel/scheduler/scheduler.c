@@ -94,6 +94,7 @@ void scheduler_isr_handler(isr_state_t* state){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
 		scheduler->current_thread=new_thread;
+		CPU_DATA->kernel_cr3=new_thread->process->kernel_pagemap.toplevel;
 		*state=new_thread->state;
 	}
 	if (scheduler->current_thread){

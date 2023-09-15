@@ -166,11 +166,12 @@ void KERNEL_CORE_CODE vmm_init(void){
 
 
 
-void vmm_pagemap_init(vmm_pagemap_t* pagemap){
+void vmm_pagemap_init(vmm_pagemap_t* pagemap,_Bool is_user){
 	pagemap->toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,0);
 	lock_init(&(pagemap->lock));
+	u64* src_pagemap=(is_user?&(vmm_shared_pagemap.toplevel):&(vmm_kernel_pagemap.toplevel));
 	for (u32 i=256;i<512;i++){
-		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(vmm_shared_pagemap.toplevel))->entries[i];
+		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(src_pagemap)->entries[i];
 	}
 }
 

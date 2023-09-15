@@ -4,7 +4,6 @@ extern _lapic_registers
 extern _random_entropy_pool
 extern _random_entropy_pool_length
 extern idt_set_entry
-extern vmm_common_kernel_pagemap
 global isr_allocate
 global isr_wait
 section .text
@@ -95,7 +94,7 @@ _isr_common_handler:
 	push rax
 	mov rax, cr3
 	push rax
-	mov rax, qword [vmm_common_kernel_pagemap]
+	mov rax, qword [gs:24]
 	mov cr3, rax
 	mov ax, 0x10
 	mov ds, ax
