@@ -80,7 +80,6 @@ syscall_handler:
 	cld
 	call rax
 	rdtsc
-	xor rax, rdx
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax

@@ -13,6 +13,13 @@ static pmm_allocator_t KERNEL_CORE_BSS _pmm_low_allocator;
 static pmm_allocator_t KERNEL_CORE_BSS _pmm_high_allocator;
 static lock_t KERNEL_CORE_DATA _pmm_counter_lock=LOCK_INIT_STRUCT;
 static pmm_counters_t KERNEL_CORE_BSS _pmm_counters;
+static u64 KERNEL_CORE_DATA _pmm_block_address_offset=KERNEL_OFFSET;
+
+
+
+static inline pmm_allocator_page_header_t* _get_block_header(u64 address){
+	return (pmm_allocator_page_header_t*)(address+_pmm_block_address_offset);
+}
 
 
 
@@ -63,7 +70,7 @@ static void KERNEL_CORE_CODE _add_memory_range(pmm_allocator_t* allocator,u64 ad
 			size=_get_block_size(idx);
 		}
 		_pmm_counters.data[PMM_COUNTER_TOTAL]+=size>>PAGE_SIZE_SHIFT;
-		pmm_allocator_page_header_t* header=(void*)address;
+		pmm_allocator_page_header_t* header=_get_block_header(address);
 		header->prev=0;
 		header->next=allocator->blocks[idx];
 		header->idx=idx;
@@ -124,6 +131,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 
 
 void KERNEL_CORE_CODE pmm_init_high_mem(void){
+	_pmm_block_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	LOG_CORE("Registering high memory...");
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		if ((KERNEL_DATA->mmap+i)->type!=1){
@@ -156,7 +164,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	}
 	u8 j=__builtin_ffs(allocator->block_bitmap>>i)+i-1;
 	u64 out=(u64)(allocator->blocks[j]);
-	pmm_allocator_page_header_t* header=(void*)out;
+	pmm_allocator_page_header_t* header=_get_block_header(out);
 	allocator->blocks[j]=header->next;
 	if (header->next){
 		header->next->prev=0;
@@ -214,7 +222,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	_toggle_address_bit(allocator,address);
 	_toggle_address_bit(allocator,address+_get_block_size(i));
 	while (i<PMM_ALLOCATOR_SIZE_COUNT){
-		const pmm_allocator_page_header_t* buddy=(void*)(address^_get_block_size(i));
+		const pmm_allocator_page_header_t* buddy=_get_block_header(address^_get_block_size(i));
 		if (((u64)buddy)>=allocator->last_address||_get_address_bit(allocator,address|_get_block_size(i))||buddy->idx!=i){
 			break;
 		}
@@ -233,7 +241,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		}
 		i++;
 	}
-	pmm_allocator_page_header_t* header=(void*)address;
+	pmm_allocator_page_header_t* header=_get_block_header(address);
 	header->prev=0;
 	header->next=allocator->blocks[i];
 	header->idx=i;
