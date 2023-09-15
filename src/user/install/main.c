@@ -104,6 +104,7 @@ void main(void){
 	}
 _start_shell:
 	elf_load("/kernel/shell.elf");
+	cpu_core_stop();
 	return;
 _update_boot_version:
 	path[_partition_name_to_path(path,(drives+partition->drive_index)->name)]=0;

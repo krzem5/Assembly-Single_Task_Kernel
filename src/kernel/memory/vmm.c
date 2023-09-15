@@ -353,3 +353,43 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 		virtual_address+=PAGE_SIZE;
 	}
 }
+
+
+
+static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
+	u64 i=(virtual_address>>39)&0x1ff;
+	u64 j=(virtual_address>>30)&0x1ff;
+	u64 k=(virtual_address>>21)&0x1ff;
+	u64 l=(virtual_address>>12)&0x1ff;
+	u64* pml4=&(pagemap->toplevel);
+	u64* pml3=_get_child_table(pml4,i,0);
+	if (!pml3){
+		return NULL;
+	}
+	if ((_get_table(pml3)->entries[j])&VMM_PAGE_FLAG_LARGE){
+		return _get_table(pml3)->entries+j;
+	}
+	u64* pml2=_get_child_table(pml3,j,0);
+	if (!pml2){
+		return NULL;
+	}
+	if ((_get_table(pml2)->entries[k])&VMM_PAGE_FLAG_LARGE){
+		return _get_table(pml2)->entries+k;
+	}
+	u64* pml1=_get_child_table(pml2,k,0);
+	if (!pml1){
+		return NULL;
+	}
+	return _get_table(pml1)->entries+l;
+}
+
+
+
+void vmm_update_address_and_set_present(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address){
+	lock_acquire_exclusive(&(pagemap->lock));
+	u64* address=_lookup_virtual_address(pagemap,virtual_address);
+	if (address){
+		*address=((*address)&(~VMM_PAGE_ADDRESS_MASK))|(physical_address&VMM_PAGE_ADDRESS_MASK)|VMM_PAGE_FLAG_PRESENT;
+	}
+	lock_release_exclusive(&(pagemap->lock));
+}

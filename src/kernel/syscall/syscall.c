@@ -73,7 +73,6 @@ void* _syscall_handlers[]={
 
 
 u64 syscall_sanatize_user_memory(u64 start,u64 size){
-	for (;;);
 	vmm_pagemap_t* pagemap=&(CPU_DATA->scheduler->current_thread->process->pagemap);
 	u64 address=vmm_virtual_to_physical(pagemap,start);
 	if (!address||!size){
