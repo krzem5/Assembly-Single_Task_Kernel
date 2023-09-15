@@ -60,8 +60,8 @@ process_t* process_new(_Bool is_driver){
 	_thread_next_pid++;
 	lock_init(&(out->lock));
 	out->is_driver=is_driver;
-	vmm_pagemap_init(&(out->user_pagemap),1);
-	vmm_pagemap_init(&(out->kernel_pagemap),0);
+	vmm_pagemap_init(&(out->user_pagemap),NULL);
+	vmm_pagemap_init(&(out->kernel_pagemap),&(out->user_pagemap));
 	vmm_memory_map_init(&(out->mmap));
 	out->fs_gs_bases=kmm_alloc(cpu_count*sizeof(process_fs_gs_bases_t));
 	for (u16 i=0;i<cpu_count;i++){

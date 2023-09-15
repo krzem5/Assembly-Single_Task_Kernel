@@ -8,6 +8,7 @@
 #define KERNEL_LOG_NAME "vmm"
 
 
+
 static u64 _vmm_address_offset=0;
 
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
@@ -134,9 +135,11 @@ static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
 void KERNEL_CORE_CODE vmm_init(void){
 	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
+	vmm_kernel_pagemap.ownership_limit=512;
 	lock_init(&(vmm_kernel_pagemap.lock));
 	INFO_CORE("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	vmm_shared_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
+	vmm_shared_pagemap.ownership_limit=512;
 	lock_init(&(vmm_shared_pagemap.lock));
 	INFO_CORE("Shared top-level page map allocated at %p",vmm_shared_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
@@ -157,7 +160,6 @@ void KERNEL_CORE_CODE vmm_init(void){
 	}
 	INFO_CORE("Identity mapping first %v...",highest_address);
 	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
-		// vmm_map_page(&vmm_kernel_pagemap,i,i,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
@@ -166,19 +168,30 @@ void KERNEL_CORE_CODE vmm_init(void){
 
 
 
-void vmm_pagemap_init(vmm_pagemap_t* pagemap,_Bool is_user){
+void vmm_pagemap_init(vmm_pagemap_t* pagemap,vmm_pagemap_t* user_pagemap){
 	pagemap->toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,0);
+	pagemap->ownership_limit=(user_pagemap?0:256);
 	lock_init(&(pagemap->lock));
-	u64* src_pagemap=(is_user?&(vmm_shared_pagemap.toplevel):&(vmm_kernel_pagemap.toplevel));
-	for (u32 i=256;i<512;i++){
-		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(src_pagemap)->entries[i];
+	if (user_pagemap){
+		for (u16 i=0;i<256;i++){
+			_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(user_pagemap->toplevel))->entries[i];
+		}
+	}
+	else{
+		for (u16 i=0;i<256;i++){
+			_get_table(&(pagemap->toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+		}
+	}
+	u64* higher_half_pagemap=(user_pagemap?&(vmm_kernel_pagemap.toplevel):&(vmm_shared_pagemap.toplevel));
+	for (u16 i=256;i<512;i++){
+		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(higher_half_pagemap)->entries[i];
 	}
 }
 
 
 
 void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
-	_delete_pagemap_recursive(&(pagemap->toplevel),4,256);
+	_delete_pagemap_recursive(&(pagemap->toplevel),4,pagemap->ownership_limit);
 }
 
 

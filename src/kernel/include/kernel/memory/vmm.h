@@ -33,6 +33,7 @@ typedef struct _VMM_PAGEMAP_TABLE{
 
 typedef struct _VMM_PAGEMAP{
 	u64 toplevel;
+	u16 ownership_limit;
 	lock_t lock;
 } vmm_pagemap_t;
 
@@ -47,7 +48,7 @@ void vmm_init(void);
 
 
 
-void vmm_pagemap_init(vmm_pagemap_t* pagemap,_Bool is_user);
+void vmm_pagemap_init(vmm_pagemap_t* pagemap,vmm_pagemap_t* user_pagemap);
 
 
 
