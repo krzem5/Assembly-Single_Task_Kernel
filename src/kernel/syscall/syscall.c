@@ -76,9 +76,8 @@ u64 syscall_sanatize_user_memory(u64 address,u64 size){
 	if (!address||!size){
 		return 0;
 	}
-	vmm_pagemap_t* pagemap=&(CPU_DATA->scheduler->current_thread->process->user_pagemap);
 	for (u64 offset=0;offset<size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(pagemap,address+offset)){
+		if (!vmm_virtual_to_physical(&(CPU_DATA->scheduler->current_thread->process->user_pagemap),address+offset)){
 			return 0;
 		}
 	}
