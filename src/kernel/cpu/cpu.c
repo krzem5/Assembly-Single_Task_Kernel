@@ -83,6 +83,7 @@ void cpu_register_core(u8 apic_id){
 
 void cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
+	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init();
 	for (u16 i=0;i<cpu_count;i++){
 		if (!((cpu_data+i)->flags&CPU_FLAG_PRESENT)){
@@ -102,6 +103,7 @@ void cpu_start_all_cores(void){
 		const volatile u8* flags=&((cpu_data+i)->flags);
 		SPINLOOP(!((*flags)&CPU_FLAG_ONLINE));
 	}
+	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();
 }
 

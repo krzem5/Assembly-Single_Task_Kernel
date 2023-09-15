@@ -13,7 +13,7 @@ static pmm_allocator_t KERNEL_CORE_BSS _pmm_low_allocator;
 static pmm_allocator_t KERNEL_CORE_BSS _pmm_high_allocator;
 static lock_t KERNEL_CORE_DATA _pmm_counter_lock=LOCK_INIT_STRUCT;
 static pmm_counters_t KERNEL_CORE_BSS _pmm_counters;
-static u64 KERNEL_CORE_DATA _pmm_block_address_offset=KERNEL_OFFSET;
+static u64 KERNEL_CORE_DATA _pmm_block_address_offset=0;
 
 
 
@@ -75,9 +75,9 @@ static void KERNEL_CORE_CODE _add_memory_range(pmm_allocator_t* allocator,u64 ad
 		header->next=allocator->blocks[idx];
 		header->idx=idx;
 		if (allocator->blocks[idx]){
-			allocator->blocks[idx]->prev=header;
+			_get_block_header(allocator->blocks[idx])->prev=address;
 		}
-		allocator->blocks[idx]=header;
+		allocator->blocks[idx]=address;
 		allocator->block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -132,6 +132,8 @@ void KERNEL_CORE_CODE pmm_init(void){
 
 void KERNEL_CORE_CODE pmm_init_high_mem(void){
 	_pmm_block_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	_pmm_low_allocator.bitmap=(void*)(((u64)(_pmm_low_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	LOG_CORE("Registering high memory...");
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		if ((KERNEL_DATA->mmap+i)->type!=1){
@@ -167,7 +169,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	pmm_allocator_page_header_t* header=_get_block_header(out);
 	allocator->blocks[j]=header->next;
 	if (header->next){
-		header->next->prev=0;
+		_get_block_header(header->next)->prev=0;
 	}
 	else{
 		allocator->block_bitmap&=~(1<<j);
@@ -175,11 +177,11 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	while (j>i){
 		j--;
 		u64 child_block=out+_get_block_size(j);
-		header=(void*)child_block;
+		header=_get_block_header(child_block);
 		header->prev=0;
 		header->next=allocator->blocks[j];
 		header->idx=j;
-		allocator->blocks[j]=header;
+		allocator->blocks[j]=child_block;
 		allocator->block_bitmap|=1<<j;
 	}
 	_toggle_address_bit(allocator,out);
@@ -198,7 +200,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
 	if (!out){
 		return 0;
 	}
-	memset((void*)out,0,count<<PAGE_SIZE_SHIFT);
+	memset((void*)(out+_pmm_block_address_offset),0,count<<PAGE_SIZE_SHIFT);
 	return out;
 }
 
@@ -228,7 +230,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 		}
 		address&=~_get_block_size(i);
 		if (buddy->prev){
-			buddy->prev->next=buddy->next;
+			_get_block_header(buddy->prev)->next=buddy->next;
 		}
 		else{
 			allocator->blocks[i]=buddy->next;
@@ -237,7 +239,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 			}
 		}
 		if (buddy->next){
-			buddy->next->prev=buddy->prev;
+			_get_block_header(buddy->next)->prev=buddy->prev;
 		}
 		i++;
 	}
@@ -246,9 +248,9 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	header->next=allocator->blocks[i];
 	header->idx=i;
 	if (allocator->blocks[i]){
-		allocator->blocks[i]->prev=header;
+		_get_block_header(allocator->blocks[i])->prev=address;
 	}
-	allocator->blocks[i]=header;
+	allocator->blocks[i]=address;
 	allocator->block_bitmap|=1<<i;
 	lock_release_exclusive(&(allocator->lock));
 }

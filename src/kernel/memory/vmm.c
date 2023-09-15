@@ -8,6 +8,7 @@
 #define KERNEL_LOG_NAME "vmm"
 
 
+static u64 _vmm_address_offset=0;
 
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
 vmm_pagemap_t KERNEL_CORE_BSS vmm_shared_pagemap;
@@ -15,7 +16,7 @@ vmm_pagemap_t KERNEL_CORE_BSS vmm_shared_pagemap;
 
 
 static inline vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
-	return (vmm_pagemap_table_t*)((*entry)&VMM_PAGE_ADDRESS_MASK);
+	return (vmm_pagemap_table_t*)(((*entry)&VMM_PAGE_ADDRESS_MASK)+_vmm_address_offset);
 }
 
 
@@ -156,10 +157,11 @@ void KERNEL_CORE_CODE vmm_init(void){
 	}
 	INFO_CORE("Identity mapping first %v...",highest_address);
 	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
-		vmm_map_page(&vmm_kernel_pagemap,i,i,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		// vmm_map_page(&vmm_kernel_pagemap,i,i,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
+	_vmm_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
 }
 
 
@@ -329,18 +331,19 @@ _cleanup:
 
 
 
-void KERNEL_CORE_CODE vmm_identity_map(const void* address,u64 size){
+u64 KERNEL_CORE_CODE vmm_identity_map(u64 physical_address,u64 size){
 	if (!size){
-		return;
+		return physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	}
-	size=pmm_align_up_address(size+((u64)address)-pmm_align_down_address((u64)address));
-	u64 address_aligned=pmm_align_down_address((u64)address);
+	size=pmm_align_up_address(size+physical_address-pmm_align_down_address(physical_address));
+	u64 address_aligned=pmm_align_down_address(physical_address);
 	while (size){
 		size-=PAGE_SIZE;
-		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,address_aligned+size)){
-			vmm_map_page(&vmm_kernel_pagemap,address_aligned+size,address_aligned+size,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,address_aligned+size+VMM_HIGHER_HALF_ADDRESS_OFFSET)){
+			vmm_map_page(&vmm_kernel_pagemap,address_aligned+size,address_aligned+size+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		}
 	}
+	return physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 }
 
 

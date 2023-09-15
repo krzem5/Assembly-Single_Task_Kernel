@@ -47,7 +47,7 @@ typedef struct _PCI_DEVICE{
 
 
 typedef struct _PCI_BAR{
-	void* address;
+	u64 address;
 	u64 size;
 	u8 flags;
 } pci_bar_t;

@@ -97,7 +97,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	if (alignment_required){
 		aligned_buffer=(void*)pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI,0);
 		if (offset&DRIVE_OFFSET_FLAG_WRITE){
-			memcpy(aligned_buffer,buffer,dbc+1);
+			memcpy(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET,buffer,dbc+1);
 		}
 	}
 	else{
@@ -132,7 +132,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	_device_wait_command(device,cmd_slot);
 	if (alignment_required){
 		if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
-			memcpy(buffer,aligned_buffer,dbc+1);
+			memcpy(buffer,aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET,dbc+1);
 		}
 		pmm_dealloc((u64)aligned_buffer,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 	}
@@ -142,13 +142,15 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 
 
 static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
-	device->command_list=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
-	device->registers->clb=((u64)(device->command_list));
-	device->registers->clbu=((u64)(device->command_list))>>32;
+	u64 command_list=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
+	device->command_list=(void*)(command_list+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	device->registers->clb=command_list;
+	device->registers->clbu=command_list>>32;
 	for (u8 i=0;i<32;i++){
-		device->command_tables[i]=(void*)pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
-		(device->command_list->commands+i)->ctba=((u64)(device->command_tables[i]));
-		(device->command_list->commands+i)->ctbau=((u64)(device->command_tables[i]))>>32;
+		u64 command_table=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
+		device->command_tables[i]=(void*)(command_table+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		(device->command_list->commands+i)->ctba=command_table;
+		(device->command_list->commands+i)->ctbau=command_table>>32;
 	}
 	u64 fis_base=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	device->registers->fb=fis_base;
@@ -185,13 +187,13 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 	drive_t drive={
 		.type=DRIVE_TYPE_AHCI,
 		.read_write=_ahci_read_write,
-		.block_count=*((u64*)(buffer+200)),
+		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
 		.block_size=512,
 		.extra_data=device
 	};
 	format_string(drive.name,16,_ahci_drive_name_format_template,port_index);
-	bswap16_trunc_spaces((const u16*)(buffer+20),10,drive.serial_number);
-	bswap16_trunc_spaces((const u16*)(buffer+54),20,drive.model_number);
+	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,drive.serial_number);
+	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,drive.model_number);
 	drive_add(&drive);
 	pmm_dealloc((u64)buffer,1,PMM_COUNTER_DRIVER_AHCI);
 }
@@ -207,10 +209,9 @@ void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	ahci_controller_t* controller=kmm_alloc(sizeof(ahci_controller_t));
-	controller->registers=pci_bar.address;
+	controller->registers=(void*)vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
 		ERROR_CORE("AHCI controller does not support 64-bit addressing");

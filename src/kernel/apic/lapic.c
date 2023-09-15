@@ -39,8 +39,7 @@ volatile u32* _lapic_registers;
 void lapic_init(u64 base,u16 cpu_count){
 	LOG("Initializing lAPIC controller...");
 	INFO("lAPIC base: %p",base);
-	_lapic_registers=(void*)base;
-	vmm_identity_map((void*)base,(REGISTER_MAX+1)*sizeof(u32));
+	_lapic_registers=(void*)vmm_identity_map(base,(REGISTER_MAX+1)*sizeof(u32));
 	INFO("Enabling APIC...");
 	msr_enable_apic();
 	_lapic_timer_frequencies=kmm_alloc(cpu_count*sizeof(u32));

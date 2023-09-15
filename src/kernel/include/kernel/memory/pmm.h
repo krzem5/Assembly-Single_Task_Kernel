@@ -35,8 +35,8 @@
 
 
 typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
-	struct _PMM_ALLOCATOR_PAGE_HEADER* prev;
-	struct _PMM_ALLOCATOR_PAGE_HEADER* next;
+	u64 prev;
+	u64 next;
 	u8 idx;
 } pmm_allocator_page_header_t;
 
@@ -46,7 +46,7 @@ typedef struct _PMM_ALLOCATOR{
 	u64 first_address;
 	u64 last_address;
 	u64* bitmap;
-	pmm_allocator_page_header_t* blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
 	lock_t lock;
 	u16 block_bitmap;
 } pmm_allocator_t;

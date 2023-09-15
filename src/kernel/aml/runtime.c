@@ -66,7 +66,7 @@ static u64 _read_field_unit(aml_node_t* node){
 					panic("Unimplemented: _read_field_unit(SystemMemory,WordAcc)",0);
 					break;
 				case 3:
-					out=*((const u32*)(node->data.field_unit.address));
+					out=*((const u32*)(node->data.field_unit.address+VMM_HIGHER_HALF_ADDRESS_OFFSET));
 					break;
 				case 4:
 					panic("Unimplemented: _read_field_unit(SystemMemory,QWordAcc)",0);
@@ -135,7 +135,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 					panic("Unimplemented: _write_field_unit(SystemMemory,WordAcc)",0);
 					break;
 				case 3:
-					*((u32*)(node->data.field_unit.address))=value->data.integer;
+					*((u32*)(node->data.field_unit.address+VMM_HIGHER_HALF_ADDRESS_OFFSET))=value->data.integer;
 					break;
 				case 4:
 					panic("Unimplemented: _write_field_unit(SystemMemory,QWordAcc)",0);

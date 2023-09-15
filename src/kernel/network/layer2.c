@@ -12,13 +12,15 @@
 
 
 static lock_t _layer2_lock=LOCK_INIT_STRUCT;
+static u64 _layer2_physical_send_buffer_address;
 static u8* _layer2_physical_send_buffer;
 
 
 
 void network_layer2_init(void){
 	LOG("Initializing layer2 network...");
-	_layer2_physical_send_buffer=(void*)pmm_alloc(1,PMM_COUNTER_NETWORK,0);
+	_layer2_physical_send_buffer_address=pmm_alloc(1,PMM_COUNTER_NETWORK,0);
+	_layer2_physical_send_buffer=(void*)(_layer2_physical_send_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 
@@ -33,7 +35,7 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 	_layer2_physical_send_buffer[12]=packet->protocol>>8;
 	_layer2_physical_send_buffer[13]=packet->protocol;
 	memcpy(_layer2_physical_send_buffer+14,packet->buffer,packet->buffer_length);
-	network_layer1_send((u64)_layer2_physical_send_buffer,packet->buffer_length+14);
+	network_layer1_send(_layer2_physical_send_buffer_address,packet->buffer_length+14);
 	lock_release_exclusive(&_layer2_lock);
 	return 1;
 }

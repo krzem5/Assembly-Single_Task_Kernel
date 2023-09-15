@@ -95,7 +95,7 @@ _Bool elf_load(const char* path){
 		if (end_address>highest_address){
 			highest_address=end_address;
 		}
-		if (vfs_read(node,program_header.p_offset,(void*)(pages+offset),program_header.p_filesz)!=program_header.p_filesz){
+		if (vfs_read(node,program_header.p_offset,(void*)(pages+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),program_header.p_filesz)!=program_header.p_filesz){
 			goto _error;
 		}
 	}

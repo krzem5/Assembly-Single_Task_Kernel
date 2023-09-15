@@ -54,9 +54,8 @@ void acpi_load(void){
 	const rsdp_t* rsdp=NULL;
 	while (range[0]){
 		INFO("Searching memory range %p - %p...",range[0],range[1]);
-		vmm_identity_map((void*)(range[0]),range[1]-range[0]);
-		const u64* start=(void*)(range[0]);
-		const u64* end=(void*)(range[1]);
+		const u64* start=(void*)vmm_identity_map(range[0],range[1]-range[0]);
+		const u64* end=start+(range[1]-range[0])/sizeof(u64);
 		while (start!=end){
 			if (start[0]==0x2052545020445352ull){
 				rsdp=(void*)start;
@@ -80,9 +79,8 @@ _rsdp_found:
 		INFO("Found XSDT at %p",rsdp->xsdt_address);
 		rsdt=(void*)(rsdp->xsdt_address);
 	}
-	vmm_identity_map(rsdt,sizeof(rsdt_t));
+	rsdt=(void*)vmm_identity_map((u64)rsdt,((const rsdt_t*)vmm_identity_map((u64)rsdt,sizeof(rsdt_t)))->header.length);
 	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
-	vmm_identity_map(rsdt,rsdt->header.length);
 	const sdt_t* madt=NULL;
 	const sdt_t* fadt=NULL;
 	const sdt_t* hmat=NULL;
@@ -90,8 +88,7 @@ _rsdp_found:
 	const sdt_t* slit=NULL;
 	for (u32 i=0;i<entry_count;i++){
 		const sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
-		vmm_identity_map(sdt,sizeof(sdt_t));
-		vmm_identity_map(sdt,sdt->length);
+		sdt=(void*)vmm_identity_map((u64)sdt,((const sdt_t*)vmm_identity_map((u64)sdt,sizeof(sdt_t)))->length);
 		if (sdt->signature==0x43495041){
 			madt=sdt;
 			INFO("Found MADT at %p",sdt);

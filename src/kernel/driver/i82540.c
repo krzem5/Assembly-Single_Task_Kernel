@@ -124,7 +124,7 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	if (desc->length<buffer_length){
 		buffer_length=desc->length;
 	}
-	memcpy(buffer,(void*)(desc->address),buffer_length);
+	memcpy(buffer,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer_length);
 	_consume_packet(device,tail,desc);
 	return buffer_length;
 }
@@ -178,9 +178,8 @@ void driver_i82540_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device_t* i82540_device=kmm_alloc(sizeof(i82540_device_t));
-	i82540_device->mmio=pci_bar.address;
+	i82540_device->mmio=(void*)vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
 	COUNTER_SPINLOOP(0xffff);
@@ -198,27 +197,29 @@ void driver_i82540_init_device(pci_device_t* device){
 			return;
 		}
 	}
-	i82540_device->rx_desc_base=pmm_alloc(pmm_align_up_address(NUM_RX_DESCRIPTORS*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
+	u64 rx_desc_base=pmm_alloc(pmm_align_up_address(NUM_RX_DESCRIPTORS*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
+	i82540_device->rx_desc_base=rx_desc_base+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	for (u16 i=0;i<NUM_RX_DESCRIPTORS;i++){
 		i82540_rx_descriptor_t* desc=GET_DESCRIPTOR(i82540_device,rx,i);
 		desc->address=pmm_alloc(1,PMM_COUNTER_DRIVER_I82540,0);
 		desc->status=0;
 	}
-	i82540_device->mmio[REG_RDBAH]=i82540_device->rx_desc_base>>32;
-	i82540_device->mmio[REG_RDBAL]=i82540_device->rx_desc_base;
+	i82540_device->mmio[REG_RDBAH]=rx_desc_base>>32;
+	i82540_device->mmio[REG_RDBAL]=rx_desc_base;
 	i82540_device->mmio[REG_RDLEN]=NUM_RX_DESCRIPTORS*sizeof(i82540_rx_descriptor_t);
 	i82540_device->mmio[REG_RDH]=0;
 	i82540_device->mmio[REG_RDT]=NUM_RX_DESCRIPTORS-1;
 	i82540_device->mmio[REG_RCTL]=RCTL_EN|RCTL_SBP|RCTL_UPE|RCTL_MPE|RCTL_LPE|RCTL_BAM|RCTL_BSIZE_4096|RCTL_PMCF|RCTL_SECRC;
-	i82540_device->tx_desc_base=pmm_alloc(pmm_align_up_address(NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
+	u64 tx_desc_base=pmm_alloc(pmm_align_up_address(NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_DRIVER_I82540,0);
+	i82540_device->tx_desc_base=tx_desc_base+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	for (u16 i=0;i<NUM_TX_DESCRIPTORS;i++){
 		i82540_tx_descriptor_t* desc=GET_DESCRIPTOR(i82540_device,tx,i);
 		desc->address=0;
 		desc->cmd=0;
 		desc->status=0;
 	}
-	i82540_device->mmio[REG_TDBAH]=i82540_device->tx_desc_base>>32;
-	i82540_device->mmio[REG_TDBAL]=i82540_device->tx_desc_base;
+	i82540_device->mmio[REG_TDBAH]=tx_desc_base>>32;
+	i82540_device->mmio[REG_TDBAL]=tx_desc_base;
 	i82540_device->mmio[REG_TDLEN]=NUM_TX_DESCRIPTORS*sizeof(i82540_tx_descriptor_t);
 	i82540_device->mmio[REG_TDH]=0;
 	i82540_device->mmio[REG_TDT]=1;

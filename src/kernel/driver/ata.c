@@ -247,7 +247,7 @@ void KERNEL_CORE_CODE driver_ata_init_device(pci_device_t* device){
 	for (u8 i=0;i<4;i++){
 		ata_device_t* ata_device=kmm_alloc_buffer();
 		kmm_grow_buffer(sizeof(ata_device_t));
-		ata_device->dma_address=pci_bar.address;
+		ata_device->dma_address=(void*)(pci_bar.address);
 		ata_device->is_slave=i&1;
 		ata_device->port=((i>>1)?0x170:0x1f0);
 		_ata_init(ata_device,i);

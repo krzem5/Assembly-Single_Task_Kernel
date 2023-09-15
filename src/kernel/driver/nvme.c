@@ -27,9 +27,8 @@ void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	vmm_identity_map(pci_bar.address,sizeof(nvme_registers_t));
 	LOG_CORE("Attached NVMe driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
-	nvme_registers_t* registers=pci_bar.address;
+	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(nvme_registers_t));
 	if (!(registers->cap&0x0000002000000000ull)){
 		WARN("NVMe instruction set not supported");
 		return;
