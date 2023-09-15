@@ -46,11 +46,10 @@ u32 serial_recv(void* buffer,u32 length,u64 timeout){
 	u32 out=0;
 	if (!timeout){
 		for (;out<length;out++){
-			while (!(io_port_in8(0x3fd)&0x01)){
-				if (!isr_wait(_serial_irq)){
-					return 0;
-				}
-			}
+			SPINLOOP(!(io_port_in8(0x3fd)&0x01));
+			// if (!isr_wait(_serial_irq)){
+			// 	return 0;
+			// }
 			*((u8*)buffer)=io_port_in8(0x3f8);
 			buffer++;
 		}

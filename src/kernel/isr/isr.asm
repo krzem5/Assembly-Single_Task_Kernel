@@ -23,24 +23,24 @@ isr_allocate:
 
 
 
-isr_wait:
-	mov rsi, rdi
-	and edi, 31
-	shr rsi, 5
-	lea rsi, [_isr_mask+rsi*4]
-._retry:
-	lock btr dword [rsi], edi
-	jc ._end
-	cmp qword [gs:32], 0
-	jne ._fail
-	hlt
-	jmp ._retry
-._end:
-	mov eax, 1
-	ret
-._fail:
-	xor eax, eax
-	ret
+; isr_wait:
+; 	mov rsi, rdi
+; 	and edi, 31
+; 	shr rsi, 5
+; 	lea rsi, [_isr_mask+rsi*4]
+; ._retry:
+; 	lock btr dword [rsi], edi
+; 	jc ._end
+; 	cmp qword [gs:32], 0
+; 	jne ._fail
+; 	hlt
+; 	jmp ._retry
+; ._end:
+; 	mov eax, 1
+; 	ret
+; ._fail:
+; 	xor eax, eax
+; 	ret
 
 
 
@@ -54,13 +54,13 @@ _next_irq_index:
 
 
 
-section .bss
+; section .bss
 
 
 
-align 4
-_isr_mask:
-	resd 8
+; align 4
+; _isr_mask:
+; 	resd 8
 
 
 
