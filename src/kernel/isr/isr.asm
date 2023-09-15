@@ -106,8 +106,8 @@ _isr_common_handler:
 	cld
 	call _isr_handler
 	rdtsc
-	; xor eax, dword [rsp+24] ; rip
-	; xor eax, dword [rsp+48] ; rsp
+	xor eax, dword [rsp+160] ; rip
+	xor eax, dword [rsp+184] ; rsp
 	mov rdx, 4
 	lock xadd qword [_random_entropy_pool_length], rdx
 	and rdx, 0x3c
