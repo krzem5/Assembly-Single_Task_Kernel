@@ -74,7 +74,7 @@ process_t* process_new(_Bool is_driver){
 
 
 void process_delete(process_t* process){
-	panic("Unimplemented: process_delete",0);
+	ERROR("Unimplemented: process_delete");
 }
 
 
@@ -110,8 +110,12 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
+	process_t* process=thread->process;
+	vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
+	vmm_release_pages(&(process->pagemap),thread->stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
+	_thread_list_remove(process,thread);
 	ERROR("Unimplemented: thread_delete");
-	// vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
-	// vmm_release_pages(&(process->pagemap),out->stack_bottom,out->stack_size>>PAGE_SIZE_SHIFT);
-	_thread_list_remove(thread->process,thread);
+	if (!process->thread_list.head){
+		process_delete(process);
+	}
 }

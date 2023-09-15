@@ -77,6 +77,10 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 
 
 
+void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
+
+
+
 void vmm_update_address_and_set_present(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address);
 
 

@@ -36,6 +36,16 @@ static vmm_memory_map_region_t* _insert_region_after_anchor(vmm_memory_map_regio
 
 
 
+static void _delete_next_region(vmm_memory_map_region_t* region){
+	region=region->next;
+	region->prev->next=region->next;
+	if (region->next){
+		region->next->prev=region->prev;
+	}
+}
+
+
+
 void vmm_memory_map_init(vmm_memory_map_t* out){
 	lock_init(&(out->lock));
 	out->first=_insert_region_after_anchor(NULL,0,LOWEST_ADDRESS,HIGHEST_ADDRESS-LOWEST_ADDRESS);
@@ -87,4 +97,36 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 	}
 	lock_release_exclusive(&(mmap->lock));
 	return address;
+}
+
+
+
+_Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
+	if ((address|length)&(PAGE_SIZE-1)){
+		panic("vmm_memory_map_release: unaligned arguments",1);
+		return 0;
+	}
+	lock_acquire_shared(&(mmap->lock));
+	vmm_memory_map_region_t* region=mmap->first;
+	while (region&&region->offset+region->length<=address){
+		region=region->next;
+	}
+	if (!region){
+		lock_release_shared(&(mmap->lock));
+		return 0;
+	}
+	if (region->offset!=address||region->length!=length){
+		panic("vmm_memory_map_release: partial release is unimplemented",0);
+	}
+	lock_shared_to_exclusive(&(mmap->lock));
+	region->is_used=0;
+	if (region->prev&&!region->prev->is_used){
+		region=region->prev;
+		_delete_next_region(region);
+	}
+	if (region->next&&!region->next->is_used){
+		_delete_next_region(region);
+	}
+	lock_release_exclusive(&(mmap->lock));
+	return 1;
 }

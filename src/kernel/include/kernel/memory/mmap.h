@@ -34,4 +34,8 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length);
 
 
 
+_Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length);
+
+
+
 #endif
