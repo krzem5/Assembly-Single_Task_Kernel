@@ -46,7 +46,6 @@ process_t* process_new(_Bool is_driver){
 	lock_init(&(out->lock));
 	out->is_driver=is_driver;
 	vmm_pagemap_init(&(out->pagemap));
-	umm_init_pagemap(&(out->pagemap));
 	vmm_memory_map_init(&(out->mmap));
 	out->fs_gs_bases=kmm_alloc(cpu_count*sizeof(process_fs_gs_bases_t));
 	for (u16 i=0;i<cpu_count;i++){

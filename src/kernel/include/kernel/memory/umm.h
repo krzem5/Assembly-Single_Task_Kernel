@@ -13,8 +13,4 @@ void* umm_alloc(u32 size);
 
 
 
-void umm_init_pagemap(vmm_pagemap_t* pagemap);
-
-
-
 #endif
