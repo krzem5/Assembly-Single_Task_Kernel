@@ -75,8 +75,7 @@ void* _syscall_handlers[]={
 u64 syscall_sanatize_user_memory(u64 start,u64 size){
 	vmm_pagemap_t* pagemap=&(CPU_DATA->scheduler->current_thread->process->pagemap);
 	u64 address=vmm_virtual_to_physical(pagemap,start);
-	// temporarly copy user pagemap to access user memory => requires the lower half of the kernel pagemap to be empty => PMM has to use high memory offsets to access
-	for (;;);
+	panic("temporarly copy user pagemap to access user memory",0);
 	if (!address||!size){
 		return 0;
 	}
