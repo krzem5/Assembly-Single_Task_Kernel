@@ -395,9 +395,15 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	for (;count;count--){
+		lock_acquire_shared(&(pagemap->lock));
 		u64 physical_address=(*_lookup_virtual_address(pagemap,virtual_address))&VMM_PAGE_ADDRESS_MASK;
 		if (physical_address!=VMM_SHADOW_PAGE_ADDRESS){
+			lock_shared_to_exclusive(&(pagemap->lock));
 			pmm_dealloc(physical_address,1,PMM_COUNTER_USER);
+			lock_release_exclusive(&(pagemap->lock));
+		}
+		else{
+			lock_release_shared(&(pagemap->lock));
 		}
 		vmm_unmap_page(pagemap,virtual_address);
 		virtual_address+=PAGE_SIZE;
@@ -407,10 +413,14 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 
 
 void vmm_update_address_and_set_present(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address){
-	lock_acquire_exclusive(&(pagemap->lock));
+	lock_acquire_shared(&(pagemap->lock));
 	u64* address=_lookup_virtual_address(pagemap,virtual_address);
 	if (address){
+		lock_shared_to_exclusive(&(pagemap->lock));
 		*address=((*address)&(~VMM_PAGE_ADDRESS_MASK))|(physical_address&VMM_PAGE_ADDRESS_MASK)|VMM_PAGE_FLAG_PRESENT;
+		lock_release_exclusive(&(pagemap->lock));
 	}
-	lock_release_exclusive(&(pagemap->lock));
+	else{
+		lock_release_shared(&(pagemap->lock));
+	}
 }
