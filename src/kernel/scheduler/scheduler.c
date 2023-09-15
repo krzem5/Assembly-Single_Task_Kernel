@@ -11,6 +11,10 @@
 
 
 
+#define THREAD_TIMESLICE_US 5000
+
+
+
 static scheduler_queues_t _scheduler_queues;
 
 
@@ -93,7 +97,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		*state=new_thread->state;
 	}
 	if (scheduler->current_thread){
-		lapic_timer_start(5000);
+		lapic_timer_start(THREAD_TIMESLICE_US);
 		return;
 	}
 	scheduler_task_wait_loop();

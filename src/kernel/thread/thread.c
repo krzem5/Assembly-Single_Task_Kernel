@@ -27,13 +27,28 @@ static void _thread_list_init(process_t* process){
 
 static void _thread_list_add(process_t* process,thread_t* thread){
 	lock_acquire_exclusive(&(process->thread_list.lock));
-	process->thread_list.head=NULL;
 	thread->thread_list_prev=NULL;
 	thread->thread_list_next=process->thread_list.head;
 	if (process->thread_list.head){
 		process->thread_list.head->thread_list_prev=thread;
 	}
 	process->thread_list.head=thread;
+	lock_release_exclusive(&(process->thread_list.lock));
+}
+
+
+
+static void _thread_list_remove(process_t* process,thread_t* thread){
+	lock_acquire_exclusive(&(process->thread_list.lock));
+	if (thread->thread_list_prev){
+		thread->thread_list_prev->thread_list_next=thread->thread_list_next;
+	}
+	else{
+		process->thread_list.head=thread->thread_list_next;
+	}
+	if (thread->thread_list_next){
+		thread->thread_list_next->thread_list_prev=thread->thread_list_prev;
+	}
 	lock_release_exclusive(&(process->thread_list.lock));
 }
 
@@ -98,5 +113,5 @@ void thread_delete(thread_t* thread){
 	ERROR("Unimplemented: thread_delete");
 	// vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
 	// vmm_release_pages(&(process->pagemap),out->stack_bottom,out->stack_size>>PAGE_SIZE_SHIFT);
-	// _thread_list_remove(thread);
+	_thread_list_remove(thread->process,thread);
 }
