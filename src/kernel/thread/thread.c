@@ -101,7 +101,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->state.ds=0x1b;
 	out->state.es=0x1b;
 	out->state.ss=0x1b;
-	out->state.rflags=0x00000202;
+	out->state.rflags=0x0000000202;
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
 	scheduler_enqueue_thread(out);

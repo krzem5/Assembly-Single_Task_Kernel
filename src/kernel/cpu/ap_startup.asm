@@ -80,8 +80,8 @@ _start64:
 	mov gs, ax
 	mov ss, ax
 	;;; Setup stack
-	mov rbp, qword [cpu_stack_top+OFFSET]
-	mov rsp, rbp
+	mov rsp, qword [cpu_stack_top+OFFSET]
+	xor rbp, rbp
 	;;; Start the kernel
 	lea rax, _cpu_init_core
 	jmp rax

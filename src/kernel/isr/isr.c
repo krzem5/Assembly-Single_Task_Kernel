@@ -55,5 +55,13 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rflags = %p",isr_state->rflags);
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
+	if (isr_state->cs==8){
+		u64 rbp=isr_state->rbp;
+		while (rbp){
+			LOG("[%u] %p ~ %p",CPU_DATA->index,rbp);
+			LOG("[%u] %p",CPU_DATA->index,*((u64*)(rbp+8)));
+			rbp=*((u64*)rbp);
+		}
+	}
 	for (;;);
 }
