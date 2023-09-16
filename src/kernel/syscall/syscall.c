@@ -68,7 +68,7 @@ void* _syscall_handlers[]={
 
 
 _Bool syscall_sanatize_user_memory(u64 address,u64 size){
-	if (!address||!size){
+	if (!address||!size||address>=VMM_HIGHER_HALF_ADDRESS_OFFSET||address+size>=VMM_HIGHER_HALF_ADDRESS_OFFSET){
 		return 0;
 	}
 	for (u64 offset=0;offset<size;offset+=PAGE_SIZE){
