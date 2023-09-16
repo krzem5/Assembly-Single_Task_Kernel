@@ -77,9 +77,10 @@ syscall_handler:
 	lea rdi, [rsp+24]
 	cmp rax, qword [_syscall_count]
 	cmovge rax, rbp
-	mov rax, qword [_syscall_handlers+rax*8]
+	sti
 	cld
-	call rax
+	call qword [_syscall_handlers+rax*8]
+	cli
 	rdtsc
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
