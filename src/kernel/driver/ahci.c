@@ -92,24 +92,17 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;
 	}
-	u8* aligned_buffer=NULL;
-	_Bool alignment_required=!!(((u64)buffer)&(PAGE_SIZE-1));
-	if (alignment_required){
-		aligned_buffer=(void*)pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI,0);
-		if (offset&DRIVE_OFFSET_FLAG_WRITE){
-			memcpy(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET,buffer,dbc+1);
-		}
-	}
-	else{
-		aligned_buffer=(void*)vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)buffer);
+	u64 aligned_buffer=pmm_alloc((dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI,0);
+	if (offset&DRIVE_OFFSET_FLAG_WRITE){
+		memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,dbc+1);
 	}
 	u8 cmd_slot=_device_get_command_slot(device);
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
-	command_table->prdt_entry->dba=((u64)aligned_buffer);
-	command_table->prdt_entry->dbau=((u64)aligned_buffer)>>32;
+	command_table->prdt_entry->dba=aligned_buffer;
+	command_table->prdt_entry->dbau=aligned_buffer>>32;
 	command_table->prdt_entry->dbc=dbc;
 	ahci_fis_reg_h2d_t* fis=(ahci_fis_reg_h2d_t*)(command_table->cfis);
 	fis->fis_type=FIS_TYPE_REG_H2D;
@@ -130,12 +123,10 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
-	if (alignment_required){
-		if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
-			memcpy(buffer,aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET,dbc+1);
-		}
-		pmm_dealloc((u64)aligned_buffer,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
+	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
+		memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),dbc+1);
 	}
+	pmm_dealloc(aligned_buffer,(dbc+1)>>9,PMM_COUNTER_DRIVER_AHCI);
 	return (dbc+1)>>9;
 }
 

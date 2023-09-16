@@ -1073,7 +1073,7 @@ void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const partition_config_t* pa
 
 
 
-_Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
+_Bool kfs_format_drive(const drive_t* drive,const void* bootcode,u32 bootcode_length){
 	LOG("Formatting drive '%s' as KFS...",drive->model_number);
 	if (DRIVE_BLOCK_SIZE_SHIFT!=DRIVE_BLOCK_SIZE_SHIFT){
 		WARN("KFS requires block_size to be equal to %u bytes",1<<DRIVE_BLOCK_SIZE_SHIFT);
@@ -1084,9 +1084,9 @@ _Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length){
 		block_count=0xffffffff;
 	}
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
-	if (boot_length){
-		INFO("Writing %v of boot code...",((boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)<<DRIVE_BLOCK_SIZE_SHIFT);
-		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)boot,(boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)!=((boot_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)){
+	if (bootcode_length){
+		INFO("Writing %v of boot code...",((bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)<<DRIVE_BLOCK_SIZE_SHIFT);
+		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)bootcode,(bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)!=((bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)){
 			ERROR("Error writing boot code to drive");
 			return 0;
 		}

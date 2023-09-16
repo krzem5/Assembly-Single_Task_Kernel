@@ -13,7 +13,7 @@ void kfs_load(const drive_t* drive,const partition_config_t* partition_config);
 
 
 
-_Bool kfs_format_drive(const drive_t* drive,const void* boot,u32 boot_length);
+_Bool kfs_format_drive(const drive_t* drive,const void* bootcode,u32 bootcode_length);
 
 
 
