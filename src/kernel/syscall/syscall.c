@@ -21,11 +21,6 @@
 
 
 
-void syscall_empty(syscall_registers_t* regs){
-}
-
-
-
 void syscall_invalid(syscall_registers_t* regs){
 	ERROR("Invalid SYSCALL number: %lu",regs->rax);
 	panic("Invalid SYSCALL",1);
@@ -34,7 +29,7 @@ void syscall_invalid(syscall_registers_t* regs){
 
 
 void* _syscall_handlers[]={
-	[0]=syscall_empty,
+	[0]=syscall_invalid,
 	[1]=syscall_serial_send,
 	[2]=syscall_serial_recv,
 	[3]=syscall_elf_load,

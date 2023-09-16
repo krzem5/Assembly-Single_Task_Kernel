@@ -62,6 +62,10 @@ syscall_handler:
 	push rcx
 	push rbx
 	push rax
+	mov bx, ds
+	push rbx
+	mov bx, es
+	push rbx
 	mov rbx, cr3
 	push rbx
 	mov rbx, qword [gs:24]
@@ -69,12 +73,11 @@ syscall_handler:
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
-	lea rdi, [rsp+8]
+	xor rbp, rbp
+	lea rdi, [rsp+24]
 	cmp rax, qword [_syscall_count]
-	jge ._invalid_syscall
+	cmovge rax, rbp
 	mov rax, qword [_syscall_handlers+rax*8]
-._call_syscall_handler:
-	xor rbx, rbx
 	cld
 	call rax
 	rdtsc
@@ -83,8 +86,9 @@ syscall_handler:
 	lock xor dword [_random_entropy_pool+rdx], eax
 	pop rax
 	mov cr3, rax
-	mov ax, 0x1b
+	pop rax
 	mov ds, ax
+	pop rax
 	mov es, ax
 	pop rax
 	pop rbx
@@ -104,9 +108,6 @@ syscall_handler:
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
-._invalid_syscall:
-	mov rax, syscall_invalid
-	jmp ._call_syscall_handler
 
 
 
