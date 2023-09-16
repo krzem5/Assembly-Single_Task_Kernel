@@ -21,15 +21,10 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 void syscall_memory_stats(syscall_registers_t* regs){
-	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rsi!=sizeof(pmm_counters_t)){
+	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rsi!=sizeof(pmm_counters_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	pmm_get_counters((pmm_counters_t*)address);
+	pmm_get_counters((pmm_counters_t*)(regs->rdi));
 	regs->rax=1;
 }

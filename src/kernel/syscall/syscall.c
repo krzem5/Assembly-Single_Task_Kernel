@@ -72,7 +72,7 @@ void* _syscall_handlers[]={
 
 
 
-u64 syscall_sanatize_user_memory(u64 address,u64 size){
+_Bool syscall_sanatize_user_memory(u64 address,u64 size){
 	if (!address||!size){
 		return 0;
 	}
@@ -81,5 +81,5 @@ u64 syscall_sanatize_user_memory(u64 address,u64 size){
 			return 0;
 		}
 	}
-	return address;
+	return 1;
 }

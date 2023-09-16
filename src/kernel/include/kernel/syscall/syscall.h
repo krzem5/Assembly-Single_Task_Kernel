@@ -24,7 +24,7 @@ typedef struct _SYSCALL_REGISTERS{
 
 
 
-u64 syscall_sanatize_user_memory(u64 address,u64 size);
+_Bool syscall_sanatize_user_memory(u64 address,u64 size);
 
 
 

@@ -7,16 +7,11 @@
 
 
 void syscall_network_layer2_send(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(network_layer2_packet_t)){
+	if (regs->rsi!=sizeof(network_layer2_packet_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	network_layer2_packet_t packet=*((const network_layer2_packet_t*)address);
+	network_layer2_packet_t packet=*((const network_layer2_packet_t*)(regs->rdi));
 	u64 buffer_address=syscall_sanatize_user_memory((u64)(packet.buffer),packet.buffer_length);
 	if (!buffer_address){
 		regs->rax=0;
@@ -29,26 +24,16 @@ void syscall_network_layer2_send(syscall_registers_t* regs){
 
 
 void syscall_network_layer2_poll(syscall_registers_t* regs){
-	if (regs->rsi!=sizeof(network_layer2_packet_t)){
+	if (regs->rsi!=sizeof(network_layer2_packet_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
+	network_layer2_packet_t* packet=(network_layer2_packet_t*)(regs->rdi);
+	if (!syscall_sanatize_user_memory((u64)(packet->buffer),packet->buffer_length)){
 		regs->rax=0;
 		return;
 	}
-	network_layer2_packet_t packet=*((network_layer2_packet_t*)address);
-	void* user_buffer=packet.buffer;
-	u64 buffer_address=syscall_sanatize_user_memory((u64)user_buffer,packet.buffer_length);
-	if (!buffer_address){
-		regs->rax=0;
-		return;
-	}
-	packet.buffer=(void*)buffer_address;
-	regs->rax=network_layer2_poll(&packet,!!regs->rdx);
-	packet.buffer=user_buffer;
-	*((network_layer2_packet_t*)address)=packet;
+	regs->rax=network_layer2_poll(packet,!!regs->rdx);
 }
 
 
@@ -66,12 +51,7 @@ void syscall_network_layer3_device_count(syscall_registers_t* regs){
 
 
 void syscall_network_layer3_device_get(syscall_registers_t* regs){
-	if (regs->rdx!=sizeof(network_layer3_device_t)){
-		regs->rax=0;
-		return;
-	}
-	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
-	if (!address){
+	if (regs->rdx!=sizeof(network_layer3_device_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;
 	}
@@ -80,21 +60,16 @@ void syscall_network_layer3_device_get(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	*((network_layer3_device_t*)address)=*device;
+	*((network_layer3_device_t*)(regs->rsi))=*device;
 	regs->rax=1;
 }
 
 
 
 void syscall_network_layer3_device_delete(syscall_registers_t* regs){
-	if (regs->rsi!=6){
+	if (regs->rsi!=6||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
-		regs->rax=0;
-		return;
-	}
-	regs->rax=network_layer3_delete_device((void*)address);
+	regs->rax=network_layer3_delete_device((void*)(regs->rdi));
 }

@@ -5,20 +5,18 @@
 
 
 void syscall_serial_send(syscall_registers_t* regs){
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
+	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		return;
 	}
-	serial_send((void*)address,regs->rsi);
+	serial_send((const void*)(regs->rdi),regs->rsi);
 }
 
 
 
 void syscall_serial_recv(syscall_registers_t* regs){
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
+	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=serial_recv((void*)address,regs->rsi,regs->rdx);
+	regs->rax=serial_recv((void*)(regs->rdi),regs->rsi,regs->rdx);
 }

@@ -20,31 +20,22 @@ static drive_t* _get_drive(u64 index){
 
 
 void syscall_drive_format(syscall_registers_t* regs){
-	u64 address=0;
-	if (regs->rdx){
-		address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
-		if (!address){
-			regs->rax=0;
-			return;
-		}
+	if (regs->rdx&&!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
 	}
 	const drive_t* drive=_get_drive(regs->rdi);
 	if (!drive){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=kfs_format_drive(drive,(void*)address,regs->rdx);
+	regs->rax=kfs_format_drive(drive,(void*)(regs->rsi),regs->rdx);
 }
 
 
 
 void syscall_drive_stats(syscall_registers_t* regs){
-	if (regs->rdx!=sizeof(drive_stats_t)){
-		regs->rax=0;
-		return;
-	}
-	u64 address=syscall_sanatize_user_memory(regs->rsi,regs->rdx);
-	if (!address){
+	if (regs->rdx!=sizeof(drive_stats_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;
 	}
@@ -54,6 +45,6 @@ void syscall_drive_stats(syscall_registers_t* regs){
 		return;
 	}
 	partition_flush_cache();
-	*((drive_stats_t*)address)=*(drive->stats);
+	*((drive_stats_t*)(regs->rsi))=*(drive->stats);
 	regs->rax=1;
 }

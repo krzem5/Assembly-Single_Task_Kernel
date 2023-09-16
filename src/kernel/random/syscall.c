@@ -6,11 +6,10 @@
 
 
 void syscall_random_generate(syscall_registers_t* regs){
-	u64 address=syscall_sanatize_user_memory(regs->rdi,regs->rsi);
-	if (!address){
+	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
 	}
-	random_generate((void*)address,regs->rsi);
+	random_generate((void*)(regs->rdi),regs->rsi);
 	regs->rax=1;
 }
