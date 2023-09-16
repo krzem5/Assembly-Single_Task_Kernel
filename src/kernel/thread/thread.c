@@ -63,11 +63,6 @@ process_t* process_new(_Bool is_driver){
 	vmm_pagemap_init(&(out->user_pagemap),NULL);
 	vmm_pagemap_init(&(out->kernel_pagemap),&(out->user_pagemap));
 	vmm_memory_map_init(&(out->mmap));
-	out->fs_gs_bases=kmm_alloc(cpu_count*sizeof(process_fs_gs_bases_t));
-	for (u16 i=0;i<cpu_count;i++){
-		(out->fs_gs_bases+i)->fs=0;
-		(out->fs_gs_bases+i)->gs=(u64)(cpu_data+i);
-	}
 	_thread_list_init(out);
 	return out;
 }
@@ -105,7 +100,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->cpu_state.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->cpu_state.kernel_cr3=process->kernel_pagemap.toplevel;
 	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->cpu_state.tss_ist2=((u64)umm_alloc(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->fs_gs_state.fs=0;
+	out->fs_gs_state.gs=0;
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
 	scheduler_enqueue_thread(out);

@@ -62,11 +62,9 @@ void cpu_init(u16 count){
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
-		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->interrupt_stack))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
 		(cpu_data+i)->kernel_cr3=vmm_kernel_pagemap.toplevel;
-		(cpu_data+i)->tss.rsp0=(cpu_data+i)->kernel_rsp;
-		(cpu_data+i)->tss.ist1=((u64)((cpu_data+i)->page_fault_stack))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		(cpu_data+i)->tss.ist2=((u64)((cpu_data+i)->scheduler_stack))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		(cpu_data+i)->tss.ist2=(cpu_data+i)->kernel_rsp;
 		(cpu_data+i)->scheduler=scheduler_new();
 	}
 	cpu_bsp_core_id=msr_get_apic_id();

@@ -29,13 +29,6 @@ typedef u32 tid_t;
 
 
 
-typedef struct _PROCESS_FS_GS_BASES{
-	u64 fs;
-	u64 gs;
-} process_fs_gs_bases_t;
-
-
-
 typedef struct _THREAD_LIST{
 	lock_t lock;
 	struct _THREAD* head;
@@ -50,7 +43,6 @@ typedef struct _PROCESS{
 	vmm_pagemap_t user_pagemap;
 	vmm_pagemap_t kernel_pagemap;
 	vmm_memory_map_t mmap;
-	process_fs_gs_bases_t* fs_gs_bases;
 	thread_list_t thread_list;
 } process_t;
 
@@ -66,6 +58,13 @@ typedef struct _THREAD_CPU_STATE{
 
 
 
+typedef struct _THREAD_FS_GS_STATE{
+	u64 fs;
+	u64 gs;
+} thread_fs_gs_state_t;
+
+
+
 typedef struct _THREAD{
 	tid_t id;
 	lock_t lock;
@@ -75,6 +74,7 @@ typedef struct _THREAD{
 	u64 stack_size;
 	isr_state_t state;
 	therad_cpu_state_t cpu_state;
+	thread_fs_gs_state_t fs_gs_state;
 	thread_priority_t priority;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;

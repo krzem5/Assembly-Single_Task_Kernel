@@ -105,7 +105,6 @@ void scheduler_isr_handler(isr_state_t* state){
 		CPU_DATA->kernel_cr3=new_thread->cpu_state.kernel_cr3;
 		CPU_DATA->tss.rsp0=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->tss.ist1=new_thread->cpu_state.tss_ist1;
-		CPU_DATA->tss.ist2=new_thread->cpu_state.tss_ist2;
 	}
 	if (scheduler->current_thread){
 		lapic_timer_start(THREAD_TIMESLICE_US);

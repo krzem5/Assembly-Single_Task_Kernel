@@ -9,8 +9,8 @@
 
 
 #define CPU_KERNEL_STACK_PAGE_COUNT 8
-#define CPU_SCHEDULER_STACK_PAGE_COUNT 1
 #define CPU_PAGE_FAULT_STACK_PAGE_COUNT 1
+#define CPU_SCHEDULER_STACK_SIZE 512
 
 #define CPU_FLAG_PRESENT 1
 #define CPU_FLAG_ONLINE 2
@@ -29,9 +29,7 @@ typedef struct _CPU_DATA{
 	topology_t topology;
 	tss_t tss;
 	scheduler_t* scheduler;
-	u8 interrupt_stack[CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
-	u8 scheduler_stack[CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
-	u8 page_fault_stack[CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
+	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
 } cpu_data_t;
 
 
