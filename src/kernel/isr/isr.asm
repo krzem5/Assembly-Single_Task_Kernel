@@ -22,11 +22,6 @@ isr_allocate:
 
 
 
-isr_fake_entry_point:
-	ret
-
-
-
 ; isr_wait:
 ; 	mov rsi, rdi
 ; 	and edi, 31
