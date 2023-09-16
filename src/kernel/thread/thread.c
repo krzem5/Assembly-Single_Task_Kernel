@@ -102,6 +102,10 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->state.es=0x1b;
 	out->state.ss=0x1b;
 	out->state.rflags=0x0000000202;
+	out->cpu_state.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->cpu_state.kernel_cr3=process->kernel_pagemap.toplevel;
+	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->cpu_state.tss_ist2=((u64)umm_alloc(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
 	scheduler_enqueue_thread(out);

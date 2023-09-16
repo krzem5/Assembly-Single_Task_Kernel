@@ -56,6 +56,16 @@ typedef struct _PROCESS{
 
 
 
+typedef struct _THREAD_CPU_STATE{
+	u64 kernel_rsp;
+	u64 user_rsp;
+	u64 kernel_cr3;
+	u64 tss_ist1;
+	u64 tss_ist2;
+} therad_cpu_state_t;
+
+
+
 typedef struct _THREAD{
 	tid_t id;
 	lock_t lock;
@@ -64,6 +74,7 @@ typedef struct _THREAD{
 	u64 stack_bottom;
 	u64 stack_size;
 	isr_state_t state;
+	therad_cpu_state_t cpu_state;
 	thread_priority_t priority;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
