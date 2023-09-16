@@ -69,10 +69,6 @@ void KERNEL_NORETURN scheduler_start(void){
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
-	// if (scheduler->current_thread){
-	// 	lapic_timer_start(THREAD_TIMESLICE_US);
-	// 	return;
-	// }
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
 		u8 priority=2;
@@ -103,7 +99,6 @@ void scheduler_isr_handler(isr_state_t* state){
 		CPU_DATA->kernel_rsp=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->user_rsp=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->kernel_cr3=new_thread->cpu_state.kernel_cr3;
-		CPU_DATA->tss.rsp0=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->tss.ist1=new_thread->cpu_state.tss_ist1;
 	}
 	if (scheduler->current_thread){

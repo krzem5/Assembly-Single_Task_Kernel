@@ -22,6 +22,11 @@ isr_allocate:
 
 
 
+isr_fake_entry_point:
+	ret
+
+
+
 ; isr_wait:
 ; 	mov rsi, rdi
 ; 	and edi, 31
@@ -136,10 +141,7 @@ _isr_common_handler:
 	cmp qword [rsp+8], 0x08
 	je ._kernel_exit
 	swapgs
-	cli
-	iretq
 ._kernel_exit:
-	sti
 _isr_entry_255:
 	iretq
 

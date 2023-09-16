@@ -64,6 +64,8 @@ void cpu_init(u16 count){
 		(cpu_data+i)->flags=0;
 		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
 		(cpu_data+i)->kernel_cr3=vmm_kernel_pagemap.toplevel;
+		(cpu_data+i)->tss.rsp0=((u64)((cpu_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
+		(cpu_data+i)->tss.ist1=0;
 		(cpu_data+i)->tss.ist2=(cpu_data+i)->kernel_rsp;
 		(cpu_data+i)->scheduler=scheduler_new();
 	}
