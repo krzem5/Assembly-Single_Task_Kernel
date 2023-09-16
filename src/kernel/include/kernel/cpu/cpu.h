@@ -23,7 +23,7 @@
 typedef struct _CPU_DATA{
 	u8 index;
 	u8 flags;
-	u8 _padding[5];
+	u8 _padding[6];
 	u64 kernel_rsp;
 	u64 user_rsp;
 	u64 kernel_cr3;
