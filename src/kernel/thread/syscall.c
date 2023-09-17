@@ -19,9 +19,9 @@ void syscall_thread_create(syscall_registers_t* regs){
 	}
 	u64 stack_size=regs->r8;
 	if (!stack_size){
-		stack_size=CPU_HEADER_DATA->cpu_data->scheduler->current_thread->stack_size;
+		stack_size=THREAD_DATA->stack_size;
 	}
-	thread_t* thread=thread_new(CPU_HEADER_DATA->cpu_data->scheduler->current_thread->process,regs->rdi,stack_size);
+	thread_t* thread=thread_new(THREAD_DATA->process,regs->rdi,stack_size);
 	thread->gpr_state.rdi=regs->rsi;
 	thread->gpr_state.rsi=regs->rdx;
 	scheduler_enqueue_thread(thread);

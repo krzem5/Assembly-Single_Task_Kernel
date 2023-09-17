@@ -14,6 +14,7 @@
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/thread/syscall.h>
+#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/user/syscall.h>
 #include <kernel/util/util.h>
@@ -72,7 +73,7 @@ _Bool syscall_sanatize_user_memory(u64 address,u64 size){
 		return 0;
 	}
 	for (u64 offset=0;offset<size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(&(CPU_HEADER_DATA->cpu_data->scheduler->current_thread->process->pagemap),address+offset)){
+		if (!vmm_virtual_to_physical(&(THREAD_DATA->process->pagemap),address+offset)){
 			return 0;
 		}
 	}
