@@ -28,10 +28,6 @@ void msr_set_gs_base(void* gs_base,_Bool is_alternate_gs);
 
 
 
-u32 msr_enable_simd(void);
-
-
-
 void msr_enable_rdtsc(void);
 
 

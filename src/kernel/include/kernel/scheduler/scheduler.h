@@ -62,16 +62,4 @@ void KERNEL_NORETURN scheduler_task_wait_loop(void);
 
 
 
-void scheduler_init_fpu(void* fpu_state);
-
-
-
-void scheduler_save_fpu(void* fpu_state);
-
-
-
-void scheduler_restore_fpu(void* fpu_state);
-
-
-
 #endif

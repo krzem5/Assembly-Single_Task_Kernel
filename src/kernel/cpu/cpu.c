@@ -4,6 +4,7 @@
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
+#include <kernel/fpu/fpu.h>
 #include <kernel/gdt/gdt.h>
 #include <kernel/idt/idt.h>
 #include <kernel/log/log.h>
@@ -24,7 +25,6 @@
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
-u32 cpu_fpu_state_size=0;
 
 
 
@@ -37,11 +37,8 @@ void _cpu_init_core(void){
 	msr_set_fs_base(NULL);
 	msr_set_gs_base(cpu_data+index,0);
 	msr_set_gs_base(cpu_data+index,1);
-	INFO("Enabling SIMD...");
-	u32 fpu_size=msr_enable_simd();
-	if (fpu_size>cpu_fpu_state_size){
-		cpu_fpu_state_size=fpu_size;
-	}
+	INFO("Enabling FPU...");
+	fpu_enable();
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
 	INFO("Enabling RDTSC...");
@@ -112,7 +109,6 @@ void cpu_start_all_cores(void){
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();
-	cpu_fpu_state_size=(cpu_fpu_state_size+63)&0xffffffc0;
 }
 
 

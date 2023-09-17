@@ -4,7 +4,6 @@ global msr_get_fs_base
 global msr_get_gs_base
 global msr_set_fs_base
 global msr_set_gs_base
-global msr_enable_simd
 global msr_enable_rdtsc
 global msr_enable_fsgsbase
 section .text
@@ -70,33 +69,6 @@ msr_set_gs_base:
 	add ecx, esi
 	shr rdx, 32
 	wrmsr
-	ret
-
-
-
-msr_enable_simd:
-	push rbx
-	mov rax, cr0
-	and rax, 0xfffffffffffffffb
-	or rax, 0x00000002
-	mov cr0, rax
-	mov rax, cr4
-	or rax, 0x00040600
-	mov cr4, rax
-	mov eax, 1
-	cpuid
-	shr ecx, 26
-	and ecx, 4
-	mov ebx, ecx
-	xor ecx, ecx
-	xgetbv
-	or eax, 0x00000003
-	or eax, ebx
-	xsetbv
-	mov eax, 13
-	cpuid
-	mov eax, ecx
-	pop rbx
 	ret
 
 
