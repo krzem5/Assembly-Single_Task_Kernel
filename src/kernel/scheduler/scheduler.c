@@ -9,6 +9,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "scheduler"
 
 
@@ -85,7 +86,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	if (new_thread){
 		if (scheduler->current_thread){
-			scheduler->current_thread->state=*state;
+			scheduler->current_thread->gpr_state=*state;
 			scheduler->current_thread->cpu_state.user_rsp=CPU_DATA->user_rsp;
 			scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 			scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
@@ -93,7 +94,7 @@ void scheduler_isr_handler(isr_state_t* state){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
 		scheduler->current_thread=new_thread;
-		*state=new_thread->state;
+		*state=new_thread->gpr_state;
 		CPU_DATA->kernel_rsp=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->user_rsp=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->kernel_cr3=new_thread->cpu_state.kernel_cr3;
@@ -101,6 +102,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
+		new_thread->state=THREAD_STATE_EXECUTING;
 	}
 	if (scheduler->current_thread){
 		lapic_timer_start(THREAD_TIMESLICE_US);
@@ -113,6 +115,9 @@ void scheduler_isr_handler(isr_state_t* state){
 
 
 void scheduler_enqueue_thread(thread_t* thread){
+	if (thread->state==THREAD_STATE_QUEUED){
+		panic("Thread already queued",0);
+	}
 	u32 remaining_us=lapic_timer_stop();
 	scheduler_queue_t* queue=NULL;
 	switch (thread->priority){
@@ -122,6 +127,8 @@ void scheduler_enqueue_thread(thread_t* thread){
 		case THREAD_PRIORITY_LOW:
 			queue=_scheduler_queues.priority_queues;
 			break;
+		default:
+			WARN("Unknown thread priority '%u'",thread->priority);
 		case THREAD_PRIORITY_NORMAL:
 			queue=_scheduler_queues.priority_queues+1;
 			break;
@@ -132,10 +139,6 @@ void scheduler_enqueue_thread(thread_t* thread){
 			queue=&(_scheduler_queues.realtime_queue);
 			break;
 	}
-	if (!queue){
-		WARN("Unable to enqueue thread with priority %u",thread->priority);
-		return;
-	}
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_queue_next=thread;
@@ -145,6 +148,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 	}
 	queue->tail=thread;
 	thread->scheduler_queue_next=NULL;
+	thread->state=THREAD_STATE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
 	lapic_timer_start(remaining_us);
 }
@@ -155,6 +159,7 @@ void KERNEL_NORETURN scheduler_dequeue_thread(void){
 	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
 	if (scheduler->current_thread){
+		scheduler->current_thread->state=THREAD_STATE_TERMINATED;
 		thread_delete(scheduler->current_thread);
 		scheduler->current_thread=NULL;
 	}

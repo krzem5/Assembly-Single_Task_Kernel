@@ -90,14 +90,14 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	}
 	vmm_reserve_pages(&(process->user_pagemap),out->stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
 	out->stack_size=stack_size;
-	out->state.rip=rip;
-	out->state.rsp=out->stack_bottom+stack_size;
-	out->state.cr3=process->user_pagemap.toplevel;
-	out->state.cs=0x23;
-	out->state.ds=0x1b;
-	out->state.es=0x1b;
-	out->state.ss=0x1b;
-	out->state.rflags=0x0000000202;
+	out->gpr_state.rip=rip;
+	out->gpr_state.rsp=out->stack_bottom+stack_size;
+	out->gpr_state.cr3=process->user_pagemap.toplevel;
+	out->gpr_state.cs=0x23;
+	out->gpr_state.ds=0x1b;
+	out->gpr_state.es=0x1b;
+	out->gpr_state.ss=0x1b;
+	out->gpr_state.rflags=0x0000000202;
 	out->cpu_state.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->cpu_state.kernel_cr3=process->kernel_pagemap.toplevel;
 	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -106,6 +106,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
 	fpu_init(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
+	out->state=THREAD_STATE_NONE;
 	_thread_list_add(process,out);
 	return out;
 }
@@ -113,6 +114,9 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
+	if (thread->state!=THREAD_STATE_TERMINATED){
+		panic("Running threads cannot be deleted",0);
+	}
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
 	vmm_release_pages(&(process->user_pagemap),thread->stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);

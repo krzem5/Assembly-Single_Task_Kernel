@@ -17,6 +17,6 @@ void __attribute__((noreturn)) thread_stop(void){
 
 
 
-u32 thread_create(void (*func)(void*),void* arg,u64 stack_size){
+u64 thread_create(void (*func)(void*),void* arg,u64 stack_size){
 	return _syscall_thread_create((u64)_thread_bootstrap,(u64)func,(u64)arg,stack_size);
 }

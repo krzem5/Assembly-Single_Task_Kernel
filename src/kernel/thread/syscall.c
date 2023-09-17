@@ -22,8 +22,8 @@ void syscall_thread_create(syscall_registers_t* regs){
 		stack_size=CPU_DATA->scheduler->current_thread->stack_size;
 	}
 	thread_t* thread=thread_new(CPU_DATA->scheduler->current_thread->process,regs->rdi,stack_size);
-	thread->state.rdi=regs->rsi;
-	thread->state.rsi=regs->rdx;
+	thread->gpr_state.rdi=regs->rsi;
+	thread->gpr_state.rsi=regs->rdx;
 	scheduler_enqueue_thread(thread);
 	regs->rax=thread->id;
 }

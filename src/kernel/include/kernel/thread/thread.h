@@ -15,17 +15,26 @@
 #define THREAD_PRIORITY_HIGH 4
 #define THREAD_PRIORITY_REALTIME 5
 
+#define THREAD_STATE_NONE 0
+#define THREAD_STATE_QUEUED 1
+#define THREAD_STATE_EXECUTING 2
+#define THREAD_STATE_TERMINATED 3
+
 
 
 typedef u8 thread_priority_t;
 
 
 
-typedef u32 pid_t;
+typedef u8 thread_state_t;
 
 
 
-typedef u32 tid_t;
+typedef u64 pid_t;
+
+
+
+typedef u64 tid_t;
 
 
 
@@ -72,11 +81,12 @@ typedef struct _THREAD{
 	vmm_pagemap_t* pagemap;
 	u64 stack_bottom;
 	u64 stack_size;
-	isr_state_t state;
+	isr_state_t gpr_state;
 	therad_cpu_state_t cpu_state;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
 	thread_priority_t priority;
+	thread_state_t state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_queue_next;
