@@ -2,7 +2,6 @@
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/gdt/gdt.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -17,20 +16,26 @@
 #define CPU_FLAG_PRESENT 1
 #define CPU_FLAG_ONLINE 2
 
-#define CPU_DATA ((volatile __seg_gs cpu_data_t*)NULL)
+#define CPU_HEADER_DATA ((volatile __seg_gs cpu_header_t*)NULL)
 
 
 
-typedef struct _CPU_DATA{
-	u8 index;
-	u8 flags;
-	u8 _padding[6];
+typedef struct _CPU_HEADER{
+	struct _CPU_HEADER_DATA* cpu_data;
 	u64 kernel_rsp;
 	u64 user_rsp;
 	u64 kernel_cr3;
+} cpu_header_t;
+
+
+
+typedef struct _CPU_HEADER_DATA{
+	cpu_header_t header;
+	u8 index;
+	u8 flags;
 	topology_t topology;
 	tss_t tss;
-	scheduler_t* scheduler;
+	struct _SCHEDULER* scheduler;
 	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
 	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
 } cpu_data_t;
@@ -59,4 +64,5 @@ void cpu_start_all_cores(void);
 
 
 
+#include <kernel/scheduler/scheduler.h>
 #endif

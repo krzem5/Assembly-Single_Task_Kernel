@@ -10,14 +10,14 @@
 
 void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14){
-		scheduler_t* scheduler=CPU_DATA->scheduler;
+		scheduler_t* scheduler=CPU_HEADER_DATA->cpu_data->scheduler;
 		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
 		if (!(isr_state->error&1)&&scheduler&&scheduler->current_thread&&vmm_virtual_to_physical(&(scheduler->current_thread->process->user_pagemap),address)==VMM_SHADOW_PAGE_ADDRESS){
 			vmm_update_address_and_set_present(&(scheduler->current_thread->process->user_pagemap),pmm_alloc_zero(1,PMM_COUNTER_USER,0),address);
 			return;
 		}
 		ERROR("Page Fault");
-		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_DATA->index);
+		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_HEADER_DATA->cpu_data->index);
 	}
 	else if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
@@ -58,8 +58,8 @@ void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->cs==8){
 		u64 rbp=isr_state->rbp;
 		while (rbp){
-			LOG("[%u] %p ~ %p",CPU_DATA->index,rbp);
-			LOG("[%u] %p",CPU_DATA->index,*((u64*)(rbp+8)));
+			LOG("[%u] %p ~ %p",CPU_HEADER_DATA->cpu_data->index,rbp);
+			LOG("[%u] %p",CPU_HEADER_DATA->cpu_data->index,*((u64*)(rbp+8)));
 			rbp=*((u64*)rbp);
 		}
 	}

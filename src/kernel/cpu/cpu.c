@@ -49,7 +49,7 @@ void _cpu_init_core(void){
 	lapic_enable();
 	INFO("Calcularing topology...");
 	topology_compute(index,&((cpu_data+index)->topology));
-	CPU_DATA->flags|=CPU_FLAG_ONLINE;
+	CPU_HEADER_DATA->cpu_data->flags|=CPU_FLAG_ONLINE;
 	if (index!=cpu_bsp_core_id){
 		scheduler_start();
 	}
@@ -63,13 +63,14 @@ void cpu_init(u16 count){
 	cpu_count=count;
 	cpu_data=umm_alloc(count*sizeof(cpu_data_t));
 	for (u16 i=0;i<count;i++){
+		(cpu_data+i)->header.cpu_data=cpu_data+i;
+		(cpu_data+i)->header.kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
+		(cpu_data+i)->header.kernel_cr3=vmm_kernel_pagemap.toplevel;
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
-		(cpu_data+i)->kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
-		(cpu_data+i)->kernel_cr3=vmm_kernel_pagemap.toplevel;
 		(cpu_data+i)->tss.rsp0=((u64)((cpu_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
 		(cpu_data+i)->tss.ist1=0;
-		(cpu_data+i)->tss.ist2=(cpu_data+i)->kernel_rsp;
+		(cpu_data+i)->tss.ist2=(cpu_data+i)->header.kernel_rsp;
 		(cpu_data+i)->scheduler=scheduler_new();
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
@@ -97,7 +98,7 @@ void cpu_start_all_cores(void){
 		if (i==cpu_bsp_core_id){
 			continue;
 		}
-		cpu_ap_startup_set_stack_top((cpu_data+i)->kernel_rsp);
+		cpu_ap_startup_set_stack_top((cpu_data+i)->header.kernel_rsp);
 		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
 		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
 		COUNTER_SPINLOOP(0xfff);

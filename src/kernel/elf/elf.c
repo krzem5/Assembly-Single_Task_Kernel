@@ -5,6 +5,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/vfs/vfs.h>

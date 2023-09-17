@@ -72,7 +72,7 @@ _Bool syscall_sanatize_user_memory(u64 address,u64 size){
 		return 0;
 	}
 	for (u64 offset=0;offset<size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(&(CPU_DATA->scheduler->current_thread->process->user_pagemap),address+offset)){
+		if (!vmm_virtual_to_physical(&(CPU_HEADER_DATA->cpu_data->scheduler->current_thread->process->user_pagemap),address+offset)){
 			return 0;
 		}
 	}

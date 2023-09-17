@@ -1,5 +1,6 @@
 #ifndef _KERNEL_THREAD_THREAD_H_
 #define _KERNEL_THREAD_THREAD_H_ 1
+#include <kernel/cpu/cpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
@@ -19,6 +20,8 @@
 #define THREAD_STATE_QUEUED 1
 #define THREAD_STATE_EXECUTING 2
 #define THREAD_STATE_TERMINATED 3
+
+#define THREAD_DATA ((volatile __seg_gs thread_t*)NULL)
 
 
 
@@ -75,6 +78,7 @@ typedef struct _THREAD_FS_GS_STATE{
 
 
 typedef struct _THREAD{
+	cpu_header_t header;
 	tid_t id;
 	lock_t lock;
 	process_t* process;
