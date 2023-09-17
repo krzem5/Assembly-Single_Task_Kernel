@@ -51,6 +51,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	serial_init_irq();
 	user_data_generate();
 	scheduler_init();
-	elf_load("/kernel/loader.elf");
 	cpu_start_all_cores();
+	elf_load("/kernel/loader.elf");
+	scheduler_start();
 }

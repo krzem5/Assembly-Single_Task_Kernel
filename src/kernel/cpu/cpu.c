@@ -24,10 +24,11 @@
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
+u32 cpu_fpu_area_size=0;
 
 
 
-void KERNEL_NORETURN _cpu_init_core(void){
+void _cpu_init_core(void){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_data+index)->topology.domain,(cpu_data+index)->topology.chip,(cpu_data+index)->topology.core,(cpu_data+index)->topology.thread);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
@@ -37,7 +38,10 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	msr_set_gs_base(cpu_data+index,0);
 	msr_set_gs_base(cpu_data+index,1);
 	INFO("Enabling SIMD...");
-	msr_enable_simd();
+	u32 fpu_size=msr_enable_simd();
+	if (fpu_size>cpu_fpu_area_size){
+		cpu_fpu_area_size=fpu_size;
+	}
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
 	INFO("Enabling RDTSC...");
@@ -49,7 +53,9 @@ void KERNEL_NORETURN _cpu_init_core(void){
 	INFO("Calcularing topology...");
 	topology_compute(index,&((cpu_data+index)->topology));
 	CPU_DATA->flags|=CPU_FLAG_ONLINE;
-	scheduler_start();
+	if (index!=cpu_bsp_core_id){
+		scheduler_start();
+	}
 }
 
 
@@ -106,6 +112,7 @@ void cpu_start_all_cores(void){
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();
+	cpu_fpu_area_size=(cpu_fpu_area_size+63)&0xffffffc0;
 }
 
 

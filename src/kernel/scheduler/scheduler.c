@@ -4,6 +4,7 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/msr/msr.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
@@ -69,6 +70,10 @@ void KERNEL_NORETURN scheduler_start(void){
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
+	if (scheduler->current_thread){
+		lapic_timer_start(THREAD_TIMESLICE_US);
+		return;
+	}
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
 		u8 priority=2;
@@ -92,6 +97,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		if (scheduler->current_thread){
 			scheduler->current_thread->state=*state;
 			scheduler->current_thread->cpu_state.user_rsp=CPU_DATA->user_rsp;
+			scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
+			scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
+			scheduler_save_fpu(scheduler->current_thread->fpu_state);
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
 		scheduler->current_thread=new_thread;
@@ -100,6 +108,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		CPU_DATA->user_rsp=new_thread->cpu_state.kernel_rsp;
 		CPU_DATA->kernel_cr3=new_thread->cpu_state.kernel_cr3;
 		CPU_DATA->tss.ist1=new_thread->cpu_state.tss_ist1;
+		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
+		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
+		scheduler_restore_fpu(new_thread->fpu_state);
 	}
 	if (scheduler->current_thread){
 		lapic_timer_start(THREAD_TIMESLICE_US);

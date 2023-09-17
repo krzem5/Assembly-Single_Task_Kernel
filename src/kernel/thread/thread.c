@@ -102,6 +102,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
+	out->fpu_state=kmm_alloc_aligned(cpu_fpu_area_size,64);
+	scheduler_init_fpu(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
 	scheduler_enqueue_thread(out);

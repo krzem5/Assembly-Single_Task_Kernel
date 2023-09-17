@@ -12,6 +12,14 @@ void msr_enable_apic(void);
 
 
 
+void* msr_get_fs_base(void);
+
+
+
+void* msr_get_gs_base(_Bool is_alternate_gs);
+
+
+
 void msr_set_fs_base(void* fs_base);
 
 
@@ -20,7 +28,7 @@ void msr_set_gs_base(void* gs_base,_Bool is_alternate_gs);
 
 
 
-void msr_enable_simd(void);
+u32 msr_enable_simd(void);
 
 
 

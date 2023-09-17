@@ -12,6 +12,10 @@ void* kmm_alloc(u32 size);
 
 
 
+void* kmm_alloc_aligned(u32 size,u32 alignment);
+
+
+
 void* kmm_alloc_buffer(void);
 
 

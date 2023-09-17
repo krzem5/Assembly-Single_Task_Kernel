@@ -40,6 +40,7 @@ typedef struct _CPU_DATA{
 extern cpu_data_t* cpu_data;
 extern u16 cpu_count;
 extern u8 cpu_bsp_core_id;
+extern u32 cpu_fpu_area_size;
 
 
 
@@ -55,7 +56,7 @@ void cpu_register_core(u8 apic_id);
 
 
 
-void KERNEL_NORETURN cpu_start_all_cores(void);
+void cpu_start_all_cores(void);
 
 
 
