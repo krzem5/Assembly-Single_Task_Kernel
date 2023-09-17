@@ -60,8 +60,6 @@ _isr_common_handler:
 	push rax
 	mov rax, cr3
 	push rax
-	mov rax, qword [gs:24]
-	mov cr3, rax
 	mov ax, 0x10
 	mov ds, ax
 	mov es, ax

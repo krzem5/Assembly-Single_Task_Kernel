@@ -62,19 +62,11 @@ syscall_handler:
 	push rcx
 	push rbx
 	push rax
-	mov bx, ds
-	push rbx
-	mov bx, es
-	push rbx
-	mov rbx, cr3
-	push rbx
-	mov rbx, qword [gs:24]
-	mov cr3, rbx
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
-	lea rdi, [rsp+24]
+	mov rdi, rsp
 	cmp rax, qword [_syscall_count]
 	cmovge rax, rbp
 	sti
@@ -85,11 +77,8 @@ syscall_handler:
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
-	pop rax
-	mov cr3, rax
-	pop rax
+	mov ax, 0x1b
 	mov ds, ax
-	pop rax
 	mov es, ax
 	pop rax
 	pop rbx
