@@ -6,7 +6,7 @@
 
 
 void syscall_thread_stop(syscall_registers_t* regs){
-	scheduler_dequeue();
+	scheduler_dequeue_thread();
 }
 
 

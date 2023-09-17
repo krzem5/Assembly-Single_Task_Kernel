@@ -159,7 +159,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 
 
-void KERNEL_NORETURN scheduler_dequeue(void){
+void KERNEL_NORETURN scheduler_dequeue_thread(void){
 	scheduler_t* scheduler=CPU_DATA->scheduler;
 	if (scheduler->current_thread){
 		thread_delete(scheduler->current_thread);
