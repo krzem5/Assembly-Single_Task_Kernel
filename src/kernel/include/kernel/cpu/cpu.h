@@ -24,7 +24,6 @@ typedef struct _CPU_HEADER{
 	struct _CPU_HEADER_DATA* cpu_data;
 	u64 kernel_rsp;
 	u64 user_rsp;
-	u64 kernel_cr3;
 } cpu_header_t;
 
 

@@ -31,7 +31,6 @@ void _isr_handler(isr_state_t* isr_state){
 		ERROR("Crash interrupt");
 	}
 	WARN("ISR %u:",isr_state->isr);
-	WARN("cr3    = %p",isr_state->cr3);
 	WARN("es     = %p",isr_state->es);
 	WARN("ds     = %p",isr_state->ds);
 	WARN("rax    = %p",isr_state->rax);

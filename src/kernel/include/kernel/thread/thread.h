@@ -59,16 +59,6 @@ typedef struct _PROCESS{
 
 
 
-typedef struct _THREAD_CPU_STATE{
-	u64 kernel_rsp;
-	u64 user_rsp;
-	u64 kernel_cr3;
-	u64 tss_ist1;
-	u64 tss_ist2;
-} therad_cpu_state_t;
-
-
-
 typedef struct _THREAD_FS_GS_STATE{
 	u64 fs;
 	u64 gs;
@@ -85,7 +75,7 @@ typedef struct _THREAD{
 	u64 stack_bottom;
 	u64 stack_size;
 	isr_state_t gpr_state;
-	therad_cpu_state_t cpu_state;
+	u64 pf_stack;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
 	thread_priority_t priority;

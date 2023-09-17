@@ -79,6 +79,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
+	out->header.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->header.user_rsp=0;
 	out->id=_thread_next_tid;
 	_thread_next_tid++;
 	lock_init(&(out->lock));
@@ -91,15 +93,12 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->stack_size=stack_size;
 	out->gpr_state.rip=rip;
 	out->gpr_state.rsp=out->stack_bottom+stack_size;
-	out->gpr_state.cr3=process->pagemap.toplevel;
 	out->gpr_state.cs=0x23;
 	out->gpr_state.ds=0x1b;
 	out->gpr_state.es=0x1b;
 	out->gpr_state.ss=0x1b;
 	out->gpr_state.rflags=0x0000000202;
-	out->cpu_state.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->cpu_state.kernel_cr3=process->pagemap.toplevel;
-	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->pf_stack=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);

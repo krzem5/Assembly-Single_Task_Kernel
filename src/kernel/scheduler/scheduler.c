@@ -87,7 +87,6 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (new_thread){
 		if (scheduler->current_thread){
 			scheduler->current_thread->gpr_state=*state;
-			scheduler->current_thread->cpu_state.user_rsp=CPU_HEADER_DATA->user_rsp;
 			scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 			scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
 			fpu_save(scheduler->current_thread->fpu_state);
@@ -97,13 +96,11 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base(new_thread,0);
 		scheduler->current_thread=new_thread;
 		*state=new_thread->gpr_state;
-		CPU_HEADER_DATA->kernel_rsp=new_thread->cpu_state.kernel_rsp;
-		CPU_HEADER_DATA->user_rsp=new_thread->cpu_state.kernel_rsp;
-		CPU_HEADER_DATA->kernel_cr3=new_thread->cpu_state.kernel_cr3;
-		CPU_HEADER_DATA->cpu_data->tss.ist1=new_thread->cpu_state.tss_ist1;
+		CPU_HEADER_DATA->cpu_data->tss.ist1=new_thread->pf_stack;
 		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
+		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
 		new_thread->state=THREAD_STATE_EXECUTING;
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);

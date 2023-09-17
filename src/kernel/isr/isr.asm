@@ -58,8 +58,6 @@ _isr_common_handler:
 	push rax
 	mov ax, es
 	push rax
-	mov rax, cr3
-	push rax
 	mov ax, 0x10
 	mov ds, ax
 	mov es, ax
@@ -75,8 +73,6 @@ _isr_common_handler:
 	lock xadd qword [_random_entropy_pool_length], rdx
 	and rdx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
-	pop rax
-	mov cr3, rax
 	pop rax
 	mov es, ax
 	pop rax
