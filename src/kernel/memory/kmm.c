@@ -18,7 +18,9 @@ static _Bool KERNEL_CORE_DATA _kmm_buffer_not_ended=0;
 
 static void KERNEL_CORE_CODE _resize_stack(void){
 	while (_kmm_top>_kmm_max_top){
-		vmm_map_page(&vmm_kernel_pagemap,pmm_alloc(1,PMM_COUNTER_KMM,0),_kmm_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		u64 page=pmm_alloc(1,PMM_COUNTER_KMM,0);
+		vmm_map_page(&vmm_kernel_pagemap,page,_kmm_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		vmm_map_page(&vmm_shared_pagemap,page,_kmm_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		_kmm_max_top+=PAGE_SIZE;
 	}
 }
