@@ -93,6 +93,10 @@ void scheduler_isr_handler(isr_state_t* state){
 			fpu_save(scheduler->current_thread->fpu_state);
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
+		new_thread->header.cpu_data=CPU_HEADER_DATA->cpu_data;
+		// new_thread->header=*CPU_HEADER_DATA;
+		msr_set_gs_base(new_thread,0);
+		WARN("%u",__LINE__);
 		scheduler->current_thread=new_thread;
 		*state=new_thread->gpr_state;
 		CPU_HEADER_DATA->kernel_rsp=new_thread->cpu_state.kernel_rsp;
@@ -103,16 +107,19 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
 		new_thread->state=THREAD_STATE_EXECUTING;
+		WARN("%u",__LINE__);
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
 		scheduler_task_wait_loop();
 	}
+	// WARN("%u",__LINE__);
 }
 
 
 
 void scheduler_enqueue_thread(thread_t* thread){
+	WARN("%u",__LINE__);
 	if (thread->state==THREAD_STATE_QUEUED){
 		panic("Thread already queued",0);
 	}
@@ -137,6 +144,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 			queue=&(_scheduler_queues.realtime_queue);
 			break;
 	}
+	WARN("%u",__LINE__);
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_queue_next=thread;
@@ -149,6 +157,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->state=THREAD_STATE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
 	lapic_timer_start(remaining_us);
+	WARN("%u",__LINE__);
 }
 
 
