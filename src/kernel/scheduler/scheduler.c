@@ -104,12 +104,10 @@ void scheduler_isr_handler(isr_state_t* state){
 		fpu_restore(new_thread->fpu_state);
 		new_thread->state=THREAD_STATE_EXECUTING;
 	}
-	if (scheduler->current_thread){
-		lapic_timer_start(THREAD_TIMESLICE_US);
-		return;
-	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
-	scheduler_task_wait_loop();
+	if (!scheduler->current_thread){
+		scheduler_task_wait_loop();
+	}
 }
 
 
