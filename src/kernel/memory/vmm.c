@@ -162,23 +162,12 @@ void KERNEL_CORE_CODE vmm_init(void){
 
 
 
-void vmm_pagemap_init(vmm_pagemap_t* pagemap,vmm_pagemap_t* user_pagemap){
+void vmm_pagemap_init(vmm_pagemap_t* pagemap){
 	pagemap->toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,0);
-	pagemap->ownership_limit=(user_pagemap?0:256);
+	pagemap->ownership_limit=256;
 	lock_init(&(pagemap->lock));
-	if (user_pagemap){
-		for (u16 i=0;i<256;i++){
-			_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(user_pagemap->toplevel))->entries[i];
-		}
-	}
-	else{
-		for (u16 i=0;i<256;i++){
-			_get_table(&(pagemap->toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
-		}
-	}
-	u64* higher_half_pagemap=(user_pagemap?&(vmm_kernel_pagemap.toplevel):&(vmm_kernel_pagemap.toplevel));
 	for (u16 i=256;i<512;i++){
-		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(higher_half_pagemap)->entries[i];
+		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i];
 	}
 }
 

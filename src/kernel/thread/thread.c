@@ -61,7 +61,7 @@ process_t* process_new(_Bool is_driver){
 	_thread_next_pid++;
 	lock_init(&(out->lock));
 	out->is_driver=is_driver;
-	vmm_pagemap_init(&(out->pagemap),NULL);
+	vmm_pagemap_init(&(out->pagemap));
 	vmm_memory_map_init(&(out->mmap));
 	_thread_list_init(out);
 	return out;
