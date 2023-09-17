@@ -33,7 +33,7 @@ void lapic_timer_start(u32 time_us);
 
 
 
-void lapic_timer_stop(void);
+u32 lapic_timer_stop(void);
 
 
 

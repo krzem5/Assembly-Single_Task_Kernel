@@ -2,12 +2,13 @@
 #include <cwd.h>
 #include <input.h>
 #include <user/clock.h>
-#include <user/cpu.h>
+#include <user/io.h>
 #include <user/network.h>
+#include <user/thread.h>
 
 
 
-static void _network_thread(void){
+static void _network_thread(void* arg){
 	u8 buffer[64];
 	network_packet_t packet;
 	while (1){
@@ -21,8 +22,8 @@ static void _network_thread(void){
 
 void main(void){
 	clock_init();
-	(void)_network_thread;// cpu_core_start((cpu_bsp_id?0:1),_network_thread,NULL);
 	cwd_init();
+	thread_create(_network_thread,NULL,0);
 	while (1){
 		input_get();
 		command_execute(input);

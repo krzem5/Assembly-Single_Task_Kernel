@@ -99,7 +99,7 @@ _Bool elf_load(const char* path){
 			goto _error;
 		}
 	}
-	thread_new(process,header.e_entry,0x200000);
+	scheduler_enqueue_thread(thread_new(process,header.e_entry,0x200000));
 	fd_clear();
 	return 1;
 _error:

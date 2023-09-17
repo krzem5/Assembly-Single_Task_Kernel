@@ -107,7 +107,6 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	fpu_init(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
 	_thread_list_add(process,out);
-	scheduler_enqueue_thread(out);
 	return out;
 }
 

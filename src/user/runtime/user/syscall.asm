@@ -45,4 +45,4 @@ DECL_SYSCALL random_generate, 28, 2
 DECL_SYSCALL coverage_dump_data, 29, 0
 DECL_SYSCALL user_data_pointer, 30, 0
 DECL_SYSCALL thread_stop, 31, 0
-DECL_SYSCALL thread_create, 32, 1
+DECL_SYSCALL thread_create, 32, 4

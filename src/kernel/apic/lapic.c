@@ -63,14 +63,15 @@ void lapic_enable(void){
 	_lapic_registers[REGISTER_ESR]=0;
 	_lapic_registers[REGISTER_TPR]=0;
 	LOG("Calibrating lAPIC timer...");
-	lapic_timer_stop();
+	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=0x00010000|LAPIC_SPURIOUS_VECTOR;
 	_lapic_registers[REGISTER_TMRDIV]=0;
 	u64 start_time=clock_get_time();
 	_lapic_registers[REGISTER_TMRINITCNT]=TIMER_CALIBRATION_TICKS;
 	SPINLOOP(_lapic_registers[REGISTER_TMRCURRCNT]);
 	u64 end_time=clock_get_time();
-	lapic_timer_stop();
+	_lapic_registers[REGISTER_TMRINITCNT]=0;
+	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
 	_lapic_timer_frequencies[CPU_DATA->index]=TIMER_CALIBRATION_TICKS/((end_time-start_time+500)/1000);
 	INFO("Timer frequency: %u ticks/us",_lapic_timer_frequencies[CPU_DATA->index]);
 }
@@ -86,7 +87,9 @@ void lapic_timer_start(u32 time_us){
 
 
 
-void lapic_timer_stop(void){
+u32 lapic_timer_stop(void){
+	u32 out=_lapic_registers[REGISTER_TMRCURRCNT];
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
+	return (out?out/_lapic_timer_frequencies[CPU_DATA->index]:0);
 }

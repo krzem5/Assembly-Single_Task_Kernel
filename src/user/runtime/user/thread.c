@@ -1,5 +1,13 @@
 #include <user/syscall.h>
+#include <user/thread.h>
 #include <user/types.h>
+
+
+
+static void _thread_bootstrap(void (*func)(void*),void* arg){
+	func(arg);
+	thread_stop();
+}
 
 
 
@@ -9,6 +17,6 @@ void __attribute__((noreturn)) thread_stop(void){
 
 
 
-u32 __attribute__((returns_twice)) thread_create(u32 stack_size){
-	return _syscall_thread_create(stack_size);
+u32 thread_create(void (*func)(void*),void* arg,u64 stack_size){
+	return _syscall_thread_create((u64)_thread_bootstrap,(u64)func,(u64)arg,stack_size);
 }

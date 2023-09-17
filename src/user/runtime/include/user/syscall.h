@@ -132,7 +132,7 @@ void __attribute__((noreturn)) _syscall_thread_stop(void);
 
 
 
-u32 __attribute__((returns_twice)) _syscall_thread_create(u32 stack_size);
+u32 _syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size);
 
 
 

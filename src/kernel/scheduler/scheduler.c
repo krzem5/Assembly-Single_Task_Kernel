@@ -117,12 +117,14 @@ void scheduler_isr_handler(isr_state_t* state){
 		lapic_timer_start(THREAD_TIMESLICE_US);
 		return;
 	}
+	lapic_timer_start(THREAD_TIMESLICE_US);
 	scheduler_task_wait_loop();
 }
 
 
 
 void scheduler_enqueue_thread(thread_t* thread){
+	u32 remaining_us=lapic_timer_stop();
 	scheduler_queue_t* queue=NULL;
 	switch (thread->priority){
 		case THREAD_PRIORITY_BACKGROUND:
@@ -155,11 +157,13 @@ void scheduler_enqueue_thread(thread_t* thread){
 	queue->tail=thread;
 	thread->scheduler_queue_next=NULL;
 	lock_release_exclusive(&(queue->lock));
+	lapic_timer_start(remaining_us);
 }
 
 
 
 void KERNEL_NORETURN scheduler_dequeue_thread(void){
+	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;
 	if (scheduler->current_thread){
 		thread_delete(scheduler->current_thread);

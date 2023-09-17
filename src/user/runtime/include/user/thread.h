@@ -20,7 +20,7 @@ void __attribute__((noreturn)) thread_stop(void);
 
 
 
-u32 __attribute__((returns_twice)) thread_create(u32 stack_size);
+u32 thread_create(void (*func)(void*),void* arg,u64 stack_size);
 
 
 
