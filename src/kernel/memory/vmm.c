@@ -143,7 +143,7 @@ void KERNEL_CORE_CODE vmm_init(void){
 	lock_init(&(vmm_shared_pagemap.lock));
 	INFO_CORE("Shared top-level page map allocated at %p",vmm_shared_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
-		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
 		_get_table(&(vmm_shared_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
 	}
 	u64 kernel_length=pmm_align_up_address(kernel_get_bss_end());
@@ -182,7 +182,7 @@ void vmm_pagemap_init(vmm_pagemap_t* pagemap,vmm_pagemap_t* user_pagemap){
 			_get_table(&(pagemap->toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 		}
 	}
-	u64* higher_half_pagemap=(user_pagemap?&(vmm_kernel_pagemap.toplevel):&(vmm_shared_pagemap.toplevel));
+	u64* higher_half_pagemap=(user_pagemap?&(vmm_kernel_pagemap.toplevel):&(vmm_kernel_pagemap.toplevel));
 	for (u16 i=256;i<512;i++){
 		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(higher_half_pagemap)->entries[i];
 	}
