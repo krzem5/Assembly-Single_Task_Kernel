@@ -5,10 +5,6 @@
 
 
 
-void umm_init(void);
-
-
-
 void* umm_alloc(u32 size);
 
 

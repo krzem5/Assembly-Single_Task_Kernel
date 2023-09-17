@@ -61,8 +61,7 @@ process_t* process_new(_Bool is_driver){
 	_thread_next_pid++;
 	lock_init(&(out->lock));
 	out->is_driver=is_driver;
-	vmm_pagemap_init(&(out->user_pagemap),NULL);
-	vmm_pagemap_init(&(out->kernel_pagemap),&(out->user_pagemap));
+	vmm_pagemap_init(&(out->pagemap),NULL);
 	vmm_memory_map_init(&(out->mmap));
 	_thread_list_init(out);
 	return out;
@@ -88,18 +87,18 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	if (!out->stack_bottom){
 		panic("Unable to reserve thread stack",0);
 	}
-	vmm_reserve_pages(&(process->user_pagemap),out->stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
+	vmm_reserve_pages(&(process->pagemap),out->stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
 	out->stack_size=stack_size;
 	out->gpr_state.rip=rip;
 	out->gpr_state.rsp=out->stack_bottom+stack_size;
-	out->gpr_state.cr3=process->user_pagemap.toplevel;
+	out->gpr_state.cr3=process->pagemap.toplevel;
 	out->gpr_state.cs=0x23;
 	out->gpr_state.ds=0x1b;
 	out->gpr_state.es=0x1b;
 	out->gpr_state.ss=0x1b;
 	out->gpr_state.rflags=0x0000000202;
 	out->cpu_state.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->cpu_state.kernel_cr3=process->kernel_pagemap.toplevel;
+	out->cpu_state.kernel_cr3=process->pagemap.toplevel;
 	out->cpu_state.tss_ist1=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
@@ -119,7 +118,7 @@ void thread_delete(thread_t* thread){
 	}
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
-	vmm_release_pages(&(process->user_pagemap),thread->stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
+	vmm_release_pages(&(process->pagemap),thread->stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
 	_thread_list_remove(process,thread);
 	ERROR("Unimplemented: thread_delete");
 	if (!process->thread_list.head){

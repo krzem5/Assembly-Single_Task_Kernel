@@ -91,7 +91,7 @@ _Bool elf_load(const char* path){
 			ERROR("Unable to reserve process memory");
 			goto _error;
 		}
-		vmm_map_pages(&(process->user_pagemap),pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
+		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
 		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
 		if (end_address>highest_address){
 			highest_address=end_address;

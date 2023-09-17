@@ -40,7 +40,6 @@ typedef struct _VMM_PAGEMAP{
 
 
 extern vmm_pagemap_t vmm_kernel_pagemap;
-extern vmm_pagemap_t vmm_shared_pagemap;
 
 
 
