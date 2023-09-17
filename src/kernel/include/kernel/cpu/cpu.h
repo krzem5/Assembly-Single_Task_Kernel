@@ -31,8 +31,8 @@ typedef struct _CPU_DATA{
 	topology_t topology;
 	tss_t tss;
 	scheduler_t* scheduler;
-	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
 	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
+	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
 } cpu_data_t;
 
 
@@ -40,7 +40,7 @@ typedef struct _CPU_DATA{
 extern cpu_data_t* cpu_data;
 extern u16 cpu_count;
 extern u8 cpu_bsp_core_id;
-extern u32 cpu_fpu_area_size;
+extern u32 cpu_fpu_state_size;
 
 
 

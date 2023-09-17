@@ -2,6 +2,8 @@ global scheduler_task_wait_loop
 global scheduler_init_fpu
 global scheduler_save_fpu
 global scheduler_restore_fpu
+extern cpu_fpu_state_size
+extern memset
 section .text
 
 
@@ -15,11 +17,15 @@ scheduler_task_wait_loop:
 
 
 scheduler_init_fpu:
-	sub rsp, 8
+	push rdi
+	xor esi, esi
+	mov edx, dword [cpu_fpu_state_size]
+	call memset
+	mov rdi, qword [rsp]
 	vzeroall
-	mov dword [rsp], 0b1100111111
+	mov dword [rsp], 0x37f
 	fldcw [rsp]
-	mov dword [rsp], 0b1111110000000
+	mov dword [rsp], 0x1f80
 	ldmxcsr [rsp]
 	xor eax, eax
 	sub eax, 1
@@ -31,7 +37,6 @@ scheduler_init_fpu:
 
 
 scheduler_save_fpu:
-	jmp $
 	xor eax, eax
 	sub eax, 1
 	mov edx, eax

@@ -24,7 +24,7 @@
 cpu_data_t* cpu_data;
 u16 cpu_count;
 u8 cpu_bsp_core_id;
-u32 cpu_fpu_area_size=0;
+u32 cpu_fpu_state_size=0;
 
 
 
@@ -39,8 +39,8 @@ void _cpu_init_core(void){
 	msr_set_gs_base(cpu_data+index,1);
 	INFO("Enabling SIMD...");
 	u32 fpu_size=msr_enable_simd();
-	if (fpu_size>cpu_fpu_area_size){
-		cpu_fpu_area_size=fpu_size;
+	if (fpu_size>cpu_fpu_state_size){
+		cpu_fpu_state_size=fpu_size;
 	}
 	INFO("Enabling SYSCALL/SYSRET...");
 	syscall_enable();
@@ -112,7 +112,7 @@ void cpu_start_all_cores(void){
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();
-	cpu_fpu_area_size=(cpu_fpu_area_size+63)&0xffffffc0;
+	cpu_fpu_state_size=(cpu_fpu_state_size+63)&0xffffffc0;
 }
 
 
