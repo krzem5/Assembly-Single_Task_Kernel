@@ -61,13 +61,6 @@ scheduler_t* scheduler_new(void){
 
 
 
-void KERNEL_NORETURN scheduler_start(void){
-	lapic_timer_start(1);
-	scheduler_task_wait_loop();
-}
-
-
-
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_DATA->scheduler;

@@ -1,11 +1,8 @@
 extern _isr_handler
-extern _isr_handler_inside_kernel
-extern _lapic_registers
 extern _random_entropy_pool
 extern _random_entropy_pool_length
-extern idt_set_entry
 global isr_allocate
-global isr_wait
+global _isr_return_from_handler
 section .text
 
 

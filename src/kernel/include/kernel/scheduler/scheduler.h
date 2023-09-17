@@ -42,10 +42,6 @@ scheduler_t* scheduler_new(void);
 
 
 
-void KERNEL_NORETURN scheduler_start(void);
-
-
-
 void scheduler_isr_handler(isr_state_t* state);
 
 
@@ -55,6 +51,10 @@ void scheduler_enqueue_thread(thread_t* thread);
 
 
 void KERNEL_NORETURN scheduler_dequeue_thread(void);
+
+
+
+void KERNEL_NORETURN scheduler_start(void);
 
 
 
