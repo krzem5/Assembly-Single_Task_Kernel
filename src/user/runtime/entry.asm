@@ -1,4 +1,4 @@
-extern _syscall_cpu_core_stop
+extern _syscall_thread_stop
 extern _user_data_init
 extern main
 global _start
@@ -17,4 +17,4 @@ _start:
 	;;; Start user code
 	call main
 	;;; Shutdown CPU
-	jmp _syscall_cpu_core_stop
+	jmp _syscall_thread_stop

@@ -59,12 +59,4 @@ void cpu_start_all_cores(void);
 
 
 
-void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2);
-
-
-
-void cpu_core_stop(void);
-
-
-
 #endif

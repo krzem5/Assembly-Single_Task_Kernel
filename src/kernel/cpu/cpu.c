@@ -110,15 +110,3 @@ void cpu_start_all_cores(void){
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();
 }
-
-
-
-void cpu_core_start(u8 index,u64 start_address,u64 arg1,u64 arg2){
-	ERROR("Unimplemented: cpu_core_start");
-}
-
-
-
-void cpu_core_stop(void){
-	scheduler_dequeue();
-}

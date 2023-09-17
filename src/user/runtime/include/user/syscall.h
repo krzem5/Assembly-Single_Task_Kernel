@@ -20,14 +20,6 @@ _Bool _syscall_elf_load(const char* path,u32 length);
 
 
 
-s32 _syscall_cpu_core_start(u32 index,void* fn,void* arg1,void* arg2);
-
-
-
-void _syscall_cpu_core_stop(void);
-
-
-
 s32 _syscall_fd_open(s32 fd,const char* path,u32 length,u32 flags);
 
 
@@ -133,6 +125,14 @@ _Bool _syscall_random_generate(void* buffer,u64 size);
 
 
 const void* _syscall_user_data_pointer(void);
+
+
+
+void __attribute__((noreturn)) _syscall_thread_stop(void);
+
+
+
+u32 __attribute__((returns_twice)) _syscall_thread_create(u32 stack_size);
 
 
 
