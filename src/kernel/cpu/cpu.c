@@ -1,17 +1,12 @@
-#include <kernel/acpi/fadt.h>
 #include <kernel/apic/lapic.h>
-#include <kernel/clock/clock.h>
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
-#include <kernel/elf/elf.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/gdt/gdt.h>
 #include <kernel/idt/idt.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/scheduler.h>
