@@ -99,6 +99,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_EXECUTING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
+		scheduler->current_thread->state_not_present=0;
 		scheduler->current_thread=NULL;
 	}
 	if (new_thread){
@@ -151,6 +152,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 			break;
 	}
 	lock_acquire_exclusive(&(queue->lock));
+	WARN("[~] %u -> %p",thread->id,queue);
 	if (queue->tail){
 		queue->tail->scheduler_queue_next=thread;
 	}
@@ -173,5 +175,7 @@ void scheduler_dequeue_thread(_Bool save_registers){
 		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
 		CPU_HEADER_DATA->cpu_data->scheduler->current_thread=NULL;
 	}
+	if (CPU_HEADER_DATA->cpu_data->scheduler->current_thread)ERROR("AAA [%u]",CPU_HEADER_DATA->cpu_data->scheduler->current_thread->id);
 	scheduler_start();
+	ERROR("BBB");
 }

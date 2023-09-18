@@ -108,6 +108,7 @@ typedef struct _THREAD{
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
 	thread_priority_t priority;
+	_Bool state_not_present;
 	thread_state_t state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;

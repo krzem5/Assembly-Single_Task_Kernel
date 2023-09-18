@@ -108,6 +108,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
 	fpu_init(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
+	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;
 	lock_init(&(out->state.lock));
 	_thread_list_add(process,out);
@@ -170,6 +171,7 @@ void thread_await_event(event_t* event){
 		lock_release_exclusive(&(event->tail->state.lock));
 		event->tail=thread;
 	}
+	thread->state_not_present=1;
 	lock_release_exclusive(&(thread->state.lock));
 	lock_release_exclusive(&(event->lock));
 	scheduler_dequeue_thread(1);
@@ -206,6 +208,7 @@ void event_signal(event_t* event,_Bool dispatch_all){
 		thread->state.event.event=NULL;
 		thread->state.event.next=NULL;
 		lock_release_exclusive(&(thread->state.lock));
+		SPINLOOP(thread->state_not_present);
 		scheduler_enqueue_thread(thread);
 		if (!dispatch_all){
 			break;
