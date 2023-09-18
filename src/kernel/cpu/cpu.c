@@ -23,7 +23,7 @@
 
 
 
-cpu_extra_data_t* cpu_extra_data;
+CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
 u16 cpu_count;
 u8 cpu_bsp_core_id;
 
@@ -50,7 +50,7 @@ void _cpu_init_core(void){
 	lapic_enable();
 	INFO("Calcularing topology...");
 	topology_compute(index,&((cpu_extra_data+index)->topology));
-	CPU_HEADER_DATA->cpu_data->flags|=CPU_FLAG_ONLINE;
+	(cpu_extra_data+index)->flags|=CPU_FLAG_ONLINE;
 	if (index!=cpu_bsp_core_id){
 		scheduler_start();
 	}
@@ -63,16 +63,10 @@ void cpu_init(u16 count){
 	INFO("CPU count: %u",count);
 	cpu_count=count;
 	cpu_local_init();
-	cpu_extra_data=kmm_alloc(count*sizeof(cpu_extra_data_t));
 	for (u16 i=0;i<count;i++){
 		(cpu_extra_data+i)->header.index=i;
 		(cpu_extra_data+i)->header.kernel_rsp=((u64)((cpu_extra_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
-		(cpu_extra_data+i)->header.current_thread=NULL;
-		(cpu_extra_data+i)->header.cpu_data=cpu_extra_data+i;
-		(cpu_extra_data+i)->index=i;
-		(cpu_extra_data+i)->flags=0;
 		(cpu_extra_data+i)->tss.rsp0=((u64)((cpu_extra_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
-		(cpu_extra_data+i)->tss.ist1=0;
 		(cpu_extra_data+i)->tss.ist2=(cpu_extra_data+i)->header.kernel_rsp;
 	}
 	cpu_bsp_core_id=msr_get_apic_id();

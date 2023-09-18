@@ -6,6 +6,7 @@
 
 
 #define CPU_LOCAL(name) ((name)+CPU_HEADER_DATA->index)
+
 #define CPU_LOCAL_DATA(type,name) \
 	type* name; \
 	static const cpu_local_data_descriptor_t _cpu_local_data_descriptor_##name={ \

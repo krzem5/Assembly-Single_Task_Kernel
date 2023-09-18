@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>

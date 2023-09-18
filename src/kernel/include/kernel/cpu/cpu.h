@@ -1,7 +1,6 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/gdt/gdt.h>
-#include <kernel/memory/pmm.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -26,14 +25,12 @@ typedef struct _CPU_HEADER{
 	u64 kernel_rsp;
 	u64 user_rsp;
 	struct _THREAD* current_thread;
-	struct _CPU_EXTRA_DATA* cpu_data;
 } cpu_header_t;
 
 
 
 typedef struct _CPU_EXTRA_DATA{
 	cpu_header_t header;
-	u8 index;
 	u8 flags;
 	topology_t topology;
 	tss_t tss;

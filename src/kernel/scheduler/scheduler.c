@@ -84,7 +84,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
 	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_EXECUTING)){
-		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
+		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		scheduler->current_thread->gpr_state=*state;
 		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
@@ -97,11 +97,10 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	if (new_thread){
 		new_thread->header.index=CPU_HEADER_DATA->index;
-		new_thread->header.cpu_data=CPU_HEADER_DATA->cpu_data;
 		msr_set_gs_base(new_thread,0);
 		scheduler->current_thread=new_thread;
 		*state=new_thread->gpr_state;
-		CPU_HEADER_DATA->cpu_data->tss.ist1=new_thread->pf_stack;
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=new_thread->pf_stack;
 		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
@@ -120,7 +119,7 @@ void scheduler_isr_handler(isr_state_t* state){
 
 void scheduler_enqueue_thread(thread_t* thread){
 	lock_acquire_exclusive(&(thread->state.lock));
-	if (thread->state.type==THREAD_STATE_TYPE_EXECUTING){
+	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		*((u16*)0x1234)=0x5678;
 		panic("Thread already queued",0);
 	}
@@ -165,7 +164,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
 	if (!save_registers){
-		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
+		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
 	}
 	scheduler_start();
