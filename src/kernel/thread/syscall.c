@@ -49,5 +49,6 @@ void syscall_thread_set_priority(syscall_registers_t* regs){
 	lock_acquire_exclusive(&(thread->lock));
 	thread->priority=regs->rsi;
 	lock_release_exclusive(&(thread->lock));
+	handle_release(handle);
 	regs->rax=1;
 }
