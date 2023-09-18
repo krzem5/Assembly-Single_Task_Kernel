@@ -304,11 +304,11 @@ static void _generate_user_cpus(user_data_header_t* header){
 	for (u16 i=0;i<cpu_count;i++){
 		user_data_cpu_table[i]=header->cpus+i;
 		(header->cpus+i)->apic_id=i;
-		(header->cpus+i)->flags=(cpu_data+i)->flags;
-		(header->cpus+i)->domain=(cpu_data+i)->topology.domain;
-		(header->cpus+i)->chip=(cpu_data+i)->topology.chip;
-		(header->cpus+i)->core=(cpu_data+i)->topology.core;
-		(header->cpus+i)->thread=(cpu_data+i)->topology.thread;
+		(header->cpus+i)->flags=(cpu_extra_data+i)->flags;
+		(header->cpus+i)->domain=(cpu_extra_data+i)->topology.domain;
+		(header->cpus+i)->chip=(cpu_extra_data+i)->topology.chip;
+		(header->cpus+i)->core=(cpu_extra_data+i)->topology.core;
+		(header->cpus+i)->thread=(cpu_extra_data+i)->topology.thread;
 	}
 }
 

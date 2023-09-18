@@ -1,5 +1,6 @@
 #include <kernel/apic/lapic.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/cpu/local.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
@@ -18,6 +19,7 @@
 
 
 
+static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 static scheduler_queues_t _scheduler_queues;
 
 
@@ -59,18 +61,9 @@ void scheduler_pause(void){
 
 
 
-scheduler_t* scheduler_new(void){
-	scheduler_t* out=kmm_alloc(sizeof(scheduler_t));
-	out->current_thread=NULL;
-	out->priority_timing=0;
-	return out;
-}
-
-
-
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
-	scheduler_t* scheduler=CPU_HEADER_DATA->cpu_data->scheduler;
+	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
 		u8 priority=2;
@@ -128,6 +121,7 @@ void scheduler_isr_handler(isr_state_t* state){
 void scheduler_enqueue_thread(thread_t* thread){
 	lock_acquire_exclusive(&(thread->state.lock));
 	if (thread->state.type==THREAD_STATE_TYPE_EXECUTING){
+		*((u16*)0x1234)=0x5678;
 		panic("Thread already queued",0);
 	}
 	u32 remaining_us=lapic_timer_stop();
@@ -172,7 +166,7 @@ void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
 	if (!save_registers){
 		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
-		CPU_HEADER_DATA->cpu_data->scheduler->current_thread=NULL;
+		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
 	}
 	scheduler_start();
 }

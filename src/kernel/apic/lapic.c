@@ -31,8 +31,7 @@
 
 
 static CPU_LOCAL_DATA(u32,_lapic_timer_frequencies);
-
-volatile u32* _lapic_registers;
+static volatile u32* _lapic_registers;
 
 
 

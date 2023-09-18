@@ -94,6 +94,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
 	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	out->header.kernel_rsp=out->kernel_stack_bottom+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->header.current_thread=out;
 	out->stack_size=stack_size;
 	out->gpr_state.rip=rip;
 	out->gpr_state.rsp=out->user_stack_bottom+stack_size;
@@ -135,7 +136,7 @@ void thread_delete(thread_t* thread){
 
 void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
-	thread_t* thread=CPU_HEADER_DATA->cpu_data->scheduler->current_thread;
+	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	lock_acquire_exclusive(&(thread->state.lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
 	lock_release_exclusive(&(thread->state.lock));
@@ -154,7 +155,7 @@ void KERNEL_NORETURN thread_terminate(void){
 
 void thread_await_event(event_t* event){
 	scheduler_pause();
-	thread_t* thread=CPU_HEADER_DATA->cpu_data->scheduler->current_thread;
+	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	lock_acquire_exclusive(&(event->lock));
 	lock_acquire_exclusive(&(thread->state.lock));
 	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;

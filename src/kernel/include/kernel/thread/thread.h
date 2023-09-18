@@ -1,6 +1,6 @@
 #ifndef _KERNEL_THREAD_THREAD_H_
 #define _KERNEL_THREAD_THREAD_H_ 1
-#include <kernel/cpu/_cpu_types.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
