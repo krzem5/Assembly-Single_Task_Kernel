@@ -95,7 +95,6 @@ typedef struct _USER_MEMORY_RANGE{
 
 
 typedef struct _USER_CPU{
-	u8 apic_id;
 	u8 flags;
 	u32 domain;
 	u32 chip;
@@ -128,7 +127,6 @@ typedef struct _USER_DATA_HEADER{
 
 
 void* user_data_pointer;
-const user_cpu_t** user_data_cpu_table;
 
 
 
@@ -300,11 +298,7 @@ static void _generate_user_cpus(user_data_header_t* header){
 	header->cpu_count=cpu_count;
 	header->cpu_bsp_id=cpu_bsp_core_id;
 	header->cpus=umm_alloc(cpu_count*sizeof(user_cpu_t));
-	user_data_cpu_table=kmm_alloc(cpu_count*sizeof(const user_cpu_t*));
 	for (u16 i=0;i<cpu_count;i++){
-		user_data_cpu_table[i]=header->cpus+i;
-		(header->cpus+i)->apic_id=i;
-		(header->cpus+i)->flags=(cpu_extra_data+i)->flags;
 		(header->cpus+i)->domain=(cpu_extra_data+i)->topology.domain;
 		(header->cpus+i)->chip=(cpu_extra_data+i)->topology.chip;
 		(header->cpus+i)->core=(cpu_extra_data+i)->topology.core;

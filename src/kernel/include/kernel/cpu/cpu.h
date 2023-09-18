@@ -12,9 +12,6 @@
 #define CPU_INTERRUPT_STACK_SIZE 4096
 #define CPU_SCHEDULER_STACK_SIZE 512
 
-#define CPU_FLAG_PRESENT 1
-#define CPU_FLAG_ONLINE 2
-
 #define CPU_HEADER_DATA ((volatile __seg_gs cpu_header_t*)NULL)
 
 
@@ -31,7 +28,6 @@ typedef struct _CPU_HEADER{
 
 typedef struct _CPU_EXTRA_DATA{
 	cpu_header_t header;
-	u8 flags;
 	topology_t topology;
 	tss_t tss;
 	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
@@ -51,10 +47,6 @@ void cpu_check_features(void);
 
 
 void cpu_init(u16 count);
-
-
-
-void cpu_register_core(u8 apic_id);
 
 
 

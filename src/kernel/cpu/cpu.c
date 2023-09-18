@@ -23,9 +23,28 @@
 
 
 
+static volatile _Bool _cpu_online;
+
 CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
 u16 cpu_count;
 u8 cpu_bsp_core_id;
+
+
+
+static void _wakeup_cpu(u8 idx){
+	if (idx==cpu_bsp_core_id){
+		return;
+	}
+	_cpu_online=0;
+	cpu_ap_startup_set_stack_top((cpu_extra_data+idx)->header.kernel_rsp);
+	lapic_send_ipi(idx,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
+	lapic_send_ipi(idx,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
+	COUNTER_SPINLOOP(0xfff);
+	for (u8 i=0;i<2;i++){
+		lapic_send_ipi(idx,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
+	}
+	SPINLOOP(!_cpu_online);
+}
 
 
 
@@ -50,7 +69,7 @@ void _cpu_init_core(void){
 	lapic_enable();
 	INFO("Calcularing topology...");
 	topology_compute(index,&((cpu_extra_data+index)->topology));
-	(cpu_extra_data+index)->flags|=CPU_FLAG_ONLINE;
+	_cpu_online=1;
 	if (index!=cpu_bsp_core_id){
 		scheduler_start();
 	}
@@ -75,34 +94,12 @@ void cpu_init(u16 count){
 
 
 
-void cpu_register_core(u8 apic_id){
-	LOG("Registering CPU core #%u",apic_id);
-	(cpu_extra_data+apic_id)->flags|=CPU_FLAG_PRESENT;
-}
-
-
-
 void cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
 	vmm_map_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS,CPU_AP_STARTUP_MEMORY_ADDRESS,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	cpu_ap_startup_init();
 	for (u16 i=0;i<cpu_count;i++){
-		if (!((cpu_extra_data+i)->flags&CPU_FLAG_PRESENT)){
-			ERROR("Unused CPU core: #%u",i);
-			panic("Unused CPU core",0);
-		}
-		if (i==cpu_bsp_core_id){
-			continue;
-		}
-		cpu_ap_startup_set_stack_top((cpu_extra_data+i)->header.kernel_rsp);
-		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
-		lapic_send_ipi(i,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
-		COUNTER_SPINLOOP(0xfff);
-		for (u8 j=0;j<2;j++){
-			lapic_send_ipi(i,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
-		}
-		const volatile u8* flags=&((cpu_extra_data+i)->flags);
-		SPINLOOP(!((*flags)&CPU_FLAG_ONLINE));
+		_wakeup_cpu(i);
 	}
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	_cpu_init_core();

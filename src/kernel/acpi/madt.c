@@ -84,10 +84,7 @@ void acpi_madt_load(const void* madt_ptr){
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
-		if (!madt_entry->type&&(madt_entry->lapic.flags&1)){
-			cpu_register_core(madt_entry->lapic.lapic_id);
-		}
-		else if (madt_entry->type==1){
+		if (madt_entry->type==1){
 			ioapic_add(madt_entry->io_apic.apic_id,madt_entry->io_apic.address,madt_entry->io_apic.gsi_base);
 		}
 		else if (madt_entry->type==2){
