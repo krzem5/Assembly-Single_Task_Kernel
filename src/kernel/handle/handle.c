@@ -12,6 +12,7 @@ static u64 _handle_next_id=1;
 
 
 void handle_new(void* object,u8 type,handle_t* out){
+	// add to an AVL tree
 	out->type=type;
 	lock_init(&(out->lock));
 	lock_acquire_exclusive(&_handle_global_lock);
