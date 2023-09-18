@@ -20,3 +20,9 @@ void __attribute__((noreturn)) thread_stop(void){
 u64 thread_create(void (*func)(void*),void* arg,u64 stack_size){
 	return _syscall_thread_create((u64)_thread_bootstrap,(u64)func,(u64)arg,stack_size);
 }
+
+
+
+_Bool thread_set_priority(u64 handle,u32 priority){
+	return _syscall_thread_set_priority(handle,priority);
+}

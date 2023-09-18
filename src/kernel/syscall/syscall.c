@@ -63,6 +63,7 @@ void* _syscall_handlers[]={
 	[30]=syscall_user_data_pointer,
 	[31]=syscall_thread_stop,
 	[32]=syscall_thread_create,
+	[33]=syscall_thread_set_priority,
 	NULL
 };
 

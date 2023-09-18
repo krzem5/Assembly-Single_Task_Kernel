@@ -23,7 +23,8 @@ static void _network_thread(void* arg){
 void main(void){
 	clock_init();
 	cwd_init();
-	thread_create(_network_thread,NULL,0);
+	u64 tid=thread_create(_network_thread,NULL,0);
+	thread_set_priority(tid,THREAD_PRIORITY_LOW);
 	while (1){
 		input_get();
 		command_execute(input);

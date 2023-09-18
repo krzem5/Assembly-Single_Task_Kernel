@@ -27,3 +27,27 @@ void syscall_thread_create(syscall_registers_t* regs){
 	scheduler_enqueue_thread(thread);
 	regs->rax=thread->handle.id;
 }
+
+
+
+void syscall_thread_set_priority(syscall_registers_t* regs){
+	if (!regs->rdi||regs->rsi<THREAD_PRIORITY_MIN||regs->rsi>THREAD_PRIORITY_MAX){
+		regs->rax=0;
+		return;
+	}
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	if (!handle){
+		regs->rax=0;
+		return;
+	}
+	thread_t* thread=handle->object;
+	if (thread->state.type==THREAD_STATE_TYPE_TERMINATED){
+		regs->rax=0;
+		handle_release(handle);
+		return;
+	}
+	lock_acquire_exclusive(&(thread->lock));
+	thread->priority=regs->rsi;
+	lock_release_exclusive(&(thread->lock));
+	regs->rax=1;
+}

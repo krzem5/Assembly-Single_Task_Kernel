@@ -4,6 +4,14 @@
 
 
 
+#define THREAD_PRIORITY_BACKGROUND 1
+#define THREAD_PRIORITY_LOW 2
+#define THREAD_PRIORITY_NORMAL 3
+#define THREAD_PRIORITY_HIGH 4
+#define THREAD_PRIORITY_REALTIME 5
+
+
+
 typedef struct _THREAD{
 	u32 id;
 } thread_t;
@@ -21,6 +29,10 @@ void __attribute__((noreturn)) thread_stop(void);
 
 
 u64 thread_create(void (*func)(void*),void* arg,u64 stack_size);
+
+
+
+_Bool thread_set_priority(u64 handle,u32 priority);
 
 
 

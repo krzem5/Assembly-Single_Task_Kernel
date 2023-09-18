@@ -118,9 +118,9 @@ void scheduler_isr_handler(isr_state_t* state){
 
 
 void scheduler_enqueue_thread(thread_t* thread){
+	lock_acquire_exclusive(&(thread->lock));
 	lock_acquire_exclusive(&(thread->state.lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
-		*((u16*)0x1234)=0x5678;
 		panic("Thread already queued",0);
 	}
 	u32 remaining_us=lapic_timer_stop();
@@ -156,6 +156,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
 	lock_release_exclusive(&(thread->state.lock));
+	lock_release_exclusive(&(thread->lock));
 	lapic_timer_start(remaining_us);
 }
 
