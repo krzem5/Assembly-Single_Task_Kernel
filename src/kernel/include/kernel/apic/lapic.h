@@ -25,6 +25,10 @@ void lapic_send_ipi(u8 lapic_id,u16 vector);
 
 
 
+void lapic_eoi(void);
+
+
+
 void lapic_enable(void);
 
 

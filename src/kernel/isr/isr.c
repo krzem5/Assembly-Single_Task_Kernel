@@ -1,3 +1,4 @@
+#include <kernel/apic/lapic.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
@@ -25,6 +26,7 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 	else if (isr_state->isr>32){
+		lapic_eoi();
 		ERROR("Event interrupt (%u)",isr_state->isr);
 		return;
 	}

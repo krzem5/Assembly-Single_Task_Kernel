@@ -22,6 +22,7 @@ static u8 _serial_irq=0;
 void serial_init_irq(void){
 	LOG("Enabling serial IRQ...");
 	_serial_irq=isr_allocate();
+	INFO("Serial IRQ: %u",_serial_irq);
 	ioapic_redirect_irq(COM1_IRQ,_serial_irq);
 	io_port_out8(0x3f9,0x01);
 	io_port_out8(0x3fc,0x0b);

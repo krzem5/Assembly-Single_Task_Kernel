@@ -64,8 +64,8 @@ void cpu_init(u16 count){
 	cpu_data=kmm_alloc(count*sizeof(cpu_data_t));
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->header.index=i;
-		(cpu_data+i)->header.cpu_data=cpu_data+i;
 		(cpu_data+i)->header.kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
+		(cpu_data+i)->header.cpu_data=cpu_data+i;
 		(cpu_data+i)->index=i;
 		(cpu_data+i)->flags=0;
 		(cpu_data+i)->tss.rsp0=((u64)((cpu_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;

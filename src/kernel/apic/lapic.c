@@ -57,6 +57,12 @@ void lapic_send_ipi(u8 lapic_id,u16 vector){
 
 
 
+void lapic_eoi(void){
+	_lapic_registers[REGISTER_EOI]=0;
+}
+
+
+
 void lapic_enable(void){
 	_lapic_registers[REGISTER_SVR]=0x100|LAPIC_SPURIOUS_VECTOR;
 	_lapic_registers[REGISTER_ESR]=0;
@@ -73,10 +79,7 @@ void lapic_enable(void){
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
 	_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]=TIMER_CALIBRATION_TICKS/((end_time-start_time+500)/1000);
-	// Temporary fix?
-	_lapic_timer_frequencies[CPU_HEADER_DATA->index]=_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index];
-	INFO("Timer frequency: %u ticks/us",_lapic_timer_frequencies[CPU_HEADER_DATA->index]);
-	WARN("%u %u [%p]",CPU_HEADER_DATA->cpu_data->index,CPU_HEADER_DATA->index,CPU_HEADER_DATA->cpu_data);
+	INFO("Timer frequency: %u ticks/us",_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]);
 }
 
 
@@ -85,7 +88,7 @@ void lapic_timer_start(u32 time_us){
 	_lapic_registers[REGISTER_EOI]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_SCHEDULER_VECTOR;
 	_lapic_registers[REGISTER_TMRDIV]=0;
-	_lapic_registers[REGISTER_TMRINITCNT]=time_us*_lapic_timer_frequencies[CPU_HEADER_DATA->index];
+	_lapic_registers[REGISTER_TMRINITCNT]=time_us*_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index];
 }
 
 
@@ -94,5 +97,5 @@ u32 lapic_timer_stop(void){
 	u32 out=_lapic_registers[REGISTER_TMRCURRCNT];
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
-	return (out?out/_lapic_timer_frequencies[CPU_HEADER_DATA->index]:0);
+	return (out?out/_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]:0);
 }
