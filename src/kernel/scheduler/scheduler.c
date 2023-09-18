@@ -92,6 +92,7 @@ void scheduler_isr_handler(isr_state_t* state){
 			fpu_save(scheduler->current_thread->fpu_state);
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
+		new_thread->header.index=CPU_HEADER_DATA->index;
 		new_thread->header.cpu_data=CPU_HEADER_DATA->cpu_data;
 		msr_set_gs_base(new_thread,0);
 		scheduler->current_thread=new_thread;
