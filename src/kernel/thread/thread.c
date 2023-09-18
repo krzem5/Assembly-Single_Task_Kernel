@@ -14,9 +14,7 @@
 
 
 
-static tid_t _thread_next_eid=1;
-static tid_t _thread_next_pid=1;
-static tid_t _thread_next_tid=1;
+static u64 _thread_next_handle_id=1;
 
 
 
@@ -58,8 +56,8 @@ static void _thread_list_remove(process_t* process,thread_t* thread){
 
 process_t* process_new(_Bool is_driver){
 	process_t* out=kmm_alloc(sizeof(process_t));
-	out->id=_thread_next_pid;
-	_thread_next_pid++;
+	out->handle.id=_thread_next_handle_id;
+	_thread_next_handle_id++;
 	lock_init(&(out->lock));
 	out->is_driver=is_driver;
 	vmm_pagemap_init(&(out->pagemap));
@@ -80,8 +78,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
-	out->id=_thread_next_tid;
-	_thread_next_tid++;
+	out->handle.id=_thread_next_handle_id;
+	_thread_next_handle_id++;
 	lock_init(&(out->lock));
 	out->process=process;
 	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
@@ -103,7 +101,6 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->gpr_state.es=0x1b;
 	out->gpr_state.ss=0x1b;
 	out->gpr_state.rflags=0x0000000202;
-	out->pf_stack=out->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
@@ -181,8 +178,8 @@ void thread_await_event(event_t* event){
 
 event_t* event_new(void){
 	event_t* out=kmm_alloc(sizeof(event_t));
-	out->id=_thread_next_eid;
-	_thread_next_eid++;
+	out->handle.id=_thread_next_handle_id;
+	_thread_next_handle_id++;
 	lock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;

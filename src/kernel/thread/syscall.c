@@ -25,5 +25,5 @@ void syscall_thread_create(syscall_registers_t* regs){
 	thread->gpr_state.rdi=regs->rsi;
 	thread->gpr_state.rsi=regs->rdx;
 	scheduler_enqueue_thread(thread);
-	regs->rax=thread->id;
+	regs->rax=thread->handle.id;
 }

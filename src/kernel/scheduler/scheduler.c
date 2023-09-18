@@ -5,7 +5,7 @@
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/thread/thread.h>
@@ -100,7 +100,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base(new_thread,0);
 		scheduler->current_thread=new_thread;
 		*state=new_thread->gpr_state;
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=new_thread->pf_stack;
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=new_thread->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
