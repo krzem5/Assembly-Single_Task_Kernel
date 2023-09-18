@@ -79,26 +79,29 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
-	out->header.kernel_rsp=((u64)umm_alloc(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->header.user_rsp=0;
 	out->id=_thread_next_tid;
 	_thread_next_tid++;
 	lock_init(&(out->lock));
 	out->process=process;
-	out->stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
-	if (!out->stack_bottom){
+	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
+	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->pf_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	if (!out->user_stack_bottom||!out->kernel_stack_bottom||!out->pf_stack_bottom){
 		panic("Unable to reserve thread stack",0);
 	}
-	vmm_reserve_pages(&(process->pagemap),out->stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
+	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
+	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
+	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
+	out->header.kernel_rsp=out->kernel_stack_bottom+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->stack_size=stack_size;
 	out->gpr_state.rip=rip;
-	out->gpr_state.rsp=out->stack_bottom+stack_size;
+	out->gpr_state.rsp=out->user_stack_bottom+stack_size;
 	out->gpr_state.cs=0x23;
 	out->gpr_state.ds=0x1b;
 	out->gpr_state.es=0x1b;
 	out->gpr_state.ss=0x1b;
 	out->gpr_state.rflags=0x0000000202;
-	out->pf_stack=((u64)umm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT))+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->pf_stack=out->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
@@ -116,8 +119,12 @@ void thread_delete(thread_t* thread){
 		panic("Running threads cannot be deleted",0);
 	}
 	process_t* process=thread->process;
-	vmm_memory_map_release(&(process->mmap),thread->stack_bottom,thread->stack_size);
-	vmm_release_pages(&(process->pagemap),thread->stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
+	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
+	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	vmm_memory_map_release(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
+	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
+	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	_thread_list_remove(process,thread);
 	ERROR("Unimplemented: thread_delete");
 	if (!process->thread_list.head){

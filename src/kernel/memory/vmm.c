@@ -394,6 +394,16 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 
 
 
+void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
+	flags|=VMM_PAGE_FLAG_PRESENT;
+	for (;count;count--){
+		vmm_map_page(pagemap,pmm_alloc_zero(1,PMM_COUNTER_USER,0),virtual_address,flags);
+		virtual_address+=PAGE_SIZE;
+	}
+}
+
+
+
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	for (;count;count--){
 		lock_acquire_shared(&(pagemap->lock));

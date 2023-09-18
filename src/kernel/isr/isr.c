@@ -14,6 +14,7 @@ void _isr_handler(isr_state_t* isr_state){
 		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
 		if (!(isr_state->error&1)&&scheduler&&scheduler->current_thread&&vmm_virtual_to_physical(&(scheduler->current_thread->process->pagemap),address)==VMM_SHADOW_PAGE_ADDRESS){
 			vmm_update_address_and_set_present(&(scheduler->current_thread->process->pagemap),pmm_alloc_zero(1,PMM_COUNTER_USER,0),address);
+			vmm_invalidate_tlb_entry(address);
 			return;
 		}
 		ERROR("Page Fault");

@@ -21,9 +21,11 @@
 
 
 typedef struct _CPU_HEADER{
-	struct _CPU_HEADER_DATA* cpu_data;
+	u8 index;
+	u8 _padding[7];
 	u64 kernel_rsp;
 	u64 user_rsp;
+	struct _CPU_HEADER_DATA* cpu_data;
 } cpu_header_t;
 
 

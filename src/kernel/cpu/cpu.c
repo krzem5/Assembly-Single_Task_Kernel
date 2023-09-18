@@ -61,7 +61,7 @@ void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
-	cpu_data=umm_alloc(count*sizeof(cpu_data_t));
+	cpu_data=kmm_alloc(count*sizeof(cpu_data_t));
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->header.cpu_data=cpu_data+i;
 		(cpu_data+i)->header.kernel_rsp=((u64)((cpu_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;

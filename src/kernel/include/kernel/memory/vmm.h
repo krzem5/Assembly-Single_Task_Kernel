@@ -79,6 +79,10 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 
 
 
+void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count);
+
+
+
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
 
 

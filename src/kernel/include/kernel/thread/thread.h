@@ -72,7 +72,9 @@ typedef struct _THREAD{
 	lock_t lock;
 	process_t* process;
 	vmm_pagemap_t* pagemap;
-	u64 stack_bottom;
+	u64 user_stack_bottom;
+	u64 kernel_stack_bottom;
+	u64 pf_stack_bottom;
 	u64 stack_size;
 	isr_state_t gpr_state;
 	u64 pf_stack;
