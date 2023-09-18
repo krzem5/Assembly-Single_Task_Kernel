@@ -6,8 +6,14 @@ section .text
 
 [bits 64]
 scheduler_start:
+	pushfq
+	pop rax
 	sti
 	int 32
+	test rax, 512
+	jnz ._interrupts_enabled
+	cli
+._interrupts_enabled:
 	ret
 
 

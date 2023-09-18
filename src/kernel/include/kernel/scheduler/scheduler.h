@@ -57,7 +57,7 @@ void scheduler_dequeue_thread(_Bool save_registers);
 
 
 
-void KERNEL_NORETURN scheduler_start(void);
+void scheduler_start(void);
 
 
 

@@ -157,7 +157,6 @@ void thread_await_event(event_t* event){
 	thread_t* thread=CPU_HEADER_DATA->cpu_data->scheduler->current_thread;
 	lock_acquire_exclusive(&(event->lock));
 	lock_acquire_exclusive(&(thread->state.lock));
-	if(event->id==3)WARN("@ %u -> %u",thread->id,event->id);
 	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->state.event.event=event;
 	thread->state.event.next=NULL;
@@ -201,7 +200,6 @@ void event_signal(event_t* event,_Bool dispatch_all){
 	lock_acquire_exclusive(&(event->lock));
 	while (event->head){
 		thread_t* thread=event->head;
-		if(event->id==3)ERROR("~ %u -> %u",thread->id,event->id);
 		event->head=thread->state.event.next;
 		lock_acquire_exclusive(&(thread->state.lock));
 		thread->state.type=THREAD_STATE_TYPE_NONE;
