@@ -1,3 +1,4 @@
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -8,14 +9,9 @@
 
 
 
-static u64 _thread_next_handle_id=1;
-
-
-
 process_t* process_new(void){
 	process_t* out=kmm_alloc(sizeof(process_t));
-	out->handle.id=_thread_next_handle_id;
-	_thread_next_handle_id++;
+	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	lock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	vmm_memory_map_init(&(out->mmap));
@@ -27,5 +23,6 @@ process_t* process_new(void){
 
 
 void process_delete(process_t* process){
+	handle_delete(&(process->handle));
 	ERROR("Unimplemented: process_delete");
 }

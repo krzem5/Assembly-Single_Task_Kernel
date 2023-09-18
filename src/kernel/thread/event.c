@@ -1,3 +1,4 @@
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -10,14 +11,9 @@
 
 
 
-static u64 _thread_next_handle_id=1;
-
-
-
 event_t* event_new(void){
 	event_t* out=kmm_alloc(sizeof(event_t));
-	out->handle.id=_thread_next_handle_id;
-	_thread_next_handle_id++;
+	handle_new(out,HANDLE_TYPE_EVENT,&(out->handle));
 	lock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
@@ -27,6 +23,7 @@ event_t* event_new(void){
 
 
 void event_delete(event_t* event){
+	handle_delete(&(event->handle));
 	ERROR("Unimplemented: event_delete");
 }
 

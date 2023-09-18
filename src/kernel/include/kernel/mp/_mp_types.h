@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MP__MP_TYPES_H_
 #define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
+#include <kernel/handle/handle.h>
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
@@ -14,12 +15,6 @@ typedef u8 thread_priority_t;
 
 
 typedef u8 thread_state_type_t;
-
-
-
-typedef struct _HANDLE{
-	u64 id;
-} handle_t;
 
 
 

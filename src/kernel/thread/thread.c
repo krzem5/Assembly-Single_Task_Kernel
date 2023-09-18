@@ -1,5 +1,6 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/fpu/fpu.h>
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -12,10 +13,6 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
-
-
-
-static u64 _thread_next_handle_id=1;
 
 
 
@@ -52,8 +49,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=kmm_alloc(sizeof(thread_t));
 	memset(out,0,sizeof(thread_t));
-	out->handle.id=_thread_next_handle_id;
-	_thread_next_handle_id++;
+	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
 	lock_init(&(out->lock));
 	out->process=process;
 	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
@@ -95,6 +91,7 @@ void thread_delete(thread_t* thread){
 		panic("Unterminated threads cannot be deleted",0);
 	}
 	lock_release_shared(&(thread->state.lock));
+	handle_delete(&(thread->handle));
 	process_t* process=thread->process;
 	_thread_list_remove(process,thread);
 	ERROR("Unimplemented: thread_delete");
