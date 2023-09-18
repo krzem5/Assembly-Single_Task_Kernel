@@ -53,6 +53,12 @@ void scheduler_init(void){
 
 
 
+void scheduler_pause(void){
+	lapic_timer_stop();
+}
+
+
+
 scheduler_t* scheduler_new(void){
 	scheduler_t* out=kmm_alloc(sizeof(scheduler_t));
 	out->current_thread=NULL;
@@ -84,14 +90,18 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (!new_thread){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
-	if (new_thread){
-		if (scheduler->current_thread){
-			scheduler->current_thread->gpr_state=*state;
-			scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
-			scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
-			fpu_save(scheduler->current_thread->fpu_state);
+	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_EXECUTING)){
+		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
+		scheduler->current_thread->gpr_state=*state;
+		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
+		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
+		fpu_save(scheduler->current_thread->fpu_state);
+		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_EXECUTING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
+		scheduler->current_thread=NULL;
+	}
+	if (new_thread){
 		new_thread->header.index=CPU_HEADER_DATA->index;
 		new_thread->header.cpu_data=CPU_HEADER_DATA->cpu_data;
 		msr_set_gs_base(new_thread,0);
@@ -102,7 +112,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
 		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
-		new_thread->state=THREAD_STATE_EXECUTING;
+		lock_acquire_exclusive(&(new_thread->state.lock));
+		new_thread->state.type=THREAD_STATE_TYPE_EXECUTING;
+		lock_release_exclusive(&(new_thread->state.lock));
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
@@ -113,7 +125,8 @@ void scheduler_isr_handler(isr_state_t* state){
 
 
 void scheduler_enqueue_thread(thread_t* thread){
-	if (thread->state==THREAD_STATE_QUEUED){
+	lock_acquire_exclusive(&(thread->state.lock));
+	if (thread->state.type==THREAD_STATE_TYPE_EXECUTING){
 		panic("Thread already queued",0);
 	}
 	u32 remaining_us=lapic_timer_stop();
@@ -146,21 +159,19 @@ void scheduler_enqueue_thread(thread_t* thread){
 	}
 	queue->tail=thread;
 	thread->scheduler_queue_next=NULL;
-	thread->state=THREAD_STATE_QUEUED;
+	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
+	lock_release_exclusive(&(thread->state.lock));
 	lapic_timer_start(remaining_us);
 }
 
 
 
-void KERNEL_NORETURN scheduler_dequeue_thread(void){
+void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
-	scheduler_t* scheduler=CPU_HEADER_DATA->cpu_data->scheduler;
-	if (scheduler->current_thread){
+	if (!save_registers){
 		msr_set_gs_base(CPU_HEADER_DATA->cpu_data,0);
-		scheduler->current_thread->state=THREAD_STATE_TERMINATED;
-		thread_delete(scheduler->current_thread);
-		scheduler->current_thread=NULL;
+		CPU_HEADER_DATA->cpu_data->scheduler->current_thread=NULL;
 	}
 	scheduler_start();
 }

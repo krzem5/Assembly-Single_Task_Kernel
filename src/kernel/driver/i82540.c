@@ -8,6 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
+#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
@@ -140,9 +141,7 @@ static void _i82540_wait(void* extra_data){
 	}
 	i82540_rx_descriptor_t* desc=GET_DESCRIPTOR(device,rx,tail);
 	while (!(desc->status&RDESC_DD)){
-		// if (!isr_wait(device->irq)){
-		// 	break;
-		// }
+		thread_await_event(IRQ_EVENT(device->irq));
 		u32 icr=device->mmio[REG_ICR];
 		if (icr&0x0004){
 			device->mmio[REG_CTRL]|=CTRL_SLU;

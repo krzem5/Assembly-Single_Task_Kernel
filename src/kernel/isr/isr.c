@@ -4,8 +4,21 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "isr"
+
+
+
+event_t* irq_events[223];
+
+
+
+void isr_init(void){
+	for (u8 i=0;i<223;i++){
+		irq_events[i]=event_new();
+	}
+}
 
 
 
@@ -18,7 +31,7 @@ void _isr_handler(isr_state_t* isr_state){
 			vmm_invalidate_tlb_entry(address);
 			return;
 		}
-		ERROR("Page Fault");
+		ERROR("Page fault");
 		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_HEADER_DATA->cpu_data->index);
 	}
 	else if (isr_state->isr==32){
@@ -27,11 +40,11 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	else if (isr_state->isr>32){
 		lapic_eoi();
-		ERROR("Event interrupt (%u)",isr_state->isr);
+		event_signal(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
 	else{
-		ERROR("Crash interrupt");
+		ERROR("Crash");
 	}
 	WARN("ISR %u:",isr_state->isr);
 	WARN("es     = %p",isr_state->es);

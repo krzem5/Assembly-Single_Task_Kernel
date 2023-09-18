@@ -3,6 +3,7 @@
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "serial"
@@ -47,10 +48,9 @@ u32 serial_recv(void* buffer,u32 length,u64 timeout){
 	u32 out=0;
 	if (!timeout){
 		for (;out<length;out++){
-			SPINLOOP(!(io_port_in8(0x3fd)&0x01));
-			// if (!isr_wait(_serial_irq)){
-			// 	return 0;
-			// }
+			while (!(io_port_in8(0x3fd)&0x01)){
+				thread_await_event(IRQ_EVENT(_serial_irq));
+			}
 			*((u8*)buffer)=io_port_in8(0x3f8);
 			buffer++;
 		}

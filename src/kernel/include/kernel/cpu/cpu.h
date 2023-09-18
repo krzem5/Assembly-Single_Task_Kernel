@@ -1,7 +1,9 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
+#include <kernel/cpu/_cpu_types.h>
 #include <kernel/gdt/gdt.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -20,17 +22,7 @@
 
 
 
-typedef struct _CPU_HEADER{
-	u8 index;
-	u8 _padding[7];
-	u64 kernel_rsp;
-	u64 user_rsp;
-	struct _CPU_HEADER_DATA* cpu_data;
-} cpu_header_t;
-
-
-
-typedef struct _CPU_HEADER_DATA{
+typedef struct _CPU_DATA{
 	cpu_header_t header;
 	u8 index;
 	u8 flags;
@@ -65,5 +57,4 @@ void cpu_start_all_cores(void);
 
 
 
-#include <kernel/scheduler/scheduler.h>
 #endif

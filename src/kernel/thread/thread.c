@@ -14,6 +14,7 @@
 
 
 
+static tid_t _thread_next_eid=1;
 static tid_t _thread_next_pid=1;
 static tid_t _thread_next_tid=1;
 
@@ -107,7 +108,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
 	fpu_init(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
-	out->state=THREAD_STATE_NONE;
+	out->state.type=THREAD_STATE_TYPE_NONE;
+	lock_init(&(out->state.lock));
 	_thread_list_add(process,out);
 	return out;
 }
@@ -115,9 +117,27 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	if (thread->state!=THREAD_STATE_TERMINATED){
+	lock_acquire_shared(&(thread->state.lock));
+	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Running threads cannot be deleted",0);
 	}
+	lock_release_shared(&(thread->state.lock));
+	process_t* process=thread->process;
+	_thread_list_remove(process,thread);
+	ERROR("Unimplemented: thread_delete");
+	if (!process->thread_list.head){
+		process_delete(process);
+	}
+}
+
+
+
+void KERNEL_NORETURN thread_terminate(void){
+	scheduler_pause();
+	thread_t* thread=CPU_HEADER_DATA->cpu_data->scheduler->current_thread;
+	lock_acquire_exclusive(&(thread->state.lock));
+	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
+	lock_release_exclusive(&(thread->state.lock));
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -125,9 +145,74 @@ void thread_delete(thread_t* thread){
 	vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
 	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
-	_thread_list_remove(process,thread);
-	ERROR("Unimplemented: thread_delete");
-	if (!process->thread_list.head){
-		process_delete(process);
+	scheduler_dequeue_thread(0);
+	for (;;);
+}
+
+
+
+void thread_await_event(event_t* event){
+	scheduler_pause();
+	thread_t* thread=CPU_HEADER_DATA->cpu_data->scheduler->current_thread;
+	lock_acquire_exclusive(&(event->lock));
+	lock_acquire_exclusive(&(thread->state.lock));
+	if(event->id==3)WARN("@ %u -> %u",thread->id,event->id);
+	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
+	thread->state.event.event=event;
+	thread->state.event.next=NULL;
+	if (!event->head){
+		event->head=thread;
+		event->tail=thread;
 	}
+	else{
+		lock_acquire_exclusive(&(event->tail->state.lock));
+		event->tail->state.event.next=thread;
+		lock_release_exclusive(&(event->tail->state.lock));
+		event->tail=thread;
+	}
+	lock_release_exclusive(&(thread->state.lock));
+	lock_release_exclusive(&(event->lock));
+	scheduler_dequeue_thread(1);
+}
+
+
+
+event_t* event_new(void){
+	event_t* out=kmm_alloc(sizeof(event_t));
+	out->id=_thread_next_eid;
+	_thread_next_eid++;
+	lock_init(&(out->lock));
+	out->head=NULL;
+	out->tail=NULL;
+	return out;
+}
+
+
+
+void event_delete(event_t* event){
+	ERROR("Unimplemented: event_delete");
+}
+
+
+
+void event_signal(event_t* event,_Bool dispatch_all){
+	lock_acquire_exclusive(&(event->lock));
+	while (event->head){
+		thread_t* thread=event->head;
+		if(event->id==3)ERROR("~ %u -> %u",thread->id,event->id);
+		event->head=thread->state.event.next;
+		lock_acquire_exclusive(&(thread->state.lock));
+		thread->state.type=THREAD_STATE_TYPE_NONE;
+		thread->state.event.event=NULL;
+		thread->state.event.next=NULL;
+		lock_release_exclusive(&(thread->state.lock));
+		scheduler_enqueue_thread(thread);
+		if (!dispatch_all){
+			break;
+		}
+	}
+	if (!event->head){
+		event->tail=NULL;
+	}
+	lock_release_exclusive(&(event->lock));
 }

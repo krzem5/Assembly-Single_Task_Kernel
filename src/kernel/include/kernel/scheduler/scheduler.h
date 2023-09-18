@@ -1,6 +1,5 @@
 #ifndef _KERNEL_SCHEDULER_SCHEDULER_H_
 #define _KERNEL_SCHEDULER_SCHEDULER_H_ 1
-#include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/thread/thread.h>
 #include <kernel/types.h>
@@ -38,6 +37,10 @@ void scheduler_init(void);
 
 
 
+void scheduler_pause(void);
+
+
+
 scheduler_t* scheduler_new(void);
 
 
@@ -50,7 +53,7 @@ void scheduler_enqueue_thread(thread_t* thread);
 
 
 
-void KERNEL_NORETURN scheduler_dequeue_thread(void);
+void scheduler_dequeue_thread(_Bool save_registers);
 
 
 

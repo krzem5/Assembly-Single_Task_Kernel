@@ -1,7 +1,7 @@
 #ifndef _KERNEL_THREAD_THREAD_H_
 #define _KERNEL_THREAD_THREAD_H_ 1
-#include <kernel/cpu/cpu.h>
-#include <kernel/isr/isr.h>
+#include <kernel/cpu/_cpu_types.h>
+#include <kernel/isr/_isr_types.h>
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
@@ -16,10 +16,11 @@
 #define THREAD_PRIORITY_HIGH 4
 #define THREAD_PRIORITY_REALTIME 5
 
-#define THREAD_STATE_NONE 0
-#define THREAD_STATE_QUEUED 1
-#define THREAD_STATE_EXECUTING 2
-#define THREAD_STATE_TERMINATED 3
+#define THREAD_STATE_TYPE_NONE 0
+#define THREAD_STATE_TYPE_QUEUED 1
+#define THREAD_STATE_TYPE_EXECUTING 2
+#define THREAD_STATE_TYPE_AWAITING_EVENT 3
+#define THREAD_STATE_TYPE_TERMINATED 255
 
 #define THREAD_DATA ((volatile __seg_gs thread_t*)NULL)
 
@@ -29,7 +30,11 @@ typedef u8 thread_priority_t;
 
 
 
-typedef u8 thread_state_t;
+typedef u8 thread_state_type_t;
+
+
+
+typedef u64 eid_t;
 
 
 
@@ -38,6 +43,15 @@ typedef u64 pid_t;
 
 
 typedef u64 tid_t;
+
+
+
+typedef struct _EVENT{
+	eid_t id;
+	lock_t lock;
+	struct _THREAD* head;
+	struct _THREAD* tail;
+} event_t;
 
 
 
@@ -63,6 +77,19 @@ typedef struct _THREAD_FS_GS_STATE{
 	u64 fs;
 	u64 gs;
 } thread_fs_gs_state_t;
+
+
+
+typedef struct _THREAD_STATE{
+	thread_state_type_t type;
+	lock_t lock;
+	union{
+		struct{
+			event_t* event;
+			struct _THREAD* next;
+		} event;
+	};
+} thread_state_t;
 
 
 
@@ -102,6 +129,26 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size);
 
 
 void thread_delete(thread_t* thread);
+
+
+
+void KERNEL_NORETURN thread_terminate(void);
+
+
+
+void thread_await_event(event_t* event);
+
+
+
+event_t* event_new(void);
+
+
+
+void event_delete(event_t* event);
+
+
+
+void event_signal(event_t* event,_Bool dispatch_all);
 
 
 
