@@ -91,7 +91,7 @@ void thread_delete(thread_t* thread){
 		panic("Unterminated threads cannot be deleted",0);
 	}
 	lock_release_shared(&(thread->state.lock));
-	handle_delete(&(thread->handle));
+	handle_release(&(thread->handle));
 	process_t* process=thread->process;
 	_thread_list_remove(process,thread);
 	ERROR("Unimplemented: thread_delete");

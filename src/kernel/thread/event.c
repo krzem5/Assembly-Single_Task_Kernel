@@ -23,7 +23,7 @@ event_t* event_new(void){
 
 
 void event_delete(event_t* event){
-	handle_delete(&(event->handle));
+	handle_release(&(event->handle));
 	ERROR("Unimplemented: event_delete");
 }
 

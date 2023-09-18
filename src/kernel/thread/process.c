@@ -23,6 +23,6 @@ process_t* process_new(void){
 
 
 void process_delete(process_t* process){
-	handle_delete(&(process->handle));
+	handle_release(&(process->handle));
 	ERROR("Unimplemented: process_delete");
 }
