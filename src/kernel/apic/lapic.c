@@ -1,8 +1,8 @@
 #include <kernel/apic/lapic.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/cpu/local.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/types.h>
@@ -30,7 +30,7 @@
 
 
 
-static u32* _lapic_timer_frequencies;
+static CPU_LOCAL_DATA(u32,_lapic_timer_frequencies);
 
 volatile u32* _lapic_registers;
 
@@ -42,7 +42,6 @@ void lapic_init(u64 base,u16 cpu_count){
 	_lapic_registers=(void*)vmm_identity_map(base,(REGISTER_MAX+1)*sizeof(u32));
 	INFO("Enabling APIC...");
 	msr_enable_apic();
-	_lapic_timer_frequencies=kmm_alloc(cpu_count*sizeof(u32));
 }
 
 
@@ -78,8 +77,8 @@ void lapic_enable(void){
 	u64 end_time=clock_get_time();
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
-	_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]=TIMER_CALIBRATION_TICKS/((end_time-start_time+500)/1000);
-	INFO("Timer frequency: %u ticks/us",_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]);
+	*CPU_LOCAL(_lapic_timer_frequencies)=TIMER_CALIBRATION_TICKS/((end_time-start_time+500)/1000);
+	INFO("Timer frequency: %u ticks/us",*CPU_LOCAL(_lapic_timer_frequencies));
 }
 
 
@@ -88,7 +87,7 @@ void lapic_timer_start(u32 time_us){
 	_lapic_registers[REGISTER_EOI]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_SCHEDULER_VECTOR;
 	_lapic_registers[REGISTER_TMRDIV]=0;
-	_lapic_registers[REGISTER_TMRINITCNT]=time_us*_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index];
+	_lapic_registers[REGISTER_TMRINITCNT]=time_us*(*CPU_LOCAL(_lapic_timer_frequencies));
 }
 
 
@@ -97,5 +96,5 @@ u32 lapic_timer_stop(void){
 	u32 out=_lapic_registers[REGISTER_TMRCURRCNT];
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
-	return (out?out/_lapic_timer_frequencies[CPU_HEADER_DATA->cpu_data->index]:0);
+	return (out?out/(*CPU_LOCAL(_lapic_timer_frequencies)):0);
 }

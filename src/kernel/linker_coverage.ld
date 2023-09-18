@@ -20,6 +20,10 @@ SECTIONS{
         *(.data .data*)
         *(.ap_startup)
         . = ALIGN(8);
+	    __KERNEL_CPU_LOCAL_START__ = . - __KERNEL_OFFSET__;
+        *(.cpulocal)
+	    __KERNEL_CPU_LOCAL_END__ = . - __KERNEL_OFFSET__;
+        . = ALIGN(8);
         __KERNEL_GCOV_INFO_START__ = .;
         *(.gcov_info)
         __KERNEL_GCOV_INFO_END__ = .;

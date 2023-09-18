@@ -25,6 +25,8 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 
 extern u64 __KERNEL_START__[1];
 extern u64 __KERNEL_CORE_END__[1];
+extern u64 __KERNEL_CPU_LOCAL_START__[1];
+extern u64 __KERNEL_CPU_LOCAL_END__[1];
 extern u64 __KERNEL_COMMON_START__[1];
 extern u64 __KERNEL_END__[1];
 extern u64 __KERNEL_BSS_START__[1];
@@ -48,6 +50,18 @@ static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_start(void){
 
 static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_core_end(void){
 	return (u64)__KERNEL_CORE_END__;
+}
+
+
+
+static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_start(void){
+	return (u64)__KERNEL_CPU_LOCAL_START__;
+}
+
+
+
+static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_end(void){
+	return (u64)__KERNEL_CPU_LOCAL_END__;
 }
 
 

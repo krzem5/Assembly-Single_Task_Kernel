@@ -32,7 +32,7 @@ void _isr_handler(isr_state_t* isr_state){
 			return;
 		}
 		ERROR("Page fault");
-		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_HEADER_DATA->cpu_data->index);
+		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
 	}
 	else if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
@@ -73,8 +73,8 @@ void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->cs==8){
 		u64 rbp=isr_state->rbp;
 		while (rbp){
-			LOG("[%u] %p ~ %p",CPU_HEADER_DATA->cpu_data->index,rbp);
-			LOG("[%u] %p",CPU_HEADER_DATA->cpu_data->index,*((u64*)(rbp+8)));
+			LOG("[%u] %p ~ %p",CPU_HEADER_DATA->index,rbp);
+			LOG("[%u] %p",CPU_HEADER_DATA->index,*((u64*)(rbp+8)));
 			rbp=*((u64*)rbp);
 		}
 	}

@@ -3,6 +3,7 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/cpu/local.h>
 #include <kernel/elf/elf.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/gdt/gdt.h>
@@ -61,6 +62,7 @@ void cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
+	cpu_local_init();
 	cpu_data=kmm_alloc(count*sizeof(cpu_data_t));
 	for (u16 i=0;i<count;i++){
 		(cpu_data+i)->header.index=i;

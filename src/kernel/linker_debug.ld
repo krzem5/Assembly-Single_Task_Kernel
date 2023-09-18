@@ -19,6 +19,10 @@ SECTIONS{
         *(.rodata .rodata* .rdata .rdata*)
         *(.data .data*)
         *(.ap_startup)
+        . = ALIGN(8);
+	    __KERNEL_CPU_LOCAL_START__ = . - __KERNEL_OFFSET__;
+        *(.cpulocal)
+	    __KERNEL_CPU_LOCAL_END__ = . - __KERNEL_OFFSET__;
         . = ALIGN(0x1000);
     }
     __KERNEL_COMMON_START__ = . - __KERNEL_OFFSET__;

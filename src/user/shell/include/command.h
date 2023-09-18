@@ -6,7 +6,6 @@
 
 #define MAX_ARG_COUNT 64
 
-
 #define DECLARE_COMMAND(name,help) \
 	static const command_t _command_##name={ \
 		#name, \
