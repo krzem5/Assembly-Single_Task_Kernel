@@ -4,8 +4,9 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "isr"
 
@@ -40,7 +41,7 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	else if (isr_state->isr>32){
 		lapic_eoi();
-		event_signal(IRQ_EVENT(isr_state->isr),1);
+		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
 	else{

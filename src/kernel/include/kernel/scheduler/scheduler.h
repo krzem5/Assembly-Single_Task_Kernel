@@ -1,7 +1,7 @@
 #ifndef _KERNEL_SCHEDULER_SCHEDULER_H_
 #define _KERNEL_SCHEDULER_SCHEDULER_H_ 1
 #include <kernel/lock/lock.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 
 

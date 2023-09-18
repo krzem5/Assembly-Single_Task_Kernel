@@ -6,7 +6,8 @@
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "elf"
@@ -57,7 +58,7 @@ _Bool elf_load(const char* path){
 		ERROR("File '%s' not found",path);
 		return 0;
 	}
-	process_t* process=process_new(0);
+	process_t* process=process_new();
 	elf_header_t header;
 	if (vfs_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		goto _error;

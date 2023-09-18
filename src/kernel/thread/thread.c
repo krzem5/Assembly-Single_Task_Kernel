@@ -5,9 +5,10 @@
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/umm.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
@@ -15,13 +16,6 @@
 
 
 static u64 _thread_next_handle_id=1;
-
-
-
-static void _thread_list_init(process_t* process){
-	lock_init(&(process->thread_list.lock));
-	process->thread_list.head=NULL;
-}
 
 
 
@@ -50,26 +44,6 @@ static void _thread_list_remove(process_t* process,thread_t* thread){
 		thread->thread_list_next->thread_list_prev=thread->thread_list_prev;
 	}
 	lock_release_exclusive(&(process->thread_list.lock));
-}
-
-
-
-process_t* process_new(_Bool is_driver){
-	process_t* out=kmm_alloc(sizeof(process_t));
-	out->handle.id=_thread_next_handle_id;
-	_thread_next_handle_id++;
-	lock_init(&(out->lock));
-	out->is_driver=is_driver;
-	vmm_pagemap_init(&(out->pagemap));
-	vmm_memory_map_init(&(out->mmap));
-	_thread_list_init(out);
-	return out;
-}
-
-
-
-void process_delete(process_t* process){
-	ERROR("Unimplemented: process_delete");
 }
 
 
@@ -118,7 +92,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 void thread_delete(thread_t* thread){
 	lock_acquire_shared(&(thread->state.lock));
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
-		panic("Running threads cannot be deleted",0);
+		panic("Unterminated threads cannot be deleted",0);
 	}
 	lock_release_shared(&(thread->state.lock));
 	process_t* process=thread->process;
@@ -172,46 +146,4 @@ void thread_await_event(event_t* event){
 	lock_release_exclusive(&(thread->state.lock));
 	lock_release_exclusive(&(event->lock));
 	scheduler_dequeue_thread(1);
-}
-
-
-
-event_t* event_new(void){
-	event_t* out=kmm_alloc(sizeof(event_t));
-	out->handle.id=_thread_next_handle_id;
-	_thread_next_handle_id++;
-	lock_init(&(out->lock));
-	out->head=NULL;
-	out->tail=NULL;
-	return out;
-}
-
-
-
-void event_delete(event_t* event){
-	ERROR("Unimplemented: event_delete");
-}
-
-
-
-void event_signal(event_t* event,_Bool dispatch_all){
-	lock_acquire_exclusive(&(event->lock));
-	while (event->head){
-		thread_t* thread=event->head;
-		event->head=thread->state.event.next;
-		lock_acquire_exclusive(&(thread->state.lock));
-		thread->state.type=THREAD_STATE_TYPE_NONE;
-		thread->state.event.event=NULL;
-		thread->state.event.next=NULL;
-		lock_release_exclusive(&(thread->state.lock));
-		SPINLOOP(thread->state_not_present);
-		scheduler_enqueue_thread(thread);
-		if (!dispatch_all){
-			break;
-		}
-	}
-	if (!event->head){
-		event->tail=NULL;
-	}
-	lock_release_exclusive(&(event->lock));
 }

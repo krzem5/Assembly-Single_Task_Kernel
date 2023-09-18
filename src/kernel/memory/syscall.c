@@ -4,7 +4,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/syscall/syscall.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 
 

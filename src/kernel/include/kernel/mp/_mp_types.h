@@ -1,5 +1,5 @@
-#ifndef _KERNEL_THREAD_THREAD_H_
-#define _KERNEL_THREAD_THREAD_H_ 1
+#ifndef _KERNEL_MP__MP_TYPES_H_
+#define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/lock.h>
@@ -22,6 +22,7 @@ typedef struct _HANDLE{
 } handle_t;
 
 
+
 typedef struct _EVENT{
 	handle_t handle;
 	lock_t lock;
@@ -41,7 +42,6 @@ typedef struct _PROCESS_THREAD_LIST{
 typedef struct _PROCESS{
 	handle_t handle;
 	lock_t lock;
-	_Bool is_driver;
 	vmm_pagemap_t pagemap;
 	vmm_memory_map_t mmap;
 	process_thread_list_t thread_list;

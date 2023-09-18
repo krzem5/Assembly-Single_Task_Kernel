@@ -1,6 +1,6 @@
-#ifndef _KERNEL_THREAD__MULTIPROCESSING_TYPES_H_
-#define _KERNEL_THREAD__MULTIPROCESSING_TYPES_H_ 1
-#include <kernel/thread/_multiprocessing_types.h>
+#ifndef _KERNEL_MP_THREAD_H_
+#define _KERNEL_MP_THREAD_H_ 1
+#include <kernel/mp/_mp_types.h>
 #include <kernel/types.h>
 
 
@@ -14,19 +14,11 @@
 
 #define THREAD_STATE_TYPE_NONE 0
 #define THREAD_STATE_TYPE_QUEUED 1
-#define THREAD_STATE_TYPE_EXECUTING 2
+#define THREAD_STATE_TYPE_RUNNING 2
 #define THREAD_STATE_TYPE_AWAITING_EVENT 3
 #define THREAD_STATE_TYPE_TERMINATED 255
 
 #define THREAD_DATA ((volatile __seg_gs thread_t*)NULL)
-
-
-
-process_t* process_new(_Bool is_driver);
-
-
-
-void process_delete(process_t* process);
 
 
 
@@ -43,18 +35,6 @@ void KERNEL_NORETURN thread_terminate(void);
 
 
 void thread_await_event(event_t* event);
-
-
-
-event_t* event_new(void);
-
-
-
-void event_delete(event_t* event);
-
-
-
-void event_signal(event_t* event,_Bool dispatch_all);
 
 
 

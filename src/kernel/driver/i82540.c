@@ -8,7 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"

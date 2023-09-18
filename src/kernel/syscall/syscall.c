@@ -9,12 +9,12 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/syscall.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/syscall.h>
+#include <kernel/mp/thread.h>
 #include <kernel/network/syscall.h>
 #include <kernel/random/syscall.h>
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
-#include <kernel/thread/syscall.h>
-#include <kernel/thread/thread.h>
 #include <kernel/types.h>
 #include <kernel/user/syscall.h>
 #include <kernel/util/util.h>

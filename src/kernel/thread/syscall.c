@@ -1,7 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 
 

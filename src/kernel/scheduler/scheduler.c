@@ -8,7 +8,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/thread/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "scheduler"
@@ -83,13 +83,13 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (!new_thread){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
-	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_EXECUTING)){
+	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		scheduler->current_thread->gpr_state=*state;
 		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
 		fpu_save(scheduler->current_thread->fpu_state);
-		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_EXECUTING){
+		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
 		scheduler->current_thread->state_not_present=0;
@@ -106,7 +106,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		fpu_restore(new_thread->fpu_state);
 		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
 		lock_acquire_exclusive(&(new_thread->state.lock));
-		new_thread->state.type=THREAD_STATE_TYPE_EXECUTING;
+		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
 		lock_release_exclusive(&(new_thread->state.lock));
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
