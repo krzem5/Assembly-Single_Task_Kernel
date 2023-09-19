@@ -94,6 +94,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
 	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
 	lock_init(&(_pmm_high_allocator.lock));
+	_pmm_counters.data[PMM_COUNTER_KERNEL_IMAGE]=pmm_align_up_address(kernel_get_bss_end()-kernel_get_start())>>PAGE_SIZE_SHIFT;
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
 		if ((KERNEL_DATA->mmap+i)->type==1){
