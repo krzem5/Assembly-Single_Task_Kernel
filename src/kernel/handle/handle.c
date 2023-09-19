@@ -37,7 +37,18 @@ void handle_delete(handle_t* handle){
 	if (handle->rc){
 		panic("Unable to delete referenced handle",0);
 	}
+	lock_acquire_exclusive(&_handle_global_lock);
+	if (handle->prev){
+		handle->prev->next=handle->next;
+	}
+	else{
+		_handle_root=handle->next;
+	}
+	if (handle->next){
+		handle->next->prev=handle->prev;
+	}
 	ERROR("Unimplemented: handle_delete");
+	lock_release_exclusive(&_handle_global_lock);
 }
 
 
