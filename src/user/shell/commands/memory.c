@@ -61,6 +61,7 @@ void memory_main(int argc,const char*const* argv){
 	printf("Free:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_free<<12);
 	printf("AHCI:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_ahci<<12);
 	printf("i82540:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_i82540<<12);
+	printf("Image:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_image<<12);
 	printf("Kernel stack:\t\x1b[1m%v\x1b[0m\n",stats.counter_kernel_stack<<12);
 	printf("KFS:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_kfs<<12);
 	printf("KMM:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_kmm<<12);

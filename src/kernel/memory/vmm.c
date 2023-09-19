@@ -381,7 +381,6 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
 			lock_shared_to_exclusive(&(pagemap->lock));
-			LOG("~ %u %p",VMM_PAGE_GET_COUNTER(entry),entry&VMM_PAGE_ADDRESS_MASK);
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,VMM_PAGE_GET_COUNTER(entry));
 			lock_release_exclusive(&(pagemap->lock));
 		}
