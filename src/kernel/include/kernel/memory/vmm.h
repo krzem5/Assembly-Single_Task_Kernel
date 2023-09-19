@@ -15,7 +15,8 @@
 #define VMM_PAGE_COUNT_MASK 0x7ff0000000000000ull
 #define VMM_PAGE_COUNT_SHIFT 52
 
-#define VMM_MAP_WITH_COUNT 0x0008000000000000ull
+#define VMM_PAGE_GET_COUNTER(x) (((x)>>52)&0x7ff)
+#define VMM_PAGE_SET_COUNTER(x) (((u64)((x)&0x7ff))<<52)
 
 #define VMM_PAGE_ADDRESS_MASK 0x0000fffffffff000ull
 
@@ -87,7 +88,7 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
 
 
 
-void vmm_update_address_and_set_present(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address);
+_Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 

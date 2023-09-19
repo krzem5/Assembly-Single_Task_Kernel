@@ -27,8 +27,7 @@ void isr_init(void){
 void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14){
 		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
-		if (!(isr_state->error&1)&&CPU_HEADER_DATA->current_thread&&vmm_virtual_to_physical(&(THREAD_DATA->process->pagemap),address)==VMM_SHADOW_PAGE_ADDRESS){
-			vmm_update_address_and_set_present(&(THREAD_DATA->process->pagemap),pmm_alloc_zero(1,PMM_COUNTER_USER,0),address);
+		if (!(isr_state->error&1)&&CPU_HEADER_DATA->current_thread&&vmm_map_shadow_page(&(THREAD_DATA->process->pagemap),address)){
 			vmm_invalidate_tlb_entry(address);
 			return;
 		}

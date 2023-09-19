@@ -75,7 +75,7 @@ _Bool elf_load(const char* path){
 		if (program_header.p_type!=1){
 			continue;
 		}
-		u64 flags=VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
+		u64 flags=VMM_PAGE_SET_COUNTER(PMM_COUNTER_USER)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
 		if (program_header.p_flags&1){
 			flags|=VMM_PAGE_FLAG_READWRITE;
 		}
@@ -92,7 +92,7 @@ _Bool elf_load(const char* path){
 			ERROR("Unable to reserve process memory");
 			goto _error;
 		}
-		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags|VMM_MAP_WITH_COUNT,page_count);
+		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags,page_count);
 		u64 end_address=program_header.p_vaddr-offset+(page_count<<PAGE_SIZE_SHIFT);
 		if (end_address>highest_address){
 			highest_address=end_address;

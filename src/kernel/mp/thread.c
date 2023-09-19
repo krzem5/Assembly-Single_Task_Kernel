@@ -58,9 +58,9 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	if (!out->user_stack_bottom||!out->kernel_stack_bottom||!out->pf_stack_bottom){
 		panic("Unable to reserve thread stack",0);
 	}
-	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
-	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
-	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
+	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_USER_STACK)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
+	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
+	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	out->header.kernel_rsp=out->kernel_stack_bottom+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->header.current_thread=out;
 	out->stack_size=stack_size;
