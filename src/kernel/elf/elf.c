@@ -76,10 +76,7 @@ _Bool elf_load(const char* path){
 			continue;
 		}
 		u64 flags=VMM_PAGE_SET_COUNTER(PMM_COUNTER_IMAGE)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
-		if (program_header.p_flags&1){
-			flags|=VMM_PAGE_FLAG_READWRITE;
-		}
-		else{
+		if (!(program_header.p_flags&1)){
 			flags|=VMM_PAGE_FLAG_NOEXECUTE;
 		}
 		if (program_header.p_flags&2){
