@@ -1,6 +1,9 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "handle"
@@ -47,8 +50,21 @@ void handle_delete(handle_t* handle){
 	if (handle->next){
 		handle->next->prev=handle->prev;
 	}
-	ERROR("Unimplemented: handle_delete");
 	lock_release_exclusive(&_handle_global_lock);
+	switch (handle->type){
+		case HANDLE_TYPE_ANY:
+			ERROR("any_delete");
+			break;
+		case HANDLE_TYPE_EVENT:
+			event_delete(handle->object);
+			break;
+		case HANDLE_TYPE_THREAD:
+			thread_delete(handle->object);
+			break;
+		case HANDLE_TYPE_PROCESS:
+			process_delete(handle->object);
+			break;
+	}
 }
 
 

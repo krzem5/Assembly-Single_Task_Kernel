@@ -87,18 +87,17 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 void thread_delete(thread_t* thread){
 	lock_acquire_shared(&(thread->lock));
-	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
-		panic("Unterminated threads cannot be deleted",0);
+	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
+		panic("Referenced threads cannot be deleted",0);
 	}
 	lock_release_shared(&(thread->lock));
-	handle_release(&(thread->handle));
 	process_t* process=thread->process;
 	lock_acquire_exclusive(&(process->lock));
 	_thread_list_remove(process,thread);
+	lock_release_exclusive(&(process->lock));
 	if (!process->thread_list.head){
 		handle_release(&(process->handle));
 	}
-	lock_release_exclusive(&(process->lock));
 	ERROR("Unimplemented: thread_delete");
 }
 
@@ -109,8 +108,8 @@ void KERNEL_NORETURN thread_terminate(void){
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	lock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
-	handle_release(&(thread->handle));
 	lock_release_exclusive(&(thread->lock));
+	handle_release(&(thread->handle));
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);

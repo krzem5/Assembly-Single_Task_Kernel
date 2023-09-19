@@ -23,8 +23,12 @@ event_t* event_new(void){
 
 
 void event_delete(event_t* event){
-	handle_release(&(event->handle));
+	lock_acquire_shared(&(event->lock));
+	if (event->head||event->handle.rc){
+		panic("Referenced events cannot be deleted",0);
+	}
 	ERROR("Unimplemented: event_delete");
+	lock_release_shared(&(event->lock));
 }
 
 

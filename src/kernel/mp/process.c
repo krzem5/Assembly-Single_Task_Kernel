@@ -5,6 +5,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/mp/process.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "process"
 
 
@@ -23,6 +24,10 @@ process_t* process_new(void){
 
 
 void process_delete(process_t* process){
-	handle_release(&(process->handle));
+	lock_acquire_shared(&(process->lock));
+	if (process->thread_list.head||process->handle.rc){
+		panic("Referenced processes cannot be deleted",0);
+	}
 	ERROR("Unimplemented: process_delete");
+	lock_release_shared(&(process->lock));
 }
