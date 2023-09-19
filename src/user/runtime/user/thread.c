@@ -23,6 +23,12 @@ u64 thread_create(void (*func)(void*),void* arg,u64 stack_size){
 
 
 
+u32 thread_get_priority(u64 handle){
+	return _syscall_thread_get_priority(handle);
+}
+
+
+
 _Bool thread_set_priority(u64 handle,u32 priority){
 	return _syscall_thread_set_priority(handle,priority);
 }

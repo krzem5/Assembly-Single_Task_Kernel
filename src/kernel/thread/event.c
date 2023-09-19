@@ -34,11 +34,11 @@ void event_dispatch(event_t* event,_Bool dispatch_all){
 	while (event->head){
 		thread_t* thread=event->head;
 		event->head=thread->state.event.next;
-		lock_acquire_exclusive(&(thread->state.lock));
+		lock_acquire_exclusive(&(thread->lock));
 		thread->state.type=THREAD_STATE_TYPE_NONE;
 		thread->state.event.event=NULL;
 		thread->state.event.next=NULL;
-		lock_release_exclusive(&(thread->state.lock));
+		lock_release_exclusive(&(thread->lock));
 		SPINLOOP(thread->state_not_present);
 		scheduler_enqueue_thread(thread);
 		if (!dispatch_all){

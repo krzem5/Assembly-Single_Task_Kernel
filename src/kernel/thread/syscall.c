@@ -30,6 +30,21 @@ void syscall_thread_create(syscall_registers_t* regs){
 
 
 
+void syscall_thread_get_priority(syscall_registers_t* regs){
+	if (!regs->rdi){
+		regs->rax=0;
+		return;
+	}
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	if (!handle){
+		regs->rax=0;
+		return;
+	}
+	regs->rax=((thread_t*)(handle->object))->priority;
+}
+
+
+
 void syscall_thread_set_priority(syscall_registers_t* regs){
 	if (!regs->rdi||regs->rsi<THREAD_PRIORITY_MIN||regs->rsi>THREAD_PRIORITY_MAX){
 		regs->rax=0;

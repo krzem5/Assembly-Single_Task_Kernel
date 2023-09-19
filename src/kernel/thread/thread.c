@@ -78,7 +78,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->priority=THREAD_PRIORITY_NORMAL;
 	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;
-	lock_init(&(out->state.lock));
+	lock_init(&(out->lock));
 	_thread_list_add(process,out);
 	return out;
 }
@@ -86,11 +86,11 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	lock_acquire_shared(&(thread->state.lock));
+	lock_acquire_shared(&(thread->lock));
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated threads cannot be deleted",0);
 	}
-	lock_release_shared(&(thread->state.lock));
+	lock_release_shared(&(thread->lock));
 	handle_release(&(thread->handle));
 	process_t* process=thread->process;
 	_thread_list_remove(process,thread);
@@ -105,9 +105,9 @@ void thread_delete(thread_t* thread){
 void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	lock_acquire_exclusive(&(thread->state.lock));
+	lock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
-	lock_release_exclusive(&(thread->state.lock));
+	lock_release_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -125,7 +125,7 @@ void thread_await_event(event_t* event){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	lock_acquire_exclusive(&(event->lock));
-	lock_acquire_exclusive(&(thread->state.lock));
+	lock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->state.event.event=event;
 	thread->state.event.next=NULL;
@@ -134,13 +134,13 @@ void thread_await_event(event_t* event){
 		event->tail=thread;
 	}
 	else{
-		lock_acquire_exclusive(&(event->tail->state.lock));
+		lock_acquire_exclusive(&(event->tail->lock));
 		event->tail->state.event.next=thread;
-		lock_release_exclusive(&(event->tail->state.lock));
+		lock_release_exclusive(&(event->tail->lock));
 		event->tail=thread;
 	}
 	thread->state_not_present=1;
-	lock_release_exclusive(&(thread->state.lock));
+	lock_release_exclusive(&(thread->lock));
 	lock_release_exclusive(&(event->lock));
 	scheduler_dequeue_thread(1);
 }

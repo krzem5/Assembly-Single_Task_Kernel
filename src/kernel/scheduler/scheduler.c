@@ -105,9 +105,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
 		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
-		lock_acquire_exclusive(&(new_thread->state.lock));
+		lock_acquire_exclusive(&(new_thread->lock));
 		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
-		lock_release_exclusive(&(new_thread->state.lock));
+		lock_release_exclusive(&(new_thread->lock));
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
@@ -119,7 +119,6 @@ void scheduler_isr_handler(isr_state_t* state){
 
 void scheduler_enqueue_thread(thread_t* thread){
 	lock_acquire_exclusive(&(thread->lock));
-	lock_acquire_exclusive(&(thread->state.lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued",0);
 	}
@@ -155,7 +154,6 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->scheduler_queue_next=NULL;
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
-	lock_release_exclusive(&(thread->state.lock));
 	lock_release_exclusive(&(thread->lock));
 	lapic_timer_start(remaining_us);
 }

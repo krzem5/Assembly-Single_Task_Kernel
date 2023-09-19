@@ -12,6 +12,10 @@ void syscall_thread_create(syscall_registers_t* regs);
 
 
 
+void syscall_thread_get_priority(syscall_registers_t* regs);
+
+
+
 void syscall_thread_set_priority(syscall_registers_t* regs);
 
 

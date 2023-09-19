@@ -53,7 +53,6 @@ typedef struct _THREAD_FS_GS_STATE{
 
 typedef struct _THREAD_STATE{
 	thread_state_type_t type;
-	lock_t lock;
 	union{
 		struct{
 			event_t* event;

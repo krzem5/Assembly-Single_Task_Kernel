@@ -46,4 +46,5 @@ DECL_SYSCALL coverage_dump_data, 29, 0
 DECL_SYSCALL user_data_pointer, 30, 0
 DECL_SYSCALL thread_stop, 31, 0
 DECL_SYSCALL thread_create, 32, 4
-DECL_SYSCALL thread_set_priority, 33, 2
+DECL_SYSCALL thread_get_priority, 33, 1
+DECL_SYSCALL thread_set_priority, 34, 2
