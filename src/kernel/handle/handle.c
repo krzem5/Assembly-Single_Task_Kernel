@@ -52,9 +52,6 @@ void handle_delete(handle_t* handle){
 	}
 	lock_release_exclusive(&_handle_global_lock);
 	switch (handle->type){
-		case HANDLE_TYPE_ANY:
-			ERROR("any_delete");
-			break;
 		case HANDLE_TYPE_EVENT:
 			event_delete(handle->object);
 			break;
