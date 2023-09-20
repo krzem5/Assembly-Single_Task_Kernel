@@ -45,14 +45,14 @@ void* omm_alloc(omm_allocator_t* allocator){
 	lock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
-		u64 page_address=pmm_alloc(allocator->page_count,PMM_COUNTER_KMM,0);
+		u64 page_address=pmm_alloc(allocator->page_count,PMM_COUNTER_KMM,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 		omm_object_t* head=NULL;
 		for (u64 i=(sizeof(omm_page_header_t)+allocator->alignment-1)&(-((u64)(allocator->alignment)));i+allocator->object_size<=(allocator->page_count<<PAGE_SIZE_SHIFT);i+=allocator->object_size){
-			omm_object_t* object=(void*)(page_address+i+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+			omm_object_t* object=(void*)(page_address+i);
 			object->next=head;
 			head=object;
 		}
-		page=(void*)(page_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		page=(void*)page_address;
 		_allocator_add_page(&(allocator->page_free_head),page);
 		page->head=head;
 		page->object_size=allocator->object_size;
@@ -84,18 +84,19 @@ void omm_dealloc(omm_allocator_t* allocator,void* object){
 	// omm_object_t* head=object;
 	// head->next=page->head;
 	// page->head=head;
-	// if (page->used_count==allocator->max_used_count){
-	// 	_allocator_remove_page(&(allocator->page_full_head),page);
-	// 	_allocator_add_page(&(allocator->page_used_head),page);
-	// }
-	// else if (page->used_count==(allocator->max_used_count>>1)){
-	// 	_allocator_remove_page(&(allocator->page_used_head),page);
-	// 	_allocator_add_page(&(allocator->page_free_head),page);
-	// }
+	if (page->used_count==allocator->max_used_count){
+		_allocator_remove_page(&(allocator->page_full_head),page);
+		_allocator_add_page(&(allocator->page_used_head),page);
+	}
+	else if (page->used_count==(allocator->max_used_count>>1)){
+		_allocator_remove_page(&(allocator->page_used_head),page);
+		_allocator_add_page(&(allocator->page_free_head),page);
+	}
 	// page->used_count--;
-	// if (!page->used_count){
-	// 	ERROR("omm_dealloc: free page");
-	// }
+	if (!page->used_count){
+		_allocator_remove_page(&(allocator->page_free_head),page);
+		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,PMM_COUNTER_KMM);
+	}
 	WARN("%p %p",object,allocator->object_size);
 	lock_release_exclusive(&(allocator->lock));
 }
