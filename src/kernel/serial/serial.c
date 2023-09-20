@@ -14,8 +14,8 @@
 
 
 
-static lock_t _serial_read_lock=LOCK_INIT_STRUCT;
-static lock_t _serial_write_lock=LOCK_INIT_STRUCT;
+static lock_t KERNEL_CORE_DATA _serial_read_lock=LOCK_INIT_STRUCT;
+static lock_t KERNEL_CORE_DATA _serial_write_lock=LOCK_INIT_STRUCT;
 static u8 _serial_irq=0;
 
 

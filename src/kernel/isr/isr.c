@@ -47,6 +47,7 @@ void _isr_handler(isr_state_t* isr_state){
 		ERROR("Crash");
 	}
 	WARN("ISR %u:",isr_state->isr);
+	WARN("cpu    = %p",CPU_HEADER_DATA->index);
 	WARN("es     = %p",isr_state->es);
 	WARN("ds     = %p",isr_state->ds);
 	WARN("rax    = %p",isr_state->rax);

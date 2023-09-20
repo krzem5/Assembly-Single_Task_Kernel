@@ -94,11 +94,10 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	lock_acquire_shared(&(thread->lock));
+	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
 		panic("Referenced threads cannot be deleted",0);
 	}
-	lock_release_shared(&(thread->lock));
 	process_t* process=thread->process;
 	lock_acquire_exclusive(&(process->lock));
 	_thread_list_remove(process,thread);
@@ -115,10 +114,9 @@ void thread_delete(thread_t* thread){
 void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	scheduler_dequeue_thread(0);
 	lock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
-	lock_release_exclusive(&(thread->lock));
-	handle_release(&(thread->handle));
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -126,7 +124,9 @@ void KERNEL_NORETURN thread_terminate(void){
 	vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
 	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
-	scheduler_dequeue_thread(0);
+	lock_release_exclusive(&(thread->lock));
+	handle_release(&(thread->handle));
+	scheduler_start();
 	for (;;);
 }
 

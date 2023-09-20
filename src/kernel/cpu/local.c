@@ -15,8 +15,8 @@ void cpu_local_init(void){
 		if ((*descriptor)->var){
 			u32 size=(*descriptor)->size*cpu_count;
 			void* data=kmm_alloc(size);
-			*((*descriptor)->var)=data;
 			memset(data,0,size);
+			*((*descriptor)->var)=data;
 		}
 	}
 }

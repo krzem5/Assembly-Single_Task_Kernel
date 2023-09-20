@@ -166,5 +166,7 @@ void scheduler_dequeue_thread(_Bool save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
 	}
-	scheduler_start();
+	else{
+		scheduler_start();
+	}
 }
