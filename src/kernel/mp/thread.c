@@ -3,8 +3,8 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/mmap.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
@@ -13,6 +13,11 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
+
+
+
+static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(thread_t),8,4);
+static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
 
 
 
@@ -46,8 +51,11 @@ static void _thread_list_remove(process_t* process,thread_t* thread){
 
 
 thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
+	if (OMM_ALLOCATOR_IS_UNINITIALISED(&_thread_fpu_state_allocator)){
+		_thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_STRUCT(fpu_state_size,64,4);
+	}
 	stack_size=pmm_align_up_address(stack_size);
-	thread_t* out=kmm_alloc(sizeof(thread_t));
+	thread_t* out=omm_alloc(&_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
 	lock_init(&(out->lock));
@@ -73,7 +81,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->gpr_state.rflags=0x0000000202;
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
-	out->fpu_state=kmm_alloc_aligned(fpu_state_size,64);
+	out->fpu_state=omm_alloc(&_thread_fpu_state_allocator);
 	fpu_init(out->fpu_state);
 	out->priority=THREAD_PRIORITY_NORMAL;
 	out->state_not_present=0;
@@ -95,10 +103,11 @@ void thread_delete(thread_t* thread){
 	lock_acquire_exclusive(&(process->lock));
 	_thread_list_remove(process,thread);
 	lock_release_exclusive(&(process->lock));
+	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
+	omm_dealloc(&_thread_allocator,thread);
 	if (!process->thread_list.head){
 		handle_release(&(process->handle));
 	}
-	ERROR("Unimplemented: thread_delete");
 }
 
 

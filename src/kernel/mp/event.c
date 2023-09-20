@@ -1,7 +1,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
@@ -11,8 +11,12 @@
 
 
 
+static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(event_t),8,2);
+
+
+
 event_t* event_new(void){
-	event_t* out=kmm_alloc(sizeof(event_t));
+	event_t* out=omm_alloc(&_event_allocator);
 	handle_new(out,HANDLE_TYPE_EVENT,&(out->handle));
 	lock_init(&(out->lock));
 	out->head=NULL;
@@ -27,8 +31,8 @@ void event_delete(event_t* event){
 	if (event->head||event->handle.rc){
 		panic("Referenced events cannot be deleted",0);
 	}
-	ERROR("Unimplemented: event_delete");
 	lock_release_shared(&(event->lock));
+	omm_dealloc(&_event_allocator,event);
 }
 
 

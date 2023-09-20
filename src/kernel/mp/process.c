@@ -1,8 +1,8 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/mmap.h>
+#include <kernel/memory/omm.h>
 #include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -10,8 +10,12 @@
 
 
 
+static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(process_t),8,2);
+
+
+
 process_t* process_new(void){
-	process_t* out=kmm_alloc(sizeof(process_t));
+	process_t* out=omm_alloc(&_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	lock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
@@ -28,6 +32,6 @@ void process_delete(process_t* process){
 	if (process->thread_list.head||process->handle.rc){
 		panic("Referenced processes cannot be deleted",0);
 	}
-	ERROR("Unimplemented: process_delete");
 	lock_release_shared(&(process->lock));
+	omm_dealloc(&_process_allocator,process);
 }
