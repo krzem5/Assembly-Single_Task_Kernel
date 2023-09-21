@@ -63,6 +63,10 @@ void scheduler_pause(void){
 
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
+	if (CPU_HEADER_DATA->index){
+		scheduler_task_wait_loop();
+		return;
+	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
@@ -85,7 +89,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=0;
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
 		scheduler->current_thread->gpr_state=*state;
 		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
@@ -163,7 +167,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
-	CPU_LOCAL(cpu_extra_data)->tss.ist1=0;
+	CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
 	if (!save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;

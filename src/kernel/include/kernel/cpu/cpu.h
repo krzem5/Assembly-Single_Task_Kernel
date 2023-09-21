@@ -32,6 +32,8 @@ typedef struct _CPU_EXTRA_DATA{
 	tss_t tss;
 	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
 	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
+	u8 TMP_IST1_STACK_BOTTOM[4096];
+	u8 TMP_IST1_STACK_TOP[8];
 } cpu_extra_data_t;
 
 
