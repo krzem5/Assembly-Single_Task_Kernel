@@ -88,6 +88,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
 	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
+		lock_acquire_exclusive(&(scheduler->current_thread->lock));
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
 		scheduler->current_thread->gpr_state=*state;
@@ -95,6 +96,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
 		fpu_save(scheduler->current_thread->fpu_state);
 		scheduler->current_thread->state_not_present=0;
+		lock_release_exclusive(&(scheduler->current_thread->lock));
 		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
