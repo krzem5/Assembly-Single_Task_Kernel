@@ -19,7 +19,7 @@
 
 
 
-static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
+/*static*/ CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 static scheduler_queues_t _scheduler_queues;
 
 
@@ -85,17 +85,19 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=0;
 		scheduler->current_thread->gpr_state=*state;
 		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
 		fpu_save(scheduler->current_thread->fpu_state);
+		scheduler->current_thread->state_not_present=0;
 		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
-		scheduler->current_thread->state_not_present=0;
 		scheduler->current_thread=NULL;
 	}
 	if (new_thread){
+		lock_acquire_exclusive(&(new_thread->lock));
 		new_thread->header.index=CPU_HEADER_DATA->index;
 		msr_set_gs_base(new_thread,0);
 		scheduler->current_thread=new_thread;
@@ -105,7 +107,6 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
 		fpu_restore(new_thread->fpu_state);
 		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
-		lock_acquire_exclusive(&(new_thread->lock));
 		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
 		lock_release_exclusive(&(new_thread->lock));
 	}
@@ -162,6 +163,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
+	CPU_LOCAL(cpu_extra_data)->tss.ist1=0;
 	if (!save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;

@@ -41,6 +41,7 @@ void syscall_thread_get_priority(syscall_registers_t* regs){
 		return;
 	}
 	regs->rax=((thread_t*)(handle->object))->priority;
+	handle_release(handle);
 }
 
 

@@ -36,6 +36,9 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 void* omm_alloc(omm_allocator_t* allocator){
+	if (allocator->object_size<sizeof(omm_object_t)){
+		allocator->object_size=sizeof(omm_object_t);
+	}
 	if (allocator->alignment&(allocator->alignment-1)){
 		panic("omm_allocator_t alignment must be a power of 2",0);
 	}
@@ -81,9 +84,10 @@ void omm_dealloc(omm_allocator_t* allocator,void* object){
 	if (page->object_size!=allocator->object_size){
 		panic("omm_dealloc: wrong allocator",0);
 	}
-	// omm_object_t* head=object;
-	// head->next=page->head;
-	// page->head=head;
+	memset(object,0,allocator->object_size);WARN("%p %p",object,allocator->object_size);
+	omm_object_t* head=object;
+	head->next=page->head;
+	page->head=head;
 	if (page->used_count==allocator->max_used_count){
 		_allocator_remove_page(&(allocator->page_full_head),page);
 		_allocator_add_page(&(allocator->page_used_head),page);
@@ -92,11 +96,10 @@ void omm_dealloc(omm_allocator_t* allocator,void* object){
 		_allocator_remove_page(&(allocator->page_used_head),page);
 		_allocator_add_page(&(allocator->page_free_head),page);
 	}
-	// page->used_count--;
+	page->used_count--;
 	if (!page->used_count){
 		_allocator_remove_page(&(allocator->page_free_head),page);
 		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,PMM_COUNTER_KMM);
 	}
-	WARN("%p %p",object,allocator->object_size);
 	lock_release_exclusive(&(allocator->lock));
 }
