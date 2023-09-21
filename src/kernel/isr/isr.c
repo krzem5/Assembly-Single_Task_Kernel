@@ -1,5 +1,6 @@
 #include <kernel/apic/lapic.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/cpu/local.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -43,11 +44,16 @@ void _isr_handler(isr_state_t* isr_state){
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
+	else if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
+		ERROR("Page fault stack not present");
+		for (;;);
+	}
 	else{
 		ERROR("Crash");
 	}
 	WARN("ISR %u:",isr_state->isr);
 	WARN("cpu    = %p",CPU_HEADER_DATA->index);
+	WARN("ist1   = %p",CPU_LOCAL(cpu_extra_data)->tss.ist1);
 	WARN("es     = %p",isr_state->es);
 	WARN("ds     = %p",isr_state->ds);
 	WARN("rax    = %p",isr_state->rax);

@@ -19,7 +19,7 @@
 
 
 
-/*static*/ CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
+static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 static scheduler_queues_t _scheduler_queues;
 
 

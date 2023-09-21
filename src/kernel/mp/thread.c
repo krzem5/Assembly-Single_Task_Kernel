@@ -94,7 +94,6 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	extern scheduler_t* _scheduler_data;
 	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
 		panic("Referenced threads cannot be deleted",0);
@@ -103,16 +102,10 @@ void thread_delete(thread_t* thread){
 	lock_acquire_exclusive(&(process->lock));
 	_thread_list_remove(process,thread);
 	lock_release_exclusive(&(process->lock));
-	for (u8 i=0;i<cpu_count;i++){
-		if (thread==(_scheduler_data+i)->current_thread){
-			WARN("[%u~%u]: wrong gs base! [%p ~ %p]",i,CPU_HEADER_DATA->index,thread,(_scheduler_data+i)->current_thread);
-		}
+	omm_dealloc(&_thread_allocator,thread);
+	if (!process->thread_list.head){
+		handle_release(&(process->handle));
 	}
-	// thread->header.current_thread=NULL;
-	// omm_dealloc(&_thread_allocator,thread);
-	// if (!process->thread_list.head){
-	// 	handle_release(&(process->handle));
-	// }
 }
 
 
