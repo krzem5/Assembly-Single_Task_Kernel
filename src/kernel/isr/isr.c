@@ -41,7 +41,6 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	else if (isr_state->isr>32){
 		lapic_eoi();
-		ERROR("~ %u",isr_state->isr);
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
