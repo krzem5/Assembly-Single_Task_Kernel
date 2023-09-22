@@ -153,5 +153,6 @@ void thread_await_event(event_t* event){
 	thread->state_not_present=1;
 	lock_release_exclusive(&(thread->lock));
 	lock_release_exclusive(&(event->lock));
+	WARN("~ %u -> %u",thread->handle.id,event->handle.id);
 	scheduler_dequeue_thread(1);
 }
