@@ -94,7 +94,6 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 void thread_delete(thread_t* thread){
-	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
 		panic("Referenced threads cannot be deleted",0);
 	}
@@ -124,8 +123,9 @@ void KERNEL_NORETURN thread_terminate(void){
 	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
-	lock_release_exclusive(&(thread->lock));
-	handle_release(&(thread->handle));
+	if (handle_release(&(thread->handle))){
+		lock_release_exclusive(&(thread->lock));
+	}
 	scheduler_start();
 	for (;;);
 }

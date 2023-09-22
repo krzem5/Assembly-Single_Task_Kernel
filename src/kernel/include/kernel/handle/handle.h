@@ -50,11 +50,13 @@ static inline void handle_acquire(handle_t* handle){
 
 
 
-static inline void handle_release(handle_t* handle){
+static inline _Bool handle_release(handle_t* handle){
 	handle->rc--;
-	if (!handle->rc){
-		handle_delete(handle);
+	if (handle->rc){
+		return 1;
 	}
+	handle_delete(handle);
+	return 0;
 }
 
 
