@@ -88,7 +88,6 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->state.type=THREAD_STATE_TYPE_NONE;
 	lock_init(&(out->lock));
 	_thread_list_add(process,out);
-	u64 _ADDR=(u64)out,_SIZE=sizeof(thread_t);if (_ADDR<=0xffff80000050fb68&&_ADDR+_SIZE>=0xffff80000050fb68+4){WARN("ALLOC %u %u %u",out->handle.rc,0xffff80000050fb68-_ADDR,__builtin_offsetof(thread_t,lock));}
 	return out;
 }
 
@@ -102,7 +101,7 @@ void thread_delete(thread_t* thread){
 	lock_acquire_exclusive(&(process->lock));
 	_thread_list_remove(process,thread);
 	lock_release_exclusive(&(process->lock));
-	// omm_dealloc(&_thread_allocator,thread);
+	omm_dealloc(&_thread_allocator,thread);
 	if (!process->thread_list.head){
 		handle_release(&(process->handle));
 	}
@@ -154,6 +153,5 @@ void thread_await_event(event_t* event){
 	thread->state_not_present=1;
 	lock_release_exclusive(&(thread->lock));
 	lock_release_exclusive(&(event->lock));
-	WARN("~ %u -> %u",thread->handle.id,event->handle.id);
 	scheduler_dequeue_thread(1);
 }

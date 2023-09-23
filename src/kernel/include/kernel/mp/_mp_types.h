@@ -76,7 +76,7 @@ typedef struct _THREAD{
 	isr_state_t gpr_state;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
-	thread_priority_t priority;
+	volatile thread_priority_t priority;
 	_Bool state_not_present;
 	thread_state_t state;
 	struct _THREAD* thread_list_prev;
