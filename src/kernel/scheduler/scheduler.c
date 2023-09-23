@@ -96,7 +96,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
 		fpu_save(scheduler->current_thread->fpu_state);
 		scheduler->current_thread->state_not_present=0;
-		lock_acquire_exclusive(&(scheduler->current_thread->lock));
+		lock_release_exclusive(&(scheduler->current_thread->lock));
 		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 			scheduler_enqueue_thread(scheduler->current_thread);
 		}
