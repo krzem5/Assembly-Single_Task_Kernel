@@ -63,10 +63,6 @@ void scheduler_pause(void){
 
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
-	if (CPU_HEADER_DATA->index>=1){
-		scheduler_task_wait_loop();
-		return;
-	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
