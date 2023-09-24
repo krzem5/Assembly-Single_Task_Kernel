@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "vmm"
@@ -169,6 +170,7 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 
 void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
+	scheduler_pause();
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -210,6 +212,7 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));
 _cleanup:
 	lock_release_exclusive(&(pagemap->lock));
+	scheduler_resume();
 }
 
 
@@ -239,6 +242,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	if (virtual_address&(PAGE_SIZE-1)){
 		return 0;
 	}
+	scheduler_pause();
 	u64 out=0;
 	lock_acquire_exclusive(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
@@ -293,6 +297,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	out=PAGE_SIZE;
 _cleanup:
 	lock_release_exclusive(&(pagemap->lock));
+	scheduler_resume();
 	return out;
 }
 
@@ -316,6 +321,7 @@ u64 KERNEL_CORE_CODE vmm_identity_map(u64 physical_address,u64 size){
 
 
 u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+	scheduler_pause();
 	u64 out=0;
 	lock_acquire_shared(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
@@ -349,6 +355,7 @@ u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_
 	out=(entry?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
 _cleanup:
 	lock_release_shared(&(pagemap->lock));
+	scheduler_resume();
 	return out;
 }
 
@@ -382,6 +389,7 @@ void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 c
 
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	for (;count;count--){
+		scheduler_pause();
 		lock_acquire_shared(&(pagemap->lock));
 		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
@@ -392,6 +400,7 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 		else{
 			lock_release_shared(&(pagemap->lock));
 		}
+		scheduler_resume();
 		vmm_unmap_page(pagemap,virtual_address);
 		virtual_address+=PAGE_SIZE;
 	}
@@ -400,14 +409,17 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 
 
 _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+	scheduler_pause();
 	lock_acquire_shared(&(pagemap->lock));
 	u64* entry=_lookup_virtual_address(pagemap,virtual_address);
 	if (!entry||((*entry)&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
 		lock_release_shared(&(pagemap->lock));
+		scheduler_resume();
 		return 0;
 	}
 	lock_shared_to_exclusive(&(pagemap->lock));
 	*entry=((*entry)&(~VMM_PAGE_ADDRESS_MASK))|pmm_alloc_zero(1,VMM_PAGE_GET_COUNTER(*entry),0)|VMM_PAGE_FLAG_PRESENT;
 	lock_release_exclusive(&(pagemap->lock));
+	scheduler_resume();
 	return 1;
 }

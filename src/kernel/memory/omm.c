@@ -1,9 +1,9 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "omm"
@@ -40,6 +40,7 @@ static void KERNEL_CORE_CODE _allocator_remove_page(omm_page_header_t** list_hea
 
 
 void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
+	scheduler_pause();
 	if (allocator->object_size<sizeof(omm_object_t)){
 		allocator->object_size=sizeof(omm_object_t);
 	}
@@ -77,12 +78,14 @@ void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
 		_allocator_add_page(&(allocator->page_full_head),page);
 	}
 	lock_release_exclusive(&(allocator->lock));
+	scheduler_resume();
 	return out;
 }
 
 
 
 void KERNEL_CORE_CODE omm_dealloc(omm_allocator_t* allocator,void* object){
+	scheduler_pause();
 	lock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));
 	if (page->object_size!=allocator->object_size){
@@ -105,4 +108,5 @@ void KERNEL_CORE_CODE omm_dealloc(omm_allocator_t* allocator,void* object){
 		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,PMM_COUNTER_OMM);
 	}
 	lock_release_exclusive(&(allocator->lock));
+	scheduler_resume();
 }
