@@ -18,21 +18,14 @@
 
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
-#define PMM_COUNTER_TOTAL 0
-#define PMM_COUNTER_FREE 1
-#define PMM_COUNTER_DRIVER_AHCI 2
-#define PMM_COUNTER_DRIVER_I82540 3
-#define PMM_COUNTER_IMAGE 4
-#define PMM_COUNTER_KERNEL_IMAGE 5
-#define PMM_COUNTER_KERNEL_STACK 6
-#define PMM_COUNTER_KFS 7
-#define PMM_COUNTER_KMM 8
-#define PMM_COUNTER_NETWORK 9
-#define PMM_COUNTER_UMM 10
-#define PMM_COUNTER_USER 11
-#define PMM_COUNTER_USER_STACK 12
-#define PMM_COUNTER_VMM 13
-#define PMM_COUNTER_MAX PMM_COUNTER_VMM
+#define PMM_DECLARE_COUNTER(name) \
+	static u16 KERNEL_CORE_DATA PMM_COUNTER_##name=0; \
+	static const char KERNEL_CORE_RDATA _pmm_counter_descriptor_name_##name[]=#name; \
+	static const pmm_counter_descriptor_t KERNEL_CORE_RDATA _pmm_counter_descriptor_##name={ \
+		_pmm_counter_descriptor_name_##name, \
+		&(PMM_COUNTER_##name) \
+	}; \
+	static const pmm_counter_descriptor_t* __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
 
 
 
@@ -55,9 +48,24 @@ typedef struct _PMM_ALLOCATOR{
 
 
 
+typedef struct _PMM_COUNTER{
+	const char* name;
+	u64 count;
+} pmm_counter_t;
+
+
+
 typedef struct _PMM_COUNTERS{
-	u64 data[PMM_COUNTER_MAX+1];
+	u32 length;
+	pmm_counter_t data[];
 } pmm_counters_t;
+
+
+
+typedef struct _PMM_COUNTER_DESCRIPTOR{
+	const char* name;
+	u16* var;
+} pmm_counter_descriptor_t;
 
 
 
@@ -94,6 +102,10 @@ static inline u64 pmm_align_down_address_large(u64 base){
 static inline u64 pmm_align_down_address_extra_large(u64 base){
 	return base&(-EXTRA_LARGE_PAGE_SIZE);
 }
+
+
+
+extern u64 pmm_adjusted_kernel_end;
 
 
 

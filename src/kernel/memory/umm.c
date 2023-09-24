@@ -12,6 +12,10 @@
 
 
 
+PMM_DECLARE_COUNTER(UMM);
+
+
+
 static lock_t _umm_stack_lock=LOCK_INIT_STRUCT;
 static u64 _umm_stack_top=UMM_CONSTANT_STACK_START;
 static u64 _umm_stack_max_top=UMM_CONSTANT_STACK_START;

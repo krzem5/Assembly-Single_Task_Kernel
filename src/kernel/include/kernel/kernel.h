@@ -24,6 +24,8 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 
 
 extern u64 __KERNEL_START__[1];
+extern u64 __KERNEL_PMM_COUNTER_START__[1];
+extern u64 __KERNEL_PMM_COUNTER_END__[1];
 extern u64 __KERNEL_CORE_END__[1];
 extern u64 __KERNEL_CPU_LOCAL_START__[1];
 extern u64 __KERNEL_CPU_LOCAL_END__[1];
@@ -44,6 +46,18 @@ static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_version(void){
 
 static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_start(void){
 	return (u64)__KERNEL_START__;
+}
+
+
+
+static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_start(void){
+	return (u64)__KERNEL_PMM_COUNTER_START__;
+}
+
+
+
+static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_end(void){
+	return (u64)__KERNEL_PMM_COUNTER_END__;
 }
 
 

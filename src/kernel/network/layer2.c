@@ -11,6 +11,10 @@
 
 
 
+PMM_DECLARE_COUNTER(NETWORK);
+
+
+
 static lock_t _layer2_lock=LOCK_INIT_STRUCT;
 static u64 _layer2_physical_send_buffer_address;
 static u8* _layer2_physical_send_buffer;

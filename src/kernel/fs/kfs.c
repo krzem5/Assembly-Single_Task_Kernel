@@ -176,6 +176,10 @@ typedef struct _KFS_FS_NODE{
 
 
 
+PMM_DECLARE_COUNTER(KFS);
+
+
+
 static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR_CORE("Error reading data from drive");

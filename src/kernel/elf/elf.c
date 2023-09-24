@@ -14,6 +14,10 @@
 
 
 
+PMM_DECLARE_COUNTER(IMAGE);
+
+
+
 typedef struct _ELF_HEADER{
 	u32 signature;
 	u8 word_size;

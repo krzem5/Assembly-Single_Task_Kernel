@@ -10,6 +10,10 @@
 
 
 
+PMM_DECLARE_COUNTER(VFS_ALLOCATOR);
+
+
+
 void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator_t* out){
 	LOG_CORE("Initializing file system node allocator...");
 	if (node_size<sizeof(vfs_node_t)){
@@ -22,7 +26,7 @@ void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator
 	out->last=(1<<VFS_ALLOCATOR_SIZE_SHIFT)-2;
 	out->next_id=1;
 	out->page_count=pmm_align_up_address(((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t)+(1<<VFS_ALLOCATOR_SIZE_SHIFT)*node_size)>>PAGE_SIZE_SHIFT;
-	u64 data=pmm_alloc(out->page_count,PMM_COUNTER_KFS,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	u64 data=pmm_alloc(out->page_count,PMM_COUNTER_VFS_ALLOCATOR,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	out->data=(void*)data;
 	void* node_data=(void*)(data+((1<<VFS_ALLOCATOR_SIZE_SHIFT)-1)*sizeof(vfs_allocator_entry_t));
 	for (vfs_allocator_index_t i=0;i<(1<<VFS_ALLOCATOR_SIZE_SHIFT)-1;i++){

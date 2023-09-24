@@ -9,6 +9,10 @@
 
 
 
+PMM_DECLARE_COUNTER(KMM);
+
+
+
 static lock_t _kmm_lock=LOCK_INIT_STRUCT;
 static u64 KERNEL_CORE_DATA _kmm_top;
 static u64 KERNEL_CORE_DATA _kmm_max_top;
@@ -28,8 +32,8 @@ static void KERNEL_CORE_CODE _resize_stack(void){
 
 void KERNEL_CORE_CODE kmm_init(void){
 	LOG_CORE("Initializing kernel memory manager...");
-	_kmm_top=pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset());
-	_kmm_max_top=pmm_align_up_address(kernel_get_bss_end()+kernel_get_offset());
+	_kmm_top=pmm_adjusted_kernel_end+kernel_get_offset();
+	_kmm_max_top=pmm_adjusted_kernel_end+kernel_get_offset();
 }
 
 

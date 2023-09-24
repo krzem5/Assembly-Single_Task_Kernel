@@ -12,6 +12,10 @@
 
 
 
+PMM_DECLARE_COUNTER(DRIVER_AHCI);
+
+
+
 // Controller
 #define CAP_NP 0x0000001f
 #define CAP_NCS 0x00001f00

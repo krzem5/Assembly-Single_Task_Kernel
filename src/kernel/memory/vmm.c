@@ -9,6 +9,11 @@
 
 
 
+PMM_DECLARE_COUNTER(USER);
+PMM_DECLARE_COUNTER(VMM);
+
+
+
 static u64 _vmm_address_offset=0;
 
 vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;

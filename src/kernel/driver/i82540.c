@@ -15,6 +15,10 @@
 
 
 
+PMM_DECLARE_COUNTER(DRIVER_I82540);
+
+
+
 #define GET_DESCRIPTOR(device,type,index) ((void*)((device)->type##_desc_base+((index)<<4)))
 
 

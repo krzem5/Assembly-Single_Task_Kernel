@@ -16,6 +16,11 @@
 
 
 
+PMM_DECLARE_COUNTER(KERNEL_STACK);
+PMM_DECLARE_COUNTER(USER_STACK);
+
+
+
 static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(thread_t),8,4);
 static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
 
