@@ -155,9 +155,9 @@ const char* kernel_lookup_symbol(u64 address,u64* offset){
 		}
 		return NULL;
 	}
-	u32 index=0;
-	for (u32 i=2;kernel_symbols[i];i+=2){
-		if (address>=kernel_symbols[i]&&kernel_symbols[i]>kernel_symbols[index]){
+	u32 index=0xffffffff;
+	for (u32 i=0;kernel_symbols[i];i+=2){
+		if (address>=kernel_symbols[i]&&(index==0xffffffff||kernel_symbols[i]>kernel_symbols[index])){
 			index=i;
 		}
 	}

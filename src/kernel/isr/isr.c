@@ -78,11 +78,17 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
 	if (isr_state->cs==8){
+		u64 offset;
+		const char* func_name=kernel_lookup_symbol(isr_state->rip,&offset);
+		if (func_name){
+			LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
+		}
+		else{
+			LOG("[%u] %p",CPU_HEADER_DATA->index,isr_state->rip);
+		}
 		u64 rbp=isr_state->rbp;
 		while (rbp){
-			LOG("[%u] %p ~ %p",CPU_HEADER_DATA->index,rbp);
-			u64 offset;
-			const char* func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
+			func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
 			if (func_name){
 				LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
 			}
