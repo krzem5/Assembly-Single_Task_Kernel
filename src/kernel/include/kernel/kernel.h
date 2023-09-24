@@ -35,6 +35,7 @@ extern u64 __KERNEL_BSS_START__[1];
 extern u64 __KERNEL_BSS_END__[1];
 
 extern const u64 __core_version;
+extern const u64 kernel_symbols[];
 
 
 
@@ -115,6 +116,10 @@ void kernel_init(void);
 
 
 void kernel_load(void);
+
+
+
+const char* kernel_lookup_symbol(u64 address,u64* offset);
 
 
 

@@ -145,3 +145,24 @@ _load_kernel:
 _error:
 	panic("Unable to load kernel");
 }
+
+
+
+const char* kernel_lookup_symbol(u64 address,u64* offset){
+	if (address<kernel_get_start()+kernel_get_offset()||address>=kernel_get_bss_end()+kernel_get_offset()){
+		if (offset){
+			*offset=0;
+		}
+		return NULL;
+	}
+	u32 index=0;
+	for (u32 i=2;kernel_symbols[i];i+=2){
+		if (address>=kernel_symbols[i]&&kernel_symbols[i]>kernel_symbols[index]){
+			index=i;
+		}
+	}
+	if (offset){
+		*offset=address-kernel_symbols[index];
+	}
+	return (void*)(kernel_symbols[index+1]);
+}

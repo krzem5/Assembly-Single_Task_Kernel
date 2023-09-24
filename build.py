@@ -87,6 +87,7 @@ USER_EXTRA_LINKER_OPTIONS={
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
+KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
 
@@ -150,10 +151,33 @@ def _read_kernel_symbols(file_path):
 	out={}
 	for line in subprocess.run(["nm","-f","bsd",file_path],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
 		line=line.strip().split(" ")
-		if (len(line)<3 or line[2].startswith("__func__")):
+		if (len(line)<3 or line[2].startswith("__func__") or "." in line[2]):
 			continue
 		out[line[2]]=int(line[0],16)
 	return out
+
+
+
+def _read_kernel_object_file_symbol_names(file_name,file_path,out):
+	for line in subprocess.run(["nm","-f","bsd","--defined-only",file_path],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+		line=line.strip().split(" ")
+		if (len(line)<3 or line[1].lower() in "vw" or line[2].startswith("__func__") or "." in line[2]):
+			continue
+		out.append(line[2])
+
+
+
+def _generate_symbol_file(kernel_symbols,file_path):
+	with open(file_path,"w") as wf:
+		wf.write("typedef unsigned long long int u64;\nconst u64 kernel_symbols[]={\n")
+		for symbol in sorted(kernel_symbols):
+			wf.write(f"\t0,(u64)\"{symbol}\",\n")
+		wf.write("\t0,0\n};\n")
+	object_file=KERNEL_OBJECT_FILE_DIRECTORY+file_path.replace("/","#")+".o"
+	if (subprocess.run(["gcc-12","-mcmodel=large","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-O3","-g0","-o",object_file,"-c",file_path]).returncode!=0):
+		sys.exit(1)
+	os.remove(file_path)
+	return object_file
 
 
 
@@ -171,9 +195,10 @@ def _split_kernel_file(src_file_path,core_file_path,kernel_file_path,core_end,en
 
 
 
-def _build_static_idt(file_path,kernel_symbols):
+def _patch_kernel(file_path,kernel_symbols):
+	address_offset=kernel_symbols["__KERNEL_CORE_END__"]+kernel_symbols["__KERNEL_OFFSET__"]
 	with open(file_path,"r+b") as wf:
-		wf.seek(kernel_symbols["_idt_data"]-kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_OFFSET__"])
+		wf.seek(kernel_symbols["_idt_data"]-address_offset)
 		for i in range(0,256):
 			address=kernel_symbols[f"_isr_entry_{i}"]
 			ist=0
@@ -182,6 +207,22 @@ def _build_static_idt(file_path,kernel_symbols):
 			elif (i==32):
 				ist=2
 			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
+		offset=kernel_symbols["kernel_symbols"]-address_offset
+		while (True):
+			wf.seek(offset+8)
+			name_address=struct.unpack("<Q",wf.read(8))[0]
+			if (not name_address):
+				break
+			wf.seek(name_address-address_offset)
+			name=""
+			while (True):
+				char=wf.read(1)[0]
+				if (not char):
+					break
+				name+=chr(char)
+			wf.seek(offset)
+			wf.write(struct.pack("<Q",kernel_symbols[name]))
+			offset+=16
 
 
 
@@ -320,6 +361,7 @@ version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
 error=False
+kernel_symbols=[]
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 	for file_name in files:
 		suffix=file_name[file_name.rindex("."):]
@@ -329,6 +371,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
+			_read_kernel_object_file_symbol_names(file_name,object_file,kernel_symbols)
 			continue
 		command=None
 		if (suffix==".c"):
@@ -338,14 +381,16 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
+		_read_kernel_object_file_symbol_names(file_name,object_file,kernel_symbols)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
+object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
 os.remove(KERNEL_VERSION_FILE_PATH)
 if (error or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
 os.remove("build/kernel.bin")
-_build_static_idt("build/disk/kernel/kernel.bin",kernel_symbols)
+_patch_kernel("build/disk/kernel/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)

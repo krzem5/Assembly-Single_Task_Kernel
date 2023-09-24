@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
 #include <kernel/isr/isr.h>
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -80,7 +81,14 @@ void _isr_handler(isr_state_t* isr_state){
 		u64 rbp=isr_state->rbp;
 		while (rbp){
 			LOG("[%u] %p ~ %p",CPU_HEADER_DATA->index,rbp);
-			LOG("[%u] %p",CPU_HEADER_DATA->index,*((u64*)(rbp+8)));
+			u64 offset;
+			const char* func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
+			if (func_name){
+				LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
+			}
+			else{
+				LOG("[%u] %p",CPU_HEADER_DATA->index,*((u64*)(rbp+8)));
+			}
 			rbp=*((u64*)rbp);
 		}
 	}
