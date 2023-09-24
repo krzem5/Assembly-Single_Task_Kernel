@@ -33,6 +33,7 @@ typedef struct _VFS_ALLOCATOR{
 	vfs_node_id_t next_id;
 	vfs_allocator_entry_t* data;
 	vfs_node_t* root_node;
+	u32 page_count;
 } vfs_allocator_t;
 
 
