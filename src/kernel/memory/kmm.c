@@ -37,7 +37,7 @@ void KERNEL_CORE_CODE kmm_init(void){
 void* KERNEL_CORE_CODE kmm_alloc(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
-		panic("Buffer in use",0);
+		panic("kmm: buffer in use");
 	}
 	void* out=(void*)_kmm_top;
 	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
@@ -51,7 +51,7 @@ void* KERNEL_CORE_CODE kmm_alloc(u32 size){
 void* KERNEL_CORE_CODE kmm_alloc_aligned(u32 size,u32 alignment){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
-		panic("Buffer in use",0);
+		panic("kmm: buffer in use");
 	}
 	_kmm_top=(_kmm_top+alignment-1)&(-((u64)alignment));
 	void* out=(void*)_kmm_top;
@@ -66,7 +66,7 @@ void* KERNEL_CORE_CODE kmm_alloc_aligned(u32 size,u32 alignment){
 void* KERNEL_CORE_CODE kmm_alloc_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){
-		panic("Buffer already in use",0);
+		panic("kmm: buffer already in use");
 	}
 	_kmm_buffer_not_ended=1;
 	lock_release_exclusive(&_kmm_lock);
@@ -78,7 +78,7 @@ void* KERNEL_CORE_CODE kmm_alloc_buffer(void){
 void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		panic("Buffer not in use",0);
+		panic("kmm: buffer not in use");
 	}
 	_kmm_top+=size;
 	_resize_stack();
@@ -90,7 +90,7 @@ void KERNEL_CORE_CODE kmm_grow_buffer(u32 size){
 void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		panic("Buffer not in use",0);
+		panic("kmm: buffer not in use");
 	}
 	_kmm_top-=size;
 	lock_release_exclusive(&_kmm_lock);
@@ -101,7 +101,7 @@ void KERNEL_CORE_CODE kmm_shrink_buffer(u32 size){
 void KERNEL_CORE_CODE kmm_end_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
-		panic("KMM buffer not in use",0);
+		panic("kmm: buffer not in use");
 	}
 	_kmm_buffer_not_ended=0;
 	_kmm_top=(_kmm_top+7)&0xfffffffffffffff8ull;

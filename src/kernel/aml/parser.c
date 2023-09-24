@@ -164,7 +164,7 @@ static const opcode_t* _parse_opcode(const u8* data){
 		return out;
 	}
 	ERROR("Unknown AML opcode '%s%x'",(extended?"5b ":""),type);
-	panic("Unknown AML opcode",0);
+	panic("Unknown AML opcode");
 	return NULL;
 }
 

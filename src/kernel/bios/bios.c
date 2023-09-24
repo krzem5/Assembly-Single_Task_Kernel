@@ -106,7 +106,7 @@ void bios_get_system_data(void){
 			goto _smbios_found;
 		}
 	}
-	panic("SMBIOS not found",0);
+	panic("SMBIOS not found");
 _smbios_found:
 	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);

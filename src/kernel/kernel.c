@@ -143,5 +143,5 @@ _load_kernel:
 	LOG_CORE("Kernel successfully loaded");
 	return;
 _error:
-	panic("Unable to load kernel",0);
+	panic("Unable to load kernel");
 }

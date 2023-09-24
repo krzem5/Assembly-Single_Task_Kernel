@@ -24,7 +24,7 @@
 
 void syscall_invalid(syscall_registers_t* regs){
 	ERROR("Invalid SYSCALL number: %lu",regs->rax);
-	panic("Invalid SYSCALL",1);
+	panic("Invalid SYSCALL");
 }
 
 

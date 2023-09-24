@@ -29,7 +29,7 @@ event_t* event_new(void){
 void event_delete(event_t* event){
 	lock_acquire_shared(&(event->lock));
 	if (event->head||event->handle.rc){
-		panic("Referenced events cannot be deleted",0);
+		panic("Referenced events cannot be deleted");
 	}
 	lock_release_shared(&(event->lock));
 	omm_dealloc(&_event_allocator,event);

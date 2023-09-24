@@ -65,7 +65,7 @@ void acpi_load(void){
 		}
 		range+=2;
 	}
-	panic("Unable to locate the RSDP",0);
+	panic("Unable to locate the RSDP");
 _rsdp_found:
 	INFO("Found RSDP at %p (revision %u)",rsdp,rsdp->revision);
 	_Bool is_xsdt=0;

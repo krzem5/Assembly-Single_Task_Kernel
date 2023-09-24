@@ -173,10 +173,10 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	u64* pml3=_get_child_table(pml4,i,1);
 	if (flags&VMM_PAGE_FLAG_EXTRA_LARGE){
 		if (pmm_align_down_address_extra_large(physical_address)!=physical_address||pmm_align_down_address_extra_large(virtual_address)!=virtual_address){
-			panic("Invalid vmm_map_page arguments",0);
+			panic("vmm_map_page: invalid vmm_map_page arguments");
 		}
 		if (_get_table(pml3)->entries[j]&VMM_PAGE_FLAG_PRESENT){
-			panic("Memory mapping already present",0);
+			panic("vmm_map_page: memory mapping already present");
 		}
 		_increase_length_if_entry_empty(pml3,j);
 		_get_table(pml3)->entries[j]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
@@ -185,21 +185,21 @@ void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u
 	u64* pml2=_get_child_table(pml3,j,1);
 	if (flags&VMM_PAGE_FLAG_LARGE){
 		if (pmm_align_down_address_large(physical_address)!=physical_address||pmm_align_down_address_large(virtual_address)!=virtual_address){
-			panic("Invalid vmm_map_page arguments",0);
+			panic("vmm_map_page: invalid vmm_map_page arguments");
 		}
 		if (_get_table(pml2)->entries[k]&VMM_PAGE_FLAG_PRESENT){
-			panic("Memory mapping already present",0);
+			panic("vmm_map_page: memory mapping already present");
 		}
 		_increase_length_if_entry_empty(pml2,k);
 		_get_table(pml2)->entries[k]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
 		goto _cleanup;
 	}
 	if (pmm_align_down_address(physical_address)!=physical_address||pmm_align_down_address(virtual_address)!=virtual_address){
-		panic("Invalid vmm_map_page arguments",0);
+		panic("vmm_map_page: invalid vmm_map_page arguments");
 	}
 	u64* pml1=_get_child_table(pml2,k,1);
 	if (_get_table(pml1)->entries[l]&VMM_PAGE_FLAG_PRESENT){
-		panic("Memory mapping already present",0);
+		panic("vmm_map_page: memory mapping already present");
 	}
 	_increase_length_if_entry_empty(pml1,l);
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));

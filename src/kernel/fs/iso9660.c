@@ -117,7 +117,7 @@ _skip_directory_entry:
 		return NULL;
 	}
 	if (relative==VFS_RELATIVE_PARENT){
-		panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PARENT)",0);
+		panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PARENT)");
 		return NULL;
 	}
 	vfs_node_t* parent=vfs_get_relative(node,VFS_RELATIVE_PARENT);
@@ -164,7 +164,7 @@ _skip_directory_entry2:
 		}
 		return NULL;
 	}
-	panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PREV_SIBLING)",0);
+	panic("Unimplemented (_iso9660_get_relative/VFS_RELATIVE_PREV_SIBLING)");
 	return NULL;
 }
 

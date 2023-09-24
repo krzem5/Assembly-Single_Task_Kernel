@@ -38,7 +38,7 @@ void handle_new(void* object,u8 type,handle_t* out){
 
 void handle_delete(handle_t* handle){
 	if (handle->rc){
-		panic("Unable to delete referenced handle",0);
+		panic("Unable to delete referenced handle");
 	}
 	lock_acquire_exclusive(&_handle_global_lock);
 	if (handle->prev){

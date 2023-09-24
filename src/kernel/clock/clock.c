@@ -70,7 +70,7 @@ static void _calculate_clock_conversion(void){
 			return;
 		}
 	}
-	panic("Unable to calculate clock frequency conversion factor",0);
+	panic("Unable to calculate clock frequency conversion factor");
 }
 
 

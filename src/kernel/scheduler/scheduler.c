@@ -63,6 +63,9 @@ void scheduler_pause(void){
 
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
+	if (CPU_HEADER_DATA->index){ // scheduler enabled only on core #0
+		scheduler_task_wait_loop();
+	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
@@ -123,7 +126,7 @@ void scheduler_isr_handler(isr_state_t* state){
 void scheduler_enqueue_thread(thread_t* thread){
 	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
-		panic("Thread already queued",0);
+		panic("Thread already queued");
 	}
 	u32 remaining_us=lapic_timer_stop();
 	scheduler_queue_t* queue=NULL;

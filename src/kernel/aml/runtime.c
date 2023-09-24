@@ -57,22 +57,22 @@ static u64 _read_field_unit(aml_node_t* node){
 			}
 			switch (node->data.field_unit.access_type&15){
 				case 0:
-					panic("Unimplemented: _read_field_unit(SystemMemory,AnyAcc)",0);
+					panic("Unimplemented: _read_field_unit(SystemMemory,AnyAcc)");
 					break;
 				case 1:
-					panic("Unimplemented: _read_field_unit(SystemMemory,ByteAcc)",0);
+					panic("Unimplemented: _read_field_unit(SystemMemory,ByteAcc)");
 					break;
 				case 2:
-					panic("Unimplemented: _read_field_unit(SystemMemory,WordAcc)",0);
+					panic("Unimplemented: _read_field_unit(SystemMemory,WordAcc)");
 					break;
 				case 3:
 					out=*((const u32*)(node->data.field_unit.address+VMM_HIGHER_HALF_ADDRESS_OFFSET));
 					break;
 				case 4:
-					panic("Unimplemented: _read_field_unit(SystemMemory,QWordAcc)",0);
+					panic("Unimplemented: _read_field_unit(SystemMemory,QWordAcc)");
 					break;
 				case 5:
-					panic("Unimplemented: _read_field_unit(SystemMemory,BufferAcc)",0);
+					panic("Unimplemented: _read_field_unit(SystemMemory,BufferAcc)");
 					break;
 			}
 			if (node->data.field_unit.access_type&16){
@@ -80,34 +80,34 @@ static u64 _read_field_unit(aml_node_t* node){
 			}
 			break;
 		case 0x01:
-			panic("Unimplemented: _read_field_unit(SystemIO)",0);
+			panic("Unimplemented: _read_field_unit(SystemIO)");
 			break;
 		case 0x02:
-			panic("Unimplemented: _read_field_unit(PCI_Config)",0);
+			panic("Unimplemented: _read_field_unit(PCI_Config)");
 			break;
 		case 0x03:
-			panic("Unimplemented: _read_field_unit(EmbeddedControl)",0);
+			panic("Unimplemented: _read_field_unit(EmbeddedControl)");
 			break;
 		case 0x04:
-			panic("Unimplemented: _read_field_unit(SMBus)",0);
+			panic("Unimplemented: _read_field_unit(SMBus)");
 			break;
 		case 0x05:
-			panic("Unimplemented: _read_field_unit(System CMOS)",0);
+			panic("Unimplemented: _read_field_unit(System CMOS)");
 			break;
 		case 0x06:
-			panic("Unimplemented: _read_field_unit(PciBarTarget)",0);
+			panic("Unimplemented: _read_field_unit(PciBarTarget)");
 			break;
 		case 0x07:
-			panic("Unimplemented: _read_field_unit(IPMI)",0);
+			panic("Unimplemented: _read_field_unit(IPMI)");
 			break;
 		case 0x08:
-			panic("Unimplemented: _read_field_unit(GeneralPurposeIO)",0);
+			panic("Unimplemented: _read_field_unit(GeneralPurposeIO)");
 			break;
 		case 0x09:
-			panic("Unimplemented: _read_field_unit(GenericSerialBus)",0);
+			panic("Unimplemented: _read_field_unit(GenericSerialBus)");
 			break;
 		case 0x0a:
-			panic("Unimplemented: _read_field_unit(PCC)",0);
+			panic("Unimplemented: _read_field_unit(PCC)");
 			break;
 	}
 	return out;
@@ -126,73 +126,73 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 		case 0x00:
 			switch (node->data.field_unit.access_type&15){
 				case 0:
-					panic("Unimplemented: _write_field_unit(SystemMemory,AnyAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemMemory,AnyAcc)");
 					break;
 				case 1:
-					panic("Unimplemented: _write_field_unit(SystemMemory,ByteAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemMemory,ByteAcc)");
 					break;
 				case 2:
-					panic("Unimplemented: _write_field_unit(SystemMemory,WordAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemMemory,WordAcc)");
 					break;
 				case 3:
 					*((u32*)(node->data.field_unit.address+VMM_HIGHER_HALF_ADDRESS_OFFSET))=value->data.integer;
 					break;
 				case 4:
-					panic("Unimplemented: _write_field_unit(SystemMemory,QWordAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemMemory,QWordAcc)");
 					break;
 				case 5:
-					panic("Unimplemented: _write_field_unit(SystemMemory,BufferAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemMemory,BufferAcc)");
 					break;
 			}
 			break;
 		case 0x01:
 			switch (node->data.field_unit.access_type&15){
 				case 0:
-					panic("Unimplemented: _write_field_unit(SystemIO,AnyAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemIO,AnyAcc)");
 					break;
 				case 1:
-					panic("Unimplemented: _write_field_unit(SystemIO,ByteAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemIO,ByteAcc)");
 					break;
 				case 2:
-					panic("Unimplemented: _write_field_unit(SystemIO,WordAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemIO,WordAcc)");
 					break;
 				case 3:
 					io_port_out32(node->data.field_unit.address,value->data.integer);
 					break;
 				case 4:
-					panic("Unimplemented: _write_field_unit(SystemIO,QWordAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemIO,QWordAcc)");
 					break;
 				case 5:
-					panic("Unimplemented: _write_field_unit(SystemIO,BufferAcc)",0);
+					panic("Unimplemented: _write_field_unit(SystemIO,BufferAcc)");
 					break;
 			}
 			break;
 		case 0x02:
-			panic("Unimplemented: _write_field_unit(PCI_Config)",0);
+			panic("Unimplemented: _write_field_unit(PCI_Config)");
 			break;
 		case 0x03:
-			panic("Unimplemented: _write_field_unit(EmbeddedControl)",0);
+			panic("Unimplemented: _write_field_unit(EmbeddedControl)");
 			break;
 		case 0x04:
-			panic("Unimplemented: _write_field_unit(SMBus)",0);
+			panic("Unimplemented: _write_field_unit(SMBus)");
 			break;
 		case 0x05:
-			panic("Unimplemented: _write_field_unit(System CMOS)",0);
+			panic("Unimplemented: _write_field_unit(System CMOS)");
 			break;
 		case 0x06:
-			panic("Unimplemented: _write_field_unit(PciBarTarget)",0);
+			panic("Unimplemented: _write_field_unit(PciBarTarget)");
 			break;
 		case 0x07:
-			panic("Unimplemented: _write_field_unit(IPMI)",0);
+			panic("Unimplemented: _write_field_unit(IPMI)");
 			break;
 		case 0x08:
-			panic("Unimplemented: _write_field_unit(GeneralPurposeIO)",0);
+			panic("Unimplemented: _write_field_unit(GeneralPurposeIO)");
 			break;
 		case 0x09:
-			panic("Unimplemented: _write_field_unit(GenericSerialBus)",0);
+			panic("Unimplemented: _write_field_unit(GenericSerialBus)");
 			break;
 		case 0x0a:
-			panic("Unimplemented: _write_field_unit(PCC)",0);
+			panic("Unimplemented: _write_field_unit(PCC)");
 			break;
 	}
 	if (node->data.field_unit.access_type&16){
@@ -256,7 +256,7 @@ static aml_node_t* _get_node(aml_node_t* local_namespace,const char* namespace,u
 			namespace++;
 			if (out->type!=AML_NODE_TYPE_PACKAGE||index>=out->data.package.length){
 				if (create_if_not_found){
-					panic("Unable to create package entry",0);
+					panic("Unable to create package entry");
 				}
 				return NULL;
 			}
@@ -284,14 +284,14 @@ _namespace_found:
 
 static u64 _get_arg_as_int(runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
 	if (arg_index>=object->arg_count||object->args[arg_index].type==AML_OBJECT_ARG_TYPE_STRING||object->args[arg_index].type==AML_OBJECT_ARG_TYPE_NAME){
-		panic("Invalid argument",0);
+		panic("Invalid argument");
 	}
 	if (object->args[arg_index].type!=AML_OBJECT_ARG_TYPE_OBJECT){
 		return object->args[arg_index].number;
 	}
 	aml_node_t* ret=_execute(local,object->args[arg_index].object);
 	if (!ret||(ret->type!=AML_NODE_TYPE_FIELD_UNIT&&ret->type!=AML_NODE_TYPE_INTEGER)){
-		panic("Expected integer return value",0);
+		panic("Expected integer return value");
 	}
 	if (ret->type==AML_NODE_TYPE_FIELD_UNIT){
 		return _read_field_unit(ret);
@@ -303,7 +303,7 @@ static u64 _get_arg_as_int(runtime_local_state_t* local,const aml_object_t* obje
 
 static aml_node_t* _get_arg_as_node(runtime_local_state_t* local,const aml_object_t* object,u8 arg_index){
 	if (arg_index>=object->arg_count){
-		panic("Invalid argument",0);
+		panic("Invalid argument");
 	}
 	switch (object->args[arg_index].type){
 		case AML_OBJECT_ARG_TYPE_UINT8:
@@ -314,10 +314,10 @@ static aml_node_t* _get_arg_as_node(runtime_local_state_t* local,const aml_objec
 			local->simple_return_value.data.integer=object->args[arg_index].number;
 			return &(local->simple_return_value);
 		case AML_OBJECT_ARG_TYPE_STRING:
-			panic("Unimplemented: AML_OBJECT_ARG_TYPE_STRING",0);
+			panic("Unimplemented: AML_OBJECT_ARG_TYPE_STRING");
 			return NULL;
 		case AML_OBJECT_ARG_TYPE_NAME:
-			panic("Unimplemented: AML_OBJECT_ARG_TYPE_NAME",0);
+			panic("Unimplemented: AML_OBJECT_ARG_TYPE_NAME");
 			return NULL;
 		case AML_OBJECT_ARG_TYPE_OBJECT:
 			return _execute(local,object->args[arg_index].object);
@@ -338,13 +338,13 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			local->simple_return_value.data.integer=1;
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_ALIAS,0):
-			panic("Unimplemented: AML_OPCODE_ALIAS",0);
+			panic("Unimplemented: AML_OPCODE_ALIAS");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME,0):
 			{
 				aml_node_t* value=_get_arg_as_node(local,object,1);
 				if (!(value->flags&AML_NODE_FLAG_LOCAL)&&value->parent!=value){
-					panic("Unimplemented: Name as reference?",0);
+					panic("Unimplemented: Name as reference?");
 				}
 				aml_node_t* out=_get_node(local->namespace,object->args[0].string,value->type,1);
 				out->data=value->data;
@@ -411,7 +411,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 						*(package->data.package.elements+i)=*value;
 					}
 					else{
-						panic("Unimplemented",0);
+						panic("Unimplemented");
 					}
 				}
 				for (u8 i=object->data_length;i<package->data.package.length;i++){
@@ -445,13 +445,13 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_ARG5,0):
 		case MAKE_OPCODE(AML_OPCODE_ARG6,0):
 			ERROR("Unimplemented: AML_OPCODE_ARG%u",object->opcode[0]-AML_OPCODE_ARG0);
-			panic("Unimplemented",0);
+			panic("Unimplemented");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_STORE,0):
 			{
 				aml_node_t* value=_get_arg_as_node(local,object,0);
 				if (object->args[1].type==AML_OBJECT_ARG_TYPE_NAME){
-					panic("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_NAME",0);
+					panic("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_NAME");
 					return NULL;
 				}
 				if (object->args[1].type!=AML_OBJECT_ARG_TYPE_OBJECT){
@@ -483,7 +483,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 								}
 								else{
 									ERROR("Unimplemented: AML_OPCODE_STORE / %x",out->type);
-									panic("Unimplemented",0);
+									panic("Unimplemented");
 								}
 								return NULL;
 							}
@@ -495,146 +495,146 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 						return NULL;
 				}
 				ERROR("Unimplemented: AML_OPCODE_STORE / AML_OBJECT_ARG_TYPE_OBJECT (%x)",target->opcode[0]);for (;;);
-				panic("Unimplemented",0);
+				panic("Unimplemented");
 				return NULL;
 			}
 		case MAKE_OPCODE(AML_OPCODE_REF_OF,0):
-			panic("Unimplemented: AML_OPCODE_REF_OF",0);
+			panic("Unimplemented: AML_OPCODE_REF_OF");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_ADD,0):
-			panic("Unimplemented: AML_OPCODE_ADD",0);
+			panic("Unimplemented: AML_OPCODE_ADD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CONCAT,0):
-			panic("Unimplemented: AML_OPCODE_CONCAT",0);
+			panic("Unimplemented: AML_OPCODE_CONCAT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_SUBTRACT,0):
-			panic("Unimplemented: AML_OPCODE_SUBTRACT",0);
+			panic("Unimplemented: AML_OPCODE_SUBTRACT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_INCREMENT,0):
-			panic("Unimplemented: AML_OPCODE_INCREMENT",0);
+			panic("Unimplemented: AML_OPCODE_INCREMENT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_DECREMENT,0):
-			panic("Unimplemented: AML_OPCODE_DECREMENT",0);
+			panic("Unimplemented: AML_OPCODE_DECREMENT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_MULTIPLY,0):
-			panic("Unimplemented: AML_OPCODE_MULTIPLY",0);
+			panic("Unimplemented: AML_OPCODE_MULTIPLY");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_DIVIDE,0):
-			panic("Unimplemented: AML_OPCODE_DIVIDE",0);
+			panic("Unimplemented: AML_OPCODE_DIVIDE");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_SHIFT_LEFT,0):
-			panic("Unimplemented: AML_OPCODE_SHIFT_LEFT",0);
+			panic("Unimplemented: AML_OPCODE_SHIFT_LEFT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_SHIFT_RIGHT,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
 			local->simple_return_value.data.integer=_get_arg_as_int(local,object,0)>>_get_arg_as_int(local,object,1);
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_AND,0):
-			panic("Unimplemented: AML_OPCODE_AND",0);
+			panic("Unimplemented: AML_OPCODE_AND");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAND,0):
-			panic("Unimplemented: AML_OPCODE_NAND",0);
+			panic("Unimplemented: AML_OPCODE_NAND");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_OR,0):
-			panic("Unimplemented: AML_OPCODE_OR",0);
+			panic("Unimplemented: AML_OPCODE_OR");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NOR,0):
-			panic("Unimplemented: AML_OPCODE_NOR",0);
+			panic("Unimplemented: AML_OPCODE_NOR");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_XOR,0):
-			panic("Unimplemented: AML_OPCODE_XOR",0);
+			panic("Unimplemented: AML_OPCODE_XOR");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NOT,0):
-			panic("Unimplemented: AML_OPCODE_NOT",0);
+			panic("Unimplemented: AML_OPCODE_NOT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_FIND_SET_LEFT_BIT,0):
-			panic("Unimplemented: AML_OPCODE_FIND_SET_LEFT_BIT",0);
+			panic("Unimplemented: AML_OPCODE_FIND_SET_LEFT_BIT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_FIND_SET_RIGHT_BIT,0):
-			panic("Unimplemented: AML_OPCODE_FIND_SET_RIGHT_BIT",0);
+			panic("Unimplemented: AML_OPCODE_FIND_SET_RIGHT_BIT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_DEREF_OF,0):
-			panic("Unimplemented: AML_OPCODE_DEREF_OF",0);
+			panic("Unimplemented: AML_OPCODE_DEREF_OF");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CONCAT_RES,0):
-			panic("Unimplemented: AML_OPCODE_CONCAT_RES",0);
+			panic("Unimplemented: AML_OPCODE_CONCAT_RES");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_MOD,0):
-			panic("Unimplemented: AML_OPCODE_MOD",0);
+			panic("Unimplemented: AML_OPCODE_MOD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NOTIFY,0):
-			panic("Unimplemented: AML_OPCODE_NOTIFY",0);
+			panic("Unimplemented: AML_OPCODE_NOTIFY");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_SIZE_OF,0):
-			panic("Unimplemented: AML_OPCODE_SIZE_OF",0);
+			panic("Unimplemented: AML_OPCODE_SIZE_OF");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_INDEX,0):
-			panic("Unimplemented: AML_OPCODE_INDEX",0);
+			panic("Unimplemented: AML_OPCODE_INDEX");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_MATCH,0):
-			panic("Unimplemented: AML_OPCODE_MATCH",0);
+			panic("Unimplemented: AML_OPCODE_MATCH");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CREATE_DWORD_FIELD,0):
-			panic("Unimplemented: AML_OPCODE_CREATE_DWORD_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_CREATE_DWORD_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CREATE_WORD_FIELD,0):
-			panic("Unimplemented: AML_OPCODE_CREATE_WORD_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_CREATE_WORD_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CREATE_BYTE_FIELD,0):
-			panic("Unimplemented: AML_OPCODE_CREATE_BYTE_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_CREATE_BYTE_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CREATE_BIT_FIELD,0):
-			panic("Unimplemented: AML_OPCODE_CREATE_BIT_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_CREATE_BIT_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_OBJECT_TYPE,0):
-			panic("Unimplemented: AML_OPCODE_OBJECT_TYPE",0);
+			panic("Unimplemented: AML_OPCODE_OBJECT_TYPE");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CREATE_QWORD_FIELD,0):
-			panic("Unimplemented: AML_OPCODE_CREATE_QWORD_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_CREATE_QWORD_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_AND,0):
-			panic("Unimplemented: AML_OPCODE_L_AND",0);
+			panic("Unimplemented: AML_OPCODE_L_AND");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_OR,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
 			local->simple_return_value.data.integer=(!!_get_arg_as_int(local,object,0))||(!!_get_arg_as_int(local,object,1));
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_L_NOT,0):
-			panic("Unimplemented: AML_OPCODE_L_NOT",0);
+			panic("Unimplemented: AML_OPCODE_L_NOT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_EQUAL,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
 			local->simple_return_value.data.integer=(_get_arg_as_int(local,object,0)==_get_arg_as_int(local,object,1));
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_L_GREATER,0):
-			panic("Unimplemented: AML_OPCODE_L_GREATER",0);
+			panic("Unimplemented: AML_OPCODE_L_GREATER");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_L_LESS,0):
-			panic("Unimplemented: AML_OPCODE_L_LESS",0);
+			panic("Unimplemented: AML_OPCODE_L_LESS");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_TO_BUFFER,0):
-			panic("Unimplemented: AML_OPCODE_TO_BUFFER",0);
+			panic("Unimplemented: AML_OPCODE_TO_BUFFER");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_TO_DECIMAL_STRING,0):
-			panic("Unimplemented: AML_OPCODE_TO_DECIMAL_STRING",0);
+			panic("Unimplemented: AML_OPCODE_TO_DECIMAL_STRING");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_TO_HEX_STRING,0):
-			panic("Unimplemented: AML_OPCODE_TO_HEX_STRING",0);
+			panic("Unimplemented: AML_OPCODE_TO_HEX_STRING");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_TO_INTEGER,0):
-			panic("Unimplemented: AML_OPCODE_TO_INTEGER",0);
+			panic("Unimplemented: AML_OPCODE_TO_INTEGER");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_TO_STRING,0):
-			panic("Unimplemented: AML_OPCODE_TO_STRING",0);
+			panic("Unimplemented: AML_OPCODE_TO_STRING");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_COPY_OBJECT,0):
-			panic("Unimplemented: AML_OPCODE_COPY_OBJECT",0);
+			panic("Unimplemented: AML_OPCODE_COPY_OBJECT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_MID,0):
-			panic("Unimplemented: AML_OPCODE_MID",0);
+			panic("Unimplemented: AML_OPCODE_MID");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_CONTINUE,0):
-			panic("Unimplemented: AML_OPCODE_CONTINUE",0);
+			panic("Unimplemented: AML_OPCODE_CONTINUE");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_IF,0):
 			local->was_branch_taken=!!_get_arg_as_int(local,object,0);
@@ -648,10 +648,10 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			}
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_WHILE,0):
-			panic("Unimplemented: AML_OPCODE_WHILE",0);
+			panic("Unimplemented: AML_OPCODE_WHILE");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NOOP,0):
-			panic("Unimplemented: AML_OPCODE_NOOP",0);
+			panic("Unimplemented: AML_OPCODE_NOOP");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_RETURN,0):
 			{
@@ -662,10 +662,10 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				return NULL;
 			}
 		case MAKE_OPCODE(AML_OPCODE_BREAK,0):
-			panic("Unimplemented: AML_OPCODE_BREAK",0);
+			panic("Unimplemented: AML_OPCODE_BREAK");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_BREAK_POINT,0):
-			panic("Unimplemented: AML_OPCODE_BREAK_POINT",0);
+			panic("Unimplemented: AML_OPCODE_BREAK_POINT");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_ONES,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -677,61 +677,61 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				return mutex;
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_EVENT):
-			panic("Unimplemented: AML_OPCODE_EXT_EVENT",0);
+			panic("Unimplemented: AML_OPCODE_EXT_EVENT");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_COND_REF_OF):
-			panic("Unimplemented: AML_OPCODE_EXT_COND_REF_OF",0);
+			panic("Unimplemented: AML_OPCODE_EXT_COND_REF_OF");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_CREATE_FIELD):
-			panic("Unimplemented: AML_OPCODE_EXT_CREATE_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_CREATE_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_LOAD_TABLE):
-			panic("Unimplemented: AML_OPCODE_EXT_LOAD_TABLE",0);
+			panic("Unimplemented: AML_OPCODE_EXT_LOAD_TABLE");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_LOAD):
-			panic("Unimplemented: AML_OPCODE_EXT_LOAD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_LOAD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_STALL):
-			panic("Unimplemented: AML_OPCODE_EXT_STALL",0);
+			panic("Unimplemented: AML_OPCODE_EXT_STALL");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_SLEEP):
-			panic("Unimplemented: AML_OPCODE_EXT_SLEEP",0);
+			panic("Unimplemented: AML_OPCODE_EXT_SLEEP");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_ACQUIRE):
-			panic("Unimplemented: AML_OPCODE_EXT_ACQUIRE",0);
+			panic("Unimplemented: AML_OPCODE_EXT_ACQUIRE");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_SIGNAL):
-			panic("Unimplemented: AML_OPCODE_EXT_SIGNAL",0);
+			panic("Unimplemented: AML_OPCODE_EXT_SIGNAL");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_WAIT):
-			panic("Unimplemented: AML_OPCODE_EXT_WAIT",0);
+			panic("Unimplemented: AML_OPCODE_EXT_WAIT");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_RESET):
-			panic("Unimplemented: AML_OPCODE_EXT_RESET",0);
+			panic("Unimplemented: AML_OPCODE_EXT_RESET");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_RELEASE):
-			panic("Unimplemented: AML_OPCODE_EXT_RELEASE",0);
+			panic("Unimplemented: AML_OPCODE_EXT_RELEASE");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_FROM_BCD):
-			panic("Unimplemented: AML_OPCODE_EXT_FROM_BCD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_FROM_BCD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_TO_BCD):
-			panic("Unimplemented: AML_OPCODE_EXT_TO_BCD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_TO_BCD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_UNLOAD):
-			panic("Unimplemented: AML_OPCODE_EXT_UNLOAD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_UNLOAD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_REVISION):
-			panic("Unimplemented: AML_OPCODE_EXT_REVISION",0);
+			panic("Unimplemented: AML_OPCODE_EXT_REVISION");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_DEBUG):
-			panic("Unimplemented: AML_OPCODE_EXT_DEBUG",0);
+			panic("Unimplemented: AML_OPCODE_EXT_DEBUG");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_FATAL):
-			panic("Unimplemented: AML_OPCODE_EXT_FATAL",0);
+			panic("Unimplemented: AML_OPCODE_EXT_FATAL");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_TIMER):
-			panic("Unimplemented: AML_OPCODE_EXT_TIMER",0);
+			panic("Unimplemented: AML_OPCODE_EXT_TIMER");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_REGION):
 			{
@@ -758,7 +758,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 					}
 					if (object->data.bytes[i]<32){
 						ERROR("Unimplemented special field type: %x",object->data.bytes[i]);
-						panic("Unimplemented",0);
+						panic("Unimplemented");
 					}
 					aml_node_t* field_unit=_alloc_node((const char*)(object->data.bytes+i),AML_NODE_TYPE_FIELD_UNIT,local->namespace);
 					i+=4;
@@ -798,19 +798,19 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				return processor;
 			}
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_POWER_RES):
-			panic("Unimplemented: AML_OPCODE_EXT_POWER_RES",0);
+			panic("Unimplemented: AML_OPCODE_EXT_POWER_RES");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_THERMAL_ZONE):
-			panic("Unimplemented: AML_OPCODE_EXT_THERMAL_ZONE",0);
+			panic("Unimplemented: AML_OPCODE_EXT_THERMAL_ZONE");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_INDEX_FIELD):
-			panic("Unimplemented: AML_OPCODE_EXT_INDEX_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_INDEX_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_BANK_FIELD):
-			panic("Unimplemented: AML_OPCODE_EXT_BANK_FIELD",0);
+			panic("Unimplemented: AML_OPCODE_EXT_BANK_FIELD");
 			return NULL;
 		case MAKE_OPCODE(AML_EXTENDED_OPCODE,AML_OPCODE_EXT_DATA_REGION):
-			panic("Unimplemented: AML_OPCODE_EXT_DATA_REGION",0);
+			panic("Unimplemented: AML_OPCODE_EXT_DATA_REGION");
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE,0):
 			for (aml_node_t* namespace=local->namespace;1;namespace=namespace->parent){
@@ -823,7 +823,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				}
 			}
 			ERROR("Object not found: %s",object->args[0].string);
-			panic("Object not found",0);
+			panic("Object not found");
 			return NULL;
 	}
 	return NULL;

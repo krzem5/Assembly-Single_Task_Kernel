@@ -10,7 +10,7 @@
 
 
 
-static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
+static void KERNEL_CORE_CODE _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
 	page->prev=NULL;
 	page->next=*list_head;
 	if (*list_head){
@@ -21,7 +21,7 @@ static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t*
 
 
 
-static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
+static void KERNEL_CORE_CODE _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
 	if (page->prev){
 		page->prev->next=page->next;
 	}
@@ -35,15 +35,15 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 
-void* omm_alloc(omm_allocator_t* allocator){
+void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
 	if (allocator->object_size<sizeof(omm_object_t)){
 		allocator->object_size=sizeof(omm_object_t);
 	}
 	if (allocator->alignment&(allocator->alignment-1)){
-		panic("omm_allocator_t alignment must be a power of 2",0);
+		panic("omm_allocator_t alignment must be a power of 2");
 	}
 	if (allocator->page_count&(allocator->page_count-1)){
-		panic("omm_allocator_t page_count must be a power of 2",0);
+		panic("omm_allocator_t page_count must be a power of 2");
 	}
 	lock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
@@ -78,11 +78,11 @@ void* omm_alloc(omm_allocator_t* allocator){
 
 
 
-void omm_dealloc(omm_allocator_t* allocator,void* object){
+void KERNEL_CORE_CODE omm_dealloc(omm_allocator_t* allocator,void* object){
 	lock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));
 	if (page->object_size!=allocator->object_size){
-		panic("omm_dealloc: wrong allocator",0);
+		panic("omm_dealloc: wrong allocator");
 	}
 	memset(object,0,allocator->object_size);WARN("%p %p",object,allocator->object_size);
 	omm_object_t* head=object;

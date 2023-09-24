@@ -45,10 +45,8 @@ void KERNEL_CORE_CODE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 
 
 
-void KERNEL_CORE_CODE panic(const char* error,_Bool recoverable){
-	if (_user_panic_handler(error)&&recoverable){
-		return;
-	}
+void KERNEL_CORE_CODE panic(const char* error){
+	_user_panic_handler(error);
 	log("\x1b[1m\x1b[1m\x1b[38;2;192;28;40mFatal error: %s\x1b[0m\n",error);
 	io_port_out16(0x604,0x2000);
 	for (;;);

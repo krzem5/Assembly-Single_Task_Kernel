@@ -64,7 +64,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->pf_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	if (!out->user_stack_bottom||!out->kernel_stack_bottom||!out->pf_stack_bottom){
-		panic("Unable to reserve thread stack",0);
+		panic("Unable to reserve thread stack");
 	}
 	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_USER_STACK)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
 	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
@@ -95,7 +95,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 void thread_delete(thread_t* thread){
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
-		panic("Referenced threads cannot be deleted",0);
+		panic("Referenced threads cannot be deleted");
 	}
 	process_t* process=thread->process;
 	lock_acquire_exclusive(&(process->lock));

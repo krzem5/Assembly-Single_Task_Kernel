@@ -125,7 +125,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
 	if (_partition_lookup_table){
-		panic("Unable to add partition",0);
+		panic("Unable to add partition");
 	}
 	partition_t* fs=kmm_alloc(sizeof(partition_t));
 	fs->next=partition_data;
@@ -154,7 +154,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 
 partition_t* KERNEL_CORE_CODE partition_get(u8 index){
 	if (!_partition_lookup_table){
-		panic("Unable to get partition",0);
+		panic("Unable to get partition");
 	}
 	return (index>=_partition_count?NULL:_partition_lookup_table[index]);
 }

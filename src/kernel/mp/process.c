@@ -30,7 +30,7 @@ process_t* process_new(void){
 void process_delete(process_t* process){
 	lock_acquire_shared(&(process->lock));
 	if (process->thread_list.head||process->handle.rc){
-		panic("Referenced processes cannot be deleted",0);
+		panic("Referenced processes cannot be deleted");
 	}
 	lock_release_shared(&(process->lock));
 	omm_dealloc(&_process_allocator,process);

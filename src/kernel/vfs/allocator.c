@@ -5,12 +5,16 @@
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "vfs_allocator"
 
 
 
 void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator_t* out){
 	LOG_CORE("Initializing file system node allocator...");
+	if (node_size<sizeof(vfs_node_t)){
+		panic("vfs_allocator_init: node_size too small");
+	}
 	lock_init(&(out->lock));
 	out->vfs_index=vfs_index;
 	out->first=0;

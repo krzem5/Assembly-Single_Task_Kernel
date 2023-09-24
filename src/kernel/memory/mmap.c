@@ -59,8 +59,7 @@ void vmm_memory_map_deinit(vmm_memory_map_t* mmap);
 
 u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
-		panic("vmm_memory_map_reserve: unaligned arguments",1);
-		return 0;
+		panic("vmm_memory_map_reserve: unaligned arguments");
 	}
 	lock_acquire_shared(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
@@ -103,8 +102,7 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 
 _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
-		panic("vmm_memory_map_release: unaligned arguments",1);
-		return 0;
+		panic("vmm_memory_map_release: unaligned arguments");
 	}
 	lock_acquire_shared(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
@@ -116,7 +114,7 @@ _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	if (region->offset!=address||region->length!=length){
-		panic("vmm_memory_map_release: partial release is unimplemented",0);
+		panic("vmm_memory_map_release: partial release is unimplemented");
 	}
 	lock_shared_to_exclusive(&(mmap->lock));
 	region->is_used=0;
