@@ -12,7 +12,11 @@ void syscall_memory_unmap(syscall_registers_t* regs);
 
 
 
-void syscall_memory_stats(syscall_registers_t* regs);
+void syscall_memory_counter_count(syscall_registers_t* regs);
+
+
+
+void syscall_memory_counter(syscall_registers_t* regs);
 
 
 

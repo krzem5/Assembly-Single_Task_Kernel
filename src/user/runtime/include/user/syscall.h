@@ -104,7 +104,11 @@ _Bool _syscall_memory_unmap(void* address,u64 length);
 
 
 
-_Bool _syscall_memory_stats(void* buffer,u32 size);
+u32 _syscall_memory_counter_count(void);
+
+
+
+_Bool _syscall_memory_counter(u32 counter,void* buffer,u32 size);
 
 
 

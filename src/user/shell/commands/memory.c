@@ -52,25 +52,20 @@ void memory_main(int argc,const char*const* argv){
 		printf("Total: \x1b[1m%v\x1b[0m (\x1b[1m%v\x1b[0m usable)\n",total_size,total_usable_size);
 		return;
 	}
-	memory_stats_t stats;
-	if (!memory_stats(&stats)){
-		printf("memory: unable to read memory stats\n");
-		return;
+	u32 counter_count=memory_get_counter_count();
+	if (!counter_count){
+		goto _counter_error;
 	}
-	printf("Total:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_total<<12);
-	printf("Free:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_free<<12);
-	printf("AHCI:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_ahci<<12);
-	printf("i82540:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_driver_i82540<<12);
-	printf("Image:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_image<<12);
-	printf("Kernel image:\t\x1b[1m%v\x1b[0m\n",stats.counter_kernel_image<<12);
-	printf("Kernel stack:\t\x1b[1m%v\x1b[0m\n",stats.counter_kernel_stack<<12);
-	printf("KFS:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_kfs<<12);
-	printf("KMM:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_kmm<<12);
-	printf("Network:\t\x1b[1m%v\x1b[0m\n",stats.counter_network<<12);
-	printf("UMM:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_umm<<12);
-	printf("User stack:\t\x1b[1m%v\x1b[0m\n",stats.counter_user_stack<<12);
-	printf("User:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_user<<12);
-	printf("VMM:\t\t\x1b[1m%v\x1b[0m\n",stats.counter_vmm<<12);
+	for (u32 i=0;i<counter_count;i++){
+		memory_counter_t counter;
+		if (!memory_get_counter(i,&counter)){
+			goto _counter_error;
+		}
+		printf("%s:\t\x1b[1m%v\x1b[0m\n",counter.name,counter.count<<12);
+	}
+	return;
+_counter_error:
+	printf("memory: unable to read memory stats\n");
 }
 
 

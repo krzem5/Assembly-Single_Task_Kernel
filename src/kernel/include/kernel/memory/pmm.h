@@ -18,11 +18,12 @@
 
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
+#define PMM_COUNTER_NAME_LENGTH 16
+
 #define PMM_DECLARE_COUNTER(name) \
 	static u16 KERNEL_CORE_DATA PMM_COUNTER_##name=0; \
-	static const char KERNEL_CORE_RDATA _pmm_counter_descriptor_name_##name[]=#name; \
 	static const pmm_counter_descriptor_t KERNEL_CORE_RDATA _pmm_counter_descriptor_##name={ \
-		_pmm_counter_descriptor_name_##name, \
+		#name, \
 		&(PMM_COUNTER_##name) \
 	}; \
 	static const pmm_counter_descriptor_t* __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
@@ -49,7 +50,7 @@ typedef struct _PMM_ALLOCATOR{
 
 
 typedef struct _PMM_COUNTER{
-	const char* name;
+	char name[PMM_COUNTER_NAME_LENGTH];
 	u64 count;
 } pmm_counter_t;
 
@@ -129,7 +130,11 @@ void pmm_dealloc(u64 address,u64 count,u8 counter);
 
 
 
-void pmm_get_counters(pmm_counters_t* out);
+u8 pmm_get_counter_count(void);
+
+
+
+_Bool pmm_get_counter(u8 counter,pmm_counter_t* out);
 
 
 

@@ -129,7 +129,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)(kernel_get_pmm_counter_start()+kernel_get_offset());(u64)descriptor<(kernel_get_pmm_counter_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=_pmm_counters->length;
-			(_pmm_counters->data+_pmm_counters->length)->name=(*descriptor)->name;
+			memcpy((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
 			(_pmm_counters->data+_pmm_counters->length)->count=0;
 			_pmm_counters->length++;
 		}
@@ -283,12 +283,19 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 
 
 
-void pmm_get_counters(pmm_counters_t* out){
+u8 pmm_get_counter_count(void){
+	return _pmm_counters->length;
+}
+
+
+
+_Bool pmm_get_counter(u8 counter,pmm_counter_t* out){
+	if (counter>=_pmm_counters->length){
+		return 0;
+	}
 	lock_acquire_exclusive(&_pmm_counter_lock);
-	*out=*_pmm_counters;
+	memcpy(out->name,(_pmm_counters->data+counter)->name,PMM_COUNTER_NAME_LENGTH);
+	out->count=(_pmm_counters->data+counter)->count;
 	lock_release_exclusive(&_pmm_counter_lock);
-	// out->data[PMM_COUNTER_FREE]=out->data[PMM_COUNTER_TOTAL];
-	// for (u8 i=PMM_COUNTER_FREE+1;i<=4;i++){
-	// 	out->data[PMM_COUNTER_FREE]-=out->data[i];
-	// }
+	return 1;
 }

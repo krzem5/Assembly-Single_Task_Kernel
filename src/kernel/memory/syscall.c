@@ -33,11 +33,20 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 
-void syscall_memory_stats(syscall_registers_t* regs){
-	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rsi!=sizeof(pmm_counters_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
+void syscall_memory_counter_count(syscall_registers_t* regs){
+	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS){
 		regs->rax=0;
 		return;
 	}
-	pmm_get_counters((pmm_counters_t*)(regs->rdi));
+	regs->rax=pmm_get_counter_count();
+}
+
+
+
+void syscall_memory_counter(syscall_registers_t* regs){
+	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rdx!=sizeof(pmm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!pmm_get_counter(regs->rdi,(pmm_counter_t*)(regs->rsi))){
+		regs->rax=0;
+		return;
+	}
 	regs->rax=1;
 }
