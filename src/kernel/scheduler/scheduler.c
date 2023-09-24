@@ -19,6 +19,7 @@
 
 
 
+static _Bool KERNEL_CORE_DATA _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 static scheduler_queues_t _scheduler_queues;
 
@@ -51,12 +52,23 @@ void scheduler_init(void){
 		lock_init(&((_scheduler_queues.priority_queues+i)->lock));
 	}
 	lock_init(&(_scheduler_queues.realtime_queue.lock));
+	_scheduler_enabled=1;
 }
 
 
 
-void scheduler_pause(void){
-	lapic_timer_stop();
+void KERNEL_CORE_CODE scheduler_pause(void){
+	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
+		CPU_LOCAL(_scheduler_data)->remaining_us=lapic_timer_stop();
+	}
+}
+
+
+
+void KERNEL_CORE_CODE scheduler_resume(void){
+	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
+		lapic_timer_start(CPU_LOCAL(_scheduler_data)->remaining_us);
+	}
 }
 
 
@@ -124,11 +136,11 @@ void scheduler_isr_handler(isr_state_t* state){
 
 
 void scheduler_enqueue_thread(thread_t* thread){
+	scheduler_pause();
 	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
-	u32 remaining_us=lapic_timer_stop();
 	scheduler_queue_t* queue=NULL;
 	switch (thread->priority){
 		case THREAD_PRIORITY_BACKGROUND:
@@ -161,7 +173,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
 	lock_release_exclusive(&(thread->lock));
-	lapic_timer_start(remaining_us);
+	scheduler_resume();
 }
 
 

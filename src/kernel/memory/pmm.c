@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "pmm"
@@ -172,6 +173,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 
 
 u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
+	scheduler_pause();
 	if (!count){
 		panic("pmm_alloc: trying to allocate zero physical pages");
 	}
@@ -214,6 +216,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	lock_acquire_exclusive(&_pmm_counter_lock);
 	(_pmm_counters->data+counter)->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	lock_release_exclusive(&_pmm_counter_lock);
+	scheduler_resume();
 	return out;
 }
 
@@ -231,6 +234,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
 
 
 void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
+	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
 	}
@@ -278,6 +282,7 @@ void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
 	allocator->blocks[i]=address;
 	allocator->block_bitmap|=1<<i;
 	lock_release_exclusive(&(allocator->lock));
+	scheduler_resume();
 }
 
 
@@ -292,9 +297,7 @@ _Bool pmm_get_counter(u8 counter,pmm_counter_t* out){
 	if (counter>=_pmm_counters->length){
 		return 0;
 	}
-	lock_acquire_exclusive(&_pmm_counter_lock);
 	memcpy(out->name,(_pmm_counters->data+counter)->name,PMM_COUNTER_NAME_LENGTH);
 	out->count=(_pmm_counters->data+counter)->count;
-	lock_release_exclusive(&_pmm_counter_lock);
 	return 1;
 }
