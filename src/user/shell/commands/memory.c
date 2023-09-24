@@ -61,7 +61,9 @@ void memory_main(int argc,const char*const* argv){
 		if (!memory_get_counter(i,&counter)){
 			goto _counter_error;
 		}
-		printf("%s:\t\x1b[1m%v\x1b[0m\n",counter.name,counter.count<<12);
+		u8 j=0;
+		for (;counter.name[j];j++);
+		printf("%s:\t%s\x1b[1m%v\x1b[0m\n",counter.name,(j>6?"":"\t"),counter.count<<12);
 	}
 	return;
 _counter_error:
