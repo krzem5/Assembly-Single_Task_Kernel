@@ -54,6 +54,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	scheduler_init();
 	cpu_start_all_cores();
 	elf_load("/kernel/loader.elf");
+	scheduler_enable();
 	scheduler_start();
 	for (;;);
 }

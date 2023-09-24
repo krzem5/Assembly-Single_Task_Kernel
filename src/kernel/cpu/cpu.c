@@ -85,7 +85,6 @@ void cpu_init(u16 count){
 	}
 	cpu_bsp_core_id=msr_get_apic_id();
 	INFO("BSP APIC id: #%u",cpu_bsp_core_id);
-	msr_set_gs_base(cpu_extra_data+cpu_bsp_core_id,0);
 }
 
 

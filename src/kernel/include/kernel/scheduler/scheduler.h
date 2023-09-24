@@ -29,12 +29,17 @@ typedef struct _SCHEDULER_QUEUES{
 typedef struct _SCHEDULER{
 	thread_t* current_thread;
 	u32 remaining_us;
+	u32 nested_pause_count;
 	u8 priority_timing;
 } scheduler_t;
 
 
 
 void scheduler_init(void);
+
+
+
+void scheduler_enable(void);
 
 
 

@@ -321,8 +321,8 @@ u64 KERNEL_CORE_CODE vmm_identity_map(u64 physical_address,u64 size){
 
 
 u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
-	scheduler_pause();
 	u64 out=0;
+	scheduler_pause();
 	lock_acquire_shared(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -388,8 +388,8 @@ void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 c
 
 
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
+	scheduler_pause();
 	for (;count;count--){
-		scheduler_pause();
 		lock_acquire_shared(&(pagemap->lock));
 		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
@@ -400,10 +400,10 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 		else{
 			lock_release_shared(&(pagemap->lock));
 		}
-		scheduler_resume();
 		vmm_unmap_page(pagemap,virtual_address);
 		virtual_address+=PAGE_SIZE;
 	}
+	scheduler_resume();
 }
 
 

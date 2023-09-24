@@ -52,6 +52,11 @@ void scheduler_init(void){
 		lock_init(&((_scheduler_queues.priority_queues+i)->lock));
 	}
 	lock_init(&(_scheduler_queues.realtime_queue.lock));
+}
+
+
+
+void scheduler_enable(void){
 	_scheduler_enabled=1;
 }
 
@@ -59,7 +64,10 @@ void scheduler_init(void){
 
 void KERNEL_CORE_CODE scheduler_pause(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		CPU_LOCAL(_scheduler_data)->remaining_us=lapic_timer_stop();
+		if (!CPU_LOCAL(_scheduler_data)->nested_pause_count){
+			CPU_LOCAL(_scheduler_data)->remaining_us=lapic_timer_stop();
+		}
+		CPU_LOCAL(_scheduler_data)->nested_pause_count++;
 	}
 }
 
@@ -67,7 +75,10 @@ void KERNEL_CORE_CODE scheduler_pause(void){
 
 void KERNEL_CORE_CODE scheduler_resume(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		lapic_timer_start(CPU_LOCAL(_scheduler_data)->remaining_us);
+		CPU_LOCAL(_scheduler_data)->nested_pause_count--;
+		if (!CPU_LOCAL(_scheduler_data)->nested_pause_count){
+			lapic_timer_start(CPU_LOCAL(_scheduler_data)->remaining_us);
+		}
 	}
 }
 
@@ -79,6 +90,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		scheduler_task_wait_loop();
 	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+	scheduler->nested_pause_count=0;
+	thread_t* current_thread=scheduler->current_thread;
+	scheduler->current_thread=NULL;
 	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
 	if (!new_thread){
 		u8 priority=2;
@@ -98,20 +112,19 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (!new_thread){
 		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
 	}
-	if (scheduler->current_thread&&(new_thread||scheduler->current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
-		lock_acquire_exclusive(&(scheduler->current_thread->lock));
+	if (current_thread&&(new_thread||current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
+		lock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
-		scheduler->current_thread->gpr_state=*state;
-		scheduler->current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
-		scheduler->current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
-		fpu_save(scheduler->current_thread->fpu_state);
-		scheduler->current_thread->state_not_present=0;
-		lock_release_exclusive(&(scheduler->current_thread->lock));
-		if (scheduler->current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
-			scheduler_enqueue_thread(scheduler->current_thread);
+		current_thread->gpr_state=*state;
+		current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
+		current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
+		fpu_save(current_thread->fpu_state);
+		current_thread->state_not_present=0;
+		lock_release_exclusive(&(current_thread->lock));
+		if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
+			scheduler_enqueue_thread(current_thread);
 		}
-		scheduler->current_thread=NULL;
 	}
 	if (new_thread){
 		lock_acquire_exclusive(&(new_thread->lock));
@@ -126,6 +139,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
 		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
 		lock_release_exclusive(&(new_thread->lock));
+	}
+	else{
+		scheduler->current_thread=current_thread;
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){

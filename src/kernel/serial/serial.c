@@ -32,6 +32,7 @@ void serial_init_irq(void){
 
 
 void KERNEL_CORE_CODE serial_send(const void* buffer,u32 length){
+	scheduler_pause();
 	lock_acquire_exclusive(&_serial_read_lock);
 	for (;length;length--){
 		SPINLOOP(!(io_port_in8(0x3fd)&0x20));
@@ -39,6 +40,7 @@ void KERNEL_CORE_CODE serial_send(const void* buffer,u32 length){
 		buffer++;
 	}
 	lock_release_exclusive(&_serial_read_lock);
+	scheduler_resume();
 }
 
 

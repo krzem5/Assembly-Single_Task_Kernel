@@ -84,6 +84,9 @@ void lapic_enable(void){
 
 void lapic_timer_start(u32 time_us){
 	_lapic_registers[REGISTER_EOI]=0;
+	if (!time_us){
+		return;
+	}
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_SCHEDULER_VECTOR;
 	_lapic_registers[REGISTER_TMRDIV]=0;
 	_lapic_registers[REGISTER_TMRINITCNT]=time_us*(*CPU_LOCAL(_lapic_timer_frequencies));
