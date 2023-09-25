@@ -13,6 +13,7 @@
 #define KERNEL_NOOPT __attribute__((noipa,optimize("O0")))
 #define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define KERNEL_INLINE inline __attribute__((always_inline))
+#define KERNEL_ATOMIC _Atomic
 
 
 
