@@ -50,6 +50,10 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 	}
 	memcpy(buffer,path,length);
 	buffer[length]=0;
+	handle_t* root_handle=(root?handle_lookup_and_acquire(root,HANDLE_TYPE_FD):NULL);
+	if (root&&!root_handle){
+		return FD_ERROR_INVALID_FD;
+	}
 	vfs_node_t* root_node=NULL;
 	if (root){
 		if (_is_invalid_fd(root)){
@@ -60,7 +64,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 			return FD_ERROR_NOT_FOUND;
 		}
 	}
-	vfs_node_t* node=vfs_get_by_path(root_node,buffer,((flags&FD_FLAG_CREATE)?((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE):0));
+	vfs_node_t* node=vfs_get_by_path((root_handle?vfs_get_by_id(((fd_data_t*)(root_handle->object))->node_id):NULL),buffer,((flags&FD_FLAG_CREATE)?((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE):0));
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}
