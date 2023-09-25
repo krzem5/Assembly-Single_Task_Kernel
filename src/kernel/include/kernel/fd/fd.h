@@ -23,6 +23,7 @@
 #define FD_FLAG_APPEND 4
 #define FD_FLAG_CREATE 8
 #define FD_FLAG_DIRECTORY 16
+#define FD_FLAG_DELETE_AT_EXIT 32
 
 #define FD_SEEK_SET 0
 #define FD_SEEK_ADD 1
@@ -53,10 +54,6 @@ typedef struct _FD_STAT{
 	char name[64];
 	u64 size;
 } fd_stat_t;
-
-
-
-void fd_clear(void);
 
 
 

@@ -49,6 +49,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 		return FD_ERROR_INVALID_POINTER;
 	}
 	memcpy(buffer,path,length);
+	buffer[length]=0;
 	vfs_node_t* root_node=NULL;
 	if (root){
 		if (_is_invalid_fd(root)){
@@ -59,7 +60,6 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 			return FD_ERROR_NOT_FOUND;
 		}
 	}
-	buffer[length]=0;
 	vfs_node_t* node=vfs_get_by_path(root_node,buffer,((flags&FD_FLAG_CREATE)?((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE):0));
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
@@ -70,9 +70,12 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 
 
 s64 fd_close(handle_id_t fd){
-	if (_is_invalid_fd(fd)){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
+	handle_release(fd_handle);
+	handle_release(fd_handle);
 	return 0;
 }
 
@@ -92,7 +95,7 @@ s64 fd_delete(handle_id_t fd){
 	}
 	_Bool out=vfs_delete(node);
 	if (out){
-		//
+		data->flags|=FD_FLAG_DELETE_AT_EXIT;
 	}
 	return (out?0:FD_ERROR_NOT_EMPTY);
 }
