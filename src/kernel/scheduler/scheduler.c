@@ -112,7 +112,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (current_thread&&(new_thread||current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		lock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
 		current_thread->gpr_state=*state;
 		current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
 		current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
@@ -194,7 +194,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 void scheduler_dequeue_thread(_Bool save_registers){
 	lapic_timer_stop();
-	CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->TMP_IST1_STACK_TOP);
+	CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
 	if (!save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;

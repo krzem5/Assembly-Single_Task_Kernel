@@ -1,6 +1,7 @@
 #ifndef _KERNEL_CPU_CPU_H_
 #define _KERNEL_CPU_CPU_H_ 1
 #include <kernel/gdt/gdt.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
 
@@ -32,8 +33,7 @@ typedef struct _CPU_EXTRA_DATA{
 	tss_t tss;
 	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
 	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
-	u8 TMP_IST1_STACK_BOTTOM[4096];
-	u8 TMP_IST1_STACK_TOP[8];
+	u8 pf_stack[CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
 } cpu_extra_data_t;
 
 

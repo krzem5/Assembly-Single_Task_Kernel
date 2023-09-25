@@ -41,17 +41,21 @@ typedef struct _HANDLE{
 
 
 
+typedef void (*handle_type_delete_callback_t)(struct _HANDLE*);
+
+
+
 typedef struct _HANDLE_DESCRIPTOR{
 	char name[HANDLE_NAME_LENGTH];
 	handle_type_t* var;
-	void (*delete_fn)(handle_t*);
+	handle_type_delete_callback_t delete_callback;
 } handle_descriptor_t;
 
 
 
 typedef struct _HANDLE_TYPE_DATA{
 	char name[HANDLE_NAME_LENGTH];
-	void (*delete_fn)(handle_t*);
+	handle_type_delete_callback_t delete_callback;
 	KERNEL_ATOMIC u64 count;
 } handle_type_data_t;
 
