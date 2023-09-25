@@ -9,7 +9,6 @@
 
 
 
-
 void syscall_memory_map(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
 	u64 out=vmm_memory_map_reserve(&(THREAD_DATA->process->mmap),0,length);
@@ -33,17 +32,13 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 
-void syscall_memory_counter_count(syscall_registers_t* regs){
-	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS){
-		regs->rax=0;
-		return;
-	}
-	regs->rax=pmm_get_counter_count();
+void syscall_memory_get_counter_count(syscall_registers_t* regs){
+	regs->rax=(CONFIG_DISABLE_USER_MEMORY_COUNTERS?0:pmm_get_counter_count());
 }
 
 
 
-void syscall_memory_counter(syscall_registers_t* regs){
+void syscall_memory_get_counter(syscall_registers_t* regs){
 	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rdx!=sizeof(pmm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!pmm_get_counter(regs->rdi,(pmm_counter_t*)(regs->rsi))){
 		regs->rax=0;
 		return;

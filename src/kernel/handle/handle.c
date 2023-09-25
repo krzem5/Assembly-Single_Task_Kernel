@@ -27,13 +27,14 @@ void handle_init(void){
 		}
 	}
 	handle_type_data=kmm_alloc(handle_type_count*sizeof(handle_type_data_t));
-	handle_type_data->name="ANY";
+	memset(handle_type_data->name,0,HANDLE_NAME_LENGTH);
+	memcpy(handle_type_data->name,"ANY",3);
 	handle_type_data->delete_fn=NULL;
 	handle_type_data->count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
 			handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
-			type_data->name=(*descriptor)->name;
+			memcpy(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
 			type_data->delete_fn=(*descriptor)->delete_fn;
 			type_data->count=0;
 		}
@@ -64,7 +65,25 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 
 
 
-void handle_delete(handle_t* handle){
+handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
+	handle_t* out=NULL;
+	lock_acquire_shared(&_handle_global_lock);
+	for (handle_t* handle=_handle_root;handle;handle=handle->next){
+		if (handle->id==id){
+			if (handle->type==type||type==HANDLE_TYPE_ANY){
+				handle_acquire(handle);
+				out=handle;
+			}
+			break;
+		}
+	}
+	lock_release_shared(&_handle_global_lock);
+	return out;
+}
+
+
+
+void _handle_delete_internal(handle_t* handle){
 	if (handle->rc){
 		panic("Unable to delete referenced handle");
 	}
@@ -82,22 +101,4 @@ void handle_delete(handle_t* handle){
 	handle_type_data->count--;
 	(handle_type_data+handle->type)->count--;
 	(handle_type_data+handle->type)->delete_fn(handle);
-}
-
-
-
-handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
-	handle_t* out=NULL;
-	lock_acquire_shared(&_handle_global_lock);
-	for (handle_t* handle=_handle_root;handle;handle=handle->next){
-		if (handle->id==id){
-			if (handle->type==type||type==HANDLE_TYPE_ANY){
-				handle_acquire(handle);
-				out=handle;
-			}
-			break;
-		}
-	}
-	lock_release_shared(&_handle_global_lock);
-	return out;
 }

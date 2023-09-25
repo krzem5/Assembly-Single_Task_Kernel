@@ -104,11 +104,11 @@ _Bool _syscall_memory_unmap(void* address,u64 length);
 
 
 
-u32 _syscall_memory_counter_count(void);
+u32 _syscall_memory_get_counter_count(void);
 
 
 
-_Bool _syscall_memory_counter(u32 counter,void* buffer,u32 size);
+_Bool _syscall_memory_get_counter(u32 counter,void* buffer,u32 size);
 
 
 
@@ -145,6 +145,14 @@ u32 _syscall_thread_get_priority(u64 handle);
 
 
 _Bool _syscall_thread_set_priority(u64 handle,u32 priority);
+
+
+
+u32 _syscall_handle_get_type_count(void);
+
+
+
+_Bool _syscall_handle_get_type(u32 handle_type,void* buffer,u32 size);
 
 
 

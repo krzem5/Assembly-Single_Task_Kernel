@@ -12,12 +12,12 @@
 
 
 
-static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_data_t),8,4);
+static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_t),8,4);
 
 
 
 static HANDLE_DECLARE_TYPE(FD,{
-	fd_data_t* data=handle->object;
+	fd_t* data=handle->object;
 	if (data->flags&FD_FLAG_DELETE_AT_EXIT){
 		vfs_node_t* node=vfs_get_by_id(data->node_id);
 		if (node&&(node->type!=VFS_NODE_TYPE_DIRECTORY||!vfs_get_relative(node,VFS_RELATIVE_FIRST_CHILD))){
@@ -30,7 +30,7 @@ static HANDLE_DECLARE_TYPE(FD,{
 
 
 static handle_id_t _node_to_fd(vfs_node_t* node,u8 flags){
-	fd_data_t* out=omm_alloc(&_fd_allocator);
+	fd_t* out=omm_alloc(&_fd_allocator);
 	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
 	lock_init(&(out->lock));
 	out->node_id=node->id;
@@ -58,7 +58,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 		if (!root_handle){
 			return FD_ERROR_INVALID_FD;
 		}
-		root_node=vfs_get_by_id(((fd_data_t*)(root_handle->object))->node_id);
+		root_node=vfs_get_by_id(((fd_t*)(root_handle->object))->node_id);
 		if (!root_node){
 			return FD_ERROR_NOT_FOUND;
 		}
@@ -92,7 +92,7 @@ s64 fd_delete(handle_id_t fd){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	data->flags|=FD_FLAG_DELETE_AT_EXIT;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
@@ -115,7 +115,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	if (!(data->flags&FD_FLAG_READ)){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -140,7 +140,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	if (!(data->flags&FD_FLAG_WRITE)){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -165,7 +165,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u8 flags){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);
@@ -200,7 +200,7 @@ s64 fd_resize(handle_id_t fd,u64 size){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);
@@ -223,7 +223,7 @@ s64 fd_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);
@@ -241,7 +241,7 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);
@@ -269,7 +269,7 @@ s64 fd_get_relative(handle_id_t fd,u8 relative,u8 flags){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);
@@ -291,13 +291,13 @@ s64 fd_move(handle_id_t fd,handle_id_t dst_fd){
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* data=fd_handle->object;
+	fd_t* data=fd_handle->object;
 	handle_t* dst_fd_handle=handle_lookup_and_acquire(dst_fd,HANDLE_TYPE_FD);
 	if (!dst_fd_handle){
 		handle_release(fd_handle);
 		return FD_ERROR_INVALID_FD;
 	}
-	fd_data_t* dst_data=dst_fd_handle->object;
+	fd_t* dst_data=dst_fd_handle->object;
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
 		handle_release(fd_handle);

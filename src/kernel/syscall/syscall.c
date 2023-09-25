@@ -5,6 +5,7 @@
 #include <kernel/drive/syscall.h>
 #include <kernel/elf/syscall.h>
 #include <kernel/fd/syscall.h>
+#include <kernel/handle/syscall.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/syscall.h>
@@ -54,8 +55,8 @@ void* _syscall_handlers[]={
 	[21]=syscall_system_shutdown,
 	[22]=syscall_memory_map,
 	[23]=syscall_memory_unmap,
-	[24]=syscall_memory_counter_count,
-	[25]=syscall_memory_counter,
+	[24]=syscall_memory_get_counter_count,
+	[25]=syscall_memory_get_counter,
 	[26]=syscall_clock_get_converion,
 	[27]=syscall_drive_format,
 	[28]=syscall_drive_stats,
@@ -66,6 +67,8 @@ void* _syscall_handlers[]={
 	[33]=syscall_thread_create,
 	[34]=syscall_thread_get_priority,
 	[35]=syscall_thread_set_priority,
+	[36]=syscall_handle_get_type_count,
+	[37]=syscall_handle_get_type,
 	NULL
 };
 

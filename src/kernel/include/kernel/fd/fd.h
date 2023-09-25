@@ -36,13 +36,13 @@
 
 
 
-typedef struct _FD_DATA{
+typedef struct _FD{
 	handle_t handle;
 	lock_t lock;
 	vfs_node_id_t node_id;
 	u64 offset;
 	u8 flags;
-} fd_data_t;
+} fd_t;
 
 
 

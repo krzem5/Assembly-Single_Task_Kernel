@@ -7,6 +7,8 @@
 
 #define HANDLE_TYPE_ANY 0
 
+#define HANDLE_NAME_LENGTH 16
+
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
@@ -31,7 +33,7 @@ typedef struct _HANDLE{
 	handle_type_t type;
 	lock_t lock;
 	handle_id_t id;
-	u64 rc;
+	KERNEL_ATOMIC u64 rc;
 	void* object;
 	struct _HANDLE* prev;
 	struct _HANDLE* next;
@@ -40,7 +42,7 @@ typedef struct _HANDLE{
 
 
 typedef struct _HANDLE_DESCRIPTOR{
-	const char* name;
+	char name[HANDLE_NAME_LENGTH];
 	handle_type_t* var;
 	void (*delete_fn)(handle_t*);
 } handle_descriptor_t;
@@ -48,10 +50,17 @@ typedef struct _HANDLE_DESCRIPTOR{
 
 
 typedef struct _HANDLE_TYPE_DATA{
-	const char* name;
+	char name[HANDLE_NAME_LENGTH];
 	void (*delete_fn)(handle_t*);
 	KERNEL_ATOMIC u64 count;
 } handle_type_data_t;
+
+
+
+typedef struct _HANDLE_USER_TYPE_DATA{
+	char name[HANDLE_NAME_LENGTH];
+	u64 count;
+} handle_user_type_data_t;
 
 
 
@@ -68,11 +77,11 @@ void handle_new(void* object,handle_type_t type,handle_t* out);
 
 
 
-void handle_delete(handle_t* handle);
-
-
-
 handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type);
+
+
+
+void _handle_delete_internal(handle_t* handle);
 
 
 
@@ -87,7 +96,7 @@ static KERNEL_INLINE _Bool handle_release(handle_t* handle){
 	if (handle->rc){
 		return 1;
 	}
-	handle_delete(handle);
+	_handle_delete_internal(handle);
 	return 0;
 }
 

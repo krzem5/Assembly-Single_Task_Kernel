@@ -37,8 +37,8 @@ DECL_SYSCALL network_layer3_device_delete, 20, 3
 DECL_SYSCALL system_shutdown, 21, 1
 DECL_SYSCALL memory_map, 22, 2
 DECL_SYSCALL memory_unmap, 23, 2
-DECL_SYSCALL memory_counter_count, 24, 0
-DECL_SYSCALL memory_counter, 25, 3
+DECL_SYSCALL memory_get_counter_count, 24, 0
+DECL_SYSCALL memory_get_counter, 25, 3
 DECL_SYSCALL clock_get_converion, 26, 0
 DECL_SYSCALL drive_format, 27, 3
 DECL_SYSCALL drive_stats, 28, 3
@@ -49,3 +49,5 @@ DECL_SYSCALL thread_stop, 32, 0
 DECL_SYSCALL thread_create, 33, 4
 DECL_SYSCALL thread_get_priority, 34, 1
 DECL_SYSCALL thread_set_priority, 35, 2
+DECL_SYSCALL handle_get_type_count, 36, 0
+DECL_SYSCALL handle_get_type, 37, 3
