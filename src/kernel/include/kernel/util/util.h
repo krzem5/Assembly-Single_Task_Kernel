@@ -12,7 +12,7 @@
 #if KERNEL_COVERAGE_ENABLED
 #define SPINLOOP(cond) \
 	do{ \
-		inline void KERNEL_NOCOVERAGE __nocoverage_spinloop(void){ \
+		KERNEL_INLINE void KERNEL_NOCOVERAGE __nocoverage_spinloop(void){ \
 			while (cond){ \
 				__pause(); \
 			} \
@@ -21,7 +21,7 @@
 	} while(0)
 #define COUNTER_SPINLOOP(max) \
 	do{ \
-		inline void KERNEL_NOCOVERAGE __nocoverage_counter_spinloop(void){ \
+		KERNEL_INLINE void KERNEL_NOCOVERAGE __nocoverage_counter_spinloop(void){ \
 			for (u64 __tmp=0;__tmp<(max);__tmp++){ \
 				__pause(); \
 			} \
@@ -41,13 +41,13 @@
 
 
 
-static inline __attribute__((always_inline)) void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
+static KERNEL_INLINE void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
 	asm volatile("pause":::"memory");
 }
 
 
 
-static inline __attribute__((always_inline)) void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
+static KERNEL_INLINE void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
 	u8* dst_ptr=dst;
 	const u8* src_ptr=src;
 	for (u64 i=0;i<length;i++){
@@ -58,7 +58,7 @@ static inline __attribute__((always_inline)) void* KERNEL_CORE_CODE KERNEL_NOCOV
 
 
 
-static inline __attribute__((always_inline)) void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
+static KERNEL_INLINE void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	for (u64 i=0;i<length;i++){
 		ptr[i]=value;

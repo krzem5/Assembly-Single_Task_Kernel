@@ -196,13 +196,13 @@ static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_i
 
 
 
-static inline void* KERNEL_CORE_CODE _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
+static KERNEL_INLINE void* KERNEL_CORE_CODE _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
 	return (void*)(((u64)nda2)+4096);
 }
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_nfda(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nfda(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NFDA_DIRTY)){
 		return;
 	}
@@ -212,7 +212,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_nfda(kfs_block_cache_t* b
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA1_DIRTY)){
 		return;
 	}
@@ -222,7 +222,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cache_t* b
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_DIRTY)){
 		return;
 	}
@@ -233,7 +233,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cache_t* b
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA3_DIRTY)){
 		return;
 	}
@@ -243,7 +243,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cache_t* b
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_BATC_DIRTY)){
 		return;
 	}
@@ -253,7 +253,7 @@ static inline void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cache_t* b
 
 
 
-static inline void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_ROOT_DIRTY)){
 		return;
 	}

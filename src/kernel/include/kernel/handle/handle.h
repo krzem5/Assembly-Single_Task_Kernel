@@ -45,13 +45,13 @@ handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type);
 
 
 
-static inline void handle_acquire(handle_t* handle){
+static KERNEL_INLINE void handle_acquire(handle_t* handle){
 	handle->rc++;
 }
 
 
 
-static inline _Bool handle_release(handle_t* handle){
+static KERNEL_INLINE _Bool handle_release(handle_t* handle){
 	handle->rc--;
 	if (handle->rc){
 		return 1;

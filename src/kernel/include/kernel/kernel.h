@@ -39,73 +39,73 @@ extern const u64 kernel_symbols[];
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_version(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_version(void){
 	return __core_version;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_start(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_start(void){
 	return (u64)__KERNEL_START__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_start(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_start(void){
 	return (u64)__KERNEL_PMM_COUNTER_START__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_end(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_pmm_counter_end(void){
 	return (u64)__KERNEL_PMM_COUNTER_END__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_core_end(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_core_end(void){
 	return (u64)__KERNEL_CORE_END__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_start(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_start(void){
 	return (u64)__KERNEL_CPU_LOCAL_START__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_end(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_end(void){
 	return (u64)__KERNEL_CPU_LOCAL_END__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_common_start(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_common_start(void){
 	return (u64)__KERNEL_COMMON_START__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_end(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_end(void){
 	return (u64)__KERNEL_END__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_bss_start(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_bss_start(void){
 	return (u64)__KERNEL_BSS_START__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_bss_end(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_bss_end(void){
 	return (u64)__KERNEL_BSS_END__;
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_offset(void){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_offset(void){
 	return KERNEL_OFFSET;
 }
 

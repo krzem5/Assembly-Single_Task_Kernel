@@ -32,20 +32,20 @@ static KERNEL_CORE_RDATA const char _format_base16_chars[]="0123456789abcdef";
 
 
 
-static inline void KERNEL_CORE_CODE _buffer_state_add(format_buffer_state_t* buffer_state,char c){
+static KERNEL_INLINE void KERNEL_CORE_CODE _buffer_state_add(format_buffer_state_t* buffer_state,char c){
 	buffer_state->buffer[buffer_state->offset]=c;
 	buffer_state->offset+=(buffer_state->offset<buffer_state->length);
 }
 
 
 
-static inline char KERNEL_CORE_CODE _format_base16_char(u8 value){
+static KERNEL_INLINE char KERNEL_CORE_CODE _format_base16_char(u8 value){
 	return _format_base16_chars[value&15];
 }
 
 
 
-static inline void KERNEL_CORE_CODE _format_int_base10(u64 value,format_buffer_state_t* out){
+static KERNEL_INLINE void KERNEL_CORE_CODE _format_int_base10(u64 value,format_buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
 	while (value){

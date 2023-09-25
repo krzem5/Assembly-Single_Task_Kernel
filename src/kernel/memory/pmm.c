@@ -26,34 +26,34 @@ u64 KERNEL_CORE_BSS pmm_adjusted_kernel_end;
 
 
 
-static inline pmm_allocator_page_header_t* _get_block_header(u64 address){
+static KERNEL_INLINE pmm_allocator_page_header_t* _get_block_header(u64 address){
 	return (pmm_allocator_page_header_t*)(address+_pmm_block_address_offset);
 }
 
 
 
-static inline u64 _get_bitmap_size(const pmm_allocator_t* allocator){
+static KERNEL_INLINE u64 _get_bitmap_size(const pmm_allocator_t* allocator){
 	return pmm_align_up_address(((((allocator->last_address-allocator->first_address)>>PAGE_SIZE_SHIFT)+64)>>6)*sizeof(u64));
 	 // 64 instead of 63 to add one more bit for the end of the last memory address
 }
 
 
 
-static inline _Bool _get_address_bit(const pmm_allocator_t* allocator,u64 address){
+static KERNEL_INLINE _Bool _get_address_bit(const pmm_allocator_t* allocator,u64 address){
 	address=(address-allocator->first_address)>>PAGE_SIZE_SHIFT;
 	return !!(allocator->bitmap[address>>6]&(1ull<<(address&63)));
 }
 
 
 
-static inline void _toggle_address_bit(const pmm_allocator_t* allocator,u64 address){
+static KERNEL_INLINE void _toggle_address_bit(const pmm_allocator_t* allocator,u64 address){
 	address=(address-allocator->first_address)>>PAGE_SIZE_SHIFT;
 	allocator->bitmap[address>>6]^=1ull<<(address&63);
 }
 
 
 
-static inline u64 KERNEL_CORE_CODE _get_block_size(u8 index){
+static KERNEL_INLINE u64 KERNEL_CORE_CODE _get_block_size(u8 index){
 	return 1ull<<(PAGE_SIZE_SHIFT+index);
 }
 

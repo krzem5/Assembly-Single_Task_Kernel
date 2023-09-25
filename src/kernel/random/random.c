@@ -7,14 +7,14 @@
 
 
 
-static inline u32 _rotate_bits(u32 a,u8 b){
+static KERNEL_INLINE u32 _rotate_bits(u32 a,u8 b){
 	asm("rol %1,%0":"+r"(a):"c"(b));
 	return a;
 }
 
 
 
-static inline void _chacha_block_quarter(u32* out,u8 a,u8 b,u8 c,u8 d){
+static KERNEL_INLINE void _chacha_block_quarter(u32* out,u8 a,u8 b,u8 c,u8 d){
 	out[a]+=out[b];
 	out[d]^=out[a];
 	out[d]=_rotate_bits(out[d],16);
@@ -31,7 +31,7 @@ static inline void _chacha_block_quarter(u32* out,u8 a,u8 b,u8 c,u8 d){
 
 
 
-static inline void _chacha_block(u32* state,u32* out){
+static KERNEL_INLINE void _chacha_block(u32* state,u32* out){
 	memcpy(out,state,16);
 	for (u8 i=0;i<10;i++){
 		_chacha_block_quarter(out,0,4,8,12);

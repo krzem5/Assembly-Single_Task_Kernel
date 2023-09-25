@@ -54,33 +54,33 @@ typedef struct _PCI_BAR{
 
 
 
-static inline u32 pci_device_read_data(const pci_device_t* device,u8 offset){
+static KERNEL_INLINE u32 pci_device_read_data(const pci_device_t* device,u8 offset){
 	io_port_out32(0xcf8,(device->bus<<16)|(device->slot<<11)|(device->func<<8)|(offset&0xfc)|0x80000000);
 	return io_port_in32(0xcfc);
 }
 
 
 
-static inline void pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
+static KERNEL_INLINE void pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
 	io_port_out32(0xcf8,(device->bus<<16)|(device->slot<<11)|(device->func<<8)|(offset&0xfc)|0x80000000);
 	io_port_out32(0xcfc,value);
 }
 
 
 
-static inline void pci_device_enable_io_access(const pci_device_t* device){
+static KERNEL_INLINE void pci_device_enable_io_access(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|1);
 }
 
 
 
-static inline void pci_device_enable_memory_access(const pci_device_t* device){
+static KERNEL_INLINE void pci_device_enable_memory_access(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|2);
 }
 
 
 
-static inline void pci_device_enable_bus_mastering(const pci_device_t* device){
+static KERNEL_INLINE void pci_device_enable_bus_mastering(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|4);
 }
 

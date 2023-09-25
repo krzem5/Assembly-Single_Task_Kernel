@@ -70,37 +70,37 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 
-static inline u64 pmm_align_up_address(u64 base){
+static KERNEL_INLINE u64 pmm_align_up_address(u64 base){
 	return (base+PAGE_SIZE-1)&(-PAGE_SIZE);
 }
 
 
 
-static inline u64 pmm_align_up_address_large(u64 base){
+static KERNEL_INLINE u64 pmm_align_up_address_large(u64 base){
 	return (base+LARGE_PAGE_SIZE-1)&(-LARGE_PAGE_SIZE);
 }
 
 
 
-static inline u64 pmm_align_up_address_extra_large(u64 base){
+static KERNEL_INLINE u64 pmm_align_up_address_extra_large(u64 base){
 	return (base+EXTRA_LARGE_PAGE_SIZE-1)&(-EXTRA_LARGE_PAGE_SIZE);
 }
 
 
 
-static inline u64 pmm_align_down_address(u64 base){
+static KERNEL_INLINE u64 pmm_align_down_address(u64 base){
 	return base&(-PAGE_SIZE);
 }
 
 
 
-static inline u64 pmm_align_down_address_large(u64 base){
+static KERNEL_INLINE u64 pmm_align_down_address_large(u64 base){
 	return base&(-LARGE_PAGE_SIZE);
 }
 
 
 
-static inline u64 pmm_align_down_address_extra_large(u64 base){
+static KERNEL_INLINE u64 pmm_align_down_address_extra_large(u64 base){
 	return base&(-EXTRA_LARGE_PAGE_SIZE);
 }
 

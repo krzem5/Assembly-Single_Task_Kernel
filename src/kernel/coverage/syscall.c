@@ -54,7 +54,7 @@ static void KERNEL_NOCOVERAGE _output_bytes(const void* buffer,u32 length){
 
 
 
-static inline void KERNEL_NOCOVERAGE _output_int(u32 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
 	_output_bytes(&value,sizeof(u32));
 }
 

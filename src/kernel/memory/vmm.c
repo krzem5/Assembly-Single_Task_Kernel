@@ -21,13 +21,13 @@ vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
 
 
 
-static inline vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
+static KERNEL_INLINE vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
 	return (vmm_pagemap_table_t*)(((*entry)&VMM_PAGE_ADDRESS_MASK)+_vmm_address_offset);
 }
 
 
 
-static inline _Bool KERNEL_CORE_CODE _decrease_length(u64* table){
+static KERNEL_INLINE _Bool KERNEL_CORE_CODE _decrease_length(u64* table){
 	if ((*table)&VMM_PAGE_FLAG_PRESENT){
 		*table-=1ull<<VMM_PAGE_COUNT_SHIFT;
 		if (!((*table)&VMM_PAGE_COUNT_MASK)){
@@ -41,7 +41,7 @@ static inline _Bool KERNEL_CORE_CODE _decrease_length(u64* table){
 
 
 
-static inline void KERNEL_CORE_CODE _increase_length(u64* table){
+static KERNEL_INLINE void KERNEL_CORE_CODE _increase_length(u64* table){
 	if ((*table)&VMM_PAGE_FLAG_PRESENT){
 		*table+=1ull<<VMM_PAGE_COUNT_SHIFT;
 	}
@@ -49,7 +49,7 @@ static inline void KERNEL_CORE_CODE _increase_length(u64* table){
 
 
 
-static inline void KERNEL_CORE_CODE _increase_length_if_entry_empty(u64* table,u64 entry){
+static KERNEL_INLINE void KERNEL_CORE_CODE _increase_length_if_entry_empty(u64* table,u64 entry){
 	if (!_get_table(table)->entries[entry]){
 		_increase_length(table);
 	}

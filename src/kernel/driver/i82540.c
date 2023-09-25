@@ -85,7 +85,7 @@ PMM_DECLARE_COUNTER(DRIVER_I82540);
 
 
 
-static inline void _consume_packet(i82540_device_t* device,u16 tail,i82540_rx_descriptor_t* desc){
+static KERNEL_INLINE void _consume_packet(i82540_device_t* device,u16 tail,i82540_rx_descriptor_t* desc){
 	desc->status=0;
 	if (device->mmio[REG_RDH]!=device->mmio[REG_RDT]){
 		device->mmio[REG_RDT]=tail;

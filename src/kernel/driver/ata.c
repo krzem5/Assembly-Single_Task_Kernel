@@ -50,7 +50,7 @@ static KERNEL_CORE_RDATA const char _ata_drive_name_format_template[]="ata%u";
 
 
 
-static inline void KERNEL_CORE_CODE KERNEL_NOCOVERAGE _delay_400ns(const ata_device_t* device){
+static KERNEL_INLINE void KERNEL_CORE_CODE KERNEL_NOCOVERAGE _delay_400ns(const ata_device_t* device){
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
