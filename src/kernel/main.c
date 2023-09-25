@@ -5,6 +5,7 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
+#include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -38,6 +39,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	partition_load();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
+	handle_init();
 	isr_init();
 	pci_enumerate(0);
 	clock_init();

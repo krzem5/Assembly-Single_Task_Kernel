@@ -16,6 +16,19 @@ static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_data_t)
 
 
 
+static HANDLE_DECLARE_TYPE(FD,{
+	fd_data_t* data=handle->object;
+	if (data->flags&FD_FLAG_DELETE_AT_EXIT){
+		vfs_node_t* node=vfs_get_by_id(data->node_id);
+		if (node&&(node->type!=VFS_NODE_TYPE_DIRECTORY||!vfs_get_relative(node,VFS_RELATIVE_FIRST_CHILD))){
+			vfs_delete(node);
+		}
+	}
+	omm_dealloc(&_fd_allocator,data);
+});
+
+
+
 static handle_id_t _node_to_fd(vfs_node_t* node,u8 flags){
 	fd_data_t* out=omm_alloc(&_fd_allocator);
 	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
@@ -29,7 +42,7 @@ static handle_id_t _node_to_fd(vfs_node_t* node,u8 flags){
 
 
 s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_DELETE_AT_EXIT))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
 	char buffer[4096];
@@ -249,7 +262,7 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 
 
 s64 fd_get_relative(handle_id_t fd,u8 relative,u8 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_DELETE_AT_EXIT))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);

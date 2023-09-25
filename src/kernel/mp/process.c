@@ -14,6 +14,12 @@ static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(proce
 
 
 
+static HANDLE_DECLARE_TYPE(PROCESS,{
+	ERROR("Delete PROCESS %p",handle);
+});
+
+
+
 process_t* process_new(void){
 	process_t* out=omm_alloc(&_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));

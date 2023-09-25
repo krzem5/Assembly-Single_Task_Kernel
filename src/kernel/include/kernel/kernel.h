@@ -29,6 +29,8 @@ extern u64 __KERNEL_PMM_COUNTER_END__[1];
 extern u64 __KERNEL_CORE_END__[1];
 extern u64 __KERNEL_CPU_LOCAL_START__[1];
 extern u64 __KERNEL_CPU_LOCAL_END__[1];
+extern u64 __KERNEL_HANDLE_START__[1];
+extern u64 __KERNEL_HANDLE_END__[1];
 extern u64 __KERNEL_COMMON_START__[1];
 extern u64 __KERNEL_END__[1];
 extern u64 __KERNEL_BSS_START__[1];
@@ -77,6 +79,18 @@ static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local
 
 static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_cpu_local_end(void){
 	return (u64)__KERNEL_CPU_LOCAL_END__;
+}
+
+
+
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_handle_start(void){
+	return (u64)__KERNEL_HANDLE_START__;
+}
+
+
+
+static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_handle_end(void){
+	return (u64)__KERNEL_HANDLE_END__;
 }
 
 

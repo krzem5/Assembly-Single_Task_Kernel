@@ -25,6 +25,10 @@
 
 
 
+extern handle_type_t HANDLE_TYPE_THREAD;
+
+
+
 thread_t* thread_new(process_t* process,u64 rip,u64 stack_size);
 
 

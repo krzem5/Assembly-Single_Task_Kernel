@@ -1,9 +1,8 @@
 #include <kernel/handle/handle.h>
+#include <kernel/kernel.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/mp/event.h>
-#include <kernel/mp/process.h>
-#include <kernel/mp/thread.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "handle"
@@ -13,15 +12,45 @@
 static lock_t _handle_global_lock=LOCK_INIT_STRUCT;
 static handle_id_t _handle_next_id=1;
 static handle_t* _handle_root=NULL;
+static lock_t _handle_type_data_lock=LOCK_INIT_STRUCT;
+static handle_type_data_t* _handle_type_data=NULL;
 
 
 
-void handle_new(void* object,u8 type,handle_t* out){
+void handle_init(void){
+	handle_type_t max_handle_type=HANDLE_TYPE_ANY;
+	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
+		if (*descriptor){
+			max_handle_type++;
+			*((*descriptor)->var)=max_handle_type;
+		}
+	}
+	_handle_type_data=kmm_alloc((max_handle_type+1)*sizeof(handle_type_data_t));
+	_handle_type_data->name="ANY";
+	_handle_type_data->delete_fn=NULL;
+	_handle_type_data->count=0;
+	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
+		if (*descriptor){
+			handle_type_data_t* type_data=_handle_type_data+(*((*descriptor)->var));
+			type_data->name=(*descriptor)->name;
+			type_data->delete_fn=(*descriptor)->delete_fn;
+			type_data->count=0;
+		}
+	}
+}
+
+
+
+void handle_new(void* object,handle_type_t type,handle_t* out){
 	// add to an AVL tree
 	out->type=type;
 	lock_init(&(out->lock));
 	out->rc=1;
 	out->object=object;
+	lock_acquire_exclusive(&_handle_type_data_lock);
+	_handle_type_data->count++;
+	(_handle_type_data+type)->count++;
+	lock_release_exclusive(&_handle_type_data_lock);
 	lock_acquire_exclusive(&_handle_global_lock);
 	out->id=_handle_next_id;
 	_handle_next_id++;
@@ -51,20 +80,11 @@ void handle_delete(handle_t* handle){
 		handle->next->prev=handle->prev;
 	}
 	lock_release_exclusive(&_handle_global_lock);
-	switch (handle->type){
-		case HANDLE_TYPE_EVENT:
-			event_delete(handle->object);
-			break;
-		case HANDLE_TYPE_THREAD:
-			thread_delete(handle->object);
-			break;
-		case HANDLE_TYPE_PROCESS:
-			process_delete(handle->object);
-			break;
-		case HANDLE_TYPE_FD:
-			ERROR("handle_delete: HANDLE_TYPE_FD");
-			break;
-	}
+	lock_acquire_exclusive(&_handle_type_data_lock);
+	_handle_type_data->count--;
+	(_handle_type_data+handle->type)->count--;
+	lock_release_exclusive(&_handle_type_data_lock);
+	(_handle_type_data+handle->type)->delete_fn(handle);
 }
 
 

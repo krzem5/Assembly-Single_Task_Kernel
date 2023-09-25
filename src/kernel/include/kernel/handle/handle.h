@@ -6,14 +6,20 @@
 
 
 #define HANDLE_TYPE_ANY 0
-#define HANDLE_TYPE_EVENT 1
-#define HANDLE_TYPE_THREAD 2
-#define HANDLE_TYPE_PROCESS 3
-#define HANDLE_TYPE_FD 4
+
+#define HANDLE_DECLARE_TYPE(name,delete_code) \
+	handle_type_t HANDLE_TYPE_##name; \
+	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
+	static const handle_descriptor_t KERNEL_CORE_RDATA _handle_descriptor_##name={ \
+		#name, \
+		&(HANDLE_TYPE_##name), \
+		_handle_delete_callback_##name \
+	}; \
+	static const handle_descriptor_t* __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
 
 
 
-typedef u8 handle_type_t;
+typedef u16 handle_type_t;
 
 
 
@@ -30,6 +36,26 @@ typedef struct _HANDLE{
 	struct _HANDLE* prev;
 	struct _HANDLE* next;
 } handle_t;
+
+
+
+typedef struct _HANDLE_DESCRIPTOR{
+	const char* name;
+	handle_type_t* var;
+	void (*delete_fn)(handle_t*);
+} handle_descriptor_t;
+
+
+
+typedef struct _HANDLE_TYPE_DATA{
+	const char* name;
+	void (*delete_fn)(handle_t*);
+	u64 count;
+} handle_type_data_t;
+
+
+
+void handle_init(void);
 
 
 

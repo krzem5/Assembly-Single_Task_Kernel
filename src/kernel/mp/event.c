@@ -15,6 +15,12 @@ static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(event_t
 
 
 
+static HANDLE_DECLARE_TYPE(EVENT,{
+	ERROR("Delete EVENT %p",handle);
+});
+
+
+
 event_t* event_new(void){
 	event_t* out=omm_alloc(&_event_allocator);
 	handle_new(out,HANDLE_TYPE_EVENT,&(out->handle));

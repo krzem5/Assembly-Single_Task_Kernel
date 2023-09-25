@@ -26,6 +26,12 @@ static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRU
 
 
 
+HANDLE_DECLARE_TYPE(THREAD,{
+	ERROR("Delete THREAD %p",handle);
+});
+
+
+
 static void _thread_list_add(process_t* process,thread_t* thread){
 	lock_acquire_exclusive(&(process->thread_list.lock));
 	thread->thread_list_prev=NULL;

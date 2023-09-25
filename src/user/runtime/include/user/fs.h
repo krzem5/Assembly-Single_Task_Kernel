@@ -21,6 +21,7 @@
 #define FS_FLAG_APPEND 4
 #define FS_FLAG_CREATE 8
 #define FS_FLAG_DIRECTORY 16
+#define FS_FLAG_DELETE_AT_EXIT 32
 
 #define FS_SEEK_SET 0
 #define FS_SEEK_ADD 1
