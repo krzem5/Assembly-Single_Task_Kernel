@@ -1,5 +1,4 @@
 #include <command.h>
-#include <cwd.h>
 #include <string.h>
 #include <user/handle.h>
 #include <user/io.h>
