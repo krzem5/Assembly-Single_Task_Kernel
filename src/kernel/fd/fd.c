@@ -1,72 +1,46 @@
 #include <kernel/fd/fd.h>
-#include <kernel/vfs/allocator.h>
-#include <kernel/vfs/vfs.h>
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/allocator.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "fd"
 
 
 
-static lock_t _fd_lock=LOCK_INIT_STRUCT;
-static u64 _fd_bitmap[FD_MAX_COUNT>>6];
-
-fd_data_t fd_data[FD_MAX_COUNT];
-u16 fd_count;
+static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_data_t),8,4);
 
 
 
-static inline _Bool _is_invalid_fd(fd_t fd){
-	return (!fd||fd>FD_MAX_COUNT||(_fd_bitmap[(fd-1)>>6]&(1ull<<((fd-1)&63))));
+static inline _Bool _is_invalid_fd(handle_id_t fd){
+	return !handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
 }
 
 
 
-static inline fd_data_t* _get_fd_data(fd_t fd){
-	return fd_data+fd-1;
+static inline fd_data_t* _get_fd_data(handle_id_t fd){
+	return handle_lookup_and_acquire(fd,HANDLE_TYPE_FD)->object;
 }
 
 
 
-static int _node_to_fd(vfs_node_t* node,u8 flags){
-	lock_acquire_exclusive(&_fd_lock);
-	if (fd_count>=FD_MAX_COUNT){
-		return FD_ERROR_OUT_OF_FDS;
-	}
-	fd_t out=0;
-	while (!_fd_bitmap[out]){
-		out++;
-	}
-	fd_t idx=__builtin_ctzll(_fd_bitmap[out]);
-	_fd_bitmap[out]&=_fd_bitmap[out]-1;
-	out=(out<<6)|idx;
-	fd_data_t* data=fd_data+out;
-	data->node_id=node->id;
+static handle_id_t _node_to_fd(vfs_node_t* node,u8 flags){
+	fd_data_t* data=omm_alloc(&_fd_allocator);
+	handle_new(data,HANDLE_TYPE_FD,&(data->handle));
 	lock_init(&(data->lock));
+	data->node_id=node->id;
 	data->offset=((flags&FD_FLAG_APPEND)?vfs_get_size(node):0);
 	data->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
-	lock_release_exclusive(&_fd_lock);
-	return idx+1;
+	return data->handle.id;
 }
 
 
 
-void fd_clear(void){
-	LOG("Clearing file descriptor list...");
-	lock_acquire_exclusive(&_fd_lock);
-	fd_count=0;
-	for (u16 i=0;i<((FD_MAX_COUNT+63)>>6);i++){
-		_fd_bitmap[i]=0xffffffffffffffffull;
-	}
-	lock_release_exclusive(&_fd_lock);
-}
-
-
-
-int fd_open(fd_t root,const char* path,u32 length,u8 flags){
+s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
@@ -75,22 +49,18 @@ int fd_open(fd_t root,const char* path,u32 length,u8 flags){
 		return FD_ERROR_INVALID_POINTER;
 	}
 	memcpy(buffer,path,length);
-	lock_acquire_exclusive(&_fd_lock);
 	vfs_node_t* root_node=NULL;
 	if (root){
 		if (_is_invalid_fd(root)){
-			lock_release_exclusive(&_fd_lock);
 			return FD_ERROR_INVALID_FD;
 		}
 		root_node=vfs_get_by_id(_get_fd_data(root)->node_id);
 		if (!root_node){
-			lock_release_exclusive(&_fd_lock);
 			return FD_ERROR_NOT_FOUND;
 		}
 	}
 	buffer[length]=0;
 	vfs_node_t* node=vfs_get_by_path(root_node,buffer,((flags&FD_FLAG_CREATE)?((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE):0));
-	lock_release_exclusive(&_fd_lock);
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}
@@ -99,107 +69,85 @@ int fd_open(fd_t root,const char* path,u32 length,u8 flags){
 
 
 
-int fd_close(fd_t fd){
-	lock_acquire_exclusive(&_fd_lock);
+s64 fd_close(handle_id_t fd){
 	if (_is_invalid_fd(fd)){
-		lock_release_exclusive(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
-	_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
-	lock_release_exclusive(&_fd_lock);
 	return 0;
 }
 
 
 
-int fd_delete(fd_t fd){
-	lock_acquire_exclusive(&_fd_lock);
+s64 fd_delete(handle_id_t fd){
 	if (_is_invalid_fd(fd)){
-		lock_release_exclusive(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_exclusive(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	if (node->type==VFS_NODE_TYPE_DIRECTORY&&vfs_get_relative(node,VFS_RELATIVE_FIRST_CHILD)){
-		lock_release_exclusive(&_fd_lock);
 		return FD_ERROR_NOT_EMPTY;
 	}
 	_Bool out=vfs_delete(node);
 	if (out){
-		_fd_bitmap[(fd-1)>>6]|=1ull<<((fd-1)&63);
+		//
 	}
-	lock_release_exclusive(&_fd_lock);
 	return (out?0:FD_ERROR_NOT_EMPTY);
 }
 
 
 
-s64 fd_read(fd_t fd,void* buffer,u64 count){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_read(handle_id_t fd,void* buffer,u64 count){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	if (!(data->flags&FD_FLAG_READ)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
 	count=vfs_read(node,data->offset,buffer,count);
 	data->offset+=count;
 	lock_release_exclusive(&(data->lock));
-	lock_release_shared(&_fd_lock);
 	return count;
 }
 
 
 
-s64 fd_write(fd_t fd,const void* buffer,u64 count){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_write(handle_id_t fd,const void* buffer,u64 count){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	if (!(data->flags&FD_FLAG_WRITE)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
 	count=vfs_write(node,data->offset,buffer,count);
 	data->offset+=count;
 	lock_release_exclusive(&(data->lock));
-	lock_release_shared(&_fd_lock);
 	return count;
 }
 
 
 
-s64 fd_seek(fd_t fd,u64 offset,u8 flags){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_seek(handle_id_t fd,u64 offset,u8 flags){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
@@ -215,69 +163,56 @@ s64 fd_seek(fd_t fd,u64 offset,u8 flags){
 			break;
 		default:
 			lock_release_exclusive(&(data->lock));
-			lock_release_shared(&_fd_lock);
 			return FD_ERROR_INVALID_FLAGS;
 	}
 	lock_release_exclusive(&(data->lock));
-	lock_release_shared(&_fd_lock);
 	return data->offset;
 }
 
 
 
-int fd_resize(fd_t fd,u64 size){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_resize(handle_id_t fd,u64 size){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
-	int out=(vfs_set_size(node,size)?0:FD_ERROR_NO_SPACE);
+	s64 out=(vfs_set_size(node,size)?0:FD_ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
 	lock_release_exclusive(&(data->lock));
-	lock_release_shared(&_fd_lock);
 	return out;
 }
 
 
 
-int fd_absolute_path(fd_t fd,char* buffer,u32 buffer_length){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
-	int out=vfs_get_full_path(node,buffer,buffer_length);
-	lock_release_shared(&_fd_lock);
+	s64 out=vfs_get_full_path(node,buffer,buffer_length);
 	return out;
 }
 
 
 
-int fd_stat(fd_t fd,fd_stat_t* out){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
@@ -288,29 +223,24 @@ int fd_stat(fd_t fd,fd_stat_t* out){
 	memcpy(out->name,node->name,64);
 	out->size=vfs_get_size(node);
 	lock_release_exclusive(&(data->lock));
-	lock_release_shared(&_fd_lock);
 	return 0;
 }
 
 
 
-int fd_get_relative(fd_t fd,u8 relative,u8 flags){
+s64 fd_get_relative(handle_id_t fd,u8 relative,u8 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
-	lock_acquire_shared(&_fd_lock);
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	vfs_node_t* other=vfs_get_relative(node,relative);
-	lock_release_shared(&_fd_lock);
 	if (!other){
 		return FD_ERROR_NO_RELATIVE;
 	}
@@ -319,34 +249,27 @@ int fd_get_relative(fd_t fd,u8 relative,u8 flags){
 
 
 
-int fd_move(fd_t fd,fd_t dst_fd){
-	lock_acquire_shared(&_fd_lock);
+s64 fd_move(handle_id_t fd,handle_id_t dst_fd){
 	if (_is_invalid_fd(fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	if (_is_invalid_fd(dst_fd)){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_data_t* data=_get_fd_data(fd);
 	vfs_node_t* node=vfs_get_by_id(data->node_id);
 	if (!node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	fd_data_t* dst_data=_get_fd_data(dst_fd);
 	vfs_node_t* dst_node=vfs_get_by_id(dst_data->node_id);
 	if (!dst_node){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_NOT_FOUND;
 	}
 	if (node->vfs_index!=dst_node->vfs_index){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_DIFFERENT_FS;
 	}
 	if (node->type!=dst_node->type){
-		lock_release_shared(&_fd_lock);
 		return FD_ERROR_DIFFERENT_TYPE;
 	}
 	lock_acquire_exclusive(&(data->lock));
@@ -354,6 +277,5 @@ int fd_move(fd_t fd,fd_t dst_fd){
 	_Bool error=((node->flags&VFS_NODE_TYPE_DIRECTORY)?!!vfs_get_relative(dst_node,VFS_RELATIVE_FIRST_CHILD):!!vfs_get_size(dst_node))||!vfs_move(node,dst_node);
 	lock_release_exclusive(&(data->lock));
 	lock_release_exclusive(&(dst_data->lock));
-	lock_release_shared(&_fd_lock);
 	return (error?FD_ERROR_NOT_EMPTY:0);
 }

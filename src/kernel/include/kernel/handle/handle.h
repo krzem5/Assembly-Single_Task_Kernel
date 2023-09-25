@@ -9,6 +9,7 @@
 #define HANDLE_TYPE_EVENT 1
 #define HANDLE_TYPE_THREAD 2
 #define HANDLE_TYPE_PROCESS 3
+#define HANDLE_TYPE_FD 4
 
 
 

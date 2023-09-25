@@ -61,6 +61,9 @@ void handle_delete(handle_t* handle){
 		case HANDLE_TYPE_PROCESS:
 			process_delete(handle->object);
 			break;
+		case HANDLE_TYPE_FD:
+			ERROR("handle_delete: HANDLE_TYPE_FD");
+			break;
 	}
 }
 

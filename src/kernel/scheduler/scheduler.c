@@ -86,9 +86,6 @@ void KERNEL_CORE_CODE scheduler_resume(void){
 
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
-	if (CPU_HEADER_DATA->index){ // scheduler enabled only on core #0
-		scheduler_task_wait_loop();
-	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	scheduler->nested_pause_count=0;
 	thread_t* current_thread=scheduler->current_thread;

@@ -1,12 +1,8 @@
 #ifndef _KERNEL_FD_FD_H_
 #define _KERNEL_FD_FD_H_ 1
-#include <kernel/vfs/allocator.h>
+#include <kernel/handle/handle.h>
 #include <kernel/types.h>
-
-
-
-// Must be a multiple of 64
-#define FD_MAX_COUNT 1024
+#include <kernel/vfs/allocator.h>
 
 
 
@@ -37,17 +33,12 @@
 #define FD_RELATIVE_NEXT_SIBLING 2
 #define FD_RELATIVE_FIRST_CHILD 3
 
-#define FD_OUT_OF_RANGE(fd) ((fd)<=0||(fd)>FD_MAX_COUNT)
-
-
-
-typedef u16 fd_t;
-
 
 
 typedef struct _FD_DATA{
-	vfs_node_id_t node_id;
+	handle_t handle;
 	lock_t lock;
+	vfs_node_id_t node_id;
 	u64 offset;
 	u8 flags;
 } fd_data_t;
@@ -65,56 +56,51 @@ typedef struct _FD_STAT{
 
 
 
-extern fd_data_t fd_data[];
-extern u16 fd_count;
-
-
-
 void fd_clear(void);
 
 
 
-int fd_open(fd_t root,const char* path,u32 length,u8 flags);
+s64 fd_open(handle_id_t root,const char* path,u32 length,u8 flags);
 
 
 
-int fd_close(fd_t fd);
+s64 fd_close(handle_id_t fd);
 
 
 
-int fd_delete(fd_t fd);
+s64 fd_delete(handle_id_t fd);
 
 
 
-s64 fd_read(fd_t fd,void* buffer,u64 count);
+s64 fd_read(handle_id_t fd,void* buffer,u64 count);
 
 
 
-s64 fd_write(fd_t fd,const void* buffer,u64 count);
+s64 fd_write(handle_id_t fd,const void* buffer,u64 count);
 
 
 
-s64 fd_seek(fd_t fd,u64 offset,u8 type);
+s64 fd_seek(handle_id_t fd,u64 offset,u8 type);
 
 
 
-int fd_resize(fd_t fd,u64 size);
+s64 fd_resize(handle_id_t fd,u64 size);
 
 
 
-int fd_absolute_path(fd_t fd,char* buffer,u32 buffer_length);
+s64 fd_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length);
 
 
 
-int fd_stat(fd_t fd,fd_stat_t* out);
+s64 fd_stat(handle_id_t fd,fd_stat_t* out);
 
 
 
-int fd_get_relative(fd_t fd,u8 relative,u8 flags);
+s64 fd_get_relative(handle_id_t fd,u8 relative,u8 flags);
 
 
 
-int fd_move(fd_t fd,fd_t dst_fd);
+s64 fd_move(handle_id_t fd,handle_id_t dst_fd);
 
 
 
