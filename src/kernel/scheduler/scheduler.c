@@ -125,6 +125,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 			scheduler_enqueue_thread(current_thread);
 		}
+		current_thread=NULL;
 	}
 	if (new_thread){
 		lock_acquire_exclusive(&(new_thread->lock));
