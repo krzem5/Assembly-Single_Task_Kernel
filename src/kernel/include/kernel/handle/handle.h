@@ -50,8 +50,13 @@ typedef struct _HANDLE_DESCRIPTOR{
 typedef struct _HANDLE_TYPE_DATA{
 	const char* name;
 	void (*delete_fn)(handle_t*);
-	u64 count;
+	_Atomic u64 count;
 } handle_type_data_t;
+
+
+
+extern handle_type_data_t* handle_type_data;
+extern handle_type_t handle_type_count;
 
 
 

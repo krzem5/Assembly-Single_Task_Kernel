@@ -12,26 +12,27 @@
 static lock_t _handle_global_lock=LOCK_INIT_STRUCT;
 static handle_id_t _handle_next_id=1;
 static handle_t* _handle_root=NULL;
-static lock_t _handle_type_data_lock=LOCK_INIT_STRUCT;
-static handle_type_data_t* _handle_type_data=NULL;
+
+handle_type_data_t* handle_type_data;
+handle_type_t handle_type_count;
 
 
 
 void handle_init(void){
-	handle_type_t max_handle_type=HANDLE_TYPE_ANY;
+	handle_type_count=HANDLE_TYPE_ANY+1;
 	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
-			max_handle_type++;
-			*((*descriptor)->var)=max_handle_type;
+			*((*descriptor)->var)=handle_type_count;
+			handle_type_count++;
 		}
 	}
-	_handle_type_data=kmm_alloc((max_handle_type+1)*sizeof(handle_type_data_t));
-	_handle_type_data->name="ANY";
-	_handle_type_data->delete_fn=NULL;
-	_handle_type_data->count=0;
+	handle_type_data=kmm_alloc(handle_type_count*sizeof(handle_type_data_t));
+	handle_type_data->name="ANY";
+	handle_type_data->delete_fn=NULL;
+	handle_type_data->count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
-			handle_type_data_t* type_data=_handle_type_data+(*((*descriptor)->var));
+			handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
 			type_data->name=(*descriptor)->name;
 			type_data->delete_fn=(*descriptor)->delete_fn;
 			type_data->count=0;
@@ -47,10 +48,8 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	lock_init(&(out->lock));
 	out->rc=1;
 	out->object=object;
-	lock_acquire_exclusive(&_handle_type_data_lock);
-	_handle_type_data->count++;
-	(_handle_type_data+type)->count++;
-	lock_release_exclusive(&_handle_type_data_lock);
+	handle_type_data->count++;
+	(handle_type_data+type)->count++;
 	lock_acquire_exclusive(&_handle_global_lock);
 	out->id=_handle_next_id;
 	_handle_next_id++;
@@ -80,11 +79,9 @@ void handle_delete(handle_t* handle){
 		handle->next->prev=handle->prev;
 	}
 	lock_release_exclusive(&_handle_global_lock);
-	lock_acquire_exclusive(&_handle_type_data_lock);
-	_handle_type_data->count--;
-	(_handle_type_data+handle->type)->count--;
-	lock_release_exclusive(&_handle_type_data_lock);
-	(_handle_type_data+handle->type)->delete_fn(handle);
+	handle_type_data->count--;
+	(handle_type_data+handle->type)->count--;
+	(handle_type_data+handle->type)->delete_fn(handle);
 }
 
 
