@@ -19,10 +19,10 @@
 
 
 
-static const scheduler_priority_t _scheduler_queue_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT]={
-	{SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL},
-	{SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW},
-	{SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW},
+static const scheduler_priority_t _scheduler_queue_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_QUEUE_COUNT]={
+	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_BACKGROUND},
+	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
+	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
 };
 
 static _Bool KERNEL_CORE_DATA _scheduler_enabled=0;
@@ -102,23 +102,18 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler->nested_pause_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
-	thread_t* new_thread=_try_pop_from_queue(_scheduler_queues.data+SCHEDULER_PRIORITY_REALTIME);
-	if (!new_thread){
-		scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
-		if (!(scheduler->round_robin_timing&15)){
-			start_priority=SCHEDULER_PRIORITY_LOW;
-		}
-		else if (!(scheduler->round_robin_timing&3)){
-			start_priority=SCHEDULER_PRIORITY_NORMAL;
-		}
-		scheduler->round_robin_timing++;
-		const scheduler_priority_t* pattern=_scheduler_queue_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
-		for (u8 i=0;!new_thread&&i<SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT;i++){
-			new_thread=_try_pop_from_queue(_scheduler_queues.data+pattern[i]);
-		}
+	scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
+	if (!(scheduler->round_robin_timing&15)){
+		start_priority=SCHEDULER_PRIORITY_LOW;
 	}
-	if (!new_thread){
-		new_thread=_try_pop_from_queue(_scheduler_queues.data+SCHEDULER_PRIORITY_BACKGROUND);
+	else if (!(scheduler->round_robin_timing&3)){
+		start_priority=SCHEDULER_PRIORITY_NORMAL;
+	}
+	scheduler->round_robin_timing++;
+	const scheduler_priority_t* pattern=_scheduler_queue_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
+	thread_t* new_thread=NULL;
+	for (u8 i=0;!new_thread&&i<SCHEDULER_QUEUE_COUNT;i++){
+		new_thread=_try_pop_from_queue(_scheduler_queues.data+pattern[i]);
 	}
 	if (current_thread&&(new_thread||current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		lock_acquire_exclusive(&(current_thread->lock));
