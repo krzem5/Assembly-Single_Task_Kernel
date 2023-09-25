@@ -3,6 +3,7 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -12,7 +13,11 @@
 
 
 
-static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_t),8,4);
+PMM_DECLARE_COUNTER(OMM_FD);
+
+
+
+static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_t),8,4,PMM_COUNTER_OMM_FD);
 
 
 

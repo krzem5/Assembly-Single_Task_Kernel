@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread_list.h>
 #include <kernel/types.h>
@@ -11,7 +12,11 @@
 
 
 
-static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(process_t),8,2);
+PMM_DECLARE_COUNTER(OMM_PROCESS);
+
+
+
+static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(process_t),8,2,PMM_COUNTER_OMM_PROCESS);
 
 
 

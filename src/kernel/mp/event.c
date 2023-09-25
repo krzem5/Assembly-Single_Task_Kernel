@@ -2,6 +2,7 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
@@ -11,7 +12,11 @@
 
 
 
-static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(event_t),8,2);
+PMM_DECLARE_COUNTER(OMM_EVENT);
+
+
+
+static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(event_t),8,2,PMM_COUNTER_OMM_EVENT);
 
 
 
