@@ -47,7 +47,7 @@ void syscall_thread_get_priority(syscall_registers_t* regs){
 
 
 void syscall_thread_set_priority(syscall_registers_t* regs){
-	if (!regs->rdi||regs->rsi<THREAD_PRIORITY_MIN||regs->rsi>THREAD_PRIORITY_MAX){
+	if (!regs->rdi||regs->rsi<SCHEDULER_PRIORITY_MIN||regs->rsi>SCHEDULER_PRIORITY_MAX){
 		regs->rax=0;
 		return;
 	}

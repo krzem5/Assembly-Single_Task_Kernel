@@ -19,9 +19,23 @@
 
 
 
+static const scheduler_priority_t _scheduler_queue_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT]={
+	{SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL},
+	{SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW},
+	{SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW},
+};
+
 static _Bool KERNEL_CORE_DATA _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 static scheduler_queues_t _scheduler_queues;
+
+
+
+static void _queue_init(scheduler_queue_t* queue){
+	lock_init(&(queue->lock));
+	queue->head=NULL;
+	queue->tail=NULL;
+}
 
 
 
@@ -47,11 +61,9 @@ static thread_t* _try_pop_from_queue(scheduler_queue_t* queue){
 
 void scheduler_init(void){
 	LOG("Initializing scheduler...");
-	lock_init(&(_scheduler_queues.background_queue.lock));
-	for (u8 i=0;i<SCHEDULER_PRIORITY_QUEUE_COUNT;i++){
-		lock_init(&((_scheduler_queues.priority_queues+i)->lock));
+	for (u8 i=0;i<SCHEDULER_QUEUE_COUNT;i++){
+		_queue_init(_scheduler_queues.data+i);
 	}
-	lock_init(&(_scheduler_queues.realtime_queue.lock));
 }
 
 
@@ -90,24 +102,23 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler->nested_pause_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
-	thread_t* new_thread=_try_pop_from_queue(&(_scheduler_queues.realtime_queue));
+	thread_t* new_thread=_try_pop_from_queue(_scheduler_queues.data+SCHEDULER_PRIORITY_REALTIME);
 	if (!new_thread){
-		u8 priority=2;
-		if (!(scheduler->priority_timing&15)){
-			priority=0;
+		scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
+		if (!(scheduler->round_robin_timing&15)){
+			start_priority=SCHEDULER_PRIORITY_LOW;
 		}
-		else if (!(scheduler->priority_timing&3)){
-			priority=1;
+		else if (!(scheduler->round_robin_timing&3)){
+			start_priority=SCHEDULER_PRIORITY_NORMAL;
 		}
-		u8 i=priority;
-		do{
-			new_thread=_try_pop_from_queue(_scheduler_queues.priority_queues+i);
-			i=(i?i-1:SCHEDULER_PRIORITY_QUEUE_COUNT-1);
-		} while (!new_thread&&i!=priority);
-		scheduler->priority_timing++;
+		scheduler->round_robin_timing++;
+		const scheduler_priority_t* pattern=_scheduler_queue_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
+		for (u8 i=0;!new_thread&&i<SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT;i++){
+			new_thread=_try_pop_from_queue(_scheduler_queues.data+pattern[i]);
+		}
 	}
 	if (!new_thread){
-		new_thread=_try_pop_from_queue(&(_scheduler_queues.background_queue));
+		new_thread=_try_pop_from_queue(_scheduler_queues.data+SCHEDULER_PRIORITY_BACKGROUND);
 	}
 	if (current_thread&&(new_thread||current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
 		lock_acquire_exclusive(&(current_thread->lock));
@@ -155,26 +166,12 @@ void scheduler_enqueue_thread(thread_t* thread){
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
-	scheduler_queue_t* queue=NULL;
-	switch (thread->priority){
-		case THREAD_PRIORITY_BACKGROUND:
-			queue=&(_scheduler_queues.background_queue);
-			break;
-		case THREAD_PRIORITY_LOW:
-			queue=_scheduler_queues.priority_queues;
-			break;
-		default:
-			WARN("Unknown thread priority '%u'",thread->priority);
-		case THREAD_PRIORITY_NORMAL:
-			queue=_scheduler_queues.priority_queues+1;
-			break;
-		case THREAD_PRIORITY_HIGH:
-			queue=_scheduler_queues.priority_queues+2;
-			break;
-		case THREAD_PRIORITY_REALTIME:
-			queue=&(_scheduler_queues.realtime_queue);
-			break;
+	scheduler_priority_t priority=thread->priority;
+	if (priority<SCHEDULER_PRIORITY_MIN||priority>SCHEDULER_PRIORITY_MAX){
+		WARN("Unknown thread priority '%u'",priority);
+		priority=SCHEDULER_PRIORITY_NORMAL;
 	}
+	scheduler_queue_t* queue=_scheduler_queues.data+priority;
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_queue_next=thread;

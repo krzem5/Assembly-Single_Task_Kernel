@@ -6,11 +6,8 @@
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/types.h>
-
-
-
-typedef u8 thread_priority_t;
 
 
 
@@ -76,7 +73,7 @@ typedef struct _THREAD{
 	isr_state_t gpr_state;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
-	volatile thread_priority_t priority;
+	volatile scheduler_priority_t priority;
 	_Bool state_not_present;
 	thread_state_t state;
 	struct _THREAD* thread_list_prev;

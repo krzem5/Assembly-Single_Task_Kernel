@@ -75,7 +75,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->fs_gs_state.gs=0;
 	out->fpu_state=omm_alloc(&_thread_fpu_state_allocator);
 	fpu_init(out->fpu_state);
-	out->priority=THREAD_PRIORITY_NORMAL;
+	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;
 	lock_init(&(out->lock));
