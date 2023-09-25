@@ -106,6 +106,6 @@ _Bool elf_load(const char* path){
 	return 1;
 _error:
 	ERROR("Unable to load ELF file");
-	process_delete(process);
+	handle_release(&(process->handle));
 	return 0;
 }

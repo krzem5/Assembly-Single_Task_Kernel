@@ -10,7 +10,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
-#define KERNEL_LOG_NAME "layer3"
+#define KERNEL_LOG_NAME "network_layer3"
 
 
 

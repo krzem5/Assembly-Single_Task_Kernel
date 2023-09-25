@@ -7,7 +7,7 @@
 #include <kernel/network/layer3.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#define KERNEL_LOG_NAME "layer2"
+#define KERNEL_LOG_NAME "network_layer2"
 
 
 

@@ -9,6 +9,7 @@
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
+#include <kernel/mp/thread_list.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -27,37 +28,16 @@ static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRU
 
 
 HANDLE_DECLARE_TYPE(THREAD,{
-	ERROR("Delete THREAD %p",handle);
+	thread_t* thread=handle->object;
+	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
+		panic("Unterminated thread not referenced");
+	}
+	process_t* process=thread->process;
+	if (thread_list_remove(&(process->thread_list),thread)){
+		handle_release(&(process->handle));
+	}
+	omm_dealloc(&_thread_allocator,thread);
 });
-
-
-
-static void _thread_list_add(process_t* process,thread_t* thread){
-	lock_acquire_exclusive(&(process->thread_list.lock));
-	thread->thread_list_prev=NULL;
-	thread->thread_list_next=process->thread_list.head;
-	if (process->thread_list.head){
-		process->thread_list.head->thread_list_prev=thread;
-	}
-	process->thread_list.head=thread;
-	lock_release_exclusive(&(process->thread_list.lock));
-}
-
-
-
-static void _thread_list_remove(process_t* process,thread_t* thread){
-	lock_acquire_exclusive(&(process->thread_list.lock));
-	if (thread->thread_list_prev){
-		thread->thread_list_prev->thread_list_next=thread->thread_list_next;
-	}
-	else{
-		process->thread_list.head=thread->thread_list_next;
-	}
-	if (thread->thread_list_next){
-		thread->thread_list_next->thread_list_prev=thread->thread_list_prev;
-	}
-	lock_release_exclusive(&(process->thread_list.lock));
-}
 
 
 
@@ -98,24 +78,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;
 	lock_init(&(out->lock));
-	_thread_list_add(process,out);
+	thread_list_add(&(process->thread_list),out);
 	return out;
-}
-
-
-
-void thread_delete(thread_t* thread){
-	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED||thread->handle.rc){
-		panic("Referenced threads cannot be deleted");
-	}
-	process_t* process=thread->process;
-	lock_acquire_exclusive(&(process->lock));
-	_thread_list_remove(process,thread);
-	lock_release_exclusive(&(process->lock));
-	omm_dealloc(&_thread_allocator,thread);
-	if (!process->thread_list.head){
-		handle_release(&(process->handle));
-	}
 }
 
 

@@ -27,10 +27,10 @@ typedef struct _EVENT{
 
 
 
-typedef struct _PROCESS_THREAD_LIST{
+typedef struct _THREAD_LIST{
 	lock_t lock;
 	struct _THREAD* head;
-} process_thread_list_t;
+} thread_list_t;
 
 
 
@@ -39,7 +39,7 @@ typedef struct _PROCESS{
 	lock_t lock;
 	vmm_pagemap_t pagemap;
 	vmm_memory_map_t mmap;
-	process_thread_list_t thread_list;
+	thread_list_t thread_list;
 } process_t;
 
 

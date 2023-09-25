@@ -8,8 +8,4 @@ process_t* process_new(void);
 
 
 
-void process_delete(process_t* process);
-
-
-
 #endif
