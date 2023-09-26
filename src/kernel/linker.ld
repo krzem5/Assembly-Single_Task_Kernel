@@ -48,7 +48,8 @@ SECTIONS{
     __KERNEL_END__ = . - __KERNEL_OFFSET__;
     __KERNEL_BSS_START__ = . - __KERNEL_OFFSET__;
     .bss : AT(ADDR(.bss) - __KERNEL_OFFSET__){
-        *(.cbss .bss)
+        *(.cbss)
+        *(.bss)
         . = ALIGN(0x1000);
     }
     __KERNEL_BSS_END__ = . - __KERNEL_OFFSET__;
