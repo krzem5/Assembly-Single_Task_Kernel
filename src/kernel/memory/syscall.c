@@ -1,11 +1,15 @@
-#include <kernel/config.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/syscall/syscall.h>
 #include <kernel/mp/thread.h>
+#include <kernel/sandbox/sandbox.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+
+
+
+SANDBOX_DECLARE_TYPE(DISABLE_MEMORY_COUNTER_API);
 
 
 
@@ -33,13 +37,13 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 void syscall_memory_get_counter_count(syscall_registers_t* regs){
-	regs->rax=(CONFIG_DISABLE_USER_MEMORY_COUNTERS?0:pmm_get_counter_count());
+	regs->rax=(sandbox_get(THREAD_DATA->sandbox,SANDBOX_FLAG_DISABLE_MEMORY_COUNTER_API)?0:pmm_get_counter_count());
 }
 
 
 
 void syscall_memory_get_counter(syscall_registers_t* regs){
-	if (CONFIG_DISABLE_USER_MEMORY_COUNTERS||regs->rdx!=sizeof(pmm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!pmm_get_counter(regs->rdi,(pmm_counter_t*)(regs->rsi))){
+	if (sandbox_get(THREAD_DATA->sandbox,SANDBOX_FLAG_DISABLE_MEMORY_COUNTER_API)||regs->rdx!=sizeof(pmm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!pmm_get_counter(regs->rdi,(pmm_counter_t*)(regs->rsi))){
 		regs->rax=0;
 		return;
 	}

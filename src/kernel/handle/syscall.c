@@ -1,4 +1,3 @@
-#include <kernel/config.h>
 #include <kernel/handle/handle.h>
 #include <kernel/mp/thread.h>
 #include <kernel/sandbox/sandbox.h>
