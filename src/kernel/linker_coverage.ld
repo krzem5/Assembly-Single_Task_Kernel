@@ -32,6 +32,10 @@ SECTIONS{
         *(.handle)
         __KERNEL_HANDLE_END__ = . - __KERNEL_OFFSET__;
         . = ALIGN(8);
+        __KERNEL_SANDBOX_START__ = . - __KERNEL_OFFSET__;
+        *(.sandbox)
+        __KERNEL_SANDBOX_END__ = . - __KERNEL_OFFSET__;
+        . = ALIGN(8);
         __KERNEL_GCOV_INFO_START__ = .;
         *(.gcov_info)
         __KERNEL_GCOV_INFO_END__ = .;

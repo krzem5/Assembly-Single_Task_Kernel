@@ -12,7 +12,7 @@
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
-	static const handle_descriptor_t KERNEL_CORE_RDATA _handle_descriptor_##name={ \
+	static const handle_descriptor_t _handle_descriptor_##name={ \
 		#name, \
 		&(HANDLE_TYPE_##name), \
 		_handle_delete_callback_##name \

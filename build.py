@@ -392,7 +392,8 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
-		_extract_object_file_symbol_names(object_file,kernel_symbols)
+		else:
+			_extract_object_file_symbol_names(object_file,kernel_symbols)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
 os.remove(KERNEL_VERSION_FILE_PATH)

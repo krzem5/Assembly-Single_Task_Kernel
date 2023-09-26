@@ -19,6 +19,7 @@
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
+#include <kernel/sandbox/sandbox.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
@@ -40,6 +41,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	kernel_load();
 	// From this point onwards all kernel functions can be used
 	handle_init();
+	sandbox_init();
 	isr_init();
 	pci_enumerate(0);
 	clock_init();
