@@ -9,14 +9,14 @@ global lock_shared_to_exclusive
 
 
 [bits 64]
-section .text.lock_init
+section .text.lock_init exec nowrite
 lock_init:
 	mov dword [rdi], 0
 	ret
 
 
 
-section .text.lock_acquire_exclusive
+section .text.lock_acquire_exclusive exec nowrite
 _lock_acquire_exclusive_global_wait:
 	pause
 	test dword [rdi], 1
@@ -28,14 +28,14 @@ lock_acquire_exclusive:
 
 
 
-section .text.lock_release_exclusive
+section .text.lock_release_exclusive exec nowrite
 lock_release_exclusive:
 	btr dword [rdi], 0
 	ret
 
 
 
-section .text.lock_acquire_shared
+section .text.lock_acquire_shared exec nowrite
 _lock_acquire_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
@@ -61,7 +61,7 @@ lock_acquire_shared:
 
 
 
-section .text.lock_release_shared
+section .text.lock_release_shared exec nowrite
 _lock_release_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
@@ -80,7 +80,7 @@ lock_release_shared:
 
 
 
-section .text.lock_exclusive_to_shared
+section .text.lock_exclusive_to_shared exec nowrite
 _lock_exclusive_to_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
@@ -93,7 +93,7 @@ lock_exclusive_to_shared:
 
 
 
-section .text.lock_shared_to_exclusive
+section .text.lock_shared_to_exclusive exec nowrite
 _lock_shared_to_exclusive_multiaccess_wait:
 	pause
 	test dword [rdi], 2

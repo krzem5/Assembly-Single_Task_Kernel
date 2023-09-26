@@ -6,7 +6,7 @@ global msr_set_fs_base
 global msr_set_gs_base
 global msr_enable_rdtsc
 global msr_enable_fsgsbase
-section .text
+section .text exec nowrite
 
 
 

@@ -1,5 +1,5 @@
 global _acpi_fadt_reboot
-section .text
+section .text exec nowrite
 
 
 
@@ -12,7 +12,7 @@ _acpi_fadt_reboot:
 
 
 
-section .rdata
+section .rdata noexec nowrite
 
 
 

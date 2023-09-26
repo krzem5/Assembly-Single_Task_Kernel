@@ -5,7 +5,7 @@
 
 
 extern _cpu_init_core
-section .ap_startup
+section .ap_startup exec nowrite
 
 
 
@@ -125,18 +125,18 @@ global cpu_ap_startup_set_stack_top
 extern vmm_kernel_pagemap
 extern vmm_map_page
 extern vmm_unmap_page
-section .text
+section .text exec nowrite
 
 
 
 [bits 64]
 cpu_ap_startup_init:
-	mov rax, qword [vmm_kernel_pagemap]
-	mov dword [kernel_toplevel_pagemap], eax
 	mov rdi, CPU_AP_STARTUP_MEMORY_ADDRESS
 	mov rsi, __AP_STARTUP_START__
 	mov rcx, 512
 	rep movsq
+	mov rax, qword [vmm_kernel_pagemap]
+	mov dword [kernel_toplevel_pagemap+OFFSET], eax
 	ret
 
 

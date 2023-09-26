@@ -1,5 +1,5 @@
 global topology_get_cpu_bits
-section .text
+section .text exec nowrite
 
 
 

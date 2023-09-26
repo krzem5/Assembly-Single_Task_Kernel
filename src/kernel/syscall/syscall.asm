@@ -3,7 +3,7 @@ extern _random_entropy_pool_length
 extern _syscall_handlers
 extern syscall_invalid
 global syscall_enable
-section .text
+section .text exec nowrite
 
 
 
@@ -39,7 +39,7 @@ syscall_enable:
 
 
 
-section .common
+section .common exec nowrite
 
 
 
@@ -98,6 +98,10 @@ syscall_handler:
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
+
+
+
+section .common_rw noexec write
 
 
 

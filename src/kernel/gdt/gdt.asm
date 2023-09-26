@@ -1,5 +1,5 @@
 global gdt_enable
-section .text
+section .text exec nowrite
 
 
 
@@ -37,7 +37,7 @@ gdt_enable:
 
 
 
-section .common
+section .common noexec nowrite
 
 
 

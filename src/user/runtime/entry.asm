@@ -2,7 +2,7 @@ extern _syscall_thread_stop
 extern _user_data_init
 extern main
 global _start
-section .text
+section .text exec nowrite
 
 
 

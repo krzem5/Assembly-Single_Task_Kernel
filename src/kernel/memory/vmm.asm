@@ -3,7 +3,7 @@ global vmm_invalidate_tlb_entry
 global vmm_switch_to_pagemap
 global vmm_set_common_kernel_pagemap
 extern vmm_kernel_pagemap
-section .ctext
+section .ctext exec nowrite
 
 
 

@@ -17,7 +17,7 @@
 		&(HANDLE_TYPE_##name), \
 		_handle_delete_callback_##name \
 	}; \
-	static const handle_descriptor_t* __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
+	static const handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
 
 
 

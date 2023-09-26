@@ -26,7 +26,7 @@
 		#name, \
 		&(PMM_COUNTER_##name) \
 	}; \
-	static const pmm_counter_descriptor_t* __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
+	static const pmm_counter_descriptor_t*const __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
 
 
 

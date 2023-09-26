@@ -1,5 +1,5 @@
 global idt_enable
-section .text
+section .text exec nowrite
 
 
 
@@ -10,7 +10,7 @@ idt_enable:
 
 
 
-section .rdata
+section .rdata noexec nowrite
 
 
 
@@ -21,7 +21,7 @@ idt_pointer:
 
 
 
-section .common
+section .common noexec nowrite
 
 
 

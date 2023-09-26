@@ -8,7 +8,7 @@ global clock_ticks_to_time
 
 
 [bits 64]
-section .text.clock_init
+section .text.clock_init exec nowrite
 clock_init:
 	call _syscall_clock_get_converion
 	mov qword [_clock_conversion_factor], rax
@@ -18,7 +18,7 @@ clock_init:
 
 
 
-section .text.clock_get_ticks
+section .text.clock_get_ticks exec nowrite
 clock_get_ticks:
 	rdtsc
 	shl rdx, 32
@@ -27,7 +27,7 @@ clock_get_ticks:
 
 
 
-section .text.clock_get_time
+section .text.clock_get_time exec nowrite
 clock_get_time:
 	rdtsc
 	shl rdx, 32
@@ -42,7 +42,7 @@ clock_get_time:
 
 
 
-section .text.clock_ticks_to_time
+section .text.clock_ticks_to_time exec nowrite
 clock_ticks_to_time:
 	mov rdx, rdi
 	mulx rdx, rax, qword [_clock_conversion_factor]
@@ -55,7 +55,7 @@ clock_ticks_to_time:
 
 
 
-section .data.clock_data
+section .data.clock_data noexec write
 
 
 

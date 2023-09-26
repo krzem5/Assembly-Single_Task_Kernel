@@ -1,5 +1,5 @@
 %macro DECL_SYSCALL 3
-section .text._syscall_%1
+section .text._syscall_%1 exec nowrite
 global _syscall_%1
 _syscall_%1:
 	mov rax, %2

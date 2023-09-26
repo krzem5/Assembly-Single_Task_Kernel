@@ -1,6 +1,6 @@
 global scheduler_start
 global scheduler_task_wait_loop
-section .text
+section .text exec nowrite
 
 
 

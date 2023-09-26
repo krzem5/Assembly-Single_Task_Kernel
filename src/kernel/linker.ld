@@ -6,18 +6,22 @@ SECTIONS{
     .core : AT(ADDR(.core) - __KERNEL_OFFSET__){
         *(.entry)
         *(.cversion)
-        *(.ctext .ctext* .crdata .crdata* .cdata .cdata*)
+        *(.ctext .ctext* .crdata .crdata*)
         . = ALIGN(8);
         __KERNEL_PMM_COUNTER_START__ = .;
         *(.pmmcounter)
         __KERNEL_PMM_COUNTER_END__ = .;
         . = ALIGN(0x1000);
     }
+    .core_rw : AT(ADDR(.core_rw) - __KERNEL_OFFSET__){
+        *(.cdata .cdata*)
+        . = ALIGN(0x1000);
+    }
     __KERNEL_CORE_END__ = . - __KERNEL_OFFSET__;
     .kernel : AT(ADDR(.kernel) - __KERNEL_OFFSET__){
         ASSERT(__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
         *(.version)
-        *(.text .text* .rodata .rodata* .rdata .rdata* .data .data*)
+        *(.text .text* .rodata .rodata* .rdata .rdata*)
         . = ALIGN(8);
         __KERNEL_CPU_LOCAL_START__ = .;
         *(.cpulocal)
@@ -40,9 +44,17 @@ SECTIONS{
         *(.ap_startup)
         . = ALIGN(0x1000);
     }
+    .kernel_rw : AT(ADDR(.kernel_rw) - __KERNEL_OFFSET__){
+        *(.data .data*)
+        . = ALIGN(0x1000);
+    }
     __KERNEL_COMMON_START__ = . - __KERNEL_OFFSET__;
     .common : AT(ADDR(.common) - __KERNEL_OFFSET__){
         *(.common)
+        . = ALIGN(0x1000);
+    }
+    .common_rw : AT(ADDR(.common_rw) - __KERNEL_OFFSET__){
+        *(.common_rw)
         . = ALIGN(0x1000);
     }
     __KERNEL_END__ = . - __KERNEL_OFFSET__;

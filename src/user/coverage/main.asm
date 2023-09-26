@@ -1,6 +1,6 @@
 extern _syscall_coverage_dump_data
 global main
-section .text
+section .text exec nowrite
 
 
 

@@ -4,7 +4,7 @@ global fpu_enable
 global fpu_init
 global fpu_save
 global fpu_restore
-section .text
+section .text exec nowrite
 
 
 
@@ -79,7 +79,7 @@ fpu_restore:
 
 
 
-section .data
+section .data noexec write
 
 
 fpu_state_size:

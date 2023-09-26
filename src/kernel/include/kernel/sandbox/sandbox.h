@@ -12,7 +12,7 @@
 		#name, \
 		&(SANDBOX_FLAG_##name) \
 	}; \
-	static const sandbox_descriptor_t* __attribute__((used,section(".sandbox"))) _sandbox_descriptor_ptr_##name=&_sandbox_descriptor_##name;
+	static const sandbox_descriptor_t*const __attribute__((used,section(".sandbox"))) _sandbox_descriptor_ptr_##name=&_sandbox_descriptor_##name;
 
 
 

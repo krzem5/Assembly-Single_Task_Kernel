@@ -6,7 +6,7 @@ global _random_entropy_pool
 global _random_entropy_pool_length
 global _random_init_entropy_pool
 global _random_get_entropy
-section .text
+section .text exec nowrite
 
 
 
@@ -41,7 +41,7 @@ _random_get_entropy:
 
 
 
-section .bss
+section .bss nobits noexec
 
 
 

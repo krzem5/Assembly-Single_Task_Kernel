@@ -1,6 +1,6 @@
 extern log
 global cpu_check_features
-section .ctext
+section .ctext exec nowrite
 
 
 
@@ -97,7 +97,7 @@ cpu_check_features:
 
 
 
-section .cdata
+section .crdata noexec nowrite
 
 
 

@@ -13,7 +13,7 @@
 		(void**)(&name), \
 		sizeof(type) \
 	}; \
-	static const cpu_local_data_descriptor_t* __attribute__((used,section(".cpulocal"))) _cpu_local_data_descriptor_ptr_##name=&_cpu_local_data_descriptor_##name;
+	static const cpu_local_data_descriptor_t*const __attribute__((used,section(".cpulocal"))) _cpu_local_data_descriptor_ptr_##name=&_cpu_local_data_descriptor_##name;
 
 
 
