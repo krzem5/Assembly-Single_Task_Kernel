@@ -22,7 +22,6 @@ SECTIONS{
         *(.text .text*)
         *(.rodata .rodata* .rdata .rdata*)
         *(.data .data*)
-        *(.ap_startup)
         . = ALIGN(8);
         __KERNEL_CPU_LOCAL_START__ = .;
         *(.cpulocal)
@@ -41,6 +40,8 @@ SECTIONS{
         *(.gcov_info)
         __KERNEL_GCOV_INFO_END__ = .;
 #endif
+        . = ALIGN(0x1000);
+        *(.ap_startup)
         . = ALIGN(0x1000);
     }
     __KERNEL_COMMON_START__ = . - __KERNEL_OFFSET__;
