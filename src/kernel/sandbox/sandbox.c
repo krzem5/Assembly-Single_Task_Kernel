@@ -21,7 +21,7 @@ static sandbox_flag_t _sandbox_flag_count;
 void sandbox_init(void){
 	LOG("Initializing sandbox flags...");
 	_sandbox_flag_count=0;
-	for (const sandbox_descriptor_t*const* descriptor=(void*)(kernel_get_sandbox_start()+kernel_get_offset());(u64)descriptor<(kernel_get_sandbox_end()+kernel_get_offset());descriptor++){
+	for (const sandbox_descriptor_t*const* descriptor=(void*)kernel_get_sandbox_start();(u64)descriptor<kernel_get_sandbox_end();descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=_sandbox_flag_count;
 			_sandbox_flag_count++;

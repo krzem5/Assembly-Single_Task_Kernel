@@ -125,7 +125,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 	LOG_CORE("Registering counters...");
 	_pmm_counters=(void*)(pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
-	for (const pmm_counter_descriptor_t*const* descriptor=(void*)(kernel_get_pmm_counter_start()+kernel_get_offset());(u64)descriptor<(kernel_get_pmm_counter_end()+kernel_get_offset());descriptor++){
+	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_get_pmm_counter_start();(u64)descriptor<kernel_get_pmm_counter_end();descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=_pmm_counters->length;
 			memcpy_lowercase((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);

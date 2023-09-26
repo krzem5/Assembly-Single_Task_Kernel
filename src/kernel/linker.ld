@@ -10,9 +10,9 @@ SECTIONS{
         *(.crdata .crdata*)
         *(.cdata .cdata*)
         . = ALIGN(8);
-        __KERNEL_PMM_COUNTER_START__ = . - __KERNEL_OFFSET__;
+        __KERNEL_PMM_COUNTER_START__ = .;
         *(.pmmcounter)
-        __KERNEL_PMM_COUNTER_END__ = . - __KERNEL_OFFSET__;
+        __KERNEL_PMM_COUNTER_END__ = .;
         . = ALIGN(0x1000);
     }
     __KERNEL_CORE_END__ = . - __KERNEL_OFFSET__;
@@ -24,17 +24,17 @@ SECTIONS{
         *(.data .data*)
         *(.ap_startup)
         . = ALIGN(8);
-        __KERNEL_CPU_LOCAL_START__ = . - __KERNEL_OFFSET__;
+        __KERNEL_CPU_LOCAL_START__ = .;
         *(.cpulocal)
-        __KERNEL_CPU_LOCAL_END__ = . - __KERNEL_OFFSET__;
+        __KERNEL_CPU_LOCAL_END__ = .;
         . = ALIGN(8);
-        __KERNEL_HANDLE_START__ = . - __KERNEL_OFFSET__;
+        __KERNEL_HANDLE_START__ = .;
         *(.handle)
-        __KERNEL_HANDLE_END__ = . - __KERNEL_OFFSET__;
+        __KERNEL_HANDLE_END__ = .;
         . = ALIGN(8);
-        __KERNEL_SANDBOX_START__ = . - __KERNEL_OFFSET__;
+        __KERNEL_SANDBOX_START__ = .;
         *(.sandbox)
-        __KERNEL_SANDBOX_END__ = . - __KERNEL_OFFSET__;
+        __KERNEL_SANDBOX_END__ = .;
 #ifdef _KERNEL_COVERAGE_BUILD_
         . = ALIGN(8);
         __KERNEL_GCOV_INFO_START__ = .;

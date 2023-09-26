@@ -32,8 +32,8 @@ typedef struct _RUNTIME_LOCAL_STATE{
 
 
 static u16 _aml_irq;
+static u8 _aml_interrupt_vector;
 
-u8 _aml_interrupt_vector;
 aml_node_t* aml_root_node;
 
 
