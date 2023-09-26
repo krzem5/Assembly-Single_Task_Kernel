@@ -18,7 +18,7 @@
 
 
 
-static volatile _Bool _cpu_online;
+static _Atomic _Bool _cpu_online;
 
 CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
 u16 cpu_count;
