@@ -16,7 +16,7 @@ PMM_DECLARE_COUNTER(OMM_EVENT);
 
 
 
-static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(event_t),8,2,PMM_COUNTER_OMM_EVENT);
+static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT("event",sizeof(event_t),8,2,PMM_COUNTER_OMM_EVENT);
 
 
 

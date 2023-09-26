@@ -112,6 +112,14 @@ _Bool _syscall_memory_get_counter(u32 counter,void* buffer,u32 size);
 
 
 
+u32 _syscall_memory_get_object_counter_count(void);
+
+
+
+_Bool _syscall_memory_get_object_counter(u32 counter,void* buffer,u32 size);
+
+
+
 void _syscall_clock_get_converion(void);
 
 

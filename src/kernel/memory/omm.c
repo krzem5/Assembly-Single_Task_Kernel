@@ -10,8 +10,10 @@
 
 
 
-static lock_t _omm_head_allocator_lock=LOCK_INIT_STRUCT;
-static omm_allocator_t* _omm_head_allocator=NULL;
+static lock_t _omm_global_lock=LOCK_INIT_STRUCT;
+
+u32 omm_allocator_count=0;
+omm_allocator_t* omm_head_allocator=NULL;
 
 
 
@@ -42,11 +44,12 @@ static void KERNEL_CORE_CODE _allocator_remove_page(omm_page_header_t** list_hea
 
 void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
-	if (allocator->_next_allocator==(void*)1){
-		lock_acquire_exclusive(&_omm_head_allocator_lock);
-		allocator->_next_allocator=_omm_head_allocator;
-		_omm_head_allocator=allocator;
-		lock_release_exclusive(&_omm_head_allocator_lock);
+	if (allocator->next_allocator==(void*)1){
+		lock_acquire_exclusive(&_omm_global_lock);
+		omm_allocator_count++;
+		allocator->next_allocator=omm_head_allocator;
+		omm_head_allocator=allocator;
+		lock_release_exclusive(&_omm_global_lock);
 	}
 	if (allocator->object_size<sizeof(omm_object_t)){
 		allocator->object_size=sizeof(omm_object_t);
@@ -84,7 +87,7 @@ void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
 		_allocator_remove_page(&(allocator->page_used_head),page);
 		_allocator_add_page(&(allocator->page_full_head),page);
 	}
-	allocator->allocation_count++;
+	allocator->counter.allocation_count++;
 	lock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 	return out;
@@ -115,7 +118,7 @@ void KERNEL_CORE_CODE omm_dealloc(omm_allocator_t* allocator,void* object){
 		_allocator_remove_page(&(allocator->page_free_head),page);
 		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,*(allocator->memory_counter));
 	}
-	allocator->deallocation_count++;
+	allocator->counter.deallocation_count++;
 	lock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }

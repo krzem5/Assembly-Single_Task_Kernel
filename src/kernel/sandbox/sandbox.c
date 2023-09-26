@@ -28,7 +28,7 @@ void sandbox_init(void){
 		}
 	}
 	INFO("Sandbox flag count: %u",_sandbox_flag_count);
-	_sandbox_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(sandbox_t)+((_sandbox_flag_count+63)>>6)*sizeof(u64),8,1,PMM_COUNTER_OMM_SANDBOX);
+	_sandbox_allocator=OMM_ALLOCATOR_INIT_STRUCT("sandbox",sizeof(sandbox_t)+((_sandbox_flag_count+63)>>6)*sizeof(u64),8,1,PMM_COUNTER_OMM_SANDBOX);
 }
 
 

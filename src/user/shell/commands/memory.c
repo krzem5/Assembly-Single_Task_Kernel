@@ -5,18 +5,43 @@
 
 
 
+#define MEMORY_SHOW_COUNTERS 0
+#define MEMORY_SHOW_OBJECT_COUNTERS 1
+#define MEMORY_SHOW_RANGES 2
+
+
+
 void memory_main(int argc,const char*const* argv){
-	_Bool show_layout=0;
+	u8 command_type=MEMORY_SHOW_COUNTERS;
 	for (u32 i=1;i<argc;i++){
 		if (string_equal(argv[i],"-l")){
-			show_layout=1;
+			command_type=MEMORY_SHOW_RANGES;
+		}
+		else if (string_equal(argv[i],"-o")){
+			command_type=MEMORY_SHOW_OBJECT_COUNTERS;
 		}
 		else{
 			printf("memory: unrecognized option '%s'\n",argv[i]);
 			return;
 		}
 	}
-	if (show_layout){
+	if (command_type==MEMORY_SHOW_OBJECT_COUNTERS){
+		u32 counter_count=memory_get_object_counter_count();
+		if (!counter_count){
+			goto _counter_error;
+		}
+		for (u32 i=0;i<counter_count;i++){
+			memory_object_counter_t counter;
+			if (!memory_get_object_counter(i,&counter)){
+				goto _counter_error;
+			}
+			u8 j=0;
+			for (;counter.name[j];j++);
+			printf("%s:\t%s\x1b[1m%lu\x1b[0m\n",counter.name,(j>6?"":"\t"),counter.allocation_count-counter.deallocation_count);
+		}
+		return;
+	}
+	if (command_type==MEMORY_SHOW_RANGES){
 		if (!memory_range_count){
 			printf("memory: unable to access memory ranges\n");
 			return;
@@ -66,9 +91,9 @@ void memory_main(int argc,const char*const* argv){
 	}
 	return;
 _counter_error:
-	printf("memory: unable to read memory stats\n");
+	printf("memory: unable to read memory counter\n");
 }
 
 
 
-DECLARE_COMMAND(memory,"memory [-l]");
+DECLARE_COMMAND(memory,"memory [-l|-o]");

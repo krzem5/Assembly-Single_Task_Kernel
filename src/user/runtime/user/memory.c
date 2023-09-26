@@ -25,3 +25,15 @@ u32 memory_get_counter_count(void){
 _Bool memory_get_counter(u32 counter,memory_counter_t* out){
 	return _syscall_memory_get_counter(counter,out,sizeof(memory_counter_t));
 }
+
+
+
+u32 memory_get_object_counter_count(void){
+	return _syscall_memory_get_object_counter_count();
+}
+
+
+
+_Bool memory_get_object_counter(u32 counter,memory_object_counter_t* out){
+	return _syscall_memory_get_object_counter(counter,out,sizeof(memory_object_counter_t));
+}

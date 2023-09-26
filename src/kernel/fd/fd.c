@@ -17,7 +17,7 @@ PMM_DECLARE_COUNTER(OMM_FD);
 
 
 
-static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(fd_t),8,4,PMM_COUNTER_OMM_FD);
+static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd",sizeof(fd_t),8,4,PMM_COUNTER_OMM_FD);
 
 
 

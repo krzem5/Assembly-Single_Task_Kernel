@@ -1,5 +1,6 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/memory/mmap.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
@@ -47,5 +48,26 @@ void syscall_memory_get_counter(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
+	regs->rax=1;
+}
+
+
+
+void syscall_memory_get_object_counter_count(syscall_registers_t* regs){
+	regs->rax=(sandbox_get(THREAD_DATA->sandbox,SANDBOX_FLAG_DISABLE_MEMORY_COUNTER_API)?0:omm_allocator_count);
+}
+
+
+
+void syscall_memory_get_object_counter(syscall_registers_t* regs){
+	if (sandbox_get(THREAD_DATA->sandbox,SANDBOX_FLAG_DISABLE_MEMORY_COUNTER_API)||regs->rdi>=omm_allocator_count||regs->rdx!=sizeof(omm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	omm_allocator_t* allocator=omm_head_allocator;
+	for (u32 i=0;i<regs->rdi;i++){
+		allocator=allocator->next_allocator;
+	}
+	*((omm_counter_t*)(regs->rsi))=allocator->counter;
 	regs->rax=1;
 }

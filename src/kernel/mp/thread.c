@@ -23,7 +23,7 @@ PMM_DECLARE_COUNTER(USER_STACK);
 
 
 
-static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT(sizeof(thread_t),8,4,PMM_COUNTER_OMM_THREAD);
+static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT("thread",sizeof(thread_t),8,4,PMM_COUNTER_OMM_THREAD);
 static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
 
 
@@ -44,7 +44,7 @@ HANDLE_DECLARE_TYPE(THREAD,{
 
 thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	if (OMM_ALLOCATOR_IS_UNINITIALISED(&_thread_fpu_state_allocator)){
-		_thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_STRUCT(fpu_state_size,64,4,PMM_COUNTER_OMM_THREAD);
+		_thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_STRUCT("fpu_state",fpu_state_size,64,4,PMM_COUNTER_OMM_THREAD);
 	}
 	stack_size=pmm_align_up_address(stack_size);
 	thread_t* out=omm_alloc(&_thread_allocator);

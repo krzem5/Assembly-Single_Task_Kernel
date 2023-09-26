@@ -22,6 +22,14 @@ typedef struct _MEMORY_COUNTER{
 
 
 
+typedef struct _MEMORY_OBJECT_COUNTER{
+	char name[16];
+	u64 allocation_count;
+	u64 deallocation_count;
+} memory_object_counter_t;
+
+
+
 typedef struct _MEMORY_RANGE{
 	u64 base_address;
 	u64 length;
@@ -48,6 +56,14 @@ u32 memory_get_counter_count(void);
 
 
 _Bool memory_get_counter(u32 counter,memory_counter_t* out);
+
+
+
+u32 memory_get_object_counter_count(void);
+
+
+
+_Bool memory_get_object_counter(u32 counter,memory_object_counter_t* out);
 
 
 
