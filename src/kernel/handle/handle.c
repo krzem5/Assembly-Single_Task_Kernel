@@ -28,13 +28,13 @@ void handle_init(void){
 	}
 	handle_type_data=kmm_alloc(handle_type_count*sizeof(handle_type_data_t));
 	memset(handle_type_data->name,0,HANDLE_NAME_LENGTH);
-	memcpy(handle_type_data->name,"ANY",3);
+	memcpy(handle_type_data->name,"any",3);
 	handle_type_data->delete_callback=NULL;
 	handle_type_data->count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)(kernel_get_handle_start()+kernel_get_offset());(u64)descriptor<(kernel_get_handle_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
 			handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
-			memcpy(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
+			memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
 			type_data->delete_callback=(*descriptor)->delete_callback;
 			type_data->count=0;
 		}

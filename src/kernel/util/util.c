@@ -31,6 +31,17 @@ void* KERNEL_CORE_CODE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
 
 
 
+char* KERNEL_CORE_CODE memcpy_lowercase(char* dst,const char* src,u64 length){
+	for (u64 i=0;i<length;i++){
+		char v=src[i];
+		v|=(v>64&&v<91)<<5;
+		dst[i]=v;
+	}
+	return dst;
+}
+
+
+
 void KERNEL_CORE_CODE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 	u16* dst16=(u16*)dst;
 	for (u8 i=0;i<length;i++){

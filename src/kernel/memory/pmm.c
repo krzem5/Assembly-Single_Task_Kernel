@@ -128,7 +128,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)(kernel_get_pmm_counter_start()+kernel_get_offset());(u64)descriptor<(kernel_get_pmm_counter_end()+kernel_get_offset());descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=_pmm_counters->length;
-			memcpy((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
+			memcpy_lowercase((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
 			(_pmm_counters->data+_pmm_counters->length)->count=0;
 			_pmm_counters->length++;
 		}

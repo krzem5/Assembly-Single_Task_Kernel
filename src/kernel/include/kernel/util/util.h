@@ -76,6 +76,10 @@ void* (memset)(void* dst,u8 value,u64 length);
 
 
 
+char* memcpy_lowercase(char* dst,const char* src,u64 length);
+
+
+
 void bswap16_trunc_spaces(const u16* src,u8 length,char* dst);
 
 
