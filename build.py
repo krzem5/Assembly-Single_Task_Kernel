@@ -54,10 +54,15 @@ KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: []
 }[mode]
+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
+	MODE_NORMAL: ["-D_KERNEL_DEBUG_BUILD_"],
+	MODE_COVERAGE: ["-D_KERNEL_COVERAGE_BUILD_"],
+	MODE_RELEASE: []
+}[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-T","src/kernel/linker_debug.ld"],
-	MODE_COVERAGE: ["-T","src/kernel/linker_coverage.ld","-g"],
-	MODE_RELEASE: ["-T","src/kernel/linker.ld"]
+	MODE_NORMAL: [],
+	MODE_COVERAGE: ["-g"],
+	MODE_RELEASE: []
 }[mode]
 USER_HASH_FILE_SUFFIX={
 	MODE_NORMAL: ".txt",
@@ -90,6 +95,12 @@ KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
+
+
+
+def _read_file(file_path):
+	with open(file_path,"rb") as rf:
+		return rf.read()
 
 
 
@@ -397,7 +408,8 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
 os.remove(KERNEL_VERSION_FILE_PATH)
-if (error or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
+if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])

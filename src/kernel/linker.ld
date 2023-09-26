@@ -35,6 +35,12 @@ SECTIONS{
         __KERNEL_SANDBOX_START__ = . - __KERNEL_OFFSET__;
         *(.sandbox)
         __KERNEL_SANDBOX_END__ = . - __KERNEL_OFFSET__;
+#ifdef _KERNEL_COVERAGE_BUILD_
+        . = ALIGN(8);
+        __KERNEL_GCOV_INFO_START__ = .;
+        *(.gcov_info)
+        __KERNEL_GCOV_INFO_END__ = .;
+#endif
         . = ALIGN(0x1000);
     }
     __KERNEL_COMMON_START__ = . - __KERNEL_OFFSET__;
@@ -50,7 +56,9 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     __KERNEL_BSS_END__ = . - __KERNEL_OFFSET__;
+#ifndef _KERNEL_DEBUG_BUILD_
     /DISCARD/ : {
         *(*)
     }
+#endif
 }
