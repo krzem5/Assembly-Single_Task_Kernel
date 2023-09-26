@@ -13,7 +13,6 @@
 
 static KERNEL_CORE_RDATA const char _kernel_memory_unusable[]=" (Unusable)";
 static KERNEL_CORE_RDATA const char _kernel_memory_normal[]="";
-static KERNEL_CORE_RDATA const char _kernel_memory_acpi[]=" (ACPI tables)";
 
 static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/kernel/kernel.bin";
 
@@ -28,16 +27,7 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		const char* type=_kernel_memory_unusable;
-		switch ((KERNEL_DATA->mmap+i)->type){
-			case 1:
-				type=_kernel_memory_normal;
-				break;
-			case 3:
-				type=_kernel_memory_acpi;
-				break;
-		}
-		INFO_CORE("  %p - %p%s",(KERNEL_DATA->mmap+i)->base,(KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length,type);
+		INFO_CORE("  %p - %p%s",(KERNEL_DATA->mmap+i)->base,(KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length,((KERNEL_DATA->mmap+i)->type==1?_kernel_memory_normal:_kernel_memory_unusable));
 		if ((KERNEL_DATA->mmap+i)->type==1){
 			total+=(KERNEL_DATA->mmap+i)->length;
 		}
