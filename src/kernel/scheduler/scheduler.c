@@ -101,6 +101,20 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	scheduler->nested_pause_count=0;
 	thread_t* current_thread=scheduler->current_thread;
+	if (current_thread){
+		lock_acquire_exclusive(&(current_thread->lock));
+		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
+		current_thread->gpr_state=*state;
+		current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
+		current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
+		fpu_save(current_thread->fpu_state);
+		current_thread->state_not_present=0;
+		lock_release_exclusive(&(current_thread->lock));
+		if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
+			scheduler_enqueue_thread(current_thread);
+		}
+	}
 	scheduler->current_thread=NULL;
 	scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
 	if (!(scheduler->round_robin_timing&15)){
@@ -114,21 +128,6 @@ void scheduler_isr_handler(isr_state_t* state){
 	thread_t* new_thread=NULL;
 	for (u8 i=0;!new_thread&&i<SCHEDULER_QUEUE_COUNT;i++){
 		new_thread=_try_pop_from_queue(_scheduler_queues.data+pattern[i]);
-	}
-	if (current_thread&&(new_thread||current_thread->state.type!=THREAD_STATE_TYPE_RUNNING)){
-		lock_acquire_exclusive(&(current_thread->lock));
-		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		current_thread->gpr_state=*state;
-		current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
-		current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
-		fpu_save(current_thread->fpu_state);
-		current_thread->state_not_present=0;
-		lock_release_exclusive(&(current_thread->lock));
-		if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
-			scheduler_enqueue_thread(current_thread);
-		}
-		current_thread=NULL;
 	}
 	if (new_thread){
 		lock_acquire_exclusive(&(new_thread->lock));
@@ -144,9 +143,6 @@ void scheduler_isr_handler(isr_state_t* state){
 		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
 		lock_release_exclusive(&(new_thread->lock));
 	}
-	else{
-		scheduler->current_thread=current_thread;
-	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
 		scheduler_task_wait_loop();
@@ -157,6 +153,7 @@ void scheduler_isr_handler(isr_state_t* state){
 
 void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
+	// add thread to queue corresponding to CPU core with least running time since boot (ie. lowest number of thread timeslices executed)
 	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
