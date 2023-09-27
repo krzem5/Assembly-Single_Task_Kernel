@@ -81,7 +81,7 @@ typedef struct _THREAD{
 	thread_state_t state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
-	struct _THREAD* scheduler_queue_next;
+	struct _THREAD* scheduler_load_balancer_thread_queue_next;
 } thread_t;
 
 

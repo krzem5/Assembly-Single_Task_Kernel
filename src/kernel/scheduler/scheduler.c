@@ -7,6 +7,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/msr/msr.h>
+#include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
@@ -19,51 +20,14 @@
 
 
 
-static const scheduler_priority_t _scheduler_queue_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_QUEUE_COUNT]={
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_BACKGROUND},
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
-};
-
 static _Bool KERNEL_CORE_DATA _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
-static scheduler_queues_t _scheduler_queues;
-
-
-
-static void _queue_init(scheduler_queue_t* queue){
-	lock_init(&(queue->lock));
-	queue->head=NULL;
-	queue->tail=NULL;
-}
-
-
-
-static thread_t* _try_pop_from_queue(scheduler_queue_t* queue){
-	if (!queue->head){
-		return NULL;
-	}
-	lock_acquire_exclusive(&(queue->lock));
-	if (!queue->head){
-		lock_release_exclusive(&(queue->lock));
-		return NULL;
-	}
-	thread_t* out=queue->head;
-	queue->head=out->scheduler_queue_next;
-	if (queue->tail==out){
-		queue->tail=NULL;
-	}
-	lock_release_exclusive(&(queue->lock));
-	return out;
-}
 
 
 
 void scheduler_init(void){
 	LOG("Initializing scheduler...");
-	for (u8 i=0;i<SCHEDULER_QUEUE_COUNT;i++){
-		_queue_init(_scheduler_queues.data+i);
-	}
+	scheduler_load_balancer_init();
 }
 
 
@@ -116,19 +80,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		}
 	}
 	scheduler->current_thread=NULL;
-	scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
-	if (!(scheduler->round_robin_timing&15)){
-		start_priority=SCHEDULER_PRIORITY_LOW;
-	}
-	else if (!(scheduler->round_robin_timing&3)){
-		start_priority=SCHEDULER_PRIORITY_NORMAL;
-	}
-	scheduler->round_robin_timing++;
-	const scheduler_priority_t* pattern=_scheduler_queue_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
-	thread_t* new_thread=NULL;
-	for (u8 i=0;!new_thread&&i<SCHEDULER_QUEUE_COUNT;i++){
-		new_thread=_try_pop_from_queue(_scheduler_queues.data+pattern[i]);
-	}
+	thread_t* new_thread=scheduler_load_balancer_get();
 	if (new_thread){
 		lock_acquire_exclusive(&(new_thread->lock));
 		new_thread->header.index=CPU_HEADER_DATA->index;
@@ -153,7 +105,6 @@ void scheduler_isr_handler(isr_state_t* state){
 
 void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
-	// add thread to queue corresponding to CPU core with least running time since boot (ie. lowest number of thread timeslices executed)
 	lock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
@@ -163,16 +114,16 @@ void scheduler_enqueue_thread(thread_t* thread){
 		WARN("Unknown thread priority '%u'",priority);
 		priority=SCHEDULER_PRIORITY_NORMAL;
 	}
-	scheduler_queue_t* queue=_scheduler_queues.data+priority;
+	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queues(priority);
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
-		queue->tail->scheduler_queue_next=thread;
+		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
 	}
 	else{
 		queue->head=thread;
 	}
 	queue->tail=thread;
-	thread->scheduler_queue_next=NULL;
+	thread->scheduler_load_balancer_thread_queue_next=NULL;
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(queue->lock));
 	lock_release_exclusive(&(thread->lock));
