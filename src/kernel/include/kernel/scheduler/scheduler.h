@@ -7,8 +7,8 @@
 
 typedef struct _SCHEDULER{
 	thread_t* current_thread;
-	u32 remaining_us;
-	u32 nested_pause_count;
+	u32 pause_remaining_us;
+	u32 pause_nested_count;
 } scheduler_t;
 
 

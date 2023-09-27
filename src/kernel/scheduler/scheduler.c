@@ -42,10 +42,10 @@ void scheduler_enable(void){
 
 void KERNEL_CORE_CODE scheduler_pause(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		if (!CPU_LOCAL(_scheduler_data)->nested_pause_count){
-			CPU_LOCAL(_scheduler_data)->remaining_us=lapic_timer_stop();
+		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
+			CPU_LOCAL(_scheduler_data)->pause_remaining_us=lapic_timer_stop();
 		}
-		CPU_LOCAL(_scheduler_data)->nested_pause_count++;
+		CPU_LOCAL(_scheduler_data)->pause_nested_count++;
 	}
 }
 
@@ -53,9 +53,9 @@ void KERNEL_CORE_CODE scheduler_pause(void){
 
 void KERNEL_CORE_CODE scheduler_resume(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		CPU_LOCAL(_scheduler_data)->nested_pause_count--;
-		if (!CPU_LOCAL(_scheduler_data)->nested_pause_count){
-			lapic_timer_start(CPU_LOCAL(_scheduler_data)->remaining_us);
+		CPU_LOCAL(_scheduler_data)->pause_nested_count--;
+		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
+			lapic_timer_start(CPU_LOCAL(_scheduler_data)->pause_remaining_us);
 		}
 	}
 }
@@ -65,7 +65,7 @@ void KERNEL_CORE_CODE scheduler_resume(void){
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	scheduler->nested_pause_count=0;
+	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
 	if (current_thread){
