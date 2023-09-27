@@ -65,6 +65,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	scheduler->nested_pause_count=0;
 	thread_t* current_thread=scheduler->current_thread;
+	scheduler->current_thread=NULL;
 	if (current_thread){
 		lock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
@@ -79,21 +80,20 @@ void scheduler_isr_handler(isr_state_t* state){
 			scheduler_enqueue_thread(current_thread);
 		}
 	}
-	scheduler->current_thread=NULL;
-	thread_t* new_thread=scheduler_load_balancer_get();
-	if (new_thread){
-		lock_acquire_exclusive(&(new_thread->lock));
-		new_thread->header.index=CPU_HEADER_DATA->index;
-		msr_set_gs_base(new_thread,0);
-		scheduler->current_thread=new_thread;
-		*state=new_thread->gpr_state;
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=new_thread->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		msr_set_fs_base((void*)(new_thread->fs_gs_state.fs));
-		msr_set_gs_base((void*)(new_thread->fs_gs_state.gs),1);
-		fpu_restore(new_thread->fpu_state);
-		vmm_switch_to_pagemap(&(new_thread->process->pagemap));
-		new_thread->state.type=THREAD_STATE_TYPE_RUNNING;
-		lock_release_exclusive(&(new_thread->lock));
+	current_thread=scheduler_load_balancer_get();
+	if (current_thread){
+		lock_acquire_exclusive(&(current_thread->lock));
+		current_thread->header.index=CPU_HEADER_DATA->index;
+		msr_set_gs_base(current_thread,0);
+		scheduler->current_thread=current_thread;
+		*state=current_thread->gpr_state;
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		msr_set_fs_base((void*)(current_thread->fs_gs_state.fs));
+		msr_set_gs_base((void*)(current_thread->fs_gs_state.gs),1);
+		fpu_restore(current_thread->fpu_state);
+		vmm_switch_to_pagemap(&(current_thread->process->pagemap));
+		current_thread->state.type=THREAD_STATE_TYPE_RUNNING;
+		lock_release_exclusive(&(current_thread->lock));
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
@@ -114,7 +114,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 		WARN("Unknown thread priority '%u'",priority);
 		priority=SCHEDULER_PRIORITY_NORMAL;
 	}
-	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queues(priority);
+	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queue(priority);
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_load_balancer_thread_queue_next=thread;

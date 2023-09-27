@@ -9,7 +9,7 @@
 
 
 
-static const scheduler_priority_t _scheduler_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_QUEUE_COUNT]={
+static const scheduler_priority_t _scheduler_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT]={
 	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_BACKGROUND},
 	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
 	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
@@ -61,7 +61,7 @@ void scheduler_load_balancer_init(void){
 		_scheduler_load_balancer.priority_queue[i]=lb_data;
 		lb_data->counter=0;
 		lb_data->group=first_group;
-		for (u8 j=0;j<SCHEDULER_QUEUE_COUNT;j++){
+		for (u8 j=0;j<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;j++){
 			_queue_init(lb_data->queues+j);
 		}
 		lb_data->round_robin_timing=0;
@@ -88,7 +88,7 @@ thread_t* scheduler_load_balancer_get(void){
 	}
 	lb_data->round_robin_timing++;
 	const scheduler_priority_t* pattern=_scheduler_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
-	for (u8 i=0;i<SCHEDULER_QUEUE_COUNT;i++){
+	for (u8 i=0;i<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;i++){
 		thread_t* out=_try_pop_from_queue(lb_data->queues+pattern[i]);
 		if (out){
 			return out;
@@ -99,7 +99,7 @@ thread_t* scheduler_load_balancer_get(void){
 
 
 
-scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queues(scheduler_priority_t priority){
+scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(scheduler_priority_t priority){
 	lock_acquire_exclusive(&(_scheduler_load_balancer.lock));
 	u16 i=0;
 	scheduler_load_balancer_data_t* out;

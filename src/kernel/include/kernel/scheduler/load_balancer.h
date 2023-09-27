@@ -19,7 +19,7 @@
 #define SCHEDULER_PRIORITY_MIN SCHEDULER_PRIORITY_BACKGROUND
 #define SCHEDULER_PRIORITY_MAX SCHEDULER_PRIORITY_REALTIME
 
-#define SCHEDULER_QUEUE_COUNT (SCHEDULER_PRIORITY_MAX+1)
+#define SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT (SCHEDULER_PRIORITY_MAX+1)
 
 
 
@@ -46,7 +46,7 @@ typedef struct _SCHEDULER_LOAD_BALANCER_GROUP{
 typedef struct _SCHEDULER_LOAD_BALANCER_DATA{
 	u64 counter;
 	scheduler_load_balancer_group_t* group;
-	scheduler_load_balancer_thread_queue_t queues[SCHEDULER_QUEUE_COUNT];
+	scheduler_load_balancer_thread_queue_t queues[SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT];
 	u8 round_robin_timing;
 	u16 cpu_index;
 } scheduler_load_balancer_data_t;
@@ -69,7 +69,7 @@ thread_t* scheduler_load_balancer_get(void);
 
 
 
-scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queues(scheduler_priority_t priority);
+scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(scheduler_priority_t priority);
 
 
 
