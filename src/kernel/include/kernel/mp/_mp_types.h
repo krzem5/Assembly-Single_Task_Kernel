@@ -8,6 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/sandbox/sandbox.h>
 #include <kernel/scheduler/_scheduler_types.h>
+#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/types.h>
 
 
@@ -76,6 +77,7 @@ typedef struct _THREAD{
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
 	sandbox_t* sandbox;
+	cpu_mask_t* cpu_mask;
 	_Atomic scheduler_priority_t priority;
 	_Bool state_not_present;
 	thread_state_t state;

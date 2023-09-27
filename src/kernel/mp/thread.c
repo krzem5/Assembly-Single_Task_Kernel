@@ -10,6 +10,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
+#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -34,6 +35,7 @@ HANDLE_DECLARE_TYPE(THREAD,{
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
 	}
+	cpu_mask_delete(thread->cpu_mask);
 	process_t* process=thread->process;
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
@@ -77,6 +79,7 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 	out->fpu_state=omm_alloc(&_thread_fpu_state_allocator);
 	fpu_init(out->fpu_state);
 	out->sandbox=process->sandbox;
+	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;

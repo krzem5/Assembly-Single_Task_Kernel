@@ -7,6 +7,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/msr/msr.h>
+#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/mp/thread.h>
@@ -27,6 +28,7 @@ static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
 void scheduler_init(void){
 	LOG("Initializing scheduler...");
+	cpu_mask_init();
 	scheduler_load_balancer_init();
 }
 
@@ -114,7 +116,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 		WARN("Unknown thread priority '%u'",priority);
 		priority=SCHEDULER_PRIORITY_NORMAL;
 	}
-	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queue(priority);
+	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queue(thread->cpu_mask,priority);
 	lock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_load_balancer_thread_queue_next=thread;

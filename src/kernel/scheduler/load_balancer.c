@@ -3,6 +3,7 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "load_balancer"
@@ -123,13 +124,13 @@ thread_t* scheduler_load_balancer_get(void){
 
 
 
-scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(scheduler_priority_t priority){
+scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(const cpu_mask_t* cpu_mask,scheduler_priority_t priority){
 	lock_acquire_exclusive(&(_scheduler_load_balancer.lock));
 	u16 i=0;
 	scheduler_load_balancer_data_t* out;
 	while (1){
 		out=_scheduler_load_balancer.priority_queue[i];
-		if (i==cpu_count-1||/*check for cpu_mask if bit 'out->cpu_index' is set*/1){
+		if (i==cpu_count-1||(cpu_mask->bitmap[out->cpu_index>>6]&((1ull<<(out->cpu_index&63))-1))){
 			break;
 		}
 		i++;
@@ -146,9 +147,9 @@ scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(schedu
 	}
 	if (j==cpu_count-1||_scheduler_load_balancer.priority_queue[j+1]->counter>out->counter){
 		out->group=_scheduler_load_balancer.free_group;
-		_scheduler_load_balancer.free_group->length=1;
-		_scheduler_load_balancer.free_group->end=j;
 		_scheduler_load_balancer.free_group=_scheduler_load_balancer.free_group->next_group;
+		out->group->length=1;
+		out->group->end=j;
 	}
 	else{
 		out->group=_scheduler_load_balancer.priority_queue[j+1]->group;
