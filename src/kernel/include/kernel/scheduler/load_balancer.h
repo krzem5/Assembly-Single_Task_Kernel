@@ -3,7 +3,6 @@
 #include <kernel/lock/lock.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/_scheduler_types.h>
-#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/types.h>
 
 
@@ -72,7 +71,7 @@ thread_t* scheduler_load_balancer_get(void);
 
 
 
-scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(const cpu_mask_t* cpu_mask,scheduler_priority_t priority);
+void scheduler_load_balancer_add(thread_t* thread);
 
 
 

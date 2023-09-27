@@ -124,13 +124,13 @@ thread_t* scheduler_load_balancer_get(void){
 
 
 
-scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(const cpu_mask_t* cpu_mask,scheduler_priority_t priority){
+void scheduler_load_balancer_add(thread_t* thread){
 	lock_acquire_exclusive(&(_scheduler_load_balancer.lock));
 	u16 i=0;
 	scheduler_load_balancer_data_t* out;
 	while (1){
 		out=_scheduler_load_balancer.priority_queue[i];
-		if (i==cpu_count-1||(cpu_mask->bitmap[out->cpu_index>>6]&((1ull<<(out->cpu_index&63))-1))){
+		if (i==cpu_count-1||(thread->cpu_mask->bitmap[out->cpu_index>>6]&((1ull<<(out->cpu_index&63))-1))){
 			break;
 		}
 		i++;
@@ -156,5 +156,15 @@ scheduler_load_balancer_thread_queue_t* scheduler_load_balancer_get_queue(const 
 		out->group->length++;
 	}
 	lock_release_exclusive(&(_scheduler_load_balancer.lock));
-	return out->queues+priority;
+	scheduler_load_balancer_thread_queue_t* queue=out->queues+thread->priority;
+	lock_acquire_exclusive(&(queue->lock));
+	if (queue->tail){
+		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
+	}
+	else{
+		queue->head=thread;
+	}
+	queue->tail=thread;
+	thread->scheduler_load_balancer_thread_queue_next=NULL;
+	lock_release_exclusive(&(queue->lock));
 }

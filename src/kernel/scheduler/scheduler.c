@@ -111,23 +111,8 @@ void scheduler_enqueue_thread(thread_t* thread){
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
-	scheduler_priority_t priority=thread->priority;
-	if (priority<SCHEDULER_PRIORITY_MIN||priority>SCHEDULER_PRIORITY_MAX){
-		WARN("Unknown thread priority '%u'",priority);
-		priority=SCHEDULER_PRIORITY_NORMAL;
-	}
-	scheduler_load_balancer_thread_queue_t* queue=scheduler_load_balancer_get_queue(thread->cpu_mask,priority);
-	lock_acquire_exclusive(&(queue->lock));
-	if (queue->tail){
-		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
-	}
-	else{
-		queue->head=thread;
-	}
-	queue->tail=thread;
-	thread->scheduler_load_balancer_thread_queue_next=NULL;
+	scheduler_load_balancer_add(thread);
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
-	lock_release_exclusive(&(queue->lock));
 	lock_release_exclusive(&(thread->lock));
 	scheduler_resume();
 }
