@@ -9,21 +9,52 @@
 
 
 
-static const scheduler_priority_t _scheduler_priority_queue_access_pattern[SCHEDULER_ROUND_ROBIN_PRIORITY_COUNT][SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT]={
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_BACKGROUND},
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
-	{SCHEDULER_PRIORITY_REALTIME,SCHEDULER_PRIORITY_HIGH,SCHEDULER_PRIORITY_NORMAL,SCHEDULER_PRIORITY_LOW,SCHEDULER_PRIORITY_BACKGROUND},
-};
+#define DECLARE_QUEUE_ORDER(a,b,c,d,e) ((a)|((b)<<SCHEDULER_PRIORITY_SHIFT)|((c)<<(2*SCHEDULER_PRIORITY_SHIFT))|((d)<<(3*SCHEDULER_PRIORITY_SHIFT))|((e)<<(4*SCHEDULER_PRIORITY_SHIFT)))
+
+
 
 static CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_data);
 static scheduler_load_balancer_t _scheduler_load_balancer;
 
 
 
-static void _queue_init(scheduler_load_balancer_thread_queue_t* queue){
+static void _thread_queue_init(scheduler_load_balancer_thread_queue_t* queue){
 	lock_init(&(queue->lock));
 	queue->head=NULL;
 	queue->tail=NULL;
+}
+
+
+
+static u32 _get_queue_order(scheduler_load_balancer_data_t* lb_data){
+	lb_data->round_robin_timing++;
+	if (!(lb_data->round_robin_timing&15)){
+		return DECLARE_QUEUE_ORDER(
+			SCHEDULER_PRIORITY_REALTIME,
+			SCHEDULER_PRIORITY_LOW,
+			SCHEDULER_PRIORITY_HIGH,
+			SCHEDULER_PRIORITY_NORMAL,
+			SCHEDULER_PRIORITY_BACKGROUND
+		);
+	}
+	else if (!(lb_data->round_robin_timing&3)){
+		return DECLARE_QUEUE_ORDER(
+			SCHEDULER_PRIORITY_REALTIME,
+			SCHEDULER_PRIORITY_NORMAL,
+			SCHEDULER_PRIORITY_HIGH,
+			SCHEDULER_PRIORITY_LOW,
+			SCHEDULER_PRIORITY_BACKGROUND
+		);
+	}
+	else{
+		return DECLARE_QUEUE_ORDER(
+			SCHEDULER_PRIORITY_REALTIME,
+			SCHEDULER_PRIORITY_HIGH,
+			SCHEDULER_PRIORITY_NORMAL,
+			SCHEDULER_PRIORITY_LOW,
+			SCHEDULER_PRIORITY_BACKGROUND
+		);
+	}
 }
 
 
@@ -62,7 +93,7 @@ void scheduler_load_balancer_init(void){
 		lb_data->counter=0;
 		lb_data->group=first_group;
 		for (u8 j=0;j<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;j++){
-			_queue_init(lb_data->queues+j);
+			_thread_queue_init(lb_data->queues+j);
 		}
 		lb_data->round_robin_timing=0;
 		lb_data->cpu_index=i;
@@ -79,20 +110,13 @@ void scheduler_load_balancer_init(void){
 
 thread_t* scheduler_load_balancer_get(void){
 	scheduler_load_balancer_data_t* lb_data=CPU_LOCAL(_scheduler_load_balancer_data);
-	scheduler_priority_t start_priority=SCHEDULER_PRIORITY_HIGH;
-	if (!(lb_data->round_robin_timing&15)){
-		start_priority=SCHEDULER_PRIORITY_LOW;
-	}
-	else if (!(lb_data->round_robin_timing&3)){
-		start_priority=SCHEDULER_PRIORITY_NORMAL;
-	}
-	lb_data->round_robin_timing++;
-	const scheduler_priority_t* pattern=_scheduler_priority_queue_access_pattern[start_priority-SCHEDULER_PRIORITY_LOW];
+	u32 queue_order=_get_queue_order(lb_data);
 	for (u8 i=0;i<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;i++){
-		thread_t* out=_try_pop_from_queue(lb_data->queues+pattern[i]);
+		thread_t* out=_try_pop_from_queue(lb_data->queues+(queue_order&((1<<SCHEDULER_PRIORITY_SHIFT)-1)));
 		if (out){
 			return out;
 		}
+		queue_order>>=SCHEDULER_PRIORITY_SHIFT;
 	}
 	return NULL;
 }
