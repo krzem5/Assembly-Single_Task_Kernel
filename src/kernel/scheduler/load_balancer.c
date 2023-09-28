@@ -91,7 +91,9 @@ void scheduler_load_balancer_init(void){
 	for (u16 i=0;i<cpu_count;i++){
 		scheduler_load_balancer_data_t* lb_data=_scheduler_load_balancer_data+i;
 		_scheduler_load_balancer.priority_queue[i]=lb_data;
-		lb_data->counter=0;
+		lb_data->added_thread_count=0;
+		lb_data->free_slot_count=0;
+		lb_data->used_slot_count=0;
 		lb_data->group=first_group;
 		for (u8 j=0;j<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;j++){
 			_thread_queue_init(lb_data->queues+j);
@@ -115,10 +117,12 @@ thread_t* scheduler_load_balancer_get(void){
 	for (u8 i=0;i<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;i++){
 		thread_t* out=_try_pop_from_queue(lb_data->queues+(queue_order&((1<<SCHEDULER_PRIORITY_SHIFT)-1)));
 		if (out){
+			lb_data->used_slot_count++;
 			return out;
 		}
 		queue_order>>=SCHEDULER_PRIORITY_SHIFT;
 	}
+	lb_data->free_slot_count++;
 	return NULL;
 }
 
@@ -135,7 +139,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 		}
 		i++;
 	}
-	out->counter++;
+	out->added_thread_count++;
 	u16 j=out->group->end;
 	_scheduler_load_balancer.priority_queue[i]=_scheduler_load_balancer.priority_queue[j];
 	_scheduler_load_balancer.priority_queue[j]=out;
@@ -145,7 +149,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 		out->group->next_group=_scheduler_load_balancer.free_group;
 		_scheduler_load_balancer.free_group=out->group;
 	}
-	if (j==cpu_count-1||_scheduler_load_balancer.priority_queue[j+1]->counter>out->counter){
+	if (j==cpu_count-1||_scheduler_load_balancer.priority_queue[j+1]->added_thread_count>out->added_thread_count){
 		out->group=_scheduler_load_balancer.free_group;
 		_scheduler_load_balancer.free_group=_scheduler_load_balancer.free_group->next_group;
 		out->group->length=1;

@@ -46,7 +46,9 @@ typedef struct _SCHEDULER_LOAD_BALANCER_GROUP{
 
 
 typedef struct _SCHEDULER_LOAD_BALANCER_DATA{
-	u64 counter;
+	u64 added_thread_count;
+	u64 free_slot_count;
+	u64 used_slot_count;
 	scheduler_load_balancer_group_t* group;
 	scheduler_load_balancer_thread_queue_t queues[SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT];
 	u8 round_robin_timing;
