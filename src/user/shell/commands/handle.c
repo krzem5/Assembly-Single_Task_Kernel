@@ -30,4 +30,4 @@ _error:
 
 
 
-DECLARE_COMMAND(handle,"handle [-l]");
+DECLARE_COMMAND(handle,"handle");

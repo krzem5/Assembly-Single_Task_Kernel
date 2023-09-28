@@ -53,3 +53,4 @@ DECL_SYSCALL thread_get_priority, 36, 1
 DECL_SYSCALL thread_set_priority, 37, 2
 DECL_SYSCALL handle_get_type_count, 38, 0
 DECL_SYSCALL handle_get_type, 39, 3
+DECL_SYSCALL scheduler_get_stats, 40, 3

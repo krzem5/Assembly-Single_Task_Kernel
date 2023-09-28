@@ -14,6 +14,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/network/syscall.h>
 #include <kernel/random/syscall.h>
+#include <kernel/scheduler/syscall.h>
 #include <kernel/serial/syscall.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -71,6 +72,7 @@ void* _syscall_handlers[]={
 	[37]=syscall_thread_set_priority,
 	[38]=syscall_handle_get_type_count,
 	[39]=syscall_handle_get_type,
+	[40]=syscall_scheduler_get_stats,
 	NULL
 };
 

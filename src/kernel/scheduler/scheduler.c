@@ -44,6 +44,7 @@ void KERNEL_CORE_CODE scheduler_pause(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
 		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
 			CPU_LOCAL(_scheduler_data)->pause_remaining_us=lapic_timer_stop();
+			asm volatile("cli":::"memory");
 		}
 		CPU_LOCAL(_scheduler_data)->pause_nested_count++;
 	}
@@ -56,6 +57,7 @@ void KERNEL_CORE_CODE scheduler_resume(void){
 		CPU_LOCAL(_scheduler_data)->pause_nested_count--;
 		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
 			lapic_timer_start(CPU_LOCAL(_scheduler_data)->pause_remaining_us);
+			asm volatile("sti":::"memory");
 		}
 	}
 }

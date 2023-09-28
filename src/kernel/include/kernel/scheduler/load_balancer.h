@@ -45,14 +45,20 @@ typedef struct _SCHEDULER_LOAD_BALANCER_GROUP{
 
 
 
-typedef struct _SCHEDULER_LOAD_BALANCER_DATA{
+typedef struct _SCHEDULER_LOAD_BALANCER_STATS{
 	u64 added_thread_count;
 	u64 free_slot_count;
 	u64 used_slot_count;
+} scheduler_load_balancer_stats_t;
+
+
+
+typedef struct _SCHEDULER_LOAD_BALANCER_DATA{
+	scheduler_load_balancer_stats_t stats;
 	scheduler_load_balancer_group_t* group;
 	scheduler_load_balancer_thread_queue_t queues[SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT];
-	u8 round_robin_timing;
 	u16 cpu_index;
+	u8 queue_access_timing;
 } scheduler_load_balancer_data_t;
 
 
@@ -74,6 +80,10 @@ thread_t* scheduler_load_balancer_get(void);
 
 
 void scheduler_load_balancer_add(thread_t* thread);
+
+
+
+_Bool scheduler_load_balancer_get_stats(u16 cpu_index,scheduler_load_balancer_stats_t* out);
 
 
 
