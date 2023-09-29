@@ -62,8 +62,8 @@ _isr_common_handler:
 	mov ds, ax
 	mov es, ax
 	mov ss, ax
-	mov rdi, rsp
 	xor rbp, rbp
+	mov rdi, rsp
 	cld
 	call _isr_handler
 	rdtsc

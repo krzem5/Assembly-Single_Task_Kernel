@@ -1,4 +1,5 @@
 #include <kernel/apic/lapic.h>
+#include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
 #include <kernel/fpu/fpu.h>
@@ -30,6 +31,10 @@ void scheduler_init(void){
 	LOG("Initializing scheduler...");
 	cpu_mask_init();
 	scheduler_load_balancer_init();
+	for (u16 i=0;i<cpu_count;i++){
+		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
+		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;
+	}
 }
 
 
@@ -66,6 +71,7 @@ void KERNEL_CORE_CODE scheduler_resume(void){
 
 void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
+	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
@@ -101,8 +107,10 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
+		scheduler_set_timer(SCHEDULER_TIMER_NONE);
 		scheduler_task_wait_loop();
 	}
+	scheduler_set_timer((state->cs==0x08?SCHEDULER_TIMER_KERNEL:SCHEDULER_TIMER_USER));
 }
 
 
@@ -131,4 +139,26 @@ void scheduler_dequeue_thread(_Bool save_registers){
 	else{
 		scheduler_start();
 	}
+}
+
+
+
+_Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out){
+	if (cpu_index>=cpu_count){
+		return 0;
+	}
+	*out=(_scheduler_data+cpu_index)->timers;
+	return 1;
+}
+
+
+
+void scheduler_set_timer(u8 timer){
+	scheduler_pause();
+	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+	u64 ticks=clock_get_ticks();
+	scheduler->timers.data[scheduler->current_timer]+=ticks-scheduler->current_timer_start;
+	scheduler->current_timer_start=ticks;
+	scheduler->current_timer=timer;
+	scheduler_resume();
 }

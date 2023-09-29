@@ -73,6 +73,7 @@ void* _syscall_handlers[]={
 	[38]=syscall_handle_get_type_count,
 	[39]=syscall_handle_get_type,
 	[40]=syscall_scheduler_get_stats,
+	[41]=syscall_scheduler_get_timers,
 	NULL
 };
 

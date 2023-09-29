@@ -12,7 +12,20 @@ typedef struct _SCHEDULER_STATS{
 
 
 
+typedef struct _SCHEDULER_TIMERS{
+	u64 timer_user;
+	u64 timer_kernel;
+	u64 timer_scheduler;
+	u64 timer_none;
+} scheduler_timers_t;
+
+
+
 _Bool scheduler_get_stats(u32 cpu_index,scheduler_stats_t* out);
+
+
+
+_Bool scheduler_get_timers(u32 cpu_index,scheduler_timers_t* out);
 
 
 

@@ -8,4 +8,8 @@ void syscall_scheduler_get_stats(syscall_registers_t* regs);
 
 
 
+void syscall_scheduler_get_timers(syscall_registers_t* regs);
+
+
+
 #endif

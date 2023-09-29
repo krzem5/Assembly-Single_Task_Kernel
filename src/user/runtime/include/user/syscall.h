@@ -168,4 +168,8 @@ _Bool _syscall_scheduler_get_stats(u32 cpu_index,void* buffer,u32 size);
 
 
 
+_Bool _syscall_scheduler_get_timers(u32 cpu_index,void* buffer,u32 size);
+
+
+
 #endif
