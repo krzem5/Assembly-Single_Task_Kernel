@@ -1,9 +1,11 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/mp/thread.h>
+#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 
 
 
@@ -64,6 +66,42 @@ void syscall_thread_set_priority(syscall_registers_t* regs){
 		return;
 	}
 	thread->priority=regs->rsi;
+	handle_release(handle);
+	regs->rax=1;
+}
+
+
+
+void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
+	if (!regs->rdi||regs->rdx!=cpu_mask_size||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	if (!handle){
+		regs->rax=0;
+		return;
+	}
+	thread_t* thread=handle->object;
+	memcpy((void*)(regs->rsi),thread->cpu_mask,cpu_mask_size);
+	handle_release(handle);
+	regs->rax=1;
+}
+
+
+
+void syscall_thread_set_cpu_mask(syscall_registers_t* regs){
+	if (!regs->rdi||regs->rdx!=cpu_mask_size||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	if (!handle){
+		regs->rax=0;
+		return;
+	}
+	thread_t* thread=handle->object;
+	memcpy(thread->cpu_mask,(void*)(regs->rsi),cpu_mask_size);
 	handle_release(handle);
 	regs->rax=1;
 }

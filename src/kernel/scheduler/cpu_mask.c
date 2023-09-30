@@ -16,11 +16,14 @@ PMM_DECLARE_COUNTER(OMM_CPU_MASK);
 static omm_allocator_t _scheduler_cpu_mask_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
 static u64 _scheduler_last_bitmap_entry;
 
+u32 cpu_mask_size;
+
 
 
 void cpu_mask_init(void){
 	LOG("Initializing scheduler default CPU mask...");
-	_scheduler_cpu_mask_allocator=OMM_ALLOCATOR_INIT_STRUCT("cpu_mask",((cpu_count+63)>>6)*sizeof(u64),8,1,PMM_COUNTER_OMM_CPU_MASK);
+	cpu_mask_size=((cpu_count+63)>>6)*sizeof(u64);
+	_scheduler_cpu_mask_allocator=OMM_ALLOCATOR_INIT_STRUCT("cpu_mask",cpu_mask_size,8,1,PMM_COUNTER_OMM_CPU_MASK);
 	_scheduler_last_bitmap_entry=((cpu_count&63)?(1ull<<(cpu_count&63))-1:0);
 }
 

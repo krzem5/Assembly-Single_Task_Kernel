@@ -20,4 +20,12 @@ void syscall_thread_set_priority(syscall_registers_t* regs);
 
 
 
+void syscall_thread_get_cpu_mask(syscall_registers_t* regs);
+
+
+
+void syscall_thread_set_cpu_mask(syscall_registers_t* regs);
+
+
+
 #endif

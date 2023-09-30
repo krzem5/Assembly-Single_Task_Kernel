@@ -74,6 +74,8 @@ void* _syscall_handlers[]={
 	[39]=syscall_handle_get_type,
 	[40]=syscall_scheduler_get_stats,
 	[41]=syscall_scheduler_get_timers,
+	[42]=syscall_thread_get_cpu_mask,
+	[43]=syscall_thread_set_cpu_mask,
 	NULL
 };
 
