@@ -73,7 +73,8 @@ void syscall_thread_set_priority(syscall_registers_t* regs){
 
 
 void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
-	if (!regs->rdi||regs->rdx!=cpu_mask_size||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
+	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
 		regs->rax=0;
 		return;
 	}
@@ -83,7 +84,7 @@ void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
 		return;
 	}
 	thread_t* thread=handle->object;
-	memcpy((void*)(regs->rsi),thread->cpu_mask,cpu_mask_size);
+	memcpy((void*)(regs->rsi),thread->cpu_mask,size);
 	handle_release(handle);
 	regs->rax=1;
 }
@@ -91,7 +92,8 @@ void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
 
 
 void syscall_thread_set_cpu_mask(syscall_registers_t* regs){
-	if (!regs->rdi||regs->rdx!=cpu_mask_size||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
+	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
 		regs->rax=0;
 		return;
 	}
@@ -101,7 +103,8 @@ void syscall_thread_set_cpu_mask(syscall_registers_t* regs){
 		return;
 	}
 	thread_t* thread=handle->object;
-	memcpy(thread->cpu_mask,(void*)(regs->rsi),cpu_mask_size);
+	memcpy(thread->cpu_mask,(void*)(regs->rsi),size);
+	memset((void*)(((u64)(thread->cpu_mask))+size),0,cpu_mask_size-size);
 	handle_release(handle);
 	regs->rax=1;
 }
