@@ -22,4 +22,8 @@ u64 clock_get_time(void);
 
 
 
+u64 clock_ticks_to_time(u64 ticks);
+
+
+
 #endif

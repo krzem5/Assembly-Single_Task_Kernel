@@ -47,11 +47,15 @@ void scheduler_enable(void){
 
 void KERNEL_CORE_CODE scheduler_pause(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
-			CPU_LOCAL(_scheduler_data)->pause_remaining_us=lapic_timer_stop();
-			asm volatile("cli":::"memory");
+		scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+		if (!scheduler->pause_nested_count){
+			scheduler->pause_remaining_us=lapic_timer_stop();
+			if (scheduler->pause_remaining_us){
+				asm volatile("cli":::"memory");
+			}
+			scheduler->pause_start_ticks=clock_get_ticks();
 		}
-		CPU_LOCAL(_scheduler_data)->pause_nested_count++;
+		scheduler->pause_nested_count++;
 	}
 }
 
@@ -59,10 +63,20 @@ void KERNEL_CORE_CODE scheduler_pause(void){
 
 void KERNEL_CORE_CODE scheduler_resume(void){
 	if (_scheduler_enabled&&CPU_LOCAL(_scheduler_data)->current_thread){
-		CPU_LOCAL(_scheduler_data)->pause_nested_count--;
-		if (!CPU_LOCAL(_scheduler_data)->pause_nested_count){
-			lapic_timer_start(CPU_LOCAL(_scheduler_data)->pause_remaining_us);
+		scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+		scheduler->pause_nested_count--;
+		if (!scheduler->pause_nested_count){
+			if (!scheduler->pause_remaining_us){
+				return;
+			}
+			u64 elapsed_us=(clock_ticks_to_time(clock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
 			asm volatile("sti":::"memory");
+			if (elapsed_us>=scheduler->pause_remaining_us){
+				scheduler_start();
+			}
+			else{
+				lapic_timer_start(scheduler->pause_remaining_us-elapsed_us);
+			}
 		}
 	}
 }

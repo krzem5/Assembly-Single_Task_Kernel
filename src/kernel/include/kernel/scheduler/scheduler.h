@@ -24,6 +24,7 @@ typedef struct _SCHEDULER{
 	thread_t* current_thread;
 	u32 pause_remaining_us;
 	u32 pause_nested_count;
+	u64 pause_start_ticks;
 	scheduler_timers_t timers;
 	u64 current_timer_start;
 	u8 current_timer;
