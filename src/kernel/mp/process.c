@@ -27,7 +27,7 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 		panic("Unterminated process not referenced");
 	}
 	sandbox_delete(process->sandbox);
-	vmm_memory_map_deinit(&(process->pagemap),&(process->mmap));
+	// vmm_memory_map_deinit(&(process->pagemap),&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(&_process_allocator,process);
 });
