@@ -126,6 +126,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		current_thread->state.type=THREAD_STATE_TYPE_RUNNING;
 		lock_release_exclusive(&(current_thread->lock));
 	}
+	else{
+		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
+	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!scheduler->current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
@@ -156,7 +159,6 @@ void scheduler_dequeue_thread(_Bool save_registers){
 	if (!save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
-		// vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
 	else{
 		scheduler_start();
