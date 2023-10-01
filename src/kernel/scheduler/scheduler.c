@@ -156,6 +156,7 @@ void scheduler_dequeue_thread(_Bool save_registers){
 	if (!save_registers){
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
+		// vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
 	else{
 		scheduler_start();
