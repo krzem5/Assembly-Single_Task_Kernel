@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MEMORY_MMAP_H_
 #define _KERNEL_MEMORY_MMAP_H_ 1
 #include <kernel/lock/lock.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 
 
@@ -26,7 +27,7 @@ void vmm_memory_map_init(vmm_memory_map_t* out);
 
 
 
-void vmm_memory_map_deinit(vmm_memory_map_t* mmap);
+void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap);
 
 
 
