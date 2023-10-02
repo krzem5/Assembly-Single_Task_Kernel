@@ -105,7 +105,7 @@ void KERNEL_NORETURN thread_terminate(void){
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	ERROR("%p",&vmm_kernel_pagemap);
-	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
+	// vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	if (handle_release(&(thread->handle))){
 		lock_release_exclusive(&(thread->lock));
 	}
