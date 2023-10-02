@@ -64,7 +64,6 @@ void vmm_memory_map_init(vmm_memory_map_t* out){
 void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap){
 	lock_acquire_exclusive(&(mmap->lock));
 	for (vmm_memory_map_region_t* region=mmap->first;region;){
-		// WARN("~ [%u] %p - %p",region->is_used,region->offset,region->offset+region->length);
 		if (region->is_used){
 			vmm_release_pages(pagemap,region->offset,region->length>>PAGE_SIZE_SHIFT);
 		}
