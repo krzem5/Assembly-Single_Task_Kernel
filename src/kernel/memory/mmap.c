@@ -1,8 +1,8 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/mmap.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "mmap"
@@ -14,8 +14,16 @@
 
 
 
+PMM_DECLARE_COUNTER(OMM_MMAP_RANGE);
+
+
+
+static omm_allocator_t _mmap_region_allocator=OMM_ALLOCATOR_INIT_STRUCT("mmap_range",sizeof(vmm_memory_map_region_t),8,4,PMM_COUNTER_OMM_MMAP_RANGE);
+
+
+
 static vmm_memory_map_region_t* _insert_region_after_anchor(vmm_memory_map_region_t* anchor,_Bool is_used,u64 offset,u64 length){
-	vmm_memory_map_region_t* out=kmm_alloc(sizeof(vmm_memory_map_region_t));
+	vmm_memory_map_region_t* out=omm_alloc(&_mmap_region_allocator);
 	out->is_used=is_used;
 	out->offset=offset;
 	out->length=length;
@@ -55,11 +63,16 @@ void vmm_memory_map_init(vmm_memory_map_t* out){
 
 void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap){
 	lock_acquire_exclusive(&(mmap->lock));
-	for (vmm_memory_map_region_t* region=mmap->first;region;region=region->next){
+	for (vmm_memory_map_region_t* region=mmap->first;region;){
+		// WARN("~ [%u] %p - %p",region->is_used,region->offset,region->offset+region->length);
 		if (region->is_used){
 			vmm_release_pages(pagemap,region->offset,region->length>>PAGE_SIZE_SHIFT);
 		}
+		vmm_memory_map_region_t* next=region->next;
+		omm_dealloc(&_mmap_region_allocator,region);
+		region=next;
 	}
+	mmap->first=NULL;
 	lock_release_exclusive(&(mmap->lock));
 }
 
