@@ -2,7 +2,6 @@ extern _isr_handler
 extern _random_entropy_pool
 extern _random_entropy_pool_length
 global isr_allocate
-global _isr_return_from_handler
 section .text exec nowrite
 
 
