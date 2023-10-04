@@ -49,7 +49,7 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 			total+=(KERNEL_DATA->mmap+i)->length;
 		}
 	}
-	INFO_CORE("Total: %v",total);
+	INFO_CORE("Total: %v (%lu B)",total,total);
 	LOG_CORE("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
 	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
 		*bss=0;
