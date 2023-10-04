@@ -181,6 +181,9 @@ PMM_DECLARE_COUNTER(KFS);
 
 
 static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
+	if (!offset){
+		panic("Invalid KFS offset");
+	}
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR_CORE("Error reading data from drive");
 	}
@@ -189,6 +192,9 @@ static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_in
 
 
 static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
+	if (!offset){
+		panic("Invalid KFS offset");
+	}
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
 		ERROR_CORE("Error writing data to drive");
 	}
@@ -299,6 +305,7 @@ static void KERNEL_CORE_CODE _block_cache_dealloc_block(kfs_block_cache_t* block
 	}
 	_block_cache_flush_batc(block_cache);
 	_drive_read(block_cache->drive,block_index/KFS_BATC_BLOCK_COUNT*8+block_cache->root.batc_block_index,&(block_cache->batc),8);
+	block_cache->flags|=KFS_BLOCK_CACHE_BATC_PRESENT;
 _batc_found:
 	block_cache->flags|=KFS_BLOCK_CACHE_BATC_DIRTY;
 	block_index-=block_cache->batc.first_block_index;
@@ -1088,14 +1095,15 @@ _Bool kfs_format_drive(const drive_t* drive,const void* bootcode,u32 bootcode_le
 		block_count=0xffffffff;
 	}
 	INFO("%lu total blocks, %lu BATC blocks",block_count,(block_count+KFS_BATC_BLOCK_COUNT-1)/KFS_BATC_BLOCK_COUNT);
+	kfs_large_block_index_t first_free_block_index=DRIVE_FIRST_FREE_BLOCK_INDEX;
 	if (bootcode_length){
 		INFO("Writing %v of boot code...",((bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)<<DRIVE_BLOCK_SIZE_SHIFT);
 		if (drive->read_write(drive->extra_data,DRIVE_OFFSET_FLAG_WRITE,(void*)bootcode,(bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)!=((bootcode_length+(1<<DRIVE_BLOCK_SIZE_SHIFT)-1)>>DRIVE_BLOCK_SIZE_SHIFT)){
 			ERROR("Error writing boot code to drive");
 			return 0;
 		}
+		first_free_block_index=(bootcode_length+4095)>>12;
 	}
-	kfs_large_block_index_t first_free_block_index=DRIVE_FIRST_FREE_BLOCK_INDEX;
 	kfs_root_block_t* root=(void*)(pmm_alloc_zero(1,PMM_COUNTER_KFS,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	root->signature=KFS_SIGNATURE;
 	root->block_count=block_count;
