@@ -14,6 +14,7 @@ SECTIONS{
         *(.entry)
         *(.cversion)
         *(.ctext .ctext*)
+        . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(core_ex)
     DECLARE_SECTION_START(core_nx)
@@ -39,6 +40,7 @@ SECTIONS{
         ASSERT(__KERNEL_SECTION_core_END__ - __KERNEL_SECTION_core_START__ <= 65536, "Kernel core too large");
         *(.version)
         *(.text .text*)
+        . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(kernel_ex)
     DECLARE_SECTION_START(kernel_nx)

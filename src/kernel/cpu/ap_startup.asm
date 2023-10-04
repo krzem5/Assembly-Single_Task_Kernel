@@ -5,7 +5,7 @@
 
 
 extern _cpu_init_core
-section .ap_startup exec nowrite
+section .ap_startup noexec nowrite
 
 
 
