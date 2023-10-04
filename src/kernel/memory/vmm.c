@@ -421,3 +421,19 @@ _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	scheduler_resume();
 	return 1;
 }
+
+
+
+void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count){
+	scheduler_pause();
+	lock_acquire_exclusive(&(pagemap->lock));
+	for (;count;count--){
+		u64* entry=_lookup_virtual_address(pagemap,virtual_address);
+		if (entry){
+			*entry=((*entry)&(~clear_flags))|set_flags;
+		}
+		virtual_address+=PAGE_SIZE;
+	}
+	lock_release_exclusive(&(pagemap->lock));
+	scheduler_resume();
+}

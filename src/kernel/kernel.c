@@ -2,12 +2,17 @@
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "kernel"
+
+
+
+#define ADJUST_SECTION_FLAGS(name,flags) vmm_adjust_flags(&vmm_kernel_pagemap,kernel_section_##name##_start(),(flags),VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(kernel_section_##name##_end()-kernel_section_##name##_start()))
 
 
 
@@ -134,6 +139,21 @@ _load_kernel:
 	return;
 _error:
 	panic("Unable to load kernel");
+}
+
+
+
+void kernel_adjust_memory_flags(void){
+	LOG("Adjusting memory flags...");
+	ADJUST_SECTION_FLAGS(core_ex,0);
+	// ADJUST_SECTION_FLAGS(core_nx,VMM_PAGE_FLAG_NOEXECUTE);
+	// ADJUST_SECTION_FLAGS(core_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(kernel_ex,0);
+	// ADJUST_SECTION_FLAGS(kernel_nx,VMM_PAGE_FLAG_NOEXECUTE);
+	// ADJUST_SECTION_FLAGS(kernel_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(common_ex,0);
+	ADJUST_SECTION_FLAGS(common_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(bss,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 }
 
 

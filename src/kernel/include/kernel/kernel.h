@@ -77,6 +77,10 @@ void kernel_load(void);
 
 
 
+void kernel_adjust_memory_flags(void);
+
+
+
 const char* kernel_lookup_symbol(u64 address,u64* offset);
 
 

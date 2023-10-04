@@ -91,6 +91,10 @@ _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
+void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count);
+
+
+
 u64 vmm_get_fault_address(void);
 
 

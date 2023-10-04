@@ -40,6 +40,7 @@ void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
 	partition_load();
 	kernel_load();
 	// From this point onwards all kernel functions can be used
+	kernel_adjust_memory_flags();
 	handle_init();
 	sandbox_init();
 	isr_init();
