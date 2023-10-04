@@ -116,16 +116,16 @@ void KERNEL_CORE_CODE pmm_init(void){
 	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
 	INFO_CORE("Low bitmap size: %v",low_bitmap_size);
-	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_get_bss_end());
+	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset());
 	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
 	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
 	INFO_CORE("High bitmap size: %v",high_bitmap_size);
-	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size);
+	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	LOG_CORE("Registering counters...");
-	_pmm_counters=(void*)(pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size+high_bitmap_size);
+	_pmm_counters=(void*)(pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
-	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_get_pmm_counter_start();(u64)descriptor<kernel_get_pmm_counter_end();descriptor++){
+	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=_pmm_counters->length;
 			memcpy_lowercase((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
@@ -136,8 +136,8 @@ void KERNEL_CORE_CODE pmm_init(void){
 	u32 pmm_counters_size=pmm_align_up_address(sizeof(pmm_counters_t)+_pmm_counters->length*sizeof(pmm_counter_t));
 	INFO_CORE("Counter array size: %v",pmm_counters_size);
 	(_pmm_counters->data+PMM_COUNTER_PMM)->count=pmm_align_up_address(low_bitmap_size+high_bitmap_size+pmm_counters_size)>>PAGE_SIZE_SHIFT;
-	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_get_bss_end()-kernel_get_start())>>PAGE_SIZE_SHIFT;
-	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_get_bss_end())+low_bitmap_size+high_bitmap_size+pmm_counters_size;
+	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_address_range_end()-kernel_section_address_range_start())>>PAGE_SIZE_SHIFT;
+	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size+high_bitmap_size+pmm_counters_size;
 	LOG_CORE("Registering low memory...");
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
 		if ((KERNEL_DATA->mmap+i)->type!=1){

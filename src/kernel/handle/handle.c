@@ -21,7 +21,7 @@ handle_type_t handle_type_count;
 void handle_init(void){
 	LOG("Initializing handle types...");
 	handle_type_count=HANDLE_TYPE_ANY+1;
-	for (const handle_descriptor_t*const* descriptor=(void*)kernel_get_handle_start();(u64)descriptor<kernel_get_handle_end();descriptor++){
+	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
 		if (*descriptor){
 			*((*descriptor)->var)=handle_type_count;
 			handle_type_count++;
@@ -33,7 +33,7 @@ void handle_init(void){
 	memcpy(handle_type_data->name,"any",3);
 	handle_type_data->delete_callback=NULL;
 	handle_type_data->count=0;
-	for (const handle_descriptor_t*const* descriptor=(void*)kernel_get_handle_start();(u64)descriptor<kernel_get_handle_end();descriptor++){
+	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
 		if (*descriptor){
 			handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
 			memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);

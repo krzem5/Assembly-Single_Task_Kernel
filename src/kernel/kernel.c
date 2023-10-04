@@ -21,9 +21,9 @@ static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/ker
 void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
 	INFO_CORE("Version: %lx",kernel_get_version());
-	INFO_CORE("Core kernel range: %p - %p",kernel_get_start(),kernel_get_core_end());
-	INFO_CORE("Full kernel range: %p - %p",kernel_get_start(),kernel_get_end());
-	INFO_CORE("BSS kernel range: %p - %p",kernel_get_bss_start(),kernel_get_bss_end());
+	INFO_CORE("Core kernel range: %p - %p (%v)",kernel_section_core_start()-kernel_get_offset(),kernel_section_core_end()-kernel_get_offset(),kernel_section_core_end()-kernel_section_core_start());
+	INFO_CORE("BSS kernel range: %p - %p (%v)",kernel_section_bss_start()-kernel_get_offset(),kernel_section_bss_end()-kernel_get_offset(),kernel_section_bss_end()-kernel_section_bss_start());
+	INFO_CORE("Full kernel range: %p - %p (%v)",kernel_section_address_range_start()-kernel_get_offset(),kernel_section_address_range_end()-kernel_get_offset(),kernel_section_address_range_end()-kernel_section_address_range_start());
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
@@ -33,8 +33,8 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 		}
 	}
 	INFO_CORE("Total: %v",total);
-	LOG_CORE("Clearing .bss section (%v)...",kernel_get_bss_end()-kernel_get_bss_start());
-	for (u64* bss=(u64*)kernel_get_bss_start();bss<(u64*)kernel_get_bss_end();bss++){
+	LOG_CORE("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
+	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
 		*bss=0;
 	}
 }
@@ -119,8 +119,8 @@ _load_kernel:
 	if (!kernel_file){
 		goto _error;
 	}
-	u64 kernel_size=kernel_get_end()-kernel_get_core_end();
-	void* address=(void*)(kernel_get_core_end()+kernel_get_offset());
+	u64 kernel_size=kernel_section_kernel_end()-kernel_section_core_end();
+	void* address=(void*)kernel_section_core_end();
 	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
 	u64 rd=vfs_read(kernel_file,0,address,kernel_size);
 	if (rd!=kernel_size){
@@ -139,7 +139,7 @@ _error:
 
 
 const char* kernel_lookup_symbol(u64 address,u64* offset){
-	if (address<kernel_get_start()+kernel_get_offset()||address>=kernel_get_bss_end()+kernel_get_offset()){
+	if (address<kernel_section_address_range_start()||address>=kernel_section_address_range_end()){
 		if (offset){
 			*offset=0;
 		}

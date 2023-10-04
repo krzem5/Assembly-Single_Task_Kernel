@@ -39,8 +39,8 @@ typedef struct _GCOV_INFO{
 
 
 
-extern const gcov_info_t* __KERNEL_GCOV_INFO_START__;
-extern const gcov_info_t* __KERNEL_GCOV_INFO_END__;
+extern const gcov_info_t* __KERNEL_SECTION_gcov_info_START__;
+extern const gcov_info_t* __KERNEL_SECTION_gcov_info_END__;
 
 
 
@@ -77,7 +77,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 	io_port_out8(0x2fa,0xc7);
 	io_port_out8(0x2fc,0x03);
 	INFO("Writing coverage data...");
-	for (const gcov_info_t*const* info_ptr=&__KERNEL_GCOV_INFO_START__;info_ptr<&__KERNEL_GCOV_INFO_END__;info_ptr++){
+	for (const gcov_info_t*const* info_ptr=&__KERNEL_SECTION_gcov_info_START__;info_ptr<&__KERNEL_SECTION_gcov_info_END__;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
 		if (!info->merge[0]){
 			continue;

@@ -218,7 +218,7 @@ def _split_kernel_file(src_file_path,core_file_path,kernel_file_path,core_end,en
 
 
 def _patch_kernel(file_path,kernel_symbols):
-	address_offset=kernel_symbols["__KERNEL_CORE_END__"]+kernel_symbols["__KERNEL_OFFSET__"]
+	address_offset=kernel_symbols["__KERNEL_SECTION_core_END__"]
 	with open(file_path,"r+b") as wf:
 		wf.seek(kernel_symbols["_idt_data"]-address_offset)
 		for i in range(0,256):
@@ -412,7 +412,7 @@ linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_CORE_END__"]-kernel_symbols["__KERNEL_START__"],kernel_symbols["__KERNEL_END__"]-kernel_symbols["__KERNEL_START__"])
+_split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_SECTION_core_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"],kernel_symbols["__KERNEL_SECTION_kernel_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"])
 os.remove("build/kernel.bin")
 _patch_kernel("build/disk/kernel/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stage3.bin")
