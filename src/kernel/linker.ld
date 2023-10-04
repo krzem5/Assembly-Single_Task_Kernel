@@ -6,10 +6,11 @@ SECTIONS{
     .core : AT(ADDR(.core) - __KERNEL_OFFSET__){
         *(.entry)
         *(.cversion)
-        *(.ctext .ctext* .crdata .crdata*)
+        *(.ctext .ctext*)
+        *(.crdata .crdata*)
         . = ALIGN(8);
         __KERNEL_PMM_COUNTER_START__ = .;
-        *(.pmmcounter)
+        *(.pmmcounter*)
         __KERNEL_PMM_COUNTER_END__ = .;
         . = ALIGN(0x1000);
     }
@@ -21,7 +22,8 @@ SECTIONS{
     .kernel : AT(ADDR(.kernel) - __KERNEL_OFFSET__){
         ASSERT(__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
         *(.version)
-        *(.text .text* .rodata .rodata* .rdata .rdata*)
+        *(.text .text*)
+        *(.rodata .rodata* .rdata .rdata*)
         . = ALIGN(8);
         __KERNEL_CPU_LOCAL_START__ = .;
         *(.cpulocal)
