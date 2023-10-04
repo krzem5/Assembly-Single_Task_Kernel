@@ -23,6 +23,10 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size);
 
 
 
+void thread_delete(thread_t* thread);
+
+
+
 void KERNEL_NORETURN thread_terminate(void);
 
 

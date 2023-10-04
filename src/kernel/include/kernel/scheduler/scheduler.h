@@ -56,10 +56,6 @@ void scheduler_enqueue_thread(thread_t* thread);
 
 
 
-void scheduler_dequeue_thread(_Bool save_registers);
-
-
-
 _Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out);
 
 

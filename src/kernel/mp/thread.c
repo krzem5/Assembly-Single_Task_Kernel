@@ -90,12 +90,8 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 
 
 
-void KERNEL_NORETURN thread_terminate(void){
-	scheduler_pause();
-	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	scheduler_dequeue_thread(0);
+void thread_delete(thread_t* thread){
 	lock_acquire_exclusive(&(thread->lock));
-	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
 	process_t* process=thread->process;
 	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -104,10 +100,19 @@ void KERNEL_NORETURN thread_terminate(void){
 	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
-	// vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	if (handle_release(&(thread->handle))){
 		lock_release_exclusive(&(thread->lock));
 	}
+}
+
+
+
+void KERNEL_NORETURN thread_terminate(void){
+	scheduler_pause();
+	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	lock_acquire_exclusive(&(thread->lock));
+	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
+	lock_release_exclusive(&(thread->lock));
 	scheduler_start();
 	for (;;);
 }
@@ -135,5 +140,5 @@ void thread_await_event(event_t* event){
 	thread->state_not_present=1;
 	lock_release_exclusive(&(thread->lock));
 	lock_release_exclusive(&(event->lock));
-	scheduler_dequeue_thread(1);
+	scheduler_start();
 }

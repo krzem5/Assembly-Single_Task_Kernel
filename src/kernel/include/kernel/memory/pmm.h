@@ -64,7 +64,7 @@ typedef struct _PMM_COUNTERS{
 
 
 typedef struct _PMM_COUNTER_DESCRIPTOR{
-	const char* name;
+	char name[PMM_COUNTER_NAME_LENGTH];
 	u16* var;
 } pmm_counter_descriptor_t;
 

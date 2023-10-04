@@ -101,14 +101,21 @@ void scheduler_isr_handler(isr_state_t* state){
 		lock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		current_thread->gpr_state=*state;
-		current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
-		current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
-		fpu_save(current_thread->fpu_state);
-		current_thread->state_not_present=0;
-		lock_release_exclusive(&(current_thread->lock));
-		if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
-			scheduler_enqueue_thread(current_thread);
+		if (current_thread->state.type==THREAD_STATE_TYPE_TERMINATED){
+			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
+			lock_release_exclusive(&(current_thread->lock));
+			thread_delete(current_thread);
+		}
+		else{
+			current_thread->gpr_state=*state;
+			current_thread->fs_gs_state.fs=(u64)msr_get_fs_base();
+			current_thread->fs_gs_state.gs=(u64)msr_get_gs_base(1);
+			fpu_save(current_thread->fpu_state);
+			current_thread->state_not_present=0;
+			lock_release_exclusive(&(current_thread->lock));
+			if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
+				scheduler_enqueue_thread(current_thread);
+			}
 		}
 	}
 	current_thread=scheduler_load_balancer_get();
@@ -149,20 +156,6 @@ void scheduler_enqueue_thread(thread_t* thread){
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
 	lock_release_exclusive(&(thread->lock));
 	scheduler_resume();
-}
-
-
-
-void scheduler_dequeue_thread(_Bool save_registers){
-	lapic_timer_stop();
-	CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-	if (!save_registers){
-		msr_set_gs_base(CPU_LOCAL(cpu_extra_data),0);
-		CPU_LOCAL(_scheduler_data)->current_thread=NULL;
-	}
-	else{
-		scheduler_start();
-	}
 }
 
 
