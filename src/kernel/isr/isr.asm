@@ -18,20 +18,6 @@ isr_allocate:
 
 
 
-section .data noexec write
-
-
-
-align 4
-_next_irq_index:
-	dd 33
-
-
-
-section .common exec nowrite
-
-
-
 _isr_common_handler:
 	cmp qword [rsp+24], 0x08
 	je ._kernel_entry
@@ -112,3 +98,13 @@ _isr_entry_%+idx:
 	jmp _isr_common_handler
 %assign idx idx+1
 %endrep
+
+
+
+section .data noexec write
+
+
+
+align 4
+_next_irq_index:
+	dd 33

@@ -76,20 +76,6 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(kernel_rw)
-    DECLARE_SECTION_START(common)
-    DECLARE_SECTION_START(common_ex)
-    .common_ex : AT(ADDR(.common_ex) - __KERNEL_OFFSET__){
-        *(.common)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(common_ex)
-    DECLARE_SECTION_START(common_rw)
-    .common_rw : AT(ADDR(.common_rw) - __KERNEL_OFFSET__){
-        *(.common_rw)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(common_rw)
-    DECLARE_SECTION_END(common)
     DECLARE_SECTION_END(kernel)
     DECLARE_SECTION_START(bss)
     .bss : AT(ADDR(.bss) - __KERNEL_OFFSET__){

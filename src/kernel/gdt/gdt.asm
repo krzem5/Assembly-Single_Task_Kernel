@@ -37,7 +37,7 @@ gdt_enable:
 
 
 
-section .common noexec nowrite
+section .rdata noexec nowrite
 
 
 

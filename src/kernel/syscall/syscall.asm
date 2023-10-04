@@ -27,7 +27,7 @@ syscall_enable:
 	add ecx, 1
 	mov edx, 0x00130008
 	wrmsr
-	lea rdx, syscall_handler
+	lea rdx, _syscall_handler
 	mov rax, rdx
 	add ecx, 1
 	shr rdx, 32
@@ -40,11 +40,7 @@ syscall_enable:
 
 
 
-section .common exec nowrite
-
-
-
-syscall_handler:
+_syscall_handler:
 	swapgs
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
@@ -107,7 +103,7 @@ syscall_handler:
 
 
 
-section .common_rw noexec write
+section .data noexec write
 
 
 
