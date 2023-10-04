@@ -16,6 +16,8 @@
 	INFO("Marking region %p - %p [%v] as %s+%s",kernel_section_##name##_start(),kernel_section_##name##_end(),pmm_align_up_address(kernel_section_##name##_end()-kernel_section_##name##_start()),(((flags)&VMM_PAGE_FLAG_READWRITE)?"RW":"RD"),(((flags)&VMM_PAGE_FLAG_NOEXECUTE)?"NX":"EX")); \
 	vmm_adjust_flags(&vmm_kernel_pagemap,kernel_section_##name##_start(),(flags),VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(kernel_section_##name##_end()-kernel_section_##name##_start())>>PAGE_SIZE_SHIFT)
 
+#define PRINT_SECTION_DATA(name) INFO_CORE("  " #name ": %p - %p (%v)",kernel_section_##name##_start(),kernel_section_##name##_end(),kernel_section_##name##_end()-kernel_section_##name##_start());
+
 
 
 static KERNEL_CORE_RDATA const char _kernel_memory_unusable[]=" (Unusable)";
@@ -28,9 +30,17 @@ static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/ker
 void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	LOG_CORE("Loading kernel data...");
 	INFO_CORE("Version: %lx",kernel_get_version());
-	INFO_CORE("Core kernel range: %p - %p (%v)",kernel_section_core_start()-kernel_get_offset(),kernel_section_core_end()-kernel_get_offset(),kernel_section_core_end()-kernel_section_core_start());
-	INFO_CORE("BSS kernel range: %p - %p (%v)",kernel_section_bss_start()-kernel_get_offset(),kernel_section_bss_end()-kernel_get_offset(),kernel_section_bss_end()-kernel_section_bss_start());
-	INFO_CORE("Full kernel range: %p - %p (%v)",kernel_section_address_range_start()-kernel_get_offset(),kernel_section_address_range_end()-kernel_get_offset(),kernel_section_address_range_end()-kernel_section_address_range_start());
+	INFO_CORE("Sections:");
+	PRINT_SECTION_DATA(address_range);
+	PRINT_SECTION_DATA(core);
+	PRINT_SECTION_DATA(core_ex);
+	PRINT_SECTION_DATA(core_nx);
+	PRINT_SECTION_DATA(core_rw);
+	PRINT_SECTION_DATA(kernel);
+	PRINT_SECTION_DATA(kernel_ex);
+	PRINT_SECTION_DATA(kernel_nx);
+	PRINT_SECTION_DATA(kernel_rw);
+	PRINT_SECTION_DATA(bss);
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
