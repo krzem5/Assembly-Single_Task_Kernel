@@ -8,6 +8,16 @@
 
 #define KERNEL_DATA ((const kernel_data_t*)0xffffffffc0007000)
 
+#define _KERNEL_DECLARE_SECTION(name) \
+	static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_section_##name##_start(void){ \
+		extern u64 __KERNEL_SECTION_##name##_START__[1]; \
+		return (u64)(__KERNEL_SECTION_##name##_START__);  \
+	} \
+	static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_section_##name##_end(void){ \
+		extern u64 __KERNEL_SECTION_##name##_END__[1]; \
+		return (u64)(__KERNEL_SECTION_##name##_END__);  \
+	}
+
 
 
 typedef struct __attribute__((packed)) _KERNEL_DATA{
@@ -136,6 +146,26 @@ static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_bss_end(v
 static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_get_offset(void){
 	return KERNEL_OFFSET;
 }
+
+
+
+_KERNEL_DECLARE_SECTION(core);
+_KERNEL_DECLARE_SECTION(core_ex);
+_KERNEL_DECLARE_SECTION(core_nx);
+_KERNEL_DECLARE_SECTION(core_rw);
+_KERNEL_DECLARE_SECTION(kernel_ex);
+_KERNEL_DECLARE_SECTION(kernel_nx);
+_KERNEL_DECLARE_SECTION(kernel_rw);
+_KERNEL_DECLARE_SECTION(common);
+_KERNEL_DECLARE_SECTION(common_ex);
+_KERNEL_DECLARE_SECTION(common_rw);
+_KERNEL_DECLARE_SECTION(bss);
+
+_KERNEL_DECLARE_SECTION(pmm_counter);
+_KERNEL_DECLARE_SECTION(cpu_local);
+_KERNEL_DECLARE_SECTION(handle);
+_KERNEL_DECLARE_SECTION(sandbox);
+// _KERNEL_DECLARE_SECTION(gcov_info);
 
 
 
