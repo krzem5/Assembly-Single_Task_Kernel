@@ -1,8 +1,9 @@
-global vmm_get_fault_address
-global vmm_invalidate_tlb_entry
-global vmm_switch_to_pagemap
-global vmm_set_common_kernel_pagemap
 extern vmm_kernel_pagemap
+global vmm_get_fault_address
+global vmm_get_pagemap
+global vmm_invalidate_tlb_entry
+global vmm_set_common_kernel_pagemap
+global vmm_switch_to_pagemap
 section .ctext exec nowrite
 
 
@@ -23,4 +24,11 @@ vmm_invalidate_tlb_entry:
 vmm_switch_to_pagemap:
 	mov rax, qword [rdi]
 	mov cr3, rax
+	ret
+
+
+
+vmm_get_pagemap:
+	mov rax, cr3
+	mov qword [rdi], rax
 	ret

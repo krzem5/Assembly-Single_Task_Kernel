@@ -421,3 +421,14 @@ _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	scheduler_resume();
 	return 1;
 }
+
+
+
+void AAAA(vmm_pagemap_t* a,vmm_pagemap_t* b){
+	scheduler_pause();
+	LOG("%p -> %p",a,b);
+	for (u16 i=0;i<512;i++){
+		INFO("[%u]: %p, %p",i,_get_table(&(a->toplevel))->entries[i],_get_table(&(b->toplevel))->entries[i]);
+	}
+	scheduler_resume();
+}

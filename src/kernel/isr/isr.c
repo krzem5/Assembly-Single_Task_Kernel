@@ -87,8 +87,16 @@ void _isr_handler(isr_state_t* isr_state){
 			LOG("[%u] %p",CPU_HEADER_DATA->index,isr_state->rip);
 		}
 		u64 rbp=isr_state->rbp;
+		vmm_pagemap_t current_pagemap;
+		vmm_get_pagemap(&current_pagemap);
 		while (rbp){
-			func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
+			if (vmm_virtual_to_physical(&current_pagemap,rbp)){
+				func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
+			}
+			else{
+				LOG("[%u] ??? [%p]",CPU_HEADER_DATA->index,rbp);
+				break;
+			}
 			if (func_name){
 				LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
 			}

@@ -28,6 +28,8 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 	}
 	sandbox_delete(process->sandbox);
 	vmm_memory_map_deinit(&(process->pagemap),&(process->mmap));
+	extern void AAAA(void*,void*);AAAA(&(process->pagemap),&vmm_kernel_pagemap);
+	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	// vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(&_process_allocator,process);
 });
