@@ -14,7 +14,7 @@ SECTIONS{
         *(.entry)
         *(.cversion)
         *(.ctext .ctext*)
-        /*. = ALIGN(0x1000); <--- breaks external drives*/
+        /*. = ALIGN(0x1000);*/ /*<--- breaks external drives*/
     }
     DECLARE_SECTION_END(core_ex)
     DECLARE_SECTION_START(core_nx)
