@@ -291,6 +291,7 @@ def _compile_user_files(program):
 				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+			print(file)
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
@@ -400,6 +401,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			command=["gcc-12","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+		print(file)
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
