@@ -7,6 +7,8 @@ SECTIONS{
         *(.entry)
         *(.cversion)
         *(.ctext .ctext*)
+    }
+    .core_nx : AT(ADDR(.core_nx) - __KERNEL_OFFSET__){
         *(.crdata .crdata*)
         . = ALIGN(8);
         __KERNEL_PMM_COUNTER_START__ = .;
@@ -23,6 +25,8 @@ SECTIONS{
         ASSERT(__KERNEL_CORE_END__ - __KERNEL_START__ <= 65536, "Kernel core too large");
         *(.version)
         *(.text .text*)
+    }
+    .kernel_nx : AT(ADDR(.kernel_nx) - __KERNEL_OFFSET__){
         *(.rodata .rodata* .rdata .rdata*)
         . = ALIGN(8);
         __KERNEL_CPU_LOCAL_START__ = .;
