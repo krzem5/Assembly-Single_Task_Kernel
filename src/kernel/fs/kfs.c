@@ -8,6 +8,16 @@
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "kfs"
+/*
+ * Required reworks:
+ * a) Allocate a fixed number of node descriptors
+ * b) Increase node side to 128 bytes
+ * c) Store file data:
+ *    i) inside the i-node
+ *    ii) list of blocks inside the i-node
+ *    iii) list of array blocks inside the i-node
+ * d) Store directory entries as a linked-list
+ */
 
 
 
