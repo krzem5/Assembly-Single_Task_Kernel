@@ -1,6 +1,7 @@
 ;;; 00000500 - 00000900: Stage2 bootloader
 ;;; 00004000 - 00007000: Stack
 ;;; 00007000 - 00007200: Kernel data
+;;; 00008000 - 00009000: Disk Buffer
 ;;; 00100000 - ????????: Kernel code
 
 
@@ -9,6 +10,8 @@
 %define STACK_BOTTOM 0x4000
 %define STACK_TOP 0x7000
 %define KERNEL_DATA 0x7000
+%define DISK_BUFFER 0x8000
+
 %define KERNEL_DATA_MMAP_LENGTH word [KERNEL_DATA]
 %define KERNEL_DATA_MMAP_PTR (KERNEL_DATA+8)
 %define KERNEL_DATA_MMAP_MAX_LEN 42
@@ -39,10 +42,25 @@ _start16:
 	mov gs, ax
 	mov ss, ax
 	;;; Store boot drive
+	or dl, dl
+	jnz ._skip_drive_fix
+	mov dl, 0x80
+._skip_drive_fix:
 	mov byte [boot_drive], dl
 	;;; Init stack
 	mov bp, STACK_TOP
 	mov sp, bp
+	;;; Store CD-ROM drive
+	mov eax, 0x4b01
+	mov si, cdrom_status_packet
+	mov byte [si+2], 0xe0
+	push si
+	int 0x13
+	pop si
+	jc ._no_cdrom_status
+	mov al, byte [si+2]
+	mov byte [cdrom_drive], al
+._no_cdrom_status:
 	;;; Init serial
 	mov al, 0x00
 	mov dx, 0x3f9
@@ -151,6 +169,14 @@ _start32:
 	;;; Start 32-bit bootloader
 	mov ebx, STRING_BOOTLOADER_STAGE2_32BIT_START
 	call ._print32
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;;; Load kernel
+	mov bx, STRING_LOAD_KERNEL
+	call ._print32
+	mov edi, KERNEL_MEM_ADDR
+	mov esi, 16
+	call _TEST_LOAD_DISK_CODE
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;;; Reallocate the kernel
 	mov ebx, STRING_REALLOC_KERNEL
 	call ._print32
@@ -208,6 +234,75 @@ _start32:
 ._print32_end:
 	popa
 	ret
+_TEST_LOAD_DISK_CODE:
+	; esi: disk offset, edi: buffer
+	pusha
+	push edi
+	mov dword [DISK_BUFFER], 0
+	mov dword [lbapacket.sector], esi
+	call switch_32_to_16
+[bits 16]
+	movzx edx, byte [boot_drive]
+	cmp dl, byte [cdrom_drive]
+	je ._read_from_cdrom
+	mov dword [lbapacket.count], 8
+	jmp ._read
+._read_from_cdrom:
+	mov dword [lbapacket.count], 2
+	shr dword [lbapacket.sector], 2
+._read:
+	mov ax, 0x4200
+	lea esi, lbapacket
+	clc
+	int 0x13
+	jmp $
+	call switch_16_to_32
+[bits 32]
+	pop edi
+	popa
+	jmp $
+	ret
+
+
+
+[bits 32]
+switch_32_to_16:
+	pop ebp
+	mov dword [hw_stack], esp
+	jmp (gdt16_code-gdt32_start):._init16
+[bits 16]
+._init16:
+	mov eax, cr0
+	and al, 0xfe
+	mov cr0, eax
+	xor ax, ax
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	jmp 0:._init16_code_seg
+._init16_code_seg:
+	mov esp, dword [hw_stack]
+	jmp bp
+[bits 16]
+switch_16_to_32:
+	xor ebp, ebp
+	pop bp
+	mov dword [hw_stack], esp
+	lgdt [gdt32_descriptor]
+	mov eax, cr0
+	or eax, 0x1
+	mov cr0, eax
+	jmp (gdt32_code-gdt32_start):._init32
+[bits 32]
+._init32:
+	mov ax, (gdt32_data-gdt32_start)
+	mov ds, ax
+	mov ss, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov esp, dword [hw_stack]
+	jmp ebp
 
 
 
@@ -241,11 +336,18 @@ STRING_MAP_KERNEL: db "Mapping kernel address range 0 - 3fffffff to ffffffffc000
 STRING_SETUP_64BIT_MODE_AND_START_KERNEL: db "Setting up 64-bit mode and starting kernel...",10,0
 
 
-
-boot_drive: db 0x00
+boot_drive:
+	db 0x00
+cdrom_drive:
+	db 0x00
+align 4
+hw_stack:
+	dd 0
 align 16
 gdt32_start:
 	dq 0x0000000000000000
+gdt16_code:
+	dq 0x000098000000ffff
 gdt32_code:
 	dq 0x00cf9a000000ffff
 gdt32_data:
@@ -262,8 +364,20 @@ gdt64_data:
 gdt64_pointer:
 	dw $-gdt64_start-1
 	dq gdt64_start
+lbapacket:
+	db 16
+	db 0
+.count:
+	dw 0
+	dd DISK_BUFFER
+.sector:
+	dd 0
+	dd 0
+cdrom_status_packet:
+	dq 0
 
 
 
-times (1024-($-$$)) db 0
+
+times (2048-($-$$)) db 0
 __BOOTLOADER_STAGE2_END__ equ $

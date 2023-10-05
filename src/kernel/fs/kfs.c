@@ -11,7 +11,7 @@
 /*
  * Required reworks:
  * a) Allocate a fixed number of node descriptors
- * b) Increase node side to 128 bytes
+ * b) Increase node side to 128 bytes [???]
  * c) Store file data:
  *    i) inside the i-node
  *    ii) list of blocks inside the i-node
