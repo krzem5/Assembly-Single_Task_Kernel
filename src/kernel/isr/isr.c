@@ -26,7 +26,7 @@ void isr_init(void){
 
 
 
-void _isr_handler(isr_state_t* isr_state){
+void KERNEL_NOCOVERAGE _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14){
 		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
 		if (!(isr_state->error&1)&&CPU_HEADER_DATA->current_thread&&vmm_map_shadow_page(&(THREAD_DATA->process->pagemap),address)){
