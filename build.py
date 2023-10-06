@@ -431,14 +431,17 @@ if (not os.path.exists("build/vm/OVMF_CODE.fd")):
 	subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"])
 if (not os.path.exists("build/vm/OVMF_VARS.fd")):
 	subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"])
-subprocess.run(["qemu-system-x86_64",
-	"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
-	"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
-	"-drive","file=build/uefi/disk.img,if=ide,format=raw",
-	"-serial","mon:stdio",
-	"-display","none"
-])
-quit()
+if (False):
+	subprocess.run(["qemu-system-x86_64",
+		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+		"-drive","file=build/uefi/disk.img,if=none,id=bootusb,format=raw",
+		"-device","nec-usb-xhci,id=xhci",
+		"-device","usb-storage,bus=xhci.0,drive=bootusb",
+		"-serial","mon:stdio",
+		"-display","none"
+	])
+	quit()
 ###############################################################################################################################
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
