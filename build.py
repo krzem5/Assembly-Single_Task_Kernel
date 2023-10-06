@@ -30,15 +30,21 @@ BUILD_DIRECTORIES=[
 	"build/disk/kernel",
 	"build/hashes",
 	"build/hashes/kernel",
+	"build/hashes/uefi",
 	"build/hashes/user",
 	"build/objects",
 	"build/objects/kernel",
 	"build/objects/kernel_coverage",
 	"build/objects/kernel_debug",
-	"build/objects/user_debug",
+	"build/objects/uefi",
 	"build/objects/user",
+	"build/objects/user_debug",
+	"build/uefi",
 	"build/vm"
 ]
+UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
+UEFI_FILE_DIRECTORY="src/uefi/"
+UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
 KERNEL_HASH_FILE_PATH={
 	MODE_NORMAL: "build/hashes/kernel/debug.txt",
 	MODE_COVERAGE: "build/hashes/kernel/coverage.txt",
@@ -380,6 +386,60 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
+changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
+object_files=[]
+rebuild_startup_disk=False
+error=False
+for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
+	for file_name in files:
+		suffix=file_name[file_name.rindex("."):]
+		if (suffix not in SOURCE_FILE_SUFFIXES):
+			continue
+		file=os.path.join(root,file_name)
+		object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			continue
+		rebuild_startup_disk=True
+		command=None
+		if (suffix==".c"):
+			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fPIC","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+		else:
+			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+		print(file)
+		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+			del file_hash_list[file]
+			error=True
+_save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
+if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi_loader.efi","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi_loader.efi","build/uefi_loader.efi"]).returncode!=0):
+	sys.exit(1)
+if (not os.path.exists("build/uefi/disk.img")):
+	rebuild_startup_disk=True
+	subprocess.run(["dd","if=/dev/zero","of=build/uefi/disk.img","bs=512","count=93750"])
+	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mklabel","gpt"])
+	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","EFI","FAT16","2048s","93716s"])
+	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","toggle","1","boot"])
+if (not os.path.exists("build/uefi/efi_partition.img")):
+	rebuild_startup_disk=True
+	subprocess.run(["dd","if=/dev/zero","of=build/uefi/efi_partition.img","bs=512","count=91669"])
+	subprocess.run(["mformat","-i","build/uefi/efi_partition.img","-h","32","-t","32","-n","64","-c","1"])
+	subprocess.run(["mmd","-i","build/uefi/efi_partition.img","::/EFI","::/EFI/BOOT"])
+if (rebuild_startup_disk):
+	subprocess.run(["mcopy","-i","build/uefi/efi_partition.img","-D","o","build/uefi_loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
+	subprocess.run(["dd","if=build/uefi/efi_partition.img","of=build/uefi/disk.img","bs=512","count=91669","seek=2048","conv=notrunc"])
+if (not os.path.exists("build/vm/OVMF_CODE.fd")):
+	subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"])
+if (not os.path.exists("build/vm/OVMF_VARS.fd")):
+	subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"])
+subprocess.run(["qemu-system-x86_64",
+	"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+	"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+	"-drive","file=build/uefi/disk.img,if=ide,format=raw",
+	"-serial","mon:stdio",
+	"-display","none"
+])
+quit()
+###############################################################################################################################
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
@@ -411,7 +471,7 @@ _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
 os.remove(KERNEL_VERSION_FILE_PATH)
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
-if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_SECTION_core_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"],kernel_symbols["__KERNEL_SECTION_kernel_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"])
@@ -439,7 +499,7 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
 		continue
 	object_files=runtime_object_files+_compile_user_files(program)
-	if (subprocess.run(["ld","-z","noexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
