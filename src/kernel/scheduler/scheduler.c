@@ -90,7 +90,7 @@ void KERNEL_CORE_CODE scheduler_resume(void){
 
 
 
-void scheduler_isr_handler(isr_state_t* state){
+void KERNEL_NOCOVERAGE scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
