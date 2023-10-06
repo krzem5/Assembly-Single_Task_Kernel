@@ -45,7 +45,7 @@ void scheduler_enable(void){
 
 
 
-void KERNEL_NOCOVERAGE KERNEL_CORE_CODE scheduler_pause(void){
+void KERNEL_CORE_CODE scheduler_pause(void){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -66,7 +66,7 @@ void KERNEL_NOCOVERAGE KERNEL_CORE_CODE scheduler_pause(void){
 
 
 
-void KERNEL_NOCOVERAGE KERNEL_CORE_CODE scheduler_resume(void){
+void KERNEL_CORE_CODE scheduler_resume(void){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -90,7 +90,7 @@ void KERNEL_NOCOVERAGE KERNEL_CORE_CODE scheduler_resume(void){
 
 
 
-void KERNEL_NOCOVERAGE scheduler_isr_handler(isr_state_t* state){
+void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
@@ -170,7 +170,7 @@ _Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out){
 
 
 
-void KERNEL_NOCOVERAGE scheduler_set_timer(u8 timer){
+void scheduler_set_timer(u8 timer){
 	scheduler_pause();
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	u64 ticks=clock_get_ticks();
