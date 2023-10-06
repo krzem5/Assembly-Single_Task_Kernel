@@ -28,10 +28,10 @@
 
 
 
-void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(void){
+void KERNEL_ENTRY_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* kernel_data){
 	cpu_check_features();
 	LOG_CORE("Starting kernel...");
-	kernel_init();
+	kernel_init(kernel_data);
 	pmm_init();
 	vmm_init();
 	pmm_init_high_mem();

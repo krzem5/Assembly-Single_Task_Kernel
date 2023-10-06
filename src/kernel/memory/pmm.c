@@ -103,9 +103,9 @@ void KERNEL_CORE_CODE pmm_init(void){
 	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
 	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
 	lock_init(&(_pmm_high_allocator.lock));
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
-		if ((KERNEL_DATA->mmap+i)->type==1){
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
+		if ((kernel_data.mmap+i)->type==1){
 			if (end>_pmm_low_allocator.last_address){
 				_pmm_low_allocator.last_address=(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end);
 			}
@@ -139,15 +139,15 @@ void KERNEL_CORE_CODE pmm_init(void){
 	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_address_range_end()-kernel_section_address_range_start())>>PAGE_SIZE_SHIFT;
 	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size+high_bitmap_size+pmm_counters_size;
 	LOG_CORE("Registering low memory...");
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		if ((KERNEL_DATA->mmap+i)->type!=1){
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		if ((kernel_data.mmap+i)->type!=1){
 			continue;
 		}
-		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
+		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
 		if (address<pmm_adjusted_kernel_end){
 			address=pmm_adjusted_kernel_end;
 		}
-		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
+		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(&_pmm_low_allocator,address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
 	}
 }
@@ -160,12 +160,12 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_pmm_counters=(void*)(((u64)_pmm_counters)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	LOG_CORE("Registering high memory...");
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		if ((KERNEL_DATA->mmap+i)->type!=1){
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		if ((kernel_data.mmap+i)->type!=1){
 			continue;
 		}
-		u64 address=pmm_align_up_address((KERNEL_DATA->mmap+i)->base);
-		u64 end=pmm_align_down_address((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
+		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
+		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(&_pmm_high_allocator,(address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
 }

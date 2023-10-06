@@ -247,12 +247,12 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 
 
 static void _generate_memory_ranges(user_data_header_t* header){
-	header->memory_range_count=KERNEL_DATA->mmap_size;
-	header->memory_ranges=umm_alloc(KERNEL_DATA->mmap_size*sizeof(user_numa_memory_range_t));
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		(header->memory_ranges+i)->base_address=(KERNEL_DATA->mmap+i)->base;
-		(header->memory_ranges+i)->length=(KERNEL_DATA->mmap+i)->length;
-		(header->memory_ranges+i)->type=(KERNEL_DATA->mmap+i)->type;
+	header->memory_range_count=kernel_data.mmap_size;
+	header->memory_ranges=umm_alloc(kernel_data.mmap_size*sizeof(user_numa_memory_range_t));
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		(header->memory_ranges+i)->base_address=(kernel_data.mmap+i)->base;
+		(header->memory_ranges+i)->length=(kernel_data.mmap+i)->length;
+		(header->memory_ranges+i)->type=(kernel_data.mmap+i)->type;
 	}
 }
 

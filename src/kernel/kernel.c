@@ -25,10 +25,13 @@ static KERNEL_CORE_RDATA const char _kernel_memory_normal[]="";
 
 static KERNEL_CORE_RDATA const char _kernel_file_path_format_template[]="%s:/kernel/kernel.bin";
 
+kernel_data_t KERNEL_CORE_DATA kernel_data;
 
 
-void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
+
+void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	LOG_CORE("Loading kernel data...");
+	kernel_data=*bootloader_kernel_data;
 	INFO_CORE("Version: %lx",kernel_get_version());
 	INFO_CORE("Sections:");
 	PRINT_SECTION_DATA(address_range);
@@ -43,10 +46,10 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(void){
 	PRINT_SECTION_DATA(bss);
 	INFO_CORE("Mmap Data:");
 	u64 total=0;
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		INFO_CORE("  %p - %p%s",(KERNEL_DATA->mmap+i)->base,(KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length,((KERNEL_DATA->mmap+i)->type==1?_kernel_memory_normal:_kernel_memory_unusable));
-		if ((KERNEL_DATA->mmap+i)->type==1){
-			total+=(KERNEL_DATA->mmap+i)->length;
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		INFO_CORE("  %p - %p%s",(kernel_data.mmap+i)->base,(kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length,((kernel_data.mmap+i)->type==1?_kernel_memory_normal:_kernel_memory_unusable));
+		if ((kernel_data.mmap+i)->type==1){
+			total+=(kernel_data.mmap+i)->length;
 		}
 	}
 	INFO_CORE("Total: %v (%lu B)",total,total);

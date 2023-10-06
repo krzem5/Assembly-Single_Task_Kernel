@@ -135,8 +135,8 @@ void KERNEL_CORE_CODE vmm_init(void){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	u64 highest_address=0;
-	for (u16 i=0;i<KERNEL_DATA->mmap_size;i++){
-		u64 end=pmm_align_up_address_extra_large((KERNEL_DATA->mmap+i)->base+(KERNEL_DATA->mmap+i)->length);
+	for (u16 i=0;i<kernel_data.mmap_size;i++){
+		u64 end=pmm_align_up_address_extra_large((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		if (end>highest_address){
 			highest_address=end;
 		}

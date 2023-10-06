@@ -226,6 +226,7 @@ _start64:
 	mov rsp, (KERNEL_OFFSET+STACK_TOP)
 	xor rbp, rbp
 	;;; Start kernel
+	lea rdi, KERNEL_DATA
 	jmp (KERNEL_OFFSET+KERNEL_MEM_ADDR)
 
 

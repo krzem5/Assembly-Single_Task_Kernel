@@ -4,8 +4,6 @@
 
 
 
-#define KERNEL_DATA ((const kernel_data_t*)0xffffffffc0007000)
-
 #define _KERNEL_DECLARE_SECTION(name) \
 	static KERNEL_INLINE u64 KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_section_##name##_start(void){ \
 		extern u64 __KERNEL_SECTION_##name##_START__[1]; \
@@ -33,6 +31,7 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 
 extern const u64 __core_version;
 extern const u64 kernel_symbols[];
+extern kernel_data_t kernel_data;
 
 
 
@@ -69,7 +68,7 @@ _KERNEL_DECLARE_SECTION(sandbox);
 
 
 
-void kernel_init(void);
+void kernel_init(const kernel_data_t* bootloader_kernel_data);
 
 
 
