@@ -524,7 +524,7 @@ if ("--run" in sys.argv):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	############################################################################################
-	if (True):
+	if (False):
 		subprocess.run([
 			"qemu-system-x86_64",
 			# Bios

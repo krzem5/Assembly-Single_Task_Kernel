@@ -221,6 +221,11 @@ def format_partition(backend):
 	if (_alloc_inode(backend,root_block)):
 		raise RuntimeError
 	######################################
+	# struct.pack("<QH",
+	# 	size,
+	# 	hard_link_count
+	# )
 	root_block.kernel_inode=1
 	root_block.save()
+	# quit()
 	######################################
