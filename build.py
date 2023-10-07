@@ -415,18 +415,22 @@ if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-
 	sys.exit(1)
 if (not os.path.exists("build/uefi/disk.img")):
 	rebuild_startup_disk=True
-	subprocess.run(["dd","if=/dev/zero","of=build/uefi/disk.img","bs=512","count=93750"])
+	subprocess.run(["dd","if=/dev/zero","of=build/uefi/disk.img","bs=512","count=262144"])
 	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mklabel","gpt"])
-	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","EFI","FAT16","2048s","93716s"])
+	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
+	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","DATA","93717s","262110s"])
 	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","toggle","1","boot"])
 if (not os.path.exists("build/uefi/efi_partition.img")):
 	rebuild_startup_disk=True
-	subprocess.run(["dd","if=/dev/zero","of=build/uefi/efi_partition.img","bs=512","count=91669"])
-	subprocess.run(["mformat","-i","build/uefi/efi_partition.img","-h","32","-t","32","-n","64","-c","1"])
+	subprocess.run(["dd","if=/dev/zero","of=build/uefi/efi_partition.img","bs=512","count=93683"])
+	subprocess.run(["mformat","-i","build/uefi/efi_partition.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/uefi/efi_partition.img","::/EFI","::/EFI/BOOT"])
 if (rebuild_startup_disk):
 	subprocess.run(["mcopy","-i","build/uefi/efi_partition.img","-D","o","build/uefi_loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/uefi/efi_partition.img","of=build/uefi/disk.img","bs=512","count=91669","seek=2048","conv=notrunc"])
+	subprocess.run(["dd","if=build/uefi/efi_partition.img","of=build/uefi/disk.img","bs=512","count=93683","seek=34","conv=notrunc"])
+	with open("/tmp/aaa.txt","wb") as wf:
+		wf.write(b"KFS2ROOT"+b"\x00"*(512-8))
+	subprocess.run(["dd","if=/tmp/aaa.txt","of=build/uefi/disk.img","bs=512","count=1","seek=93717","conv=notrunc"])
 if (not os.path.exists("build/vm/OVMF_CODE.fd")):
 	subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"])
 if (not os.path.exists("build/vm/OVMF_VARS.fd")):
