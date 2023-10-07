@@ -39,6 +39,7 @@ BUILD_DIRECTORIES=[
 	"build/objects/uefi",
 	"build/objects/user",
 	"build/objects/user_debug",
+	"build/partitions",
 	"build/uefi",
 	"build/vm"
 ]
@@ -388,7 +389,7 @@ for dir in BUILD_DIRECTORIES:
 		os.mkdir(dir)
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]
-rebuild_startup_disk=False
+rebuild_uefi_partition=False
 error=False
 for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 	for file_name in files:
@@ -400,7 +401,7 @@ for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			continue
-		rebuild_startup_disk=True
+		rebuild_uefi_partition=True
 		command=None
 		if (suffix==".c"):
 			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fPIC","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
@@ -411,45 +412,12 @@ for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 			del file_hash_list[file]
 			error=True
 _save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
-if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi_loader.efi","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi_loader.efi","build/uefi_loader.efi"]).returncode!=0):
+if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
 	sys.exit(1)
-if (not os.path.exists("build/uefi/disk.img")):
-	rebuild_startup_disk=True
-	subprocess.run(["dd","if=/dev/zero","of=build/uefi/disk.img","bs=512","count=262144"])
-	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mklabel","gpt"])
-	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
-	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","mkpart","DATA","93717s","262110s"])
-	subprocess.run(["parted","build/uefi/disk.img","-s","-a","minimal","toggle","1","boot"])
-if (not os.path.exists("build/uefi/efi_partition.img")):
-	rebuild_startup_disk=True
-	subprocess.run(["dd","if=/dev/zero","of=build/uefi/efi_partition.img","bs=512","count=93683"])
-	subprocess.run(["mformat","-i","build/uefi/efi_partition.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
-	subprocess.run(["mmd","-i","build/uefi/efi_partition.img","::/EFI","::/EFI/BOOT"])
-if (rebuild_startup_disk):
-	subprocess.run(["mcopy","-i","build/uefi/efi_partition.img","-D","o","build/uefi_loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/uefi/efi_partition.img","of=build/uefi/disk.img","bs=512","count=93683","seek=34","conv=notrunc"])
-	with open("/tmp/aaa.txt","wb") as wf:
-		wf.write(b"KFS2ROOT"+b"\x00"*(512-8))
-	subprocess.run(["dd","if=/tmp/aaa.txt","of=build/uefi/disk.img","bs=512","count=1","seek=93717","conv=notrunc"])
-if (not os.path.exists("build/vm/OVMF_CODE.fd")):
-	subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"])
-if (not os.path.exists("build/vm/OVMF_VARS.fd")):
-	subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"])
-if (False):
-	subprocess.run(["qemu-system-x86_64",
-		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
-		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
-		"-drive","file=build/uefi/disk.img,if=none,id=bootusb,format=raw",
-		"-device","nec-usb-xhci,id=xhci",
-		"-device","usb-storage,bus=xhci.0,drive=bootusb",
-		"-serial","mon:stdio",
-		"-display","none"
-	])
-	quit()
-###############################################################################################################################
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
+rebuild_data_partition=False
 error=False
 kernel_symbols=[]
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
@@ -464,6 +432,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			_read_extracted_object_file_symbols(object_file,kernel_symbols)
 			continue
 		command=None
+		rebuild_data_partition=True
 		if (suffix==".c"):
 			command=["gcc-12","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
@@ -512,6 +481,32 @@ with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/disk"]).returncode!=0):
 	sys.exit(1)
+if (not os.path.exists("build/install_disk.img")):
+	rebuild_uefi_partition=True
+	rebuild_data_partition=True
+	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img","bs=512","count=262144"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s","262110s"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+if (not os.path.exists("build/partitions/efi.img")):
+	rebuild_uefi_partition=True
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img","bs=512","count=93683"])
+	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
+	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
+if (not os.path.exists("build/partitions/data.img")):
+	rebuild_data_partition=True
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img","bs=512","count=168394"])
+	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
+	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
+if (rebuild_uefi_partition):
+	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
+	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img","bs=512","count=93683","seek=34","conv=notrunc"])
+if (rebuild_data_partition):
+	with open("/tmp/aaa.txt","wb") as wf:
+		wf.write(b"KFS2ROOT"+b"\x00"*(512-8))
+	subprocess.run(["dd","if=/tmp/aaa.txt","of=build/partitions/data.img","bs=512","count=1","seek=0","conv=notrunc"])
+	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img","bs=512","count=168394","seek=93717","conv=notrunc"])
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -519,6 +514,25 @@ if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/ssd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
 			sys.exit(1)
+	if (not os.path.exists("build/vm/OVMF_CODE.fd")):
+		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+			sys.exit(1)
+	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
+		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+			sys.exit(1)
+	############################################################################################
+	if (False):
+		subprocess.run(["qemu-system-x86_64",
+			"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+			"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+			"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
+			"-device","nec-usb-xhci,id=xhci",
+			"-device","usb-storage,bus=xhci.0,drive=bootusb",
+			"-serial","mon:stdio",
+			"-display","none"
+		])
+		quit()
+	############################################################################################
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
