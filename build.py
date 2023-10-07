@@ -1,4 +1,5 @@
 import array
+import binascii
 import hashlib
 import os
 import socket
@@ -102,6 +103,8 @@ KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
+INSTALL_DISK_SIZE=262144
+INSTALL_DISK_BLOCK_SIZE=512
 
 
 
@@ -309,6 +312,99 @@ def _compile_user_files(program):
 
 
 
+KFS2_SIGNATURE=0x544f4f523253464b
+KFS2_BLOCKS_PER_INODE=64
+KFS2_INODE_SIZE=128
+KFS2_MAX_INODES=0x100000000
+KFS2_BITMAP_LEVEL_COUNT=5
+KFS2_MAX_DISK_BLOCK_COUNT=2**48//INSTALL_DISK_BLOCK_SIZE
+def _kfs2_compute_bitmap(size):
+	out=[]
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		size=(size+63)>>6
+		out.append(size)
+	return out
+
+
+
+def _kfs2_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap):
+	offset=0
+	inode_allocation_bitmap_offsets=[]
+	data_block_allocation_bitmap_offsets=[]
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		inode_allocation_bitmap_offsets.append(offset)
+		offset+=inode_allocation_bitmap[i]
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		data_block_allocation_bitmap_offsets.append(offset)
+		offset+=data_block_allocation_bitmap[i]
+	return inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets
+
+
+
+def _kfs2_init_bitmap(wf,base_offset,count,bitmap,bitmap_offsets):
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		wf.seek(base_offset+bitmap_offsets[i]*8)
+		new_count=0
+		for j in range(0,bitmap[i]):
+			mask=0
+			if (count>=64):
+				mask=0xffffffffffffffff
+				new_count=j
+				count-=64
+			elif (count):
+				mask=(1<<count)-1
+				new_count=j
+				count=0
+			wf.write(struct.pack("<Q",mask))
+		count=new_count+1
+
+
+
+def _kfs2_compute_crc(wf,offset,length):
+	wf.seek(offset)
+	wf.write(struct.pack("<I",binascii.crc32(wf.read(length))))
+
+
+
+def _kfs2_format_partition(file_path,block_count):
+	if (block_count>KFS2_MAX_DISK_BLOCK_COUNT):
+		block_count=KFS2_MAX_DISK_BLOCK_COUNT
+	with open(file_path,"r+b") as wf:
+		inode_block_count=block_count//KFS2_BLOCKS_PER_INODE
+		inode_count=INSTALL_DISK_BLOCK_SIZE//KFS2_INODE_SIZE*inode_block_count
+		if (inode_count>KFS2_MAX_INODES):
+			inode_count=KFS2_MAX_INODES
+		inode_allocation_bitmap=_kfs2_compute_bitmap(inode_count)
+		inode_allocation_bitmap_entry_count=sum(inode_allocation_bitmap)
+		first_inode_block=1
+		first_data_block=first_inode_block+inode_block_count
+		data_block_allocation_bitmap=_kfs2_compute_bitmap(block_count-first_data_block)
+		data_block_allocation_bitmap_entry_count=sum(data_block_allocation_bitmap)
+		first_bitmap_block=block_count-((inode_allocation_bitmap_entry_count+data_block_allocation_bitmap_entry_count)*8+INSTALL_DISK_BLOCK_SIZE-1)//INSTALL_DISK_BLOCK_SIZE
+		data_block_count=first_bitmap_block-first_data_block
+		inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets=_kfs2_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap)
+		wf.seek(0)
+		wf.write(struct.pack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
+			KFS2_SIGNATURE,
+			block_count,
+			inode_count,
+			data_block_count,
+			first_inode_block,
+			first_data_block,
+			first_bitmap_block,
+			*inode_allocation_bitmap_offsets,
+			*data_block_allocation_bitmap_offsets,
+			inode_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
+			data_block_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
+			1, # kernel inode (zero === no kernel)
+			0  # CRC
+		))
+		_kfs2_compute_crc(wf,0,144)
+		_kfs2_init_bitmap(wf,first_bitmap_block*INSTALL_DISK_BLOCK_SIZE,inode_count,inode_allocation_bitmap,inode_allocation_bitmap_offsets)
+		_kfs2_init_bitmap(wf,first_bitmap_block*INSTALL_DISK_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
+
+
+
 def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
@@ -484,29 +580,25 @@ if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","is
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
 	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img","bs=512","count=262144"])
+	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
 	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
 	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s","262110s"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s",f"{INSTALL_DISK_SIZE-34}s"])
 	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
 if (not os.path.exists("build/partitions/efi.img")):
 	rebuild_uefi_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img","bs=512","count=93683"])
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683"])
 	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
 if (not os.path.exists("build/partitions/data.img")):
 	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img","bs=512","count=168394"])
-	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
-	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}"])
+	_kfs2_format_partition("build/partitions/data.img",INSTALL_DISK_SIZE-93717+1)
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img","bs=512","count=93683","seek=34","conv=notrunc"])
+	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683","seek=34","conv=notrunc"])
 if (rebuild_data_partition):
-	with open("/tmp/aaa.txt","wb") as wf:
-		wf.write(b"KFS2ROOT"+b"\x00"*(512-8))
-	subprocess.run(["dd","if=/tmp/aaa.txt","of=build/partitions/data.img","bs=512","count=1","seek=0","conv=notrunc"])
-	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img","bs=512","count=168394","seek=93717","conv=notrunc"])
+	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}","seek=93717","conv=notrunc"])
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -521,15 +613,59 @@ if ("--run" in sys.argv):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	############################################################################################
-	if (False):
-		subprocess.run(["qemu-system-x86_64",
+	if (True):
+		subprocess.run([
+			"qemu-system-x86_64",
+			# Bios
 			"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 			"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+			# Drive files
+			"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
+			"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
 			"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
+			# Drives
+			"-device","ahci,id=ahci",
+			"-device","ide-hd,drive=hdd,bus=ahci.0",
+			"-device","nvme,serial=00112233,drive=ssd",
+			# USB
 			"-device","nec-usb-xhci,id=xhci",
 			"-device","usb-storage,bus=xhci.0,drive=bootusb",
+			# Network
+			"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
+			"-device","e1000,netdev=network",
+			# Memory
+			"-m","2G,slots=2,maxmem=4G",
+			"-object","memory-backend-ram,size=1G,id=mem0",
+			"-object","memory-backend-ram,size=1G,id=mem1",
+			# CPU
+			"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
+			"-smp","8,sockets=2,cores=2,threads=2,maxcpus=8",
+			# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
+			# NUMA
+			"-numa","node,nodeid=0,memdev=mem0",
+			"-numa","node,nodeid=1,memdev=mem1",
+			"-numa","cpu,node-id=0,socket-id=0",
+			"-numa","cpu,node-id=1,socket-id=1",
+			"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
+			"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+			"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
+			"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+			"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
+			"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+			"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
+			"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+			"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+			"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+			"-numa","dist,src=0,dst=1,val=20",
+			# Graphics
+			"-display","none",
+			# Serial
 			"-serial","mon:stdio",
-			"-display","none"
+			"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
+			# Config
+			"-machine","hmat=on",
+			"-uuid","00112233-4455-6677-8899-aabbccddeeff",
+			"-smbios","type=2,serial=SERIAL_NUMBER"
 		])
 		quit()
 	############################################################################################
