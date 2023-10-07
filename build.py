@@ -485,31 +485,27 @@ with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/disk"]).returncode!=0):
 	sys.exit(1)
-data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93717,INSTALL_DISK_SIZE-34)
-if (not os.path.exists("build/install_disk.img") or True):
+if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
 	rebuild_data_partition=True
-	# subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
-	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
-	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
-	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s",f"{INSTALL_DISK_SIZE-34}s"])
-	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
-	kfs2.format_partition(data_fs)
+	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
+	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
 if (not os.path.exists("build/partitions/efi.img")):
 	rebuild_uefi_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683"])
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
 	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
-# if (not os.path.exists("build/partitions/data.img")):
-# 	rebuild_data_partition=True
-# 	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}"])
-# 	_kfs2_format_partition("build/partitions/data.img",INSTALL_DISK_SIZE-93717+1)
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683","seek=34","conv=notrunc"])
-# if (rebuild_data_partition):
-# 	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}","seek=93717","conv=notrunc"])
-data_fs.close()
+	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
+if (rebuild_data_partition or True):
+	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
+	kfs2.format_partition(data_fs)
+	print(kfs2.get_or_create_file(data_fs,"/boot/kernel.bin"))
+	data_fs.close()
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
