@@ -1,6 +1,7 @@
 import array
 import binascii
 import hashlib
+import kfs2
 import os
 import socket
 import struct
@@ -312,99 +313,6 @@ def _compile_user_files(program):
 
 
 
-KFS2_SIGNATURE=0x544f4f523253464b
-KFS2_BLOCKS_PER_INODE=64
-KFS2_INODE_SIZE=128
-KFS2_MAX_INODES=0x100000000
-KFS2_BITMAP_LEVEL_COUNT=5
-KFS2_MAX_DISK_BLOCK_COUNT=2**48//INSTALL_DISK_BLOCK_SIZE
-def _kfs2_compute_bitmap(size):
-	out=[]
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		size=(size+63)>>6
-		out.append(size)
-	return out
-
-
-
-def _kfs2_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap):
-	offset=0
-	inode_allocation_bitmap_offsets=[]
-	data_block_allocation_bitmap_offsets=[]
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		inode_allocation_bitmap_offsets.append(offset)
-		offset+=inode_allocation_bitmap[i]
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		data_block_allocation_bitmap_offsets.append(offset)
-		offset+=data_block_allocation_bitmap[i]
-	return inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets
-
-
-
-def _kfs2_init_bitmap(wf,base_offset,count,bitmap,bitmap_offsets):
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		wf.seek(base_offset+bitmap_offsets[i]*8)
-		new_count=0
-		for j in range(0,bitmap[i]):
-			mask=0
-			if (count>=64):
-				mask=0xffffffffffffffff
-				new_count=j
-				count-=64
-			elif (count):
-				mask=(1<<count)-1
-				new_count=j
-				count=0
-			wf.write(struct.pack("<Q",mask))
-		count=new_count+1
-
-
-
-def _kfs2_compute_crc(wf,offset,length):
-	wf.seek(offset)
-	wf.write(struct.pack("<I",binascii.crc32(wf.read(length))))
-
-
-
-def _kfs2_format_partition(file_path,block_count):
-	if (block_count>KFS2_MAX_DISK_BLOCK_COUNT):
-		block_count=KFS2_MAX_DISK_BLOCK_COUNT
-	with open(file_path,"r+b") as wf:
-		inode_block_count=block_count//KFS2_BLOCKS_PER_INODE
-		inode_count=INSTALL_DISK_BLOCK_SIZE//KFS2_INODE_SIZE*inode_block_count
-		if (inode_count>KFS2_MAX_INODES):
-			inode_count=KFS2_MAX_INODES
-		inode_allocation_bitmap=_kfs2_compute_bitmap(inode_count)
-		inode_allocation_bitmap_entry_count=sum(inode_allocation_bitmap)
-		first_inode_block=1
-		first_data_block=first_inode_block+inode_block_count
-		data_block_allocation_bitmap=_kfs2_compute_bitmap(block_count-first_data_block)
-		data_block_allocation_bitmap_entry_count=sum(data_block_allocation_bitmap)
-		first_bitmap_block=block_count-((inode_allocation_bitmap_entry_count+data_block_allocation_bitmap_entry_count)*8+INSTALL_DISK_BLOCK_SIZE-1)//INSTALL_DISK_BLOCK_SIZE
-		data_block_count=first_bitmap_block-first_data_block
-		inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets=_kfs2_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap)
-		wf.seek(0)
-		wf.write(struct.pack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
-			KFS2_SIGNATURE,
-			block_count,
-			inode_count,
-			data_block_count,
-			first_inode_block,
-			first_data_block,
-			first_bitmap_block,
-			*inode_allocation_bitmap_offsets,
-			*data_block_allocation_bitmap_offsets,
-			inode_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
-			data_block_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
-			1, # kernel inode (zero === no kernel)
-			0  # CRC
-		))
-		_kfs2_compute_crc(wf,0,144)
-		_kfs2_init_bitmap(wf,first_bitmap_block*INSTALL_DISK_BLOCK_SIZE,inode_count,inode_allocation_bitmap,inode_allocation_bitmap_offsets)
-		_kfs2_init_bitmap(wf,first_bitmap_block*INSTALL_DISK_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
-
-
-
 def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
@@ -577,28 +485,31 @@ with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/disk"]).returncode!=0):
 	sys.exit(1)
-if (not os.path.exists("build/install_disk.img")):
+data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93717,INSTALL_DISK_SIZE-34)
+if (not os.path.exists("build/install_disk.img") or True):
 	rebuild_uefi_partition=True
 	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s",f"{INSTALL_DISK_SIZE-34}s"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+	# subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
+	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
+	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93716s"])
+	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93717s",f"{INSTALL_DISK_SIZE-34}s"])
+	# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+	kfs2.format_partition(data_fs)
 if (not os.path.exists("build/partitions/efi.img")):
 	rebuild_uefi_partition=True
 	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683"])
 	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
-if (not os.path.exists("build/partitions/data.img")):
-	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}"])
-	_kfs2_format_partition("build/partitions/data.img",INSTALL_DISK_SIZE-93717+1)
+# if (not os.path.exists("build/partitions/data.img")):
+# 	rebuild_data_partition=True
+# 	subprocess.run(["dd","if=/dev/zero","of=build/partitions/data.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}"])
+# 	_kfs2_format_partition("build/partitions/data.img",INSTALL_DISK_SIZE-93717+1)
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93683","seek=34","conv=notrunc"])
-if (rebuild_data_partition):
-	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}","seek=93717","conv=notrunc"])
+# if (rebuild_data_partition):
+# 	subprocess.run(["dd","if=build/partitions/data.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE-93717+1}","seek=93717","conv=notrunc"])
+data_fs.close()
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -613,7 +524,7 @@ if ("--run" in sys.argv):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	############################################################################################
-	if (False):
+	if (True):
 		subprocess.run([
 			"qemu-system-x86_64",
 			# Bios
