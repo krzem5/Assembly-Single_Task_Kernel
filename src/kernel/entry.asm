@@ -36,6 +36,4 @@ _entry:
 	mov cr3, rsi
 	jmp (KERNEL_OFFSET+._skip_pagemap_fix)
 ._skip_pagemap_fix:
-	; mov rax, 0xabababababababab
-	; jmp $
 	jmp main
