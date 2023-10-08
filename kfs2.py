@@ -1,3 +1,4 @@
+import array
 import binascii
 import struct
 
@@ -14,15 +15,16 @@ KFS2_BLOCK_SIZE=4096
 KFS2_INODE_FLAG_FILE=0x0000
 KFS2_INODE_FLAG_DIRECTORY=0x0001
 
-KFS2_INODE_STORAGE_MASK=0x0006
+KFS2_INODE_STORAGE_MASK=0x000e
 KFS2_INODE_STORAGE_TYPE_INLINE=0x0000
 KFS2_INODE_STORAGE_TYPE_SINGLE=0x0002
 KFS2_INODE_STORAGE_TYPE_DOUBLE=0x0004
 KFS2_INODE_STORAGE_TYPE_TRIPLE=0x0006
+KFS2_INODE_STORAGE_TYPE_QUADRUPLE=0x0008
 
 
 
-__all__=["KFS2FileBackend","format_partition","get_or_create_file"]
+__all__=["KFS2FileBackend","format_partition","get_inode","set_file_content","set_kernel_inode"]
 
 
 
@@ -47,7 +49,7 @@ class KFS2FileBackend(object):
 	def read(self,length):
 		if (self._file.tell()+length>=self.end):
 			raise RuntimeError
-		return self._file.read(length)
+		return bytearray(self._file.read(length))
 
 	def write(self,data):
 		if (self._file.tell()+len(data)>=self.end):
@@ -168,6 +170,102 @@ class KFS2Node(object):
 
 
 
+class KFS2NodeDataProviderChunk(object):
+	def __init__(self,offset,data,length):
+		self.offset=offset
+		self.data=data
+		self.length=length
+
+
+
+class KFS2NodeDataProvider(object):
+	def __init__(self,backend,root_block,node,flags=None,node_data=None):
+		self._backend=backend
+		self._data_offset=(root_block.first_data_block if isinstance(root_block,KFS2RootBlock) else root_block)
+		self.node=node
+		self.flags=(flags if flags is not None else node.flags)
+		self.data=(node_data if node_data is not None else node.data)
+
+	def resize(self,size):
+		if (self.node.size):
+			old_data_provider=KFS2NodeDataProvider(self._backend,self._data_offset,None,self.flags,self.data)
+			raise RuntimeError("Unimplemented")
+		root_block=KFS2RootBlock.load(self._backend)
+		self.node.size=size
+		self.node.flags&=~KFS2_INODE_STORAGE_MASK
+		if (size<=48):
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_INLINE
+			return
+		if (size<=6*KFS2_BLOCK_SIZE):
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_SINGLE
+			raise RuntimeError("Init KFS2_INODE_STORAGE_TYPE_SINGLE")
+		if (size<=KFS2_BLOCK_SIZE**2//8):
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_DOUBLE
+			buffer=array.array("Q")
+			for i in range(0,KFS2_BLOCK_SIZE//8):
+				if (i*KFS2_BLOCK_SIZE<size):
+					buffer.append(_alloc_data_block(self._backend,root_block))
+				else:
+					buffer.append(0)
+			root_block=_alloc_data_block(self._backend,root_block)
+			self._backend.seek(self._data_offset+root_block*KFS2_BLOCK_SIZE)
+			self._backend.write(buffer.tobytes())
+			self.data[:8]=struct.pack("<Q",root_block)
+			return
+		if (size<=KFS2_BLOCK_SIZE**3//64):
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_TRIPLE
+			raise RuntimeError("Init KFS2_INODE_STORAGE_TYPE_TRIPLE")
+		if (size<=KFS2_BLOCK_SIZE**4//512):
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_QUADRUPLE
+			raise RuntimeError("Init KFS2_INODE_STORAGE_TYPE_QUADRUPLE")
+		raise RuntimeError("size too large")
+
+	def get_chunk_at_offset(self,offset):
+		if (offset>=self.node.size):
+			return None
+		storage=self.node.flags&KFS2_INODE_STORAGE_MASK
+		if (storage==KFS2_INODE_STORAGE_TYPE_INLINE):
+			if (offset>=48):
+				return None
+			return KFS2NodeDataProviderChunk(0,self.data,48)
+		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
+		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
+			index=offset//KFS2_BLOCK_SIZE
+			if (index>=KFS2_BLOCK_SIZE//8):
+				return None
+			self._backend.seek(self._data_offset+struct.unpack("<Q",self.data[:8])[0]*KFS2_BLOCK_SIZE+index*8)
+			self._backend.seek(self._data_offset+self._backend.read_u64()*KFS2_BLOCK_SIZE)
+			return KFS2NodeDataProviderChunk(index*KFS2_BLOCK_SIZE,self._backend.read(KFS2_BLOCK_SIZE),KFS2_BLOCK_SIZE)
+		elif (storage==KFS2_INODE_STORAGE_TYPE_TRIPLE):
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_TRIPLE")
+		else:
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_QUADRUPLE")
+
+	def save_chunk(self,chunk):
+		if (chunk.offset>=self.node.size):
+			raise RuntimeError("Wrong offset")
+		storage=self.node.flags&KFS2_INODE_STORAGE_MASK
+		if (storage==KFS2_INODE_STORAGE_TYPE_INLINE):
+			if (chunk.offset!=0):
+				raise RuntimeError("Wrong offset")
+			self.data[:]=chunk.data
+		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
+		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
+			index=chunk.offset//KFS2_BLOCK_SIZE
+			if (index>=KFS2_BLOCK_SIZE//8 or chunk.offset&(KFS2_BLOCK_SIZE-1)):
+				raise RuntimeError("Wrong offset")
+			self._backend.seek(self._data_offset+struct.unpack("<Q",self.data[:8])[0]*KFS2_BLOCK_SIZE+index*8)
+			self._backend.seek(self._data_offset+self._backend.read_u64()*KFS2_BLOCK_SIZE)
+			self._backend.write(chunk.data)
+		elif (storage==KFS2_INODE_STORAGE_TYPE_TRIPLE):
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_TRIPLE")
+		else:
+			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_QUADRUPLE")
+
+
+
 class KFS2DirectoryEntry(object):
 	def __init__(self,inode,size,name_length,type,name):
 		self.inode=inode
@@ -272,6 +370,36 @@ def _alloc_inode(backend,root_block):
 
 
 
+def _alloc_data_block(backend,root_block):
+	offset=root_block.first_bitmap_block*KFS2_BLOCK_SIZE
+	backend.seek(offset+root_block.data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1])
+	idx=0
+	while (True):
+		mask=backend.read_u64()
+		if (mask):
+			idx=ffs(mask)|(idx<<6)
+			break
+		idx+=1
+		if (idx==root_block.data_block_allocation_bitmap_highest_level_length):
+			raise RuntimeError
+	for i in range(KFS2_BITMAP_LEVEL_COUNT-2,-1,-1):
+		backend.seek(offset+root_block.data_block_allocation_bitmap_offsets[i]+(idx<<3))
+		idx=ffs(backend.read_u64())|(idx<<6)
+	out=idx
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		idx>>=6
+		k=offset+root_block.data_block_allocation_bitmap_offsets[i]+(idx<<3)
+		backend.seek(k)
+		mask=backend.read_u64()
+		mask&=mask-1
+		backend.seek(k)
+		backend.write_u64(mask)
+		if (mask):
+			break
+	return out
+
+
+
 def _init_node_as_file(backend,root_block,inode):
 	out=KFS2Node(
 		backend,
@@ -335,7 +463,7 @@ def format_partition(backend):
 
 
 
-def get_or_create_file(backend,path):
+def get_inode(backend,path):
 	root_block=KFS2RootBlock.load(backend)
 	node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,0))
 	out=0
@@ -350,11 +478,15 @@ def get_or_create_file(backend,path):
 		new_entry_size=KFS2DirectoryEntry.get_entry_size_for_name(name)
 		best_entry_padding=0xffffffff
 		best_entry_offset=None
+		data_provider=KFS2NodeDataProvider(backend,root_block,node)
 		offset=0
 		child_found=False
-		if (storage==KFS2_INODE_STORAGE_TYPE_INLINE):
-			for j in range(0,node.size):
-				entry=KFS2DirectoryEntry.decode(node.data[offset:])
+		while (not child_found):
+			chunk=data_provider.get_chunk_at_offset(offset)
+			if (chunk is None):
+				break
+			while (offset<chunk.offset+chunk.length):
+				entry=KFS2DirectoryEntry.decode(chunk.data[offset-chunk.offset:])
 				if (entry.name_length==0):
 					padding=entry.size-new_entry_size
 					if (best_entry_padding==0xffffffff or (padding>=0 and padding<best_entry_padding)):
@@ -366,12 +498,6 @@ def get_or_create_file(backend,path):
 					child_found=True
 					break
 				offset+=entry.size
-		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
-		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_DOUBLE")
-		else:
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_TRIPLE")
 		if (child_found):
 			continue
 		child_inode=_alloc_inode(backend,root_block)
@@ -381,16 +507,12 @@ def get_or_create_file(backend,path):
 		if (best_entry_padding<12):
 			new_entry_size+=best_entry_padding
 			best_entry_padding=0
-		if (storage==KFS2_INODE_STORAGE_TYPE_INLINE):
-			node.data[best_entry_offset:best_entry_offset+new_entry_size]=KFS2DirectoryEntry(child_inode,new_entry_size,len(name),type,bytes(name,"utf-8")).encode()
-			if (best_entry_padding):
-				node.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(child_inode,best_entry_padding,0,0,b"").encode()
-		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
-		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_DOUBLE")
-		else:
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_TRIPLE")
+		chunk=data_provider.get_chunk_at_offset(best_entry_offset)
+		best_entry_offset-=chunk.offset
+		chunk.data[best_entry_offset:best_entry_offset+new_entry_size]=KFS2DirectoryEntry(child_inode,new_entry_size,len(name),type,bytes(name,"utf-8")).encode()
+		if (best_entry_padding):
+			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(child_inode,best_entry_padding,0,0,b"").encode()
+		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_FLAG_DIRECTORY):
 			node=_init_node_as_directory(backend,root_block,child_inode)
 		else:
@@ -398,3 +520,32 @@ def get_or_create_file(backend,path):
 		node.save()
 		out=child_inode
 	return out
+
+
+
+def set_file_content(backend,inode,content):
+	root_block=KFS2RootBlock.load(backend)
+	if (inode>=root_block.inode_count):
+		raise RuntimeError
+	node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,inode))
+	data_provider=KFS2NodeDataProvider(backend,root_block,node)
+	if (node.size<len(content)):
+		data_provider.resize(len(content))
+	offset=0
+	while (offset<len(content)):
+		chunk=data_provider.get_chunk_at_offset(offset)
+		length=len(content)-offset
+		if (length>chunk.length):
+			length=chunk.length
+			chunk.data[:length]=content[offset:offset+length]
+		data_provider.save_chunk(chunk)
+		offset+=length
+
+
+
+def set_kernel_inode(backend,kernel_inode):
+	root_block=KFS2RootBlock.load(backend)
+	if (kernel_inode>=root_block.inode_count):
+		raise RuntimeError
+	root_block.kernel_inode=kernel_inode
+	root_block.save()

@@ -504,7 +504,10 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition or True):
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	print(kfs2.get_or_create_file(data_fs,"/boot/kernel.bin"))
+	with open("build/kernel.elf","rb") as rf:
+		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
+		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	data_fs.close()
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
