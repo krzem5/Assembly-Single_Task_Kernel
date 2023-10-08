@@ -227,6 +227,7 @@ _start64:
 	xor rbp, rbp
 	;;; Start kernel
 	lea rdi, KERNEL_DATA
+	xor rsi, rsi
 	jmp (KERNEL_OFFSET+KERNEL_MEM_ADDR)
 
 

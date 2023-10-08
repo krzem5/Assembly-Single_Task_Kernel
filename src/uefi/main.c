@@ -1,5 +1,6 @@
 #include <efi.h>
 #include <uefi/relocator.h>
+#include <uefi/util.h>
 
 
 
@@ -23,6 +24,8 @@
 #define KFS2_INODE_STORAGE_TYPE_QUADRUPLE 0x0008
 
 #define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
+
+#define KERNEL_MEMORY_ADDRESS 0x100000
 
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_SHIFT 12
@@ -169,15 +172,15 @@ static void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
 
 
 
-static void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
-	uint16_t buffer[9];
-	for (uint8_t i=0;i<8;i++){
-		uint8_t j=(value>>((7-i)<<2))&0xf;
-		buffer[i]=j+(j>9?87:48);
-	}
-	buffer[8]=0;
-	system_table->ConOut->OutputString(system_table->ConOut,buffer);
-}
+// static void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
+// 	uint16_t buffer[9];
+// 	for (uint8_t i=0;i<8;i++){
+// 		uint8_t j=(value>>((7-i)<<2))&0xf;
+// 		buffer[i]=j+(j>9?87:48);
+// 	}
+// 	buffer[8]=0;
+// 	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+// }
 
 
 
@@ -211,8 +214,8 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 			continue;
 		}
-		EFI_PHYSICAL_ADDRESS kernel_base_address;
-		if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT,&kernel_base_address))){
+		EFI_PHYSICAL_ADDRESS kernel_base_address=KERNEL_MEMORY_ADDRESS;
+		if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT,&kernel_base_address))){
 			continue;
 		}
 		system_table->ConOut->OutputString(system_table->ConOut,L"Size: ");
@@ -239,6 +242,12 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 					if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+(*((const uint64_t*)(buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
 						goto _cleanup;
 					}
+					_output_int_hex(system_table,(kfs2_root_block.first_data_block+(*((const uint64_t*)(buffer+i*sizeof(uint64_t)))))<<block_size_shift);
+					system_table->ConOut->OutputString(system_table->ConOut,L" -> ");
+					_output_int_hex(system_table,(uint64_t)buffer_ptr);
+					system_table->ConOut->OutputString(system_table->ConOut,L" (");
+					_output_int_hex(system_table,*((uint64_t*)buffer_ptr));
+					system_table->ConOut->OutputString(system_table->ConOut,L")\r\n");
 					buffer_ptr+=KFS2_BLOCK_SIZE;
 				}
 				break;
@@ -260,6 +269,16 @@ _cleanup:
 	if (!kernel_loaded){
 		return EFI_SUCCESS;
 	}
+	EFI_PHYSICAL_ADDRESS kernel_pagemap;
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,3*PAGE_SIZE,&kernel_pagemap))){
+		return EFI_SUCCESS;
+	}
+	*((uint64_t*)(kernel_pagemap+0x0000))=0x00000003|(kernel_pagemap+0x1000);
+	*((uint64_t*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x2000);
+	*((uint64_t*)(kernel_pagemap+0x1000))=0x00000083;
+	*((uint64_t*)(kernel_pagemap+0x2ff8))=0x00000083;
+	_output_int_hex(system_table,kernel_pagemap);
+	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;
@@ -272,44 +291,39 @@ _cleanup:
 		}
 		system_table->BootServices->AllocatePool(0x80000000,memory_map_size,&memory_map);
 	}
-	_output_int_hex(system_table,memory_map_size);
-	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	kernel_data_t kernel_data={
 		.mmap_size=0
 	};
 	for (UINTN i=0;i<memory_map_size;i+=memory_descriptor_size){
 		EFI_MEMORY_DESCRIPTOR* entry=(EFI_MEMORY_DESCRIPTOR*)(memory_map+i);
-		_output_int_hex32(system_table,entry->Type);
-		system_table->ConOut->OutputString(system_table->ConOut,L", ");
-		_output_int_hex(system_table,entry->PhysicalStart);
-		system_table->ConOut->OutputString(system_table->ConOut,L", ");
-		_output_int_hex(system_table,entry->VirtualStart);
-		system_table->ConOut->OutputString(system_table->ConOut,L", ");
-		_output_int_hex(system_table,entry->NumberOfPages);
-		system_table->ConOut->OutputString(system_table->ConOut,L", ");
-		_output_int_hex(system_table,entry->Attribute);
-		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 		entry->VirtualStart=entry->PhysicalStart+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 		if (entry->Type!=EfiLoaderCode&&entry->Type!=EfiLoaderData&&entry->Type!=EfiBootServicesCode&&entry->Type!=EfiBootServicesData&&entry->Type!=EfiConventionalMemory){
 			continue;
 		}
+		uint64_t entry_start=entry->PhysicalStart;
 		uint64_t entry_end=entry->PhysicalStart+(entry->NumberOfPages<<PAGE_SIZE_SHIFT);
+		if (entry_start<KERNEL_MEMORY_ADDRESS){
+			entry_start=KERNEL_MEMORY_ADDRESS;
+		}
+		if (entry_start>=entry_end){
+			continue;
+		}
 		for (uint16_t j=0;j<kernel_data.mmap_size;j++){
 			uint64_t end=kernel_data.mmap[j].base+kernel_data.mmap[j].length;
-			if (end<entry->PhysicalStart||entry_end<kernel_data.mmap[j].base){
+			if (end<entry_start||entry_end<kernel_data.mmap[j].base){
 				continue;
 			}
 			if (entry_end>end){
 				end=entry_end;
 			}
-			if (kernel_data.mmap[j].base>entry->PhysicalStart){
-				kernel_data.mmap[j].base=entry->PhysicalStart;
+			if (kernel_data.mmap[j].base>entry_start){
+				kernel_data.mmap[j].base=entry_start;
 			}
 			kernel_data.mmap[j].length=end-kernel_data.mmap[j].base;
 			goto _entry_added;
 		}
-		kernel_data.mmap[kernel_data.mmap_size].base=entry->PhysicalStart;
-		kernel_data.mmap[kernel_data.mmap_size].length=entry->NumberOfPages<<PAGE_SIZE_SHIFT;
+		kernel_data.mmap[kernel_data.mmap_size].base=entry_start;
+		kernel_data.mmap[kernel_data.mmap_size].length=entry_end-entry_start;
 		kernel_data.mmap[kernel_data.mmap_size].type=1;
 		kernel_data.mmap_size++;
 _entry_added:
@@ -322,10 +336,10 @@ _entry_added:
 		_output_int_hex(system_table,kernel_data.mmap[i].length);
 		system_table->ConOut->OutputString(system_table->ConOut,L")\r\n");
 	}
-	// while (system_table->BootServices->ExitBootServices(image,memory_map_key)==EFI_INVALID_PARAMETER){
-	// 	system_table->BootServices->GetMemoryMap(&memory_map_size,memory_map,&memory_map_key,&memory_descriptor_size,&memory_descriptor_version);
-	// }
+	while (system_table->BootServices->ExitBootServices(image,memory_map_key)==EFI_INVALID_PARAMETER){
+		system_table->BootServices->GetMemoryMap(&memory_map_size,memory_map,&memory_map_key,&memory_descriptor_size,&memory_descriptor_version);
+	}
 	system_table->RuntimeServices->SetVirtualAddressMap(memory_map_size,memory_descriptor_size,memory_descriptor_version,memory_map);
-	system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-	return EFI_SUCCESS;
+	((void (*)(void*,void*))KERNEL_MEMORY_ADDRESS)(&kernel_data,(void*)kernel_pagemap);
+	for (;;);
 }

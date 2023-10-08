@@ -1,6 +1,6 @@
 extern efi_main
 global _start
-section .text
+section .text exec nowrite
 
 
 
@@ -15,13 +15,13 @@ _start:
 
 
 
-section .data
+section .data noexec write
 _relocatable_symbol:
 	dq 0
 
 
 
-section .reloc
+section .reloc noexec nowrite
 	dd _relocatable_symbol-$
 	dd 10
 	dw 0

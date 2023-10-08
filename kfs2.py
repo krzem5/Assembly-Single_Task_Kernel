@@ -182,7 +182,7 @@ class KFS2NodeDataProviderChunk(object):
 class KFS2NodeDataProvider(object):
 	def __init__(self,backend,root_block,node,flags=None,node_data=None):
 		self._backend=backend
-		self._data_offset=(root_block.first_data_block if isinstance(root_block,KFS2RootBlock) else root_block)
+		self._data_offset=(root_block.first_data_block if isinstance(root_block,KFS2RootBlock) else root_block)*KFS2_BLOCK_SIZE
 		self.node=node
 		self.flags=(flags if flags is not None else node.flags)
 		self.data=(node_data if node_data is not None else node.data)
@@ -209,7 +209,7 @@ class KFS2NodeDataProvider(object):
 				else:
 					buffer.append(0)
 			data_block=_alloc_data_block(self._backend,root_block)
-			self._backend.seek((self._data_offset+data_block)*KFS2_BLOCK_SIZE)
+			self._backend.seek(self._data_offset+data_block*KFS2_BLOCK_SIZE)
 			self._backend.write(buffer.tobytes())
 			self.data[:8]=struct.pack("<Q",data_block)
 			return
@@ -540,6 +540,8 @@ def set_file_content(backend,inode,content):
 		if (length>chunk.length):
 			length=chunk.length
 			chunk.data[:length]=content[offset:offset+length]
+			for i in range(length,chunk.length):
+				chunk.data[i]=0
 		data_provider.save_chunk(chunk)
 		offset+=length
 	node.save()

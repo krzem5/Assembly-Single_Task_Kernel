@@ -505,10 +505,10 @@ if (not os.path.exists("build/partitions/efi.img")):
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
-if (rebuild_data_partition or True):
+if (rebuild_data_partition):
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	with open("build/kernel.elf","rb") as rf:
+	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
