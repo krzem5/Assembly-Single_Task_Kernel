@@ -391,6 +391,7 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
+#####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]
 rebuild_uefi_partition=False
@@ -418,6 +419,7 @@ for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 _save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
 if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
 	sys.exit(1)
+#####################################################################################################################################
 version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
@@ -455,7 +457,6 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_SECTION_core_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"],kernel_symbols["__KERNEL_SECTION_kernel_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"])
-os.remove("build/kernel.bin")
 _patch_kernel("build/disk/kernel/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
@@ -474,6 +475,7 @@ with open("build/disk/os.img","wb") as wf:
 os.remove("build/stage1.bin")
 os.remove("build/stage2.bin")
 os.remove("build/stage3.bin")
+#####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
@@ -481,10 +483,12 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	object_files=runtime_object_files+_compile_user_files(program)
 	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
+#####################################################################################################################################
 with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/disk"]).returncode!=0):
 	sys.exit(1)
+#####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
 	rebuild_data_partition=True
@@ -509,6 +513,7 @@ if (rebuild_data_partition or True):
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	data_fs.close()
+#####################################################################################################################################
 if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -523,7 +528,7 @@ if ("--run" in sys.argv):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	############################################################################################
-	if (False):
+	if (True):
 		subprocess.run([
 			"qemu-system-x86_64",
 			# Bios

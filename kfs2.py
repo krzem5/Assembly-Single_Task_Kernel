@@ -12,8 +12,9 @@ KFS2_BITMAP_LEVEL_COUNT=5
 KFS2_MAX_DISK_SIZE=0x1000000000000
 KFS2_BLOCK_SIZE=4096
 
-KFS2_INODE_FLAG_FILE=0x0000
-KFS2_INODE_FLAG_DIRECTORY=0x0001
+KFS2_INODE_TYPE_FILE=0x0000
+KFS2_INODE_TYPE_DIRECTORY=0x0001
+KFS2_INODE_TYPE_MASK=0x0001
 
 KFS2_INODE_STORAGE_MASK=0x000e
 KFS2_INODE_STORAGE_TYPE_INLINE=0x0000
@@ -207,10 +208,10 @@ class KFS2NodeDataProvider(object):
 					buffer.append(_alloc_data_block(self._backend,root_block))
 				else:
 					buffer.append(0)
-			root_block=_alloc_data_block(self._backend,root_block)
-			self._backend.seek(self._data_offset+root_block*KFS2_BLOCK_SIZE)
+			data_block=_alloc_data_block(self._backend,root_block)
+			self._backend.seek((self._data_offset+data_block)*KFS2_BLOCK_SIZE)
 			self._backend.write(buffer.tobytes())
-			self.data[:8]=struct.pack("<Q",root_block)
+			self.data[:8]=struct.pack("<Q",data_block)
 			return
 		if (size<=KFS2_BLOCK_SIZE**3//64):
 			self.node.flags|=KFS2_INODE_STORAGE_TYPE_TRIPLE
@@ -406,7 +407,7 @@ def _init_node_as_file(backend,root_block,inode):
 		KFS2Node.index_to_offset(root_block,inode),
 		0,
 		1,
-		KFS2_INODE_FLAG_FILE|KFS2_INODE_STORAGE_TYPE_INLINE,
+		KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE,
 		[0]*48
 	)
 	return out
@@ -419,7 +420,7 @@ def _init_node_as_directory(backend,root_block,inode):
 		KFS2Node.index_to_offset(root_block,inode),
 		1,
 		1,
-		KFS2_INODE_FLAG_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
+		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
 		KFS2DirectoryEntry(0,48,0,0,b"").encode()
 	)
 	return out
@@ -472,7 +473,7 @@ def get_inode(backend,path):
 		name=path[i]
 		if (not name):
 			continue
-		if (not (node.flags&KFS2_INODE_FLAG_DIRECTORY)):
+		if ((node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY):
 			raise RuntimeError("Non-directory does not have children")
 		storage=node.flags&KFS2_INODE_STORAGE_MASK
 		new_entry_size=KFS2DirectoryEntry.get_entry_size_for_name(name)
@@ -503,7 +504,8 @@ def get_inode(backend,path):
 		child_inode=_alloc_inode(backend,root_block)
 		if (best_entry_padding==0xffffffff):
 			raise RuntimeError("Resize inode data")
-		type=(KFS2_INODE_FLAG_FILE if i==len(path)-1 else KFS2_INODE_FLAG_DIRECTORY)
+		node.size+=1
+		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 else KFS2_INODE_TYPE_DIRECTORY)
 		if (best_entry_padding<12):
 			new_entry_size+=best_entry_padding
 			best_entry_padding=0
@@ -513,7 +515,7 @@ def get_inode(backend,path):
 		if (best_entry_padding):
 			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(child_inode,best_entry_padding,0,0,b"").encode()
 		data_provider.save_chunk(chunk)
-		if (type==KFS2_INODE_FLAG_DIRECTORY):
+		if (type==KFS2_INODE_TYPE_DIRECTORY):
 			node=_init_node_as_directory(backend,root_block,child_inode)
 		else:
 			node=_init_node_as_file(backend,root_block,child_inode)
@@ -540,6 +542,7 @@ def set_file_content(backend,inode,content):
 			chunk.data[:length]=content[offset:offset+length]
 		data_provider.save_chunk(chunk)
 		offset+=length
+	node.save()
 
 
 

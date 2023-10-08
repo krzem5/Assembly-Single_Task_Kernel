@@ -3,10 +3,29 @@
 
 
 
-#define MAX_BLOCK_SIZE 4096
+#define KFS2_BLOCK_SIZE 4096
 
 #define KFS2_ROOT_BLOCK_SIGNATURE 0x544f4f523253464b
 #define KFS2_BITMAP_LEVEL_COUNT 5
+
+#define KFS2_INODE_GET_BLOCK_INDEX(inode) ((inode)/(KFS2_BLOCK_SIZE/sizeof(kfs2_node_t)))
+#define KFS2_INODE_GET_NODE_INDEX(inode) ((inode)%(KFS2_BLOCK_SIZE/sizeof(kfs2_node_t)))
+
+#define KFS2_INODE_TYPE_FILE 0x0000
+#define KFS2_INODE_TYPE_DIRECTORY 0x0001
+#define KFS2_INODE_TYPE_MASK 0x0001
+
+#define KFS2_INODE_STORAGE_MASK 0x000e
+#define KFS2_INODE_STORAGE_TYPE_INLINE 0x0000
+#define KFS2_INODE_STORAGE_TYPE_SINGLE 0x0002
+#define KFS2_INODE_STORAGE_TYPE_DOUBLE 0x0004
+#define KFS2_INODE_STORAGE_TYPE_TRIPLE 0x0006
+#define KFS2_INODE_STORAGE_TYPE_QUADRUPLE 0x0008
+
+#define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
+
+#define PAGE_SIZE 4096
+#define PAGE_SIZE_SHIFT 12
 
 
 
@@ -25,6 +44,39 @@ typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 	uint32_t kernel_inode;
 	uint32_t crc;
 } kfs2_root_block_t;
+
+
+
+typedef struct __attribute__((packed)) _KFS2_NODE{
+	uint64_t size;
+	union{
+		uint8_t inline_[48];
+		uint64_t single[6];
+		uint64_t double_;
+		uint64_t triple;
+		uint64_t quadruple;
+	} data;
+	uint16_t hard_link_count;
+	uint16_t flags;
+	uint32_t crc;
+} kfs2_node_t;
+
+
+
+typedef struct __attribute__((packed)) _KERNEL_DATA{
+	uint16_t mmap_size;
+	uint8_t _padding[6];
+	struct{
+		uint64_t base;
+		uint64_t length;
+		uint32_t type;
+		uint8_t _padding[4];
+	} mmap[42];
+} kernel_data_t;
+
+
+
+_Static_assert(sizeof(kfs2_node_t)==64);
 
 
 
@@ -98,6 +150,13 @@ static _Bool kfs_verify_crc(const void* data,uint32_t length){
 
 
 
+static inline char _int_to_hex(uint8_t v){
+	v&=15;
+	return v+(v>9?87:48);
+}
+
+
+
 static void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
 	uint16_t buffer[17];
 	for (uint8_t i=0;i<16;i++){
@@ -105,6 +164,18 @@ static void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
 		buffer[i]=j+(j>9?87:48);
 	}
 	buffer[16]=0;
+	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+}
+
+
+
+static void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
+	uint16_t buffer[9];
+	for (uint8_t i=0;i<8;i++){
+		uint8_t j=(value>>((7-i)<<2))&0xf;
+		buffer[i]=j+(j>9?87:48);
+	}
+	buffer[8]=0;
 	system_table->ConOut->OutputString(system_table->ConOut,buffer);
 }
 
@@ -121,26 +192,140 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	_Bool kernel_loaded=0;
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
-		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize>MAX_BLOCK_SIZE){
+		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize>KFS2_BLOCK_SIZE||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
 			continue;
 		}
-		uint8_t buffer[MAX_BLOCK_SIZE];
-		if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,0,MAX_BLOCK_SIZE,buffer))){
+		uint8_t buffer[KFS2_BLOCK_SIZE];
+		if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,0,KFS2_BLOCK_SIZE,buffer))){
 			continue;
 		}
 		kfs2_root_block_t kfs2_root_block=*((const kfs2_root_block_t*)buffer);
 		if (kfs2_root_block.signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_root_block.kernel_inode||!kfs_verify_crc(&kfs2_root_block,sizeof(kfs2_root_block_t))){
 			continue;
 		}
-		_output_int_hex(system_table,kfs2_root_block.kernel_inode);
+		uint32_t block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/block_io_protocol->Media->BlockSize);
+		if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(kfs2_root_block.kernel_inode))<<block_size_shift,KFS2_BLOCK_SIZE,buffer))){
+			continue;
+		}
+		kfs2_node_t node=*((const kfs2_node_t*)(buffer+KFS2_INODE_GET_NODE_INDEX(kfs2_root_block.kernel_inode)*sizeof(kfs2_node_t)));
+		if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
+			continue;
+		}
+		EFI_PHYSICAL_ADDRESS kernel_base_address;
+		if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT,&kernel_base_address))){
+			continue;
+		}
+		system_table->ConOut->OutputString(system_table->ConOut,L"Size: ");
+		_output_int_hex(system_table,node.size);
 		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
+		system_table->ConOut->OutputString(system_table->ConOut,L"Base: ");
+		_output_int_hex(system_table,kernel_base_address);
+		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
+		switch (node.flags&KFS2_INODE_STORAGE_MASK){
+			case KFS2_INODE_STORAGE_TYPE_INLINE:
+				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_INLINE\r\n");
+				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+				break;
+			case KFS2_INODE_STORAGE_TYPE_SINGLE:
+				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_SINGLE\r\n");
+				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+				break;
+			case KFS2_INODE_STORAGE_TYPE_DOUBLE:
+				if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+node.data.double_)<<block_size_shift,KFS2_BLOCK_SIZE,buffer))){
+					goto _cleanup;
+				}
+				void* buffer_ptr=(void*)kernel_base_address;
+				for (uint16_t i=0;i<(node.size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i++){
+					if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+(*((const uint64_t*)(buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
+						goto _cleanup;
+					}
+					buffer_ptr+=KFS2_BLOCK_SIZE;
+				}
+				break;
+			case KFS2_INODE_STORAGE_TYPE_TRIPLE:
+				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_TRIPLE\r\n");
+				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+				break;
+			case KFS2_INODE_STORAGE_TYPE_QUADRUPLE:
+				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_QUADRUPLE\r\n");
+				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+				break;
+		}
 		kernel_loaded=1;
 		break;
+_cleanup:
+		system_table->BootServices->FreePages(kernel_base_address,(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT);
 	}
 	system_table->BootServices->FreePool(buffer);
 	if (!kernel_loaded){
 		return EFI_SUCCESS;
 	}
+	UINTN memory_map_size=0;
+	void* memory_map=NULL;
+	UINTN memory_map_key=0;
+	UINTN memory_descriptor_size=0;
+	UINT32 memory_descriptor_version=0;
+	while (system_table->BootServices->GetMemoryMap(&memory_map_size,memory_map,&memory_map_key,&memory_descriptor_size,&memory_descriptor_version)==EFI_BUFFER_TOO_SMALL){
+		memory_map_size+=memory_descriptor_size<<4;
+		if (memory_map){
+			system_table->BootServices->FreePool(memory_map);
+		}
+		system_table->BootServices->AllocatePool(0x80000000,memory_map_size,&memory_map);
+	}
+	_output_int_hex(system_table,memory_map_size);
+	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
+	kernel_data_t kernel_data={
+		.mmap_size=0
+	};
+	for (UINTN i=0;i<memory_map_size;i+=memory_descriptor_size){
+		EFI_MEMORY_DESCRIPTOR* entry=(EFI_MEMORY_DESCRIPTOR*)(memory_map+i);
+		_output_int_hex32(system_table,entry->Type);
+		system_table->ConOut->OutputString(system_table->ConOut,L", ");
+		_output_int_hex(system_table,entry->PhysicalStart);
+		system_table->ConOut->OutputString(system_table->ConOut,L", ");
+		_output_int_hex(system_table,entry->VirtualStart);
+		system_table->ConOut->OutputString(system_table->ConOut,L", ");
+		_output_int_hex(system_table,entry->NumberOfPages);
+		system_table->ConOut->OutputString(system_table->ConOut,L", ");
+		_output_int_hex(system_table,entry->Attribute);
+		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
+		entry->VirtualStart=entry->PhysicalStart+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		if (entry->Type!=EfiLoaderCode&&entry->Type!=EfiLoaderData&&entry->Type!=EfiBootServicesCode&&entry->Type!=EfiBootServicesData&&entry->Type!=EfiConventionalMemory){
+			continue;
+		}
+		uint64_t entry_end=entry->PhysicalStart+(entry->NumberOfPages<<PAGE_SIZE_SHIFT);
+		for (uint16_t j=0;j<kernel_data.mmap_size;j++){
+			uint64_t end=kernel_data.mmap[j].base+kernel_data.mmap[j].length;
+			if (end<entry->PhysicalStart||entry_end<kernel_data.mmap[j].base){
+				continue;
+			}
+			if (entry_end>end){
+				end=entry_end;
+			}
+			if (kernel_data.mmap[j].base>entry->PhysicalStart){
+				kernel_data.mmap[j].base=entry->PhysicalStart;
+			}
+			kernel_data.mmap[j].length=end-kernel_data.mmap[j].base;
+			goto _entry_added;
+		}
+		kernel_data.mmap[kernel_data.mmap_size].base=entry->PhysicalStart;
+		kernel_data.mmap[kernel_data.mmap_size].length=entry->NumberOfPages<<PAGE_SIZE_SHIFT;
+		kernel_data.mmap[kernel_data.mmap_size].type=1;
+		kernel_data.mmap_size++;
+_entry_added:
+	}
+	for (uint16_t i=0;i<kernel_data.mmap_size;i++){
+		_output_int_hex(system_table,kernel_data.mmap[i].base);
+		system_table->ConOut->OutputString(system_table->ConOut,L", ");
+		_output_int_hex(system_table,kernel_data.mmap[i].base+kernel_data.mmap[i].length);
+		system_table->ConOut->OutputString(system_table->ConOut,L" (");
+		_output_int_hex(system_table,kernel_data.mmap[i].length);
+		system_table->ConOut->OutputString(system_table->ConOut,L")\r\n");
+	}
+	// while (system_table->BootServices->ExitBootServices(image,memory_map_key)==EFI_INVALID_PARAMETER){
+	// 	system_table->BootServices->GetMemoryMap(&memory_map_size,memory_map,&memory_map_key,&memory_descriptor_size,&memory_descriptor_version);
+	// }
+	system_table->RuntimeServices->SetVirtualAddressMap(memory_map_size,memory_descriptor_size,memory_descriptor_version,memory_map);
 	system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
 	return EFI_SUCCESS;
 }
