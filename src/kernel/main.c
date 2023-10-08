@@ -28,7 +28,7 @@
 
 
 
-void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kernel_data){
+void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kernel_data){
 	cpu_check_features();
 	LOG_CORE("Starting kernel...");
 	kernel_init(bootloader_kernel_data);

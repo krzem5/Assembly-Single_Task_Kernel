@@ -218,12 +218,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT,&kernel_base_address))){
 			continue;
 		}
-		system_table->ConOut->OutputString(system_table->ConOut,L"Size: ");
-		_output_int_hex(system_table,node.size);
-		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
-		system_table->ConOut->OutputString(system_table->ConOut,L"Base: ");
-		_output_int_hex(system_table,kernel_base_address);
-		system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 		switch (node.flags&KFS2_INODE_STORAGE_MASK){
 			case KFS2_INODE_STORAGE_TYPE_INLINE:
 				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_INLINE\r\n");
@@ -242,12 +236,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 					if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+(*((const uint64_t*)(buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
 						goto _cleanup;
 					}
-					_output_int_hex(system_table,(kfs2_root_block.first_data_block+(*((const uint64_t*)(buffer+i*sizeof(uint64_t)))))<<block_size_shift);
-					system_table->ConOut->OutputString(system_table->ConOut,L" -> ");
-					_output_int_hex(system_table,(uint64_t)buffer_ptr);
-					system_table->ConOut->OutputString(system_table->ConOut,L" (");
-					_output_int_hex(system_table,*((uint64_t*)buffer_ptr));
-					system_table->ConOut->OutputString(system_table->ConOut,L")\r\n");
 					buffer_ptr+=KFS2_BLOCK_SIZE;
 				}
 				break;
@@ -277,8 +265,6 @@ _cleanup:
 	*((uint64_t*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x2000);
 	*((uint64_t*)(kernel_pagemap+0x1000))=0x00000083;
 	*((uint64_t*)(kernel_pagemap+0x2ff8))=0x00000083;
-	_output_int_hex(system_table,kernel_pagemap);
-	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;

@@ -5,7 +5,7 @@
 
 
 
-ENTRY(main)
+ENTRY(_start)
 SECTIONS{
     . = 0xffffffffc0100000;
     DECLARE_SECTION_START(address_range);
