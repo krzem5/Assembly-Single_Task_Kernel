@@ -215,52 +215,7 @@ def _generate_symbol_file(kernel_symbols,file_path):
 
 
 
-def _split_kernel_file(src_file_path,core_file_path,kernel_file_path,core_end,end):
-	if ((core_end|end)&4095):
-		raise RuntimeError("'core_end' and 'end' must be page-aligned")
-	end-=core_end
-	with open(src_file_path,"rb") as rf,open(core_file_path,"wb") as wf_core,open(kernel_file_path,"wb") as wf:
-		while (core_end):
-			wf_core.write(rf.read(4096))
-			core_end-=4096
-		while (end):
-			wf.write(rf.read(4096))
-			end-=4096
-
-
-
 def _patch_kernel(file_path,kernel_symbols):
-	address_offset=kernel_symbols["__KERNEL_SECTION_core_END__"]
-	with open(file_path,"r+b") as wf:
-		wf.seek(kernel_symbols["_idt_data"]-address_offset)
-		for i in range(0,256):
-			address=kernel_symbols[f"_isr_entry_{i}"]
-			ist=0
-			if (i==14):
-				ist=1
-			elif (i==32):
-				ist=2
-			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
-		offset=kernel_symbols["kernel_symbols"]-address_offset
-		while (True):
-			wf.seek(offset+8)
-			name_address=struct.unpack("<Q",wf.read(8))[0]
-			if (not name_address):
-				break
-			wf.seek(name_address-address_offset)
-			name=""
-			while (True):
-				char=wf.read(1)[0]
-				if (not char):
-					break
-				name+=chr(char)
-			wf.seek(offset)
-			wf.write(struct.pack("<Q",kernel_symbols[name]))
-			offset+=16
-
-
-
-def _patch_kernel2(file_path,kernel_symbols):
 	address_offset=kernel_symbols["__KERNEL_SECTION_address_range_START__"]
 	with open(file_path,"r+b") as wf:
 		wf.seek(kernel_symbols["_idt_data"]-address_offset)
@@ -288,29 +243,6 @@ def _patch_kernel2(file_path,kernel_symbols):
 			wf.seek(offset)
 			wf.write(struct.pack("<Q",kernel_symbols[name]))
 			offset+=16
-
-
-
-def _get_file_size(file_path):
-	return os.stat(file_path).st_size
-
-
-
-def _copy_file(file_path,wf):
-	with open(file_path,"rb") as rf:
-		while (True):
-			chunk=rf.read(4096)
-			if (not chunk):
-				return
-			wf.write(chunk)
-
-
-
-def _pad_file(wf,count):
-	while (count):
-		length=(4096 if count>4096 else count)
-		wf.write(b"\x00"*length)
-		count-=length
 
 
 
@@ -491,7 +423,7 @@ linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_patch_kernel2("build/kernel.bin",kernel_symbols)
+_patch_kernel("build/kernel.bin",kernel_symbols)
 #####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
@@ -547,8 +479,7 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
-		# "-d","int,cpu_reset",
-		# "--no-reboot",
+		# "-d","int,cpu_reset","--no-reboot",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
