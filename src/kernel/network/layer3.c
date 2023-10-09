@@ -87,7 +87,7 @@ static void _update_ping_time(network_layer3_device_t* device){
 
 void network_layer3_init(void){
 	LOG("Initializing layer3 network...");
-	if (partition_boot->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
+	if (1||partition_boot->partition_config.type!=PARTITION_CONFIG_TYPE_KFS){
 		_layer3_cache_enabled=0;
 		WARN("Layer3 network device cache disabled, boot partition not formatted as KFS");
 	}

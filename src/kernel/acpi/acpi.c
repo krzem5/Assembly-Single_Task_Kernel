@@ -3,6 +3,7 @@
 #include <kernel/acpi/madt.h>
 #include <kernel/acpi/slit.h>
 #include <kernel/acpi/srat.h>
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -40,33 +41,9 @@ typedef struct __attribute__((packed)) _RSDT{
 
 
 
-static const u64 _rsdp_search_regions[]={
-	0x00080000,0x000a0000,
-	0x000e0000,0x00100000,
-	0x00000000,0x00000000
-};
-
-
-
 void acpi_load(void){
 	LOG("Loading ACPI RSDP...");
-	const u64* range=_rsdp_search_regions;
-	const rsdp_t* rsdp=NULL;
-	while (range[0]){
-		INFO("Searching memory range %p - %p...",range[0],range[1]);
-		const u64* start=(void*)vmm_identity_map(range[0],range[1]-range[0]);
-		const u64* end=start+(range[1]-range[0])/sizeof(u64);
-		while (start!=end){
-			if (start[0]==0x2052545020445352ull){
-				rsdp=(void*)start;
-				goto _rsdp_found;
-			}
-			start+=2;
-		}
-		range+=2;
-	}
-	panic("Unable to locate the RSDP");
-_rsdp_found:
+	const rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(rsdt_t));
 	INFO("Found RSDP at %p (revision %u)",rsdp,rsdp->revision);
 	_Bool is_xsdt=0;
 	const rsdt_t* rsdt;

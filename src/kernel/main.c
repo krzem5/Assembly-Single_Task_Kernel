@@ -49,7 +49,6 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	acpi_load();
 	aml_runtime_init_irq();
 	aml_bus_enumerate();
-	for (;;);
 	bios_get_system_data();
 	network_layer1_init_irq();
 	network_layer2_init();
@@ -59,6 +58,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	user_data_generate();
 	scheduler_init();
 	cpu_start_all_cores();
+	for (;;);
 	elf_load("/kernel/loader.elf");
 	scheduler_enable();
 	scheduler_start();

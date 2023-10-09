@@ -37,10 +37,11 @@ gdt_enable:
 
 
 
-section .rdata noexec nowrite
+section .data noexec write
 
 
 
+align 16
 gdt_start:
 	dq 0x0000000000000000
 gdt_kernel_code:

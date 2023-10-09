@@ -26,6 +26,8 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 		u8 _padding[4];
 	} mmap[42];
 	u64 first_free_address;
+	u64 rsdp_address;
+	u64 smbios_address;
 } kernel_data_t;
 
 

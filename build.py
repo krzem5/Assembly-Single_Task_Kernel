@@ -259,6 +259,37 @@ def _patch_kernel(file_path,kernel_symbols):
 
 
 
+def _patch_kernel2(file_path,kernel_symbols):
+	address_offset=kernel_symbols["__KERNEL_SECTION_address_range_START__"]
+	with open(file_path,"r+b") as wf:
+		wf.seek(kernel_symbols["_idt_data"]-address_offset)
+		for i in range(0,256):
+			address=kernel_symbols[f"_isr_entry_{i}"]
+			ist=0
+			if (i==14):
+				ist=1
+			elif (i==32):
+				ist=2
+			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
+		offset=kernel_symbols["kernel_symbols"]-address_offset
+		while (True):
+			wf.seek(offset+8)
+			name_address=struct.unpack("<Q",wf.read(8))[0]
+			if (not name_address):
+				break
+			wf.seek(name_address-address_offset)
+			name=""
+			while (True):
+				char=wf.read(1)[0]
+				if (not char):
+					break
+				name+=chr(char)
+			wf.seek(offset)
+			wf.write(struct.pack("<Q",kernel_symbols[name]))
+			offset+=16
+
+
+
 def _get_file_size(file_path):
 	return os.stat(file_path).st_size
 
@@ -458,6 +489,7 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_SECTION_core_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"],kernel_symbols["__KERNEL_SECTION_kernel_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"])
 _patch_kernel("build/disk/kernel/kernel.bin",kernel_symbols)
+_patch_kernel2("build/kernel.bin",kernel_symbols)
 kernel_core_size=_get_file_size("build/stage3.bin")
 if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
 	sys.exit(1)

@@ -1,15 +1,11 @@
 #include <kernel/bios/bios.h>
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "bios"
-
-
-
-#define SMBIOS_MEMORY_REGION_START 0x0f0000
-#define SMBIOS_MEMORY_REGION_END 0x100000
 
 
 
@@ -96,18 +92,7 @@ static char* _duplicate_string(const char* str){
 
 void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
-	INFO("Searching memory range %p - %p...",SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END);
-	const smbios_t* smbios=NULL;
-	const u32* start=(void*)vmm_identity_map(SMBIOS_MEMORY_REGION_START,SMBIOS_MEMORY_REGION_END-SMBIOS_MEMORY_REGION_START);
-	const u32* end=start+(SMBIOS_MEMORY_REGION_END-SMBIOS_MEMORY_REGION_START)/sizeof(u32);
-	for (;start<end;start+=4){
-		if (start[0]==0x5f4d535f){
-			smbios=(const smbios_t*)start;
-			goto _smbios_found;
-		}
-	}
-	panic("SMBIOS not found");
-_smbios_found:
+	const smbios_t* smbios=(void*)vmm_identity_map(kernel_data.smbios_address,sizeof(smbios_t));
 	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
 	u64 table_start=vmm_identity_map(smbios->table_address,smbios->table_length);
