@@ -38,7 +38,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	kmm_init();
 	pci_enumerate(1);
 	partition_load();
-	// kernel_load();
+	kernel_load();
 	// // From this point onwards all kernel functions can be used
 	kernel_adjust_memory_flags();
 	handle_init();
@@ -58,7 +58,6 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	user_data_generate();
 	scheduler_init();
 	cpu_start_all_cores();
-	for (;;);
 	elf_load("/kernel/loader.elf");
 	scheduler_enable();
 	scheduler_start();

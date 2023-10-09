@@ -572,6 +572,7 @@ if ("--run" in sys.argv):
 			"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
 			"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
 			"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
+			"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
 			# Drives
 			"-device","ahci,id=ahci",
 			"-device","ide-hd,drive=hdd,bus=ahci.0",

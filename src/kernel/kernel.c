@@ -134,23 +134,23 @@ _check_every_drive:
 	}
 	goto _error;
 _load_kernel:
-	LOG_CORE("Loading kernel...");
-	INFO_CORE("Opening kernel file...");
-	vfs_node_t* kernel_file=vfs_get_by_path(NULL,path,0);
-	if (!kernel_file){
-		goto _error;
-	}
-	u64 kernel_size=kernel_section_kernel_end()-kernel_section_core_end();
-	void* address=(void*)kernel_section_core_end();
-	INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
-	u64 rd=vfs_read(kernel_file,0,address,kernel_size);
-	if (rd!=kernel_size){
-		goto _error;
-	}
-	u64 version=*((u64*)address);
-	if (version!=kernel_get_version()){
-		goto _error;
-	}
+	// LOG_CORE("Loading kernel...");
+	// INFO_CORE("Opening kernel file...");
+	// vfs_node_t* kernel_file=vfs_get_by_path(NULL,path,0);
+	// if (!kernel_file){
+	// 	goto _error;
+	// }
+	// u64 kernel_size=kernel_section_kernel_end()-kernel_section_core_end();
+	// void* address=(void*)kernel_section_core_end();
+	// INFO_CORE("Reading %v from '/kernel.bin' to address %p...",kernel_size,address);
+	// u64 rd=vfs_read(kernel_file,0,address,kernel_size);
+	// if (rd!=kernel_size){
+	// 	goto _error;
+	// }
+	// u64 version=*((u64*)address);
+	// if (version!=kernel_get_version()){
+	// 	goto _error;
+	// }
 	LOG_CORE("Kernel successfully loaded");
 	return;
 _error:

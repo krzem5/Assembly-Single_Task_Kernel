@@ -40,6 +40,7 @@ void scheduler_init(void){
 
 
 void scheduler_enable(void){
+	LOG("Enabling scheduler...");
 	_scheduler_enabled=1;
 }
 
