@@ -15,7 +15,7 @@
 void* vfs_alloc(partition_t* fs,const char* name,u8 name_length){
 	if (name_length>63){
 		name_length=63;
-		WARN_CORE("vfs_node_t.name_length too long");
+		WARN("vfs_node_t.name_length too long");
 	}
 	vfs_node_t* out=vfs_allocator_get(&(fs->allocator),VFS_NODE_ID_EMPTY,1);
 	out->type=VFS_NODE_TYPE_FILE;
@@ -84,14 +84,14 @@ vfs_node_t* vfs_get_by_path(vfs_node_t* root,const char* path,u8 type){
 _check_next_fs:
 			}
 			if (!root){
-				ERROR_CORE("Partition not found");
+				ERROR("Partition not found");
 				return NULL;
 			}
 			path+=partition_name_length+1;
 		}
 	}
 	if (!root){
-		ERROR_CORE("No root provided");
+		ERROR("No root provided");
 		return NULL;
 	}
 	const char* name=path;

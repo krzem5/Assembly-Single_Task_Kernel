@@ -26,14 +26,14 @@ void network_layer1_init_irq(void){
 
 void network_layer1_set_device(const network_layer1_device_t* device){
 	if (network_layer1_name){
-		WARN_CORE("Layer1 network device already installed");
+		WARN("Layer1 network device already installed");
 		return;
 	}
-	LOG_CORE("Enabling layer1 network device '%s'...",device->name);
+	LOG("Enabling layer1 network device '%s'...",device->name);
 	_layer1_device=*device;
 	network_layer1_name=_layer1_device.name;
 	memcpy(network_layer1_mac_address,_layer1_device.mac_address,6);
-	INFO_CORE("Layer1 network MAC address: %x:%x:%x:%x:%x:%x",_layer1_device.mac_address[0],_layer1_device.mac_address[1],_layer1_device.mac_address[2],_layer1_device.mac_address[3],_layer1_device.mac_address[4],_layer1_device.mac_address[5]);
+	INFO("Layer1 network MAC address: %x:%x:%x:%x:%x:%x",_layer1_device.mac_address[0],_layer1_device.mac_address[1],_layer1_device.mac_address[2],_layer1_device.mac_address[3],_layer1_device.mac_address[4],_layer1_device.mac_address[5]);
 }
 
 

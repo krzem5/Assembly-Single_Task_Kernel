@@ -195,7 +195,7 @@ static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void
 		panic("Invalid KFS offset");
 	}
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT)),(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
-		ERROR_CORE("Error reading data from drive");
+		ERROR("Error reading data from drive");
 	}
 }
 
@@ -206,7 +206,7 @@ static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,con
 		panic("Invalid KFS offset");
 	}
 	if (drive->read_write(drive->extra_data,(offset<<(12-DRIVE_BLOCK_SIZE_SHIFT))|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,length<<(12-DRIVE_BLOCK_SIZE_SHIFT))!=(length<<(12-DRIVE_BLOCK_SIZE_SHIFT))){
-		ERROR_CORE("Error writing data to drive");
+		ERROR("Error writing data to drive");
 	}
 }
 
@@ -275,7 +275,7 @@ static KERNEL_INLINE void _block_cache_flush_root(kfs_block_cache_t* block_cache
 	}
 	block_cache->flags&=~KFS_BLOCK_CACHE_ROOT_DIRTY;
 	if (block_cache->drive->read_write(block_cache->drive->extra_data,1|DRIVE_OFFSET_FLAG_WRITE,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR_CORE("Error writing data to drive");
+		ERROR("Error writing data to drive");
 	}
 }
 
@@ -894,7 +894,7 @@ static u64 _kfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 
 	if (count){
 		u8 chunk[1<<DRIVE_BLOCK_SIZE_SHIFT];
 		if (block_cache->drive->read_write(block_cache->drive->extra_data,(block_cache->nfda.ranges[range_index].block_index<<(12-DRIVE_BLOCK_SIZE_SHIFT))+offset,chunk,1)!=1){
-			ERROR_CORE("Error reading data from drive");
+			ERROR("Error reading data from drive");
 			return 0;
 		}
 		memcpy(buffer,chunk,count);
@@ -1065,15 +1065,15 @@ static const partition_file_system_config_t _kfs_fs_config={
 
 
 void kfs_load(const drive_t* drive,const partition_config_t* partition_config){
-	LOG_CORE("Loading KFS file system from drive '%s'...",drive->model_number);
-	INFO_CORE("Allocating block cache...");
+	LOG("Loading KFS file system from drive '%s'...",drive->model_number);
+	INFO("Allocating block cache...");
 	kfs_block_cache_t* block_cache=(void*)(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	block_cache->flags=0;
 	block_cache->drive=drive;
 	memset(block_cache->empty_block,0,4096);
-	INFO_CORE("Reading ROOT block...");
+	INFO("Reading ROOT block...");
 	if (drive->read_write(drive->extra_data,1,&(block_cache->root),sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)!=(sizeof(kfs_root_block_t)>>DRIVE_BLOCK_SIZE_SHIFT)){
-		ERROR_CORE("Error reading ROOT block from drive");
+		ERROR("Error reading ROOT block from drive");
 		return;
 	}
 	block_cache->flags|=KFS_BLOCK_CACHE_ROOT_PRESENT;

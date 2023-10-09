@@ -85,7 +85,7 @@ static const partition_file_system_config_t _emptyfs_fs_config={
 
 
 void emptyfs_load(const drive_t* drive,const partition_config_t* partition_config){
-	LOG_CORE("Loading EmptyFS file system from drive '%s'...",drive->model_number);
+	LOG("Loading EmptyFS file system from drive '%s'...",drive->model_number);
 	vfs_node_t* root=partition_add(drive,partition_config,&_emptyfs_fs_config,NULL);
 	root->type=VFS_NODE_TYPE_FILE;
 }

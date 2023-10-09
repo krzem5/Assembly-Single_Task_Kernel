@@ -200,19 +200,19 @@ void driver_ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	LOG_CORE("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	ahci_controller_t* controller=kmm_alloc(sizeof(ahci_controller_t));
 	controller->registers=(void*)vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
-	INFO_CORE("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
+	INFO("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
-		ERROR_CORE("AHCI controller does not support 64-bit addressing");
+		ERROR("AHCI controller does not support 64-bit addressing");
 		return;
 	}
 	if (controller->registers->cap2&CAP2_BOH){
 		controller->registers->bohc|=BOHC_OOS;
 		SPINLOOP(controller->registers->bohc&(BOHC_BOS|BOHC_BB));
 		if ((controller->registers->bohc&BOHC_BB)||(controller->registers->bohc&BOHC_BOS)||!(controller->registers->bohc&BOHC_OOS)){
-			ERROR_CORE("AHCI controller bios handoff failed");
+			ERROR("AHCI controller bios handoff failed");
 			return;
 		}
 	}

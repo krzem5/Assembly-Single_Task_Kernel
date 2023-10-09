@@ -32,7 +32,7 @@ static void _resize_stack(void){
 
 
 void kmm_init(void){
-	LOG_CORE("Initializing kernel memory manager...");
+	LOG("Initializing kernel memory manager...");
 	_kmm_top=pmm_adjusted_kernel_end+kernel_get_offset();
 	_kmm_max_top=pmm_adjusted_kernel_end+kernel_get_offset();
 }

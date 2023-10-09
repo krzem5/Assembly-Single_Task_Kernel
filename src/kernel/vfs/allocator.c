@@ -15,7 +15,7 @@ PMM_DECLARE_COUNTER(VFS_ALLOCATOR);
 
 
 void vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator_t* out){
-	LOG_CORE("Initializing file system node allocator...");
+	LOG("Initializing file system node allocator...");
 	if (node_size<sizeof(vfs_node_t)){
 		panic("vfs_allocator_init: node_size too small");
 	}

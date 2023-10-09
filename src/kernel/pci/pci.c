@@ -11,7 +11,7 @@
 
 
 void pci_enumerate(_Bool early_boot){
-	LOG_CORE("Scanning PCI devices...");
+	LOG("Scanning PCI devices...");
 	pci_device_t device={
 		0,
 		0,
@@ -69,7 +69,7 @@ void pci_enumerate(_Bool early_boot){
 					}
 				}
 				if (early_boot){
-					INFO_CORE("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
+					INFO("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 					driver_ahci_init_device(&device);
 					driver_ata_init_device(&device);
 					driver_nvme_init_device(&device);
@@ -103,7 +103,7 @@ _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out)
 			pci_device_write_data(device,register_index+4,bar_high);
 		}
 		if (bar&8){
-			WARN_CORE("Prefeachable PCI BAR is unimplemented!");
+			WARN("Prefeachable PCI BAR is unimplemented!");
 			return 0;
 		}
 		mask=0xfffffff0;

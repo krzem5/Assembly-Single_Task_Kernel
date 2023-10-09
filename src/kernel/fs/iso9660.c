@@ -100,7 +100,7 @@ static vfs_node_t* _iso9660_get_relative(partition_t* fs,vfs_node_t* node,u8 rel
 				continue; // required to break out of the loop after the last directory entry
 			}
 			if (directory->length>buffer_space){
-				WARN_CORE("Unimplemented (directory entry crosses sector boundary)");
+				WARN("Unimplemented (directory entry crosses sector boundary)");
 				return NULL;
 			}
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
@@ -148,7 +148,7 @@ _skip_directory_entry:
 				continue; // required to break out of the loop after the last directory entry
 			}
 			if (directory->length>buffer_space){
-				WARN_CORE("Unimplemented (directory entry crosses sector boundary)");
+				WARN("Unimplemented (directory entry crosses sector boundary)");
 				return NULL;
 			}
 			if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
@@ -236,10 +236,10 @@ static const partition_file_system_config_t _iso9660_fs_config={
 
 
 void iso9660_load(const drive_t* drive,const partition_config_t* partition_config,u32 block_index,u32 data_length){
-	LOG_CORE("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
-	INFO_CORE("Root block offset: %u, Root block length: %u",block_index,data_length);
+	LOG("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
+	INFO("Root block offset: %u, Root block length: %u",block_index,data_length);
 	if (drive->block_size_shift!=11){
-		WARN_CORE("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
+		WARN("ISO 9660 drive with block_size_shift!=11 [%u]",drive->block_size_shift);
 	}
 	iso9660_fs_node_t* root=partition_add(drive,partition_config,&_iso9660_fs_config,NULL);
 	root->parent_offset=0xffffffffffffffffull;

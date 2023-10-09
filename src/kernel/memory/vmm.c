@@ -122,15 +122,15 @@ static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 void vmm_init(void){
-	LOG_CORE("Initializing virtual memory manager...");
+	LOG("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
 	lock_init(&(vmm_kernel_pagemap.lock));
-	INFO_CORE("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
+	INFO("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,PMM_COUNTER_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
 	u64 kernel_length=pmm_align_up_address(kernel_data.first_free_address);
-	INFO_CORE("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
+	INFO("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
 	for (u64 i=0;i<kernel_length;i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
@@ -141,11 +141,11 @@ void vmm_init(void){
 			highest_address=end;
 		}
 	}
-	INFO_CORE("Identity mapping first %v...",highest_address);
+	INFO("Identity mapping first %v...",highest_address);
 	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
-	LOG_CORE("Switching to kernel pagemap...");
+	LOG("Switching to kernel pagemap...");
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	_vmm_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
 }

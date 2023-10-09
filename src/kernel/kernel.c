@@ -12,7 +12,7 @@
 
 
 
-#define PRINT_SECTION_DATA(name) INFO_CORE("  " #name ": %p - %p (%v)",kernel_section_##name##_start(),kernel_section_##name##_end(),kernel_section_##name##_end()-kernel_section_##name##_start());
+#define PRINT_SECTION_DATA(name) INFO("  " #name ": %p - %p (%v)",kernel_section_##name##_start(),kernel_section_##name##_end(),kernel_section_##name##_end()-kernel_section_##name##_start());
 
 #define ADJUST_SECTION_FLAGS(name,flags) \
 	INFO("Marking region %p - %p [%v] as %s+%s",kernel_section_##name##_start(),kernel_section_##name##_end(),pmm_align_up_address(kernel_section_##name##_end()-kernel_section_##name##_start()),(((flags)&VMM_PAGE_FLAG_READWRITE)?"RW":"RD"),(((flags)&VMM_PAGE_FLAG_NOEXECUTE)?"NX":"EX")); \
@@ -25,28 +25,28 @@ kernel_data_t __attribute__((section(".data"))) kernel_data;
 
 
 void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
-	LOG_CORE("Loading kernel data...");
+	LOG("Loading kernel data...");
 	kernel_data=*bootloader_kernel_data;
-	INFO_CORE("Version: %lx",kernel_get_version());
-	INFO_CORE("Sections:");
+	INFO("Version: %lx",kernel_get_version());
+	INFO("Sections:");
 	PRINT_SECTION_DATA(address_range);
 	PRINT_SECTION_DATA(kernel);
 	PRINT_SECTION_DATA(kernel_ex);
 	PRINT_SECTION_DATA(kernel_nx);
 	PRINT_SECTION_DATA(kernel_rw);
 	PRINT_SECTION_DATA(bss);
-	INFO_CORE("Mmap Data:");
+	INFO("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
-		INFO_CORE("  %p - %p%s",(kernel_data.mmap+i)->base,(kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length,((kernel_data.mmap+i)->type==1?"":" (Unusable)"));
+		INFO("  %p - %p%s",(kernel_data.mmap+i)->base,(kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length,((kernel_data.mmap+i)->type==1?"":" (Unusable)"));
 		if ((kernel_data.mmap+i)->type==1){
 			total+=(kernel_data.mmap+i)->length;
 		}
 	}
-	INFO_CORE("Total: %v (%lu B)",total,total);
-	INFO_CORE("First free address: %p",kernel_data.first_free_address);
+	INFO("Total: %v (%lu B)",total,total);
+	INFO("First free address: %p",kernel_data.first_free_address);
 	u8* data=(u8*)0xffffffffc01327a0;for (u8 i=0;i<96;i++){WARN("[%u] %x",i,data[i]);}
-	LOG_CORE("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
+	LOG("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
 	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
 		*bss=0;
 	}

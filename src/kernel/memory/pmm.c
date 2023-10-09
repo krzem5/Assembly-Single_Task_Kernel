@@ -63,7 +63,7 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
-	INFO_CORE("Registering memory range %p - %p",address,end);
+	INFO("Registering memory range %p - %p",address,end);
 	do{
 		u8 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
 		if (idx>=PMM_ALLOCATOR_SIZE_COUNT){
@@ -95,8 +95,8 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 
 
 void pmm_init(void){
-	LOG_CORE("Initializing physical memory manager...");
-	LOG_CORE("Scanning memory...");
+	LOG("Initializing physical memory manager...");
+	LOG("Scanning memory...");
 	_pmm_low_allocator.first_address=0;
 	_pmm_low_allocator.last_address=0;
 	lock_init(&(_pmm_low_allocator.lock));
@@ -115,14 +115,14 @@ void pmm_init(void){
 		}
 	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
-	INFO_CORE("Low bitmap size: %v",low_bitmap_size);
+	INFO("Low bitmap size: %v",low_bitmap_size);
 	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_data.first_free_address);
 	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
 	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
-	INFO_CORE("High bitmap size: %v",high_bitmap_size);
+	INFO("High bitmap size: %v",high_bitmap_size);
 	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
-	LOG_CORE("Registering counters...");
+	LOG("Registering counters...");
 	_pmm_counters=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
@@ -134,11 +134,11 @@ void pmm_init(void){
 		}
 	}
 	u32 pmm_counters_size=pmm_align_up_address(sizeof(pmm_counters_t)+_pmm_counters->length*sizeof(pmm_counter_t));
-	INFO_CORE("Counter array size: %v",pmm_counters_size);
+	INFO("Counter array size: %v",pmm_counters_size);
 	(_pmm_counters->data+PMM_COUNTER_PMM)->count=pmm_align_up_address(low_bitmap_size+high_bitmap_size+pmm_counters_size)>>PAGE_SIZE_SHIFT;
 	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_address_range_end()-kernel_section_address_range_start())>>PAGE_SIZE_SHIFT;
 	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size+pmm_counters_size;
-	LOG_CORE("Registering low memory...");
+	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		if ((kernel_data.mmap+i)->type!=1){
 			continue;
@@ -159,7 +159,7 @@ void pmm_init_high_mem(void){
 	_pmm_low_allocator.bitmap=(void*)(((u64)(_pmm_low_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_pmm_counters=(void*)(((u64)_pmm_counters)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	LOG_CORE("Registering high memory...");
+	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		if ((kernel_data.mmap+i)->type!=1){
 			continue;

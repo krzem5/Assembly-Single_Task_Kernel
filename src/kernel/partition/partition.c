@@ -61,7 +61,7 @@ static void _load_iso9660(drive_t* drive){
 			return;
 		}
 		if (block_index==16){
-			INFO_CORE("Detected drive format of '%s' as ISO 9660",drive->model_number);
+			INFO("Detected drive format of '%s' as ISO 9660",drive->model_number);
 		}
 		switch (volume_descriptor->type){
 			case 0:
@@ -85,7 +85,7 @@ static void _load_iso9660(drive_t* drive){
 _load_next_block:
 		block_index++;
 		if (partition_index==255){
-			WARN_CORE("Too many ISO 9660 partitions");
+			WARN("Too many ISO 9660 partitions");
 			break;
 		}
 		partition_index++;
@@ -108,7 +108,7 @@ static void _load_kfs(const drive_t* drive){
 	if (kfs_root_block->signature!=KFS_SIGNATURE){
 		return;
 	}
-	INFO_CORE("Detected drive format of '%s' as KFS",drive->model_number);
+	INFO("Detected drive format of '%s' as KFS",drive->model_number);
 	const partition_config_t partition_config={
 		PARTITION_CONFIG_TYPE_KFS,
 		0,
@@ -136,7 +136,7 @@ void* partition_add(const drive_t* drive,const partition_config_t* partition_con
 	fs->drive=drive;
 	fs->extra_data=extra_data;
 	vfs_allocator_init(_partition_count,config->node_size,&(fs->allocator));
-	LOG_CORE("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
+	LOG("Created partition '%s' from drive '%s'",fs->name,drive->model_number);
 	fs->root=vfs_alloc(fs,"",0);
 	fs->root->type=VFS_NODE_TYPE_DIRECTORY;
 	fs->root->flags|=VFS_NODE_FLAG_ROOT;
@@ -159,9 +159,9 @@ partition_t* partition_get(u8 index){
 
 
 void partition_load(void){
-	LOG_CORE("Loading drive partitions...");
+	LOG("Loading drive partitions...");
 	for (drive_t* drive=drive_data;drive;drive=drive->next){
-		INFO_CORE("Loading partitions from drive '%s'...",drive->model_number);
+		INFO("Loading partitions from drive '%s'...",drive->model_number);
 		_load_iso9660(drive);
 		_load_kfs(drive);
 		const partition_config_t partition_config={
@@ -172,7 +172,7 @@ void partition_load(void){
 		};
 		emptyfs_load(drive,&partition_config);
 	}
-	LOG_CORE("Building partition lookup table...");
+	LOG("Building partition lookup table...");
 	_partition_lookup_table=kmm_alloc(_partition_count*sizeof(partition_t*));
 	for (partition_t* partition=partition_data;partition;partition=partition->next){
 		_partition_lookup_table[partition->index]=partition;
