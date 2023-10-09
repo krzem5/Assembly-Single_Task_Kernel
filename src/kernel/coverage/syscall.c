@@ -10,6 +10,10 @@
 
 
 
+#define COVERAGE_FILE_REPORT_MARKER 0xb8bcbbbe41444347
+
+
+
 typedef struct _GCOV_CTR_INFO{
 	u32 num;
 	s64* values;
@@ -82,8 +86,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 		if (!info->merge[0]){
 			continue;
 		}
-		u8 header[8]={'G','C','D','A',0xbe,0xbb,0xbc,0xb8};
-		_output_bytes(header,8);
+		u64 marker=COVERAGE_FILE_REPORT_MARKER;
+		_output_bytes(&marker,sizeof(u64));
 		_output_int(info->version);
 		_output_int(info->checksum);
 		u32 filename_length=0;

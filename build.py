@@ -106,6 +106,7 @@ USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
+COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 
 
 
@@ -353,7 +354,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			buffer=rf.read(8)
 			if (len(buffer)<8):
 				break
-			if (struct.unpack("<Q",buffer)[0]!=0xb8bcbbbe41444347):
+			if (struct.unpack("<Q",buffer)[0]!=COVERAGE_FILE_REPORT_MARKER):
 				rf.seek(rf.tell()-7)
 				continue
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
