@@ -10,8 +10,6 @@ section .entry exec nowrite
 
 [bits 64]
 _start:
-	test rsi, rsi
-	jz ._skip_env_fix
 	cli
 	mov rsp, rdx
 	add rsp, KERNEL_OFFSET
@@ -38,6 +36,4 @@ _start:
 	mov dx, 0x3fc
 	out dx, al
 	mov cr3, rsi
-	jmp (KERNEL_OFFSET+._skip_env_fix)
-._skip_env_fix:
-	jmp main
+	jmp (KERNEL_OFFSET+main)

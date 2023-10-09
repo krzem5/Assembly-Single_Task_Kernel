@@ -45,7 +45,6 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	}
 	INFO("Total: %v (%lu B)",total,total);
 	INFO("First free address: %p",kernel_data.first_free_address);
-	u8* data=(u8*)0xffffffffc01327a0;for (u8 i=0;i<96;i++){WARN("[%u] %x",i,data[i]);}
 	LOG("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
 	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
 		*bss=0;
