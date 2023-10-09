@@ -82,6 +82,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 		if (!info->merge[0]){
 			continue;
 		}
+		u8 header[8]={'G','C','D','A',0xbe,0xbb,0xbc,0xb8};
+		_output_bytes(header,8);
 		_output_int(info->version);
 		_output_int(info->checksum);
 		u32 filename_length=0;

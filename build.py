@@ -350,10 +350,13 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			os.remove(os.path.join(KERNEL_OBJECT_FILE_DIRECTORY,file))
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
-			buffer=rf.read(12)
-			if (not buffer):
+			buffer=rf.read(8)
+			if (len(buffer)<8):
 				break
-			version,checksum,file_name_length=struct.unpack("III",buffer)
+			if (struct.unpack("<Q",buffer)[0]!=0xb8bcbbbe41444347):
+				rf.seek(rf.tell()-7)
+				continue
+			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
 			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
@@ -559,79 +562,26 @@ if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
-	############################################################################################
-	if (True):
-		subprocess.run([
-			"qemu-system-x86_64",
-			# "-d","int,cpu_reset",
-			# "--no-reboot",
-			# Bios
-			"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
-			"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
-			# Drive files
-			"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
-			"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
-			"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
-			"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
-			# Drives
-			"-device","ahci,id=ahci",
-			"-device","ide-hd,drive=hdd,bus=ahci.0",
-			"-device","nvme,serial=00112233,drive=ssd",
-			# USB
-			"-device","nec-usb-xhci,id=xhci",
-			"-device","usb-storage,bus=xhci.0,drive=bootusb",
-			# Network
-			"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
-			"-device","e1000,netdev=network",
-			# Memory
-			"-m","2G,slots=2,maxmem=4G",
-			"-object","memory-backend-ram,size=1G,id=mem0",
-			"-object","memory-backend-ram,size=1G,id=mem1",
-			# CPU
-			"-cpu","Skylake-Client-v1,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
-			"-smp","8,sockets=2,cores=2,threads=2,maxcpus=8",
-			# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
-			# NUMA
-			"-numa","node,nodeid=0,memdev=mem0",
-			"-numa","node,nodeid=1,memdev=mem1",
-			"-numa","cpu,node-id=0,socket-id=0",
-			"-numa","cpu,node-id=1,socket-id=1",
-			"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
-			"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-			"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
-			"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-			"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
-			"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-			"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
-			"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-			"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-			"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-			"-numa","dist,src=0,dst=1,val=20",
-			# Graphics
-			"-display","none",
-			# Serial
-			"-serial","mon:stdio",
-			"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
-			# Config
-			"-machine","hmat=on",
-			"-uuid","00112233-4455-6677-8899-aabbccddeeff",
-			"-smbios","type=2,serial=SERIAL_NUMBER"
-		])
-		quit()
-	############################################################################################
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
-		# Boot
-		"-boot","order=dc",
+		# "-d","int,cpu_reset",
+		# "--no-reboot",
+		# Bios
+		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
 		# Drive files
 		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
+		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
 		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
 		# Drives
 		"-device","ahci,id=ahci",
 		"-device","ide-hd,drive=hdd,bus=ahci.0",
 		"-device","nvme,serial=00112233,drive=ssd",
+		# USB
+		"-device","nec-usb-xhci,id=xhci",
+		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
 		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
 		"-device","e1000,netdev=network",
@@ -668,7 +618,7 @@ if ("--run" in sys.argv):
 		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
-	]+_kvm_flags())
+	])
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")

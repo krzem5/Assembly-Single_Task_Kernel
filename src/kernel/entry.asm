@@ -3,13 +3,13 @@
 
 
 extern main
-global _entry
+global _start
 section .entry exec nowrite
 
 
 
 [bits 64]
-_entry:
+_start:
 	test rsi, rsi
 	jz ._skip_env_fix
 	cli
