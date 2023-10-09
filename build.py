@@ -434,7 +434,7 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 #####################################################################################################################################
 with open("build/disk/kernel/startup.txt","w") as wf:
 	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
-if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","-b","os.img","-hide","os.img","build/disk"]).returncode!=0):
+if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
