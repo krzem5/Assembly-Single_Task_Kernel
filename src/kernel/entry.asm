@@ -11,7 +11,11 @@ section .entry exec nowrite
 [bits 64]
 _entry:
 	test rsi, rsi
-	jz ._skip_pagemap_fix
+	jz ._skip_env_fix
+	cli
+	mov rsp, rdx
+	add rsp, KERNEL_OFFSET
+	xor rbp, rbp
 	mov al, 0x00
 	mov dx, 0x3f9
 	out dx, al
@@ -34,6 +38,6 @@ _entry:
 	mov dx, 0x3fc
 	out dx, al
 	mov cr3, rsi
-	jmp (KERNEL_OFFSET+._skip_pagemap_fix)
-._skip_pagemap_fix:
+	jmp (KERNEL_OFFSET+._skip_env_fix)
+._skip_env_fix:
 	jmp main

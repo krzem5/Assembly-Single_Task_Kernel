@@ -528,9 +528,11 @@ if ("--run" in sys.argv):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	############################################################################################
-	if (False):
+	if (True):
 		subprocess.run([
 			"qemu-system-x86_64",
+			# "-d","int,cpu_reset",
+			# "--no-reboot",
 			# Bios
 			"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 			"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",

@@ -53,6 +53,7 @@ void KERNEL_CORE_CODE KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloa
 		}
 	}
 	INFO_CORE("Total: %v (%lu B)",total,total);
+	INFO_CORE("First free address: %p",kernel_data.first_free_address);
 	LOG_CORE("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
 	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
 		*bss=0;

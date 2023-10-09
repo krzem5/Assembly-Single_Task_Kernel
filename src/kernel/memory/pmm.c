@@ -116,14 +116,14 @@ void KERNEL_CORE_CODE pmm_init(void){
 	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
 	INFO_CORE("Low bitmap size: %v",low_bitmap_size);
-	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset());
+	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_data.first_free_address);
 	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
 	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
 	INFO_CORE("High bitmap size: %v",high_bitmap_size);
-	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size);
+	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	LOG_CORE("Registering counters...");
-	_pmm_counters=(void*)(pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size+high_bitmap_size);
+	_pmm_counters=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
 		if (*descriptor){
@@ -137,7 +137,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 	INFO_CORE("Counter array size: %v",pmm_counters_size);
 	(_pmm_counters->data+PMM_COUNTER_PMM)->count=pmm_align_up_address(low_bitmap_size+high_bitmap_size+pmm_counters_size)>>PAGE_SIZE_SHIFT;
 	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_address_range_end()-kernel_section_address_range_start())>>PAGE_SIZE_SHIFT;
-	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_section_address_range_end()-kernel_get_offset())+low_bitmap_size+high_bitmap_size+pmm_counters_size;
+	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size+pmm_counters_size;
 	LOG_CORE("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		if ((kernel_data.mmap+i)->type!=1){

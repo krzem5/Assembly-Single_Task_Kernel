@@ -38,8 +38,8 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	kmm_init();
 	pci_enumerate(1);
 	partition_load();
-	kernel_load();
-	// From this point onwards all kernel functions can be used
+	// kernel_load();
+	// // From this point onwards all kernel functions can be used
 	kernel_adjust_memory_flags();
 	handle_init();
 	sandbox_init();
@@ -49,6 +49,7 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	acpi_load();
 	aml_runtime_init_irq();
 	aml_bus_enumerate();
+	for (;;);
 	bios_get_system_data();
 	network_layer1_init_irq();
 	network_layer2_init();
