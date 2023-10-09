@@ -27,25 +27,21 @@ typedef void (*format_format_t)(__builtin_va_list*,u8,format_buffer_state_t*);
 
 
 
-static KERNEL_CORE_RDATA const char _format_null_str[]="(null)";
-static KERNEL_CORE_RDATA const char _format_base16_chars[]="0123456789abcdef";
-
-
-
-static KERNEL_INLINE void KERNEL_CORE_CODE _buffer_state_add(format_buffer_state_t* buffer_state,char c){
+static KERNEL_INLINE void _buffer_state_add(format_buffer_state_t* buffer_state,char c){
 	buffer_state->buffer[buffer_state->offset]=c;
 	buffer_state->offset+=(buffer_state->offset<buffer_state->length);
 }
 
 
 
-static KERNEL_INLINE char KERNEL_CORE_CODE _format_base16_char(u8 value){
-	return _format_base16_chars[value&15];
+static KERNEL_INLINE char _format_base16_char(u8 value){
+	value&=15;
+	return value+(value>9?87:48);
 }
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _format_int_base10(u64 value,format_buffer_state_t* out){
+static KERNEL_INLINE void _format_int_base10(u64 value,format_buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
 	while (value){
@@ -61,7 +57,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _format_int_base10(u64 value,format_b
 
 
 
-static void KERNEL_CORE_CODE _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	u64 data;
 	if (flags&FLAG_SIGN){
 		s64 signed_data=((flags&FLAG_LONG)?__builtin_va_arg(*va,s64):__builtin_va_arg(*va,s32));
@@ -97,16 +93,16 @@ static void KERNEL_CORE_CODE _format_int(__builtin_va_list* va,u8 flags,format_b
 
 
 
-static void KERNEL_CORE_CODE _format_format_char(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_char(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_buffer_state_add(out,__builtin_va_arg(*va,int));
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_string(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_string(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	const char* ptr=__builtin_va_arg(*va,const char*);
 	if (!ptr){
-		ptr=_format_null_str;
+		ptr="(null)";
 	}
 	while (*ptr){
 		_buffer_state_add(out,*ptr);
@@ -116,25 +112,25 @@ static void KERNEL_CORE_CODE _format_format_string(__builtin_va_list* va,u8 flag
 
 
 
-static void KERNEL_CORE_CODE _format_format_decimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_decimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags|FLAG_SIGN,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_unsigned(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_unsigned(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_hexadecimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_hexadecimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	_format_int(va,flags|FLAG_HEX,out);
 }
 
 
 
-static void KERNEL_CORE_CODE _format_format_volume(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_volume(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	u64 size=__builtin_va_arg(*va,u64);
 	if (!size){
 		_buffer_state_add(out,'0');
@@ -186,7 +182,7 @@ static void KERNEL_CORE_CODE _format_format_volume(__builtin_va_list* va,u8 flag
 
 
 
-static void KERNEL_CORE_CODE _format_format_pointer(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
+static void _format_format_pointer(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	u64 address=__builtin_va_arg(*va,u64);
 	u32 shift=64;
 	while (shift){
@@ -200,7 +196,7 @@ static void KERNEL_CORE_CODE _format_format_pointer(__builtin_va_list* va,u8 fla
 
 
 
-static KERNEL_CORE_RDATA const format_format_t _format_formats[HIGHEST_FORMAT-LOWEST_FORMAT+1]={
+static const format_format_t _format_formats[HIGHEST_FORMAT-LOWEST_FORMAT+1]={
 	['c'-LOWEST_FORMAT]=_format_format_char,
 	['s'-LOWEST_FORMAT]=_format_format_string,
 	['d'-LOWEST_FORMAT]=_format_format_decimal,
@@ -212,7 +208,7 @@ static KERNEL_CORE_RDATA const format_format_t _format_formats[HIGHEST_FORMAT-LO
 
 
 
-u32 KERNEL_CORE_CODE format_string(char* buffer,u32 length,const char* template,...){
+u32 format_string(char* buffer,u32 length,const char* template,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,template);
 	u32 out=format_string_va(buffer,length,template,&va);
@@ -222,7 +218,7 @@ u32 KERNEL_CORE_CODE format_string(char* buffer,u32 length,const char* template,
 
 
 
-u32 KERNEL_CORE_CODE format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va){
+u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va){
 	if (!length){
 		return 0;
 	}

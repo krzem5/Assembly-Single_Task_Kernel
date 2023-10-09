@@ -12,7 +12,7 @@
 
 
 
-void* KERNEL_CORE_CODE vfs_alloc(partition_t* fs,const char* name,u8 name_length){
+void* vfs_alloc(partition_t* fs,const char* name,u8 name_length){
 	if (name_length>63){
 		name_length=63;
 		WARN_CORE("vfs_node_t.name_length too long");
@@ -55,7 +55,7 @@ vfs_node_t* vfs_get_by_id(vfs_node_id_t id){
 
 
 
-vfs_node_t* KERNEL_CORE_CODE vfs_get_by_path(vfs_node_t* root,const char* path,u8 type){
+vfs_node_t* vfs_get_by_path(vfs_node_t* root,const char* path,u8 type){
 	if (path[0]=='/'){
 		if (!partition_boot){
 			panic("Root file system not located yet; partition must be specified");
@@ -149,7 +149,7 @@ _check_next_fs:
 
 
 
-vfs_node_t* KERNEL_CORE_CODE vfs_get_relative(vfs_node_t* node,u8 relative){
+vfs_node_t* vfs_get_relative(vfs_node_t* node,u8 relative){
 	if (!node){
 		return NULL;
 	}
@@ -281,7 +281,7 @@ _Bool vfs_delete(vfs_node_t* node){
 
 
 
-vfs_node_t* KERNEL_CORE_CODE vfs_get_child(vfs_node_t* parent,const char* name,u8 name_length){
+vfs_node_t* vfs_get_child(vfs_node_t* parent,const char* name,u8 name_length){
 	if (!parent||parent->type!=VFS_NODE_TYPE_DIRECTORY){
 		return NULL;
 	}
@@ -302,7 +302,7 @@ _next_child:
 
 
 
-u64 KERNEL_CORE_CODE vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count){
+u64 vfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 count){
 	if (node->type!=VFS_NODE_TYPE_FILE||!count){
 		return 0;
 	}

@@ -57,11 +57,7 @@ PMM_DECLARE_COUNTER(DRIVER_AHCI);
 
 
 
-static KERNEL_CORE_RDATA const char _ahci_drive_name_format_template[]="ahci%u";
-
-
-
-static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device){
+static u8 _device_get_command_slot(const ahci_device_t* device){
 	u32 mask;
 	do{
 		mask=(~(device->registers->sact|device->registers->ci))&((1ull<<device->controller->command_slot_count)-1);
@@ -71,7 +67,7 @@ static u8 KERNEL_CORE_CODE _device_get_command_slot(const ahci_device_t* device)
 
 
 
-static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8 cmd_slot){
+static void _device_send_command(const ahci_device_t* device,u8 cmd_slot){
 	SPINLOOP(device->registers->tfd&(TFD_STS_DSQ|TFD_STS_BSY));
 	device->registers->cmd&=~CMD_ST;
 	SPINLOOP(device->registers->cmd&CMD_CR);
@@ -81,7 +77,7 @@ static void KERNEL_CORE_CODE _device_send_command(const ahci_device_t* device,u8
 
 
 
-static void KERNEL_CORE_CODE _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
+static void _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
 	SPINLOOP(device->registers->ci&(1<<cmd_slot));
 	device->registers->cmd&=~CMD_ST;
 	SPINLOOP(device->registers->cmd&CMD_ST);
@@ -90,7 +86,7 @@ static void KERNEL_CORE_CODE _device_wait_command(const ahci_device_t* device,u8
 
 
 
-static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	ahci_device_t* device=extra_data;
 	u32 dbc=(count<<9)-1;
 	if (dbc>0x3fffff){
@@ -136,7 +132,7 @@ static u64 KERNEL_CORE_CODE _ahci_read_write(void* extra_data,u64 offset,void* b
 
 
 
-static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
+static void _ahci_init(ahci_device_t* device,u8 port_index){
 	u64 command_list=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	device->command_list=(void*)(command_list+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	device->registers->clb=command_list;
@@ -186,7 +182,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 		.block_size=512,
 		.extra_data=device
 	};
-	format_string(drive.name,16,_ahci_drive_name_format_template,port_index);
+	format_string(drive.name,16,"ahci%u",port_index);
 	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,drive.serial_number);
 	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,drive.model_number);
 	drive_add(&drive);
@@ -195,7 +191,7 @@ static void KERNEL_CORE_CODE _ahci_init(ahci_device_t* device,u8 port_index){
 
 
 
-void KERNEL_CORE_CODE driver_ahci_init_device(pci_device_t* device){
+void driver_ahci_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x06||device->progif!=0x01){
 		return;
 	}

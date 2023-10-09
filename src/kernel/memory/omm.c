@@ -17,7 +17,7 @@ omm_allocator_t* omm_head_allocator=NULL;
 
 
 
-static void KERNEL_CORE_CODE _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
+static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
 	page->prev=NULL;
 	page->next=*list_head;
 	if (*list_head){
@@ -28,7 +28,7 @@ static void KERNEL_CORE_CODE _allocator_add_page(omm_page_header_t** list_head,o
 
 
 
-static void KERNEL_CORE_CODE _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
+static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
 	if (page->prev){
 		page->prev->next=page->next;
 	}
@@ -42,7 +42,7 @@ static void KERNEL_CORE_CODE _allocator_remove_page(omm_page_header_t** list_hea
 
 
 
-void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
+void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	if (allocator->next_allocator==(void*)1){
 		lock_acquire_exclusive(&_omm_global_lock);
@@ -95,7 +95,7 @@ void* KERNEL_CORE_CODE omm_alloc(omm_allocator_t* allocator){
 
 
 
-void KERNEL_CORE_CODE omm_dealloc(omm_allocator_t* allocator,void* object){
+void omm_dealloc(omm_allocator_t* allocator,void* object){
 	scheduler_pause();
 	lock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));

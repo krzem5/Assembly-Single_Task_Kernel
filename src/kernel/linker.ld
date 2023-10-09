@@ -9,37 +9,11 @@ ENTRY(_start)
 SECTIONS{
     . = 0xffffffffc0100000;
     DECLARE_SECTION_START(address_range);
-    DECLARE_SECTION_START(core);
-    DECLARE_SECTION_START(core_ex);
-    .core_ex : AT(ADDR(.core_ex) - BASE_ADDRESS_OFFSET){
-        *(.entry)
-        *(.cversion)
-        *(.ctext .ctext*)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(core_ex);
-    DECLARE_SECTION_START(core_nx);
-    .core_nx : AT(ADDR(.core_nx) - BASE_ADDRESS_OFFSET){
-        *(.crdata .crdata*)
-        . = ALIGN(8);
-	    DECLARE_SECTION_START(pmm_counter);
-        *(.pmmcounter*)
-	    DECLARE_SECTION_END(pmm_counter);
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(core_nx);
-    DECLARE_SECTION_START(core_rw);
-    .core_rw : AT(ADDR(.core_rw) - BASE_ADDRESS_OFFSET){
-        *(.cdata .cdata*)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(core_rw);
-    DECLARE_SECTION_END(core);
     DECLARE_SECTION_START(kernel);
     DECLARE_SECTION_START(kernel_ex);
     .kernel_ex : AT(ADDR(.kernel_ex) - BASE_ADDRESS_OFFSET){
-        ASSERT(__KERNEL_SECTION_core_END__ - __KERNEL_SECTION_core_START__ <= 65536, "Kernel core too large");
-        *(.version)
+        *(.entry)
+        *(.cversion .version)
         *(.text .text*)
         . = ALIGN(0x1000);
     }
@@ -48,6 +22,10 @@ SECTIONS{
     .kernel_nx : AT(ADDR(.kernel_nx) - BASE_ADDRESS_OFFSET){
         *(.rodata .rodata* .rdata .rdata*)
         . = ALIGN(8);
+	    DECLARE_SECTION_START(pmm_counter);
+        *(.pmmcounter)
+        . = ALIGN(8);
+	    DECLARE_SECTION_END(pmm_counter);
 	    DECLARE_SECTION_START(cpu_local);
         *(.cpulocal)
         . = ALIGN(8);
@@ -80,7 +58,6 @@ SECTIONS{
     DECLARE_SECTION_END(kernel);
     DECLARE_SECTION_START(bss);
     .bss : AT(ADDR(.bss) - BASE_ADDRESS_OFFSET){
-        *(.cbss)
         *(.bss)
         . = ALIGN(0x1000);
     }

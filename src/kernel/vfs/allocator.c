@@ -14,7 +14,7 @@ PMM_DECLARE_COUNTER(VFS_ALLOCATOR);
 
 
 
-void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator_t* out){
+void vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator_t* out){
 	LOG_CORE("Initializing file system node allocator...");
 	if (node_size<sizeof(vfs_node_t)){
 		panic("vfs_allocator_init: node_size too small");
@@ -45,7 +45,7 @@ void KERNEL_CORE_CODE vfs_allocator_init(u8 vfs_index,u8 node_size,vfs_allocator
 
 
 
-vfs_node_t* KERNEL_CORE_CODE vfs_allocator_get(vfs_allocator_t* allocator,vfs_node_id_t id,_Bool allocate_if_not_present){
+vfs_node_t* vfs_allocator_get(vfs_allocator_t* allocator,vfs_node_id_t id,_Bool allocate_if_not_present){
 	vfs_node_t* out=NULL;
 	lock_acquire_exclusive(&(allocator->lock));
 	if (allocate_if_not_present&&id==VFS_NODE_ID_EMPTY){

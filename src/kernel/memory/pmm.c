@@ -16,13 +16,13 @@ PMM_DECLARE_COUNTER(TOTAL);
 
 
 
-static pmm_allocator_t KERNEL_CORE_BSS _pmm_low_allocator;
-static pmm_allocator_t KERNEL_CORE_BSS _pmm_high_allocator;
-static lock_t KERNEL_CORE_DATA _pmm_counter_lock=LOCK_INIT_STRUCT;
-static pmm_counters_t* KERNEL_CORE_BSS _pmm_counters;
-static u64 KERNEL_CORE_DATA _pmm_block_address_offset=0;
+static pmm_allocator_t KERNEL_BSS _pmm_low_allocator;
+static pmm_allocator_t KERNEL_BSS _pmm_high_allocator;
+static lock_t _pmm_counter_lock=LOCK_INIT_STRUCT;
+static pmm_counters_t* KERNEL_BSS _pmm_counters;
+static u64 _pmm_block_address_offset=0;
 
-u64 KERNEL_CORE_BSS pmm_adjusted_kernel_end;
+u64 KERNEL_BSS pmm_adjusted_kernel_end;
 
 
 
@@ -53,13 +53,13 @@ static KERNEL_INLINE void _toggle_address_bit(const pmm_allocator_t* allocator,u
 
 
 
-static KERNEL_INLINE u64 KERNEL_CORE_CODE _get_block_size(u8 index){
+static KERNEL_INLINE u64 _get_block_size(u8 index){
 	return 1ull<<(PAGE_SIZE_SHIFT+index);
 }
 
 
 
-static void KERNEL_CORE_CODE _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
+static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
@@ -94,7 +94,7 @@ static void KERNEL_CORE_CODE _add_memory_range(pmm_allocator_t* allocator,u64 ad
 
 
 
-void KERNEL_CORE_CODE pmm_init(void){
+void pmm_init(void){
 	LOG_CORE("Initializing physical memory manager...");
 	LOG_CORE("Scanning memory...");
 	_pmm_low_allocator.first_address=0;
@@ -154,7 +154,7 @@ void KERNEL_CORE_CODE pmm_init(void){
 
 
 
-void KERNEL_CORE_CODE pmm_init_high_mem(void){
+void pmm_init_high_mem(void){
 	_pmm_block_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	_pmm_low_allocator.bitmap=(void*)(((u64)(_pmm_low_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -172,7 +172,7 @@ void KERNEL_CORE_CODE pmm_init_high_mem(void){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
+u64 pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 	scheduler_pause();
 	if (!count){
 		panic("pmm_alloc: trying to allocate zero physical pages");
@@ -222,7 +222,7 @@ u64 KERNEL_CORE_CODE pmm_alloc(u64 count,u8 counter,_Bool memory_hint){
 
 
 
-u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
+u64 pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
 	u64 out=pmm_alloc(count,counter,memory_hint);
 	if (!out){
 		return 0;
@@ -233,7 +233,7 @@ u64 KERNEL_CORE_CODE pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint){
 
 
 
-void KERNEL_CORE_CODE pmm_dealloc(u64 address,u64 count,u8 counter){
+void pmm_dealloc(u64 address,u64 count,u8 counter){
 	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");

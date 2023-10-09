@@ -21,8 +21,8 @@
 #define PMM_COUNTER_NAME_LENGTH 16
 
 #define PMM_DECLARE_COUNTER(name) \
-	static u16 KERNEL_CORE_DATA PMM_COUNTER_##name=0; \
-	static const pmm_counter_descriptor_t KERNEL_CORE_RDATA _pmm_counter_descriptor_##name={ \
+	static u16 PMM_COUNTER_##name=0; \
+	static const pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
 		#name, \
 		&(PMM_COUNTER_##name) \
 	}; \

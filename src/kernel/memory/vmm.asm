@@ -3,7 +3,7 @@ global vmm_get_fault_address
 global vmm_get_pagemap
 global vmm_invalidate_tlb_entry
 global vmm_switch_to_pagemap
-section .ctext exec nowrite
+section .text exec nowrite
 
 
 

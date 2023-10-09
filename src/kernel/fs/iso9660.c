@@ -42,7 +42,7 @@ typedef struct _ISO9660_FS_NODE{
 
 
 
-static vfs_node_t* KERNEL_CORE_CODE _iso9660_create_node_from_directory_entry(partition_t* fs,const iso9660_fs_node_t* parent,iso9660_directory_t* directory_entry,u64 current_offset){
+static vfs_node_t* _iso9660_create_node_from_directory_entry(partition_t* fs,const iso9660_fs_node_t* parent,iso9660_directory_t* directory_entry,u64 current_offset){
 	u8 length=directory_entry->identifier_length;
 	if (!(directory_entry->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)){
 		length-=2;
@@ -74,7 +74,7 @@ static _Bool _iso9660_delete(partition_t* fs,vfs_node_t* node){
 
 
 
-static vfs_node_t* KERNEL_CORE_CODE _iso9660_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
+static vfs_node_t* _iso9660_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
 	u8 buffer[2048];
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (relative==VFS_RELATIVE_FIRST_CHILD){
@@ -182,7 +182,7 @@ static _Bool _iso9660_move_file(partition_t* fs,vfs_node_t* src_node,vfs_node_t*
 
 
 
-static u64 KERNEL_CORE_CODE _iso9660_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 _iso9660_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
 	const iso9660_fs_node_t* iso9660_node=(const iso9660_fs_node_t*)node;
 	if (count+offset>iso9660_node->data_length){
 		count=iso9660_node->data_length-offset;
@@ -218,7 +218,7 @@ static void _iso9660_flush_cache(partition_t* fs){
 
 
 
-static const partition_file_system_config_t KERNEL_CORE_RDATA _iso9660_fs_config={
+static const partition_file_system_config_t _iso9660_fs_config={
 	sizeof(iso9660_fs_node_t),
 	PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO,
 	_iso9660_create,
@@ -235,7 +235,7 @@ static const partition_file_system_config_t KERNEL_CORE_RDATA _iso9660_fs_config
 
 
 
-void KERNEL_CORE_CODE iso9660_load(const drive_t* drive,const partition_config_t* partition_config,u32 block_index,u32 data_length){
+void iso9660_load(const drive_t* drive,const partition_config_t* partition_config,u32 block_index,u32 data_length){
 	LOG_CORE("Loading ISO 9660 file system from drive '%s'...",drive->model_number);
 	INFO_CORE("Root block offset: %u, Root block length: %u",block_index,data_length);
 	if (drive->block_size_shift!=11){

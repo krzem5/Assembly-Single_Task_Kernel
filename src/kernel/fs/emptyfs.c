@@ -19,7 +19,7 @@ static _Bool _emptyfs_delete(partition_t* fs,vfs_node_t* node){
 
 
 
-static vfs_node_t* KERNEL_CORE_CODE _emptyfs_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
+static vfs_node_t* _emptyfs_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
 	return NULL;
 }
 
@@ -37,7 +37,7 @@ static _Bool _emptyfs_move_file(partition_t* fs,vfs_node_t* src_node,vfs_node_t*
 
 
 
-static u64 KERNEL_CORE_CODE _emptyfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 _emptyfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
 	return fs->drive->read_write(fs->drive->extra_data,offset>>fs->drive->block_size_shift,buffer,count>>fs->drive->block_size_shift)<<fs->drive->block_size_shift;
 }
 
@@ -67,7 +67,7 @@ static void _emptyfs_flush_cache(partition_t* fs){
 
 
 
-static const partition_file_system_config_t KERNEL_CORE_RDATA _emptyfs_fs_config={
+static const partition_file_system_config_t _emptyfs_fs_config={
 	sizeof(vfs_node_t),
 	PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO,
 	_emptyfs_create,
@@ -84,7 +84,7 @@ static const partition_file_system_config_t KERNEL_CORE_RDATA _emptyfs_fs_config
 
 
 
-void KERNEL_CORE_CODE emptyfs_load(const drive_t* drive,const partition_config_t* partition_config){
+void emptyfs_load(const drive_t* drive,const partition_config_t* partition_config){
 	LOG_CORE("Loading EmptyFS file system from drive '%s'...",drive->model_number);
 	vfs_node_t* root=partition_add(drive,partition_config,&_emptyfs_fs_config,NULL);
 	root->type=VFS_NODE_TYPE_FILE;

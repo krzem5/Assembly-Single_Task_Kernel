@@ -7,29 +7,22 @@
 
 
 
-static KERNEL_CORE_RDATA const char _drive_type_name_ahci[]="AHCI";
-static KERNEL_CORE_RDATA const char _drive_type_name_ata[]="ATA";
-static KERNEL_CORE_RDATA const char _drive_type_name_atapi[]="ATAPI";
-static KERNEL_CORE_RDATA const char _drive_type_name_nvme[]="NVME";
-
-
-
-static const char*const KERNEL_CORE_RDATA _drive_type_names[]={
-	[DRIVE_TYPE_AHCI]=_drive_type_name_ahci,
-	[DRIVE_TYPE_ATA]=_drive_type_name_ata,
-	[DRIVE_TYPE_ATAPI]=_drive_type_name_atapi,
-	[DRIVE_TYPE_NVME]=_drive_type_name_nvme,
+static const char* _drive_type_names[]={
+	[DRIVE_TYPE_AHCI]="AHCI",
+	[DRIVE_TYPE_ATA]="ATA",
+	[DRIVE_TYPE_ATAPI]="ATAPI",
+	[DRIVE_TYPE_NVME]="NVME",
 };
 
 
 
-static u32 KERNEL_CORE_BSS _drive_count;
+static u32 KERNEL_BSS _drive_count;
 
-drive_t* KERNEL_CORE_BSS drive_data;
+drive_t* KERNEL_BSS drive_data;
 
 
 
-void KERNEL_CORE_CODE drive_add(const drive_t* drive){
+void drive_add(const drive_t* drive){
 	LOG_CORE("Creating drive '%s' as '%s/%s'...",drive->name,_drive_type_names[drive->type],drive->model_number);
 	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
 	*new_drive=*drive;

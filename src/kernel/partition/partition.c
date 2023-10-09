@@ -37,18 +37,15 @@ typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
 
 
 
-static KERNEL_CORE_RDATA const char _partition_name_index_format_template[]="%sp%u";
-static KERNEL_CORE_RDATA const char _partition_name_drive_format_template[]="%s";
+static u8 KERNEL_BSS _partition_count;
+static partition_t** KERNEL_BSS _partition_lookup_table;
 
-static u8 KERNEL_CORE_BSS _partition_count;
-static partition_t** KERNEL_CORE_BSS _partition_lookup_table;
-
-partition_t* KERNEL_CORE_BSS partition_data;
-partition_t* KERNEL_CORE_BSS partition_boot;
+partition_t* KERNEL_BSS partition_data;
+partition_t* KERNEL_BSS partition_boot;
 
 
 
-static void KERNEL_CORE_CODE _load_iso9660(drive_t* drive){
+static void _load_iso9660(drive_t* drive){
 	if (drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
 		return;
 	}
@@ -99,7 +96,7 @@ _loaded_all_blocks:
 
 
 
-static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
+static void _load_kfs(const drive_t* drive){
 	if (drive->block_size>4096){
 		return;
 	}
@@ -123,7 +120,7 @@ static void KERNEL_CORE_CODE _load_kfs(const drive_t* drive){
 
 
 
-void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
+void* partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
 	if (_partition_lookup_table){
 		panic("Unable to add partition");
 	}
@@ -135,7 +132,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 	fs->partition_config=*partition_config;
 	fs->index=_partition_count;
 	fs->flags=0;
-	fs->name_length=format_string(fs->name,16,(partition_config->type==PARTITION_CONFIG_TYPE_DRIVE?_partition_name_drive_format_template:_partition_name_index_format_template),drive->name,partition_config->index);
+	fs->name_length=format_string(fs->name,16,(partition_config->type==PARTITION_CONFIG_TYPE_DRIVE?"%s":"%sp%u"),drive->name,partition_config->index);
 	fs->drive=drive;
 	fs->extra_data=extra_data;
 	vfs_allocator_init(_partition_count,config->node_size,&(fs->allocator));
@@ -152,7 +149,7 @@ void* KERNEL_CORE_CODE partition_add(const drive_t* drive,const partition_config
 
 
 
-partition_t* KERNEL_CORE_CODE partition_get(u8 index){
+partition_t* partition_get(u8 index){
 	if (!_partition_lookup_table){
 		panic("Unable to get partition");
 	}
@@ -161,7 +158,7 @@ partition_t* KERNEL_CORE_CODE partition_get(u8 index){
 
 
 
-void KERNEL_CORE_CODE partition_load(void){
+void partition_load(void){
 	LOG_CORE("Loading drive partitions...");
 	for (drive_t* drive=drive_data;drive;drive=drive->next){
 		INFO_CORE("Loading partitions from drive '%s'...",drive->model_number);

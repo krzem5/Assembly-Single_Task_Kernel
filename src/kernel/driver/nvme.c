@@ -17,7 +17,7 @@
 
 
 
-void KERNEL_CORE_CODE driver_nvme_init_device(pci_device_t* device){
+void driver_nvme_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x08||device->progif!=0x02){
 		return;
 	}

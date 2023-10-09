@@ -539,9 +539,9 @@ def set_file_content(backend,inode,content):
 		length=len(content)-offset
 		if (length>chunk.length):
 			length=chunk.length
-			chunk.data[:length]=content[offset:offset+length]
-			for i in range(length,chunk.length):
-				chunk.data[i]=0
+		chunk.data[:length]=content[offset:offset+length]
+		for i in range(length,chunk.length):
+			chunk.data[i]=0
 		data_provider.save_chunk(chunk)
 		offset+=length
 	node.save()

@@ -190,7 +190,7 @@ PMM_DECLARE_COUNTER(KFS);
 
 
 
-static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
+static void _drive_read(const drive_t* drive,kfs_large_block_index_t offset,void* buffer,kfs_large_block_index_t length){
 	if (!offset){
 		panic("Invalid KFS offset");
 	}
@@ -201,7 +201,7 @@ static void KERNEL_CORE_CODE _drive_read(const drive_t* drive,kfs_large_block_in
 
 
 
-static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
+static void _drive_write(const drive_t* drive,kfs_large_block_index_t offset,const void* buffer,kfs_large_block_index_t length){
 	if (!offset){
 		panic("Invalid KFS offset");
 	}
@@ -212,13 +212,13 @@ static void KERNEL_CORE_CODE _drive_write(const drive_t* drive,kfs_large_block_i
 
 
 
-static KERNEL_INLINE void* KERNEL_CORE_CODE _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
+static KERNEL_INLINE void* _nda2_block_get_high_part(kfs_nda2_block_t* nda2){
 	return (void*)(((u64)nda2)+4096);
 }
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nfda(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_nfda(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NFDA_DIRTY)){
 		return;
 	}
@@ -228,7 +228,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nfda(kfs_block_cac
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_nda1(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA1_DIRTY)){
 		return;
 	}
@@ -238,7 +238,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda1(kfs_block_cac
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_nda2(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_DIRTY)){
 		return;
 	}
@@ -249,7 +249,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda2(kfs_block_cac
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_nda3(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA3_DIRTY)){
 		return;
 	}
@@ -259,7 +259,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_nda3(kfs_block_cac
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_batc(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_BATC_DIRTY)){
 		return;
 	}
@@ -269,7 +269,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_batc(kfs_block_cac
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cache_t* block_cache){
+static KERNEL_INLINE void _block_cache_flush_root(kfs_block_cache_t* block_cache){
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_ROOT_DIRTY)){
 		return;
 	}
@@ -281,7 +281,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _block_cache_flush_root(kfs_block_cac
 
 
 
-static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_alloc_block(kfs_block_cache_t* block_cache){
+static kfs_large_block_index_t _block_cache_alloc_block(kfs_block_cache_t* block_cache){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_cache->batc.bitmap3){
 		goto _batc_found;
 	}
@@ -309,7 +309,7 @@ _batc_found:
 
 
 
-static void KERNEL_CORE_CODE _block_cache_dealloc_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void _block_cache_dealloc_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_BATC_PRESENT)&&block_index>=block_cache->batc.first_block_index&&block_index<block_cache->batc.first_block_index+KFS_BATC_BLOCK_COUNT){
 		goto _batc_found;
 	}
@@ -326,7 +326,7 @@ _batc_found:
 
 
 
-static void KERNEL_CORE_CODE _block_cache_clear_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void _block_cache_clear_block(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	_drive_write(block_cache->drive,block_index,&(block_cache->empty_block),1);
 }
 
@@ -348,7 +348,7 @@ static void _block_cache_init_nfda(kfs_block_cache_t* block_cache,kfs_large_bloc
 
 
 
-static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda2(kfs_block_cache_t* block_cache,kfs_index_t node_index){
+static kfs_large_block_index_t _block_cache_init_nda2(kfs_block_cache_t* block_cache,kfs_index_t node_index){
 	block_cache->root.nda2_block_count+=2<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	block_cache->nda2.block_index[0]=_block_cache_alloc_block(block_cache);
 	block_cache->nda2.block_index[1]=_block_cache_alloc_block(block_cache);
@@ -368,7 +368,7 @@ static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda2(kfs_block
 
 
 
-static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda3(kfs_block_cache_t* block_cache,kfs_index_t node_index){
+static kfs_large_block_index_t _block_cache_init_nda3(kfs_block_cache_t* block_cache,kfs_index_t node_index){
 	block_cache->root.nda3_block_count+=1<<(12-DRIVE_BLOCK_SIZE_SHIFT);
 	block_cache->nda3.block_index=_block_cache_alloc_block(block_cache);
 	block_cache->nda3.node_index=node_index;
@@ -382,7 +382,7 @@ static kfs_large_block_index_t KERNEL_CORE_CODE _block_cache_init_nda3(kfs_block
 
 
 
-static void KERNEL_CORE_CODE _block_cache_load_nfda(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void _block_cache_load_nfda(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NFDA_PRESENT)&&block_cache->nfda.block_index==block_index){
 		return;
 	}
@@ -393,7 +393,7 @@ static void KERNEL_CORE_CODE _block_cache_load_nfda(kfs_block_cache_t* block_cac
 
 
 
-static void KERNEL_CORE_CODE _block_cache_load_nda1(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
+static void _block_cache_load_nda1(kfs_block_cache_t* block_cache,kfs_large_block_index_t block_index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NDA1_PRESENT)&&block_cache->nda1_block_index==block_index){
 		return;
 	}
@@ -405,7 +405,7 @@ static void KERNEL_CORE_CODE _block_cache_load_nda1(kfs_block_cache_t* block_cac
 
 
 
-static kfs_node_t* KERNEL_CORE_CODE _get_node_by_index(kfs_block_cache_t* block_cache,kfs_index_t index){
+static kfs_node_t* _get_node_by_index(kfs_block_cache_t* block_cache,kfs_index_t index){
 	if ((block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)&&block_cache->nda2.node_index==(index>>15)){
 		goto _nda2_found;
 	}
@@ -436,7 +436,7 @@ _nda2_found:
 
 
 
-static void KERNEL_CORE_CODE _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
+static void _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* out){
 	out->header.type=((node->flags&KFS_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 	out->header.parent=(node->parent==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
 	out->header.prev_sibling=(node->prev_sibling==KFS_NODE_ID_NONE?VFS_NODE_ID_EMPTY:VFS_NODE_ID_UNKNOWN);
@@ -448,7 +448,7 @@ static void KERNEL_CORE_CODE _node_to_fs_node(kfs_node_t* node,kfs_fs_node_t* ou
 
 
 
-static _Bool KERNEL_CORE_CODE _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block_index_t checked_nda2_index){
+static _Bool _nda3_find_free_nda2(kfs_block_cache_t* block_cache,kfs_large_block_index_t checked_nda2_index){
 	u16 free_nda2_index=0xffff;
 	for (u16 i=0;i<1022;i++){
 		kfs_large_block_index_t block_index=block_cache->nda3.nda2[i];
@@ -477,7 +477,7 @@ static _Bool KERNEL_CORE_CODE _nda3_find_free_nda2(kfs_block_cache_t* block_cach
 
 
 
-static kfs_node_t* KERNEL_CORE_CODE _alloc_node(kfs_block_cache_t* block_cache,kfs_flags_t type,const char* name,u8 name_length){
+static kfs_node_t* _alloc_node(kfs_block_cache_t* block_cache,kfs_flags_t type,const char* name,u8 name_length){
 	kfs_large_block_index_t checked_nda2_index=0;
 	if (!(block_cache->flags&KFS_BLOCK_CACHE_NDA2_PRESENT)){
 		goto _nda2_empty;
@@ -567,7 +567,7 @@ _nda2_found:
 
 
 
-static u64 KERNEL_CORE_CODE _get_nfda_and_range_index(kfs_block_cache_t* block_cache,kfs_node_t* node,u64 offset){
+static u64 _get_nfda_and_range_index(kfs_block_cache_t* block_cache,kfs_node_t* node,u64 offset){
 	u64 extra=offset&4095;
 	offset>>=12;
 	kfs_large_block_index_t block_index=node->data.file.nfda_head;
@@ -744,7 +744,7 @@ static _Bool _kfs_delete(partition_t* fs,vfs_node_t* node){
 
 
 
-static vfs_node_t* KERNEL_CORE_CODE _kfs_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
+static vfs_node_t* _kfs_get_relative(partition_t* fs,vfs_node_t* node,u8 relative){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -836,7 +836,7 @@ static _Bool _kfs_move_file(partition_t* fs,vfs_node_t* src_node,vfs_node_t* dst
 
 
 
-static u64 KERNEL_CORE_CODE _kfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
+static u64 _kfs_read(partition_t* fs,vfs_node_t* node,u64 offset,u8* buffer,u64 count){
 	kfs_block_cache_t* block_cache=fs->extra_data;
 	kfs_fs_node_t* kfs_fs_node=(kfs_fs_node_t*)node;
 	_block_cache_load_nda1(block_cache,kfs_fs_node->block_index);
@@ -1047,7 +1047,7 @@ static void _kfs_flush_cache(partition_t* fs){
 
 
 
-static const partition_file_system_config_t KERNEL_CORE_RDATA _kfs_fs_config={
+static const partition_file_system_config_t _kfs_fs_config={
 	sizeof(kfs_fs_node_t),
 	0,
 	_kfs_create,
@@ -1064,7 +1064,7 @@ static const partition_file_system_config_t KERNEL_CORE_RDATA _kfs_fs_config={
 
 
 
-void KERNEL_CORE_CODE kfs_load(const drive_t* drive,const partition_config_t* partition_config){
+void kfs_load(const drive_t* drive,const partition_config_t* partition_config){
 	LOG_CORE("Loading KFS file system from drive '%s'...",drive->model_number);
 	INFO_CORE("Allocating block cache...");
 	kfs_block_cache_t* block_cache=(void*)(pmm_alloc(pmm_align_up_address(sizeof(kfs_block_cache_t))>>PAGE_SIZE_SHIFT,PMM_COUNTER_KFS,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);

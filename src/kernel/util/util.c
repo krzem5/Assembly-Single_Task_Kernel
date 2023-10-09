@@ -4,13 +4,13 @@
 
 
 
-_Bool KERNEL_CORE_CODE __attribute__((weak)) _user_panic_handler(const char* error){
+_Bool __attribute__((weak)) _user_panic_handler(const char* error){
 	return 0;
 }
 
 
 
-void* KERNEL_NOCOVERAGE KERNEL_CORE_CODE KERNEL_NOOPT memcpy(void* dst,const void* src,u64 length){
+void* KERNEL_NOCOVERAGE KERNEL_NOOPT memcpy(void* dst,const void* src,u64 length){
 	u8* dst_ptr=dst;
 	const u8* src_ptr=src;
 	for (u64 i=0;i<length;i++){
@@ -21,7 +21,7 @@ void* KERNEL_NOCOVERAGE KERNEL_CORE_CODE KERNEL_NOOPT memcpy(void* dst,const voi
 
 
 
-void* KERNEL_NOCOVERAGE KERNEL_CORE_CODE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
+void* KERNEL_NOCOVERAGE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	for (u64 i=0;i<length;i++){
 		ptr[i]=value;
@@ -31,7 +31,7 @@ void* KERNEL_NOCOVERAGE KERNEL_CORE_CODE KERNEL_NOOPT memset(void* dst,u8 value,
 
 
 
-char* KERNEL_NOCOVERAGE KERNEL_CORE_CODE memcpy_lowercase(char* dst,const char* src,u64 length){
+char* KERNEL_NOCOVERAGE memcpy_lowercase(char* dst,const char* src,u64 length){
 	for (u64 i=0;i<length;i++){
 		char v=src[i];
 		v|=(v>64&&v<91)<<5;
@@ -42,7 +42,7 @@ char* KERNEL_NOCOVERAGE KERNEL_CORE_CODE memcpy_lowercase(char* dst,const char* 
 
 
 
-void KERNEL_NOCOVERAGE KERNEL_CORE_CODE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
+void KERNEL_NOCOVERAGE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 	u16* dst16=(u16*)dst;
 	for (u8 i=0;i<length;i++){
 		dst16[i]=__builtin_bswap16(src[i]);
@@ -56,7 +56,7 @@ void KERNEL_NOCOVERAGE KERNEL_CORE_CODE bswap16_trunc_spaces(const u16* src,u8 l
 
 
 
-void KERNEL_CORE_CODE panic(const char* error){
+void panic(const char* error){
 	_user_panic_handler(error);
 	log("\x1b[1m\x1b[1m\x1b[38;2;192;28;40mFatal error: %s\x1b[0m\n",error);
 	io_port_out16(0x604,0x2000);

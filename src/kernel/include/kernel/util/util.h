@@ -41,13 +41,13 @@
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __pause(void){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE __pause(void){
 	asm volatile("pause":::"memory");
 }
 
 
 
-static KERNEL_INLINE void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
+static KERNEL_INLINE void* KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
 	u8* dst_ptr=dst;
 	const u8* src_ptr=src;
 	for (u64 i=0;i<length;i++){
@@ -58,7 +58,7 @@ static KERNEL_INLINE void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memcpy_inline(vo
 
 
 
-static KERNEL_INLINE void* KERNEL_CORE_CODE KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
+static KERNEL_INLINE void* KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	for (u64 i=0;i<length;i++){
 		ptr[i]=value;

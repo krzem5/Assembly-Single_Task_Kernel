@@ -491,26 +491,7 @@ linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_split_kernel_file("build/kernel.bin","build/stage3.bin","build/disk/kernel/kernel.bin",kernel_symbols["__KERNEL_SECTION_core_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"],kernel_symbols["__KERNEL_SECTION_kernel_END__"]-kernel_symbols["__KERNEL_SECTION_core_START__"])
-_patch_kernel("build/disk/kernel/kernel.bin",kernel_symbols)
 _patch_kernel2("build/kernel.bin",kernel_symbols)
-kernel_core_size=_get_file_size("build/stage3.bin")
-if (subprocess.run(["nasm","src/bootloader/stage2.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage2.bin",f"-D__KERNEL_CORE_SIZE__={kernel_core_size}"]).returncode!=0):
-	sys.exit(1)
-stage2_size=_get_file_size("build/stage2.bin")
-if (subprocess.run(["nasm","src/bootloader/stage1.asm","-f","bin","-Wall","-Werror","-O3","-o","build/stage1.bin",f"-D__BOOTLOADER_STAGE2_SIZE__={stage2_size}",f"-D__BOOTLOADER_VERSION__={version}"]).returncode!=0):
-	sys.exit(1)
-stage1_size=_get_file_size("build/stage1.bin")
-with open("build/disk/kernel/core.bin","wb") as wf:
-	_copy_file("build/stage1.bin",wf)
-	_copy_file("build/stage2.bin",wf)
-	_copy_file("build/stage3.bin",wf)
-with open("build/disk/os.img","wb") as wf:
-	_copy_file("build/disk/kernel/core.bin",wf)
-	_pad_file(wf,OS_IMAGE_SIZE-kernel_core_size-stage2_size-stage1_size)
-os.remove("build/stage1.bin")
-os.remove("build/stage2.bin")
-os.remove("build/stage3.bin")
 #####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):

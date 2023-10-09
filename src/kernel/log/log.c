@@ -8,7 +8,7 @@
 
 
 
-void KERNEL_CORE_CODE log(const char* template,...){
+void log(const char* template,...){
 	char buffer[BUFFER_SIZE];
 	__builtin_va_list va;
 	__builtin_va_start(va,template);

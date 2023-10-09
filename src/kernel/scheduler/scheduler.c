@@ -22,7 +22,7 @@
 
 
 
-static _Bool KERNEL_CORE_DATA _scheduler_enabled=0;
+static _Bool _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
 
@@ -46,7 +46,7 @@ void scheduler_enable(void){
 
 
 
-void KERNEL_CORE_CODE scheduler_pause(void){
+void scheduler_pause(void){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -67,7 +67,7 @@ void KERNEL_CORE_CODE scheduler_pause(void){
 
 
 
-void KERNEL_CORE_CODE scheduler_resume(void){
+void scheduler_resume(void){
 	if (!_scheduler_enabled){
 		return;
 	}

@@ -17,17 +17,17 @@ PMM_DECLARE_COUNTER(VMM);
 
 static u64 _vmm_address_offset=0;
 
-vmm_pagemap_t KERNEL_CORE_BSS vmm_kernel_pagemap;
+vmm_pagemap_t KERNEL_BSS vmm_kernel_pagemap;
 
 
 
-static KERNEL_INLINE vmm_pagemap_table_t* KERNEL_CORE_CODE _get_table(u64* entry){
+static KERNEL_INLINE vmm_pagemap_table_t* _get_table(u64* entry){
 	return (vmm_pagemap_table_t*)(((*entry)&VMM_PAGE_ADDRESS_MASK)+_vmm_address_offset);
 }
 
 
 
-static KERNEL_INLINE _Bool KERNEL_CORE_CODE _decrease_length(u64* table){
+static KERNEL_INLINE _Bool _decrease_length(u64* table){
 	if ((*table)&VMM_PAGE_FLAG_PRESENT){
 		*table-=1ull<<VMM_PAGE_COUNT_SHIFT;
 		if (!((*table)&VMM_PAGE_COUNT_MASK)){
@@ -41,7 +41,7 @@ static KERNEL_INLINE _Bool KERNEL_CORE_CODE _decrease_length(u64* table){
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _increase_length(u64* table){
+static KERNEL_INLINE void _increase_length(u64* table){
 	if ((*table)&VMM_PAGE_FLAG_PRESENT){
 		*table+=1ull<<VMM_PAGE_COUNT_SHIFT;
 	}
@@ -49,7 +49,7 @@ static KERNEL_INLINE void KERNEL_CORE_CODE _increase_length(u64* table){
 
 
 
-static KERNEL_INLINE void KERNEL_CORE_CODE _increase_length_if_entry_empty(u64* table,u64 entry){
+static KERNEL_INLINE void _increase_length_if_entry_empty(u64* table,u64 entry){
 	if (!_get_table(table)->entries[entry]){
 		_increase_length(table);
 	}
@@ -76,7 +76,7 @@ static void _delete_pagemap_recursive(u64* table,u8 level,u16 limit){
 
 
 
-static u64* KERNEL_CORE_CODE _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present){
+static u64* _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present){
 	u64* entry=_get_table(table)->entries+index;
 	if (*entry){
 		return entry;
@@ -121,7 +121,7 @@ static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 
-void KERNEL_CORE_CODE vmm_init(void){
+void vmm_init(void){
 	LOG_CORE("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,PMM_COUNTER_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
 	lock_init(&(vmm_kernel_pagemap.lock));
@@ -168,7 +168,7 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 
 
-void KERNEL_CORE_CODE vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
+void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
 	scheduler_pause();
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -302,7 +302,7 @@ _cleanup:
 
 
 
-u64 KERNEL_CORE_CODE vmm_identity_map(u64 physical_address,u64 size){
+u64 vmm_identity_map(u64 physical_address,u64 size){
 	if (!size){
 		return physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	}
@@ -319,7 +319,7 @@ u64 KERNEL_CORE_CODE vmm_identity_map(u64 physical_address,u64 size){
 
 
 
-u64 KERNEL_CORE_CODE vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 out=0;
 	scheduler_pause();
 	lock_acquire_shared(&(pagemap->lock));

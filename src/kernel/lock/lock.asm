@@ -12,7 +12,7 @@ global lock_acquire_shared
 global lock_release_shared
 global lock_exclusive_to_shared
 global lock_shared_to_exclusive
-section .ctext exec nowrite
+section .text exec nowrite
 
 
 

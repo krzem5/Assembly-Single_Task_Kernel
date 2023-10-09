@@ -64,7 +64,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
 
 
 
-void KERNEL_CORE_CODE KERNEL_NOCOVERAGE __gcov_merge_add(void){
+void KERNEL_NOCOVERAGE __gcov_merge_add(void){
 	return;
 }
 

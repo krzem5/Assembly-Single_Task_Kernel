@@ -158,17 +158,17 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-// static void _output_int(EFI_SYSTEM_TABLE* system_table,uint64_t value){
-// 	uint16_t buffer[21];
-// 	buffer[20]=0;
-// 	uint8_t i=20;
-// 	do{
-// 		i--;
-// 		buffer[i]=(value%10)+48;
-// 		value/=10;
-// 	} while (value);
-// 	system_table->ConOut->OutputString(system_table->ConOut,buffer+i);
-// }
+static inline void _output_int(EFI_SYSTEM_TABLE* system_table,uint64_t value){
+	uint16_t buffer[21];
+	buffer[20]=0;
+	uint8_t i=20;
+	do{
+		i--;
+		buffer[i]=(value%10)+48;
+		value/=10;
+	} while (value);
+	system_table->ConOut->OutputString(system_table->ConOut,buffer+i);
+}
 
 
 
@@ -179,27 +179,27 @@ static inline char _int_to_hex(uint8_t v){
 
 
 
-// static void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
-// 	uint16_t buffer[17];
-// 	for (uint8_t i=0;i<16;i++){
-// 		uint8_t j=(value>>((15-i)<<2))&0xf;
-// 		buffer[i]=j+(j>9?87:48);
-// 	}
-// 	buffer[16]=0;
-// 	system_table->ConOut->OutputString(system_table->ConOut,buffer);
-// }
+static inline void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
+	uint16_t buffer[17];
+	for (uint8_t i=0;i<16;i++){
+		uint8_t j=(value>>((15-i)<<2))&0xf;
+		buffer[i]=j+(j>9?87:48);
+	}
+	buffer[16]=0;
+	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+}
 
 
 
-// static void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
-// 	uint16_t buffer[9];
-// 	for (uint8_t i=0;i<8;i++){
-// 		uint8_t j=(value>>((7-i)<<2))&0xf;
-// 		buffer[i]=j+(j>9?87:48);
-// 	}
-// 	buffer[8]=0;
-// 	system_table->ConOut->OutputString(system_table->ConOut,buffer);
-// }
+static inline void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
+	uint16_t buffer[9];
+	for (uint8_t i=0;i<8;i++){
+		uint8_t j=(value>>((7-i)<<2))&0xf;
+		buffer[i]=j+(j>9?87:48);
+	}
+	buffer[8]=0;
+	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+}
 
 
 

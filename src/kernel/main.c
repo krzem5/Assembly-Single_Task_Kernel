@@ -28,7 +28,7 @@
 
 
 
-void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kernel_data){
+void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kernel_data){
 	cpu_check_features();
 	LOG_CORE("Starting kernel...");
 	kernel_init(bootloader_kernel_data);
@@ -39,7 +39,6 @@ void KERNEL_CORE_CODE KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t
 	pci_enumerate(1);
 	partition_load();
 	kernel_load();
-	kernel_adjust_memory_flags();
 	handle_init();
 	sandbox_init();
 	isr_init();

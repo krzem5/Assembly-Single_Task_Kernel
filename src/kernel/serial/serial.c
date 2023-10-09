@@ -14,8 +14,8 @@
 
 
 
-static lock_t KERNEL_CORE_DATA _serial_read_lock=LOCK_INIT_STRUCT;
-static lock_t KERNEL_CORE_DATA _serial_write_lock=LOCK_INIT_STRUCT;
+static lock_t _serial_read_lock=LOCK_INIT_STRUCT;
+static lock_t _serial_write_lock=LOCK_INIT_STRUCT;
 static u8 _serial_irq=0;
 
 
@@ -31,7 +31,7 @@ void serial_init_irq(void){
 
 
 
-void KERNEL_CORE_CODE serial_send(const void* buffer,u32 length){
+void serial_send(const void* buffer,u32 length){
 	scheduler_pause();
 	lock_acquire_exclusive(&_serial_read_lock);
 	for (;length;length--){
