@@ -36,13 +36,12 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	vmm_init();
 	pmm_init_high_mem();
 	kmm_init();
-	pci_enumerate(1);
+	pci_enumerate();
 	partition_load();
 	kernel_load();
 	handle_init();
 	sandbox_init();
 	isr_init();
-	pci_enumerate(0);
 	clock_init();
 	acpi_load();
 	aml_runtime_init_irq();

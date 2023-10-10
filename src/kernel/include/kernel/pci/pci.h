@@ -86,7 +86,7 @@ static KERNEL_INLINE void pci_device_enable_bus_mastering(const pci_device_t* de
 
 
 
-void pci_enumerate(_Bool early_boot);
+void pci_enumerate(void);
 
 
 
