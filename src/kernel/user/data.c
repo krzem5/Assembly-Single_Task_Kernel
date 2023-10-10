@@ -185,7 +185,7 @@ static void _generate_partitions(user_data_header_t* header){
 	for (const partition_t* partition=partition_data;partition;partition=partition->next){
 		header->partition_count++;
 	}
-	header->partition_boot_index=0/*partition_boot->index*/;
+	header->partition_boot_index=partition_boot->index;
 	header->partitions=umm_alloc(header->partition_count*sizeof(user_partition_t));
 	for (const partition_t* partition=partition_data;partition;partition=partition->next){
 		user_partition_t* user_partition=header->partitions+partition->index;
