@@ -422,7 +422,8 @@ os.remove(KERNEL_VERSION_FILE_PATH)
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
-_patch_kernel("build/kernel.bin",_read_kernel_symbols("build/kernel.elf"))
+kernel_symbols=_read_kernel_symbols("build/kernel.elf")
+_patch_kernel("build/kernel.bin",kernel_symbols)
 #####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
@@ -458,7 +459,7 @@ if (rebuild_data_partition):
 	kfs2.format_partition(data_fs)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_bss_END__"]-kernel_symbols["__KERNEL_SECTION_bss_START__"]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	data_fs.close()
 #####################################################################################################################################
