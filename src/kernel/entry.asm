@@ -14,6 +14,7 @@ _start:
 	mov rsp, rdx
 	add rsp, KERNEL_OFFSET
 	xor rbp, rbp
+	mov cr3, rsi
 	mov al, 0x00
 	mov dx, 0x3f9
 	out dx, al
@@ -35,5 +36,4 @@ _start:
 	mov al, 0x03
 	mov dx, 0x3fc
 	out dx, al
-	mov cr3, rsi
 	jmp (KERNEL_OFFSET+main)
