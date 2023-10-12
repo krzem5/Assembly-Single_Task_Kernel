@@ -4,7 +4,17 @@
 
 
 
+typedef struct _NUMA_NODE{
+	u32 index;
+	u32 cpu_count;
+	u32 memory_range_count;
+} numa_node_t;
+
+
+
 typedef struct _NUMA_CPU{
+	u32 numa_index;
+	u32 cpu_index;
 	u8 apic_id;
 	u32 sapic_eid;
 } numa_cpu_t;
@@ -12,6 +22,8 @@ typedef struct _NUMA_CPU{
 
 
 typedef struct _NUMA_MEMORY_RANGE{
+	u32 numa_index;
+	u32 memory_range_index;
 	u64 base_address;
 	u64 length;
 	_Bool hot_pluggable;
@@ -19,19 +31,23 @@ typedef struct _NUMA_MEMORY_RANGE{
 
 
 
-typedef struct _NUMA_NODE{
-	u32 index;
-	u32 cpu_count;
-	u32 memory_range_count;
-	const numa_cpu_t* cpus;
-	const numa_memory_range_t* memory_ranges;
-} numa_node_t;
+u32 numa_get_node_count(void);
 
 
 
-extern u32 numa_node_count;
-extern const numa_node_t* numa_nodes;
-extern const u8* numa_node_locality_matrix;
+_Bool numa_get_node(u32 index,numa_node_t* out);
+
+
+
+_Bool numa_get_node_cpu(u32 index,u32 cpu_index,numa_cpu_t* out);
+
+
+
+_Bool numa_get_node_memory_range(u32 index,u32 memory_range_index,numa_memory_range_t* out);
+
+
+
+_Bool numa_get_locality(u32 offset,u8* buffer,u32 length);
 
 
 

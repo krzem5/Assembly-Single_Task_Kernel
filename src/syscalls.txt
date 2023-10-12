@@ -28,6 +28,11 @@ network_layer3_device_count(void) -> u32
 network_layer3_device_delete(const void* buffer,u32 size) -> _Bool
 network_layer3_device_get(u32 index,void* buffer,u32 size) -> _Bool
 network_layer3_refresh(void) -> void
+numa_get_locality(u32 offset,void* buffer,u32 length) -> _Bool
+numa_get_node(u32 index,void* buffer,u32 size) -> _Bool
+numa_get_node_count(void) -> u32
+numa_get_node_cpu(u32 index,u32 cpu_index,void* buffer,u32 size) -> _Bool
+numa_get_node_memory_range(u32 index,u32 memory_range_index,void* buffer,u32 size) -> _Bool
 random_generate(void* buffer,u64 size) -> _Bool
 scheduler_get_stats(u32 cpu_index,void* buffer,u32 size) -> _Bool
 scheduler_get_timers(u32 cpu_index,void* buffer,u32 size) -> _Bool
