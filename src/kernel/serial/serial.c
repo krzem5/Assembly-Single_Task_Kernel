@@ -20,6 +20,18 @@ static u8 _serial_irq=0;
 
 
 
+void serial_init(void){
+	io_port_out8(0x3f9,0x00);
+	io_port_out8(0x3fb,0x80);
+	io_port_out8(0x3f8,0x03);
+	io_port_out8(0x3f9,0x00);
+	io_port_out8(0x3fb,0x03);
+	io_port_out8(0x3fa,0xc7);
+	io_port_out8(0x3fc,0x03);
+}
+
+
+
 void serial_init_irq(void){
 	LOG("Enabling serial IRQ...");
 	_serial_irq=isr_allocate();

@@ -29,6 +29,7 @@
 
 
 void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kernel_data){
+	serial_init();
 	cpu_check_features();
 	LOG("Starting kernel...");
 	kernel_init(bootloader_kernel_data);
