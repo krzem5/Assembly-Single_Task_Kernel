@@ -40,13 +40,6 @@ typedef struct _USER_PARTITION{
 
 
 
-typedef struct _USER_LAYER1_NETWORK_DEVICE{
-	char* name;
-	u8 mac_address[6];
-} user_layer1_network_device_t;
-
-
-
 typedef struct _USER_MEMORY_RANGE{
 	u64 base_address;
 	u64 length;
@@ -71,7 +64,6 @@ typedef struct _USER_DATA_HEADER{
 	u32 partition_count;
 	u32 partition_boot_index;
 	user_partition_t* partitions;
-	user_layer1_network_device_t* layer1_network_device;
 	u32 memory_range_count;
 	user_memory_range_t* memory_ranges;
 	u32 cpu_count;
@@ -141,19 +133,6 @@ static void _generate_partitions(user_data_header_t* header){
 
 
 
-static void _generate_layer1_network_device(user_data_header_t* header){
-	if (!network_layer1_name){
-		header->layer1_network_device=NULL;
-		return;
-	}
-	user_layer1_network_device_t* user_layer1_network_device=umm_alloc(sizeof(user_layer1_network_device_t));
-	user_layer1_network_device->name=_duplicate_string(network_layer1_name);
-	memcpy(user_layer1_network_device->mac_address,network_layer1_mac_address,6);
-	header->layer1_network_device=user_layer1_network_device;
-}
-
-
-
 static void _generate_memory_ranges(user_data_header_t* header){
 	header->memory_range_count=kernel_data.mmap_size;
 	header->memory_ranges=umm_alloc(kernel_data.mmap_size*sizeof(user_memory_range_t));
@@ -184,7 +163,6 @@ void user_data_generate(void){
 	user_data_header_t* header=umm_alloc(sizeof(user_data_header_t));
 	_generate_drives(header);
 	_generate_partitions(header);
-	_generate_layer1_network_device(header);
 	_generate_memory_ranges(header);
 	_generate_user_cpus(header);
 	user_data_pointer=header;

@@ -18,7 +18,6 @@ typedef struct _USER_DATA_HEADER{
 	u32 partition_count;
 	u32 partition_boot_index;
 	const partition_t* partitions;
-	const network_config_t* layer1_network_device;
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;
 	u32 cpu_count;
@@ -33,7 +32,6 @@ const drive_t* drives;
 u32 partition_count;
 u32 partition_boot_index;
 const partition_t* partitions;
-const network_config_t* network_config;
 u32 memory_range_count;
 const memory_range_t* memory_ranges;
 u32 cpu_count;
@@ -49,7 +47,6 @@ void _user_data_init(void){
 	partition_count=header->partition_count;
 	partition_boot_index=header->partition_boot_index;
 	partitions=header->partitions;
-	network_config=header->layer1_network_device;
 	memory_range_count=header->memory_range_count;
 	memory_ranges=header->memory_ranges;
 	cpu_count=header->cpu_count;

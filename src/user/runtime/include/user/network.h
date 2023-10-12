@@ -9,13 +9,6 @@
 
 
 
-typedef struct _NETWORK_CONFIG{
-	const char* name;
-	u8 mac_address[6];
-} network_config_t;
-
-
-
 typedef struct _NETWORK_PACKET{
 	u8 address[6];
 	u16 protocol;
@@ -36,7 +29,7 @@ typedef struct _NETWORK_DEVICE{
 
 
 
-extern const network_config_t* network_config;
+_Bool network_get_mac_address(u8* mac_address);
 
 
 

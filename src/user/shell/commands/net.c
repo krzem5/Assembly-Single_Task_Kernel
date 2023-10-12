@@ -80,9 +80,15 @@ void net_main(int argc,const char*const* argv){
 		network_refresh_device_list();
 	}
 	if (flags&FLAG_INFO){
-		printf("Driver: \x1b[1m%s\x1b[0m\nAddress: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n",
-			network_config->name,
-			network_config->mac_address[0],network_config->mac_address[1],network_config->mac_address[2],network_config->mac_address[3],network_config->mac_address[4],network_config->mac_address[5]
+		u8 mac_address[6];
+		network_get_mac_address(mac_address);
+		printf("Address: \x1b[1m%X:%X:%X:%X:%X:%X\x1b[0m\n",
+			mac_address[0],
+			mac_address[1],
+			mac_address[2],
+			mac_address[3],
+			mac_address[4],
+			mac_address[5]
 		);
 		return;
 	}
