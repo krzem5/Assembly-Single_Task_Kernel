@@ -8,12 +8,10 @@
 ENTRY(_start)
 SECTIONS{
     . = 0xffffffffc0100000;
-    DECLARE_SECTION_START(address_range);
     DECLARE_SECTION_START(kernel);
     DECLARE_SECTION_START(kernel_ex);
     .kernel_ex : AT(ADDR(.kernel_ex) - BASE_ADDRESS_OFFSET){
         *(.entry)
-        *(.cversion .version)
         *(.text .text*)
         . = ALIGN(0x1000);
     }
@@ -55,14 +53,13 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(kernel_rw);
-    DECLARE_SECTION_END(kernel);
-    DECLARE_SECTION_START(bss);
+    DECLARE_SECTION_START(kernel_bss);
     .bss : AT(ADDR(.bss) - BASE_ADDRESS_OFFSET){
         *(.bss)
         . = ALIGN(0x1000);
     }
-    DECLARE_SECTION_END(bss);
-    DECLARE_SECTION_END(address_range);
+    DECLARE_SECTION_END(kernel_bss);
+    DECLARE_SECTION_END(kernel);
 #ifndef _KERNEL_DEBUG_BUILD_
     /DISCARD/ : {
         *(*)

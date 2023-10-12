@@ -29,12 +29,11 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	kernel_data=*bootloader_kernel_data;
 	INFO("Version: %lx",kernel_get_version());
 	INFO("Sections:");
-	PRINT_SECTION_DATA(address_range);
 	PRINT_SECTION_DATA(kernel);
 	PRINT_SECTION_DATA(kernel_ex);
 	PRINT_SECTION_DATA(kernel_nx);
 	PRINT_SECTION_DATA(kernel_rw);
-	PRINT_SECTION_DATA(bss);
+	PRINT_SECTION_DATA(kernel_bss);
 	INFO("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -45,15 +44,15 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	}
 	INFO("Total: %v (%lu B)",total,total);
 	INFO("First free address: %p",kernel_data.first_free_address);
-	LOG("Clearing .bss section (%v)...",kernel_section_bss_end()-kernel_section_bss_start());
-	for (u64* bss=(u64*)kernel_section_bss_start();bss<(u64*)kernel_section_bss_end();bss++){
+	LOG("Clearing .bss section (%v)...",kernel_section_kernel_bss_end()-kernel_section_kernel_bss_start());
+	for (u64* bss=(u64*)kernel_section_kernel_bss_start();bss<(u64*)kernel_section_kernel_bss_end();bss++){
 		*bss=0;
 	}
 	LOG("Adjusting memory flags...");
 	ADJUST_SECTION_FLAGS(kernel_ex,0);
 	ADJUST_SECTION_FLAGS(kernel_nx,VMM_PAGE_FLAG_NOEXECUTE);
 	ADJUST_SECTION_FLAGS(kernel_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
-	ADJUST_SECTION_FLAGS(bss,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(kernel_bss,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 }
 
 
@@ -73,7 +72,7 @@ void kernel_load(void){
 
 
 const char* kernel_lookup_symbol(u64 address,u64* offset){
-	if (address<kernel_section_address_range_start()||address>=kernel_section_address_range_end()){
+	if (address<kernel_section_kernel_start()||address>=kernel_section_kernel_end()){
 		if (offset){
 			*offset=0;
 		}

@@ -256,7 +256,7 @@ def _generate_symbol_file(kernel_symbols,file_path):
 
 
 def _patch_kernel(file_path,kernel_symbols):
-	address_offset=kernel_symbols["__KERNEL_SECTION_address_range_START__"]
+	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"]
 	with open(file_path,"r+b") as wf:
 		wf.seek(kernel_symbols["_idt_data"]-address_offset)
 		for i in range(0,256):
@@ -499,7 +499,7 @@ if (rebuild_data_partition):
 	kfs2.format_partition(data_fs)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_bss_END__"]-kernel_symbols["__KERNEL_SECTION_bss_START__"]))
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	data_fs.close()
 #####################################################################################################################################

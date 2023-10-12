@@ -136,7 +136,7 @@ void pmm_init(void){
 	u32 pmm_counters_size=pmm_align_up_address(sizeof(pmm_counters_t)+_pmm_counters->length*sizeof(pmm_counter_t));
 	INFO("Counter array size: %v",pmm_counters_size);
 	(_pmm_counters->data+PMM_COUNTER_PMM)->count=pmm_align_up_address(low_bitmap_size+high_bitmap_size+pmm_counters_size)>>PAGE_SIZE_SHIFT;
-	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_address_range_end()-kernel_section_address_range_start())>>PAGE_SIZE_SHIFT;
+	(_pmm_counters->data+PMM_COUNTER_KERNEL_IMAGE)->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size+pmm_counters_size;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
