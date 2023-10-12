@@ -31,6 +31,7 @@ void syscall_invalid(syscall_registers_t* regs){
 
 
 
+u64 _syscall_count=44;
 void* _syscall_handlers[]={
 	[0]=syscall_invalid,
 	[1]=syscall_serial_send,

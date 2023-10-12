@@ -31,9 +31,6 @@ typedef struct _RUNTIME_LOCAL_STATE{
 
 
 
-static u16 _aml_irq;
-static u8 _aml_interrupt_vector;
-
 aml_node_t* aml_root_node;
 
 
@@ -981,35 +978,22 @@ _end:
 
 
 
-void _aml_handle_interrupt(void){
-	ERROR("AML interrupt received!");
-}
-
-
-
 void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
-	_aml_irq=irq;
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
 	runtime_local_state_t local={
 		aml_root_node
 	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
 	_execute_multiple(&local,root->data.objects,root->data_length);
+	INFO("Registering AML IRQ...");
+	ioapic_redirect_irq(irq,isr_allocate());
 }
 
 
 
 aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path){
 	return _get_node((root?root:aml_root_node),path,0,0);
-}
-
-
-
-void aml_runtime_init_irq(void){
-	LOG("Registering AML IRQ...");
-	_aml_interrupt_vector=isr_allocate();
-	ioapic_redirect_irq(_aml_irq,_aml_interrupt_vector);
 }
 
 

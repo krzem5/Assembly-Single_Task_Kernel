@@ -1,5 +1,6 @@
 extern _random_entropy_pool
 extern _random_entropy_pool_length
+extern _syscall_count
 extern _syscall_handlers
 extern scheduler_set_timer
 extern syscall_invalid
@@ -10,15 +11,6 @@ section .text exec nowrite
 
 [bits 64]
 syscall_enable:
-	cmp qword [_syscall_count], 0
-	jnz ._syscalls_counted
-	mov rax, 0
-._next_handler:
-	add rax, 1
-	cmp qword [_syscall_handlers+rax*8], 0
-	jne ._next_handler
-	mov qword [_syscall_count], rax
-._syscalls_counted:
 	mov ecx, 0xc0000080
 	rdmsr
 	or eax, 1
@@ -100,12 +92,3 @@ _syscall_handler:
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
-
-
-
-section .data noexec write
-
-
-
-_syscall_count:
-	dq 0

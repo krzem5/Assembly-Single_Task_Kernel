@@ -105,10 +105,6 @@ void aml_runtime_init(aml_object_t* root,u16 irq);
 
 
 
-void aml_runtime_init_irq(void);
-
-
-
 aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path);
 
 

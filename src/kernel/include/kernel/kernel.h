@@ -32,14 +32,14 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 
 
 
-extern const u64 __core_version;
+extern const u64 __version;
 extern const u64 kernel_symbols[];
 extern kernel_data_t kernel_data;
 
 
 
 static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_get_version(void){
-	return __core_version;
+	return __version;
 }
 
 
