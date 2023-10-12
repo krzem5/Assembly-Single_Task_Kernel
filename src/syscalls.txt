@@ -1,0 +1,43 @@
+clock_get_converion(void) -> void
+coverage_dump_data(void) -> void
+drive_format(u32 index,const void* boot,u32 boot_length) -> _Bool
+drive_stats(u32 index,void* buffer,u32 size) -> _Bool
+elf_load(const char* path,u32 length) -> _Bool
+fd_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
+fd_close(s32 fd) -> s32
+fd_delete(s32 fd) -> s32
+fd_get_relative(s32 fd,u32 relative,u32 flags) -> s32
+fd_move(s32 fd,u32 dst_fd) -> s32
+fd_open(s32 fd,const char* path,u32 length,u32 flags) -> s32
+fd_read(s32 fd,void* buffer,u32 size) -> s32
+fd_resize(s32 fd,u64 size) -> s32
+fd_seek(s32 fd,u64 offset,u32 type) -> s64
+fd_stat(s32 fd,void* ptr,u32 size) -> s32
+fd_write(s32 fd,const void* buffer,u32 size) -> s32
+handle_get_type(u32 handle_type,void* buffer,u32 size) -> _Bool
+handle_get_type_count(void) -> u32
+memory_get_counter(u32 counter,void* buffer,u32 size) -> _Bool
+memory_get_counter_count(void) -> u32
+memory_get_object_counter(u32 counter,void* buffer,u32 size) -> _Bool
+memory_get_object_counter_count(void) -> u32
+memory_map(u64 length,u32 flags) -> void*
+memory_unmap(void* address,u64 length) -> _Bool
+network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
+network_layer2_send(const void* packet,u32 length) -> _Bool
+network_layer3_device_count(void) -> u32
+network_layer3_device_delete(const void* buffer,u32 size) -> _Bool
+network_layer3_device_get(u32 index,void* buffer,u32 size) -> _Bool
+network_layer3_refresh(void) -> void
+random_generate(void* buffer,u64 size) -> _Bool
+scheduler_get_stats(u32 cpu_index,void* buffer,u32 size) -> _Bool
+scheduler_get_timers(u32 cpu_index,void* buffer,u32 size) -> _Bool
+serial_recv(void* buffer,u32 length,u64 timeout) -> u32
+serial_send(const void* buffer,u32 length) -> void
+system_shutdown(u32 flags) -> void
+thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
+thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
+thread_get_priority(u64 handle) -> u32
+thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
+thread_set_priority(u64 handle,u32 priority) -> _Bool
+thread_stop(void) noreturn -> void
+user_data_pointer(void) -> const void*

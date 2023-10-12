@@ -438,3 +438,19 @@ void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u
 	lock_release_exclusive(&(pagemap->lock));
 	scheduler_resume();
 }
+
+
+
+_Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
+	scheduler_pause();
+	lock_acquire_shared(&(pagemap->lock));
+	_Bool out=1;
+	for (;count;count--){
+		u64* entry=_lookup_virtual_address(pagemap,virtual_address);
+		out&=(entry&&*entry&&((*entry)&VMM_PAGE_FLAG_USER));
+		virtual_address+=PAGE_SIZE;
+	}
+	lock_release_shared(&(pagemap->lock));
+	scheduler_resume();
+	return out;
+}

@@ -32,8 +32,4 @@ void system_shutdown(u8 flags);
 
 
 
-void system_poll(void);
-
-
-
 #endif

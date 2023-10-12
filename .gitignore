@@ -1,2 +1,3 @@
 build
 src/kernel/include/kernel/_version.h
+src/kernel/_generated

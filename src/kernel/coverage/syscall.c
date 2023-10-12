@@ -125,7 +125,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 
 
 void syscall_coverage_dump_data(syscall_registers_t* regs){
-	return;
+	syscall_invalid(regs);
 }
 
 

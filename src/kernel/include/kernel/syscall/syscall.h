@@ -24,6 +24,10 @@ typedef struct _SYSCALL_REGISTERS{
 
 
 
+void syscall_invalid(syscall_registers_t* regs);
+
+
+
 _Bool syscall_sanatize_user_memory(u64 address,u64 size);
 
 

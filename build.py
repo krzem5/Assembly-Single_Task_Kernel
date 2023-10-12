@@ -43,8 +43,10 @@ BUILD_DIRECTORIES=[
 	"build/objects/user_debug",
 	"build/partitions",
 	"build/uefi",
-	"build/vm"
+	"build/vm",
+	"src/kernel/_generated"
 ]
+SYSCALL_SOURCE_FILE_PATH="src/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
@@ -100,7 +102,6 @@ USER_EXTRA_LINKER_OPTIONS={
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
-KERNEL_VERSION_FILE_PATH="src/kernel/include/kernel/_version.h"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
@@ -110,17 +111,56 @@ COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 
 
 
+def _generate_syscalls(file_path):
+	syscalls=[]
+	with open(file_path,"r") as rf:
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			name=line.split("(")[0].strip()
+			args=tuple(line.split("(")[1].split(")")[0].strip().split(","))
+			if (args==("void",)):
+				args=tuple()
+			attrs=line.split(")")[1].split("->")[0].strip()
+			ret=line.split("->")[1].strip()
+			syscalls.append((name,args,attrs,ret))
+	syscalls=sorted(syscalls,key=lambda e:e[0])
+	syscalls.insert(0,("invalid",tuple(),"","void"))
+	with open("src/user/runtime/user/syscall.asm","w") as wf:
+		wf.write("[bits 64]\n")
+		for i,(name,args,_,ret) in enumerate(syscalls):
+			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}\n_syscall_{name}:\n\tmov rax, {i}\n")
+			if (len(args)>3):
+				wf.write("\tmov r8, rcx\n")
+			wf.write("\tsyscall\n\tret\n")
+	with open("src/user/runtime/include/user/syscall.h","w") as wf:
+		wf.write("#ifndef _USER_SYSCALL_H_\n#define _USER_SYSCALL_H_ 1\n#include <user/types.h>\n\n\n\n")
+		for name,args,attrs,ret in syscalls:
+			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
+		wf.write("#endif\n")
+	with open("src/kernel/_generated/syscalls.c","w") as wf:
+		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n\n\n\n")
+		for name,_,_,_ in syscalls:
+			wf.write(f"extern void syscall_{name}(syscall_registers_t* regs);\n")
+		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)};\n\n\n\nconst void* _syscall_handlers[{len(syscalls)}]={{\n")
+		for name,_,_,_ in syscalls:
+			wf.write(f"\tsyscall_{name},\n")
+		wf.write("};\n")
+
+
+
+def _generate_kernel_version():
+	version=time.time_ns()
+	with open("src/kernel/_generated/version.c","w") as wf:
+		wf.write(f"#include <kernel/types.h>\n\n\n\nconst u64 __version=0x{version:016x};\n")
+	return version
+
+
+
 def _read_file(file_path):
 	with open(file_path,"rb") as rf:
 		return rf.read()
-
-
-
-def _generate_kernel_version(version_file_path):
-	version=time.time_ns()
-	with open(version_file_path,"w") as wf:
-		wf.write(f"#ifndef _KERNEL__VERSION_H_\n#define _KERNEL__VERSION_H_ 1\n\n\n\n#define KERNEL_VERSION 0x{version:16x}ull\n\n\n\n#endif\n")
-	return version
 
 
 
@@ -358,6 +398,7 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
+_generate_syscalls(SYSCALL_SOURCE_FILE_PATH)
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]
@@ -387,7 +428,7 @@ _save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
 if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################
-version=_generate_kernel_version(KERNEL_VERSION_FILE_PATH)
+version=_generate_kernel_version()
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
 rebuild_data_partition=False
@@ -418,7 +459,6 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			_extract_object_file_symbol_names(object_file,kernel_symbols)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
-os.remove(KERNEL_VERSION_FILE_PATH)
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
