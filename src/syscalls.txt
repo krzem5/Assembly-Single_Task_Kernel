@@ -39,6 +39,7 @@ scheduler_get_stats(u32 cpu_index,void* buffer,u32 size) -> _Bool
 scheduler_get_timers(u32 cpu_index,void* buffer,u32 size) -> _Bool
 serial_recv(void* buffer,u32 length,u64 timeout) -> u32
 serial_send(const void* buffer,u32 length) -> void
+system_get_string(u32 type,void* bufer,u32 size) -> u32
 system_shutdown(u32 flags) noreturn -> void
 thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
 thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool

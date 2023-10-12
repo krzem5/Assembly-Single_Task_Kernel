@@ -18,6 +18,7 @@ typedef struct _BIOS_DATA{
 	char* version;
 	char* serial_number;
 	u8 uuid[16];
+	char* uuid_str;
 	u8 wakeup_type;
 } bios_data_t;
 

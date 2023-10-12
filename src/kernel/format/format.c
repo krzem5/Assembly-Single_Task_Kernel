@@ -153,6 +153,11 @@ u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_l
 		else if (*template=='x'){
 			_format_int(va,flags|FLAG_HEX,&out);
 		}
+		else if (*template=='X'){
+			u8 value=(u8)__builtin_va_arg(*va,u32);
+			_buffer_state_add(&out,_format_base16_char(value>>4));
+			_buffer_state_add(&out,_format_base16_char(value));
+		}
 		else if (*template=='v'){
 			u64 size=__builtin_va_arg(*va,u64);
 			if (!size){

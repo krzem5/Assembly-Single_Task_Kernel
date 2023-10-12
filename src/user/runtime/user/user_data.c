@@ -12,7 +12,6 @@
 
 
 typedef struct _USER_DATA_HEADER{
-	const system_bios_data_t* bios_data;
 	u32 drive_count;
 	u32 drive_boot_index;
 	const drive_t* drives;
@@ -28,7 +27,6 @@ typedef struct _USER_DATA_HEADER{
 
 
 
-const system_bios_data_t* system_bios_data;
 u32 drive_count;
 u32 drive_boot_index;
 const drive_t* drives;
@@ -45,7 +43,6 @@ const cpu_t* cpus;
 
 void _user_data_init(void){
 	const user_data_header_t* header=_syscall_user_data_pointer();
-	system_bios_data=header->bios_data;
 	drive_count=header->drive_count;
 	drive_boot_index=header->drive_boot_index;
 	drives=header->drives;

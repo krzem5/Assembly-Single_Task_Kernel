@@ -15,19 +15,6 @@
 
 
 
-typedef struct _USER_BIOS_DATA{
-	char* bios_vendor;
-	char* bios_version;
-	char* manufacturer;
-	char* product;
-	char* version;
-	char* serial_number;
-	u8 uuid[16];
-	u8 wakeup_type;
-} user_bios_data_t;
-
-
-
 typedef struct _USER_DRIVE{
 	u8 flags;
 	u8 type;
@@ -69,7 +56,6 @@ typedef struct _USER_MEMORY_RANGE{
 
 
 typedef struct _USER_CPU{
-	u8 flags;
 	u32 domain;
 	u32 chip;
 	u32 core;
@@ -79,7 +65,6 @@ typedef struct _USER_CPU{
 
 
 typedef struct _USER_DATA_HEADER{
-	user_bios_data_t* bios_data;
 	u32 drive_count;
 	u32 drive_boot_index;
 	user_drive_t* drives;
@@ -107,21 +92,6 @@ static char* _duplicate_string(const char* str){
 	char* out=umm_alloc(length);
 	memcpy(out,str,length);
 	return out;
-}
-
-
-
-static void _generate_bios_data(user_data_header_t* header){
-	user_bios_data_t* user_bios_data=umm_alloc(sizeof(user_bios_data_t));
-	user_bios_data->bios_vendor=_duplicate_string(bios_data.bios_vendor);
-	user_bios_data->bios_version=_duplicate_string(bios_data.bios_version);
-	user_bios_data->manufacturer=_duplicate_string(bios_data.manufacturer);
-	user_bios_data->product=_duplicate_string(bios_data.product);
-	user_bios_data->version=_duplicate_string(bios_data.version);
-	user_bios_data->serial_number=_duplicate_string(bios_data.serial_number);
-	memcpy(user_bios_data->uuid,bios_data.uuid,16);
-	user_bios_data->wakeup_type=bios_data.wakeup_type;
-	header->bios_data=user_bios_data;
 }
 
 
@@ -212,7 +182,6 @@ static void _generate_user_cpus(user_data_header_t* header){
 void user_data_generate(void){
 	LOG("Generating user data structures...");
 	user_data_header_t* header=umm_alloc(sizeof(user_data_header_t));
-	_generate_bios_data(header);
 	_generate_drives(header);
 	_generate_partitions(header);
 	_generate_layer1_network_device(header);
