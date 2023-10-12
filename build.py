@@ -44,7 +44,11 @@ BUILD_DIRECTORIES=[
 	"build/partitions",
 	"build/uefi",
 	"build/vm",
-	"src/kernel/_generated"
+	"src/kernel/_generated",
+	"src/user/runtime/user/_generated",
+	"src/user/runtime/_generated",
+	"src/user/runtime/_generated/include",
+	"src/user/runtime/_generated/include/user"
 ]
 SYSCALL_SOURCE_FILE_PATH="src/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
@@ -127,14 +131,14 @@ def _generate_syscalls(file_path):
 			syscalls.append((name,args,attrs,ret))
 	syscalls=sorted(syscalls,key=lambda e:e[0])
 	syscalls.insert(0,("invalid",tuple(),"","void"))
-	with open("src/user/runtime/user/syscall.asm","w") as wf:
+	with open("src/user/runtime/user/_generated/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
 			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}\n_syscall_{name}:\n\tmov rax, {i}\n")
 			if (len(args)>3):
 				wf.write("\tmov r8, rcx\n")
 			wf.write("\tsyscall\n\tret\n")
-	with open("src/user/runtime/include/user/syscall.h","w") as wf:
+	with open("src/user/runtime/_generated/include/user/syscall.h","w") as wf:
 		wf.write("#ifndef _USER_SYSCALL_H_\n#define _USER_SYSCALL_H_ 1\n#include <user/types.h>\n\n\n\n")
 		for name,args,attrs,ret in syscalls:
 			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
@@ -303,7 +307,7 @@ def _compile_user_files(program):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include",f"-I{USER_FILE_DIRECTORY}/runtime/include"]+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
