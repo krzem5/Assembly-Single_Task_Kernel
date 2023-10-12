@@ -1,13 +1,8 @@
-#include <kernel/aml/runtime.h>
-#include <kernel/bios/bios.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/drive/drive.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/umm.h>
-#include <kernel/network/layer1.h>
-#include <kernel/numa/numa.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
