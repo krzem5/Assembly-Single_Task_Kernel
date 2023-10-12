@@ -19,9 +19,6 @@ typedef struct _USER_DATA_HEADER{
 	u32 partition_count;
 	u32 partition_boot_index;
 	const partition_t* partitions;
-	u32 numa_node_count;
-	const numa_node_t* numa_nodes;
-	const u8* numa_node_locality_matrix;
 	const network_config_t* layer1_network_device;
 	u32 memory_range_count;
 	const memory_range_t* memory_ranges;

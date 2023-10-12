@@ -10,9 +10,6 @@
 #define FLAG_HEX 16
 #define MASK_SIZE (FLAG_SHORT_SHORT|FLAG_SHORT|FLAG_LONG)
 
-#define LOWEST_FORMAT 'c'
-#define HIGHEST_FORMAT 'x'
-
 
 
 typedef struct _FORMAT_BUFFER_STATE{
@@ -20,10 +17,6 @@ typedef struct _FORMAT_BUFFER_STATE{
 	u32 offset;
 	u32 length;
 } format_buffer_state_t;
-
-
-
-typedef void (*format_format_t)(__builtin_va_list*,u8,format_buffer_state_t*);
 
 
 
@@ -93,121 +86,6 @@ static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* ou
 
 
 
-static void _format_format_char(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	_buffer_state_add(out,__builtin_va_arg(*va,int));
-}
-
-
-
-static void _format_format_string(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	const char* ptr=__builtin_va_arg(*va,const char*);
-	if (!ptr){
-		ptr="(null)";
-	}
-	while (*ptr){
-		_buffer_state_add(out,*ptr);
-		ptr++;
-	}
-}
-
-
-
-static void _format_format_decimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	_format_int(va,flags|FLAG_SIGN,out);
-}
-
-
-
-static void _format_format_unsigned(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	_format_int(va,flags,out);
-}
-
-
-
-static void _format_format_hexadecimal(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	_format_int(va,flags|FLAG_HEX,out);
-}
-
-
-
-static void _format_format_volume(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	u64 size=__builtin_va_arg(*va,u64);
-	if (!size){
-		_buffer_state_add(out,'0');
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x400){
-		_format_int_base10(size,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x100000){
-		_format_int_base10((size+0x200)>>10,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'K');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x40000000){
-		_format_int_base10((size+0x80000)>>20,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'M');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x10000000000ull){
-		_format_int_base10((size+0x20000000)>>30,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'G');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x4000000000000ull){
-		_format_int_base10((size+0x8000000000ull)>>40,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'T');
-		_buffer_state_add(out,'B');
-	}
-	else if (size<0x1000000000000000ull){
-		_format_int_base10((size+0x2000000000000ull)>>50,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'P');
-		_buffer_state_add(out,'B');
-	}
-	else{
-		_format_int_base10((size+0x800000000000000ull)>>60,out);
-		_buffer_state_add(out,' ');
-		_buffer_state_add(out,'E');
-		_buffer_state_add(out,'B');
-	}
-}
-
-
-
-static void _format_format_pointer(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
-	u64 address=__builtin_va_arg(*va,u64);
-	u32 shift=64;
-	while (shift){
-		if (shift==32){
-			_buffer_state_add(out,'_');
-		}
-		shift-=4;
-		_buffer_state_add(out,_format_base16_char(address>>shift));
-	}
-}
-
-
-
-static const format_format_t _format_formats[HIGHEST_FORMAT-LOWEST_FORMAT+1]={
-	['c'-LOWEST_FORMAT]=_format_format_char,
-	['s'-LOWEST_FORMAT]=_format_format_string,
-	['d'-LOWEST_FORMAT]=_format_format_decimal,
-	['u'-LOWEST_FORMAT]=_format_format_unsigned,
-	['x'-LOWEST_FORMAT]=_format_format_hexadecimal,
-	['v'-LOWEST_FORMAT]=_format_format_volume,
-	['p'-LOWEST_FORMAT]=_format_format_pointer
-};
-
-
-
 u32 format_string(char* buffer,u32 length,const char* template,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,template);
@@ -253,8 +131,87 @@ u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_l
 				break;
 			}
 		}
-		if (*template>=LOWEST_FORMAT&&*template<=HIGHEST_FORMAT&&_format_formats[(u8)(*template)-LOWEST_FORMAT]){
-			_format_formats[(u8)(*template)-LOWEST_FORMAT](va,flags,&out);
+		if (*template=='c'){
+			_buffer_state_add(&out,__builtin_va_arg(*va,int));
+		}
+		else if (*template=='s'){
+			const char* ptr=__builtin_va_arg(*va,const char*);
+			if (!ptr){
+				ptr="(null)";
+			}
+			while (*ptr){
+				_buffer_state_add(&out,*ptr);
+				ptr++;
+			}
+		}
+		else if (*template=='d'){
+			_format_int(va,flags|FLAG_SIGN,&out);
+		}
+		else if (*template=='u'){
+			_format_int(va,flags,&out);
+		}
+		else if (*template=='x'){
+			_format_int(va,flags|FLAG_HEX,&out);
+		}
+		else if (*template=='v'){
+			u64 size=__builtin_va_arg(*va,u64);
+			if (!size){
+				_buffer_state_add(&out,'0');
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x400){
+				_format_int_base10(size,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x100000){
+				_format_int_base10((size+0x200)>>10,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'K');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x40000000){
+				_format_int_base10((size+0x80000)>>20,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'M');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x10000000000ull){
+				_format_int_base10((size+0x20000000)>>30,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'G');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x4000000000000ull){
+				_format_int_base10((size+0x8000000000ull)>>40,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'T');
+				_buffer_state_add(&out,'B');
+			}
+			else if (size<0x1000000000000000ull){
+				_format_int_base10((size+0x2000000000000ull)>>50,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'P');
+				_buffer_state_add(&out,'B');
+			}
+			else{
+				_format_int_base10((size+0x800000000000000ull)>>60,&out);
+				_buffer_state_add(&out,' ');
+				_buffer_state_add(&out,'E');
+				_buffer_state_add(&out,'B');
+			}
+		}
+		else if (*template=='p'){
+			u64 address=__builtin_va_arg(*va,u64);
+			u32 shift=64;
+			while (shift){
+				if (shift==32){
+					_buffer_state_add(&out,'_');
+				}
+				shift-=4;
+				_buffer_state_add(&out,_format_base16_char(address>>shift));
+			}
 		}
 		else{
 			_buffer_state_add(&out,*template);

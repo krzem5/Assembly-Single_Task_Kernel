@@ -53,31 +53,6 @@ typedef struct _USER_PARTITION{
 
 
 
-typedef struct _USER_NUMA_CPU{
-	u8 apic_id;
-	u32 sapic_eid;
-} user_numa_cpu_t;
-
-
-
-typedef struct _USER_NUMA_MEMORY_RANGE{
-	u64 base_address;
-	u64 length;
-	_Bool hot_pluggable;
-} user_numa_memory_range_t;
-
-
-
-typedef struct _USER_NUMA_NODE{
-	u32 index;
-	u32 cpu_count;
-	u32 memory_range_count;
-	user_numa_cpu_t* cpus;
-	user_numa_memory_range_t* memory_ranges;
-} user_numa_node_t;
-
-
-
 typedef struct _USER_LAYER1_NETWORK_DEVICE{
 	char* name;
 	u8 mac_address[6];
@@ -111,9 +86,6 @@ typedef struct _USER_DATA_HEADER{
 	u32 partition_count;
 	u32 partition_boot_index;
 	user_partition_t* partitions;
-	u32 numa_node_count;
-	user_numa_node_t* numa_nodes;
-	u8* numa_node_locality_matrix;
 	user_layer1_network_device_t* layer1_network_device;
 	u32 memory_range_count;
 	user_memory_range_t* memory_ranges;
@@ -201,38 +173,6 @@ static void _generate_partitions(user_data_header_t* header){
 
 
 
-static void _generate_numa_nodes(user_data_header_t* header){
-	header->numa_node_count=numa_node_count;
-	header->numa_nodes=umm_alloc(numa_node_count*sizeof(user_numa_node_t));
-	user_numa_node_t* user_numa_node=header->numa_nodes;
-	for (u32 i=0;i<numa_node_count;i++){
-		const numa_node_t* numa_node=numa_nodes+i;
-		user_numa_node->index=numa_node->index;
-		user_numa_node->cpu_count=numa_node->cpu_count;
-		user_numa_node->memory_range_count=numa_node->memory_range_count;
-		user_numa_node->cpus=umm_alloc(numa_node->cpu_count*sizeof(user_numa_cpu_t));
-		user_numa_cpu_t* user_numa_cpu=user_numa_node->cpus;
-		for (const numa_cpu_t* cpu=numa_node->cpus;cpu;cpu=cpu->next){
-			user_numa_cpu->apic_id=cpu->apic_id;
-			user_numa_cpu->sapic_eid=cpu->sapic_eid;
-			user_numa_cpu++;
-		}
-		user_numa_node->memory_ranges=umm_alloc(numa_node->memory_range_count*sizeof(user_numa_memory_range_t));
-		user_numa_memory_range_t* user_numa_memory_range=user_numa_node->memory_ranges;
-		for (const numa_memory_range_t* memory_range=numa_node->memory_ranges;memory_range;memory_range=memory_range->next){
-			user_numa_memory_range->base_address=memory_range->base_address;
-			user_numa_memory_range->length=memory_range->length;
-			user_numa_memory_range->hot_pluggable=memory_range->hot_pluggable;
-			user_numa_memory_range++;
-		}
-		user_numa_node++;
-	}
-	header->numa_node_locality_matrix=umm_alloc(numa_node_count*numa_node_count);
-	memcpy(header->numa_node_locality_matrix,numa_node_locality_matrix,numa_node_count*numa_node_count);
-}
-
-
-
 static void _generate_layer1_network_device(user_data_header_t* header){
 	if (!network_layer1_name){
 		header->layer1_network_device=NULL;
@@ -248,7 +188,7 @@ static void _generate_layer1_network_device(user_data_header_t* header){
 
 static void _generate_memory_ranges(user_data_header_t* header){
 	header->memory_range_count=kernel_data.mmap_size;
-	header->memory_ranges=umm_alloc(kernel_data.mmap_size*sizeof(user_numa_memory_range_t));
+	header->memory_ranges=umm_alloc(kernel_data.mmap_size*sizeof(user_memory_range_t));
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		(header->memory_ranges+i)->base_address=(kernel_data.mmap+i)->base;
 		(header->memory_ranges+i)->length=(kernel_data.mmap+i)->length;
@@ -284,7 +224,6 @@ void user_data_generate(void){
 	_generate_bios_data(header);
 	_generate_drives(header);
 	_generate_partitions(header);
-	_generate_numa_nodes(header);
 	_generate_layer1_network_device(header);
 	_generate_memory_ranges(header);
 	_generate_aml_root_node(header);
