@@ -10,8 +10,9 @@ void aml_main(int argc,const char*const* argv){
 		printf("aml: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	if (aml_root_node){
-		aml_print_node(aml_root_node);
+	const aml_node_t* root=aml_get_root_node();
+	if (root){
+		aml_print_node(root);
 	}
 	else{
 		printf("aml: unable to access AML data\n");

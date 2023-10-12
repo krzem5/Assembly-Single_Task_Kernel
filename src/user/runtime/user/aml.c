@@ -1,5 +1,6 @@
 #include <user/aml.h>
 #include <user/io.h>
+#include <user/syscall.h>
 
 
 
@@ -122,6 +123,12 @@ _end:
 	if (!indent){
 		printf("\n");
 	}
+}
+
+
+
+const aml_node_t* aml_get_root_node(void){
+	return _syscall_aml_get_root_node();
 }
 
 

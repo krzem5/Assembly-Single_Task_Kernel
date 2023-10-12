@@ -78,7 +78,7 @@ typedef struct _AML_NODE{
 
 
 
-extern const aml_node_t* aml_root_node;
+const aml_node_t* aml_get_root_node(void);
 
 
 

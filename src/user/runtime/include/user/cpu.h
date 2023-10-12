@@ -14,7 +14,6 @@ typedef struct _CPU{
 
 
 extern u32 cpu_count;
-extern u32 cpu_bsp_id;
 extern const cpu_t* cpus;
 
 

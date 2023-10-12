@@ -1,3 +1,4 @@
+aml_get_root_node(void) -> const void*
 clock_get_converion(void) -> void
 coverage_dump_data(void) -> void
 drive_format(u32 index,const void* boot,u32 boot_length) -> _Bool
