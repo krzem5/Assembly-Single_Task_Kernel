@@ -148,7 +148,7 @@ void _syscall_serial_send(const void* buffer,u32 length);
 
 
 
-void _syscall_system_shutdown(u32 flags);
+void __attribute__((noreturn)) _syscall_system_shutdown(u32 flags);
 
 
 
