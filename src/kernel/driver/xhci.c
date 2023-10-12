@@ -20,6 +20,11 @@ typedef volatile struct _XHCI_REGISTERS{
 	u32 dboff;
 	u32 rtsoff;
 	u32 hccparams2;
+} xhci_registers_t;
+
+
+
+typedef volatile struct _XHCI_OPERATIONAL_REGISTERS{
 	u32 usbcmd;
 	u32 usbsts;
 	u32 pagesize;
@@ -29,7 +34,7 @@ typedef volatile struct _XHCI_REGISTERS{
 	u8 _padding3[20];
 	u64 dcbaap;
 	u64 config;
-} xhci_registers_t;
+} xhci_operational_registers_t;
 
 
 
@@ -45,5 +50,10 @@ void driver_xhci_init_device(pci_device_t* device){
 	}
 	LOG("Attached XHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	xhci_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(xhci_registers_t));
+	xhci_operational_registers_t* operational_registers=(void*)vmm_identity_map(pci_bar.address+registers->caplength,sizeof(xhci_operational_registers_t));
 	INFO("Ports: %u, Slots: %u, Context size: %u",registers->hcsparams1>>24,registers->hcsparams1&0xff,((registers->hccparams1&0x04)?64:32));
+	if (operational_registers->pagesize!=1){
+		WARN("Page count not supported");
+		return;
+	}
 }
