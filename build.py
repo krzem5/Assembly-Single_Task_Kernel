@@ -544,6 +544,7 @@ if ("--run" in sys.argv):
 		"-device","e1000,netdev=network",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
+		"-mem-prealloc",
 		"-object","memory-backend-ram,size=1G,id=mem0",
 		"-object","memory-backend-ram,size=1G,id=mem1",
 		# CPU
