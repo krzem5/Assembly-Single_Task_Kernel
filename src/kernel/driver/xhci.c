@@ -117,7 +117,7 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_device->context_size=((registers->hccparams1&0x04)?64:32);
 	xhci_device->port_registers=(void*)vmm_identity_map(pci_bar.address+0x400,xhci_device->ports*sizeof(xhci_port_registers_t));
 	INFO("Ports: %u, Slots: %u, Context size: %u",xhci_device->ports,xhci_device->slots,xhci_device->context_size);
-	xhci_device->device_context_base_array=kmm_alloc_aligned((xhci_device->slots+1)+sizeof(xhci_device_context_base_t),64);
+	xhci_device->device_context_base_array=kmm_alloc_aligned((xhci_device->slots+1)*sizeof(xhci_device_context_base_t),64);
 	xhci_device->command_ring=kmm_alloc_aligned(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),64);
 	xhci_device->event_ring=kmm_alloc_aligned(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),64);
 	if (xhci_device->operational_registers->usbcmd&USBCMD_RS){
