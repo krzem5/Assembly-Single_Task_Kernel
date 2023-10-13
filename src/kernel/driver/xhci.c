@@ -132,5 +132,5 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_device->operational_registers->dcbaap=(u64)(xhci_device->device_context_base_array);
 	xhci_device->operational_registers->crcr=((u64)(xhci_device->command_ring))|CRCR_RCS;
 	xhci_device->operational_registers->usbcmd|=USBCMD_RS;
-	panic("AAA");
+	// panic("AAA");
 }
