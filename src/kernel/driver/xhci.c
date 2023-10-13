@@ -262,7 +262,7 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(xhci_registers_t));
 	xhci_operational_registers_t* operational_registers=(void*)vmm_identity_map(pci_bar.address+registers->caplength,sizeof(xhci_operational_registers_t));
 	if (operational_registers->pagesize!=1){
-		WARN("Page count not supported");
+		WARN("Page size not supported");
 		return;
 	}
 	xhci_device_t* xhci_device=kmm_alloc(sizeof(xhci_device_t));
@@ -291,7 +291,6 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_device->operational_registers->usbcmd=USBCMD_HCRST;
 	SPINLOOP(xhci_device->operational_registers->usbcmd&USBCMD_HCRST);
 	SPINLOOP(xhci_device->operational_registers->usbsts&USBSTS_CNR);
-	// Initialization described in section 4.2
 	xhci_device->event_ring_segment->ptr=((u64)(xhci_device->event_ring))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	xhci_device->event_ring_segment->size=XHCI_RING_SIZE;
 	xhci_device->operational_registers->config=xhci_device->slots;
