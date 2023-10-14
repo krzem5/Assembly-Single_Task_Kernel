@@ -9,10 +9,6 @@
 
 
 
-// static lock_t _handle_global_lock=LOCK_INIT_STRUCT;
-// static handle_id_t _handle_next_id=1;
-// static handle_t* _handle_root=NULL;
-
 handle_type_data_t* handle_type_data;
 handle_type_t handle_type_count;
 
@@ -59,7 +55,10 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	handle_type_data_t* type_data=handle_type_data+type;
 	lock_init(&(out->lock));
 	out->rc=1;
-	out->object=object;
+	out->object_offset=((s64)object)-((s64)out);
+	if (((u64)out)+out->object_offset!=((u64)object)){
+		panic("Wrong object offset");
+	}
 	lock_acquire_exclusive(&(type_data->lock));
 	out->id=HANDLE_ID_CREATE(type,type_data->active_count);
 	handle_type_data->active_count++;
@@ -72,22 +71,6 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	}
 	type_data->root=out;
 	lock_release_exclusive(&(type_data->lock));
-	// lock_init(&(out->lock));
-	// out->type=type;
-	// out->rc=1;
-	// out->object=object;
-	// handle_type_data->count++;
-	// (handle_type_data+type)->count++;
-	// lock_acquire_exclusive(&_handle_global_lock);
-	// out->id=_handle_next_id;
-	// _handle_next_id++;
-	// out->prev=NULL;
-	// out->next=_handle_root;
-	// if (_handle_root){
-	// 	_handle_root->prev=out;
-	// }
-	// _handle_root=out;
-	// lock_release_exclusive(&_handle_global_lock);
 }
 
 

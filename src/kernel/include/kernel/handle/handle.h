@@ -13,6 +13,8 @@
 #define HANDLE_ID_GET_TYPE(handle_id) ((handle_id)&0xffff)
 #define HANDLE_ID_GET_INDEX(handle_id) ((handle_id)>>16)
 
+#define HANDLE_GET_OBJECT(handle) ((void*)(((u64)(handle))+(handle)->object_offset))
+
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
@@ -36,8 +38,8 @@ typedef u64 handle_id_t;
 typedef struct _HANDLE{
 	handle_id_t id;
 	lock_t lock;
+	s32 object_offset;
 	KERNEL_ATOMIC u64 rc;
-	void* object;
 	struct _HANDLE* prev;
 	struct _HANDLE* next;
 } handle_t;

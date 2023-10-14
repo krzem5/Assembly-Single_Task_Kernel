@@ -43,7 +43,7 @@ void syscall_thread_get_priority(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=((thread_t*)(handle->object))->priority;
+	regs->rax=((thread_t*)HANDLE_GET_OBJECT(handle))->priority;
 	handle_release(handle);
 }
 
@@ -59,7 +59,7 @@ void syscall_thread_set_priority(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	thread_t* thread=handle->object;
+	thread_t* thread=HANDLE_GET_OBJECT(handle);
 	if (thread->state.type==THREAD_STATE_TYPE_TERMINATED){
 		regs->rax=0;
 		handle_release(handle);
@@ -83,7 +83,7 @@ void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	thread_t* thread=handle->object;
+	thread_t* thread=HANDLE_GET_OBJECT(handle);
 	memcpy((void*)(regs->rsi),thread->cpu_mask,size);
 	handle_release(handle);
 	regs->rax=1;
@@ -102,7 +102,7 @@ void syscall_thread_set_cpu_mask(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	thread_t* thread=handle->object;
+	thread_t* thread=HANDLE_GET_OBJECT(handle);
 	memcpy(thread->cpu_mask,(void*)(regs->rsi),size);
 	memset((void*)(((u64)(thread->cpu_mask))+size),0,cpu_mask_size-size);
 	handle_release(handle);
