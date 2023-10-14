@@ -21,7 +21,7 @@ static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT("process",si
 
 
 static HANDLE_DECLARE_TYPE(PROCESS,{
-	process_t* process=HANDLE_GET_OBJECT(handle);
+	process_t* process=handle->object;
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}

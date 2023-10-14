@@ -39,7 +39,7 @@ static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRU
 
 
 HANDLE_DECLARE_TYPE(THREAD,{
-	thread_t* thread=HANDLE_GET_OBJECT(handle);
+	thread_t* thread=handle->object;
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
 	}

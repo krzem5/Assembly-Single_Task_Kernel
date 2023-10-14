@@ -10,7 +10,7 @@ void main(void){
 		goto _error;
 	}
 	char buffer[4096];
-	u32 length=fs_read(fd,buffer,4096);
+	s64 length=fs_read(fd,buffer,4096);
 	fs_close(fd);
 	if (length<=0){
 		goto _error;
