@@ -30,6 +30,15 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 	omm_dealloc(&_process_allocator,process);
 });
 
+process_t* process_kernel;
+
+
+
+void process_init(void){
+	LOG("Creating kernel process...");
+	process_kernel=process_new();
+}
+
 
 
 process_t* process_new(void){

@@ -6,7 +6,6 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
-#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -198,7 +197,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 
 
 static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
-	aml_node_t* out=umm_alloc(sizeof(aml_node_t));
+	aml_node_t* out=kmm_alloc(sizeof(aml_node_t));
 	if (name){
 		for (u8 i=0;i<4;i++){
 			out->name[i]=name[i];
@@ -360,7 +359,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
 			local->simple_return_value.data.string.length=object->args[0].string_length;
-			char* user_string=umm_alloc(object->args[0].string_length+1);
+			char* user_string=kmm_alloc(object->args[0].string_length+1);
 			memcpy(user_string,object->args[0].string,object->args[0].string_length);
 			user_string[object->args[0].string_length]=0;
 			local->simple_return_value.data.string.data=user_string;
@@ -381,7 +380,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_BUFFER,0):
 			{
 				u64 size=_get_arg_as_int(local,object,0);
-				u8* buffer_data=umm_alloc(size);
+				u8* buffer_data=kmm_alloc(size);
 				memset(buffer_data,0,size);
 				memcpy(buffer_data,object->data.bytes,(size<object->data_length?size:object->data_length));
 				local->simple_return_value.type=AML_NODE_TYPE_BUFFER;
@@ -394,7 +393,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			{
 				aml_node_t* package=_alloc_node(NULL,AML_NODE_TYPE_PACKAGE,NULL);
 				package->data.package.length=_get_arg_as_int(local,object,0);
-				package->data.package.elements=umm_alloc(package->data.package.length*sizeof(aml_node_t));
+				package->data.package.elements=kmm_alloc(package->data.package.length*sizeof(aml_node_t));
 				for (u8 i=0;i<(object->data_length<package->data.package.length?object->data_length:package->data.package.length);i++){
 					aml_node_t* value=_execute(local,object->data.objects+i);
 					if (value->flags&AML_NODE_FLAG_LOCAL){

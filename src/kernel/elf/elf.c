@@ -3,7 +3,6 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/mp/thread.h>

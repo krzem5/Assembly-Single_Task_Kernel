@@ -4,6 +4,14 @@
 
 
 
+extern process_t* process_kernel;
+
+
+
+void process_init(void);
+
+
+
 process_t* process_new(void);
 
 

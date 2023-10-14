@@ -11,8 +11,8 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/process.h>
 #include <kernel/network/layer2.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
@@ -46,6 +46,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	random_init();
 	serial_init_irq();
 	scheduler_init();
+	process_init();
 	cpu_start_all_cores();
 	elf_load("/kernel/loader.elf");
 	scheduler_enable();
