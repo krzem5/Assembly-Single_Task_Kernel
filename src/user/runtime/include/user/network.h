@@ -41,20 +41,4 @@ _Bool network_poll(network_packet_t* packet,_Bool block);
 
 
 
-void network_refresh_device_list(void);
-
-
-
-u32 network_device_count(void);
-
-
-
-_Bool network_device_get(u32 index,network_device_t* device);
-
-
-
-_Bool network_device_delete(const u8* address);
-
-
-
 #endif

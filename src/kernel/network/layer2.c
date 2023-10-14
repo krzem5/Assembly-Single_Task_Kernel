@@ -4,7 +4,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
-#include <kernel/network/layer3.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "network_layer2"
@@ -69,10 +68,6 @@ _Bool network_layer2_poll(network_layer2_packet_t* packet,_Bool block){
 	}
 	packet->protocol=(layer1_buffer[12]<<8)|layer1_buffer[13];
 	layer1_buffer_length-=14;
-	if (packet->protocol==NETWORK_LAYER3_PROTOCOL_TYPE){
-		network_layer3_process_packet((const u8*)(layer1_buffer+6),layer1_buffer_length,layer1_buffer+14);
-		return 0;
-	}
 	if (packet->buffer_length>layer1_buffer_length){
 		packet->buffer_length=layer1_buffer_length;
 	}

@@ -15,7 +15,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
-#include <kernel/network/layer3.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
@@ -48,7 +47,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	bios_get_system_data();
 	network_layer1_init_irq();
 	network_layer2_init();
-	network_layer3_init();
 	random_init();
 	serial_init_irq();
 	scheduler_init();

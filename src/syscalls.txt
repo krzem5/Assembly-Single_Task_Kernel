@@ -29,10 +29,6 @@ memory_unmap(void* address,u64 length) -> _Bool
 network_layer1_get_mac_address(void* buffer,u32 size) -> _Bool
 network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
 network_layer2_send(const void* packet,u32 length) -> _Bool
-network_layer3_device_count(void) -> u32
-network_layer3_device_delete(const void* buffer,u32 size) -> _Bool
-network_layer3_device_get(u32 index,void* buffer,u32 size) -> _Bool
-network_layer3_refresh(void) -> void
 numa_get_locality(u32 offset,void* buffer,u32 length) -> _Bool
 numa_get_node(u32 index,void* buffer,u32 size) -> _Bool
 numa_get_node_count(void) -> u32
