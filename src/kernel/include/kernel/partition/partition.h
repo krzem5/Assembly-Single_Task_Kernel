@@ -76,7 +76,7 @@ void* partition_add(const drive_t* drive,const partition_config_t* partition_con
 
 
 
-partition_t* partition_get(u8 index);
+partition_t* partition_get(u32 index);
 
 
 

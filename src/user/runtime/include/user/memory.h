@@ -38,8 +38,7 @@ typedef struct _MEMORY_RANGE{
 
 
 
-extern u32 memory_range_count;
-extern const memory_range_t* memory_ranges;
+_Bool memory_get_range(u32 index,memory_range_t* out);
 
 
 

@@ -73,17 +73,16 @@ void ls_main(int argc,const char*const* argv){
 		return;
 	}
 	if (type==LS_TYPE_DRIVES){
-		const drive_t* drive=drives;
-		for (u32 i=0;i<drive_count;i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t(%s)%s\n",drive->name,drive->block_count*drive->block_size,drive_type_names[drive->type],drive->model_number,((drive->flags&DRIVE_FLAG_BOOT)?" [boot]":""));
-			drive++;
+		drive_t drive;
+		for (u32 i=0;drive_get(i,&drive);i++){
+			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t(%s)%s\n",drive.name,drive.block_count*drive.block_size,drive_type_names[drive.type],drive.model_number,((drive.flags&DRIVE_FLAG_BOOT)?" [boot]":""));
 		}
 	}
 	else if (type==LS_TYPE_PARTITIONS){
-		const partition_t* partition=partitions;
-		for (u32 i=0;i<partition_count;i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t%s%s%s\n",partition->name,(partition->last_block_index-partition->first_block_index)*(drives+partition->drive_index)->block_size,partition_type_names[partition->type],((partition->flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition->flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition->flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
-			partition++;
+		partition_t partition;
+		drive_t drive;
+		for (u32 i=0;partition_get(i,&partition)&&drive_get(partition.drive_index,&drive);i++){
+			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,partition_type_names[partition.type],((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
 		}
 	}
 	else if (!directory){

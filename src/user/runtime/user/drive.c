@@ -4,6 +4,12 @@
 
 
 
+_Bool drive_get(u32 index,drive_t* out){
+	return _syscall_drive_get(index,out,sizeof(drive_t));
+}
+
+
+
 _Bool drive_format(u32 index,const void* boot,u32 boot_length){
 	return _syscall_drive_format(index,boot,boot_length);
 }

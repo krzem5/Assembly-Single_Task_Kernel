@@ -45,37 +45,36 @@ void drive_main(int argc,const char*const* argv){
 		return;
 	}
 	u32 i=0;
-	for (;i<drive_count;i++){
-		if (string_equal((drives+i)->name,drive_name)){
-			break;
+	drive_t drive;
+	for (;drive_get(i,&drive);i++){
+		if (string_equal(drive.name,drive_name)){
+			goto _drive_found;
 		}
 	}
-	if (i==drive_count){
-		printf("drive: drive '%s' not found\n",drive_name);
-		return;
-	}
+	printf("drive: drive '%s' not found\n",drive_name);
+	return;
+_drive_found:
+	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nBlock size: \x1b[1m%v\x1b[0m\nBlock count: \x1b[1m%lu\x1b[0m\n",
+		drive_name,
+		drive_type_names[drive.type],
+		drive.block_count*drive.block_size,
+		drive.block_size,
+		drive.block_count
+	);
 	drive_stats_t stats;
 	if (!drive_get_stats(i,&stats)){
 		printf("drive: unable to get drive stats\n");
 		return;
 	}
-	const drive_t* drive=drives+i;
-	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nBlock size: \x1b[1m%v\x1b[0m\nBlock count: \x1b[1m%lu\x1b[0m\n",
-		drive_name,
-		drive_type_names[drive->type],
-		drive->block_count*drive->block_size,
-		drive->block_size,
-		drive->block_count
-	);
 	if (stats.root_block_count){
 		printf("KFS blocks:\n  ROOT: \x1b[1m%v\x1b[0m\n  BATC: \x1b[1m%v\x1b[0m\n  NDA3: \x1b[1m%v\x1b[0m\n  NDA2: \x1b[1m%v\x1b[0m\n  NDA1: \x1b[1m%v\x1b[0m\n  NFDA: \x1b[1m%v\x1b[0m\n  DATA: \x1b[1m%v\x1b[0m\n",
-			stats.root_block_count*drive->block_size,
-			stats.batc_block_count*drive->block_size,
-			stats.nda3_block_count*drive->block_size,
-			stats.nda2_block_count*drive->block_size,
-			stats.nda1_block_count*drive->block_size,
-			stats.nfda_block_count*drive->block_size,
-			stats.data_block_count*drive->block_size
+			stats.root_block_count*drive.block_size,
+			stats.batc_block_count*drive.block_size,
+			stats.nda3_block_count*drive.block_size,
+			stats.nda2_block_count*drive.block_size,
+			stats.nda1_block_count*drive.block_size,
+			stats.nfda_block_count*drive.block_size,
+			stats.data_block_count*drive.block_size
 		);
 	}
 	if (!speed_test){

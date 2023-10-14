@@ -99,21 +99,21 @@ typedef volatile struct _XHCI_INTERRUPT_REGISTERS{
 
 
 typedef volatile struct _XHCI_DEVICE_CONTEXT_BASE{
-	u64 ptr;
+	u64 address;
 } xhci_device_context_base_t;
 
 
 
 typedef volatile struct _XHCI_TRANSFER_BLOCK{
-	u64 ptr;
+	u64 address;
 	u32 status;
-	u32 control;
+	u32 flags;
 } xhci_transfer_block_t;
 
 
 
 typedef volatile struct _XHCI_EVENT_RING_SEGMENT{
-    u64 ptr;
+    u64 address;
     u32 size;
     u8 _padding[4];
 } xhci_event_ring_segment_t;
@@ -291,7 +291,7 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_device->operational_registers->usbcmd=USBCMD_HCRST;
 	SPINLOOP(xhci_device->operational_registers->usbcmd&USBCMD_HCRST);
 	SPINLOOP(xhci_device->operational_registers->usbsts&USBSTS_CNR);
-	xhci_device->event_ring_segment->ptr=((u64)(xhci_device->event_ring))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	xhci_device->event_ring_segment->address=((u64)(xhci_device->event_ring))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	xhci_device->event_ring_segment->size=XHCI_RING_SIZE;
 	xhci_device->operational_registers->config=xhci_device->slots;
 	xhci_device->operational_registers->dcbaap=((u64)(xhci_device->device_context_base_array))-VMM_HIGHER_HALF_ADDRESS_OFFSET;

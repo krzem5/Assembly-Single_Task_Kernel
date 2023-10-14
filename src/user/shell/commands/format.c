@@ -33,15 +33,15 @@ void format_main(int argc,const char*const* argv){
 		return;
 	}
 	u32 i=0;
-	for (;i<drive_count;i++){
-		if (string_equal((drives+i)->name,drive_name)){
-			break;
+	drive_t drive;
+	for (;drive_get(i,&drive);i++){
+		if (string_equal(drive.name,drive_name)){
+			goto _drive_found;
 		}
 	}
-	if (i==drive_count){
-		printf("format: drive '%s' not found\n",drive_name);
-		return;
-	}
+	printf("format: drive '%s' not found\n",drive_name);
+	return;
+_drive_found:
 	u8* boot_code=NULL;
 	u32 boot_code_length=0;
 	if (boot){

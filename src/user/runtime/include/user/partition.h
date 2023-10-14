@@ -21,15 +21,13 @@ typedef struct _PARTITION{
 	u8 index;
 	u64 first_block_index;
 	u64 last_block_index;
-	const char* name;
+	char name[48];
 	u32 drive_index;
 } partition_t;
 
 
 
-extern u32 partition_count;
-extern u32 partition_boot_index;
-extern const partition_t* partitions;
+_Bool partition_get(u32 index,partition_t* out);
 
 
 

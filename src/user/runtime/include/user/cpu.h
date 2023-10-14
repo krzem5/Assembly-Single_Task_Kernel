@@ -4,17 +4,7 @@
 
 
 
-typedef struct _CPU{
-	u32 domain;
-	u32 chip;
-	u32 core;
-	u32 thread;
-} cpu_t;
-
-
-
-extern u32 cpu_count;
-extern const cpu_t* cpus;
+u32 cpu_get_count(void);
 
 
 

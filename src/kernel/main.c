@@ -23,7 +23,6 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
-#include <kernel/user/data.h>
 #define KERNEL_LOG_NAME "main"
 
 
@@ -52,7 +51,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	network_layer3_init();
 	random_init();
 	serial_init_irq();
-	user_data_generate();
 	scheduler_init();
 	cpu_start_all_cores();
 	elf_load("/kernel/loader.elf");

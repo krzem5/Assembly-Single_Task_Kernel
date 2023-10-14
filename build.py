@@ -478,7 +478,7 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 		sys.exit(1)
 #####################################################################################################################################
 with open("build/disk/kernel/startup.txt","w") as wf:
-	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/install.elf\n"))
+	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/shell.elf\n"))
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################

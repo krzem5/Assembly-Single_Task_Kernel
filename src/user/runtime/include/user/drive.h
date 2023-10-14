@@ -29,18 +29,16 @@ typedef struct _DRIVE{
 	u8 flags;
 	u8 type;
 	u8 index;
-	const char* name;
-	const char* serial_number;
-	const char* model_number;
+	char name[48];
+	char serial_number[48];
+	char model_number[48];
 	u64 block_count;
 	u64 block_size;
 } drive_t;
 
 
 
-extern u32 drive_count;
-extern u32 drive_boot_index;
-extern const drive_t* drives;
+_Bool drive_get(u32 index,drive_t* out);
 
 
 
