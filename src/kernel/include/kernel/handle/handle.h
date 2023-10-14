@@ -38,10 +38,17 @@ typedef u64 handle_id_t;
 typedef struct _HANDLE{
 	handle_id_t id;
 	lock_t lock;
-	s32 object_offset;
+	s16 object_offset;
+	u8 rb_color;
 	KERNEL_ATOMIC u64 rc;
-	struct _HANDLE* prev;
-	struct _HANDLE* next;
+	struct _HANDLE* rb_parent;
+	union{
+		struct{
+			struct _HANDLE* rb_prev;
+			struct _HANDLE* rb_next;
+		};
+		struct _HANDLE* rb_nodes[2];
+	};
 } handle_t;
 
 
@@ -62,7 +69,7 @@ typedef struct _HANDLE_TYPE_DATA{
 	char name[HANDLE_NAME_LENGTH];
 	lock_t lock;
 	handle_type_delete_callback_t delete_callback;
-	handle_t* root;
+	handle_t* rb_root;
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;
 } handle_type_data_t;
