@@ -9,13 +9,6 @@
 
 
 
-#define USE_RB_TREE 1
-#if USE_RB_TREE
-#define RB_ROOT_INIT RB_NIL_NODE
-#else
-#define RB_ROOT_INIT NULL
-#endif
-
 #define RB_NIL_NODE (&_handle_rb_nil_node)
 
 
@@ -32,11 +25,20 @@ handle_type_t handle_type_count;
 
 
 
-static void _handle_add_node_to_tree(handle_t** root,handle_t* node){
-#if USE_RB_TREE
-#define x node
-	node->rb_left=RB_NIL_NODE;
-	node->rb_right=RB_NIL_NODE;
+static KERNEL_INLINE void _replace_tree_node(handle_t** root,handle_t* old,handle_t* new){
+	if (old->rb_parent){
+		old->rb_parent->rb_nodes[old->rb_parent->rb_right==old]=new;
+	}
+	else{
+		*root=new;
+	}
+}
+
+
+
+static void _handle_add_node_to_tree(handle_t** root,handle_t* x){
+	x->rb_left=RB_NIL_NODE;
+	x->rb_right=RB_NIL_NODE;
 	if (*root==RB_NIL_NODE){
 		x->rb_parent=NULL;
 		x->rb_color=0;
@@ -76,54 +78,22 @@ static void _handle_add_node_to_tree(handle_t** root,handle_t* node){
 		y->rb_parent=z;
 	}
 	(*root)->rb_color=0;
-#undef x
-#else
-	node->rb_parent=&_handle_rb_nil_node;
-	node->rb_left=NULL;
-	node->rb_right=*root;
-	if (*root){
-		(*root)->rb_left=node;
-	}
-	*root=node;
-#endif
 }
 
 
 
 static handle_t* _handle_get_node_from_tree(handle_t* root,handle_id_t id){
-#if USE_RB_TREE
 	for (handle_t* x=root;x!=RB_NIL_NODE;x=x->rb_nodes[x->id<id]){
 		if (x->id==id){
 			return x;
 		}
 	}
 	return NULL;
-#else
-	for (handle_t* handle=root;handle;handle=handle->rb_right){
-		if (handle->id==id){
-			return handle;
-		}
-	}
-	return NULL;
-#endif
 }
 
 
 
-static KERNEL_INLINE void _handle_replace_tree_node(handle_t** root,handle_t* old,handle_t* new){
-	if (old->rb_parent){
-		old->rb_parent->rb_nodes[old->rb_parent->rb_right==old]=new;
-	}
-	else{
-		*root=new;
-	}
-}
-
-
-
-static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
-#if USE_RB_TREE
-#define x node
+static void _handle_remove_node_from_tree(handle_t** root,handle_t* x){
 	_Bool skip_recursive_fix=x->rb_color;
 	handle_t* z;
 	handle_t* z_parent;
@@ -138,7 +108,7 @@ static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
 			y->rb_right=x->rb_right;
 			x->rb_right->rb_parent=y;
 		}
-		_handle_replace_tree_node(root,x,y);
+		_replace_tree_node(root,x,y);
 		y->rb_parent=x->rb_parent;
 		y->rb_left=x->rb_left;
 		y->rb_left->rb_parent=y;
@@ -146,7 +116,7 @@ static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
 	}
 	else{
 		z=x->rb_nodes[x->rb_left==RB_NIL_NODE];
-		_handle_replace_tree_node(root,x,z);
+		_replace_tree_node(root,x,z);
 		z_parent=x->rb_parent;
 		z->rb_parent=z_parent;
 	}
@@ -164,7 +134,7 @@ static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
 			z_parent->rb_nodes[i]=y;
 			y->rb_parent=z_parent;
 			x->rb_parent=z_parent->rb_parent;
-			_handle_replace_tree_node(root,z_parent,x);
+			_replace_tree_node(root,z_parent,x);
 			x->rb_nodes[j]=z_parent;
 			z_parent->rb_parent=x;
 			x=y;
@@ -193,25 +163,13 @@ static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
 		z_parent->rb_nodes[i]=x->rb_nodes[j];
 		x->rb_nodes[j]->rb_parent=z_parent;
 		x->rb_parent=z_parent->rb_parent;
-		_handle_replace_tree_node(root,z_parent,x);
+		_replace_tree_node(root,z_parent,x);
 		x->rb_nodes[j]=z_parent;
 		z_parent->rb_parent=x;
 		(*root)->rb_color=0;
 		return;
 	}
 	z->rb_color=0;
-#undef x
-#else
-	if (node->rb_left){
-		node->rb_left->rb_right=node->rb_right;
-	}
-	else{
-		*root=node->rb_right;
-	}
-	if (node->rb_right){
-		node->rb_right->rb_left=node->rb_left;
-	}
-#endif
 }
 
 
@@ -231,7 +189,7 @@ void handle_init(void){
 	memcpy(handle_type_data->name,"any",3);
 	lock_init(&(handle_type_data->lock));
 	handle_type_data->delete_callback=NULL;
-	handle_type_data->rb_root=RB_ROOT_INIT;
+	handle_type_data->rb_root=RB_NIL_NODE;
 	handle_type_data->count=0;
 	handle_type_data->active_count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
@@ -240,7 +198,7 @@ void handle_init(void){
 			memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
 			lock_init(&(type_data->lock));
 			type_data->delete_callback=(*descriptor)->delete_callback;
-			type_data->rb_root=RB_ROOT_INIT;
+			type_data->rb_root=RB_NIL_NODE;
 			type_data->count=0;
 			type_data->active_count=0;
 		}
