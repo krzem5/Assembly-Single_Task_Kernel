@@ -26,7 +26,7 @@
 
 
 static void _main_thread(void){
-	ERROR("Main thread!");
+	ERROR("Main thread! (%p)");
 }
 
 
@@ -55,7 +55,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
-	scheduler_enqueue_thread(thread_new(process_kernel,(u64)_main_thread,0x200000,0));
+	scheduler_enqueue_thread(thread_new_kernel(process_kernel,(u64)_main_thread,0x200000,0));
 	elf_load("/kernel/loader.elf");
 	scheduler_enable();
 	scheduler_start();

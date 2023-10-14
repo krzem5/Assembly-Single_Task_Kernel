@@ -101,7 +101,7 @@ _Bool elf_load(const char* path){
 			goto _error;
 		}
 	}
-	scheduler_enqueue_thread(thread_new(process,header.e_entry,0x200000,1));
+	scheduler_enqueue_thread(thread_new_user(process,header.e_entry,0x200000));
 	return 1;
 _error:
 	ERROR("Unable to load ELF file");

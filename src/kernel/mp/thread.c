@@ -19,6 +19,14 @@
 
 
 
+#define SET_KERNEL_THREAD_ARG(register) \
+	if ((arg_count)){ \
+		(arg_count)--; \
+		out->gpr_state.register=__builtin_va_arg(va,u64); \
+	}
+
+
+
 PMM_DECLARE_COUNTER(KERNEL_STACK);
 PMM_DECLARE_COUNTER(OMM_THREAD);
 PMM_DECLARE_COUNTER(USER_STACK);
@@ -97,11 +105,23 @@ thread_t* thread_new_user(process_t* process,u64 rip,u64 stack_size){
 
 
 
-thread_t* thread_new_kernel(process_t* process,u64 rip,u64 stack_size){
+thread_t* thread_new_kernel(process_t* process,u64 rip,u64 stack_size,u8 arg_count,...){
+	if (arg_count>6){
+		panic("Too many kernel thread arguments");
+	}
 	thread_t* out=_thread_alloc(process,0,stack_size);
 	out->gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
 	out->gpr_state.rax=rip;
 	out->gpr_state.rsp=out->kernel_stack_bottom+stack_size;
+	__builtin_va_list va;
+	__builtin_va_start(va,arg_count);
+	SET_KERNEL_THREAD_ARG(rdi);
+	SET_KERNEL_THREAD_ARG(rsi);
+	SET_KERNEL_THREAD_ARG(rdx);
+	SET_KERNEL_THREAD_ARG(rcx);
+	SET_KERNEL_THREAD_ARG(r8);
+	SET_KERNEL_THREAD_ARG(r9);
+	__builtin_va_end(va);
 	out->gpr_state.cs=0x08;
 	out->gpr_state.ds=0x10;
 	out->gpr_state.es=0x10;
@@ -110,12 +130,6 @@ thread_t* thread_new_kernel(process_t* process,u64 rip,u64 stack_size){
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=(u64)out;
 	return out;
-}
-
-
-
-thread_t* thread_new(process_t* process,u64 rip,u64 stack_size,_Bool is_user_thread){
-	return (is_user_thread?thread_new_user:thread_new_kernel)(process,rip,stack_size);
 }
 
 
