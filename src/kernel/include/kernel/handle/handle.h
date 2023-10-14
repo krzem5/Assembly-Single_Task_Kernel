@@ -38,10 +38,9 @@ typedef u64 handle_id_t;
 typedef struct _HANDLE{
 	handle_id_t id;
 	lock_t lock;
-	s16 object_offset;
-	u8 rb_color;
+	s32 object_offset;
 	KERNEL_ATOMIC u64 rc;
-	struct _HANDLE* rb_parent;
+	u64 rb_parent_and_color;
 	union{
 		struct{
 			struct _HANDLE* rb_left;
