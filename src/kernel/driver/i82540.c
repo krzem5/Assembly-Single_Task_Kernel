@@ -159,17 +159,6 @@ static void _i82540_wait(void* extra_data){
 
 
 
-static void _i82540_irq_init(void* extra_data){
-	i82540_device_t* device=extra_data;
-	device->irq=isr_allocate();
-	ioapic_redirect_irq(device->pci_irq,device->irq);
-	device->mmio[REG_ITR]=0x0000;
-	device->mmio[REG_IMS]=0x0084;
-	(void)device->mmio[REG_ICR];
-}
-
-
-
 void driver_i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
@@ -228,7 +217,11 @@ void driver_i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_TDT]=1;
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
 	i82540_device->pci_irq=device->interrupt_line;
-	i82540_device->irq=0;
+	i82540_device->irq=isr_allocate();
+	ioapic_redirect_irq(i82540_device->pci_irq,i82540_device->irq);
+	i82540_device->mmio[REG_ITR]=0x0000;
+	i82540_device->mmio[REG_IMS]=0x0084;
+	(void)i82540_device->mmio[REG_ICR];
 	u32 rah=i82540_device->mmio[REG_RAH0];
 	u32 ral=i82540_device->mmio[REG_RAL0];
 	network_layer1_device_t layer1_device={
@@ -244,7 +237,6 @@ void driver_i82540_init_device(pci_device_t* device){
 		_i82540_tx,
 		_i82540_rx,
 		_i82540_wait,
-		_i82540_irq_init,
 		i82540_device
 	};
 	network_layer1_set_device(&layer1_device);

@@ -13,7 +13,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/umm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
@@ -37,13 +36,12 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	clock_init();
 	handle_init();
 	isr_init();
+	acpi_load();
 	pci_enumerate();
 	partition_load();
 	kernel_load();
-	acpi_load();
 	aml_bus_enumerate();
 	bios_get_system_data();
-	network_layer1_init_irq();
 	network_layer2_init();
 	random_init();
 	serial_init_irq();

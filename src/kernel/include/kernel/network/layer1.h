@@ -14,7 +14,6 @@ typedef struct _NETWORK_LAYER1_DEVICE{
 	void (*tx)(void*,u64,u16);
 	u16 (*rx)(void*,void*,u16);
 	void (*wait)(void*);
-	void (*irq_init)(void*);
 	void* extra_data;
 } network_layer1_device_t;
 

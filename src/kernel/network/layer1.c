@@ -14,16 +14,6 @@ mac_address_t network_layer1_mac_address;
 
 
 
-void network_layer1_init_irq(void){
-	if (!network_layer1_name){
-		return;
-	}
-	LOG("Initializing layer1 network device IRQ...");
-	_layer1_device.irq_init(_layer1_device.extra_data);
-}
-
-
-
 void network_layer1_set_device(const network_layer1_device_t* device){
 	if (network_layer1_name){
 		WARN("Layer1 network device already installed");
