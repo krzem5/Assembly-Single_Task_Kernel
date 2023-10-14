@@ -26,7 +26,16 @@
 
 
 static void _main_thread(void){
-	ERROR("Main thread! (%p)");
+	LOG("Main thread started");
+	pci_enumerate();
+	partition_load();
+	kernel_load();
+	aml_bus_enumerate();
+	bios_get_system_data();
+	network_layer2_init();
+	random_init();
+	serial_init_irq();
+	elf_load("/kernel/loader.elf");
 }
 
 
@@ -44,19 +53,10 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	handle_init();
 	isr_init();
 	acpi_load();
-	pci_enumerate();
-	partition_load();
-	kernel_load();
-	aml_bus_enumerate();
-	bios_get_system_data();
-	network_layer2_init();
-	random_init();
-	serial_init_irq();
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
 	scheduler_enqueue_thread(thread_new_kernel(process_kernel,(u64)_main_thread,0x200000,0));
-	elf_load("/kernel/loader.elf");
 	scheduler_enable();
 	scheduler_start();
 	for (;;);
