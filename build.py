@@ -349,13 +349,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 
 
 def _process_packet(buffer):
-	if (buffer[0]&1):
-		return None
-	type=buffer[0]>>1
-	if (type==0x00):
-		return bytearray([0x01])
-	if (type==0x01):
-		return bytearray([0x03,0x02,0x00,0x22,0x11,0x33,0x44,0x66,0x55,0x77,0x88,0xaa,0x99,0xbb,0xcc,0xee,0xdd,0xff])+b"TEST_SERIAL_NUMBER\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 	return None
 
 
