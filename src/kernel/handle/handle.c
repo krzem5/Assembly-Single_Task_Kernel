@@ -9,11 +9,22 @@
 
 
 
+#define USE_RB_TREE 1
+#if USE_RB_TREE
+#define RB_ROOT_INIT RB_NIL_NODE
+#else
+#define RB_ROOT_INIT NULL
+#endif
+
+#define RB_NIL_NODE (&_handle_rb_nil_node)
+
+
+
 static handle_t _handle_rb_nil_node={
 	.rb_color=0,
 	.rb_parent=NULL,
-	.rb_prev=NULL,
-	.rb_next=NULL
+	.rb_left=NULL,
+	.rb_right=NULL
 };
 
 handle_type_data_t* handle_type_data;
@@ -22,38 +33,185 @@ handle_type_t handle_type_count;
 
 
 static void _handle_add_node_to_tree(handle_t** root,handle_t* node){
+#if USE_RB_TREE
+#define x node
+	node->rb_left=RB_NIL_NODE;
+	node->rb_right=RB_NIL_NODE;
+	if (*root==RB_NIL_NODE){
+		x->rb_parent=NULL;
+		x->rb_color=0;
+		*root=x;
+		return;
+	}
+	x->rb_color=1;
+	handle_t* y=*root;
+	for (;y->rb_right!=RB_NIL_NODE;y=y->rb_right);
+	x->rb_parent=y;
+	y->rb_right=x;
+	if (!y->rb_parent){
+		return;
+	}
+	while (x->rb_parent&&x->rb_parent->rb_color){
+		y=x->rb_parent;
+		y->rb_color=0;
+		y=y->rb_parent;
+		y->rb_color=1;
+		handle_t* z=y->rb_left;
+		if (z->rb_color){
+			z->rb_color=0;
+			x=y;
+			continue;
+		}
+		z=y->rb_right;
+		y->rb_right=z->rb_left;
+		z->rb_left->rb_parent=y;
+		z->rb_parent=y->rb_parent;
+		if (y->rb_parent){
+			y->rb_parent->rb_right=z;
+		}
+		else{
+			*root=z;
+		}
+		z->rb_left=y;
+		y->rb_parent=z;
+	}
+	(*root)->rb_color=0;
+#undef x
+#else
 	node->rb_parent=&_handle_rb_nil_node;
-	node->rb_prev=NULL;
-	node->rb_next=*root;
+	node->rb_left=NULL;
+	node->rb_right=*root;
 	if (*root){
-		(*root)->rb_prev=node;
+		(*root)->rb_left=node;
 	}
 	*root=node;
+#endif
 }
 
 
 
 static handle_t* _handle_get_node_from_tree(handle_t* root,handle_id_t id){
-	for (handle_t* handle=root;handle;handle=handle->rb_next){
+#if USE_RB_TREE
+	for (handle_t* x=root;x!=RB_NIL_NODE;x=x->rb_nodes[x->id<id]){
+		if (x->id==id){
+			return x;
+		}
+	}
+	return NULL;
+#else
+	for (handle_t* handle=root;handle;handle=handle->rb_right){
 		if (handle->id==id){
 			return handle;
 		}
 	}
 	return NULL;
+#endif
+}
+
+
+
+static KERNEL_INLINE void _handle_replace_tree_node(handle_t** root,handle_t* old,handle_t* new){
+	if (old->rb_parent){
+		old->rb_parent->rb_nodes[old->rb_parent->rb_right==old]=new;
+	}
+	else{
+		*root=new;
+	}
 }
 
 
 
 static void _handle_remove_node_from_tree(handle_t** root,handle_t* node){
-	if (node->rb_prev){
-		node->rb_prev->rb_next=node->rb_next;
+#if USE_RB_TREE
+#define x node
+	_Bool skip_recursive_fix=x->rb_color;
+	handle_t* z;
+	handle_t* z_parent;
+	if (x->rb_left!=RB_NIL_NODE&&x->rb_right!=RB_NIL_NODE){
+		handle_t* y=x->rb_right;
+		for (;y->rb_left!=RB_NIL_NODE;y=y->rb_left);
+		skip_recursive_fix=y->rb_color;
+		z=y->rb_right;
+		z_parent=y;
+		if (y->rb_parent!=x){
+			y->rb_parent->rb_left=y->rb_right;
+			y->rb_right=x->rb_right;
+			x->rb_right->rb_parent=y;
+		}
+		_handle_replace_tree_node(root,x,y);
+		y->rb_parent=x->rb_parent;
+		y->rb_left=x->rb_left;
+		y->rb_left->rb_parent=y;
+		y->rb_color=x->rb_color;
 	}
 	else{
-		*root=node->rb_next;
+		z=x->rb_nodes[x->rb_left==RB_NIL_NODE];
+		_handle_replace_tree_node(root,x,z);
+		z_parent=x->rb_parent;
+		z->rb_parent=z_parent;
 	}
-	if (node->rb_next){
-		node->rb_next->rb_prev=node->rb_prev;
+	if (skip_recursive_fix){
+		return;
 	}
+	while (z->rb_parent&&!z->rb_color){
+		_Bool i=(z==z_parent->rb_left);
+		_Bool j=i^1;
+		x=z_parent->rb_nodes[i];
+		if (x->rb_color){
+			x->rb_color=0;
+			z_parent->rb_color=1;
+			handle_t* y=x->rb_nodes[j];
+			z_parent->rb_nodes[i]=y;
+			y->rb_parent=z_parent;
+			x->rb_parent=z_parent->rb_parent;
+			_handle_replace_tree_node(root,z_parent,x);
+			x->rb_nodes[j]=z_parent;
+			z_parent->rb_parent=x;
+			x=y;
+		}
+		if (!x->rb_left->rb_color&&!x->rb_right->rb_color){
+			x->rb_color=1;
+			z=z_parent;
+			z_parent=z->rb_parent;
+			continue;
+		}
+		if (!x->rb_nodes[i]->rb_color){
+			x->rb_nodes[j]->rb_color=0;
+			x->rb_color=1;
+			handle_t* y=x->rb_nodes[j];
+			x->rb_nodes[j]=y->rb_nodes[i];
+			y->rb_nodes[i]->rb_parent=x;
+			y->rb_parent=x->rb_parent;
+			x->rb_parent->rb_nodes[x==x->rb_parent->rb_right]=y;
+			y->rb_nodes[i]=x;
+			x->rb_parent=y;
+			x=z_parent->rb_nodes[i];
+		}
+		x->rb_color=z_parent->rb_color;
+		z_parent->rb_color=0;
+		x->rb_nodes[i]->rb_color=0;
+		z_parent->rb_nodes[i]=x->rb_nodes[j];
+		x->rb_nodes[j]->rb_parent=z_parent;
+		x->rb_parent=z_parent->rb_parent;
+		_handle_replace_tree_node(root,z_parent,x);
+		x->rb_nodes[j]=z_parent;
+		z_parent->rb_parent=x;
+		(*root)->rb_color=0;
+		return;
+	}
+	z->rb_color=0;
+#undef x
+#else
+	if (node->rb_left){
+		node->rb_left->rb_right=node->rb_right;
+	}
+	else{
+		*root=node->rb_right;
+	}
+	if (node->rb_right){
+		node->rb_right->rb_left=node->rb_left;
+	}
+#endif
 }
 
 
@@ -73,7 +231,7 @@ void handle_init(void){
 	memcpy(handle_type_data->name,"any",3);
 	lock_init(&(handle_type_data->lock));
 	handle_type_data->delete_callback=NULL;
-	handle_type_data->rb_root=NULL;
+	handle_type_data->rb_root=RB_ROOT_INIT;
 	handle_type_data->count=0;
 	handle_type_data->active_count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
@@ -82,7 +240,7 @@ void handle_init(void){
 			memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
 			lock_init(&(type_data->lock));
 			type_data->delete_callback=(*descriptor)->delete_callback;
-			type_data->rb_root=NULL;
+			type_data->rb_root=RB_ROOT_INIT;
 			type_data->count=0;
 			type_data->active_count=0;
 		}

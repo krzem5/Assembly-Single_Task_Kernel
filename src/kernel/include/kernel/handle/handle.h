@@ -44,8 +44,8 @@ typedef struct _HANDLE{
 	struct _HANDLE* rb_parent;
 	union{
 		struct{
-			struct _HANDLE* rb_prev;
-			struct _HANDLE* rb_next;
+			struct _HANDLE* rb_left;
+			struct _HANDLE* rb_right;
 		};
 		struct _HANDLE* rb_nodes[2];
 	};
