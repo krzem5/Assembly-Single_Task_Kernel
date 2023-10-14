@@ -45,37 +45,53 @@ HANDLE_DECLARE_TYPE(THREAD,{
 
 
 
-thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
+thread_t* thread_new(process_t* process,u64 rip,u64 stack_size,_Bool is_user_thread){
 	if (OMM_ALLOCATOR_IS_UNINITIALISED(&_thread_fpu_state_allocator)){
 		_thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_STRUCT("fpu_state",fpu_state_size,64,4,PMM_COUNTER_OMM_THREAD);
 	}
 	stack_size=pmm_align_up_address(stack_size);
+	u64 kernel_stack_size=(is_user_thread?CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT:pmm_align_up_address(stack_size));
 	thread_t* out=omm_alloc(&_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
 	lock_init(&(out->lock));
 	out->process=process;
-	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
-	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,kernel_stack_size);
 	out->pf_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	if (!out->user_stack_bottom||!out->kernel_stack_bottom||!out->pf_stack_bottom){
+	if (!out->kernel_stack_bottom||!out->pf_stack_bottom){
 		panic("Unable to reserve thread stack");
 	}
-	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_USER_STACK)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
-	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,CPU_KERNEL_STACK_PAGE_COUNT);
+	if (is_user_thread){
+		out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,stack_size);
+		if (!out->user_stack_bottom){
+			panic("Unable to reserve thread stack");
+		}
+		vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_USER_STACK)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,stack_size>>PAGE_SIZE_SHIFT);
+	}
+	else{
+		out->user_stack_bottom=0;
+	}
+	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,kernel_stack_size>>PAGE_SIZE_SHIFT);
 	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_SET_COUNTER(PMM_COUNTER_KERNEL_STACK)|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	out->header.kernel_rsp=out->kernel_stack_bottom+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->header.current_thread=out;
 	out->stack_size=stack_size;
-	out->gpr_state.rip=rip;
-	out->gpr_state.rsp=out->user_stack_bottom+stack_size;
-	out->gpr_state.cs=0x23;
-	out->gpr_state.ds=0x1b;
-	out->gpr_state.es=0x1b;
-	out->gpr_state.ss=0x1b;
+	out->kernel_stack_size=kernel_stack_size;
+	if (!is_user_thread){
+		out->gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
+		out->gpr_state.rax=rip;
+	}
+	else{
+		out->gpr_state.rip=rip;
+	}
+	out->gpr_state.rsp=(is_user_thread?out->user_stack_bottom:out->kernel_stack_bottom)+stack_size;
+	out->gpr_state.cs=(is_user_thread?0x23:0x08);
+	out->gpr_state.ds=(is_user_thread?0x1b:0x10);
+	out->gpr_state.es=(is_user_thread?0x1b:0x10);
+	out->gpr_state.ss=(is_user_thread?0x1b:0x10);
 	out->gpr_state.rflags=0x0000000202;
 	out->fs_gs_state.fs=0;
-	out->fs_gs_state.gs=0;
+	out->fs_gs_state.gs=(u64)out;
 	out->fpu_state=omm_alloc(&_thread_fpu_state_allocator);
 	fpu_init(out->fpu_state);
 	out->cpu_mask=cpu_mask_new();
@@ -92,11 +108,15 @@ thread_t* thread_new(process_t* process,u64 rip,u64 stack_size){
 void thread_delete(thread_t* thread){
 	lock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
-	vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
-	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	if (thread->user_stack_bottom){
+		vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->stack_size);
+	}
+	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,thread->kernel_stack_size);
 	vmm_memory_map_release(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
-	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,CPU_KERNEL_STACK_PAGE_COUNT);
+	if (thread->user_stack_bottom){
+		vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->stack_size>>PAGE_SIZE_SHIFT);
+	}
+	vmm_release_pages(&(process->pagemap),thread->kernel_stack_bottom,thread->kernel_stack_size>>PAGE_SIZE_SHIFT);
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){

@@ -19,7 +19,7 @@ extern handle_type_t HANDLE_TYPE_THREAD;
 
 
 
-thread_t* thread_new(process_t* process,u64 rip,u64 stack_size);
+thread_t* thread_new(process_t* process,u64 rip,u64 stack_size,_Bool is_user_thread);
 
 
 
@@ -32,6 +32,10 @@ void KERNEL_NORETURN thread_terminate(void);
 
 
 void thread_await_event(event_t* event);
+
+
+
+void KERNEL_NORETURN _thread_bootstrap_kernel_thread(void);
 
 
 

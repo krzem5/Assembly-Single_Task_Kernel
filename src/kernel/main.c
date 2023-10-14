@@ -13,6 +13,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/network/layer2.h>
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
@@ -21,6 +22,12 @@
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "main"
+
+
+
+static void _main_thread(void){
+	ERROR("Main thread!");
+}
 
 
 
@@ -48,6 +55,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
+	scheduler_enqueue_thread(thread_new(process_kernel,(u64)_main_thread,0x200000,0));
 	elf_load("/kernel/loader.elf");
 	scheduler_enable();
 	scheduler_start();
