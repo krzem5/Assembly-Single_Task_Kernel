@@ -21,7 +21,7 @@ void handle_main(int argc,const char*const* argv){
 		}
 		u8 j=0;
 		for (;type_data.name[j];j++);
-		printf("%s:\t%s\x1b[1m%u\x1b[0m\n",type_data.name,(j>6?"":"\t"),type_data.count);
+		printf("%s:\t%s\x1b[1m%u\x1b[0m\t(\x1b[1m%u\x1b[0m)\n",type_data.name,(j>6?"":"\t"),type_data.active_count,type_data.count);
 	}
 	return;
 _error:

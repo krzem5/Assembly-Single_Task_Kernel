@@ -9,6 +9,10 @@
 
 #define HANDLE_NAME_LENGTH 16
 
+#define HANDLE_ID_CREATE(type,index) ((type)|((index)<<16))
+#define HANDLE_ID_GET_TYPE(handle_id) ((handle_id)&0xffff)
+#define HANDLE_ID_GET_INDEX(handle_id) ((handle_id)>>16)
+
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
@@ -30,9 +34,8 @@ typedef u64 handle_id_t;
 
 
 typedef struct _HANDLE{
-	handle_type_t type;
-	lock_t lock;
 	handle_id_t id;
+	lock_t lock;
 	KERNEL_ATOMIC u64 rc;
 	void* object;
 	struct _HANDLE* prev;
@@ -55,16 +58,12 @@ typedef struct _HANDLE_DESCRIPTOR{
 
 typedef struct _HANDLE_TYPE_DATA{
 	char name[HANDLE_NAME_LENGTH];
+	lock_t lock;
 	handle_type_delete_callback_t delete_callback;
-	KERNEL_ATOMIC u64 count;
+	handle_t* root;
+	KERNEL_ATOMIC handle_id_t count;
+	KERNEL_ATOMIC handle_id_t active_count;
 } handle_type_data_t;
-
-
-
-typedef struct _HANDLE_USER_TYPE_DATA{
-	char name[HANDLE_NAME_LENGTH];
-	u64 count;
-} handle_user_type_data_t;
 
 
 

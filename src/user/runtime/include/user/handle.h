@@ -11,6 +11,7 @@ typedef u16 handle_type_t;
 typedef struct _HANDLE_TYPE_DATA{
 	char name[16];
 	u64 count;
+	u64 active_count;
 } handle_type_data_t;
 
 
