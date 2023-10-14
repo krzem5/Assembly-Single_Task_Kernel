@@ -81,6 +81,9 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("vmm_memory_map_reserve: unaligned arguments");
 	}
+	if (!length){
+		return 0;
+	}
 	lock_acquire_shared(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
 	if (address){

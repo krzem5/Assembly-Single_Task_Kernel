@@ -22,7 +22,7 @@ void syscall_thread_create(syscall_registers_t* regs){
 	}
 	u64 stack_size=regs->r8;
 	if (!stack_size){
-		stack_size=THREAD_DATA->stack_size;
+		stack_size=THREAD_DATA->user_stack_size;
 	}
 	thread_t* thread=thread_new(THREAD_DATA->process,regs->rdi,stack_size,1);
 	thread->gpr_state.rdi=regs->rsi;

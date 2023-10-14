@@ -70,7 +70,7 @@ typedef struct _THREAD{
 	u64 user_stack_bottom;
 	u64 kernel_stack_bottom;
 	u64 pf_stack_bottom;
-	u64 stack_size;
+	u64 user_stack_size;
 	u64 kernel_stack_size;
 	isr_state_t gpr_state;
 	thread_fs_gs_state_t fs_gs_state;
