@@ -18,7 +18,6 @@
 #include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
-#include <kernel/sandbox/sandbox.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
@@ -37,7 +36,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	kmm_init();
 	clock_init();
 	handle_init();
-	sandbox_init();
 	isr_init();
 	pci_enumerate();
 	partition_load();

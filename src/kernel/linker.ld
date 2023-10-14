@@ -32,10 +32,6 @@ SECTIONS{
         *(.handle)
         . = ALIGN(8);
 	    DECLARE_SECTION_END(handle);
-	    DECLARE_SECTION_START(sandbox);
-        *(.sandbox)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(sandbox);
 #ifdef _KERNEL_COVERAGE_BUILD_
 	    DECLARE_SECTION_START(gcov_info);
         *(.gcov_info)

@@ -6,7 +6,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread_list.h>
-#include <kernel/sandbox/sandbox.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "process"
@@ -26,7 +25,6 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
-	sandbox_delete(process->sandbox);
 	vmm_memory_map_deinit(&(process->pagemap),&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(&_process_allocator,process);
@@ -41,6 +39,5 @@ process_t* process_new(void){
 	vmm_pagemap_init(&(out->pagemap));
 	vmm_memory_map_init(&(out->mmap));
 	thread_list_init(&(out->thread_list));
-	out->sandbox=sandbox_new();
 	return out;
 }

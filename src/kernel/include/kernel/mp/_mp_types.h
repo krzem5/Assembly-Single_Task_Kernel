@@ -6,7 +6,6 @@
 #include <kernel/lock/lock.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/sandbox/sandbox.h>
 #include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/types.h>
@@ -39,7 +38,6 @@ typedef struct _PROCESS{
 	vmm_pagemap_t pagemap;
 	vmm_memory_map_t mmap;
 	thread_list_t thread_list;
-	sandbox_t* sandbox;
 } process_t;
 
 
@@ -76,7 +74,6 @@ typedef struct _THREAD{
 	isr_state_t gpr_state;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
-	sandbox_t* sandbox;
 	cpu_mask_t* cpu_mask;
 	_Atomic scheduler_priority_t priority;
 	_Bool state_not_present;
