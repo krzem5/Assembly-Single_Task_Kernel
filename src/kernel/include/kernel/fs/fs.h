@@ -9,12 +9,11 @@
 
 
 
-#define FILESYSTEM_DECLARE_TYPE(name,init_callback,deinit_callback,load_callback) \
+#define FILESYSTEM_DECLARE_TYPE(name,deinit_callback,load_callback) \
 	filesystem_type_t FILESYSTEM_TYPE_##name; \
 	static const filesystem_descriptor_t _filesystem_descriptor_##name={ \
 		#name, \
 		&(FILESYSTEM_TYPE_##name), \
-		(init_callback), \
 		(deinit_callback), \
 		(load_callback) \
 	}; \
@@ -25,7 +24,6 @@
 typedef struct _FILESYSTEM_DESCRIPTOR{
 	const char* name;
 	filesystem_type_t* var;
-	void (*init_callback)(filesystem2_t*);
 	void (*deinit_callback)(filesystem2_t*);
 	filesystem2_t* (*load_callback)(partition2_t*);
 } filesystem_descriptor_t;

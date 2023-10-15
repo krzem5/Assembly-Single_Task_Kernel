@@ -43,7 +43,6 @@ filesystem2_t* fs_create(filesystem_type_t type){
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
 	lock_init(&(out->lock));
 	out->type=type;
-	(*(((const filesystem_descriptor_t*const*)kernel_section_filesystem_start())+type))->init_callback(out);
 	return out;
 }
 

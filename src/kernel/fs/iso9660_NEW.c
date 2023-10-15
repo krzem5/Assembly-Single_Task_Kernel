@@ -25,12 +25,6 @@ extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
 
 
 
-static void _iso9660_init_callback(filesystem2_t* fs){
-	return;
-}
-
-
-
 static void _iso9660_deinit_callback(filesystem2_t* fs){
 	panic("_iso9660_deinit_callback");
 }
@@ -73,7 +67,6 @@ _directory_lba_found:
 
 FILESYSTEM_DECLARE_TYPE(
 	ISO9660,
-	_iso9660_init_callback,
 	_iso9660_deinit_callback,
 	_iso9660_load_callback
 )
