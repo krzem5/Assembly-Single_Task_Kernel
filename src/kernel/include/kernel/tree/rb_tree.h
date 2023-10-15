@@ -1,7 +1,7 @@
 #ifndef _KERNEL_RB_TREE_H_
 #define _KERNEL_RB_TREE_H_ 1
+#include <kernel/lock/lock.h>
 #include <kernel/types.h>
-// WARNING: No lock protection
 
 
 
@@ -21,6 +21,7 @@ typedef struct _RB_TREE_NODE{
 
 typedef struct _RB_TREE{
 	rb_tree_node_t* root;
+	lock_t lock;
 } rb_tree_t;
 
 
@@ -42,6 +43,14 @@ rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key);
 
 
 void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x);
+
+
+
+rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree);
+
+
+
+rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x);
 
 
 

@@ -15,7 +15,7 @@ PMM_DECLARE_COUNTER(OMM_DRIVE);
 
 
 
-static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive_t),8,4,PMM_COUNTER_OMM_DRIVE);
+static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive2_t),8,4,PMM_COUNTER_OMM_DRIVE);
 
 
 
@@ -59,6 +59,10 @@ drive2_t* drive_create(const drive_config_t* config){
 	INFO("Drive serial number: '%s', Drive size: %v (%lu * %lu)",out->serial_number,out->block_count*out->block_size,out->block_count,out->block_size);
 	if (out->block_size&(out->block_size-1)){
 		WARN("Drive block size is not a power of 2");
+	}
+	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
+		drive2_t* driveAAA=handle->object;
+		ERROR("[%p] %s",handle->rb_node.key,driveAAA->name);
 	}
 	return out;
 }
