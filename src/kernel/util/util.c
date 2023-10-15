@@ -42,6 +42,14 @@ char* KERNEL_NOCOVERAGE memcpy_lowercase(char* dst,const char* src,u64 length){
 
 
 
+void KERNEL_NOCOVERAGE memcpy_trunc_spaces(char* dst,const char* src,u8 length){
+	for (;length&&src[length-1]==32;length--);
+	memcpy(dst,src,length);
+	dst[length]=0;
+}
+
+
+
 void KERNEL_NOCOVERAGE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 	u16* dst16=(u16*)dst;
 	for (u8 i=0;i<length;i++){

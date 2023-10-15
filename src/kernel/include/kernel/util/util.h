@@ -80,6 +80,10 @@ char* memcpy_lowercase(char* dst,const char* src,u64 length);
 
 
 
+void memcpy_trunc_spaces(char* dst,const char* src,u8 length);
+
+
+
 void bswap16_trunc_spaces(const u16* src,u8 length,char* dst);
 
 

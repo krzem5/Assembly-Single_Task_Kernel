@@ -1,9 +1,10 @@
 #ifndef _KERNEL_PARTITION_PARTITION_H_
 #define _KERNEL_PARTITION_PARTITION_H_ 1
 #include <kernel/drive/drive.h>
-#include <kernel/vfs/allocator.h>
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/types.h>
+#include <kernel/vfs/allocator.h>
 
 
 
@@ -67,6 +68,23 @@ typedef struct _PARTITION{
 
 
 
+typedef struct _FILESYSTEM2{
+	u64 _tmp;
+} filesystem2_t;
+
+
+
+typedef struct _PARTITION2{
+	handle_t handle;
+	drive2_t* drive;
+	char name[32];
+	u64 start_lba;
+	u64 end_lba;
+	filesystem2_t* fs;
+} partition2_t;
+
+
+
 extern partition_t* partition_data;
 extern partition_t* partition_boot;
 
@@ -77,6 +95,10 @@ void* partition_add(const drive_t* drive,const partition_config_t* partition_con
 
 
 partition_t* partition_get(u32 index);
+
+
+
+void partition_load_from_drive(drive2_t* drive);
 
 
 

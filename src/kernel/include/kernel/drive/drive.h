@@ -45,7 +45,8 @@ typedef struct _DRIVE2{
 	u8 type;
 	u8 flags;
 	u8 block_size_shift;
-	u8 _padding[5];
+	u8 _padding;
+	u32 _next_partition_index;
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
@@ -87,6 +88,7 @@ typedef struct _DRIVE{
 
 
 
+extern handle_type_t HANDLE_TYPE_DRIVE;
 extern drive_t* drive_data;
 
 
