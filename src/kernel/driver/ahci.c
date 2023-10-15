@@ -175,6 +175,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	drive_t drive={
 		.type=DRIVE_TYPE_AHCI,
 		.read_write=_ahci_read_write,
@@ -186,6 +187,18 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,drive.serial_number);
 	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,drive.model_number);
 	drive_add(&drive);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	drive_config_t config={
+		.type=DRIVE_TYPE_AHCI,
+		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
+		.block_size=512,
+		.read_write=_ahci_read_write,
+		.extra_data=device
+	};
+	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%u",port_index);
+	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,config.serial_number);
+	bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,config.model_number);
+	drive_create(&config);
 	pmm_dealloc((u64)buffer,1,PMM_COUNTER_DRIVER_AHCI);
 }
 
