@@ -21,6 +21,10 @@
 
 
 
+typedef u64 (*drive_io_callback_t)(void*,u64,void*,u64);
+
+
+
 typedef struct _DRIVE_CONFIG{
 	u8 type;
 	u8 flags;
@@ -30,7 +34,7 @@ typedef struct _DRIVE_CONFIG{
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
 	u64 block_count;
 	u64 block_size;
-	u64 (*read_write)(void*,u64,void*,u64);
+	drive_io_callback_t read_write;
 	void* extra_data;
 } drive_config_t;
 
@@ -47,7 +51,7 @@ typedef struct _DRIVE2{
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
 	u64 block_count;
 	u64 block_size;
-	u64 (*read_write)(void*,u64,void*,u64);
+	drive_io_callback_t read_write;
 	void* extra_data;
 } drive2_t;
 
@@ -76,7 +80,7 @@ typedef struct _DRIVE{
 	char model_number[64];
 	u64 block_count;
 	u64 block_size;
-	u64 (*read_write)(void*,u64,void*,u64);
+	drive_io_callback_t read_write;
 	void* extra_data;
 	drive_stats_t* stats;
 } drive_t;

@@ -24,7 +24,9 @@
 	}; \
 	static const handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
 
-#define HANDLE_FOREACH(type) for (handle_t* handle=(handle_t*)rb_tree_iter_start(&((handle_type_data+(type))->handle_tree));handle;handle=(handle_t*)rb_tree_iter_next(&((handle_type_data+(type))->handle_tree),&(handle->rb_node)))
+#define HANDLE_ITER_START(type) ((handle_t*)rb_tree_iter_start(&((handle_type_data+(type))->handle_tree)))
+#define HANDLE_ITER_NEXT(type,handle) ((handle_t*)rb_tree_iter_next(&((handle_type_data+(type))->handle_tree),&((handle)->rb_node)))
+#define HANDLE_FOREACH(type) for (handle_t* handle=HANDLE_ITER_START((type));handle;handle=HANDLE_ITER_NEXT((type),handle))
 
 
 

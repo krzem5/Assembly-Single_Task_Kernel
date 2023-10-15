@@ -60,10 +60,6 @@ drive2_t* drive_create(const drive_config_t* config){
 	if (out->block_size&(out->block_size-1)){
 		WARN("Drive block size is not a power of 2");
 	}
-	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
-		drive2_t* driveAAA=handle->object;
-		ERROR("[%p] %s",handle->rb_node.key,driveAAA->name);
-	}
 	return out;
 }
 
