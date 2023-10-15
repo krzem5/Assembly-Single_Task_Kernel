@@ -1,6 +1,7 @@
 #ifndef _KERNEL_DRIVE_DRIVE_H_
 #define _KERNEL_DRIVE_DRIVE_H_ 1
 #include <kernel/handle/handle.h>
+#include <kernel/partition/_partition_types.h>
 #include <kernel/types.h>
 
 
@@ -45,7 +46,7 @@ typedef struct _DRIVE2{
 	u8 type;
 	u8 flags;
 	u8 block_size_shift;
-	u8 _padding;
+	partition_type_t partition_type;
 	u32 _next_partition_index;
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];

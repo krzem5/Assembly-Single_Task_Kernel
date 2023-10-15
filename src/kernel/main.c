@@ -27,6 +27,7 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
+	partition_init();
 	pci_enumerate();
 	partition_load();
 	kernel_load();

@@ -1,9 +1,11 @@
 #include <kernel/drive/drive.h>
 #include <kernel/format/format.h>
 #include <kernel/fs/emptyfs.h>
+#include <kernel/fs/fs.h>
 #include <kernel/fs/iso9660.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle.h>
+#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
@@ -111,7 +113,33 @@ _loaded_all_blocks:
 
 
 
-static void _create_partition(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba,filesystem2_t* fs){
+void partition_init(void){
+	partition_type_t partition_type_index=PARTITION_TYPE_UNKNOWN;
+	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
+		if (*descriptor){
+			partition_type_index++;
+			*((*descriptor)->var)=partition_type_index;
+		}
+	}
+}
+
+
+
+void partition_load_from_drive(drive2_t* drive){
+	LOG("Loading partitions from drive '%s'...",drive->model_number);
+	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
+		if (*descriptor&&(*descriptor)->load_callback(drive)){
+			drive->partition_type=*((*descriptor)->var);
+			INFO("Detected drive partitioning as '%s'",(*descriptor)->name);
+			return;
+		}
+	}
+	WARN("Unable to detect partition type of drive '%s'",drive->model_number);
+}
+
+
+
+void partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number);
 	partition2_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
@@ -119,46 +147,7 @@ static void _create_partition(drive2_t* drive,const char* name,u64 start_lba,u64
 	memcpy(out->name,name,32);
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
-	if (!fs){
-		ERROR("Detect filesystems...");
-	}
-	out->fs=fs;
-}
-
-
-
-static _Bool _load_iso9660_AAA(drive2_t* drive){
-	if (drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
-		return 0;
-	}
-	u64 block_index=16;
-	u8 buffer[2048];
-	while (1){
-		if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
-			return 0;
-		}
-		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;
-		if (volume_descriptor->identifier[0]!='C'||volume_descriptor->identifier[1]!='D'||volume_descriptor->identifier[2]!='0'||volume_descriptor->identifier[3]!='0'||volume_descriptor->identifier[4]!='1'||volume_descriptor->version!=1){
-			return 0;
-		}
-		if (block_index==16){
-			INFO("Detected drive partitioning format as ISO 9660");
-		}
-		switch (volume_descriptor->type){
-			case 0:
-			case 2:
-			case 3:
-				break;
-			case 1:
-				char name_buffer[32];
-				memcpy_trunc_spaces(name_buffer,volume_descriptor->primary_volume_descriptor.volume_name,32);
-				_create_partition(drive,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size,NULL);
-				break;
-			case 255:
-				return 1;
-		}
-		block_index++;
-	}
+	out->fs=fs_load(out);
 }
 
 
@@ -197,15 +186,6 @@ partition_t* partition_get(u32 index){
 		panic("Unable to get partition");
 	}
 	return (index>=_partition_count?NULL:_partition_lookup_table[index]);
-}
-
-
-
-void partition_load_from_drive(drive2_t* drive){
-	INFO("Loading partitions from drive '%s'...",drive->model_number);
-	if (_load_iso9660_AAA(drive)){
-		return;
-	}
 }
 
 
