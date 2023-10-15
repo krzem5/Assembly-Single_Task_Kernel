@@ -2,7 +2,6 @@
 #include <kernel/format/format.h>
 #include <kernel/fs/emptyfs.h>
 #include <kernel/fs/iso9660.h>
-#include <kernel/fs/kfs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
@@ -28,12 +27,6 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 		u32 directory_data_length;
 	} primary_volume_descriptor;
 } iso9660_volume_descriptor_t;
-
-
-
-typedef struct __attribute__((packed)) _KFS_ROOT_BLOCK{
-	u64 signature;
-} kfs_root_block_t;
 
 
 
@@ -96,30 +89,6 @@ _loaded_all_blocks:
 
 
 
-static void _load_kfs(const drive_t* drive){
-	if (drive->block_size>4096){
-		return;
-	}
-	u8 buffer[4096];
-	if (drive->read_write(drive->extra_data,1,buffer,1)!=1){
-		return;
-	}
-	const kfs_root_block_t* kfs_root_block=(const kfs_root_block_t*)buffer;
-	if (kfs_root_block->signature!=KFS_SIGNATURE){
-		return;
-	}
-	INFO("Detected drive format of '%s' as KFS",drive->model_number);
-	const partition_config_t partition_config={
-		PARTITION_CONFIG_TYPE_KFS,
-		0,
-		0,
-		drive->block_count
-	};
-	kfs_load(drive,&partition_config);
-}
-
-
-
 void* partition_add(const drive_t* drive,const partition_config_t* partition_config,const partition_file_system_config_t* config,void* extra_data){
 	if (_partition_lookup_table){
 		panic("Unable to add partition");
@@ -163,7 +132,6 @@ void partition_load(void){
 	for (drive_t* drive=drive_data;drive;drive=drive->next){
 		INFO("Loading partitions from drive '%s'...",drive->model_number);
 		_load_iso9660(drive);
-		_load_kfs(drive);
 		const partition_config_t partition_config={
 			PARTITION_CONFIG_TYPE_DRIVE,
 			0,

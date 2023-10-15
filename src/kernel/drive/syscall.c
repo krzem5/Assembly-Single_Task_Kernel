@@ -1,5 +1,4 @@
 #include <kernel/drive/drive.h>
-#include <kernel/fs/kfs.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/syscall/syscall.h>
@@ -67,16 +66,12 @@ void syscall_drive_get(syscall_registers_t* regs){
 
 
 void syscall_drive_format(syscall_registers_t* regs){
-	if (regs->rdx&&!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
-		regs->rax=0;
-		return;
-	}
 	const drive_t* drive=_get_drive(regs->rdi);
 	if (!drive){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=kfs_format_drive(drive,(void*)(regs->rsi),regs->rdx);
+	regs->rax=0;
 }
 
 
