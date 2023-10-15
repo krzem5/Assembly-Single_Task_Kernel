@@ -43,6 +43,7 @@ drive_t* KERNEL_BSS drive_data;
 
 
 drive2_t* drive_create(const drive_config_t* config){
+	LOG("Creating drive '%s' as '%s/%s'...",config->name,_drive_type_names[config->type],config->model_number);
 	drive2_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
@@ -55,13 +56,16 @@ drive2_t* drive_create(const drive_config_t* config){
 	out->block_size=config->block_size;
 	out->read_write=config->read_write;
 	out->extra_data=config->extra_data;
+	INFO("Drive serial number: '%s', Drive size: %v (%lu * %lu)",out->serial_number,out->block_count*out->block_size,out->block_count,out->block_size);
+	if (out->block_size&(out->block_size-1)){
+		WARN("Drive block size is not a power of 2");
+	}
 	return out;
 }
 
 
 
 void drive_add(const drive_t* drive){
-	LOG("Creating drive '%s' as '%s/%s'...",drive->name,_drive_type_names[drive->type],drive->model_number);
 	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
 	*new_drive=*drive;
 	new_drive->next=drive_data;
@@ -78,8 +82,4 @@ void drive_add(const drive_t* drive){
 	new_drive->stats->nfda_block_count=0;
 	new_drive->stats->data_block_count=0;
 	_drive_count++;
-	INFO("Drive serial number: '%s', Drive size: %v (%lu * %lu)",drive->serial_number,drive->block_count*drive->block_size,drive->block_count,drive->block_size);
-	if (drive->block_size>>(new_drive->block_size_shift+1)){
-		WARN("Drive block size is not a power of 2");
-	}
 }
