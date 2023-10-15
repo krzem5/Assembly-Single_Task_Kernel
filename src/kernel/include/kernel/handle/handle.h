@@ -46,7 +46,7 @@ typedef struct _HANDLE{
 
 
 
-typedef void (*handle_type_delete_callback_t)(struct _HANDLE*);
+typedef void (*handle_type_delete_callback_t)(handle_t*);
 
 
 
