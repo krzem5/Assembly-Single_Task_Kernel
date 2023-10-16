@@ -39,5 +39,14 @@ vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_node_name_t* name)
 		return out;
 _check_next_sibling:
 	}
-	return node->functions->lookup(node,name);
+	out=node->functions->lookup(node,name);
+	if (!out){
+		return NULL;
+	}
+	lock_acquire_exclusive(&(node->lock));
+	out->relatives.parent=node;
+	out->relatives.next_sibling=node->relatives.child;
+	node->relatives.child=out;
+	lock_release_exclusive(&(node->lock));
+	return out;
 }

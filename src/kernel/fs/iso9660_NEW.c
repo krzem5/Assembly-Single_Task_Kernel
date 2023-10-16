@@ -10,6 +10,30 @@
 
 
 
+// ISO 9660 directory flags
+#define ISO9660_DIRECTORY_FLAG_HIDDEN 1
+#define ISO9660_DIRECTORY_FLAG_DIRECTOR 2
+#define ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE 4
+
+
+
+typedef struct __attribute__((packed)) _ISO9660_DIRECTORY{
+	u8 length;
+	u8 _padding;
+	u32 lba;
+	u8 _padding2[4];
+	u32 data_length;
+	u8 _padding3[11];
+	u8 flags;
+	u8 file_unit_size;
+	u8 gap_size;
+	u8 _padding4[4];
+	u8 identifier_length;
+	char identifier[];
+} iso9660_directory_t;
+
+
+
 typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 	u8 type;
 	u8 identifier[5];
@@ -62,43 +86,132 @@ static void _iso9660_delete(vfs2_node_t* node){
 
 
 static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
-	panic("_iso9660_lookup");
+	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
+	drive2_t* drive=node->fs->partition->drive;
+	u8 buffer[2048];
+	u32 data_offset=iso9660_node->data_offset;
+	u32 data_length=iso9660_node->data_length;
+	u16 buffer_space=0;
+	iso9660_directory_t* directory=NULL;
+	while (data_length){
+		if (buffer_space&&!directory->length){
+			data_length-=buffer_space;
+			buffer_space=0;
+		}
+		if (!buffer_space){
+			directory=(iso9660_directory_t*)buffer;
+			if (drive->read_write(drive->extra_data,data_offset,buffer,1)!=1){
+				return NULL;
+			}
+			buffer_space=2048;
+			data_offset++;
+			continue; // required to break out of the loop after the last directory entry
+		}
+		if (directory->length>buffer_space){
+			WARN("Unimplemented (directory entry crosses sector boundary)");
+			return NULL;
+		}
+		if ((directory->identifier_length==1&&directory->identifier[0]<2)||(directory->flags&ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE)){
+			goto _skip_directory_entry;
+		}
+		u8 name_length=directory->identifier_length;
+		if (!(directory->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)){
+			name_length-=2;
+		}
+		if (name_length!=name->length){
+			goto _skip_directory_entry;
+		}
+		for (u8 i=0;i<name_length;i++){
+			if (directory->identifier[i]+((directory->identifier[i]>64&&directory->identifier[i]<91)<<5)!=name->data[i]){
+				goto _skip_directory_entry;
+			}
+		}
+		vfs2_node_t* out=vfs2_node_create(node->fs,name);
+		out->flags|=((directory->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?VFS2_NODE_TYPE_DIRECTORY:VFS2_NODE_TYPE_FILE);
+		((iso9660_vfs_node_t*)out)->current_offset=(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length;
+		((iso9660_vfs_node_t*)out)->data_offset=directory->lba;
+		((iso9660_vfs_node_t*)out)->data_length=directory->data_length;
+		return out;
+_skip_directory_entry:
+		data_length-=directory->length;
+		buffer_space-=directory->length;
+		directory=(iso9660_directory_t*)(buffer+2048-buffer_space);
+	}
+	return NULL;
 }
 
 
 
 static _Bool _iso9660_link(vfs2_node_t* node,vfs2_node_t* parent){
-	panic("_iso9660_link");
+	return 0;
 }
 
 
 
 static _Bool _iso9660_unlink(vfs2_node_t* node){
-	panic("_iso9660_unlink");
+	return 0;
 }
 
 
 
 static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
-	panic("_iso9660_read");
+	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
+	drive2_t* drive=node->fs->partition->drive;
+	if (size+offset>iso9660_node->data_length){
+		size=iso9660_node->data_length-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	u64 out=size;
+	u64 block_index=offset>>11;
+	u16 padding=offset&2047;
+	if (padding){
+		u8 disk_buffer[2048];
+		if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
+			return 0;
+		}
+		memcpy(buffer,disk_buffer+padding,2048-padding);
+		block_index++;
+		buffer+=2048-padding;
+		size-=2048-padding;
+		offset&=0xfffff800;
+	}
+	if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,buffer,size>>11)!=(size>>11)){
+		return 0;
+	}
+	block_index+=size>>11;
+	buffer+=size&0xfffff800;
+	padding=size&2047;
+	if (padding){
+		u8 disk_buffer[2048];
+		if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
+			return 0;
+		}
+		memcpy(buffer,disk_buffer,padding);
+	}
+	return out;
 }
 
 
 
 static s64 _iso9660_write(vfs2_node_t* node,u64 offset,const void*,u64 size){
-	panic("_iso9660_write");
+	return -1;
 }
 
 
 
 static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
-	panic("_iso9660_resize");
+	if (!(flags&VFS2_NODE_FLAG_RESIZE_RELATIVE)||size){
+		return -1;
+	}
+	return ((iso9660_vfs_node_t*)node)->data_length;
 }
 
 
 
 static void _iso9660_flush(vfs2_node_t* node){
-	panic("_iso9660_flush");
+	return;
 }
 
 
@@ -152,17 +265,13 @@ static filesystem2_t* _iso9660_load_callback(partition2_t* partition){
 _directory_lba_found:
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
 	out->functions=&_iso9660_functions;
+	out->partition=partition;
 	vfs2_node_name_t* root_name=vfs2_name_alloc("/",0);
 	out->root=vfs2_node_create(out,root_name);
 	vfs2_name_dealloc(root_name);
 	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;
 	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
 	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;
-	/***************************************************************/
-	// vfs2_node_name_t* _tmp_name=vfs2_name_alloc("kernel",0);
-	// LOG("%p",vfs2_node_get_child(out->root,_tmp_name));
-	// vfs2_name_dealloc(_tmp_name);
-	/***************************************************************/
 	return out;
 }
 

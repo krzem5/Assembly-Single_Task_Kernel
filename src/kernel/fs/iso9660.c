@@ -108,7 +108,7 @@ static vfs_node_t* _iso9660_get_relative(partition_t* fs,vfs_node_t* node,u8 rel
 			}
 			vfs_node_t* out=_iso9660_create_node_from_directory_entry(fs,iso9660_node,directory,(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length);
 			out->prev_sibling=VFS_NODE_ID_EMPTY;
-			return (vfs_node_t*)out;
+			return out;
 _skip_directory_entry:
 			data_length-=directory->length;
 			buffer_space-=directory->length;
