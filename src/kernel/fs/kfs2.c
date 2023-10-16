@@ -128,7 +128,7 @@ static u32 _calculate_crc(const void* data,u32 length){
 	for (u32 i=0;i<length;i++){
 		out=_kfs2_crc_table[(out&0xff)^ptr[i]]^(out>>8);
 	}
-	return out^0xffffffff;
+	return ~out;
 }
 
 
@@ -228,7 +228,6 @@ static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
 	if (root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!_verify_crc(root_block,sizeof(kfs2_root_block_t))){
 		return NULL;
 	}
-	// panic("_kfs2_load_callback");
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;

@@ -136,7 +136,7 @@ static uint32_t _calculate_crc(const void* data,uint32_t length){
 	for (uint32_t i=0;i<length;i++){
 		out=_kfs2_crc_table[(out&0xff)^ptr[i]]^(out>>8);
 	}
-	return out^0xffffffff;
+	return ~out;
 }
 
 
