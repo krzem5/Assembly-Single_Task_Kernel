@@ -43,6 +43,8 @@ filesystem2_t* fs_create(filesystem_type_t type){
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
 	lock_init(&(out->lock));
 	out->type=type;
+	out->functions=NULL;
+	out->root=NULL;
 	return out;
 }
 

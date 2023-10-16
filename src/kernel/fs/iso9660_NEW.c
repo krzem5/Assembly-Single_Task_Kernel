@@ -1,8 +1,11 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs2/node.h>
 #define KERNEL_LOG_NAME "iso9660"
 
 
@@ -21,7 +24,96 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 
+typedef struct _ISO9660_VFS_NODE{
+	vfs2_node_t node;
+	u64 current_offset;
+	u32 data_offset;
+	u32 data_length;
+} iso9660_vfs_node_t;
+
+
+
+PMM_DECLARE_COUNTER(OMM_ISO9660_NODE);
+
+
+
+static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660_NODE);
+
+
+
 extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
+
+
+
+static vfs2_node_t* _iso9660_create(void){
+	iso9660_vfs_node_t* out=omm_alloc(&_iso9660_vfs_node_allocator);
+	out->current_offset=0xffffffffffffffffull;
+	out->data_offset=0;
+	out->data_length=0;
+	return (vfs2_node_t*)out;
+}
+
+
+
+static void _iso9660_delete(vfs2_node_t* node){
+	omm_dealloc(&_iso9660_vfs_node_allocator,node);
+}
+
+
+
+static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,vfs2_node_name_t* name){
+	panic("_iso9660_lookup");
+}
+
+
+
+static _Bool _iso9660_link(vfs2_node_t* node,vfs2_node_t* parent){
+	panic("_iso9660_link");
+}
+
+
+
+static _Bool _iso9660_unlink(vfs2_node_t* node){
+	panic("_iso9660_unlink");
+}
+
+
+
+static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
+	panic("_iso9660_read");
+}
+
+
+
+static s64 _iso9660_write(vfs2_node_t* node,u64 offset,const void*,u64 size){
+	panic("_iso9660_write");
+}
+
+
+
+static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
+	panic("_iso9660_resize");
+}
+
+
+
+static void _iso9660_flush(vfs2_node_t* node){
+	panic("_iso9660_flush");
+}
+
+
+
+static vfs2_functions_t _iso9660_functions={
+	_iso9660_create,
+	_iso9660_delete,
+	_iso9660_lookup,
+	_iso9660_link,
+	_iso9660_unlink,
+	_iso9660_read,
+	_iso9660_write,
+	_iso9660_resize,
+	_iso9660_flush
+};
 
 
 
@@ -59,7 +151,11 @@ static filesystem2_t* _iso9660_load_callback(partition2_t* partition){
 	}
 _directory_lba_found:
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
-	WARN("%u %u",directory_lba,directory_data_length);
+	out->functions=&_iso9660_functions;
+	out->root=vfs2_node_create(out,"/",1);
+	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;
+	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
+	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;
 	return out;
 }
 
