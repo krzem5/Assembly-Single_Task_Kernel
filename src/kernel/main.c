@@ -4,6 +4,7 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/driver/initramfs.h>
 #include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
@@ -28,6 +29,7 @@
 static void _main_thread(void){
 	LOG("Main thread started");
 	partition_init();
+	initramfs_load();
 	pci_enumerate();
 	partition_load();
 	kernel_load();

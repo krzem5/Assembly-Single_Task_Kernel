@@ -72,7 +72,7 @@ class KFS2FileBackend(object):
 
 
 class KFS2RootBlock(object):
-	def __init__(self,backend,block_count,inode_count,data_block_count,first_inode_block,first_data_block,first_bitmap_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode):
+	def __init__(self,backend,block_count,inode_count,data_block_count,first_inode_block,first_data_block,first_bitmap_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode,initramfs_inode):
 		self._backend=backend
 		self.block_count=block_count
 		self.inode_count=inode_count
@@ -85,9 +85,10 @@ class KFS2RootBlock(object):
 		self.inode_allocation_bitmap_highest_level_length=inode_allocation_bitmap_highest_level_length
 		self.data_block_allocation_bitmap_highest_level_length=data_block_allocation_bitmap_highest_level_length
 		self.kernel_inode=kernel_inode
+		self.initramfs_inode=initramfs_inode
 
 	def save(self):
-		header=struct.pack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHI",
+		header=struct.pack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
 			KFS2_SIGNATURE,
 			self.block_count,
 			self.inode_count,
@@ -99,7 +100,8 @@ class KFS2RootBlock(object):
 			*self.data_block_allocation_bitmap_offsets,
 			self.inode_allocation_bitmap_highest_level_length,
 			self.data_block_allocation_bitmap_highest_level_length,
-			self.kernel_inode
+			self.kernel_inode,
+			self.initramfs_inode
 		)
 		self._backend.seek(0)
 		self._backend.write(header+struct.pack("<I",binascii.crc32(header)))
@@ -107,10 +109,10 @@ class KFS2RootBlock(object):
 	@staticmethod
 	def load(backend):
 		backend.seek(0)
-		header=backend.read(148)
+		header=backend.read(152)
 		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",header)
-		if (data[0]!=KFS2_SIGNATURE or data[7+2*KFS2_BITMAP_LEVEL_COUNT+3]!=crc):
+		data=struct.unpack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
+		if (data[0]!=KFS2_SIGNATURE or data[7+2*KFS2_BITMAP_LEVEL_COUNT+4]!=crc):
 			raise RuntimeError
 		return KFS2RootBlock(
 			backend,
@@ -124,7 +126,8 @@ class KFS2RootBlock(object):
 			data[7+KFS2_BITMAP_LEVEL_COUNT:7+2*KFS2_BITMAP_LEVEL_COUNT],
 			data[7+2*KFS2_BITMAP_LEVEL_COUNT],
 			data[7+2*KFS2_BITMAP_LEVEL_COUNT+1],
-			data[7+2*KFS2_BITMAP_LEVEL_COUNT+2]
+			data[7+2*KFS2_BITMAP_LEVEL_COUNT+2],
+			data[7+2*KFS2_BITMAP_LEVEL_COUNT+3]
 		)
 
 
@@ -453,6 +456,7 @@ def format_partition(backend):
 		data_block_allocation_bitmap_offsets,
 		inode_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
 		data_block_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
+		0,
 		0
 	)
 	root_block.save()
@@ -553,4 +557,13 @@ def set_kernel_inode(backend,kernel_inode):
 	if (kernel_inode>=root_block.inode_count):
 		raise RuntimeError
 	root_block.kernel_inode=kernel_inode
+	root_block.save()
+
+
+
+def set_initramfs_inode(backend,initramfs_inode):
+	root_block=KFS2RootBlock.load(backend)
+	if (initramfs_inode>=root_block.inode_count):
+		raise RuntimeError
+	root_block.initramfs_inode=initramfs_inode
 	root_block.save()

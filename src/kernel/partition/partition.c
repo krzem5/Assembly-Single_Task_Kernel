@@ -139,7 +139,7 @@ void partition_load_from_drive(drive2_t* drive){
 
 
 
-void partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba){
+partition2_t* partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number);
 	partition2_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
@@ -148,6 +148,7 @@ void partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
 	out->fs=fs_load(out);
+	return out;
 }
 
 

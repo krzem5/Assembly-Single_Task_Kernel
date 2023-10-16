@@ -45,6 +45,7 @@ typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 	uint16_t inode_allocation_bitmap_highest_level_length;
 	uint16_t data_block_allocation_bitmap_highest_level_length;
 	uint32_t kernel_inode;
+	uint32_t initramfs_inode;
 	uint32_t crc;
 } kfs2_root_block_t;
 
@@ -78,6 +79,8 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 	uint64_t first_free_address;
 	uint64_t rsdp_address;
 	uint64_t smbios_address;
+	uint64_t initramfs_address;
+	uint64_t initramfs_size;
 } kernel_data_t;
 
 
@@ -203,6 +206,57 @@ static inline void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t val
 
 
 
+static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_BLOCK_IO_PROTOCOL* block_io_protocol,const kfs2_root_block_t* kfs2_root_block,uint32_t block_size_shift,uint32_t inode,uint64_t address){
+	uint8_t disk_buffer[KFS2_BLOCK_SIZE];
+	if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
+		return 0;
+	}
+	kfs2_node_t node=*((const kfs2_node_t*)(disk_buffer+KFS2_INODE_GET_NODE_INDEX(inode)*sizeof(kfs2_node_t)));
+	if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
+		return 0;
+	}
+	uint64_t page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,page_count,&address))){
+		return 0;
+	}
+	switch (node.flags&KFS2_INODE_STORAGE_MASK){
+		case KFS2_INODE_STORAGE_TYPE_INLINE:
+			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_INLINE\r\n");
+			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+			break;
+		case KFS2_INODE_STORAGE_TYPE_SINGLE:
+			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_SINGLE\r\n");
+			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+			break;
+		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
+			if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+node.data.double_)<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
+				goto _cleanup;
+			}
+			void* buffer_ptr=(void*)address;
+			for (uint16_t i=0;i<(node.size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i++){
+				if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+(*((const uint64_t*)(disk_buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
+					goto _cleanup;
+				}
+				buffer_ptr+=KFS2_BLOCK_SIZE;
+			}
+			break;
+		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
+			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_TRIPLE\r\n");
+			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+			break;
+		case KFS2_INODE_STORAGE_TYPE_QUADRUPLE:
+			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_QUADRUPLE\r\n");
+			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
+			break;
+	}
+	return address+(page_count<<PAGE_SIZE_SHIFT);
+_cleanup:
+	system_table->BootServices->FreePages(address,page_count);
+	return 0;
+}
+
+
+
 EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	relocate_executable();
 	system_table->ConOut->Reset(system_table->ConOut,0);
@@ -212,6 +266,8 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
 	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_guid,NULL,&buffer_size,buffer);
 	uint64_t first_free_address=0;
+	uint64_t initramfs_address=0;
+	uint64_t initramfs_size=0;
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
 		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize>KFS2_BLOCK_SIZE||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
@@ -222,57 +278,21 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 			continue;
 		}
 		kfs2_root_block_t kfs2_root_block=*((const kfs2_root_block_t*)disk_buffer);
-		if (kfs2_root_block.signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_root_block.kernel_inode||!kfs_verify_crc(&kfs2_root_block,sizeof(kfs2_root_block_t))){
+		if (kfs2_root_block.signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_root_block.kernel_inode||!kfs2_root_block.initramfs_inode||!kfs_verify_crc(&kfs2_root_block,sizeof(kfs2_root_block_t))){
 			continue;
 		}
 		uint32_t block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/block_io_protocol->Media->BlockSize);
-		if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(kfs2_root_block.kernel_inode))<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
+		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.kernel_inode,KERNEL_MEMORY_ADDRESS);
+		if (!first_free_address){
 			continue;
 		}
-		kfs2_node_t node=*((const kfs2_node_t*)(disk_buffer+KFS2_INODE_GET_NODE_INDEX(kfs2_root_block.kernel_inode)*sizeof(kfs2_node_t)));
-		if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
+		initramfs_address=first_free_address;
+		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.initramfs_inode,first_free_address);
+		if (!first_free_address){
 			continue;
 		}
-		EFI_PHYSICAL_ADDRESS kernel_base_address=KERNEL_MEMORY_ADDRESS;
-		uint64_t kernel_page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
-		if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,kernel_page_count,&kernel_base_address))){
-			continue;
-		}
-		first_free_address=KERNEL_MEMORY_ADDRESS+(kernel_page_count<<PAGE_SIZE_SHIFT);
-		switch (node.flags&KFS2_INODE_STORAGE_MASK){
-			case KFS2_INODE_STORAGE_TYPE_INLINE:
-				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_INLINE\r\n");
-				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-				break;
-			case KFS2_INODE_STORAGE_TYPE_SINGLE:
-				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_SINGLE\r\n");
-				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-				break;
-			case KFS2_INODE_STORAGE_TYPE_DOUBLE:
-				if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+node.data.double_)<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
-					goto _cleanup;
-				}
-				void* buffer_ptr=(void*)kernel_base_address;
-				for (uint16_t i=0;i<(node.size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i++){
-					if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block.first_data_block+(*((const uint64_t*)(disk_buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
-						goto _cleanup;
-					}
-					buffer_ptr+=KFS2_BLOCK_SIZE;
-				}
-				break;
-			case KFS2_INODE_STORAGE_TYPE_TRIPLE:
-				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_TRIPLE\r\n");
-				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-				break;
-			case KFS2_INODE_STORAGE_TYPE_QUADRUPLE:
-				system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_QUADRUPLE\r\n");
-				system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-				break;
-		}
+		initramfs_size=first_free_address-initramfs_address;
 		break;
-_cleanup:
-		first_free_address=0;
-		system_table->BootServices->FreePages(kernel_base_address,kernel_page_count);
 	}
 	system_table->BootServices->FreePool(buffer);
 	if (!first_free_address){
@@ -281,12 +301,12 @@ _cleanup:
 	kernel_data_t* kernel_data=(void*)first_free_address;
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,1,(EFI_PHYSICAL_ADDRESS*)(&kernel_data)))){
 		kernel_data=NULL;
-		goto _cleanup;
+		return EFI_SUCCESS;
 	}
 	first_free_address+=PAGE_SIZE;
 	EFI_PHYSICAL_ADDRESS kernel_stack=first_free_address;
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,KERNEL_STACK_PAGE_COUNT,&kernel_stack))){
-		goto _cleanup;
+		return EFI_SUCCESS;
 	}
 	first_free_address+=KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 	EFI_PHYSICAL_ADDRESS kernel_pagemap=first_free_address;
@@ -301,6 +321,7 @@ _cleanup:
 	kernel_data->mmap_size=0;
 	kernel_data->first_free_address=first_free_address;
 	kernel_data->rsdp_address=0;
+	kernel_data->smbios_address=0;
 	for (uint64_t i=0;i<system_table->NumberOfTableEntries;i++){
 		if (!kernel_data->rsdp_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_acpi_20_table_guid)){
 			kernel_data->rsdp_address=(uint64_t)((system_table->ConfigurationTable+i)->VendorTable);
@@ -309,6 +330,8 @@ _cleanup:
 			kernel_data->smbios_address=(uint64_t)((system_table->ConfigurationTable+i)->VendorTable);
 		}
 	}
+	kernel_data->initramfs_address=initramfs_address;
+	kernel_data->initramfs_size=initramfs_size;
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;

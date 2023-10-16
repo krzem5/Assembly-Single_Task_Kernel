@@ -28,6 +28,8 @@ typedef struct __attribute__((packed)) _KERNEL_DATA{
 	u64 first_free_address;
 	u64 rsdp_address;
 	u64 smbios_address;
+	u64 initramfs_address;
+	u64 initramfs_size;
 } kernel_data_t;
 
 

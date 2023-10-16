@@ -115,7 +115,7 @@ void partition_load_from_drive(drive2_t* drive);
 
 
 
-void partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba);
+partition2_t* partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba);
 
 
 

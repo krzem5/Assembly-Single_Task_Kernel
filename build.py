@@ -496,8 +496,11 @@ if (rebuild_data_partition):
 	kfs2.format_partition(data_fs)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
+		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
+		kfs2.set_file_content(data_fs,initramfs_inode,b"Init RAM FS"*1024*8)
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
+		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	data_fs.close()
 #####################################################################################################################################
 if ("--run" in sys.argv):

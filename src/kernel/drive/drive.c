@@ -32,6 +32,7 @@ static const char* _drive_type_names[]={
 	[DRIVE_TYPE_ATA]="ATA",
 	[DRIVE_TYPE_ATAPI]="ATAPI",
 	[DRIVE_TYPE_NVME]="NVME",
+	[DRIVE_TYPE_INITRAMFS]="INITRAMFS"
 };
 
 

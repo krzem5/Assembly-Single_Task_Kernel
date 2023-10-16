@@ -10,6 +10,7 @@
 #define DRIVE_TYPE_ATA 1
 #define DRIVE_TYPE_ATAPI 2
 #define DRIVE_TYPE_NVME 3
+#define DRIVE_TYPE_INITRAMFS 4
 
 #define DRIVE_FLAG_BOOT 1
 
