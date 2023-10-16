@@ -44,7 +44,7 @@ vfs2_node_name_t* vfs2_name_alloc(const char* name,u32 length){
 			length++;
 		}
 	}
-	vfs2_node_name_t* out=NULL;
+	vfs2_node_name_t* out;
 	USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
@@ -64,6 +64,7 @@ vfs2_node_name_t* vfs2_name_alloc(const char* name,u32 length){
 		out->data[i]=name[i];
 		out->hash=(out->hash^name[i])*FNV_PRIME;
 	}
+	out->data[length]=0;
 	return out;
 }
 
@@ -83,4 +84,26 @@ void vfs2_name_dealloc(vfs2_node_name_t* name){
 	else{
 		panic("vfs2_name_dealloc: name too long");
 	}
+}
+
+
+
+vfs2_node_name_t* vfs2_name_duplicate(const vfs2_node_name_t* name){
+	u32 length=name->length;
+	vfs2_node_name_t* out;
+	USE_ALLOCATOR(8)
+	else USE_ALLOCATOR(16)
+	else USE_ALLOCATOR(24)
+	else USE_ALLOCATOR(32)
+	else USE_ALLOCATOR(48)
+	else USE_ALLOCATOR(64)
+	else USE_ALLOCATOR(96)
+	else USE_ALLOCATOR(128)
+	else USE_ALLOCATOR(192)
+	else USE_ALLOCATOR(256)
+	else{
+		panic("vfs2_name_alloc: name too long");
+	}
+	memcpy(out,name,sizeof(vfs2_node_name_t)+length+1);
+	return out;
 }

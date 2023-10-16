@@ -20,4 +20,8 @@ void vfs2_name_dealloc(vfs2_node_name_t* name);
 
 
 
+vfs2_node_name_t* vfs2_name_duplicate(const vfs2_node_name_t* name);
+
+
+
 #endif

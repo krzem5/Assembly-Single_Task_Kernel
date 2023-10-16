@@ -6,14 +6,14 @@
 
 
 
-vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const char* name,u32 name_length){
+vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_node_name_t* name){
 	vfs2_node_t* out=fs->functions->create();
 	if (!out){
 		return NULL;
 	}
 	out->flags=0;
 	lock_init(&(out->lock));
-	out->name=vfs2_name_alloc(name,name_length);
+	out->name=vfs2_name_duplicate(name);
 	out->relatives.parent=NULL;
 	out->relatives.prev_sibling=NULL;
 	out->relatives.next_sibling=NULL;
@@ -21,4 +21,23 @@ vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const char* name,u32 name_
 	out->fs=fs;
 	out->functions=fs->functions;
 	return out;
+}
+
+
+
+vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_node_name_t* name){
+	vfs2_node_t* out=node->relatives.child;
+	for (;out;out=out->relatives.next_sibling){
+		if (out->name->length!=name->length||out->name->hash!=name->hash){
+			continue;
+		}
+		for (u32 i=0;i<out->name->length;i++){
+			if (out->name->data[i]!=name->data[i]){
+				goto _check_next_sibling;
+			}
+		}
+		return out;
+_check_next_sibling:
+	}
+	return node->functions->lookup(node,name);
 }
