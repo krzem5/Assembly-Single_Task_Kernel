@@ -206,13 +206,13 @@ static vfs2_functions_t _iso9660_functions={
 
 
 
-static void _iso9660_deinit_callback(filesystem2_t* fs){
-	panic("_iso9660_deinit_callback");
+static void _iso9660_fs_deinit(filesystem2_t* fs){
+	panic("_iso9660_fs_deinit");
 }
 
 
 
-static filesystem2_t* _iso9660_load_callback(partition2_t* partition){
+static filesystem2_t* _iso9660_fs_load(partition2_t* partition){
 	drive2_t* drive=partition->drive;
 	if (partition->start_lba||drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
 		return NULL;
@@ -256,6 +256,6 @@ _directory_lba_found:
 
 FILESYSTEM_DECLARE_TYPE(
 	ISO9660,
-	_iso9660_deinit_callback,
-	_iso9660_load_callback
+	_iso9660_fs_deinit,
+	_iso9660_fs_load
 );

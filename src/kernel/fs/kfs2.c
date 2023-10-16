@@ -68,6 +68,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 
 typedef struct _KFS2_VFS_NODE{
 	vfs2_node_t node;
+	u32 inode;
 } kfs2_vfs_node_t;
 
 
@@ -138,14 +139,83 @@ static _Bool _verify_crc(const void* data,u32 length){
 
 
 
-static void _kfs2_deinit_callback(filesystem2_t* fs){
-	(void)_kfs2_vfs_node_allocator;
+static vfs2_node_t* _kfs2_create(void){
+	kfs2_vfs_node_t* out=omm_alloc(&_kfs2_vfs_node_allocator);
+	out->inode=0xffffffff;
+	return (vfs2_node_t*)out;
+}
+
+
+
+static void _kfs2_delete(vfs2_node_t* node){
+	omm_dealloc(&_kfs2_vfs_node_allocator,node);
+}
+
+
+
+static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
+	panic("_kfs2_lookup");
+}
+
+
+
+static _Bool _kfs2_link(vfs2_node_t* node,vfs2_node_t* parent){
+	panic("_kfs2_link");
+}
+
+
+
+static _Bool _kfs2_unlink(vfs2_node_t* node){
+	panic("_kfs2_unlink");
+}
+
+
+
+static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
+	panic("_kfs2_read");
+}
+
+
+
+static s64 _kfs2_write(vfs2_node_t* node,u64 offset,const void* buffer,u64 size){
+	panic("_kfs2_write");
+}
+
+
+
+static s64 _kfs2_resize(vfs2_node_t* node,s64 size,u32 flags){
+	panic("_kfs2_resize");
+}
+
+
+
+static void _kfs2_flush(vfs2_node_t* node){
+	panic("_kfs2_flush");
+}
+
+
+
+static vfs2_functions_t _kfs2_functions={
+	_kfs2_create,
+	_kfs2_delete,
+	_kfs2_lookup,
+	_kfs2_link,
+	_kfs2_unlink,
+	_kfs2_read,
+	_kfs2_write,
+	_kfs2_resize,
+	_kfs2_flush
+};
+
+
+
+static void _kfs2_fs_deinit(filesystem2_t* fs){
 	panic("_kfs2_deinit_callback");
 }
 
 
 
-static filesystem2_t* _kfs2_load_callback(partition2_t* partition){
+static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
 	drive2_t* drive=partition->drive;
 	if (drive->block_size>4096){
 		return NULL;
@@ -159,13 +229,21 @@ static filesystem2_t* _kfs2_load_callback(partition2_t* partition){
 		return NULL;
 	}
 	// panic("_kfs2_load_callback");
-	return NULL;
+	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
+	out->functions=&_kfs2_functions;
+	out->partition=partition;
+	vfs2_node_name_t* root_name=vfs2_name_alloc("/",0);
+	out->root=vfs2_node_create(out,root_name);
+	vfs2_name_dealloc(root_name);
+	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;
+	((kfs2_vfs_node_t*)(out->root))->inode=0;
+	return out;
 }
 
 
 
 FILESYSTEM_DECLARE_TYPE(
 	KFS2,
-	_kfs2_deinit_callback,
-	_kfs2_load_callback
+	_kfs2_fs_deinit,
+	_kfs2_fs_load
 );
