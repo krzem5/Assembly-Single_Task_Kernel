@@ -213,7 +213,8 @@ static void _iso9660_deinit_callback(filesystem2_t* fs){
 
 
 static filesystem2_t* _iso9660_load_callback(partition2_t* partition){
-	if (partition->start_lba||partition->drive->type!=DRIVE_TYPE_ATAPI||partition->drive->block_size!=2048){
+	drive2_t* drive=partition->drive;
+	if (partition->start_lba||drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
 		return NULL;
 	}
 	u32 directory_lba=0;
@@ -221,7 +222,7 @@ static filesystem2_t* _iso9660_load_callback(partition2_t* partition){
 	u64 block_index=16;
 	u8 buffer[2048];
 	while (1){
-		if (partition->drive->read_write(partition->drive->extra_data,block_index,buffer,1)!=1){
+		if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
 			return NULL;
 		}
 		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;

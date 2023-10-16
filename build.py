@@ -111,6 +111,7 @@ USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
+INITRAMFS_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 
 
@@ -488,17 +489,25 @@ if (not os.path.exists("build/partitions/efi.img")):
 	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
 	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
+if (not os.path.exists("build/partitions/initramfs.img")):
+	rebuild_data_partition=True
+	subprocess.run(["dd","if=/dev/zero","of=build/partitions/initramfs.img","bs=4096",f"count={INITRAMFS_SIZE}"])
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 if (rebuild_data_partition):
+	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
+	kfs2.format_partition(initramfs_fs)
+	test_inode=kfs2.get_inode(initramfs_fs,"/data/test.txt")
+	kfs2.set_file_content(initramfs_fs,test_inode,b"Test KFS2 inode")
+	initramfs_fs.close()
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	with open("build/kernel.bin","rb") as rf:
+	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
-		kfs2.set_file_content(data_fs,initramfs_inode,b"Init RAM FS"*1024*8)
+		kfs2.set_file_content(data_fs,kernel_inode,kernel_rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
+		kfs2.set_file_content(data_fs,initramfs_inode,initramfs_rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	data_fs.close()
