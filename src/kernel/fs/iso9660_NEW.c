@@ -159,9 +159,9 @@ _directory_lba_found:
 	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
 	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;
 	/***************************************************************/
-	vfs2_node_name_t* _tmp_name=vfs2_name_alloc("kernel",0);
-	LOG("%p",vfs2_node_get_child(out->root,_tmp_name));
-	vfs2_name_dealloc(_tmp_name);
+	// vfs2_node_name_t* _tmp_name=vfs2_name_alloc("kernel",0);
+	// LOG("%p",vfs2_node_get_child(out->root,_tmp_name));
+	// vfs2_name_dealloc(_tmp_name);
 	/***************************************************************/
 	return out;
 }
