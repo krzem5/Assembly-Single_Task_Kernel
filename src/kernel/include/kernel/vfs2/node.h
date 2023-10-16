@@ -1,5 +1,5 @@
-#ifndef _KERNEL_VFS_NODE_H_
-#define _KERNEL_VFS_NODE_H_ 1
+#ifndef _KERNEL_VFS2_NODE_H_
+#define _KERNEL_VFS2_NODE_H_ 1
 #include <kernel/lock/lock.h>
 #include <kernel/types.h>
 #include <kernel/vfs2/name.h>

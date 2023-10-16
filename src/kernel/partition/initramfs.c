@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/vfs2/vfs.h>
 
 
 
@@ -12,6 +13,6 @@ PARTITION_DECLARE_TYPE(INITRAMFS,{
 	if (!partition->fs){
 		return 0;
 	}
-	// mount partition->fs as root
+	vfs2_mount(partition->fs,NULL);
 	return 1;
 });

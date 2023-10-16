@@ -148,6 +148,9 @@ partition2_t* partition_create(drive2_t* drive,const char* name,u64 start_lba,u6
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
 	out->fs=fs_load(out);
+	if (!out->fs){
+		WARN("No filesystem detected on partition '%s/%s'",drive->name,name);
+	}
 	return out;
 }
 

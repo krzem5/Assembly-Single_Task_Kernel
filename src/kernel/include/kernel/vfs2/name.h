@@ -1,5 +1,5 @@
-#ifndef _KERNEL_VFS_NAME_H_
-#define _KERNEL_VFS_NAME_H_ 1
+#ifndef _KERNEL_VFS2_NAME_H_
+#define _KERNEL_VFS2_NAME_H_ 1
 #include <kernel/types.h>
 
 
