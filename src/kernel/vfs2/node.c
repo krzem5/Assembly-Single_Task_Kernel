@@ -7,6 +7,9 @@
 
 
 vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_node_name_t* name){
+	if (!fs->functions->create){
+		return NULL;
+	}
 	vfs2_node_t* out=fs->functions->create();
 	if (!out){
 		return NULL;
@@ -38,6 +41,9 @@ vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_node_name_t* name)
 		}
 		return out;
 _check_next_sibling:
+	}
+	if (!node->functions->lookup){
+		return NULL;
 	}
 	out=node->functions->lookup(node,name);
 	if (!out){

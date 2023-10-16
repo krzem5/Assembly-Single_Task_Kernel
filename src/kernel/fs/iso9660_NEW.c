@@ -142,18 +142,6 @@ _skip_directory_entry:
 
 
 
-static _Bool _iso9660_link(vfs2_node_t* node,vfs2_node_t* parent){
-	return 0;
-}
-
-
-
-static _Bool _iso9660_unlink(vfs2_node_t* node){
-	return 0;
-}
-
-
-
 static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive2_t* drive=node->fs->partition->drive;
@@ -195,12 +183,6 @@ static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 
-static s64 _iso9660_write(vfs2_node_t* node,u64 offset,const void*,u64 size){
-	return -1;
-}
-
-
-
 static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
 	if (!(flags&VFS2_NODE_FLAG_RESIZE_RELATIVE)||size){
 		return -1;
@@ -210,22 +192,16 @@ static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
 
 
 
-static void _iso9660_flush(vfs2_node_t* node){
-	return;
-}
-
-
-
 static vfs2_functions_t _iso9660_functions={
 	_iso9660_create,
 	_iso9660_delete,
 	_iso9660_lookup,
-	_iso9660_link,
-	_iso9660_unlink,
+	NULL,
+	NULL,
 	_iso9660_read,
-	_iso9660_write,
+	NULL,
 	_iso9660_resize,
-	_iso9660_flush
+	NULL
 };
 
 
