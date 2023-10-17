@@ -4,6 +4,10 @@
 
 
 
+#define VFS2_NAME_MAX_LENGTH 255
+
+
+
 typedef struct _VFS2_NODE_NAME{
 	u32 length;
 	u32 hash;

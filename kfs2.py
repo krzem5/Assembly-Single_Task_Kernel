@@ -254,6 +254,7 @@ class KFS2NodeDataProvider(object):
 			if (chunk.offset!=0):
 				raise RuntimeError("Wrong offset")
 			self.data[:]=chunk.data
+			self.node.save()
 		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
 			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
 		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
@@ -421,7 +422,7 @@ def _init_node_as_directory(backend,root_block,inode):
 	out=KFS2Node(
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
-		1,
+		48,
 		1,
 		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
 		KFS2DirectoryEntry(0,48,0,0,b"").encode()
@@ -497,7 +498,7 @@ def get_inode(backend,path):
 					if (best_entry_padding==0xffffffff or (padding>=0 and padding<best_entry_padding)):
 						best_entry_padding=padding
 						best_entry_offset=offset
-				elif (entry.name==name):
+				elif (entry.name.decode("utf-8")==name):
 					node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,entry.inode))
 					out=entry.inode
 					child_found=True
@@ -508,7 +509,6 @@ def get_inode(backend,path):
 		child_inode=_alloc_inode(backend,root_block)
 		if (best_entry_padding==0xffffffff):
 			raise RuntimeError("Resize inode data")
-		node.size+=1
 		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 else KFS2_INODE_TYPE_DIRECTORY)
 		if (best_entry_padding<12):
 			new_entry_size+=best_entry_padding

@@ -25,3 +25,28 @@ void vfs2_mount(filesystem2_t* fs,const char* path){
 	}
 	panic("vfs2_mount");
 }
+
+
+
+vfs2_node_t* vfs2_lookup(vfs2_node_t* root,const char* path){
+	if (!root){
+		root=_vfs2_root_node;
+	}
+	while (root&&path[0]){
+		if (path[0]=='/'){
+			path++;
+			continue;
+		}
+		u64 i=0;
+		for (;path[i]&&path[i]!='/';i++){
+			if (i>=VFS2_NAME_MAX_LENGTH){
+				return NULL;
+			}
+		}
+		vfs2_node_name_t* name=vfs2_name_alloc(path,i);
+		root=vfs2_node_get_child(root,name);
+		vfs2_name_dealloc(name);
+		path+=i;
+	}
+	return root;
+}
