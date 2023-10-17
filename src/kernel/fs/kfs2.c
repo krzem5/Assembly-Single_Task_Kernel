@@ -85,7 +85,7 @@ PMM_DECLARE_COUNTER(OMM_KFS2_EDATA);
 
 
 static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
-static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,4,PMM_COUNTER_OMM_KFS2_EDATA);
+static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
 
 
 
@@ -162,6 +162,10 @@ static void _kfs2_delete(vfs2_node_t* node){
 
 
 static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if (kfs2_node->inode==0xffffffff){
+		return NULL;
+	}
 	panic("_kfs2_lookup");
 }
 

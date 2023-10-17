@@ -88,11 +88,14 @@ static void _iso9660_delete(vfs2_node_t* node){
 static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive2_t* drive=node->fs->partition->drive;
-	u8 buffer[2048];
 	u32 data_offset=iso9660_node->data_offset;
+	if (!data_offset){
+		return NULL;
+	}
 	u32 data_length=iso9660_node->data_length;
 	u16 buffer_space=0;
 	iso9660_directory_t* directory=NULL;
+	u8 buffer[2048];
 	while (data_length){
 		if (buffer_space&&!directory->length){
 			data_length-=buffer_space;
