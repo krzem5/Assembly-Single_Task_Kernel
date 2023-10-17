@@ -243,7 +243,7 @@ _directory_lba_found:
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
-	vfs2_node_name_t* root_name=vfs2_name_alloc("/",0);
+	vfs2_node_name_t* root_name=vfs2_name_alloc("<root>",0);
 	out->root=vfs2_node_create(out,root_name);
 	vfs2_name_dealloc(root_name);
 	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;

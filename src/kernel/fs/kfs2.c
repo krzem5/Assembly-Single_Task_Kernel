@@ -66,6 +66,12 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 
 
 
+typedef struct _KFS2_FS_EXTRA_DATA{
+	kfs2_root_block_t root_block;
+} kfs2_fs_extra_data_t;
+
+
+
 typedef struct _KFS2_VFS_NODE{
 	vfs2_node_t node;
 	u32 inode;
@@ -74,10 +80,12 @@ typedef struct _KFS2_VFS_NODE{
 
 
 PMM_DECLARE_COUNTER(OMM_KFS2_NODE);
+PMM_DECLARE_COUNTER(OMM_KFS2_EDATA);
 
 
 
 static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
+static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,4,PMM_COUNTER_OMM_KFS2_EDATA);
 
 
 
@@ -210,6 +218,7 @@ static vfs2_functions_t _kfs2_functions={
 
 
 static void _kfs2_fs_deinit(filesystem2_t* fs){
+	omm_dealloc(&_kfs2_fs_extra_data_allocator,fs->extra_data);
 	panic("_kfs2_deinit_callback");
 }
 
@@ -228,10 +237,13 @@ static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
 	if (root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!_verify_crc(root_block,sizeof(kfs2_root_block_t))){
 		return NULL;
 	}
+	kfs2_fs_extra_data_t* extra_data=omm_alloc(&_kfs2_fs_extra_data_allocator);
+	extra_data->root_block=*root_block;
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
-	vfs2_node_name_t* root_name=vfs2_name_alloc("/",0);
+	out->extra_data=extra_data;
+	vfs2_node_name_t* root_name=vfs2_name_alloc("<root>",0);
 	out->root=vfs2_node_create(out,root_name);
 	vfs2_name_dealloc(root_name);
 	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;

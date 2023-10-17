@@ -69,7 +69,7 @@ void pci_enumerate(void){
 						offset=(cap>>8);
 					}
 				}
-				INFO("Found PCI device at [%x:%x:%x]: %u/%u/%u/%u/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
+				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
 				driver_ahci_init_device(&device);
 				driver_ata_init_device(&device);
 				driver_nvme_init_device(&device);

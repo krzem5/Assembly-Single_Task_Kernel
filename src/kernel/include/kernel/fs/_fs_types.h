@@ -17,6 +17,7 @@ typedef struct _FILESYSTEM2{
 	filesystem_type_t type;
 	vfs2_functions_t* functions;
 	struct _PARTITION2* partition;
+	void* extra_data;
 	vfs2_node_t* root;
 } filesystem2_t;
 
