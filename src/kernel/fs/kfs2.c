@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs2/node.h>
@@ -103,6 +104,7 @@ typedef struct _KFS2_VFS_NODE{
 
 PMM_DECLARE_COUNTER(OMM_KFS2_NODE);
 PMM_DECLARE_COUNTER(OMM_KFS2_EDATA);
+PMM_DECLARE_COUNTER(KFS2_CHUNK);
 
 
 
@@ -220,10 +222,12 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 
 
 static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
-	if (!chunk->data||chunk->length<KFS2_BLOCK_SIZE){
-		return;
+	if (chunk->data&&chunk->length==KFS2_BLOCK_SIZE){
+		pmm_dealloc(((u64)(chunk->data))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
 	}
-	panic("_node_dealloc_chunk");
+	chunk->offset=0;
+	chunk->data=NULL;
+	chunk->length=0;
 }
 
 

@@ -61,4 +61,8 @@ vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_node_name_t* name)
 
 
 
+s64 vfs2_node_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size);
+
+
+
 #endif

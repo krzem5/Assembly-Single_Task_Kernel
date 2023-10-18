@@ -56,3 +56,12 @@ _check_next_sibling:
 	lock_release_exclusive(&(node->lock));
 	return out;
 }
+
+
+
+s64 vfs2_node_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
+	if (!node->functions->read){
+		return -1;
+	}
+	return node->functions->read(node,offset,buffer,size);
+}
