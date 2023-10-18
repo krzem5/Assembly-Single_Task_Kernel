@@ -82,6 +82,9 @@ typedef struct __attribute__((packed)) _KFS2_DIRECTORY_ENTRY{
 
 typedef struct _KFS2_DATA_CHUNK{
 	u64 offset;
+	u64* quadruple_cache;
+	u64* triple_cache;
+	u64* double_cache;
 	void* data;
 	u16 length;
 } kfs2_data_chunk_t;
@@ -194,10 +197,18 @@ static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_node_name_t* name,u
 
 
 
-static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
-	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
-	partition2_t* partition=node->node.fs->partition;
+static void _read_data_block(filesystem2_t* fs,u64 block_index,void* buffer){
+	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	partition2_t* partition=fs->partition;
 	drive2_t* drive=partition->drive;
+	if (drive->read_write(drive->extra_data,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+		panic("_read_data_block: I/O error");
+	}
+}
+
+
+
+static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 	switch (node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK){
 		case KFS2_INODE_STORAGE_TYPE_INLINE:
 			if (offset>=48){
@@ -217,15 +228,28 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 					out->data=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				}
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
-				if (drive->read_write(drive->extra_data,partition->start_lba+((extra_data->root_block.first_data_block+node->kfs2_node.data.single[index])<<extra_data->block_size_shift),out->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-					panic("_node_get_chunk_at_offset: I/O error");
-				}
+				_read_data_block(node->node.fs,node->kfs2_node.data.single[index],out->data);
 				out->length=KFS2_BLOCK_SIZE;
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
-			panic("KFS2_INODE_STORAGE_TYPE_DOUBLE");
-			break;
+			{
+				u64 index=offset/KFS2_BLOCK_SIZE;
+				if (index>=KFS2_BLOCK_SIZE/sizeof(u64)){
+					panic("_node_get_chunk_at_offset: invalid offset");
+				}
+				if (!out->double_cache){
+					out->double_cache=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					_read_data_block(node->node.fs,node->kfs2_node.data.double_,out->double_cache);
+				}
+				if (!out->data){
+					out->data=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+				}
+				out->offset=offset&(-KFS2_BLOCK_SIZE);
+				_read_data_block(node->node.fs,out->double_cache[index],out->data);
+				out->length=KFS2_BLOCK_SIZE;
+				break;
+			}
 		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
 			panic("KFS2_INODE_STORAGE_TYPE_TRIPLE");
 			break;
@@ -238,10 +262,22 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 
 
 static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
+	chunk->offset=0;
+	if (chunk->quadruple_cache){
+		pmm_dealloc(((u64)(chunk->quadruple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		chunk->quadruple_cache=NULL;
+	}
+	if (chunk->triple_cache){
+		pmm_dealloc(((u64)(chunk->triple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		chunk->triple_cache=NULL;
+	}
+	if (chunk->double_cache){
+		pmm_dealloc(((u64)(chunk->double_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		chunk->double_cache=NULL;
+	}
 	if (chunk->data&&chunk->length==KFS2_BLOCK_SIZE){
 		pmm_dealloc(((u64)(chunk->data))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
 	}
-	chunk->offset=0;
 	chunk->data=NULL;
 	chunk->length=0;
 }
@@ -269,6 +305,9 @@ static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_node_name_t* name)
 	}
 	kfs2_data_chunk_t chunk={
 		0,
+		NULL,
+		NULL,
+		NULL,
 		NULL,
 		0
 	};
@@ -323,6 +362,9 @@ static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 	u64 out=size;
 	kfs2_data_chunk_t chunk={
 		0,
+		NULL,
+		NULL,
+		NULL,
 		NULL,
 		0
 	};
