@@ -9,7 +9,7 @@
 #define FNV_OFFSET_BASIS 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
-#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs2_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs2_name["#size"]",sizeof(vfs2_node_name_t)+8,8,4,PMM_COUNTER_OMM_VFS2_NAME);
+#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs2_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs2_name["#size"]",sizeof(vfs2_name_t)+8,8,4,PMM_COUNTER_OMM_VFS2_NAME);
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
 		out=omm_alloc(&_vfs2_name_allocator##size); \
@@ -38,13 +38,13 @@ DECLARE_ALLOCATOR(256);
 
 
 
-vfs2_node_name_t* vfs2_name_alloc(const char* name,u32 length){
+vfs2_name_t* vfs2_name_alloc(const char* name,u32 length){
 	if (!length){
 		while (name[length]){
 			length++;
 		}
 	}
-	vfs2_node_name_t* out;
+	vfs2_name_t* out;
 	USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
@@ -70,7 +70,7 @@ vfs2_node_name_t* vfs2_name_alloc(const char* name,u32 length){
 
 
 
-void vfs2_name_dealloc(vfs2_node_name_t* name){
+void vfs2_name_dealloc(vfs2_name_t* name){
 	USE_ALLOCATOR_DEALLOC(8)
 	else USE_ALLOCATOR_DEALLOC(16)
 	else USE_ALLOCATOR_DEALLOC(24)
@@ -88,9 +88,9 @@ void vfs2_name_dealloc(vfs2_node_name_t* name){
 
 
 
-vfs2_node_name_t* vfs2_name_duplicate(const vfs2_node_name_t* name){
+vfs2_name_t* vfs2_name_duplicate(const vfs2_name_t* name){
 	u32 length=name->length;
-	vfs2_node_name_t* out;
+	vfs2_name_t* out;
 	USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
@@ -104,6 +104,6 @@ vfs2_node_name_t* vfs2_name_duplicate(const vfs2_node_name_t* name){
 	else{
 		panic("vfs2_name_alloc: name too long");
 	}
-	memcpy(out,name,sizeof(vfs2_node_name_t)+length+1);
+	memcpy(out,name,sizeof(vfs2_name_t)+length+1);
 	return out;
 }

@@ -174,7 +174,7 @@ static inline _Bool _verify_crc(const void* data,u32 length){
 
 
 
-static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_node_name_t* name,u32 inode){
+static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_name_t* name,u32 inode){
 	u8 buffer[4096];
 	partition2_t* partition=fs->partition;
 	drive2_t* drive=partition->drive;
@@ -298,7 +298,7 @@ static void _kfs2_delete(vfs2_node_t* node){
 
 
 
-static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
+static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size){
 		return NULL;
@@ -444,7 +444,7 @@ static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
-	vfs2_node_name_t* root_name=vfs2_name_alloc("<root>",0);
+	vfs2_name_t* root_name=vfs2_name_alloc("<root>",0);
 	out->root=_load_inode(out,root_name,0);
 	vfs2_name_dealloc(root_name);
 	out->root->flags|=VFS2_NODE_FLAG_PERMANENT;

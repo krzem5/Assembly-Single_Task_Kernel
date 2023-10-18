@@ -85,7 +85,7 @@ static void _iso9660_delete(vfs2_node_t* node){
 
 
 
-static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_node_name_t* name){
+static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive2_t* drive=node->fs->partition->drive;
 	u32 data_offset=iso9660_node->data_offset;
@@ -246,7 +246,7 @@ _directory_lba_found:
 	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
-	vfs2_node_name_t* root_name=vfs2_name_alloc("<root>",0);
+	vfs2_name_t* root_name=vfs2_name_alloc("<root>",0);
 	out->root=vfs2_node_create(out,root_name);
 	vfs2_name_dealloc(root_name);
 	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;

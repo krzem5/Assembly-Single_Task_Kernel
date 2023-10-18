@@ -12,19 +12,19 @@ typedef struct _VFS2_NODE_NAME{
 	u32 length;
 	u32 hash;
 	char data[];
-} vfs2_node_name_t;
+} vfs2_name_t;
 
 
 
-vfs2_node_name_t* vfs2_name_alloc(const char* name,u32 length);
+vfs2_name_t* vfs2_name_alloc(const char* name,u32 length);
 
 
 
-void vfs2_name_dealloc(vfs2_node_name_t* name);
+void vfs2_name_dealloc(vfs2_name_t* name);
 
 
 
-vfs2_node_name_t* vfs2_name_duplicate(const vfs2_node_name_t* name);
+vfs2_name_t* vfs2_name_duplicate(const vfs2_name_t* name);
 
 
 
