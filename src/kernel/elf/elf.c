@@ -113,6 +113,9 @@ _error:
 
 
 _Bool elf_load2(vfs2_node_t* node){
+	if (!node){
+		return 0;
+	}
 	process_t* process=process_new();
 	elf_header_t header;
 	if (vfs2_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
@@ -141,7 +144,6 @@ _Bool elf_load2(vfs2_node_t* node){
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
 		u64 pages=pmm_alloc_zero(page_count,PMM_COUNTER_IMAGE,0);
 		if (!vmm_memory_map_reserve(&(process->mmap),program_header.p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT)){
-			ERROR("Unable to reserve process memory");
 			goto _error;
 		}
 		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags,page_count);
@@ -156,7 +158,6 @@ _Bool elf_load2(vfs2_node_t* node){
 	scheduler_enqueue_thread(thread_new_user(process,header.e_entry,0x200000));
 	return 1;
 _error:
-	ERROR("Unable to load ELF file");
 	handle_release(&(process->handle));
 	return 0;
 }

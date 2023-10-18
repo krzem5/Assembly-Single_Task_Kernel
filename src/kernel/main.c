@@ -22,6 +22,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #include <kernel/vfs2/vfs.h>
 #define KERNEL_LOG_NAME "main"
 
@@ -39,7 +40,9 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	LOG("%p",vfs2_lookup(NULL,"/boot/boot.elf"));
+	// if (!elf_load2(vfs2_lookup(NULL,"/boot/boot.elf"))){
+	// 	panic("Unable to loade boot file");
+	// }
 	elf_load("/kernel/loader.elf");
 }
 

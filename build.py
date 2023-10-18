@@ -498,8 +498,9 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition):
 	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
 	kfs2.format_partition(initramfs_fs)
-	test_inode=kfs2.get_inode(initramfs_fs,"/boot/boot.elf")
-	kfs2.set_file_content(initramfs_fs,test_inode,b"Test KFS2 inode")
+	with open("build/disk/kernel/boot.elf","rb") as rf:
+		test_inode=kfs2.get_inode(initramfs_fs,"/boot/boot.elf")
+		kfs2.set_file_content(initramfs_fs,test_inode,rf.read())
 	initramfs_fs.close()
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)

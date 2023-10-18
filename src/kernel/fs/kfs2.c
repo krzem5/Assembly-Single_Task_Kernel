@@ -195,6 +195,9 @@ static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_node_name_t* name,u
 
 
 static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
+	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
+	partition2_t* partition=node->node.fs->partition;
+	drive2_t* drive=partition->drive;
 	switch (node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK){
 		case KFS2_INODE_STORAGE_TYPE_INLINE:
 			if (offset>=48){
@@ -205,8 +208,21 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 			out->length=48;
 			break;
 		case KFS2_INODE_STORAGE_TYPE_SINGLE:
-			panic("KFS2_INODE_STORAGE_TYPE_SINGLE");
-			break;
+			{
+				u64 index=offset/KFS2_BLOCK_SIZE;
+				if (index>=6){
+					panic("_node_get_chunk_at_offset: invalid offset");
+				}
+				if (!out->data){
+					out->data=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+				}
+				out->offset=offset&(-KFS2_BLOCK_SIZE);
+				if (drive->read_write(drive->extra_data,partition->start_lba+((extra_data->root_block.first_data_block+node->kfs2_node.data.single[index])<<extra_data->block_size_shift),out->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+					panic("_node_get_chunk_at_offset: I/O error");
+				}
+				out->length=KFS2_BLOCK_SIZE;
+				break;
+			}
 		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
 			panic("KFS2_INODE_STORAGE_TYPE_DOUBLE");
 			break;

@@ -202,7 +202,10 @@ class KFS2NodeDataProvider(object):
 			return
 		if (size<=6*KFS2_BLOCK_SIZE):
 			self.node.flags|=KFS2_INODE_STORAGE_TYPE_SINGLE
-			raise RuntimeError("Init KFS2_INODE_STORAGE_TYPE_SINGLE")
+			for i in range(0,6):
+				self.data[i*8:i*8+8]=struct.pack("<Q",i*KFS2_BLOCK_SIZE<size)
+			self.node.save()
+			return
 		if (size<=KFS2_BLOCK_SIZE**2//8):
 			self.node.flags|=KFS2_INODE_STORAGE_TYPE_DOUBLE
 			buffer=array.array("Q")
@@ -233,7 +236,11 @@ class KFS2NodeDataProvider(object):
 				return None
 			return KFS2NodeDataProviderChunk(0,self.data,48)
 		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
+			index=offset//KFS2_BLOCK_SIZE
+			if (index>=6):
+				return None
+			self._backend.seek(self._data_offset+struct.unpack("<Q",self.data[index*8:index*8+8])[0]*KFS2_BLOCK_SIZE)
+			return KFS2NodeDataProviderChunk(index*KFS2_BLOCK_SIZE,self._backend.read(KFS2_BLOCK_SIZE),KFS2_BLOCK_SIZE)
 		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
 			index=offset//KFS2_BLOCK_SIZE
 			if (index>=KFS2_BLOCK_SIZE//8):
@@ -256,7 +263,11 @@ class KFS2NodeDataProvider(object):
 			self.data[:]=chunk.data
 			self.node.save()
 		elif (storage==KFS2_INODE_STORAGE_TYPE_SINGLE):
-			raise RuntimeError("KFS2_INODE_STORAGE_TYPE_SINGLE")
+			index=chunk.offset//KFS2_BLOCK_SIZE
+			if (index>=6 or chunk.offset&(KFS2_BLOCK_SIZE-1)):
+				raise RuntimeError("Wrong offset")
+			self._backend.seek(self._data_offset+struct.unpack("<Q",self.data[index*8:index*8+8])[0]*KFS2_BLOCK_SIZE)
+			self._backend.write(chunk.data)
 		elif (storage==KFS2_INODE_STORAGE_TYPE_DOUBLE):
 			index=chunk.offset//KFS2_BLOCK_SIZE
 			if (index>=KFS2_BLOCK_SIZE//8 or chunk.offset&(KFS2_BLOCK_SIZE-1)):
