@@ -40,9 +40,9 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	// if (!elf_load2(vfs2_lookup(NULL,"/boot/boot.elf"))){
-	// 	panic("Unable to loade boot file");
-	// }
+	if (!elf_load2(vfs2_lookup(NULL,"/boot/boot.elf"))){
+		panic("Unable to load boot file");
+	}
 	elf_load("/kernel/loader.elf");
 }
 

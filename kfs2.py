@@ -203,7 +203,7 @@ class KFS2NodeDataProvider(object):
 		if (size<=6*KFS2_BLOCK_SIZE):
 			self.node.flags|=KFS2_INODE_STORAGE_TYPE_SINGLE
 			for i in range(0,6):
-				self.data[i*8:i*8+8]=struct.pack("<Q",i*KFS2_BLOCK_SIZE<size)
+				self.data[i*8:i*8+8]=struct.pack("<Q",(_alloc_data_block(self._backend,root_block) if i*KFS2_BLOCK_SIZE<size else 0))
 			self.node.save()
 			return
 		if (size<=KFS2_BLOCK_SIZE**2//8):

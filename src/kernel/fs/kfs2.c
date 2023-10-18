@@ -332,7 +332,9 @@ static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 			_node_get_chunk_at_offset(kfs2_node,offset,&chunk);
 		}
 		u64 padding=offset-chunk.offset;
-		memcpy(buffer,chunk.data+padding,chunk.length-padding);
+		u64 read_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
+		memcpy(buffer,chunk.data+padding,read_size);
+		buffer+=read_size;
 		offset+=chunk.length-padding;
 	}
 	_node_dealloc_chunk(&chunk);
