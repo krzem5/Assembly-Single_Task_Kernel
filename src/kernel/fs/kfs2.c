@@ -197,7 +197,7 @@ static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_node_name_t* name,u
 static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 	switch (node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK){
 		case KFS2_INODE_STORAGE_TYPE_INLINE:
-			if (offset){
+			if (offset>=48){
 				panic("_node_get_chunk_at_offset: invalid offset");
 			}
 			out->offset=0;
@@ -294,7 +294,33 @@ static _Bool _kfs2_unlink(vfs2_node_t* node){
 
 
 static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
-	panic("_kfs2_read");
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if (kfs2_node->kfs2_node._inode==0xffffffff||offset>=kfs2_node->kfs2_node.size){
+		return 0;
+	}
+	if (offset+size>=kfs2_node->kfs2_node.size){
+		size=kfs2_node->kfs2_node.size-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	u64 out=size;
+	kfs2_data_chunk_t chunk={
+		0,
+		NULL,
+		0
+	};
+	size+=offset;
+	while (offset<size){
+		if (offset-chunk.offset>=chunk.length){
+			_node_get_chunk_at_offset(kfs2_node,offset,&chunk);
+		}
+		u64 padding=offset-chunk.offset;
+		memcpy(buffer,chunk.data+padding,chunk.length-padding);
+		offset+=chunk.length-padding;
+	}
+	_node_dealloc_chunk(&chunk);
+	return out;
 }
 
 
