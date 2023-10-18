@@ -1,11 +1,22 @@
 aml_get_root_node(void) -> const void*
-cpu_get_count(void) -> u32
 clock_get_converion(void) -> void
 coverage_dump_data(void) -> void
+cpu_get_count(void) -> u32
 drive_format(u32 index,const void* boot,u32 boot_length) -> _Bool
 drive_get(u32 index,void* buffer,u32 size) -> _Bool
 drive_stats(u32 index,void* buffer,u32 size) -> _Bool
 elf_load(const char* path,u32 length) -> _Bool
+fd2_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
+fd2_close(s32 fd) -> s32
+fd2_delete(s32 fd) -> s32
+fd2_get_relative(s32 fd,u32 relative,u32 flags) -> s32
+fd2_move(s32 fd,u32 dst_fd) -> s32
+fd2_open(s32 fd,const char* path,u32 length,u32 flags) -> s32
+fd2_read(s32 fd,void* buffer,u32 size) -> s32
+fd2_resize(s32 fd,u64 size) -> s32
+fd2_seek(s32 fd,u64 offset,u32 type) -> s64
+fd2_stat(s32 fd,void* ptr,u32 size) -> s32
+fd2_write(s32 fd,const void* buffer,u32 size) -> s32
 fd_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
 fd_close(s32 fd) -> s32
 fd_delete(s32 fd) -> s32

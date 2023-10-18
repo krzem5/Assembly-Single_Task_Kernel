@@ -65,4 +65,12 @@ s64 vfs2_node_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size);
 
 
 
+s64 vfs2_node_write(vfs2_node_t* node,u64 offset,const void* buffer,u64 size);
+
+
+
+s64 vfs2_node_resize(vfs2_node_t* node,s64 offset,u32 flags);
+
+
+
 #endif
