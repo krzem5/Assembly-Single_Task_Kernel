@@ -12,6 +12,10 @@ import time
 
 
 
+BYPASS_KVM_LOCK=False
+
+
+
 MODE_NORMAL=0
 MODE_COVERAGE=1
 MODE_RELEASE=2
@@ -386,7 +390,7 @@ def _kvm_flags():
 		if (" vmx" not in rf.read()):
 			return []
 	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
-		if ("tsc" in rf.read()):
+		if ("tsc" in rf.read() and not BYPASS_KVM_LOCK):
 			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
 			return []
 	return ["-accel","kvm"]
