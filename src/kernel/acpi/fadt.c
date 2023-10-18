@@ -1,7 +1,6 @@
 #include <kernel/acpi/fadt.h>
 #include <kernel/aml/parser.h>
 #include <kernel/aml/runtime.h>
-#include <kernel/cache/cache.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -73,8 +72,6 @@ void acpi_fadt_load(const void* fadt_ptr){
 
 void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
 	asm volatile("cli":::"memory");
-	cache_flush();
-	COUNTER_SPINLOOP(0xffff); // ensure cache flushes properly
 	if (restart){
 		_acpi_fadt_reboot();
 	}

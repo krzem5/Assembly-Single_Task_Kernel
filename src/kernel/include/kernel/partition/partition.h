@@ -131,8 +131,4 @@ void partition_load(void);
 
 
 
-void partition_flush_cache(void);
-
-
-
 #endif

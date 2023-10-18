@@ -213,14 +213,3 @@ void partition_load(void){
 		_partition_lookup_table[partition->index]=partition;
 	}
 }
-
-
-
-void partition_flush_cache(void){
-	LOG("Flushing partition cache...");
-	for (partition_t* fs=partition_data;fs;fs=fs->next){
-		lock_acquire_exclusive(&(fs->lock));
-		fs->config->flush_cache(fs);
-		lock_release_exclusive(&(fs->lock));
-	}
-}

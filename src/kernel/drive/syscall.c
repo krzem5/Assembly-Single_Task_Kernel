@@ -86,7 +86,6 @@ void syscall_drive_stats(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	partition_flush_cache();
 	*((drive_stats_t*)(regs->rsi))=*(drive->stats);
 	regs->rax=1;
 }
