@@ -32,6 +32,12 @@ void vfs2_node_delete(vfs2_node_t* node){
 	if (!node->functions->delete){
 		panic("vfs2_node_delete: node->functions->delete not present");
 	}
+	if (node->relatives.child){
+		panic("vfs2_node_delete: non-NULL node->relatives.child");
+	}
+	if (node->relatives.prev_sibling||node->relatives.next_sibling){
+		panic("vfs2_node_delete: relink prev/next sibling");
+	}
 	vfs2_name_dealloc(node->name);
 	node->functions->delete(node);
 }
