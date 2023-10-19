@@ -44,6 +44,7 @@ static handle_id_t _node_to_fd(vfs2_node_t* node,u32 flags){
 
 
 s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
+	panic("fd2_open");
 	if (flags&(~(FD2_FLAG_READ|FD2_FLAG_WRITE|FD2_FLAG_APPEND|FD2_FLAG_CREATE|FD2_FLAG_DIRECTORY|FD2_FLAG_DELETE_AT_EXIT))){
 		return FD2_ERROR_INVALID_FLAGS;
 	}
@@ -81,6 +82,7 @@ s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
 
 
 s64 fd2_close(handle_id_t fd){
+	panic("fd2_close");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -93,6 +95,7 @@ s64 fd2_close(handle_id_t fd){
 
 
 s64 fd2_read(handle_id_t fd,void* buffer,u64 count){
+	panic("fd2_read");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -113,6 +116,7 @@ s64 fd2_read(handle_id_t fd,void* buffer,u64 count){
 
 
 s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
+	panic("fd2_write");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -137,6 +141,7 @@ s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
 
 
 s64 fd2_seek(handle_id_t fd,u64 offset,u32 type){
+	panic("fd2_seek");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -171,6 +176,7 @@ s64 fd2_seek(handle_id_t fd,u64 offset,u32 type){
 
 
 s64 fd2_resize(handle_id_t fd,u64 size,u32 flags){
+	panic("fd2_resize");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -193,15 +199,12 @@ s64 fd2_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 s64 fd2_stat(handle_id_t fd,fd2_stat_t* out){
+	panic("fd2_stat");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
 	}
 	fd2_t* data=fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
 	lock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS2_NODE_TYPE_MASK;
 	out->vfs_index=/*data->node->vfs_index*/0xaa;
