@@ -31,7 +31,7 @@ static HANDLE_DECLARE_TYPE(FD2,{
 
 
 
-static handle_id_t _node_to_fd(vfs2_node_t* node,u8 flags){
+static handle_id_t _node_to_fd(vfs2_node_t* node,u32 flags){
 	fd2_t* out=omm_alloc(&_fd2_allocator);
 	handle_new(out,HANDLE_TYPE_FD2,&(out->handle));
 	lock_init(&(out->lock));
@@ -43,7 +43,7 @@ static handle_id_t _node_to_fd(vfs2_node_t* node,u8 flags){
 
 
 
-s64 fd2_open(handle_id_t root,const char* path,u32 length,u8 flags){
+s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&(~(FD2_FLAG_READ|FD2_FLAG_WRITE|FD2_FLAG_APPEND|FD2_FLAG_CREATE|FD2_FLAG_DIRECTORY|FD2_FLAG_DELETE_AT_EXIT))){
 		return FD2_ERROR_INVALID_FLAGS;
 	}
@@ -85,25 +85,6 @@ s64 fd2_close(handle_id_t fd){
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
 	}
-	handle_release(fd2_handle);
-	handle_release(fd2_handle);
-	return 0;
-}
-
-
-
-s64 fd2_delete(handle_id_t fd){
-	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
-	if (!fd2_handle){
-		return FD2_ERROR_INVALID_FD;
-	}
-	fd2_t* data=fd2_handle->object;
-	data->flags|=FD2_FLAG_DELETE_AT_EXIT;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
-	panic("fd2_delete");
 	handle_release(fd2_handle);
 	handle_release(fd2_handle);
 	return 0;
@@ -155,7 +136,7 @@ s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
 
 
 
-s64 fd2_seek(handle_id_t fd,u64 offset,u8 flags){
+s64 fd2_seek(handle_id_t fd,u64 offset,u32 type){
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -166,7 +147,7 @@ s64 fd2_seek(handle_id_t fd,u64 offset,u8 flags){
 		return FD2_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
-	switch (flags){
+	switch (type){
 		case FD2_SEEK_SET:
 			data->offset=offset;
 			break;
@@ -189,7 +170,7 @@ s64 fd2_seek(handle_id_t fd,u64 offset,u8 flags){
 
 
 
-s64 fd2_resize(handle_id_t fd,u64 size){
+s64 fd2_resize(handle_id_t fd,u64 size,u32 flags){
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -205,25 +186,6 @@ s64 fd2_resize(handle_id_t fd,u64 size){
 		data->offset=size;
 	}
 	lock_release_exclusive(&(data->lock));
-	handle_release(fd2_handle);
-	return out;
-}
-
-
-
-s64 fd2_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length){
-	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
-	if (!fd2_handle){
-		return FD2_ERROR_INVALID_FD;
-	}
-	fd2_t* data=fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
-	panic("fd2_absolute_path");
-	// s64 out=vfs_get_full_path(data->node,buffer,buffer_length);
-	s64 out=0;
 	handle_release(fd2_handle);
 	return out;
 }
@@ -253,46 +215,36 @@ s64 fd2_stat(handle_id_t fd,fd2_stat_t* out){
 
 
 
-s64 fd2_move(handle_id_t fd,handle_id_t dst_fd){
-	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
-	if (!fd2_handle){
-		return FD2_ERROR_INVALID_FD;
-	}
-	fd2_t* data=fd2_handle->object;
-	handle_t* dst_fd2_handle=handle_lookup_and_acquire(dst_fd,HANDLE_TYPE_FD2);
-	if (!dst_fd2_handle){
-		handle_release(fd2_handle);
-		return FD2_ERROR_INVALID_FD;
-	}
-	fd2_t* dst_data=dst_fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		handle_release(dst_fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
-	if (!dst_data->node){
-		handle_release(fd2_handle);
-		handle_release(dst_fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
-	if (data->node->fs!=dst_data->node->fs){
-		handle_release(fd2_handle);
-		handle_release(dst_fd2_handle);
-		return FD2_ERROR_DIFFERENT_FS;
-	}
-	if ((data->node->flags&VFS2_NODE_TYPE_MASK)!=(dst_data->node->flags&VFS2_NODE_TYPE_MASK)){
-		handle_release(fd2_handle);
-		handle_release(dst_fd2_handle);
-		return FD2_ERROR_DIFFERENT_TYPE;
-	}
-	lock_acquire_exclusive(&(data->lock));
-	lock_acquire_exclusive(&(dst_data->lock));
-	panic("fd2_move");
-	_Bool error=0;
-	// _Bool error=((node->flags&VFS2_NODE_TYPE_DIRECTORY)?!!vfs_get_relative(dst_node,VFS_RELATIVE_FIRST_CHILD):!!vfs_get_size(dst_node))||!vfs_move(node,dst_node);
-	lock_release_exclusive(&(data->lock));
-	lock_release_exclusive(&(dst_data->lock));
-	handle_release(fd2_handle);
-	handle_release(dst_fd2_handle);
-	return (error?FD2_ERROR_NOT_EMPTY:0);
+s64 fd2_dup(handle_id_t fd,u32 flags){
+	panic("fd2_dup");
+}
+
+
+
+s64 fd2_path(handle_id_t fd,char* buffer,u32 buffer_length){
+	panic("fd2_path");
+}
+
+
+
+s64 fd2_iter_start(handle_id_t fd){
+	panic("fd2_iter_start");
+}
+
+
+
+s64 fd2_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
+	panic("fd2_iter_get");
+}
+
+
+
+s64 fd2_iter_next(handle_id_t iterator){
+	panic("fd2_iter_next");
+}
+
+
+
+s64 fd2_iter_stop(handle_id_t iterator){
+	panic("fd2_iter_stop");
 }

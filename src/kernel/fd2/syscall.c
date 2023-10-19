@@ -22,12 +22,6 @@ void syscall_fd2_close(syscall_registers_t* regs){
 
 
 
-void syscall_fd2_delete(syscall_registers_t* regs){
-	regs->rax=fd2_delete(regs->rdi);
-}
-
-
-
 void syscall_fd2_read(syscall_registers_t* regs){
 	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=FD2_ERROR_INVALID_POINTER;
@@ -55,17 +49,7 @@ void syscall_fd2_seek(syscall_registers_t* regs){
 
 
 void syscall_fd2_resize(syscall_registers_t* regs){
-	regs->rax=fd2_resize(regs->rdi,regs->rsi);
-}
-
-
-
-void syscall_fd2_absolute_path(syscall_registers_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
-		regs->rax=FD2_ERROR_INVALID_POINTER;
-		return;
-	}
-	regs->rax=fd2_absolute_path(regs->rdi,(void*)(regs->rsi),regs->rdx);
+	regs->rax=fd2_resize(regs->rdi,regs->rsi,regs->rdx);
 }
 
 
@@ -84,6 +68,45 @@ void syscall_fd2_stat(syscall_registers_t* regs){
 
 
 
-void syscall_fd2_move(syscall_registers_t* regs){
-	regs->rax=fd2_move(regs->rdi,regs->rsi);
+void syscall_fd2_dup(syscall_registers_t* regs){
+	regs->rax=fd2_dup(regs->rdi,regs->rsi);
 }
+
+
+
+void syscall_fd2_path(syscall_registers_t* regs){
+	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=FD2_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd2_path(regs->rdi,(void*)(regs->rsi),regs->rdx);
+}
+
+
+
+void syscall_fd2_iter_start(syscall_registers_t* regs){
+	regs->rax=fd2_iter_start(regs->rdi);
+}
+
+
+
+void syscall_fd2_iter_get(syscall_registers_t* regs){
+	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=FD2_ERROR_INVALID_POINTER;
+		return;
+	}
+	regs->rax=fd2_iter_get(regs->rdi,(void*)(regs->rsi),regs->rdx);
+}
+
+
+
+void syscall_fd2_iter_next(syscall_registers_t* regs){
+	regs->rax=fd2_iter_next(regs->rdi);
+}
+
+
+
+void syscall_fd2_iter_stop(syscall_registers_t* regs){
+	regs->rax=fd2_iter_stop(regs->rdi);
+}
+

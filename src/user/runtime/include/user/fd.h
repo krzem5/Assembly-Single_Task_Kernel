@@ -1,5 +1,5 @@
-#ifndef _USER_FS2_H_
-#define _USER_FS2_H_ 1
+#ifndef _USER_FD_H_
+#define _USER_FD_H_ 1
 #include <user/types.h>
 
 
@@ -32,53 +32,65 @@
 
 
 
-typedef struct _FS2_STAT{
+typedef struct _FD_STAT{
 	u8 type;
 	u8 fs2_index;
 	u8 name_length;
 	char name[64];
 	u64 size;
-} fs2_stat_t;
+} fd_stat_t;
 
 
 
-s64 fs2_open(u64 fd,const char* path,u8 flags);
+s64 fd_open(u64 fd,const char* path,u32 length,u32 flags);
 
 
 
-s64 fs2_close(u64 fd);
+s64 fd_close(u64 fd);
 
 
 
-s64 fs2_delete(u64 fd);
+s64 fd_read(u64 fd,void* buffer,u32 size);
 
 
 
-s64 fs2_read(u64 fd,void* buffer,u64 count);
+s64 fd_write(u64 fd,const void* buffer,u32 size);
 
 
 
-s64 fs2_write(u64 fd,const void* buffer,u64 count);
+s64 fd_seek(u64 fd,u64 offset,u32 type);
 
 
 
-s64 fs2_seek(u64 fd,u64 offset,u8 type);
+s64 fd_resize(u64 fd,u64 size,u32 flags);
 
 
 
-s64 fs2_resize(u64 fd,u64 size);
+s64 fd_stat(u64 fd,fd_stat_t* out);
 
 
 
-s64 fs2_absolute_path(u64 fd,char* buffer,u32 buffer_length);
+s64 fd_dup(u64 fd,u32 flags);
 
 
 
-s64 fs2_stat(u64 fd,fs2_stat_t* stat);
+s64 fd_path(u64 fd,char* buffer,u32 size);
 
 
 
-s64 fs2_move(u64 fd,u64 dst_fd);
+s64 fd_iter_start(u64 fd);
+
+
+
+s64 fd_iter_get(u64 iterator,char* buffer,u32 size);
+
+
+
+s64 fd_iter_next(u64 iterator);
+
+
+
+s64 fd_iter_stop(u64 iterator);
 
 
 

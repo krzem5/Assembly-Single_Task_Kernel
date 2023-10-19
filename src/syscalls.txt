@@ -6,27 +6,30 @@ drive_format(u32 index,const void* boot,u32 boot_length) -> _Bool
 drive_get(u32 index,void* buffer,u32 size) -> _Bool
 drive_stats(u32 index,void* buffer,u32 size) -> _Bool
 elf_load(const char* path,u32 length) -> _Bool
-fd2_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
-fd2_close(s32 fd) -> s32
-fd2_delete(s32 fd) -> s32
-fd2_move(s32 fd,u32 dst_fd) -> s32
-fd2_open(s32 fd,const char* path,u32 length,u32 flags) -> s32
-fd2_read(s32 fd,void* buffer,u32 size) -> s32
-fd2_resize(s32 fd,u64 size) -> s32
-fd2_seek(s32 fd,u64 offset,u32 type) -> s64
-fd2_stat(s32 fd,void* ptr,u32 size) -> s32
-fd2_write(s32 fd,const void* buffer,u32 size) -> s32
-fd_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
-fd_close(s32 fd) -> s32
-fd_delete(s32 fd) -> s32
-fd_get_relative(s32 fd,u32 relative,u32 flags) -> s32
-fd_move(s32 fd,u32 dst_fd) -> s32
-fd_open(s32 fd,const char* path,u32 length,u32 flags) -> s32
-fd_read(s32 fd,void* buffer,u32 size) -> s32
-fd_resize(s32 fd,u64 size) -> s32
-fd_seek(s32 fd,u64 offset,u32 type) -> s64
-fd_stat(s32 fd,void* ptr,u32 size) -> s32
-fd_write(s32 fd,const void* buffer,u32 size) -> s32
+fd2_close(u64 fd) -> s64
+fd2_dup(u64 fd,u32 flags) -> s64
+fd2_iter_get(u64 iterator,char* buffer,u32 size) -> s64
+fd2_iter_next(u64 iterator) -> s64
+fd2_iter_start(u64 fd) -> s64
+fd2_iter_stop(u64 iterator) -> s64
+fd2_open(u64 fd,const char* path,u32 length,u32 flags) -> s64
+fd2_path(u64 fd,char* buffer,u32 size) -> s64
+fd2_read(u64 fd,void* buffer,u32 size) -> s64
+fd2_resize(u64 fd,u64 size,u32 flags) -> s64
+fd2_seek(u64 fd,u64 offset,u32 type) -> s64
+fd2_stat(u64 fd,void* ptr,u32 size) -> s64
+fd2_write(u64 fd,const void* buffer,u32 size) -> s64
+fd_absolute_path(s64 fd,char* buffer,u32 buffer_length) -> s64
+fd_close(s64 fd) -> s64
+fd_delete(s64 fd) -> s64
+fd_get_relative(s64 fd,u32 relative,u32 flags) -> s64
+fd_move(s64 fd,u32 dst_fd) -> s64
+fd_open(s64 fd,const char* path,u32 length,u32 flags) -> s64
+fd_read(s64 fd,void* buffer,u32 size) -> s64
+fd_resize(s64 fd,u64 size) -> s64
+fd_seek(s64 fd,u64 offset,u32 type) -> s64
+fd_stat(s64 fd,void* ptr,u32 size) -> s64
+fd_write(s64 fd,const void* buffer,u32 size) -> s64
 handle_get_type(u32 handle_type,void* buffer,u32 size) -> _Bool
 handle_get_type_count(void) -> u32
 memory_get_counter(u32 counter,void* buffer,u32 size) -> _Bool

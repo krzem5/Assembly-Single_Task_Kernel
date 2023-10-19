@@ -51,15 +51,11 @@ typedef struct _FD2_STAT{
 
 
 
-s64 fd2_open(handle_id_t root,const char* path,u32 length,u8 flags);
+s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags);
 
 
 
 s64 fd2_close(handle_id_t fd);
-
-
-
-s64 fd2_delete(handle_id_t fd);
 
 
 
@@ -71,15 +67,11 @@ s64 fd2_write(handle_id_t fd,const void* buffer,u64 count);
 
 
 
-s64 fd2_seek(handle_id_t fd,u64 offset,u8 type);
+s64 fd2_seek(handle_id_t fd,u64 offset,u32 type);
 
 
 
-s64 fd2_resize(handle_id_t fd,u64 size);
-
-
-
-s64 fd2_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length);
+s64 fd2_resize(handle_id_t fd,u64 size,u32 flags);
 
 
 
@@ -87,7 +79,27 @@ s64 fd2_stat(handle_id_t fd,fd2_stat_t* out);
 
 
 
-s64 fd2_move(handle_id_t fd,handle_id_t dst_fd);
+s64 fd2_dup(handle_id_t fd,u32 flags);
+
+
+
+s64 fd2_path(handle_id_t fd,char* buffer,u32 buffer_length);
+
+
+
+s64 fd2_iter_start(handle_id_t fd);
+
+
+
+s64 fd2_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length);
+
+
+
+s64 fd2_iter_next(handle_id_t iterator);
+
+
+
+s64 fd2_iter_stop(handle_id_t iterator);
 
 
 
