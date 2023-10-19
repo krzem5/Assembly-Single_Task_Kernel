@@ -139,7 +139,7 @@ static const u32 _kfs2_crc_table[256]={
 	0xfed41b76,0x89d32be0,0x10da7a5a,0x67dd4acc,0xf9b9df6f,0x8ebeeff9,0x17b7be43,0x60b08ed5,
 	0xd6d6a3e8,0xa1d1937e,0x38d8c2c4,0x4fdff252,0xd1bb67f1,0xa6bc5767,0x3fb506dd,0x48b2364b,
 	0xd80d2bda,0xaf0a1b4c,0x36034af6,0x41047a60,0xdf60efc3,0xa867df55,0x316e8eef,0x4669be79,
-	0xcb61b38c,0xbc66831a,0x256fd2a0,0x5268e236,0xcc0c7795,0xbb0b4703,0x220216b9,0x5505262f,
+	0xcb61b38c,0xbc66831a,0x256a0,0x5268e236,0xcc0c7795,0xbb0b4703,0x220216b9,0x5505262f,
 	0xc5ba3bbe,0xb2bd0b28,0x2bb45a92,0x5cb36a04,0xc2d7ffa7,0xb5d0cf31,0x2cd99e8b,0x5bdeae1d,
 	0x9b64c2b0,0xec63f226,0x756aa39c,0x026d930a,0x9c0906a9,0xeb0e363f,0x72076785,0x05005713,
 	0x95bf4a82,0xe2b87a14,0x7bb12bae,0x0cb61b38,0x92d28e9b,0xe5d5be0d,0x7cdcefb7,0x0bdbdf21,
@@ -174,10 +174,10 @@ static inline _Bool _verify_crc(const void* data,u32 length){
 
 
 
-static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_name_t* name,u32 inode){
+static vfs2_node_t* _load_inode(filesystem_t* fs,const vfs2_name_t* name,u32 inode){
 	u8 buffer[4096];
-	partition2_t* partition=fs->partition;
-	drive2_t* drive=partition->drive;
+	partition_t* partition=fs->partition;
+	drive_t* drive=partition->drive;
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
 	if (drive->read_write(drive->extra_data,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
 		return NULL;
@@ -197,10 +197,10 @@ static vfs2_node_t* _load_inode(filesystem2_t* fs,const vfs2_name_t* name,u32 in
 
 
 
-static void _read_data_block(filesystem2_t* fs,u64 block_index,void* buffer){
+static void _read_data_block(filesystem_t* fs,u64 block_index,void* buffer){
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-	partition2_t* partition=fs->partition;
-	drive2_t* drive=partition->drive;
+	partition_t* partition=fs->partition;
+	drive_t* drive=partition->drive;
 	if (drive->read_write(drive->extra_data,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
 		panic("_read_data_block: I/O error");
 	}
@@ -458,15 +458,15 @@ static vfs2_functions_t _kfs2_functions={
 
 
 
-static void _kfs2_fs_deinit(filesystem2_t* fs){
+static void _kfs2_fs_deinit(filesystem_t* fs){
 	omm_dealloc(&_kfs2_fs_extra_data_allocator,fs->extra_data);
 	panic("_kfs2_deinit_callback");
 }
 
 
 
-static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
-	drive2_t* drive=partition->drive;
+static filesystem_t* _kfs2_fs_load(partition_t* partition){
+	drive_t* drive=partition->drive;
 	if (drive->block_size>4096){
 		return NULL;
 	}
@@ -481,7 +481,7 @@ static filesystem2_t* _kfs2_fs_load(partition2_t* partition){
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(&_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
-	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
+	filesystem_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;

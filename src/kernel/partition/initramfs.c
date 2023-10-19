@@ -9,7 +9,7 @@ PARTITION_DECLARE_TYPE(INITRAMFS,{
 	if (drive->type!=DRIVE_TYPE_INITRAMFS){
 		return 0;
 	}
-	partition2_t* partition=partition_create(drive,"INITRAMFS",0,drive->block_count);
+	partition_t* partition=partition_create(drive,"INITRAMFS",0,drive->block_count);
 	if (!partition->fs){
 		return 0;
 	}

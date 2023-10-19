@@ -48,13 +48,13 @@ typedef struct _VFS2_NODE{
 	lock_t lock;
 	vfs2_name_t* name;
 	vfs2_node_relatives_t relatives;
-	struct _FILESYSTEM2* fs;
+	struct _FILESYSTEM* fs;
 	vfs2_functions_t* functions;
 } vfs2_node_t;
 
 
 
-vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_name_t* name);
+vfs2_node_t* vfs2_node_create(struct _FILESYSTEM* fs,const vfs2_name_t* name);
 
 
 

@@ -11,7 +11,7 @@ static vfs2_node_t* _vfs2_root_node;
 
 
 
-void vfs2_mount(filesystem2_t* fs,const char* path){
+void vfs2_mount(filesystem_t* fs,const char* path){
 	if (!path){
 		if (_vfs2_root_node){
 			panic("Root filesystem already registered");

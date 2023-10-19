@@ -5,7 +5,7 @@
 
 
 
-void vfs2_mount(filesystem2_t* fs,const char* path);
+void vfs2_mount(filesystem_t* fs,const char* path);
 
 
 

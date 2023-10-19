@@ -6,7 +6,7 @@
 
 
 
-vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_name_t* name){
+vfs2_node_t* vfs2_node_create(filesystem_t* fs,const vfs2_name_t* name){
 	if (!fs->functions->create){
 		return NULL;
 	}

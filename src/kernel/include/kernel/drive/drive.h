@@ -42,7 +42,7 @@ typedef struct _DRIVE_CONFIG{
 
 
 
-typedef struct _DRIVE2{
+typedef struct _DRIVE{
 	handle_t handle;
 	u8 type;
 	u8 flags;
@@ -56,7 +56,7 @@ typedef struct _DRIVE2{
 	u64 block_size;
 	drive_io_callback_t read_write;
 	void* extra_data;
-} drive2_t;
+} drive_t;
 
 
 
@@ -64,7 +64,7 @@ extern handle_type_t HANDLE_TYPE_DRIVE;
 
 
 
-drive2_t* drive_create(const drive_config_t* config);
+drive_t* drive_create(const drive_config_t* config);
 
 
 

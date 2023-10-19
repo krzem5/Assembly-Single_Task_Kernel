@@ -24,8 +24,8 @@
 typedef struct _FILESYSTEM_DESCRIPTOR{
 	const char* name;
 	filesystem_type_t* var;
-	void (*deinit_callback)(filesystem2_t*);
-	filesystem2_t* (*load_callback)(partition2_t*);
+	void (*deinit_callback)(filesystem_t*);
+	filesystem_t* (*load_callback)(partition_t*);
 } filesystem_descriptor_t;
 
 
@@ -38,11 +38,11 @@ void fs_init(void);
 
 
 
-filesystem2_t* fs_create(filesystem_type_t type);
+filesystem_t* fs_create(filesystem_type_t type);
 
 
 
-filesystem2_t* fs_load(partition2_t* partition);
+filesystem_t* fs_load(partition_t* partition);
 
 
 

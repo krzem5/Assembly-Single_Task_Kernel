@@ -87,7 +87,7 @@ static void _iso9660_delete(vfs2_node_t* node){
 
 static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
-	drive2_t* drive=node->fs->partition->drive;
+	drive_t* drive=node->fs->partition->drive;
 	u32 data_offset=iso9660_node->data_offset;
 	if (!data_offset){
 		return NULL;
@@ -153,7 +153,7 @@ static u64 _iso9660_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
 
 static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
-	drive2_t* drive=node->fs->partition->drive;
+	drive_t* drive=node->fs->partition->drive;
 	if (size+offset>iso9660_node->data_length){
 		size=iso9660_node->data_length-offset;
 	}
@@ -216,14 +216,14 @@ static vfs2_functions_t _iso9660_functions={
 
 
 
-static void _iso9660_fs_deinit(filesystem2_t* fs){
+static void _iso9660_fs_deinit(filesystem_t* fs){
 	panic("_iso9660_fs_deinit");
 }
 
 
 
-static filesystem2_t* _iso9660_fs_load(partition2_t* partition){
-	drive2_t* drive=partition->drive;
+static filesystem_t* _iso9660_fs_load(partition_t* partition){
+	drive_t* drive=partition->drive;
 	if (partition->start_lba||drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
 		return NULL;
 	}
@@ -250,7 +250,7 @@ static filesystem2_t* _iso9660_fs_load(partition2_t* partition){
 		block_index++;
 	}
 _directory_lba_found:
-	filesystem2_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
+	filesystem_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
 	vfs2_name_t* root_name=vfs2_name_alloc("<root>",0);

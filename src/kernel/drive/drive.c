@@ -15,12 +15,12 @@ PMM_DECLARE_COUNTER(OMM_DRIVE);
 
 
 
-static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive2_t),8,4,PMM_COUNTER_OMM_DRIVE);
+static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive_t),8,4,PMM_COUNTER_OMM_DRIVE);
 
 
 
 HANDLE_DECLARE_TYPE(DRIVE,{
-	drive2_t* drive=handle->object;
+	drive_t* drive=handle->object;
 	WARN("Delete drive: %s",drive->name);
 	omm_dealloc(&_drive_allocator,drive);
 });
@@ -37,9 +37,9 @@ static const char* _drive_type_names[]={
 
 
 
-drive2_t* drive_create(const drive_config_t* config){
+drive_t* drive_create(const drive_config_t* config){
 	LOG("Creating drive '%s' as '%s/%s'...",config->name,_drive_type_names[config->type],config->model_number);
-	drive2_t* out=omm_alloc(&_drive_allocator);
+	drive_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
 	out->flags=config->flags;

@@ -8,7 +8,6 @@
 #include <kernel/mp/thread.h>
 #include <kernel/mp/process.h>
 #include <kernel/types.h>
-#include <kernel/vfs/vfs.h>
 #include <kernel/vfs2/node.h>
 #define KERNEL_LOG_NAME "elf"
 

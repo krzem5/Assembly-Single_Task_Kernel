@@ -6,7 +6,6 @@
 #include <kernel/lock/lock.h>
 #include <kernel/partition/_partition_types.h>
 #include <kernel/types.h>
-#include <kernel/vfs/allocator.h>
 
 
 
@@ -25,7 +24,7 @@
 
 #define PARTITION_DECLARE_TYPE(name,load_code) \
 	partition_type_t PARTITION_TYPE_##name; \
-	static _Bool _partition_load_callback_##name(drive2_t* drive){load_code;} \
+	static _Bool _partition_load_callback_##name(drive_t* drive){load_code;} \
 	static const partition_descriptor_t _partition_descriptor_##name={ \
 		#name, \
 		&(PARTITION_TYPE_##name), \
@@ -38,19 +37,19 @@
 typedef struct _PARTITION_DESCRIPTOR{
 	const char* name;
 	partition_type_t* var;
-	_Bool (*load_callback)(drive2_t*);
+	_Bool (*load_callback)(drive_t*);
 } partition_descriptor_t;
 
 
 
-typedef struct _PARTITION2{
+typedef struct _PARTITION{
 	handle_t handle;
-	drive2_t* drive;
+	drive_t* drive;
 	char name[32];
 	u64 start_lba;
 	u64 end_lba;
-	filesystem2_t* fs;
-} partition2_t;
+	filesystem_t* fs;
+} partition_t;
 
 
 
@@ -62,11 +61,11 @@ void partition_init(void);
 
 
 
-void partition_load_from_drive(drive2_t* drive);
+void partition_load_from_drive(drive_t* drive);
 
 
 
-partition2_t* partition_create(drive2_t* drive,const char* name,u64 start_lba,u64 end_lba);
+partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 end_lba);
 
 
 
