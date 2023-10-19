@@ -57,20 +57,6 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 
 
 
-void kernel_load(void){
-	for (partition_t* partition=partition_data;partition;partition=partition->next){
-		if (partition->partition_config.type!=DRIVE_TYPE_ATAPI){
-			continue;
-		}
-		partition->flags|=PARTITION_FLAG_BOOT;
-		partition_boot=partition;
-		((drive_t*)(partition->drive))->flags|=DRIVE_FLAG_BOOT;
-		break;
-	}
-}
-
-
-
 const char* kernel_lookup_symbol(u64 address,u64* offset){
 	if (address<kernel_section_kernel_start()||address>=kernel_section_kernel_end()){
 		if (offset){

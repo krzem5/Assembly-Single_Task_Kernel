@@ -5,20 +5,19 @@ cpu_get_count(void) -> u32
 drive_format(u32 index,const void* boot,u32 boot_length) -> _Bool
 drive_get(u32 index,void* buffer,u32 size) -> _Bool
 drive_stats(u32 index,void* buffer,u32 size) -> _Bool
-elf_load(const char* path,u32 length) -> _Bool
-fd2_close(u64 fd) -> s64
-fd2_dup(u64 fd,u32 flags) -> s64
-fd2_iter_get(u64 iterator,char* buffer,u32 size) -> s64
-fd2_iter_next(u64 iterator) -> s64
-fd2_iter_start(u64 fd) -> s64
-fd2_iter_stop(u64 iterator) -> s64
-fd2_open(u64 fd,const char* path,u32 length,u32 flags) -> s64
-fd2_path(u64 fd,char* buffer,u32 size) -> s64
-fd2_read(u64 fd,void* buffer,u32 size) -> s64
-fd2_resize(u64 fd,u64 size,u32 flags) -> s64
-fd2_seek(u64 fd,u64 offset,u32 type) -> s64
-fd2_stat(u64 fd,void* ptr,u32 size) -> s64
-fd2_write(u64 fd,const void* buffer,u32 size) -> s64
+fd_close(u64 fd) -> s64
+fd_dup(u64 fd,u32 flags) -> s64
+fd_iter_get(u64 iterator,char* buffer,u32 size) -> s64
+fd_iter_next(u64 iterator) -> s64
+fd_iter_start(u64 fd) -> s64
+fd_iter_stop(u64 iterator) -> s64
+fd_open(u64 fd,const char* path,u32 length,u32 flags) -> s64
+fd_path(u64 fd,char* buffer,u32 size) -> s64
+fd_read(u64 fd,void* buffer,u32 size) -> s64
+fd_resize(u64 fd,u64 size,u32 flags) -> s64
+fd_seek(u64 fd,u64 offset,u32 type) -> s64
+fd_stat(u64 fd,void* ptr,u32 size) -> s64
+fd_write(u64 fd,const void* buffer,u32 size) -> s64
 handle_get_type(u32 handle_type,void* buffer,u32 size) -> _Bool
 handle_get_type_count(void) -> u32
 memory_get_counter(u32 counter,void* buffer,u32 size) -> _Bool

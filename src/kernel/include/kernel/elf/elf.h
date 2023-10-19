@@ -4,11 +4,7 @@
 
 
 
-_Bool elf_load(const char* path);
-
-
-
-_Bool elf_load2(vfs2_node_t* node);
+_Bool elf_load(vfs2_node_t* node);
 
 
 

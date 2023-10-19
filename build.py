@@ -474,9 +474,6 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	object_files=runtime_object_files+_compile_user_files(program)
 	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-if (mode==MODE_COVERAGE):
-	os.remove("build/disk/kernel/shell.elf")
-	os.rename("build/disk/kernel/coverage.elf","build/disk/kernel/shell.elf")
 #####################################################################################################################################=
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
 	sys.exit(1)
@@ -503,7 +500,7 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition):
 	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
 	kfs2.format_partition(initramfs_fs)
-	with open("build/disk/kernel/boot.elf","rb") as rf:
+	with open(f"build/disk/kernel/{'coverage' if mode==MODE_COVERAGE else 'shell'}.elf","rb") as rf:
 		test_inode=kfs2.get_inode(initramfs_fs,"/boot/boot.elf")
 		kfs2.set_file_content(initramfs_fs,test_inode,rf.read())
 	initramfs_fs.close()

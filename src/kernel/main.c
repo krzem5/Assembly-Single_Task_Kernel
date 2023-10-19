@@ -34,16 +34,14 @@ static void _main_thread(void){
 	initramfs_load();
 	pci_enumerate();
 	partition_load();
-	kernel_load();
 	aml_bus_enumerate();
 	bios_get_system_data();
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	if (!elf_load2(vfs2_lookup(NULL,"/boot/boot.elf"))){
+	if (!elf_load(vfs2_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}
-	elf_load("/kernel/shell.elf");
 }
 
 
