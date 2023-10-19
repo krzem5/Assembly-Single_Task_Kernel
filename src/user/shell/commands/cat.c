@@ -1,6 +1,6 @@
 #include <command.h>
 #include <cwd.h>
-#include <user/fs.h>
+#include <user/fd.h>
 #include <user/io.h>
 #include <user/types.h>
 
@@ -15,14 +15,14 @@ void cat_main(int argc,const char*const* argv){
 		printf("cat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	int fd=fs_open(cwd_fd,argv[1],FS_FLAG_READ);
+	s64 fd=fd_open(cwd_fd,argv[1],FD_FLAG_READ);
 	if (fd<0){
 		printf("cat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;
 	}
 	char buffer[512];
 	while (1){
-		s64 length=fs_read(fd,buffer,512);
+		s64 length=fd_read(fd,buffer,512);
 		if (length<0){
 			printf("cat: unable to read from file '%s': error %d\n",argv[1],length);
 			goto _cleanup;
@@ -34,7 +34,7 @@ void cat_main(int argc,const char*const* argv){
 	}
 	putchar('\n');
 _cleanup:
-	fs_close(fd);
+	fd_close(fd);
 }
 
 

@@ -4,7 +4,9 @@
 
 
 
-s64 fd_open(u64 fd,const char* path,u32 length,u32 flags){
+s64 fd_open(u64 fd,const char* path,u32 flags){
+	u64 length=0;
+	for (;path[length];length++);
 	return _syscall_fd2_open(fd,path,length,flags);
 }
 

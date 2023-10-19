@@ -4,37 +4,37 @@
 
 
 
-#define FS2_ERROR_INVALID_FLAGS -1
-#define FS2_ERROR_INVALID_FD -2
-#define FS2_ERROR_INVALID_POINTER -3
-#define FS2_ERROR_OUT_OF_FDS -4
-#define FS2_ERROR_NOT_FOUND -5
-#define FS2_ERROR_UNSUPPORTED_OPERATION -6
-#define FS2_ERROR_NO_RELATIVE -7
-#define FS2_ERROR_NOT_EMPTY -8
-#define FS2_ERROR_DIFFERENT_FS -9
-#define FS2_ERROR_DIFFERENT_TYPE -10
-#define FS2_ERROR_NO_SPACE -11
+#define FD_ERROR_INVALID_FLAGS -1
+#define FD_ERROR_INVALID_FD -2
+#define FD_ERROR_INVALID_POINTER -3
+#define FD_ERROR_OUT_OF_FDS -4
+#define FD_ERROR_NOT_FOUND -5
+#define FD_ERROR_UNSUPPORTED_OPERATION -6
+#define FD_ERROR_NO_RELATIVE -7
+#define FD_ERROR_NOT_EMPTY -8
+#define FD_ERROR_DIFFERENT_FS -9
+#define FD_ERROR_DIFFERENT_TYPE -10
+#define FD_ERROR_NO_SPACE -11
 
-#define FS2_FLAG_READ 1
-#define FS2_FLAG_WRITE 2
-#define FS2_FLAG_APPEND 4
-#define FS2_FLAG_CREATE 8
-#define FS2_FLAG_DIRECTORY 16
-#define FS2_FLAG_DELETE_AT_EXIT 32
+#define FD_FLAG_READ 1
+#define FD_FLAG_WRITE 2
+#define FD_FLAG_APPEND 4
+#define FD_FLAG_CREATE 8
+#define FD_FLAG_DIRECTORY 16
+#define FD_FLAG_DELETE_AT_EXIT 32
 
-#define FS2_SEEK_SET 0
-#define FS2_SEEK_ADD 1
-#define FS2_SEEK_END 2
+#define FD_SEEK_SET 0
+#define FD_SEEK_ADD 1
+#define FD_SEEK_END 2
 
-#define FS2_STAT_TYPE_FILE 1
-#define FS2_STAT_TYPE_DIRECTORY 2
+#define FD_STAT_TYPE_FILE 1
+#define FD_STAT_TYPE_DIRECTORY 2
 
 
 
 typedef struct _FD_STAT{
 	u8 type;
-	u8 fs2_index;
+	u8 fd_index;
 	u8 name_length;
 	char name[64];
 	u64 size;
@@ -42,7 +42,7 @@ typedef struct _FD_STAT{
 
 
 
-s64 fd_open(u64 fd,const char* path,u32 length,u32 flags);
+s64 fd_open(u64 fd,const char* path,u32 flags);
 
 
 

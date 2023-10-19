@@ -1,6 +1,6 @@
 #include <command.h>
 #include <cwd.h>
-#include <user/fs.h>
+#include <user/fd.h>
 #include <user/io.h>
 #include <user/types.h>
 
@@ -62,7 +62,7 @@ void sz_main(int argc,const char*const* argv){
 		printf("sz: unrecognized option '%s'\n",argv[3]);
 		return;
 	}
-	int fd=fs_open(cwd_fd,argv[1],0);
+	s64 fd=fd_open(cwd_fd,argv[1],0);
 	if (fd<0){
 		printf("sz: unable to open file '%s': error %d\n",argv[1],fd);
 		return;
@@ -73,15 +73,15 @@ void sz_main(int argc,const char*const* argv){
 			printf("sz: '%s' is not a valid size\n",argv[2]);
 			goto _cleanup;
 		}
-		int error=fs_resize(fd,size);
+		int error=fd_resize(fd,size,0);
 		if (error<0){
 			printf("sz: unable to resize '%s' to '%s': error %d\n",argv[1],argv[2],error);
 			goto _cleanup;
 		}
 	}
-	printf("%lu\n",fs_seek(fd,0,FS_SEEK_END));
+	printf("%lu\n",fd_seek(fd,0,FD_SEEK_END));
 _cleanup:
-	fs_close(fd);
+	fd_close(fd);
 }
 
 

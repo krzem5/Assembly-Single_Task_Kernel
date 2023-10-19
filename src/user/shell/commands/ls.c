@@ -2,7 +2,7 @@
 #include <cwd.h>
 #include <string.h>
 #include <user/drive.h>
-#include <user/fs.h>
+#include <user/fd.h>
 #include <user/io.h>
 #include <user/partition.h>
 #include <user/types.h>
@@ -30,23 +30,6 @@ static const char* partition_type_names[]={
 	[PARTITION_TYPE_ISO9660]="ISO 9660",
 	[PARTITION_TYPE_KFS]="KFS"
 };
-
-
-
-static void _list_files(int fd){
-	int child=fs_get_relative(fd,FS_RELATIVE_FIRST_CHILD,0);
-	fs_stat_t stat;
-	while (child>=0){
-		if (fs_stat(child,&stat)<0){
-			fs_close(child);
-			break;
-		}
-		printf("\x1b[1m%s\x1b[0m:\t%v\t%s\n",stat.name,stat.size,(stat.type==FS_STAT_TYPE_FILE?"file":"directory"));
-		int next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
-		fs_close(child);
-		child=next_child;
-	}
-}
 
 
 
@@ -85,18 +68,18 @@ void ls_main(int argc,const char*const* argv){
 			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,partition_type_names[partition.type],((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
 		}
 	}
-	else if (!directory){
-		_list_files(cwd_fd);
-	}
-	else{
-		int fd=fs_open(cwd_fd,directory,0);
-		if (fd<0){
-			printf("ls: unable to open file '%s': error %d\n",directory,fd);
-			return;
-		}
-		_list_files(fd);
-		fs_close(fd);
-	}
+	// else if (!directory){
+	// 	_list_files(cwd_fd);
+	// }
+	// else{
+	// 	int fd=fs_open(cwd_fd,directory,0);
+	// 	if (fd<0){
+	// 		printf("ls: unable to open file '%s': error %d\n",directory,fd);
+	// 		return;
+	// 	}
+	// 	_list_files(fd);
+	// 	fs_close(fd);
+	// }
 }
 
 

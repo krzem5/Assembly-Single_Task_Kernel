@@ -6,7 +6,7 @@
 
 extern char cwd[];
 extern u32 cwd_length;
-extern int cwd_fd;
+extern s64 cwd_fd;
 
 
 

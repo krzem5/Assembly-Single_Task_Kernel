@@ -43,7 +43,7 @@ static void _main_thread(void){
 	if (!elf_load2(vfs2_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}
-	elf_load("/kernel/loader.elf");
+	elf_load("/kernel/shell.elf");
 }
 
 

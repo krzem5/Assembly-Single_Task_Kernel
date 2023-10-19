@@ -23,9 +23,6 @@ static omm_allocator_t _fd2_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd2",sizeof(fd2
 
 static HANDLE_DECLARE_TYPE(FD2,{
 	fd2_t* data=handle->object;
-	if (data->flags&FD2_FLAG_DELETE_AT_EXIT){
-		panic("FD2_FLAG_DELETE_AT_EXIT");
-	}
 	omm_dealloc(&_fd2_allocator,data);
 });
 
@@ -44,8 +41,7 @@ static handle_id_t _node_to_fd(vfs2_node_t* node,u32 flags){
 
 
 s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
-	panic("fd2_open");
-	if (flags&(~(FD2_FLAG_READ|FD2_FLAG_WRITE|FD2_FLAG_APPEND|FD2_FLAG_CREATE|FD2_FLAG_DIRECTORY|FD2_FLAG_DELETE_AT_EXIT))){
+	if (flags&(~(FD2_FLAG_READ|FD2_FLAG_WRITE|FD2_FLAG_APPEND|FD2_FLAG_CREATE|FD2_FLAG_DIRECTORY))){
 		return FD2_ERROR_INVALID_FLAGS;
 	}
 	char buffer[4096];
@@ -62,9 +58,6 @@ s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
 			return FD2_ERROR_INVALID_FD;
 		}
 		root_node=((fd2_t*)(root_handle->object))->node;
-		if (!root_node){
-			return FD2_ERROR_NOT_FOUND;
-		}
 	}
 	if (flags&FD2_FLAG_CREATE){
 		panic("FD2_FLAG_CREATE");
@@ -82,7 +75,6 @@ s64 fd2_open(handle_id_t root,const char* path,u32 length,u32 flags){
 
 
 s64 fd2_close(handle_id_t fd){
-	panic("fd2_close");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -95,7 +87,6 @@ s64 fd2_close(handle_id_t fd){
 
 
 s64 fd2_read(handle_id_t fd,void* buffer,u64 count){
-	panic("fd2_read");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -116,7 +107,6 @@ s64 fd2_read(handle_id_t fd,void* buffer,u64 count){
 
 
 s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
-	panic("fd2_write");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
@@ -125,10 +115,6 @@ s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
 	if (!(data->flags&FD2_FLAG_WRITE)){
 		handle_release(fd2_handle);
 		return FD2_ERROR_UNSUPPORTED_OPERATION;
-	}
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
 	}
 	lock_acquire_exclusive(&(data->lock));
 	count=vfs2_node_write(data->node,data->offset,buffer,count);
@@ -141,16 +127,11 @@ s64 fd2_write(handle_id_t fd,const void* buffer,u64 count){
 
 
 s64 fd2_seek(handle_id_t fd,u64 offset,u32 type){
-	panic("fd2_seek");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
 	}
 	fd2_t* data=fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
 	lock_acquire_exclusive(&(data->lock));
 	switch (type){
 		case FD2_SEEK_SET:
@@ -176,16 +157,11 @@ s64 fd2_seek(handle_id_t fd,u64 offset,u32 type){
 
 
 s64 fd2_resize(handle_id_t fd,u64 size,u32 flags){
-	panic("fd2_resize");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
 	}
 	fd2_t* data=fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
 	lock_acquire_exclusive(&(data->lock));
 	s64 out=(vfs2_node_resize(data->node,size,0)?0:FD2_ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
@@ -199,7 +175,6 @@ s64 fd2_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 s64 fd2_stat(handle_id_t fd,fd2_stat_t* out){
-	panic("fd2_stat");
 	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
 	if (!fd2_handle){
 		return FD2_ERROR_INVALID_FD;
