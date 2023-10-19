@@ -37,12 +37,6 @@ static const char* _drive_type_names[]={
 
 
 
-static u32 KERNEL_BSS _drive_count;
-
-drive_t* KERNEL_BSS drive_data;
-
-
-
 drive2_t* drive_create(const drive_config_t* config){
 	LOG("Creating drive '%s' as '%s/%s'...",config->name,_drive_type_names[config->type],config->model_number);
 	drive2_t* out=omm_alloc(&_drive_allocator);
@@ -64,25 +58,4 @@ drive2_t* drive_create(const drive_config_t* config){
 	}
 	partition_load_from_drive(out);
 	return out;
-}
-
-
-
-void drive_add(const drive_t* drive){
-	drive_t* new_drive=kmm_alloc(sizeof(drive_t));
-	*new_drive=*drive;
-	new_drive->next=drive_data;
-	drive_data=new_drive;
-	new_drive->flags=0;
-	new_drive->index=_drive_count;
-	new_drive->block_size_shift=__builtin_ctzll(drive->block_size);
-	new_drive->stats=kmm_alloc(sizeof(drive_stats_t));
-	new_drive->stats->root_block_count=0;
-	new_drive->stats->batc_block_count=0;
-	new_drive->stats->nda3_block_count=0;
-	new_drive->stats->nda2_block_count=0;
-	new_drive->stats->nda1_block_count=0;
-	new_drive->stats->nfda_block_count=0;
-	new_drive->stats->data_block_count=0;
-	_drive_count++;
 }

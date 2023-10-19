@@ -189,14 +189,6 @@ static void _ata_init(ata_device_t* device,u8 index){
 		WARN("ATA/ATAPI drive does not support LBA; ignoring drive");
 		goto _error;
 	}
-	drive_t drive={
-		.type=(device->is_atapi?DRIVE_TYPE_ATAPI:DRIVE_TYPE_ATA),
-		.read_write=_ata_read_write,
-		.extra_data=device
-	};
-	format_string(drive.name,16,"ata%u",index);
-	bswap16_trunc_spaces(buffer+10,10,drive.serial_number);
-	bswap16_trunc_spaces(buffer+27,20,drive.model_number);
 	drive_config_t config={
 		.type=(device->is_atapi?DRIVE_TYPE_ATAPI:DRIVE_TYPE_ATA),
 		.read_write=_ata_read_write,
@@ -226,9 +218,6 @@ static void _ata_init(ata_device_t* device,u8 index){
 	};
 	u8 output_buffer[8];
 	_send_atapi_command(device,(const u16*)atapi_command,8,(u16*)output_buffer);
-	drive.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1;
-	drive.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
-	drive_add(&drive);
 	config.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1;
 	config.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
 	drive_create(&config);

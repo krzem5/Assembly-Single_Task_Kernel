@@ -33,7 +33,6 @@ static void _main_thread(void){
 	partition_init();
 	initramfs_load();
 	pci_enumerate();
-	partition_load();
 	aml_bus_enumerate();
 	bios_get_system_data();
 	network_layer2_init();

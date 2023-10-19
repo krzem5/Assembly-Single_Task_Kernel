@@ -57,22 +57,6 @@ _drive_found:
 		drive.block_size,
 		drive.block_count
 	);
-	drive_stats_t stats;
-	if (!drive_get_stats(i,&stats)){
-		printf("drive: unable to get drive stats\n");
-		return;
-	}
-	if (stats.root_block_count){
-		printf("KFS blocks:\n  ROOT: \x1b[1m%v\x1b[0m\n  BATC: \x1b[1m%v\x1b[0m\n  NDA3: \x1b[1m%v\x1b[0m\n  NDA2: \x1b[1m%v\x1b[0m\n  NDA1: \x1b[1m%v\x1b[0m\n  NFDA: \x1b[1m%v\x1b[0m\n  DATA: \x1b[1m%v\x1b[0m\n",
-			stats.root_block_count*drive.block_size,
-			stats.batc_block_count*drive.block_size,
-			stats.nda3_block_count*drive.block_size,
-			stats.nda2_block_count*drive.block_size,
-			stats.nda1_block_count*drive.block_size,
-			stats.nfda_block_count*drive.block_size,
-			stats.data_block_count*drive.block_size
-		);
-	}
 }
 
 
