@@ -58,11 +58,23 @@ vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_name_t* name);
 
 
 
+void vfs2_node_delete(vfs2_node_t* node);
+
+
+
 vfs2_node_t* vfs2_node_lookup(vfs2_node_t* node,const vfs2_name_t* name);
 
 
 
 u64 vfs2_node_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out);
+
+
+
+_Bool vfs2_node_link(vfs2_node_t* node,vfs2_node_t* parent);
+
+
+
+_Bool vfs2_node_unlink(vfs2_node_t* node);
 
 
 
@@ -75,6 +87,10 @@ s64 vfs2_node_write(vfs2_node_t* node,u64 offset,const void* buffer,u64 size);
 
 
 s64 vfs2_node_resize(vfs2_node_t* node,s64 offset,u32 flags);
+
+
+
+void vfs2_node_flush(vfs2_node_t* node);
 
 
 
