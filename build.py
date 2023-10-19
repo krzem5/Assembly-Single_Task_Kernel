@@ -474,9 +474,10 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	object_files=runtime_object_files+_compile_user_files(program)
 	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-#####################################################################################################################################
-with open("build/disk/kernel/startup.txt","w") as wf:
-	wf.write(("/kernel/coverage.elf\n" if mode==MODE_COVERAGE else "/kernel/shell.elf\n"))
+if (mode==MODE_COVERAGE):
+	os.remove("build/disk/kernel/shell.elf")
+	os.rename("build/disk/kernel/coverage.elf","build/disk/kernel/shell.elf")
+#####################################################################################################################################=
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################
