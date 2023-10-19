@@ -3,7 +3,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "kernel"
 
 
