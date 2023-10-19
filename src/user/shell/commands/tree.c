@@ -24,18 +24,13 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 	if (level>=MAX_LEVELS){
 		return;
 	}
-	s64 iter=fd_iter_start(fd);
-	printf("### %p\n",iter);
-	for (;iter>=0;){
+	for (s64 iter=fd_iter_start(fd);iter>=0;){
 		char name[256];
-		printf("~~~ %u\n",__LINE__);
 		if (fd_iter_get(iter,name,256)<=0){
 			iter=fd_iter_next(iter);
 			continue;
 		}
-		printf("~~~ %u\n",__LINE__);
 		s64 child=fd_open(fd,name,0);
-		printf("~~~ %u\n",__LINE__);
 		if (child<0){
 			iter=fd_iter_next(iter);
 			continue;

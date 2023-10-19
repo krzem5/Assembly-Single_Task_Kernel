@@ -355,15 +355,14 @@ static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
 		pointer+=entry->size;
-		if (!entry->name_length){
-			continue;
+		if (entry->name_length){
+			*out=vfs2_name_alloc(entry->name,entry->name_length);
+			_node_dealloc_chunk(&chunk);
+			return pointer;
 		}
-		LOG("%p, %s",pointer,entry->name);
-		*out=vfs2_name_alloc(entry->name,entry->name_length);
-		break;
 	}
 	_node_dealloc_chunk(&chunk);
-	return (pointer>=kfs2_node->kfs2_node.size?0:pointer);
+	return 0;
 }
 
 

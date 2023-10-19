@@ -220,13 +220,11 @@ s64 fd2_iter_start(handle_id_t fd){
 	lock_acquire_exclusive(&(data->lock));
 	vfs2_name_t* current_name;
 	u64 pointer=vfs2_node_iterate(data->node,0,&current_name);
-	LOG("~~~ %u",__LINE__);
 	if (!pointer){
 		lock_release_exclusive(&(data->lock));
 		handle_release(fd2_handle);
 		return -1;
 	}
-	LOG("~~~ %u",__LINE__);
 	fd2_iterator_t* out=omm_alloc(&_fd2_iterator_allocator);
 	handle_new(out,HANDLE_TYPE_FD2_ITERATOR,&(out->handle));
 	lock_init(&(out->lock));
@@ -235,7 +233,6 @@ s64 fd2_iter_start(handle_id_t fd){
 	out->current_name=current_name;
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd2_handle);
-	LOG("~~~ %u %p",__LINE__,out->handle.rb_node.key);
 	return out->handle.rb_node.key;
 }
 
