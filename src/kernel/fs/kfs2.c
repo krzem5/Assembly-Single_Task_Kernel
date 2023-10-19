@@ -336,6 +336,12 @@ _skip_entry:
 
 
 
+static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
+	panic("_kfs2_iterate");
+}
+
+
+
 static _Bool _kfs2_link(vfs2_node_t* node,vfs2_node_t* parent){
 	panic("_kfs2_link");
 }
@@ -407,6 +413,7 @@ static vfs2_functions_t _kfs2_functions={
 	_kfs2_create,
 	_kfs2_delete,
 	_kfs2_lookup,
+	_kfs2_iterate,
 	_kfs2_link,
 	_kfs2_unlink,
 	_kfs2_read,

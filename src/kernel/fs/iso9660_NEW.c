@@ -145,6 +145,12 @@ _skip_directory_entry:
 
 
 
+static u64 _iso9660_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
+	panic("_iso9660_iterate");
+}
+
+
+
 static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive2_t* drive=node->fs->partition->drive;
@@ -199,6 +205,7 @@ static vfs2_functions_t _iso9660_functions={
 	_iso9660_create,
 	_iso9660_delete,
 	_iso9660_lookup,
+	_iso9660_iterate,
 	NULL,
 	NULL,
 	_iso9660_read,

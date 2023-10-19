@@ -27,11 +27,6 @@
 #define FS2_SEEK_ADD 1
 #define FS2_SEEK_END 2
 
-#define FS2_RELATIVE_PARENT 0
-#define FS2_RELATIVE_PREV_SIBLING 1
-#define FS2_RELATIVE_NEXT_SIBLING 2
-#define FS2_RELATIVE_FIRST_CHILD 3
-
 #define FS2_STAT_TYPE_FILE 1
 #define FS2_STAT_TYPE_DIRECTORY 2
 
@@ -47,47 +42,43 @@ typedef struct _FS2_STAT{
 
 
 
-int fs2_open(int fd,const char* path,u8 flags);
+s64 fs2_open(u64 fd,const char* path,u8 flags);
 
 
 
-int fs2_close(int fd);
+s64 fs2_close(u64 fd);
 
 
 
-int fs2_delete(int fd);
+s64 fs2_delete(u64 fd);
 
 
 
-s64 fs2_read(int fd,void* buffer,u64 count);
+s64 fs2_read(u64 fd,void* buffer,u64 count);
 
 
 
-s64 fs2_write(int fd,const void* buffer,u64 count);
+s64 fs2_write(u64 fd,const void* buffer,u64 count);
 
 
 
-s64 fs2_seek(int fd,u64 offset,u8 type);
+s64 fs2_seek(u64 fd,u64 offset,u8 type);
 
 
 
-int fs2_resize(int fd,u64 size);
+s64 fs2_resize(u64 fd,u64 size);
 
 
 
-int fs2_absolute_path(int fd,char* buffer,u32 buffer_length);
+s64 fs2_absolute_path(u64 fd,char* buffer,u32 buffer_length);
 
 
 
-int fs2_stat(int fd,fs2_stat_t* stat);
+s64 fs2_stat(u64 fd,fs2_stat_t* stat);
 
 
 
-int fs2_get_relative(int fd,u8 relative,u8 flags);
-
-
-
-int fs2_move(int fd,int dst_fd);
+s64 fs2_move(u64 fd,u64 dst_fd);
 
 
 

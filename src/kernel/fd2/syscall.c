@@ -84,12 +84,6 @@ void syscall_fd2_stat(syscall_registers_t* regs){
 
 
 
-void syscall_fd2_get_relative(syscall_registers_t* regs){
-	regs->rax=fd2_get_relative(regs->rdi,regs->rsi,regs->rdx);
-}
-
-
-
 void syscall_fd2_move(syscall_registers_t* regs){
 	regs->rax=fd2_move(regs->rdi,regs->rsi);
 }

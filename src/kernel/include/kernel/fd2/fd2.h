@@ -29,11 +29,6 @@
 #define FD2_SEEK_ADD 1
 #define FD2_SEEK_END 2
 
-#define FD2_RELATIVE_PARENT 0
-#define FD2_RELATIVE_PREV_SIBLING 1
-#define FD2_RELATIVE_NEXT_SIBLING 2
-#define FD2_RELATIVE_FIRST_CHILD 3
-
 
 
 typedef struct _FD2{
@@ -89,10 +84,6 @@ s64 fd2_absolute_path(handle_id_t fd,char* buffer,u32 buffer_length);
 
 
 s64 fd2_stat(handle_id_t fd,fd2_stat_t* out);
-
-
-
-s64 fd2_get_relative(handle_id_t fd,u8 relative,u8 flags);
 
 
 

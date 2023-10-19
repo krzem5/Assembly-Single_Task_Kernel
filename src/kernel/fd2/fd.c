@@ -9,7 +9,7 @@
 #include <kernel/util/util.h>
 #include <kernel/vfs2/node.h>
 #include <kernel/vfs2/vfs.h>
-#define KERNEL_LOG_NAME "fd"
+#define KERNEL_LOG_NAME "fd2"
 
 
 
@@ -249,31 +249,6 @@ s64 fd2_stat(handle_id_t fd,fd2_stat_t* out){
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd2_handle);
 	return 0;
-}
-
-
-
-s64 fd2_get_relative(handle_id_t fd,u8 relative,u8 flags){
-	if (flags&(~(FD2_FLAG_READ|FD2_FLAG_WRITE|FD2_FLAG_APPEND|FD2_FLAG_DELETE_AT_EXIT))){
-		return FD2_ERROR_INVALID_FLAGS;
-	}
-	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
-	if (!fd2_handle){
-		return FD2_ERROR_INVALID_FD;
-	}
-	fd2_t* data=fd2_handle->object;
-	if (!data->node){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NOT_FOUND;
-	}
-	vfs2_node_t* other=NULL/*vfs_get_relative(data->node,relative)*/;
-	panic("fd2_get_relative");
-	if (!other){
-		handle_release(fd2_handle);
-		return FD2_ERROR_NO_RELATIVE;
-	}
-	handle_release(fd2_handle);
-	return _node_to_fd(other,flags);
 }
 
 

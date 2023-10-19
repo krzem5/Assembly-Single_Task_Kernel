@@ -23,6 +23,7 @@ typedef struct _VFS2_FUNCTIONS{
 	struct _VFS2_NODE* (*create)(void);
 	void (*delete)(struct _VFS2_NODE*);
 	struct _VFS2_NODE* (*lookup)(struct _VFS2_NODE*,const vfs2_name_t*);
+	u64 (*iterate)(struct _VFS2_NODE*,u64,vfs2_name_t**);
 	_Bool (*link)(struct _VFS2_NODE*,struct _VFS2_NODE*);
 	_Bool (*unlink)(struct _VFS2_NODE*);
 	s64 (*read)(struct _VFS2_NODE*,u64,void*,u64);
@@ -58,6 +59,10 @@ vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_name_t* name);
 
 
 vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_name_t* name);
+
+
+
+u64 vfs2_node_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out);
 
 
 

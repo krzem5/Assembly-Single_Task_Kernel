@@ -9,7 +9,6 @@ elf_load(const char* path,u32 length) -> _Bool
 fd2_absolute_path(s32 fd,char* buffer,u32 buffer_length) -> s32
 fd2_close(s32 fd) -> s32
 fd2_delete(s32 fd) -> s32
-fd2_get_relative(s32 fd,u32 relative,u32 flags) -> s32
 fd2_move(s32 fd,u32 dst_fd) -> s32
 fd2_open(s32 fd,const char* path,u32 length,u32 flags) -> s32
 fd2_read(s32 fd,void* buffer,u32 size) -> s32
