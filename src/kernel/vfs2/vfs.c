@@ -44,7 +44,7 @@ vfs2_node_t* vfs2_lookup(vfs2_node_t* root,const char* path){
 			}
 		}
 		vfs2_name_t* name=vfs2_name_alloc(path,i);
-		root=vfs2_node_get_child(root,name);
+		root=vfs2_node_lookup(root,name);
 		vfs2_name_dealloc(name);
 		path+=i;
 	}

@@ -28,7 +28,7 @@ vfs2_node_t* vfs2_node_create(struct _FILESYSTEM2* fs,const vfs2_name_t* name){
 
 
 
-vfs2_node_t* vfs2_node_get_child(vfs2_node_t* node,const vfs2_name_t* name){
+vfs2_node_t* vfs2_node_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 	vfs2_node_t* out=node->relatives.child;
 	for (;out;out=out->relatives.next_sibling){
 		if (out->name->length!=name->length||out->name->hash!=name->hash){
