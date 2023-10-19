@@ -300,7 +300,7 @@ static void _kfs2_delete(vfs2_node_t* node){
 
 static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
-	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size){
+	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return NULL;
 	}
 	kfs2_data_chunk_t chunk={
@@ -337,7 +337,33 @@ _skip_entry:
 
 
 static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
-	panic("_kfs2_iterate");
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if (kfs2_node->kfs2_node._inode==0xffffffff||pointer>=kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
+		return 0;
+	}
+	kfs2_data_chunk_t chunk={
+		0,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		0
+	};
+	while (pointer<kfs2_node->kfs2_node.size){
+		if (pointer-chunk.offset>=chunk.length){
+			_node_get_chunk_at_offset(kfs2_node,pointer,&chunk);
+		}
+		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
+		pointer+=entry->size;
+		if (!entry->name_length){
+			continue;
+		}
+		LOG("%p, %s",pointer,entry->name);
+		*out=vfs2_name_alloc(entry->name,entry->name_length);
+		break;
+	}
+	_node_dealloc_chunk(&chunk);
+	return (pointer>=kfs2_node->kfs2_node.size?0:pointer);
 }
 
 
@@ -398,6 +424,15 @@ static s64 _kfs2_write(vfs2_node_t* node,u64 offset,const void* buffer,u64 size)
 
 
 static s64 _kfs2_resize(vfs2_node_t* node,s64 size,u32 flags){
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if (kfs2_node->kfs2_node._inode==0xffffffff){
+		return 0;
+	}
+	if (flags&VFS2_NODE_FLAG_RESIZE_RELATIVE){
+		if (!size){
+			return kfs2_node->kfs2_node.size;
+		}
+	}
 	panic("_kfs2_resize");
 }
 

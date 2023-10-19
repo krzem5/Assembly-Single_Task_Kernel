@@ -24,38 +24,50 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 	if (level>=MAX_LEVELS){
 		return;
 	}
-	// s64 child=fs_get_relative(fd,FS_RELATIVE_FIRST_CHILD,0);
-	// fs_stat_t stat;
-	// while (child>=0){
-	// 	if (fs_stat(child,&stat)<0){
-	// 		fs_close(child);
-	// 		break;
-	// 	}
-	// 	int next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
-	// 	_Bool has_next_sibling=(next_child>=0);
-	// 	fs_close(next_child);
-	// 	for (u32 i=0;i<level;i++){
-	// 		printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
-	// 	}
-	// 	printf("%s── %s\n",(has_next_sibling?"├":"└"),stat.name);
-	// 	if (stat.type==FS_STAT_TYPE_DIRECTORY){
-	// 		frame->directory_count++;
-	// 		u64 mask=1ull<<(level&63);
-	// 		if (has_next_sibling){
-	// 			frame->bitmap[level>>6]|=mask;
-	// 		}
-	// 		else{
-	// 			frame->bitmap[level>>6]&=~mask;
-	// 		}
-	// 		_list_files(child,level+1,frame);
-	// 	}
-	// 	else{
-	// 		frame->file_count++;
-	// 	}
-	// 	next_child=fs_get_relative(child,FS_RELATIVE_NEXT_SIBLING,0);
-	// 	fs_close(child);
-	// 	child=next_child;
-	// }
+	s64 iter=fd_iter_start(fd);
+	printf("### %p\n",iter);
+	for (;iter>=0;){
+		char name[256];
+		printf("~~~ %u\n",__LINE__);
+		if (fd_iter_get(iter,name,256)<=0){
+			iter=fd_iter_next(iter);
+			continue;
+		}
+		printf("~~~ %u\n",__LINE__);
+		s64 child=fd_open(fd,name,0);
+		printf("~~~ %u\n",__LINE__);
+		if (child<0){
+			iter=fd_iter_next(iter);
+			continue;
+		}
+		fd_stat_t stat;
+		if (fd_stat(child,&stat)<0){
+			fd_close(child);
+			iter=fd_iter_next(iter);
+			continue;
+		}
+		iter=fd_iter_next(iter);
+		_Bool has_next_sibling=(iter>=0);
+		for (u32 i=0;i<level;i++){
+			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
+		}
+		printf("%s── %s\n",(has_next_sibling?"├":"└"),stat.name);
+		if (stat.type==FD_STAT_TYPE_DIRECTORY){
+			frame->directory_count++;
+			u64 mask=1ull<<(level&63);
+			if (has_next_sibling){
+				frame->bitmap[level>>6]|=mask;
+			}
+			else{
+				frame->bitmap[level>>6]&=~mask;
+			}
+			_list_files(child,level+1,frame);
+		}
+		else{
+			frame->file_count++;
+		}
+		fd_close(child);
+	}
 }
 
 

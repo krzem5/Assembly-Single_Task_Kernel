@@ -57,11 +57,11 @@ typedef struct _ISO9660_VFS_NODE{
 
 
 
-PMM_DECLARE_COUNTER(OMM_ISO9660_NODE);
+PMM_DECLARE_COUNTER(OMM_ISO9660NODE);
 
 
 
-static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660_NODE);
+static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660NODE);
 
 
 

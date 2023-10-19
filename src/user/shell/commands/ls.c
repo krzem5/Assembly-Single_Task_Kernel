@@ -33,6 +33,28 @@ static const char* partition_type_names[]={
 
 
 
+static void _list_files(s64 fd){
+	for (s64 iter=fd_iter_start(fd);iter>=0;iter=fd_iter_next(iter)){
+		char name[256];
+		if (fd_iter_get(iter,name,256)<=0){
+			continue;
+		}
+		s64 child=fd_open(fd,name,0);
+		if (child<0){
+			continue;
+		}
+		fd_stat_t stat;
+		if (fd_stat(child,&stat)<0){
+			fd_close(child);
+			continue;
+		}
+		printf("\x1b[1m%s\x1b[0m:\t%v\t%s\n",name,stat.size,(stat.type==FD_STAT_TYPE_FILE?"file":"directory"));
+		fd_close(child);
+	}
+}
+
+
+
 void ls_main(int argc,const char*const* argv){
 	u8 type=LS_TYPE_FILES;
 	const char* directory=NULL;
@@ -68,18 +90,18 @@ void ls_main(int argc,const char*const* argv){
 			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,partition_type_names[partition.type],((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
 		}
 	}
-	// else if (!directory){
-	// 	_list_files(cwd_fd);
-	// }
-	// else{
-	// 	int fd=fs_open(cwd_fd,directory,0);
-	// 	if (fd<0){
-	// 		printf("ls: unable to open file '%s': error %d\n",directory,fd);
-	// 		return;
-	// 	}
-	// 	_list_files(fd);
-	// 	fs_close(fd);
-	// }
+	else if (!directory){
+		_list_files(cwd_fd);
+	}
+	else{
+		s64 fd=fd_open(cwd_fd,directory,0);
+		if (fd<0){
+			printf("ls: unable to open file '%s': error %d\n",directory,fd);
+			return;
+		}
+		_list_files(fd);
+		fd_close(fd);
+	}
 }
 
 

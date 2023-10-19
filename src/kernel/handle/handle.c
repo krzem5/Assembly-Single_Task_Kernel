@@ -56,7 +56,7 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	out->object=object;
 	handle_type_data_t* type_data=handle_type_data+type;
 	lock_acquire_exclusive(&(type_data->lock));
-	out->rb_node.key=HANDLE_ID_CREATE(type,type_data->active_count);
+	out->rb_node.key=HANDLE_ID_CREATE(type,type_data->count);
 	type_data->count++;
 	type_data->active_count++;
 	rb_tree_insert_node_increasing(&(type_data->handle_tree),&(out->rb_node));

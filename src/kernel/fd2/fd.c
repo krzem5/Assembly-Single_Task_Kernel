@@ -14,16 +14,22 @@
 
 
 PMM_DECLARE_COUNTER(OMM_FD2);
+PMM_DECLARE_COUNTER(OMM_FD2_ITER);
 
 
 
 static omm_allocator_t _fd2_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd2",sizeof(fd2_t),8,4,PMM_COUNTER_OMM_FD2);
+static omm_allocator_t _fd2_iterator_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd2_iterator",sizeof(fd2_iterator_t),8,4,PMM_COUNTER_OMM_FD2_ITER);
 
 
 
 static HANDLE_DECLARE_TYPE(FD2,{
 	fd2_t* data=handle->object;
 	omm_dealloc(&_fd2_allocator,data);
+});
+static HANDLE_DECLARE_TYPE(FD2_ITERATOR,{
+	fd2_iterator_t* data=handle->object;
+	omm_dealloc(&_fd2_iterator_allocator,data);
 });
 
 
@@ -206,19 +212,82 @@ s64 fd2_path(handle_id_t fd,char* buffer,u32 buffer_length){
 
 
 s64 fd2_iter_start(handle_id_t fd){
-	panic("fd2_iter_start");
+	handle_t* fd2_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD2);
+	if (!fd2_handle){
+		return FD2_ERROR_INVALID_FD;
+	}
+	fd2_t* data=fd2_handle->object;
+	lock_acquire_exclusive(&(data->lock));
+	vfs2_name_t* current_name;
+	u64 pointer=vfs2_node_iterate(data->node,0,&current_name);
+	LOG("~~~ %u",__LINE__);
+	if (!pointer){
+		lock_release_exclusive(&(data->lock));
+		handle_release(fd2_handle);
+		return -1;
+	}
+	LOG("~~~ %u",__LINE__);
+	fd2_iterator_t* out=omm_alloc(&_fd2_iterator_allocator);
+	handle_new(out,HANDLE_TYPE_FD2_ITERATOR,&(out->handle));
+	lock_init(&(out->lock));
+	out->node=data->node;
+	out->pointer=pointer;
+	out->current_name=current_name;
+	lock_release_exclusive(&(data->lock));
+	handle_release(fd2_handle);
+	LOG("~~~ %u %p",__LINE__,out->handle.rb_node.key);
+	return out->handle.rb_node.key;
 }
 
 
 
 s64 fd2_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
-	panic("fd2_iter_get");
+	handle_t* fd2_iterator_handle=handle_lookup_and_acquire(iterator,HANDLE_TYPE_FD2_ITERATOR);
+	if (!fd2_iterator_handle){
+		return FD2_ERROR_INVALID_FD;
+	}
+	fd2_iterator_t* data=fd2_iterator_handle->object;
+	lock_acquire_shared(&(data->lock));
+	if (data->current_name){
+		if (buffer_length>data->current_name->length+1){
+			buffer_length=data->current_name->length+1;
+		}
+		if (buffer_length){
+			memcpy(buffer,data->current_name->data,buffer_length-1);
+			buffer[buffer_length]=0;
+		}
+	}
+	else{
+		buffer_length=0;
+	}
+	lock_release_shared(&(data->lock));
+	handle_release(fd2_iterator_handle);
+	return buffer_length;
 }
 
 
 
 s64 fd2_iter_next(handle_id_t iterator){
-	panic("fd2_iter_next");
+	handle_t* fd2_iterator_handle=handle_lookup_and_acquire(iterator,HANDLE_TYPE_FD2_ITERATOR);
+	if (!fd2_iterator_handle){
+		return FD2_ERROR_INVALID_FD;
+	}
+	fd2_iterator_t* data=fd2_iterator_handle->object;
+	lock_acquire_exclusive(&(data->lock));
+	s64 out=-1;
+	if (data->current_name){
+		vfs2_name_dealloc(data->current_name);
+		data->pointer=vfs2_node_iterate(data->node,data->pointer,&(data->current_name));
+		if (!data->pointer){
+			handle_release(fd2_iterator_handle);
+		}
+		else{
+			out=fd2_iterator_handle->rb_node.key;
+		}
+	}
+	lock_release_exclusive(&(data->lock));
+	handle_release(fd2_iterator_handle);
+	return out;
 }
 
 

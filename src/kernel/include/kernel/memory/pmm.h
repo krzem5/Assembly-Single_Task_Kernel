@@ -23,7 +23,7 @@
 #define PMM_DECLARE_COUNTER(name) \
 	static u16 PMM_COUNTER_##name=0; \
 	static const pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
-		#name, \
+		#name"\x00", \
 		&(PMM_COUNTER_##name) \
 	}; \
 	static const pmm_counter_descriptor_t*const __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;

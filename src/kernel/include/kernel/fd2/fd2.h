@@ -2,6 +2,7 @@
 #define _KERNEL_FD2_FD2_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/types.h>
+#include <kernel/vfs2/name.h>
 #include <kernel/vfs2/node.h>
 
 
@@ -47,6 +48,16 @@ typedef struct _FD2_STAT{
 	char name[64];
 	u64 size;
 } fd2_stat_t;
+
+
+
+typedef struct _FD2_ITERATOR{
+	handle_t handle;
+	lock_t lock;
+	vfs2_node_t* node;
+	u64 pointer;
+	vfs2_name_t* current_name;
+} fd2_iterator_t;
 
 
 
