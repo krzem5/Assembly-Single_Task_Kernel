@@ -6,7 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs2/node.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "kfs2"
 
 
@@ -99,7 +99,7 @@ typedef struct _KFS2_FS_EXTRA_DATA{
 
 
 typedef struct _KFS2_VFS_NODE{
-	vfs2_node_t node;
+	vfs_node_t node;
 	kfs2_node_t kfs2_node;
 } kfs2_vfs_node_t;
 
@@ -174,7 +174,7 @@ static inline _Bool _verify_crc(const void* data,u32 length){
 
 
 
-static vfs2_node_t* _load_inode(filesystem_t* fs,const vfs2_name_t* name,u32 inode){
+static vfs_node_t* _load_inode(filesystem_t* fs,const vfs_name_t* name,u32 inode){
 	u8 buffer[4096];
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
@@ -186,13 +186,13 @@ static vfs2_node_t* _load_inode(filesystem_t* fs,const vfs2_name_t* name,u32 ino
 	if (!_verify_crc(node,sizeof(kfs2_node_t))){
 		return NULL;
 	}
-	kfs2_vfs_node_t* out=(kfs2_vfs_node_t*)vfs2_node_create(fs,name);
+	kfs2_vfs_node_t* out=(kfs2_vfs_node_t*)vfs_node_create(fs,name);
 	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
-		out->node.flags=(out->node.flags&(~VFS2_NODE_TYPE_MASK))|VFS2_NODE_TYPE_DIRECTORY;
+		out->node.flags=(out->node.flags&(~VFS_NODE_TYPE_MASK))|VFS_NODE_TYPE_DIRECTORY;
 	}
 	out->kfs2_node=*node;
 	out->kfs2_node._inode=inode;
-	return (vfs2_node_t*)out;
+	return (vfs_node_t*)out;
 }
 
 
@@ -284,21 +284,21 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 
-static vfs2_node_t* _kfs2_create(void){
+static vfs_node_t* _kfs2_create(void){
 	kfs2_vfs_node_t* out=omm_alloc(&_kfs2_vfs_node_allocator);
 	out->kfs2_node._inode=0xffffffff;
-	return (vfs2_node_t*)out;
+	return (vfs_node_t*)out;
 }
 
 
 
-static void _kfs2_delete(vfs2_node_t* node){
+static void _kfs2_delete(vfs_node_t* node){
 	omm_dealloc(&_kfs2_vfs_node_allocator,node);
 }
 
 
 
-static vfs2_node_t* _kfs2_lookup(vfs2_node_t* node,const vfs2_name_t* name){
+static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const vfs_name_t* name){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return NULL;
@@ -336,7 +336,7 @@ _skip_entry:
 
 
 
-static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
+static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||pointer>=kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
@@ -356,7 +356,7 @@ static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
 		pointer+=entry->size;
 		if (entry->name_length){
-			*out=vfs2_name_alloc(entry->name,entry->name_length);
+			*out=vfs_name_alloc(entry->name,entry->name_length);
 			_node_dealloc_chunk(&chunk);
 			return pointer;
 		}
@@ -367,19 +367,19 @@ static u64 _kfs2_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
 
 
 
-static _Bool _kfs2_link(vfs2_node_t* node,vfs2_node_t* parent){
+static _Bool _kfs2_link(vfs_node_t* node,vfs_node_t* parent){
 	panic("_kfs2_link");
 }
 
 
 
-static _Bool _kfs2_unlink(vfs2_node_t* node){
+static _Bool _kfs2_unlink(vfs_node_t* node){
 	panic("_kfs2_unlink");
 }
 
 
 
-static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
+static s64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||offset>=kfs2_node->kfs2_node.size){
 		return 0;
@@ -416,18 +416,18 @@ static s64 _kfs2_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 
-static s64 _kfs2_write(vfs2_node_t* node,u64 offset,const void* buffer,u64 size){
+static s64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
 	panic("_kfs2_write");
 }
 
 
 
-static s64 _kfs2_resize(vfs2_node_t* node,s64 size,u32 flags){
+static s64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff){
 		return 0;
 	}
-	if (flags&VFS2_NODE_FLAG_RESIZE_RELATIVE){
+	if (flags&VFS_NODE_FLAG_RESIZE_RELATIVE){
 		if (!size){
 			return kfs2_node->kfs2_node.size;
 		}
@@ -437,13 +437,13 @@ static s64 _kfs2_resize(vfs2_node_t* node,s64 size,u32 flags){
 
 
 
-static void _kfs2_flush(vfs2_node_t* node){
+static void _kfs2_flush(vfs_node_t* node){
 	panic("_kfs2_flush");
 }
 
 
 
-static vfs2_functions_t _kfs2_functions={
+static vfs_functions_t _kfs2_functions={
 	_kfs2_create,
 	_kfs2_delete,
 	_kfs2_lookup,
@@ -485,10 +485,10 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
-	vfs2_name_t* root_name=vfs2_name_alloc("<root>",0);
+	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
 	out->root=_load_inode(out,root_name,0);
-	vfs2_name_dealloc(root_name);
-	out->root->flags|=VFS2_NODE_FLAG_PERMANENT;
+	vfs_name_dealloc(root_name);
+	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
 	return out;
 }
 

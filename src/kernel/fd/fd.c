@@ -7,8 +7,8 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs2/node.h>
-#include <kernel/vfs2/vfs.h>
+#include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "fd"
 
 
@@ -34,12 +34,12 @@ static HANDLE_DECLARE_TYPE(FD_ITERATOR,{
 
 
 
-static handle_id_t _node_to_fd(vfs2_node_t* node,u32 flags){
+static handle_id_t _node_to_fd(vfs_node_t* node,u32 flags){
 	fd_t* out=omm_alloc(&_fd_allocator);
 	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
 	lock_init(&(out->lock));
 	out->node=node;
-	out->offset=((flags&FD_FLAG_APPEND)?vfs2_node_resize(node,0,VFS2_NODE_FLAG_RESIZE_RELATIVE):0);
+	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
 	return out->handle.rb_node.key;
 }
@@ -57,7 +57,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	memcpy(buffer,path,length);
 	buffer[length]=0;
 	handle_t* root_handle=NULL;
-	vfs2_node_t* root_node=NULL;
+	vfs_node_t* root_node=NULL;
 	if (root){
 		root_handle=handle_lookup_and_acquire(root,HANDLE_TYPE_FD);
 		if (!root_handle){
@@ -68,7 +68,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&FD_FLAG_CREATE){
 		panic("FD_FLAG_CREATE");
 	}
-	vfs2_node_t* node=vfs2_lookup(root_node,buffer);
+	vfs_node_t* node=vfs_lookup(root_node,buffer);
 	if (root_handle){
 		handle_release(root_handle);
 	}
@@ -103,7 +103,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count){
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	lock_acquire_exclusive(&(data->lock));
-	count=vfs2_node_read(data->node,data->offset,buffer,count);
+	count=vfs_node_read(data->node,data->offset,buffer,count);
 	data->offset+=count;
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
@@ -123,7 +123,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count){
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	lock_acquire_exclusive(&(data->lock));
-	count=vfs2_node_write(data->node,data->offset,buffer,count);
+	count=vfs_node_write(data->node,data->offset,buffer,count);
 	data->offset+=count;
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
@@ -147,7 +147,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 			data->offset+=offset;
 			break;
 		case FD_SEEK_END:
-			data->offset=vfs2_node_resize(data->node,0,VFS2_NODE_FLAG_RESIZE_RELATIVE);
+			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 			break;
 		default:
 			lock_release_exclusive(&(data->lock));
@@ -169,7 +169,7 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 	}
 	fd_t* data=fd_handle->object;
 	lock_acquire_exclusive(&(data->lock));
-	s64 out=(vfs2_node_resize(data->node,size,0)?0:FD_ERROR_NO_SPACE);
+	s64 out=(vfs_node_resize(data->node,size,0)?0:FD_ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
@@ -187,11 +187,11 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	}
 	fd_t* data=fd_handle->object;
 	lock_acquire_exclusive(&(data->lock));
-	out->type=data->node->flags&VFS2_NODE_TYPE_MASK;
+	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->vfs_index=/*data->node->vfs_index*/0xaa;
 	out->name_length=data->node->name->length;
 	memcpy(out->name,data->node->name->data,64);
-	out->size=vfs2_node_resize(data->node,0,VFS2_NODE_FLAG_RESIZE_RELATIVE);
+	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return 0;
@@ -218,8 +218,8 @@ s64 fd_iter_start(handle_id_t fd){
 	}
 	fd_t* data=fd_handle->object;
 	lock_acquire_exclusive(&(data->lock));
-	vfs2_name_t* current_name;
-	u64 pointer=vfs2_node_iterate(data->node,0,&current_name);
+	vfs_name_t* current_name;
+	u64 pointer=vfs_node_iterate(data->node,0,&current_name);
 	if (!pointer){
 		lock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
@@ -273,8 +273,8 @@ s64 fd_iter_next(handle_id_t iterator){
 	lock_acquire_exclusive(&(data->lock));
 	s64 out=-1;
 	if (data->current_name){
-		vfs2_name_dealloc(data->current_name);
-		data->pointer=vfs2_node_iterate(data->node,data->pointer,&(data->current_name));
+		vfs_name_dealloc(data->current_name);
+		data->pointer=vfs_node_iterate(data->node,data->pointer,&(data->current_name));
 		if (!data->pointer){
 			handle_release(fd_iterator_handle);
 		}

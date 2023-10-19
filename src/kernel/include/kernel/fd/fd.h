@@ -2,8 +2,8 @@
 #define _KERNEL_FD_FD_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/types.h>
-#include <kernel/vfs2/name.h>
-#include <kernel/vfs2/node.h>
+#include <kernel/vfs/name.h>
+#include <kernel/vfs/node.h>
 
 
 
@@ -34,7 +34,7 @@
 typedef struct _FD{
 	handle_t handle;
 	lock_t lock;
-	vfs2_node_t* node;
+	vfs_node_t* node;
 	u64 offset;
 	u8 flags;
 } fd_t;
@@ -54,9 +54,9 @@ typedef struct _FD_STAT{
 typedef struct _FD_ITERATOR{
 	handle_t handle;
 	lock_t lock;
-	vfs2_node_t* node;
+	vfs_node_t* node;
 	u64 pointer;
-	vfs2_name_t* current_name;
+	vfs_name_t* current_name;
 } fd_iterator_t;
 
 

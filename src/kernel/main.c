@@ -23,7 +23,7 @@
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs2/vfs.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "main"
 
 
@@ -38,7 +38,7 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	if (!elf_load(vfs2_lookup(NULL,"/boot/boot.elf"))){
+	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}
 }

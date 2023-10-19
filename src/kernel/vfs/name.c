@@ -2,26 +2,26 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs2/name.h>
+#include <kernel/vfs/name.h>
 
 
 
 #define FNV_OFFSET_BASIS 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
-#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs2_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs2_name["#size"]",sizeof(vfs2_name_t)+size,8,4,PMM_COUNTER_OMM_VFS2_NAME);
+#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs_name["#size"]",sizeof(vfs_name_t)+size,8,4,PMM_COUNTER_OMM_vfs_NAME);
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
-		out=omm_alloc(&_vfs2_name_allocator##size); \
+		out=omm_alloc(&_vfs_name_allocator##size); \
 	}
 #define USE_ALLOCATOR_DEALLOC(size) \
 	if (name->length<(size)){ \
-		omm_dealloc(&_vfs2_name_allocator##size,name); \
+		omm_dealloc(&_vfs_name_allocator##size,name); \
 	}
 
 
 
-PMM_DECLARE_COUNTER(OMM_VFS2_NAME);
+PMM_DECLARE_COUNTER(OMM_vfs_NAME);
 
 
 
@@ -38,13 +38,13 @@ DECLARE_ALLOCATOR(256);
 
 
 
-vfs2_name_t* vfs2_name_alloc(const char* name,u32 length){
+vfs_name_t* vfs_name_alloc(const char* name,u32 length){
 	if (!length){
 		while (name[length]){
 			length++;
 		}
 	}
-	vfs2_name_t* out;
+	vfs_name_t* out;
 	USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
@@ -56,7 +56,7 @@ vfs2_name_t* vfs2_name_alloc(const char* name,u32 length){
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
 	else{
-		panic("vfs2_name_alloc: name too long");
+		panic("vfs_name_alloc: name too long");
 	}
 	out->length=length;
 	out->hash=FNV_OFFSET_BASIS;
@@ -70,7 +70,7 @@ vfs2_name_t* vfs2_name_alloc(const char* name,u32 length){
 
 
 
-void vfs2_name_dealloc(vfs2_name_t* name){
+void vfs_name_dealloc(vfs_name_t* name){
 	USE_ALLOCATOR_DEALLOC(8)
 	else USE_ALLOCATOR_DEALLOC(16)
 	else USE_ALLOCATOR_DEALLOC(24)
@@ -82,15 +82,15 @@ void vfs2_name_dealloc(vfs2_name_t* name){
 	else USE_ALLOCATOR_DEALLOC(192)
 	else USE_ALLOCATOR_DEALLOC(256)
 	else{
-		panic("vfs2_name_dealloc: name too long");
+		panic("vfs_name_dealloc: name too long");
 	}
 }
 
 
 
-vfs2_name_t* vfs2_name_duplicate(const vfs2_name_t* name){
+vfs_name_t* vfs_name_duplicate(const vfs_name_t* name){
 	u32 length=name->length;
-	vfs2_name_t* out;
+	vfs_name_t* out;
 	USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
@@ -102,8 +102,8 @@ vfs2_name_t* vfs2_name_duplicate(const vfs2_name_t* name){
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
 	else{
-		panic("vfs2_name_alloc: name too long");
+		panic("vfs_name_alloc: name too long");
 	}
-	memcpy(out,name,sizeof(vfs2_name_t)+length+1);
+	memcpy(out,name,sizeof(vfs_name_t)+length+1);
 	return out;
 }

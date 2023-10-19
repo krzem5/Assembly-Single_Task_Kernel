@@ -8,7 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/mp/process.h>
 #include <kernel/types.h>
-#include <kernel/vfs2/node.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "elf"
 
 
@@ -54,13 +54,13 @@ typedef struct _ELF_PROGRAM_HEADER{
 
 
 
-_Bool elf_load(vfs2_node_t* node){
+_Bool elf_load(vfs_node_t* node){
 	if (!node){
 		return 0;
 	}
 	process_t* process=process_new();
 	elf_header_t header;
-	if (vfs2_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
+	if (vfs_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		goto _error;
 	}
 	if (header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=2||header.e_machine!=0x3e||header.e_version!=1){
@@ -69,7 +69,7 @@ _Bool elf_load(vfs2_node_t* node){
 	u64 highest_address=0;
 	for (u16 i=0;i<header.e_phnum;i++){
 		elf_program_header_t program_header;
-		if (vfs2_node_read(node,header.e_phoff+i*sizeof(elf_program_header_t),&program_header,sizeof(elf_program_header_t))!=sizeof(elf_program_header_t)){
+		if (vfs_node_read(node,header.e_phoff+i*sizeof(elf_program_header_t),&program_header,sizeof(elf_program_header_t))!=sizeof(elf_program_header_t)){
 			goto _error;
 		}
 		if (program_header.p_type!=1){
@@ -93,7 +93,7 @@ _Bool elf_load(vfs2_node_t* node){
 		if (end_address>highest_address){
 			highest_address=end_address;
 		}
-		if (vfs2_node_read(node,program_header.p_offset,(void*)(pages+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),program_header.p_filesz)!=program_header.p_filesz){
+		if (vfs_node_read(node,program_header.p_offset,(void*)(pages+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),program_header.p_filesz)!=program_header.p_filesz){
 			goto _error;
 		}
 	}

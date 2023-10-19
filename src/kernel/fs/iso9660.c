@@ -5,7 +5,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs2/node.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "iso9660"
 
 
@@ -49,7 +49,7 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 typedef struct _ISO9660_VFS_NODE{
-	vfs2_node_t node;
+	vfs_node_t node;
 	u64 current_offset;
 	u32 data_offset;
 	u32 data_length;
@@ -69,23 +69,23 @@ extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
 
 
 
-static vfs2_node_t* _iso9660_create(void){
+static vfs_node_t* _iso9660_create(void){
 	iso9660_vfs_node_t* out=omm_alloc(&_iso9660_vfs_node_allocator);
 	out->current_offset=0xffffffffffffffffull;
 	out->data_offset=0;
 	out->data_length=0;
-	return (vfs2_node_t*)out;
+	return (vfs_node_t*)out;
 }
 
 
 
-static void _iso9660_delete(vfs2_node_t* node){
+static void _iso9660_delete(vfs_node_t* node){
 	omm_dealloc(&_iso9660_vfs_node_allocator,node);
 }
 
 
 
-static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_name_t* name){
+static vfs_node_t* _iso9660_lookup(vfs_node_t* node,const vfs_name_t* name){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	u32 data_offset=iso9660_node->data_offset;
@@ -129,8 +129,8 @@ static vfs2_node_t* _iso9660_lookup(vfs2_node_t* node,const vfs2_name_t* name){
 				goto _skip_directory_entry;
 			}
 		}
-		vfs2_node_t* out=vfs2_node_create(node->fs,name);
-		out->flags|=((directory->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?VFS2_NODE_TYPE_DIRECTORY:VFS2_NODE_TYPE_FILE);
+		vfs_node_t* out=vfs_node_create(node->fs,name);
+		out->flags|=((directory->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 		((iso9660_vfs_node_t*)out)->current_offset=(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length;
 		((iso9660_vfs_node_t*)out)->data_offset=directory->lba;
 		((iso9660_vfs_node_t*)out)->data_length=directory->data_length;
@@ -145,13 +145,13 @@ _skip_directory_entry:
 
 
 
-static u64 _iso9660_iterate(vfs2_node_t* node,u64 pointer,vfs2_name_t** out){
+static u64 _iso9660_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
 	panic("_iso9660_iterate");
 }
 
 
 
-static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
+static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	if (size+offset>iso9660_node->data_length){
@@ -192,8 +192,8 @@ static s64 _iso9660_read(vfs2_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 
-static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
-	if (!(flags&VFS2_NODE_FLAG_RESIZE_RELATIVE)||size){
+static s64 _iso9660_resize(vfs_node_t* node,s64 size,u32 flags){
+	if (!(flags&VFS_NODE_FLAG_RESIZE_RELATIVE)||size){
 		return -1;
 	}
 	return ((iso9660_vfs_node_t*)node)->data_length;
@@ -201,7 +201,7 @@ static s64 _iso9660_resize(vfs2_node_t* node,s64 size,u32 flags){
 
 
 
-static vfs2_functions_t _iso9660_functions={
+static vfs_functions_t _iso9660_functions={
 	_iso9660_create,
 	_iso9660_delete,
 	_iso9660_lookup,
@@ -253,10 +253,10 @@ _directory_lba_found:
 	filesystem_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
-	vfs2_name_t* root_name=vfs2_name_alloc("<root>",0);
-	out->root=vfs2_node_create(out,root_name);
-	vfs2_name_dealloc(root_name);
-	out->root->flags|=VFS2_NODE_FLAG_PERMANENT|VFS2_NODE_TYPE_DIRECTORY;
+	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
+	out->root=vfs_node_create(out,root_name);
+	vfs_name_dealloc(root_name);
+	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
 	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;
 	return out;
