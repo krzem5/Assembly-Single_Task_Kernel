@@ -46,8 +46,7 @@ void initramfs_load(void){
 		.serial_number="initramfs",
 		.model_number="initramfs",
 		.block_count=pmm_align_up_address(kernel_data.initramfs_size)>>PAGE_SIZE_SHIFT,
-		.block_size=PAGE_SIZE,
-		.read_write=_initramfs_read_write
+		.block_size=PAGE_SIZE
 	};
 	drive_create(&config);
 }

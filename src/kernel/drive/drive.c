@@ -40,7 +40,6 @@ drive_t* drive_create(const drive_config_t* config){
 	memcpy(out->model_number,config->model_number,DRIVE_MODEL_NUMBER_LENGTH);
 	out->block_count=config->block_count;
 	out->block_size=config->block_size;
-	out->read_write=config->read_write;
 	out->extra_data=config->extra_data;
 	INFO("Drive serial number: '%s', Drive size: %v (%lu * %lu)",out->serial_number,out->block_count*out->block_size,out->block_count,out->block_size);
 	if (out->block_size&(out->block_size-1)){
@@ -53,11 +52,11 @@ drive_t* drive_create(const drive_config_t* config){
 
 
 u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
-	return drive->read_write(drive->extra_data,offset&DRIVE_OFFSET_MASK,buffer,size);
+	return drive->type->io_callback(drive->extra_data,offset&DRIVE_OFFSET_MASK,buffer,size);
 }
 
 
 
 u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
-	return drive->read_write(drive->extra_data,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,size);
+	return drive->type->io_callback(drive->extra_data,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,size);
 }

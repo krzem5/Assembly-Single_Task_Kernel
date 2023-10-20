@@ -186,7 +186,6 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 		.type=&_ahci_drive_type,
 		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
 		.block_size=512,
-		.read_write=_ahci_read_write,
 		.extra_data=device
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%u",port_index);

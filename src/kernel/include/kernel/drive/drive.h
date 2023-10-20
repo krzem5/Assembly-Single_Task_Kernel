@@ -35,7 +35,6 @@ typedef struct _DRIVE_CONFIG{
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
 	u64 block_count;
 	u64 block_size;
-	drive_io_callback_t read_write;
 	void* extra_data;
 } drive_config_t;
 
@@ -53,7 +52,6 @@ typedef struct _DRIVE{
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
 	u64 block_count;
 	u64 block_size;
-	drive_io_callback_t read_write;
 	void* extra_data;
 } drive_t;
 

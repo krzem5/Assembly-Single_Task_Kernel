@@ -208,7 +208,6 @@ static void _ata_init(ata_device_t* device,u8 index){
 	}
 	drive_config_t config={
 		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
-		.read_write=_atapi_read_write,
 		.extra_data=device
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"ata%u",index);
