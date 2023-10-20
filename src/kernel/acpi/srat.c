@@ -8,6 +8,9 @@
 #define SRAT_ENTRY_TYPE_PROCESSOR 0
 #define SRAT_ENTRY_TYPE_MEMORY 1
 
+#define SRAT_ENTRY_PROCESSOR_FLAG_PRESENT 1
+#define SRAT_ENTRY_MEMORY_FLAG_PRESENT 1
+
 
 
 typedef struct __attribute__((packed)) _SRAT{
@@ -51,10 +54,10 @@ void acpi_srat_load(const void* srat_ptr){
 	for (u32 offset=0;offset<srat->length-sizeof(srat_t);){
 		const srat_entry_t* entry=(const srat_entry_t*)(srat->data+offset);
 		u32 proximity_domain=0;
-		if (entry->type==SRAT_ENTRY_TYPE_PROCESSOR&&(entry->processor.flags&1)){
+		if (entry->type==SRAT_ENTRY_TYPE_PROCESSOR&&(entry->processor.flags&SRAT_ENTRY_PROCESSOR_FLAG_PRESENT)){
 			proximity_domain=(entry->processor.proximity_domain_high[0]<<24)|(entry->processor.proximity_domain_high[1]<<16)|(entry->processor.proximity_domain_high[2]<<8)|entry->processor.proximity_domain_low;
 		}
-		else if (entry->type==SRAT_ENTRY_TYPE_MEMORY&&(entry->memory.flags&1)){
+		else if (entry->type==SRAT_ENTRY_TYPE_MEMORY&&(entry->memory.flags&SRAT_ENTRY_MEMORY_FLAG_PRESENT)){
 			proximity_domain=entry->memory.proximity_domain;
 		}
 		if (proximity_domain>max_proximity_domain){
@@ -65,11 +68,11 @@ void acpi_srat_load(const void* srat_ptr){
 	numa_init(max_proximity_domain+1);
 	for (u32 offset=0;offset<srat->length-sizeof(srat_t);){
 		const srat_entry_t* entry=(const srat_entry_t*)(srat->data+offset);
-		if (entry->type==SRAT_ENTRY_TYPE_PROCESSOR&&(entry->processor.flags&1)){
+		if (entry->type==SRAT_ENTRY_TYPE_PROCESSOR&&(entry->processor.flags&SRAT_ENTRY_PROCESSOR_FLAG_PRESENT)){
 			u32 proximity_domain=(entry->processor.proximity_domain_high[0]<<24)|(entry->processor.proximity_domain_high[1]<<16)|(entry->processor.proximity_domain_high[2]<<8)|entry->processor.proximity_domain_low;
 			numa_add_cpu(proximity_domain,entry->processor.apic_id,entry->processor.sapic_eid);
 		}
-		else if (entry->type==SRAT_ENTRY_TYPE_MEMORY&&(entry->memory.flags&1)){
+		else if (entry->type==SRAT_ENTRY_TYPE_MEMORY&&(entry->memory.flags&SRAT_ENTRY_MEMORY_FLAG_PRESENT)){
 			numa_add_memory_range(entry->memory.proximity_domain,entry->memory.base_address,entry->memory.base_address+entry->memory.length,!!(entry->memory.flags&2));
 		}
 		offset+=entry->length;
