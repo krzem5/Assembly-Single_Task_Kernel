@@ -63,8 +63,6 @@ PMM_DECLARE_COUNTER(OMM_ISO9660NODE);
 
 static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660NODE);
 
-
-
 extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
 
 

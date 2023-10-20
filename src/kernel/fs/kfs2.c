@@ -111,11 +111,6 @@ PMM_DECLARE_COUNTER(KFS2_CHUNK);
 
 
 
-static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
-static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
-
-
-
 static const u32 _kfs2_crc_table[256]={
 	0x00000000,0x77073096,0xee0e612c,0x990951ba,0x076dc419,0x706af48f,0xe963a535,0x9e6495a3,
 	0x0edb8832,0x79dcb8a4,0xe0d5e91e,0x97d2d988,0x09b64c2b,0x7eb17cbd,0xe7b82d07,0x90bf1d91,
@@ -153,6 +148,9 @@ static const u32 _kfs2_crc_table[256]={
 
 
 
+static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
+static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
+
 extern filesystem_type_t FILESYSTEM_TYPE_KFS2;
 
 
@@ -168,7 +166,7 @@ static u32 _calculate_crc(const void* data,u32 length){
 
 
 
-static inline _Bool _verify_crc(const void* data,u32 length){
+static KERNEL_INLINE _Bool _verify_crc(const void* data,u32 length){
 	return _calculate_crc(data,length-4)==*((u32*)(data+length-4));
 }
 

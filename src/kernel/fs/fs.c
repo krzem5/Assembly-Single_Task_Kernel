@@ -22,7 +22,7 @@ static omm_allocator_t _fs_allocator=OMM_ALLOCATOR_INIT_STRUCT("fs",sizeof(files
 
 HANDLE_DECLARE_TYPE(FS,{
 	filesystem_t* fs=handle->object;
-	WARN("Delete fs: %p",fs);
+	WARN("Delete filesystem: %p",fs);
 	omm_dealloc(&_fs_allocator,fs);
 });
 
