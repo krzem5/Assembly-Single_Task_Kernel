@@ -31,6 +31,16 @@ void* KERNEL_NOCOVERAGE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
 
 
 
+_Bool KERNEL_NOCOVERAGE KERNEL_NOOPT streq(const char* a,const char* b){
+	while (*a&&*a==*b){
+		a++;
+		b++;
+	}
+	return (!*a&&!*b);
+}
+
+
+
 char* KERNEL_NOCOVERAGE memcpy_lowercase(char* dst,const char* src,u64 length){
 	for (u64 i=0;i<length;i++){
 		char v=src[i];

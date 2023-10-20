@@ -24,7 +24,7 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 PARTITION_DECLARE_TYPE(ISO9660,{
-	if (drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
+	if (drive->block_size!=2048||(!streq(drive->type->name,"ATA")&&!streq(drive->type->name,"ATAPI"))){
 		return 0;
 	}
 	u64 block_index=16;

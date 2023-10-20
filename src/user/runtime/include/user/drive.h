@@ -4,13 +4,6 @@
 
 
 
-#define DRIVE_TYPE_AHCI 0
-#define DRIVE_TYPE_ATA 1
-#define DRIVE_TYPE_ATAPI 2
-#define DRIVE_TYPE_NVME 3
-
-
-
 typedef struct _DRIVE{
 	u8 flags;
 	u8 type;

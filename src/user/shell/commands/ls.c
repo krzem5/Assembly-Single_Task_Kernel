@@ -15,24 +15,6 @@
 
 
 
-static const char* drive_type_names[]={
-	[DRIVE_TYPE_AHCI]="AHCI",
-	[DRIVE_TYPE_ATA]="ATA",
-	[DRIVE_TYPE_ATAPI]="ATAPI",
-	[DRIVE_TYPE_NVME]="NVMe"
-};
-
-
-
-static const char* partition_type_names[]={
-	[PARTITION_TYPE_DRIVE]="drive",
-	[PARTITION_TYPE_EMPTY]="empty",
-	[PARTITION_TYPE_ISO9660]="ISO 9660",
-	[PARTITION_TYPE_KFS]="KFS"
-};
-
-
-
 static void _list_files(s64 fd){
 	for (s64 iter=fd_iter_start(fd);iter>=0;iter=fd_iter_next(iter)){
 		char name[256];
@@ -80,14 +62,14 @@ void ls_main(int argc,const char*const* argv){
 	if (type==LS_TYPE_DRIVES){
 		drive_t drive;
 		for (u32 i=0;drive_get(i,&drive);i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t(%s)\n",drive.name,drive.block_count*drive.block_size,drive_type_names[drive.type],drive.model_number);
+			printf("\x1b[1m%s\x1b[0m\t%v\t(%s)\n",drive.name,drive.block_count*drive.block_size,drive.model_number);
 		}
 	}
 	else if (type==LS_TYPE_PARTITIONS){
 		partition_t partition;
 		drive_t drive;
 		for (u32 i=0;partition_get(i,&partition)&&drive_get(partition.drive_index,&drive);i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,partition_type_names[partition.type],((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
+			printf("\x1b[1m%s\x1b[0m\t%v\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
 		}
 	}
 	else if (!directory){

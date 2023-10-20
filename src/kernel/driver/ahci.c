@@ -132,6 +132,13 @@ static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 
 
 
+static drive_type_t _ahci_drive_type={
+	"AHCI",
+	_ahci_read_write
+};
+
+
+
 static void _ahci_init(ahci_device_t* device,u8 port_index){
 	u64 command_list=pmm_alloc(1,PMM_COUNTER_DRIVER_AHCI,0);
 	device->command_list=(void*)(command_list+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -176,7 +183,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
 	drive_config_t config={
-		.type=DRIVE_TYPE_AHCI,
+		.type=&_ahci_drive_type,
 		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
 		.block_size=512,
 		.read_write=_ahci_read_write,

@@ -6,12 +6,6 @@
 
 
 
-#define DRIVE_TYPE_AHCI 0
-#define DRIVE_TYPE_ATA 1
-#define DRIVE_TYPE_ATAPI 2
-#define DRIVE_TYPE_NVME 3
-#define DRIVE_TYPE_INITRAMFS 4
-
 #define DRIVE_NAME_LENGTH 16
 #define DRIVE_SERIAL_NUMBER_LENGTH 32
 #define DRIVE_MODEL_NUMBER_LENGTH 64
@@ -25,8 +19,15 @@ typedef u64 (*drive_io_callback_t)(void*,u64,void*,u64);
 
 
 
+typedef struct _DRIVE_TYPE{
+	const char* name;
+	drive_io_callback_t io_callback;
+} drive_type_t;
+
+
+
 typedef struct _DRIVE_CONFIG{
-	u8 type;
+	const drive_type_t* type;
 	u8 flags;
 	u8 _padding[6];
 	char name[DRIVE_NAME_LENGTH];
@@ -42,7 +43,7 @@ typedef struct _DRIVE_CONFIG{
 
 typedef struct _DRIVE{
 	handle_t handle;
-	u8 type;
+	const drive_type_t* type;
 	u8 flags;
 	u8 block_size_shift;
 	partition_type_t partition_type;

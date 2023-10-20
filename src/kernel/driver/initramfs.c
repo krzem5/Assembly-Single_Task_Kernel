@@ -30,11 +30,18 @@ static u64 _initramfs_read_write(void* extra_data,u64 offset,void* buffer,u64 co
 
 
 
+static drive_type_t _initramfs_drive_type={
+	"INITRAMFS",
+	_initramfs_read_write
+};
+
+
+
 void initramfs_load(void){
 	LOG("Loading initramfs...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	drive_config_t config={
-		.type=DRIVE_TYPE_INITRAMFS,
+		.type=&_initramfs_drive_type,
 		.name="initramfs",
 		.serial_number="initramfs",
 		.model_number="initramfs",

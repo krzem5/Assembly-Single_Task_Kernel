@@ -27,18 +27,8 @@ HANDLE_DECLARE_TYPE(DRIVE,{
 
 
 
-static const char* _drive_type_names[]={
-	[DRIVE_TYPE_AHCI]="AHCI",
-	[DRIVE_TYPE_ATA]="ATA",
-	[DRIVE_TYPE_ATAPI]="ATAPI",
-	[DRIVE_TYPE_NVME]="NVME",
-	[DRIVE_TYPE_INITRAMFS]="INITRAMFS"
-};
-
-
-
 drive_t* drive_create(const drive_config_t* config){
-	LOG("Creating drive '%s' as '%s/%s'...",config->name,_drive_type_names[config->type],config->model_number);
+	LOG("Creating drive '%s' as '%s/%s'...",config->name,config->type->name,config->model_number);
 	drive_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;

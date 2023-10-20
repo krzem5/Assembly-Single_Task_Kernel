@@ -224,7 +224,7 @@ static void _iso9660_fs_deinit(filesystem_t* fs){
 
 static filesystem_t* _iso9660_fs_load(partition_t* partition){
 	drive_t* drive=partition->drive;
-	if (partition->start_lba||drive->type!=DRIVE_TYPE_ATAPI||drive->block_size!=2048){
+	if (partition->start_lba||(!streq(drive->type->name,"ATA")&&!streq(drive->type->name,"ATAPI"))||drive->block_size!=2048){
 		return NULL;
 	}
 	u32 directory_lba=0;

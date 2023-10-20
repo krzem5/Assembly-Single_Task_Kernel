@@ -96,6 +96,12 @@ static void _send_atapi_command(const ata_device_t* device,const u16* command,u1
 
 
 static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+	panic("_ata_read_write");
+}
+
+
+
+static u64 _atapi_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	const ata_device_t* device=extra_data;
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		WARN("ATA drives are read-only");
@@ -140,6 +146,17 @@ static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
 	}
 	return count;
 }
+
+
+
+static drive_type_t _ata_drive_type={
+	"ATA",
+	_ata_read_write
+};
+static drive_type_t _atapi_drive_type={
+	"ATAPI",
+	_atapi_read_write
+};
 
 
 
@@ -190,8 +207,8 @@ static void _ata_init(ata_device_t* device,u8 index){
 		goto _error;
 	}
 	drive_config_t config={
-		.type=(device->is_atapi?DRIVE_TYPE_ATAPI:DRIVE_TYPE_ATA),
-		.read_write=_ata_read_write,
+		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
+		.read_write=_atapi_read_write,
 		.extra_data=device
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"ata%u",index);

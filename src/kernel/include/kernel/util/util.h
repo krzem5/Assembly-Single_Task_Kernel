@@ -76,6 +76,10 @@ void* (memset)(void* dst,u8 value,u64 length);
 
 
 
+_Bool streq(const char* a,const char* b);
+
+
+
 char* memcpy_lowercase(char* dst,const char* src,u64 length);
 
 
