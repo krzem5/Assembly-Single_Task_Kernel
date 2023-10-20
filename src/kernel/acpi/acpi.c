@@ -44,7 +44,7 @@ typedef struct __attribute__((packed)) _RSDT{
 void acpi_load(void){
 	LOG("Loading ACPI RSDP...");
 	const rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(rsdt_t));
-	INFO("Found RSDP at %p (revision %u)",rsdp,rsdp->revision);
+	INFO("Found RSDP at %p (revision %u)",((u64)rsdp)-VMM_HIGHER_HALF_ADDRESS_OFFSET,rsdp->revision);
 	_Bool is_xsdt=0;
 	const rsdt_t* rsdt;
 	if (!rsdp->revision||!rsdp->xsdt_address){

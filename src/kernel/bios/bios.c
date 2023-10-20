@@ -10,6 +10,12 @@
 
 
 
+#define SMBIOS_HEADER_TYPE_BIOS_INFORMATION 0
+#define SMBIOS_HEADER_TYPE_SYSTEM_INFORMATION 1
+#define SMBIOS_HEADER_TYPE_BASEBOARD_INFORMATION 2
+
+
+
 typedef struct __attribute__((packed)) _SMBIOS{
 	u32 entry_point_string;
 	u8 _padding[2];
@@ -94,7 +100,7 @@ static char* _duplicate_string(const char* str){
 void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	const smbios_t* smbios=(void*)vmm_identity_map(kernel_data.smbios_address,sizeof(smbios_t));
-	INFO("Found SMBIOS at %p (revision %u.%u)",smbios,smbios->major_version,smbios->minor_version);
+	INFO("Found SMBIOS at %p (revision %u.%u)",((u64)smbios)-VMM_HIGHER_HALF_ADDRESS_OFFSET,smbios->major_version,smbios->minor_version);
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
 	u64 table_start=vmm_identity_map(smbios->table_address,smbios->table_length);
 	u64 table_end=table_start+smbios->table_length;
@@ -102,11 +108,11 @@ void bios_get_system_data(void){
 	for (u64 offset=table_start;offset<table_end;){
 		const smbios_header_t* header=(void*)offset;
 		switch (header->type){
-			case 0:
+			case SMBIOS_HEADER_TYPE_BIOS_INFORMATION:
 				bios_data.bios_vendor=_duplicate_string(_get_header_string(header,header->bios_information.vendor));
 				bios_data.bios_version=_duplicate_string(_get_header_string(header,header->bios_information.bios_version));
 				break;
-			case 1:
+			case SMBIOS_HEADER_TYPE_SYSTEM_INFORMATION:
 				bios_data.manufacturer=_duplicate_string(_get_header_string(header,header->system_information.manufacturer));
 				bios_data.product=_duplicate_string(_get_header_string(header,header->system_information.product_name));
 				bios_data.version=_duplicate_string(_get_header_string(header,header->system_information.version));
@@ -135,7 +141,7 @@ void bios_get_system_data(void){
 						break;
 				}
 				break;
-			case 2:
+			case SMBIOS_HEADER_TYPE_BASEBOARD_INFORMATION:
 				bios_data.serial_number=_duplicate_string(_get_header_string(header,header->baseboard_information.serial_number));
 				serial_number_found=1;
 				break;

@@ -38,14 +38,14 @@ static u16 _ioapic_override_index;
 
 
 
-static u32 _read_register(ioapic_t* ioapic,u32 reg){
+static KERNEL_INLINE u32 _read_register(ioapic_t* ioapic,u32 reg){
 	ioapic->registers[0]=reg;
 	return ioapic->registers[4];
 }
 
 
 
-static void _write_register(ioapic_t* ioapic,u32 reg,u32 value){
+static KERNEL_INLINE void _write_register(ioapic_t* ioapic,u32 reg,u32 value){
 	ioapic->registers[0]=reg;
 	ioapic->registers[4]=value;
 }
