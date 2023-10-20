@@ -34,7 +34,7 @@ static KERNEL_INLINE char _format_base16_char(u8 value){
 
 
 
-static KERNEL_INLINE void _format_int_base10(u64 value,format_buffer_state_t* out){
+static KERNEL_INLINE void _format_base10_int(u64 value,format_buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
 	while (value){
@@ -68,7 +68,7 @@ static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* ou
 		return;
 	}
 	if (!(flags&FLAG_HEX)){
-		_format_int_base10(data,out);
+		_format_base10_int(data,out);
 		return;
 	}
 	char buffer[16];
@@ -166,42 +166,42 @@ u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_l
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x400){
-				_format_int_base10(size,&out);
+				_format_base10_int(size,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x100000){
-				_format_int_base10((size+0x200)>>10,&out);
+				_format_base10_int((size+0x200)>>10,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'K');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x40000000){
-				_format_int_base10((size+0x80000)>>20,&out);
+				_format_base10_int((size+0x80000)>>20,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'M');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x10000000000ull){
-				_format_int_base10((size+0x20000000)>>30,&out);
+				_format_base10_int((size+0x20000000)>>30,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'G');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x4000000000000ull){
-				_format_int_base10((size+0x8000000000ull)>>40,&out);
+				_format_base10_int((size+0x8000000000ull)>>40,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'T');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x1000000000000000ull){
-				_format_int_base10((size+0x2000000000000ull)>>50,&out);
+				_format_base10_int((size+0x2000000000000ull)>>50,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'P');
 				_buffer_state_add(&out,'B');
 			}
 			else{
-				_format_int_base10((size+0x800000000000000ull)>>60,&out);
+				_format_base10_int((size+0x800000000000000ull)>>60,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'E');
 				_buffer_state_add(&out,'B');

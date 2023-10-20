@@ -34,18 +34,6 @@ static HANDLE_DECLARE_TYPE(FD_ITERATOR,{
 
 
 
-static handle_id_t _node_to_fd(vfs_node_t* node,u32 flags){
-	fd_t* out=omm_alloc(&_fd_allocator);
-	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
-	lock_init(&(out->lock));
-	out->node=node;
-	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
-	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
-	return out->handle.rb_node.key;
-}
-
-
-
 s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
 		return FD_ERROR_INVALID_FLAGS;
@@ -75,7 +63,13 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (!node){
 		return FD_ERROR_NOT_FOUND;
 	}
-	return _node_to_fd(node,flags);
+	fd_t* out=omm_alloc(&_fd_allocator);
+	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
+	lock_init(&(out->lock));
+	out->node=node;
+	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
+	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
+	return out->handle.rb_node.key;
 }
 
 
@@ -188,10 +182,10 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	fd_t* data=fd_handle->object;
 	lock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
-	out->vfs_index=/*data->node->vfs_index*/0xaa;
 	out->name_length=data->node->name->length;
-	memcpy(out->name,data->node->name->data,64);
+	out->fs_handle=data->node->fs->handle.rb_node.key;
 	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
+	memcpy(out->name,data->node->name->data,data->node->name->length+1);
 	lock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return 0;

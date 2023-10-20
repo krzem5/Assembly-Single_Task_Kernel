@@ -34,10 +34,10 @@
 
 typedef struct _FD_STAT{
 	u8 type;
-	u8 fd_index;
 	u8 name_length;
-	char name[64];
+	u64 fs_handle;
 	u64 size;
+	char name[256];
 } fd_stat_t;
 
 
