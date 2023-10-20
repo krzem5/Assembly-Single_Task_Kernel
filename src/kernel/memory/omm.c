@@ -1,3 +1,4 @@
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -7,6 +8,12 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "omm"
+
+
+
+HANDLE_DECLARE_TYPE(OMM_ALLOCATOR,{
+	panic("Unable to delete HANDLE_TYPE_OMM_ALLOCATOR");
+});
 
 
 
@@ -45,6 +52,7 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	if (allocator->next_allocator==(void*)1){
+		handle_new(allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(allocator->handle));
 		lock_acquire_exclusive(&_omm_global_lock);
 		omm_allocator_count++;
 		allocator->next_allocator=omm_head_allocator;

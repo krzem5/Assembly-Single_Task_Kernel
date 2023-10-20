@@ -22,7 +22,7 @@
 
 #define PMM_DECLARE_COUNTER(name) \
 	static u16 PMM_COUNTER_##name=0; \
-	static const pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
+	static pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
 		#name"\x00", \
 		&(PMM_COUNTER_##name) \
 	}; \

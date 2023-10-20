@@ -1,5 +1,6 @@
 #ifndef _KERNEL_MEMORY_OMM_H_
 #define _KERNEL_MEMORY_OMM_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
@@ -8,12 +9,12 @@
 
 #define OMM_COUNTER_NAME_LENGTH 16
 
-#define OMM_ALLOCATOR_INIT_LATER_STRUCT {LOCK_INIT_STRUCT,0,NULL}
+#define OMM_ALLOCATOR_INIT_LATER_STRUCT {.object_size=0}
 #define OMM_ALLOCATOR_IS_UNINITIALISED(allocator) (!(allocator)->object_size)
 
 #define OMM_ALLOCATOR_INIT_STRUCT(name,object_size,alignment,page_count,memory_counter) \
 	(omm_allocator_t){ \
-		LOCK_INIT_STRUCT, \
+		.lock=LOCK_INIT_STRUCT, \
 		((object_size)+alignment-1)&(-(alignment)), \
 		(void*)1, \
 		(alignment), \
@@ -57,6 +58,7 @@ typedef struct _OMM_COUNTER{
 
 
 typedef struct _OMM_ALLOCATOR{
+	handle_t handle;
 	lock_t lock;
 	u32 object_size;
 	struct _OMM_ALLOCATOR* next_allocator;

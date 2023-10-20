@@ -18,5 +18,6 @@ align 16
 idt_pointer:
 	dw 0x0fff
 	dq _idt_data
+align 8
 _idt_data:
 	times 512 dq 0
