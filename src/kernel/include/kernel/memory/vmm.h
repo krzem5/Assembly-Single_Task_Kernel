@@ -103,15 +103,15 @@ u64 vmm_get_fault_address(void);
 
 
 
+void vmm_get_pagemap(vmm_pagemap_t* pagemap);
+
+
+
 void vmm_invalidate_tlb_entry(u64 address);
 
 
 
 void vmm_switch_to_pagemap(const vmm_pagemap_t* pagemap);
-
-
-
-void vmm_get_pagemap(vmm_pagemap_t* pagemap);
 
 
 

@@ -97,7 +97,7 @@ void kmm_shrink_buffer(u32 size){
 	if (!_kmm_buffer_not_ended){
 		panic("kmm: buffer not in use");
 	}
-	_kmm_top-=size;
+	_kmm_top=(_kmm_top-size+7)&0xfffffffffffffff8ull;
 	lock_release_exclusive(&_kmm_lock);
 }
 
