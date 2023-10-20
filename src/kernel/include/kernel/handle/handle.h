@@ -14,6 +14,8 @@
 #define HANDLE_ID_GET_TYPE(handle_id) ((handle_id)&0xffff)
 #define HANDLE_ID_GET_INDEX(handle_id) ((handle_id)>>16)
 
+#define HANDLE_INIT_STRUCT {.rb_node={.key=0}}
+
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \

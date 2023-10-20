@@ -7,16 +7,15 @@
 
 
 
-#define OMM_COUNTER_NAME_LENGTH 16
-
 #define OMM_ALLOCATOR_INIT_LATER_STRUCT {.object_size=0}
 #define OMM_ALLOCATOR_IS_UNINITIALISED(allocator) (!(allocator)->object_size)
 
 #define OMM_ALLOCATOR_INIT_STRUCT(name,object_size,alignment,page_count,memory_counter) \
 	(omm_allocator_t){ \
-		.lock=LOCK_INIT_STRUCT, \
+		#name, \
+		HANDLE_INIT_STRUCT, \
+		LOCK_INIT_STRUCT, \
 		((object_size)+alignment-1)&(-(alignment)), \
-		(void*)1, \
 		(alignment), \
 		(page_count), \
 		(((page_count)<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/(((object_size)+alignment-1)&(-(alignment))), \
@@ -24,11 +23,8 @@
 		NULL, \
 		NULL, \
 		NULL, \
-		{ \
-			(name), \
-			0, \
-			0 \
-		} \
+		0, \
+		0 \
 	}
 
 
@@ -49,19 +45,11 @@ typedef struct _OMM_PAGE_HEADER{
 
 
 
-typedef struct _OMM_COUNTER{
-	char name[OMM_COUNTER_NAME_LENGTH];
-	u64 allocation_count;
-	u64 deallocation_count;
-} omm_counter_t;
-
-
-
 typedef struct _OMM_ALLOCATOR{
+	const char* name;
 	handle_t handle;
 	lock_t lock;
 	u32 object_size;
-	struct _OMM_ALLOCATOR* next_allocator;
 	u32 alignment;
 	u32 page_count;
 	u32 max_used_count;
@@ -69,13 +57,9 @@ typedef struct _OMM_ALLOCATOR{
 	omm_page_header_t* page_free_head;
 	omm_page_header_t* page_used_head;
 	omm_page_header_t* page_full_head;
-	omm_counter_t counter;
+	KERNEL_ATOMIC u64 allocation_count;
+	KERNEL_ATOMIC u64 deallocation_count;
 } omm_allocator_t;
-
-
-
-extern u32 omm_allocator_count;
-extern omm_allocator_t* omm_head_allocator;
 
 
 
