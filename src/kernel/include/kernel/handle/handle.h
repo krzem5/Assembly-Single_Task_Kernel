@@ -59,6 +59,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 
 
 typedef struct _HANDLE_TYPE_DATA{
+	handle_t handle;
 	char name[HANDLE_NAME_LENGTH];
 	lock_t lock;
 	handle_type_delete_callback_t delete_callback;

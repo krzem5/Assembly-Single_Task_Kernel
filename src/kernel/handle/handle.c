@@ -10,6 +10,12 @@
 
 
 
+HANDLE_DECLARE_TYPE(HANDLE,{
+	panic("Unable to delete HANDLE_TYPE_HANDLE");
+});
+
+
+
 handle_type_data_t* handle_type_data;
 handle_type_t handle_type_count;
 
@@ -19,10 +25,8 @@ void handle_init(void){
 	LOG("Initializing handle types...");
 	handle_type_count=HANDLE_TYPE_ANY+1;
 	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
-		if (*descriptor){
-			*((*descriptor)->var)=handle_type_count;
-			handle_type_count++;
-		}
+		*((*descriptor)->var)=handle_type_count;
+		handle_type_count++;
 	}
 	INFO("Handle type count: %u",handle_type_count);
 	handle_type_data=kmm_alloc(handle_type_count*sizeof(handle_type_data_t));
@@ -34,15 +38,17 @@ void handle_init(void){
 	handle_type_data->count=0;
 	handle_type_data->active_count=0;
 	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
-		if (*descriptor){
-			handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
-			memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
-			lock_init(&(type_data->lock));
-			type_data->delete_callback=(*descriptor)->delete_callback;
-			rb_tree_init(&(type_data->handle_tree));
-			type_data->count=0;
-			type_data->active_count=0;
-		}
+		handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
+		memcpy_lowercase(type_data->name,(*descriptor)->name,HANDLE_NAME_LENGTH);
+		lock_init(&(type_data->lock));
+		type_data->delete_callback=(*descriptor)->delete_callback;
+		rb_tree_init(&(type_data->handle_tree));
+		type_data->count=0;
+		type_data->active_count=0;
+	}
+	for (const handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
+		handle_type_data_t* type_data=handle_type_data+(*((*descriptor)->var));
+		handle_new(type_data,HANDLE_TYPE_HANDLE,&(type_data->handle));
 	}
 }
 
