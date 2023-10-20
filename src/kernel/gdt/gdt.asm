@@ -19,8 +19,7 @@ gdt_enable:
 	mov qword [gdt_tss+8], rdi
 	lgdt [gdt_pointer]
 	push (gdt_kernel_code-gdt_start)
-	lea rax, ._update_cs
-	push rax
+	push ._update_cs
 	retfq
 ._update_cs:
 	xor eax, eax
