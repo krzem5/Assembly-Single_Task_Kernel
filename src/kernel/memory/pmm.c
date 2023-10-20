@@ -121,13 +121,11 @@ void pmm_init(void){
 	lock_init(&(_pmm_high_allocator.lock));
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
-		if ((kernel_data.mmap+i)->type==1){
-			if (end>_pmm_low_allocator.last_address){
-				_pmm_low_allocator.last_address=(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end);
-			}
-			if (end>_pmm_high_allocator.last_address){
-				_pmm_high_allocator.last_address=end;
-			}
+		if (end>_pmm_low_allocator.last_address){
+			_pmm_low_allocator.last_address=(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end);
+		}
+		if (end>_pmm_high_allocator.last_address){
+			_pmm_high_allocator.last_address=end;
 		}
 	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
@@ -149,9 +147,6 @@ void pmm_init(void){
 	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
-		if ((kernel_data.mmap+i)->type!=1){
-			continue;
-		}
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
 		if (address<pmm_adjusted_kernel_end){
 			address=pmm_adjusted_kernel_end;
@@ -169,9 +164,6 @@ void pmm_init_high_mem(void){
 	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
-		if ((kernel_data.mmap+i)->type!=1){
-			continue;
-		}
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(&_pmm_high_allocator,(address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);

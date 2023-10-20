@@ -13,7 +13,6 @@
 typedef struct _USER_MEMORY_RANGE{
 	u64 base_address;
 	u64 length;
-	u32 type;
 } user_memory_range_t;
 
 
@@ -26,7 +25,6 @@ void syscall_memory_get_range(syscall_registers_t* regs){
 	user_memory_range_t* out=(void*)(regs->rsi);
 	out->base_address=(kernel_data.mmap+regs->rdi)->base;
 	out->length=(kernel_data.mmap+regs->rdi)->length;
-	out->type=(kernel_data.mmap+regs->rdi)->type;
 	regs->rax=1;
 }
 

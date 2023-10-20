@@ -32,10 +32,8 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	INFO("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
-		INFO("  %p - %p%s",(kernel_data.mmap+i)->base,(kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length,((kernel_data.mmap+i)->type==1?"":" (Unusable)"));
-		if ((kernel_data.mmap+i)->type==1){
-			total+=(kernel_data.mmap+i)->length;
-		}
+		INFO("  %p - %p",(kernel_data.mmap+i)->base,(kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
+		total+=(kernel_data.mmap+i)->length;
 	}
 	INFO("Total: %v (%lu B)",total,total);
 	INFO("First free address: %p",kernel_data.first_free_address);

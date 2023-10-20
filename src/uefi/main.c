@@ -67,14 +67,11 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 
 
 
-typedef struct __attribute__((packed)) _KERNEL_DATA{
+typedef struct _KERNEL_DATA{
 	uint16_t mmap_size;
-	uint8_t _padding[6];
 	struct{
 		uint64_t base;
 		uint64_t length;
-		uint32_t type;
-		uint8_t _padding[4];
 	} mmap[42];
 	uint64_t first_free_address;
 	uint64_t rsdp_address;
@@ -374,7 +371,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		}
 		kernel_data->mmap[kernel_data->mmap_size].base=entry_start;
 		kernel_data->mmap[kernel_data->mmap_size].length=entry_end-entry_start;
-		kernel_data->mmap[kernel_data->mmap_size].type=1;
 		kernel_data->mmap_size++;
 _entry_added:
 	}

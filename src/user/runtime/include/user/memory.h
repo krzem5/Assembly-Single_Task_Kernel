@@ -33,7 +33,6 @@ typedef struct _MEMORY_OBJECT_COUNTER{
 typedef struct _MEMORY_RANGE{
 	u64 base_address;
 	u64 length;
-	u32 type;
 } memory_range_t;
 
 
