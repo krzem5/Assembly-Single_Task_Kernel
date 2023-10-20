@@ -17,10 +17,11 @@ void vfs_mount(filesystem_t* fs,const char* path){
 			panic("Root filesystem already registered");
 		}
 		_vfs_root_node=fs->root;
-		lock_acquire_exclusive(&(fs->root->lock));
-		vfs_name_dealloc(fs->root->name);
-		fs->root->name=vfs_name_alloc("",0);
-		lock_release_exclusive(&(fs->root->lock));
+		lock_acquire_exclusive(&(_vfs_root_node->lock));
+		vfs_name_dealloc(_vfs_root_node->name);
+		_vfs_root_node->name=vfs_name_alloc("",0);
+		_vfs_root_node->relatives.parent=NULL;
+		lock_release_exclusive(&(_vfs_root_node->lock));
 		return;
 	}
 	panic("vfs_mount");
