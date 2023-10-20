@@ -28,8 +28,6 @@ typedef struct _DRIVE_TYPE{
 
 typedef struct _DRIVE_CONFIG{
 	const drive_type_t* type;
-	u8 flags;
-	u8 _padding[6];
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
@@ -43,10 +41,8 @@ typedef struct _DRIVE_CONFIG{
 typedef struct _DRIVE{
 	handle_t handle;
 	const drive_type_t* type;
-	u8 flags;
 	u8 block_size_shift;
 	partition_type_t partition_type;
-	u32 _next_partition_index;
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];

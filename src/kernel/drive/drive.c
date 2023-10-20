@@ -32,9 +32,7 @@ drive_t* drive_create(const drive_config_t* config){
 	drive_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
-	out->flags=config->flags;
 	out->block_size_shift=__builtin_ctzll(config->block_size);
-	out->_next_partition_index=0;
 	memcpy(out->name,config->name,DRIVE_NAME_LENGTH);
 	memcpy(out->serial_number,config->serial_number,DRIVE_SERIAL_NUMBER_LENGTH);
 	memcpy(out->model_number,config->model_number,DRIVE_MODEL_NUMBER_LENGTH);
