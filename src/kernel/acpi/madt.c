@@ -7,6 +7,13 @@
 
 
 
+#define MADT_ENTRY_TYPE_LAPIC 0
+#define MADT_ENTRY_TYPE_IOAPIC 1
+#define MADT_ENTRY_TYPE_ISO 2
+#define MADT_ENTRY_TYPE_LAPIC_OVERRIDE 5
+
+
+
 typedef struct __attribute__((packed)) _MADT{
 	u32 signature;
 	u32 length;
@@ -57,7 +64,7 @@ void acpi_madt_load(const void* madt_ptr){
 	u64 lapic_address=madt->lapic;
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
-		if (!madt_entry->type){
+		if (madt_entry->type==MADT_ENTRY_TYPE_LAPIC){
 			if (madt_entry->lapic.processor_id!=madt_entry->lapic.lapic_id){
 				WARN("CPU code id does not match CPU APIC id");
 			}
@@ -68,13 +75,13 @@ void acpi_madt_load(const void* madt_ptr){
 				cpu_count++;
 			}
 		}
-		else if (madt_entry->type==1){
+		else if (madt_entry->type==MADT_ENTRY_TYPE_IOAPIC){
 			ioapic_count++;
 		}
-		else if (madt_entry->type==2){
+		else if (madt_entry->type==MADT_ENTRY_TYPE_ISO){
 			iso_count++;
 		}
-		else if (madt_entry->type==5){
+		else if (madt_entry->type==MADT_ENTRY_TYPE_LAPIC_OVERRIDE){
 			lapic_address=madt_entry->lapic_override.lapic;
 		}
 		i+=madt_entry->length;
@@ -84,10 +91,10 @@ void acpi_madt_load(const void* madt_ptr){
 	cpu_init(cpu_count);
 	for (u32 i=0;i<madt->length-sizeof(madt_t);){
 		const madt_entry_t* madt_entry=(const madt_entry_t*)(madt->entries+i);
-		if (madt_entry->type==1){
+		if (madt_entry->type==MADT_ENTRY_TYPE_IOAPIC){
 			ioapic_add(madt_entry->io_apic.apic_id,madt_entry->io_apic.address,madt_entry->io_apic.gsi_base);
 		}
-		else if (madt_entry->type==2){
+		else if (madt_entry->type==MADT_ENTRY_TYPE_ISO){
 			ioapic_add_override(madt_entry->iso.irq,madt_entry->iso.gsi,madt_entry->iso.flags);
 		}
 		i+=madt_entry->length;
