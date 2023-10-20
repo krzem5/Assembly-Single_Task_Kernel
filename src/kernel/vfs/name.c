@@ -9,7 +9,7 @@
 #define FNV_OFFSET_BASIS 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
-#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs_name["#size"]",sizeof(vfs_name_t)+size,4,4,PMM_COUNTER_OMM_vfs_NAME);
+#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs_name["#size"]",sizeof(vfs_name_t)+size,4,2,PMM_COUNTER_OMM_vfs_NAME);
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
 		out=omm_alloc(&_vfs_name_allocator##size); \
@@ -25,7 +25,9 @@ PMM_DECLARE_COUNTER(OMM_vfs_NAME);
 
 
 
+DECLARE_ALLOCATOR(4);
 DECLARE_ALLOCATOR(8);
+DECLARE_ALLOCATOR(12);
 DECLARE_ALLOCATOR(16);
 DECLARE_ALLOCATOR(24);
 DECLARE_ALLOCATOR(32);
@@ -45,7 +47,9 @@ vfs_name_t* vfs_name_alloc(const char* name,u32 length){
 		}
 	}
 	vfs_name_t* out;
-	USE_ALLOCATOR(8)
+	USE_ALLOCATOR(4)
+	else USE_ALLOCATOR(8)
+	else USE_ALLOCATOR(12)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
 	else USE_ALLOCATOR(32)
@@ -71,7 +75,9 @@ vfs_name_t* vfs_name_alloc(const char* name,u32 length){
 
 
 void vfs_name_dealloc(vfs_name_t* name){
-	USE_ALLOCATOR_DEALLOC(8)
+	USE_ALLOCATOR_DEALLOC(4)
+	else USE_ALLOCATOR_DEALLOC(8)
+	else USE_ALLOCATOR_DEALLOC(12)
 	else USE_ALLOCATOR_DEALLOC(16)
 	else USE_ALLOCATOR_DEALLOC(24)
 	else USE_ALLOCATOR_DEALLOC(32)
