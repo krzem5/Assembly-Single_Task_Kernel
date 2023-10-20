@@ -9,7 +9,7 @@
 
 
 
-void syscall_handle_get_type_by_name(syscall_registers_t* regs){
+void syscall_handle_get_type(syscall_registers_t* regs){
 	regs->rax=0;
 	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		return;
@@ -32,12 +32,12 @@ _check_next_handle:
 
 
 
-void syscall_handle_get_type_count(syscall_registers_t* regs){
-	regs->rax=0;
-}
-
-
-
-void syscall_handle_get_type(syscall_registers_t* regs){
-	regs->rax=0;
+void syscall_handle_get_handle(syscall_registers_t* regs){
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(regs->rdi);
+	if (!handle_descriptor||regs->rsi==HANDLE_INVALID){
+		regs->rax=HANDLE_INVALID;
+		return;
+	}
+	rb_tree_node_t* node=rb_tree_lookup_increasing_node(&(handle_descriptor->tree),regs->rsi);
+	regs->rax=(node?node->key:HANDLE_INVALID);
 }

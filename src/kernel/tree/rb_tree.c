@@ -1,7 +1,9 @@
 #include <kernel/lock/lock.h>
+#include <kernel/log/log.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#define KERNEL_LOG_NAME "rb_tree"
 
 
 
@@ -145,13 +147,13 @@ rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 		}
 		if (x->rb_right!=NIL_NODE){
 			for (x=x->rb_right;x->rb_left!=NIL_NODE;x=x->rb_left);
+			break;
 		}
-		else{
-			do{
-				y=x;
-				x=_get_parent(x);
-			} while (x&&y==x->rb_right);
-		}
+		do{
+			y=x;
+			x=_get_parent(x);
+		} while (x&&y==x->rb_right);
+		break;
 	}
 	lock_release_shared(&(tree->lock));
 	return x;

@@ -4,27 +4,36 @@
 
 
 
+#define HANDLE_INVALID 0xffffffffffffffffull
+
+#define HANDLE_FOREACH(iterator,name) for (handle_iter_start((name),(iterator));(iterator)->handle!=HANDLE_INVALID;handle_iter_next((iterator)))
+
+
+
 typedef u16 handle_type_t;
 
 
 
-typedef struct _HANDLE_TYPE_DATA{
-	char name[16];
-	u64 count;
-	u64 active_count;
-} handle_type_data_t;
+typedef u64 handle_t;
 
 
 
-handle_type_t handle_get_type_by_name(const char* name);
+typedef struct _HANDLE_ITERATOR{
+	handle_type_t type;
+	handle_t handle;
+} handle_iterator_t;
 
 
 
-handle_type_t handle_get_type_count(void);
+handle_type_t handle_get_type(const char* name);
 
 
 
-_Bool handle_get_type_data(handle_type_t handle_type,handle_type_data_t* out);
+void handle_iter_start(const char* name,handle_iterator_t* out);
+
+
+
+void handle_iter_next(handle_iterator_t* iterator);
 
 
 

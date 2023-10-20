@@ -10,23 +10,13 @@ void handle_main(int argc,const char*const* argv){
 		printf("handle: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	printf("%u\n",handle_get_type_by_name("handle"));
-	u32 type_count=handle_get_type_count();
-	if (!type_count){
-		goto _error;
+	handle_iterator_t iterator;
+	HANDLE_FOREACH(&iterator,"handle"){
+		printf("%p\n",iterator.handle);
 	}
-	for (u32 i=0;i<type_count;i++){
-		handle_type_data_t type_data;
-		if (!handle_get_type_data(i,&type_data)){
-			goto _error;
-		}
-		u8 j=0;
-		for (;type_data.name[j];j++);
-		printf("%s:\t%s\x1b[1m%u\x1b[0m\t(\x1b[1m%u\x1b[0m)\n",type_data.name,(j>6?"":"\t"),type_data.active_count,type_data.count);
-	}
-	return;
-_error:
-	printf("handle: unable to read handle stats\n");
+// 		u8 i=0;
+// 		for (;type_data.name[i];i++);
+// 		printf("%s:\t%s\x1b[1m%u\x1b[0m\t(\x1b[1m%u\x1b[0m)\n",type_data.name,(i>6?"":"\t"),type_data.active_count,type_data.count);
 }
 
 
