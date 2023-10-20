@@ -10,6 +10,7 @@ void handle_main(int argc,const char*const* argv){
 		printf("handle: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
+	printf("%u\n",handle_get_type_by_name("handle"));
 	u32 type_count=handle_get_type_count();
 	if (!type_count){
 		goto _error;

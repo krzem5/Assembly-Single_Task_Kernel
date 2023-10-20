@@ -26,9 +26,9 @@
 	}; \
 	static handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
 
-#define HANDLE_ITER_START(type) ((handle_t*)rb_tree_iter_start(&((handle_type_data+(type))->handle_tree)))
-#define HANDLE_ITER_NEXT(type,handle) ((handle_t*)rb_tree_iter_next(&((handle_type_data+(type))->handle_tree),&((handle)->rb_node)))
-#define HANDLE_FOREACH(type) for (handle_t* handle=HANDLE_ITER_START((type));handle;handle=HANDLE_ITER_NEXT((type),handle))
+#define HANDLE_ITER_START(descriptor) ((handle_t*)rb_tree_iter_start(&((descriptor)->tree)))
+#define HANDLE_ITER_NEXT(descriptor,handle) ((handle_t*)rb_tree_iter_next(&((descriptor)->tree),&((handle)->rb_node)))
+#define HANDLE_FOREACH(type) handle_descriptor_t* __descriptor=handle_get_descriptor((type));for (handle_t* handle=HANDLE_ITER_START(__descriptor);handle;handle=HANDLE_ITER_NEXT(__descriptor,handle))
 
 
 
@@ -53,7 +53,7 @@ typedef void (*handle_type_delete_callback_t)(handle_t*);
 
 
 typedef struct _HANDLE_DESCRIPTOR{
-	char name[HANDLE_NAME_LENGTH];
+	const char* name;
 	handle_type_t* var;
 	handle_type_delete_callback_t delete_callback;
 	handle_t handle;
@@ -66,7 +66,15 @@ typedef struct _HANDLE_DESCRIPTOR{
 
 
 
+extern handle_type_t HANDLE_TYPE_HANDLE;
+
+
+
 void handle_init(void);
+
+
+
+handle_descriptor_t* handle_get_descriptor(handle_type_t type);
 
 
 

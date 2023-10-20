@@ -1,6 +1,7 @@
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 
 
 
@@ -10,7 +11,7 @@ _Bool __attribute__((weak)) _user_panic_handler(const char* error){
 
 
 
-void* KERNEL_NOCOVERAGE KERNEL_NOOPT memcpy(void* dst,const void* src,u64 length){
+void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memcpy)(void* dst,const void* src,u64 length){
 	u8* dst_ptr=dst;
 	const u8* src_ptr=src;
 	for (u64 i=0;i<length;i++){
@@ -21,7 +22,7 @@ void* KERNEL_NOCOVERAGE KERNEL_NOOPT memcpy(void* dst,const void* src,u64 length
 
 
 
-void* KERNEL_NOCOVERAGE KERNEL_NOOPT memset(void* dst,u8 value,u64 length){
+void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memset)(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	for (u64 i=0;i<length;i++){
 		ptr[i]=value;
@@ -43,9 +44,7 @@ _Bool KERNEL_NOCOVERAGE KERNEL_NOOPT streq(const char* a,const char* b){
 
 char* KERNEL_NOCOVERAGE memcpy_lowercase(char* dst,const char* src,u64 length){
 	for (u64 i=0;i<length;i++){
-		char v=src[i];
-		v|=(v>64&&v<91)<<5;
-		dst[i]=v;
+		dst[i]=convert_lowercase(src[i]);
 	}
 	return dst;
 }

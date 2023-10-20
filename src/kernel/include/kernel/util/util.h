@@ -68,6 +68,12 @@ static KERNEL_INLINE void* KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,
 
 
 
+static KERNEL_INLINE char convert_lowercase(char c){
+	return c|((c>64&&c<91)<<5);
+}
+
+
+
 void* (memcpy)(void* dst,const void* src,u64 length);
 
 

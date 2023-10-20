@@ -19,13 +19,6 @@ static rb_tree_t _handle_type_tree;
 
 
 
-static handle_descriptor_t* _get_handle_descriptor(handle_type_t type){
-	u64 out=(u64)rb_tree_lookup_node(&_handle_type_tree,type);
-	return (out?(handle_descriptor_t*)(out-__builtin_offsetof(handle_descriptor_t,rb_node)):NULL);
-}
-
-
-
 void handle_init(void){
 	LOG("Initializing handle types...");
 	rb_tree_init(&_handle_type_tree);
@@ -50,8 +43,15 @@ void handle_init(void){
 
 
 
+handle_descriptor_t* handle_get_descriptor(handle_type_t type){
+	u64 out=(u64)rb_tree_lookup_node(&_handle_type_tree,type);
+	return (out?(handle_descriptor_t*)(out-__builtin_offsetof(handle_descriptor_t,rb_node)):NULL);
+}
+
+
+
 void handle_new(void* object,handle_type_t type,handle_t* out){
-	handle_descriptor_t* handle_descriptor=_get_handle_descriptor(type);
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		panic("Invalid handle type");
 	}
@@ -68,7 +68,7 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 
 
 handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
-	handle_descriptor_t* handle_descriptor=_get_handle_descriptor(HANDLE_ID_GET_TYPE(id));
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(id));
 	if (!handle_descriptor||(type!=HANDLE_TYPE_ANY&&type!=HANDLE_ID_GET_TYPE(id))){
 		return NULL;
 	}
@@ -87,7 +87,7 @@ void _handle_delete_internal(handle_t* handle){
 	if (handle->rc){
 		return;
 	}
-	handle_descriptor_t* handle_descriptor=_get_handle_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
 	lock_acquire_exclusive(&(handle_descriptor->lock));
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
 	lock_release_exclusive(&(handle_descriptor->lock));

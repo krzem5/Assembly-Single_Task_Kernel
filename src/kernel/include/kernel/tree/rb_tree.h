@@ -42,6 +42,10 @@ rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key);
 
 
 
+rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key);
+
+
+
 void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x);
 
 

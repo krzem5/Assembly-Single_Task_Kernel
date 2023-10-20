@@ -16,6 +16,10 @@ typedef struct _HANDLE_TYPE_DATA{
 
 
 
+handle_type_t handle_get_type_by_name(const char* name);
+
+
+
 handle_type_t handle_get_type_count(void);
 
 
