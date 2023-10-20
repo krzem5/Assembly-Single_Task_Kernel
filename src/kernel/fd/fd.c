@@ -250,7 +250,8 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 			buffer_length=data->current_name->length+1;
 		}
 		if (buffer_length){
-			memcpy(buffer,data->current_name->data,buffer_length-1);
+			buffer_length--;
+			memcpy(buffer,data->current_name->data,buffer_length);
 			buffer[buffer_length]=0;
 		}
 	}

@@ -1,8 +1,10 @@
 #include <kernel/fs/fs.h>
+#include <kernel/log/log.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/name.h>
 #include <kernel/vfs/node.h>
+#define KERNEL_LOG_NAME "vfs_node"
 
 
 
