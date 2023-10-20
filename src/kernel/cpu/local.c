@@ -12,11 +12,9 @@
 void cpu_local_init(void){
 	LOG("Allocating cpu-local data...");
 	for (const cpu_local_data_descriptor_t*const* descriptor=(void*)kernel_section_cpu_local_start();(u64)descriptor<kernel_section_cpu_local_end();descriptor++){
-		if (*descriptor){
-			u32 size=(*descriptor)->size*cpu_count;
-			void* data=kmm_alloc(size);
-			memset(data,0,size);
-			*((*descriptor)->var)=data;
-		}
+		u32 size=(*descriptor)->size*cpu_count;
+		void* data=kmm_alloc(size);
+		memset(data,0,size);
+		*((*descriptor)->var)=data;
 	}
 }

@@ -34,10 +34,8 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 void partition_init(void){
 	partition_type_t partition_type_index=PARTITION_TYPE_UNKNOWN;
 	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
-		if (*descriptor){
-			partition_type_index++;
-			*((*descriptor)->var)=partition_type_index;
-		}
+		partition_type_index++;
+		*((*descriptor)->var)=partition_type_index;
 	}
 }
 
@@ -46,7 +44,7 @@ void partition_init(void){
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
 	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
-		if (*descriptor&&(*descriptor)->load_callback(drive)){
+		if ((*descriptor)->load_callback(drive)){
 			drive->partition_type=*((*descriptor)->var);
 			INFO("Detected drive partitioning as '%s'",(*descriptor)->name);
 			return;

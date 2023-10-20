@@ -126,12 +126,10 @@ void pmm_init(void){
 	_pmm_counters=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
-		if (*descriptor){
-			*((*descriptor)->var)=_pmm_counters->length;
-			memcpy_lowercase((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
-			(_pmm_counters->data+_pmm_counters->length)->count=0;
-			_pmm_counters->length++;
-		}
+		*((*descriptor)->var)=_pmm_counters->length;
+		memcpy_lowercase((_pmm_counters->data+_pmm_counters->length)->name,(*descriptor)->name,PMM_COUNTER_NAME_LENGTH);
+		(_pmm_counters->data+_pmm_counters->length)->count=0;
+		_pmm_counters->length++;
 	}
 	u32 pmm_counters_size=pmm_align_up_address(sizeof(pmm_counters_t)+_pmm_counters->length*sizeof(pmm_counter_t));
 	INFO("Counter array size: %v",pmm_counters_size);
