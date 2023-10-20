@@ -16,7 +16,7 @@ u32 clock_conversion_shift;
 
 
 
-static u64 KERNEL_INLINE KERNEL_NOCOVERAGE _wait_for_pit(u8 high){
+static KERNEL_INLINE u64 KERNEL_NOCOVERAGE _wait_for_pit(u8 high){
 	for (u32 i=0;i<500000;i++){
 		io_port_in8(0x42);
 		if (io_port_in8(0x42)<high){
@@ -63,7 +63,12 @@ static u64 _get_cpu_frequency(void){
 
 
 
-static void _calculate_clock_conversion(void){
+void clock_init(void){
+	LOG("Initializing TSC clock source...");
+	INFO("Calculating clock frequency...");
+	clock_cpu_frequency=_get_cpu_frequency();
+	LOG("CPU clock frequency: %lu Hz",clock_cpu_frequency);
+	INFO("Calculating clock frequency conversion factor...");
 	for (clock_conversion_shift=32;clock_conversion_shift;clock_conversion_shift--){
 		clock_conversion_factor=((1000000000ull<<clock_conversion_shift)+(clock_cpu_frequency>>1))/clock_cpu_frequency;
 		if (!(clock_conversion_factor>>32)){
@@ -71,14 +76,4 @@ static void _calculate_clock_conversion(void){
 		}
 	}
 	panic("Unable to calculate clock frequency conversion factor");
-}
-
-
-
-void clock_init(void){
-	LOG("Initializing clock source...");
-	INFO("Calculating clock frequency...");
-	clock_cpu_frequency=_get_cpu_frequency();
-	LOG("CPU clock frequency: %lu Hz",clock_cpu_frequency);
-	_calculate_clock_conversion();
 }

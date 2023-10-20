@@ -68,23 +68,23 @@ void acpi_load(void){
 		sdt=(void*)vmm_identity_map((u64)sdt,((const sdt_t*)vmm_identity_map((u64)sdt,sizeof(sdt_t)))->length);
 		if (sdt->signature==0x43495041){
 			madt=sdt;
-			INFO("Found MADT at %p",sdt);
+			INFO("Found MADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x50434146){
 			fadt=sdt;
-			INFO("Found FADT at %p",sdt);
+			INFO("Found FADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54414d48){
 			hmat=sdt;
-			INFO("Found HMAT at %p",sdt);
+			INFO("Found HMAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54415253){
 			srat=sdt;
-			INFO("Found SRAT at %p",sdt);
+			INFO("Found SRAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54494c53){
 			slit=sdt;
-			INFO("Found SLIT at %p",sdt);
+			INFO("Found SLIT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 	}
 	if (madt){

@@ -38,9 +38,8 @@ typedef struct _CPU_EXTRA_DATA{
 
 
 
-extern cpu_extra_data_t* cpu_extra_data;
 extern u16 cpu_count;
-extern u8 cpu_bsp_core_id;
+extern cpu_extra_data_t* cpu_extra_data;
 
 
 

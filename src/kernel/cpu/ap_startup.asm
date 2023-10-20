@@ -80,7 +80,12 @@ _start64:
 	mov gs, ax
 	mov ss, ax
 	;;; Setup stack
-	mov rsp, qword [cpu_stack_top+OFFSET]
+	mov eax, 1
+	xor ebx, ebx
+	cpuid
+	shr ebx, 24
+	mov rdx, qword [cpu_stack_list+OFFSET]
+	mov rsp, qword [rdx+rbx*8]
 	xor rbp, rbp
 	;;; Start the kernel
 	lea rax, _cpu_init_core
@@ -92,7 +97,7 @@ align 4
 kernel_toplevel_pagemap:
 	dd 0
 align 8
-cpu_stack_top:
+cpu_stack_list:
 	dq 0
 align 16
 gdt32_start:
@@ -121,26 +126,19 @@ times 4096-($-$$) db 0
 
 
 global cpu_ap_startup_init
-global cpu_ap_startup_set_stack_top
 extern vmm_kernel_pagemap
-extern vmm_map_page
-extern vmm_unmap_page
 section .text exec nowrite
 
 
 
 [bits 64]
 cpu_ap_startup_init:
+	mov r8, rdi
 	mov rdi, CPU_AP_STARTUP_MEMORY_ADDRESS
 	mov rsi, __AP_STARTUP_START__
 	mov rcx, 512
 	rep movsq
 	mov rax, qword [vmm_kernel_pagemap]
 	mov dword [kernel_toplevel_pagemap+OFFSET], eax
-	ret
-
-
-
-cpu_ap_startup_set_stack_top:
-	mov qword [cpu_stack_top+OFFSET], rdi
+	mov qword [cpu_stack_list+OFFSET], r8
 	ret

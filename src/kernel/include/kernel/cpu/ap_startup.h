@@ -8,11 +8,7 @@
 
 
 
-void cpu_ap_startup_init(void);
-
-
-
-void cpu_ap_startup_set_stack_top(u64 stack_top);
+void cpu_ap_startup_init(void* cpu_stack_list);
 
 
 

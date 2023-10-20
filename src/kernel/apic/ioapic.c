@@ -1,8 +1,8 @@
-#include <kernel/cpu/cpu.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/msr/msr.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "ioapic"
 
@@ -35,6 +35,7 @@ static u16 _ioapic_index;
 static ioapic_override_t* _ioapic_override_data;
 static u16 _ioapic_override_count;
 static u16 _ioapic_override_index;
+static u16 _ioapic_irq_destination_cpu;
 
 
 
@@ -60,6 +61,7 @@ void ioapic_init(u16 count,u16 override_count){
 	_ioapic_override_data=kmm_alloc(override_count*sizeof(ioapic_override_t));
 	_ioapic_override_count=override_count;
 	_ioapic_override_index=0;
+	_ioapic_irq_destination_cpu=msr_get_apic_id();
 	INFO("Disabling PIC...");
 	io_port_out8(0xa1,0xff);
 	io_port_out8(0x21,0xff);
@@ -109,5 +111,5 @@ void ioapic_redirect_irq(u8 irq,u8 vector){
 		ioapic++;
 	}
 	_write_register(ioapic,((irq-ioapic->gsi_base)<<1)+16,vector|((flags&0x0a)<<12));
-	_write_register(ioapic,((irq-ioapic->gsi_base)<<1)+17,cpu_bsp_core_id<<24);
+	_write_register(ioapic,((irq-ioapic->gsi_base)<<1)+17,_ioapic_irq_destination_cpu<<24);
 }

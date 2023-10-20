@@ -20,18 +20,13 @@ clock_get_time:
 	rdtsc
 	shl rdx, 32
 	or rdx, rax
-	mulx rdx, rax, qword [clock_conversion_factor]
-	mov ecx, dword [clock_conversion_shift]
-	shrd rax, rdx, cl
-	shrx rdx, rdx, rcx
-	test cl, 64
-	cmovne rax, rdx
-	ret
+	jmp _clock_ticks_to_time_inernal
 
 
 
 clock_ticks_to_time:
 	mov rdx, rdi
+_clock_ticks_to_time_inernal:
 	mulx rdx, rax, qword [clock_conversion_factor]
 	mov ecx, dword [clock_conversion_shift]
 	shrd rax, rdx, cl
