@@ -1,4 +1,3 @@
-extern memset
 global fpu_state_size
 global fpu_enable
 global fpu_init
@@ -43,12 +42,13 @@ fpu_enable:
 
 fpu_init:
 	push rdi
-	xor esi, esi
-	mov edx, dword [fpu_state_size]
-	call memset
+	xor eax, eax
+	mov ecx, dword [fpu_state_size]
+	shr ecx, 3
+	rep stosq
 	mov rdi, qword [rsp]
 	vzeroall
-	mov dword [rsp], 0x37f
+	mov dword [rsp], 0x037f
 	fldcw [rsp]
 	mov dword [rsp], 0x1f80
 	ldmxcsr [rsp]
