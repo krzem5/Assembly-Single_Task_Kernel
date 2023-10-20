@@ -4,8 +4,6 @@
 
 
 
-#define DRIVE_FLAG_BOOT 1
-
 #define DRIVE_TYPE_AHCI 0
 #define DRIVE_TYPE_ATA 1
 #define DRIVE_TYPE_ATAPI 2

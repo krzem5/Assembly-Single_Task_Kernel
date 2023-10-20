@@ -80,7 +80,7 @@ void ls_main(int argc,const char*const* argv){
 	if (type==LS_TYPE_DRIVES){
 		drive_t drive;
 		for (u32 i=0;drive_get(i,&drive);i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t(%s)%s\n",drive.name,drive.block_count*drive.block_size,drive_type_names[drive.type],drive.model_number,((drive.flags&DRIVE_FLAG_BOOT)?" [boot]":""));
+			printf("\x1b[1m%s\x1b[0m\t%v\t%s\t(%s)\n",drive.name,drive.block_count*drive.block_size,drive_type_names[drive.type],drive.model_number);
 		}
 	}
 	else if (type==LS_TYPE_PARTITIONS){

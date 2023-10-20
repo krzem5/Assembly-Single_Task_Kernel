@@ -12,8 +12,6 @@
 #define DRIVE_TYPE_NVME 3
 #define DRIVE_TYPE_INITRAMFS 4
 
-#define DRIVE_FLAG_BOOT 1
-
 #define DRIVE_NAME_LENGTH 16
 #define DRIVE_SERIAL_NUMBER_LENGTH 32
 #define DRIVE_MODEL_NUMBER_LENGTH 64
@@ -65,6 +63,14 @@ extern handle_type_t HANDLE_TYPE_DRIVE;
 
 
 drive_t* drive_create(const drive_config_t* config);
+
+
+
+u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size);
+
+
+
+u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size);
 
 
 

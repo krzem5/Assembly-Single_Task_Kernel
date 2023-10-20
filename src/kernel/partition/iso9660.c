@@ -30,7 +30,7 @@ PARTITION_DECLARE_TYPE(ISO9660,{
 	u64 block_index=16;
 	u8 buffer[2048];
 	while (1){
-		if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
+		if (drive_read(drive,block_index,buffer,1)!=1){
 			return 0;
 		}
 		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;

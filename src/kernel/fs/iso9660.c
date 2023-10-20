@@ -103,7 +103,7 @@ static vfs_node_t* _iso9660_lookup(vfs_node_t* node,const vfs_name_t* name){
 		}
 		if (!buffer_space){
 			directory=(iso9660_directory_t*)buffer;
-			if (drive->read_write(drive->extra_data,data_offset,buffer,1)!=1){
+			if (drive_read(drive,data_offset,buffer,1)!=1){
 				return NULL;
 			}
 			buffer_space=2048;
@@ -165,7 +165,7 @@ static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 	u16 padding=offset&2047;
 	if (padding){
 		u8 disk_buffer[2048];
-		if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
+		if (drive_read(drive,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
 			return 0;
 		}
 		memcpy(buffer,disk_buffer+padding,2048-padding);
@@ -174,7 +174,7 @@ static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 		size-=2048-padding;
 		offset&=0xfffff800;
 	}
-	if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,buffer,size>>11)!=(size>>11)){
+	if (drive_read(drive,iso9660_node->data_offset+block_index,buffer,size>>11)!=(size>>11)){
 		return 0;
 	}
 	block_index+=size>>11;
@@ -182,7 +182,7 @@ static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 	padding=size&2047;
 	if (padding){
 		u8 disk_buffer[2048];
-		if (drive->read_write(drive->extra_data,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
+		if (drive_read(drive,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
 			return 0;
 		}
 		memcpy(buffer,disk_buffer,padding);
@@ -232,7 +232,7 @@ static filesystem_t* _iso9660_fs_load(partition_t* partition){
 	u64 block_index=16;
 	u8 buffer[2048];
 	while (1){
-		if (drive->read_write(drive->extra_data,block_index,buffer,1)!=1){
+		if (drive_read(drive,block_index,buffer,1)!=1){
 			return NULL;
 		}
 		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;

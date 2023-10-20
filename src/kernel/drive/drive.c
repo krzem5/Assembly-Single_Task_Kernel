@@ -59,3 +59,15 @@ drive_t* drive_create(const drive_config_t* config){
 	partition_load_from_drive(out);
 	return out;
 }
+
+
+
+u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
+	return drive->read_write(drive->extra_data,offset&DRIVE_OFFSET_MASK,buffer,size);
+}
+
+
+
+u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
+	return drive->read_write(drive->extra_data,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,size);
+}
