@@ -43,6 +43,18 @@ vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
 				return NULL;
 			}
 		}
+		if (i==1&&path[0]=='.'){
+			path+=i;
+			continue;
+		}
+		if (i==2&&path[0]=='.'&&path[1]=='.'){
+			root=root->relatives.parent;
+			if (!root){
+				root=_vfs_root_node;
+			}
+			path+=i;
+			continue;
+		}
 		vfs_name_t* name=vfs_name_alloc(path,i);
 		root=vfs_node_lookup(root,name);
 		vfs_name_dealloc(name);
