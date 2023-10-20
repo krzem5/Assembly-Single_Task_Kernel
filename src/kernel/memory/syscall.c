@@ -56,17 +56,17 @@ void syscall_memory_unmap(syscall_registers_t* regs){
 
 
 void syscall_memory_get_counter_count(syscall_registers_t* regs){
-	regs->rax=pmm_get_counter_count();
+	regs->rax=0;
 }
 
 
 
 void syscall_memory_get_counter(syscall_registers_t* regs){
-	if (regs->rdx!=sizeof(pmm_counter_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!pmm_get_counter(regs->rdi,(pmm_counter_t*)(regs->rsi))){
+	if (regs->rdx!=0x11223344||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;
 	}
-	regs->rax=1;
+	regs->rax=0;
 }
 
 

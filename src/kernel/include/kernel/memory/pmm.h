@@ -50,20 +50,6 @@ typedef struct _PMM_ALLOCATOR{
 
 
 
-typedef struct _PMM_COUNTER{
-	char name[PMM_COUNTER_NAME_LENGTH];
-	u64 count;
-} pmm_counter_t;
-
-
-
-typedef struct _PMM_COUNTERS{
-	u32 length;
-	pmm_counter_t data[];
-} pmm_counters_t;
-
-
-
 typedef struct _PMM_COUNTER_DESCRIPTOR{
 	char name[PMM_COUNTER_NAME_LENGTH];
 	handle_id_t* var;
@@ -121,23 +107,15 @@ void pmm_init_high_mem(void);
 
 
 
-u64 pmm_alloc(u64 count,u8 counter,_Bool memory_hint);
+u64 pmm_alloc(u64 count,handle_id_t counter,_Bool memory_hint);
 
 
 
-u64 pmm_alloc_zero(u64 count,u8 counter,_Bool memory_hint);
+u64 pmm_alloc_zero(u64 count,handle_id_t counter,_Bool memory_hint);
 
 
 
-void pmm_dealloc(u64 address,u64 count,u8 counter);
-
-
-
-u8 pmm_get_counter_count(void);
-
-
-
-_Bool pmm_get_counter(u8 counter,pmm_counter_t* out);
+void pmm_dealloc(u64 address,u64 count,handle_id_t counter);
 
 
 
