@@ -1,3 +1,4 @@
+#include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
@@ -13,6 +14,12 @@
 PMM_DECLARE_COUNTER(KERNEL_IMAGE);
 PMM_DECLARE_COUNTER(PMM);
 PMM_DECLARE_COUNTER(TOTAL);
+
+
+
+static HANDLE_DECLARE_TYPE(PMM_COUNTER,{
+	panic("Unable to delete	HANDLE_TYPE_PMM_COUNTER");
+});
 
 
 
@@ -123,6 +130,12 @@ void pmm_init(void){
 	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	LOG("Registering counters...");
+	for (pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
+		pmm_counter_descriptor_t* counter_descriptor=*descriptor;
+		// handle_new(counter_descriptor,HANDLE_TYPE_PMM_COUNTER,&(counter_descriptor->handle));
+		*(counter_descriptor->var)=counter_descriptor->handle.rb_node.key;
+	}
+	LOG("Registering counters (2)...");
 	_pmm_counters=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size);
 	_pmm_counters->length=0;
 	for (const pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){

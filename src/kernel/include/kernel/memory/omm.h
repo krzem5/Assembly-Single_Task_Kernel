@@ -65,7 +65,7 @@ typedef struct _OMM_ALLOCATOR{
 	u32 alignment;
 	u32 page_count;
 	u32 max_used_count;
-	u16* memory_counter;
+	handle_id_t* memory_counter;
 	omm_page_header_t* page_free_head;
 	omm_page_header_t* page_used_head;
 	omm_page_header_t* page_full_head;

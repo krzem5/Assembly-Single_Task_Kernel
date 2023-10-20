@@ -17,12 +17,12 @@
 #define HANDLE_DECLARE_TYPE(name,delete_code) \
 	handle_type_t HANDLE_TYPE_##name; \
 	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
-	static const handle_descriptor_t _handle_descriptor_##name={ \
+	static handle_descriptor_t _handle_descriptor_##name={ \
 		#name, \
 		&(HANDLE_TYPE_##name), \
 		_handle_delete_callback_##name \
 	}; \
-	static const handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
+	static handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
 
 #define HANDLE_ITER_START(type) ((handle_t*)rb_tree_iter_start(&((handle_type_data+(type))->handle_tree)))
 #define HANDLE_ITER_NEXT(type,handle) ((handle_t*)rb_tree_iter_next(&((handle_type_data+(type))->handle_tree),&((handle)->rb_node)))
@@ -54,24 +54,13 @@ typedef struct _HANDLE_DESCRIPTOR{
 	char name[HANDLE_NAME_LENGTH];
 	handle_type_t* var;
 	handle_type_delete_callback_t delete_callback;
-} handle_descriptor_t;
-
-
-
-typedef struct _HANDLE_TYPE_DATA{
 	handle_t handle;
-	char name[HANDLE_NAME_LENGTH];
 	lock_t lock;
-	handle_type_delete_callback_t delete_callback;
-	rb_tree_t handle_tree;
+	rb_tree_t tree;
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;
-} handle_type_data_t;
-
-
-
-extern handle_type_data_t* handle_type_data;
-extern handle_type_t handle_type_count;
+	rb_tree_node_t rb_node;
+} handle_descriptor_t;
 
 
 
