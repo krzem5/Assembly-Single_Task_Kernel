@@ -10,9 +10,12 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
 
 
+
+static u8 _isr_next_irq_index=33;
 
 event_t* irq_events[223];
 
@@ -23,6 +26,17 @@ void isr_init(void){
 	for (u8 i=0;i<223;i++){
 		irq_events[i]=event_new();
 	}
+}
+
+
+
+u8 isr_allocate(void){
+	if (_isr_next_irq_index>=0xfe){
+		panic("Not enough IRQs");
+	}
+	u8 out=_isr_next_irq_index;
+	_isr_next_irq_index++;
+	return out;
 }
 
 

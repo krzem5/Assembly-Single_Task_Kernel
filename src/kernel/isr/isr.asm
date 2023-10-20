@@ -1,23 +1,11 @@
 extern _isr_handler
 extern _random_entropy_pool
 extern _random_entropy_pool_length
-global isr_allocate
 section .text exec nowrite
 
 
 
 [bits 64]
-isr_allocate:
-	movzx ecx, byte [_next_irq_index]
-	cmp ecx, 0xfe
-	jge $
-	mov eax, ecx
-	add ecx, 1
-	mov byte [_next_irq_index], cl
-	ret
-
-
-
 _isr_common_handler:
 	cmp qword [rsp+24], 0x08
 	je ._kernel_entry
@@ -98,13 +86,3 @@ _isr_entry_%+idx:
 	jmp _isr_common_handler
 %assign idx idx+1
 %endrep
-
-
-
-section .data noexec write
-
-
-
-align 4
-_next_irq_index:
-	dd 33
