@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/driver/ata.h>
 #include <kernel/format/format.h>
+#include <kernel/handle/handle.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
@@ -255,7 +256,7 @@ void driver_ata_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,4,&pci_bar)){
 		return;
 	}
-	LOG("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached ATA driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	for (u8 i=0;i<4;i++){
 		ata_device_t* ata_device=kmm_alloc_buffer();
 		kmm_grow_buffer(sizeof(ata_device_t));
@@ -263,5 +264,14 @@ void driver_ata_init_device(pci_device_t* device){
 		ata_device->is_slave=i&1;
 		ata_device->port=((i>>1)?0x170:0x1f0);
 		_ata_init(ata_device,i);
+	}
+}
+
+
+
+void driver_ata_init(void){
+	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+		pci_device_t* device=handle->object;
+		driver_ata_init_device(device);
 	}
 }

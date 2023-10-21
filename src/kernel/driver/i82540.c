@@ -1,14 +1,15 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/driver/i82540.h>
+#include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
-#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
@@ -163,7 +164,7 @@ void driver_i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
 	}
-	LOG("Attached i82540 driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached i82540 driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	pci_device_enable_bus_mastering(device);
 	pci_device_enable_memory_access(device);
 	pci_bar_t pci_bar;
@@ -240,4 +241,13 @@ void driver_i82540_init_device(pci_device_t* device){
 		i82540_device
 	};
 	network_layer1_set_device(&layer1_device);
+}
+
+
+
+void driver_i82540_init(void){
+	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+		pci_device_t* device=handle->object;
+		driver_i82540_init_device(device);
+	}
 }

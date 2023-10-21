@@ -1,5 +1,6 @@
 #ifndef _KERNEL_PCI_PCI_H_
 #define _KERNEL_PCI_PCI_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/io/io.h>
 #include <kernel/types.h>
 
@@ -29,10 +30,17 @@ typedef struct _PCI_INTERRUPT_STATE{
 
 
 
-typedef struct _PCI_DEVICE{
+typedef struct _PCI_DEVICE_ADDRESS{
 	u8 bus;
 	u8 slot;
 	u8 func;
+} pci_device_address_t;
+
+
+
+typedef struct _PCI_DEVICE{
+	handle_t handle;
+	pci_device_address_t address;
 	u16 device_id;
 	u16 vendor_id;
 	u8 class;
@@ -54,16 +62,32 @@ typedef struct _PCI_BAR{
 
 
 
-static KERNEL_INLINE u32 pci_device_read_data(const pci_device_t* device,u8 offset){
-	io_port_out32(0xcf8,(device->bus<<16)|(device->slot<<11)|(device->func<<8)|(offset&0xfc)|0x80000000);
+extern handle_type_t HANDLE_TYPE_PCI_DEVICE;
+
+
+
+static KERNEL_INLINE u32 pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
+	io_port_out32(0xcf8,(device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000);
 	return io_port_in32(0xcfc);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
-	io_port_out32(0xcf8,(device->bus<<16)|(device->slot<<11)|(device->func<<8)|(offset&0xfc)|0x80000000);
+static KERNEL_INLINE u32 pci_device_read_data(const pci_device_t* device,u8 offset){
+	return pci_device_read_data_raw(&(device->address),offset);
+}
+
+
+
+static KERNEL_INLINE void pci_device_write_data_raw(const pci_device_address_t* device_address,u8 offset,u32 value){
+	io_port_out32(0xcf8,(device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000);
 	io_port_out32(0xcfc,value);
+}
+
+
+
+static KERNEL_INLINE void pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
+	pci_device_write_data_raw(&(device->address),offset,value);
 }
 
 

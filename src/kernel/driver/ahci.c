@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/driver/ahci.h>
 #include <kernel/format/format.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
@@ -206,7 +207,7 @@ void driver_ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	ahci_controller_t* controller=kmm_alloc(sizeof(ahci_controller_t));
 	controller->registers=(void*)vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	INFO("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
@@ -237,5 +238,14 @@ void driver_ahci_init_device(pci_device_t* device){
 		ahci_device->controller=controller;
 		ahci_device->registers=port_registers;
 		_ahci_init(ahci_device,i);
+	}
+}
+
+
+
+void driver_ahci_init(void){
+	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+		pci_device_t* device=handle->object;
+		driver_ahci_init_device(device);
 	}
 }

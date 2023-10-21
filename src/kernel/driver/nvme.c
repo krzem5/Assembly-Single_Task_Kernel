@@ -1,4 +1,5 @@
 #include <kernel/driver/nvme.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -27,7 +28,7 @@ void driver_nvme_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(nvme_registers_t));
 	if (!(registers->cap&0x0000002000000000ull)){
 		WARN("NVMe instruction set not supported");
@@ -40,4 +41,13 @@ void driver_nvme_init_device(pci_device_t* device){
 	u32 queue_entries=(registers->cap&0xffff)+1;
 	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
 	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,doorbell_stride);
+}
+
+
+
+void driver_nvme_init(void){
+	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+		pci_device_t* device=handle->object;
+		driver_nvme_init_device(device);
+	}
 }

@@ -6,78 +6,98 @@
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/pci/pci.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "pci"
+
+
+
+PMM_DECLARE_COUNTER(OMM_PCI_DEVICE);
+
+
+
+static omm_allocator_t _pci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("pci_device",sizeof(pci_device_t),8,4,PMM_COUNTER_OMM_PCI_DEVICE);
+
+
+
+HANDLE_DECLARE_TYPE(PCI_DEVICE,{
+	panic("Unable to delete HANDLE_TYPE_PCI_DEVICE");
+});
 
 
 
 void pci_enumerate(void){
 	LOG("Scanning PCI devices...");
-	pci_device_t device={
+	pci_device_address_t device_address={
 		0,
 		0,
 		0
 	};
-	u8 max_bus_index=((pci_device_read_data(&device,0xc)&0x800000)?8:1);
+	u8 max_bus_index=((pci_device_read_data_raw(&device_address,0xc)&0x800000)?8:1);
 	for (u8 bus=0;bus<max_bus_index;bus++){
-		device.bus=0;
-		device.slot=0;
-		device.func=bus;
-		if (pci_device_read_data(&device,0)==0xffffffff){
+		device_address.bus=0;
+		device_address.slot=0;
+		device_address.func=bus;
+		if (pci_device_read_data_raw(&device_address,0)==0xffffffff){
 			continue;
 		}
-		device.bus=bus;
+		device_address.bus=bus;
 		for (u16 slot=0;slot<256;slot++){
-			device.slot=slot;
+			device_address.slot=slot;
 			for (u8 func=0;func<8;func++){
-				device.func=func;
-				u32 data[4]={pci_device_read_data(&device,0)};
+				device_address.func=func;
+				u32 data[4]={pci_device_read_data_raw(&device_address,0)};
 				if (data[0]==0xffffffff){
 					continue;
 				}
-				data[1]=pci_device_read_data(&device,4);
-				data[2]=pci_device_read_data(&device,8);
-				data[3]=pci_device_read_data(&device,12);
+				data[1]=pci_device_read_data_raw(&device_address,4);
+				data[2]=pci_device_read_data_raw(&device_address,8);
+				data[3]=pci_device_read_data_raw(&device_address,12);
 				if ((data[3]>>16)&0xff){ // PCI-to-XXX bridge
 					continue;
 				}
-				device.device_id=data[0]>>16;
-				device.vendor_id=data[0];
-				device.class=data[2]>>24;
-				device.subclass=data[2]>>16;
-				device.progif=data[2]>>8;
-				device.revision_id=data[2];
-				device.header_type=data[3]>>16;
-				device.interrupt_line=pci_device_read_data(&device,60);
-				device.interrupt_state.state=PCI_INTERRUPT_STATE_NONE;
+				pci_device_t* device=omm_alloc(&_pci_device_allocator);
+				handle_new(device,HANDLE_TYPE_PCI_DEVICE,&(device->handle));
+				device->address=device_address;
+				device->device_id=data[0]>>16;
+				device->vendor_id=data[0];
+				device->class=data[2]>>24;
+				device->subclass=data[2]>>16;
+				device->progif=data[2]>>8;
+				device->revision_id=data[2];
+				device->header_type=data[3]>>16;
+				device->interrupt_line=pci_device_read_data(device,60);
+				device->interrupt_state.state=PCI_INTERRUPT_STATE_NONE;
 				if (data[1]&0x100000){
-					u8 offset=pci_device_read_data(&device,52);
+					u8 offset=pci_device_read_data(device,52);
 					while (offset){
-						u32 cap=pci_device_read_data(&device,offset);
+						u32 cap=pci_device_read_data(device,offset);
 						if ((cap&0xff)==5){
-							device.interrupt_state.state=PCI_INTERRUPT_STATE_MSI;
-							device.interrupt_state.msi.offset=offset;
+							device->interrupt_state.state=PCI_INTERRUPT_STATE_MSI;
+							device->interrupt_state.msi.offset=offset;
 							break;
 						}
 						if ((cap&0xff)==17){
-							device.interrupt_state.state=PCI_INTERRUPT_STATE_MSIX;
-							device.interrupt_state.msix.offset=offset;
-							device.interrupt_state.msix.next_table_index=0;
-							device.interrupt_state.msix.table_size=(cap>>16)&0x1ff;
+							device->interrupt_state.state=PCI_INTERRUPT_STATE_MSIX;
+							device->interrupt_state.msix.offset=offset;
+							device->interrupt_state.msix.next_table_index=0;
+							device->interrupt_state.msix.table_size=(cap>>16)&0x1ff;
 							break;
 						}
 						offset=(cap>>8);
 					}
 				}
-				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%x:%x",device.bus,device.slot,device.func,device.class,device.subclass,device.progif,device.revision_id,device.device_id,device.vendor_id);
-				driver_ahci_init_device(&device);
-				driver_ata_init_device(&device);
-				driver_nvme_init_device(&device);
-				driver_i82540_init_device(&device);
-				driver_xhci_init_device(&device);
+				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%x:%x",device->address.bus,device->address.slot,device->address.func,device->class,device->subclass,device->progif,device->revision_id,device->device_id,device->vendor_id);
 			}
 		}
 	}
+	driver_ahci_init();
+	driver_ata_init();
+	driver_nvme_init();
+	driver_i82540_init();
+	driver_xhci_init();
 }
 
 

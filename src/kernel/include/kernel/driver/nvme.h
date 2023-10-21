@@ -1,6 +1,6 @@
 #ifndef _KERNEL_DRIVER_NVME_H_
 #define _KERNEL_DRIVER_NVME_H_
-#include <kernel/pci/pci.h>
+#include <kernel/types.h>
 
 
 
@@ -20,7 +20,7 @@ typedef volatile struct _NVME_REGISTERS{
 
 
 
-void driver_nvme_init_device(pci_device_t* device);
+void driver_nvme_init(void);
 
 
 

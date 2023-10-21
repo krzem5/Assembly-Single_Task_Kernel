@@ -1,6 +1,6 @@
 #ifndef _KERNEL_DRIVER_ATA_H_
 #define _KERNEL_DRIVER_ATA_H_
-#include <kernel/pci/pci.h>
+#include <kernel/types.h>
 
 
 
@@ -13,7 +13,7 @@ typedef struct _ATA_DEVICE{
 
 
 
-void driver_ata_init_device(pci_device_t* device);
+void driver_ata_init(void);
 
 
 

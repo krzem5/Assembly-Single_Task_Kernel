@@ -1,6 +1,6 @@
 #ifndef _KERNEL_DRIVER_AHCI_H_
 #define _KERNEL_DRIVER_AHCI_H_
-#include <kernel/pci/pci.h>
+#include <kernel/types.h>
 
 
 
@@ -139,7 +139,7 @@ typedef struct _AHCI_DEVICE{
 
 
 
-void driver_ahci_init_device(pci_device_t* device);
+void driver_ahci_init(void);
 
 
 

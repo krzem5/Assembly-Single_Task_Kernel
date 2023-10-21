@@ -258,7 +258,7 @@ void driver_xhci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	LOG("Attached XHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
+	LOG("Attached XHCI driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	xhci_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(xhci_registers_t));
 	xhci_operational_registers_t* operational_registers=(void*)vmm_identity_map(pci_bar.address+registers->caplength,sizeof(xhci_operational_registers_t));
 	if (operational_registers->pagesize!=1){
@@ -321,4 +321,13 @@ void driver_xhci_init_device(pci_device_t* device){
 	root_hub->hub.port_count=xhci_device->ports;
 	_enumerate_hub(root_hub);
 	// panic("Test");
+}
+
+
+
+void driver_xhci_init(void){
+	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+		pci_device_t* device=handle->object;
+		driver_xhci_init_device(device);
+	}
 }
