@@ -12,7 +12,7 @@
 
 #define OMM_ALLOCATOR_INIT_STRUCT(name,object_size,alignment,page_count,pmm_counter) \
 	(omm_allocator_t){ \
-		#name, \
+		(name), \
 		HANDLE_INIT_STRUCT, \
 		LOCK_INIT_STRUCT, \
 		((object_size)+alignment-1)&(-(alignment)), \
@@ -60,6 +60,10 @@ typedef struct _OMM_ALLOCATOR{
 	KERNEL_ATOMIC u64 allocation_count;
 	KERNEL_ATOMIC u64 deallocation_count;
 } omm_allocator_t;
+
+
+
+extern handle_type_t HANDLE_TYPE_OMM_ALLOCATOR;
 
 
 

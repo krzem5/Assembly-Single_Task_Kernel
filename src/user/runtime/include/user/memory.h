@@ -7,26 +7,20 @@
 #define MEMORY_FLAG_LARGE 1
 #define MEMORY_FLAG_EXTRA_LARGE 2
 
-#define MEMORY_RANGE_TYPE_NORMAL 1
-#define MEMORY_RANGE_TYPE_UNUSABLE 2
-#define MEMORY_RANGE_TYPE_ACPI_TABLES 3
-#define MEMORY_RANGE_TYPE_ACPI_NVS 4
-#define MEMORY_RANGE_TYPE_BAD_MEMORY 5
 
 
-
-typedef struct _MEMORY_COUNTER{
-	char name[16];
+typedef struct _MEMORY_COUNTER_DATA{
+	char name[64];
 	u64 count;
-} memory_counter_t;
+} memory_counter_data_t;
 
 
 
-typedef struct _MEMORY_OBJECT_COUNTER{
-	char name[16];
+typedef struct _MEMORY_OBJECT_ALLOCATOR_DATA{
+	char name[64];
 	u64 allocation_count;
 	u64 deallocation_count;
-} memory_object_counter_t;
+} memory_object_allocator_data_t;
 
 
 
@@ -49,19 +43,11 @@ _Bool memory_unmap(void* address,u64 length);
 
 
 
-u32 memory_get_counter_count(void);
+_Bool memory_counter_get_data(u64 handle,memory_counter_data_t* out);
 
 
 
-_Bool memory_get_counter(u32 counter,memory_counter_t* out);
-
-
-
-u32 memory_get_object_counter_count(void);
-
-
-
-_Bool memory_get_object_counter(u32 counter,memory_object_counter_t* out);
+_Bool memory_object_allocator_get_data(u64 handle,memory_object_allocator_data_t* out);
 
 
 

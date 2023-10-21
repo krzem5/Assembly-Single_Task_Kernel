@@ -19,12 +19,10 @@
 
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
-#define PMM_COUNTER_NAME_LENGTH 16
-
 #define PMM_DECLARE_COUNTER(name) \
 	static handle_id_t PMM_COUNTER_##name=0; \
 	static pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
-		#name"\x00", \
+		#name, \
 		&(PMM_COUNTER_##name) \
 	}; \
 	static pmm_counter_descriptor_t*const __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
@@ -51,11 +49,15 @@ typedef struct _PMM_ALLOCATOR{
 
 
 typedef struct _PMM_COUNTER_DESCRIPTOR{
-	char name[PMM_COUNTER_NAME_LENGTH];
+	const char* name;
 	handle_id_t* var;
 	KERNEL_ATOMIC u64 count;
 	handle_t handle;
 } pmm_counter_descriptor_t;
+
+
+
+extern handle_type_t HANDLE_TYPE_PMM_COUNTER;
 
 
 

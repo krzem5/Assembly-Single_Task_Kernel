@@ -1,5 +1,6 @@
 #include <command.h>
 #include <string.h>
+#include <user/handle.h>
 #include <user/io.h>
 #include <user/memory.h>
 
@@ -26,18 +27,13 @@ void memory_main(int argc,const char*const* argv){
 		}
 	}
 	if (command_type==MEMORY_SHOW_OBJECT_COUNTERS){
-		u32 counter_count=memory_get_object_counter_count();
-		if (!counter_count){
-			goto _counter_error;
-		}
-		for (u32 i=0;i<counter_count;i++){
-			memory_object_counter_t counter;
-			if (!memory_get_object_counter(i,&counter)){
-				goto _counter_error;
+		handle_iterator_t iterator;
+		HANDLE_FOREACH(&iterator,"omm_allocator"){
+			memory_object_allocator_data_t data;
+			if (!memory_object_allocator_get_data(iterator.handle,&data)){
+				continue;
 			}
-			u8 j=0;
-			for (;counter.name[j];j++);
-			printf("%s:\t%s\x1b[1m%lu\x1b[0m\n",counter.name,(j>6?"":"\t"),counter.allocation_count-counter.deallocation_count);
+			printf("%s:\t\x1b[1m%lu\x1b[0m\n",data.name,data.allocation_count-data.deallocation_count);
 		}
 		return;
 	}
@@ -52,22 +48,14 @@ void memory_main(int argc,const char*const* argv){
 		printf("Total: \x1b[1m%v\x1b[0m (\x1b[1m%lu\x1b[0m B)\n",total_size,total_size);
 		return;
 	}
-	u32 counter_count=memory_get_counter_count();
-	if (!counter_count){
-		goto _counter_error;
-	}
-	for (u32 i=0;i<counter_count;i++){
-		memory_counter_t counter;
-		if (!memory_get_counter(i,&counter)){
-			goto _counter_error;
+	handle_iterator_t iterator;
+	HANDLE_FOREACH(&iterator,"pmm_counter"){
+		memory_counter_data_t data;
+		if (!memory_counter_get_data(iterator.handle,&data)){
+			continue;
 		}
-		u8 j=0;
-		for (;counter.name[j];j++);
-		printf("%s:\t%s\x1b[1m%v\x1b[0m\n",counter.name,(j>6?"":"\t"),counter.count<<12);
+		printf("%s:\t\x1b[1m%v\x1b[0m\n",data.name,data.count<<12);
 	}
-	return;
-_counter_error:
-	printf("memory: unable to read memory counter\n");
 }
 
 

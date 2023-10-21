@@ -19,12 +19,10 @@ fd_write(u64 fd,const void* buffer,u32 size) -> s64
 handle_get_data(u64 handle,void* buffer,u32 size) -> _Bool
 handle_get_handle(u64 type,u64 handle) -> u64
 handle_get_type(const char* name,u32 length) -> u64
-memory_get_counter(u32 counter,void* buffer,u32 size) -> _Bool
-memory_get_counter_count(void) -> u32
-memory_get_object_counter(u32 counter,void* buffer,u32 size) -> _Bool
-memory_get_object_counter_count(void) -> u32
+memory_counter_get_data(u64 handle,void* buffer,u32 size) -> _Bool
 memory_get_range(u32 index,void* buffer,u32 size) -> _Bool
 memory_map(u64 length,u32 flags) -> void*
+memory_object_allocator_get_data(u64 handle,void* buffer,u32 size) -> _Bool
 memory_unmap(void* address,u64 length) -> _Bool
 network_layer1_get_mac_address(void* buffer,u32 size) -> _Bool
 network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
