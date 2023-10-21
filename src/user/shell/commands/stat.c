@@ -2,7 +2,6 @@
 #include <cwd.h>
 #include <user/fd.h>
 #include <user/io.h>
-#include <user/partition.h>
 
 
 
@@ -33,12 +32,7 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unable to read data from file '%s': error %d\n",argv[1],error);
 		goto _cleanup;
 	}
-	partition_t partition;
-	if (!partition_get(/*stat.fs_index*/1,&partition)){
-		printf("stat: unable to read partition data\n");
-		goto _cleanup;
-	}
-	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\nPartition: \x1b[1m%s\x1b[0m\nID: \x1b[1m%p\x1b[0m\n",stat.name,_fd_stat_type_names[stat.type],stat.size,stat.size,partition.name,0x1122334455667788ull);
+	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\n",stat.name,_fd_stat_type_names[stat.type],stat.size,stat.size);
 _cleanup:
 	fd_close(fd);
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <user/drive.h>
 #include <user/fd.h>
+#include <user/handle.h>
 #include <user/io.h>
 #include <user/partition.h>
 #include <user/types.h>
@@ -66,10 +67,13 @@ void ls_main(int argc,const char*const* argv){
 		}
 	}
 	else if (type==LS_TYPE_PARTITIONS){
-		partition_t partition;
-		drive_t drive;
-		for (u32 i=0;partition_get(i,&partition)&&drive_get(partition.drive_index,&drive);i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t%s%s%s\n",partition.name,(partition.last_block_index-partition.first_block_index)*drive.block_size,((partition.flags&PARTITION_FLAG_BOOT)?" [boot]":""),((partition.flags&PARTITION_FLAG_HALF_INSTALLED)?" [half-installed]":""),((partition.flags&PARTITION_FLAG_PREVIOUS_BOOT)?" [previous boot]":""));
+		handle_iterator_t iterator;
+		HANDLE_FOREACH(&iterator,"partition"){
+			partition_data_t data;
+			if (!partition_get_data(iterator.handle,&data)){
+				continue;
+			}
+			printf("\x1b[1m%s\x1b[0m\t(%s)\t%v\n",data.name,data.partition_table_name,(data.end_lba-data.start_lba)*512/*drive.block_size*/);
 		}
 	}
 	else if (!directory){

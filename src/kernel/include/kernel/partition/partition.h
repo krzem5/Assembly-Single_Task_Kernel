@@ -9,17 +9,6 @@
 
 
 
-#define PARTITION_FILE_SYSTEM_CONFIG_FLAG_ALIGNED_IO 1
-
-#define PARTITION_FLAG_BOOT 1
-#define PARTITION_FLAG_HALF_INSTALLED 2
-#define PARTITION_FLAG_PREVIOUS_BOOT 4
-
-#define PARTITION_CONFIG_TYPE_DRIVE 0
-#define PARTITION_CONFIG_TYPE_EMPTY 1
-#define PARTITION_CONFIG_TYPE_ISO9660 2
-#define PARTITION_CONFIG_TYPE_KFS 3
-
 #define PARTITION_TYPE_UNKNOWN 0
 
 #define PARTITION_DECLARE_TYPE(name,load_code) \
@@ -44,6 +33,7 @@ typedef struct _PARTITION_DESCRIPTOR{
 
 typedef struct _PARTITION{
 	handle_t handle;
+	const partition_descriptor_t* partition_descriptor;
 	drive_t* drive;
 	char name[32];
 	u64 start_lba;
