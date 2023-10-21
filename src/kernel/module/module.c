@@ -287,6 +287,7 @@ _Bool module_load(vfs_node_t* node){
 	void* file_data=(void*)(pmm_alloc(file_data_pages,PMM_COUNTER_MODULE_BUFFER,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	vfs_node_read(node,0,file_data,file_size);
 	module_t* module=omm_alloc(&_module_allocator);
+	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
 	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,PMM_COUNTER_MODULE_BUFFER);
