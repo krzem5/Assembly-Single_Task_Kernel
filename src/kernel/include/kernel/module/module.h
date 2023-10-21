@@ -7,7 +7,7 @@
 
 #define MODULE_DECLARE(name,init_callback,deinit_callback) \
 	static const module_descriptor_t __attribute__((used,section(".module"))) _module_descriptor={ \
-		#name, \
+		(name), \
 		(init_callback), \
 		(deinit_callback) \
 	}

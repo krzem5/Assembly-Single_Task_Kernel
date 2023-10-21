@@ -124,11 +124,13 @@ typedef struct _ELF_SYMBOL_TABLE_ENTRY{
 
 
 
-static void _map_section_addresses(void* file_data,const elf_header_t* header){
+static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
+	elf_section_header_t* section_header=file_data+header->e_shoff+header->e_shstrndx*sizeof(elf_section_header_t);
+	const char* string_table=file_data+section_header->sh_offset;
 	u64 ex_size=0;
 	u64 nx_size=0;
 	u64 rw_size=0;
-	elf_section_header_t* section_header=file_data+header->e_shoff;
+	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			section_header++;
@@ -161,6 +163,7 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header){
 	u64 nx_base=pmm_alloc(nx_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	u64 rw_base=pmm_alloc(rw_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	section_header=file_data+header->e_shoff;
+	u64 out=0;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			section_header->sh_addr=0;
@@ -183,21 +186,24 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header){
 			*var+=(-*var)&(section_header->sh_addralign-1);
 		}
 		section_header->sh_addr=*var;
+		if (streq(string_table+section_header->sh_name,".module")){
+			out=section_header->sh_addr;
+		}
 		memcpy((void*)(section_header->sh_addr),file_data+section_header->sh_offset,section_header->sh_size);
 		*var+=section_header->sh_size;
 		section_header++;
 	}
-	ERROR("ex_size=%v, nx_size=%v, rw_size=%v",ex_size,nx_size,rw_size);
+	return out;
 }
 
 
 
-static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
+static void _resolve_symbol_table(void* file_data,const elf_header_t* header,elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_symbol_table_entry_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
 			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
-			WARN("Resolve: %s: %p",string_table+symbol_table->st_name,symbol_table->st_value);
 		}
+		symbol_table->st_value+=((const elf_section_header_t*)(file_data+header->e_shoff+symbol_table->st_shndx*sizeof(elf_section_header_t)))->sh_addr;
 		symbol_table++;
 	}
 }
@@ -219,11 +225,11 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 		}
 		section_header++;
 	}
-	_resolve_symbol_table(symbol_table,symbol_table_size,string_table);
+	_resolve_symbol_table(file_data,header,symbol_table,symbol_table_size,string_table);
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (section_header->sh_type==SHT_REL){
-			//
+			panic("SHT_REL");
 		}
 		if (section_header->sh_type==SHT_RELA){
 			u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
@@ -232,7 +238,6 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 				const elf_symbol_table_entry_t* symbol=symbol_table+(entry->r_info>>32);
 				u64 relocation_address=base+entry->r_offset;
 				u64 value=symbol->st_value+entry->r_addend;
-				INFO("%s: %p %u %ld [%u] ~ %p",string_table+symbol->st_name,base+entry->r_offset,entry->r_info&0xffffffff,entry->r_addend,section_header->sh_info,symbol->st_value);
 				switch (entry->r_info&0xffffffff){
 					case R_X86_64_NONE:
 						break;
@@ -320,41 +325,45 @@ _Bool module_load(vfs_node_t* node){
 	if (vfs_node_read(node,0,file_data,file_size)!=file_size){
 		goto _cleanup;
 	}
-	_map_section_addresses(file_data,&header);
+	const module_descriptor_t* module_descriptor=(void*)_map_section_addresses(file_data,&header);
 	_apply_relocations(file_data,&header);
-	const elf_section_header_t* section_header=file_data+header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t);
-	const char* string_table=file_data+section_header->sh_offset;
-	for (u16 i=0;i<header.e_shnum;i++){
-		section_header=file_data+header.e_shoff+i*sizeof(elf_section_header_t);
-		switch (section_header->sh_type){
-			case SHT_PROGBITS:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_PROGBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-			case SHT_SYMTAB:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_SYMTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-			case SHT_STRTAB:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_STRTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-			case SHT_RELA:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_RELA:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-			case SHT_NOBITS:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_NOBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-			case SHT_REL:
-				WARN("[%u] %s",i,string_table+section_header->sh_name);
-				INFO("SHT_REL:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-				break;
-		}
+	if (!module_descriptor){
+		panic("'.module' section not present");
 	}
+	WARN("%s",module_descriptor->name);
+	// const elf_section_header_t* section_header=file_data+header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t);
+	// const char* string_table=file_data+section_header->sh_offset;
+	// for (u16 i=0;i<header.e_shnum;i++){
+	// 	section_header=file_data+header.e_shoff+i*sizeof(elf_section_header_t);
+	// 	switch (section_header->sh_type){
+	// 		case SHT_PROGBITS:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_PROGBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 		case SHT_SYMTAB:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_SYMTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 		case SHT_STRTAB:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_STRTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 		case SHT_RELA:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_RELA:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 		case SHT_NOBITS:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_NOBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 		case SHT_REL:
+	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
+	// 			INFO("SHT_REL:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
+	// 			break;
+	// 	}
+	// }
 _cleanup:
 	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,PMM_COUNTER_MODULE_BUFFER);
-	extern void acpi_fadt_shutdown(_Bool restart);acpi_fadt_shutdown(0);
+	// extern void acpi_fadt_shutdown(_Bool restart);acpi_fadt_shutdown(0);
 	return 0;
 }
