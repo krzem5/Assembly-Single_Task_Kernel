@@ -36,10 +36,6 @@ SECTIONS{
         *(.handle)
         . = ALIGN(8);
 	    DECLARE_SECTION_END(handle);
-	    DECLARE_SECTION_START(partition);
-        *(.partition)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(partition);
 	    DECLARE_SECTION_START(filesystem);
         *(.filesystem)
         . = ALIGN(8);
