@@ -30,6 +30,7 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
+	__KERNEL_TEMP_INIT_EXECUTE();
 	initramfs_load();
 	pci_enumerate();
 	aml_bus_enumerate();

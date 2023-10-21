@@ -20,6 +20,10 @@ SECTIONS{
     .kernel_nx : AT(ADDR(.kernel_nx) - BASE_ADDRESS_OFFSET){
         *(.rodata .rodata* .rdata .rdata*)
         . = ALIGN(8);
+	    DECLARE_SECTION_START(tmp_init);
+        *(.tmp_init)
+        . = ALIGN(8);
+	    DECLARE_SECTION_END(tmp_init);
 	    DECLARE_SECTION_START(pmm_counter);
         *(.pmmcounter)
         . = ALIGN(8);

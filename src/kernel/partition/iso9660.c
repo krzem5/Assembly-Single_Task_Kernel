@@ -23,7 +23,7 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 
-PARTITION_DECLARE_TYPE(ISO9660,{
+static _Bool _iso9660_load_partitions(drive_t* drive){
 	if (drive->block_size!=2048||(!streq(drive->type->name,"ATA")&&!streq(drive->type->name,"ATAPI"))){
 		return 0;
 	}
@@ -48,4 +48,17 @@ PARTITION_DECLARE_TYPE(ISO9660,{
 		}
 		block_index++;
 	}
+}
+
+
+
+static partition_descriptor_t _iso9660_partition_descriptor={
+	"ISO9660",
+	_iso9660_load_partitions
+};
+
+
+
+__KERNEL_TEMP_INIT({
+	partition_register_descriptor(&_iso9660_partition_descriptor);
 });

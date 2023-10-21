@@ -4,10 +4,8 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -28,15 +26,43 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 	WARN("Delete partition: %s",partition->name);
 	omm_dealloc(&_partition_allocator,partition);
 });
+HANDLE_DECLARE_TYPE(PARTITION_DESCRIPTOR,{});
+
+
+
+void partition_register_descriptor(partition_descriptor_t* descriptor){
+	LOG("Registering partition descriptor '%s'...",descriptor->name);
+	handle_new(descriptor,HANDLE_TYPE_PARTITION_DESCRIPTOR,&(descriptor->handle));
+	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
+		drive_t* drive=handle->object;
+		if (drive->partition_descriptor){
+			continue;
+		}
+		drive->partition_descriptor=descriptor;
+		if (descriptor->load_callback(drive)){
+			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number,descriptor->name);
+			return;
+		}
+		drive->partition_descriptor=NULL;
+	}
+}
+
+
+
+void partition_unregister_descriptor(partition_descriptor_t* descriptor){
+	LOG("Unregistering partition descriptor '%s'...",descriptor->name);
+	handle_destroy(&(descriptor->handle));
+}
 
 
 
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
-	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
-		drive->partition_descriptor=*descriptor;
-		if ((*descriptor)->load_callback(drive)){
-			INFO("Detected drive partitioning as '%s'",(*descriptor)->name);
+	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_DESCRIPTOR){
+		partition_descriptor_t* descriptor=handle->object;
+		drive->partition_descriptor=descriptor;
+		if (descriptor->load_callback(drive)){
+			INFO("Detected drive partitioning as '%s'",descriptor->name);
 			return;
 		}
 	}

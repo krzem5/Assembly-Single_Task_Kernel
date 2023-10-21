@@ -84,6 +84,10 @@ handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type);
 
 
 
+void handle_destroy(handle_t* handle);
+
+
+
 void _handle_delete_internal(handle_t* handle);
 
 

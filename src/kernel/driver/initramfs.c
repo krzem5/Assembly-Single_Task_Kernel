@@ -3,8 +3,10 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "initramfs"
 
 
@@ -37,9 +39,33 @@ static drive_type_t _initramfs_drive_type={
 
 
 
+static _Bool _initramfs_load_partitions(drive_t* drive){
+	if (!streq(drive->type->name,"INITRAMFS")){
+		return 0;
+	}
+	partition_t* partition=partition_create(drive,"INITRAMFS",0,drive->block_count);
+	if (!partition->fs){
+		return 0;
+	}
+	vfs_mount(partition->fs,NULL);
+	return 1;
+}
+
+
+
+static partition_descriptor_t _initramfs_partition_descriptor={
+	"INITRAMFS",
+	_initramfs_load_partitions
+};
+
+
+
 void initramfs_load(void){
 	LOG("Loading initramfs...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
+	INFO("Registering partition descriptor...");
+	partition_register_descriptor(&_initramfs_partition_descriptor);
+	INFO("Creating virtual drive...");
 	drive_config_t config={
 		.type=&_initramfs_drive_type,
 		.name="initramfs",
