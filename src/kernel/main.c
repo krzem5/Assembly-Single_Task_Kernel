@@ -4,9 +4,9 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/driver/initramfs.h>
 #include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
+#include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
