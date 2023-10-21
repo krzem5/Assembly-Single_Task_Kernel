@@ -342,7 +342,7 @@ def _compile_module(module):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-plt","-fno-pie","-shared","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{program}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-shared","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{program}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)

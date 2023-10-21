@@ -3,6 +3,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "kernel"
 
 
@@ -67,4 +68,15 @@ const char* kernel_lookup_symbol(u64 address,u64* offset){
 		*offset=address-kernel_symbols[index];
 	}
 	return (void*)(kernel_symbols[index+1]);
+}
+
+
+
+u64 kernel_lookup_symbol_address(const char* name){
+	for (u32 i=0;kernel_symbols[i];i+=2){
+		if (streq(name,(void*)(kernel_symbols[i+1]))){
+			return kernel_symbols[i];
+		}
+	}
+	return 0;
 }
