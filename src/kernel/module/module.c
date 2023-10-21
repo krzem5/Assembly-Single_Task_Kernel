@@ -330,7 +330,7 @@ _Bool module_load(vfs_node_t* node){
 	if (!module_descriptor){
 		panic("'.module' section not present");
 	}
-	WARN("%s",module_descriptor->name);
+	WARN("Module name: %s",module_descriptor->name);
 	// const elf_section_header_t* section_header=file_data+header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t);
 	// const char* string_table=file_data+section_header->sh_offset;
 	// for (u16 i=0;i<header.e_shnum;i++){
