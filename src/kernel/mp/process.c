@@ -1,4 +1,5 @@
 #include <kernel/handle/handle.h>
+#include <kernel/kernel.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
@@ -14,6 +15,8 @@
 
 #define USERSPACE_LOWEST_ADDRESS 0x0000000000001000ull
 #define USERSPACE_HIGHEST_ADDRESS 0x0000800000000000ull
+
+#define KERNELSPACE_LOWEST_ADDRESS 0xfffff00000000000ull
 
 
 
@@ -36,6 +39,7 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 });
 
 process_t* process_kernel;
+vmm_memory_map_t process_kernel_image_mmap;
 
 
 
@@ -45,8 +49,12 @@ void process_init(void){
 	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
 	lock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
-	vmm_memory_map_init(USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(process_kernel->mmap));
+	vmm_memory_map_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
+	vmm_memory_map_init(kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
+	if (!vmm_memory_map_reserve(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address+0x1000000/*Due to KMM*/)){
+		panic("Unable to reserve kernel memory");
+	}
 }
 
 

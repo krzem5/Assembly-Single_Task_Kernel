@@ -33,8 +33,8 @@ static void _resize_stack(void){
 
 void kmm_init(void){
 	LOG("Initializing kernel memory manager...");
-	_kmm_top=pmm_adjusted_kernel_end+kernel_get_offset();
-	_kmm_max_top=pmm_adjusted_kernel_end+kernel_get_offset();
+	_kmm_top=kernel_data.first_free_address+kernel_get_offset();
+	_kmm_max_top=kernel_data.first_free_address+kernel_get_offset();
 }
 
 

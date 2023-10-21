@@ -27,8 +27,6 @@ static pmm_allocator_t KERNEL_BSS _pmm_low_allocator;
 static pmm_allocator_t KERNEL_BSS _pmm_high_allocator;
 static u64 _pmm_block_address_offset=0;
 
-u64 KERNEL_BSS pmm_adjusted_kernel_end;
-
 
 
 static KERNEL_INLINE pmm_allocator_page_header_t* _get_block_header(u64 address){
@@ -144,12 +142,12 @@ void pmm_init(void){
 	}
 	_adjust_counter(PMM_COUNTER_PMM,pmm_align_up_address(low_bitmap_size+high_bitmap_size)>>PAGE_SIZE_SHIFT);
 	_adjust_counter(PMM_COUNTER_KERNEL_IMAGE,pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT);
-	pmm_adjusted_kernel_end=pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+high_bitmap_size;
+	kernel_data.first_free_address+=low_bitmap_size+high_bitmap_size;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
-		if (address<pmm_adjusted_kernel_end){
-			address=pmm_adjusted_kernel_end;
+		if (address<kernel_data.first_free_address){
+			address=kernel_data.first_free_address;
 		}
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(&_pmm_low_allocator,address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));

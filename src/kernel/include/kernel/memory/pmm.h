@@ -97,10 +97,6 @@ static KERNEL_INLINE u64 pmm_align_down_address_extra_large(u64 base){
 
 
 
-extern u64 pmm_adjusted_kernel_end;
-
-
-
 void pmm_init(void);
 
 
