@@ -16,6 +16,7 @@ fd_resize(u64 fd,u64 size,u32 flags) -> s64
 fd_seek(u64 fd,u64 offset,u32 type) -> s64
 fd_stat(u64 fd,void* ptr,u32 size) -> s64
 fd_write(u64 fd,const void* buffer,u32 size) -> s64
+handle_get_data(u64 handle,void* buffer,u32 size) -> _Bool
 handle_get_handle(u64 type,u64 handle) -> u64
 handle_get_type(const char* name,u32 length) -> u64
 memory_get_counter(u32 counter,void* buffer,u32 size) -> _Bool

@@ -24,3 +24,9 @@ void handle_iter_next(handle_iterator_t* iterator){
 		iterator->handle=_syscall_handle_get_handle(iterator->type,iterator->handle+1);
 	}
 }
+
+
+
+_Bool handle_get_data(handle_t handle,handle_data_t* out){
+	return _syscall_handle_get_data(handle,out,sizeof(handle_data_t));
+}

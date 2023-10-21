@@ -12,11 +12,12 @@ void handle_main(int argc,const char*const* argv){
 	}
 	handle_iterator_t iterator;
 	HANDLE_FOREACH(&iterator,"handle"){
-		printf("%p\n",iterator.handle);
+		handle_data_t data;
+		if (!handle_get_data(iterator.handle,&data)){
+			continue;
+		}
+		printf("%s:\t\x1b[1m%u\x1b[0m\t(\x1b[1m%u\x1b[0m)\n",data.name,data.active_count,data.count);
 	}
-// 		u8 i=0;
-// 		for (;type_data.name[i];i++);
-// 		printf("%s:\t%s\x1b[1m%u\x1b[0m\t(\x1b[1m%u\x1b[0m)\n",type_data.name,(i>6?"":"\t"),type_data.active_count,type_data.count);
 }
 
 

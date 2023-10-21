@@ -32,12 +32,42 @@ void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memset)(void* dst,u8 value,u64 length){
 
 
 
-_Bool KERNEL_NOCOVERAGE KERNEL_NOOPT streq(const char* a,const char* b){
+_Bool KERNEL_NOCOVERAGE streq(const char* a,const char* b){
 	while (*a&&*a==*b){
 		a++;
 		b++;
 	}
 	return (!*a&&!*b);
+}
+
+
+
+void KERNEL_NOCOVERAGE strcpy(char* dst,const char* src,u64 max_length){
+	if (!max_length){
+		return;
+	}
+	for (u64 i=0;i<max_length;i++){
+		dst[i]=src[i];
+		if (!src[i]){
+			break;
+		}
+	}
+	dst[max_length]=0;
+}
+
+
+
+void KERNEL_NOCOVERAGE strcpy_lowercase(char* dst,const char* src,u64 max_length){
+	if (!max_length){
+		return;
+	}
+	for (u64 i=0;i<max_length;i++){
+		dst[i]=convert_lowercase(src[i]);
+		if (!src[i]){
+			break;
+		}
+	}
+	dst[max_length]=0;
 }
 
 

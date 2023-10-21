@@ -86,6 +86,14 @@ _Bool streq(const char* a,const char* b);
 
 
 
+void strcpy(char* dst,const char* src,u64 max_length);
+
+
+
+void strcpy_lowercase(char* dst,const char* src,u64 max_length);
+
+
+
 char* memcpy_lowercase(char* dst,const char* src,u64 length);
 
 
