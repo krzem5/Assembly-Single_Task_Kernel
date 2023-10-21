@@ -53,21 +53,6 @@ void* kmm_alloc(u32 size){
 
 
 
-void* kmm_alloc_aligned(u32 size,u32 alignment){
-	lock_acquire_exclusive(&_kmm_lock);
-	if (_kmm_buffer_not_ended){
-		panic("kmm: buffer in use");
-	}
-	_kmm_top=(_kmm_top+alignment-1)&(-((u64)alignment));
-	void* out=(void*)_kmm_top;
-	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
-	_resize_stack();
-	lock_release_exclusive(&_kmm_lock);
-	return out;
-}
-
-
-
 void* kmm_alloc_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (_kmm_buffer_not_ended){

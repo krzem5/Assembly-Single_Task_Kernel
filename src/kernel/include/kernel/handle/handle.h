@@ -8,8 +8,6 @@
 
 #define HANDLE_TYPE_ANY 0
 
-#define HANDLE_NAME_LENGTH 16
-
 #define HANDLE_ID_CREATE(type,index) ((type)|((index)<<16))
 #define HANDLE_ID_GET_TYPE(handle_id) ((handle_id)&0xffff)
 #define HANDLE_ID_GET_INDEX(handle_id) ((handle_id)>>16)
