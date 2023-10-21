@@ -11,15 +11,15 @@ void test_func(void){
 
 
 
-static _Bool _init(void){
-	ERROR("Module loaded! ~ %s",kernel_lookup_symbol(0x12345678,NULL));
+static _Bool _init(module_t* module){
 	test_func();
+	ERROR("Module loaded! @ %p",module->ex_region.base);
 	return 1;
 }
 
 
 
-static void _deinit(void){
+static void _deinit(module_t* module){
 	WARN("Module unloaded!");
 }
 

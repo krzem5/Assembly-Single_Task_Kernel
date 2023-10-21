@@ -1,17 +1,15 @@
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/mmap.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "module"
-
-
-
-PMM_DECLARE_COUNTER(MODULE_BUFFER);
-PMM_DECLARE_COUNTER(MODULE_IMAGE);
 
 
 
@@ -101,12 +99,42 @@ typedef struct _ELF_SYMBOL_TABLE_ENTRY{
 
 
 
-static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
+PMM_DECLARE_COUNTER(MODULE_BUFFER);
+PMM_DECLARE_COUNTER(MODULE_IMAGE);
+PMM_DECLARE_COUNTER(OMM_MODULE);
+
+
+
+static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,PMM_COUNTER_OMM_MODULE);
+
+
+
+HANDLE_DECLARE_TYPE(MODULE,{
+	module_t* module=handle->object;
+	ERROR("Delete MODULE: %s",module->descriptor->name);
+	omm_dealloc(&_module_allocator,module);
+});
+
+
+
+static void _module_alloc_region(module_address_region_t* region){
+	region->size=pmm_align_up_address((region->size?region->size:1));
+	u64 base=pmm_alloc(region->size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0);
+	region->base=vmm_memory_map_reserve(&process_kernel_image_mmap,0,region->size);
+	if (!region->base){
+		panic("Unable to reserve module section memory");
+	}
+	vmm_map_pages(&vmm_kernel_pagemap,base,region->base,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,region->size>>PAGE_SIZE_SHIFT);
+}
+
+
+
+static void _map_section_addresses(void* file_data,const elf_header_t* header,module_t* module){
 	elf_section_header_t* section_header=file_data+header->e_shoff+header->e_shstrndx*sizeof(elf_section_header_t);
 	const char* string_table=file_data+section_header->sh_offset;
-	u64 ex_size=0;
-	u64 nx_size=0;
-	u64 rw_size=0;
+	module->ex_region.size=0;
+	module->nx_region.size=0;
+	module->rw_region.size=0;
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
@@ -116,13 +144,13 @@ static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
 		u64* var=NULL;
 		switch (section_header->sh_flags&(SHF_WRITE|SHF_EXECINSTR)){
 			case 0:
-				var=&nx_size;
+				var=&(module->nx_region.size);
 				break;
 			case SHF_WRITE:
-				var=&rw_size;
+				var=&(module->rw_region.size);
 				break;
 			case SHF_EXECINSTR:
-				var=&ex_size;
+				var=&(module->ex_region.size);
 				break;
 			default:
 				panic("Invalid section flag combination");
@@ -133,14 +161,14 @@ static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
 		*var+=section_header->sh_size;
 		section_header++;
 	}
-	ex_size=pmm_align_up_address((ex_size?ex_size:1));
-	nx_size=pmm_align_up_address((nx_size?nx_size:1));
-	rw_size=pmm_align_up_address((rw_size?rw_size:1));
-	u64 ex_base=pmm_alloc(ex_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	u64 nx_base=pmm_alloc(nx_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	u64 rw_base=pmm_alloc(rw_size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	_module_alloc_region(&(module->ex_region));
+	_module_alloc_region(&(module->nx_region));
+	_module_alloc_region(&(module->rw_region));
 	section_header=file_data+header->e_shoff;
-	u64 out=0;
+	u64 ex_base=module->ex_region.base;
+	u64 nx_base=module->nx_region.base;
+	u64 rw_base=module->rw_region.base;
+	module->descriptor=NULL;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			section_header->sh_addr=0;
@@ -150,13 +178,13 @@ static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
 		u64* var=NULL;
 		switch (section_header->sh_flags&(SHF_WRITE|SHF_EXECINSTR)){
 			case 0:
-				var=&nx_base;
+				var=&(nx_base);
 				break;
 			case SHF_WRITE:
-				var=&rw_base;
+				var=&(rw_base);
 				break;
 			case SHF_EXECINSTR:
-				var=&ex_base;
+				var=&(ex_base);
 				break;
 		}
 		if (section_header->sh_addralign){
@@ -164,13 +192,15 @@ static u64 _map_section_addresses(void* file_data,const elf_header_t* header){
 		}
 		section_header->sh_addr=*var;
 		if (streq(string_table+section_header->sh_name,".module")){
-			out=section_header->sh_addr;
+			module->descriptor=(void*)(section_header->sh_addr);
 		}
 		memcpy((void*)(section_header->sh_addr),file_data+section_header->sh_offset,section_header->sh_size);
 		*var+=section_header->sh_size;
 		section_header++;
 	}
-	return out;
+	if (!module->descriptor){
+		panic("'.module' section not present");
+	}
 }
 
 
@@ -255,17 +285,14 @@ _Bool module_load(vfs_node_t* node){
 	u64 file_size=vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	u64 file_data_pages=pmm_align_up_address(file_size)>>PAGE_SIZE_SHIFT;
 	void* file_data=(void*)(pmm_alloc(file_data_pages,PMM_COUNTER_MODULE_BUFFER,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	if (vfs_node_read(node,0,file_data,file_size)!=file_size){
-		goto _cleanup;
-	}
-	const module_descriptor_t* module_descriptor=(void*)_map_section_addresses(file_data,&header);
+	vfs_node_read(node,0,file_data,file_size);
+	module_t* module=omm_alloc(&_module_allocator);
+	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
-	if (!module_descriptor){
-		panic("'.module' section not present");
-	}
-	WARN("Module name: %s",module_descriptor->name);
-_cleanup:
 	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,PMM_COUNTER_MODULE_BUFFER);
-	// extern void acpi_fadt_shutdown(_Bool restart);acpi_fadt_shutdown(0);
-	return 0;
+	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
+	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
+	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
+	LOG("Module '%s' loaded",module->descriptor->name);
+	return module->descriptor->init_callback(module);
 }
