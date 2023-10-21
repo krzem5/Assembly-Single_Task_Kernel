@@ -4,7 +4,14 @@
 
 
 
-typedef u16 partition_type_t;
+struct _DRIVE;
+
+
+
+typedef struct _PARTITION_DESCRIPTOR{
+	const char* name;
+	_Bool (*load_callback)(struct _DRIVE*);
+} partition_descriptor_t;
 
 
 

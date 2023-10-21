@@ -12,22 +12,12 @@
 #define PARTITION_TYPE_UNKNOWN 0
 
 #define PARTITION_DECLARE_TYPE(name,load_code) \
-	partition_type_t PARTITION_TYPE_##name; \
 	static _Bool _partition_load_callback_##name(drive_t* drive){load_code;} \
 	static const partition_descriptor_t _partition_descriptor_##name={ \
 		#name, \
-		&(PARTITION_TYPE_##name), \
 		_partition_load_callback_##name \
 	}; \
 	static const partition_descriptor_t*const __attribute__((used,section(".partition"))) _partition_descriptor_ptr_##name=&_partition_descriptor_##name;
-
-
-
-typedef struct _PARTITION_DESCRIPTOR{
-	const char* name;
-	partition_type_t* var;
-	_Bool (*load_callback)(drive_t*);
-} partition_descriptor_t;
 
 
 
@@ -44,10 +34,6 @@ typedef struct _PARTITION{
 
 
 extern handle_type_t HANDLE_TYPE_PARTITION;
-
-
-
-void partition_init(void);
 
 
 

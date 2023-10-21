@@ -31,26 +31,16 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 
 
 
-void partition_init(void){
-	partition_type_t partition_type_index=PARTITION_TYPE_UNKNOWN;
-	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
-		partition_type_index++;
-		*((*descriptor)->var)=partition_type_index;
-	}
-}
-
-
-
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
 	for (const partition_descriptor_t*const* descriptor=(void*)kernel_section_partition_start();(u64)descriptor<kernel_section_partition_end();descriptor++){
-		drive->partition_type=*((*descriptor)->var);
+		drive->partition_descriptor=*descriptor;
 		if ((*descriptor)->load_callback(drive)){
 			INFO("Detected drive partitioning as '%s'",(*descriptor)->name);
 			return;
 		}
 	}
-	drive->partition_type=PARTITION_TYPE_UNKNOWN;
+	drive->partition_descriptor=NULL;
 	WARN("Unable to detect partition type of drive '%s'",drive->model_number);
 }
 
@@ -60,7 +50,7 @@ partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number);
 	partition_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
-	out->partition_descriptor=((const partition_descriptor_t*const*)kernel_section_partition_start())[drive->partition_type-PARTITION_TYPE_UNKNOWN-1];
+	out->partition_descriptor=drive->partition_descriptor;
 	out->drive=drive;
 	memcpy(out->name,name,32);
 	out->start_lba=start_lba;

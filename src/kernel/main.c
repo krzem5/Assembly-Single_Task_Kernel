@@ -17,7 +17,6 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer2.h>
-#include <kernel/partition/partition.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
@@ -31,7 +30,6 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
-	partition_init();
 	initramfs_load();
 	pci_enumerate();
 	aml_bus_enumerate();
