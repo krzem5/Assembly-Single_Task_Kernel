@@ -6,7 +6,6 @@
 
 
 static _Bool _init(module_t* module){
-	test_func();
 	ERROR("Module loaded! @ %p",module->ex_region.base);
 	return 1;
 }
