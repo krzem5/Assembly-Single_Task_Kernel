@@ -36,12 +36,16 @@ BUILD_DIRECTORIES=[
 	"build/disk/kernel",
 	"build/hashes",
 	"build/hashes/kernel",
+	"build/hashes/modules",
 	"build/hashes/uefi",
 	"build/hashes/user",
+	"build/modules",
 	"build/objects",
 	"build/objects/kernel",
 	"build/objects/kernel_coverage",
 	"build/objects/kernel_debug",
+	"build/objects/modules",
+	"build/objects/modules_debug",
 	"build/objects/uefi",
 	"build/objects/user",
 	"build/objects/user_debug",
@@ -49,10 +53,10 @@ BUILD_DIRECTORIES=[
 	"build/uefi",
 	"build/vm",
 	"src/kernel/_generated",
-	"src/user/runtime/user/_generated",
 	"src/user/runtime/_generated",
 	"src/user/runtime/_generated/include",
-	"src/user/runtime/_generated/include/user"
+	"src/user/runtime/_generated/include/user",
+	"src/user/runtime/user/_generated"
 ]
 SYSCALL_SOURCE_FILE_PATH="src/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
@@ -69,8 +73,8 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_NORMAL: ["-ggdb","-O0"],
+	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O0"],
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
@@ -79,13 +83,38 @@ KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: [],
+	MODE_NORMAL: ["-g"],
+	MODE_COVERAGE: ["-g"],
+	MODE_RELEASE: []
+}[mode]
+MODULE_HASH_FILE_SUFFIX={
+	MODE_NORMAL: ".txt",
+	MODE_COVERAGE: ".txt",
+	MODE_RELEASE: ".release.txt"
+}[mode]
+MODULE_OBJECT_FILE_DIRECTORY={
+	MODE_NORMAL: "build/objects/modules_debug/",
+	MODE_COVERAGE: "build/objects/modules_coverage/",
+	MODE_RELEASE: "build/objects/modules/"
+}[mode]
+MODULE_EXTRA_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-ggdb","-O0","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-ggdb","-O0","-fno-omit-frame-pointer"],
+	MODE_RELEASE: ["-O3","-g0","-fomit-frame-pointer"]
+}[mode]
+MODULE_EXTRA_LINKER_PREPROCESSING_OPTIONS={
+	MODE_NORMAL: ["-D_MODULE_DEBUG_BUILD_"],
+	MODE_COVERAGE: ["-D_MODULE_DEBUG_BUILD_"],
+	MODE_RELEASE: []
+}[mode]
+MODULE_EXTRA_LINKER_OPTIONS={
+	MODE_NORMAL: ["-g"],
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
 USER_HASH_FILE_SUFFIX={
 	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".release.txt",
+	MODE_COVERAGE: ".txt",
 	MODE_RELEASE: ".release.txt"
 }[mode]
 USER_OBJECT_FILE_DIRECTORY={
@@ -94,8 +123,8 @@ USER_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/user/"
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-g","-fno-omit-frame-pointer","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","-DKERNEL_COVERAGE_ENABLED=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
@@ -111,6 +140,7 @@ USER_EXTRA_LINKER_OPTIONS={
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
+MODULE_FILE_DIRECTORY="src/modules"
 USER_FILE_DIRECTORY="src/user"
 OS_IMAGE_SIZE=1440*1024
 INSTALL_DISK_SIZE=262144
@@ -295,6 +325,36 @@ def _patch_kernel(file_path,kernel_symbols):
 
 
 
+def _compile_module(module):
+	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module)
+	object_files=[]
+	error=False
+	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
+		for file_name in files:
+			suffix=file_name[file_name.rindex("."):]
+			if (suffix not in SOURCE_FILE_SUFFIXES):
+				continue
+			file=os.path.join(root,file_name)
+			object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			object_files.append(object_file)
+			if (_file_not_changed(changed_files,object_file+".deps") and 0):
+				continue
+			command=None
+			if (suffix==".c"):
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-plt","-fno-pie","-shared","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{program}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
+			else:
+				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+			print(file)
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+				del file_hash_list[file]
+				error=True
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/modules/{module}.mod"]+object_files+KERNEL_EXTRA_LINKER_OPTIONS).returncode!=0):
+		sys.exit(1)
+
+
+
 def _compile_user_files(program):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
@@ -419,7 +479,7 @@ for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 		rebuild_uefi_partition=True
 		command=None
 		if (suffix==".c"):
-			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fPIC","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		print(file)
@@ -450,7 +510,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		command=None
 		rebuild_data_partition=True
 		if (suffix==".c"):
-			command=["gcc-12","-mcmodel=large","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		print(file)
@@ -474,7 +534,10 @@ for program in os.listdir(USER_FILE_DIRECTORY):
 	object_files=runtime_object_files+_compile_user_files(program)
 	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-#####################################################################################################################################=
+#####################################################################################################################################
+for module in os.listdir(MODULE_FILE_DIRECTORY):
+	_compile_module(module)
+#####################################################################################################################################
 if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################
@@ -501,8 +564,10 @@ if (rebuild_data_partition):
 	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
 	kfs2.format_partition(initramfs_fs)
 	with open(f"build/disk/kernel/{'coverage' if mode==MODE_COVERAGE else 'shell'}.elf","rb") as rf:
-		test_inode=kfs2.get_inode(initramfs_fs,"/boot/boot.elf")
-		kfs2.set_file_content(initramfs_fs,test_inode,rf.read())
+		kfs2.set_file_content(initramfs_fs,kfs2.get_inode(initramfs_fs,"/boot/boot.elf"),rf.read())
+	for module in os.listdir(MODULE_FILE_DIRECTORY):
+		with open(f"build/modules/{module}.mod","rb") as rf:
+			kfs2.set_file_content(initramfs_fs,kfs2.get_inode(initramfs_fs,f"/module/{module}.mod"),rf.read())
 	initramfs_fs.close()
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)

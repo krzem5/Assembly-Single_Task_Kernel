@@ -13,6 +13,7 @@
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer2.h>
@@ -38,6 +39,7 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
+	module_load(vfs_lookup(NULL,"/module/test.mod"));
 	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}
