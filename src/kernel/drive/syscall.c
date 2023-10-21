@@ -25,6 +25,7 @@ typedef struct _USER_DRIVE_DATA{
 
 void syscall_drive_get_data(syscall_registers_t* regs){
 	if (regs->rdx!=sizeof(user_drive_data_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
 		return;
 	}
 	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_DRIVE);
