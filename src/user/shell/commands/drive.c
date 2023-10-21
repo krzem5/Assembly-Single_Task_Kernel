@@ -1,19 +1,9 @@
 #include <command.h>
 #include <string.h>
-#include <user/clock.h>
 #include <user/drive.h>
-#include <user/fd.h>
 #include <user/handle.h>
 #include <user/io.h>
-#include <user/memory.h>
 #include <user/types.h>
-
-
-
-// Must be page-aligned
-#define SPEED_TEST_BUFFER_SIZE (32768*4096)
-
-#define SPEED_TEST_COUNT 2
 
 
 
