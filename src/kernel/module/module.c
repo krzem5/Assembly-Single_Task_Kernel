@@ -31,31 +31,8 @@ PMM_DECLARE_COUNTER(MODULE_IMAGE);
 #define R_X86_64_NONE 0
 #define R_X86_64_64 1
 #define R_X86_64_PC32 2
-#define R_X86_64_GOT32 3
 #define R_X86_64_PLT32 4
-#define R_X86_64_COPY 5
-#define R_X86_64_GLOB_DAT 6
-#define R_X86_64_JUMP_SLOT 7
-#define R_X86_64_RELATIVE 8
-#define R_X86_64_GOTPCREL 9
 #define R_X86_64_32 10
-#define R_X86_64_32S 11
-#define R_X86_64_16 12
-#define R_X86_64_PC16 13
-#define R_X86_64_8 14
-#define R_X86_64_PC8 15
-#define R_X86_64_PC64 24
-#define R_X86_64_GOTOFF64 25
-#define R_X86_64_GOTPC32 26
-#define R_X86_64_SIZE32 32
-#define R_X86_64_SIZE64 33
-#define R_X86_64_GOTPC32_TLSDESC 34
-#define R_X86_64_TLSDESC_CALL 35
-#define R_X86_64_TLSDESC 36
-#define R_X86_64_IRELATIVE 37
-#define R_X86_64_RELATIVE64 38
-#define R_X86_64_GOTPCRELX 41
-#define R_X86_64_REX_GOTPCRELX 42
 
 
 
@@ -248,56 +225,11 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 					case R_X86_64_PLT32:
 						*((u32*)relocation_address)=value-relocation_address;
 						break;
-					case R_X86_64_GOT32:
-						panic("R_X86_64_GOT32");
-					case R_X86_64_COPY:
-						panic("R_X86_64_COPY");
-					case R_X86_64_GLOB_DAT:
-						panic("R_X86_64_GLOB_DAT");
-					case R_X86_64_JUMP_SLOT:
-						panic("R_X86_64_JUMP_SLOT");
-					case R_X86_64_RELATIVE:
-						panic("R_X86_64_RELATIVE");
-					case R_X86_64_GOTPCREL:
-						panic("R_X86_64_GOTPCREL");
 					case R_X86_64_32:
 						*((u32*)relocation_address)=value;
 						break;
-					case R_X86_64_32S:
-						panic("R_X86_64_32S");
-					case R_X86_64_16:
-						panic("R_X86_64_16");
-					case R_X86_64_PC16:
-						panic("R_X86_64_PC16");
-					case R_X86_64_8:
-						panic("R_X86_64_8");
-					case R_X86_64_PC8:
-						panic("R_X86_64_PC8");
-					case R_X86_64_PC64:
-						panic("R_X86_64_PC64");
-					case R_X86_64_GOTOFF64:
-						panic("R_X86_64_GOTOFF64");
-					case R_X86_64_GOTPC32:
-						panic("R_X86_64_GOTPC32");
-					case R_X86_64_SIZE32:
-						panic("R_X86_64_SIZE32");
-					case R_X86_64_SIZE64:
-						panic("R_X86_64_SIZE64");
-					case R_X86_64_GOTPC32_TLSDESC:
-						panic("R_X86_64_GOTPC32_TLSDESC");
-					case R_X86_64_TLSDESC_CALL:
-						panic("R_X86_64_TLSDESC_CALL");
-					case R_X86_64_TLSDESC:
-						panic("R_X86_64_TLSDESC");
-					case R_X86_64_IRELATIVE:
-						panic("R_X86_64_IRELATIVE");
-					case R_X86_64_RELATIVE64:
-						panic("R_X86_64_RELATIVE64");
-					case R_X86_64_GOTPCRELX:
-						panic("R_X86_64_GOTPCRELX");
-					case R_X86_64_REX_GOTPCRELX:
-						panic("R_X86_64_REX_GOTPCRELX");
 					default:
+						WARN("Unknon relocation type: %u",entry->r_info&0xffffffff);
 						panic("Unknown relocation type");
 				}
 				entry++;
@@ -326,37 +258,6 @@ _Bool module_load(vfs_node_t* node){
 	if (vfs_node_read(node,0,file_data,file_size)!=file_size){
 		goto _cleanup;
 	}
-	// const elf_section_header_t* section_header=file_data+header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t);
-	// const char* string_table=file_data+section_header->sh_offset;
-	// for (u16 i=0;i<header.e_shnum;i++){
-	// 	section_header=file_data+header.e_shoff+i*sizeof(elf_section_header_t);
-	// 	switch (section_header->sh_type){
-	// 		case SHT_PROGBITS:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_PROGBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 		case SHT_SYMTAB:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_SYMTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 		case SHT_STRTAB:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_STRTAB:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 		case SHT_RELA:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_RELA:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 		case SHT_NOBITS:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_NOBITS:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 		case SHT_REL:
-	// 			WARN("[%u] %s",i,string_table+section_header->sh_name);
-	// 			INFO("SHT_REL:\t%p\t%v\t%u\t%u",section_header->sh_addr,section_header->sh_size,section_header->sh_addralign,section_header->sh_entsize);
-	// 			break;
-	// 	}
-	// }
 	const module_descriptor_t* module_descriptor=(void*)_map_section_addresses(file_data,&header);
 	_apply_relocations(file_data,&header);
 	if (!module_descriptor){
