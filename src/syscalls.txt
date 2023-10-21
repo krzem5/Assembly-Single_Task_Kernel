@@ -2,7 +2,7 @@ aml_get_root_node(void) -> const void*
 clock_get_converion(void) -> void
 coverage_dump_data(void) -> void
 cpu_get_count(void) -> u32
-drive_get(u32 index,void* buffer,u32 size) -> _Bool
+drive_get_data(u32 handle,void* buffer,u32 size) -> _Bool
 fd_close(u64 fd) -> s64
 fd_dup(u64 fd,u32 flags) -> s64
 fd_iter_get(u64 iterator,char* buffer,u32 size) -> s64

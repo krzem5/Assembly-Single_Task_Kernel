@@ -31,22 +31,22 @@ void drive_main(int argc,const char*const* argv){
 		printf("drive: no drive supplied\n");
 		return;
 	}
-	u32 i=0;
-	drive_t drive;
-	for (;drive_get(i,&drive);i++){
-		if (string_equal(drive.name,drive_name)){
-			goto _drive_found;
-		}
-	}
+	// u32 i=0;
+	// drive_t drive;
+	// for (;drive_get(i,&drive);i++){
+	// 	if (string_equal(drive.name,drive_name)){
+	// 		goto _drive_found;
+	// 	}
+	// }
 	printf("drive: drive '%s' not found\n",drive_name);
 	return;
-_drive_found:
-	printf("Name: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nBlock size: \x1b[1m%v\x1b[0m\nBlock count: \x1b[1m%lu\x1b[0m\n",
-		drive_name,
-		drive.block_count*drive.block_size,
-		drive.block_size,
-		drive.block_count
-	);
+// _drive_found:
+// 	printf("Name: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v\x1b[0m\nBlock size: \x1b[1m%v\x1b[0m\nBlock count: \x1b[1m%lu\x1b[0m\n",
+// 		drive_name,
+// 		drive.block_count*drive.block_size,
+// 		drive.block_size,
+// 		drive.block_count
+// 	);
 }
 
 

@@ -6,7 +6,6 @@
 
 
 #define PARTITION_DATA_NAME_LENGTH 64
-
 #define PARTITION_DATA_PARTITION_TABLE_NAME_LENGTH 64
 
 
@@ -19,12 +18,6 @@ typedef struct _USER_PARTITION_DATA{
 	u64 end_lba;
 	u64 fs_handle;
 } user_partition_data_t;
-
-
-
-void syscall_partition_get(syscall_registers_t* regs){
-	regs->rax=0;
-}
 
 
 

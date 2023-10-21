@@ -4,20 +4,18 @@
 
 
 
-typedef struct _DRIVE{
-	u8 flags;
-	u8 type;
-	u8 index;
-	char name[48];
-	char serial_number[48];
-	char model_number[48];
+typedef struct _DRIVE_DATA{
+	char name[64];
+	char serial_number[64];
+	char model_number[64];
+	char type[64];
 	u64 block_count;
 	u64 block_size;
-} drive_t;
+} drive_data_t;
 
 
 
-_Bool drive_get(u32 index,drive_t* out);
+_Bool drive_get_data(u64 handle,drive_data_t* out);
 
 
 

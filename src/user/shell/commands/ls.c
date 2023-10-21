@@ -61,9 +61,13 @@ void ls_main(int argc,const char*const* argv){
 		return;
 	}
 	if (type==LS_TYPE_DRIVES){
-		drive_t drive;
-		for (u32 i=0;drive_get(i,&drive);i++){
-			printf("\x1b[1m%s\x1b[0m\t%v\t(%s)\n",drive.name,drive.block_count*drive.block_size,drive.model_number);
+		handle_iterator_t iterator;
+		HANDLE_FOREACH(&iterator,"drive"){
+			drive_data_t data;
+			if (!drive_get_data(iterator.handle,&data)){
+				continue;
+			}
+			printf("\x1b[1m%s\x1b[0m\t%v\t(%s)\n",data.name,data.block_count*data.block_size,data.model_number);
 		}
 	}
 	else if (type==LS_TYPE_PARTITIONS){
@@ -73,7 +77,11 @@ void ls_main(int argc,const char*const* argv){
 			if (!partition_get_data(iterator.handle,&data)){
 				continue;
 			}
-			printf("\x1b[1m%s\x1b[0m\t(%s)\t%v\n",data.name,data.partition_table_name,(data.end_lba-data.start_lba)*512/*drive.block_size*/);
+			drive_data_t drive_data;
+			if (!drive_get_data(data.drive_handle,&drive_data)){
+				continue;
+			}
+			printf("\x1b[1m%s\x1b[0m\t(%s)\t%v\n",data.name,data.partition_table_name,(data.end_lba-data.start_lba)*drive_data.block_size);
 		}
 	}
 	else if (!directory){
