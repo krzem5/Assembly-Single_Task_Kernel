@@ -43,4 +43,3 @@ void syscall_drive_get_data(syscall_registers_t* regs){
 	out->block_size=drive->block_size;
 	regs->rax=1;
 }
-
