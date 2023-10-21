@@ -12,6 +12,11 @@
 
 
 
+#define USERSPACE_LOWEST_ADDRESS 0x0000000000001000ull
+#define USERSPACE_HIGHEST_ADDRESS 0x0000800000000000ull
+
+
+
 PMM_DECLARE_COUNTER(OMM_PROCESS);
 
 
@@ -36,7 +41,12 @@ process_t* process_kernel;
 
 void process_init(void){
 	LOG("Creating kernel process...");
-	process_kernel=process_new();
+	process_kernel=omm_alloc(&_process_allocator);
+	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
+	lock_init(&(process_kernel->lock));
+	vmm_pagemap_init(&(process_kernel->pagemap));
+	vmm_memory_map_init(USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(process_kernel->mmap));
+	thread_list_init(&(process_kernel->thread_list));
 }
 
 
@@ -46,7 +56,7 @@ process_t* process_new(void){
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	lock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
-	vmm_memory_map_init(&(out->mmap));
+	vmm_memory_map_init(USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));
 	return out;
 }

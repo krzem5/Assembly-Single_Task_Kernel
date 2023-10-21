@@ -9,11 +9,6 @@
 
 
 
-#define LOWEST_ADDRESS 0x0000000000001000ull
-#define HIGHEST_ADDRESS 0x0000800000000000ull
-
-
-
 PMM_DECLARE_COUNTER(OMM_MMAP_RANGE);
 
 
@@ -54,9 +49,9 @@ static void _delete_next_region(vmm_memory_map_region_t* region){
 
 
 
-void vmm_memory_map_init(vmm_memory_map_t* out){
+void vmm_memory_map_init(u64 low,u64 high,vmm_memory_map_t* out){
 	lock_init(&(out->lock));
-	out->first=_insert_region_after_anchor(NULL,0,LOWEST_ADDRESS,HIGHEST_ADDRESS-LOWEST_ADDRESS);
+	out->first=_insert_region_after_anchor(NULL,0,low,high-low);
 }
 
 

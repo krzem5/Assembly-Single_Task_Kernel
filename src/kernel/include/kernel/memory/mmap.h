@@ -23,7 +23,7 @@ typedef struct _VMM_MEMORY_MAP{
 
 
 
-void vmm_memory_map_init(vmm_memory_map_t* out);
+void vmm_memory_map_init(u64 low,u64 high,vmm_memory_map_t* out);
 
 
 
