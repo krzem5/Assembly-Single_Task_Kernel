@@ -73,8 +73,8 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O0"],
-	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O0"],
+	MODE_NORMAL: ["-ggdb","-O1"],
+	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
@@ -94,7 +94,7 @@ MODULE_HASH_FILE_SUFFIX={
 }[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/modules_debug/",
-	MODE_COVERAGE: "build/objects/modules_coverage/",
+	MODE_COVERAGE: "build/objects/modules_debug/",
 	MODE_RELEASE: "build/objects/modules/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
