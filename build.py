@@ -338,7 +338,7 @@ def _compile_module(module):
 			file=os.path.join(root,file_name)
 			object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps") and 0):
+			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
 			command=None
 			if (suffix==".c"):

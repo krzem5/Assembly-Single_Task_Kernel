@@ -228,11 +228,11 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 	_resolve_symbol_table(file_data,header,symbol_table,symbol_table_size,string_table);
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
-		if (section_header->sh_type==SHT_REL){
+		u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
+		if (section_header->sh_type==SHT_REL&&base){
 			panic("SHT_REL");
 		}
-		if (section_header->sh_type==SHT_RELA){
-			u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
+		if (section_header->sh_type==SHT_RELA&&base){
 			const elf_relocation_addend_entry_t* entry=file_data+section_header->sh_offset;
 			for (u64 i=0;i<section_header->sh_size;i+=sizeof(elf_relocation_addend_entry_t)){
 				const elf_symbol_table_entry_t* symbol=symbol_table+(entry->r_info>>32);
@@ -261,7 +261,8 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 					case R_X86_64_GOTPCREL:
 						panic("R_X86_64_GOTPCREL");
 					case R_X86_64_32:
-						panic("R_X86_64_32");
+						*((u32*)relocation_address)=value;
+						break;
 					case R_X86_64_32S:
 						panic("R_X86_64_32S");
 					case R_X86_64_16:
@@ -325,12 +326,6 @@ _Bool module_load(vfs_node_t* node){
 	if (vfs_node_read(node,0,file_data,file_size)!=file_size){
 		goto _cleanup;
 	}
-	const module_descriptor_t* module_descriptor=(void*)_map_section_addresses(file_data,&header);
-	_apply_relocations(file_data,&header);
-	if (!module_descriptor){
-		panic("'.module' section not present");
-	}
-	WARN("Module name: %s",module_descriptor->name);
 	// const elf_section_header_t* section_header=file_data+header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t);
 	// const char* string_table=file_data+section_header->sh_offset;
 	// for (u16 i=0;i<header.e_shnum;i++){
@@ -362,6 +357,12 @@ _Bool module_load(vfs_node_t* node){
 	// 			break;
 	// 	}
 	// }
+	const module_descriptor_t* module_descriptor=(void*)_map_section_addresses(file_data,&header);
+	_apply_relocations(file_data,&header);
+	if (!module_descriptor){
+		panic("'.module' section not present");
+	}
+	WARN("Module name: %s",module_descriptor->name);
 _cleanup:
 	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,PMM_COUNTER_MODULE_BUFFER);
 	// extern void acpi_fadt_shutdown(_Bool restart);acpi_fadt_shutdown(0);
