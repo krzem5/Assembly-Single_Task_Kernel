@@ -63,8 +63,12 @@ _Bool module_load(vfs_node_t* node){
 	if (header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=1||header.e_machine!=0x3e||header.e_version!=1){
 		return 0;
 	}
+	elf_section_header_t section_header;
+	if (vfs_node_read(node,header.e_shoff+header.e_shstrndx*sizeof(elf_section_header_t),&section_header,sizeof(elf_section_header_t))!=sizeof(elf_section_header_t)){
+		return 0;
+	}
+	WARN("%u",header.e_shstrndx);
 	for (u16 i=0;i<header.e_shnum;i++){
-		elf_section_header_t section_header;
 		if (vfs_node_read(node,header.e_shoff+i*sizeof(elf_section_header_t),&section_header,sizeof(elf_section_header_t))!=sizeof(elf_section_header_t)){
 			return 0;
 		}
