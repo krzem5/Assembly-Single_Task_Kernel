@@ -6,14 +6,14 @@
 
 
 static _Bool _init(module_t* module){
-	ERROR("Module loaded! @ %p",module->ex_region.base);
+	ERROR("Module loaded @ %p",module->ex_region.base);
 	return 1;
 }
 
 
 
 static void _deinit(module_t* module){
-	WARN("Module unloaded!");
+	WARN("Module unloaded");
 }
 
 
