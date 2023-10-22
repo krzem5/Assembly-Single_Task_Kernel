@@ -1,6 +1,7 @@
 import array
 import binascii
 import hashlib
+import initramfs
 import kfs2
 import os
 import socket
@@ -39,6 +40,9 @@ BUILD_DIRECTORIES=[
 	"build/hashes/modules",
 	"build/hashes/uefi",
 	"build/hashes/user",
+	"build/initramfs",
+	"build/initramfs/boot",
+	"build/initramfs/module",
 	"build/modules",
 	"build/objects",
 	"build/objects/kernel",
@@ -195,6 +199,11 @@ def _generate_kernel_version():
 def _read_file(file_path):
 	with open(file_path,"rb") as rf:
 		return rf.read()
+
+
+def _copy_file(src,dst):
+	with open(src,"rb") as rf,open(dst,"wb") as wf:
+		wf.write(rf.read())
 
 
 
@@ -559,6 +568,10 @@ if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 if (rebuild_data_partition):
+	_copy_file("build/disk/kernel/shell.elf","build/initramfs/boot/boot.elf")
+	for module in os.listdir(MODULE_FILE_DIRECTORY):
+		_copy_file(f"build/modules/{module}.mod",f"build/initramfs/module/{module}.mod")
+	initramfs.create("build/initramfs","build/partitions/initramfs_NEW.img")
 	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
 	kfs2.format_partition(initramfs_fs)
 	with open(f"build/disk/kernel/shell.elf","rb") as rf:
@@ -569,7 +582,7 @@ if (rebuild_data_partition):
 	initramfs_fs.close()
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf:
+	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs_NEW.img","rb") as initramfs_rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,kernel_inode,kernel_rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
