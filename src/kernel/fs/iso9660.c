@@ -57,11 +57,15 @@ typedef struct _ISO9660_VFS_NODE{
 
 
 
-PMM_DECLARE_COUNTER(OMM_ISO9660NODE);
+PMM_DECLARE_COUNTER(OMM_ISO9660_NODE);
 
 
 
-static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660NODE);
+static filesystem_descriptor_t _iso9660_filesystem_descriptor;
+
+
+
+static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660_NODE);
 
 extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
 
@@ -248,7 +252,7 @@ static filesystem_t* _iso9660_fs_load(partition_t* partition){
 		block_index++;
 	}
 _directory_lba_found:
-	filesystem_t* out=fs_create(FILESYSTEM_TYPE_ISO9660);
+	filesystem_t* out=fs_create(&_iso9660_filesystem_descriptor);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
 	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
@@ -262,8 +266,15 @@ _directory_lba_found:
 
 
 
-FILESYSTEM_DECLARE_TYPE(
-	ISO9660,
+static filesystem_descriptor_t _iso9660_filesystem_descriptor={
+	"iso9660",
+	NULL,
 	_iso9660_fs_deinit,
 	_iso9660_fs_load
-);
+};
+
+
+
+__KERNEL_TEMP_INIT({
+	fs_register_descriptor(&_iso9660_filesystem_descriptor);
+});

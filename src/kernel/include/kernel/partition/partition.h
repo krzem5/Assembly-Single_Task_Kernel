@@ -11,7 +11,7 @@
 
 typedef struct _PARTITION{
 	handle_t handle;
-	const partition_descriptor_t* partition_descriptor;
+	const partition_descriptor_t* descriptor;
 	drive_t* drive;
 	char name[32];
 	u64 start_lba;

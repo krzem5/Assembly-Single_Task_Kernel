@@ -14,7 +14,7 @@ typedef u16 filesystem_type_t;
 typedef struct _FILESYSTEM{
 	handle_t handle;
 	lock_t lock;
-	filesystem_type_t type;
+	struct _FILESYSTEM_DESCRIPTOR* descriptor;
 	vfs_functions_t* functions;
 	struct _PARTITION* partition;
 	void* extra_data;

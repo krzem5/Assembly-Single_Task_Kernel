@@ -148,6 +148,10 @@ static const u32 _kfs2_crc_table[256]={
 
 
 
+static filesystem_descriptor_t _kfs2_filesystem_descriptor;
+
+
+
 static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
 static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
 
@@ -479,7 +483,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(&_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
-	filesystem_t* out=fs_create(FILESYSTEM_TYPE_KFS2);
+	filesystem_t* out=fs_create(&_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
@@ -492,8 +496,15 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 
 
 
-FILESYSTEM_DECLARE_TYPE(
-	KFS2,
+static filesystem_descriptor_t _kfs2_filesystem_descriptor={
+	"kfs2",
+	NULL,
 	_kfs2_fs_deinit,
 	_kfs2_fs_load
-);
+};
+
+
+
+__KERNEL_TEMP_INIT({
+	fs_register_descriptor(&_kfs2_filesystem_descriptor);
+});

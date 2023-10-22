@@ -23,8 +23,10 @@ static omm_allocator_t _fs_allocator=OMM_ALLOCATOR_INIT_STRUCT("fs",sizeof(files
 HANDLE_DECLARE_TYPE(FS,{
 	filesystem_t* fs=handle->object;
 	WARN("Delete filesystem: %p",fs);
+	handle_release(&(fs->descriptor->handle));
 	omm_dealloc(&_fs_allocator,fs);
 });
+HANDLE_DECLARE_TYPE(FS_DESCRIPTOR,{});
 
 
 
@@ -38,11 +40,33 @@ void fs_init(void){
 
 
 
-filesystem_t* fs_create(filesystem_type_t type){
+void fs_register_descriptor(filesystem_descriptor_t* descriptor){
+	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
+	handle_new(descriptor,HANDLE_TYPE_FS_DESCRIPTOR,&(descriptor->handle));
+	HANDLE_FOREACH(HANDLE_TYPE_PARTITION){
+		partition_t* partition=handle->object;
+		if (partition->fs){
+			continue;
+		}
+		descriptor->load_callback(partition);
+	}
+}
+
+
+
+void fs_unregister_descriptor(filesystem_descriptor_t* descriptor){
+	LOG("Unregistering filesystem descriptor '%s'...",descriptor->name);
+	handle_destroy(&(descriptor->handle));
+}
+
+
+
+filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
+	handle_acquire(&(descriptor->handle));
 	filesystem_t* out=omm_alloc(&_fs_allocator);
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
 	lock_init(&(out->lock));
-	out->type=type;
+	out->descriptor=descriptor;
 	out->functions=NULL;
 	out->root=NULL;
 	return out;
@@ -51,8 +75,9 @@ filesystem_t* fs_create(filesystem_type_t type){
 
 
 filesystem_t* fs_load(partition_t* partition){
-	for (const filesystem_descriptor_t*const* descriptor=(void*)kernel_section_filesystem_start();(u64)descriptor<kernel_section_filesystem_end();descriptor++){
-		filesystem_t* out=(*descriptor)->load_callback(partition);
+	HANDLE_FOREACH(HANDLE_TYPE_FS_DESCRIPTOR){
+		filesystem_descriptor_t* descriptor=handle->object;
+		filesystem_t* out=descriptor->load_callback(partition);
 		if (out){
 			return out;
 		}

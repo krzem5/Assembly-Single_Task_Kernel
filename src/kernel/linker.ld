@@ -36,10 +36,6 @@ SECTIONS{
         *(.handle)
         . = ALIGN(8);
 	    DECLARE_SECTION_END(handle);
-	    DECLARE_SECTION_START(filesystem);
-        *(.filesystem)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(filesystem);
 #ifdef _KERNEL_COVERAGE_BUILD_
 	    DECLARE_SECTION_START(gcov_info);
         *(.gcov_info)
