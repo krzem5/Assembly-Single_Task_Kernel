@@ -13,6 +13,51 @@
 
 
 
+#define PMM_COUNTER_DRIVER_AHCI (0x10000|HANDLE_TYPE_PMM_COUNTER)// PMM_DECLARE_COUNTER(DRIVER_AHCI);
+
+
+
+// Controller
+#define CAP_NP 0x0000001f
+#define CAP_NCS 0x00001f00
+#define CAP_NCS_SHIFT 8
+#define CAP_S64A 0x80000000
+
+#define GHC_HR 0x00000001
+#define GHC_IE 0x00000002
+#define GHC_AE 0x80000000
+
+#define CAP2_BOH 0x1
+
+#define BOHC_BOS 0x01
+#define BOHC_OOS 0x02
+#define BOHC_BB 0x10
+
+// Device
+#define CMD_ST 0x0001
+#define CMD_FRE 0x0010
+#define CMD_CR 0x8000
+
+#define TFD_STS_DSQ 0x08
+#define TFD_STS_BSY 0x80
+
+// Command
+#define FLAGS_WRITE 0x40
+#define FLAGS_PREFEACHABLE 0x80
+
+// FIS
+#define FIS_TYPE_REG_H2D 0x27
+
+// FIS flags
+#define FIS_FLAG_COMMAND 0x80
+
+// ATA
+#define ATA_CMD_IDENTIFY 0xec
+#define ATA_CMD_READ 0x25
+#define ATA_CMD_WRITE 0x35
+
+
+
 typedef volatile struct _AHCI_PORT_REGISTERS{
 	u32 clb;
 	u32 clbu;
@@ -145,51 +190,6 @@ typedef struct _AHCI_DEVICE{
 	ahci_command_list_t* command_list;
 	ahci_command_table_t* command_tables[32];
 } ahci_device_t;
-
-
-
-#define PMM_COUNTER_DRIVER_AHCI (0x10000|HANDLE_TYPE_PMM_COUNTER)// PMM_DECLARE_COUNTER(DRIVER_AHCI);
-
-
-
-// Controller
-#define CAP_NP 0x0000001f
-#define CAP_NCS 0x00001f00
-#define CAP_NCS_SHIFT 8
-#define CAP_S64A 0x80000000
-
-#define GHC_HR 0x00000001
-#define GHC_IE 0x00000002
-#define GHC_AE 0x80000000
-
-#define CAP2_BOH 0x1
-
-#define BOHC_BOS 0x01
-#define BOHC_OOS 0x02
-#define BOHC_BB 0x10
-
-// Device
-#define CMD_ST 0x0001
-#define CMD_FRE 0x0010
-#define CMD_CR 0x8000
-
-#define TFD_STS_DSQ 0x08
-#define TFD_STS_BSY 0x80
-
-// Command
-#define FLAGS_WRITE 0x40
-#define FLAGS_PREFEACHABLE 0x80
-
-// FIS
-#define FIS_TYPE_REG_H2D 0x27
-
-// FIS flags
-#define FIS_FLAG_COMMAND 0x80
-
-// ATA
-#define ATA_CMD_IDENTIFY 0xec
-#define ATA_CMD_READ 0x25
-#define ATA_CMD_WRITE 0x35
 
 
 
