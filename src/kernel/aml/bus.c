@@ -23,81 +23,81 @@ static void _parse_crs(const u8* data,u32 length){
 		// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/06_Device_Configuration/Device_Configuration.html?highlight=_sta#resource-data-types-for-acpi
 		switch (code){
 			case 0x08:
-				WARN("Unimplemented _CRS tag: IRQ Format Descriptor");
+				// WARN("Unimplemented _CRS tag: IRQ Format Descriptor");
 				break;
 			case 0x0a:
-				WARN("Unimplemented _CRS tag: DMA Format Descriptor");
+				// WARN("Unimplemented _CRS tag: DMA Format Descriptor");
 				break;
 			case 0x0c:
-				WARN("Unimplemented _CRS tag: Start Dependent Functions Descriptor");
+				// WARN("Unimplemented _CRS tag: Start Dependent Functions Descriptor");
 				break;
 			case 0x0e:
-				WARN("Unimplemented _CRS tag: End Dependent Functions Descriptor");
+				// WARN("Unimplemented _CRS tag: End Dependent Functions Descriptor");
 				break;
 			case 0x10:
-				WARN("Unimplemented _CRS tag: I/O Port Descriptor");
+				// WARN("Unimplemented _CRS tag: I/O Port Descriptor");
 				break;
 			case 0x12:
-				WARN("Unimplemented _CRS tag: Fixed Location I/O Port Descriptor");
+				// WARN("Unimplemented _CRS tag: Fixed Location I/O Port Descriptor");
 				break;
 			case 0x14:
-				WARN("Unimplemented _CRS tag: Fixed DMA Descriptor");
+				// WARN("Unimplemented _CRS tag: Fixed DMA Descriptor");
 				break;
 			case 0x1c:
-				WARN("Unimplemented _CRS tag: Vendor Defined Descriptor");
+				// WARN("Unimplemented _CRS tag: Vendor Defined Descriptor");
 				break;
 			case 0x1e:
 				return;
 			case 0x03:
-				WARN("Unimplemented _CRS tag: 24-Bit Memory Range Descriptor");
+				// WARN("Unimplemented _CRS tag: 24-Bit Memory Range Descriptor");
 				break;
 			case 0x05:
-				WARN("Unimplemented _CRS tag: Generic Register Descriptor");
+				// WARN("Unimplemented _CRS tag: Generic Register Descriptor");
 				break;
 			case 0x09:
-				WARN("Unimplemented _CRS tag: Vendor-Defined Descriptor");
+				// WARN("Unimplemented _CRS tag: Vendor-Defined Descriptor");
 				break;
 			case 0x0b:
-				WARN("Unimplemented _CRS tag: 32-Bit Memory Range Descriptor");
+				// WARN("Unimplemented _CRS tag: 32-Bit Memory Range Descriptor");
 				break;
 			case 0x0d:
-				WARN("Unimplemented _CRS tag: 32-Bit Fixed Memory Range Descriptor");
+				// WARN("Unimplemented _CRS tag: 32-Bit Fixed Memory Range Descriptor");
 				break;
 			case 0x0f:
-				WARN("Unimplemented _CRS tag: Address Space Resource Descriptors");
+				// WARN("Unimplemented _CRS tag: Address Space Resource Descriptors");
 				break;
 			case 0x11:
-				WARN("Unimplemented _CRS tag: Word Address Space Descriptor");
+				// WARN("Unimplemented _CRS tag: Word Address Space Descriptor");
 				break;
 			case 0x13:
-				WARN("Unimplemented _CRS tag: Extended Interrupt Descriptor");
+				// WARN("Unimplemented _CRS tag: Extended Interrupt Descriptor");
 				break;
 			case 0x15:
-				WARN("Unimplemented _CRS tag: QWord Address Space Descriptor");
+				// WARN("Unimplemented _CRS tag: QWord Address Space Descriptor");
 				break;
 			case 0x17:
-				WARN("Unimplemented _CRS tag: Extended Address Space Descriptor");
+				// WARN("Unimplemented _CRS tag: Extended Address Space Descriptor");
 				break;
 			case 0x19:
-				WARN("Unimplemented _CRS tag: GPIO Connection Descriptor");
+				// WARN("Unimplemented _CRS tag: GPIO Connection Descriptor");
 				break;
 			case 0x1b:
-				WARN("Unimplemented _CRS tag: Pin Function Descriptor");
+				// WARN("Unimplemented _CRS tag: Pin Function Descriptor");
 				break;
 			case 0x1d:
-				WARN("Unimplemented _CRS tag: GenericSerialBus Connection Descriptors");
+				// WARN("Unimplemented _CRS tag: GenericSerialBus Connection Descriptors");
 				break;
 			case 0x1f:
-				WARN("Unimplemented _CRS tag: Pin Configuration Descriptor");
+				// WARN("Unimplemented _CRS tag: Pin Configuration Descriptor");
 				break;
 			case 0x21:
-				WARN("Unimplemented _CRS tag: Pin Group Descriptor");
+				// WARN("Unimplemented _CRS tag: Pin Group Descriptor");
 				break;
 			case 0x23:
-				WARN("Unimplemented _CRS tag: Pin Group Function Descriptor");
+				// WARN("Unimplemented _CRS tag: Pin Group Function Descriptor");
 				break;
 			case 0x25:
-				WARN("Unimplemented _CRS tag: Pin Group Configuration Descriptor");
+				// WARN("Unimplemented _CRS tag: Pin Group Configuration Descriptor");
 				break;
 			default:
 				WARN("Unknon _CRS tag: %x",code);
@@ -110,7 +110,6 @@ static void _parse_crs(const u8* data,u32 length){
 
 
 static void _parse_device(aml_node_t* device){
-	// LOG("%s",device);
 	aml_runtime_evaluate_node(aml_runtime_get_node(device,"_INI"));
 	aml_node_t* hid=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_HID"));
 	if (hid){

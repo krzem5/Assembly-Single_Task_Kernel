@@ -18,6 +18,7 @@ static lock_t _kmm_lock=LOCK_INIT_STRUCT;
 static u64 _kmm_top;
 static u64 _kmm_max_top;
 static _Bool _kmm_buffer_not_ended=0;
+static _Bool _kmm_frozen=0;
 
 
 
@@ -39,8 +40,23 @@ void kmm_init(void){
 
 
 
+void kmm_freeze_allocator(void){
+	if (_kmm_frozen){
+		panic("kmm: allocator is frozen");
+	}
+	LOG("Freezing kernel memory allocator...");
+	_kmm_frozen=1;
+	INFO("Total KMM size: %v",_kmm_max_top-kernel_get_offset()-kernel_data.first_free_address);
+	kernel_data.first_free_address=_kmm_max_top-kernel_get_offset();
+}
+
+
+
 void* kmm_alloc(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
+	if (_kmm_frozen){
+		panic("kmm: allocator is frozen");
+	}
 	if (_kmm_buffer_not_ended){
 		panic("kmm: buffer in use");
 	}
@@ -55,6 +71,9 @@ void* kmm_alloc(u32 size){
 
 void* kmm_alloc_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
+	if (_kmm_frozen){
+		panic("kmm: allocator is frozen");
+	}
 	if (_kmm_buffer_not_ended){
 		panic("kmm: buffer already in use");
 	}
@@ -67,6 +86,9 @@ void* kmm_alloc_buffer(void){
 
 void kmm_grow_buffer(u32 size){
 	lock_acquire_exclusive(&_kmm_lock);
+	if (_kmm_frozen){
+		panic("kmm: allocator is frozen");
+	}
 	if (!_kmm_buffer_not_ended){
 		panic("kmm: buffer not in use");
 	}
@@ -79,6 +101,9 @@ void kmm_grow_buffer(u32 size){
 
 void kmm_end_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
+	if (_kmm_frozen){
+		panic("kmm: allocator is frozen");
+	}
 	if (!_kmm_buffer_not_ended){
 		panic("kmm: buffer not in use");
 	}

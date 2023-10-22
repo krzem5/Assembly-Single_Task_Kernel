@@ -3,7 +3,7 @@
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
@@ -13,10 +13,6 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
-
-
-
-#define GET_DESCRIPTOR(device,type,index) ((void*)((device)->type##_desc_base+((index)<<4)))
 
 
 
@@ -82,6 +78,10 @@
 
 
 
+#define GET_DESCRIPTOR(device,type,index) ((void*)((device)->type##_desc_base+((index)<<4)))
+
+
+
 #define NUM_RX_DESCRIPTORS 512
 #define NUM_TX_DESCRIPTORS 512
 
@@ -120,6 +120,8 @@ typedef struct _I82540_DEVICE{
 
 
 static pmm_counter_descriptor_t _i82540_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("i82540");
+static pmm_counter_descriptor_t _i82540_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_i82540_device");
+static omm_allocator_t _i82540_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("i82540_device",sizeof(i82540_device_t),8,1,&_i82540_device_omm_pmm_counter);
 
 
 
@@ -208,7 +210,7 @@ static void _i82540_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	i82540_device_t* i82540_device=kmm_alloc(sizeof(i82540_device_t));
+	i82540_device_t* i82540_device=omm_alloc(&_i82540_device_allocator);
 	i82540_device->mmio=(void*)vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;

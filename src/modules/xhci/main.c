@@ -1,6 +1,5 @@
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -170,8 +169,12 @@ typedef struct _USB_DEVICE{
 
 
 static pmm_counter_descriptor_t _xhci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("xhci");
+static pmm_counter_descriptor_t _xhci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_device");
+static pmm_counter_descriptor_t _usb_controller_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_controller");
 static pmm_counter_descriptor_t _usb_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
-static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,4,&_usb_device_omm_pmm_counter);
+static omm_allocator_t _xhci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("xhci_device",sizeof(xhci_device_t),8,1,&_xhci_device_omm_pmm_counter);
+static omm_allocator_t _usb_controller_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_controller",sizeof(usb_controller_t),8,1,&_usb_controller_omm_pmm_counter);
+static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,2,&_usb_device_omm_pmm_counter);
 
 
 
@@ -262,7 +265,7 @@ static void _xhci_init_device(pci_device_t* device){
 		WARN("Page size not supported");
 		return;
 	}
-	xhci_device_t* xhci_device=kmm_alloc(sizeof(xhci_device_t));
+	xhci_device_t* xhci_device=omm_alloc(&_xhci_device_allocator);
 	xhci_device->registers=registers;
 	xhci_device->operational_registers=operational_registers;
 	xhci_device->ports=registers->hcsparams1>>24;
@@ -303,7 +306,7 @@ static void _xhci_init_device(pci_device_t* device){
 	}
 	xhci_device->operational_registers->usbcmd|=USBCMD_RS;
 	COUNTER_SPINLOOP(0xfff);
-	usb_controller_t* controller=kmm_alloc(sizeof(usb_controller_t));
+	usb_controller_t* controller=omm_alloc(&_usb_controller_allocator);
 	controller->device=xhci_device;
 	controller->detect=_xhci_detect_port;
 	controller->reset=_xhci_reset_port;

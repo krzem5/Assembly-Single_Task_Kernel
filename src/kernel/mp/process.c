@@ -2,6 +2,7 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/kmm.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -49,7 +50,8 @@ void process_init(void){
 	vmm_memory_map_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
 	vmm_memory_map_init(kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
-	if (!vmm_memory_map_reserve(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address+0x1000000/*Due to KMM*/)){
+	kmm_freeze_allocator();
+	if (!vmm_memory_map_reserve(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address)){
 		panic("Unable to reserve kernel memory");
 	}
 }

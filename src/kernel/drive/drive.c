@@ -1,7 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/partition/partition.h>

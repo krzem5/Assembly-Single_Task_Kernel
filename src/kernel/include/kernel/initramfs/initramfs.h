@@ -3,7 +3,7 @@
 
 
 
-void initramfs_load(void);
+void initramfs_init(void);
 
 
 

@@ -8,6 +8,10 @@ void kmm_init(void);
 
 
 
+void kmm_freeze_allocator(void);
+
+
+
 void* kmm_alloc(u32 size);
 
 

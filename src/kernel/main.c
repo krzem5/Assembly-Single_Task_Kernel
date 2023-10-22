@@ -1,6 +1,5 @@
 #include <kernel/acpi/acpi.h>
 #include <kernel/aml/bus.h>
-#include <kernel/aml/runtime.h>
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
@@ -30,10 +29,9 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
-	initramfs_load();
+	initramfs_init();
 	pci_enumerate();
 	aml_bus_enumerate();
-	bios_get_system_data();
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
@@ -67,6 +65,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	clock_init();
 	isr_init();
 	acpi_load();
+	bios_get_system_data();
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();

@@ -84,7 +84,7 @@ static drive_type_t _initramfs_drive_type={
 
 
 
-static _Bool _initramfs_load_partitions(drive_t* drive){
+static _Bool _initramfs_init_partitions(drive_t* drive){
 	if (!streq(drive->type->name,"INITRAMFS")){
 		return 0;
 	}
@@ -100,7 +100,7 @@ static _Bool _initramfs_load_partitions(drive_t* drive){
 
 static partition_descriptor_t _initramfs_partition_descriptor={
 	"INITRAMFS",
-	_initramfs_load_partitions
+	_initramfs_init_partitions
 };
 
 
@@ -274,7 +274,7 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor={
 
 
 
-void initramfs_load(void){
+void initramfs_init(void){
 	LOG("Loading initramfs...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	fs_register_descriptor(&_initramfs_filesystem_descriptor);
