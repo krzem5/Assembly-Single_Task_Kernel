@@ -19,14 +19,13 @@
 
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
-#define PMM_DECLARE_COUNTER(name) \
-	static handle_id_t PMM_COUNTER_##name=0; \
+#define PMM_DECLARE_COUNTER2(name) \
 	static pmm_counter_descriptor_t _pmm_counter_descriptor_##name={ \
 		#name, \
-		&(PMM_COUNTER_##name), \
-		0 \
+		NULL, \
+		0, \
+		HANDLE_INIT_STRUCT \
 	}; \
-	static pmm_counter_descriptor_t*const __attribute__((used,section(".pmmcounter"))) _pmm_counter_descriptor_ptr_##name=&_pmm_counter_descriptor_##name;
 
 
 
@@ -106,15 +105,15 @@ void pmm_init_high_mem(void);
 
 
 
-u64 pmm_alloc(u64 count,handle_id_t counter,_Bool memory_hint);
+u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 
 
-u64 pmm_alloc_zero(u64 count,handle_id_t counter,_Bool memory_hint);
+u64 pmm_alloc_zero(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 
 
-void pmm_dealloc(u64 address,u64 count,handle_id_t counter);
+void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter);
 
 
 

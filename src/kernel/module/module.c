@@ -102,13 +102,13 @@ typedef struct _ELF_SYMBOL_TABLE_ENTRY{
 
 
 
-PMM_DECLARE_COUNTER(MODULE_BUFFER);
-PMM_DECLARE_COUNTER(MODULE_IMAGE);
-PMM_DECLARE_COUNTER(OMM_MODULE);
+PMM_DECLARE_COUNTER2(MODULE_BUFFER);
+PMM_DECLARE_COUNTER2(MODULE_IMAGE);
+PMM_DECLARE_COUNTER2(OMM_MODULE);
 
 
 
-static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,PMM_COUNTER_OMM_MODULE);
+static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,&_pmm_counter_descriptor_OMM_MODULE);
 
 
 
@@ -122,7 +122,7 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static void _module_alloc_region(module_address_region_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	u64 base=pmm_alloc(region->size>>PAGE_SIZE_SHIFT,PMM_COUNTER_MODULE_IMAGE,0);
+	u64 base=pmm_alloc(region->size>>PAGE_SIZE_SHIFT,&_pmm_counter_descriptor_MODULE_IMAGE,0);
 	region->base=vmm_memory_map_reserve(&process_kernel_image_mmap,0,region->size);
 	if (!region->base){
 		panic("Unable to reserve module section memory");
@@ -291,13 +291,13 @@ _Bool module_load(vfs_node_t* node){
 	}
 	u64 file_size=vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	u64 file_data_pages=pmm_align_up_address(file_size)>>PAGE_SIZE_SHIFT;
-	void* file_data=(void*)(pmm_alloc(file_data_pages,PMM_COUNTER_MODULE_BUFFER,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* file_data=(void*)(pmm_alloc(file_data_pages,&_pmm_counter_descriptor_MODULE_BUFFER,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	vfs_node_read(node,0,file_data,file_size);
 	module_t* module=omm_alloc(&_module_allocator);
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
-	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,PMM_COUNTER_MODULE_BUFFER);
+	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,&_pmm_counter_descriptor_MODULE_BUFFER);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);

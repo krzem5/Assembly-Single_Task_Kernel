@@ -13,13 +13,13 @@
 
 
 
-PMM_DECLARE_COUNTER(OMM_FD);
-PMM_DECLARE_COUNTER(OMM_FD_ITER);
+PMM_DECLARE_COUNTER2(OMM_FD);
+PMM_DECLARE_COUNTER2(OMM_FD_ITER);
 
 
 
-static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd",sizeof(fd_t),8,4,PMM_COUNTER_OMM_FD);
-static omm_allocator_t _fd_iterator_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd_iterator",sizeof(fd_iterator_t),8,4,PMM_COUNTER_OMM_FD_ITER);
+static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd",sizeof(fd_t),8,4,&_pmm_counter_descriptor_OMM_FD);
+static omm_allocator_t _fd_iterator_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd_iterator",sizeof(fd_iterator_t),8,4,&_pmm_counter_descriptor_OMM_FD_ITER);
 
 
 

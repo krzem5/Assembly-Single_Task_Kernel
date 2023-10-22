@@ -15,9 +15,6 @@
 #define VMM_PAGE_COUNT_MASK 0x7ff0000000000000ull
 #define VMM_PAGE_COUNT_SHIFT 52
 
-#define VMM_PAGE_GET_COUNTER(x) (((x)>>52)&0x7ff)
-#define VMM_PAGE_SET_COUNTER(x) (((u64)((x)&0x7ff))<<52)
-
 #define VMM_PAGE_ADDRESS_MASK 0x0000fffffffff000ull
 
 #define VMM_SHADOW_PAGE_ADDRESS 0x1000

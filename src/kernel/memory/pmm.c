@@ -11,9 +11,9 @@
 
 
 
-PMM_DECLARE_COUNTER(KERNEL_IMAGE);
-PMM_DECLARE_COUNTER(PMM);
-PMM_DECLARE_COUNTER(TOTAL);
+PMM_DECLARE_COUNTER2(KERNEL_IMAGE);
+PMM_DECLARE_COUNTER2(PMM);
+PMM_DECLARE_COUNTER2(TOTAL);
 
 
 
@@ -62,17 +62,6 @@ static KERNEL_INLINE u64 _get_block_size(u8 index){
 
 
 
-static void _adjust_counter(handle_id_t counter,s64 offset){
-	handle_t* handle=handle_lookup_and_acquire(counter,HANDLE_TYPE_PMM_COUNTER);
-	if (!handle){
-		panic("Invalid PMM counter");
-	}
-	((pmm_counter_descriptor_t*)(handle->object))->count+=offset;
-	handle_release(handle);
-}
-
-
-
 static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 	if (address>=end){
 		return;
@@ -92,7 +81,7 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
-		_adjust_counter(PMM_COUNTER_TOTAL,size>>PAGE_SIZE_SHIFT);
+		_pmm_counter_descriptor_TOTAL.count+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=_get_block_header(address);
 		header->prev=0;
 		header->next=allocator->blocks[idx];
@@ -135,13 +124,11 @@ void pmm_init(void){
 	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	LOG("Registering counters...");
-	for (pmm_counter_descriptor_t*const* descriptor=(void*)kernel_section_pmm_counter_start();(u64)descriptor<kernel_section_pmm_counter_end();descriptor++){
-		pmm_counter_descriptor_t* counter_descriptor=*descriptor;
-		handle_new(counter_descriptor,HANDLE_TYPE_PMM_COUNTER,&(counter_descriptor->handle));
-		*(counter_descriptor->var)=counter_descriptor->handle.rb_node.key;
-	}
-	_adjust_counter(PMM_COUNTER_PMM,pmm_align_up_address(low_bitmap_size+high_bitmap_size)>>PAGE_SIZE_SHIFT);
-	_adjust_counter(PMM_COUNTER_KERNEL_IMAGE,pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT);
+	handle_new(&_pmm_counter_descriptor_PMM,HANDLE_TYPE_PMM_COUNTER,&(_pmm_counter_descriptor_PMM.handle));
+	handle_new(&_pmm_counter_descriptor_KERNEL_IMAGE,HANDLE_TYPE_PMM_COUNTER,&(_pmm_counter_descriptor_KERNEL_IMAGE.handle));
+	handle_new(&_pmm_counter_descriptor_TOTAL,HANDLE_TYPE_PMM_COUNTER,&(_pmm_counter_descriptor_TOTAL.handle));
+	_pmm_counter_descriptor_PMM.count+=pmm_align_up_address(low_bitmap_size+high_bitmap_size)>>PAGE_SIZE_SHIFT;
+	_pmm_counter_descriptor_KERNEL_IMAGE.count+=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	kernel_data.first_free_address+=low_bitmap_size+high_bitmap_size;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -170,7 +157,7 @@ void pmm_init_high_mem(void){
 
 
 
-u64 pmm_alloc(u64 count,handle_id_t counter,_Bool memory_hint){
+u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	scheduler_pause();
 	if (!count){
 		panic("pmm_alloc: trying to allocate zero physical pages");
@@ -208,14 +195,17 @@ u64 pmm_alloc(u64 count,handle_id_t counter,_Bool memory_hint){
 	_toggle_address_bit(allocator,out);
 	_toggle_address_bit(allocator,out+_get_block_size(i));
 	lock_release_exclusive(&(allocator->lock));
-	_adjust_counter(counter,_get_block_size(i)>>PAGE_SIZE_SHIFT);
+	if (!counter->handle.rb_node.key){
+		handle_new(counter,HANDLE_TYPE_PMM_COUNTER,&(counter->handle));
+	}
+	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	scheduler_resume();
 	return out;
 }
 
 
 
-u64 pmm_alloc_zero(u64 count,handle_id_t counter,_Bool memory_hint){
+u64 pmm_alloc_zero(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	u64 out=pmm_alloc(count,counter,memory_hint);
 	if (!out){
 		return 0;
@@ -226,7 +216,7 @@ u64 pmm_alloc_zero(u64 count,handle_id_t counter,_Bool memory_hint){
 
 
 
-void pmm_dealloc(u64 address,u64 count,handle_id_t counter){
+void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
@@ -235,7 +225,7 @@ void pmm_dealloc(u64 address,u64 count,handle_id_t counter){
 	if (i>=PMM_ALLOCATOR_SIZE_COUNT){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
-	_adjust_counter(counter,-((s64)(_get_block_size(i)>>PAGE_SIZE_SHIFT)));
+	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=(address<PMM_LOW_ALLOCATOR_LIMIT?&_pmm_low_allocator:&_pmm_high_allocator);
 	lock_acquire_exclusive(&(allocator->lock));
 	_toggle_address_bit(allocator,address);

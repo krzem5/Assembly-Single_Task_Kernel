@@ -13,11 +13,11 @@
 
 
 
-PMM_DECLARE_COUNTER(OMM_PCI_DEVICE);
+PMM_DECLARE_COUNTER2(OMM_PCI_DEVICE);
 
 
 
-static omm_allocator_t _pci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("pci_device",sizeof(pci_device_t),8,4,PMM_COUNTER_OMM_PCI_DEVICE);
+static omm_allocator_t _pci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("pci_device",sizeof(pci_device_t),8,4,&_pmm_counter_descriptor_OMM_PCI_DEVICE);
 
 
 

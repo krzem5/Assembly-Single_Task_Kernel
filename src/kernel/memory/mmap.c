@@ -9,11 +9,11 @@
 
 
 
-PMM_DECLARE_COUNTER(OMM_MMAP_RANGE);
+PMM_DECLARE_COUNTER2(OMM_MMAP_RANGE);
 
 
 
-static omm_allocator_t _mmap_region_allocator=OMM_ALLOCATOR_INIT_STRUCT("mmap_range",sizeof(vmm_memory_map_region_t),8,4,PMM_COUNTER_OMM_MMAP_RANGE);
+static omm_allocator_t _mmap_region_allocator=OMM_ALLOCATOR_INIT_STRUCT("mmap_range",sizeof(vmm_memory_map_region_t),8,4,&_pmm_counter_descriptor_OMM_MMAP_RANGE);
 
 
 

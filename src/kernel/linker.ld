@@ -24,10 +24,6 @@ SECTIONS{
         *(.tmp_init)
         . = ALIGN(8);
 	    DECLARE_SECTION_END(tmp_init);
-	    DECLARE_SECTION_START(pmm_counter);
-        *(.pmmcounter)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(pmm_counter);
 	    DECLARE_SECTION_START(cpu_local);
         *(.cpulocal)
         . = ALIGN(8);

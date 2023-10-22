@@ -10,7 +10,7 @@
 
 
 
-PMM_DECLARE_COUNTER(NETWORK);
+PMM_DECLARE_COUNTER2(NETWORK);
 
 
 
@@ -22,7 +22,7 @@ static u8* _layer2_physical_send_buffer;
 
 void network_layer2_init(void){
 	LOG("Initializing layer2 network...");
-	_layer2_physical_send_buffer_address=pmm_alloc(1,PMM_COUNTER_NETWORK,0);
+	_layer2_physical_send_buffer_address=pmm_alloc(1,&_pmm_counter_descriptor_NETWORK,0);
 	_layer2_physical_send_buffer=(void*)(_layer2_physical_send_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 

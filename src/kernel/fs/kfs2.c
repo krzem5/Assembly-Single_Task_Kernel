@@ -105,9 +105,9 @@ typedef struct _KFS2_VFS_NODE{
 
 
 
-PMM_DECLARE_COUNTER(OMM_KFS2_NODE);
-PMM_DECLARE_COUNTER(OMM_KFS2_EDATA);
-PMM_DECLARE_COUNTER(KFS2_CHUNK);
+PMM_DECLARE_COUNTER2(OMM_KFS2_NODE);
+PMM_DECLARE_COUNTER2(OMM_KFS2_EDATA);
+PMM_DECLARE_COUNTER2(KFS2_CHUNK);
 
 
 
@@ -152,8 +152,8 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor;
 
 
 
-static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
-static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
+static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,&_pmm_counter_descriptor_OMM_KFS2_NODE);
+static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,&_pmm_counter_descriptor_OMM_KFS2_EDATA);
 
 
 
@@ -225,7 +225,7 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 					panic("_node_get_chunk_at_offset: invalid offset");
 				}
 				if (!out->data){
-					out->data=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					out->data=(void*)(pmm_alloc(1,&_pmm_counter_descriptor_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				}
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				_read_data_block(node->node.fs,node->kfs2_node.data.single[index],out->data);
@@ -239,11 +239,11 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 					panic("_node_get_chunk_at_offset: invalid offset");
 				}
 				if (!out->double_cache){
-					out->double_cache=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					out->double_cache=(void*)(pmm_alloc(1,&_pmm_counter_descriptor_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 					_read_data_block(node->node.fs,node->kfs2_node.data.double_,out->double_cache);
 				}
 				if (!out->data){
-					out->data=(void*)(pmm_alloc(1,PMM_COUNTER_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					out->data=(void*)(pmm_alloc(1,&_pmm_counter_descriptor_KFS2_CHUNK,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				}
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				_read_data_block(node->node.fs,out->double_cache[index],out->data);
@@ -264,19 +264,19 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 	chunk->offset=0;
 	if (chunk->quadruple_cache){
-		pmm_dealloc(((u64)(chunk->quadruple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		pmm_dealloc(((u64)(chunk->quadruple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_pmm_counter_descriptor_KFS2_CHUNK);
 		chunk->quadruple_cache=NULL;
 	}
 	if (chunk->triple_cache){
-		pmm_dealloc(((u64)(chunk->triple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		pmm_dealloc(((u64)(chunk->triple_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_pmm_counter_descriptor_KFS2_CHUNK);
 		chunk->triple_cache=NULL;
 	}
 	if (chunk->double_cache){
-		pmm_dealloc(((u64)(chunk->double_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		pmm_dealloc(((u64)(chunk->double_cache))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_pmm_counter_descriptor_KFS2_CHUNK);
 		chunk->double_cache=NULL;
 	}
 	if (chunk->data&&chunk->length==KFS2_BLOCK_SIZE){
-		pmm_dealloc(((u64)(chunk->data))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,PMM_COUNTER_KFS2_CHUNK);
+		pmm_dealloc(((u64)(chunk->data))-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_pmm_counter_descriptor_KFS2_CHUNK);
 	}
 	chunk->data=NULL;
 	chunk->length=0;

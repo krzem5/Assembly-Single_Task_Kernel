@@ -13,7 +13,7 @@
 
 
 
-PMM_DECLARE_COUNTER(IMAGE);
+PMM_DECLARE_COUNTER2(IMAGE);
 
 
 
@@ -75,7 +75,7 @@ _Bool elf_load(vfs_node_t* node){
 		if (program_header.p_type!=1){
 			continue;
 		}
-		u64 flags=VMM_PAGE_SET_COUNTER(PMM_COUNTER_IMAGE)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
+		u64 flags=VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
 		if (!(program_header.p_flags&1)){
 			flags|=VMM_PAGE_FLAG_NOEXECUTE;
 		}
@@ -84,7 +84,7 @@ _Bool elf_load(vfs_node_t* node){
 		}
 		u64 offset=program_header.p_vaddr&(PAGE_SIZE-1);
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
-		u64 pages=pmm_alloc_zero(page_count,PMM_COUNTER_IMAGE,0);
+		u64 pages=pmm_alloc_zero(page_count,&_pmm_counter_descriptor_IMAGE,0);
 		if (!vmm_memory_map_reserve(&(process->mmap),program_header.p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT)){
 			goto _error;
 		}

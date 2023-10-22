@@ -19,7 +19,7 @@
 		(alignment), \
 		(page_count), \
 		(((page_count)<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/(((object_size)+alignment-1)&(-(alignment))), \
-		&(pmm_counter), \
+		(pmm_counter), \
 		NULL, \
 		NULL, \
 		NULL, \
@@ -53,7 +53,7 @@ typedef struct _OMM_ALLOCATOR{
 	u32 alignment;
 	u32 page_count;
 	u32 max_used_count;
-	handle_id_t* pmm_counter;
+	pmm_counter_descriptor_t* pmm_counter;
 	omm_page_header_t* page_free_head;
 	omm_page_header_t* page_used_head;
 	omm_page_header_t* page_full_head;
