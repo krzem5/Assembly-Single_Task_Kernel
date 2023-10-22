@@ -33,8 +33,6 @@ if ("--coverage" in sys.argv):
 
 BUILD_DIRECTORIES=[
 	"build",
-	"build/disk",
-	"build/disk/kernel",
 	"build/hashes",
 	"build/hashes/kernel",
 	"build/hashes/modules",
@@ -43,7 +41,7 @@ BUILD_DIRECTORIES=[
 	"build/initramfs",
 	"build/initramfs/boot",
 	"build/initramfs/module",
-	"build/modules",
+	"build/module",
 	"build/objects",
 	"build/objects/kernel",
 	"build/objects/kernel_coverage",
@@ -55,6 +53,7 @@ BUILD_DIRECTORIES=[
 	"build/objects/user_debug",
 	"build/partitions",
 	"build/uefi",
+	"build/user",
 	"build/vm",
 	"src/kernel/_generated",
 	"src/user/runtime/_generated",
@@ -354,7 +353,7 @@ def _compile_module(module):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/modules/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 
 
@@ -534,19 +533,16 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _patch_kernel("build/kernel.bin",kernel_symbols)
 #####################################################################################################################################
+for module in os.listdir(MODULE_FILE_DIRECTORY):
+	_compile_module(module)
+#####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime"):
 		continue
 	object_files=runtime_object_files+_compile_user_files(program)
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/disk/kernel/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/user/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-#####################################################################################################################################
-for module in os.listdir(MODULE_FILE_DIRECTORY):
-	_compile_module(module)
-#####################################################################################################################################
-if (subprocess.run(["genisoimage","-q","-V","INSTALL DRIVE","-input-charset","iso8859-1","-o","build/os.iso","build/disk"]).returncode!=0):
-	sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
@@ -561,28 +557,17 @@ if (not os.path.exists("build/partitions/efi.img")):
 	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
 	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
-if (not os.path.exists("build/partitions/initramfs.img")):
-	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/initramfs.img","bs=4096",f"count={INITRAMFS_SIZE}"])
 if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 if (rebuild_data_partition):
-	_copy_file("build/disk/kernel/shell.elf","build/initramfs/boot/boot.elf")
+	_copy_file("build/user/shell.elf","build/initramfs/boot/boot.elf")
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
-		_copy_file(f"build/modules/{module}.mod",f"build/initramfs/module/{module}.mod")
-	initramfs.create("build/initramfs","build/partitions/initramfs_NEW.img")
-	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
-	kfs2.format_partition(initramfs_fs)
-	with open(f"build/disk/kernel/shell.elf","rb") as rf:
-		kfs2.set_file_content(initramfs_fs,kfs2.get_inode(initramfs_fs,"/boot/boot.elf"),rf.read())
-	for module in os.listdir(MODULE_FILE_DIRECTORY):
-		with open(f"build/modules/{module}.mod","rb") as rf:
-			kfs2.set_file_content(initramfs_fs,kfs2.get_inode(initramfs_fs,f"/module/{module}.mod"),rf.read())
-	initramfs_fs.close()
+		_copy_file(f"build/module/{module}.mod",f"build/initramfs/module/{module}.mod")
+	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs_NEW.img","rb") as initramfs_rf:
+	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,kernel_inode,kernel_rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
@@ -615,7 +600,6 @@ if ("--run" in sys.argv):
 		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
 		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
-		"-drive","file=build/os.iso,index=0,media=cdrom,readonly=true,id=cd",
 		# Drives
 		"-device","ahci,id=ahci",
 		"-device","ide-hd,drive=hdd,bus=ahci.0",
