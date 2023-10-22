@@ -44,7 +44,9 @@ static void _main_thread(void){
 	module_load(vfs_lookup(NULL,"/module/iso9660.mod"));
 	module_load(vfs_lookup(NULL,"/module/nvme.mod"));
 	module_load(vfs_lookup(NULL,"/module/xhci.mod"));
+#if KERNEL_COVERAGE_ENABLED
 	module_load(vfs_lookup(NULL,"/module/coverage.mod"));
+#endif
 	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}

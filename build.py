@@ -561,7 +561,7 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition):
 	initramfs_fs=kfs2.KFS2FileBackend("build/partitions/initramfs.img",4096,0,INITRAMFS_SIZE)
 	kfs2.format_partition(initramfs_fs)
-	with open(f"build/disk/kernel/{'coverage' if mode==MODE_COVERAGE else 'shell'}.elf","rb") as rf:
+	with open(f"build/disk/kernel/shell.elf","rb") as rf:
 		kfs2.set_file_content(initramfs_fs,kfs2.get_inode(initramfs_fs,"/boot/boot.elf"),rf.read())
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
 		with open(f"build/modules/{module}.mod","rb") as rf:
