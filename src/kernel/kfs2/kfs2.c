@@ -500,6 +500,6 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor={
 
 
 
-__KERNEL_TEMP_INIT({
+void kfs2_init(void){
 	fs_register_descriptor(&_kfs2_filesystem_descriptor);
-});
+}
