@@ -77,17 +77,6 @@ void kmm_grow_buffer(u32 size){
 
 
 
-void kmm_shrink_buffer(u32 size){
-	lock_acquire_exclusive(&_kmm_lock);
-	if (!_kmm_buffer_not_ended){
-		panic("kmm: buffer not in use");
-	}
-	_kmm_top=(_kmm_top-size+7)&0xfffffffffffffff8ull;
-	lock_release_exclusive(&_kmm_lock);
-}
-
-
-
 void kmm_end_buffer(void){
 	lock_acquire_exclusive(&_kmm_lock);
 	if (!_kmm_buffer_not_ended){
