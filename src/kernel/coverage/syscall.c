@@ -105,12 +105,6 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 start,u64 end){
 
 
 
-void KERNEL_NOCOVERAGE __gcov_merge_add(void){
-	return;
-}
-
-
-
 void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_registers_t* regs){
 	LOG("Dumping coverage information...");
 	INFO("Initializing serial port...");
