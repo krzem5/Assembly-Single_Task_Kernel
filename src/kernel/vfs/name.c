@@ -9,7 +9,7 @@
 #define FNV_OFFSET_BASIS 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
-#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs_name["#size"]",sizeof(vfs_name_t)+size,4,2,&_pmm_counter_descriptor_OMM_VFS_NAME);
+#define DECLARE_ALLOCATOR(size) static omm_allocator_t _vfs_name_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("vfs_name["#size"]",sizeof(vfs_name_t)+size,4,2,&_vfs_name_omm_pmm_counter);
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
 		out=omm_alloc(&_vfs_name_allocator##size); \
@@ -21,10 +21,7 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_VFS_NAME);
-
-
-
+static pmm_counter_descriptor_t _vfs_name_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_vfs_name");
 DECLARE_ALLOCATOR(4);
 DECLARE_ALLOCATOR(8);
 DECLARE_ALLOCATOR(12);

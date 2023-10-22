@@ -12,11 +12,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_FS);
-
-
-
-static omm_allocator_t _fs_allocator=OMM_ALLOCATOR_INIT_STRUCT("fs",sizeof(filesystem_t),8,4,&_pmm_counter_descriptor_OMM_FS);
+static pmm_counter_descriptor_t _fs_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fs");
+static omm_allocator_t _fs_allocator=OMM_ALLOCATOR_INIT_STRUCT("fs",sizeof(filesystem_t),8,4,&_fs_omm_pmm_counter);
 
 
 

@@ -13,11 +13,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_PARTITION);
-
-
-
-static omm_allocator_t _partition_allocator=OMM_ALLOCATOR_INIT_STRUCT("partition",sizeof(partition_t),8,4,&_pmm_counter_descriptor_OMM_PARTITION);
+static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
+static omm_allocator_t _partition_allocator=OMM_ALLOCATOR_INIT_STRUCT("partition",sizeof(partition_t),8,4,&_partition_omm_pmm_counter);
 
 
 

@@ -10,7 +10,7 @@
 
 
 
-PMM_DECLARE_COUNTER2(KMM);
+static pmm_counter_descriptor_t _kmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("kmm");
 
 
 
@@ -23,7 +23,7 @@ static _Bool _kmm_buffer_not_ended=0;
 
 static void _resize_stack(void){
 	while (_kmm_top>_kmm_max_top){
-		u64 page=pmm_alloc(1,&_pmm_counter_descriptor_KMM,0);
+		u64 page=pmm_alloc(1,&_kmm_pmm_counter,0);
 		vmm_map_page(&vmm_kernel_pagemap,page,_kmm_max_top,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 		_kmm_max_top+=PAGE_SIZE;
 	}

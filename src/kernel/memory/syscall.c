@@ -86,7 +86,7 @@ void syscall_memory_counter_get_data(syscall_registers_t* regs){
 	}
 	user_memory_counter_data_t* out=(void*)(regs->rsi);
 	pmm_counter_descriptor_t* pmm_counter_descriptor=handle->object;
-	strcpy_lowercase(out->name,pmm_counter_descriptor->name,MEMORY_COUNTER_DATA_NAME_LENGTH);
+	strcpy(out->name,pmm_counter_descriptor->name,MEMORY_COUNTER_DATA_NAME_LENGTH);
 	out->count=pmm_counter_descriptor->count;
 	regs->rax=1;
 }
@@ -104,7 +104,7 @@ void syscall_memory_object_allocator_get_data(syscall_registers_t* regs){
 	}
 	user_memory_object_allocator_data_t* out=(void*)(regs->rsi);
 	omm_allocator_t* omm_allocator=handle->object;
-	strcpy_lowercase(out->name,omm_allocator->name,MEMORY_OBJECT_ALLOCATOR_DATA_NAME_LENGTH);
+	strcpy(out->name,omm_allocator->name,MEMORY_OBJECT_ALLOCATOR_DATA_NAME_LENGTH);
 	out->allocation_count=omm_allocator->allocation_count;
 	out->deallocation_count=omm_allocator->deallocation_count;
 	regs->rax=1;

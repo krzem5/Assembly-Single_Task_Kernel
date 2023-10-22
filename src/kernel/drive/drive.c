@@ -11,11 +11,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_DRIVE);
-
-
-
-static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive_t),8,4,&_pmm_counter_descriptor_OMM_DRIVE);
+static pmm_counter_descriptor_t _drive_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_drive");
+static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive_t),8,4,&_drive_omm_pmm_counter);
 
 
 

@@ -20,11 +20,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_PROCESS);
-
-
-
-static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT("process",sizeof(process_t),8,2,&_pmm_counter_descriptor_OMM_PROCESS);
+static pmm_counter_descriptor_t _process_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_process");
+static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT("process",sizeof(process_t),8,2,&_process_omm_pmm_counter);
 
 
 

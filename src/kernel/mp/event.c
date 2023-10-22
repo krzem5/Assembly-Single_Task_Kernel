@@ -12,11 +12,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(OMM_EVENT);
-
-
-
-static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT("event",sizeof(event_t),8,2,&_pmm_counter_descriptor_OMM_EVENT);
+static pmm_counter_descriptor_t _event_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_event");
+static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
 
 
 

@@ -10,8 +10,8 @@
 
 
 
-PMM_DECLARE_COUNTER2(VMM);
-PMM_DECLARE_COUNTER2(VMM_SHADOW);
+static pmm_counter_descriptor_t _vmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm");
+static pmm_counter_descriptor_t _vmm_shadow_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm_shadow");
 
 
 
@@ -31,7 +31,7 @@ static KERNEL_INLINE _Bool _decrease_length(u64* table){
 	if ((*table)&VMM_PAGE_FLAG_PRESENT){
 		*table-=1ull<<VMM_PAGE_COUNT_SHIFT;
 		if (!((*table)&VMM_PAGE_COUNT_MASK)){
-			pmm_dealloc((*table)&VMM_PAGE_ADDRESS_MASK,1,&_pmm_counter_descriptor_VMM);
+			pmm_dealloc((*table)&VMM_PAGE_ADDRESS_MASK,1,&_vmm_pmm_counter);
 			*table=0;
 			return 1;
 		}
@@ -71,7 +71,7 @@ static void _delete_pagemap_recursive(u64* table,u8 level,u16 limit){
 			_delete_pagemap_recursive(entries+i,level-1,512);
 		}
 	}
-	pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_pmm_counter_descriptor_VMM);
+	pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_pmm_counter);
 }
 
 
@@ -85,7 +85,7 @@ static u64* _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present)
 		return 0;
 	}
 	_increase_length(table);
-	u64 out=pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM,0);
+	u64 out=pmm_alloc_zero(1,&_vmm_pmm_counter,0);
 	*entry=((u64)out)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	return entry;
 }
@@ -123,11 +123,11 @@ static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 void vmm_init(void){
 	LOG("Initializing virtual memory manager...");
-	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM,PMM_MEMORY_HINT_LOW_MEMORY);
+	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,&_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
 	lock_init(&(vmm_kernel_pagemap.lock));
 	INFO("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
-		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
 	u64 kernel_length=pmm_align_up_address(kernel_data.first_free_address);
 	INFO("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
@@ -153,7 +153,7 @@ void vmm_init(void){
 
 
 void vmm_pagemap_init(vmm_pagemap_t* pagemap){
-	pagemap->toplevel=pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM,0);
+	pagemap->toplevel=pmm_alloc_zero(1,&_vmm_pmm_counter,0);
 	lock_init(&(pagemap->lock));
 	for (u16 i=256;i<512;i++){
 		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i];
@@ -373,7 +373,7 @@ void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 
 void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
 	flags|=VMM_PAGE_FLAG_PRESENT;
 	for (;count;count--){
-		vmm_map_page(pagemap,pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM_SHADOW,0),virtual_address,flags);
+		vmm_map_page(pagemap,pmm_alloc_zero(1,&_vmm_shadow_pmm_counter,0),virtual_address,flags);
 		virtual_address+=PAGE_SIZE;
 	}
 }
@@ -387,7 +387,7 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
 			lock_shared_to_exclusive(&(pagemap->lock));
-			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_pmm_counter_descriptor_VMM_SHADOW);
+			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_shadow_pmm_counter);
 			lock_release_exclusive(&(pagemap->lock));
 		}
 		else{
@@ -411,7 +411,7 @@ _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 		return 0;
 	}
 	lock_shared_to_exclusive(&(pagemap->lock));
-	*entry=((*entry)&(~VMM_PAGE_ADDRESS_MASK))|pmm_alloc_zero(1,&_pmm_counter_descriptor_VMM_SHADOW,0)|VMM_PAGE_FLAG_PRESENT;
+	*entry=((*entry)&(~VMM_PAGE_ADDRESS_MASK))|pmm_alloc_zero(1,&_vmm_shadow_pmm_counter,0)|VMM_PAGE_FLAG_PRESENT;
 	lock_release_exclusive(&(pagemap->lock));
 	scheduler_resume();
 	return 1;

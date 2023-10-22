@@ -12,11 +12,6 @@
 
 
 
-PMM_DECLARE_COUNTER2(DRIVER_XHCI);
-PMM_DECLARE_COUNTER2(OMM_USB_DEVICE);
-
-
-
 #define XHCI_RING_SIZE 16
 
 // Command Ring Control Register
@@ -174,7 +169,9 @@ typedef struct _USB_DEVICE{
 
 
 
-static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,4,&_pmm_counter_descriptor_OMM_USB_DEVICE);
+static pmm_counter_descriptor_t _xhci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("xhci");
+static pmm_counter_descriptor_t _usb_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
+static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,4,&_usb_device_omm_pmm_counter);
 
 
 
@@ -276,7 +273,7 @@ void driver_xhci_init_device(pci_device_t* device){
 	xhci_device->doorbell_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->dboff,xhci_device->ports*sizeof(xhci_doorbell_t));
 	xhci_device->interrupt_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->rtsoff+0x20,xhci_device->interrupts*sizeof(xhci_interrupt_registers_t));
 	INFO("Ports: %u, Interrupts: %u, Slots: %u, Context size: %u",xhci_device->ports,xhci_device->interrupts,xhci_device->slots,xhci_device->context_size);
-	void* data=(void*)(pmm_alloc_zero(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_pmm_counter_descriptor_DRIVER_XHCI,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* data=(void*)(pmm_alloc_zero(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	xhci_device->device_context_base_array=data;
 	data+=_align_size((xhci_device->slots+1)*sizeof(xhci_device_context_base_t));
 	xhci_device->command_ring=data;
