@@ -1,8 +1,10 @@
 #if KERNEL_COVERAGE_ENABLED
 #include <kernel/acpi/fadt.h>
+#include <kernel/handle/handle.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/module/module.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -66,29 +68,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
 
 static void _process_gcov_info_section(u64 start,u64 end){
 	INFO("Procesing .gcov_info section %p - %p...",start,end);
-}
-
-
-
-void KERNEL_NOCOVERAGE __gcov_merge_add(void){
-	return;
-}
-
-
-
-void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_registers_t* regs){
-	LOG("Dumping coverage information...");
-	INFO("Initializing serial port...");
-	io_port_out8(0x2f9,0x00);
-	io_port_out8(0x2fb,0x80);
-	io_port_out8(0x2f8,0x03);
-	io_port_out8(0x2f9,0x00);
-	io_port_out8(0x2fb,0x03);
-	io_port_out8(0x2fa,0xc7);
-	io_port_out8(0x2fc,0x03);
-	INFO("Writing coverage data...");
-	_process_gcov_info_section((u64)(&__KERNEL_SECTION_gcov_info_START__),(u64)(&__KERNEL_SECTION_gcov_info_END__));
-	for (const gcov_info_t*const* info_ptr=&__KERNEL_SECTION_gcov_info_START__;info_ptr<&__KERNEL_SECTION_gcov_info_END__;info_ptr++){
+	for (const gcov_info_t*const* info_ptr=(void*)start;(u64)info_ptr<end;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
 		if (!info->merge[0]){
 			continue;
@@ -120,6 +100,35 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 			_output_int(fn_info->ctrs->num);
 			_output_bytes(fn_info->ctrs->values,fn_info->ctrs->num*sizeof(u64));
 		}
+	}
+}
+
+
+
+void KERNEL_NOCOVERAGE __gcov_merge_add(void){
+	return;
+}
+
+
+
+void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_registers_t* regs){
+	LOG("Dumping coverage information...");
+	INFO("Initializing serial port...");
+	io_port_out8(0x2f9,0x00);
+	io_port_out8(0x2fb,0x80);
+	io_port_out8(0x2f8,0x03);
+	io_port_out8(0x2f9,0x00);
+	io_port_out8(0x2fb,0x03);
+	io_port_out8(0x2fa,0xc7);
+	io_port_out8(0x2fc,0x03);
+	INFO("Writing coverage data...");
+	_process_gcov_info_section((u64)(&__KERNEL_SECTION_gcov_info_START__),(u64)(&__KERNEL_SECTION_gcov_info_END__));
+	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
+		module_t* module=handle->object;
+		if (!module->gcov_info.size){
+			continue;
+		}
+		_process_gcov_info_section(module->gcov_info.base,module->gcov_info.base+module->gcov_info.size);
 	}
 	acpi_fadt_shutdown(0);
 }

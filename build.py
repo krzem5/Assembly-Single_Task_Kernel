@@ -385,6 +385,9 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
 			os.remove(os.path.join(KERNEL_OBJECT_FILE_DIRECTORY,file))
+	for file in os.listdir(MODULE_OBJECT_FILE_DIRECTORY):
+		if (file.endswith(".gcda")):
+			os.remove(os.path.join(MODULE_OBJECT_FILE_DIRECTORY,file))
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(8)
@@ -404,7 +407,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
 					wf.write(rf.read(counter_count<<3))
-	subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
+	subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"-d",MODULE_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
 
 
 
