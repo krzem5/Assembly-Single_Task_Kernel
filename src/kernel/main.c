@@ -38,7 +38,11 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	module_load(vfs_lookup(NULL,"/module/test.mod"));
+	module_load(vfs_lookup(NULL,"/module/ahci.mod"));
+	module_load(vfs_lookup(NULL,"/module/ata.mod"));
+	module_load(vfs_lookup(NULL,"/module/i82530.mod"));
+	module_load(vfs_lookup(NULL,"/module/nvme.mod"));
+	module_load(vfs_lookup(NULL,"/module/xhci.mod"));
 	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");
 	}
