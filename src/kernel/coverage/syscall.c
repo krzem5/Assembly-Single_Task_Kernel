@@ -87,6 +87,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 	io_port_out8(0x2fa,0xc7);
 	io_port_out8(0x2fc,0x03);
 	INFO("Writing coverage data...");
+	_process_gcov_info_section((u64)(&__KERNEL_SECTION_gcov_info_START__),(u64)(&__KERNEL_SECTION_gcov_info_END__));
 	for (const gcov_info_t*const* info_ptr=&__KERNEL_SECTION_gcov_info_START__;info_ptr<&__KERNEL_SECTION_gcov_info_END__;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
 		if (!info->merge[0]){
