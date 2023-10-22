@@ -6,6 +6,8 @@
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -27,6 +29,11 @@ typedef struct _RUNTIME_LOCAL_STATE{
 	aml_node_t* return_value;
 	_Bool was_branch_taken;
 } runtime_local_state_t;
+
+
+
+static pmm_counter_descriptor_t _aml_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_node");
+static omm_allocator_t _aml_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("aml_node",sizeof(aml_node_t),8,4,&_aml_node_omm_pmm_counter);
 
 
 
@@ -197,7 +204,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 
 
 static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
-	aml_node_t* out=kmm_alloc(sizeof(aml_node_t));
+	aml_node_t* out=omm_alloc(&_aml_node_allocator);
 	if (name){
 		for (u8 i=0;i<4;i++){
 			out->name[i]=name[i];

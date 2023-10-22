@@ -1,6 +1,7 @@
 #include <kernel/aml/parser.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -144,6 +145,11 @@ static const opcode_t _aml_opcodes[]={
 	DECL_OPCODE(AML_OPCODE_EXT_DATA_REGION,OPCODE_FLAG_EXTENDED,AML_OBJECT_ARG_TYPE_NAME,AML_OBJECT_ARG_TYPE_OBJECT,AML_OBJECT_ARG_TYPE_OBJECT,AML_OBJECT_ARG_TYPE_OBJECT),
 	DECL_OPCODE(AML_OPCODE_NAME_REFERENCE,0)
 };
+
+
+
+static pmm_counter_descriptor_t _aml_object_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_object");
+static omm_allocator_t _aml_object_allocator=OMM_ALLOCATOR_INIT_STRUCT("aml_object",sizeof(aml_object_t),8,2,&_aml_object_omm_pmm_counter);
 
 
 
@@ -360,7 +366,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_OBJECT){
-			out->args[i].object=kmm_alloc(sizeof(aml_object_t));
+			out->args[i].object=omm_alloc(&_aml_object_allocator);
 			data+=_parse_object(data,out->args[i].object);
 		}
 	}
@@ -389,7 +395,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",data,length);
-	aml_object_t* root=kmm_alloc(sizeof(aml_object_t));
+	aml_object_t* root=omm_alloc(&_aml_object_allocator);
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;
 	root->arg_count=0;
