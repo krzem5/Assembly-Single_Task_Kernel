@@ -20,7 +20,6 @@
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
 #define PMM_COUNTER_INIT_STRUCT(name) {(name),NULL,0,HANDLE_INIT_STRUCT}
-#define PMM_DECLARE_COUNTER2(name) static pmm_counter_descriptor_t _pmm_counter_descriptor_##name=PMM_COUNTER_INIT_STRUCT(#name)
 
 
 
