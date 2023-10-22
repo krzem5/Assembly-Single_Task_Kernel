@@ -23,6 +23,9 @@ KFS2_INODE_STORAGE_TYPE_DOUBLE=0x0004
 KFS2_INODE_STORAGE_TYPE_TRIPLE=0x0006
 KFS2_INODE_STORAGE_TYPE_QUADRUPLE=0x0008
 
+KFS2_NAME_FNV_OFFSET_BASIS=0x811c9dc5
+KFS2_NAME_FNV_PRIME=0x01000193
+
 
 
 __all__=["KFS2FileBackend","format_partition","get_inode","set_file_content","set_kernel_inode"]
@@ -297,11 +300,10 @@ class KFS2NodeDataProvider(object):
 
 
 class KFS2DirectoryEntry(object):
-	def __init__(self,inode,size,name_length,type,name):
+	def __init__(self,inode,size,name_length,name):
 		self.inode=inode
 		self.size=size
 		self.name_length=name_length
-		self.type=type
 		self.name=name
 
 	def encode(self):
@@ -311,20 +313,28 @@ class KFS2DirectoryEntry(object):
 			self.inode,
 			self.size,
 			self.name_length,
-			self.type,
+			KFS2DirectoryEntry.calculate_compressed_hash(self.name),
 			self.name
 		)
 
 	@staticmethod
 	def decode(data):
-		inode,size,name_length,type=struct.unpack("<IHBB",data[:8])
-		if (size&3):
+		inode,size,name_length,name_compressed_hash=struct.unpack("<IHBB",data[:8])
+		if (size&3 or name_compressed_hash!=KFS2DirectoryEntry.calculate_compressed_hash(data[8:8+name_length])):
 			raise RuntimeError
-		return KFS2DirectoryEntry(inode,size,name_length,type,data[8:8+name_length])
+		return KFS2DirectoryEntry(inode,size,name_length,data[8:8+name_length])
 
 	@staticmethod
 	def get_entry_size_for_name(name):
 		return (8+len(name)+3)&0xffc
+
+	@staticmethod
+	def calculate_compressed_hash(name):
+		out=KFS2_NAME_FNV_OFFSET_BASIS
+		for c in name:
+			out=((out^c)*KFS2_NAME_FNV_PRIME)&0xffffffff
+		out^=out>>16
+		return (out^(out>>8))&0xff
 
 
 
@@ -450,7 +460,7 @@ def _init_node_as_directory(backend,root_block,inode):
 		48,
 		1,
 		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
-		KFS2DirectoryEntry(0,48,0,0,b"").encode()
+		KFS2DirectoryEntry(0,48,0,b"").encode()
 	)
 	return out
 
@@ -536,7 +546,7 @@ def get_inode(backend,path):
 			best_entry_offset=node.size
 			data_provider.increase_directory_size()
 			chunk=data_provider.get_chunk_at_offset(best_entry_offset)
-			chunk.data[best_entry_offset-chunk.offset:chunk.length]=KFS2DirectoryEntry(0,chunk.length-best_entry_offset+chunk.offset,0,0,b"").encode()
+			chunk.data[best_entry_offset-chunk.offset:chunk.length]=KFS2DirectoryEntry(0,chunk.length-best_entry_offset+chunk.offset,0,b"").encode()
 			data_provider.save_chunk(chunk)
 			best_entry_padding=node.size-new_entry_size-best_entry_offset
 		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 else KFS2_INODE_TYPE_DIRECTORY)
@@ -545,9 +555,9 @@ def get_inode(backend,path):
 			best_entry_padding=0
 		chunk=data_provider.get_chunk_at_offset(best_entry_offset)
 		best_entry_offset-=chunk.offset
-		chunk.data[best_entry_offset:best_entry_offset+new_entry_size]=KFS2DirectoryEntry(child_inode,new_entry_size,len(name),type,bytes(name,"utf-8")).encode()
+		chunk.data[best_entry_offset:best_entry_offset+new_entry_size]=KFS2DirectoryEntry(child_inode,new_entry_size,len(name),bytes(name,"utf-8")).encode()
 		if (best_entry_padding):
-			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,0,b"").encode()
+			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,b"").encode()
 		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_TYPE_DIRECTORY):
 			node=_init_node_as_directory(backend,root_block,child_inode)

@@ -74,7 +74,7 @@ typedef struct __attribute__((packed)) _KFS2_DIRECTORY_ENTRY{
 	u32 inode;
 	u16 size;
 	u8 name_length;
-	u8 type;
+	u8 name_compressed_hash;
 	char name[];
 } kfs2_directory_entry_t;
 
@@ -167,6 +167,13 @@ static u32 _calculate_crc(const void* data,u32 length){
 
 static KERNEL_INLINE _Bool _verify_crc(const void* data,u32 length){
 	return _calculate_crc(data,length-4)==*((u32*)(data+length-4));
+}
+
+
+
+static KERNEL_INLINE u8 _calculate_compressed_hash(const vfs_name_t* name){
+	u16 tmp=name->hash^(name->hash>>16);
+	return tmp^(tmp>>8);
 }
 
 
@@ -309,12 +316,13 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const vfs_name_t* name){
 		0
 	};
 	u64 offset=0;
+	u8 compressed_hash=_calculate_compressed_hash(name);
 	while (offset<kfs2_node->kfs2_node.size){
 		if (offset-chunk.offset>=chunk.length){
 			_node_get_chunk_at_offset(kfs2_node,offset,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
-		if (!entry->name_length||entry->name_length!=name->length){
+		if (entry->name_length!=name->length||entry->name_compressed_hash!=compressed_hash){
 			goto _skip_entry;
 		}
 		for (u16 i=0;i<name->length;i++){
