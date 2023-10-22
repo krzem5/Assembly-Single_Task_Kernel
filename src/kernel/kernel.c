@@ -72,11 +72,11 @@ const char* kernel_lookup_symbol(u64 address,u64* offset){
 
 
 
-u64 kernel_lookup_symbol_address(const char* name){
+const u64* kernel_lookup_symbol_address_ref(const char* name){
 	for (u32 i=0;kernel_symbols[i];i+=2){
 		if (streq(name,(void*)(kernel_symbols[i+1]))){
-			return kernel_symbols[i];
+			return kernel_symbols+i;
 		}
 	}
-	return 0;
+	return NULL;
 }

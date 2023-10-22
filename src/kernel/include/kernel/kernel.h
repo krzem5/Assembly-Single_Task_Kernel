@@ -69,7 +69,7 @@ const char* kernel_lookup_symbol(u64 address,u64* offset);
 
 
 
-u64 kernel_lookup_symbol_address(const char* name);
+const u64* kernel_lookup_symbol_address_ref(const char* name);
 
 
 

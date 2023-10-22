@@ -31,6 +31,9 @@
 #define R_X86_64_PC32 2
 #define R_X86_64_PLT32 4
 #define R_X86_64_32 10
+#define R_X86_64_REX_GOTPCRELX 42
+
+#define ELF_RELOCATION_IS_GOT(r) ((r)==R_X86_64_REX_GOTPCRELX)
 
 
 
@@ -205,12 +208,11 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 
 
 
-static void _resolve_symbol_table(void* file_data,const elf_header_t* header,elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
+static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_symbol_table_entry_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
-			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
+			symbol_table->st_value=(u64)kernel_lookup_symbol_address_ref(string_table+symbol_table->st_name);
 		}
-		symbol_table->st_value+=((const elf_section_header_t*)(file_data+header->e_shoff+symbol_table->st_shndx*sizeof(elf_section_header_t)))->sh_addr;
 		symbol_table++;
 	}
 }
@@ -232,7 +234,7 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 		}
 		section_header++;
 	}
-	_resolve_symbol_table(file_data,header,symbol_table,symbol_table_size,string_table);
+	_resolve_symbol_table(symbol_table,symbol_table_size,string_table);
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
 		u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
@@ -244,7 +246,11 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 			for (u64 i=0;i<section_header->sh_size;i+=sizeof(elf_relocation_addend_entry_t)){
 				const elf_symbol_table_entry_t* symbol=symbol_table+(entry->r_info>>32);
 				u64 relocation_address=base+entry->r_offset;
-				u64 value=symbol->st_value+entry->r_addend;
+				u64 value=symbol->st_value;
+				if (value&&symbol->st_shndx==SHN_UNDEF&&!ELF_RELOCATION_IS_GOT(entry->r_info&0xffffffff)){
+					value=*((const u64*)value);
+				}
+				value+=entry->r_addend+((const elf_section_header_t*)(file_data+header->e_shoff+symbol->st_shndx*sizeof(elf_section_header_t)))->sh_addr;
 				switch (entry->r_info&0xffffffff){
 					case R_X86_64_NONE:
 						break;
@@ -253,6 +259,7 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 						break;
 					case R_X86_64_PC32:
 					case R_X86_64_PLT32:
+					case R_X86_64_REX_GOTPCRELX:
 						*((u32*)relocation_address)=value-relocation_address;
 						break;
 					case R_X86_64_32:
