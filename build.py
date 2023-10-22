@@ -327,7 +327,7 @@ def _patch_kernel(file_path,kernel_symbols):
 
 def _compile_module(module):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY)
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
 	object_files=[]
 	error=False
 	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
