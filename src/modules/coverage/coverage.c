@@ -1,0 +1,140 @@
+#if KERNEL_COVERAGE_ENABLED
+#include <kernel/acpi/fadt.h>
+#include <kernel/handle/handle.h>
+#include <kernel/io/io.h>
+#include <kernel/kernel.h>
+#include <kernel/log/log.h>
+#include <kernel/module/module.h>
+#include <kernel/syscall/syscall.h>
+#include <kernel/types.h>
+#include <kernel/util/util.h>
+#define KERNEL_LOG_NAME "coverage"
+
+
+
+#define COVERAGE_FILE_REPORT_MARKER 0xb8bcbbbe41444347
+
+
+
+typedef struct _GCOV_CTR_INFO{
+	u32 num;
+	s64* values;
+} gcov_ctr_info_t;
+
+
+
+typedef struct _GCOV_FN_INFO{
+	const struct _GCOV_INFO* key;
+	u32 ident;
+	u32 lineno_checksum;
+	u32 cfg_checksum;
+	gcov_ctr_info_t ctrs[8];
+} gcov_fn_info_t;
+
+
+
+typedef struct _GCOV_INFO{
+	u32 version;
+	u8 _padding[12];
+	u32 checksum;
+	const char* filename;
+	void* merge[8];
+	u32 n_functions;
+	const gcov_fn_info_t*const* functions;
+} gcov_info_t;
+
+
+
+static void KERNEL_NOCOVERAGE _output_bytes(const void* buffer,u32 length){
+	for (;length;length--){
+		SPINLOOP(!(io_port_in8(0x2fd)&0x20));
+		io_port_out8(0x2f8,*((const u8*)buffer));
+		buffer++;
+	}
+}
+
+
+
+static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
+	_output_bytes(&value,sizeof(u32));
+}
+
+
+
+static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
+	INFO("Procesing .gcov_info section %p - %p...",base,base+size);
+	for (const gcov_info_t*const* info_ptr=(void*)base;(u64)info_ptr<base+size;info_ptr++){
+		const gcov_info_t* info=*info_ptr;
+		if (!info->merge[0]){
+			continue;
+		}
+		u64 marker=COVERAGE_FILE_REPORT_MARKER;
+		_output_bytes(&marker,sizeof(u64));
+		_output_int(info->version);
+		_output_int(info->checksum);
+		u32 filename_length=0;
+		while (info->filename[filename_length]){
+			filename_length++;
+		}
+		_output_int(filename_length);
+		_output_bytes(info->filename,filename_length);
+		u32 function_count=0;
+		for (u32 i=0;i<info->n_functions;i++){
+			const gcov_fn_info_t* fn_info=info->functions[i];
+			function_count+=(fn_info&&fn_info->key==info);
+		}
+		_output_int(function_count);
+		for (u32 i=0;i<info->n_functions;i++){
+			const gcov_fn_info_t* fn_info=info->functions[i];
+			if (!fn_info||fn_info->key!=info){
+				continue;
+			}
+			_output_int(fn_info->ident);
+			_output_int(fn_info->lineno_checksum);
+			_output_int(fn_info->cfg_checksum);
+			_output_int(fn_info->ctrs->num);
+			_output_bytes(fn_info->ctrs->values,fn_info->ctrs->num*sizeof(u64));
+		}
+	}
+}
+
+
+
+void KERNEL_NOCOVERAGE coverage_export(void){
+	LOG("Exporting coverage information...");
+	INFO("Initializing serial port...");
+	io_port_out8(0x2f9,0x00);
+	io_port_out8(0x2fb,0x80);
+	io_port_out8(0x2f8,0x03);
+	io_port_out8(0x2f9,0x00);
+	io_port_out8(0x2fb,0x03);
+	io_port_out8(0x2fa,0xc7);
+	io_port_out8(0x2fc,0x03);
+	INFO("Writing coverage data...");
+	u64 size;
+	u64 base=kernel_gcov_info_data(&size);
+	_process_gcov_info_section(base,size);
+	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
+		module_t* module=handle->object;
+		if (module->gcov_info.size){
+			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.size);
+		}
+	}
+	acpi_fadt_shutdown(0);
+}
+
+
+
+#else
+#include <kernel/log/log.h>
+#define KERNEL_LOG_NAME "coverage"
+
+
+
+void coverage_export(void){
+	ERROR("Kernel compiled without coverage support");
+}
+
+
+
+#endif

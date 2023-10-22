@@ -16,6 +16,11 @@
 
 
 
+extern u64 __KERNEL_SECTION_gcov_info_START__[1];
+extern u64 __KERNEL_SECTION_gcov_info_END__[1];
+
+
+
 kernel_data_t __attribute__((section(".data"))) kernel_data;
 
 
@@ -79,4 +84,16 @@ const u64* kernel_lookup_symbol_address_ref(const char* name){
 		}
 	}
 	return NULL;
+}
+
+
+
+u64 kernel_gcov_info_data(u64* size){
+#if KERNEL_COVERAGE_ENABLED
+	*size=((u64)__KERNEL_SECTION_gcov_info_END__)-((u64)__KERNEL_SECTION_gcov_info_START__);
+	return (u64)__KERNEL_SECTION_gcov_info_START__;
+#else
+	*size=0;
+	return 0;
+#endif
 }

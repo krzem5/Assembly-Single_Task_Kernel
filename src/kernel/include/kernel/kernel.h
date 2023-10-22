@@ -72,4 +72,8 @@ const u64* kernel_lookup_symbol_address_ref(const char* name);
 
 
 
+u64 kernel_gcov_info_data(u64* size);
+
+
+
 #endif
