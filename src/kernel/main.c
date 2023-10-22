@@ -40,7 +40,7 @@ static void _main_thread(void){
 	serial_init_irq();
 	module_load(vfs_lookup(NULL,"/module/ahci.mod"));
 	module_load(vfs_lookup(NULL,"/module/ata.mod"));
-	module_load(vfs_lookup(NULL,"/module/i82530.mod"));
+	module_load(vfs_lookup(NULL,"/module/i82540.mod"));
 	module_load(vfs_lookup(NULL,"/module/nvme.mod"));
 	module_load(vfs_lookup(NULL,"/module/xhci.mod"));
 	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){

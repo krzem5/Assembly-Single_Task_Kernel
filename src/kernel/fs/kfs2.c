@@ -317,7 +317,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const vfs_name_t* name){
 			_node_get_chunk_at_offset(kfs2_node,offset,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
-		if (entry->name_length!=name->length){
+		if (!entry->name_length||entry->name_length!=name->length){
 			goto _skip_entry;
 		}
 		for (u16 i=0;i<name->length;i++){
@@ -325,8 +325,9 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const vfs_name_t* name){
 				goto _skip_entry;
 			}
 		}
+		u64 inode=entry->inode;
 		_node_dealloc_chunk(&chunk);
-		return _load_inode(node->fs,name,entry->inode);
+		return _load_inode(node->fs,name,inode);
 _skip_entry:
 		offset+=entry->size;
 	}

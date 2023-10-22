@@ -190,6 +190,20 @@ class KFS2NodeDataProvider(object):
 		self.flags=(flags if flags is not None else node.flags)
 		self.data=(node_data if node_data is not None else node.data)
 
+	def increase_directory_size(self):
+		root_block=KFS2RootBlock.load(self._backend)
+		self.node.flags&=~KFS2_INODE_STORAGE_MASK
+		if (self.node.size==48):
+			data=self.data[:]
+			self.node.flags|=KFS2_INODE_STORAGE_TYPE_SINGLE
+			self.node.size=KFS2_BLOCK_SIZE
+			self.data[:]=struct.pack("<6Q",_alloc_data_block(self._backend,root_block),0,0,0,0,0)
+			self._backend.seek(self._data_offset+struct.unpack("<Q",self.data[:8])[0]*KFS2_BLOCK_SIZE)
+			self._backend.write(data)
+			self.node.save()
+		else:
+			raise RuntimeError("Unimplemented")
+
 	def resize(self,size):
 		if (self.node.size):
 			old_data_provider=KFS2NodeDataProvider(self._backend,self._data_offset,None,self.flags,self.data)
@@ -506,7 +520,7 @@ def get_inode(backend,path):
 				entry=KFS2DirectoryEntry.decode(chunk.data[offset-chunk.offset:])
 				if (entry.name_length==0):
 					padding=entry.size-new_entry_size
-					if (best_entry_padding==0xffffffff or (padding>=0 and padding<best_entry_padding)):
+					if (padding>=0 and (best_entry_padding==0xffffffff or padding<best_entry_padding)):
 						best_entry_padding=padding
 						best_entry_offset=offset
 				elif (entry.name.decode("utf-8")==name):
@@ -519,7 +533,12 @@ def get_inode(backend,path):
 			continue
 		child_inode=_alloc_inode(backend,root_block)
 		if (best_entry_padding==0xffffffff):
-			raise RuntimeError("Resize inode data")
+			best_entry_offset=node.size
+			data_provider.increase_directory_size()
+			chunk=data_provider.get_chunk_at_offset(best_entry_offset)
+			chunk.data[best_entry_offset-chunk.offset:chunk.length]=KFS2DirectoryEntry(0,chunk.length-best_entry_offset+chunk.offset,0,0,b"").encode()
+			data_provider.save_chunk(chunk)
+			best_entry_padding=node.size-new_entry_size-best_entry_offset
 		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 else KFS2_INODE_TYPE_DIRECTORY)
 		if (best_entry_padding<12):
 			new_entry_size+=best_entry_padding
@@ -528,7 +547,7 @@ def get_inode(backend,path):
 		best_entry_offset-=chunk.offset
 		chunk.data[best_entry_offset:best_entry_offset+new_entry_size]=KFS2DirectoryEntry(child_inode,new_entry_size,len(name),type,bytes(name,"utf-8")).encode()
 		if (best_entry_padding):
-			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(child_inode,best_entry_padding,0,0,b"").encode()
+			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,0,b"").encode()
 		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_TYPE_DIRECTORY):
 			node=_init_node_as_directory(backend,root_block,child_inode)
