@@ -66,7 +66,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
 
 
 
-static void _process_gcov_info_section(u64 start,u64 end){
+static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 start,u64 end){
 	INFO("Procesing .gcov_info section %p - %p...",start,end);
 	for (const gcov_info_t*const* info_ptr=(void*)start;(u64)info_ptr<end;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
@@ -125,10 +125,9 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE syscall_coverage_dump_data(syscall_regist
 	_process_gcov_info_section((u64)(&__KERNEL_SECTION_gcov_info_START__),(u64)(&__KERNEL_SECTION_gcov_info_END__));
 	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
 		module_t* module=handle->object;
-		if (!module->gcov_info.size){
-			continue;
+		if (module->gcov_info.size){
+			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.base+module->gcov_info.size);
 		}
-		_process_gcov_info_section(module->gcov_info.base,module->gcov_info.base+module->gcov_info.size);
 	}
 	acpi_fadt_shutdown(0);
 }
