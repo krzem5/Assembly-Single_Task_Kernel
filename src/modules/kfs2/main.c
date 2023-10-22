@@ -4,11 +4,11 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "kfs2"
-
 
 
 #define KFS2_BLOCK_SIZE 4096
@@ -508,6 +508,22 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor={
 
 
 
-void kfs2_init(void){
+
+static _Bool _init(module_t* module){
 	fs_register_descriptor(&_kfs2_filesystem_descriptor);
+	return 1;
 }
+
+
+
+static void _deinit(module_t* module){
+	return;
+}
+
+
+
+MODULE_DECLARE(
+	"kfs2",
+	_init,
+	_deinit
+);

@@ -9,7 +9,6 @@
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
-#include <kernel/kfs2/kfs2.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
@@ -31,7 +30,6 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
-	kfs2_init();
 	initramfs_load();
 	pci_enumerate();
 	aml_bus_enumerate();
@@ -43,6 +41,7 @@ static void _main_thread(void){
 	module_load(vfs_lookup(NULL,"/module/ata.mod"));
 	module_load(vfs_lookup(NULL,"/module/i82540.mod"));
 	module_load(vfs_lookup(NULL,"/module/iso9660.mod"));
+	module_load(vfs_lookup(NULL,"/module/kfs2.mod"));
 	module_load(vfs_lookup(NULL,"/module/nvme.mod"));
 	module_load(vfs_lookup(NULL,"/module/xhci.mod"));
 #if KERNEL_COVERAGE_ENABLED
