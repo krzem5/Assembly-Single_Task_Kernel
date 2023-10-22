@@ -63,6 +63,8 @@ static partition_descriptor_t _initramfs_partition_descriptor={
 void initramfs_load(void){
 	LOG("Loading initramfs...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
+	INFO("Registering drive type...");
+	drive_register_type(&_initramfs_drive_type);
 	INFO("Registering partition descriptor...");
 	partition_register_descriptor(&_initramfs_partition_descriptor);
 	INFO("Creating virtual drive...");

@@ -22,15 +22,32 @@ static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof
 HANDLE_DECLARE_TYPE(DRIVE,{
 	drive_t* drive=handle->object;
 	WARN("Delete drive: %s",drive->name);
+	handle_release(&(drive->type->handle));
 	if (drive->partition_descriptor){
 		handle_release(&(drive->partition_descriptor->handle));
 	}
 	omm_dealloc(&_drive_allocator,drive);
 });
+HANDLE_DECLARE_TYPE(DRIVE_TYPE,{});
+
+
+
+void drive_register_type(drive_type_t* type){
+	LOG("Registering drive type '%s'...",type->name);
+	handle_new(type,HANDLE_TYPE_DRIVE_TYPE,&(type->handle));
+}
+
+
+
+void drive_unregister_type(drive_type_t* type){
+	LOG("Unregistering drive type '%s'...",type->name);
+	handle_destroy(&(type->handle));
+}
 
 
 
 drive_t* drive_create(const drive_config_t* config){
+	handle_acquire(&(config->type->handle));
 	LOG("Creating drive '%s' as '%s/%s'...",config->name,config->type->name,config->model_number);
 	drive_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));

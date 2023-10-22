@@ -244,6 +244,7 @@ void driver_ahci_init_device(pci_device_t* device){
 
 
 void driver_ahci_init(void){
+	drive_register_type(&_ahci_drive_type);
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
 		driver_ahci_init_device(device);
