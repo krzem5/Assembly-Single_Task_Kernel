@@ -11,7 +11,6 @@
 
 typedef struct _FILESYSTEM_DESCRIPTOR{
 	const char* name;
-	filesystem_type_t* var;
 	void (*deinit_callback)(filesystem_t*);
 	filesystem_t* (*load_callback)(partition_t*);
 	handle_t handle;

@@ -7,10 +7,6 @@
 
 
 
-typedef u16 filesystem_type_t;
-
-
-
 typedef struct _FILESYSTEM{
 	handle_t handle;
 	lock_t lock;

@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -14,6 +15,24 @@
 #define ISO9660_DIRECTORY_FLAG_HIDDEN 1
 #define ISO9660_DIRECTORY_FLAG_DIRECTOR 2
 #define ISO9660_DIRECTORY_FLAG_ASSOCIATED_FILE 4
+
+
+
+typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
+	u8 type;
+	u8 identifier[5];
+	u8 version;
+	struct __attribute__((packed)){
+		u8 _padding[33];
+		char volume_name[32];
+		u8 _padding2[8];
+		u32 volume_size;
+		u8 _padding3[74];
+		u32 directory_lba;
+		u8 _padding4[4];
+		u32 directory_data_length;
+	} primary_volume_descriptor;
+} iso9660_volume_descriptor_t;
 
 
 
@@ -31,20 +50,6 @@ typedef struct __attribute__((packed)) _ISO9660_DIRECTORY{
 	u8 identifier_length;
 	char identifier[];
 } iso9660_directory_t;
-
-
-
-typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
-	u8 type;
-	u8 identifier[5];
-	u8 version;
-	struct __attribute__((packed)){
-		u8 _padding[151];
-		u32 directory_lba;
-		u8 _padding2[4];
-		u32 directory_data_length;
-	} primary_volume_descriptor;
-} iso9660_volume_descriptor_t;
 
 
 
@@ -67,7 +72,41 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor;
 
 static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,PMM_COUNTER_OMM_ISO9660_NODE);
 
-extern filesystem_type_t FILESYSTEM_TYPE_ISO9660;
+
+
+static _Bool _iso9660_load_partitions(drive_t* drive){
+	if (drive->block_size!=2048||(!streq(drive->type->name,"ATA")&&!streq(drive->type->name,"ATAPI"))){
+		return 0;
+	}
+	u64 block_index=16;
+	u8 buffer[2048];
+	while (1){
+		if (drive_read(drive,block_index,buffer,1)!=1){
+			return 0;
+		}
+		iso9660_volume_descriptor_t* volume_descriptor=(iso9660_volume_descriptor_t*)buffer;
+		if (volume_descriptor->identifier[0]!='C'||volume_descriptor->identifier[1]!='D'||volume_descriptor->identifier[2]!='0'||volume_descriptor->identifier[3]!='0'||volume_descriptor->identifier[4]!='1'||volume_descriptor->version!=1){
+			return 0;
+		}
+		switch (volume_descriptor->type){
+			case 1:
+				char name_buffer[32];
+				memcpy_trunc_spaces(name_buffer,volume_descriptor->primary_volume_descriptor.volume_name,32);
+				partition_create(drive,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size);
+				return 1;
+			case 255:
+				return 0;
+		}
+		block_index++;
+	}
+}
+
+
+
+static partition_descriptor_t _iso9660_partition_descriptor={
+	"ISO9660",
+	_iso9660_load_partitions
+};
 
 
 
@@ -268,7 +307,6 @@ _directory_lba_found:
 
 static filesystem_descriptor_t _iso9660_filesystem_descriptor={
 	"iso9660",
-	NULL,
 	_iso9660_fs_deinit,
 	_iso9660_fs_load
 };
@@ -276,5 +314,6 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor={
 
 
 __KERNEL_TEMP_INIT({
+	partition_register_descriptor(&_iso9660_partition_descriptor);
 	fs_register_descriptor(&_iso9660_filesystem_descriptor);
 });

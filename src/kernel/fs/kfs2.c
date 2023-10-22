@@ -155,8 +155,6 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor;
 static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,PMM_COUNTER_OMM_KFS2_NODE);
 static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,PMM_COUNTER_OMM_KFS2_EDATA);
 
-extern filesystem_type_t FILESYSTEM_TYPE_KFS2;
-
 
 
 static u32 _calculate_crc(const void* data,u32 length){
@@ -498,7 +496,6 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 
 static filesystem_descriptor_t _kfs2_filesystem_descriptor={
 	"kfs2",
-	NULL,
 	_kfs2_fs_deinit,
 	_kfs2_fs_load
 };
