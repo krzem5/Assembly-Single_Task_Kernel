@@ -30,16 +30,6 @@ HANDLE_DECLARE_TYPE(FS_DESCRIPTOR,{});
 
 
 
-void fs_init(void){
-	filesystem_type_t fs_type_index=0;
-	for (const filesystem_descriptor_t*const* descriptor=(void*)kernel_section_filesystem_start();(u64)descriptor<kernel_section_filesystem_end();descriptor++){
-		*((*descriptor)->var)=fs_type_index;
-		fs_type_index++;
-	}
-}
-
-
-
 void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
 	handle_new(descriptor,HANDLE_TYPE_FS_DESCRIPTOR,&(descriptor->handle));

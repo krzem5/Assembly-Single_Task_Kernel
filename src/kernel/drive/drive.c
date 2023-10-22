@@ -23,7 +23,7 @@ HANDLE_DECLARE_TYPE(DRIVE,{
 	drive_t* drive=handle->object;
 	WARN("Delete drive: %s",drive->name);
 	if (drive->partition_descriptor){
-		handle_release(&(drive->partition_descriptor));
+		handle_release(&(drive->partition_descriptor->handle));
 	}
 	omm_dealloc(&_drive_allocator,drive);
 });

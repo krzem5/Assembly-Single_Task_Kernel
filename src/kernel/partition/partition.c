@@ -25,7 +25,7 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 	partition_t* partition=handle->object;
 	WARN("Delete partition: %s",partition->name);
 	if (partition->descriptor){
-		handle_release(&(partition->descriptor));
+		handle_release(&(partition->descriptor->handle));
 	}
 	omm_dealloc(&_partition_allocator,partition);
 });

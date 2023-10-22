@@ -24,10 +24,6 @@ extern handle_type_t HANDLE_TYPE_FS_DESCRIPTOR;
 
 
 
-void fs_init(void);
-
-
-
 void fs_register_descriptor(filesystem_descriptor_t* descriptor);
 
 
