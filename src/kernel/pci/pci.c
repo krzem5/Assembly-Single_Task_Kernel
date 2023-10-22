@@ -1,7 +1,3 @@
-#include <kernel/driver/ata.h>
-#include <kernel/driver/i82540.h>
-#include <kernel/driver/nvme.h>
-#include <kernel/driver/xhci.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/pci/pci.h>
@@ -89,10 +85,6 @@ void pci_enumerate(void){
 			}
 		}
 	}
-	driver_ata_init();
-	driver_nvme_init();
-	driver_i82540_init();
-	driver_xhci_init();
 }
 
 

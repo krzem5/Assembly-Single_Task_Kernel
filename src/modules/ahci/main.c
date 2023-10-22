@@ -333,7 +333,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 
 
 
-void driver_ahci_init_device(pci_device_t* device){
+static void _ahci_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x06||device->progif!=0x01){
 		return;
 	}
@@ -382,7 +382,7 @@ static _Bool _init(module_t* module){
 	drive_register_type(&_ahci_drive_type);
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
-		driver_ahci_init_device(device);
+		_ahci_init_device(device);
 	}
 	return 1;
 }

@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -310,7 +311,22 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor={
 
 
 
-__KERNEL_TEMP_INIT({
-	partition_register_descriptor(&_iso9660_partition_descriptor);
+static _Bool _init(module_t* module){
 	fs_register_descriptor(&_iso9660_filesystem_descriptor);
-});
+	partition_register_descriptor(&_iso9660_partition_descriptor);
+	return 1;
+}
+
+
+
+static void _deinit(module_t* module){
+	return;
+}
+
+
+
+MODULE_DECLARE(
+	"iso9660",
+	_init,
+	_deinit
+);
