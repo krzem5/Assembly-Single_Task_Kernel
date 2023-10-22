@@ -119,7 +119,7 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static void _module_alloc_region(module_address_region_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	u64 base=pmm_alloc(region->size>>PAGE_SIZE_SHIFT,&_module_image_pmm_counter,0);
+	u64 base=pmm_alloc_zero(region->size>>PAGE_SIZE_SHIFT,&_module_image_pmm_counter,0);
 	region->base=vmm_memory_map_reserve(&process_kernel_image_mmap,0,region->size);
 	if (!region->base){
 		panic("Unable to reserve module section memory");
@@ -164,6 +164,10 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 	_module_alloc_region(&(module->ex_region));
 	_module_alloc_region(&(module->nx_region));
 	_module_alloc_region(&(module->rw_region));
+#ifdef KERNEL_COVERAGE_ENABLED
+	module->gcov_info.base=0;
+	module->gcov_info.size=0;
+#endif
 	section_header=file_data+header->e_shoff;
 	u64 ex_base=module->ex_region.base;
 	u64 nx_base=module->nx_region.base;
@@ -194,6 +198,13 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 		if (streq(string_table+section_header->sh_name,".module")){
 			module->descriptor=(void*)(section_header->sh_addr);
 		}
+#ifdef KERNEL_COVERAGE_ENABLED
+		else if (streq(string_table+section_header->sh_name,".gcov_info")){
+			module->gcov_info.base=section_header->sh_addr;
+			module->gcov_info.size=section_header->sh_size;
+			INFO("Found .gcov_info section at %p (%v)",module->gcov_info.base,module->gcov_info.size);
+		}
+#endif
 		memcpy((void*)(section_header->sh_addr),file_data+section_header->sh_offset,section_header->sh_size);
 		*var+=section_header->sh_size;
 		section_header++;

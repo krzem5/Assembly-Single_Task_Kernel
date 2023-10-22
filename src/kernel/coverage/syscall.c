@@ -64,6 +64,12 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE _output_int(u32 value){
 
 
 
+static void _process_gcov_info_section(u64 start,u64 end){
+	INFO("Procesing .gcov_info section %p - %p...",start,end);
+}
+
+
+
 void KERNEL_NOCOVERAGE __gcov_merge_add(void){
 	return;
 }

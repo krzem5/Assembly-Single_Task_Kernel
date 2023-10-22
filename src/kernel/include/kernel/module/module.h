@@ -28,6 +28,9 @@ typedef struct _MODULE{
 	module_address_region_t ex_region;
 	module_address_region_t nx_region;
 	module_address_region_t rw_region;
+#ifdef KERNEL_COVERAGE_ENABLED
+	module_address_region_t gcov_info;
+#endif
 } module_t;
 
 
@@ -37,6 +40,10 @@ typedef struct _MODULE_DESCRIPTOR{
 	_Bool (*init_callback)(module_t*);
 	void (*deinit_callback)(module_t*);
 } module_descriptor_t;
+
+
+
+extern handle_type_t HANDLE_TYPE_MODULE;
 
 
 

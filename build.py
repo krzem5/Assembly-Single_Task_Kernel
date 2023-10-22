@@ -75,7 +75,7 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
-	MODE_RELEASE: []
+	MODE_RELEASE: ["-O3","-g0"]
 }[mode]
 KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
 	MODE_NORMAL: ["-D_KERNEL_DEBUG_BUILD_"],
@@ -98,14 +98,9 @@ MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/modules/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O0","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-ggdb","-O0","-fno-omit-frame-pointer"],
-	MODE_RELEASE: ["-O3","-g0","-fomit-frame-pointer"]
-}[mode]
-MODULE_EXTRA_LINKER_PREPROCESSING_OPTIONS={
-	MODE_NORMAL: ["-D_MODULE_DEBUG_BUILD_"],
-	MODE_COVERAGE: ["-D_MODULE_DEBUG_BUILD_"],
-	MODE_RELEASE: []
+	MODE_NORMAL: ["-ggdb","-O1"],
+	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_RELEASE: ["-O3","-g0"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-g"],
@@ -342,7 +337,7 @@ def _compile_module(module):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -350,7 +345,7 @@ def _compile_module(module):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/modules/{module}.mod"]+object_files+KERNEL_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/modules/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 
 
