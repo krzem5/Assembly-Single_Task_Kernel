@@ -25,7 +25,7 @@ typedef struct _USB_DEVICE{
 	u8 type;
 	u8 speed;
 	u8 address;
-	u16 port;
+	u8 port;
 	union{
 		struct{
 			u16 port_count;
