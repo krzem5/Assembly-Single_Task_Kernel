@@ -5,74 +5,12 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/usb/controller.h>
+#include <kernel/usb/device.h>
 #include <kernel/util/util.h>
 #include <xhci/device.h>
 #include <xhci/registers.h>
 #define KERNEL_LOG_NAME "xhci"
-
-
-
-/******************************************************************************************************************************************/
-
-
-
-typedef struct _USB_CONTROLLER{
-	void* device;
-	_Bool (*detect)(void*,u16);
-	u8 (*reset)(void*,u16);
-	void (*disconnect)(void*,u16);
-} usb_controller_t;
-
-
-
-usb_controller_t* usb_controller_alloc(void);
-
-
-
-void usb_controller_dealloc(usb_controller_t* controller);
-
-
-
-/******************************************************************************************************************************************/
-
-
-
-#define USB_DEVICE_SPEED_INVALID 0
-#define USB_DEVICE_SPEED_FULL 1
-#define USB_DEVICE_SPEED_LOW 2
-#define USB_DEVICE_SPEED_HIGH 3
-#define USB_DEVICE_SPEED_SUPER 4
-
-#define USB_DEVICE_TYPE_HUB 0
-
-
-
-typedef struct _USB_DEVICE{
-	const usb_controller_t* controller;
-	struct _USB_DEVICE* parent;
-	struct _USB_DEVICE* prev;
-	struct _USB_DEVICE* next;
-	u8 type;
-	u8 speed;
-	u16 port;
-	union{
-		struct{
-			u16 port_count;
-		} hub;
-	};
-} usb_device_t;
-
-
-
-usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 port);
-
-
-
-void usb_device_dealloc(usb_device_t* device);
-
-
-
-void usb_device_enumerate_children(usb_device_t* hub);
 
 
 
