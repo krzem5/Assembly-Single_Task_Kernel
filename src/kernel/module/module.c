@@ -307,6 +307,7 @@ _Bool module_load(vfs_node_t* node){
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
 	LOG("Module '%s' loaded successfully",module->descriptor->name);
-	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,(u64)(module->descriptor->init_callback),0x200000,1,module));
+	module->descriptor->init_callback(module);
+	// scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,(u64)(module->descriptor->init_callback),0x200000,1,module));
 	return 1;
 }
