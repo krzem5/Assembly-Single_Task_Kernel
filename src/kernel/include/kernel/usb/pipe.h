@@ -4,13 +4,17 @@
 
 
 
+struct _USB_DEVICE;
+
+
+
 typedef struct _USB_PIPE{
 	u8 DATA;
 } usb_pipe_t;
 
 
 
-usb_pipe_t* usb_pipe_alloc(usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size);
+usb_pipe_t* usb_pipe_alloc(struct _USB_DEVICE* device,u8 endpoint_address,u8 attributes,u16 max_packet_size);
 
 
 

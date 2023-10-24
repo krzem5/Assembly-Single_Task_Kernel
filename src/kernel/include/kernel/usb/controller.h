@@ -1,7 +1,7 @@
 #ifndef _KERNEL_USB_CONTROLLER_H_
 #define _KERNEL_USB_CONTROLLER_H_ 1
-#include <kernel/pipe.h>
 #include <kernel/types.h>
+#include <kernel/usb/pipe.h>
 
 
 
