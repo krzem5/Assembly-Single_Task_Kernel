@@ -37,6 +37,18 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 
 
+static void _xhci_update_pipe(void* ctx,usb_device_t* device,usb_pipe_t* pipe){
+	panic("update_pipe");
+}
+
+
+
+static void _xhci_transfer_pipe(void* ctx,usb_pipe_t* pipe){
+	panic("transfer_pipe");
+}
+
+
+
 static _Bool _xhci_detect_port(void* ctx,u16 port){
 	const xhci_device_t* xhci_device=ctx;
 	return !!((xhci_device->port_registers+port)->portsc&PORTSC_CCS);
@@ -133,7 +145,11 @@ static void _xhci_init_device(pci_device_t* device){
 	}
 	xhci_device->operational_registers->usbcmd|=USBCMD_RS;
 	COUNTER_SPINLOOP(0xfff);
-	usb_controller_t* usb_controller=usb_controller_alloc();
+	usb_root_controller_t* root_controller=usb_root_controller_alloc();
+	root_controller->device=xhci_device;
+	root_controller->update_pipe=_xhci_update_pipe;
+	root_controller->transfer_pipe=_xhci_transfer_pipe;
+	usb_controller_t* usb_controller=usb_controller_alloc(root_controller);
 	usb_controller->device=xhci_device;
 	usb_controller->detect=_xhci_detect_port;
 	usb_controller->reset=_xhci_reset_port;
