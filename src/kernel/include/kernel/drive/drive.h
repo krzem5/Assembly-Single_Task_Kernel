@@ -43,7 +43,7 @@ typedef struct _DRIVE{
 	handle_t handle;
 	drive_type_t* type;
 	u8 block_size_shift;
-	partition_table_descriptor_t* partition_descriptor;
+	partition_table_descriptor_t* partition_table_descriptor;
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];

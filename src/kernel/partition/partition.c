@@ -35,16 +35,16 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 	handle_new(descriptor,HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR,&(descriptor->handle));
 	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
 		drive_t* drive=handle->object;
-		if (drive->partition_descriptor){
+		if (drive->partition_table_descriptor){
 			continue;
 		}
 		handle_acquire(&(descriptor->handle));
-		drive->partition_descriptor=descriptor;
+		drive->partition_table_descriptor=descriptor;
 		if (descriptor->load_callback(drive)){
 			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number,descriptor->name);
 		}
 		else{
-			drive->partition_descriptor=NULL;
+			drive->partition_table_descriptor=NULL;
 			handle_release(&(descriptor->handle));
 		}
 	}
@@ -64,14 +64,14 @@ void partition_load_from_drive(drive_t* drive){
 	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR){
 		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
-		drive->partition_descriptor=descriptor;
+		drive->partition_table_descriptor=descriptor;
 		if (descriptor->load_callback(drive)){
 			INFO("Detected drive partitioning as '%s'",descriptor->name);
 			return;
 		}
 		handle_release(&(descriptor->handle));
 	}
-	drive->partition_descriptor=NULL;
+	drive->partition_table_descriptor=NULL;
 	WARN("Unable to detect partition type of drive '%s'",drive->model_number);
 }
 
@@ -79,10 +79,10 @@ void partition_load_from_drive(drive_t* drive){
 
 partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number);
-	handle_acquire(&(drive->partition_descriptor->handle));
+	handle_acquire(&(drive->partition_table_descriptor->handle));
 	partition_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
-	out->descriptor=drive->partition_descriptor;
+	out->descriptor=drive->partition_table_descriptor;
 	out->drive=drive;
 	memcpy(out->name,name,32);
 	out->start_lba=start_lba;

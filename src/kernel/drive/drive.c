@@ -19,8 +19,8 @@ HANDLE_DECLARE_TYPE(DRIVE,{
 	drive_t* drive=handle->object;
 	WARN("Delete drive: %s",drive->name);
 	handle_release(&(drive->type->handle));
-	if (drive->partition_descriptor){
-		handle_release(&(drive->partition_descriptor->handle));
+	if (drive->partition_table_descriptor){
+		handle_release(&(drive->partition_table_descriptor->handle));
 	}
 	omm_dealloc(&_drive_allocator,drive);
 });
@@ -49,7 +49,7 @@ drive_t* drive_create(const drive_config_t* config){
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
 	out->block_size_shift=__builtin_ctzll(config->block_size);
-	out->partition_descriptor=NULL;
+	out->partition_table_descriptor=NULL;
 	memcpy(out->name,config->name,DRIVE_NAME_LENGTH);
 	memcpy(out->serial_number,config->serial_number,DRIVE_SERIAL_NUMBER_LENGTH);
 	memcpy(out->model_number,config->model_number,DRIVE_MODEL_NUMBER_LENGTH);
