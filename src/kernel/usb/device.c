@@ -36,16 +36,15 @@ static u16 _speed_to_packet_size(u8 speed){
 static void _set_device_address(usb_device_t* device){
 	usb_address_space_dealloc(&(device->parent->hub.address_space),device->address);
 	device->address=usb_address_space_alloc(&(device->parent->hub.address_space));
-	(void)_speed_to_packet_size;
-	// usb_pipe_t* pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
-	// usb_control_request_t request={
-	// 	USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
-	// 	USB_REQ_SET_ADDRESS,
-	// 	device->address,
-	// 	0,
-	// 	0
-	// };
-	// usb_pipe_transfer_setup(device,pipe,&request,NULL);
+	usb_pipe_t* pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
+	usb_control_request_t request={
+		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
+		USB_REQ_SET_ADDRESS,
+		device->address,
+		0,
+		0
+	};
+	usb_pipe_transfer_setup(device,pipe,&request,NULL);
 	LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
 }
 

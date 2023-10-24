@@ -17,7 +17,11 @@
 
 static pmm_counter_descriptor_t _xhci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("xhci");
 static pmm_counter_descriptor_t _xhci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_device");
+static pmm_counter_descriptor_t _xhci_ring_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_ring");
+static pmm_counter_descriptor_t _xhci_pipe_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_pipe");
 static omm_allocator_t _xhci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("xhci_device",sizeof(xhci_device_t),8,1,&_xhci_device_omm_pmm_counter);
+static omm_allocator_t _xhci_ring_allocator=OMM_ALLOCATOR_INIT_STRUCT("xhci_ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4,&_xhci_ring_omm_pmm_counter);
+static omm_allocator_t _xhci_pipe_allocator=OMM_ALLOCATOR_INIT_STRUCT("xhci_pipe",sizeof(xhci_pipe_t),8,2,&_xhci_pipe_omm_pmm_counter);
 
 
 
@@ -30,28 +34,36 @@ static KERNEL_INLINE u32 _align_size(u32 size){
 static u32 _get_total_memory_size(const xhci_device_t* device){
 	u32 out=0;
 	out+=_align_size((device->slots+1)*sizeof(xhci_device_context_base_t));
-	out+=_align_size(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t));
-	out+=_align_size(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t));
 	out+=_align_size(sizeof(xhci_event_ring_segment_t));
 	return out;
 }
 
 
 
+static xhci_ring_t* _alloc_ring(void){
+	xhci_ring_t* out=omm_alloc(&_xhci_ring_allocator);
+	memset(out,0,sizeof(xhci_ring_t));
+	return out;
+}
+
+
+
 static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
-	panic("_xhci_pipe_alloc");
+	// panic("_xhci_pipe_alloc");
+	xhci_pipe_t* out=omm_alloc(&_xhci_pipe_allocator);
+	return out;
 }
 
 
 
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
-	panic("_xhci_pipe_transfer_setup");
+	// panic("_xhci_pipe_transfer_setup");
 }
 
 
 
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
-	panic("_xhci_pipe_transfer_normal");
+	// panic("_xhci_pipe_transfer_normal");
 }
 
 
@@ -117,19 +129,16 @@ static void _xhci_init_device(pci_device_t* device){
 	xhci_device->ports=registers->hcsparams1>>24;
 	xhci_device->interrupts=(registers->hcsparams1>>8)&0x7ff;
 	xhci_device->slots=registers->hcsparams1;
-	xhci_device->context_size=((registers->hccparams1&0x04)?64:32);
+	xhci_device->is_context_64_bytes=!!(registers->hccparams1&0x04);
 	xhci_device->port_registers=(void*)vmm_identity_map(pci_bar.address+0x400,xhci_device->ports*sizeof(xhci_port_registers_t));
 	xhci_device->doorbell_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->dboff,xhci_device->ports*sizeof(xhci_doorbell_t));
 	xhci_device->interrupt_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->rtsoff+0x20,xhci_device->interrupts*sizeof(xhci_interrupt_registers_t));
-	INFO("Ports: %u, Interrupts: %u, Slots: %u, Context size: %u",xhci_device->ports,xhci_device->interrupts,xhci_device->slots,xhci_device->context_size);
+	INFO("Ports: %u, Interrupts: %u, Slots: %u, Context size: %u",xhci_device->ports,xhci_device->interrupts,xhci_device->slots,(32<<xhci_device->is_context_64_bytes));
 	void* data=(void*)(pmm_alloc_zero(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	xhci_device->device_context_base_array=data;
-	data+=_align_size((xhci_device->slots+1)*sizeof(xhci_device_context_base_t));
-	xhci_device->command_ring=data;
-	data+=_align_size(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t));
-	xhci_device->event_ring=data;
-	data+=_align_size(XHCI_RING_SIZE*sizeof(xhci_transfer_block_t));
-	xhci_device->event_ring_segment=data;
+	xhci_device->command_ring=_alloc_ring();
+	xhci_device->event_ring=_alloc_ring();
+	xhci_device->event_ring_segment=data+_align_size((xhci_device->slots+1)*sizeof(xhci_device_context_base_t));
 	if (xhci_device->operational_registers->usbcmd&USBCMD_RS){
 		xhci_device->operational_registers->usbcmd&=~USBCMD_RS;
 		SPINLOOP(!(xhci_device->operational_registers->usbsts&USBSTS_HCH));

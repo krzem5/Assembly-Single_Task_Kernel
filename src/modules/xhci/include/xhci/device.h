@@ -9,6 +9,16 @@
 
 
 
+typedef struct _XHCI_RING{
+	xhci_transfer_block_t ring[XHCI_RING_SIZE];
+	xhci_transfer_block_t event;
+	u32 eidx;
+	u32 nidx;
+	u32 cs;
+} xhci_ring_t;
+
+
+
 typedef struct _XHCI_DEVICE{
 	xhci_registers_t* registers;
 	xhci_operational_registers_t* operational_registers;
@@ -16,14 +26,21 @@ typedef struct _XHCI_DEVICE{
 	xhci_doorbell_t* doorbell_registers;
 	xhci_interrupt_registers_t* interrupt_registers;
 	xhci_device_context_base_t* device_context_base_array;
-	xhci_transfer_block_t* command_ring;
-	xhci_transfer_block_t* event_ring;
+	xhci_ring_t* command_ring;
+	xhci_ring_t* event_ring;
 	xhci_event_ring_segment_t* event_ring_segment;
 	u8 ports;
 	u16 interrupts;
 	u8 slots;
-	u8 context_size;
+	_Bool is_context_64_bytes;
 } xhci_device_t;
+
+
+
+typedef struct _XHCI_PIPE{
+	xhci_ring_t* ring;
+	u32 slot;
+} xhci_pipe_t;
 
 
 

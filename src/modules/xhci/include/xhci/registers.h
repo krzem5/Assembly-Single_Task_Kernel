@@ -105,4 +105,28 @@ typedef volatile struct _XHCI_EVENT_RING_SEGMENT{
 
 
 
+typedef volatile struct _XHCI_SLOT_CONTEXT{
+	u32 context[4];
+	u8 _padding[16];
+} xhci_slot_context_t;
+
+
+
+typedef volatile struct _XHCI_ENDPOINT_CONTEXT{
+	u32 context[2];
+	u64 deq;
+	u32 length;
+	u8 _padding[12];
+} xhci_ednpoint_context_t;
+
+
+
+typedef volatile struct _XHCI_INPUT_CONTEXT{
+	u32 del;
+	u32 address;
+	u8 _padding[24];
+} xhci_input_context_t;
+
+
+
 #endif
