@@ -7,7 +7,7 @@
 
 
 usb_pipe_t* usb_pipe_alloc(usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
-	return device->controller->root_controller->pipe_update(device->controller->root_controller->device,device,endpoint_address,attributes,max_packet_size);
+	return device->controller->root_controller->pipe_alloc(device->controller->root_controller->device,device,endpoint_address,attributes,max_packet_size);
 }
 
 

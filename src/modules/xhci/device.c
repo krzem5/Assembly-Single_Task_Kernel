@@ -38,8 +38,8 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 
 
-static usb_pipe_t* _xhci_pipe_update(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
-	panic("_xhci_pipe_update");
+static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
+	panic("_xhci_pipe_alloc");
 }
 
 
@@ -154,7 +154,7 @@ static void _xhci_init_device(pci_device_t* device){
 	COUNTER_SPINLOOP(0xfff);
 	usb_root_controller_t* root_controller=usb_root_controller_alloc();
 	root_controller->device=xhci_device;
-	root_controller->pipe_update=_xhci_pipe_update;
+	root_controller->pipe_alloc=_xhci_pipe_alloc;
 	root_controller->pipe_transfer_setup=_xhci_pipe_transfer_setup;
 	root_controller->pipe_transfer_normal=_xhci_pipe_transfer_normal;
 	usb_controller_t* usb_controller=usb_controller_alloc(root_controller);
