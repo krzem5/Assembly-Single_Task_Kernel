@@ -45,7 +45,7 @@ static void _set_device_address(usb_device_t* device){
 	// 	0,
 	// 	0
 	// };
-	// usb_pipe_transfer_setup(pipe,&request,NULL);
+	// usb_pipe_transfer_setup(device,pipe,&request,NULL);
 	LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
 }
 

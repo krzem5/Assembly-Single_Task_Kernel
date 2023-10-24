@@ -38,19 +38,19 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 
 
-static void _xhci_pipe_update(void* ctx,usb_device_t* device,usb_pipe_t* pipe){
-	panic("pipe_update");
+static usb_pipe_t* _xhci_pipe_update(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
+	panic("_xhci_pipe_update");
 }
 
 
 
-static void _xhci_pipe_transfer_setup(void* ctx,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
+static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
 	panic("_xhci_pipe_transfer_setup");
 }
 
 
 
-static void _xhci_pipe_transfer_normal(void* ctx,usb_pipe_t* pipe,void* data,u16 length){
+static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
 	panic("_xhci_pipe_transfer_normal");
 }
 
