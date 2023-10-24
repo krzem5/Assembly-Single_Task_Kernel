@@ -6,6 +6,8 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -31,9 +33,7 @@
 #define R_X86_64_PC32 2
 #define R_X86_64_PLT32 4
 #define R_X86_64_32 10
-#define R_X86_64_REX_GOTPCRELX 42
-
-#define ELF_RELOCATION_IS_GOT(r) ((r)==R_X86_64_REX_GOTPCRELX)
+#define R_X86_64_32S 11
 
 
 
@@ -219,7 +219,7 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_symbol_table_entry_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
-			symbol_table->st_value=(u64)kernel_lookup_symbol_address_ref(string_table+symbol_table->st_name);
+			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
 		}
 		symbol_table++;
 	}
@@ -255,9 +255,6 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 				const elf_symbol_table_entry_t* symbol=symbol_table+(entry->r_info>>32);
 				u64 relocation_address=base+entry->r_offset;
 				u64 value=symbol->st_value;
-				if (value&&symbol->st_shndx==SHN_UNDEF&&!ELF_RELOCATION_IS_GOT(entry->r_info&0xffffffff)){
-					value=*((const u64*)value);
-				}
 				value+=entry->r_addend+((const elf_section_header_t*)(file_data+header->e_shoff+symbol->st_shndx*sizeof(elf_section_header_t)))->sh_addr;
 				switch (entry->r_info&0xffffffff){
 					case R_X86_64_NONE:
@@ -267,10 +264,10 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 						break;
 					case R_X86_64_PC32:
 					case R_X86_64_PLT32:
-					case R_X86_64_REX_GOTPCRELX:
 						*((u32*)relocation_address)=value-relocation_address;
 						break;
 					case R_X86_64_32:
+					case R_X86_64_32S:
 						*((u32*)relocation_address)=value;
 						break;
 					default:
@@ -310,5 +307,6 @@ _Bool module_load(vfs_node_t* node){
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
 	LOG("Module '%s' loaded successfully",module->descriptor->name);
-	return module->descriptor->init_callback(module);
+	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,(u64)(module->descriptor->init_callback),0x200000,1,module));
+	return 1;
 }

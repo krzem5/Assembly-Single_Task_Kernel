@@ -97,7 +97,7 @@ _Bool elf_load(vfs_node_t* node){
 			goto _error;
 		}
 	}
-	scheduler_enqueue_thread(thread_new_user(process,header.e_entry,0x200000));
+	scheduler_enqueue_thread(thread_new_user_thread(process,header.e_entry,0x200000));
 	return 1;
 _error:
 	handle_release(&(process->handle));

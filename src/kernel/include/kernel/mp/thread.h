@@ -19,11 +19,11 @@ extern handle_type_t HANDLE_TYPE_THREAD;
 
 
 
-thread_t* thread_new_user(process_t* process,u64 rip,u64 stack_size);
+thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size);
 
 
 
-thread_t* thread_new_kernel(process_t* process,u64 rip,u64 stack_size,u8 arg_count,...);
+thread_t* thread_new_kernel_thread(process_t* process,u64 rip,u64 stack_size,u8 arg_count,...);
 
 
 
