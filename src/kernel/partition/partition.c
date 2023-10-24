@@ -31,7 +31,7 @@ HANDLE_DECLARE_TYPE(PARTITION_TABLE_DESCRIPTOR,{});
 
 
 void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
-	LOG("Registering partition descriptor '%s'...",descriptor->name);
+	LOG("Registering partition table descriptor '%s'...",descriptor->name);
 	handle_new(descriptor,HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR,&(descriptor->handle));
 	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
 		drive_t* drive=handle->object;
@@ -53,7 +53,7 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 
 
 void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
-	LOG("Unregistering partition descriptor '%s'...",descriptor->name);
+	LOG("Unregistering partition table descriptor '%s'...",descriptor->name);
 	handle_destroy(&(descriptor->handle));
 }
 
