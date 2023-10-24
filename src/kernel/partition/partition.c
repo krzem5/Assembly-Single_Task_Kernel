@@ -26,13 +26,13 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 	}
 	omm_dealloc(&_partition_allocator,partition);
 });
-HANDLE_DECLARE_TYPE(PARTITION_DESCRIPTOR,{});
+HANDLE_DECLARE_TYPE(PARTITION_TABLE_DESCRIPTOR,{});
 
 
 
-void partition_register_descriptor(partition_descriptor_t* descriptor){
+void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Registering partition descriptor '%s'...",descriptor->name);
-	handle_new(descriptor,HANDLE_TYPE_PARTITION_DESCRIPTOR,&(descriptor->handle));
+	handle_new(descriptor,HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR,&(descriptor->handle));
 	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
 		drive_t* drive=handle->object;
 		if (drive->partition_descriptor){
@@ -52,7 +52,7 @@ void partition_register_descriptor(partition_descriptor_t* descriptor){
 
 
 
-void partition_unregister_descriptor(partition_descriptor_t* descriptor){
+void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Unregistering partition descriptor '%s'...",descriptor->name);
 	handle_destroy(&(descriptor->handle));
 }
@@ -61,8 +61,8 @@ void partition_unregister_descriptor(partition_descriptor_t* descriptor){
 
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number);
-	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_DESCRIPTOR){
-		partition_descriptor_t* descriptor=handle->object;
+	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR){
+		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
 		drive->partition_descriptor=descriptor;
 		if (descriptor->load_callback(drive)){

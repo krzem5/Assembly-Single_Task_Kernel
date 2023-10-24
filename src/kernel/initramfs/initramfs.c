@@ -98,7 +98,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 
 
 
-static partition_descriptor_t _initramfs_partition_descriptor={
+static partition_table_descriptor_t _initramfs_partition_table_descriptor={
 	"INITRAMFS",
 	_initramfs_init_partitions
 };
@@ -278,7 +278,7 @@ void initramfs_init(void){
 	LOG("Loading initramfs...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	fs_register_descriptor(&_initramfs_filesystem_descriptor);
-	partition_register_descriptor(&_initramfs_partition_descriptor);
+	partition_register_table_descriptor(&_initramfs_partition_table_descriptor);
 	drive_register_type(&_initramfs_drive_type);
 	INFO("Creating virtual drive...");
 	drive_config_t config={

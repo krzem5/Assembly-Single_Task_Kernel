@@ -36,7 +36,7 @@ static _Bool _iso9660_load_partitions(drive_t* drive){
 
 
 
-static partition_descriptor_t _iso9660_partition_descriptor={
+static partition_table_descriptor_t _iso9660_partition_table_descriptor={
 	"ISO9660",
 	_iso9660_load_partitions
 };
@@ -44,5 +44,5 @@ static partition_descriptor_t _iso9660_partition_descriptor={
 
 
 void iso9660_register_partition(void){
-	partition_register_descriptor(&_iso9660_partition_descriptor);
+	partition_register_table_descriptor(&_iso9660_partition_table_descriptor);
 }

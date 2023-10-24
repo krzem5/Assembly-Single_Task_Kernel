@@ -11,7 +11,7 @@
 
 typedef struct _PARTITION{
 	handle_t handle;
-	partition_descriptor_t* descriptor;
+	partition_table_descriptor_t* descriptor;
 	drive_t* drive;
 	char name[32];
 	u64 start_lba;
@@ -22,15 +22,15 @@ typedef struct _PARTITION{
 
 
 extern handle_type_t HANDLE_TYPE_PARTITION;
-extern handle_type_t HANDLE_TYPE_PARTITION_DESCRIPTOR;
+extern handle_type_t HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR;
 
 
 
-void partition_register_descriptor(partition_descriptor_t* descriptor);
+void partition_register_table_descriptor(partition_table_descriptor_t* descriptor);
 
 
 
-void partition_unregister_descriptor(partition_descriptor_t* descriptor);
+void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor);
 
 
 
