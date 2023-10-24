@@ -7,6 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/usb/controller.h>
 #include <kernel/usb/device.h>
+#include <kernel/usb/structures.h>
 #include <kernel/util/util.h>
 #include <xhci/device.h>
 #include <xhci/registers.h>
@@ -37,14 +38,20 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 
 
-static void _xhci_update_pipe(void* ctx,usb_device_t* device,usb_pipe_t* pipe){
-	panic("update_pipe");
+static void _xhci_pipe_update(void* ctx,usb_device_t* device,usb_pipe_t* pipe){
+	panic("pipe_update");
 }
 
 
 
-static void _xhci_transfer_pipe(void* ctx,usb_pipe_t* pipe){
-	panic("transfer_pipe");
+static void _xhci_pipe_transfer_setup(void* ctx,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
+	panic("_xhci_pipe_transfer_setup");
+}
+
+
+
+static void _xhci_pipe_transfer_normal(void* ctx,usb_pipe_t* pipe,void* data,u16 length){
+	panic("_xhci_pipe_transfer_normal");
 }
 
 
@@ -147,8 +154,9 @@ static void _xhci_init_device(pci_device_t* device){
 	COUNTER_SPINLOOP(0xfff);
 	usb_root_controller_t* root_controller=usb_root_controller_alloc();
 	root_controller->device=xhci_device;
-	root_controller->update_pipe=_xhci_update_pipe;
-	root_controller->transfer_pipe=_xhci_transfer_pipe;
+	root_controller->pipe_update=_xhci_pipe_update;
+	root_controller->pipe_transfer_setup=_xhci_pipe_transfer_setup;
+	root_controller->pipe_transfer_normal=_xhci_pipe_transfer_normal;
 	usb_controller_t* usb_controller=usb_controller_alloc(root_controller);
 	usb_controller->device=xhci_device;
 	usb_controller->detect=_xhci_detect_port;

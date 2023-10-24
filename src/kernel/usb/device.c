@@ -5,6 +5,8 @@
 #include <kernel/usb/address.h>
 #include <kernel/usb/controller.h>
 #include <kernel/usb/device.h>
+#include <kernel/usb/pipe.h>
+#include <kernel/usb/structures.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "usb_device"
 
@@ -15,9 +17,34 @@ static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_devi
 
 
 
+static u16 _speed_to_packet_size(u8 speed){
+	switch (speed){
+		case USB_DEVICE_SPEED_FULL:
+			return 8;
+		case USB_DEVICE_SPEED_LOW:
+			return 8;
+		case USB_DEVICE_SPEED_HIGH:
+			return 64;
+		case USB_DEVICE_SPEED_SUPER:
+			return 512;
+	}
+	panic("_speed_to_packet_size: invalid USB speed");
+}
+
+
+
 static void _set_device_address(usb_device_t* device){
 	usb_address_space_dealloc(&(device->parent->hub.address_space),device->address);
 	device->address=usb_address_space_alloc(&(device->parent->hub.address_space));
+	usb_pipe_t* pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
+	usb_control_request_t request={
+		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
+		USB_REQ_SET_ADDRESS,
+		device->address,
+		0,
+		0
+	};
+	usb_pipe_transfer_setup(pipe,&request,NULL);
 	LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
 }
 
