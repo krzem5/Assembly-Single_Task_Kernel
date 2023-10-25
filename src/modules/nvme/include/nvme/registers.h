@@ -4,6 +4,9 @@
 
 
 
+// Capability flags
+#define CAP_CSS_NVME 0x2000000000ull
+
 // Controller Configuration flags
 #define CC_EN 0x01
 

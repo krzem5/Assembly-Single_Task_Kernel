@@ -22,13 +22,13 @@ static void _nvme_init_device(pci_device_t* device){
 	}
 	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(nvme_registers_t));
-	if (!(registers->cap&0x0000002000000000ull)){
+	if (!(registers->cap&CAP_CSS_NVME)){
 		WARN("NVMe instruction set not supported");
 		return;
 	}
 	INFO("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
 	INFO("Min page size: %lu, Max page size: %lu",1<<(12+((registers->cap>>48)&15)),1<<(12+((registers->cap>>52)&15)));
-	registers->cc&=~CC_EN;
+	registers->cc=0;
 	SPINLOOP(registers->csts&CSTS_RDY);
 	u32 queue_entries=(registers->cap&0xffff)+1;
 	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
