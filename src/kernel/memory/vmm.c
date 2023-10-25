@@ -382,20 +382,16 @@ void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 c
 
 void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	scheduler_pause();
+	lock_acquire_exclusive(&(pagemap->lock));
 	for (;count;count--){
-		lock_acquire_shared(&(pagemap->lock));
 		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
-			lock_shared_to_exclusive(&(pagemap->lock));
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_shadow_pmm_counter);
-			lock_release_exclusive(&(pagemap->lock));
-		}
-		else{
-			lock_release_shared(&(pagemap->lock));
 		}
 		vmm_unmap_page(pagemap,virtual_address);
 		virtual_address+=PAGE_SIZE;
 	}
+	lock_release_exclusive(&(pagemap->lock));
 	scheduler_resume();
 }
 
