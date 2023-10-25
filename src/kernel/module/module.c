@@ -130,6 +130,7 @@ static void _module_alloc_region(module_address_region_t* region){
 
 
 static void _map_section_addresses(void* file_data,const elf_header_t* header,module_t* module){
+	INFO("Mapping section addresses...");
 	elf_section_header_t* section_header=file_data+header->e_shoff+header->e_shstrndx*sizeof(elf_section_header_t);
 	const char* string_table=file_data+section_header->sh_offset;
 	module->ex_region.size=0;
@@ -164,6 +165,7 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 	_module_alloc_region(&(module->ex_region));
 	_module_alloc_region(&(module->nx_region));
 	_module_alloc_region(&(module->rw_region));
+	INFO("Regions: EX: %v, NX: %v, RW: %v",module->ex_region.size,module->nx_region.size,module->rw_region.size);
 #ifdef KERNEL_COVERAGE_ENABLED
 	module->gcov_info.base=0;
 	module->gcov_info.size=0;
@@ -173,6 +175,7 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 	u64 nx_base=module->nx_region.base;
 	u64 rw_base=module->rw_region.base;
 	module->descriptor=NULL;
+	INFO("Allocating sections...");
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			section_header->sh_addr=0;
@@ -217,6 +220,7 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 
 
 static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
+	INFO("Resolving symbols...");
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_symbol_table_entry_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
 			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
@@ -243,6 +247,7 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 		section_header++;
 	}
 	_resolve_symbol_table(symbol_table,symbol_table_size,string_table);
+	INFO("Applying relocations...");
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
 		u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
@@ -287,6 +292,7 @@ _Bool module_load(vfs_node_t* node){
 	if (!node){
 		return 0;
 	}
+	LOG("Loading kernel module...");
 	elf_header_t header;
 	if (vfs_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
 		return 0;
@@ -296,6 +302,7 @@ _Bool module_load(vfs_node_t* node){
 	}
 	u64 file_size=vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	u64 file_data_pages=pmm_align_up_address(file_size)>>PAGE_SIZE_SHIFT;
+	INFO("Module file size: %v",file_data_pages<<PAGE_SIZE_SHIFT);
 	void* file_data=(void*)(pmm_alloc(file_data_pages,&_module_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	vfs_node_read(node,0,file_data,file_size);
 	module_t* module=omm_alloc(&_module_allocator);
@@ -303,6 +310,7 @@ _Bool module_load(vfs_node_t* node){
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
 	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,&_module_buffer_pmm_counter);
+	INFO("Adjusting memory flags...");
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
