@@ -40,6 +40,7 @@ static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_que
 	completion_queue->head=(completion_queue->head+1)&completion_queue->queue.mask;
 	completion_queue->phase^=!completion_queue->head;
 	queue->head=out->sq_head;
+	WARN("%x",out->status);
 	*(completion_queue->queue.doorbell)=completion_queue->head;
 	lock_release_exclusive(&(queue->lock));
 	return out;
@@ -77,13 +78,47 @@ static void _submission_queue_send_entry(nvme_submission_queue_t* queue){
 
 
 
-static void _request_identify_data(nvme_device_t* device,u64 buffer,u8 cns,u32 namespace_id){
-	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->submission_queue),SQE_OPC_ADMIN_IDENTIFY);
+static _Bool _request_identify_data(nvme_device_t* device,u64 buffer,u8 cns,u32 namespace_id){
+	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->admin_submission_queue),SQE_OPC_ADMIN_IDENTIFY);
 	entry->dptr_prp1=buffer;
 	entry->nsid=namespace_id;
 	entry->extra_data[0]=cns;
-	_submission_queue_send_entry(&(device->submission_queue));
-	_completion_queue_wait(&(device->submission_queue));
+	_submission_queue_send_entry(&(device->admin_submission_queue));
+	return !(_completion_queue_wait(&(device->admin_submission_queue))->status&0x1fe);
+}
+
+
+
+static void _create_io_completion_queue(nvme_device_t* device,u16 queue_index,nvme_completion_queue_t* out){
+	_completion_queue_init(device,queue_index,(device->registers->cap&0xffff)+1,out);
+	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->admin_submission_queue),SQE_OPC_ADMIN_CREATE_IO_CQ);
+	entry->dptr_prp1=((u64)(out->entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	entry->extra_data[0]=(out->queue.mask<<16)|(queue_index>>1);
+	entry->extra_data[1]=1;
+	_submission_queue_send_entry(&(device->admin_submission_queue));
+	_completion_queue_wait(&(device->admin_submission_queue));
+}
+
+
+
+static void _create_io_submission_queue(nvme_device_t* device,nvme_completion_queue_t* completion_queue,u16 queue_index,nvme_submission_queue_t* out){
+	_submission_queue_init(device,completion_queue,queue_index,(device->registers->cap&0xffff)+1,out);
+	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->admin_submission_queue),SQE_OPC_ADMIN_CREATE_IO_SQ);
+	entry->dptr_prp1=((u64)(out->entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	entry->extra_data[0]=(out->queue.mask<<16)|(queue_index>>1);
+	entry->extra_data[1]=((queue_index>>1)<<16)|1;
+	_submission_queue_send_entry(&(device->admin_submission_queue));
+	_completion_queue_wait(&(device->admin_submission_queue));
+}
+
+
+
+static void _load_namespace(nvme_device_t* device,u32 namespace_id,nvme_identify_data_t* identify_data){
+	if (!_request_identify_data(device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_NS,namespace_id)||!identify_data->namespace.nsze||(identify_data->namespace.flbas&0xf)>=identify_data->namespace.nlbaf){
+		return;
+	}
+	INFO("Found valid namespace: %u",namespace_id);
+	WARN("%u x %u = %v",identify_data->namespace.nsze,1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,identify_data->namespace.nsze<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads);
 }
 
 
@@ -112,18 +147,22 @@ static void _nvme_init_device(pci_device_t* device){
 	u32 queue_entries=(registers->cap&0xffff)+1;
 	nvme_device.doorbell_stride=4<<((registers->cap>>32)&0xf);
 	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,nvme_device.doorbell_stride);
-	_completion_queue_init(&nvme_device,1,PAGE_SIZE/sizeof(nvme_completion_queue_entry_t),&(nvme_device.completion_queue));
-	_submission_queue_init(&nvme_device,&(nvme_device.completion_queue),0,PAGE_SIZE/sizeof(nvme_submission_queue_entry_t),&(nvme_device.submission_queue));
-	registers->aqa=(nvme_device.completion_queue.queue.mask<<16)|nvme_device.submission_queue.queue.mask;
-	registers->acq=((u64)(nvme_device.completion_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	registers->asq=((u64)(nvme_device.submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	_completion_queue_init(&nvme_device,1,PAGE_SIZE/sizeof(nvme_completion_queue_entry_t),&(nvme_device.admin_completion_queue));
+	_submission_queue_init(&nvme_device,&(nvme_device.admin_completion_queue),0,PAGE_SIZE/sizeof(nvme_submission_queue_entry_t),&(nvme_device.admin_submission_queue));
+	registers->aqa=(nvme_device.admin_completion_queue.queue.mask<<16)|nvme_device.admin_submission_queue.queue.mask;
+	registers->acq=((u64)(nvme_device.admin_completion_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	registers->asq=((u64)(nvme_device.admin_submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	registers->cc=CC_EN|0x460000;
 	SPINLOOP(!(registers->csts&CSTS_RDY));
-	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(1,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(2,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_request_identify_data(&nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_CTRL,0);
-	WARN("S/N: %s",identify_data->controller.sn);
-	INFO("Namespace count: %u",identify_data->controller.nn);
-	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_nvme_driver_pmm_counter);
+	INFO("Namespace count: %u, Maximum data transfer size: %u",identify_data->controller.nn,identify_data->controller.mdts);
+	_create_io_completion_queue(&nvme_device,3,&(nvme_device.io_completion_queue));
+	_create_io_submission_queue(&nvme_device,&(nvme_device.io_completion_queue),2,&(nvme_device.io_submission_queue));
+	for (u32 i=0;i<identify_data->controller.nn;i++){
+		_load_namespace(&nvme_device,i,(void*)(((u64)identify_data)+PAGE_SIZE));
+	}
+	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,2,&_nvme_driver_pmm_counter);
 
 }
 

@@ -89,7 +89,7 @@ void KERNEL_NOCOVERAGE memcpy_trunc_spaces(char* dst,const char* src,u8 length){
 
 
 
-void KERNEL_NOCOVERAGE bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
+void KERNEL_NOCOVERAGE memcpy_bswap16_trunc_spaces(const u16* src,u8 length,char* dst){
 	u16* dst16=(u16*)dst;
 	for (u8 i=0;i<length;i++){
 		dst16[i]=__builtin_bswap16(src[i]);

@@ -61,7 +61,7 @@ typedef volatile struct _NVME_SUBMISSION_QUEUE_ENTRY{
 
 
 
-typedef union _NVME_IDENTIFY_DATA{
+typedef volatile union _NVME_IDENTIFY_DATA{
 	struct{
 		u16 vid;
 		u16 ssvid;
@@ -76,8 +76,19 @@ typedef union _NVME_IDENTIFY_DATA{
 		u32 nn;
 	} controller;
 	struct{
-		u32 ns_id[1024];
-	} ns_list;
+		u64 nsze;
+		u64 ncap;
+		u64 nuse;
+		u8 nsfeat;
+		u8 nlbaf;
+		u8 flbas;
+		u8 _padding[101];
+		struct{
+			u16 ms;
+			u8 lbads;
+			u8 rp;
+		} lbaf[16];
+	} namespace;
 } nvme_identify_data_t;
 
 

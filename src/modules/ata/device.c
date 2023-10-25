@@ -190,8 +190,8 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 		.extra_data=device
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"ata%u",index);
-	bswap16_trunc_spaces(buffer+10,10,config.serial_number);
-	bswap16_trunc_spaces(buffer+27,20,config.model_number);
+	memcpy_bswap16_trunc_spaces(buffer+10,10,config.serial_number);
+	memcpy_bswap16_trunc_spaces(buffer+27,20,config.model_number);
 	if (!device->is_atapi){
 		WARN("Unimplemented: ATA drive");
 		return 0;
