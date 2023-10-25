@@ -237,13 +237,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 
-u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
-	if (virtual_address&(PAGE_SIZE-1)){
-		return 0;
-	}
-	scheduler_pause();
-	u64 out=0;
-	lock_acquire_exclusive(&(pagemap->lock));
+static _Bool _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -251,41 +245,39 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64* pml4=&(pagemap->toplevel);
 	u64* pml3=_get_child_table(pml4,i,0);
 	if (!pml3){
-		goto _cleanup;
+		return 0;
 	}
 	u64 entry=_get_table(pml3)->entries[j];
 	if (entry&VMM_PAGE_FLAG_LARGE){
 		if (!entry||(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1))){
-			goto _cleanup;
+			return 0;
 		}
 		_get_table(pml3)->entries[j]=0;
 		_decrease_length(pml3);
-		out=EXTRA_LARGE_PAGE_SIZE;
-		goto _cleanup;
+		return EXTRA_LARGE_PAGE_SIZE;
 	}
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
-		goto _cleanup;
+		return 0;
 	}
 	entry=_get_table(pml2)->entries[k];
 	if (entry&VMM_PAGE_FLAG_LARGE){
 		if (!entry||(virtual_address&(LARGE_PAGE_SIZE-1))){
-			goto _cleanup;
+			return 0;
 		}
 		_get_table(pml2)->entries[k]=0;
 		if (_decrease_length(pml2)){
 			_decrease_length(pml3);
 		}
-		out=LARGE_PAGE_SIZE;
-		goto _cleanup;
+		return LARGE_PAGE_SIZE;
 	}
 	u64* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
-		goto _cleanup;
+		return 0;
 	}
 	entry=_get_table(pml1)->entries[l];
 	if (!entry){
-		goto _cleanup;
+		return 0;
 	}
 	_get_table(pml1)->entries[l]=0;
 	if (_decrease_length(pml1)){
@@ -293,8 +285,18 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 			_decrease_length(pml3);
 		}
 	}
-	out=PAGE_SIZE;
-_cleanup:
+	return PAGE_SIZE;
+}
+
+
+
+u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+	if (virtual_address&(PAGE_SIZE-1)){
+		return 0;
+	}
+	scheduler_pause();
+	lock_acquire_exclusive(&(pagemap->lock));
+	u64 out=_unmap_page(pagemap,virtual_address);
 	lock_release_exclusive(&(pagemap->lock));
 	scheduler_resume();
 	return out;
@@ -388,7 +390,7 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_shadow_pmm_counter);
 		}
-		vmm_unmap_page(pagemap,virtual_address);
+		_unmap_page(pagemap,virtual_address);
 		virtual_address+=PAGE_SIZE;
 	}
 	lock_release_exclusive(&(pagemap->lock));
