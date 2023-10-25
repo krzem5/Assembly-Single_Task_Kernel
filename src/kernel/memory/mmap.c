@@ -131,13 +131,14 @@ _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 		panic("vmm_memory_map_release: partial release is unimplemented");
 	}
 	region->is_used=0;
-	if (region->prev&&!region->prev->is_used){
-		region=region->prev;
-		_delete_next_region(region);
-	}
-	if (region->next&&!region->next->is_used){
-		_delete_next_region(region);
-	}
+	// if (region->prev&&!region->prev->is_used){
+	// 	region=region->prev;
+	// 	_delete_next_region(region);
+	// }
+	// if (region->next&&!region->next->is_used){
+	// 	_delete_next_region(region);
+	// }
+	(void)_delete_next_region;
 	lock_release_exclusive(&(mmap->lock));
 	return 1;
 }
