@@ -32,12 +32,4 @@ void lock_release_shared(lock_t* lock);
 
 
 
-void lock_exclusive_to_shared(lock_t* lock);
-
-
-
-void lock_shared_to_exclusive(lock_t* lock);
-
-
-
 #endif

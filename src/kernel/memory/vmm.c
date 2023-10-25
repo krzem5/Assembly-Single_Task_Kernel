@@ -399,14 +399,13 @@ void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 
 _Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	scheduler_pause();
-	lock_acquire_shared(&(pagemap->lock));
+	lock_acquire_exclusive(&(pagemap->lock));
 	u64* entry=_lookup_virtual_address(pagemap,virtual_address);
 	if (!entry||((*entry)&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
-		lock_release_shared(&(pagemap->lock));
+		lock_release_exclusive(&(pagemap->lock));
 		scheduler_resume();
 		return 0;
 	}
-	lock_shared_to_exclusive(&(pagemap->lock));
 	*entry=((*entry)&(~VMM_PAGE_ADDRESS_MASK))|pmm_alloc_zero(1,&_vmm_shadow_pmm_counter,0)|VMM_PAGE_FLAG_PRESENT;
 	lock_release_exclusive(&(pagemap->lock));
 	scheduler_resume();
