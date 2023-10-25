@@ -37,6 +37,7 @@ static vmm_memory_map_region_t* _insert_region_after_anchor(vmm_memory_map_regio
 
 
 static void _delete_next_region(vmm_memory_map_region_t* region){
+	region->length+=region->next->length;
 	region=region->next;
 	region->prev->next=region->next;
 	if (region->next){
@@ -131,14 +132,13 @@ _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 		panic("vmm_memory_map_release: partial release is unimplemented");
 	}
 	region->is_used=0;
-	// if (region->prev&&!region->prev->is_used){
-	// 	region=region->prev;
-	// 	_delete_next_region(region);
-	// }
-	// if (region->next&&!region->next->is_used){
-	// 	_delete_next_region(region);
-	// }
-	(void)_delete_next_region;
+	if (region->prev&&!region->prev->is_used){
+		region=region->prev;
+		_delete_next_region(region);
+	}
+	if (region->next&&!region->next->is_used){
+		_delete_next_region(region);
+	}
 	lock_release_exclusive(&(mmap->lock));
 	return 1;
 }
