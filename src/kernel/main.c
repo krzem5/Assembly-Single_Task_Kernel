@@ -62,6 +62,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	vmm_init();
 	pmm_init_high_mem();
 	kmm_init();
+	kernel_adjust_memory_flags();
 	clock_init();
 	isr_init();
 	acpi_load();

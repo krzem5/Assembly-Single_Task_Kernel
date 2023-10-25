@@ -47,6 +47,11 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	for (u64* bss=(u64*)kernel_section_kernel_bss_start();bss<(u64*)kernel_section_kernel_bss_end();bss++){
 		*bss=0;
 	}
+}
+
+
+
+void kernel_adjust_memory_flags(void){
 	LOG("Adjusting memory flags...");
 	ADJUST_SECTION_FLAGS(kernel_ex,0);
 	ADJUST_SECTION_FLAGS(kernel_nx,VMM_PAGE_FLAG_NOEXECUTE);

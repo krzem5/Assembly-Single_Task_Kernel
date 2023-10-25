@@ -307,14 +307,16 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	}
 	first_free_address+=KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 	EFI_PHYSICAL_ADDRESS kernel_pagemap=first_free_address;
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,3,&kernel_pagemap))){
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,4,&kernel_pagemap))){
 		return EFI_SUCCESS;
 	}
-	first_free_address+=3*PAGE_SIZE;
+	first_free_address+=4*PAGE_SIZE;
 	*((uint64_t*)(kernel_pagemap+0x0000))=0x00000003|(kernel_pagemap+0x1000);
-	*((uint64_t*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x2000);
+	*((uint64_t*)(kernel_pagemap+0x0800))=0x00000003|(kernel_pagemap+0x2000);
+	*((uint64_t*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x3000);
 	*((uint64_t*)(kernel_pagemap+0x1000))=0x00000083;
-	*((uint64_t*)(kernel_pagemap+0x2ff8))=0x00000083;
+	*((uint64_t*)(kernel_pagemap+0x2000))=0x00000083;
+	*((uint64_t*)(kernel_pagemap+0x3ff8))=0x00000083;
 	kernel_data->mmap_size=0;
 	kernel_data->first_free_address=first_free_address;
 	kernel_data->rsdp_address=0;

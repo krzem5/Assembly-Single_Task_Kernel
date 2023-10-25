@@ -64,6 +64,10 @@ void kernel_init(const kernel_data_t* bootloader_kernel_data);
 
 
 
+void kernel_adjust_memory_flags(void);
+
+
+
 const char* kernel_lookup_symbol(u64 address,u64* offset);
 
 
