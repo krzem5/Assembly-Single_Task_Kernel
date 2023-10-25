@@ -13,6 +13,13 @@
 // Controller Status flags
 #define CSTS_RDY 0x01
 
+#define SQE_OPC_ADMIN_CREATE_IO_SQ 1
+#define SQE_OPC_ADMIN_CREATE_IO_CQ 5
+#define SQE_OPC_ADMIN_IDENTIFY 6
+
+#define ADMIN_IDENTIFY_CNS_ID_NS 0
+#define ADMIN_IDENTIFY_CNS_ID_CTRL 1
+
 
 
 typedef volatile struct _NVME_REGISTERS{
@@ -28,6 +35,50 @@ typedef volatile struct _NVME_REGISTERS{
 	u64 asq;
 	u64 acq;
 } nvme_registers_t;
+
+
+
+typedef volatile struct _NVME_COMPLETION_QUEUE_ENTRY{
+	u32 cdw0;
+	u8 _padding[4];
+	u16 sq_head;
+	u16 sq_id;
+	u16 cid;
+	u16 status;
+} nvme_completion_queue_entry_t;
+
+
+
+typedef volatile struct _NVME_SUBMISSION_QUEUE_ENTRY{
+	u32 cdw0;
+	u32 nsid;
+	u8 _padding[8];
+	u64 mptr;
+	u64 dptr_prp1;
+	u64 dptr_prp2;
+	u32 extra_data[6];
+} nvme_submission_queue_entry_t;
+
+
+
+typedef union _NVME_IDENTIFY_DATA{
+	struct{
+		u16 vid;
+		u16 ssvid;
+		char sn[20];
+		char mn[40];
+		char fr[8];
+		u8 rab;
+		u8 ieee[3];
+		u8 cmic;
+		u8 mdts;
+		u8 _padding[438];
+		u32 nn;
+	} controller;
+	struct{
+		u32 ns_id[1024];
+	} ns_list;
+} nvme_identify_data_t;
 
 
 

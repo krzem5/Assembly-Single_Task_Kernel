@@ -1,5 +1,44 @@
 #ifndef _NVME_DEVICE_H_
 #define _NVME_DEVICE_H_ 1
+#include <kernel/lock/lock.h>
+#include <kernel/types.h>
+#include <nvme/registers.h>
+
+
+
+typedef struct _NVME_QUEUE{
+	volatile u32* doorbell;
+	u16 mask;
+} nvme_queue_t;
+
+
+
+typedef struct _NVME_COMPLETION_QUEUE{
+	nvme_queue_t queue;
+	nvme_completion_queue_entry_t* entries;
+	u16 head;
+	_Bool phase;
+} nvme_completion_queue_t;
+
+
+
+typedef struct _NVME_SUBMISSION_QUEUE{
+	nvme_queue_t queue;
+	nvme_submission_queue_entry_t* entries;
+	nvme_completion_queue_t* completion_queue;
+	lock_t lock;
+	u16 head;
+	u16 tail;
+} nvme_submission_queue_t;
+
+
+
+typedef struct _NVME_DEVICE{
+	nvme_registers_t* registers;
+	u32 doorbell_stride;
+	nvme_completion_queue_t completion_queue;
+	nvme_submission_queue_t submission_queue;
+} nvme_device_t;
 
 
 

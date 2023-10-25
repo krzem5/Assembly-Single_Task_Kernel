@@ -1,5 +1,7 @@
 #include <kernel/handle/handle.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
@@ -7,6 +9,82 @@
 #include <nvme/device.h>
 #include <nvme/registers.h>
 #define KERNEL_LOG_NAME "nvme"
+
+
+
+static pmm_counter_descriptor_t _nvme_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("nvme");
+
+
+
+static KERNEL_INLINE void _init_queue(nvme_device_t* device,u16 queue_index,u16 queue_length,nvme_queue_t* out){
+	out->doorbell=(volatile u32*)(((u64)(device->registers))+0x1000+queue_index*device->doorbell_stride);
+	out->mask=queue_length-1;
+}
+
+
+
+static void _completion_queue_init(nvme_device_t* device,u16 queue_index,u16 queue_length,nvme_completion_queue_t* out){
+	_init_queue(device,queue_index,queue_length,&(out->queue));
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_completion_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->head=0;
+	out->phase=1;
+}
+
+
+
+static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_queue_t* queue){
+	lock_acquire_exclusive(&(queue->lock));
+	nvme_completion_queue_t* completion_queue=queue->completion_queue;
+	nvme_completion_queue_entry_t* out=completion_queue->entries+completion_queue->head;
+	SPINLOOP((out->status&1)!=completion_queue->phase);
+	completion_queue->head=(completion_queue->head+1)&completion_queue->queue.mask;
+	completion_queue->phase^=!completion_queue->head;
+	queue->head=out->sq_head;
+	*(completion_queue->queue.doorbell)=completion_queue->head;
+	lock_release_exclusive(&(queue->lock));
+	return out;
+}
+
+
+
+static void _submission_queue_init(nvme_device_t* device,nvme_completion_queue_t* completion_queue,u16 queue_index,u16 queue_length,nvme_submission_queue_t* out){
+	_init_queue(device,queue_index,queue_length,&(out->queue));
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->completion_queue=completion_queue;
+	lock_init(&(out->lock));
+	out->head=0;
+	out->tail=0;
+}
+
+
+
+static nvme_submission_queue_entry_t* _submission_queue_init_entry(nvme_submission_queue_t* queue,u8 opc){
+	lock_acquire_exclusive(&(queue->lock));
+	SPINLOOP(((queue->head+1)&queue->queue.mask)==queue->tail);
+	nvme_submission_queue_entry_t* out=queue->entries+queue->tail;
+	memset((void*)out,0,sizeof(nvme_submission_queue_entry_t));
+	out->cdw0=(queue->tail<<16)|opc;
+	return out;
+}
+
+
+
+static void _submission_queue_send_entry(nvme_submission_queue_t* queue){
+	queue->tail=(queue->tail+1)&queue->queue.mask;
+	*(queue->queue.doorbell)=queue->tail;
+	lock_release_exclusive(&(queue->lock));
+}
+
+
+
+static void _request_identify_data(nvme_device_t* device,u64 buffer,u8 cns,u32 namespace_id){
+	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->submission_queue),SQE_OPC_ADMIN_IDENTIFY);
+	entry->dptr_prp1=buffer;
+	entry->nsid=namespace_id;
+	entry->extra_data[0]=cns;
+	_submission_queue_send_entry(&(device->submission_queue));
+	_completion_queue_wait(&(device->submission_queue));
+}
 
 
 
@@ -21,18 +99,32 @@ static void _nvme_init_device(pci_device_t* device){
 		return;
 	}
 	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
-	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,sizeof(nvme_registers_t));
+	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,pci_bar.size);
 	if (!(registers->cap&CAP_CSS_NVME)){
 		WARN("NVMe instruction set not supported");
 		return;
 	}
+	nvme_device_t nvme_device;
+	nvme_device.registers=registers;
 	INFO("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
-	INFO("Min page size: %lu, Max page size: %lu",1<<(12+((registers->cap>>48)&15)),1<<(12+((registers->cap>>52)&15)));
 	registers->cc=0;
 	SPINLOOP(registers->csts&CSTS_RDY);
 	u32 queue_entries=(registers->cap&0xffff)+1;
-	u8 doorbell_stride=4<<((registers->cap>>32)&0xf);
-	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,doorbell_stride);
+	nvme_device.doorbell_stride=4<<((registers->cap>>32)&0xf);
+	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,nvme_device.doorbell_stride);
+	_completion_queue_init(&nvme_device,1,PAGE_SIZE/sizeof(nvme_completion_queue_entry_t),&(nvme_device.completion_queue));
+	_submission_queue_init(&nvme_device,&(nvme_device.completion_queue),0,PAGE_SIZE/sizeof(nvme_submission_queue_entry_t),&(nvme_device.submission_queue));
+	registers->aqa=(nvme_device.completion_queue.queue.mask<<16)|nvme_device.submission_queue.queue.mask;
+	registers->acq=((u64)(nvme_device.completion_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	registers->asq=((u64)(nvme_device.submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	registers->cc=CC_EN|0x460000;
+	SPINLOOP(!(registers->csts&CSTS_RDY));
+	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(1,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_request_identify_data(&nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_CTRL,0);
+	WARN("S/N: %s",identify_data->controller.sn);
+	INFO("Namespace count: %u",identify_data->controller.nn);
+	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_nvme_driver_pmm_counter);
+
 }
 
 

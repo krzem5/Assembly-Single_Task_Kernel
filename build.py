@@ -592,6 +592,7 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
+		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset","--no-reboot",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
