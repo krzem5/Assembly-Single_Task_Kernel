@@ -42,6 +42,7 @@ typedef struct _XHCI_DEVICE{
 typedef struct _XHCI_PIPE{
 	xhci_ring_t* ring;
 	u32 slot;
+	u32 endpoint_id;
 } xhci_pipe_t;
 
 

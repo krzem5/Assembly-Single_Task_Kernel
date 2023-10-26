@@ -27,9 +27,13 @@
 #define PORTSC_SPEED_SUPER 4096
 
 #define TRB_LK_TC 0x02
+#define TRB_IOC 0x20
 #define TRB_IDT 0x40
 
 #define TRB_TYPE_MASK (63<<10)
+#define TRB_TYPE_TR_SETUP (2<<10)
+#define TRB_TYPE_TR_DATA (3<<10)
+#define TRB_TYPE_TR_STATUS (4<<10)
 #define TRB_TYPE_TR_LINK (6<<10)
 #define TRB_TYPE_CR_ENABLE_SLOT (9<<10)
 #define TRB_TYPE_CR_ADDRESS_DEVICE (11<<10)

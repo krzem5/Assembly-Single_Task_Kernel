@@ -164,12 +164,13 @@ static void _command_submit(xhci_device_t* xhci_device,xhci_input_context_t* inp
 
 
 static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
+	xhci_device_t* xhci_device=ctx;
     u8 endpoint_type=attributes&USB_ENDPOINT_XFER_MASK;
 	u8 endpoint_id=(endpoint_address?((endpoint_address&0x0f)<<1)|(!!(endpoint_address&USB_DIR_IN)):1);
-	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* out=omm_alloc(&_xhci_pipe_allocator);
 	out->ring=_alloc_ring(0);
 	out->ring->cs=1;
+	out->endpoint_id=endpoint_id;
 	xhci_input_context_t* input_context=_alloc_input_context(xhci_device,device,endpoint_id);
 	input_context->input.address=(1<<endpoint_id)|1;
 	xhci_input_context_t* endpoint=input_context+((endpoint_id+1)<<xhci_device->is_context_64_bytes);
@@ -200,13 +201,21 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 
 
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
-	// panic("_xhci_pipe_transfer_setup");
+	// warning: assumes no page boundary is crossed in both request and data
+	xhci_device_t* xhci_device=ctx;
+	xhci_pipe_t* xhci_pipe=pipe;
+	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
+	if (request->wLength){
+		_enqueue_event(xhci_pipe->ring,data,request->wLength,((!!(request->bRequestType&USB_DIR_IN))<<16)|TRB_TYPE_TR_DATA);
+	}
+	_enqueue_event(xhci_pipe->ring,NULL,0,((!(request->bRequestType&USB_DIR_IN))<<16)|TRB_IOC|TRB_TYPE_TR_STATUS);
+	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
 }
 
 
 
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
-	// panic("_xhci_pipe_transfer_normal");
+	panic("_xhci_pipe_transfer_normal");
 }
 
 
