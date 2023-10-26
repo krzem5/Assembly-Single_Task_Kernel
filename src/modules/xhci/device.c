@@ -212,6 +212,7 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 	}
 	_enqueue_event(xhci_pipe->ring,NULL,0,((!(request->bRequestType&USB_DIR_IN))<<16)|TRB_IOC|TRB_TYPE_TR_STATUS);
 	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
+	_wait_for_all_events(xhci_device,xhci_pipe->ring);
 }
 
 
