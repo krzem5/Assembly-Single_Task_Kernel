@@ -107,6 +107,9 @@ static void _enqueue_event_raw(xhci_ring_t* ring,const void* data,u32 size,u32 f
 	}
 	else{
 		transfer_block->address=((u64)data)-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		if ((transfer_block->address>>PAGE_SIZE_SHIFT)!=((transfer_block->address+size)>>PAGE_SIZE_SHIFT)){
+			panic("_enqueue_event_raw: data crosses page boundary");
+		}
 	}
 	transfer_block->status=size;
 	transfer_block->flags=flags|ring->cs;
@@ -201,7 +204,6 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 
 
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
-	// warning: assumes no page boundary is crossed in data
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
 	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
