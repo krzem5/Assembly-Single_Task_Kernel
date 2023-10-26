@@ -201,7 +201,7 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 
 
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
-	// warning: assumes no page boundary is crossed in both request and data
+	// warning: assumes no page boundary is crossed in data
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
 	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
