@@ -9,7 +9,7 @@
 
 
 
-static vfs_node_t* _vfs_root_node;
+static vfs_node_t* _vfs_root_node=NULL;
 
 
 

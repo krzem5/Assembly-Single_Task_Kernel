@@ -128,7 +128,7 @@ _end:
 
 
 const aml_node_t* aml_get_root_node(void){
-	return _syscall_aml_get_root_node();
+	return NULL;
 }
 
 
