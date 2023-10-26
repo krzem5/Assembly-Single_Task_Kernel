@@ -37,6 +37,7 @@ static void _main_thread(void){
 	serial_init_irq();
 	module_load(vfs_lookup(NULL,"/module/ahci.mod"));
 	module_load(vfs_lookup(NULL,"/module/ata.mod"));
+	module_load(vfs_lookup(NULL,"/module/gpt.mod"));
 	module_load(vfs_lookup(NULL,"/module/i82540.mod"));
 	module_load(vfs_lookup(NULL,"/module/iso9660.mod"));
 	module_load(vfs_lookup(NULL,"/module/kfs2.mod"));

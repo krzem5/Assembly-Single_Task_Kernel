@@ -3,7 +3,7 @@
 
 
 
-void iso9660_register_partition(void);
+void iso9660_register_partition_table(void);
 
 
 

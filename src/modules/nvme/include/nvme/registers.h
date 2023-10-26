@@ -13,12 +13,12 @@
 // Controller Status flags
 #define CSTS_RDY 0x01
 
-#define SQE_OPC_ADMIN_CREATE_IO_SQ 1
-#define SQE_OPC_ADMIN_CREATE_IO_CQ 5
-#define SQE_OPC_ADMIN_IDENTIFY 6
+#define OPC_ADMIN_CREATE_IO_SQ 1
+#define OPC_ADMIN_CREATE_IO_CQ 5
+#define OPC_ADMIN_IDENTIFY 6
 
-#define ADMIN_IDENTIFY_CNS_ID_NS 0
-#define ADMIN_IDENTIFY_CNS_ID_CTRL 1
+#define CNS_ID_NS 0
+#define CNS_ID_CTRL 1
 
 
 

@@ -43,6 +43,6 @@ static partition_table_descriptor_t _iso9660_partition_table_descriptor={
 
 
 
-void iso9660_register_partition(void){
+void iso9660_register_partition_table(void){
 	partition_register_table_descriptor(&_iso9660_partition_table_descriptor);
 }
