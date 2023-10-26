@@ -58,7 +58,7 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor;
 
 
 
-static u64 _initramfs_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+static u64 _initramfs_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		return 0;
 	}

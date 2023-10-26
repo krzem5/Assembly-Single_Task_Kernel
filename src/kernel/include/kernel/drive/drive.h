@@ -15,7 +15,11 @@
 
 
 
-typedef u64 (*drive_io_callback_t)(void*,u64,void*,u64);
+struct _DRIVE;
+
+
+
+typedef u64 (*drive_io_callback_t)(struct _DRIVE*,u64,void*,u64);
 
 
 

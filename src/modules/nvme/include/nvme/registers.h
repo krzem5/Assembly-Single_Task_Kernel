@@ -16,6 +16,8 @@
 #define OPC_ADMIN_CREATE_IO_SQ 1
 #define OPC_ADMIN_CREATE_IO_CQ 5
 #define OPC_ADMIN_IDENTIFY 6
+#define OPC_IO_WRITE 1
+#define OPC_IO_READ 2
 
 #define CNS_ID_NS 0
 #define CNS_ID_CTRL 1

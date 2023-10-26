@@ -51,8 +51,8 @@ static void _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
 
 
 
-static u64 _ahci_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
-	ahci_device_t* device=extra_data;
+static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	ahci_device_t* device=drive->extra_data;
 	u32 dbc=(count<<9)-1;
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;

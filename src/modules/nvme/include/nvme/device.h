@@ -36,6 +36,7 @@ typedef struct _NVME_SUBMISSION_QUEUE{
 typedef struct _NVME_DEVICE{
 	nvme_registers_t* registers;
 	u32 doorbell_stride;
+	u32 max_request_size;
 	nvme_completion_queue_t admin_completion_queue;
 	nvme_submission_queue_t admin_submission_queue;
 	nvme_completion_queue_t io_completion_queue;

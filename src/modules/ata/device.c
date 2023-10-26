@@ -74,14 +74,14 @@ static void _send_atapi_command(const ata_device_t* device,const u16* command,u1
 
 
 
-static u64 _ata_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+static u64 _ata_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	panic("_ata_read_write");
 }
 
 
 
-static u64 _atapi_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
-	const ata_device_t* device=extra_data;
+static u64 _atapi_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	const ata_device_t* device=drive->extra_data;
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		WARN("ATA drives are read-only");
 		return 0;

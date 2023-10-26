@@ -117,8 +117,27 @@ static void _create_io_submission_queue(nvme_device_t* device,nvme_completion_qu
 
 
 
-static u64 _nvme_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
-	panic("_nvme_read_write");
+static u64 _nvme_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	nvme_device_t* device=drive->extra_data;
+	if (count>(device->max_request_size>>drive->block_size_shift)){
+		count=device->max_request_size>>drive->block_size_shift;
+	}
+	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0);
+	if (offset&DRIVE_OFFSET_FLAG_WRITE){
+		memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,count<<drive->block_size_shift);
+	}
+	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->io_submission_queue),((offset&DRIVE_OFFSET_FLAG_WRITE)?OPC_IO_WRITE:OPC_IO_READ));
+	entry->dptr_prp1=aligned_buffer;
+	entry->extra_data[0]=offset;
+	entry->extra_data[1]=offset>>32;
+	entry->extra_data[2]=0x80000000|(count-1);
+	_submission_queue_send_entry(&(device->io_submission_queue));
+	_completion_queue_wait(&(device->io_submission_queue));
+	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
+		memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),count<<drive->block_size_shift);
+	}
+	pmm_dealloc(aligned_buffer,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter);
+	return 0;
 }
 
 
@@ -182,7 +201,8 @@ static void _nvme_init_device(pci_device_t* device){
 	SPINLOOP(!(registers->csts&CSTS_RDY));
 	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(2,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_request_identify_data(nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,CNS_ID_CTRL,0);
-	INFO("Namespace count: %u, Maximum data transfer size: %u",identify_data->controller.nn,identify_data->controller.mdts);
+	nvme_device->max_request_size=PAGE_SIZE<<identify_data->controller.mdts;
+	INFO("Namespace count: %u, Maximum data transfer size: %v",identify_data->controller.nn,nvme_device->max_request_size);
 	_create_io_completion_queue(nvme_device,3,&(nvme_device->io_completion_queue));
 	_create_io_submission_queue(nvme_device,&(nvme_device->io_completion_queue),2,&(nvme_device->io_submission_queue));
 	for (u32 i=0;i<identify_data->controller.nn;i++){
