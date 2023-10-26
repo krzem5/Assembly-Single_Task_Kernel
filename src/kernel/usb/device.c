@@ -60,6 +60,7 @@ usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 po
 	out->speed=USB_DEVICE_SPEED_HIGH;
 	out->address=0;
 	out->port=port;
+	out->default_pipe=NULL;
 	if (type==USB_DEVICE_TYPE_HUB){
 		out->hub.port_count=0;
 		out->hub.child=NULL;

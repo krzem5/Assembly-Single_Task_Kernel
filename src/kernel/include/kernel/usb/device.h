@@ -3,6 +3,7 @@
 #include <kernel/types.h>
 #include <kernel/usb/address.h>
 #include <kernel/usb/controller.h>
+#include <kernel/usb/pipe.h>
 
 
 
@@ -26,9 +27,11 @@ typedef struct _USB_DEVICE{
 	u8 speed;
 	u8 address;
 	u8 port;
+	usb_pipe_t* default_pipe;
 	union{
 		struct{
 			u16 port_count;
+			_Bool is_root_hub;
 			struct _USB_DEVICE* child;
 			usb_address_space_t address_space;
 		} hub;

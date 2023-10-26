@@ -26,6 +26,18 @@
 #define PORTSC_SPEED_HIGH 3072
 #define PORTSC_SPEED_SUPER 4096
 
+#define TRB_LK_TC 0x02
+#define TRB_IDT 0x40
+
+#define TRB_TYPE_MASK (63<<10)
+#define TRB_TYPE_TR_LINK (6<<10)
+#define TRB_TYPE_CR_ENABLE_SLOT (9<<10)
+#define TRB_TYPE_CR_ADDRESS_DEVICE (11<<10)
+#define TRB_TYPE_CR_CONFIGURE_ENDPOINT (12<<10)
+#define TRB_TYPE_ER_TRANSFER (32<<10)
+#define TRB_TYPE_ER_COMMAND_COMPLETE (33<<10)
+#define TRB_TYPE_ER_PORT_STATUS_CHANGE (34<<10)
+
 
 
 typedef volatile struct _XHCI_REGISTERS{
@@ -90,7 +102,10 @@ typedef volatile struct _XHCI_DEVICE_CONTEXT_BASE{
 
 
 typedef volatile struct _XHCI_TRANSFER_BLOCK{
-	u64 address;
+	union{
+		u64 address;
+		u8 inline_data[8];
+	};
 	u32 status;
 	u32 flags;
 } xhci_transfer_block_t;
@@ -122,9 +137,21 @@ typedef volatile struct _XHCI_ENDPOINT_CONTEXT{
 
 
 typedef volatile struct _XHCI_INPUT_CONTEXT{
-	u32 del;
-	u32 address;
-	u8 _padding[24];
+	union{
+		u8 _size[32];
+		struct{
+			u32 del;
+			u32 address;
+		} input;
+		struct{
+			u32 ctx[4];
+		} slot;
+		struct{
+			u32 ctx[2];
+			u64 deq;
+			u32 length;
+		} endpoint;
+	};
 } xhci_input_context_t;
 
 
