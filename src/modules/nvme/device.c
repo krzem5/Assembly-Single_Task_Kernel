@@ -1,6 +1,9 @@
+#include <kernel/drive/drive.h>
+#include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
@@ -13,6 +16,8 @@
 
 
 static pmm_counter_descriptor_t _nvme_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("nvme");
+static pmm_counter_descriptor_t _nvme_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_nvme_device");
+static omm_allocator_t _nvme_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("nvme_deivce",sizeof(nvme_device_t),8,1,&_nvme_device_omm_pmm_counter);
 
 
 
@@ -112,12 +117,34 @@ static void _create_io_submission_queue(nvme_device_t* device,nvme_completion_qu
 
 
 
-static void _load_namespace(nvme_device_t* device,u32 namespace_id,nvme_identify_data_t* identify_data){
+static u64 _nvme_read_write(void* extra_data,u64 offset,void* buffer,u64 count){
+	panic("_nvme_read_write");
+}
+
+
+
+static drive_type_t _nvme_drive_type={
+	"NVMe",
+	_nvme_read_write
+};
+
+
+
+static void _load_namespace(nvme_device_t* device,u32 namespace_id,const nvme_identify_data_t* controller_identify_data,nvme_identify_data_t* identify_data){
 	if (!_request_identify_data(device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_NS,namespace_id)||!identify_data->namespace.nsze||(identify_data->namespace.flbas&0xf)>=identify_data->namespace.nlbaf){
 		return;
 	}
 	INFO("Found valid namespace: %u",namespace_id);
-	WARN("%u x %u = %v",identify_data->namespace.nsze,1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,identify_data->namespace.nsze<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads);
+	drive_config_t config={
+		.type=&_nvme_drive_type,
+		.block_count=identify_data->namespace.nsze,
+		.block_size=1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,
+		.extra_data=device
+	};
+	format_string(config.name,DRIVE_NAME_LENGTH,"nvme%u",namespace_id);
+	memcpy_trunc_spaces(config.serial_number,(const char*)(controller_identify_data->controller.sn),20);
+	memcpy_trunc_spaces(config.model_number,(const char*)(controller_identify_data->controller.mn),40);
+	drive_create(&config);
 }
 
 
@@ -138,28 +165,28 @@ static void _nvme_init_device(pci_device_t* device){
 		WARN("NVMe instruction set not supported");
 		return;
 	}
-	nvme_device_t nvme_device;
-	nvme_device.registers=registers;
+	nvme_device_t* nvme_device=omm_alloc(&_nvme_device_allocator);
+	nvme_device->registers=registers;
 	INFO("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
 	registers->cc=0;
 	SPINLOOP(registers->csts&CSTS_RDY);
 	u32 queue_entries=(registers->cap&0xffff)+1;
-	nvme_device.doorbell_stride=4<<((registers->cap>>32)&0xf);
-	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,nvme_device.doorbell_stride);
-	_completion_queue_init(&nvme_device,1,PAGE_SIZE/sizeof(nvme_completion_queue_entry_t),&(nvme_device.admin_completion_queue));
-	_submission_queue_init(&nvme_device,&(nvme_device.admin_completion_queue),0,PAGE_SIZE/sizeof(nvme_submission_queue_entry_t),&(nvme_device.admin_submission_queue));
-	registers->aqa=(nvme_device.admin_completion_queue.queue.mask<<16)|nvme_device.admin_submission_queue.queue.mask;
-	registers->acq=((u64)(nvme_device.admin_completion_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	registers->asq=((u64)(nvme_device.admin_submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	nvme_device->doorbell_stride=4<<((registers->cap>>32)&0xf);
+	INFO("Queue entry count: %u, Doorbell stride: %v",queue_entries,nvme_device->doorbell_stride);
+	_completion_queue_init(nvme_device,1,PAGE_SIZE/sizeof(nvme_completion_queue_entry_t),&(nvme_device->admin_completion_queue));
+	_submission_queue_init(nvme_device,&(nvme_device->admin_completion_queue),0,PAGE_SIZE/sizeof(nvme_submission_queue_entry_t),&(nvme_device->admin_submission_queue));
+	registers->aqa=(nvme_device->admin_completion_queue.queue.mask<<16)|nvme_device->admin_submission_queue.queue.mask;
+	registers->acq=((u64)(nvme_device->admin_completion_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+	registers->asq=((u64)(nvme_device->admin_submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	registers->cc=CC_EN|0x460000;
 	SPINLOOP(!(registers->csts&CSTS_RDY));
 	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(2,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	_request_identify_data(&nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_CTRL,0);
+	_request_identify_data(nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,ADMIN_IDENTIFY_CNS_ID_CTRL,0);
 	INFO("Namespace count: %u, Maximum data transfer size: %u",identify_data->controller.nn,identify_data->controller.mdts);
-	_create_io_completion_queue(&nvme_device,3,&(nvme_device.io_completion_queue));
-	_create_io_submission_queue(&nvme_device,&(nvme_device.io_completion_queue),2,&(nvme_device.io_submission_queue));
+	_create_io_completion_queue(nvme_device,3,&(nvme_device->io_completion_queue));
+	_create_io_submission_queue(nvme_device,&(nvme_device->io_completion_queue),2,&(nvme_device->io_submission_queue));
 	for (u32 i=0;i<identify_data->controller.nn;i++){
-		_load_namespace(&nvme_device,i,(void*)(((u64)identify_data)+PAGE_SIZE));
+		_load_namespace(nvme_device,i,identify_data,(void*)(((u64)identify_data)+PAGE_SIZE));
 	}
 	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,2,&_nvme_driver_pmm_counter);
 
