@@ -12,7 +12,7 @@ usb_pipe_t* usb_pipe_alloc(usb_device_t* device,u8 endpoint_address,u8 attribute
 
 
 
-void usb_pipe_transfer_setup(usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
+void usb_pipe_transfer_setup(usb_device_t* device,usb_pipe_t* pipe,const usb_raw_control_request_t* request,void* data){
 	device->controller->root_controller->pipe_transfer_setup(device->controller->root_controller->device,device,pipe,request,data);
 }
 

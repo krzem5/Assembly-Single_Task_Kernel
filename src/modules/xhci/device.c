@@ -171,7 +171,7 @@ static void _command_submit(xhci_device_t* xhci_device,xhci_input_context_t* inp
 
 static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
 	xhci_device_t* xhci_device=ctx;
-    u8 endpoint_type=attributes&USB_ENDPOINT_XFER_MASK;
+	u8 endpoint_type=attributes&USB_ENDPOINT_XFER_MASK;
 	u8 endpoint_id=(endpoint_address?((endpoint_address&0x0f)<<1)|(!!(endpoint_address&USB_DIR_IN)):1);
 	xhci_pipe_t* out=omm_alloc(&_xhci_pipe_allocator);
 	out->ring=_alloc_ring(0);
@@ -206,10 +206,10 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 
 
 
-static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_control_request_t* request,void* data){
+static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_raw_control_request_t* request,void* data){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
-	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
+	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_raw_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
 	if (request->wLength){
 		_enqueue_event(xhci_pipe->ring,data,request->wLength,((!!(request->bRequestType&USB_DIR_IN))<<16)|TRB_TYPE_TR_DATA);
 	}

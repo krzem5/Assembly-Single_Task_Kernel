@@ -42,17 +42,17 @@
 
 
 
-typedef struct _USB_CONTROL_REQUEST{
+typedef struct _USB_RAW_CONTROL_REQUEST{
 	u8 bRequestType;
 	u8 bRequest;
 	u16 wValue;
 	u16 wIndex;
 	u16 wLength;
-} usb_control_request_t;
+} usb_raw_control_request_t;
 
 
 
-typedef struct _USB_DEVICE_DESCRIPTOR{
+typedef struct _USB_RAW_DEVICE_DESCRIPTOR{
 	u8 bLength;
 	u8 bDescriptorType;
 	u16 bcdUSB;
@@ -67,7 +67,45 @@ typedef struct _USB_DEVICE_DESCRIPTOR{
 	u8 iProduct;
 	u8 iSerialNumber;
 	u8 bNumConfigurations;
-} usb_device_descriptor_t;
+} usb_raw_device_descriptor_t;
+
+
+
+typedef struct _USB_RAW_CONFIGURATION_DESCRIPTOR{
+	u8 bLength;
+	u8 bDescriptorType;
+	u16 wTotalLength;
+	u8 bNumInterfaces;
+	u8 bConfigurationValue;
+	u8 iConfiguration;
+	u8 bmAttributes;
+	u8 bMaxPower;
+} usb_raw_configuration_descriptor_t;
+
+
+
+typedef struct _USB_RAW_INTERFACE_DESCRIPTOR{
+	u8 bLength;
+	u8 bDescriptorType;
+	u8 bInterfaceNumber;
+	u8 bAlternateSetting;
+	u8 bNumEndpoints;
+	u8 bInterfaceClass;
+	u8 bInterfaceSubClass;
+	u8 bInterfaceProtocol;
+	u8 iInterface;
+} usb_raw_interface_descriptor_t;
+
+
+
+typedef struct _USB_RAW_ENDPOINT_DESCRIPTOR{
+	u8 bLength;
+	u8 bDescriptorType;
+	u8 bEndpointAddress;
+	u8 bmAttributes;
+	u16 wMaxPacketSize;
+	u8 bInterval;
+} usb_raw_endpoint_descriptor_t;
 
 
 

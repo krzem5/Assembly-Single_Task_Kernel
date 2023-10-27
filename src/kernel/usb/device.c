@@ -1,6 +1,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/usb/address.h>
 #include <kernel/usb/controller.h>
@@ -12,8 +13,15 @@
 
 
 
+static pmm_counter_descriptor_t _usb_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("usb_buffer");
 static pmm_counter_descriptor_t _usb_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
+static pmm_counter_descriptor_t _usb_device_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
+static pmm_counter_descriptor_t _usb_configuration_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_configuration_descriptor");
+static pmm_counter_descriptor_t _usb_interface_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_interface_descriptor");
 static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,2,&_usb_device_omm_pmm_counter);
+static omm_allocator_t _usb_device_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,&_usb_device_descriptor_omm_pmm_counter);
+static omm_allocator_t _usb_configuration_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,&_usb_configuration_descriptor_omm_pmm_counter);
+static omm_allocator_t _usb_interface_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,&_usb_interface_descriptor_omm_pmm_counter);
 
 
 
@@ -37,7 +45,7 @@ static void _set_device_address(usb_device_t* device){
 	usb_address_space_dealloc(&(device->parent->hub.address_space),device->address);
 	device->address=usb_address_space_alloc(&(device->parent->hub.address_space));
 	device->default_pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
-	usb_control_request_t request={
+	usb_raw_control_request_t request={
 		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
 		USB_REQ_SET_ADDRESS,
 		device->address,
@@ -49,17 +57,63 @@ static void _set_device_address(usb_device_t* device){
 
 
 
+static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 index){
+	usb_raw_control_request_t request={
+		USB_DIR_IN|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
+		USB_REQ_GET_DESCRIPTOR,
+		USB_DT_CONFIG<<8,
+		index,
+		sizeof(usb_raw_configuration_descriptor_t)
+	};
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,buffer);
+	const usb_raw_configuration_descriptor_t* raw_configuration_descriptor=buffer;
+	request.wLength=raw_configuration_descriptor->bLength;
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,buffer);
+	usb_configuration_descriptor_t* configuration_descriptor=omm_alloc(&_usb_configuration_descriptor_allocator);
+	configuration_descriptor->next=NULL;
+	configuration_descriptor->value=raw_configuration_descriptor->bConfigurationValue;
+	configuration_descriptor->interface_count=raw_configuration_descriptor->bNumInterfaces;
+	configuration_descriptor->name_string=raw_configuration_descriptor->iConfiguration;
+	configuration_descriptor->attributes=raw_configuration_descriptor->bmAttributes;
+	configuration_descriptor->max_power=raw_configuration_descriptor->bMaxPower;
+	configuration_descriptor->interfaces=NULL;
+	(void)_usb_interface_descriptor_allocator;
+}
+
+
+
 static void _configure_device(usb_device_t* device){
-	usb_control_request_t request={
+	usb_raw_control_request_t request={
 		USB_DIR_IN|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
 		USB_REQ_GET_DESCRIPTOR,
 		USB_DT_DEVICE<<8,
 		0,
 		8
 	};
-    usb_device_descriptor_t descriptor;
+	usb_raw_device_descriptor_t descriptor;
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,&descriptor);
-	WARN("%X:%X:%X",descriptor.bDeviceClass,descriptor.bDeviceSubClass,descriptor.bDeviceProtocol);
+	request.wLength=descriptor.bLength;
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,&descriptor);
+	device->device_descriptor=omm_alloc(&_usb_device_descriptor_allocator);
+	device->device_descriptor->version=descriptor.bcdUSB;
+	device->device_descriptor->device_class=descriptor.bDeviceClass;
+	device->device_descriptor->device_subclass=descriptor.bDeviceSubClass;
+	device->device_descriptor->device_protocol=descriptor.bDeviceProtocol;
+	device->device_descriptor->max_packet_size=(descriptor.bcdUSB>=0x300?1<<descriptor.bMaxPacketSize0:descriptor.bMaxPacketSize0);
+	device->device_descriptor->vendor=descriptor.idVendor;
+	device->device_descriptor->product=descriptor.idProduct;
+	device->device_descriptor->manufacturer_string=descriptor.iManufacturer;
+	device->device_descriptor->product_string=descriptor.iProduct;
+	device->device_descriptor->serial_number_string=descriptor.iSerialNumber;
+	device->device_descriptor->configuration_count=descriptor.bNumConfigurations;
+	WARN("_configure_device: resize default_pipe to %v",device->device_descriptor->max_packet_size);
+	device->configuration_descriptor=NULL;
+	void* buffer=(void*)(pmm_alloc(1,&_usb_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	for (u8 i=descriptor.bNumConfigurations;i;){
+		i--;
+		_load_configuration_descriptor(device,buffer,i);
+	}
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_usb_buffer_pmm_counter);
 }
 
 
@@ -75,6 +129,8 @@ usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 po
 	out->address=0;
 	out->port=port;
 	out->default_pipe=NULL;
+	out->device_descriptor=NULL;
+	out->configuration_descriptor=NULL;
 	if (type==USB_DEVICE_TYPE_HUB){
 		out->hub.port_count=0;
 		out->hub.child=NULL;
