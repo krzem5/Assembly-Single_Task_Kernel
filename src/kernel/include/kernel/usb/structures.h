@@ -28,6 +28,12 @@
 #define USB_REQ_SET_INTERFACE 0x0b
 #define USB_REQ_SYNCH_FRAME 0x0c
 
+#define USB_DT_DEVICE 0x01
+#define USB_DT_CONFIG 0x02
+#define USB_DT_STRING 0x03
+#define USB_DT_INTERFACE 0x04
+#define USB_DT_ENDPOINT 0x05
+
 #define USB_ENDPOINT_XFER_CONTROL 0x00
 #define USB_ENDPOINT_XFER_ISOC 0x01
 #define USB_ENDPOINT_XFER_BULK 0x02
@@ -43,6 +49,25 @@ typedef struct _USB_CONTROL_REQUEST{
 	u16 wIndex;
 	u16 wLength;
 } usb_control_request_t;
+
+
+
+typedef struct _USB_DEVICE_DESCRIPTOR{
+	u8 bLength;
+	u8 bDescriptorType;
+	u16 bcdUSB;
+	u8 bDeviceClass;
+	u8 bDeviceSubClass;
+	u8 bDeviceProtocol;
+	u8 bMaxPacketSize0;
+	u16 idVendor;
+	u16 idProduct;
+	u16 bcdDevice;
+	u8 iManufacturer;
+	u8 iProduct;
+	u8 iSerialNumber;
+	u8 bNumConfigurations;
+} usb_device_descriptor_t;
 
 
 

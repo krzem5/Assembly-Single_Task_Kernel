@@ -82,7 +82,7 @@ static xhci_input_context_t* _alloc_input_context(xhci_device_t* xhci_device,usb
 		return out;
 	}
 	if (device->speed==USB_DEVICE_SPEED_FULL||device->speed==USB_DEVICE_SPEED_LOW){
-		panic("_alloc_input_context: slow USB device");
+		panic("_alloc_input_context: slow USB device connected to an XHCI device");
 	}
 	u32 route=0;
 	for (;device->parent;device=device->parent){
@@ -105,8 +105,11 @@ static void _enqueue_event_raw(xhci_ring_t* ring,const void* data,u32 size,u32 f
 	if (flags&TRB_IDT){
 		memcpy((void*)(transfer_block->inline_data),data,size);
 	}
+	else if (!data){
+		transfer_block->address=0;
+	}
 	else{
-		transfer_block->address=((u64)data)-VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		transfer_block->address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)data);
 		if ((transfer_block->address>>PAGE_SIZE_SHIFT)!=((transfer_block->address+size)>>PAGE_SIZE_SHIFT)){
 			panic("_enqueue_event_raw: data crosses page boundary");
 		}

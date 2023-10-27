@@ -36,7 +36,7 @@ static u16 _speed_to_packet_size(u8 speed){
 static void _set_device_address(usb_device_t* device){
 	usb_address_space_dealloc(&(device->parent->hub.address_space),device->address);
 	device->address=usb_address_space_alloc(&(device->parent->hub.address_space));
-	usb_pipe_t* pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
+	device->default_pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
 	usb_control_request_t request={
 		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
 		USB_REQ_SET_ADDRESS,
@@ -44,8 +44,22 @@ static void _set_device_address(usb_device_t* device){
 		0,
 		0
 	};
-	usb_pipe_transfer_setup(device,pipe,&request,NULL);
-	LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
+}
+
+
+
+static void _configure_device(usb_device_t* device){
+	usb_control_request_t request={
+		USB_DIR_IN|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
+		USB_REQ_GET_DESCRIPTOR,
+		USB_DT_DEVICE<<8,
+		0,
+		8
+	};
+    usb_device_descriptor_t descriptor;
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,&descriptor);
+	WARN("%X:%X:%X",descriptor.bDeviceClass,descriptor.bDeviceSubClass,descriptor.bDeviceProtocol);
 }
 
 
@@ -95,5 +109,7 @@ void usb_device_enumerate_children(usb_device_t* hub){
 		hub->hub.child=device;
 		device->speed=speed;
 		_set_device_address(device);
+		LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
+		_configure_device(device);
 	}
 }
