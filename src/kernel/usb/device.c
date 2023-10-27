@@ -152,6 +152,14 @@ static void _configure_device(usb_device_t* device){
 		_load_configuration_descriptor(device,buffer,i);
 	}
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_usb_buffer_pmm_counter);
+	if (device->configuration_descriptor){
+		request.bRequestType=USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE;
+		request.bRequest=USB_REQ_SET_CONFIGURATION;
+		request.wValue=device->configuration_descriptor->value;
+		request.wIndex=0;
+		request.wLength=0;
+		usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
+	}
 }
 
 
