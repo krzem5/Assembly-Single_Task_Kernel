@@ -1,5 +1,5 @@
 #include <kernel/types.h>
-#include <kernel/usb/address.h>
+#include <kernel/usb/address_space.h>
 #include <kernel/util/util.h>
 
 

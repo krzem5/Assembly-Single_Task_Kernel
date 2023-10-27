@@ -4,7 +4,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/usb/address.h>
+#include <kernel/usb/address_space.h>
 #include <kernel/usb/controller.h>
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
@@ -178,6 +178,7 @@ usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 po
 	out->parent=NULL;
 	out->prev=NULL;
 	out->next=NULL;
+	out->child=NULL;
 	out->type=type;
 	out->speed=USB_DEVICE_SPEED_HIGH;
 	out->address=0;
@@ -187,7 +188,6 @@ usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 po
 	out->configuration_descriptor=NULL;
 	if (type==USB_DEVICE_TYPE_HUB){
 		out->hub.port_count=0;
-		out->hub.child=NULL;
 		usb_address_space_init(&(out->hub.address_space));
 	}
 	return out;
@@ -209,8 +209,8 @@ void usb_device_enumerate_children(usb_device_t* hub){
 		}
 		usb_device_t* device=usb_device_alloc(hub->controller,USB_DEVICE_TYPE_DEVICE,i);
 		device->parent=hub;
-		device->next=hub->hub.child;
-		hub->hub.child=device;
+		device->next=hub->child;
+		hub->child=device;
 		device->speed=speed;
 		_set_device_address(device);
 		LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);

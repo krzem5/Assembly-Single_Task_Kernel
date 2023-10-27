@@ -1,5 +1,5 @@
-#ifndef _KERNEL_USB_ADDRESS_H_
-#define _KERNEL_USB_ADDRESS_H_ 1
+#ifndef _KERNEL_USB_ADDRESS_SPACE_H_
+#define _KERNEL_USB_ADDRESS_SPACE_H_ 1
 #include <kernel/types.h>
 
 
