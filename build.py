@@ -591,6 +591,7 @@ if ("--run" in sys.argv):
 	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
+		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset","--no-reboot",
 		# Bios
