@@ -206,6 +206,18 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 
 
 
+static void _xhci_pipe_resize(void* ctx,usb_device_t* device,usb_pipe_t* pipe,u16 max_packet_size){
+	xhci_device_t* xhci_device=ctx;
+	xhci_pipe_t* xhci_pipe=pipe;
+	xhci_input_context_t* input_context=_alloc_input_context(xhci_device,device,1);
+	input_context->input.address=2;
+	(input_context+(2<<xhci_device->is_context_64_bytes))->endpoint.ctx[1]=max_packet_size<<16;
+	_command_submit(xhci_device,input_context,(xhci_pipe->slot<<24)|TRB_TYPE_CR_EVALUATE_CONTEXT);
+	_dealloc_input_context(xhci_device,input_context);
+}
+
+
+
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_raw_control_request_t* request,void* data){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
@@ -322,6 +334,7 @@ static void _xhci_init_device(pci_device_t* device){
 	usb_root_controller_t* root_controller=usb_root_controller_alloc();
 	root_controller->device=xhci_device;
 	root_controller->pipe_alloc=_xhci_pipe_alloc;
+	root_controller->pipe_resize=_xhci_pipe_resize;
 	root_controller->pipe_transfer_setup=_xhci_pipe_transfer_setup;
 	root_controller->pipe_transfer_normal=_xhci_pipe_transfer_normal;
 	usb_controller_t* usb_controller=usb_controller_alloc(root_controller);

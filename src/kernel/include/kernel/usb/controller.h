@@ -12,6 +12,7 @@ struct _USB_DEVICE;
 typedef struct _USB_ROOT_CONTROLLER{
 	void* device;
 	usb_pipe_t* (*pipe_alloc)(void*,struct _USB_DEVICE*,u8,u8,u16);
+	void (*pipe_resize)(void*,struct _USB_DEVICE*,usb_pipe_t*,u16);
 	void (*pipe_transfer_setup)(void*,struct _USB_DEVICE*,usb_pipe_t*,const usb_raw_control_request_t*,void*);
 	void (*pipe_transfer_normal)(void*,struct _USB_DEVICE*,usb_pipe_t*,void*,u16);
 } usb_root_controller_t;

@@ -1,3 +1,4 @@
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -24,6 +25,12 @@ static omm_allocator_t _usb_device_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUC
 static omm_allocator_t _usb_configuration_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,&_usb_configuration_descriptor_omm_pmm_counter);
 static omm_allocator_t _usb_interface_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,&_usb_interface_descriptor_omm_pmm_counter);
 static omm_allocator_t _usb_endpoint_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,&_usb_endpoint_descriptor_omm_pmm_counter);
+
+
+
+HANDLE_DECLARE_TYPE(USB_DEVICE,{
+	panic("Delete USB_DEVICE");
+});
 
 
 
@@ -144,7 +151,7 @@ static void _configure_device(usb_device_t* device){
 	device->device_descriptor->product_string=descriptor.iProduct;
 	device->device_descriptor->serial_number_string=descriptor.iSerialNumber;
 	device->device_descriptor->configuration_count=descriptor.bNumConfigurations;
-	WARN("_configure_device: resize default_pipe to %v",device->device_descriptor->max_packet_size);
+	usb_pipe_resize(device,device->default_pipe,device->device_descriptor->max_packet_size);
 	device->configuration_descriptor=NULL;
 	void* buffer=(void*)(pmm_alloc(1,&_usb_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u8 i=descriptor.bNumConfigurations;i;){
@@ -166,6 +173,7 @@ static void _configure_device(usb_device_t* device){
 
 usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 port){
 	usb_device_t* out=omm_alloc(&_usb_device_allocator);
+	handle_new(out,HANDLE_TYPE_USB_DEVICE,&(out->handle));
 	out->controller=controller;
 	out->parent=NULL;
 	out->prev=NULL;
@@ -183,12 +191,6 @@ usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 po
 		usb_address_space_init(&(out->hub.address_space));
 	}
 	return out;
-}
-
-
-
-void usb_device_dealloc(usb_device_t* device){
-	omm_dealloc(&_usb_device_allocator,device);
 }
 
 

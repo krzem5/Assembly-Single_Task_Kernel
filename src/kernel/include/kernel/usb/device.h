@@ -1,5 +1,6 @@
 #ifndef _KERNEL_USB_DEVICE_H_
 #define _KERNEL_USB_DEVICE_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/types.h>
 #include <kernel/usb/address.h>
 #include <kernel/usb/controller.h>
@@ -71,6 +72,7 @@ typedef struct _USB_CONFIGURATION_DESCRIPTOR{
 
 
 typedef struct _USB_DEVICE{
+	handle_t handle;
 	const usb_controller_t* controller;
 	struct _USB_DEVICE* parent;
 	struct _USB_DEVICE* prev;
@@ -95,10 +97,6 @@ typedef struct _USB_DEVICE{
 
 
 usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 port);
-
-
-
-void usb_device_dealloc(usb_device_t* device);
 
 
 
