@@ -18,10 +18,12 @@ static pmm_counter_descriptor_t _usb_device_omm_pmm_counter=PMM_COUNTER_INIT_STR
 static pmm_counter_descriptor_t _usb_device_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
 static pmm_counter_descriptor_t _usb_configuration_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_configuration_descriptor");
 static pmm_counter_descriptor_t _usb_interface_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_interface_descriptor");
+static pmm_counter_descriptor_t _usb_endpoint_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_endpoint_descriptor");
 static omm_allocator_t _usb_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device",sizeof(usb_device_t),8,2,&_usb_device_omm_pmm_counter);
 static omm_allocator_t _usb_device_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,&_usb_device_descriptor_omm_pmm_counter);
 static omm_allocator_t _usb_configuration_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,&_usb_configuration_descriptor_omm_pmm_counter);
 static omm_allocator_t _usb_interface_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,&_usb_interface_descriptor_omm_pmm_counter);
+static omm_allocator_t _usb_endpoint_descriptor_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,&_usb_endpoint_descriptor_omm_pmm_counter);
 
 
 
@@ -80,10 +82,32 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 	for (u16 i=0;i<raw_configuration_descriptor->wTotalLength-raw_configuration_descriptor->bLength;i+=raw_configuration_descriptor->extra_data[i]){
 		switch (raw_configuration_descriptor->extra_data[i+1]){
 			case USB_DT_INTERFACE:
-				WARN("USB_DT_INTERFACE");
+				const usb_raw_interface_descriptor_t* raw_interface_descriptor=(const void*)(raw_configuration_descriptor->extra_data+i);
+				usb_interface_descriptor_t* interface_descriptor=omm_alloc(&_usb_interface_descriptor_allocator);
+				interface_descriptor->next=configuration_descriptor->interface;
+				interface_descriptor->index=raw_interface_descriptor->bInterfaceNumber;
+				interface_descriptor->alternate_setting=raw_interface_descriptor->bAlternateSetting;
+				interface_descriptor->endpoint_count=raw_interface_descriptor->bNumEndpoints;
+				interface_descriptor->class=raw_interface_descriptor->bInterfaceClass;
+				interface_descriptor->subclass=raw_interface_descriptor->bInterfaceSubClass;
+				interface_descriptor->protocol=raw_interface_descriptor->bInterfaceProtocol;
+				interface_descriptor->name_string=raw_interface_descriptor->iInterface;
+				interface_descriptor->endpoint=NULL;
+				configuration_descriptor->interface=interface_descriptor;
 				break;
 			case USB_DT_ENDPOINT:
-				WARN("USB_DT_ENDPOINT");
+				if (!configuration_descriptor->interface){
+					WARN("USB_DT_ENDPOINT before USB_DT_INTERFACE");
+					break;
+				}
+				const usb_raw_endpoint_descriptor_t* raw_endpoint_descriptor=(const void*)(raw_configuration_descriptor->extra_data+i);
+				usb_endpoint_descriptor_t* endpoint_descriptor=omm_alloc(&_usb_endpoint_descriptor_allocator);
+				endpoint_descriptor->next=configuration_descriptor->interface->endpoint;
+				endpoint_descriptor->address=raw_endpoint_descriptor->bEndpointAddress;
+				endpoint_descriptor->attributes=raw_endpoint_descriptor->bmAttributes;
+				endpoint_descriptor->max_packet_size=raw_endpoint_descriptor->wMaxPacketSize;
+				endpoint_descriptor->interval=raw_endpoint_descriptor->bInterval;
+				configuration_descriptor->interface->endpoint=endpoint_descriptor;
 				break;
 			case USB_DT_ENDPOINT_COMPANION:
 				break;
@@ -92,7 +116,6 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 				break;
 		}
 	}
-	(void)_usb_interface_descriptor_allocator;
 }
 
 

@@ -34,6 +34,16 @@ typedef struct _USB_DEVICE_DESCRIPTOR{
 
 
 
+typedef struct _USB_ENDPOINT_DESCRIPTOR{
+	struct _USB_ENDPOINT_DESCRIPTOR* next;
+	u8 address;
+	u8 attributes;
+	u16 max_packet_size;
+	u8 interval;
+} usb_endpoint_descriptor_t;
+
+
+
 typedef struct _USB_INTERFACE_DESCRIPTOR{
 	struct _USB_INTERFACE_DESCRIPTOR* next;
 	u8 index;
@@ -43,6 +53,7 @@ typedef struct _USB_INTERFACE_DESCRIPTOR{
 	u8 subclass;
 	u8 protocol;
 	u8 name_string;
+	usb_endpoint_descriptor_t* endpoint;
 } usb_interface_descriptor_t;
 
 
