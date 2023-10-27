@@ -67,7 +67,7 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 	};
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,buffer);
 	const usb_raw_configuration_descriptor_t* raw_configuration_descriptor=buffer;
-	request.wLength=raw_configuration_descriptor->bLength;
+	request.wLength=raw_configuration_descriptor->wTotalLength;
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,buffer);
 	usb_configuration_descriptor_t* configuration_descriptor=omm_alloc(&_usb_configuration_descriptor_allocator);
 	configuration_descriptor->next=NULL;
@@ -76,7 +76,22 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 	configuration_descriptor->name_string=raw_configuration_descriptor->iConfiguration;
 	configuration_descriptor->attributes=raw_configuration_descriptor->bmAttributes;
 	configuration_descriptor->max_power=raw_configuration_descriptor->bMaxPower;
-	configuration_descriptor->interfaces=NULL;
+	configuration_descriptor->interface=NULL;
+	for (u16 i=0;i<raw_configuration_descriptor->wTotalLength-raw_configuration_descriptor->bLength;i+=raw_configuration_descriptor->extra_data[i]){
+		switch (raw_configuration_descriptor->extra_data[i+1]){
+			case USB_DT_INTERFACE:
+				WARN("USB_DT_INTERFACE");
+				break;
+			case USB_DT_ENDPOINT:
+				WARN("USB_DT_ENDPOINT");
+				break;
+			case USB_DT_ENDPOINT_COMPANION:
+				break;
+			default:
+				WARN("Unknown USB descriptor type: %X",raw_configuration_descriptor->extra_data[i+1]);
+				break;
+		}
+	}
 	(void)_usb_interface_descriptor_allocator;
 }
 

@@ -33,6 +33,9 @@
 #define USB_DT_STRING 0x03
 #define USB_DT_INTERFACE 0x04
 #define USB_DT_ENDPOINT 0x05
+#define USB_DT_DEVICE_QUALIFIER 0x06
+#define USB_DT_OTHER_SPEED_CONFIG 0x07
+#define USB_DT_ENDPOINT_COMPANION 0x30
 
 #define USB_ENDPOINT_XFER_CONTROL 0x00
 #define USB_ENDPOINT_XFER_ISOC 0x01
@@ -80,6 +83,7 @@ typedef struct _USB_RAW_CONFIGURATION_DESCRIPTOR{
 	u8 iConfiguration;
 	u8 bmAttributes;
 	u8 bMaxPower;
+	u8 extra_data[];
 } usb_raw_configuration_descriptor_t;
 
 

@@ -54,7 +54,7 @@ typedef struct _USB_CONFIGURATION_DESCRIPTOR{
 	u8 name_string;
 	u8 attributes;
 	u8 max_power;
-	usb_interface_descriptor_t* interfaces;
+	usb_interface_descriptor_t* interface;
 } usb_configuration_descriptor_t;
 
 
