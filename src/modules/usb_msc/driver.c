@@ -51,7 +51,7 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	driver->driver.descriptor=&_usb_msc_driver_descriptor;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
 	driver->output_pipe=usb_pipe_alloc(device,output_descriptor->address,output_descriptor->attributes,output_descriptor->max_packet_size);
-	interface_descriptor->driver=driver;
+	interface_descriptor->driver=(usb_driver_t*)driver;
 	usb_raw_control_request_t request={
 		USB_DIR_IN|USB_TYPE_CLASS|USB_RECIP_INTERFACE,
 		0xfe,
