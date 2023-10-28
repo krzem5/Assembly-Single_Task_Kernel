@@ -12,6 +12,7 @@
 
 typedef struct _USB_MSC_DRIVER{
 	usb_driver_t driver;
+	usb_device_t* device;
 	usb_pipe_t* input_pipe;
 	usb_pipe_t* output_pipe;
 } usb_msc_driver_t;
@@ -24,6 +25,11 @@ static omm_allocator_t _usb_msc_driver_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_
 
 
 static usb_driver_descriptor_t _usb_msc_driver_descriptor;
+
+
+
+static void _setup_drive(usb_msc_driver_t* driver,u16 index){
+}
 
 
 
@@ -49,6 +55,7 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	}
 	usb_msc_driver_t* driver=omm_alloc(&_usb_msc_driver_allocator);
 	driver->driver.descriptor=&_usb_msc_driver_descriptor;
+	driver->device=device;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
 	driver->output_pipe=usb_pipe_alloc(device,output_descriptor->address,output_descriptor->attributes,output_descriptor->max_packet_size);
 	interface_descriptor->driver=(usb_driver_t*)driver;
@@ -61,7 +68,9 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	};
 	u8 max_lun;
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,&max_lun);
-	WARN("Max LUN: %u",max_lun);
+	for (u16 i=0;i<=max_lun;i++){
+		_setup_drive(driver,i);
+	}
 	return 1;
 }
 
