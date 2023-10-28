@@ -106,6 +106,7 @@ typedef struct _USB_DEVICE{
 	usb_pipe_t* default_pipe;
 	usb_device_descriptor_t* device_descriptor;
 	usb_configuration_descriptor_t* configuration_descriptor;
+	usb_configuration_descriptor_t* current_configuration_descriptor;
 } usb_device_t;
 
 

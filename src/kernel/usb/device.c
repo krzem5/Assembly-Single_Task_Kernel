@@ -153,6 +153,7 @@ static void _configure_device(usb_device_t* device){
 	device->device_descriptor->configuration_count=descriptor.bNumConfigurations;
 	usb_pipe_resize(device,device->default_pipe,device->device_descriptor->max_packet_size);
 	device->configuration_descriptor=NULL;
+	device->current_configuration_descriptor=NULL;
 	void* buffer=(void*)(pmm_alloc(1,&_usb_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u8 i=descriptor.bNumConfigurations;i;){
 		i--;
@@ -166,6 +167,7 @@ static void _configure_device(usb_device_t* device){
 		request.wIndex=0;
 		request.wLength=0;
 		usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
+		device->current_configuration_descriptor=device->configuration_descriptor;
 	}
 }
 
