@@ -79,6 +79,7 @@ typedef struct _USB_DRIVER_DESCRIPTOR{
 
 typedef struct _USB_DRIVER{
 	usb_driver_descriptor_t* descriptor;
+	struct _USB_DRIVER* prev;
 	struct _USB_DRIVER* next;
 } usb_driver_t;
 
@@ -99,7 +100,6 @@ typedef struct _USB_DEVICE{
 	struct _USB_DEVICE* next;
 	struct _USB_DEVICE* child;
 	usb_driver_list_t driver_list;
-	u8 type;
 	u8 speed;
 	u8 address;
 	u8 port;

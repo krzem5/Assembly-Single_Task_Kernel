@@ -179,7 +179,6 @@ usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent
 	out->prev=NULL;
 	out->next=NULL;
 	out->child=NULL;
-	out->type=USB_DEVICE_TYPE_DEVICE;
 	out->speed=speed;
 	out->address=0;
 	out->port=port;
