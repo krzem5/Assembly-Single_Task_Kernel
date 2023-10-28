@@ -9,6 +9,7 @@
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
 #include <kernel/usb/structures.h>
+#include <kernel/usb/usb.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "usb_device"
 
@@ -161,13 +162,7 @@ static void _configure_device(usb_device_t* device){
 	}
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_usb_buffer_pmm_counter);
 	if (device->configuration_descriptor){
-		request.bRequestType=USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE;
-		request.bRequest=USB_REQ_SET_CONFIGURATION;
-		request.wValue=device->configuration_descriptor->value;
-		request.wIndex=0;
-		request.wLength=0;
-		usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
-		device->current_configuration_descriptor=device->configuration_descriptor;
+		usb_device_set_configuration(device,device->configuration_descriptor->value);
 	}
 }
 
@@ -196,4 +191,32 @@ usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent
 	LOG("Port: %u, Speed: %u, Address: %X",out->port,out->speed,out->address);
 	_configure_device(out);
 	return out;
+}
+
+
+
+_Bool usb_device_set_configuration(usb_device_t* device,u8 value){
+	usb_configuration_descriptor_t* configuration_descriptor=device->configuration_descriptor;
+	for (;configuration_descriptor&&configuration_descriptor->value!=value;configuration_descriptor=configuration_descriptor->next);
+	if (!configuration_descriptor){
+		return 0;
+	}
+	if (device->current_configuration_descriptor){
+		panic("usb_device_set_configuration: dealloc device->current_configuration_descriptor");
+	}
+	device->current_configuration_descriptor=configuration_descriptor;
+	usb_raw_control_request_t request={
+		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
+		USB_REQ_SET_CONFIGURATION,
+		value,
+		0,
+		0
+	};
+	usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
+	HANDLE_FOREACH(HANDLE_TYPE_USB_DRIVER_DESCRIPTOR){
+		handle_acquire(handle);
+		usb_driver_descriptor_t* descriptor=handle->object;
+		WARN("%s",descriptor->name);
+	}
+	return 1;
 }

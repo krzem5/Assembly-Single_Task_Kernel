@@ -4,6 +4,10 @@
 
 
 
+extern handle_type_t HANDLE_TYPE_USB_DRIVER_DESCRIPTOR;
+
+
+
 void usb_register_driver(usb_driver_descriptor_t* driver);
 
 

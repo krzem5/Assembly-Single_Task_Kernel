@@ -17,4 +17,8 @@ usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent
 
 
 
+_Bool usb_device_set_configuration(usb_device_t* device,u8 value);
+
+
+
 #endif
