@@ -80,13 +80,14 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 	request.wLength=raw_configuration_descriptor->wTotalLength;
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,buffer);
 	usb_configuration_descriptor_t* configuration_descriptor=omm_alloc(&_usb_configuration_descriptor_allocator);
-	configuration_descriptor->next=NULL;
+	configuration_descriptor->next=device->configuration_descriptor;
 	configuration_descriptor->value=raw_configuration_descriptor->bConfigurationValue;
 	configuration_descriptor->interface_count=raw_configuration_descriptor->bNumInterfaces;
 	configuration_descriptor->name_string=raw_configuration_descriptor->iConfiguration;
 	configuration_descriptor->attributes=raw_configuration_descriptor->bmAttributes;
 	configuration_descriptor->max_power=raw_configuration_descriptor->bMaxPower;
 	configuration_descriptor->interface=NULL;
+	device->configuration_descriptor=configuration_descriptor;
 	for (u16 i=0;i<raw_configuration_descriptor->wTotalLength-raw_configuration_descriptor->bLength;i+=raw_configuration_descriptor->extra_data[i]){
 		switch (raw_configuration_descriptor->extra_data[i+1]){
 			case USB_DT_INTERFACE:
@@ -101,6 +102,7 @@ static void _load_configuration_descriptor(usb_device_t* device,void* buffer,u8 
 				interface_descriptor->protocol=raw_interface_descriptor->bInterfaceProtocol;
 				interface_descriptor->name_string=raw_interface_descriptor->iInterface;
 				interface_descriptor->endpoint=NULL;
+				interface_descriptor->driver=NULL;
 				configuration_descriptor->interface=interface_descriptor;
 				break;
 			case USB_DT_ENDPOINT:
@@ -213,10 +215,17 @@ _Bool usb_device_set_configuration(usb_device_t* device,u8 value){
 		0
 	};
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
-	HANDLE_FOREACH(HANDLE_TYPE_USB_DRIVER_DESCRIPTOR){
-		handle_acquire(handle);
-		usb_driver_descriptor_t* descriptor=handle->object;
-		WARN("%s",descriptor->name);
+	for (usb_interface_descriptor_t* interface_descriptor=configuration_descriptor->interface;interface_descriptor;interface_descriptor=interface_descriptor->next){
+		HANDLE_FOREACH(HANDLE_TYPE_USB_DRIVER_DESCRIPTOR){
+			handle_acquire(handle);
+			usb_driver_descriptor_t* descriptor=handle->object;
+			if (!descriptor->load_callback(device,interface_descriptor)){
+				handle_release(handle);
+				continue;
+			}
+			INFO("Attached driver '%s' to interface of type %X:%X:%X",descriptor->name,interface_descriptor->class,interface_descriptor->subclass,interface_descriptor->protocol);
+			break;
+		}
 	}
 	return 1;
 }
