@@ -51,8 +51,8 @@ static u16 _speed_to_packet_size(u8 speed){
 
 
 static void _set_device_address(usb_device_t* device){
-	usb_address_space_dealloc(&(device->parent->hub.address_space),device->address);
-	device->address=usb_address_space_alloc(&(device->parent->hub.address_space));
+	usb_address_space_dealloc(&(device->controller->root_controller->address_space),device->address);
+	device->address=usb_address_space_alloc(&(device->controller->root_controller->address_space));
 	device->default_pipe=usb_pipe_alloc(device,0,USB_ENDPOINT_XFER_CONTROL,_speed_to_packet_size(device->speed));
 	usb_raw_control_request_t request={
 		USB_DIR_OUT|USB_TYPE_STANDARD|USB_RECIP_DEVICE,
@@ -171,49 +171,28 @@ static void _configure_device(usb_device_t* device){
 
 
 
-usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 port){
+usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
 	usb_device_t* out=omm_alloc(&_usb_device_allocator);
 	handle_new(out,HANDLE_TYPE_USB_DEVICE,&(out->handle));
 	out->controller=controller;
-	out->parent=NULL;
+	out->parent=parent;
 	out->prev=NULL;
 	out->next=NULL;
 	out->child=NULL;
-	out->type=type;
-	out->speed=USB_DEVICE_SPEED_HIGH;
+	out->type=USB_DEVICE_TYPE_DEVICE;
+	out->speed=speed;
 	out->address=0;
 	out->port=port;
 	out->default_pipe=NULL;
 	out->device_descriptor=NULL;
 	out->configuration_descriptor=NULL;
-	if (type==USB_DEVICE_TYPE_HUB){
-		out->hub.port_count=0;
-		usb_address_space_init(&(out->hub.address_space));
+	if (!parent){
+		return out;
 	}
+	out->next=parent->child;
+	parent->child=out;
+	_set_device_address(out);
+	LOG("Port: %u, Speed: %u, Address: %X",out->port,out->speed,out->address);
+	_configure_device(out);
 	return out;
-}
-
-
-
-void usb_device_enumerate_children(usb_device_t* hub){
-	if (hub->type!=USB_DEVICE_TYPE_HUB){
-		panic("usb_device_enumerate_children: usb device is not a hub");
-	}
-	for (u16 i=0;i<hub->hub.port_count;i++){
-		if (!hub->controller->detect(hub->controller->device,i)){
-			continue;
-		}
-		u8 speed=hub->controller->reset(hub->controller->device,i);
-		if (speed==USB_DEVICE_SPEED_INVALID){
-			continue;
-		}
-		usb_device_t* device=usb_device_alloc(hub->controller,USB_DEVICE_TYPE_DEVICE,i);
-		device->parent=hub;
-		device->next=hub->child;
-		hub->child=device;
-		device->speed=speed;
-		_set_device_address(device);
-		LOG("Port: %u, Speed: %u, Address: %X",device->port,device->speed,device->address);
-		_configure_device(device);
-	}
 }

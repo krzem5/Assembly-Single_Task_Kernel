@@ -16,11 +16,7 @@
 
 
 
-usb_device_t* usb_device_alloc(const usb_controller_t* controller,u8 type,u16 port);
-
-
-
-void usb_device_enumerate_children(usb_device_t* hub);
+usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed);
 
 
 

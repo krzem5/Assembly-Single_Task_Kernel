@@ -93,7 +93,7 @@ typedef struct _USB_DRIVER_LIST{
 
 typedef struct _USB_DEVICE{
 	handle_t handle;
-	const struct _USB_CONTROLLER* controller;
+	struct _USB_CONTROLLER* controller;
 	struct _USB_DEVICE* parent;
 	struct _USB_DEVICE* prev;
 	struct _USB_DEVICE* next;
@@ -106,13 +106,6 @@ typedef struct _USB_DEVICE{
 	usb_pipe_t* default_pipe;
 	usb_device_descriptor_t* device_descriptor;
 	usb_configuration_descriptor_t* configuration_descriptor;
-	union{
-		struct{
-			u16 port_count;
-			_Bool is_root_hub;
-			usb_address_space_t address_space;
-		} hub;
-	};
 } usb_device_t;
 
 
@@ -123,15 +116,14 @@ typedef struct _USB_ROOT_CONTROLLER{
 	void (*pipe_resize)(void*,usb_device_t*,usb_pipe_t*,u16);
 	void (*pipe_transfer_setup)(void*,usb_device_t*,usb_pipe_t*,const usb_raw_control_request_t*,void*);
 	void (*pipe_transfer_normal)(void*,usb_device_t*,usb_pipe_t*,void*,u16);
+	usb_address_space_t address_space;
 } usb_root_controller_t;
 
 
 
 typedef struct _USB_CONTROLLER{
-	const usb_root_controller_t* root_controller;
+	usb_root_controller_t* root_controller;
 	void* device;
-	_Bool (*detect)(void*,u16);
-	u8 (*reset)(void*,u16);
 	void (*disconnect)(void*,u16);
 } usb_controller_t;
 

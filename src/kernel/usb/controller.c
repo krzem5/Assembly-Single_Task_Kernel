@@ -1,6 +1,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
+#include <kernel/usb/address_space.h>
 #include <kernel/usb/controller.h>
 
 
@@ -13,12 +14,14 @@ static omm_allocator_t _usb_controller_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_
 
 
 usb_root_controller_t* usb_root_controller_alloc(void){
-	return omm_alloc(&_usb_root_controller_allocator);
+	usb_root_controller_t* out=omm_alloc(&_usb_root_controller_allocator);
+	usb_address_space_init(&(out->address_space));
+	return out;
 }
 
 
 
-usb_controller_t* usb_controller_alloc(const usb_root_controller_t* root_controller){
+usb_controller_t* usb_controller_alloc(usb_root_controller_t* root_controller){
 	usb_controller_t* out=omm_alloc(&_usb_controller_allocator);
 	out->root_controller=root_controller;
 	return out;

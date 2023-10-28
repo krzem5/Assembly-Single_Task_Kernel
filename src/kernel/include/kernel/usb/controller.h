@@ -8,7 +8,7 @@ usb_root_controller_t* usb_root_controller_alloc(void);
 
 
 
-usb_controller_t* usb_controller_alloc(const usb_root_controller_t* root_controller);
+usb_controller_t* usb_controller_alloc(usb_root_controller_t* root_controller);
 
 
 

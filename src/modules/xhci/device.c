@@ -78,7 +78,7 @@ static xhci_input_context_t* _alloc_input_context(xhci_device_t* xhci_device,usb
 	xhci_input_context_t* slot=out+(1<<xhci_device->is_context_64_bytes);
 	slot->slot.ctx[0]=(max_endpoint<<27)|(_speed_to_context_speed(device->speed)<<20);
 	slot->slot.ctx[1]=(device->port+1)<<16;
-	if (device->parent->hub.is_root_hub){
+	if (!device->parent->parent){
 		return out;
 	}
 	if (device->speed==USB_DEVICE_SPEED_FULL||device->speed==USB_DEVICE_SPEED_LOW){
@@ -169,6 +169,31 @@ static void _command_submit(xhci_device_t* xhci_device,xhci_input_context_t* inp
 
 
 
+static u8 _reset_port(void* ctx,u16 port){
+	const xhci_device_t* xhci_device=ctx;
+	xhci_port_registers_t* port_registers=xhci_device->port_registers+port;
+	if (!(port_registers->portsc&PORTSC_CCS)||(port_registers->portsc&PORTSC_PLS_MASK)!=PORTSC_PLS_U0){
+		return USB_DEVICE_SPEED_INVALID;
+	}
+	SPINLOOP((port_registers->portsc&(PORTSC_CCS|PORTSC_PED))==PORTSC_CCS);
+	if (!(port_registers->portsc&PORTSC_PED)){
+		return USB_DEVICE_SPEED_INVALID;
+	}
+	switch (port_registers->portsc&PORTSC_SPEED_MASK){
+		case PORTSC_SPEED_FULL:
+			return USB_DEVICE_SPEED_FULL;
+		case PORTSC_SPEED_LOW:
+			return USB_DEVICE_SPEED_LOW;
+		case PORTSC_SPEED_HIGH:
+			return USB_DEVICE_SPEED_HIGH;
+		case PORTSC_SPEED_SUPER:
+			return USB_DEVICE_SPEED_SUPER;
+	}
+	return USB_DEVICE_SPEED_INVALID;
+}
+
+
+
 static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_address,u8 attributes,u16 max_packet_size){
 	xhci_device_t* xhci_device=ctx;
 	u8 endpoint_type=attributes&USB_ENDPOINT_XFER_MASK;
@@ -187,7 +212,7 @@ static usb_pipe_t* _xhci_pipe_alloc(void* ctx,usb_device_t* device,u8 endpoint_a
 	endpoint->endpoint.deq=(((u64)(out->ring))-VMM_HIGHER_HALF_ADDRESS_OFFSET)|1;
 	endpoint->endpoint.length=max_packet_size;
 	if (endpoint_id==1){
-		if (!device->parent->hub.is_root_hub){
+		if (device->parent->parent){
 			panic("_xhci_pipe_alloc: config parent");
 		}
 		xhci_input_context_t* device_input_context=_alloc_input_context_raw(xhci_device);
@@ -234,38 +259,6 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
 	panic("_xhci_pipe_transfer_normal");
-}
-
-
-
-static _Bool _xhci_detect_port(void* ctx,u16 port){
-	const xhci_device_t* xhci_device=ctx;
-	return !!((xhci_device->port_registers+port)->portsc&PORTSC_CCS);
-}
-
-
-
-static u8 _xhci_reset_port(void* ctx,u16 port){
-	const xhci_device_t* xhci_device=ctx;
-	xhci_port_registers_t* port_registers=xhci_device->port_registers+port;
-	if (!(port_registers->portsc&PORTSC_CCS)||(port_registers->portsc&PORTSC_PLS_MASK)!=PORTSC_PLS_U0){
-		return USB_DEVICE_SPEED_INVALID;
-	}
-	SPINLOOP((port_registers->portsc&(PORTSC_CCS|PORTSC_PED))==PORTSC_CCS);
-	if (!(port_registers->portsc&PORTSC_PED)){
-		return USB_DEVICE_SPEED_INVALID;
-	}
-	switch (port_registers->portsc&PORTSC_SPEED_MASK){
-		case PORTSC_SPEED_FULL:
-			return USB_DEVICE_SPEED_FULL;
-		case PORTSC_SPEED_LOW:
-			return USB_DEVICE_SPEED_LOW;
-		case PORTSC_SPEED_HIGH:
-			return USB_DEVICE_SPEED_HIGH;
-		case PORTSC_SPEED_SUPER:
-			return USB_DEVICE_SPEED_SUPER;
-	}
-	return USB_DEVICE_SPEED_INVALID;
 }
 
 
@@ -339,13 +332,18 @@ static void _xhci_init_device(pci_device_t* device){
 	root_controller->pipe_transfer_normal=_xhci_pipe_transfer_normal;
 	usb_controller_t* usb_controller=usb_controller_alloc(root_controller);
 	usb_controller->device=xhci_device;
-	usb_controller->detect=_xhci_detect_port;
-	usb_controller->reset=_xhci_reset_port;
 	usb_controller->disconnect=_xhci_disconnect_port;
-	usb_device_t* root_hub=usb_device_alloc(usb_controller,USB_DEVICE_TYPE_HUB,0);
-	root_hub->hub.port_count=xhci_device->ports;
-	root_hub->hub.is_root_hub=1;
-	usb_device_enumerate_children(root_hub);
+	usb_device_t* root_hub=usb_device_alloc(usb_controller,NULL,0,USB_DEVICE_SPEED_SUPER);
+	for (u16 i=0;i<xhci_device->ports;i++){
+		if (!((xhci_device->port_registers+i)->portsc&PORTSC_CCS)){
+			continue;
+		}
+		u8 speed=_reset_port(xhci_device,i);
+		if (speed==USB_DEVICE_SPEED_INVALID){
+			continue;
+		}
+		usb_device_alloc(usb_controller,root_hub,i,speed);
+	}
 }
 
 
