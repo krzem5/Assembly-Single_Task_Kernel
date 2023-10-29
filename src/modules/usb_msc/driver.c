@@ -28,7 +28,8 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor;
 
 
 
-static void _setup_drive(usb_msc_driver_t* driver,u16 index){
+static void _setup_drive(usb_msc_driver_t* driver,u8 index){
+	WARN("Setup USB MSC #%u",index);
 }
 
 
