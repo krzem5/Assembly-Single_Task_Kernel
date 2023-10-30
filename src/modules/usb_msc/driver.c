@@ -1,5 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/format/format.h>
+#include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -78,17 +79,29 @@ typedef struct __attribute__((packed)) _USB_SCSI_READ_CAPACITY_10_RESPONCE{
 
 
 
+typedef struct _USB_MSC_LUN_CONTEXT{
+	struct _USB_MSC_DRIVER* driver;
+	struct _USB_MSC_LUN_CONTEXT* next;
+	u8 lun;
+} usb_msc_lun_context_t;
+
+
+
 typedef struct _USB_MSC_DRIVER{
 	usb_driver_t driver;
 	usb_device_t* device;
 	usb_pipe_t* input_pipe;
 	usb_pipe_t* output_pipe;
+	lock_t lock;
+	struct _USB_MSC_LUN_CONTEXT* lun_context;
 } usb_msc_driver_t;
 
 
 
 static pmm_counter_descriptor_t _usb_msc_driver_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_driver");
+static pmm_counter_descriptor_t _usb_msc_lun_context_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_lun_context");
 static omm_allocator_t _usb_msc_driver_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,&_usb_msc_driver_omm_pmm_counter);
+static omm_allocator_t _usb_msc_lun_context_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,&_usb_msc_lun_context_omm_pmm_counter);
 
 
 
@@ -124,10 +137,12 @@ static _Bool _fetch_inquiry(usb_msc_driver_t* driver,u8 lun,usb_scsi_inquiry_res
 			}
 		}
 	};
+	lock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_inquiry_responce_t));
 	usb_scsi_status_t status;
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	lock_release_exclusive(&(driver->lock));
 	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
 }
 
@@ -147,10 +162,12 @@ static _Bool _fetch_read_capacity_10(usb_msc_driver_t* driver,u8 lun,usb_scsi_re
 			}
 		}
 	};
+	lock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_read_capacity_10_responce_t));
 	usb_scsi_status_t status;
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	lock_release_exclusive(&(driver->lock));
 	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
 }
 
@@ -164,12 +181,16 @@ static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 		WARN("Failed to setup LUN %u",lun);
 		return;
 	}
-	(void)_usb_msc_drive_type;
+	usb_msc_lun_context_t* context=omm_alloc(&_usb_msc_lun_context_allocator);
+	context->driver=driver;
+	context->next=driver->lun_context;
+	context->lun=lun;
+	driver->lun_context=context;
 	drive_config_t config={
 		.type=&_usb_msc_drive_type,
 		.block_count=__builtin_bswap32(read_capacity_10_data.sectors),
 		.block_size=__builtin_bswap32(read_capacity_10_data.block_size),
-		.extra_data=NULL
+		.extra_data=context
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"usb%u",lun);
 	memcpy_trunc_spaces(config.serial_number,inquiry_data.rev,4);
@@ -204,6 +225,8 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	driver->device=device;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
 	driver->output_pipe=usb_pipe_alloc(device,output_descriptor->address,output_descriptor->attributes,output_descriptor->max_packet_size);
+	lock_init(&(driver->lock));
+	driver->lun_context=NULL;
 	interface_descriptor->driver=(usb_driver_t*)driver;
 	usb_raw_control_request_t request={
 		USB_DIR_IN|USB_TYPE_CLASS|USB_RECIP_INTERFACE,
