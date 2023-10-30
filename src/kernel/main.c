@@ -9,7 +9,6 @@
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
@@ -29,6 +28,7 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
+	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();
 	aml_bus_enumerate();
@@ -63,12 +63,10 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	pmm_init();
 	vmm_init();
 	pmm_init_high_mem();
-	kmm_init();
 	kernel_adjust_memory_flags();
 	clock_init();
 	isr_init();
 	acpi_load();
-	bios_get_system_data();
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
