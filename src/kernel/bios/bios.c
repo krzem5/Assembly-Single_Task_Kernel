@@ -149,24 +149,7 @@ void bios_get_system_data(void){
 		offset+=_get_header_length(header);
 	}
 	bios_data.uuid_str=kmm_alloc(37);
-	format_string(bios_data.uuid_str,37,"%X%X%X%X-%X%X-%X%X-%X%X-%X%X%X%X%X%X",
-		bios_data.uuid[0],
-		bios_data.uuid[1],
-		bios_data.uuid[2],
-		bios_data.uuid[3],
-		bios_data.uuid[4],
-		bios_data.uuid[5],
-		bios_data.uuid[6],
-		bios_data.uuid[7],
-		bios_data.uuid[8],
-		bios_data.uuid[9],
-		bios_data.uuid[10],
-		bios_data.uuid[11],
-		bios_data.uuid[12],
-		bios_data.uuid[13],
-		bios_data.uuid[14],
-		bios_data.uuid[15]
-	);
+	format_string(bios_data.uuid_str,37,"%g",bios_data.uuid);
 	INFO("BIOS data:");
 	INFO("  BIOS vendor: %s",bios_data.bios_vendor);
 	INFO("  BIOS version: %s",bios_data.bios_version);

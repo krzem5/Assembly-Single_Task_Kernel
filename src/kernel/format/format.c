@@ -218,6 +218,15 @@ u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_l
 				_buffer_state_add(&out,_format_base16_char(address>>shift));
 			}
 		}
+		else if (*template=='g'){
+			const u8* guid=__builtin_va_arg(*va,const u8*);
+			for (u8 i=0;i<32;i++){
+				if (i==9||i==13||i==17){
+					_buffer_state_add(&out,'-');
+				}
+				_buffer_state_add(&out,_format_base16_char(guid[i>>1]>>((!(i&1))<<2)));
+			}
+		}
 		else{
 			_buffer_state_add(&out,*template);
 		}
