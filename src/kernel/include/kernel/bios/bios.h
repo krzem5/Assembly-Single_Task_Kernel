@@ -1,5 +1,6 @@
 #ifndef _KERNEL_BIOS_BIOS_H_
 #define _KERNEL_BIOS_BIOS_H_ 1
+#include <kernel/vfs/name.h>
 #include <kernel/types.h>
 
 
@@ -11,15 +12,16 @@
 
 
 typedef struct _BIOS_DATA{
-	char* bios_vendor;
-	char* bios_version;
-	char* manufacturer;
-	char* product;
-	char* version;
-	char* serial_number;
+	vfs_name_t* bios_vendor;
+	vfs_name_t* bios_version;
+	vfs_name_t* manufacturer;
+	vfs_name_t* product;
+	vfs_name_t* version;
+	vfs_name_t* serial_number;
 	u8 uuid[16];
-	char* uuid_str;
+	vfs_name_t* uuid_str;
 	u8 wakeup_type;
+	vfs_name_t* wakeup_type_str;
 } bios_data_t;
 
 

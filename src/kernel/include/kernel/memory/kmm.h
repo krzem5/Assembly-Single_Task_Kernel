@@ -16,16 +16,4 @@ void* kmm_alloc(u32 size);
 
 
 
-void* kmm_alloc_buffer(void);
-
-
-
-void kmm_grow_buffer(u32 size);
-
-
-
-void kmm_end_buffer(void);
-
-
-
 #endif

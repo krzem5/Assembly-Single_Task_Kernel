@@ -28,4 +28,8 @@ vfs_name_t* vfs_name_duplicate(const vfs_name_t* name);
 
 
 
+void vfs_name_rehash(vfs_name_t* name);
+
+
+
 #endif

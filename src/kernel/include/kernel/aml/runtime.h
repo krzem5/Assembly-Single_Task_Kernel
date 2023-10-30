@@ -3,6 +3,7 @@
 #include <kernel/aml/parser.h>
 #include <kernel/lock/lock.h>
 #include <kernel/types.h>
+#include <kernel/vfs/name.h>
 
 
 
@@ -37,10 +38,7 @@ typedef struct _AML_NODE{
 	struct _AML_NODE* next;
 	struct _AML_NODE* child;
 	union{
-		struct{
-			u64 length;
-			u8* data;
-		} buffer;
+		vfs_name_t* buffer;
 		struct{
 			u64 size;
 			void* pointer;
@@ -85,10 +83,7 @@ typedef struct _AML_NODE{
 			u64 block_address;
 			u8 block_length;
 		} processor;
-		struct{
-			u64 length;
-			const char* data;
-		} string;
+		vfs_name_t* string;
 		struct{
 			// Unimplemented
 		} thermal_zone;

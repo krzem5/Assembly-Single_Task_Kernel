@@ -17,7 +17,6 @@ static pmm_counter_descriptor_t _kmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("kmm");
 static lock_t _kmm_lock=LOCK_INIT_STRUCT;
 static u64 _kmm_top;
 static u64 _kmm_max_top;
-static _Bool _kmm_buffer_not_ended=0;
 static _Bool _kmm_frozen=0;
 
 
@@ -57,58 +56,9 @@ void* kmm_alloc(u32 size){
 	if (_kmm_frozen){
 		panic("kmm: allocator is frozen");
 	}
-	if (_kmm_buffer_not_ended){
-		panic("kmm: buffer in use");
-	}
 	void* out=(void*)_kmm_top;
 	_kmm_top+=(size+7)&0xfffffffffffffff8ull;
 	_resize_stack();
 	lock_release_exclusive(&_kmm_lock);
 	return out;
-}
-
-
-
-void* kmm_alloc_buffer(void){
-	lock_acquire_exclusive(&_kmm_lock);
-	if (_kmm_frozen){
-		panic("kmm: allocator is frozen");
-	}
-	if (_kmm_buffer_not_ended){
-		panic("kmm: buffer already in use");
-	}
-	_kmm_buffer_not_ended=1;
-	lock_release_exclusive(&_kmm_lock);
-	return (void*)_kmm_top;
-}
-
-
-
-void kmm_grow_buffer(u32 size){
-	lock_acquire_exclusive(&_kmm_lock);
-	if (_kmm_frozen){
-		panic("kmm: allocator is frozen");
-	}
-	if (!_kmm_buffer_not_ended){
-		panic("kmm: buffer not in use");
-	}
-	_kmm_top+=size;
-	_resize_stack();
-	lock_release_exclusive(&_kmm_lock);
-}
-
-
-
-void kmm_end_buffer(void){
-	lock_acquire_exclusive(&_kmm_lock);
-	if (_kmm_frozen){
-		panic("kmm: allocator is frozen");
-	}
-	if (!_kmm_buffer_not_ended){
-		panic("kmm: buffer not in use");
-	}
-	_kmm_buffer_not_ended=0;
-	_kmm_top=(_kmm_top+7)&0xfffffffffffffff8ull;
-	_resize_stack();
-	lock_release_exclusive(&_kmm_lock);
 }

@@ -2,7 +2,6 @@
 #include <kernel/cpu/local.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/types.h>
@@ -15,6 +14,8 @@
 
 
 static CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_data);
+static CPU_LOCAL_DATA(scheduler_load_balancer_data_t*,_scheduler_load_balancer_priority_queue);
+static CPU_LOCAL_DATA(scheduler_load_balancer_group_t,_scheduler_load_balancer_groups);
 static scheduler_load_balancer_t _scheduler_load_balancer;
 
 
@@ -84,17 +85,15 @@ void scheduler_load_balancer_init(void){
 	LOG("Initializing scheduler load balancer...");
 	lock_init(&(_scheduler_load_balancer.lock));
 	_scheduler_load_balancer.free_group=NULL;
-	_scheduler_load_balancer.priority_queue=kmm_alloc(cpu_count*sizeof(scheduler_load_balancer_data_t*));
-	scheduler_load_balancer_group_t* first_group=kmm_alloc(sizeof(scheduler_load_balancer_group_t));
-	first_group->length=cpu_count;
-	first_group->end=cpu_count-1;
+	_scheduler_load_balancer_groups->length=cpu_count;
+	_scheduler_load_balancer_groups->end=cpu_count-1;
 	for (u16 i=0;i<cpu_count;i++){
 		scheduler_load_balancer_data_t* lb_data=_scheduler_load_balancer_data+i;
-		_scheduler_load_balancer.priority_queue[i]=lb_data;
+		_scheduler_load_balancer_priority_queue[i]=lb_data;
 		lb_data->stats.added_thread_count=0;
 		lb_data->stats.free_slot_count=0;
 		lb_data->stats.used_slot_count=0;
-		lb_data->group=first_group;
+		lb_data->group=_scheduler_load_balancer_groups;
 		for (u8 j=0;j<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;j++){
 			_thread_queue_init(lb_data->queues+j);
 		}
@@ -103,9 +102,8 @@ void scheduler_load_balancer_init(void){
 		if (!i){
 			continue;
 		}
-		scheduler_load_balancer_group_t* group=kmm_alloc(sizeof(scheduler_load_balancer_group_t));
-		group->next_group=_scheduler_load_balancer.free_group;
-		_scheduler_load_balancer.free_group=group;
+		(_scheduler_load_balancer_groups+i)->next_group=_scheduler_load_balancer.free_group;
+		_scheduler_load_balancer.free_group=_scheduler_load_balancer_groups+i;
 	}
 }
 
@@ -133,7 +131,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 	u16 i=0;
 	scheduler_load_balancer_data_t* out;
 	while (1){
-		out=_scheduler_load_balancer.priority_queue[i];
+		out=_scheduler_load_balancer_priority_queue[i];
 		if (i==cpu_count-1||(thread->cpu_mask->bitmap[out->cpu_index>>6]&(1ull<<(out->cpu_index&63)))){
 			break;
 		}
@@ -141,22 +139,22 @@ void scheduler_load_balancer_add(thread_t* thread){
 	}
 	out->stats.added_thread_count++;
 	u16 j=out->group->end;
-	_scheduler_load_balancer.priority_queue[i]=_scheduler_load_balancer.priority_queue[j];
-	_scheduler_load_balancer.priority_queue[j]=out;
+	_scheduler_load_balancer_priority_queue[i]=_scheduler_load_balancer_priority_queue[j];
+	_scheduler_load_balancer_priority_queue[j]=out;
 	out->group->end--;
 	out->group->length--;
 	if (!out->group->length){
 		out->group->next_group=_scheduler_load_balancer.free_group;
 		_scheduler_load_balancer.free_group=out->group;
 	}
-	if (j==cpu_count-1||_scheduler_load_balancer.priority_queue[j+1]->stats.added_thread_count>out->stats.added_thread_count){
+	if (j==cpu_count-1||_scheduler_load_balancer_priority_queue[j+1]->stats.added_thread_count>out->stats.added_thread_count){
 		out->group=_scheduler_load_balancer.free_group;
 		_scheduler_load_balancer.free_group=_scheduler_load_balancer.free_group->next_group;
 		out->group->length=1;
 		out->group->end=j;
 	}
 	else{
-		out->group=_scheduler_load_balancer.priority_queue[j+1]->group;
+		out->group=_scheduler_load_balancer_priority_queue[j+1]->group;
 		out->group->length++;
 	}
 	lock_release_exclusive(&(_scheduler_load_balancer.lock));

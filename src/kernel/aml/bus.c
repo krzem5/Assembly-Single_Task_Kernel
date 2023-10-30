@@ -121,7 +121,7 @@ static void _parse_device(aml_node_t* device){
 	}
 	aml_node_t* crs=aml_runtime_evaluate_node(aml_runtime_get_node(device,"_CRS"));
 	if (crs&&crs->type==AML_NODE_TYPE_BUFFER){
-		_parse_crs(crs->data.buffer.data,crs->data.buffer.length);
+		_parse_crs((const u8*)(crs->data.buffer->data),crs->data.buffer->length);
 	}
 }
 

@@ -98,8 +98,8 @@ void acpi_load(void){
 	}
 	if (srat){
 		acpi_srat_load(srat);
-	}
-	if (slit){
-		acpi_slit_load(slit);
+		if (slit){
+			acpi_slit_load(slit);
+		}
 	}
 }

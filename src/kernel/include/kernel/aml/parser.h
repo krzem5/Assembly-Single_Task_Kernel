@@ -1,6 +1,7 @@
 #ifndef _KERNEL_AML_PARSER_H_
 #define _KERNEL_AML_PARSER_H_ 1
 #include <kernel/types.h>
+#include <kernel/vfs/name.h>
 
 
 
@@ -146,7 +147,7 @@ typedef struct _AML_OBJECT{
 		u16 string_length;
 		union{
 			u64 number;
-			const char* string;
+			vfs_name_t* string;
 			struct _AML_OBJECT* object;
 		};
 	} args[6];

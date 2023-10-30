@@ -41,7 +41,7 @@ extern u8* numa_node_locality_matrix;
 
 
 
-void numa_init(u32 proximity_domain_count);
+void numa_init(u32 proximity_domain_count,u32 cpu_count,u32 memory_range_count);
 
 
 

@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/name.h>
 #define KERNEL_LOG_NAME "bios"
 
 
@@ -85,14 +86,8 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
-static char* _duplicate_string(const char* str){
-	u32 length=0;
-	do{
-		length++;
-	} while (str[length-1]);
-	char* out=kmm_alloc(length);
-	memcpy(out,str,length);
-	return out;
+static vfs_name_t* _duplicate_string(const char* str){
+	return vfs_name_alloc(str,0);
 }
 
 
@@ -148,25 +143,29 @@ void bios_get_system_data(void){
 		}
 		offset+=_get_header_length(header);
 	}
-	bios_data.uuid_str=kmm_alloc(37);
-	format_string(bios_data.uuid_str,37,"%g",bios_data.uuid);
-	INFO("BIOS data:");
-	INFO("  BIOS vendor: %s",bios_data.bios_vendor);
-	INFO("  BIOS version: %s",bios_data.bios_version);
-	INFO("  Manufacturer: %s",bios_data.manufacturer);
-	INFO("  Product: %s",bios_data.product);
-	INFO("  Version: %s",bios_data.version);
-	INFO("  Serial number: %s",bios_data.serial_number);
-	INFO("  UUID: %s",bios_data.uuid_str);
+	char buffer[37];
+	format_string(buffer,37,"%g",bios_data.uuid);
+	bios_data.uuid_str=vfs_name_alloc(buffer,36);
 	switch (bios_data.wakeup_type){
-		case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
-			INFO("  Last wakeup: Unknown");
-			break;
 		case BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH:
-			INFO("  Last wakeup: Power switch");
+			bios_data.wakeup_type_str=vfs_name_alloc("Power switch",0);
 			break;
 		case BIOS_DATA_WAKEUP_TYPE_AC_POWER:
-			INFO("  Last wakeup: AC power");
+			bios_data.wakeup_type_str=vfs_name_alloc("AC power",0);
+			break;
+		default:
+		case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
+			bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
+			bios_data.wakeup_type_str=vfs_name_alloc("Unknown",0);
 			break;
 	}
+	INFO("BIOS data:");
+	INFO("  BIOS vendor: %s",bios_data.bios_vendor->data);
+	INFO("  BIOS version: %s",bios_data.bios_version->data);
+	INFO("  Manufacturer: %s",bios_data.manufacturer->data);
+	INFO("  Product: %s",bios_data.product->data);
+	INFO("  Version: %s",bios_data.version->data);
+	INFO("  Serial number: %s",bios_data.serial_number->data);
+	INFO("  UUID: %s",bios_data.uuid_str->data);
+	INFO("  Last wakeup: %s",bios_data.wakeup_type_str->data);
 }

@@ -11,6 +11,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/name.h>
 #define KERNEL_LOG_NAME "aml"
 
 
@@ -231,30 +232,31 @@ static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
 
 
 
-static aml_node_t* _get_node(aml_node_t* local_namespace,const char* namespace,u8 type,_Bool create_if_not_found){
+static aml_node_t* _get_node(aml_node_t* local_namespace,const vfs_name_t* namespace,u8 type,_Bool create_if_not_found){
 	aml_node_t* out=local_namespace;
-	if (namespace[0]=='\\'){
+	u16 i=0;
+	if (namespace->data[i]=='\\'){
 		out=aml_root_node;
-		namespace++;
+		i++;
 	}
-	while (namespace[0]){
-		if (namespace[0]=='^'){
+	while (i<namespace->length){
+		if (namespace->data[i]=='^'){
 			out=out->parent;
-			namespace++;
+			i++;
 		}
-		else if (namespace[0]=='.'){
-			namespace++;
+		else if (namespace->data[i]=='.'){
+			i++;
 		}
-		else if (namespace[0]=='['){
+		else if (namespace->data[i]=='['){
 			u64 index=0;
-			for (namespace++;namespace[0]!=']';namespace++){
-				if (namespace[0]<48||namespace[0]>57){
-					WARN("Invalid index character: %c",namespace[0]);
+			for (i++;namespace->data[i]!=']';i++){
+				if (namespace->data[i]<48||namespace->data[i]>57){
+					WARN("Invalid index character: %c",namespace->data[i]);
 					continue;
 				}
-				index=index*10+namespace[0]-48;
+				index=index*10+namespace->data[i]-48;
 			}
-			namespace++;
+			i++;
 			if (out->type!=AML_NODE_TYPE_PACKAGE||index>=out->data.package.length){
 				if (create_if_not_found){
 					panic("Unable to create package entry");
@@ -265,7 +267,7 @@ static aml_node_t* _get_node(aml_node_t* local_namespace,const char* namespace,u
 		}
 		else{
 			for (aml_node_t* child=out->child;child;child=child->next){
-				if (*((const u32*)(child->name))==*((const u32*)namespace)){
+				if (*((const u32*)(child->name))==*((const u32*)(namespace->data+i))){
 					out=child;
 					goto _namespace_found;
 				}
@@ -273,9 +275,9 @@ static aml_node_t* _get_node(aml_node_t* local_namespace,const char* namespace,u
 			if (!create_if_not_found){
 				return NULL;
 			}
-			out=_alloc_node(namespace,(namespace[4]?AML_NODE_TYPE_SCOPE:type),out);
+			out=_alloc_node(namespace->data+i,(i+4<namespace->length?AML_NODE_TYPE_SCOPE:type),out);
 _namespace_found:
-			namespace+=4;
+			i+=4;
 		}
 	}
 	return out;
@@ -365,11 +367,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
-			local->simple_return_value.data.string.length=object->args[0].string_length;
-			char* user_string=kmm_alloc(object->args[0].string_length+1);
-			memcpy(user_string,object->args[0].string,object->args[0].string_length);
-			user_string[object->args[0].string_length]=0;
-			local->simple_return_value.data.string.data=user_string;
+			local->simple_return_value.data.string=vfs_name_duplicate(object->args[0].string);
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_QWORD_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -387,12 +385,10 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_BUFFER,0):
 			{
 				u64 size=_get_arg_as_int(local,object,0);
-				u8* buffer_data=kmm_alloc(size);
-				memset(buffer_data,0,size);
-				memcpy(buffer_data,object->data.bytes,(size<object->data_length?size:object->data_length));
 				local->simple_return_value.type=AML_NODE_TYPE_BUFFER;
-				local->simple_return_value.data.buffer.length=size;
-				local->simple_return_value.data.buffer.data=buffer_data;
+				local->simple_return_value.data.buffer=vfs_name_alloc(NULL,size);
+				memcpy(local->simple_return_value.data.buffer->data,object->data.bytes,(size<object->data_length?size:object->data_length));
+				vfs_name_rehash(local->simple_return_value.data.buffer);
 				return &(local->simple_return_value);
 			}
 		case MAKE_OPCODE(AML_OPCODE_PACKAGE,0):
@@ -850,16 +846,16 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 			log("<undefined>");
 			goto _end;
 		case AML_NODE_TYPE_BUFFER:
-			log("buffer<size=%u>",node->data.buffer.length);
-			if (node->data.buffer.length>16){
+			log("buffer<size=%u>",node->data.buffer->length);
+			if (node->data.buffer->length>16){
 				goto _end;
 			}
-			log("{",node->data.buffer.length);
-			for (u8 i=0;i<node->data.buffer.length;i++){
+			log("{",node->data.buffer->length);
+			for (u8 i=0;i<node->data.buffer->length;i++){
 				if (i){
 					log(" ");
 				}
-				log("%x",node->data.buffer.data[i]);
+				log("%x",node->data.buffer->data[i]);
 			}
 			log("}");
 			goto _end;
@@ -939,7 +935,7 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 			log("processor<id=%u>",node->data.processor.id);
 			break;
 		case AML_NODE_TYPE_STRING:
-			log("'%s'",node->data.string.data);
+			log("'%s'",node->data.string->data);
 			goto _end;
 		case AML_NODE_TYPE_THERMAL_ZONE:
 			log("thermal_zone<...>");
@@ -999,7 +995,10 @@ void aml_runtime_init(aml_object_t* root,u16 irq){
 
 
 aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path){
-	return _get_node((root?root:aml_root_node),path,0,0);
+	vfs_name_t* path_data=vfs_name_alloc(path,0);
+	aml_node_t* out=_get_node((root?root:aml_root_node),path_data,0,0);
+	vfs_name_dealloc(path_data);
+	return out;
 }
 
 

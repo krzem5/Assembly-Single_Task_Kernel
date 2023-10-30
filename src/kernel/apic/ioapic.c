@@ -1,6 +1,6 @@
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/types.h>
@@ -26,6 +26,10 @@ typedef struct _IOAPIC_OVERRIDE{
 	u16 flags;
 	u32 gsi;
 } ioapic_override_t;
+
+
+
+static pmm_counter_descriptor_t _ioapic_pmm_counter=PMM_COUNTER_INIT_STRUCT("ioapic");
 
 
 
@@ -55,10 +59,11 @@ static KERNEL_INLINE void _write_register(ioapic_t* ioapic,u32 reg,u32 value){
 
 void ioapic_init(u16 count,u16 override_count){
 	LOG("Initializing IOAPIC controller...");
-	_ioapic_data=kmm_alloc(count*sizeof(ioapic_t));
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,&_ioapic_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_ioapic_data=buffer;
 	_ioapic_count=count;
 	_ioapic_index=0;
-	_ioapic_override_data=kmm_alloc(override_count*sizeof(ioapic_override_t));
+	_ioapic_override_data=buffer+count*sizeof(ioapic_t);
 	_ioapic_override_count=override_count;
 	_ioapic_override_index=0;
 	_ioapic_irq_destination_cpu=msr_get_apic_id();

@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/name.h>
 #define KERNEL_LOG_NAME "aml_parser"
 
 
@@ -225,13 +226,12 @@ static u32 _get_pkglength(const u8* data){
 
 
 
-static const char* _get_decoded_name(const u8* data,u16* out_length){
-	char* out=kmm_alloc_buffer();
+static vfs_name_t* _get_decoded_name(const u8* data){
+	char buffer[4096];
 	u16 length=0;
 	u32 index=0;
 	while (data[index]=='\\'||data[index]=='^'){
-		kmm_grow_buffer(1);
-		out[length]=data[index];
+		buffer[length]=data[index];
 		length++;
 		index++;
 	}
@@ -251,22 +251,17 @@ static const char* _get_decoded_name(const u8* data,u16* out_length){
 	}
 	while (segment_count){
 		segment_count--;
-		kmm_grow_buffer((segment_count?5:4));
 		for (u8 i=0;i<4;i++){
-			out[length]=data[index];
+			buffer[length]=data[index];
 			length++;
 			index++;
 		}
 		if (segment_count){
-			out[length]='.';
+			buffer[length]='.';
 			length++;
 		}
 	}
-	kmm_grow_buffer(1);
-	kmm_end_buffer();
-	out[length]=0;
-	*out_length=length;
-	return out;
+	return vfs_name_alloc(buffer,length);
 }
 
 
@@ -324,7 +319,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 	if (opcode->opcode==AML_OPCODE_NAME_REFERENCE){
 		out->arg_count=1;
 		out->flags=0;
-		out->args[0].string=_get_decoded_name(data,&(out->args[0].string_length));
+		out->args[0].string=_get_decoded_name(data);
 		return _get_name_encoding_length(data);
 	}
 	data+=_get_opcode_encoding_length(opcode);
@@ -353,16 +348,11 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 			data+=8;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_STRING){
-			u32 length=0;
-			do{
-				length++;
-			} while (data[length-1]);
-			out->args[i].string=(const char*)data;
-			out->args[i].string_length=length-1;
-			data+=length;
+			out->args[i].string=vfs_name_alloc((const char*)data,0);
+			data+=out->args[i].string->length+1;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_NAME){
-			out->args[i].string=_get_decoded_name(data,&(out->args[i].string_length));
+			out->args[i].string=_get_decoded_name(data);
 			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_OBJECT){

@@ -61,9 +61,14 @@ vfs_name_t* vfs_name_alloc(const char* name,u32 length){
 	}
 	out->length=length;
 	out->hash=FNV_OFFSET_BASIS;
-	for (u32 i=0;i<length;i++){
-		out->data[i]=name[i];
-		out->hash=(out->hash^name[i])*FNV_PRIME;
+	if (name){
+		for (u32 i=0;i<length;i++){
+			out->data[i]=name[i];
+			out->hash=(out->hash^name[i])*FNV_PRIME;
+		}
+	}
+	else{
+		memset(out->data,0,length);
 	}
 	out->data[length]=0;
 	return out;
@@ -109,4 +114,13 @@ vfs_name_t* vfs_name_duplicate(const vfs_name_t* name){
 	}
 	memcpy(out,name,sizeof(vfs_name_t)+length+1);
 	return out;
+}
+
+
+
+void vfs_name_rehash(vfs_name_t* name){
+	name->hash=FNV_OFFSET_BASIS;
+	for (u32 i=0;i<name->length;i++){
+		name->hash=(name->hash^name->data[i])*FNV_PRIME;
+	}
 }

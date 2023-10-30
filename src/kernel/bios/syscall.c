@@ -1,5 +1,7 @@
 #include <kernel/bios/bios.h>
 #include <kernel/syscall/syscall.h>
+#include <kernel/util/util.h>
+#include <kernel/vfs/name.h>
 
 
 
@@ -19,7 +21,7 @@ void syscall_system_get_string(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	const char* src=NULL;
+	const vfs_name_t* src=NULL;
 	switch (regs->rdi){
 		case SYSTEM_STRING_BIOS_VENDOR:
 			src=bios_data.bios_vendor;
@@ -43,17 +45,7 @@ void syscall_system_get_string(syscall_registers_t* regs){
 			src=bios_data.uuid_str;
 			break;
 		case SYSTEM_STRING_LAST_WAKEUP:
-			switch (bios_data.wakeup_type){
-				case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
-					src="Unknown";
-					break;
-				case BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH:
-					src="Power switch";
-					break;
-				case BIOS_DATA_WAKEUP_TYPE_AC_POWER:
-					src="AC power";
-					break;
-			}
+			src=bios_data.wakeup_type_str;
 			break;
 	}
 	if (!src){
@@ -61,18 +53,18 @@ void syscall_system_get_string(syscall_registers_t* regs){
 		return;
 	}
 	if (!regs->rsi){
-		for (regs->rax=0;src[regs->rax];regs->rax++);
+		regs->rax=src->length;
 		return;
 	}
 	if (!regs->rdx){
 		regs->rax=0;
 		return;
 	}
-	char* out=(void*)(regs->rsi);
-	regs->rax=0;
-	while (regs->rax<regs->rdx-1&&src[regs->rax]){
-		out[regs->rax]=src[regs->rax];
-		regs->rax++;
+	regs->rax=regs->rdx-1;
+	if (regs->rax>src->length){
+		regs->rax=src->length;
 	}
+	char* out=(void*)(regs->rsi);
+	memcpy(out,src->data,regs->rax);
 	out[regs->rax]=0;
 }
