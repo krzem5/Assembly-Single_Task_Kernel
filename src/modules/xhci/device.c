@@ -110,8 +110,10 @@ static void _enqueue_event_raw(xhci_ring_t* ring,const void* data,u32 size,u32 f
 	}
 	else{
 		transfer_block->address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)data);
-		if ((transfer_block->address>>PAGE_SIZE_SHIFT)!=((transfer_block->address+size)>>PAGE_SIZE_SHIFT)){
-			panic("_enqueue_event_raw: data crosses page boundary");
+		for (u64 i=PAGE_SIZE;i<size;i+=PAGE_SIZE){
+			if (vmm_virtual_to_physical(&vmm_kernel_pagemap,((u64)data)+i)!=transfer_block->address+i){
+				panic("_enqueue_event_raw: data crosses page boundary");
+			}
 		}
 	}
 	transfer_block->status=size;

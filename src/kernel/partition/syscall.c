@@ -37,7 +37,7 @@ void syscall_partition_get_data(syscall_registers_t* regs){
 	out->drive_handle=partition->drive->handle.rb_node.key;
 	out->start_lba=partition->start_lba;
 	out->end_lba=partition->end_lba;
-	out->fs_handle=partition->fs->handle.rb_node.key;
+	out->fs_handle=(partition->fs?partition->fs->handle.rb_node.key:0);
 	regs->rax=1;
 }
 
