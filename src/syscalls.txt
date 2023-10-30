@@ -1,4 +1,4 @@
-cspinlock_get_converion(void) -> void
+clock_get_converion(void) -> void
 cpu_get_count(void) -> u32
 drive_get_data(u32 handle,void* buffer,u32 size) -> _Bool
 fd_close(u64 fd) -> s64

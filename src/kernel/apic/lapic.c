@@ -70,10 +70,10 @@ void lapic_enable(void){
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=0x00010000|LAPIC_SPURIOUS_VECTOR;
 	_lapic_registers[REGISTER_TMRDIV]=0;
-	u64 start_time=cspinlock_get_time();
+	u64 start_time=clock_get_time();
 	_lapic_registers[REGISTER_TMRINITCNT]=TIMER_CALIBRATION_TICKS;
 	SPINLOOP(_lapic_registers[REGISTER_TMRCURRCNT]);
-	u64 end_time=cspinlock_get_time();
+	u64 end_time=clock_get_time();
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;
 	*CPU_LOCAL(_lapic_timer_frequencies)=TIMER_CALIBRATION_TICKS/((end_time-start_time+500)/1000);

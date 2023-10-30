@@ -3,8 +3,8 @@
 
 
 
-void syscall_cspinlock_get_converion(syscall_registers_t* regs){
-	regs->rax=cspinlock_conversion_factor;
-	regs->rdx=cspinlock_conversion_shift;
-	regs->r8=cspinlock_cpu_frequency;
+void syscall_clock_get_converion(syscall_registers_t* regs){
+	regs->rax=clock_conversion_factor;
+	regs->rdx=clock_conversion_shift;
+	regs->r8=clock_cpu_frequency;
 }

@@ -32,7 +32,7 @@ void scheduler_init(void){
 	cpu_mask_init();
 	scheduler_load_balancer_init();
 	for (u16 i=0;i<cpu_count;i++){
-		(_scheduler_data+i)->current_timer_start=cspinlock_get_ticks();
+		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
 		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;
 	}
 }
@@ -62,7 +62,7 @@ void scheduler_pause(void){
 	if (scheduler->pause_remaining_us){
 		asm volatile("cli":::"memory");
 	}
-	scheduler->pause_start_ticks=cspinlock_get_ticks();
+	scheduler->pause_start_ticks=clock_get_ticks();
 }
 
 
@@ -79,7 +79,7 @@ void scheduler_resume(void){
 	if (scheduler->pause_nested_count||!scheduler->pause_remaining_us){
 		return;
 	}
-	u64 elapsed_us=(cspinlock_ticks_to_time(cspinlock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
+	u64 elapsed_us=(clock_ticks_to_time(clock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
 	asm volatile("sti":::"memory");
 	if (elapsed_us>=scheduler->pause_remaining_us){
 		scheduler_start();
@@ -172,7 +172,7 @@ _Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out){
 void scheduler_set_timer(u8 timer){
 	scheduler_pause();
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	u64 ticks=cspinlock_get_ticks();
+	u64 ticks=clock_get_ticks();
 	scheduler->timers.data[scheduler->current_timer]+=ticks-scheduler->current_timer_start;
 	scheduler->current_timer_start=ticks;
 	scheduler->current_timer=timer;

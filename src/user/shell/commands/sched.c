@@ -22,7 +22,7 @@ void sched_main(int argc,const char*const* argv){
 		if (!scheduler_get_timers(i,&timers)){
 			goto _error_timers;
 		}
-		printf("#%u:\t%lu\t%lu\t%lu\t%lu\t%lu\n",i,stats.added_thread_count,cspinlock_ticks_to_time(timers.timer_user)/1000000ull,cspinlock_ticks_to_time(timers.timer_kernel)/1000000ull,cspinlock_ticks_to_time(timers.timer_scheduler)/1000000ull,cspinlock_ticks_to_time(timers.timer_none)/1000000ull);
+		printf("#%u:\t%lu\t%lu\t%lu\t%lu\t%lu\n",i,stats.added_thread_count,clock_ticks_to_time(timers.timer_user)/1000000ull,clock_ticks_to_time(timers.timer_kernel)/1000000ull,clock_ticks_to_time(timers.timer_scheduler)/1000000ull,clock_ticks_to_time(timers.timer_none)/1000000ull);
 	}
 	return;
 _error_stats:

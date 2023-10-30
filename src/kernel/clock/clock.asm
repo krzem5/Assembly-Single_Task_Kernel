@@ -1,14 +1,14 @@
-extern cspinlock_conversion_factor
-extern cspinlock_conversion_shift
-global cspinlock_get_ticks
-global cspinlock_get_time
-global cspinlock_ticks_to_time
+extern clock_conversion_factor
+extern clock_conversion_shift
+global clock_get_ticks
+global clock_get_time
+global clock_ticks_to_time
 section .text exec nowrite
 
 
 
 [bits 64]
-cspinlock_get_ticks:
+clock_get_ticks:
 	rdtsc
 	shl rdx, 32
 	or rax, rdx
@@ -16,19 +16,19 @@ cspinlock_get_ticks:
 
 
 
-cspinlock_get_time:
+clock_get_time:
 	rdtsc
 	shl rdx, 32
 	or rdx, rax
-	jmp _cspinlock_ticks_to_time_inernal
+	jmp _clock_ticks_to_time_inernal
 
 
 
-cspinlock_ticks_to_time:
+clock_ticks_to_time:
 	mov rdx, rdi
-_cspinlock_ticks_to_time_inernal:
-	mulx rdx, rax, qword [cspinlock_conversion_factor]
-	mov ecx, dword [cspinlock_conversion_shift]
+_clock_ticks_to_time_inernal:
+	mulx rdx, rax, qword [clock_conversion_factor]
+	mov ecx, dword [clock_conversion_shift]
 	shrd rax, rdx, cl
 	shrx rdx, rdx, rcx
 	test cl, 64
