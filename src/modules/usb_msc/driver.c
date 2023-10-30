@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
@@ -98,6 +99,7 @@ typedef struct _USB_MSC_DRIVER{
 
 
 
+static pmm_counter_descriptor_t _usb_msc_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("usb_msc");
 static pmm_counter_descriptor_t _usb_msc_driver_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_driver");
 static pmm_counter_descriptor_t _usb_msc_lun_context_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_lun_context");
 static omm_allocator_t _usb_msc_driver_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,&_usb_msc_driver_omm_pmm_counter);
@@ -175,9 +177,10 @@ static drive_type_t _usb_msc_drive_type={
 
 static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 	INFO("Setting up LUN %u...",lun);
-	usb_scsi_inquiry_responce_t inquiry_data;
-	usb_scsi_read_capacity_10_responce_t read_capacity_10_data;
-	if (!_fetch_inquiry(driver,lun,&inquiry_data)||!_fetch_read_capacity_10(driver,lun,&read_capacity_10_data)){
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	usb_scsi_inquiry_responce_t* inquiry_data=buffer;
+	usb_scsi_read_capacity_10_responce_t* read_capacity_10_data=buffer+sizeof(usb_scsi_inquiry_responce_t);
+	if (!_fetch_inquiry(driver,lun,inquiry_data)||!_fetch_read_capacity_10(driver,lun,read_capacity_10_data)){
 		WARN("Failed to setup LUN %u",lun);
 		return;
 	}
@@ -188,13 +191,14 @@ static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 	driver->lun_context=context;
 	drive_config_t config={
 		.type=&_usb_msc_drive_type,
-		.block_count=__builtin_bswap32(read_capacity_10_data.sectors),
-		.block_size=__builtin_bswap32(read_capacity_10_data.block_size),
+		.block_count=__builtin_bswap32(read_capacity_10_data->sectors),
+		.block_size=__builtin_bswap32(read_capacity_10_data->block_size),
 		.extra_data=context
 	};
 	format_string(config.name,DRIVE_NAME_LENGTH,"usb%u",lun);
-	memcpy_trunc_spaces(config.serial_number,inquiry_data.rev,4);
-	memcpy_trunc_spaces(config.model_number,inquiry_data.product,16);
+	memcpy_trunc_spaces(config.serial_number,inquiry_data->rev,4);
+	memcpy_trunc_spaces(config.model_number,inquiry_data->product,16);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
 	drive_create(&config);
 }
 

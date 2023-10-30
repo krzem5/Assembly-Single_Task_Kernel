@@ -156,8 +156,8 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%u",port_index);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,config.serial_number);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,config.model_number);
-	drive_create(&config);
 	pmm_dealloc(buffer,1,&_ahci_driver_pmm_counter);
+	drive_create(&config);
 }
 
 
