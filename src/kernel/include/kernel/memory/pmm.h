@@ -1,7 +1,7 @@
 #ifndef _KERNEL_MEMORY_PMM_H_
 #define _KERNEL_MEMORY_PMM_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
 
 
@@ -36,7 +36,7 @@ typedef struct _PMM_ALLOCATOR{
 	u64 last_address;
 	u64* bitmap;
 	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
-	lock_t lock;
+	spinlock_t lock;
 	u16 block_bitmap;
 } pmm_allocator_t;
 

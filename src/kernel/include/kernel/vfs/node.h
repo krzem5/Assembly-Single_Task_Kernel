@@ -1,6 +1,6 @@
 #ifndef _KERNEL_VFS_NODE_H_
 #define _KERNEL_VFS_NODE_H_ 1
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
 #include <kernel/vfs/name.h>
 
@@ -45,7 +45,7 @@ typedef struct _vfs_node_RELATIVES{
 
 typedef struct _vfs_NODE{
 	u32 flags;
-	lock_t lock;
+	spinlock_t lock;
 	vfs_name_t* name;
 	vfs_node_relatives_t relatives;
 	struct _FILESYSTEM* fs;

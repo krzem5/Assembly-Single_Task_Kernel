@@ -1,7 +1,7 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/io/io.h>
 #include <kernel/isr/isr.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -14,8 +14,8 @@
 
 
 
-static lock_t _serial_read_lock=LOCK_INIT_STRUCT;
-static lock_t _serial_write_lock=LOCK_INIT_STRUCT;
+static spinlock_t _serial_read_lock=SPINLOCK_INIT_STRUCT;
+static spinlock_t _serial_write_lock=SPINLOCK_INIT_STRUCT;
 static u8 _serial_irq=0;
 
 
@@ -45,20 +45,20 @@ void serial_init_irq(void){
 
 void serial_send(const void* buffer,u32 length){
 	scheduler_pause();
-	lock_acquire_exclusive(&_serial_read_lock);
+	spinlock_acquire_exclusive(&_serial_read_lock);
 	for (;length;length--){
 		SPINLOOP(!(io_port_in8(0x3fd)&0x20));
 		io_port_out8(0x3f8,*((const u8*)buffer));
 		buffer++;
 	}
-	lock_release_exclusive(&_serial_read_lock);
+	spinlock_release_exclusive(&_serial_read_lock);
 	scheduler_resume();
 }
 
 
 
 u32 serial_recv(void* buffer,u32 length,u64 timeout){
-	lock_acquire_exclusive(&_serial_write_lock);
+	spinlock_acquire_exclusive(&_serial_write_lock);
 	u32 out=0;
 	if (!timeout){
 		for (;out<length;out++){
@@ -83,6 +83,6 @@ u32 serial_recv(void* buffer,u32 length,u64 timeout){
 			buffer++;
 		}
 	}
-	lock_release_exclusive(&_serial_write_lock);
+	spinlock_release_exclusive(&_serial_write_lock);
 	return out;
 }

@@ -6,7 +6,7 @@
 
 
 void main(void){
-	clock_init();
+	cspinlock_init();
 	cwd_init();
 	while (1){
 		input_get();

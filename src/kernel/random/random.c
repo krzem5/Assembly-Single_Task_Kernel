@@ -1,4 +1,4 @@
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>
@@ -48,7 +48,7 @@ static KERNEL_INLINE void _chacha_block(u32* state,u32* out){
 
 
 
-static lock_t _random_chacha_lock=LOCK_INIT_STRUCT;
+static spinlock_t _random_chacha_lock=SPINLOCK_INIT_STRUCT;
 static u32 _random_chacha_state[16];
 static u32 _random_chacha_buffer[16];
 
@@ -63,7 +63,7 @@ void random_init(void){
 
 
 void random_generate(void* buffer,u64 length){
-	lock_acquire_exclusive(&_random_chacha_lock);
+	spinlock_acquire_exclusive(&_random_chacha_lock);
 	_random_get_entropy(_random_chacha_state);
 	u8* buffer_ptr=buffer;
 	while (length){
@@ -73,5 +73,5 @@ void random_generate(void* buffer,u64 length){
 		length-=chunk_size;
 		buffer_ptr+=chunk_size;
 	}
-	lock_release_exclusive(&_random_chacha_lock);
+	spinlock_release_exclusive(&_random_chacha_lock);
 }

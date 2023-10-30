@@ -44,7 +44,7 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 static xhci_ring_t* _alloc_ring(_Bool cs){
 	xhci_ring_t* out=omm_alloc(&_xhci_ring_allocator);
 	memset(out,0,sizeof(xhci_ring_t));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->cs=cs;
 	return out;
 }
@@ -162,11 +162,11 @@ static u8 _wait_for_all_events(xhci_device_t* xhci_device,xhci_ring_t* ring){
 
 
 static void _command_submit(xhci_device_t* xhci_device,xhci_input_context_t* input_context,u32 flags){
-	lock_acquire_exclusive(&(xhci_device->command_ring->lock));
+	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_device->command_ring,(void*)input_context,0,flags);
 	xhci_device->doorbell_registers->value=0;
 	_wait_for_all_events(xhci_device,xhci_device->command_ring);
-	lock_release_exclusive(&(xhci_device->command_ring->lock));
+	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
 }
 
 

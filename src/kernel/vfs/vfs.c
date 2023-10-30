@@ -1,5 +1,5 @@
 #include <kernel/fs/fs.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -19,11 +19,11 @@ void vfs_mount(filesystem_t* fs,const char* path){
 			panic("Root filesystem already registered");
 		}
 		_vfs_root_node=fs->root;
-		lock_acquire_exclusive(&(_vfs_root_node->lock));
+		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
 		vfs_name_dealloc(_vfs_root_node->name);
 		_vfs_root_node->name=vfs_name_alloc("",0);
 		_vfs_root_node->relatives.parent=NULL;
-		lock_release_exclusive(&(_vfs_root_node->lock));
+		spinlock_release_exclusive(&(_vfs_root_node->lock));
 		return;
 	}
 	panic("vfs_mount");

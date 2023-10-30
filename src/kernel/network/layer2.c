@@ -1,4 +1,4 @@
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -14,7 +14,7 @@ static pmm_counter_descriptor_t _network_pmm_counter=PMM_COUNTER_INIT_STRUCT("ne
 
 
 
-static lock_t _layer2_lock=LOCK_INIT_STRUCT;
+static spinlock_t _layer2_lock=SPINLOCK_INIT_STRUCT;
 static u64 _layer2_physical_send_buffer_address;
 static u8* _layer2_physical_send_buffer;
 
@@ -32,14 +32,14 @@ _Bool network_layer2_send(const network_layer2_packet_t* packet){
 	if (packet->buffer_length>4082){
 		return 0;
 	}
-	lock_acquire_exclusive(&_layer2_lock);
+	spinlock_acquire_exclusive(&_layer2_lock);
 	memcpy(_layer2_physical_send_buffer,packet->address,6);
 	memcpy(_layer2_physical_send_buffer+6,network_layer1_mac_address,6);
 	_layer2_physical_send_buffer[12]=packet->protocol>>8;
 	_layer2_physical_send_buffer[13]=packet->protocol;
 	memcpy(_layer2_physical_send_buffer+14,packet->buffer,packet->buffer_length);
 	network_layer1_send(_layer2_physical_send_buffer_address,packet->buffer_length+14);
-	lock_release_exclusive(&_layer2_lock);
+	spinlock_release_exclusive(&_layer2_lock);
 	return 1;
 }
 
@@ -50,9 +50,9 @@ _Bool network_layer2_poll(network_layer2_packet_t* packet,_Bool block){
 		network_layer1_wait();
 	}
 	u8 layer1_buffer[4096];
-	lock_acquire_exclusive(&_layer2_lock);
+	spinlock_acquire_exclusive(&_layer2_lock);
 	u16 layer1_buffer_length=network_layer1_poll(layer1_buffer,4096);
-	lock_release_exclusive(&_layer2_lock);
+	spinlock_release_exclusive(&_layer2_lock);
 	if (layer1_buffer_length<14){
 		return 0;
 	}

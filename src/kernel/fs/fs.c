@@ -2,7 +2,7 @@
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -52,7 +52,7 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	filesystem_t* out=omm_alloc(&_fs_allocator);
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->descriptor=descriptor;
 	out->functions=NULL;
 	out->root=NULL;

@@ -1,6 +1,6 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -21,7 +21,7 @@ static scheduler_load_balancer_t _scheduler_load_balancer;
 
 
 static void _thread_queue_init(scheduler_load_balancer_thread_queue_t* queue){
-	lock_init(&(queue->lock));
+	spinlock_init(&(queue->lock));
 	queue->head=NULL;
 	queue->tail=NULL;
 }
@@ -65,9 +65,9 @@ static thread_t* _try_pop_from_queue(scheduler_load_balancer_thread_queue_t* que
 	if (!queue->head){
 		return NULL;
 	}
-	lock_acquire_exclusive(&(queue->lock));
+	spinlock_acquire_exclusive(&(queue->lock));
 	if (!queue->head){
-		lock_release_exclusive(&(queue->lock));
+		spinlock_release_exclusive(&(queue->lock));
 		return NULL;
 	}
 	thread_t* out=queue->head;
@@ -75,7 +75,7 @@ static thread_t* _try_pop_from_queue(scheduler_load_balancer_thread_queue_t* que
 	if (queue->tail==out){
 		queue->tail=NULL;
 	}
-	lock_release_exclusive(&(queue->lock));
+	spinlock_release_exclusive(&(queue->lock));
 	return out;
 }
 
@@ -83,7 +83,7 @@ static thread_t* _try_pop_from_queue(scheduler_load_balancer_thread_queue_t* que
 
 void scheduler_load_balancer_init(void){
 	LOG("Initializing scheduler load balancer...");
-	lock_init(&(_scheduler_load_balancer.lock));
+	spinlock_init(&(_scheduler_load_balancer.lock));
 	_scheduler_load_balancer.free_group=NULL;
 	_scheduler_load_balancer_groups->length=cpu_count;
 	_scheduler_load_balancer_groups->end=cpu_count-1;
@@ -127,7 +127,7 @@ thread_t* scheduler_load_balancer_get(void){
 
 
 void scheduler_load_balancer_add(thread_t* thread){
-	lock_acquire_exclusive(&(_scheduler_load_balancer.lock));
+	spinlock_acquire_exclusive(&(_scheduler_load_balancer.lock));
 	u16 i=0;
 	scheduler_load_balancer_data_t* out;
 	while (1){
@@ -157,9 +157,9 @@ void scheduler_load_balancer_add(thread_t* thread){
 		out->group=_scheduler_load_balancer_priority_queue[j+1]->group;
 		out->group->length++;
 	}
-	lock_release_exclusive(&(_scheduler_load_balancer.lock));
+	spinlock_release_exclusive(&(_scheduler_load_balancer.lock));
 	scheduler_load_balancer_thread_queue_t* queue=out->queues+thread->priority;
-	lock_acquire_exclusive(&(queue->lock));
+	spinlock_acquire_exclusive(&(queue->lock));
 	if (queue->tail){
 		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
 	}
@@ -168,7 +168,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 	}
 	queue->tail=thread;
 	thread->scheduler_load_balancer_thread_queue_next=NULL;
-	lock_release_exclusive(&(queue->lock));
+	spinlock_release_exclusive(&(queue->lock));
 }
 
 

@@ -3,7 +3,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/isr/_isr_types.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/_scheduler_types.h>
@@ -18,7 +18,7 @@ typedef u8 thread_state_type_t;
 
 typedef struct _EVENT{
 	handle_t handle;
-	lock_t lock;
+	spinlock_t lock;
 	struct _THREAD* head;
 	struct _THREAD* tail;
 } event_t;
@@ -26,7 +26,7 @@ typedef struct _EVENT{
 
 
 typedef struct _THREAD_LIST{
-	lock_t lock;
+	spinlock_t lock;
 	struct _THREAD* head;
 } thread_list_t;
 
@@ -34,7 +34,7 @@ typedef struct _THREAD_LIST{
 
 typedef struct _PROCESS{
 	handle_t handle;
-	lock_t lock;
+	spinlock_t lock;
 	vmm_pagemap_t pagemap;
 	vmm_memory_map_t mmap;
 	thread_list_t thread_list;
@@ -64,7 +64,7 @@ typedef struct _THREAD_STATE{
 typedef struct _THREAD{
 	cpu_header_t header;
 	handle_t handle;
-	lock_t lock;
+	spinlock_t lock;
 	process_t* process;
 	vmm_pagemap_t* pagemap;
 	u64 user_stack_bottom;

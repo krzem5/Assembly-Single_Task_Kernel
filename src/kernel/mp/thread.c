@@ -1,7 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -57,7 +57,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	thread_t* out=omm_alloc(&_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->process=process;
 	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,user_stack_size);
 	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,kernel_stack_size);
@@ -130,7 +130,7 @@ thread_t* thread_new_kernel_thread(process_t* process,u64 rip,u64 stack_size,u8 
 
 
 void thread_delete(thread_t* thread){
-	lock_acquire_exclusive(&(thread->lock));
+	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	if (thread->user_stack_size){
 		vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->user_stack_size);
@@ -144,7 +144,7 @@ void thread_delete(thread_t* thread){
 	vmm_release_pages(&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){
-		lock_release_exclusive(&(thread->lock));
+		spinlock_release_exclusive(&(thread->lock));
 	}
 }
 
@@ -153,9 +153,9 @@ void thread_delete(thread_t* thread){
 void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	lock_acquire_exclusive(&(thread->lock));
+	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
-	lock_release_exclusive(&(thread->lock));
+	spinlock_release_exclusive(&(thread->lock));
 	scheduler_start();
 	for (;;);
 }
@@ -165,8 +165,8 @@ void KERNEL_NORETURN thread_terminate(void){
 void thread_await_event(event_t* event){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	lock_acquire_exclusive(&(event->lock));
-	lock_acquire_exclusive(&(thread->lock));
+	spinlock_acquire_exclusive(&(event->lock));
+	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->state.event.event=event;
 	thread->state.event.next=NULL;
@@ -175,13 +175,13 @@ void thread_await_event(event_t* event){
 		event->tail=thread;
 	}
 	else{
-		lock_acquire_exclusive(&(event->tail->lock));
+		spinlock_acquire_exclusive(&(event->tail->lock));
 		event->tail->state.event.next=thread;
-		lock_release_exclusive(&(event->tail->lock));
+		spinlock_release_exclusive(&(event->tail->lock));
 		event->tail=thread;
 	}
 	thread->state_not_present=1;
-	lock_release_exclusive(&(thread->lock));
-	lock_release_exclusive(&(event->lock));
+	spinlock_release_exclusive(&(thread->lock));
+	spinlock_release_exclusive(&(event->lock));
 	scheduler_start();
 }

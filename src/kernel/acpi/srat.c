@@ -32,7 +32,7 @@ typedef struct __attribute__((packed)) _SRAT_ENTRY{
 			u32 flags;
 			u8 sapic_eid;
 			u8 proximity_domain_high[3];
-			u32 clock_domain;
+			u32 cspinlock_domain;
 		} processor;
 		struct __attribute__((packed)){
 			u32 proximity_domain;

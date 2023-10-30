@@ -1,6 +1,6 @@
 #ifndef _KERNEL_SCHEDULER_LOAD_BALANCER_H_
 #define _KERNEL_SCHEDULER_LOAD_BALANCER_H_ 1
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/types.h>
@@ -26,7 +26,7 @@
 
 
 typedef struct _SCHEDULER_LOAD_BALANCER_THREAD_QUEUE{
-	lock_t lock;
+	spinlock_t lock;
 	thread_t* head;
 	thread_t* tail;
 } scheduler_load_balancer_thread_queue_t;
@@ -64,7 +64,7 @@ typedef struct _SCHEDULER_LOAD_BALANCER_DATA{
 
 
 typedef struct _SCHEDULER_LOAD_BALANCER{
-	lock_t lock;
+	spinlock_t lock;
 	scheduler_load_balancer_group_t* free_group;
 	scheduler_load_balancer_data_t** priority_queue;
 } scheduler_load_balancer_t;

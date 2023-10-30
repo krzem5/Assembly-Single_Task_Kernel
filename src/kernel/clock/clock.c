@@ -10,9 +10,9 @@
 
 
 
-u64 clock_cpu_frequency;
-u64 clock_conversion_factor;
-u32 clock_conversion_shift;
+u64 cspinlock_cpu_frequency;
+u64 cspinlock_conversion_factor;
+u32 cspinlock_conversion_shift;
 
 
 
@@ -63,15 +63,15 @@ static u64 _get_cpu_frequency(void){
 
 
 
-void clock_init(void){
+void cspinlock_init(void){
 	LOG("Initializing TSC clock source...");
 	INFO("Calculating clock frequency...");
-	clock_cpu_frequency=_get_cpu_frequency();
-	LOG("CPU clock frequency: %lu Hz",clock_cpu_frequency);
+	cspinlock_cpu_frequency=_get_cpu_frequency();
+	LOG("CPU clock frequency: %lu Hz",cspinlock_cpu_frequency);
 	INFO("Calculating clock frequency conversion factor...");
-	for (clock_conversion_shift=32;clock_conversion_shift;clock_conversion_shift--){
-		clock_conversion_factor=((1000000000ull<<clock_conversion_shift)+(clock_cpu_frequency>>1))/clock_cpu_frequency;
-		if (!(clock_conversion_factor>>32)){
+	for (cspinlock_conversion_shift=32;cspinlock_conversion_shift;cspinlock_conversion_shift--){
+		cspinlock_conversion_factor=((1000000000ull<<cspinlock_conversion_shift)+(cspinlock_cpu_frequency>>1))/cspinlock_cpu_frequency;
+		if (!(cspinlock_conversion_factor>>32)){
 			return;
 		}
 	}

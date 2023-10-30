@@ -5,46 +5,46 @@
 
 
 
-global lock_init
-global lock_acquire_exclusive
-global lock_release_exclusive
-global lock_acquire_shared
-global lock_release_shared
+global spinlock_init
+global spinlock_acquire_exclusive
+global spinlock_release_exclusive
+global spinlock_acquire_shared
+global spinlock_release_shared
 section .text exec nowrite
 
 
 
 [bits 64]
-lock_init:
+spinlock_init:
 	mov dword [rdi], 0
 	ret
 
 
 
-_lock_acquire_exclusive_global_wait:
+_spinlock_acquire_exclusive_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz _lock_acquire_exclusive_global_wait
-lock_acquire_exclusive:
+	jnz _spinlock_acquire_exclusive_global_wait
+spinlock_acquire_exclusive:
 	lock bts dword [rdi], 0
-	jc _lock_acquire_exclusive_global_wait
+	jc _spinlock_acquire_exclusive_global_wait
 	ret
 
 
 
-lock_release_exclusive:
+spinlock_release_exclusive:
 	btr dword [rdi], 0
 	ret
 
 
 
-_lock_acquire_shared_multiaccess_wait:
+_spinlock_acquire_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _lock_acquire_shared_multiaccess_wait
-lock_acquire_shared:
+	jnz _spinlock_acquire_shared_multiaccess_wait
+spinlock_acquire_shared:
 	lock bts dword [rdi], 1
-	jc _lock_acquire_shared_multiaccess_wait
+	jc _spinlock_acquire_shared_multiaccess_wait
 	test dword [rdi], 4
 	jnz ._multiaccess_active
 	jmp ._global_test
@@ -63,13 +63,13 @@ lock_acquire_shared:
 
 
 
-_lock_release_shared_multiaccess_wait:
+_spinlock_release_shared_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _lock_release_shared_multiaccess_wait
-lock_release_shared:
+	jnz _spinlock_release_shared_multiaccess_wait
+spinlock_release_shared:
 	lock bts dword [rdi], 1
-	jc _lock_release_shared_multiaccess_wait
+	jc _spinlock_release_shared_multiaccess_wait
 	sub dword [rdi], 8
 	cmp dword [rdi], 8
 	jge ._still_used

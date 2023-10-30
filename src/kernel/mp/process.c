@@ -1,6 +1,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -44,7 +44,7 @@ void process_init(void){
 	LOG("Creating kernel process...");
 	process_kernel=omm_alloc(&_process_allocator);
 	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
-	lock_init(&(process_kernel->lock));
+	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	vmm_memory_map_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
@@ -59,7 +59,7 @@ void process_init(void){
 process_t* process_new(void){
 	process_t* out=omm_alloc(&_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	vmm_memory_map_init(USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));

@@ -1,4 +1,4 @@
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -57,7 +57,7 @@ static KERNEL_INLINE void _replace_node(rb_tree_t* tree,rb_tree_node_t* old,rb_t
 
 void rb_tree_init(rb_tree_t* tree){
 	tree->root=NIL_NODE;
-	lock_init(&(tree->lock));
+	spinlock_init(&(tree->lock));
 }
 
 
@@ -69,7 +69,7 @@ void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 
 
 void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x){
-	lock_acquire_exclusive(&(tree->lock));
+	spinlock_acquire_exclusive(&(tree->lock));
 	x->rb_left=NIL_NODE;
 	x->rb_right=NIL_NODE;
 	if (tree->root==NIL_NODE){
@@ -114,27 +114,27 @@ void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x){
 	}
 	_set_color(tree->root,0);
 _cleanup:
-	lock_release_exclusive(&(tree->lock));
+	spinlock_release_exclusive(&(tree->lock));
 }
 
 
 
 rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
-	lock_acquire_shared(&(tree->lock));
+	spinlock_acquire_shared(&(tree->lock));
 	for (rb_tree_node_t* x=tree->root;x!=NIL_NODE;x=x->rb_nodes[x->key<key]){
 		if (x->key==key){
-			lock_release_shared(&(tree->lock));
+			spinlock_release_shared(&(tree->lock));
 			return x;
 		}
 	}
-	lock_release_shared(&(tree->lock));
+	spinlock_release_shared(&(tree->lock));
 	return NULL;
 }
 
 
 
 rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
-	lock_acquire_shared(&(tree->lock));
+	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	while (x&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
@@ -155,14 +155,14 @@ rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 		} while (x&&y==x->rb_right);
 		break;
 	}
-	lock_release_shared(&(tree->lock));
+	spinlock_release_shared(&(tree->lock));
 	return x;
 }
 
 
 
 void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
-	lock_acquire_exclusive(&(tree->lock));
+	spinlock_acquire_exclusive(&(tree->lock));
 	_Bool skip_recursive_fix=_get_color(x);
 	rb_tree_node_t* z;
 	rb_tree_node_t* z_parent;
@@ -238,7 +238,7 @@ void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 	}
 	_set_color(z,0);
 _cleanup:
-	lock_release_exclusive(&(tree->lock));
+	spinlock_release_exclusive(&(tree->lock));
 }
 
 
@@ -248,17 +248,17 @@ rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 	if (tree->root==NIL_NODE){
 		return NULL;
 	}
-	lock_acquire_shared(&(tree->lock));
+	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	for (;x->rb_left!=NIL_NODE;x=x->rb_left);
-	lock_release_shared(&(tree->lock));
+	spinlock_release_shared(&(tree->lock));
 	return x;
 }
 
 
 
 rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
-	lock_acquire_shared(&(tree->lock));
+	spinlock_acquire_shared(&(tree->lock));
 	if (x->rb_right!=NIL_NODE){
 		for (x=x->rb_right;x->rb_left!=NIL_NODE;x=x->rb_left);
 	}
@@ -269,6 +269,6 @@ rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
 			x=_get_parent(x);
 		} while (x&&y==x->rb_right);
 	}
-	lock_release_shared(&(tree->lock));
+	spinlock_release_shared(&(tree->lock));
 	return x;
 }

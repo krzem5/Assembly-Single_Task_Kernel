@@ -3,7 +3,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/_fs_types.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 

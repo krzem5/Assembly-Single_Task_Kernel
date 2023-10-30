@@ -1,6 +1,6 @@
 #ifndef _KERNEL_HANDLE_HANDLE_H_
 #define _KERNEL_HANDLE_HANDLE_H_ 1
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -55,7 +55,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 	handle_type_t* var;
 	handle_type_delete_callback_t delete_callback;
 	handle_t handle;
-	lock_t lock;
+	spinlock_t lock;
 	rb_tree_t tree;
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;

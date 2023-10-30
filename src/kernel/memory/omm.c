@@ -1,5 +1,5 @@
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -56,7 +56,7 @@ void* omm_alloc(omm_allocator_t* allocator){
 	if (allocator->page_count&(allocator->page_count-1)){
 		panic("omm_allocator_t page_count must be a power of 2");
 	}
-	lock_acquire_exclusive(&(allocator->lock));
+	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
 		u64 page_address=pmm_alloc(allocator->page_count,allocator->pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
@@ -84,7 +84,7 @@ void* omm_alloc(omm_allocator_t* allocator){
 		_allocator_add_page(&(allocator->page_full_head),page);
 	}
 	allocator->allocation_count++;
-	lock_release_exclusive(&(allocator->lock));
+	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 	return out;
 }
@@ -93,7 +93,7 @@ void* omm_alloc(omm_allocator_t* allocator){
 
 void omm_dealloc(omm_allocator_t* allocator,void* object){
 	scheduler_pause();
-	lock_acquire_exclusive(&(allocator->lock));
+	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));
 	if (page->object_size!=allocator->object_size){
 		panic("omm_dealloc: wrong allocator");
@@ -115,6 +115,6 @@ void omm_dealloc(omm_allocator_t* allocator,void* object){
 		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,allocator->pmm_counter);
 	}
 	allocator->deallocation_count++;
-	lock_release_exclusive(&(allocator->lock));
+	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }

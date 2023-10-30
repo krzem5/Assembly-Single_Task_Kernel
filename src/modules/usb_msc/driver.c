@@ -1,6 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/format/format.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -104,7 +104,7 @@ typedef struct _USB_MSC_DRIVER{
 	usb_device_t* device;
 	usb_pipe_t* input_pipe;
 	usb_pipe_t* output_pipe;
-	lock_t lock;
+	spinlock_t lock;
 	struct _USB_MSC_LUN_CONTEXT* lun_context;
 } usb_msc_driver_t;
 
@@ -140,11 +140,11 @@ static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_resp
 	};
 	context->tag++;
 	usb_msc_csw_t status;
-	lock_acquire_exclusive(&(driver->lock));
+	spinlock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_msc_cbw_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_inquiry_responce_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
-	lock_release_exclusive(&(driver->lock));
+	spinlock_release_exclusive(&(driver->lock));
 	return (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==command.dCBWTag&&!status.bCSWStatus);
 }
 
@@ -169,10 +169,10 @@ static _Bool _wait_for_device(usb_msc_lun_context_t* context){
 	while (1){
 		test_unit_ready_command.dCBWTag=context->tag;
 		context->tag++;
-		lock_acquire_exclusive(&(driver->lock));
+		spinlock_acquire_exclusive(&(driver->lock));
 		usb_pipe_transfer_normal(driver->device,driver->output_pipe,&test_unit_ready_command,sizeof(usb_msc_cbw_t));
 		usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
-		lock_release_exclusive(&(driver->lock));
+		spinlock_release_exclusive(&(driver->lock));
 		if (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==test_unit_ready_command.dCBWTag&&!status.bCSWStatus){
 			return 1;
 		}
@@ -200,11 +200,11 @@ static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_rea
 	};
 	context->tag++;
 	usb_msc_csw_t status;
-	lock_acquire_exclusive(&(driver->lock));
+	spinlock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_msc_cbw_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_read_capacity_10_responce_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
-	lock_release_exclusive(&(driver->lock));
+	spinlock_release_exclusive(&(driver->lock));
 	return (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==command.dCBWTag&&!status.bCSWStatus);
 }
 
@@ -234,11 +234,11 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count)
 	};
 	context->tag++;
 	usb_msc_csw_t status;
-	lock_acquire_exclusive(&(driver->lock));
+	spinlock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_msc_cbw_t));
 	usb_pipe_transfer_normal(driver->device,((offset&DRIVE_OFFSET_FLAG_WRITE)?driver->output_pipe:driver->input_pipe),linear_buffer,count<<drive->block_size_shift);
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
-	lock_release_exclusive(&(driver->lock));
+	spinlock_release_exclusive(&(driver->lock));
 	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
 		memcpy(buffer,linear_buffer,count<<drive->block_size_shift);
 	}
@@ -314,7 +314,7 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	driver->device=device;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
 	driver->output_pipe=usb_pipe_alloc(device,output_descriptor->address,output_descriptor->attributes,output_descriptor->max_packet_size);
-	lock_init(&(driver->lock));
+	spinlock_init(&(driver->lock));
 	driver->lun_context=NULL;
 	interface_descriptor->driver=(usb_driver_t*)driver;
 	usb_raw_control_request_t request={

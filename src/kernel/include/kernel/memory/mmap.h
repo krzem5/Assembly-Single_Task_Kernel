@@ -1,6 +1,6 @@
 #ifndef _KERNEL_MEMORY_MMAP_H_
 #define _KERNEL_MEMORY_MMAP_H_ 1
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 
@@ -17,7 +17,7 @@ typedef struct _VMM_MEMORY_MAP_REGION{
 
 
 typedef struct _VMM_MEMORY_MAP{
-	lock_t lock;
+	spinlock_t lock;
 	vmm_memory_map_region_t* first;
 } vmm_memory_map_t;
 

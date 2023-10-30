@@ -1,6 +1,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -102,10 +102,10 @@ void pmm_init(void){
 	LOG("Scanning memory...");
 	_pmm_low_allocator.first_address=0;
 	_pmm_low_allocator.last_address=0;
-	lock_init(&(_pmm_low_allocator.lock));
+	spinlock_init(&(_pmm_low_allocator.lock));
 	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
 	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
-	lock_init(&(_pmm_high_allocator.lock));
+	spinlock_init(&(_pmm_high_allocator.lock));
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		if (end>_pmm_low_allocator.last_address){
@@ -167,9 +167,9 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	pmm_allocator_t* allocator=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY||!_pmm_high_allocator.block_bitmap||__builtin_ffs(_pmm_high_allocator.block_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
-	lock_acquire_exclusive(&(allocator->lock));
+	spinlock_acquire_exclusive(&(allocator->lock));
 	if (!(allocator->block_bitmap>>i)){
-		lock_release_exclusive(&(allocator->lock));
+		spinlock_release_exclusive(&(allocator->lock));
 		panic("pmm_alloc: out of memory");
 	}
 	u8 j=__builtin_ffs(allocator->block_bitmap>>i)+i-1;
@@ -194,7 +194,7 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	}
 	_toggle_address_bit(allocator,out);
 	_toggle_address_bit(allocator,out+_get_block_size(i));
-	lock_release_exclusive(&(allocator->lock));
+	spinlock_release_exclusive(&(allocator->lock));
 	if (!counter->handle.rb_node.key){
 		handle_new(counter,HANDLE_TYPE_PMM_COUNTER,&(counter->handle));
 	}
@@ -227,7 +227,7 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	}
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=(address<PMM_LOW_ALLOCATOR_LIMIT?&_pmm_low_allocator:&_pmm_high_allocator);
-	lock_acquire_exclusive(&(allocator->lock));
+	spinlock_acquire_exclusive(&(allocator->lock));
 	_toggle_address_bit(allocator,address);
 	_toggle_address_bit(allocator,address+_get_block_size(i));
 	while (i<PMM_ALLOCATOR_SIZE_COUNT){
@@ -259,6 +259,6 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	}
 	allocator->blocks[i]=address;
 	allocator->block_bitmap|=1<<i;
-	lock_release_exclusive(&(allocator->lock));
+	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }

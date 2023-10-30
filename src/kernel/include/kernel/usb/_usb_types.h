@@ -1,7 +1,7 @@
 #ifndef _KERNEL_USB__USB_TYPES_H_
 #define _KERNEL_USB__USB_TYPES_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
 #include <kernel/usb/address_space.h>
 #include <kernel/usb/structures.h>

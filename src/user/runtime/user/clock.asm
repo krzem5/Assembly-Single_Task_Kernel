@@ -1,25 +1,25 @@
-extern _syscall_clock_get_converion
-global clock_cpu_frequency
-global clock_init
-global clock_get_ticks
-global clock_get_time
-global clock_ticks_to_time
+extern _syscall_cspinlock_get_converion
+global cspinlock_cpu_frequency
+global cspinlock_init
+global cspinlock_get_ticks
+global cspinlock_get_time
+global cspinlock_ticks_to_time
 
 
 
 [bits 64]
-section .text.clock_init exec nowrite
-clock_init:
-	call _syscall_clock_get_converion
-	mov qword [_clock_conversion_factor], rax
-	mov dword [_clock_conversion_shift], edx
-	mov qword [clock_cpu_frequency], r8
+section .text.cspinlock_init exec nowrite
+cspinlock_init:
+	call _syscall_cspinlock_get_converion
+	mov qword [_cspinlock_conversion_factor], rax
+	mov dword [_cspinlock_conversion_shift], edx
+	mov qword [cspinlock_cpu_frequency], r8
 	ret
 
 
 
-section .text.clock_get_ticks exec nowrite
-clock_get_ticks:
+section .text.cspinlock_get_ticks exec nowrite
+cspinlock_get_ticks:
 	rdtsc
 	shl rdx, 32
 	or rax, rdx
@@ -27,13 +27,13 @@ clock_get_ticks:
 
 
 
-section .text.clock_get_time exec nowrite
-clock_get_time:
+section .text.cspinlock_get_time exec nowrite
+cspinlock_get_time:
 	rdtsc
 	shl rdx, 32
 	or rdx, rax
-	mulx rdx, rax, qword [_clock_conversion_factor]
-	mov ecx, dword [_clock_conversion_shift]
+	mulx rdx, rax, qword [_cspinlock_conversion_factor]
+	mov ecx, dword [_cspinlock_conversion_shift]
 	shrd rax, rdx, cl
 	shrx rdx, rdx, rcx
 	test cl, 64
@@ -42,11 +42,11 @@ clock_get_time:
 
 
 
-section .text.clock_ticks_to_time exec nowrite
-clock_ticks_to_time:
+section .text.cspinlock_ticks_to_time exec nowrite
+cspinlock_ticks_to_time:
 	mov rdx, rdi
-	mulx rdx, rax, qword [_clock_conversion_factor]
-	mov ecx, dword [_clock_conversion_shift]
+	mulx rdx, rax, qword [_cspinlock_conversion_factor]
+	mov ecx, dword [_cspinlock_conversion_shift]
 	shrd rax, rdx, cl
 	shrx rdx, rdx, rcx
 	test cl, 64
@@ -55,14 +55,14 @@ clock_ticks_to_time:
 
 
 
-section .data.clock_data noexec write
+section .data.cspinlock_data noexec write
 
 
 
 align 8
-clock_cpu_frequency:
+cspinlock_cpu_frequency:
 	dq 0
-_clock_conversion_factor:
+_cspinlock_conversion_factor:
 	dq 0
-_clock_conversion_shift:
+_cspinlock_conversion_shift:
 	dd 0

@@ -1,6 +1,6 @@
 #ifndef _KERNEL_MEMORY_VMM_H_
 #define _KERNEL_MEMORY_VMM_H_ 1
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
 
 
@@ -31,7 +31,7 @@ typedef struct _VMM_PAGEMAP_TABLE{
 
 typedef struct _VMM_PAGEMAP{
 	u64 toplevel;
-	lock_t lock;
+	spinlock_t lock;
 } vmm_pagemap_t;
 
 

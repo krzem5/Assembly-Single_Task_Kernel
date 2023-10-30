@@ -3,7 +3,7 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/io/io.h>
 #include <kernel/isr/isr.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -54,7 +54,7 @@ static u64 _read_field_unit(aml_node_t* node){
 	switch (node->data.field_unit.type){
 		case 0x00:
 			if (node->data.field_unit.access_type&16){
-				lock_acquire_exclusive(&(node->data.field_unit.lock));
+				spinlock_acquire_exclusive(&(node->data.field_unit.lock));
 			}
 			switch (node->data.field_unit.access_type&15){
 				case 0:
@@ -77,7 +77,7 @@ static u64 _read_field_unit(aml_node_t* node){
 					break;
 			}
 			if (node->data.field_unit.access_type&16){
-				lock_release_exclusive(&(node->data.field_unit.lock));
+				spinlock_release_exclusive(&(node->data.field_unit.lock));
 			}
 			break;
 		case 0x01:
@@ -118,7 +118,7 @@ static u64 _read_field_unit(aml_node_t* node){
 
 static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 	if (node->data.field_unit.access_type&16){
-		lock_acquire_exclusive(&(node->data.field_unit.lock));
+		spinlock_acquire_exclusive(&(node->data.field_unit.lock));
 	}
 	if (value->type!=AML_NODE_TYPE_INTEGER){
 		ERROR("Unable to convert %u to %u",value->type,AML_NODE_TYPE_INTEGER);for (;;);
@@ -197,7 +197,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 			break;
 	}
 	if (node->data.field_unit.access_type&16){
-		lock_release_exclusive(&(node->data.field_unit.lock));
+		spinlock_release_exclusive(&(node->data.field_unit.lock));
 	}
 }
 
@@ -766,7 +766,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 					i+=aml_parse_pkglength(object->data.bytes+i,&size);
 					field_unit->data.field_unit.type=region_type;
 					field_unit->data.field_unit.access_type=object->args[1].number;
-					lock_init(&(field_unit->data.field_unit.lock));
+					spinlock_init(&(field_unit->data.field_unit.lock));
 					field_unit->data.field_unit.address=region_start+offset;
 					field_unit->data.field_unit.size=size;
 					offset+=size;

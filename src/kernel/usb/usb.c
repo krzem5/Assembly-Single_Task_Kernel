@@ -1,5 +1,5 @@
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/usb/device.h>
 #include <kernel/usb/usb.h>

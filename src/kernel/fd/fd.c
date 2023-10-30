@@ -1,6 +1,6 @@
 #include <kernel/fd/fd.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -62,7 +62,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	}
 	fd_t* out=omm_alloc(&_fd_allocator);
 	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
@@ -93,10 +93,10 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	count=vfs_node_read(data->node,data->offset,buffer,count);
 	data->offset+=count;
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return count;
 }
@@ -113,10 +113,10 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	count=vfs_node_write(data->node,data->offset,buffer,count);
 	data->offset+=count;
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return count;
 }
@@ -129,7 +129,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	switch (type){
 		case FD_SEEK_SET:
 			data->offset=offset;
@@ -141,12 +141,12 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 			break;
 		default:
-			lock_release_exclusive(&(data->lock));
+			spinlock_release_exclusive(&(data->lock));
 			handle_release(fd_handle);
 			return FD_ERROR_INVALID_FLAGS;
 	}
 	u64 out=data->offset;
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return out;
 }
@@ -159,12 +159,12 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	s64 out=(vfs_node_resize(data->node,size,0)?0:FD_ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return out;
 }
@@ -177,13 +177,13 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->name_length=data->node->name->length;
 	out->fs_handle=data->node->fs->handle.rb_node.key;
 	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	memcpy(out->name,data->node->name->data,data->node->name->length+1);
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return 0;
 }
@@ -208,21 +208,21 @@ s64 fd_iter_start(handle_id_t fd){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	vfs_name_t* current_name;
 	u64 pointer=vfs_node_iterate(data->node,0,&current_name);
 	if (!pointer){
-		lock_release_exclusive(&(data->lock));
+		spinlock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
 		return -1;
 	}
 	fd_iterator_t* out=omm_alloc(&_fd_iterator_allocator);
 	handle_new(out,HANDLE_TYPE_FD_ITERATOR,&(out->handle));
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
 }
@@ -235,7 +235,7 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
-	lock_acquire_shared(&(data->lock));
+	spinlock_acquire_shared(&(data->lock));
 	if (data->current_name){
 		if (buffer_length>data->current_name->length+1){
 			buffer_length=data->current_name->length+1;
@@ -249,7 +249,7 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 	else{
 		buffer_length=0;
 	}
-	lock_release_shared(&(data->lock));
+	spinlock_release_shared(&(data->lock));
 	handle_release(fd_iterator_handle);
 	return buffer_length;
 }
@@ -262,7 +262,7 @@ s64 fd_iter_next(handle_id_t iterator){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
-	lock_acquire_exclusive(&(data->lock));
+	spinlock_acquire_exclusive(&(data->lock));
 	s64 out=-1;
 	if (data->current_name){
 		vfs_name_dealloc(data->current_name);
@@ -274,7 +274,7 @@ s64 fd_iter_next(handle_id_t iterator){
 			out=fd_iterator_handle->rb_node.key;
 		}
 	}
-	lock_release_exclusive(&(data->lock));
+	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_iterator_handle);
 	return out;
 }

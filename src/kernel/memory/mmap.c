@@ -1,4 +1,4 @@
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -48,14 +48,14 @@ static void _delete_next_region(vmm_memory_map_region_t* region){
 
 
 void vmm_memory_map_init(u64 low,u64 high,vmm_memory_map_t* out){
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->first=_insert_region_after_anchor(NULL,0,low,high-low);
 }
 
 
 
 void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap){
-	lock_acquire_exclusive(&(mmap->lock));
+	spinlock_acquire_exclusive(&(mmap->lock));
 	for (vmm_memory_map_region_t* region=mmap->first;region;){
 		if (region->is_used){
 			vmm_release_pages(pagemap,region->offset,region->length>>PAGE_SIZE_SHIFT);
@@ -65,7 +65,7 @@ void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap){
 		region=next;
 	}
 	mmap->first=NULL;
-	lock_release_exclusive(&(mmap->lock));
+	spinlock_release_exclusive(&(mmap->lock));
 }
 
 
@@ -77,7 +77,7 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if (!length){
 		return 0;
 	}
-	lock_acquire_exclusive(&(mmap->lock));
+	spinlock_acquire_exclusive(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
 	if (address){
 		while (region&&region->offset+region->length<=address){
@@ -90,14 +90,14 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		}
 	}
 	if (!region){
-		lock_release_exclusive(&(mmap->lock));
+		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
 	if (!address){
 		address=region->offset;
 	}
 	else if (region->is_used||address-region->offset+length>region->length){
-		lock_release_exclusive(&(mmap->lock));
+		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
 	_insert_region_after_anchor(region,0,address+length,region->offset+region->length-length-address);
@@ -109,7 +109,7 @@ u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length){
 		_insert_region_after_anchor(region,1,address,length);
 		region->length=address-region->offset;
 	}
-	lock_release_exclusive(&(mmap->lock));
+	spinlock_release_exclusive(&(mmap->lock));
 	return address;
 }
 
@@ -119,13 +119,13 @@ _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("vmm_memory_map_release: unaligned arguments");
 	}
-	lock_acquire_exclusive(&(mmap->lock));
+	spinlock_acquire_exclusive(&(mmap->lock));
 	vmm_memory_map_region_t* region=mmap->first;
 	while (region&&region->offset+region->length<=address){
 		region=region->next;
 	}
 	if (!region){
-		lock_release_exclusive(&(mmap->lock));
+		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
 	if (region->offset!=address||region->length!=length){
@@ -139,6 +139,6 @@ _Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length){
 	if (region->next&&!region->next->is_used){
 		_delete_next_region(region);
 	}
-	lock_release_exclusive(&(mmap->lock));
+	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
 }

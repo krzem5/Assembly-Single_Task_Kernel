@@ -1,6 +1,6 @@
-#ifndef _USER_SPINlock_H_
-#define _USER_SPINlock_H_ 1
-#include <user/types.h>
+#ifndef _KERNEL_SPINLOCK_SPINLOCK_H_
+#define _KERNEL_SPINLOCK_SPINLOCK_H_ 1
+#include <kernel/types.h>
 
 
 

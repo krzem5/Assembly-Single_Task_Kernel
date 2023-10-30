@@ -1,6 +1,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -27,7 +27,7 @@ void handle_init(void){
 		handle_type_index++;
 		handle_descriptor_t* handle_descriptor=*descriptor;
 		*((*descriptor)->var)=handle_type_index;
-		lock_init(&(handle_descriptor->lock));
+		spinlock_init(&(handle_descriptor->lock));
 		handle_descriptor->delete_callback=(*descriptor)->delete_callback;
 		rb_tree_init(&(handle_descriptor->tree));
 		handle_descriptor->count=0;
@@ -57,12 +57,12 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	}
 	out->rc=1;
 	out->object=object;
-	lock_acquire_exclusive(&(handle_descriptor->lock));
+	spinlock_acquire_exclusive(&(handle_descriptor->lock));
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;
 	handle_descriptor->active_count++;
 	rb_tree_insert_node_increasing(&(handle_descriptor->tree),&(out->rb_node));
-	lock_release_exclusive(&(handle_descriptor->lock));
+	spinlock_release_exclusive(&(handle_descriptor->lock));
 }
 
 
@@ -72,12 +72,12 @@ handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
 	if (!handle_descriptor||(type!=HANDLE_TYPE_ANY&&type!=HANDLE_ID_GET_TYPE(id))){
 		return NULL;
 	}
-	lock_acquire_shared(&(handle_descriptor->lock));
+	spinlock_acquire_shared(&(handle_descriptor->lock));
 	handle_t* out=(handle_t*)rb_tree_lookup_node(&(handle_descriptor->tree),id);
 	if (out){
 		handle_acquire(out);
 	}
-	lock_release_shared(&(handle_descriptor->lock));
+	spinlock_release_shared(&(handle_descriptor->lock));
 	return out;
 }
 
@@ -95,9 +95,9 @@ void _handle_delete_internal(handle_t* handle){
 		return;
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
-	lock_acquire_exclusive(&(handle_descriptor->lock));
+	spinlock_acquire_exclusive(&(handle_descriptor->lock));
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
-	lock_release_exclusive(&(handle_descriptor->lock));
+	spinlock_release_exclusive(&(handle_descriptor->lock));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 	handle_descriptor->active_count--;

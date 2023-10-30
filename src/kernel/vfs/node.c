@@ -17,7 +17,7 @@ vfs_node_t* vfs_node_create(filesystem_t* fs,const vfs_name_t* name){
 		return NULL;
 	}
 	out->flags=0;
-	lock_init(&(out->lock));
+	spinlock_init(&(out->lock));
 	out->name=vfs_name_duplicate(name);
 	out->relatives.parent=NULL;
 	out->relatives.prev_sibling=NULL;
@@ -67,11 +67,11 @@ _check_next_sibling:
 	if (!out){
 		return NULL;
 	}
-	lock_acquire_exclusive(&(node->lock));
+	spinlock_acquire_exclusive(&(node->lock));
 	out->relatives.parent=node;
 	out->relatives.next_sibling=node->relatives.child;
 	node->relatives.child=out;
-	lock_release_exclusive(&(node->lock));
+	spinlock_release_exclusive(&(node->lock));
 	return out;
 }
 

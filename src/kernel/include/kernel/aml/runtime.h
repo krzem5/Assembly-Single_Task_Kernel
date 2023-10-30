@@ -1,7 +1,7 @@
 #ifndef _KERNEL_AML_RUNTIME_H_
 #define _KERNEL_AML_RUNTIME_H_ 1
 #include <kernel/aml/parser.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
 #include <kernel/vfs/name.h>
 
@@ -49,7 +49,7 @@ typedef struct _AML_NODE{
 		struct{
 			u8 type;
 			u8 access_type;
-			lock_t lock;
+			spinlock_t lock;
 			u64 address;
 			u64 size;
 		} field_unit;

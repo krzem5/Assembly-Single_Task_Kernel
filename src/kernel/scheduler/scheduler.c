@@ -4,7 +4,7 @@
 #include <kernel/cpu/local.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/isr/isr.h>
-#include <kernel/lock/lock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/msr/msr.h>
@@ -32,7 +32,7 @@ void scheduler_init(void){
 	cpu_mask_init();
 	scheduler_load_balancer_init();
 	for (u16 i=0;i<cpu_count;i++){
-		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
+		(_scheduler_data+i)->current_timer_start=cspinlock_get_ticks();
 		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;
 	}
 }
@@ -62,7 +62,7 @@ void scheduler_pause(void){
 	if (scheduler->pause_remaining_us){
 		asm volatile("cli":::"memory");
 	}
-	scheduler->pause_start_ticks=clock_get_ticks();
+	scheduler->pause_start_ticks=cspinlock_get_ticks();
 }
 
 
@@ -79,7 +79,7 @@ void scheduler_resume(void){
 	if (scheduler->pause_nested_count||!scheduler->pause_remaining_us){
 		return;
 	}
-	u64 elapsed_us=(clock_ticks_to_time(clock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
+	u64 elapsed_us=(cspinlock_ticks_to_time(cspinlock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
 	asm volatile("sti":::"memory");
 	if (elapsed_us>=scheduler->pause_remaining_us){
 		scheduler_start();
@@ -99,19 +99,19 @@ void scheduler_isr_handler(isr_state_t* state){
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
 	if (current_thread){
-		lock_acquire_exclusive(&(current_thread->lock));
+		spinlock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base((u64)CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
 		if (current_thread->state.type==THREAD_STATE_TYPE_TERMINATED){
 			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
-			lock_release_exclusive(&(current_thread->lock));
+			spinlock_release_exclusive(&(current_thread->lock));
 			thread_delete(current_thread);
 		}
 		else{
 			current_thread->gpr_state=*state;
 			fpu_save(current_thread->fpu_state);
 			current_thread->state_not_present=0;
-			lock_release_exclusive(&(current_thread->lock));
+			spinlock_release_exclusive(&(current_thread->lock));
 			if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
 				scheduler_enqueue_thread(current_thread);
 			}
@@ -119,7 +119,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	current_thread=scheduler_load_balancer_get();
 	if (current_thread){
-		lock_acquire_exclusive(&(current_thread->lock));
+		spinlock_acquire_exclusive(&(current_thread->lock));
 		current_thread->header.index=CPU_HEADER_DATA->index;
 		msr_set_gs_base((u64)current_thread,0);
 		scheduler->current_thread=current_thread;
@@ -130,7 +130,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		fpu_restore(current_thread->fpu_state);
 		vmm_switch_to_pagemap(&(current_thread->process->pagemap));
 		current_thread->state.type=THREAD_STATE_TYPE_RUNNING;
-		lock_release_exclusive(&(current_thread->lock));
+		spinlock_release_exclusive(&(current_thread->lock));
 	}
 	else{
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
@@ -147,13 +147,13 @@ void scheduler_isr_handler(isr_state_t* state){
 
 void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
-	lock_acquire_exclusive(&(thread->lock));
+	spinlock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
 	scheduler_load_balancer_add(thread);
 	thread->state.type=THREAD_STATE_TYPE_QUEUED;
-	lock_release_exclusive(&(thread->lock));
+	spinlock_release_exclusive(&(thread->lock));
 	scheduler_resume();
 }
 
@@ -172,7 +172,7 @@ _Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out){
 void scheduler_set_timer(u8 timer){
 	scheduler_pause();
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	u64 ticks=clock_get_ticks();
+	u64 ticks=cspinlock_get_ticks();
 	scheduler->timers.data[scheduler->current_timer]+=ticks-scheduler->current_timer_start;
 	scheduler->current_timer_start=ticks;
 	scheduler->current_timer=timer;
