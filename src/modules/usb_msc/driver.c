@@ -109,19 +109,6 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor;
 
 
 
-static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
-	return 0;
-}
-
-
-
-static drive_type_t _usb_msc_drive_type={
-	"USB MSC",
-	_usb_msc_read_write
-};
-
-
-
 static _Bool _fetch_inquiry(usb_msc_driver_t* driver,u8 lun,usb_scsi_inquiry_responce_t* out){
 	usb_scsi_command_t command={
 		USB_SCSI_COMMAND_SIGNATURE,
@@ -170,6 +157,19 @@ static _Bool _fetch_read_capacity_10(usb_msc_driver_t* driver,u8 lun,usb_scsi_re
 	lock_release_exclusive(&(driver->lock));
 	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
 }
+
+
+
+static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	return 0;
+}
+
+
+
+static drive_type_t _usb_msc_drive_type={
+	"USB MSC",
+	_usb_msc_read_write
+};
 
 
 
