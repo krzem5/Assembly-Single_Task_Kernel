@@ -2,7 +2,6 @@
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>

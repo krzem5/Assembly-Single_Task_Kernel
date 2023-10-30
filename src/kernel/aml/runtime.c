@@ -5,7 +5,6 @@
 #include <kernel/isr/isr.h>
 #include <kernel/lock/lock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -46,7 +45,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 
 
 
-static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count);
+static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* first_object,u32 object_count);
 
 
 
@@ -263,7 +262,9 @@ static aml_node_t* _get_node(aml_node_t* local_namespace,const vfs_name_t* names
 				}
 				return NULL;
 			}
-			out=out->data.package.elements+index;
+			for (out=out->data.package.child;index;out=out->next){
+				index--;
+			}
 		}
 		else{
 			for (aml_node_t* child=out->child;child;child=child->next){
@@ -378,7 +379,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				aml_node_t* scope=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_SCOPE,1);
 				aml_node_t* prev_namespace=local->namespace;
 				local->namespace=scope;
-				_execute_multiple(local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.child,object->data_length);
 				local->namespace=prev_namespace;
 				return scope;
 			}
@@ -396,18 +397,25 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			{
 				aml_node_t* package=_alloc_node(NULL,AML_NODE_TYPE_PACKAGE,NULL);
 				package->data.package.length=_get_arg_as_int(local,object,0);
-				package->data.package.elements=kmm_alloc(package->data.package.length*sizeof(aml_node_t));
-				for (u8 i=0;i<(object->data_length<package->data.package.length?object->data_length:package->data.package.length);i++){
-					aml_node_t* value=_execute(local,object->data.objects+i);
+				package->data.package.child=NULL;
+				aml_node_t* last_child=NULL;
+				for (aml_object_t* child=object->data.child;child;child=child->next){
+					aml_node_t* value=_execute(local,child);
 					if (value->flags&AML_NODE_FLAG_LOCAL){
-						*(package->data.package.elements+i)=*value;
+						aml_node_t* new_node=omm_alloc(&_aml_node_allocator);
+						*new_node=*value;
+						value=new_node;
+					}
+					if (last_child){
+						last_child->next=value;
 					}
 					else{
-						panic("Unimplemented");
+						package->data.package.child=value;
 					}
+					last_child=value;
 				}
-				for (u8 i=object->data_length;i<package->data.package.length;i++){
-					(package->data.package.elements+i)->type=AML_NODE_TYPE_UNDEFINED;
+				if (object->data_length!=package->data.package.length){
+					panic("Unimplemented");
 				}
 				return package;
 			}
@@ -415,8 +423,8 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			{
 				aml_node_t* method=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_METHOD,1);
 				method->data.method.flags=object->args[1].number;
-				method->data.method.object_count=object->data_length;
-				method->data.method.objects=object->data.objects;
+				method->data.method.child_count=object->data_length;
+				method->data.method.child=object->data.child;
 				method->data.method.namespace=local->namespace;
 				return method;
 			}
@@ -631,12 +639,12 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 		case MAKE_OPCODE(AML_OPCODE_IF,0):
 			local->was_branch_taken=!!_get_arg_as_int(local,object,0);
 			if (local->was_branch_taken){
-				_execute_multiple(local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.child,object->data_length);
 			}
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_ELSE,0):
 			if (!local->was_branch_taken){
-				_execute_multiple(local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.child,object->data_length);
 			}
 			return NULL;
 		case MAKE_OPCODE(AML_OPCODE_WHILE,0):
@@ -773,7 +781,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				aml_node_t* device=_get_node(local->namespace,object->args[0].string,AML_NODE_TYPE_DEVICE,1);
 				aml_node_t* prev_namespace=local->namespace;
 				local->namespace=device;
-				_execute_multiple(local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.child,object->data_length);
 				local->namespace=prev_namespace;
 				return device;
 			}
@@ -785,7 +793,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				processor->data.processor.block_length=object->args[3].number;
 				aml_node_t* prev_namespace=local->namespace;
 				local->namespace=processor;
-				_execute_multiple(local,object->data.objects,object->data_length);
+				_execute_multiple(local,object->data.child,object->data_length);
 				local->namespace=prev_namespace;
 				return processor;
 			}
@@ -823,11 +831,12 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 
 
 
-static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* objects,u32 object_count){
+static void _execute_multiple(runtime_local_state_t* local,const aml_object_t* first_object,u32 object_count){
 	_Bool prev_was_branch_taken=local->was_branch_taken;
 	local->was_branch_taken=0;
 	for (u32 i=0;i<object_count&&!local->return_value;i++){
-		_execute(local,objects+i);
+		_execute(local,first_object);
+		first_object=first_object->next;
 	}
 	local->was_branch_taken=prev_was_branch_taken;
 }
@@ -947,14 +956,12 @@ static void _print_node(const aml_node_t* node,u32 indent,_Bool inside_package){
 	}
 	log("{\n");
 	if (node->type==AML_NODE_TYPE_PACKAGE){
-		for (u8 i=0;i<node->data.package.length;i++){
-			_print_node(node->data.package.elements+i,indent+4,1);
-			if (i+1<node->data.package.length){
-				log(",\n");
+		for (aml_node_t* child=node->data.package.child;child;child=child->next){
+			if (child==node->data.package.child){
+				log(",");
 			}
-			else{
-				log("\n");
-			}
+			_print_node(child,indent+4,1);
+			log("\n");
 		}
 	}
 	else{
@@ -987,7 +994,7 @@ void aml_runtime_init(aml_object_t* root,u16 irq){
 		aml_root_node
 	};
 	local.simple_return_value.flags=AML_NODE_FLAG_LOCAL;
-	_execute_multiple(&local,root->data.objects,root->data_length);
+	_execute_multiple(&local,root->data.child,root->data_length);
 	INFO("Registering AML IRQ...");
 	ioapic_redirect_irq(irq,isr_allocate());
 }
@@ -1010,7 +1017,7 @@ aml_node_t* aml_runtime_evaluate_node(aml_node_t* node){
 	runtime_local_state_t local;
 	local.namespace=node;
 	local.return_value=NULL;
-	_execute_multiple(&local,node->data.method.objects,node->data.method.object_count);
+	_execute_multiple(&local,node->data.method.child,node->data.method.child_count);
 	return local.return_value; // Can return stack-local pointer!
 }
 

@@ -142,6 +142,7 @@ typedef struct _AML_OBJECT{
 	u8 arg_count;
 	u8 flags;
 	u32 data_length;
+	struct _AML_OBJECT* next;
 	struct{
 		u8 type;
 		u16 string_length;
@@ -153,7 +154,7 @@ typedef struct _AML_OBJECT{
 	} args[6];
 	union{
 		const u8* bytes;
-		struct _AML_OBJECT* objects;
+		struct _AML_OBJECT* child;
 	} data;
 } aml_object_t;
 

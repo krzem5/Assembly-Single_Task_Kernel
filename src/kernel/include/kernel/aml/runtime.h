@@ -56,8 +56,8 @@ typedef struct _AML_NODE{
 		u64 integer;
 		struct{
 			u8 flags;
-			u32 object_count;
-			const aml_object_t* objects;
+			u32 child_count;
+			const aml_object_t* child;
 			struct _AML_NODE* namespace;
 		} method;
 		struct{
@@ -73,7 +73,7 @@ typedef struct _AML_NODE{
 		} region;
 		struct{
 			u8 length;
-			struct _AML_NODE* elements;
+			struct _AML_NODE* child;
 		} package;
 		struct{
 			// Unimplemented

@@ -1,6 +1,5 @@
 #include <kernel/aml/parser.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/kmm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -320,6 +319,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 		out->arg_count=1;
 		out->flags=0;
 		out->args[0].string=_get_decoded_name(data);
+		out->next=NULL;
 		return _get_name_encoding_length(data);
 	}
 	data+=_get_opcode_encoding_length(opcode);
@@ -329,6 +329,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 	}
 	out->arg_count=opcode->arg_count;
 	out->flags=((opcode->flags&OPCODE_FLAG_EXTRA_BYTES)?AML_OBJECT_FLAG_BYTE_DATA:0);
+	out->next=NULL;
 	for (u8 i=0;i<opcode->arg_count;i++){
 		out->args[i].type=opcode->args[i];
 		if (opcode->args[i]==AML_OBJECT_ARG_TYPE_UINT8){
@@ -373,9 +374,18 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 		out->data_length++;
 		i+=_get_full_opcode_length(data+i,_parse_opcode(data+i));
 	}
-	out->data.objects=kmm_alloc(out->data_length*sizeof(aml_object_t));
+	out->data.child=NULL;
+	aml_object_t* last_child=NULL;
 	for (u32 i=0;i<out->data_length;i++){
-		data+=_parse_object(data,out->data.objects+i);
+		aml_object_t* child=omm_alloc(&_aml_object_allocator);
+		data+=_parse_object(data,child);
+		if (last_child){
+			last_child->next=child;
+		}
+		else{
+			out->data.child=child;
+		}
+		last_child=child;
 	}
 	return data_end-data_start;
 }
@@ -391,14 +401,24 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 	root->arg_count=0;
 	root->flags=0;
 	root->data_length=0;
+	root->next=NULL;
 	for (u32 offset=0;offset<length;){
 		root->data_length++;
 		offset+=_get_full_opcode_length(data+offset,_parse_opcode(data+offset));
 	}
-	root->data.objects=kmm_alloc(root->data_length*sizeof(aml_object_t));
+	root->data.child=NULL;
+	aml_object_t* last_child=NULL;
 	u32 offset=0;
 	for (u32 i=0;i<root->data_length;i++){
-		offset+=_parse_object(data+offset,root->data.objects+i);
+		aml_object_t* child=omm_alloc(&_aml_object_allocator);
+		offset+=_parse_object(data+offset,child);
+		if (i){
+			last_child->next=child;
+		}
+		else{
+			root->data.child=child;
+		}
+		last_child=child;
 	}
 	return root;
 }
