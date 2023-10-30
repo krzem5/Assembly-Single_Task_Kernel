@@ -35,11 +35,11 @@ event_t* event_new(void){
 
 
 void event_delete(event_t* event){
-	spinlock_acquire_shared(&(event->lock));
+	spinlock_acquire_exclusive(&(event->lock));
 	if (event->head||event->handle.rc){
 		panic("Referenced events cannot be deleted");
 	}
-	spinlock_release_shared(&(event->lock));
+	spinlock_release_exclusive(&(event->lock));
 	omm_dealloc(&_event_allocator,event);
 }
 
