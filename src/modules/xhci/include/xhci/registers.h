@@ -33,6 +33,7 @@
 
 // Transfer Buffer Types
 #define TRB_TYPE_MASK 0xfc00
+#define TRB_TYPE_TR_NORMAL 0x0400
 #define TRB_TYPE_TR_SETUP 0x0800
 #define TRB_TYPE_TR_DATA 0x0c00
 #define TRB_TYPE_TR_STATUS 0x1000

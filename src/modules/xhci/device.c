@@ -258,7 +258,11 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 
 
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
-	panic("_xhci_pipe_transfer_normal");
+	xhci_device_t* xhci_device=ctx;
+	xhci_pipe_t* xhci_pipe=pipe;
+	_enqueue_event(xhci_pipe->ring,data,length,TRB_IOC|TRB_TYPE_TR_NORMAL);
+	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
+	_wait_for_all_events(xhci_device,xhci_pipe->ring);
 }
 
 

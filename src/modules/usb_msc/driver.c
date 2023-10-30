@@ -1,3 +1,5 @@
+#include <kernel/drive/drive.h>
+#include <kernel/format/format.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -7,6 +9,72 @@
 #include <kernel/usb/usb.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "usb_msc_driver"
+
+
+
+#define USB_SCSI_COMMAND_TEST_UNIT_READY 0x00
+#define USB_SCSI_COMMAND_INQUIRY 0x12
+#define USB_SCSI_COMMAND_MODE_SELECT_6 0x15
+#define USB_SCSI_COMMAND_MODE_SENSE_6 0x1a
+#define USB_SCSI_COMMAND_START_STOP_UNIT 0x1b
+#define USB_SCSI_COMMAND_PREVENT_ALLOW_MEDIUM_REMOVAL 0x1e
+#define USB_SCSI_COMMAND_READ_CAPACITY_10 0x25
+#define USB_SCSI_COMMAND_REQUEST_SENSE 0x03
+#define USB_SCSI_COMMAND_READ_FORMAT_CAPACITY 0x23
+#define USB_SCSI_COMMAND_READ_10 0x28
+#define USB_SCSI_COMMAND_WRITE_10 0x2a
+
+#define USB_SCSI_COMMAND_SIGNATURE 0x43425355
+#define USB_SCSI_STATUS_SIGNATURE 0x53425355
+
+
+
+typedef struct __attribute__((packed)) _USB_SCSI_COMMAND{
+	u32 signature;
+	u32 tag;
+	u32 size;
+	u8 direction;
+	u8 lun;
+	u8 length;
+	union __attribute__((packed)){
+		u8 _data[16];
+		struct __attribute__((packed)){
+			u8 type;
+			u8 _padding[3];
+			u8 size;
+		} inquiry;
+		struct __attribute__((packed)){
+			u8 type;
+		} read_capacity_10;
+	} command;
+} usb_scsi_command_t;
+
+
+
+typedef struct __attribute__((packed)) _USB_SCSI_STATUS{
+	u32 signature;
+	u32 tag;
+	u32 residue;
+	u8 status;
+} usb_scsi_status_t;
+
+
+
+typedef struct __attribute__((packed)) _USB_SCSI_INQUIRY_RESPONCE{
+	u8 pdt;
+	u8 removable;
+	u8 _padding[6];
+	char vendor[8];
+	char product[16];
+	char rev[4];
+} usb_scsi_inquiry_responce_t;
+
+
+
+typedef struct __attribute__((packed)) _USB_SCSI_READ_CAPACITY_10_RESPONCE{
+	u32 sectors;
+	u32 block_size;
+} usb_scsi_read_capacity_10_responce_t;
 
 
 
@@ -28,8 +96,85 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor;
 
 
 
-static void _setup_drive(usb_msc_driver_t* driver,u8 index){
-	WARN("Setup USB MSC #%u",index);
+static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	return 0;
+}
+
+
+
+static drive_type_t _usb_msc_drive_type={
+	"USB MSC",
+	_usb_msc_read_write
+};
+
+
+
+static _Bool _fetch_inquiry(usb_msc_driver_t* driver,u8 lun,usb_scsi_inquiry_responce_t* out){
+	usb_scsi_command_t command={
+		USB_SCSI_COMMAND_SIGNATURE,
+		0x11223344,
+		sizeof(usb_scsi_inquiry_responce_t),
+		USB_DIR_IN,
+		lun,
+		16,
+		{
+			.inquiry={
+				.type=USB_SCSI_COMMAND_INQUIRY,
+				.size=sizeof(usb_scsi_inquiry_responce_t)
+			}
+		}
+	};
+	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_inquiry_responce_t));
+	usb_scsi_status_t status;
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
+}
+
+
+
+static _Bool _fetch_read_capacity_10(usb_msc_driver_t* driver,u8 lun,usb_scsi_read_capacity_10_responce_t* out){
+	usb_scsi_command_t command={
+		USB_SCSI_COMMAND_SIGNATURE,
+		0x11223344,
+		sizeof(usb_scsi_read_capacity_10_responce_t),
+		USB_DIR_IN,
+		lun,
+		16,
+		{
+			.read_capacity_10={
+				.type=USB_SCSI_COMMAND_READ_CAPACITY_10
+			}
+		}
+	};
+	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_read_capacity_10_responce_t));
+	usb_scsi_status_t status;
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
+}
+
+
+
+static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
+	INFO("Setting up LUN %u...",lun);
+	usb_scsi_inquiry_responce_t inquiry_data;
+	usb_scsi_read_capacity_10_responce_t read_capacity_10_data;
+	if (!_fetch_inquiry(driver,lun,&inquiry_data)||!_fetch_read_capacity_10(driver,lun,&read_capacity_10_data)){
+		WARN("Failed to setup LUN %u",lun);
+		return;
+	}
+	(void)_usb_msc_drive_type;
+	drive_config_t config={
+		.type=&_usb_msc_drive_type,
+		.block_count=__builtin_bswap32(read_capacity_10_data.sectors),
+		.block_size=__builtin_bswap32(read_capacity_10_data.block_size),
+		.extra_data=NULL
+	};
+	format_string(config.name,DRIVE_NAME_LENGTH,"usb%u",lun);
+	memcpy_trunc_spaces(config.serial_number,inquiry_data.rev,4);
+	memcpy_trunc_spaces(config.model_number,inquiry_data.product,16);
+	drive_create(&config);
 }
 
 
