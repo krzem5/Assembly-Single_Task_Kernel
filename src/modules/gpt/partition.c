@@ -20,7 +20,8 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 	if (header->signature!=GPT_TABLE_HEADER_SIGNATURE){
 		return 0;
 	}
-	panic("_gpt_load_partitions");
+	return 0;
+	// panic("_gpt_load_partitions");
 }
 
 
