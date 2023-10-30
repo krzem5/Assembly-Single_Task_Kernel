@@ -14,32 +14,35 @@
 
 
 
-#define USB_SCSI_COMMAND_TEST_UNIT_READY 0x00
-#define USB_SCSI_COMMAND_INQUIRY 0x12
-#define USB_SCSI_COMMAND_MODE_SELECT_6 0x15
-#define USB_SCSI_COMMAND_MODE_SENSE_6 0x1a
-#define USB_SCSI_COMMAND_START_STOP_UNIT 0x1b
-#define USB_SCSI_COMMAND_PREVENT_ALLOW_MEDIUM_REMOVAL 0x1e
-#define USB_SCSI_COMMAND_READ_CAPACITY_10 0x25
-#define USB_SCSI_COMMAND_REQUEST_SENSE 0x03
-#define USB_SCSI_COMMAND_READ_FORMAT_CAPACITY 0x23
-#define USB_SCSI_COMMAND_READ_10 0x28
-#define USB_SCSI_COMMAND_WRITE_10 0x2a
+#define USB_MSC_CBW_TEST_UNIT_READY 0x00
+#define USB_MSC_CBW_INQUIRY 0x12
+#define USB_MSC_CBW_MODE_SELECT_6 0x15
+#define USB_MSC_CBW_MODE_SENSE_6 0x1a
+#define USB_MSC_CBW_START_STOP_UNIT 0x1b
+#define USB_MSC_CBW_PREVENT_ALLOW_MEDIUM_REMOVAL 0x1e
+#define USB_MSC_CBW_READ_CAPACITY_10 0x25
+#define USB_MSC_CBW_REQUEST_SENSE 0x03
+#define USB_MSC_CBW_READ_FORMAT_CAPACITY 0x23
+#define USB_MSC_CBW_READ_10 0x28
+#define USB_MSC_CBW_WRITE_10 0x2a
 
-#define USB_SCSI_COMMAND_SIGNATURE 0x43425355
-#define USB_SCSI_STATUS_SIGNATURE 0x53425355
+#define USB_MSC_CBW_SIGNATURE 0x43425355
+#define USB_MSC_CSW_SIGNATURE 0x53425355
 
 
 
-typedef struct __attribute__((packed)) _USB_SCSI_COMMAND{
-	u32 signature;
-	u32 tag;
-	u32 size;
-	u8 direction;
-	u8 lun;
-	u8 length;
+typedef struct __attribute__((packed)) _USB_MSC_CBW{
+	u32 dCBWSignature;
+	u32 dCBWTag;
+	u32 dCBWDataTransferLength;
+	u8 bmCBWFlags;
+	u8 bCBWLUN;
+	u8 bCBWCBLength;
 	union __attribute__((packed)){
 		u8 _data[16];
+		struct __attribute__((packed)){
+			u8 type;
+		} test_unit_ready;
 		struct __attribute__((packed)){
 			u8 type;
 			u8 _padding[3];
@@ -48,17 +51,24 @@ typedef struct __attribute__((packed)) _USB_SCSI_COMMAND{
 		struct __attribute__((packed)){
 			u8 type;
 		} read_capacity_10;
-	} command;
-} usb_scsi_command_t;
+		struct __attribute__((packed)){
+			u8 type;
+			u8 flags;
+			u32 lba;
+			u8 _padding;
+			u16 count;
+		} read_write_10;
+	} CBWCB;
+} usb_msc_cbw_t;
 
 
 
-typedef struct __attribute__((packed)) _USB_SCSI_STATUS{
-	u32 signature;
-	u32 tag;
-	u32 residue;
-	u8 status;
-} usb_scsi_status_t;
+typedef struct __attribute__((packed)) _USB_MSC_CSW{
+	u32 dCSWSignature;
+	u32 dCSWTag;
+	u32 dCSWDataResidue;
+	u8 bCSWStatus;
+} usb_msc_csw_t;
 
 
 
@@ -83,6 +93,7 @@ typedef struct __attribute__((packed)) _USB_SCSI_READ_CAPACITY_10_RESPONCE{
 typedef struct _USB_MSC_LUN_CONTEXT{
 	struct _USB_MSC_DRIVER* driver;
 	struct _USB_MSC_LUN_CONTEXT* next;
+	u32 tag;
 	u8 lun;
 } usb_msc_lun_context_t;
 
@@ -111,58 +122,107 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor;
 
 
 
-static _Bool _fetch_inquiry(usb_msc_driver_t* driver,u8 lun,usb_scsi_inquiry_responce_t* out){
-	usb_scsi_command_t command={
-		USB_SCSI_COMMAND_SIGNATURE,
-		0x11223344,
+static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
+	usb_msc_driver_t* driver=context->driver;
+	usb_msc_cbw_t command={
+		USB_MSC_CBW_SIGNATURE,
+		context->tag,
 		sizeof(usb_scsi_inquiry_responce_t),
-		USB_DIR_IN,
-		lun,
+		0x80,
+		context->lun,
 		16,
 		{
 			.inquiry={
-				.type=USB_SCSI_COMMAND_INQUIRY,
+				.type=USB_MSC_CBW_INQUIRY,
 				.size=sizeof(usb_scsi_inquiry_responce_t)
 			}
 		}
 	};
+	context->tag++;
 	lock_acquire_exclusive(&(driver->lock));
-	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
+	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_msc_cbw_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_inquiry_responce_t));
-	usb_scsi_status_t status;
-	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	usb_msc_csw_t status;
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
 	lock_release_exclusive(&(driver->lock));
-	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
+	return (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==command.dCBWTag&&!status.bCSWStatus);
 }
 
 
 
-static _Bool _fetch_read_capacity_10(usb_msc_driver_t* driver,u8 lun,usb_scsi_read_capacity_10_responce_t* out){
-	usb_scsi_command_t command={
-		USB_SCSI_COMMAND_SIGNATURE,
-		0x11223344,
-		sizeof(usb_scsi_read_capacity_10_responce_t),
-		USB_DIR_IN,
-		lun,
+static _Bool _wait_for_device(usb_msc_lun_context_t* context){
+	usb_msc_driver_t* driver=context->driver;
+	usb_msc_cbw_t test_unit_ready_command={
+		USB_MSC_CBW_SIGNATURE,
+		0,
+		0,
+		0x80,
+		context->lun,
 		16,
 		{
-			.read_capacity_10={
-				.type=USB_SCSI_COMMAND_READ_CAPACITY_10
+			.test_unit_ready={
+				.type=USB_MSC_CBW_TEST_UNIT_READY,
 			}
 		}
 	};
+	usb_msc_csw_t status;
+	while (1){
+		test_unit_ready_command.dCBWTag=context->tag;
+		context->tag++;
+		lock_acquire_exclusive(&(driver->lock));
+		usb_pipe_transfer_normal(driver->device,driver->output_pipe,&test_unit_ready_command,sizeof(usb_msc_cbw_t));
+		usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
+		lock_release_exclusive(&(driver->lock));
+		if (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==test_unit_ready_command.dCBWTag&&!status.bCSWStatus){
+			return 1;
+		}
+		panic("_wait_for_device: send USB_MSC_CBW_REQUEST_SENSE");
+	}
+	return 0;
+}
+
+
+
+static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
+	usb_msc_driver_t* driver=context->driver;
+	usb_msc_cbw_t command={
+		USB_MSC_CBW_SIGNATURE,
+		context->tag,
+		sizeof(usb_scsi_read_capacity_10_responce_t),
+		0x80,
+		context->lun,
+		16,
+		{
+			.read_capacity_10={
+				.type=USB_MSC_CBW_READ_CAPACITY_10
+			}
+		}
+	};
+	context->tag++;
 	lock_acquire_exclusive(&(driver->lock));
-	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_scsi_command_t));
+	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&command,sizeof(usb_msc_cbw_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_read_capacity_10_responce_t));
-	usb_scsi_status_t status;
-	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_scsi_status_t));
+	usb_msc_csw_t status;
+	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&status,sizeof(usb_msc_csw_t));
 	lock_release_exclusive(&(driver->lock));
-	return (status.signature==USB_SCSI_STATUS_SIGNATURE&&status.tag==command.tag&&!status.status);
+	return (status.dCSWSignature==USB_MSC_CSW_SIGNATURE&&status.dCSWTag==command.dCBWTag&&!status.bCSWStatus);
 }
 
 
 
 static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+	usb_msc_lun_context_t* context=drive->extra_data;
+	usb_msc_driver_t* driver=context->driver;
+	void* linear_buffer=(void*)(pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	if (offset&DRIVE_OFFSET_FLAG_WRITE){
+		memcpy(linear_buffer,buffer,count<<drive->block_size_shift);
+	}
+	lock_acquire_exclusive(&(driver->lock));
+	lock_release_exclusive(&(driver->lock));
+	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
+		memcpy(buffer,linear_buffer,count<<drive->block_size_shift);
+	}
+	pmm_dealloc(((u64)linear_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
 	return 0;
 }
 
@@ -177,17 +237,17 @@ static drive_type_t _usb_msc_drive_type={
 
 static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 	INFO("Setting up LUN %u...",lun);
+	usb_msc_lun_context_t* context=omm_alloc(&_usb_msc_lun_context_allocator);
+	context->driver=driver;
+	context->tag=0;
+	context->lun=lun;
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	usb_scsi_inquiry_responce_t* inquiry_data=buffer;
 	usb_scsi_read_capacity_10_responce_t* read_capacity_10_data=buffer+sizeof(usb_scsi_inquiry_responce_t);
-	if (!_fetch_inquiry(driver,lun,inquiry_data)||!_fetch_read_capacity_10(driver,lun,read_capacity_10_data)){
-		WARN("Failed to setup LUN %u",lun);
-		return;
+	if (!_fetch_inquiry(context,inquiry_data)||!_wait_for_device(context)||!_fetch_read_capacity_10(context,read_capacity_10_data)){
+		goto _error;
 	}
-	usb_msc_lun_context_t* context=omm_alloc(&_usb_msc_lun_context_allocator);
-	context->driver=driver;
 	context->next=driver->lun_context;
-	context->lun=lun;
 	driver->lun_context=context;
 	drive_config_t config={
 		.type=&_usb_msc_drive_type,
@@ -198,8 +258,13 @@ static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 	format_string(config.name,DRIVE_NAME_LENGTH,"usb%u",lun);
 	memcpy_trunc_spaces(config.serial_number,inquiry_data->rev,4);
 	memcpy_trunc_spaces(config.model_number,inquiry_data->product,16);
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
 	drive_create(&config);
+	goto _cleanup;
+_error:
+	WARN("Failed to setup LUN %u",lun);
+	omm_dealloc(&_usb_msc_lun_context_allocator,context);
+_cleanup:
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
 }
 
 
