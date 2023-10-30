@@ -1,5 +1,5 @@
-#ifndef _KERNEL_CSPINlock_CSPINlock_H_
-#define _KERNEL_CSPINlock_CSPINlock_H_ 1
+#ifndef _KERNEL_CLOCK_CLOCK_H_
+#define _KERNEL_CLOCK_CLOCK_H_ 1
 #include <kernel/types.h>
 
 

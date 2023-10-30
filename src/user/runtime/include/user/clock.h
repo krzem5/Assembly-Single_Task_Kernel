@@ -1,5 +1,5 @@
-#ifndef _USER_CSPINlock_H_
-#define _USER_CSPINlock_H_ 1
+#ifndef _USER_CLOCK_H_
+#define _USER_CLOCK_H_ 1
 #include <user/types.h>
 
 

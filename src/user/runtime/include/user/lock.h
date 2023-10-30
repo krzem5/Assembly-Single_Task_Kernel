@@ -1,34 +1,34 @@
-#ifndef _USER_SPINlock_H_
-#define _USER_SPINlock_H_ 1
+#ifndef _USER_LOCK_H_
+#define _USER_LOCK_H_ 1
 #include <user/types.h>
 
 
 
-#define SPINLOCK_INIT_STRUCT (0)
+#define LOCK_INIT_STRUCT (0)
 
 
 
-typedef u32 spinlock_t;
+typedef u32 lock_t;
 
 
 
-void spinlock_init(spinlock_t* out);
+void lock_init(lock_t* out);
 
 
 
-void spinlock_acquire_exclusive(spinlock_t* lock);
+void lock_acquire_exclusive(lock_t* lock);
 
 
 
-void spinlock_release_exclusive(spinlock_t* lock);
+void lock_release_exclusive(lock_t* lock);
 
 
 
-void spinlock_acquire_shared(spinlock_t* lock);
+void lock_acquire_shared(lock_t* lock);
 
 
 
-void spinlock_release_shared(spinlock_t* lock);
+void lock_release_shared(lock_t* lock);
 
 
 

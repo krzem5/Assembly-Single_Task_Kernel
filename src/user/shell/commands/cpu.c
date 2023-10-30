@@ -200,7 +200,7 @@ void cpu_main(int argc,const char*const* argv){
 		FEATURE(ecx,16,"la57");
 		FEATURE(ecx,22,"rdpid");
 		FEATURE(ecx,23,"kl");
-		FEATURE(ecx,24,"bus_spinlock_detect");
+		FEATURE(ecx,24,"bus_lock_detect");
 		FEATURE(ecx,25,"cldemote");
 		FEATURE(ecx,27,"movdiri");
 		FEATURE(ecx,28,"movdir64b");
