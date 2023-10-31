@@ -28,9 +28,7 @@ typedef struct _MODULE{
 	module_address_region_t ex_region;
 	module_address_region_t nx_region;
 	module_address_region_t rw_region;
-#ifdef KERNEL_COVERAGE_ENABLED
 	module_address_region_t gcov_info;
-#endif
 } module_t;
 
 
