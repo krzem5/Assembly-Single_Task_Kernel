@@ -16,12 +16,7 @@
 
 
 
-extern u64 __KERNEL_SECTION_gcov_info_START__[1];
-extern u64 __KERNEL_SECTION_gcov_info_END__[1];
-
-
-
-kernel_data_t kernel_data;
+kernel_data_t KERNEL_INIT_WRITE kernel_data;
 
 
 
@@ -103,11 +98,6 @@ u64 kernel_lookup_symbol_address(const char* name){
 
 
 u64 kernel_gcov_info_data(u64* size){
-#if KERNEL_COVERAGE_ENABLED
-	*size=((u64)__KERNEL_SECTION_gcov_info_END__)-((u64)__KERNEL_SECTION_gcov_info_START__);
-	return (u64)__KERNEL_SECTION_gcov_info_START__;
-#else
-	*size=0;
-	return 0;
-#endif
+	*size=kernel_section_gcov_info_end()-kernel_section_gcov_info_start();
+	return kernel_section_gcov_info_start();
 }

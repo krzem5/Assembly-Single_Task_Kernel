@@ -32,12 +32,12 @@ SECTIONS{
         *(.handle)
         . = ALIGN(8);
 	    DECLARE_SECTION_END(handle);
-#ifdef _KERNEL_COVERAGE_BUILD_
 	    DECLARE_SECTION_START(gcov_info);
+#ifdef _KERNEL_COVERAGE_BUILD_
         *(.gcov_info)
+#endif
         . = ALIGN(8);
 	    DECLARE_SECTION_END(gcov_info);
-#endif
         . = ALIGN(0x1000);
         *(.ap_startup)
         . = ALIGN(0x1000);

@@ -47,6 +47,7 @@ BUILD_DIRECTORIES=[
 	"build/objects/kernel_coverage",
 	"build/objects/kernel_debug",
 	"build/objects/modules",
+	"build/objects/modules_coverage",
 	"build/objects/modules_debug",
 	"build/objects/uefi",
 	"build/objects/user",
@@ -97,7 +98,7 @@ MODULE_HASH_FILE_SUFFIX={
 }[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/modules_debug/",
-	MODE_COVERAGE: "build/objects/modules_debug/",
+	MODE_COVERAGE: "build/objects/modules_coverage/",
 	MODE_RELEASE: "build/objects/modules/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
