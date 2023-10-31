@@ -29,6 +29,7 @@ typedef struct _MODULE{
 	module_address_region_t nx_region;
 	module_address_region_t rw_region;
 	module_address_region_t gcov_info;
+	_Bool loaded;
 } module_t;
 
 

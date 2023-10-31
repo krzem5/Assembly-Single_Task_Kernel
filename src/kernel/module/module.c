@@ -301,6 +301,7 @@ _Bool module_load(vfs_node_t* node){
 	void* file_data=(void*)(pmm_alloc(file_data_pages,&_module_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	vfs_node_read(node,0,file_data,file_size);
 	module_t* module=omm_alloc(&_module_allocator);
+	module->loaded=0;
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
@@ -311,5 +312,6 @@ _Bool module_load(vfs_node_t* node){
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
 	LOG("Module '%s' loaded successfully",module->descriptor->name);
 	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,(u64)(module->descriptor->init_callback),0x200000,1,module));
+	module->loaded=1;
 	return 1;
 }
