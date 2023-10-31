@@ -1,4 +1,3 @@
-#if KERNEL_COVERAGE_ENABLED
 #include <kernel/acpi/fadt.h>
 #include <kernel/handle/handle.h>
 #include <kernel/io/io.h>
@@ -122,19 +121,3 @@ void KERNEL_NOCOVERAGE coverage_export(void){
 	}
 	acpi_fadt_shutdown(0);
 }
-
-
-
-#else
-#include <kernel/log/log.h>
-#define KERNEL_LOG_NAME "coverage"
-
-
-
-void coverage_export(void){
-	ERROR("Kernel compiled without coverage support");
-}
-
-
-
-#endif
