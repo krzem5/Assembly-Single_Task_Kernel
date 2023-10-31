@@ -5,6 +5,11 @@
 #include <kernel/vfs/node.h>
 
 
+#define MODULE_STATE_UNKNOWN 0
+#define MODULE_STATE_LOADING 1
+#define MODULE_STATE_RUNNING 2
+#define MODULE_STATE_UNLOADING 3
+#define MODULE_STATE_REMOVED 4
 
 #define MODULE_DECLARE(name,init_callback,deinit_callback) \
 	static const module_descriptor_t __attribute__((used,section(".module"))) _module_descriptor={ \
@@ -29,7 +34,7 @@ typedef struct _MODULE{
 	module_address_region_t nx_region;
 	module_address_region_t rw_region;
 	module_address_region_t gcov_info;
-	_Bool loaded;
+	u8 state;
 } module_t;
 
 
