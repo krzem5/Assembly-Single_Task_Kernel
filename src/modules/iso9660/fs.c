@@ -162,7 +162,7 @@ static s64 _iso9660_resize(vfs_node_t* node,s64 size,u32 flags){
 
 
 
-static vfs_functions_t _iso9660_functions={
+static const vfs_functions_t _iso9660_functions={
 	_iso9660_create,
 	_iso9660_delete,
 	_iso9660_lookup,

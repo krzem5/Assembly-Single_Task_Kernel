@@ -54,6 +54,14 @@ gdt_user_code:
 gdt_tss:
 	dq 0x0000000000000000
 	dq 0x0000000000000000
+gdt_end:
+
+
+
+section .rdata noexec nowrite
+
+
+
 gdt_pointer:
-	dw $-gdt_start-1
+	dw gdt_end-gdt_start-1
 	dq gdt_start

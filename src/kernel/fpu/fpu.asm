@@ -82,5 +82,6 @@ fpu_restore:
 section .data noexec write
 
 
+
 fpu_state_size:
 	dd 0

@@ -179,7 +179,7 @@ def _generate_syscalls(file_path):
 		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"extern void syscall_{name}(syscall_registers_t* regs);\n")
-		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)};\n\n\n\nconst void* _syscall_handlers[{len(syscalls)}]={{\n")
+		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)};\n\n\n\nconst void*const _syscall_handlers[{len(syscalls)}]={{\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"\tsyscall_{name},\n")
 		wf.write("};\n")

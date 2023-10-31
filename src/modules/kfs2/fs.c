@@ -318,7 +318,7 @@ static void _kfs2_flush(vfs_node_t* node){
 
 
 
-static vfs_functions_t _kfs2_functions={
+static const vfs_functions_t _kfs2_functions={
 	_kfs2_create,
 	_kfs2_delete,
 	_kfs2_lookup,

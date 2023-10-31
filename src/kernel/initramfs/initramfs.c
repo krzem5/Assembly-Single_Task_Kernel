@@ -214,7 +214,7 @@ static s64 _initramfs_resize(vfs_node_t* node,s64 size,u32 flags){
 
 
 
-static vfs_functions_t _initramfs_functions={
+static const vfs_functions_t _initramfs_functions={
 	_initramfs_create,
 	_initramfs_delete,
 	_initramfs_lookup,

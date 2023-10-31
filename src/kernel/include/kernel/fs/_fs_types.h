@@ -11,7 +11,7 @@ typedef struct _FILESYSTEM{
 	handle_t handle;
 	spinlock_t lock;
 	struct _FILESYSTEM_DESCRIPTOR* descriptor;
-	vfs_functions_t* functions;
+	const vfs_functions_t* functions;
 	struct _PARTITION* partition;
 	void* extra_data;
 	vfs_node_t* root;

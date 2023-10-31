@@ -19,37 +19,37 @@
 
 
 
-typedef struct _vfs_FUNCTIONS{
-	struct _vfs_NODE* (*create)(void);
-	void (*delete)(struct _vfs_NODE*);
-	struct _vfs_NODE* (*lookup)(struct _vfs_NODE*,const vfs_name_t*);
-	u64 (*iterate)(struct _vfs_NODE*,u64,vfs_name_t**);
-	_Bool (*link)(struct _vfs_NODE*,struct _vfs_NODE*);
-	_Bool (*unlink)(struct _vfs_NODE*);
-	s64 (*read)(struct _vfs_NODE*,u64,void*,u64);
-	s64 (*write)(struct _vfs_NODE*,u64,const void*,u64);
-	s64 (*resize)(struct _vfs_NODE*,s64,u32);
-	void (*flush)(struct _vfs_NODE*);
+typedef struct _VFS_FUNCTIONS{
+	struct _VFS_NODE* (*create)(void);
+	void (*delete)(struct _VFS_NODE*);
+	struct _VFS_NODE* (*lookup)(struct _VFS_NODE*,const vfs_name_t*);
+	u64 (*iterate)(struct _VFS_NODE*,u64,vfs_name_t**);
+	_Bool (*link)(struct _VFS_NODE*,struct _VFS_NODE*);
+	_Bool (*unlink)(struct _VFS_NODE*);
+	s64 (*read)(struct _VFS_NODE*,u64,void*,u64);
+	s64 (*write)(struct _VFS_NODE*,u64,const void*,u64);
+	s64 (*resize)(struct _VFS_NODE*,s64,u32);
+	void (*flush)(struct _VFS_NODE*);
 } vfs_functions_t;
 
 
 
 typedef struct _vfs_node_RELATIVES{
-	struct _vfs_NODE* parent;
-	struct _vfs_NODE* prev_sibling;
-	struct _vfs_NODE* next_sibling;
-	struct _vfs_NODE* child;
+	struct _VFS_NODE* parent;
+	struct _VFS_NODE* prev_sibling;
+	struct _VFS_NODE* next_sibling;
+	struct _VFS_NODE* child;
 } vfs_node_relatives_t;
 
 
 
-typedef struct _vfs_NODE{
+typedef struct _VFS_NODE{
 	u32 flags;
 	spinlock_t lock;
 	vfs_name_t* name;
 	vfs_node_relatives_t relatives;
 	struct _FILESYSTEM* fs;
-	vfs_functions_t* functions;
+	const vfs_functions_t* functions;
 } vfs_node_t;
 
 
