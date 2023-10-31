@@ -13,10 +13,6 @@ __all__=["create"]
 
 
 
-align=lambda x:(x+7)&0xfffffff8
-
-
-
 class Node(object):
 	def __init__(self,name,flags,file_path):
 		name=bytes(name,"utf-8")
@@ -24,7 +20,7 @@ class Node(object):
 		self.flags=flags
 		self.children=[]
 		self.data_size=(os.stat(file_path).st_size if file_path is not None else 0)
-		self.size=align(self.data_size)+align(12+len(name))
+		self.size=((19+len(name))&0xfffffff8)+((self.data_size+7)&0xfffffff8)
 		self.file_path=file_path
 
 	def add_child(self,child):
