@@ -16,7 +16,7 @@
 
 static spinlock_t _serial_read_lock=SPINLOCK_INIT_STRUCT;
 static spinlock_t _serial_write_lock=SPINLOCK_INIT_STRUCT;
-static u8 _serial_irq=0;
+static u8 KERNEL_INIT_WRITE _serial_irq=0;
 
 
 

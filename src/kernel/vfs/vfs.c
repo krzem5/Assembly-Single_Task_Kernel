@@ -9,7 +9,7 @@
 
 
 
-static vfs_node_t* _vfs_root_node=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _vfs_root_node=NULL;
 
 
 

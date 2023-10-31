@@ -54,7 +54,7 @@ typedef struct __attribute__((packed)) _SMBIO_HEADER{
 
 
 
-bios_data_t KERNEL_BSS bios_data;
+bios_data_t bios_data;
 
 
 

@@ -35,7 +35,7 @@ HANDLE_DECLARE_TYPE(USB_DEVICE,{
 
 
 
-static u16 _speed_to_packet_size(u8 speed){
+static KERNEL_INLINE u16 _speed_to_packet_size(u8 speed){
 	switch (speed){
 		case USB_DEVICE_SPEED_FULL:
 			return 8;

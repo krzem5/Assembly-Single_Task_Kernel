@@ -33,24 +33,24 @@ static pmm_counter_descriptor_t _ioapic_pmm_counter=PMM_COUNTER_INIT_STRUCT("ioa
 
 
 
-static ioapic_t* _ioapic_data;
-static u16 _ioapic_count;
-static u16 _ioapic_index;
-static ioapic_override_t* _ioapic_override_data;
-static u16 _ioapic_override_count;
-static u16 _ioapic_override_index;
-static u16 _ioapic_irq_destination_cpu;
+static ioapic_t* KERNEL_INIT_WRITE _ioapic_data;
+static u16 KERNEL_INIT_WRITE _ioapic_count;
+static u16 KERNEL_INIT_WRITE _ioapic_index;
+static ioapic_override_t* KERNEL_INIT_WRITE _ioapic_override_data;
+static u16 KERNEL_INIT_WRITE _ioapic_override_count;
+static u16 KERNEL_INIT_WRITE _ioapic_override_index;
+static u16 KERNEL_INIT_WRITE _ioapic_irq_destination_cpu;
 
 
 
-static KERNEL_INLINE u32 _read_register(ioapic_t* ioapic,u32 reg){
+static KERNEL_INLINE u32 _read_register(const ioapic_t* ioapic,u32 reg){
 	ioapic->registers[0]=reg;
 	return ioapic->registers[4];
 }
 
 
 
-static KERNEL_INLINE void _write_register(ioapic_t* ioapic,u32 reg,u32 value){
+static KERNEL_INLINE void _write_register(const ioapic_t* ioapic,u32 reg,u32 value){
 	ioapic->registers[0]=reg;
 	ioapic->registers[4]=value;
 }
@@ -99,7 +99,7 @@ void ioapic_add_override(u8 irq,u32 gsi,u16 flags){
 
 void ioapic_redirect_irq(u8 irq,u8 vector){
 	u16 flags=0;
-	ioapic_override_t* ioapic_override=_ioapic_override_data;
+	const ioapic_override_t* ioapic_override=_ioapic_override_data;
 	for (u16 i=0;i<_ioapic_override_count;i++){
 		if (ioapic_override->irq==irq){
 			irq=ioapic_override->gsi;
@@ -108,7 +108,7 @@ void ioapic_redirect_irq(u8 irq,u8 vector){
 		}
 		ioapic_override++;
 	}
-	ioapic_t* ioapic=_ioapic_data;
+	const ioapic_t* ioapic=_ioapic_data;
 	for (u16 i=0;i<_ioapic_count;i++){
 		if (ioapic->gsi_base<=irq&&ioapic->gsi_base+ioapic->gsi_count>irq){
 			break;

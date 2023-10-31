@@ -15,7 +15,7 @@ static pmm_counter_descriptor_t _vmm_shadow_pmm_counter=PMM_COUNTER_INIT_STRUCT(
 
 
 
-vmm_pagemap_t KERNEL_BSS vmm_kernel_pagemap;
+vmm_pagemap_t vmm_kernel_pagemap;
 
 
 

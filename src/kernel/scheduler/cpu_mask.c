@@ -11,9 +11,9 @@
 
 static pmm_counter_descriptor_t _scheduler_cpu_mask_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_cpu_mask");
 static omm_allocator_t _scheduler_cpu_mask_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
-static u64 _scheduler_last_bitmap_entry;
+static u64 KERNEL_INIT_WRITE _scheduler_last_bitmap_entry;
 
-u32 cpu_mask_size;
+u32 KERNEL_INIT_WRITE cpu_mask_size;
 
 
 

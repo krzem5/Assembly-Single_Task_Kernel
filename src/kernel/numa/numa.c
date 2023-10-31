@@ -13,14 +13,14 @@ static pmm_counter_descriptor_t _numa_pmm_counter=PMM_COUNTER_INIT_STRUCT("numa"
 
 
 
-static numa_cpu_t* _numa_cpus;
-static numa_memory_range_t* _numa_memory_ranges;
-static u32 _numa_remaining_cpus;
-static u32 _numa_remaining_memory_ranges;
+static numa_cpu_t* KERNEL_INIT_WRITE _numa_cpus;
+static numa_memory_range_t* KERNEL_INIT_WRITE _numa_memory_ranges;
+static u32 KERNEL_INIT_WRITE _numa_remaining_cpus;
+static u32 KERNEL_INIT_WRITE _numa_remaining_memory_ranges;
 
-u32 numa_node_count=0;
-numa_node_t* numa_nodes;
-u8* numa_node_locality_matrix;
+u32 KERNEL_INIT_WRITE numa_node_count=0;
+numa_node_t* KERNEL_INIT_WRITE numa_nodes;
+u8* KERNEL_INIT_WRITE numa_node_locality_matrix;
 
 
 

@@ -41,8 +41,8 @@ typedef struct __attribute__((packed)) _DSDT{
 
 
 
-static u32 _fadt_pm1a_control_block;
-static u32 _fadt_pm1b_control_block;
+static u32 KERNEL_INIT_WRITE _fadt_pm1a_control_block;
+static u32 KERNEL_INIT_WRITE _fadt_pm1b_control_block;
 
 
 

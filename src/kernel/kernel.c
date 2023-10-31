@@ -38,6 +38,7 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	PRINT_SECTION_DATA(kernel_ex);
 	PRINT_SECTION_DATA(kernel_nx);
 	PRINT_SECTION_DATA(kernel_rw);
+	PRINT_SECTION_DATA(kernel_iw);
 	PRINT_SECTION_DATA(kernel_bss);
 	INFO("Mmap Data:");
 	u64 total=0;
@@ -56,7 +57,15 @@ void kernel_adjust_memory_flags(void){
 	ADJUST_SECTION_FLAGS(kernel_ex,0);
 	ADJUST_SECTION_FLAGS(kernel_nx,VMM_PAGE_FLAG_NOEXECUTE);
 	ADJUST_SECTION_FLAGS(kernel_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(kernel_iw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 	ADJUST_SECTION_FLAGS(kernel_bss,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+}
+
+
+
+void kernel_adjust_memory_flags_after_init(void){
+	LOG("Adjusting memory flags (after init)...");
+	ADJUST_SECTION_FLAGS(kernel_iw,VMM_PAGE_FLAG_NOEXECUTE);
 }
 
 

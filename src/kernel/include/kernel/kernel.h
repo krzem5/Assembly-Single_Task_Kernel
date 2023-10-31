@@ -53,6 +53,7 @@ _KERNEL_DECLARE_SECTION(kernel);
 _KERNEL_DECLARE_SECTION(kernel_ex);
 _KERNEL_DECLARE_SECTION(kernel_nx);
 _KERNEL_DECLARE_SECTION(kernel_rw);
+_KERNEL_DECLARE_SECTION(kernel_iw);
 _KERNEL_DECLARE_SECTION(kernel_bss);
 
 _KERNEL_DECLARE_SECTION(cpu_local);
@@ -65,6 +66,10 @@ void kernel_init(const kernel_data_t* bootloader_kernel_data);
 
 
 void kernel_adjust_memory_flags(void);
+
+
+
+void kernel_adjust_memory_flags_after_init(void);
 
 
 

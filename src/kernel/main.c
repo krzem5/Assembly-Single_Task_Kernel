@@ -35,6 +35,7 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
+	kernel_adjust_memory_flags_after_init();
 	module_load(vfs_lookup(NULL,"/module/ahci.mod"));
 	module_load(vfs_lookup(NULL,"/module/ata.mod"));
 	module_load(vfs_lookup(NULL,"/module/gpt.mod"));

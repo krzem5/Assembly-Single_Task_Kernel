@@ -49,6 +49,12 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(kernel_rw);
+    DECLARE_SECTION_START(kernel_iw);
+    .kernel_iw : AT(ADDR(.kernel_iw) - BASE_ADDRESS_OFFSET){
+        *(.idata .idata*)
+        . = ALIGN(0x1000);
+    }
+    DECLARE_SECTION_END(kernel_iw);
     DECLARE_SECTION_START(kernel_bss);
     .bss : AT(ADDR(.bss) - BASE_ADDRESS_OFFSET){
         *(.bss)

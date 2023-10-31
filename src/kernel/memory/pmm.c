@@ -23,14 +23,13 @@ HANDLE_DECLARE_TYPE(PMM_COUNTER,{
 
 
 
-static pmm_allocator_t KERNEL_BSS _pmm_low_allocator;
-static pmm_allocator_t KERNEL_BSS _pmm_high_allocator;
-static u64 _pmm_block_address_offset=0;
+static pmm_allocator_t _pmm_low_allocator;
+static pmm_allocator_t _pmm_high_allocator;
 
 
 
 static KERNEL_INLINE pmm_allocator_page_header_t* _get_block_header(u64 address){
-	return (pmm_allocator_page_header_t*)(address+_pmm_block_address_offset);
+	return (pmm_allocator_page_header_t*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 
@@ -117,11 +116,11 @@ void pmm_init(void){
 	}
 	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
 	INFO("Low bitmap size: %v",low_bitmap_size);
-	_pmm_low_allocator.bitmap=(void*)pmm_align_up_address(kernel_data.first_free_address);
+	_pmm_low_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
 	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
 	INFO("High bitmap size: %v",high_bitmap_size);
-	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size);
+	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
 	LOG("Registering counters...");
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
@@ -144,9 +143,6 @@ void pmm_init(void){
 
 
 void pmm_init_high_mem(void){
-	_pmm_block_address_offset=VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	_pmm_low_allocator.bitmap=(void*)(((u64)(_pmm_low_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	_pmm_high_allocator.bitmap=(void*)(((u64)(_pmm_high_allocator.bitmap))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
@@ -210,7 +206,7 @@ u64 pmm_alloc_zero(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint
 	if (!out){
 		return 0;
 	}
-	memset((void*)(out+_pmm_block_address_offset),0,count<<PAGE_SIZE_SHIFT);
+	memset((void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,count<<PAGE_SIZE_SHIFT);
 	return out;
 }
 

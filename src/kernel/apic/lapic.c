@@ -30,8 +30,8 @@
 
 
 
-static CPU_LOCAL_DATA(u32,_lapic_timer_frequencies);
-static volatile u32* _lapic_registers;
+static KERNEL_INIT_WRITE CPU_LOCAL_DATA(u32,_lapic_timer_frequencies);
+static volatile u32* KERNEL_INIT_WRITE _lapic_registers;
 
 
 

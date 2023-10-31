@@ -17,7 +17,7 @@
 
 static u8 _isr_next_irq_index=33;
 
-event_t* irq_events[223];
+event_t* KERNEL_INIT_WRITE irq_events[223];
 
 
 
