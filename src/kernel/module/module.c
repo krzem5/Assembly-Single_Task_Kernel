@@ -203,7 +203,9 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 			module->gcov_info.size=section_header->sh_size;
 			INFO("Found .gcov_info section at %p (%v)",module->gcov_info.base,module->gcov_info.size);
 		}
-		memcpy((void*)(section_header->sh_addr),file_data+section_header->sh_offset,section_header->sh_size);
+		if (section_header->sh_type==SHT_PROGBITS){
+			memcpy((void*)(section_header->sh_addr),file_data+section_header->sh_offset,section_header->sh_size);
+		}
 		*var+=section_header->sh_size;
 		section_header++;
 	}
