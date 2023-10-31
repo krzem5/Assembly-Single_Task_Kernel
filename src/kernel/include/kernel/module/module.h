@@ -23,17 +23,17 @@
 typedef struct _MODULE_ADDRESS_REGION{
 	u64 base;
 	u64 size;
-} module_address_region_t;
+} module_address_range_t;
 
 
 
 typedef struct _MODULE{
 	handle_t handle;
 	const struct _MODULE_DESCRIPTOR* descriptor;
-	module_address_region_t ex_region;
-	module_address_region_t nx_region;
-	module_address_region_t rw_region;
-	module_address_region_t gcov_info;
+	module_address_range_t ex_region;
+	module_address_range_t nx_region;
+	module_address_range_t rw_region;
+	module_address_range_t gcov_info;
 	u8 state;
 } module_t;
 
