@@ -8,6 +8,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "fs"
 
 
@@ -52,10 +53,10 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	filesystem_t* out=omm_alloc(&_fs_allocator);
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
-	spinlock_init(&(out->lock));
 	out->descriptor=descriptor;
 	out->functions=NULL;
 	out->root=NULL;
+	memset(out->uuid,0,16);
 	return out;
 }
 

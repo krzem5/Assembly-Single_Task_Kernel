@@ -9,12 +9,12 @@
 
 typedef struct _FILESYSTEM{
 	handle_t handle;
-	spinlock_t lock;
 	struct _FILESYSTEM_DESCRIPTOR* descriptor;
 	const vfs_functions_t* functions;
 	struct _PARTITION* partition;
 	void* extra_data;
 	vfs_node_t* root;
+	u8 uuid[16];
 } filesystem_t;
 
 

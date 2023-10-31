@@ -561,17 +561,18 @@ if (rebuild_uefi_partition):
 	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 if (rebuild_data_partition):
-	_copy_file("build/user/shell.elf","build/initramfs/boot/boot.elf")
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
 		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf:
+	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf,open("build/user/shell.elf","rb") as shell_rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
+		shell_inode=kfs2.get_inode(data_fs,"/boot/shell.elf")
 		kfs2.set_file_content(data_fs,kernel_inode,kernel_rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
 		kfs2.set_file_content(data_fs,initramfs_inode,initramfs_rf.read())
+		kfs2.set_file_content(data_fs,shell_inode,shell_rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	data_fs.close()

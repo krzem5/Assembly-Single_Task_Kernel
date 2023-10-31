@@ -34,6 +34,7 @@
 
 typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 	uint64_t signature;
+	uint8_t uuid[16];
 	uint64_t block_count;
 	uint64_t inode_count;
 	uint64_t data_block_count;
@@ -78,6 +79,7 @@ typedef struct _KERNEL_DATA{
 	uint64_t smbios_address;
 	uint64_t initramfs_address;
 	uint64_t initramfs_size;
+	uint8_t boot_fs_uuid[16];
 } kernel_data_t;
 
 
@@ -265,6 +267,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	uint64_t first_free_address=0;
 	uint64_t initramfs_address=0;
 	uint64_t initramfs_size=0;
+	uint8_t boot_fs_uuid[16];
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
 		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize>KFS2_BLOCK_SIZE||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
@@ -277,6 +280,9 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		kfs2_root_block_t kfs2_root_block=*((const kfs2_root_block_t*)disk_buffer);
 		if (kfs2_root_block.signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_root_block.kernel_inode||!kfs2_root_block.initramfs_inode||!kfs_verify_crc(&kfs2_root_block,sizeof(kfs2_root_block_t))){
 			continue;
+		}
+		for (uint8_t j=0;j<16;j++){
+			boot_fs_uuid[j]=kfs2_root_block.uuid[j];
 		}
 		uint32_t block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/block_io_protocol->Media->BlockSize);
 		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.kernel_inode,KERNEL_MEMORY_ADDRESS);
@@ -331,6 +337,9 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	}
 	kernel_data->initramfs_address=initramfs_address;
 	kernel_data->initramfs_size=initramfs_size;
+	for (uint8_t i=0;i<16;i++){
+		kernel_data->boot_fs_uuid[i]=boot_fs_uuid[i];
+	}
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;

@@ -10,7 +10,7 @@
 
 
 
-static pmm_counter_descriptor_t _gpt_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("GPT");
+static pmm_counter_descriptor_t _gpt_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("gpt");
 
 
 

@@ -103,6 +103,9 @@ static void _dealloc_input_context(xhci_device_t* xhci_device,xhci_input_context
 static void _enqueue_event_raw(xhci_ring_t* ring,const void* data,u32 size,u32 flags){
 	xhci_transfer_block_t* transfer_block=ring->ring+ring->nidx;
 	if (flags&TRB_IDT){
+		if (size>8){
+			panic("_enqueue_event_raw: inline size too large");
+		}
 		memcpy((void*)(transfer_block->inline_data),data,size);
 	}
 	else if (!data){
@@ -248,6 +251,7 @@ static void _xhci_pipe_resize(void* ctx,usb_device_t* device,usb_pipe_t* pipe,u1
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_raw_control_request_t* request,void* data){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
+	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_raw_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
 	if (request->wLength){
 		_enqueue_event(xhci_pipe->ring,data,request->wLength,((!!(request->bRequestType&USB_DIR_IN))<<16)|TRB_TYPE_TR_DATA);
@@ -255,6 +259,7 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 	_enqueue_event(xhci_pipe->ring,NULL,0,((!(request->bRequestType&USB_DIR_IN))<<16)|TRB_IOC|TRB_TYPE_TR_STATUS);
 	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
 	_wait_for_all_events(xhci_device,xhci_pipe->ring);
+	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
 }
 
 
@@ -262,9 +267,11 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
+	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_pipe->ring,data,length,TRB_IOC|TRB_TYPE_TR_NORMAL);
 	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
 	_wait_for_all_events(xhci_device,xhci_pipe->ring);
+	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
 }
 
 

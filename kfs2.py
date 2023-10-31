@@ -1,6 +1,7 @@
 import array
 import binascii
 import struct
+import uuid
 
 
 
@@ -75,8 +76,9 @@ class KFS2FileBackend(object):
 
 
 class KFS2RootBlock(object):
-	def __init__(self,backend,block_count,inode_count,data_block_count,first_inode_block,first_data_block,first_bitmap_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode,initramfs_inode):
+	def __init__(self,backend,uuid,block_count,inode_count,data_block_count,first_inode_block,first_data_block,first_bitmap_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode,initramfs_inode):
 		self._backend=backend
+		self.uuid=uuid
 		self.block_count=block_count
 		self.inode_count=inode_count
 		self.data_block_count=data_block_count
@@ -91,8 +93,9 @@ class KFS2RootBlock(object):
 		self.initramfs_inode=initramfs_inode
 
 	def save(self):
-		header=struct.pack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
+		header=struct.pack(f"<Q16BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
 			KFS2_SIGNATURE,
+			*self.uuid,
 			self.block_count,
 			self.inode_count,
 			self.data_block_count,
@@ -112,25 +115,26 @@ class KFS2RootBlock(object):
 	@staticmethod
 	def load(backend):
 		backend.seek(0)
-		header=backend.read(152)
+		header=backend.read(168)
 		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<QQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
-		if (data[0]!=KFS2_SIGNATURE or data[7+2*KFS2_BITMAP_LEVEL_COUNT+4]!=crc):
+		data=struct.unpack(f"<Q16BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
+		if (data[0]!=KFS2_SIGNATURE or data[23+2*KFS2_BITMAP_LEVEL_COUNT+4]!=crc):
 			raise RuntimeError
 		return KFS2RootBlock(
 			backend,
-			data[1],
-			data[2],
-			data[3],
-			data[4],
-			data[5],
-			data[6],
-			data[7:7+KFS2_BITMAP_LEVEL_COUNT],
-			data[7+KFS2_BITMAP_LEVEL_COUNT:7+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[7+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[7+2*KFS2_BITMAP_LEVEL_COUNT+1],
-			data[7+2*KFS2_BITMAP_LEVEL_COUNT+2],
-			data[7+2*KFS2_BITMAP_LEVEL_COUNT+3]
+			data[1:17],
+			data[17],
+			data[18],
+			data[19],
+			data[20],
+			data[21],
+			data[22],
+			data[23:23+KFS2_BITMAP_LEVEL_COUNT],
+			data[23+KFS2_BITMAP_LEVEL_COUNT:23+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[23+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[23+2*KFS2_BITMAP_LEVEL_COUNT+1],
+			data[23+2*KFS2_BITMAP_LEVEL_COUNT+2],
+			data[23+2*KFS2_BITMAP_LEVEL_COUNT+3]
 		)
 
 
@@ -482,6 +486,7 @@ def format_partition(backend):
 	inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets=_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap)
 	root_block=KFS2RootBlock(
 		backend,
+		uuid.uuid4().bytes,
 		backend.block_count,
 		inode_count,
 		data_block_count,

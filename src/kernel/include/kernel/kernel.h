@@ -27,6 +27,7 @@ typedef struct _KERNEL_DATA{
 	u64 smbios_address;
 	u64 initramfs_address;
 	u64 initramfs_size;
+	u8 boot_fs_uuid[16];
 } kernel_data_t;
 
 

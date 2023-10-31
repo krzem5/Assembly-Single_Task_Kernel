@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/util/util.h>
 #include <kernel/vfs/name.h>
 #include <kernel/vfs/node.h>
 #include <kfs2/crc.h>
@@ -364,6 +365,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	out->root=_load_inode(out,root_name,0);
 	vfs_name_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
+	memcpy(out->uuid,root_block->uuid,16);
 	return out;
 }
 

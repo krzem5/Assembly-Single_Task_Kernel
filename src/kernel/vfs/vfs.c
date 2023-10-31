@@ -16,7 +16,10 @@ static vfs_node_t* KERNEL_INIT_WRITE _vfs_root_node=NULL;
 void vfs_mount(filesystem_t* fs,const char* path){
 	if (!path){
 		if (_vfs_root_node){
-			panic("Root filesystem already registered");
+			spinlock_acquire_exclusive(&(_vfs_root_node->lock));
+			vfs_name_dealloc(_vfs_root_node->name);
+			_vfs_root_node->name=vfs_name_alloc("<root>",0);
+			spinlock_release_exclusive(&(_vfs_root_node->lock));
 		}
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));

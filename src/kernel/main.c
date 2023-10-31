@@ -4,6 +4,7 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
+#include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
@@ -35,7 +36,6 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	kernel_adjust_memory_flags_after_init();
 	module_load(vfs_lookup(NULL,"/boot/module/ahci.mod"));
 	module_load(vfs_lookup(NULL,"/boot/module/ata.mod"));
 	module_load(vfs_lookup(NULL,"/boot/module/gpt.mod"));
@@ -48,8 +48,10 @@ static void _main_thread(void){
 #if KERNEL_COVERAGE_ENABLED
 	module_load(vfs_lookup(NULL,"/boot/module/coverage.mod"));
 #endif
-	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
-		panic("Unable to load boot file");
+	module_load(vfs_lookup(NULL,"/boot/module/os_loader.mod"));
+	kernel_adjust_memory_flags_after_init();
+	if (!elf_load(vfs_lookup(NULL,"/boot/shell.elf"))){
+		panic("Unable to load shell");
 	}
 }
 
