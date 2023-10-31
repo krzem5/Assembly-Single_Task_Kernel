@@ -50,7 +50,7 @@ static void _main_thread(void){
 #endif
 	module_load(vfs_lookup(NULL,"/boot/module/os_loader.mod"));
 	kernel_adjust_memory_flags_after_init();
-	if (!elf_load(vfs_lookup(NULL,"/boot/shell.elf"))){
+	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
 		panic("Unable to load shell");
 	}
 }

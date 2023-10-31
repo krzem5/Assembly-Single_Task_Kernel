@@ -569,7 +569,7 @@ if (rebuild_data_partition):
 	with open("build/kernel.bin","rb") as kernel_rf,open("build/partitions/initramfs.img","rb") as initramfs_rf,open("build/user/shell.elf","rb") as shell_rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
-		shell_inode=kfs2.get_inode(data_fs,"/boot/shell.elf")
+		shell_inode=kfs2.get_inode(data_fs,"/shell.elf")
 		kfs2.set_file_content(data_fs,kernel_inode,kernel_rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
 		kfs2.set_file_content(data_fs,initramfs_inode,initramfs_rf.read())
 		kfs2.set_file_content(data_fs,shell_inode,shell_rf.read())

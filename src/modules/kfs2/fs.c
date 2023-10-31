@@ -29,6 +29,7 @@ typedef struct _KFS2_VFS_NODE{
 
 
 
+static pmm_counter_descriptor_t _kfs2_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("kfs2_buffer");
 static pmm_counter_descriptor_t _kfs2_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_kfs2_node");
 static pmm_counter_descriptor_t _kfs2_extra_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_kfs2_extra_data");
 static pmm_counter_descriptor_t _kfs2_chunk_pmm_counter=PMM_COUNTER_INIT_STRUCT("kfs2_chunk");
@@ -49,23 +50,23 @@ static KERNEL_INLINE u8 _calculate_compressed_hash(const vfs_name_t* name){
 
 
 static vfs_node_t* _load_inode(filesystem_t* fs,const vfs_name_t* name,u32 inode){
-	u8 buffer[4096];
+	void* buffer=(void*)(pmm_alloc(1,&_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		return NULL;
-	}
+	kfs2_vfs_node_t* out=NULL;
 	kfs2_node_t* node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(inode)*sizeof(kfs2_node_t));
-	if (!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
-		return NULL;
+	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)||!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
+		goto _cleanup;
 	}
-	kfs2_vfs_node_t* out=(kfs2_vfs_node_t*)vfs_node_create(fs,name);
+	out=(kfs2_vfs_node_t*)vfs_node_create(fs,name);
 	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
 		out->node.flags=(out->node.flags&(~VFS_NODE_TYPE_MASK))|VFS_NODE_TYPE_DIRECTORY;
 	}
 	out->kfs2_node=*node;
 	out->kfs2_node._inode=inode;
+_cleanup:
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_kfs2_buffer_pmm_counter);
 	return (vfs_node_t*)out;
 }
 
