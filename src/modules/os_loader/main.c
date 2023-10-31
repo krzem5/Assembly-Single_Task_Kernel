@@ -10,7 +10,24 @@
 
 
 
+#define EARLY_MODULE_DIRECTORY "/boot/module"
+
+
+
 static _Bool _init(module_t* module){
+	LOG("Loading early modules...");
+	vfs_node_t* dir=vfs_lookup(NULL,EARLY_MODULE_DIRECTORY);
+	if (!dir){
+		panic("Unable to locate early module directory");
+	}
+	vfs_name_t* module_name;
+	for (u64 pointer=vfs_node_iterate(dir,0,&module_name);pointer;pointer=vfs_node_iterate(dir,pointer,&module_name)){
+		if (streq(module_name->data,"os_loader.mod")){
+			continue;
+		}
+		INFO("Loading early module '%s'...",module_name->data);
+		module_load(vfs_lookup(dir,module_name->data));
+	}
 	LOG("Searching for boot filesystem...");
 	filesystem_t* boot_fs=NULL;
 	HANDLE_FOREACH(HANDLE_TYPE_FS){

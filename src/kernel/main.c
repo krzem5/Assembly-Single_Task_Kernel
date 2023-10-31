@@ -36,20 +36,12 @@ static void _main_thread(void){
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
-	module_load(vfs_lookup(NULL,"/boot/module/ahci.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/ata.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/gpt.mod"));
+	kernel_adjust_memory_flags_after_init();
+	module_load(vfs_lookup(NULL,"/boot/module/os_loader.mod"));
 	module_load(vfs_lookup(NULL,"/boot/module/i82540.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/iso9660.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/kfs2.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/nvme.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/usb_msc.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/xhci.mod"));
 #if KERNEL_COVERAGE_ENABLED
 	module_load(vfs_lookup(NULL,"/boot/module/coverage.mod"));
 #endif
-	module_load(vfs_lookup(NULL,"/boot/module/os_loader.mod"));
-	kernel_adjust_memory_flags_after_init();
 	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
 		panic("Unable to load shell");
 	}

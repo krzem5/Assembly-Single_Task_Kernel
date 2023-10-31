@@ -30,7 +30,7 @@ class Node(object):
 
 
 def _generate_tree(directory,node):
-	for name in os.listdir(directory):
+	for name in sorted(os.listdir(directory)):
 		path=os.path.join(directory,name)
 		if (os.path.isfile(path)):
 			node.add_child(Node(name,0,path))
