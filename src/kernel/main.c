@@ -36,17 +36,17 @@ static void _main_thread(void){
 	random_init();
 	serial_init_irq();
 	kernel_adjust_memory_flags_after_init();
-	module_load(vfs_lookup(NULL,"/module/ahci.mod"));
-	module_load(vfs_lookup(NULL,"/module/ata.mod"));
-	module_load(vfs_lookup(NULL,"/module/gpt.mod"));
-	module_load(vfs_lookup(NULL,"/module/i82540.mod"));
-	module_load(vfs_lookup(NULL,"/module/iso9660.mod"));
-	module_load(vfs_lookup(NULL,"/module/kfs2.mod"));
-	module_load(vfs_lookup(NULL,"/module/nvme.mod"));
-	module_load(vfs_lookup(NULL,"/module/usb_msc.mod"));
-	module_load(vfs_lookup(NULL,"/module/xhci.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/ahci.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/ata.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/gpt.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/i82540.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/iso9660.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/kfs2.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/nvme.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/usb_msc.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/xhci.mod"));
 #if KERNEL_COVERAGE_ENABLED
-	module_load(vfs_lookup(NULL,"/module/coverage.mod"));
+	module_load(vfs_lookup(NULL,"/boot/module/coverage.mod"));
 #endif
 	if (!elf_load(vfs_lookup(NULL,"/boot/boot.elf"))){
 		panic("Unable to load boot file");

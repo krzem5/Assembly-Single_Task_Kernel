@@ -40,7 +40,7 @@ BUILD_DIRECTORIES=[
 	"build/hashes/user",
 	"build/initramfs",
 	"build/initramfs/boot",
-	"build/initramfs/module",
+	"build/initramfs/boot/module",
 	"build/module",
 	"build/objects",
 	"build/objects/kernel",
@@ -563,7 +563,7 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition):
 	_copy_file("build/user/shell.elf","build/initramfs/boot/boot.elf")
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
-		_copy_file(f"build/module/{module}.mod",f"build/initramfs/module/{module}.mod")
+		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
