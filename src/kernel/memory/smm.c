@@ -1,8 +1,10 @@
+#include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
+#define KERNEL_LOG_NAME "smm"
 
 
 
