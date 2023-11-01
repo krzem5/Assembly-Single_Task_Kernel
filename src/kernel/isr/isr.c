@@ -41,25 +41,36 @@ u8 isr_allocate(void){
 
 
 void _isr_handler(isr_state_t* isr_state){
-	// User-receivable exceptions [((rflags>>12)&3)==3]: 0 (Division Error), 3 (Breakpoint), 4 (Overflow), 5 (Bound Range Exceeded), 6 (Invalid Opcode), 13 (General Protection Fault), 14 (Page Fault), 16 (x87 Floating-Point Exception), 19 (SIMD Floating-Point Exception)
-	if (isr_state->isr==14){
-		if (pf_handle_fault(isr_state)){
-			return;
-		}
-		ERROR("Page fault");
-		ERROR("Address: %p, Error: %p [%u]",pf_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
-	}
-	else if (isr_state->isr==32){
+	if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
 		return;
 	}
-	else if (isr_state->isr>32){
+	if (isr_state->isr==14&&pf_handle_fault(isr_state)){
+		return;
+	}
+	if (isr_state->isr>32){
 		lapic_eoi();
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
-	else if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
+	if (((isr_state->rflags>>12)&3)==3&&(0b00000000000010010110000001111001&(1<<isr_state->isr))){
+		//  0: Division Error
+		//  3: Breakpoint
+		//  4: Overflow
+		//  5: Bound Range Exceeded
+		//  6: Invalid Opcode
+		// 13: General Protection Fault
+		// 14: Page Fault
+		// 16: x87 Floating-Point Exception
+		// 19: SIMD Floating-Point Exception
+		panic("Forward ISR to user process");
+	}
+	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
 		panic("Page fault stack not present");
+	}
+	else if (isr_state->isr==14){
+		ERROR("Page fault");
+		ERROR("Address: %p, Error: %p [%u]",pf_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
 	}
 	else{
 		ERROR("Crash");
