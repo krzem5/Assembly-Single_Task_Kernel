@@ -50,7 +50,7 @@ void process_init(void){
 	mmap_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
 	mmap_init(kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
-	if (!mmap_reserve(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address)){
+	if (!mmap_reserve(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL)){
 		panic("Unable to reserve kernel memory");
 	}
 }

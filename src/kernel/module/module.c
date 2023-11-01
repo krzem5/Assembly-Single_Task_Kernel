@@ -40,10 +40,11 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static void _module_alloc_region(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	region->base=mmap_reserve(&process_kernel_image_mmap,0,region->size);
-	if (!region->base){
+	mmap_region_t* mmap_region=mmap_reserve(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter);
+	if (!mmap_region){
 		panic("Unable to reserve module section memory");
 	}
+	region->base=mmap_region->rb_node.key;
 	vmm_map_pages(&vmm_kernel_pagemap,pmm_alloc_zero(region->size>>PAGE_SIZE_SHIFT,&_module_image_pmm_counter,0),region->base,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,region->size>>PAGE_SIZE_SHIFT);
 }
 

@@ -27,6 +27,9 @@
 
 
 
+static pmm_counter_descriptor_t _thread_user_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_stack");
+static pmm_counter_descriptor_t _thread_kernel_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("kernel_stack");
+static pmm_counter_descriptor_t _thread_pf_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("pf_stack");
 static pmm_counter_descriptor_t _thread_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_thread");
 static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT("thread",sizeof(thread_t),8,4,&_thread_omm_pmm_counter);
 static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
@@ -59,12 +62,23 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->process=process;
-	out->user_stack_bottom=mmap_reserve(&(process->mmap),0,user_stack_size);
-	out->kernel_stack_bottom=mmap_reserve(&(process->mmap),0,kernel_stack_size);
-	out->pf_stack_bottom=mmap_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	if ((user_stack_size&&!out->user_stack_bottom)||!out->kernel_stack_bottom||!out->pf_stack_bottom){
-		panic("Unable to reserve thread stacks");
+	if (user_stack_size){
+		mmap_region_t* region=mmap_reserve(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter);
+		if (!region){
+			panic("Unable to reserve thread stack");
+		}
+		out->user_stack_bottom=region->rb_node.key;
 	}
+	mmap_region_t* region=mmap_reserve(&(process->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter);
+	if (!region){
+		panic("Unable to reserve thread stack");
+	}
+	out->kernel_stack_bottom=region->rb_node.key;
+	region=mmap_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter);
+	if (!region){
+		panic("Unable to reserve thread stack");
+	}
+	out->pf_stack_bottom=region->rb_node.key;
 	vmm_reserve_pages(&(process->pagemap),out->user_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,user_stack_size>>PAGE_SIZE_SHIFT);
 	vmm_reserve_pages(&(process->pagemap),out->kernel_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,kernel_stack_size>>PAGE_SIZE_SHIFT);
 	vmm_commit_pages(&(process->pagemap),out->pf_stack_bottom,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,CPU_PAGE_FAULT_STACK_PAGE_COUNT);

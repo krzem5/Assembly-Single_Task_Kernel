@@ -46,7 +46,7 @@ _Bool elf_load(vfs_node_t* node){
 		u64 offset=program_header.p_vaddr&(PAGE_SIZE-1);
 		u64 page_count=pmm_align_up_address(program_header.p_memsz+offset)>>PAGE_SIZE_SHIFT;
 		u64 pages=pmm_alloc_zero(page_count,&_user_image_pmm_counter,0);
-		if (!mmap_reserve(&(process->mmap),program_header.p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT)){
+		if (!mmap_reserve(&(process->mmap),program_header.p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT,&_user_image_pmm_counter)){
 			goto _error;
 		}
 		vmm_map_pages(&(process->pagemap),pages,program_header.p_vaddr-offset,flags,page_count);

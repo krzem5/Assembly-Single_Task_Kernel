@@ -39,6 +39,10 @@ typedef struct _USER_MEMORY_OBJECT_ALLOCATOR_DATA{
 
 
 
+static pmm_counter_descriptor_t _user_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_data");
+
+
+
 void syscall_memory_get_range(syscall_registers_t* regs){
 	if (regs->rdi>=kernel_data.mmap_size||regs->rdx!=sizeof(user_memory_range_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
@@ -54,11 +58,11 @@ void syscall_memory_get_range(syscall_registers_t* regs){
 
 void syscall_memory_map(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
-	u64 out=mmap_reserve(&(THREAD_DATA->process->mmap),0,length);
+	mmap_region_t* out=mmap_reserve(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter);
 	if (out){
-		vmm_reserve_pages(&(THREAD_DATA->process->pagemap),out,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,length>>PAGE_SIZE_SHIFT);
+		vmm_reserve_pages(&(THREAD_DATA->process->pagemap),out->rb_node.key,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,length>>PAGE_SIZE_SHIFT);
 	}
-	regs->rax=out;
+	regs->rax=out->rb_node.key;
 }
 
 

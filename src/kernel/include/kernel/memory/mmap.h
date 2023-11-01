@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MEMORY_MMAP_H_
 #define _KERNEL_MEMORY_MMAP_H_ 1
 #include <kernel/lock/spinlock.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -16,6 +17,7 @@ typedef struct _MMAP_REGION{
 	struct _MMAP_LENGTH_GROUP* group;
 	struct _MMAP_REGION* group_prev;
 	struct _MMAP_REGION* group_next;
+	pmm_counter_descriptor_t* pmm_counter;
 } mmap_region_t;
 
 
@@ -43,7 +45,7 @@ void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap);
 
 
 
-u64 mmap_reserve(mmap_t* mmap,u64 address,u64 length);
+mmap_region_t* mmap_reserve(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter);
 
 
 
