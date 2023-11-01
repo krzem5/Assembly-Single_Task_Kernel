@@ -70,7 +70,7 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	else if (isr_state->isr==14){
 		ERROR("Page fault");
-		ERROR("Address: %p, Error: %p [%u]",pf_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
+		ERROR("Address: %p, Error: %p",pf_get_fault_address(),isr_state->error);
 	}
 	else{
 		ERROR("Crash");
