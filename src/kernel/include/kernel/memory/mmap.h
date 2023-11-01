@@ -2,25 +2,25 @@
 #define _KERNEL_MEMORY_MMAP_H_ 1
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
 
 
 typedef struct _VMM_MEMORY_MAP_REGION{
 	_Bool is_used;
-	u64 offset;
-	u64 length;
 	rb_tree_node_t rb_offset_node;
 	rb_tree_node_t rb_length_node;
-	struct _VMM_MEMORY_MAP_REGION* next;
 	struct _VMM_MEMORY_MAP_REGION* prev;
+	struct _VMM_MEMORY_MAP_REGION* next;
 } vmm_memory_map_region_t;
 
 
 
 typedef struct _VMM_MEMORY_MAP{
 	spinlock_t lock;
-	vmm_memory_map_region_t* first;
+	rb_tree_t offset_tree;
+	rb_tree_t length_tree;
 } vmm_memory_map_t;
 
 

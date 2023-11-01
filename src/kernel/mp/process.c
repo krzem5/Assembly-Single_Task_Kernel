@@ -44,6 +44,7 @@ void process_init(void){
 	LOG("Creating kernel process...");
 	process_kernel=omm_alloc(&_process_allocator);
 	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
+	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	vmm_memory_map_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));

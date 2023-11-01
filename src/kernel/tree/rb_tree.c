@@ -192,6 +192,34 @@ rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 
 
 
+rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
+	spinlock_acquire_shared(&(tree->lock));
+	rb_tree_node_t* x=tree->root;
+	while (x&&x->key!=key){
+		rb_tree_node_t* y=x->rb_nodes[x->key<key];
+		if (y!=NIL_NODE){
+			x=y;
+			continue;
+		}
+		if (x->key<key){
+			break;
+		}
+		if (x->rb_left!=NIL_NODE){
+			for (x=x->rb_left;x->rb_right!=NIL_NODE;x=x->rb_right);
+			break;
+		}
+		do{
+			y=x;
+			x=_get_parent(x);
+		} while (x&&y==x->rb_left);
+		break;
+	}
+	spinlock_release_shared(&(tree->lock));
+	return x;
+}
+
+
+
 rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
