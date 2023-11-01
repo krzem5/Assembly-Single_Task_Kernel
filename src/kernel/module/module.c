@@ -1,3 +1,4 @@
+#include <kernel/elf/structures.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -17,93 +18,6 @@
 
 
 #define MODULE_ROOT_DIRECTORY "/boot/module"
-
-
-
-#define SHN_UNDEF 0
-
-#define SHT_PROGBITS 1
-#define SHT_SYMTAB 2
-#define SHT_STRTAB 3
-#define SHT_RELA 4
-#define SHT_NOBITS 8
-#define SHT_REL 9
-
-#define SHF_WRITE 1
-#define SHF_ALLOC 2
-#define SHF_EXECINSTR 4
-
-#define R_X86_64_NONE 0
-#define R_X86_64_64 1
-#define R_X86_64_PC32 2
-#define R_X86_64_PLT32 4
-#define R_X86_64_32 10
-#define R_X86_64_32S 11
-
-
-
-typedef struct _ELF_HEADER{
-	u32 signature;
-	u8 word_size;
-	u8 endianess;
-	u8 header_version;
-	u8 abi;
-	u8 _padding[8];
-	u16 e_type;
-	u16 e_machine;
-	u32 e_version;
-	u64 e_entry;
-	u64 e_phoff;
-	u64 e_shoff;
-	u32 e_flags;
-	u16 e_ehsize;
-	u16 e_phentsize;
-	u16 e_phnum;
-	u16 e_shentsize;
-	u16 e_shnum;
-	u16 e_shstrndx;
-} elf_header_t;
-
-
-
-typedef struct _ELF_SECTION_HEADER{
-	u32 sh_name;
-	u32 sh_type;
-	u64 sh_flags;
-	u64 sh_addr;
-	u64 sh_offset;
-	u64 sh_size;
-	u32 sh_link;
-	u32 sh_info;
-	u64 sh_addralign;
-	u64 sh_entsize;
-} elf_section_header_t;
-
-
-
-typedef struct _ELF_RELOCATION_ENTRY{
-	u64 r_offset;
-	u64 r_info;
-} elf_relocation_entry_t;
-
-
-
-typedef struct _ELF_RELOCATION_ADDEND_ENTRY{
-	u64 r_offset;
-	u64 r_info;
-	s64 r_addend;
-} elf_relocation_addend_entry_t;
-
-
-
-typedef struct _ELF_SYMBOL_TABLE_ENTRY{
-	u32 st_name;
-	u8 st_info;
-	u8 st_other;
-	u16 st_shndx;
-	u64 st_value;
-	u64 st_size;
-} elf_symbol_table_entry_t;
 
 
 
@@ -135,9 +49,9 @@ static void _module_alloc_region(module_address_range_t* region){
 
 
 
-static void _map_section_addresses(void* file_data,const elf_header_t* header,module_t* module){
+static void _map_section_addresses(void* file_data,const elf_hdr_t* header,module_t* module){
 	INFO("Mapping section addresses...");
-	elf_section_header_t* section_header=file_data+header->e_shoff+header->e_shstrndx*sizeof(elf_section_header_t);
+	elf_shdr_t* section_header=file_data+header->e_shoff+header->e_shstrndx*sizeof(elf_shdr_t);
 	const char* string_table=file_data+section_header->sh_offset;
 	module->ex_region.size=0;
 	module->nx_region.size=0;
@@ -223,9 +137,9 @@ static void _map_section_addresses(void* file_data,const elf_header_t* header,mo
 
 
 
-static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 symbol_table_size,const char* string_table){
+static void _resolve_symbol_table(elf_sym_t* symbol_table,u64 symbol_table_size,const char* string_table){
 	INFO("Resolving symbols...");
-	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_symbol_table_entry_t)){
+	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_sym_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
 			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
 		}
@@ -235,16 +149,16 @@ static void _resolve_symbol_table(elf_symbol_table_entry_t* symbol_table,u64 sym
 
 
 
-static void _apply_relocations(void* file_data,const elf_header_t* header){
-	const elf_section_header_t* section_header=file_data+header->e_shoff;
-	elf_symbol_table_entry_t* symbol_table=NULL;
+static void _apply_relocations(void* file_data,const elf_hdr_t* header){
+	const elf_shdr_t* section_header=file_data+header->e_shoff;
+	elf_sym_t* symbol_table=NULL;
 	u64 symbol_table_size=0;
 	const char* string_table=NULL;
 	for (u16 i=0;i<header->e_shnum;i++){
 		if (section_header->sh_type==SHT_SYMTAB){
 			symbol_table=file_data+section_header->sh_offset;
 			symbol_table_size=section_header->sh_size;
-			section_header=file_data+header->e_shoff+section_header->sh_link*sizeof(elf_section_header_t);
+			section_header=file_data+header->e_shoff+section_header->sh_link*sizeof(elf_shdr_t);
 			string_table=file_data+section_header->sh_offset;
 			break;
 		}
@@ -254,17 +168,17 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 	INFO("Applying relocations...");
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
-		u64 base=((const elf_section_header_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_section_header_t)))->sh_addr;
+		u64 base=((const elf_shdr_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_shdr_t)))->sh_addr;
 		if (section_header->sh_type==SHT_REL&&base){
 			panic("SHT_REL");
 		}
 		if (section_header->sh_type==SHT_RELA&&base){
-			const elf_relocation_addend_entry_t* entry=file_data+section_header->sh_offset;
-			for (u64 i=0;i<section_header->sh_size;i+=sizeof(elf_relocation_addend_entry_t)){
-				const elf_symbol_table_entry_t* symbol=symbol_table+(entry->r_info>>32);
+			const elf_rela_t* entry=file_data+section_header->sh_offset;
+			for (u64 i=0;i<section_header->sh_size;i+=sizeof(elf_rela_t)){
+				const elf_sym_t* symbol=symbol_table+(entry->r_info>>32);
 				u64 relocation_address=base+entry->r_offset;
 				u64 value=symbol->st_value;
-				value+=entry->r_addend+((const elf_section_header_t*)(file_data+header->e_shoff+symbol->st_shndx*sizeof(elf_section_header_t)))->sh_addr;
+				value+=entry->r_addend+((const elf_shdr_t*)(file_data+header->e_shoff+symbol->st_shndx*sizeof(elf_shdr_t)))->sh_addr;
 				switch (entry->r_info&0xffffffff){
 					case R_X86_64_NONE:
 						break;
@@ -322,8 +236,8 @@ module_t* module_load(const char* name){
 		return NULL;
 	}
 	INFO("Loading module from file...");
-	elf_header_t header;
-	if (vfs_node_read(module_file,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)||header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=1||header.e_machine!=0x3e||header.e_version!=1){
+	elf_hdr_t header;
+	if (vfs_node_read(module_file,0,&header,sizeof(elf_hdr_t))!=sizeof(elf_hdr_t)||header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_REL||header.e_machine!=0x3e||header.e_version!=1){
 		spinlock_release_exclusive(&_module_global_lock);
 		return NULL;
 	}
