@@ -85,12 +85,6 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
-static string_t* _duplicate_string(const char* str){
-	return smm_alloc(str,0);
-}
-
-
-
 void bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	const smbios_t* smbios=(void*)vmm_identity_map(kernel_data.smbios_address,sizeof(smbios_t));
@@ -103,15 +97,15 @@ void bios_get_system_data(void){
 		const smbios_header_t* header=(void*)offset;
 		switch (header->type){
 			case SMBIOS_HEADER_TYPE_BIOS_INFORMATION:
-				bios_data.bios_vendor=_duplicate_string(_get_header_string(header,header->bios_information.vendor));
-				bios_data.bios_version=_duplicate_string(_get_header_string(header,header->bios_information.bios_version));
+				bios_data.bios_vendor=smm_alloc(_get_header_string(header,header->bios_information.vendor),0);
+				bios_data.bios_version=smm_alloc(_get_header_string(header,header->bios_information.bios_version),0);
 				break;
 			case SMBIOS_HEADER_TYPE_SYSTEM_INFORMATION:
-				bios_data.manufacturer=_duplicate_string(_get_header_string(header,header->system_information.manufacturer));
-				bios_data.product=_duplicate_string(_get_header_string(header,header->system_information.product_name));
-				bios_data.version=_duplicate_string(_get_header_string(header,header->system_information.version));
+				bios_data.manufacturer=smm_alloc(_get_header_string(header,header->system_information.manufacturer),0);
+				bios_data.product=smm_alloc(_get_header_string(header,header->system_information.product_name),0);
+				bios_data.version=smm_alloc(_get_header_string(header,header->system_information.version),0);
 				if (!serial_number_found){
-					bios_data.serial_number=_duplicate_string(_get_header_string(header,header->system_information.serial_number));
+					bios_data.serial_number=smm_alloc(_get_header_string(header,header->system_information.serial_number),0);
 				}
 				for (u8 i=0;i<4;i++){
 					bios_data.uuid[i]=header->system_information.uuid[3-i];
@@ -136,7 +130,7 @@ void bios_get_system_data(void){
 				}
 				break;
 			case SMBIOS_HEADER_TYPE_BASEBOARD_INFORMATION:
-				bios_data.serial_number=_duplicate_string(_get_header_string(header,header->baseboard_information.serial_number));
+				bios_data.serial_number=smm_alloc(_get_header_string(header,header->baseboard_information.serial_number),0);
 				serial_number_found=1;
 				break;
 		}
