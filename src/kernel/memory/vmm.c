@@ -11,7 +11,6 @@
 
 
 static pmm_counter_descriptor_t _vmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm");
-static pmm_counter_descriptor_t _vmm_shadow_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm_shadow");
 
 
 
@@ -353,60 +352,6 @@ _cleanup:
 	spinlock_release_shared(&(pagemap->lock));
 	scheduler_resume();
 	return out;
-}
-
-
-
-void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
-	flags&=~VMM_PAGE_FLAG_PRESENT;
-	for (;count;count--){
-		vmm_map_page(pagemap,VMM_SHADOW_PAGE_ADDRESS,virtual_address,flags);
-		virtual_address+=PAGE_SIZE;
-	}
-}
-
-
-
-void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count){
-	flags|=VMM_PAGE_FLAG_PRESENT;
-	for (;count;count--){
-		vmm_map_page(pagemap,pmm_alloc_zero(1,&_vmm_shadow_pmm_counter,0),virtual_address,flags);
-		virtual_address+=PAGE_SIZE;
-	}
-}
-
-
-
-void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
-	scheduler_pause();
-	spinlock_acquire_exclusive(&(pagemap->lock));
-	for (;count;count--){
-		u64 entry=*_lookup_virtual_address(pagemap,virtual_address);
-		if ((entry&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
-			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_shadow_pmm_counter);
-		}
-		_unmap_page(pagemap,virtual_address);
-		virtual_address+=PAGE_SIZE;
-	}
-	spinlock_release_exclusive(&(pagemap->lock));
-	scheduler_resume();
-}
-
-
-
-_Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address){
-	scheduler_pause();
-	spinlock_acquire_exclusive(&(pagemap->lock));
-	u64* entry=_lookup_virtual_address(pagemap,virtual_address);
-	if (!entry||((*entry)&VMM_PAGE_ADDRESS_MASK)!=VMM_SHADOW_PAGE_ADDRESS){
-		spinlock_release_exclusive(&(pagemap->lock));
-		scheduler_resume();
-		return 0;
-	}
-	*entry=((*entry)&(~VMM_PAGE_ADDRESS_MASK))|pmm_alloc_zero(1,&_vmm_shadow_pmm_counter,0)|VMM_PAGE_FLAG_PRESENT;
-	spinlock_release_exclusive(&(pagemap->lock));
-	scheduler_resume();
-	return 1;
 }
 
 

@@ -63,7 +63,7 @@ void mmap_init(u64 low,u64 high,mmap_t* out){
 	rb_tree_init(&(out->offset_tree));
 	rb_tree_init(&(out->length_tree));
 	mmap_region_t* region=omm_alloc(&_mmap_region_allocator);
-	region->is_used=0;
+	region->flags=0;
 	region->rb_node.key=low;
 	region->length=high-low;
 	region->prev=NULL;
@@ -84,9 +84,9 @@ void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap){
 
 
 
-mmap_region_t* mmap_reserve(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter){
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vmm_pagemap_t* pagemap){
 	if ((address|length)&(PAGE_SIZE-1)){
-		panic("mmap_reserve: unaligned arguments");
+		panic("mmap_alloc: unaligned arguments");
 	}
 	if (!length){
 		return NULL;
@@ -115,7 +115,7 @@ mmap_region_t* mmap_reserve(mmap_t* mmap,u64 address,u64 length,pmm_counter_desc
 	if (!address){
 		address=region->rb_node.key;
 	}
-	else if (region->is_used||address-region->rb_node.key+length>region->length){
+	else if ((region->flags&MMAP_REGION_FLAG_USED)||address-region->rb_node.key+length>region->length){
 		spinlock_release_exclusive(&(mmap->lock));
 		return NULL;
 	}
@@ -137,7 +137,7 @@ mmap_region_t* mmap_reserve(mmap_t* mmap,u64 address,u64 length,pmm_counter_desc
 	}
 	if (region->length>length){
 		mmap_region_t* new_region=omm_alloc(&_mmap_region_allocator);
-		new_region->is_used=0;
+		new_region->flags=0;
 		new_region->rb_node.key=address+length;
 		new_region->length=region->length-length;
 		new_region->prev=region;
@@ -150,17 +150,23 @@ mmap_region_t* mmap_reserve(mmap_t* mmap,u64 address,u64 length,pmm_counter_desc
 		rb_tree_insert_node(&(mmap->offset_tree),&(new_region->rb_node));
 		_add_region_to_length_tree(mmap,new_region);
 	}
-	region->is_used=1;
+	region->flags=flags|MMAP_REGION_FLAG_USED;
 	region->pmm_counter=pmm_counter;
 	spinlock_release_exclusive(&(mmap->lock));
+	if (pagemap){
+		u64 vmm_flags=mmap_get_vmm_flags(region);
+		for (u64 i=0;i<length;i+=PAGE_SIZE){
+			vmm_map_page(pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
+		}
+	}
 	return region;
 }
 
 
 
-_Bool mmap_release(mmap_t* mmap,u64 address,u64 length){
+_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
-		panic("mmap_release: unaligned arguments");
+		panic("mmap_dealloc: unaligned arguments");
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
 	rb_tree_node_t* rb_node=rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
@@ -169,14 +175,14 @@ _Bool mmap_release(mmap_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
-	if (!region->is_used){
+	if (!(region->flags&MMAP_REGION_FLAG_USED)){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
 	if (region->rb_node.key!=address||region->length!=length){
-		panic("mmap_release: partial release");
+		panic("mmap_dealloc: partial release");
 	}
-	if (region->prev&&!region->prev->is_used){
+	if (region->prev&&!(region->prev->flags&MMAP_REGION_FLAG_USED)){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
 		_remove_region_from_length_tree(mmap,prev_region);
@@ -188,7 +194,7 @@ _Bool mmap_release(mmap_t* mmap,u64 address,u64 length){
 		omm_dealloc(&_mmap_region_allocator,region);
 		region=prev_region;
 	}
-	if (region->next&&!region->next->is_used){
+	if (region->next&&!(region->next->flags&MMAP_REGION_FLAG_USED)){
 		mmap_region_t* next_region=region->next;
 		rb_tree_remove_node(&(mmap->offset_tree),&(next_region->rb_node));
 		_remove_region_from_length_tree(mmap,next_region);
@@ -199,8 +205,33 @@ _Bool mmap_release(mmap_t* mmap,u64 address,u64 length){
 		}
 		omm_dealloc(&_mmap_region_allocator,next_region);
 	}
-	region->is_used=0;
+	region->flags=0;
 	_add_region_to_length_tree(mmap,region);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
+}
+
+
+
+mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
+	spinlock_acquire_exclusive(&(mmap->lock));
+	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
+	spinlock_release_exclusive(&(mmap->lock));
+	return (out&&(out->flags&MMAP_REGION_FLAG_USED)?out:NULL);
+}
+
+
+
+u64 mmap_get_vmm_flags(mmap_region_t* region){
+	u64 out=VMM_PAGE_FLAG_PRESENT;
+	if (region->flags&MMAP_REGION_FLAG_VMM_READWRITE){
+		out|=VMM_PAGE_FLAG_READWRITE;
+	}
+	if (region->flags&MMAP_REGION_FLAG_VMM_USER){
+		out|=VMM_PAGE_FLAG_USER;
+	}
+	if (region->flags&MMAP_REGION_FLAG_VMM_NOEXECUTE){
+		out|=VMM_PAGE_FLAG_NOEXECUTE;
+	}
+	return out;
 }

@@ -17,8 +17,6 @@
 
 #define VMM_PAGE_ADDRESS_MASK 0x0000fffffffff000ull
 
-#define VMM_SHADOW_PAGE_ADDRESS 0x1000
-
 #define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
 
 
@@ -69,22 +67,6 @@ u64 vmm_identity_map(u64 physical_address,u64 size);
 
 
 u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address);
-
-
-
-void vmm_reserve_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count);
-
-
-
-void vmm_commit_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 flags,u64 count);
-
-
-
-void vmm_release_pages(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
-
-
-
-_Bool vmm_map_shadow_page(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 

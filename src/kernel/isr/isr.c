@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
 #include <kernel/isr/isr.h>
+#include <kernel/isr/pf.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -43,9 +44,7 @@ u8 isr_allocate(void){
 
 void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14){
-		u64 address=vmm_get_fault_address()&(-PAGE_SIZE);
-		if (!(isr_state->error&1)&&CPU_HEADER_DATA->current_thread&&vmm_map_shadow_page(&(THREAD_DATA->process->pagemap),address)){
-			vmm_invalidate_tlb_entry(address);
+		if (pf_handle_fault(isr_state)){
 			return;
 		}
 		ERROR("Page fault");

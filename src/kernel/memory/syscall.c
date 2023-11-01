@@ -58,23 +58,15 @@ void syscall_memory_get_range(syscall_registers_t* regs){
 
 void syscall_memory_map(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
-	mmap_region_t* out=mmap_reserve(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter);
-	if (out){
-		vmm_reserve_pages(&(THREAD_DATA->process->pagemap),out->rb_node.key,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,length>>PAGE_SIZE_SHIFT);
-	}
-	regs->rax=out->rb_node.key;
+	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	regs->rax=(out?out->rb_node.key:0);
 }
 
 
 
 void syscall_memory_unmap(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rsi);
-	if (!mmap_release(&(THREAD_DATA->process->mmap),regs->rdi,length)){
-		regs->rax=0;
-		return;
-	}
-	vmm_release_pages(&(THREAD_DATA->process->pagemap),regs->rdi,length>>PAGE_SIZE_SHIFT);
-	regs->rax=1;
+	regs->rax=mmap_dealloc(&(THREAD_DATA->process->mmap),regs->rdi,length);
 }
 
 
