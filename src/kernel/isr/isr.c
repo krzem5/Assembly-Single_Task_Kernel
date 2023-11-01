@@ -53,16 +53,21 @@ void _isr_handler(isr_state_t* isr_state){
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
-	if (((isr_state->rflags>>12)&3)==3&&(0b00000000000010010110000001111001&(1<<isr_state->isr))){
-		//  0: Division Error
-		//  3: Breakpoint
-		//  4: Overflow
-		//  5: Bound Range Exceeded
-		//  6: Invalid Opcode
-		// 13: General Protection Fault
-		// 14: Page Fault
-		// 16: x87 Floating-Point Exception
-		// 19: SIMD Floating-Point Exception
+	if (CPU_HEADER_DATA->current_thread&&((isr_state->rflags>>12)&3)==3&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
+		// SIGNAL_ZDE Zero Division Error
+		// SIGNAL_SCE System Call Exception
+		// SIGNAL_IOE Invalid Opcode Error
+		// SIGNAL_GPF General Protection Fault
+		// SIGNAL_PF Page Fault
+		// SIGNAL_FPE Floating Point Exception
+		// SIGNAL_USR First user-defined signal
+		//  0: SIGNAL_ZDE
+		//  6: SIGNAL_IOE
+		// 13: SIGNAL_GPF
+		// 14: SIGNAL_PGF
+		// 16: SIGNAL_FPE
+		// 19: SIGNAL_FPE
+		// signal_send(process_t* process,u32 type,const void* data,u32 size);
 		panic("Forward ISR to user process");
 	}
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){

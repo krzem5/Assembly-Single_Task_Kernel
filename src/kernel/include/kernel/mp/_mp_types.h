@@ -38,6 +38,7 @@ typedef struct _PROCESS{
 	vmm_pagemap_t pagemap;
 	mmap_t mmap;
 	thread_list_t thread_list;
+	u64 signal_handler;
 } process_t;
 
 
