@@ -5,28 +5,35 @@
 #include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "os_loader"
 
 
 
-#define EARLY_MODULE_DIRECTORY "/boot/module"
+#define EARLY_MODULE_ORDER_FILE "/boot/module/order.txt"
 
 
 
 static _Bool _init(module_t* module){
 	LOG("Loading early modules...");
-	vfs_node_t* dir=vfs_lookup(NULL,EARLY_MODULE_DIRECTORY);
-	if (!dir){
-		panic("Unable to locate early module directory");
+	vfs_node_t* early_modile_order_file=vfs_lookup(NULL,EARLY_MODULE_ORDER_FILE);
+	if (!early_modile_order_file){
+		panic("Unable to locate early module order file");
 	}
-	string_t* module_name;
-	for (u64 pointer=vfs_node_iterate(dir,0,&module_name);pointer;pointer=vfs_node_iterate(dir,pointer,&module_name)){
-		if (streq(module_name->data,"os_loader.mod")){
-			continue;
+	char buffer[4096];
+	u64 size=vfs_node_read(early_modile_order_file,0,buffer,4096);
+	for (u64 i=0;i<size;){
+		for (;i<size&&(!buffer[i]||buffer[i]==' '||buffer[i]=='\t'||buffer[i]=='\r'||buffer[i]=='\n');i++);
+		u64 j=i;
+		for (;j<size&&buffer[j]!='\n';j++);
+		u64 k=j;
+		for (;k&&(!buffer[k-1]||buffer[k-1]==' '||buffer[k-1]=='\t'||buffer[k-1]=='\r'||buffer[k-1]=='\n');k--);
+		buffer[k]=0;
+		if (buffer[i]&&buffer[i]!='#'){
+			module_load(buffer+i);
 		}
-		INFO("Loading early module '%s'...",module_name->data);
-		module_load(vfs_lookup(dir,module_name->data));
+		i=j;
 	}
 	LOG("Searching for boot filesystem...");
 	filesystem_t* boot_fs=NULL;

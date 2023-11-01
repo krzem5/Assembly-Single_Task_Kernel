@@ -1,9 +1,15 @@
-ahci
-ata
-gpt
+# Filesystems
 iso9660
 kfs2
-nvme
-os_loader
+
+# Partition descriptors
+gpt
+
+# USB drivers
 usb_msc
+
+# PCI drivers
+ahci
+ata
+nvme
 xhci

@@ -37,10 +37,10 @@ static void _main_thread(void){
 	random_init();
 	serial_init_irq();
 	kernel_adjust_memory_flags_after_init();
-	module_load(vfs_lookup(NULL,"/boot/module/os_loader.mod"));
-	module_load(vfs_lookup(NULL,"/boot/module/i82540.mod"));
+	module_load("os_loader");
+	module_load("i82540");
 #if KERNEL_COVERAGE_ENABLED
-	module_load(vfs_lookup(NULL,"/boot/module/coverage.mod"));
+	module_load("coverage");
 #endif
 	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
 		panic("Unable to load shell");

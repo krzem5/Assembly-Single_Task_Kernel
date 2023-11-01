@@ -51,7 +51,7 @@ extern handle_type_t HANDLE_TYPE_MODULE;
 
 
 
-_Bool module_load(vfs_node_t* node);
+module_t* module_load(const char* name);
 
 
 

@@ -391,11 +391,11 @@ def _compile_user_files(program):
 
 
 def _get_early_modules(file_path):
-	out=[]
+	out=["os_loader"]
 	with open(file_path,"r") as rf:
 		for module in rf.read().split("\n"):
 			module=module.strip()
-			if (module):
+			if (module and module[0]!="#"):
 				out.append(module)
 	return out
 
@@ -575,6 +575,7 @@ if (rebuild_uefi_partition):
 if (rebuild_data_partition):
 	for module in _get_early_modules(EARLY_MODULE_SOURCE_FILE_PATH):
 		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
+	_copy_file(EARLY_MODULE_SOURCE_FILE_PATH,"build/initramfs/boot/module/order.txt")
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)

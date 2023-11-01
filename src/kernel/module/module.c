@@ -1,4 +1,6 @@
+#include <kernel/format/format.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -9,7 +11,12 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "module"
+
+
+
+#define MODULE_ROOT_DIRECTORY "/boot/module"
 
 
 
@@ -104,6 +111,8 @@ static pmm_counter_descriptor_t _module_buffer_pmm_counter=PMM_COUNTER_INIT_STRU
 static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("module_image");
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
 static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
+
+static spinlock_t _module_global_lock=SPINLOCK_INIT_STRUCT;
 
 
 
@@ -283,23 +292,47 @@ static void _apply_relocations(void* file_data,const elf_header_t* header){
 
 
 
-_Bool module_load(vfs_node_t* node){
-	if (!node){
-		return 0;
+module_t* module_load(const char* name){
+	if (!name){
+		return NULL;
 	}
-	LOG("Loading kernel module...");
+	LOG("Loading module '%s'...",name);
+	spinlock_acquire_exclusive(&_module_global_lock);
+	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
+		handle_acquire(handle);
+		module_t* module=handle->object;
+		if (streq(module->descriptor->name,name)){
+			INFO("Module '%s' already loaded",name);
+			handle_release(handle);
+			spinlock_release_exclusive(&_module_global_lock);
+			return module;
+		}
+		handle_release(handle);
+	}
+	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY);
+	if (!directory){
+		panic("Unable to find module root directory");
+	}
+	char buffer[256];
+	string_t* name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
+	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
+	smm_dealloc(name_string);
+	if (!module_file){
+		WARN("Unable to find module '%s'",name);
+		spinlock_release_exclusive(&_module_global_lock);
+		return NULL;
+	}
+	INFO("Loading module from file...");
 	elf_header_t header;
-	if (vfs_node_read(node,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)){
-		return 0;
+	if (vfs_node_read(module_file,0,&header,sizeof(elf_header_t))!=sizeof(elf_header_t)||header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=1||header.e_machine!=0x3e||header.e_version!=1){
+		spinlock_release_exclusive(&_module_global_lock);
+		return NULL;
 	}
-	if (header.signature!=0x464c457f||header.word_size!=2||header.endianess!=1||header.header_version!=1||header.abi!=0||header.e_type!=1||header.e_machine!=0x3e||header.e_version!=1){
-		return 0;
-	}
-	u64 file_size=vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
+	u64 file_size=vfs_node_resize(module_file,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	u64 file_data_pages=pmm_align_up_address(file_size)>>PAGE_SIZE_SHIFT;
 	INFO("Module file size: %v",file_data_pages<<PAGE_SIZE_SHIFT);
 	void* file_data=(void*)(pmm_alloc(file_data_pages,&_module_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	vfs_node_read(node,0,file_data,file_size);
+	vfs_node_read(module_file,0,file_data,file_size);
 	module_t* module=omm_alloc(&_module_allocator);
 	module->state=MODULE_STATE_LOADING;
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
@@ -310,8 +343,10 @@ _Bool module_load(vfs_node_t* node){
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
-	LOG("Module '%s' loaded successfully",module->descriptor->name);
+	LOG("Module '%s' loaded successfully",name);
+	spinlock_release_exclusive(&_module_global_lock);
 	module->descriptor->init_callback(module);
 	module->state=MODULE_STATE_RUNNING;
-	return 1;
+	return module;
 }
+
