@@ -6,7 +6,7 @@
 
 
 extern process_t* process_kernel;
-extern vmm_memory_map_t process_kernel_image_mmap;
+extern mmap_t process_kernel_image_mmap;
 
 
 

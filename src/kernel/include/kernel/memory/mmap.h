@@ -7,47 +7,47 @@
 
 
 
-typedef struct _VMM_MEMORY_MAP_REGION{
+typedef struct _MMAP_REGION{
 	rb_tree_node_t rb_node;
 	_Bool is_used;
 	u64 length;
-	struct _VMM_MEMORY_MAP_REGION* prev;
-	struct _VMM_MEMORY_MAP_REGION* next;
-	struct _VMM_MEMORY_MAP_LENGTH_GROUP* group;
-	struct _VMM_MEMORY_MAP_REGION* group_prev;
-	struct _VMM_MEMORY_MAP_REGION* group_next;
-} vmm_memory_map_region_t;
+	struct _MMAP_REGION* prev;
+	struct _MMAP_REGION* next;
+	struct _MMAP_LENGTH_GROUP* group;
+	struct _MMAP_REGION* group_prev;
+	struct _MMAP_REGION* group_next;
+} mmap_region_t;
 
 
 
-typedef struct _VMM_MEMORY_MAP_LENGTH_GROUP{
+typedef struct _MMAP_LENGTH_GROUP{
 	rb_tree_node_t rb_node;
-	vmm_memory_map_region_t* head;
-} vmm_memory_map_length_group_t;
+	mmap_region_t* head;
+} mmap_length_group_t;
 
 
 
-typedef struct _VMM_MEMORY_MAP{
+typedef struct _MMAP{
 	spinlock_t lock;
 	rb_tree_t offset_tree;
 	rb_tree_t length_tree;
-} vmm_memory_map_t;
+} mmap_t;
 
 
 
-void vmm_memory_map_init(u64 low,u64 high,vmm_memory_map_t* out);
+void mmap_init(u64 low,u64 high,mmap_t* out);
 
 
 
-void vmm_memory_map_deinit(vmm_pagemap_t* pagemap,vmm_memory_map_t* mmap);
+void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap);
 
 
 
-u64 vmm_memory_map_reserve(vmm_memory_map_t* mmap,u64 address,u64 length);
+u64 mmap_reserve(mmap_t* mmap,u64 address,u64 length);
 
 
 
-_Bool vmm_memory_map_release(vmm_memory_map_t* mmap,u64 address,u64 length);
+_Bool mmap_release(mmap_t* mmap,u64 address,u64 length);
 
 
 

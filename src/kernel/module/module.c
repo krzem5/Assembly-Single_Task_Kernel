@@ -126,7 +126,7 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static void _module_alloc_region(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	region->base=vmm_memory_map_reserve(&process_kernel_image_mmap,0,region->size);
+	region->base=mmap_reserve(&process_kernel_image_mmap,0,region->size);
 	if (!region->base){
 		panic("Unable to reserve module section memory");
 	}

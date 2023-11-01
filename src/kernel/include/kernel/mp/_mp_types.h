@@ -36,7 +36,7 @@ typedef struct _PROCESS{
 	handle_t handle;
 	spinlock_t lock;
 	vmm_pagemap_t pagemap;
-	vmm_memory_map_t mmap;
+	mmap_t mmap;
 	thread_list_t thread_list;
 } process_t;
 

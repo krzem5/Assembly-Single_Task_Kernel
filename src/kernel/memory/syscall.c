@@ -54,7 +54,7 @@ void syscall_memory_get_range(syscall_registers_t* regs){
 
 void syscall_memory_map(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
-	u64 out=vmm_memory_map_reserve(&(THREAD_DATA->process->mmap),0,length);
+	u64 out=mmap_reserve(&(THREAD_DATA->process->mmap),0,length);
 	if (out){
 		vmm_reserve_pages(&(THREAD_DATA->process->pagemap),out,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE,length>>PAGE_SIZE_SHIFT);
 	}
@@ -65,7 +65,7 @@ void syscall_memory_map(syscall_registers_t* regs){
 
 void syscall_memory_unmap(syscall_registers_t* regs){
 	u64 length=pmm_align_up_address(regs->rsi);
-	if (!vmm_memory_map_release(&(THREAD_DATA->process->mmap),regs->rdi,length)){
+	if (!mmap_release(&(THREAD_DATA->process->mmap),regs->rdi,length)){
 		regs->rax=0;
 		return;
 	}

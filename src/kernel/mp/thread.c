@@ -59,9 +59,9 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->process=process;
-	out->user_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,user_stack_size);
-	out->kernel_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,kernel_stack_size);
-	out->pf_stack_bottom=vmm_memory_map_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	out->user_stack_bottom=mmap_reserve(&(process->mmap),0,user_stack_size);
+	out->kernel_stack_bottom=mmap_reserve(&(process->mmap),0,kernel_stack_size);
+	out->pf_stack_bottom=mmap_reserve(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	if ((user_stack_size&&!out->user_stack_bottom)||!out->kernel_stack_bottom||!out->pf_stack_bottom){
 		panic("Unable to reserve thread stacks");
 	}
@@ -133,10 +133,10 @@ void thread_delete(thread_t* thread){
 	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	if (thread->user_stack_size){
-		vmm_memory_map_release(&(process->mmap),thread->user_stack_bottom,thread->user_stack_size);
+		mmap_release(&(process->mmap),thread->user_stack_bottom,thread->user_stack_size);
 	}
-	vmm_memory_map_release(&(process->mmap),thread->kernel_stack_bottom,thread->kernel_stack_size);
-	vmm_memory_map_release(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	mmap_release(&(process->mmap),thread->kernel_stack_bottom,thread->kernel_stack_size);
+	mmap_release(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	if (thread->user_stack_size){
 		vmm_release_pages(&(process->pagemap),thread->user_stack_bottom,thread->user_stack_size>>PAGE_SIZE_SHIFT);
 	}
