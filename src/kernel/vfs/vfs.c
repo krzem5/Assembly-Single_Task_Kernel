@@ -15,16 +15,8 @@ static vfs_node_t* _vfs_root_node=NULL;
 
 void vfs_mount(filesystem_t* fs,const char* path){
 	if (!path){
-		if (_vfs_root_node){
-			spinlock_acquire_exclusive(&(_vfs_root_node->lock));
-			smm_dealloc(_vfs_root_node->name);
-			_vfs_root_node->name=smm_alloc("<root>",0);
-			spinlock_release_exclusive(&(_vfs_root_node->lock));
-		}
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
-		smm_dealloc(_vfs_root_node->name);
-		_vfs_root_node->name=smm_alloc("",0);
 		_vfs_root_node->relatives.parent=NULL;
 		spinlock_release_exclusive(&(_vfs_root_node->lock));
 		return;
@@ -61,9 +53,8 @@ vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
 			path+=2;
 			continue;
 		}
-		string_t* name=smm_alloc(path,i);
+		SMM_TEMPORARY_STRING name=smm_alloc(path,i);
 		root=vfs_node_lookup(root,name);
-		smm_dealloc(name);
 		path+=i;
 	}
 	return root;

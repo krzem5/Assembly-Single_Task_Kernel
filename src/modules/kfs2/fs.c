@@ -360,9 +360,8 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
-	string_t* root_name=smm_alloc("<root>",0);
+	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=_load_inode(out,root_name,0);
-	smm_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
 	memcpy(out->uuid,root_block->uuid,16);
 	return out;

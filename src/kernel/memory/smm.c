@@ -99,7 +99,8 @@ void smm_dealloc(string_t* name){
 string_t* smm_duplicate(const string_t* name){
 	u32 length=name->length;
 	string_t* out;
-	USE_ALLOCATOR(8)
+	USE_ALLOCATOR(4)
+	else USE_ALLOCATOR(8)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
 	else USE_ALLOCATOR(32)
@@ -123,4 +124,10 @@ void smm_rehash(string_t* name){
 	for (u32 i=0;i<name->length;i++){
 		name->hash=(name->hash^name->data[i])*FNV_PRIME;
 	}
+}
+
+
+
+void _smm_cleanup(string_t** string){
+	smm_dealloc(*string);
 }

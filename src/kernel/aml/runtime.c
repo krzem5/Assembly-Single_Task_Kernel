@@ -1002,9 +1002,8 @@ void aml_runtime_init(aml_object_t* root,u16 irq){
 
 
 aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path){
-	string_t* path_data=smm_alloc(path,0);
+	SMM_TEMPORARY_STRING path_data=smm_alloc(path,0);
 	aml_node_t* out=_get_node((root?root:aml_root_node),path_data,0,0);
-	smm_dealloc(path_data);
 	return out;
 }
 

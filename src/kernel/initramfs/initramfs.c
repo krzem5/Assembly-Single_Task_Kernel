@@ -251,9 +251,8 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	filesystem_t* out=fs_create(&_initramfs_filesystem_descriptor);
 	out->functions=&_initramfs_functions;
 	out->partition=partition;
-	string_t* root_name=smm_alloc("<root>",0);
+	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=vfs_node_create(out,root_name);
-	smm_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((initramfs_vfs_node_t*)(out->root))->offset=sizeof(initramfs_header_t);
 	((initramfs_vfs_node_t*)(out->root))->size=node.size;
