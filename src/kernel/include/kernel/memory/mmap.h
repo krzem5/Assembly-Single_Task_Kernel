@@ -10,6 +10,8 @@ typedef struct _VMM_MEMORY_MAP_REGION{
 	_Bool is_used;
 	u64 offset;
 	u64 length;
+	rb_tree_node_t rb_offset_node;
+	rb_tree_node_t rb_length_node;
 	struct _VMM_MEMORY_MAP_REGION* next;
 	struct _VMM_MEMORY_MAP_REGION* prev;
 } vmm_memory_map_region_t;

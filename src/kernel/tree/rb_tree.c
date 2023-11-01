@@ -136,7 +136,7 @@ void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x){
 		tree->root=x;
 		goto _cleanup;
 	}
-	_set_color(x,1);
+	x->rb_parent_and_color=1;
 	rb_tree_node_t* y=tree->root;
 	for (;y->rb_right!=NIL_NODE;y=y->rb_right);
 	_set_parent(x,y);
