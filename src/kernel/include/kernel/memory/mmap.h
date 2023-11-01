@@ -8,12 +8,22 @@
 
 
 typedef struct _VMM_MEMORY_MAP_REGION{
+	rb_tree_node_t rb_node;
 	_Bool is_used;
-	rb_tree_node_t rb_offset_node;
-	rb_tree_node_t rb_length_node;
+	u64 length;
 	struct _VMM_MEMORY_MAP_REGION* prev;
 	struct _VMM_MEMORY_MAP_REGION* next;
+	struct _VMM_MEMORY_MAP_LENGTH_GROUP* group;
+	struct _VMM_MEMORY_MAP_REGION* group_prev;
+	struct _VMM_MEMORY_MAP_REGION* group_next;
 } vmm_memory_map_region_t;
+
+
+
+typedef struct _VMM_MEMORY_MAP_LENGTH_GROUP{
+	rb_tree_node_t rb_node;
+	vmm_memory_map_region_t* head;
+} vmm_memory_map_length_group_t;
 
 
 
