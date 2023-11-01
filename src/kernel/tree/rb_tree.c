@@ -74,7 +74,13 @@ void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 	x->rb_parent_and_color=1;
 	rb_tree_node_t* y=tree->root;
 	while (y->rb_nodes[y->key<x->key]!=NIL_NODE){
+		if (x->key==y->key){
+			panic("rb_tree_insert_node: duplicated key");
+		}
 		y=y->rb_nodes[y->key<x->key];
+	}
+	if (x->key==y->key){
+		panic("rb_tree_insert_node: duplicated key");
 	}
 	_set_parent(x,y);
 	y->rb_nodes[y->key<x->key]=x;
