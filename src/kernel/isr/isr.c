@@ -67,6 +67,7 @@ void _isr_handler(isr_state_t* isr_state){
 		// 14: SIGNAL_PGF
 		// 16: SIGNAL_FPE
 		// 19: SIGNAL_FPE
+		// _syscall_signal_set_handler(void* handler,u32 stack_size);
 		// signal_send(process_t* process,u32 type,const void* data,u32 size);
 		panic("Forward ISR to user process");
 	}
