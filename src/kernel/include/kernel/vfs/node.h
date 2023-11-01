@@ -2,7 +2,7 @@
 #define _KERNEL_VFS_NODE_H_ 1
 #include <kernel/lock/spinlock.h>
 #include <kernel/types.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 
 
 
@@ -22,8 +22,8 @@
 typedef struct _VFS_FUNCTIONS{
 	struct _VFS_NODE* (*create)(void);
 	void (*delete)(struct _VFS_NODE*);
-	struct _VFS_NODE* (*lookup)(struct _VFS_NODE*,const vfs_name_t*);
-	u64 (*iterate)(struct _VFS_NODE*,u64,vfs_name_t**);
+	struct _VFS_NODE* (*lookup)(struct _VFS_NODE*,const string_t*);
+	u64 (*iterate)(struct _VFS_NODE*,u64,string_t**);
 	_Bool (*link)(struct _VFS_NODE*,struct _VFS_NODE*);
 	_Bool (*unlink)(struct _VFS_NODE*);
 	s64 (*read)(struct _VFS_NODE*,u64,void*,u64);
@@ -46,7 +46,7 @@ typedef struct _vfs_node_RELATIVES{
 typedef struct _VFS_NODE{
 	u32 flags;
 	spinlock_t lock;
-	vfs_name_t* name;
+	string_t* name;
 	vfs_node_relatives_t relatives;
 	struct _FILESYSTEM* fs;
 	const vfs_functions_t* functions;
@@ -54,7 +54,7 @@ typedef struct _VFS_NODE{
 
 
 
-vfs_node_t* vfs_node_create(struct _FILESYSTEM* fs,const vfs_name_t* name);
+vfs_node_t* vfs_node_create(struct _FILESYSTEM* fs,const string_t* name);
 
 
 
@@ -62,11 +62,11 @@ void vfs_node_delete(vfs_node_t* node);
 
 
 
-vfs_node_t* vfs_node_lookup(vfs_node_t* node,const vfs_name_t* name);
+vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name);
 
 
 
-u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out);
+u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out);
 
 
 

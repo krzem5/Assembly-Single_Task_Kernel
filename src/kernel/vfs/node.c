@@ -2,13 +2,13 @@
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "vfs_node"
 
 
 
-vfs_node_t* vfs_node_create(filesystem_t* fs,const vfs_name_t* name){
+vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
 	if (!fs->functions->create){
 		return NULL;
 	}
@@ -18,7 +18,7 @@ vfs_node_t* vfs_node_create(filesystem_t* fs,const vfs_name_t* name){
 	}
 	out->flags=0;
 	spinlock_init(&(out->lock));
-	out->name=vfs_name_duplicate(name);
+	out->name=smm_duplicate(name);
 	out->relatives.parent=NULL;
 	out->relatives.prev_sibling=NULL;
 	out->relatives.next_sibling=NULL;
@@ -40,13 +40,13 @@ void vfs_node_delete(vfs_node_t* node){
 	if (node->relatives.prev_sibling||node->relatives.next_sibling){
 		panic("vfs_node_delete: relink prev/next sibling");
 	}
-	vfs_name_dealloc(node->name);
+	smm_dealloc(node->name);
 	node->functions->delete(node);
 }
 
 
 
-vfs_node_t* vfs_node_lookup(vfs_node_t* node,const vfs_name_t* name){
+vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name){
 	vfs_node_t* out=node->relatives.child;
 	for (;out;out=out->relatives.next_sibling){
 		if (out->name->length!=name->length||out->name->hash!=name->hash){
@@ -77,7 +77,7 @@ _check_next_sibling:
 
 
 
-u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
+u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	if (!node->functions->iterate){
 		return 0;
 	}

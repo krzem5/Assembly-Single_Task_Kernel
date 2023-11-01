@@ -10,7 +10,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #define KERNEL_LOG_NAME "aml"
 
 
@@ -231,7 +231,7 @@ static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
 
 
 
-static aml_node_t* _get_node(aml_node_t* local_namespace,const vfs_name_t* namespace,u8 type,_Bool create_if_not_found){
+static aml_node_t* _get_node(aml_node_t* local_namespace,const string_t* namespace,u8 type,_Bool create_if_not_found){
 	aml_node_t* out=local_namespace;
 	u16 i=0;
 	if (namespace->data[i]=='\\'){
@@ -368,7 +368,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_NAME_REFERENCE_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_STRING;
-			local->simple_return_value.data.string=vfs_name_duplicate(object->args[0].string);
+			local->simple_return_value.data.string=smm_duplicate(object->args[0].string);
 			return &(local->simple_return_value);
 		case MAKE_OPCODE(AML_OPCODE_QWORD_PREFIX,0):
 			local->simple_return_value.type=AML_NODE_TYPE_INTEGER;
@@ -387,9 +387,9 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 			{
 				u64 size=_get_arg_as_int(local,object,0);
 				local->simple_return_value.type=AML_NODE_TYPE_BUFFER;
-				local->simple_return_value.data.buffer=vfs_name_alloc(NULL,size);
+				local->simple_return_value.data.buffer=smm_alloc(NULL,size);
 				memcpy(local->simple_return_value.data.buffer->data,object->data.bytes,(size<object->data_length?size:object->data_length));
-				vfs_name_rehash(local->simple_return_value.data.buffer);
+				smm_rehash(local->simple_return_value.data.buffer);
 				return &(local->simple_return_value);
 			}
 		case MAKE_OPCODE(AML_OPCODE_PACKAGE,0):
@@ -1002,9 +1002,9 @@ void aml_runtime_init(aml_object_t* root,u16 irq){
 
 
 aml_node_t* aml_runtime_get_node(aml_node_t* root,const char* path){
-	vfs_name_t* path_data=vfs_name_alloc(path,0);
+	string_t* path_data=smm_alloc(path,0);
 	aml_node_t* out=_get_node((root?root:aml_root_node),path_data,0,0);
-	vfs_name_dealloc(path_data);
+	smm_dealloc(path_data);
 	return out;
 }
 

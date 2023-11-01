@@ -7,7 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
 #include <kfs2/crc.h>
 #include <kfs2/structures.h>
@@ -42,14 +42,14 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor;
 
 
 
-static KERNEL_INLINE u8 _calculate_compressed_hash(const vfs_name_t* name){
+static KERNEL_INLINE u8 _calculate_compressed_hash(const string_t* name){
 	u16 tmp=name->hash^(name->hash>>16);
 	return tmp^(tmp>>8);
 }
 
 
 
-static vfs_node_t* _load_inode(filesystem_t* fs,const vfs_name_t* name,u32 inode){
+static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 	void* buffer=(void*)(pmm_alloc(1,&_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
@@ -173,7 +173,7 @@ static void _kfs2_delete(vfs_node_t* node){
 
 
 
-static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const vfs_name_t* name){
+static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return NULL;
@@ -213,7 +213,7 @@ _skip_entry:
 
 
 
-static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
+static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||pointer>=kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
@@ -233,7 +233,7 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
 		pointer+=entry->size;
 		if (entry->name_length){
-			*out=vfs_name_alloc(entry->name,entry->name_length);
+			*out=smm_alloc(entry->name,entry->name_length);
 			_node_dealloc_chunk(&chunk);
 			return pointer;
 		}
@@ -362,9 +362,9 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
-	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
+	string_t* root_name=smm_alloc("<root>",0);
 	out->root=_load_inode(out,root_name,0);
-	vfs_name_dealloc(root_name);
+	smm_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
 	memcpy(out->uuid,root_block->uuid,16);
 	return out;

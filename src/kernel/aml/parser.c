@@ -5,7 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #define KERNEL_LOG_NAME "aml_parser"
 
 
@@ -225,7 +225,7 @@ static u32 _get_pkglength(const u8* data){
 
 
 
-static vfs_name_t* _get_decoded_name(const u8* data){
+static string_t* _get_decoded_name(const u8* data){
 	char buffer[4096];
 	u16 length=0;
 	u32 index=0;
@@ -260,7 +260,7 @@ static vfs_name_t* _get_decoded_name(const u8* data){
 			length++;
 		}
 	}
-	return vfs_name_alloc(buffer,length);
+	return smm_alloc(buffer,length);
 }
 
 
@@ -349,7 +349,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 			data+=8;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_STRING){
-			out->args[i].string=vfs_name_alloc((const char*)data,0);
+			out->args[i].string=smm_alloc((const char*)data,0);
 			data+=out->args[i].string->length+1;
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_NAME){

@@ -124,7 +124,7 @@ static void _initramfs_delete(vfs_node_t* node){
 
 
 
-static vfs_node_t* _initramfs_lookup(vfs_node_t* node,const vfs_name_t* name){
+static vfs_node_t* _initramfs_lookup(vfs_node_t* node,const string_t* name){
 	initramfs_vfs_node_t* initramfs_node=(initramfs_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	if (!initramfs_node->offset||!(initramfs_node->flags&INITRAMFS_FLAG_DIRECTORY)){
@@ -165,7 +165,7 @@ _skip_entry:
 
 
 
-static u64 _initramfs_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
+static u64 _initramfs_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	initramfs_vfs_node_t* initramfs_node=(initramfs_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	if (!initramfs_node->offset||!(initramfs_node->flags&INITRAMFS_FLAG_DIRECTORY)){
@@ -182,7 +182,7 @@ static u64 _initramfs_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
 	if (drive_read(drive,pointer,&child_node,sizeof(initramfs_node_t))!=sizeof(initramfs_node_t)||drive_read(drive,pointer+sizeof(initramfs_node_t),buffer,child_node.name_length)!=child_node.name_length){
 		return 0;
 	}
-	*out=vfs_name_alloc(buffer,child_node.name_length);
+	*out=smm_alloc(buffer,child_node.name_length);
 	return pointer+child_node.size;
 }
 
@@ -251,9 +251,9 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	filesystem_t* out=fs_create(&_initramfs_filesystem_descriptor);
 	out->functions=&_initramfs_functions;
 	out->partition=partition;
-	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
+	string_t* root_name=smm_alloc("<root>",0);
 	out->root=vfs_node_create(out,root_name);
-	vfs_name_dealloc(root_name);
+	smm_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((initramfs_vfs_node_t*)(out->root))->offset=sizeof(initramfs_header_t);
 	((initramfs_vfs_node_t*)(out->root))->size=node.size;

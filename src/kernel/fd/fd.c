@@ -209,7 +209,7 @@ s64 fd_iter_start(handle_id_t fd){
 	}
 	fd_t* data=fd_handle->object;
 	spinlock_acquire_exclusive(&(data->lock));
-	vfs_name_t* current_name;
+	string_t* current_name;
 	u64 pointer=vfs_node_iterate(data->node,0,&current_name);
 	if (!pointer){
 		spinlock_release_exclusive(&(data->lock));
@@ -265,7 +265,7 @@ s64 fd_iter_next(handle_id_t iterator){
 	spinlock_acquire_exclusive(&(data->lock));
 	s64 out=-1;
 	if (data->current_name){
-		vfs_name_dealloc(data->current_name);
+		smm_dealloc(data->current_name);
 		data->pointer=vfs_node_iterate(data->node,data->pointer,&(data->current_name));
 		if (!data->pointer){
 			handle_release(fd_iterator_handle);

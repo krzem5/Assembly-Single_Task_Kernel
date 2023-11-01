@@ -5,7 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #define KERNEL_LOG_NAME "bios"
 
 
@@ -85,8 +85,8 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
-static vfs_name_t* _duplicate_string(const char* str){
-	return vfs_name_alloc(str,0);
+static string_t* _duplicate_string(const char* str){
+	return smm_alloc(str,0);
 }
 
 
@@ -144,18 +144,18 @@ void bios_get_system_data(void){
 	}
 	char buffer[37];
 	format_string(buffer,37,"%g",bios_data.uuid);
-	bios_data.uuid_str=vfs_name_alloc(buffer,36);
+	bios_data.uuid_str=smm_alloc(buffer,36);
 	switch (bios_data.wakeup_type){
 		case BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH:
-			bios_data.wakeup_type_str=vfs_name_alloc("Power switch",0);
+			bios_data.wakeup_type_str=smm_alloc("Power switch",0);
 			break;
 		case BIOS_DATA_WAKEUP_TYPE_AC_POWER:
-			bios_data.wakeup_type_str=vfs_name_alloc("AC power",0);
+			bios_data.wakeup_type_str=smm_alloc("AC power",0);
 			break;
 		default:
 		case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
 			bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
-			bios_data.wakeup_type_str=vfs_name_alloc("Unknown",0);
+			bios_data.wakeup_type_str=smm_alloc("Unknown",0);
 			break;
 	}
 	INFO("BIOS data:");

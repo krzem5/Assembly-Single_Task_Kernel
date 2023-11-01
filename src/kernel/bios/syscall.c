@@ -1,7 +1,7 @@
 #include <kernel/bios/bios.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 
 
 
@@ -21,7 +21,7 @@ void syscall_system_get_string(syscall_registers_t* regs){
 		regs->rax=0;
 		return;
 	}
-	const vfs_name_t* src=NULL;
+	const string_t* src=NULL;
 	switch (regs->rdi){
 		case SYSTEM_STRING_BIOS_VENDOR:
 			src=bios_data.bios_vendor;

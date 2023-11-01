@@ -20,7 +20,7 @@ static _Bool _init(module_t* module){
 	if (!dir){
 		panic("Unable to locate early module directory");
 	}
-	vfs_name_t* module_name;
+	string_t* module_name;
 	for (u64 pointer=vfs_node_iterate(dir,0,&module_name);pointer;pointer=vfs_node_iterate(dir,pointer,&module_name)){
 		if (streq(module_name->data,"os_loader.mod")){
 			continue;

@@ -2,7 +2,7 @@
 #define _KERNEL_FD_FD_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/types.h>
-#include <kernel/vfs/name.h>
+#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
 
 
@@ -56,7 +56,7 @@ typedef struct _FD_ITERATOR{
 	spinlock_t lock;
 	vfs_node_t* node;
 	u64 pointer;
-	vfs_name_t* current_name;
+	string_t* current_name;
 } fd_iterator_t;
 
 

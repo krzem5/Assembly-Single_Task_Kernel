@@ -46,7 +46,7 @@ static void _iso9660_delete(vfs_node_t* node){
 
 
 
-static vfs_node_t* _iso9660_lookup(vfs_node_t* node,const vfs_name_t* name){
+static vfs_node_t* _iso9660_lookup(vfs_node_t* node,const string_t* name){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	u32 data_offset=iso9660_node->data_offset;
@@ -106,7 +106,7 @@ _skip_directory_entry:
 
 
 
-static u64 _iso9660_iterate(vfs_node_t* node,u64 pointer,vfs_name_t** out){
+static u64 _iso9660_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	panic("_iso9660_iterate");
 }
 
@@ -214,9 +214,9 @@ _directory_lba_found:
 	filesystem_t* out=fs_create(&_iso9660_filesystem_descriptor);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
-	vfs_name_t* root_name=vfs_name_alloc("<root>",0);
+	string_t* root_name=smm_alloc("<root>",0);
 	out->root=vfs_node_create(out,root_name);
-	vfs_name_dealloc(root_name);
+	smm_dealloc(root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
 	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;
