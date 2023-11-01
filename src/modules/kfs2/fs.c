@@ -60,9 +60,7 @@ static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 		goto _cleanup;
 	}
 	out=(kfs2_vfs_node_t*)vfs_node_create(fs,name);
-	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
-		out->node.flags=(out->node.flags&(~VFS_NODE_TYPE_MASK))|VFS_NODE_TYPE_DIRECTORY;
-	}
+	out->node.flags|=((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 	out->kfs2_node=*node;
 	out->kfs2_node._inode=inode;
 _cleanup:

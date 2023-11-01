@@ -6,8 +6,10 @@
 
 
 static const char* _fd_stat_type_names[]={
+	[0]="<unknown>",
 	[FD_STAT_TYPE_FILE]="file",
-	[FD_STAT_TYPE_DIRECTORY]="directory"
+	[FD_STAT_TYPE_DIRECTORY]="directory",
+	[FD_STAT_TYPE_LINK]="link"
 };
 
 
