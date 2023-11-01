@@ -5,10 +5,8 @@
 #include <kernel/isr/pf.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
-#include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -43,12 +41,13 @@ u8 isr_allocate(void){
 
 
 void _isr_handler(isr_state_t* isr_state){
+	// User-receivable exceptions [((rflags>>12)&3)==3]: 0 (Division Error), 3 (Breakpoint), 4 (Overflow), 5 (Bound Range Exceeded), 6 (Invalid Opcode), 13 (General Protection Fault), 14 (Page Fault), 16 (x87 Floating-Point Exception), 19 (SIMD Floating-Point Exception)
 	if (isr_state->isr==14){
 		if (pf_handle_fault(isr_state)){
 			return;
 		}
 		ERROR("Page fault");
-		ERROR("Address: %p, Error: %p [%u]",vmm_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
+		ERROR("Address: %p, Error: %p [%u]",pf_get_fault_address(),isr_state->error,CPU_HEADER_DATA->index);
 	}
 	else if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
@@ -60,8 +59,7 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 	else if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
-		ERROR("Page fault stack not present");
-		for (;;);
+		panic("Page fault stack not present");
 	}
 	else{
 		ERROR("Crash");

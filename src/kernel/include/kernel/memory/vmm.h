@@ -78,15 +78,7 @@ _Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 coun
 
 
 
-u64 vmm_get_fault_address(void);
-
-
-
 void vmm_get_pagemap(vmm_pagemap_t* pagemap);
-
-
-
-void vmm_invalidate_tlb_entry(u64 address);
 
 
 
