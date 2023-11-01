@@ -63,7 +63,66 @@ void rb_tree_init(rb_tree_t* tree){
 
 
 void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
-	panic("Unimplemented: rb_tree_insert_node");
+	spinlock_acquire_exclusive(&(tree->lock));
+	x->rb_left=NIL_NODE;
+	x->rb_right=NIL_NODE;
+	if (tree->root==NIL_NODE){
+		x->rb_parent_and_color=0;
+		tree->root=x;
+		goto _cleanup;
+	}
+	x->rb_parent_and_color=1;
+	rb_tree_node_t* y=tree->root;
+	while (y->rb_nodes[y->key<x->key]!=NIL_NODE){
+		y=y->rb_nodes[y->key<x->key];
+	}
+	_set_parent(x,y);
+	y->rb_nodes[y->key<x->key]=x;
+	if (y==tree->root){
+		goto _cleanup;
+	}
+	while (x!=tree->root&&_get_color(_get_parent(x))){
+		y=_get_parent(x);
+		rb_tree_node_t* z=_get_parent(y);
+		rb_tree_node_t* w=z->rb_nodes[y==z->rb_left];
+		if (_get_color(w)){
+			_set_color(y,0);
+			_set_color(z,1);
+			_set_color(w,0);
+			x=z;
+			continue;
+		}
+		_Bool i=(y==z->rb_left);
+		if (x==y->rb_nodes[i]){
+			x=y;
+			y=x->rb_nodes[i];
+			w=y->rb_nodes[i^1];
+			x->rb_nodes[i]=w;
+			y->rb_nodes[i^1]=x;
+			_set_parent(x,y);
+			_set_parent(y,z);
+			_set_parent(w,x);
+			z->rb_nodes[x==z->rb_right]=y;
+		}
+		_set_color(y,0);
+		_set_color(z,1);
+		y=z->rb_nodes[i^1];
+		w=y->rb_nodes[i];
+		z->rb_nodes[i^1]=w;
+		y->rb_nodes[i]=z;
+		_set_parent(y,_get_parent(z));
+		_set_parent(w,z);
+		if (!_get_parent(z)){
+			tree->root=y;
+		}
+		else{
+			_get_parent(z)->rb_nodes[z==_get_parent(z)->rb_right]=y;
+		}
+		_set_parent(z,y);
+	}
+	tree->root->rb_parent_and_color=0;
+_cleanup:
+	spinlock_release_exclusive(&(tree->lock));
 }
 
 
