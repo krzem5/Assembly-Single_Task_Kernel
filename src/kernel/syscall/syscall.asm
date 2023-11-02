@@ -36,6 +36,7 @@ _syscall_handler:
 	swapgs
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
+	push qword 0x1b
 	push qword [gs:16]
 	push r11
 	push qword 0x23
