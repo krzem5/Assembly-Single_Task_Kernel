@@ -58,7 +58,8 @@ static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 
-void mmap_init(u64 low,u64 high,mmap_t* out){
+void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
+	out->pagemap=pagemap;
 	spinlock_init(&(out->lock));
 	rb_tree_init(&(out->offset_tree));
 	rb_tree_init(&(out->length_tree));
@@ -74,7 +75,7 @@ void mmap_init(u64 low,u64 high,mmap_t* out){
 
 
 
-void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap){
+void mmap_deinit(mmap_t* mmap){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	panic("mmap_deinit");
 	rb_tree_init(&(mmap->offset_tree));
@@ -84,7 +85,7 @@ void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap){
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vmm_pagemap_t* pagemap){
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
 	}
@@ -153,10 +154,10 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	region->flags=flags|MMAP_REGION_FLAG_USED;
 	region->pmm_counter=pmm_counter;
 	spinlock_release_exclusive(&(mmap->lock));
-	if (pagemap){
+	if (flags&MMAP_REGION_FLAG_COMMIT){
 		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<length;i+=PAGE_SIZE){
-			vmm_map_page(pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
+			vmm_map_page(mmap->pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
 		}
 	}
 	return region;
@@ -164,7 +165,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,vmm_pagemap_t* pagemap,u64 address,u64 length){
+_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_dealloc: unaligned arguments");
 	}
@@ -183,7 +184,7 @@ _Bool mmap_dealloc(mmap_t* mmap,vmm_pagemap_t* pagemap,u64 address,u64 length){
 		panic("mmap_dealloc: partial release");
 	}
 	for (u64 i=0;i<length;i+=PAGE_SIZE){
-		u64 physical_address=vmm_unmap_page(pagemap,address+i)&VMM_PAGE_ADDRESS_MASK;
+		u64 physical_address=vmm_unmap_page(mmap->pagemap,address+i)&VMM_PAGE_ADDRESS_MASK;
 		if (physical_address){
 			pmm_dealloc(physical_address,1,region->pmm_counter);
 		}

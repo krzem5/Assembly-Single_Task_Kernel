@@ -64,7 +64,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	spinlock_init(&(out->lock));
 	out->process=process;
 	if (user_stack_size){
-		mmap_region_t* region=mmap_alloc(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+		mmap_region_t* region=mmap_alloc(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE);
 		if (!region){
 			panic("Unable to reserve thread stack");
 		}
@@ -73,12 +73,12 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	else{
 		out->user_stack_bottom=0;
 	}
-	mmap_region_t* region=mmap_alloc(&(process->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* region=mmap_alloc(&(process->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE);
 	if (!region){
 		panic("Unable to reserve thread stack");
 	}
 	out->kernel_stack_bottom=region->rb_node.key;
-	region=mmap_alloc(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,&(process->pagemap));
+	region=mmap_alloc(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE);
 	if (!region){
 		panic("Unable to reserve thread stack");
 	}
@@ -149,10 +149,10 @@ void thread_delete(thread_t* thread){
 	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	if (thread->user_stack_size){
-		mmap_dealloc(&(process->mmap),&(process->pagemap),thread->user_stack_bottom,thread->user_stack_size);
+		mmap_dealloc(&(process->mmap),thread->user_stack_bottom,thread->user_stack_size);
 	}
-	mmap_dealloc(&(process->mmap),&(process->pagemap),thread->kernel_stack_bottom,thread->kernel_stack_size);
-	mmap_dealloc(&(process->mmap),&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	mmap_dealloc(&(process->mmap),thread->kernel_stack_bottom,thread->kernel_stack_size);
+	mmap_dealloc(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){
 		spinlock_release_exclusive(&(thread->lock));

@@ -12,6 +12,7 @@
 #define MMAP_REGION_FLAG_VMM_READWRITE 2
 #define MMAP_REGION_FLAG_VMM_USER 4
 #define MMAP_REGION_FLAG_VMM_NOEXECUTE 8
+#define MMAP_REGION_FLAG_COMMIT 16
 
 
 
@@ -37,6 +38,7 @@ typedef struct _MMAP_LENGTH_GROUP{
 
 
 typedef struct _MMAP{
+	vmm_pagemap_t* pagemap;
 	spinlock_t lock;
 	rb_tree_t offset_tree;
 	rb_tree_t length_tree;
@@ -44,19 +46,19 @@ typedef struct _MMAP{
 
 
 
-void mmap_init(u64 low,u64 high,mmap_t* out);
+void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out);
 
 
 
-void mmap_deinit(vmm_pagemap_t* pagemap,mmap_t* mmap);
+void mmap_deinit(mmap_t* mmap);
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vmm_pagemap_t* pagemap);
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags);
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,vmm_pagemap_t* pagemap,u64 address,u64 length);
+_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
 
 
 

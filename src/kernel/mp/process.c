@@ -30,7 +30,7 @@ static HANDLE_DECLARE_TYPE(PROCESS,{
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
-	mmap_deinit(&(process->pagemap),&(process->mmap));
+	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(&_process_allocator,process);
 });
@@ -47,10 +47,10 @@ void process_init(void){
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
-	mmap_init(KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
+	mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
-	mmap_init(kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
-	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
+	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
+	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0)){
 		panic("Unable to reserve kernel memory");
 	}
 }
@@ -62,7 +62,7 @@ process_t* process_new(void){
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
-	mmap_init(USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
+	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));
 	return out;
 }
