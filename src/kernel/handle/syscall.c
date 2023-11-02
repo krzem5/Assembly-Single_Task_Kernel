@@ -1,4 +1,5 @@
 #include <kernel/handle/handle.h>
+#include <kernel/isr/isr.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -20,7 +21,7 @@ typedef struct _USER_HANDLE_DATA{
 
 
 
-void syscall_handle_get_type(syscall_registers_t* regs){
+void syscall_handle_get_type(isr_state_t* regs){
 	regs->rax=0;
 	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		return;
@@ -43,7 +44,7 @@ _check_next_handle:
 
 
 
-void syscall_handle_get_handle(syscall_registers_t* regs){
+void syscall_handle_get_handle(isr_state_t* regs){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(regs->rdi);
 	if (!handle_descriptor||regs->rsi==HANDLE_INVALID){
 		regs->rax=HANDLE_INVALID;
@@ -55,7 +56,7 @@ void syscall_handle_get_handle(syscall_registers_t* regs){
 
 
 
-void syscall_handle_get_data(syscall_registers_t* regs){
+void syscall_handle_get_data(isr_state_t* regs){
 	if (regs->rdx!=sizeof(user_handle_data_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		return;
 	}

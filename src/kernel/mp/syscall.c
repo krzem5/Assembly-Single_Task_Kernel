@@ -1,4 +1,5 @@
 #include <kernel/cpu/cpu.h>
+#include <kernel/isr/isr.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -9,13 +10,13 @@
 
 
 
-void syscall_thread_stop(syscall_registers_t* regs){
+void syscall_thread_stop(isr_state_t* regs){
 	thread_terminate();
 }
 
 
 
-void syscall_thread_create(syscall_registers_t* regs){
+void syscall_thread_create(isr_state_t* regs){
 	if (!syscall_sanatize_user_memory(regs->rdi,1)){
 		regs->rax=0;
 		return;
@@ -33,7 +34,7 @@ void syscall_thread_create(syscall_registers_t* regs){
 
 
 
-void syscall_thread_get_priority(syscall_registers_t* regs){
+void syscall_thread_get_priority(isr_state_t* regs){
 	if (!regs->rdi){
 		regs->rax=0;
 		return;
@@ -49,7 +50,7 @@ void syscall_thread_get_priority(syscall_registers_t* regs){
 
 
 
-void syscall_thread_set_priority(syscall_registers_t* regs){
+void syscall_thread_set_priority(isr_state_t* regs){
 	if (!regs->rdi||regs->rsi<SCHEDULER_PRIORITY_MIN||regs->rsi>SCHEDULER_PRIORITY_MAX){
 		regs->rax=0;
 		return;
@@ -72,7 +73,7 @@ void syscall_thread_set_priority(syscall_registers_t* regs){
 
 
 
-void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
+void syscall_thread_get_cpu_mask(isr_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
 	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
 		regs->rax=0;
@@ -91,7 +92,7 @@ void syscall_thread_get_cpu_mask(syscall_registers_t* regs){
 
 
 
-void syscall_thread_set_cpu_mask(syscall_registers_t* regs){
+void syscall_thread_set_cpu_mask(isr_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
 	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
 		regs->rax=0;

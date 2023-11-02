@@ -21,7 +21,6 @@ typedef struct _CPU_HEADER{
 	u8 index;
 	u8 _padding[7];
 	u64 kernel_rsp;
-	u64 user_rsp;
 	struct _THREAD* current_thread;
 } cpu_header_t;
 

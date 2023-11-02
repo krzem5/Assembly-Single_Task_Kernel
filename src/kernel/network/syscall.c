@@ -1,3 +1,4 @@
+#include <kernel/isr/isr.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/syscall/syscall.h>
@@ -6,7 +7,7 @@
 
 
 
-void syscall_network_layer1_get_mac_address(syscall_registers_t* regs){
+void syscall_network_layer1_get_mac_address(isr_state_t* regs){
 	if (regs->rsi!=6||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
@@ -17,7 +18,7 @@ void syscall_network_layer1_get_mac_address(syscall_registers_t* regs){
 
 
 
-void syscall_network_layer2_send(syscall_registers_t* regs){
+void syscall_network_layer2_send(isr_state_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;
@@ -34,7 +35,7 @@ void syscall_network_layer2_send(syscall_registers_t* regs){
 
 
 
-void syscall_network_layer2_poll(syscall_registers_t* regs){
+void syscall_network_layer2_poll(isr_state_t* regs){
 	if (regs->rsi!=sizeof(network_layer2_packet_t)||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;
 		return;

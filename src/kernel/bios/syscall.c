@@ -1,7 +1,8 @@
 #include <kernel/bios/bios.h>
+#include <kernel/isr/isr.h>
+#include <kernel/memory/smm.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
 
 
 
@@ -16,7 +17,7 @@
 
 
 
-void syscall_system_get_string(syscall_registers_t* regs){
+void syscall_system_get_string(isr_state_t* regs){
 	if (regs->rsi&&!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;

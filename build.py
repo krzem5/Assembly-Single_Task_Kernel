@@ -178,9 +178,9 @@ def _generate_syscalls(file_path):
 			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
 		wf.write("#endif\n")
 	with open("src/kernel/_generated/syscalls.c","w") as wf:
-		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n\n\n\n")
+		wf.write("#include <kernel/isr/isr.h>\n#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls:
-			wf.write(f"extern void syscall_{name}(syscall_registers_t* regs);\n")
+			wf.write(f"extern void syscall_{name}(isr_state_t* regs);\n")
 		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)};\n\n\n\nconst void*const _syscall_handlers[{len(syscalls)}]={{\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"\tsyscall_{name},\n")

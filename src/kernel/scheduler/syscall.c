@@ -1,3 +1,4 @@
+#include <kernel/isr/isr.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
@@ -6,7 +7,7 @@
 
 
 
-void syscall_scheduler_get_stats(syscall_registers_t* regs){
+void syscall_scheduler_get_stats(isr_state_t* regs){
 	if (regs->rdx!=sizeof(scheduler_load_balancer_stats_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!scheduler_load_balancer_get_stats(regs->rdi,(void*)(regs->rsi))){
 		regs->rax=0;
 		return;
@@ -16,7 +17,7 @@ void syscall_scheduler_get_stats(syscall_registers_t* regs){
 
 
 
-void syscall_scheduler_get_timers(syscall_registers_t* regs){
+void syscall_scheduler_get_timers(isr_state_t* regs){
 	if (regs->rdx!=sizeof(scheduler_timers_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!scheduler_get_timers(regs->rdi,(void*)(regs->rsi))){
 		regs->rax=0;
 		return;

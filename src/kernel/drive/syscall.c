@@ -1,4 +1,5 @@
 #include <kernel/drive/drive.h>
+#include <kernel/isr/isr.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -23,7 +24,7 @@ typedef struct _USER_DRIVE_DATA{
 
 
 
-void syscall_drive_get_data(syscall_registers_t* regs){
+void syscall_drive_get_data(isr_state_t* regs){
 	if (regs->rdx!=sizeof(user_drive_data_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;

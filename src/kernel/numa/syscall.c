@@ -1,3 +1,4 @@
+#include <kernel/isr/isr.h>
 #include <kernel/numa/numa.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -32,13 +33,13 @@ typedef struct _USER_NUMA_MEMORY_RANGE{
 
 
 
-void syscall_numa_get_node_count(syscall_registers_t* regs){
+void syscall_numa_get_node_count(isr_state_t* regs){
 	regs->rax=numa_node_count;
 }
 
 
 
-void syscall_numa_get_node(syscall_registers_t* regs){
+void syscall_numa_get_node(isr_state_t* regs){
 	if (regs->rdi>=numa_node_count||regs->rdx!=sizeof(user_numa_node_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;
@@ -53,7 +54,7 @@ void syscall_numa_get_node(syscall_registers_t* regs){
 
 
 
-void syscall_numa_get_node_cpu(syscall_registers_t* regs){
+void syscall_numa_get_node_cpu(isr_state_t* regs){
 	if (regs->rdi>=numa_node_count||regs->r8!=sizeof(user_numa_cpu_t)||!syscall_sanatize_user_memory(regs->rdx,regs->r8)){
 		regs->rax=0;
 		return;
@@ -77,7 +78,7 @@ void syscall_numa_get_node_cpu(syscall_registers_t* regs){
 
 
 
-void syscall_numa_get_node_memory_range(syscall_registers_t* regs){
+void syscall_numa_get_node_memory_range(isr_state_t* regs){
 	if (regs->rdi>=numa_node_count||regs->r8!=sizeof(user_numa_memory_range_t)||!syscall_sanatize_user_memory(regs->rdx,regs->r8)){
 		regs->rax=0;
 		return;
@@ -102,7 +103,7 @@ void syscall_numa_get_node_memory_range(syscall_registers_t* regs){
 
 
 
-void syscall_numa_get_locality(syscall_registers_t* regs){
+void syscall_numa_get_locality(isr_state_t* regs){
 	u64 matrix_size=numa_node_count*numa_node_count;
 	if (regs->rdi>=matrix_size||regs->rdx>=matrix_size||regs->rdi+regs->rdx>=matrix_size||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;

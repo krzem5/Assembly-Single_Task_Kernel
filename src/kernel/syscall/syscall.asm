@@ -34,10 +34,11 @@ syscall_enable:
 
 _syscall_handler:
 	swapgs
-	mov qword [gs:16], rsp
+	push rbp
+	mov rbp, rsp
 	mov rsp, qword [gs:8]
 	push qword 0x1b
-	push qword [gs:16]
+	push rbp
 	push r11
 	push qword 0x23
 	push rcx
@@ -58,13 +59,18 @@ _syscall_handler:
 	push rcx
 	push rbx
 	push rax
+	xor ebx, ebx
+	mov bx, ds
+	push rbx
+	mov bx, es
+	push rbx
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
 	mov edi, 1
 	call scheduler_set_timer
-	mov rax, qword [rsp]
+	mov rax, qword [rsp+16]
 	mov rdi, rsp
 	cmp rax, qword [_syscall_count]
 	cmovge rax, rbp
@@ -78,9 +84,10 @@ _syscall_handler:
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
-	mov ax, 0x1b
-	mov ds, ax
-	mov es, ax
+	pop rbx
+	mov es, bx
+	pop rbx
+	mov ds, bx
 	pop rax
 	pop rbx
 	pop rcx
@@ -101,5 +108,6 @@ _syscall_handler:
 	add rsp, 8
 	pop r11
 	mov rsp, qword [rsp]
+	pop rbp
 	swapgs
 	o64 sysret
