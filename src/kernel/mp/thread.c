@@ -64,7 +64,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	spinlock_init(&(out->lock));
 	out->process=process;
 	if (user_stack_size){
-		mmap_region_t* region=mmap_alloc(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE);
+		mmap_region_t* region=mmap_alloc(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 		if (!region){
 			panic("Unable to reserve thread stack");
 		}
@@ -73,12 +73,12 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	else{
 		out->user_stack_bottom=0;
 	}
-	mmap_region_t* region=mmap_alloc(&(process->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE);
+	mmap_region_t* region=mmap_alloc(&(process->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!region){
 		panic("Unable to reserve thread stack");
 	}
 	out->kernel_stack_bottom=region->rb_node.key;
-	region=mmap_alloc(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE);
+	region=mmap_alloc(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!region){
 		panic("Unable to reserve thread stack");
 	}

@@ -6,6 +6,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "mmap"
 
 
@@ -85,9 +86,12 @@ void mmap_deinit(mmap_t* mmap){
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags){
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
+	}
+	if (!length&&file){
+		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));
 	}
 	if (!length){
 		return NULL;
@@ -153,8 +157,12 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	}
 	region->flags=flags|MMAP_REGION_FLAG_USED;
 	region->pmm_counter=pmm_counter;
+	region->file=file;
 	spinlock_release_exclusive(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
+		if (file){
+			panic("mmap_alloc: MMAP_REGION_FLAG_COMMIT of a file-backed memory region");
+		}
 		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<length;i+=PAGE_SIZE){
 			vmm_map_page(mmap->pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
@@ -186,6 +194,9 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	for (u64 i=0;i<length;i+=PAGE_SIZE){
 		u64 physical_address=vmm_unmap_page(mmap->pagemap,address+i)&VMM_PAGE_ADDRESS_MASK;
 		if (physical_address){
+			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_FILE_WRITEBACK)){
+				panic("mmap_dealloc: file-backed memory region writeback");
+			}
 			pmm_dealloc(physical_address,1,region->pmm_counter);
 		}
 	}

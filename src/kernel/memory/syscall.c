@@ -59,7 +59,7 @@ void syscall_memory_get_range(isr_state_t* regs){
 
 void syscall_memory_map(isr_state_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
-	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE);
+	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	regs->rax=(out?out->rb_node.key:0);
 }
 

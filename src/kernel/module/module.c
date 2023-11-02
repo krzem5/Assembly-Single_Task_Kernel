@@ -40,12 +40,11 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static void _module_alloc_region(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,0);
+	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!mmap_region){
 		panic("Unable to reserve module section memory");
 	}
 	region->base=mmap_region->rb_node.key;
-	vmm_map_pages(&vmm_kernel_pagemap,pmm_alloc_zero(region->size>>PAGE_SIZE_SHIFT,&_module_image_pmm_counter,0),region->base,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT,region->size>>PAGE_SIZE_SHIFT);
 }
 
 
@@ -169,13 +168,19 @@ static void _apply_relocations(void* file_data,const elf_hdr_t* header){
 	INFO("Applying relocations...");
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
+		if (!section_header->sh_info||section_header->sh_info>=header->e_shnum){
+			goto _skip_section;
+		}
 		u64 base=((const elf_shdr_t*)(file_data+header->e_shoff+section_header->sh_info*sizeof(elf_shdr_t)))->sh_addr;
-		if (section_header->sh_type==SHT_REL&&base){
+		if (!base){
+			goto _skip_section;
+		}
+		if (section_header->sh_type==SHT_REL){
 			panic("SHT_REL");
 		}
-		if (section_header->sh_type==SHT_RELA&&base){
+		else if (section_header->sh_type==SHT_RELA){
 			const elf_rela_t* entry=file_data+section_header->sh_offset;
-			for (u64 i=0;i<section_header->sh_size;i+=sizeof(elf_rela_t)){
+			for (u64 j=0;j<section_header->sh_size;j+=sizeof(elf_rela_t)){
 				const elf_sym_t* symbol=symbol_table+(entry->r_info>>32);
 				u64 relocation_address=base+entry->r_offset;
 				u64 value=symbol->st_value;
@@ -201,6 +206,7 @@ static void _apply_relocations(void* file_data,const elf_hdr_t* header){
 				entry++;
 			}
 		}
+_skip_section:
 		section_header++;
 	}
 }
@@ -242,17 +248,15 @@ module_t* module_load(const char* name){
 		spinlock_release_exclusive(&_module_global_lock);
 		return NULL;
 	}
-	u64 file_size=vfs_node_resize(module_file,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
-	u64 file_data_pages=pmm_align_up_address(file_size)>>PAGE_SIZE_SHIFT;
-	INFO("Module file size: %v",file_data_pages<<PAGE_SIZE_SHIFT);
-	void* file_data=(void*)(pmm_alloc(file_data_pages,&_module_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	vfs_node_read(module_file,0,file_data,file_size);
+	mmap_region_t* file_data_region=mmap_alloc(&(process_kernel->mmap),0,0,&_module_buffer_pmm_counter,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
+	INFO("Module file size: %v",file_data_region->length);
+	void* file_data=(void*)(file_data_region->rb_node.key);
 	module_t* module=omm_alloc(&_module_allocator);
 	module->state=MODULE_STATE_LOADING;
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header);
-	pmm_dealloc(((u64)file_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,file_data_pages,&_module_buffer_pmm_counter);
+	// mmap_dealloc(&(process_kernel->mmap),file_data_region->rb_node.key,file_data_region->length);
 	INFO("Adjusting memory flags...");
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);

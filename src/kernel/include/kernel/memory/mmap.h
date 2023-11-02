@@ -5,6 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
+#include <kernel/vfs/node.h>
 
 
 
@@ -13,6 +14,7 @@
 #define MMAP_REGION_FLAG_VMM_USER 4
 #define MMAP_REGION_FLAG_VMM_NOEXECUTE 8
 #define MMAP_REGION_FLAG_COMMIT 16
+#define MMAP_REGION_FLAG_NO_FILE_WRITEBACK 32
 
 
 
@@ -26,6 +28,7 @@ typedef struct _MMAP_REGION{
 	struct _MMAP_REGION* group_prev;
 	struct _MMAP_REGION* group_next;
 	pmm_counter_descriptor_t* pmm_counter;
+	vfs_node_t* file;
 } mmap_region_t;
 
 
@@ -54,7 +57,7 @@ void mmap_deinit(mmap_t* mmap);
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags);
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file);
 
 
 
