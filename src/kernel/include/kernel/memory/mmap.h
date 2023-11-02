@@ -56,7 +56,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
+_Bool mmap_dealloc(mmap_t* mmap,vmm_pagemap_t* pagemap,u64 address,u64 length);
 
 
 

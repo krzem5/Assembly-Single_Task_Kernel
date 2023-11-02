@@ -67,7 +67,7 @@ void syscall_memory_map(isr_state_t* regs){
 
 void syscall_memory_unmap(isr_state_t* regs){
 	u64 length=pmm_align_up_address(regs->rsi);
-	regs->rax=mmap_dealloc(&(THREAD_DATA->process->mmap),regs->rdi,length);
+	regs->rax=mmap_dealloc(&(THREAD_DATA->process->mmap),&(THREAD_DATA->process->pagemap),regs->rdi,length);
 }
 
 

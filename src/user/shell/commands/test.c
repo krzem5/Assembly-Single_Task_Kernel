@@ -5,7 +5,7 @@
 
 
 void test_main(int argc,const char*const* argv){
-	*((char*)0)=0;
+	*((char*)0)=0xa5;
 }
 
 

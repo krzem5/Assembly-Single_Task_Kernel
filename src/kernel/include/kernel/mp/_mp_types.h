@@ -8,6 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/scheduler/cpu_mask.h>
+#include <kernel/signal/_signal_types.h>
 #include <kernel/types.h>
 
 
@@ -80,6 +81,7 @@ typedef struct _THREAD{
 	_Atomic scheduler_priority_t priority;
 	_Bool state_not_present;
 	thread_state_t state;
+	signal_state_t* signal_state;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;

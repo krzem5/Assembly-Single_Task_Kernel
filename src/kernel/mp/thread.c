@@ -13,6 +13,7 @@
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/signal/signal.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
@@ -91,6 +92,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state_not_present=0;
 	out->state.type=THREAD_STATE_TYPE_NONE;
+	out->signal_state=NULL;
 	thread_list_add(&(process->thread_list),out);
 	return out;
 }
@@ -147,10 +149,10 @@ void thread_delete(thread_t* thread){
 	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	if (thread->user_stack_size){
-		mmap_dealloc(&(process->mmap),thread->user_stack_bottom,thread->user_stack_size);
+		mmap_dealloc(&(process->mmap),&(process->pagemap),thread->user_stack_bottom,thread->user_stack_size);
 	}
-	mmap_dealloc(&(process->mmap),thread->kernel_stack_bottom,thread->kernel_stack_size);
-	mmap_dealloc(&(process->mmap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	mmap_dealloc(&(process->mmap),&(process->pagemap),thread->kernel_stack_bottom,thread->kernel_stack_size);
+	mmap_dealloc(&(process->mmap),&(process->pagemap),thread->pf_stack_bottom,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){
 		spinlock_release_exclusive(&(thread->lock));

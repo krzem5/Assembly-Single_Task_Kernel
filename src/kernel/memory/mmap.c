@@ -164,7 +164,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
+_Bool mmap_dealloc(mmap_t* mmap,vmm_pagemap_t* pagemap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_dealloc: unaligned arguments");
 	}
@@ -181,6 +181,12 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	}
 	if (region->rb_node.key!=address||region->length!=length){
 		panic("mmap_dealloc: partial release");
+	}
+	for (u64 i=0;i<length;i+=PAGE_SIZE){
+		u64 physical_address=vmm_unmap_page(pagemap,address+i)&VMM_PAGE_ADDRESS_MASK;
+		if (physical_address){
+			pmm_dealloc(physical_address,1,region->pmm_counter);
+		}
 	}
 	if (region->prev&&!(region->prev->flags&MMAP_REGION_FLAG_USED)){
 		mmap_region_t* prev_region=region->prev;

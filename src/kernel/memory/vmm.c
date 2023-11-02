@@ -116,7 +116,7 @@ static u64* _lookup_virtual_address(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 
-static _Bool _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+static u64 _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -128,12 +128,12 @@ static _Bool _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	}
 	u64 entry=_get_table(pml3)->entries[j];
 	if (entry&VMM_PAGE_FLAG_LARGE){
-		if (!entry||(virtual_address&(EXTRA_LARGE_PAGE_SIZE-1))){
+		if (virtual_address&(EXTRA_LARGE_PAGE_SIZE-1)){
 			return 0;
 		}
 		_get_table(pml3)->entries[j]=0;
 		_decrease_length(pml3);
-		return EXTRA_LARGE_PAGE_SIZE;
+		return entry;
 	}
 	u64* pml2=_get_child_table(pml3,j,0);
 	if (!pml2){
@@ -141,14 +141,14 @@ static _Bool _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	}
 	entry=_get_table(pml2)->entries[k];
 	if (entry&VMM_PAGE_FLAG_LARGE){
-		if (!entry||(virtual_address&(LARGE_PAGE_SIZE-1))){
+		if (virtual_address&(LARGE_PAGE_SIZE-1)){
 			return 0;
 		}
 		_get_table(pml2)->entries[k]=0;
 		if (_decrease_length(pml2)){
 			_decrease_length(pml3);
 		}
-		return LARGE_PAGE_SIZE;
+		return entry;
 	}
 	u64* pml1=_get_child_table(pml2,k,0);
 	if (!pml1){
@@ -164,7 +164,7 @@ static _Bool _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 			_decrease_length(pml3);
 		}
 	}
-	return PAGE_SIZE;
+	return entry;
 }
 
 
