@@ -20,7 +20,7 @@ typedef u32 signal_type_t;
 
 
 
-void signal_send(thread_t* thread,isr_state_t* isr_state,signal_type_t type,const void* data,u32 size);
+void signal_send(thread_t* thread,isr_state_t* isr_state,signal_type_t type,u64 arg);
 
 
 

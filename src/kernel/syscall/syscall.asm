@@ -36,6 +36,12 @@ _syscall_handler:
 	swapgs
 	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
+	push qword [gs:16]
+	push r11
+	push qword 0x23
+	push rcx
+	push qword 0
+	push qword 0
 	push r15
 	push r14
 	push r13
@@ -89,6 +95,10 @@ _syscall_handler:
 	pop r13
 	pop r14
 	pop r15
-	mov rsp, qword [gs:16]
+	add rsp, 16
+	pop rcx
+	add rsp, 8
+	pop r11
+	mov rsp, qword [rsp]
 	swapgs
 	o64 sysret

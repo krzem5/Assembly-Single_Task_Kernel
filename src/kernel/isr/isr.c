@@ -15,30 +15,6 @@
 
 
 
-typedef struct _ISR_SIGNAL_CONTEXT{
-	u64 rax;
-	u64 rbx;
-	u64 rcx;
-	u64 rdx;
-	u64 rsi;
-	u64 rdi;
-	u64 rbp;
-	u64 r8;
-	u64 r9;
-	u64 r10;
-	u64 r11;
-	u64 r12;
-	u64 r13;
-	u64 r14;
-	u64 r15;
-	u64 error;
-	u64 rip;
-	u64 rflags;
-	u64 rsp;
-} isr_signal_context_t;
-
-
-
 static const signal_type_t _isr_to_signal_type[]={
 	[0]=SIGNAL_TYPE_ZDE,
 	[6]=SIGNAL_TYPE_IOE,
@@ -87,29 +63,8 @@ void _isr_handler(isr_state_t* isr_state){
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
-	if (CPU_HEADER_DATA->current_thread&&((isr_state->rflags>>12)&3)==3&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
-		isr_signal_context_t ctx={
-			isr_state->rax,
-			isr_state->rbx,
-			isr_state->rcx,
-			isr_state->rdx,
-			isr_state->rsi,
-			isr_state->rdi,
-			isr_state->rbp,
-			isr_state->r8,
-			isr_state->r9,
-			isr_state->r10,
-			isr_state->r11,
-			isr_state->r12,
-			isr_state->r13,
-			isr_state->r14,
-			isr_state->r15,
-			isr_state->error,
-			isr_state->rip,
-			isr_state->rflags,
-			isr_state->rsp
-		};
-		signal_send(CPU_HEADER_DATA->current_thread,isr_state,_isr_to_signal_type[isr_state->isr],&ctx,sizeof(isr_signal_context_t));
+	if (CPU_HEADER_DATA->current_thread&&isr_state->cs==0x23&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
+		signal_send(CPU_HEADER_DATA->current_thread,isr_state,_isr_to_signal_type[isr_state->isr],0);
 		return;
 	}
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
