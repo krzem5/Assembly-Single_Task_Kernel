@@ -8,11 +8,45 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/signal/signal.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
 
 
+
+typedef struct _ISR_SIGNAL_CONTEXT{
+	u64 rax;
+	u64 rbx;
+	u64 rcx;
+	u64 rdx;
+	u64 rsi;
+	u64 rdi;
+	u64 rbp;
+	u64 r8;
+	u64 r9;
+	u64 r10;
+	u64 r11;
+	u64 r12;
+	u64 r13;
+	u64 r14;
+	u64 r15;
+	u64 error;
+	u64 rip;
+	u64 rflags;
+	u64 rsp;
+} isr_signal_context_t;
+
+
+
+static const signal_type_t _isr_to_signal_type[]={
+	[0]=SIGNAL_TYPE_ZDE,
+	[6]=SIGNAL_TYPE_IOE,
+	[13]=SIGNAL_TYPE_GPF,
+	[14]=SIGNAL_TYPE_PF,
+	[16]=SIGNAL_TYPE_FPE,
+	[19]=SIGNAL_TYPE_FPE
+};
 
 static u8 _isr_next_irq_index=33;
 
@@ -54,22 +88,29 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 	if (CPU_HEADER_DATA->current_thread&&((isr_state->rflags>>12)&3)==3&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
-		// SIGNAL_ZDE Zero Division Error
-		// SIGNAL_SCE System Call Exception
-		// SIGNAL_IOE Invalid Opcode Error
-		// SIGNAL_GPF General Protection Fault
-		// SIGNAL_PF Page Fault
-		// SIGNAL_FPE Floating Point Exception
-		// SIGNAL_USR First user-defined signal
-		//  0: SIGNAL_ZDE
-		//  6: SIGNAL_IOE
-		// 13: SIGNAL_GPF
-		// 14: SIGNAL_PGF
-		// 16: SIGNAL_FPE
-		// 19: SIGNAL_FPE
-		// _syscall_signal_set_handler(void* handler,u32 stack_size);
-		// signal_send(process_t* process,u32 type,const void* data,u32 size);
-		panic("Forward ISR to user process");
+		isr_signal_context_t ctx={
+			isr_state->rax,
+			isr_state->rbx,
+			isr_state->rcx,
+			isr_state->rdx,
+			isr_state->rsi,
+			isr_state->rdi,
+			isr_state->rbp,
+			isr_state->r8,
+			isr_state->r9,
+			isr_state->r10,
+			isr_state->r11,
+			isr_state->r12,
+			isr_state->r13,
+			isr_state->r14,
+			isr_state->r15,
+			isr_state->error,
+			isr_state->rip,
+			isr_state->rflags,
+			isr_state->rsp
+		};
+		signal_send(CPU_HEADER_DATA->current_thread,isr_state,_isr_to_signal_type[isr_state->isr],&ctx,sizeof(isr_signal_context_t));
+		return;
 	}
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
 		panic("Page fault stack not present");
