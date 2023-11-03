@@ -75,14 +75,6 @@ void kernel_adjust_memory_flags_after_init(void);
 
 
 
-const char* kernel_lookup_symbol(u64 address,u64* offset);
-
-
-
-u64 kernel_lookup_symbol_address(const char* name);
-
-
-
 u64 kernel_gcov_info_data(u64* size);
 
 

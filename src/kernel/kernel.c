@@ -65,38 +65,6 @@ void kernel_adjust_memory_flags_after_init(void){
 
 
 
-const char* kernel_lookup_symbol(u64 address,u64* offset){
-	if (address<kernel_section_kernel_start()||address>=kernel_section_kernel_end()){
-		if (offset){
-			*offset=0;
-		}
-		return NULL;
-	}
-	u32 index=0xffffffff;
-	for (u32 i=0;kernel_symbols[i];i+=2){
-		if (address>=kernel_symbols[i]&&(index==0xffffffff||kernel_symbols[i]>kernel_symbols[index])){
-			index=i;
-		}
-	}
-	if (offset){
-		*offset=address-kernel_symbols[index];
-	}
-	return (void*)(kernel_symbols[index+1]);
-}
-
-
-
-u64 kernel_lookup_symbol_address(const char* name){
-	for (u32 i=0;kernel_symbols[i];i+=2){
-		if (streq(name,(void*)(kernel_symbols[i+1]))){
-			return kernel_symbols[i];
-		}
-	}
-	return 0;
-}
-
-
-
 u64 kernel_gcov_info_data(u64* size){
 	*size=kernel_section_gcov_info_end()-kernel_section_gcov_info_start();
 	return kernel_section_gcov_info_start();
