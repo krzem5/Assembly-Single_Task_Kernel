@@ -200,6 +200,8 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 			pmm_dealloc(physical_address,1,region->pmm_counter);
 		}
 	}
+	spinlock_release_exclusive(&(mmap->lock));
+	return 0;
 	if (region->prev&&!(region->prev->flags&MMAP_REGION_FLAG_USED)){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
