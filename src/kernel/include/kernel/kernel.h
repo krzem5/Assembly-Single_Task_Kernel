@@ -33,7 +33,7 @@ typedef struct _KERNEL_DATA{
 
 
 extern const u64 __version;
-extern const u64 kernel_symbols[];
+extern const u64 _raw_kernel_symbols[];
 extern kernel_data_t kernel_data;
 
 

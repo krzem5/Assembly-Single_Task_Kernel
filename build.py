@@ -286,7 +286,7 @@ def _extract_object_file_symbol_names(object_file,out):
 
 def _generate_symbol_file(kernel_symbols,file_path):
 	with open(file_path,"w") as wf:
-		wf.write("typedef unsigned long long int u64;\nconst u64 kernel_symbols[]={\n")
+		wf.write("typedef unsigned long long int u64;\nconst u64 _raw_kernel_symbols[]={\n")
 		for symbol in sorted(set(kernel_symbols)):
 			wf.write(f"\t0,(u64)\"{symbol}\",\n")
 		wf.write("\t0,0\n};\n")
@@ -310,7 +310,7 @@ def _patch_kernel(file_path,kernel_symbols):
 			elif (i==32):
 				ist=2
 			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
-		offset=kernel_symbols["kernel_symbols"]-address_offset
+		offset=kernel_symbols["_raw_kernel_symbols"]-address_offset
 		while (True):
 			wf.seek(offset+8)
 			name_address=struct.unpack("<Q",wf.read(8))[0]

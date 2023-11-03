@@ -23,8 +23,8 @@ static rb_tree_t _symbol_tree;
 void symbol_init(void){
 	LOG("Initializing symbol tree...");
 	rb_tree_init(&_symbol_tree);
-	for (u32 i=0;kernel_symbols[i];i+=2){
-		symbol_add("kernel",(const char*)(kernel_symbols[i+1]),kernel_symbols[i]);
+	for (u32 i=0;_raw_kernel_symbols[i];i+=2){
+		symbol_add("kernel",(const char*)(_raw_kernel_symbols[i+1]),_raw_kernel_symbols[i]);
 	}
 }
 
