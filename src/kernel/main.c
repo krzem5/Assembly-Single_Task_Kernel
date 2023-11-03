@@ -20,6 +20,7 @@
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
+#include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
@@ -59,6 +60,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	vmm_init();
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
+	symbol_init();
 	clock_init();
 	isr_init();
 	acpi_load();

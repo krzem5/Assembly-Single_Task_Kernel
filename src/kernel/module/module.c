@@ -9,6 +9,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
+#include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -137,11 +138,15 @@ static void _map_section_addresses(void* file_data,const elf_hdr_t* header,modul
 
 
 
-static void _resolve_symbol_table(elf_sym_t* symbol_table,u64 symbol_table_size,const char* string_table){
+static void _resolve_symbol_table(void* file_data,const elf_hdr_t* header,elf_sym_t* symbol_table,u64 symbol_table_size,const char* string_table,const char* module_name){
 	INFO("Resolving symbols...");
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_sym_t)){
 		if (symbol_table->st_shndx==SHN_UNDEF){
-			symbol_table->st_value=kernel_lookup_symbol_address(string_table+symbol_table->st_name);
+			const symbol_t* symbol=symbol_lookup_by_name(string_table+symbol_table->st_name);
+			symbol_table->st_value=(symbol?symbol->rb_node.key:0);
+		}
+		else if (symbol_table->st_value){
+			symbol_add(module_name,string_table+symbol_table->st_name,symbol_table->st_value+((const elf_shdr_t*)(file_data+header->e_shoff+symbol_table->st_shndx*sizeof(elf_shdr_t)))->sh_addr);
 		}
 		symbol_table++;
 	}
@@ -149,7 +154,7 @@ static void _resolve_symbol_table(elf_sym_t* symbol_table,u64 symbol_table_size,
 
 
 
-static void _apply_relocations(void* file_data,const elf_hdr_t* header){
+static void _apply_relocations(void* file_data,const elf_hdr_t* header,const char* module_name){
 	const elf_shdr_t* section_header=file_data+header->e_shoff;
 	elf_sym_t* symbol_table=NULL;
 	u64 symbol_table_size=0;
@@ -164,7 +169,7 @@ static void _apply_relocations(void* file_data,const elf_hdr_t* header){
 		}
 		section_header++;
 	}
-	_resolve_symbol_table(symbol_table,symbol_table_size,string_table);
+	_resolve_symbol_table(file_data,header,symbol_table,symbol_table_size,string_table,module_name);
 	INFO("Applying relocations...");
 	section_header=file_data+header->e_shoff;
 	for (u16 i=0;i<header->e_shnum;i++){
@@ -256,7 +261,7 @@ module_t* module_load(const char* name){
 	module->state=MODULE_STATE_LOADING;
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
-	_apply_relocations(file_data,&header);
+	_apply_relocations(file_data,&header,name);
 	mmap_dealloc(&(process_kernel->mmap),file_data_region->rb_node.key,file_data_region->length);
 	INFO("Adjusting memory flags...");
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);

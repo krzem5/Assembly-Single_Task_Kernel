@@ -287,7 +287,7 @@ def _extract_object_file_symbol_names(object_file,out):
 def _generate_symbol_file(kernel_symbols,file_path):
 	with open(file_path,"w") as wf:
 		wf.write("typedef unsigned long long int u64;\nconst u64 kernel_symbols[]={\n")
-		for symbol in sorted(kernel_symbols):
+		for symbol in sorted(set(kernel_symbols)):
 			wf.write(f"\t0,(u64)\"{symbol}\",\n")
 		wf.write("\t0,0\n};\n")
 	object_file=KERNEL_OBJECT_FILE_DIRECTORY+file_path.replace("/","#")+".o"

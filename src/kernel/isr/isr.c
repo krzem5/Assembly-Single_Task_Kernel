@@ -9,6 +9,7 @@
 #include <kernel/mp/event.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/signal/signal.h>
+#include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
@@ -103,31 +104,26 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
 	if (isr_state->cs==8){
-		u64 offset;
-		const char* func_name=kernel_lookup_symbol(isr_state->rip,&offset);
-		if (func_name){
-			LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
-		}
-		else{
-			LOG("[%u] %p",CPU_HEADER_DATA->index,isr_state->rip);
-		}
-		u64 rbp=isr_state->rbp;
 		vmm_pagemap_t current_pagemap;
 		vmm_get_pagemap(&current_pagemap);
-		while (rbp){
-			if (vmm_virtual_to_physical(&current_pagemap,rbp)){
-				func_name=kernel_lookup_symbol(*((u64*)(rbp+8)),&offset);
+		u64 rip=isr_state->rip;
+		u64 rbp=isr_state->rbp;
+		while (1){
+			const symbol_t* symbol=symbol_lookup(rip);
+			if (symbol){
+				LOG("[%u] %s:%s+%u",CPU_HEADER_DATA->index,symbol->module,symbol->name->data,rip-symbol->rb_node.key);
 			}
 			else{
-				LOG("[%u] ??? [%p]",CPU_HEADER_DATA->index,rbp);
+				LOG("[%u] %p",CPU_HEADER_DATA->index,rip);
+			}
+			if (!rbp){
 				break;
 			}
-			if (func_name){
-				LOG("[%u] %s+%u",CPU_HEADER_DATA->index,func_name,offset);
+			if (!vmm_virtual_to_physical(&current_pagemap,rbp)||!vmm_virtual_to_physical(&current_pagemap,rbp+8)){
+				LOG("[%u] <rbp: %p>",CPU_HEADER_DATA->index,rbp);
+				break;
 			}
-			else{
-				LOG("[%u] %p",CPU_HEADER_DATA->index,*((u64*)(rbp+8)));
-			}
+			rip=*((u64*)(rbp+8));
 			rbp=*((u64*)rbp);
 		}
 	}
