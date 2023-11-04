@@ -3,8 +3,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/elf/elf.h>
-#include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
@@ -22,8 +20,6 @@
 #include <kernel/serial/serial.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
-#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "main"
 
 
@@ -39,13 +35,6 @@ static void _main_thread(void){
 	serial_init_irq();
 	kernel_adjust_memory_flags_after_init();
 	module_load("os_loader");
-	module_load("i82540");
-#if KERNEL_COVERAGE_ENABLED
-	module_load("coverage");
-#endif
-	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
-		panic("Unable to load shell");
-	}
 }
 
 
@@ -67,8 +56,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
-	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,(u64)_main_thread,0x200000,0));
+	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_main_thread,0x200000,0));
 	scheduler_enable();
 	scheduler_start();
-	for (;;);
+	scheduler_task_wait_loop();
 }

@@ -1,40 +1,53 @@
+#include <kernel/elf/elf.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/mmap.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "os_loader"
 
 
 
 #define EARLY_MODULE_ORDER_FILE "/boot/module/order.txt"
+#define LATE_MODULE_ORDER_FILE "/boot/module/order.txt" // Same file name, different filesystem
+
+
+
+static void _load_modules_from_order_file(const char* order_file_path){
+	vfs_node_t* file=vfs_lookup(NULL,order_file_path);
+	if (!file){
+		panic("Unable to locate module order file");
+	}
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
+	char* buffer=(char*)(region->rb_node.key);
+	for (u64 i=0;i<region->length&&buffer[i];){
+		for (;i<region->length&&(buffer[i]==' '||buffer[i]=='\t'||buffer[i]=='\r'||buffer[i]=='\n');i++);
+		if (!buffer[i]){
+			break;
+		}
+		u64 j=i;
+		for (;j<region->length&&buffer[j]!='\n';j++);
+		u64 k=j;
+		for (;k&&(buffer[k-1]==' '||buffer[k-1]=='\t'||buffer[k-1]=='\r'||buffer[k-1]=='\n');k--);
+		if (buffer[i]&&buffer[i]!='#'){
+			SMM_TEMPORARY_STRING module_name=smm_alloc(buffer+i,k-i);
+			module_load(module_name->data);
+		}
+		i=j;
+	}
+	mmap_dealloc(&(process_kernel->mmap),region->rb_node.key,region->length);
+}
 
 
 
 static _Bool _init(module_t* module){
 	LOG("Loading early modules...");
-	vfs_node_t* early_modile_order_file=vfs_lookup(NULL,EARLY_MODULE_ORDER_FILE);
-	if (!early_modile_order_file){
-		panic("Unable to locate early module order file");
-	}
-	char buffer[4096];
-	u64 size=vfs_node_read(early_modile_order_file,0,buffer,4096);
-	for (u64 i=0;i<size;){
-		for (;i<size&&(!buffer[i]||buffer[i]==' '||buffer[i]=='\t'||buffer[i]=='\r'||buffer[i]=='\n');i++);
-		u64 j=i;
-		for (;j<size&&buffer[j]!='\n';j++);
-		u64 k=j;
-		for (;k&&(!buffer[k-1]||buffer[k-1]==' '||buffer[k-1]=='\t'||buffer[k-1]=='\r'||buffer[k-1]=='\n');k--);
-		buffer[k]=0;
-		if (buffer[i]&&buffer[i]!='#'){
-			module_load(buffer+i);
-		}
-		i=j;
-	}
+	_load_modules_from_order_file(EARLY_MODULE_ORDER_FILE);
 	LOG("Searching for boot filesystem...");
 	filesystem_t* boot_fs=NULL;
 	HANDLE_FOREACH(HANDLE_TYPE_FS){
@@ -51,9 +64,18 @@ _check_next_fs:
 		handle_release(handle);
 	}
 	if (!boot_fs){
-		panic("Unable to finde boot filesystem");
+		panic("Unable to find boot filesystem");
 	}
 	vfs_mount(boot_fs,NULL);
+	LOG("Loading late modules...");
+	_load_modules_from_order_file(LATE_MODULE_ORDER_FILE);
+#if KERNEL_COVERAGE_ENABLED
+	module_load("coverage");
+#endif
+	LOG("Loading user shell...");
+	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
+		panic("Unable to load user shell");
+	}
 	return 1;
 }
 

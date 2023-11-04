@@ -589,6 +589,8 @@ if (rebuild_data_partition):
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	with open("build/user/shell.elf","rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
+	with open("src/late_modules.txt","rb") as rf:
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/order.txt"),rf.read())
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
 		with open(f"build/module/{module}.mod","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}.mod"),rf.read())

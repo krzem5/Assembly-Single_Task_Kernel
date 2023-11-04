@@ -116,13 +116,13 @@ thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
 
 
 
-thread_t* thread_new_kernel_thread(process_t* process,u64 rip,u64 stack_size,u8 arg_count,...){
+thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,u8 arg_count,...){
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
 	thread_t* out=_thread_alloc(process,0,stack_size);
 	out->gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
-	out->gpr_state.rax=rip;
+	out->gpr_state.rax=(u64)func;
 	out->gpr_state.rsp=out->kernel_stack_bottom+stack_size;
 	__builtin_va_list va;
 	__builtin_va_start(va,arg_count);

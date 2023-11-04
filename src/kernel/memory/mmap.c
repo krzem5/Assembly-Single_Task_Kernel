@@ -11,6 +11,8 @@
 
 
 
+static pmm_counter_descriptor_t _mmap_file_pmm_counter=PMM_COUNTER_INIT_STRUCT("mmap_file");
+static pmm_counter_descriptor_t _mmap_generic_pmm_counter=PMM_COUNTER_INIT_STRUCT("mmap_generic");
 static pmm_counter_descriptor_t _mmap_region_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_mmap_region");
 static pmm_counter_descriptor_t _mmap_length_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_mmap_length_group");
 static omm_allocator_t _mmap_region_allocator=OMM_ALLOCATOR_INIT_STRUCT("mmap_region",sizeof(mmap_region_t),8,4,&_mmap_region_omm_pmm_counter);
@@ -90,6 +92,9 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
 	}
+	if (!pmm_counter){
+		pmm_counter=(file?&_mmap_file_pmm_counter:&_mmap_generic_pmm_counter);
+	}
 	if (!length&&file){
 		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));
 	}
@@ -120,7 +125,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	if (!address){
 		address=region->rb_node.key;
 	}
-	else if ((region->flags&MMAP_REGION_FLAG_USED)||address-region->rb_node.key+length>region->length){
+	else if (region->flags||address-region->rb_node.key+length>region->length){
 		spinlock_release_exclusive(&(mmap->lock));
 		return NULL;
 	}
@@ -173,6 +178,16 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 
+static void __DEBUG(mmap_t* mmap){
+	INFO("Debug:");
+	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node)){
+		mmap_region_t* region=(mmap_region_t*)rb_node;
+		INFO("%p - %p: %X",region->rb_node.key,region->length,region->flags);
+	}
+}
+
+
+
 _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_dealloc: unaligned arguments");
@@ -184,7 +199,7 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
-	if (!(region->flags&MMAP_REGION_FLAG_USED)){
+	if (!region->flags){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
@@ -200,9 +215,11 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 			pmm_dealloc(physical_address,1,region->pmm_counter);
 		}
 	}
+	(void)__DEBUG;
+	// __DEBUG(mmap);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 0;
-	if (region->prev&&!(region->prev->flags&MMAP_REGION_FLAG_USED)){
+	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
 		_remove_region_from_length_tree(mmap,prev_region);
@@ -214,7 +231,7 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		omm_dealloc(&_mmap_region_allocator,region);
 		region=prev_region;
 	}
-	if (region->next&&!(region->next->flags&MMAP_REGION_FLAG_USED)){
+	if (region->next&&!region->next->flags){
 		mmap_region_t* next_region=region->next;
 		rb_tree_remove_node(&(mmap->offset_tree),&(next_region->rb_node));
 		_remove_region_from_length_tree(mmap,next_region);
@@ -227,6 +244,7 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	}
 	region->flags=0;
 	_add_region_to_length_tree(mmap,region);
+	// __DEBUG(mmap);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
 }
@@ -237,7 +255,7 @@ mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
 	spinlock_release_exclusive(&(mmap->lock));
-	return (out&&(out->flags&MMAP_REGION_FLAG_USED)?out:NULL);
+	return (out&&out->flags?out:NULL);
 }
 
 

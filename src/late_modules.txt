@@ -1,0 +1,16 @@
+# Filesystems
+iso9660
+kfs2
+
+# Partition descriptors
+gpt
+
+# USB drivers
+usb_msc
+
+# PCI drivers
+ahci
+ata
+i82540
+nvme
+xhci

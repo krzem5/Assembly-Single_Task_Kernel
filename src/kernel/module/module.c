@@ -22,7 +22,6 @@
 
 
 
-static pmm_counter_descriptor_t _module_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("module_buffer");
 static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("module_image");
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
 static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
@@ -248,7 +247,7 @@ module_t* module_load(const char* name){
 		return NULL;
 	}
 	INFO("Loading module from file...");
-	mmap_region_t* file_data_region=mmap_alloc(&(process_kernel->mmap),0,0,&_module_buffer_pmm_counter,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
+	mmap_region_t* file_data_region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
 	INFO("Module file size: %v",file_data_region->length);
 	void* file_data=(void*)(file_data_region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
