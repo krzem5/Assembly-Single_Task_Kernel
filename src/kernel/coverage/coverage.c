@@ -2,6 +2,6 @@
 
 
 
-KERNEL_NOINLINE void KERNEL_NOCOVERAGE __gcov_merge_add(void){
+void KERNEL_NOCOVERAGE __gcov_merge_add(void){
 	return;
 }

@@ -4,7 +4,7 @@
 
 
 
-_Bool elf_load(vfs_node_t* node);
+_Bool elf_load(vfs_node_t* file);
 
 
 

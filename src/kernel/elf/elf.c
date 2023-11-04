@@ -19,12 +19,12 @@ static pmm_counter_descriptor_t _user_image_pmm_counter=PMM_COUNTER_INIT_STRUCT(
 
 
 
-_Bool elf_load(vfs_node_t* node){
-	if (!node){
+_Bool elf_load(vfs_node_t* file){
+	if (!file){
 		return 0;
 	}
 	process_t* process=process_new();
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,node);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	if (header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_EXEC||header.e_machine!=0x3e||header.e_version!=1){
@@ -45,7 +45,7 @@ _Bool elf_load(vfs_node_t* node){
 		if (program_header->p_flags&PF_W){
 			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 		}
-		if (!mmap_alloc(&(process->mmap),program_header->p_vaddr,pmm_align_up_address(program_header->p_memsz),&_user_image_pmm_counter,flags,node)){
+		if (!mmap_alloc(&(process->mmap),program_header->p_vaddr,pmm_align_up_address(program_header->p_memsz),&_user_image_pmm_counter,flags,file)){
 			goto _error;
 		}
 	}

@@ -1,11 +1,10 @@
+#include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/module/module.h>
-#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
@@ -23,24 +22,11 @@ static void _load_modules_from_order_file(const char* order_file_path){
 	if (!file){
 		panic("Unable to locate module order file");
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
-	char* buffer=(char*)(region->rb_node.key);
-	for (u64 i=0;i<region->length&&buffer[i];){
-		for (;i<region->length&&(buffer[i]==' '||buffer[i]=='\t'||buffer[i]=='\r'||buffer[i]=='\n');i++);
-		if (!buffer[i]){
-			break;
-		}
-		u64 j=i;
-		for (;j<region->length&&buffer[j]!='\n';j++);
-		u64 k=j;
-		for (;k&&(buffer[k-1]==' '||buffer[k-1]=='\t'||buffer[k-1]=='\r'||buffer[k-1]=='\n');k--);
-		if (buffer[i]&&buffer[i]!='#'){
-			SMM_TEMPORARY_STRING module_name=smm_alloc(buffer+i,k-i);
-			module_load(module_name->data);
-		}
-		i=j;
+	config_t* config=config_load(file);
+	for (config_item_t* item=config->head;item;item=item->next){
+		module_load(item->key->data);
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	config_dealloc(config);
 }
 
 
