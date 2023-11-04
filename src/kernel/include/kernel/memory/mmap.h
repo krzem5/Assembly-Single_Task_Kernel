@@ -16,6 +16,9 @@
 #define MMAP_REGION_FLAG_COMMIT 16
 #define MMAP_REGION_FLAG_NO_FILE_WRITEBACK 32
 
+#define MMAP_REGION_FILE_OFFSET_SHIFT 6
+#define MMAP_REGION_FILE_OFFSET(offset) (((u64)(offset))<<MMAP_REGION_FILE_OFFSET_SHIFT)
+
 
 
 typedef struct _MMAP_REGION{
@@ -62,6 +65,10 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
+
+
+
+_Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region);
 
 
 

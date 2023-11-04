@@ -35,26 +35,25 @@ _Bool elf_load(vfs_node_t* node){
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		u64 flags=VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_PRESENT;
+		if (program_header->p_vaddr&(PAGE_SIZE-1)){
+			panic("elf_load: Non-page-aligned program header");
+		}
+		u64 flags=MMAP_REGION_FILE_OFFSET(program_header->p_offset)|MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
 		if (!(program_header->p_flags&PF_X)){
-			flags|=VMM_PAGE_FLAG_NOEXECUTE;
+			flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
 		}
 		if (program_header->p_flags&PF_W){
-			flags|=VMM_PAGE_FLAG_READWRITE;
+			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 		}
-		u64 offset=program_header->p_vaddr&(PAGE_SIZE-1);
-		u64 page_count=pmm_align_up_address(program_header->p_memsz+offset)>>PAGE_SIZE_SHIFT;
-		u64 pages=pmm_alloc_zero(page_count,&_user_image_pmm_counter,0);
-		if (!mmap_alloc(&(process->mmap),program_header->p_vaddr-offset,page_count<<PAGE_SIZE_SHIFT,&_user_image_pmm_counter,0,NULL)){
+		if (!mmap_alloc(&(process->mmap),program_header->p_vaddr,pmm_align_up_address(program_header->p_memsz),&_user_image_pmm_counter,flags,node)){
 			goto _error;
 		}
-		vmm_map_pages(&(process->pagemap),pages,program_header->p_vaddr-offset,flags,page_count);
-		memcpy((void*)(pages+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),file_data+program_header->p_offset,program_header->p_filesz);
 	}
+	mmap_dealloc_region(&(process_kernel->mmap),region);
 	scheduler_enqueue_thread(thread_new_user_thread(process,header.e_entry,0x200000));
 	return 1;
 _error:
-	mmap_dealloc(&(process_kernel->mmap),region->rb_node.key,region->length);
+	mmap_dealloc_region(&(process_kernel->mmap),region);
 	handle_release(&(process->handle));
 	return 0;
 }

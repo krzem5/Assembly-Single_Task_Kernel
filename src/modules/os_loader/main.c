@@ -40,7 +40,7 @@ static void _load_modules_from_order_file(const char* order_file_path){
 		}
 		i=j;
 	}
-	mmap_dealloc(&(process_kernel->mmap),region->rb_node.key,region->length);
+	mmap_dealloc_region(&(process_kernel->mmap),region);
 }
 
 

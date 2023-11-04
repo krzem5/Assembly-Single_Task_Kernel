@@ -61,6 +61,66 @@ static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 
+static void __DEBUG(mmap_t* mmap){
+	INFO("Debug:");
+	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node)){
+		mmap_region_t* region=(mmap_region_t*)rb_node;
+		INFO("%p - %p: %X",region->rb_node.key,region->length,region->flags);
+	}
+}
+
+
+
+static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
+	if (!region->flags){
+		spinlock_release_exclusive(&(mmap->lock));
+		return 0;
+	}
+	for (u64 i=0;i<region->length;i+=PAGE_SIZE){
+		u64 physical_address=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
+		if (physical_address){
+			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_FILE_WRITEBACK)){
+				panic("mmap_dealloc: file-backed memory region writeback");
+			}
+			pmm_dealloc(physical_address,1,region->pmm_counter);
+		}
+	}
+	(void)__DEBUG;
+	// __DEBUG(mmap);
+	spinlock_release_exclusive(&(mmap->lock));
+	return 1;
+	if (region->prev&&!region->prev->flags){
+		mmap_region_t* prev_region=region->prev;
+		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
+		_remove_region_from_length_tree(mmap,prev_region);
+		prev_region->length+=region->length;
+		prev_region->next=region->next;
+		if (prev_region->next){
+			prev_region->next->prev=prev_region;
+		}
+		omm_dealloc(&_mmap_region_allocator,region);
+		region=prev_region;
+	}
+	if (region->next&&!region->next->flags){
+		mmap_region_t* next_region=region->next;
+		rb_tree_remove_node(&(mmap->offset_tree),&(next_region->rb_node));
+		_remove_region_from_length_tree(mmap,next_region);
+		region->length+=next_region->length;
+		region->next=next_region->next;
+		if (region->next){
+			region->next->prev=region;
+		}
+		omm_dealloc(&_mmap_region_allocator,next_region);
+	}
+	region->flags=0;
+	_add_region_to_length_tree(mmap,region);
+	// __DEBUG(mmap);
+	spinlock_release_exclusive(&(mmap->lock));
+	return 1;
+}
+
+
+
 void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 	out->pagemap=pagemap;
 	spinlock_init(&(out->lock));
@@ -165,25 +225,16 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	region->file=file;
 	spinlock_release_exclusive(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
-		if (file){
-			panic("mmap_alloc: MMAP_REGION_FLAG_COMMIT of a file-backed memory region");
-		}
 		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<length;i+=PAGE_SIZE){
-			vmm_map_page(mmap->pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
+			u64 physical_address=pmm_alloc_zero(1,pmm_counter,0);
+			if (file){
+				vfs_node_read(file,i+(region->flags>>MMAP_REGION_FILE_OFFSET_SHIFT),(void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE);
+			}
+			vmm_map_page(mmap->pagemap,physical_address,address+i,vmm_flags);
 		}
 	}
 	return region;
-}
-
-
-
-static void __DEBUG(mmap_t* mmap){
-	INFO("Debug:");
-	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node)){
-		mmap_region_t* region=(mmap_region_t*)rb_node;
-		INFO("%p - %p: %X",region->rb_node.key,region->length,region->flags);
-	}
 }
 
 
@@ -199,54 +250,17 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
-	if (!region->flags){
-		spinlock_release_exclusive(&(mmap->lock));
-		return 0;
-	}
 	if (region->rb_node.key!=address||region->length!=length){
 		panic("mmap_dealloc: partial release");
 	}
-	for (u64 i=0;i<length;i+=PAGE_SIZE){
-		u64 physical_address=vmm_unmap_page(mmap->pagemap,address+i)&VMM_PAGE_ADDRESS_MASK;
-		if (physical_address){
-			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_FILE_WRITEBACK)){
-				panic("mmap_dealloc: file-backed memory region writeback");
-			}
-			pmm_dealloc(physical_address,1,region->pmm_counter);
-		}
-	}
-	(void)__DEBUG;
-	// __DEBUG(mmap);
-	spinlock_release_exclusive(&(mmap->lock));
-	return 0;
-	if (region->prev&&!region->prev->flags){
-		mmap_region_t* prev_region=region->prev;
-		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
-		_remove_region_from_length_tree(mmap,prev_region);
-		prev_region->length+=length;
-		prev_region->next=region->next;
-		if (prev_region->next){
-			prev_region->next->prev=prev_region;
-		}
-		omm_dealloc(&_mmap_region_allocator,region);
-		region=prev_region;
-	}
-	if (region->next&&!region->next->flags){
-		mmap_region_t* next_region=region->next;
-		rb_tree_remove_node(&(mmap->offset_tree),&(next_region->rb_node));
-		_remove_region_from_length_tree(mmap,next_region);
-		region->length+=next_region->length;
-		region->next=next_region->next;
-		if (region->next){
-			region->next->prev=region;
-		}
-		omm_dealloc(&_mmap_region_allocator,next_region);
-	}
-	region->flags=0;
-	_add_region_to_length_tree(mmap,region);
-	// __DEBUG(mmap);
-	spinlock_release_exclusive(&(mmap->lock));
-	return 1;
+	return _dealloc_region(mmap,region);
+}
+
+
+
+_Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
+	spinlock_acquire_exclusive(&(mmap->lock));
+	return _dealloc_region(mmap,region);
 }
 
 
