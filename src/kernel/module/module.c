@@ -247,12 +247,12 @@ module_t* module_load(const char* name){
 		return NULL;
 	}
 	INFO("Loading module from file...");
-	mmap_region_t* file_data_region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
-	INFO("Module file size: %v",file_data_region->length);
-	void* file_data=(void*)(file_data_region->rb_node.key);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
+	INFO("Module file size: %v",region->length);
+	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	if (header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_REL||header.e_machine!=0x3e||header.e_version!=1){
-		mmap_dealloc(&(process_kernel->mmap),file_data_region->rb_node.key,file_data_region->length);
+		mmap_dealloc(&(process_kernel->mmap),region->rb_node.key,region->length);
 		spinlock_release_exclusive(&_module_global_lock);
 		return NULL;
 	}
@@ -261,7 +261,7 @@ module_t* module_load(const char* name){
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
 	_map_section_addresses(file_data,&header,module);
 	_apply_relocations(file_data,&header,name);
-	mmap_dealloc(&(process_kernel->mmap),file_data_region->rb_node.key,file_data_region->length);
+	mmap_dealloc(&(process_kernel->mmap),region->rb_node.key,region->length);
 	INFO("Adjusting memory flags...");
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,module->ex_region.size>>PAGE_SIZE_SHIFT);
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,module->nx_region.size>>PAGE_SIZE_SHIFT);
