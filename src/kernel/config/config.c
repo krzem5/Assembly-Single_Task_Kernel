@@ -73,6 +73,7 @@ void config_dealloc(config_t* config){
 		if (item->value){
 			smm_dealloc(item->value);
 		}
+		omm_dealloc(&_config_item_allocator,item);
 		item=next;
 	}
 	omm_dealloc(&_config_allocator,config);

@@ -12,8 +12,8 @@
 
 
 
-#define EARLY_MODULE_ORDER_FILE "/boot/module/order.txt"
-#define LATE_MODULE_ORDER_FILE "/boot/module/order.txt" // Same file name, different filesystem
+#define EARLY_MODULE_ORDER_FILE "/boot/module/module_order.config"
+#define LATE_MODULE_ORDER_FILE "/boot/module/module_order.config" // Same file name, different filesystem
 
 
 
