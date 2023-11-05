@@ -28,23 +28,11 @@ static vfs_node_t* _devfs_create(void){
 
 
 
-static vfs_node_t* _devfs_lookup(vfs_node_t* node,const string_t* name){
-	return NULL;
-}
-
-
-
-static u64 _devfs_iterate(vfs_node_t* node,u64 pointer,string_t** out){
-	return 0;
-}
-
-
-
 static const vfs_functions_t _devfs_functions={
 	_devfs_create,
 	NULL,
-	_devfs_lookup,
-	_devfs_iterate,
+	NULL,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
