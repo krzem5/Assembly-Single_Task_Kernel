@@ -1,4 +1,5 @@
 #include <devfs/fs.h>
+#include <kernel/format/format.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -113,4 +114,14 @@ vfs_node_t* devfs_create_node(vfs_node_t* parent,const char* name,string_t* data
 		vfs_node_attach_external_child(parent,(vfs_node_t*)out);
 	}
 	return (vfs_node_t*)out;
+}
+
+
+
+void devfs_create_data_node(vfs_node_t* parent,const char* name,const char* format,...){
+	__builtin_va_list va;
+	__builtin_va_start(va,format);
+	char buffer[256];
+	devfs_create_node(parent,name,smm_alloc(buffer,format_string_va(buffer,256,format,&va)));
+	__builtin_va_end(va);
 }

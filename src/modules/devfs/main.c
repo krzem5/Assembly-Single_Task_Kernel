@@ -1,3 +1,4 @@
+#include <devfs/drive.h>
 #include <devfs/fs.h>
 #include <devfs/pci.h>
 #include <kernel/module/module.h>
@@ -6,6 +7,7 @@
 
 static _Bool _init(module_t* module){
 	devfs_create_fs();
+	devfs_drive_init();
 	devfs_pci_init();
 	return 1;
 }

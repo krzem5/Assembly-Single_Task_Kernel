@@ -18,4 +18,8 @@ vfs_node_t* devfs_create_node(vfs_node_t* parent,const char* name,string_t* data
 
 
 
+void devfs_create_data_node(vfs_node_t* parent,const char* name,const char* format,...);
+
+
+
 #endif
