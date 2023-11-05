@@ -147,7 +147,7 @@ static u64 _nvme_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 static drive_type_t _nvme_drive_type={
-	"NVMe",
+	"nvme",
 	_nvme_read_write
 };
 

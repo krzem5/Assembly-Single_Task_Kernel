@@ -102,7 +102,7 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 static drive_type_t _ahci_drive_type={
-	"AHCI",
+	"ahci",
 	_ahci_read_write
 };
 
@@ -151,8 +151,16 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
+	char serial_number_buffer[21];
+	char model_number_buffer[41];
+	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,serial_number_buffer);
+	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,model_number_buffer);
 	drive_config_t config={
 		.type=&_ahci_drive_type,
+		.controller_index=device->controller->index,
+		.device_index=port_index,
+		.serial_number_NEW=smm_alloc(serial_number_buffer,0),
+		.model_number_NEW=smm_alloc(model_number_buffer,0),
 		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
 		.block_size=512,
 		.extra_data=device

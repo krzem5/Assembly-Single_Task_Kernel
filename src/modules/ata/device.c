@@ -133,11 +133,11 @@ static u64 _atapi_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 static drive_type_t _ata_drive_type={
-	"ATA",
+	"ata",
 	_ata_read_write
 };
 static drive_type_t _atapi_drive_type={
-	"ATAPI",
+	"atapi",
 	_atapi_read_write
 };
 
@@ -189,13 +189,6 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 		WARN("ATA/ATAPI drive does not support LBA; ignoring drive");
 		return 0;
 	}
-	drive_config_t config={
-		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
-		.extra_data=device
-	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"ata%ud%u",_ata_device_index,index);
-	memcpy_bswap16_trunc_spaces(buffer+10,10,config.serial_number);
-	memcpy_bswap16_trunc_spaces(buffer+27,20,config.model_number);
 	if (!device->is_atapi){
 		WARN("Unimplemented: ATA drive");
 		return 0;
@@ -216,8 +209,23 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 	};
 	u8 output_buffer[8];
 	_send_atapi_command(device,(const u16*)atapi_command,8,(u16*)output_buffer);
-	config.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1;
-	config.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7];
+	char serial_number_buffer[21];
+	char model_number_buffer[41];
+	memcpy_bswap16_trunc_spaces(buffer+10,10,serial_number_buffer);
+	memcpy_bswap16_trunc_spaces(buffer+27,20,model_number_buffer);
+	drive_config_t config={
+		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
+		.controller_index=_ata_device_index,
+		.device_index=index,
+		.serial_number_NEW=smm_alloc(serial_number_buffer,0),
+		.model_number_NEW=smm_alloc(model_number_buffer,0),
+		.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1,
+		.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7],
+		.extra_data=device
+	};
+	format_string(config.name,DRIVE_NAME_LENGTH,"ata%ud%u",_ata_device_index,index);
+	memcpy_bswap16_trunc_spaces(buffer+10,10,config.serial_number);
+	memcpy_bswap16_trunc_spaces(buffer+27,20,config.model_number);
 	drive_create(&config);
 	return 1;
 }

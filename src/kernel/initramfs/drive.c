@@ -29,7 +29,7 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,void* buffer,u64 coun
 
 
 static drive_type_t _initramfs_drive_type={
-	"INITRAMFS",
+	"initramfs",
 	_initramfs_read_write
 };
 
@@ -43,6 +43,10 @@ void initramfs_drive_init(void){
 		.name="initramfs",
 		.serial_number="initramfs",
 		.model_number="initramfs",
+		.controller_index=0,
+		.device_index=0,
+		.serial_number_NEW=smm_alloc("initramfs",0),
+		.model_number_NEW=smm_alloc("initramfs",0),
 		.block_count=pmm_align_up_address(kernel_data.initramfs_size),
 		.block_size=1
 	};

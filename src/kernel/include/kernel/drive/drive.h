@@ -1,6 +1,7 @@
 #ifndef _KERNEL_DRIVE_DRIVE_H_
 #define _KERNEL_DRIVE_DRIVE_H_ 1
 #include <kernel/handle/handle.h>
+#include <kernel/memory/smm.h>
 #include <kernel/partition/_partition_types.h>
 #include <kernel/types.h>
 
@@ -36,6 +37,10 @@ typedef struct _DRIVE_CONFIG{
 	char name[DRIVE_NAME_LENGTH];
 	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
 	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
+	u32 controller_index;
+	u32 device_index;
+	string_t* serial_number_NEW;
+	string_t* model_number_NEW;
 	u64 block_count;
 	u64 block_size;
 	void* extra_data;
