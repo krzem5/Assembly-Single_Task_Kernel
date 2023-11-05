@@ -188,7 +188,7 @@ static void _initramfs_fs_deinit(filesystem_t* fs){
 
 static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	drive_t* drive=partition->drive;
-	if (partition->start_lba||!streq(drive->type->name,"INITRAMFS")||drive->block_size!=1){
+	if (partition->start_lba||!streq(drive->type->name,"initramfs")||drive->block_size!=1){
 		return NULL;
 	}
 	initramfs_header_t header;
