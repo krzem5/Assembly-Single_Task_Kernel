@@ -410,6 +410,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(MODULE_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
 			os.remove(os.path.join(MODULE_OBJECT_FILE_DIRECTORY,file))
+	file_list=[]
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(8)
@@ -420,6 +421,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				continue
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
+			file_list.append(file_name)
 			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
 			with open(file_name,"wb") as wf:
@@ -429,7 +431,32 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
 					wf.write(rf.read(counter_count<<3))
-	subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"-d",MODULE_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
+	with open(output_file_path,"w") as wf:
+		wf.write("TN:\n")
+		function_stats=None
+		for line in subprocess.run(["gcov-12","-b","-t"]+file_list,stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+			line=line.strip().split(":")
+			if (len(line)<2):
+				if (line[0].startswith("function ")):
+					name,count=line[0][9:].split(" called ")
+					function_stats=(name.strip(),int(count.split(" ")[0].strip()))
+				continue
+			code_line=line[1].strip()
+			if ("%" in code_line):
+				continue
+			if (not code_line or code_line=="0"):
+				if (line[2]=="Source"):
+					wf.write(f"SF:{line[3]}\n")
+				continue
+			code_line=int(code_line)
+			type_=line[0].strip()
+			if (function_stats):
+				name,_=function_stats
+				function_stats=None
+				wf.write(f"FN:{code_line},{name}\n")
+			if (line[0].isdigit()):
+				wf.write(f"DA:{code_line},{line[0]}\n")
+	# subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"-d",MODULE_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
 
 
 
