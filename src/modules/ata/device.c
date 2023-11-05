@@ -24,6 +24,10 @@ static omm_allocator_t _ata_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("ata_devi
 
 
 
+static u16 _ata_device_index=0;
+
+
+
 static KERNEL_INLINE void KERNEL_NOCOVERAGE _delay_400ns(const ata_device_t* device){
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
 	io_port_in8(device->port+ATA_REG_DEV_CTL);
@@ -189,7 +193,7 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
 		.extra_data=device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"ata%u",index);
+	format_string(config.name,DRIVE_NAME_LENGTH,"ata%ud%u",_ata_device_index,index);
 	memcpy_bswap16_trunc_spaces(buffer+10,10,config.serial_number);
 	memcpy_bswap16_trunc_spaces(buffer+27,20,config.model_number);
 	if (!device->is_atapi){
@@ -240,6 +244,7 @@ static void _ata_init_device(pci_device_t* device){
 			omm_dealloc(&_ata_device_allocator,ata_device);
 		}
 	}
+	_ata_device_index++;
 }
 
 

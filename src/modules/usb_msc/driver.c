@@ -125,6 +125,10 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor;
 
 
 
+static u16 _usb_msc_index=0;
+
+
+
 static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
@@ -266,7 +270,8 @@ static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 		.block_size=__builtin_bswap32(read_capacity_10_data->block_size),
 		.extra_data=context
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"usb%u",lun);
+	format_string(config.name,DRIVE_NAME_LENGTH,"usb%ud%u",_usb_msc_index,lun);
+	_usb_msc_index++;
 	memcpy_trunc_spaces(config.serial_number,inquiry_data->rev,4);
 	memcpy_trunc_spaces(config.model_number,inquiry_data->product,16);
 	drive_create(&config);

@@ -41,6 +41,7 @@ typedef struct _NVME_DEVICE{
 	nvme_submission_queue_t admin_submission_queue;
 	nvme_completion_queue_t io_completion_queue;
 	nvme_submission_queue_t io_submission_queue;
+	u16 index;
 } nvme_device_t;
 
 

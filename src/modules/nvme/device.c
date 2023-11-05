@@ -21,6 +21,10 @@ static omm_allocator_t _nvme_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("nvme_de
 
 
 
+static u16 _nvme_device_index=0;
+
+
+
 static KERNEL_INLINE void _init_queue(nvme_device_t* device,u16 queue_index,u16 queue_length,nvme_queue_t* out){
 	out->doorbell=(volatile u32*)(((u64)(device->registers))+0x1000+queue_index*device->doorbell_stride);
 	out->mask=queue_length-1;
@@ -160,7 +164,7 @@ static void _load_namespace(nvme_device_t* device,u32 namespace_id,const nvme_id
 		.block_size=1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,
 		.extra_data=device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"nvme%u",namespace_id);
+	format_string(config.name,DRIVE_NAME_LENGTH,"nvme%ud%u",device->index,namespace_id);
 	memcpy_trunc_spaces(config.serial_number,(const char*)(controller_identify_data->controller.sn),20);
 	memcpy_trunc_spaces(config.model_number,(const char*)(controller_identify_data->controller.mn),40);
 	drive_create(&config);
@@ -186,6 +190,8 @@ static void _nvme_init_device(pci_device_t* device){
 	}
 	nvme_device_t* nvme_device=omm_alloc(&_nvme_device_allocator);
 	nvme_device->registers=registers;
+	nvme_device->index=_nvme_device_index;
+	_nvme_device_index++;
 	INFO("NVMe version %x.%x.%x",registers->vs>>16,(registers->vs>>8)&0xff,registers->vs&0xff);
 	registers->cc=0;
 	SPINLOOP(registers->csts&CSTS_RDY);
