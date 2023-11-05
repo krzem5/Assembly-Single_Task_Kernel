@@ -55,6 +55,8 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
 	out->descriptor=descriptor;
 	out->functions=NULL;
+	out->partition=NULL;
+	out->extra_data=NULL;
 	out->root=NULL;
 	memset(out->uuid,0,16);
 	return out;

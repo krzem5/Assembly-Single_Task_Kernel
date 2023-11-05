@@ -1,8 +1,10 @@
+#include <devfs/fs.h>
 #include <kernel/module/module.h>
 
 
 
 static _Bool _init(module_t* module){
+	devfs_create_fs();
 	return 1;
 }
 

@@ -34,11 +34,14 @@ typedef struct _VFS_FUNCTIONS{
 
 
 
-typedef struct _vfs_node_RELATIVES{
+typedef struct _VFS_NODE_RELATIVES{
 	struct _VFS_NODE* parent;
 	struct _VFS_NODE* prev_sibling;
 	struct _VFS_NODE* next_sibling;
 	struct _VFS_NODE* child;
+	struct _VFS_NODE* external_prev_sibling;
+	struct _VFS_NODE* external_next_sibling;
+	struct _VFS_NODE* external_child;
 } vfs_node_relatives_t;
 
 
@@ -91,6 +94,10 @@ s64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags);
 
 
 void vfs_node_flush(vfs_node_t* node);
+
+
+
+void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child);
 
 
 

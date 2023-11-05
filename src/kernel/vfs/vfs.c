@@ -13,22 +13,13 @@ static vfs_node_t* _vfs_root_node=NULL;
 
 
 
-void vfs_mount(filesystem_t* fs,const char* path){
-	if (!path){
-		_vfs_root_node=fs->root;
-		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
-		_vfs_root_node->relatives.parent=NULL;
-		spinlock_release_exclusive(&(_vfs_root_node->lock));
-		return;
-	}
-	panic("vfs_mount");
-}
-
-
-
-vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
+static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,vfs_node_t** parent,const char** child_name){
 	if (!root){
 		root=_vfs_root_node;
+	}
+	if (parent){
+		*parent=NULL;
+		*child_name=NULL;
 	}
 	while (root&&path[0]){
 		if (path[0]=='/'){
@@ -54,8 +45,45 @@ vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
 			continue;
 		}
 		SMM_TEMPORARY_STRING name=smm_alloc(path,i);
-		root=vfs_node_lookup(root,name);
+		vfs_node_t* child=vfs_node_lookup(root,name);
 		path+=i;
+		if (!child&&parent){
+			if (!path[0]){
+				*parent=root;
+				*child_name=path-i;
+				return NULL;
+			}
+			panic("_lookup_node: alloc virtual node");
+		}
+		root=child;
 	}
 	return root;
+}
+
+
+
+void vfs_mount(filesystem_t* fs,const char* path){
+	if (!path){
+		_vfs_root_node=fs->root;
+		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
+		_vfs_root_node->relatives.parent=NULL;
+		spinlock_release_exclusive(&(_vfs_root_node->lock));
+		return;
+	}
+	vfs_node_t* parent;
+	const char* child_name;
+	if (_lookup_node(NULL,path,&parent,&child_name)){
+		panic("vfs_mount: node already exists");
+	}
+	spinlock_acquire_exclusive(&(fs->root->lock));
+	smm_dealloc(fs->root->name);
+	fs->root->name=smm_alloc(child_name,0);
+	spinlock_release_exclusive(&(fs->root->lock));
+	vfs_node_attach_external_child(parent,fs->root);
+}
+
+
+
+vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
+	return _lookup_node(root,path,NULL,NULL);
 }

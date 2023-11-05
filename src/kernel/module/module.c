@@ -139,15 +139,25 @@ static void _map_section_addresses(void* file_data,const elf_hdr_t* header,modul
 
 static void _resolve_symbol_table(void* file_data,const elf_hdr_t* header,elf_sym_t* symbol_table,u64 symbol_table_size,const char* string_table,const char* module_name){
 	INFO("Resolving symbols...");
+	_Bool unresolved_symbols=0;
 	for (u64 i=0;i<symbol_table_size;i+=sizeof(elf_sym_t)){
-		if (symbol_table->st_shndx==SHN_UNDEF){
+		if (symbol_table->st_shndx==SHN_UNDEF&&string_table[symbol_table->st_name]){
 			const symbol_t* symbol=symbol_lookup_by_name(string_table+symbol_table->st_name);
-			symbol_table->st_value=(symbol?symbol->rb_node.key:0);
+			if (symbol){
+				symbol_table->st_value=symbol->rb_node.key;
+			}
+			else{
+				ERROR("Unresolved symbol: %s",string_table+symbol_table->st_name);
+				unresolved_symbols=1;
+			}
 		}
 		else if (symbol_table->st_value){
 			symbol_add(module_name,string_table+symbol_table->st_name,symbol_table->st_value+((const elf_shdr_t*)(file_data+header->e_shoff+symbol_table->st_shndx*sizeof(elf_shdr_t)))->sh_addr);
 		}
 		symbol_table++;
+	}
+	if (unresolved_symbols){
+		panic("unresolved module symbols");
 	}
 }
 
