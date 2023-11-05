@@ -225,13 +225,12 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 	region->file=file;
 	spinlock_release_exclusive(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
+		if (file){
+			panic("mmap_alloc: both file and MMAP_REGION_FLAG_COMMIT specfied");
+		}
 		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<length;i+=PAGE_SIZE){
-			u64 physical_address=pmm_alloc_zero(1,pmm_counter,0);
-			if (file){
-				vfs_node_read(file,i+(region->flags>>MMAP_REGION_FILE_OFFSET_SHIFT),(void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE);
-			}
-			vmm_map_page(mmap->pagemap,physical_address,address+i,vmm_flags);
+			vmm_map_page(mmap->pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
 		}
 	}
 	return region;
@@ -265,10 +264,31 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
+_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,const void* data,u64 length){
+	spinlock_acquire_shared(&(mmap->lock));
+	if (!(region->flags&MMAP_REGION_FLAG_COMMIT)){
+		panic("mmap_set_memory: MMAP_REGION_FLAG_COMMIT flag missing");
+	}
+	if (length>region->length){
+		length=region->length;
+	}
+	for (u64 i=0;i<length;i+=PAGE_SIZE){
+		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,region->rb_node.key+i);
+		if (!physical_address){
+			panic("mmap_set_memory: wrong memory mapping");
+		}
+		memcpy((void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),data+i,(length-i>PAGE_SIZE?PAGE_SIZE:length-i));
+	}
+	spinlock_release_shared(&(mmap->lock));
+	return 1;
+}
+
+
+
 mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
-	spinlock_acquire_exclusive(&(mmap->lock));
+	spinlock_acquire_shared(&(mmap->lock));
 	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
-	spinlock_release_exclusive(&(mmap->lock));
+	spinlock_release_shared(&(mmap->lock));
 	return (out&&out->flags?out:NULL);
 }
 

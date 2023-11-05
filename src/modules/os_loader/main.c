@@ -60,7 +60,7 @@ _check_next_fs:
 		panic("Unable to find boot filesystem");
 	}
 	vfs_mount(boot_fs,NULL);
-	LOG("Loading late modules...");
+	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
 	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){

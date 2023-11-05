@@ -38,16 +38,18 @@ _Bool elf_load(vfs_node_t* file){
 		if (program_header->p_vaddr&(PAGE_SIZE-1)){
 			panic("elf_load: Non-page-aligned program header");
 		}
-		u64 flags=MMAP_REGION_FILE_OFFSET(program_header->p_offset)|MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
+		u64 flags=MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
 		if (!(program_header->p_flags&PF_X)){
 			flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
 		}
 		if (program_header->p_flags&PF_W){
 			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 		}
-		if (!mmap_alloc(&(process->mmap),program_header->p_vaddr,pmm_align_up_address(program_header->p_memsz),&_user_image_pmm_counter,flags,file)){
+		mmap_region_t* program_region=mmap_alloc(&(process->mmap),program_header->p_vaddr,pmm_align_up_address(program_header->p_memsz),&_user_image_pmm_counter,flags,NULL);
+		if (!program_region){
 			goto _error;
 		}
+		mmap_set_memory(&(process->mmap),program_region,file_data+program_header->p_offset,program_header->p_filesz);
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	scheduler_enqueue_thread(thread_new_user_thread(process,header.e_entry,0x200000));
