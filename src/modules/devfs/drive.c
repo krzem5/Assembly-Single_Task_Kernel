@@ -3,7 +3,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/vfs/node.h>
-#define KERNEL_LOG_NAME "devfs_block"
+#define KERNEL_LOG_NAME "devfs_drive"
 
 
 
