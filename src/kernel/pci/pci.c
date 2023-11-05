@@ -10,7 +10,7 @@
 
 
 static pmm_counter_descriptor_t _pci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_pci_device");
-static omm_allocator_t _pci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("pci_device",sizeof(pci_device_t),8,4,&_pci_device_omm_pmm_counter);
+static omm_allocator_t _pci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("pci_device",sizeof(pci_device_t),8,1,&_pci_device_omm_pmm_counter);
 
 
 
