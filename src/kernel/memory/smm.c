@@ -103,6 +103,7 @@ string_t* smm_duplicate(const string_t* name){
 	string_t* out;
 	USE_ALLOCATOR(4)
 	else USE_ALLOCATOR(8)
+	else USE_ALLOCATOR(12)
 	else USE_ALLOCATOR(16)
 	else USE_ALLOCATOR(24)
 	else USE_ALLOCATOR(32)

@@ -156,7 +156,7 @@ s64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
 
 
 s64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
-	if (!node->functions->read){
+	if (!node->functions->resize){
 		return 0;
 	}
 	return node->functions->resize(node,offset,flags);

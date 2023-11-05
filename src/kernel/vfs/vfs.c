@@ -14,7 +14,7 @@ static vfs_node_t* _vfs_root_node=NULL;
 
 
 static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,vfs_node_t** parent,const char** child_name){
-	if (!root){
+	if (!root||path[0]=='/'){
 		root=_vfs_root_node;
 	}
 	if (parent){
