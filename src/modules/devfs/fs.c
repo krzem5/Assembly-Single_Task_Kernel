@@ -17,13 +17,12 @@ typedef struct _DEVFS_VFS_NODE{
 
 
 static pmm_counter_descriptor_t _devfs_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_devfs_node");
-static omm_allocator_t _devfs_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("devfs_node",sizeof(devfs_vfs_node_t),8,4,&_devfs_node_omm_pmm_counter);
+static omm_allocator_t _devfs_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("devfs_node",sizeof(devfs_vfs_node_t),8,2,&_devfs_node_omm_pmm_counter);
 
 
 
 static vfs_node_t* _devfs_create(void){
-	devfs_vfs_node_t* out=omm_alloc(&_devfs_vfs_node_allocator);
-	return (vfs_node_t*)out;
+	return omm_alloc(&_devfs_vfs_node_allocator);
 }
 
 
@@ -70,5 +69,6 @@ void devfs_create_fs(void){
 	devfs->functions=&_devfs_functions;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	devfs->root=vfs_node_create(devfs,root_name);
+	devfs->root->flags|=VFS_NODE_FLAG_VIRTUAL|VFS_NODE_TYPE_DIRECTORY;
 	vfs_mount(devfs,"/dev");
 }
