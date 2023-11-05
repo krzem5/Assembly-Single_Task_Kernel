@@ -456,6 +456,8 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				wf.write(f"FN:{code_line},{name}\n")
 			if (line[0].isdigit()):
 				wf.write(f"DA:{code_line},{line[0]}\n")
+			else:
+				wf.write(f"DA:{code_line},0\n")
 	# subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"-d",MODULE_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
 
 
