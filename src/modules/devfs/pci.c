@@ -31,7 +31,7 @@ static void _create_device_data_node(vfs_node_t* parent,const char* name,const c
 
 
 void devfs_pci_init(void){
-	LOG("Creating pci filesystem...");
+	LOG("Creating pci subsysetm...");
 	vfs_node_t* root=devfs_create_node(devfs->root,"pci",NULL);
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		handle_acquire(handle);
