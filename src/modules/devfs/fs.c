@@ -42,22 +42,10 @@ static const vfs_functions_t _devfs_functions={
 
 
 
-static void _devfs_fs_deinit(filesystem_t* fs){
-	return;
-}
-
-
-
-static filesystem_t* _devfs_fs_load(partition_t* partition){
-	return NULL;
-}
-
-
-
 static filesystem_descriptor_t _devfs_filesystem_descriptor={
 	"devfs",
-	_devfs_fs_deinit,
-	_devfs_fs_load
+	NULL,
+	NULL
 };
 
 

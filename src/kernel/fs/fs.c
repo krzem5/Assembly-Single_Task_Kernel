@@ -31,6 +31,9 @@ HANDLE_DECLARE_TYPE(FS_DESCRIPTOR,{});
 void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
 	handle_new(descriptor,HANDLE_TYPE_FS_DESCRIPTOR,&(descriptor->handle));
+	if (!descriptor->load_callback){
+		return;
+	}
 	HANDLE_FOREACH(HANDLE_TYPE_PARTITION){
 		partition_t* partition=handle->object;
 		if (partition->fs){
@@ -67,6 +70,9 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 filesystem_t* fs_load(partition_t* partition){
 	HANDLE_FOREACH(HANDLE_TYPE_FS_DESCRIPTOR){
 		filesystem_descriptor_t* descriptor=handle->object;
+		if (!descriptor->load_callback){
+			continue;
+		}
 		filesystem_t* out=descriptor->load_callback(partition);
 		if (out){
 			return out;
