@@ -458,7 +458,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				wf.write(f"DA:{code_line},{line[0]}\n")
 			elif (line[0]=="#####"):
 				wf.write(f"DA:{code_line},0\n")
-			print(line[0],code_line,line[2])
 	# subprocess.run(["lcov","-c","-d",KERNEL_OBJECT_FILE_DIRECTORY,"-d",MODULE_OBJECT_FILE_DIRECTORY,"--gcov-tool","gcov-12","-o",output_file_path])
 
 
