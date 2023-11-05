@@ -46,7 +46,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		for (u32 i=0;i<level;i++){
 			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
 		}
-		printf("%s── %s\n",(has_next_sibling?"├":"└"),stat.name);
+		printf("%s── %s%s\x1b[0m\n",(has_next_sibling?"├":"└"),(stat.type==FD_STAT_TYPE_DIRECTORY?"\x1b[1m\x1b[34m":""),stat.name);
 		if (stat.type==FD_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;
 			u64 mask=1ull<<(level&63);
