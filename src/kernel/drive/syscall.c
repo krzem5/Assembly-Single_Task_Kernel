@@ -38,8 +38,8 @@ void syscall_drive_get_data(isr_state_t* regs){
 	user_drive_data_t* out=(void*)(regs->rsi);
 	drive_t* drive=handle->object;
 	format_string(out->name,DRIVE_DATA_NAME_LENGTH,"%s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
-	memcpy(out->serial_number,drive->serial_number_NEW->data,(DRIVE_DATA_SERIAL_NUMBER_LENGTH>drive->serial_number_NEW->length?drive->serial_number_NEW->length:DRIVE_DATA_SERIAL_NUMBER_LENGTH));
-	memcpy(out->model_number,drive->model_number_NEW->data,(DRIVE_DATA_MODEL_NUMBER_LENGTH>drive->model_number_NEW->length?drive->model_number_NEW->length:DRIVE_DATA_MODEL_NUMBER_LENGTH));
+	memcpy(out->serial_number,drive->serial_number->data,(DRIVE_DATA_SERIAL_NUMBER_LENGTH>drive->serial_number->length?drive->serial_number->length:DRIVE_DATA_SERIAL_NUMBER_LENGTH));
+	memcpy(out->model_number,drive->model_number->data,(DRIVE_DATA_MODEL_NUMBER_LENGTH>drive->model_number->length?drive->model_number->length:DRIVE_DATA_MODEL_NUMBER_LENGTH));
 	strcpy(out->type,drive->type->name,DRIVE_DATA_TYPE_LENGTH);
 	out->block_count=drive->block_count;
 	out->block_size=drive->block_size;

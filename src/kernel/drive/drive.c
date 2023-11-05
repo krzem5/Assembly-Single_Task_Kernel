@@ -44,15 +44,15 @@ void drive_unregister_type(drive_type_t* type){
 
 drive_t* drive_create(const drive_config_t* config){
 	handle_acquire(&(config->type->handle));
-	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number_NEW->data,config->serial_number_NEW->data);
+	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number->data,config->serial_number->data);
 	drive_t* out=omm_alloc(&_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
 	out->block_size_shift=__builtin_ctzll(config->block_size);
 	out->controller_index=config->controller_index;
 	out->device_index=config->device_index;
-	out->serial_number_NEW=config->serial_number_NEW;
-	out->model_number_NEW=config->model_number_NEW;
+	out->serial_number=config->serial_number;
+	out->model_number=config->model_number;
 	out->block_count=config->block_count;
 	out->block_size=config->block_size;
 	out->extra_data=config->extra_data;

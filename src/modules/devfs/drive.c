@@ -17,8 +17,8 @@ void devfs_drive_init(void){
 		char buffer[32];
 		format_string(buffer,32,"%s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
 		vfs_node_t* node=devfs_create_node(root,buffer,NULL);
-		devfs_create_node(node,"serial_number",smm_duplicate(drive->serial_number_NEW));
-		devfs_create_node(node,"model_number",smm_duplicate(drive->model_number_NEW));
+		devfs_create_node(node,"serial_number",smm_duplicate(drive->serial_number));
+		devfs_create_node(node,"model_number",smm_duplicate(drive->model_number));
 		devfs_create_data_node(node,"block_count","%lu",drive->block_count);
 		devfs_create_data_node(node,"block_size","%lu",drive->block_size);
 		handle_release(handle);

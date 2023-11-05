@@ -41,7 +41,7 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
 		if (descriptor->load_callback(drive)){
-			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number_NEW->data,descriptor->name);
+			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,descriptor->name);
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
@@ -60,7 +60,7 @@ void partition_unregister_table_descriptor(partition_table_descriptor_t* descrip
 
 
 void partition_load_from_drive(drive_t* drive){
-	LOG("Loading partitions from drive '%s'...",drive->model_number_NEW->data);
+	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
 	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR){
 		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
@@ -72,13 +72,13 @@ void partition_load_from_drive(drive_t* drive){
 		handle_release(&(descriptor->handle));
 	}
 	drive->partition_table_descriptor=NULL;
-	WARN("Unable to detect partition type of drive '%s'",drive->model_number_NEW->data);
+	WARN("Unable to detect partition type of drive '%s'",drive->model_number->data);
 }
 
 
 
 partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 end_lba){
-	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number_NEW->data);
+	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	partition_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));

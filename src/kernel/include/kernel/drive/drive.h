@@ -32,8 +32,8 @@ typedef struct _DRIVE_CONFIG{
 	drive_type_t* type;
 	u32 controller_index;
 	u32 device_index;
-	string_t* serial_number_NEW;
-	string_t* model_number_NEW;
+	string_t* serial_number;
+	string_t* model_number;
 	u64 block_count;
 	u64 block_size;
 	void* extra_data;
@@ -47,8 +47,8 @@ typedef struct _DRIVE{
 	u8 block_size_shift;
 	u16 controller_index;
 	u16 device_index;
-	string_t* serial_number_NEW;
-	string_t* model_number_NEW;
+	string_t* serial_number;
+	string_t* model_number;
 	u64 block_count;
 	u64 block_size;
 	void* extra_data;
