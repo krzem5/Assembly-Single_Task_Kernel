@@ -9,6 +9,7 @@ typedef struct _AHCI_CONTROLLER{
 	ahci_registers_t* registers;
 	u8 port_count;
 	u8 command_slot_count;
+	u16 index;
 } ahci_controller_t;
 
 

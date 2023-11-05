@@ -22,6 +22,10 @@ static omm_allocator_t _ahci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("ahci_de
 
 
 
+static u16 _ahci_controller_index=0;
+
+
+
 static u8 _device_get_command_slot(const ahci_device_t* device){
 	u32 mask;
 	do{
@@ -153,7 +157,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 		.block_size=512,
 		.extra_data=device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%u",port_index);
+	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%ud%u",device->controller->index,port_index);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,config.serial_number);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,config.model_number);
 	pmm_dealloc(buffer,1,&_ahci_driver_pmm_counter);
@@ -190,6 +194,8 @@ static void _ahci_init_device(pci_device_t* device){
 	controller->registers->ghc=(controller->registers->ghc&(~GHC_IE))|GHC_AE;
 	controller->port_count=controller->registers->cap&CAP_NP;
 	controller->command_slot_count=(controller->registers->cap&CAP_NCS)>>CAP_NCS_SHIFT;
+	controller->index=_ahci_controller_index;
+	_ahci_controller_index++;
 	for (u8 i=0;i<controller->port_count;i++){
 		if (!(controller->registers->pi&(1<<i))){
 			continue;
