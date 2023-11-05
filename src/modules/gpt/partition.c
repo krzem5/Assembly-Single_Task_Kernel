@@ -36,20 +36,20 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 	INFO("Found valid GPT partition table: %g",header->guid);
 	for (u32 i=0;i<entry_buffer_size;i+=header->entry_size){
 		const gpt_partition_entry_t* entry=entry_buffer+i;
-		for (u8 i=0;i<16;i++){
-			if (entry->type_guid[i]){
+		for (u8 j=0;j<16;j++){
+			if (entry->type_guid[j]){
 				goto _valid_entry;
 			}
 		}
 		continue;
 _valid_entry:
 		char name_buffer[32];
-		u8 i=0;
-		for (;i<((header->entry_size-56)>>1)&&i<31;i++){
-			name_buffer[i]=entry->name[i];
+		u8 j=0;
+		for (;j<((header->entry_size-56)>>1)&&j<31;j++){
+			name_buffer[j]=entry->name[j];
 		}
-		name_buffer[i]=0;
-		partition_create(drive,name_buffer,entry->start_lba,entry->end_lba);
+		name_buffer[j]=0;
+		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba);
 	}
 	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,&_gpt_driver_pmm_counter);
 	return 1;
@@ -58,7 +58,7 @@ _valid_entry:
 
 
 static partition_table_descriptor_t _gpt_partition_table_descriptor={
-	"GPT",
+	"gpt",
 	_gpt_load_partitions
 };
 

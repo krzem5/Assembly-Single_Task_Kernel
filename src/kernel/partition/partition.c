@@ -6,6 +6,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -77,20 +78,20 @@ void partition_load_from_drive(drive_t* drive){
 
 
 
-partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 end_lba){
+partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	partition_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
 	out->descriptor=drive->partition_table_descriptor;
 	out->drive=drive;
-	memcpy(out->name,name,32);
+	out->index=index;
+	out->name=smm_alloc(name,0);
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
 	out->fs=fs_load(out);
 	if (!out->fs){
-		// Add partition index to the line below
-		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,name);
+		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,index,name);
 	}
 	return out;
 }

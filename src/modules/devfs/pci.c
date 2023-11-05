@@ -14,8 +14,8 @@ void devfs_pci_init(void){
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		handle_acquire(handle);
 		pci_device_t* device=handle->object;
-		char buffer[16];
-		format_string(buffer,16,"%X.%X.%X",device->address.bus,device->address.slot,device->address.func);
+		char buffer[32];
+		format_string(buffer,32,"b%us%uf%u",device->address.bus,device->address.slot,device->address.func);
 		vfs_node_t* node=devfs_create_node(root,buffer,NULL);
 		devfs_create_data_node(node,"device_id","%X%X",device->device_id>>8,device->device_id);
 		devfs_create_data_node(node,"vendor_id","%X%X",device->vendor_id>>8,device->vendor_id);

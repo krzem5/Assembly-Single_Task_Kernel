@@ -12,7 +12,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 	if (!streq(drive->type->name,"initramfs")){
 		return 0;
 	}
-	partition_t* partition=partition_create(drive,"initramfs",0,drive->block_count);
+	partition_t* partition=partition_create(drive,0,"initramfs",0,drive->block_count);
 	if (!partition->fs){
 		return 0;
 	}

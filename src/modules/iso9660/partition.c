@@ -25,7 +25,7 @@ static _Bool _iso9660_load_partitions(drive_t* drive){
 			case 1:
 				char name_buffer[32];
 				memcpy_trunc_spaces(name_buffer,volume_descriptor->primary_volume_descriptor.volume_name,32);
-				partition_create(drive,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size);
+				partition_create(drive,block_index-16,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size);
 				return 1;
 			case 255:
 				return 0;
@@ -37,7 +37,7 @@ static _Bool _iso9660_load_partitions(drive_t* drive){
 
 
 static partition_table_descriptor_t _iso9660_partition_table_descriptor={
-	"ISO9660",
+	"iso9660",
 	_iso9660_load_partitions
 };
 

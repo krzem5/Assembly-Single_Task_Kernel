@@ -33,7 +33,7 @@ void syscall_partition_get_data(isr_state_t* regs){
 	}
 	user_partition_data_t* out=(void*)(regs->rsi);
 	partition_t* partition=handle->object;
-	strcpy(out->name,partition->name,PARTITION_DATA_NAME_LENGTH);
+	memcpy(out->name,partition->name->data,(PARTITION_DATA_NAME_LENGTH>partition->name->length+1?partition->name->length+1:PARTITION_DATA_NAME_LENGTH));
 	strcpy(out->partition_table_name,partition->descriptor->name,PARTITION_DATA_PARTITION_TABLE_NAME_LENGTH);
 	out->drive_handle=partition->drive->handle.rb_node.key;
 	out->start_lba=partition->start_lba;
