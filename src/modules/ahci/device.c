@@ -156,18 +156,15 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,serial_number_buffer);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,model_number_buffer);
 	drive_config_t config={
-		.type=&_ahci_drive_type,
-		.controller_index=device->controller->index,
-		.device_index=port_index,
-		.serial_number_NEW=smm_alloc(serial_number_buffer,0),
-		.model_number_NEW=smm_alloc(model_number_buffer,0),
-		.block_count=*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
-		.block_size=512,
-		.extra_data=device
+		&_ahci_drive_type,
+		device->controller->index,
+		port_index,
+		smm_alloc(serial_number_buffer,0),
+		smm_alloc(model_number_buffer,0),
+		*((u64*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+200)),
+		512,
+		device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"ahci%ud%u",device->controller->index,port_index);
-	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,config.serial_number);
-	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,config.model_number);
 	pmm_dealloc(buffer,1,&_ahci_driver_pmm_counter);
 	drive_create(&config);
 }

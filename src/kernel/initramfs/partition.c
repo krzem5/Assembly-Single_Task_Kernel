@@ -12,7 +12,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 	if (!streq(drive->type->name,"initramfs")){
 		return 0;
 	}
-	partition_t* partition=partition_create(drive,"INITRAMFS",0,drive->block_count);
+	partition_t* partition=partition_create(drive,"initramfs",0,drive->block_count);
 	if (!partition->fs){
 		return 0;
 	}
@@ -23,7 +23,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 
 
 static partition_table_descriptor_t _initramfs_partition_table_descriptor={
-	"INITRAMFS",
+	"initramfs",
 	_initramfs_init_partitions
 };
 

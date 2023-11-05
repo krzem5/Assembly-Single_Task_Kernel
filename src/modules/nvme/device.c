@@ -158,15 +158,20 @@ static void _load_namespace(nvme_device_t* device,u32 namespace_id,const nvme_id
 		return;
 	}
 	INFO("Found valid namespace: %u",namespace_id);
+	char serial_number_buffer[21];
+	char model_number_buffer[41];
+	memcpy_trunc_spaces(serial_number_buffer,(const char*)(controller_identify_data->controller.sn),20);
+	memcpy_trunc_spaces(model_number_buffer,(const char*)(controller_identify_data->controller.mn),40);
 	drive_config_t config={
-		.type=&_nvme_drive_type,
-		.block_count=identify_data->namespace.nsze,
-		.block_size=1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,
-		.extra_data=device
+		&_nvme_drive_type,
+		device->index,
+		namespace_id,
+		smm_alloc(serial_number_buffer,0),
+		smm_alloc(model_number_buffer,0),
+		identify_data->namespace.nsze,
+		1<<(identify_data->namespace.lbaf+(identify_data->namespace.flbas&0xf))->lbads,
+		device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"nvme%ud%u",device->index,namespace_id);
-	memcpy_trunc_spaces(config.serial_number,(const char*)(controller_identify_data->controller.sn),20);
-	memcpy_trunc_spaces(config.model_number,(const char*)(controller_identify_data->controller.mn),40);
 	drive_create(&config);
 }
 

@@ -214,18 +214,15 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 	memcpy_bswap16_trunc_spaces(buffer+10,10,serial_number_buffer);
 	memcpy_bswap16_trunc_spaces(buffer+27,20,model_number_buffer);
 	drive_config_t config={
-		.type=(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
-		.controller_index=_ata_device_index,
-		.device_index=index,
-		.serial_number_NEW=smm_alloc(serial_number_buffer,0),
-		.model_number_NEW=smm_alloc(model_number_buffer,0),
-		.block_count=((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1,
-		.block_size=(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7],
-		.extra_data=device
+		(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
+		_ata_device_index,
+		index,
+		smm_alloc(serial_number_buffer,0),
+		smm_alloc(model_number_buffer,0),
+		((output_buffer[0]<<24)|(output_buffer[1]<<16)|(output_buffer[2]<<8)|output_buffer[3])+1,
+		(output_buffer[4]<<24)|(output_buffer[5]<<16)|(output_buffer[6]<<8)|output_buffer[7],
+		device
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"ata%ud%u",_ata_device_index,index);
-	memcpy_bswap16_trunc_spaces(buffer+10,10,config.serial_number);
-	memcpy_bswap16_trunc_spaces(buffer+27,20,config.model_number);
 	drive_create(&config);
 	return 1;
 }

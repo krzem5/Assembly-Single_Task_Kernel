@@ -7,10 +7,6 @@
 
 
 
-#define DRIVE_NAME_LENGTH 16
-#define DRIVE_SERIAL_NUMBER_LENGTH 32
-#define DRIVE_MODEL_NUMBER_LENGTH 64
-
 #define DRIVE_OFFSET_FLAG_WRITE 0x8000000000000000ull
 #define DRIVE_OFFSET_MASK 0x7fffffffffffffffull
 
@@ -34,9 +30,6 @@ typedef struct _DRIVE_TYPE{
 
 typedef struct _DRIVE_CONFIG{
 	drive_type_t* type;
-	char name[DRIVE_NAME_LENGTH];
-	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
-	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
 	u32 controller_index;
 	u32 device_index;
 	string_t* serial_number_NEW;
@@ -52,13 +45,14 @@ typedef struct _DRIVE{
 	handle_t handle;
 	drive_type_t* type;
 	u8 block_size_shift;
-	partition_table_descriptor_t* partition_table_descriptor;
-	char name[DRIVE_NAME_LENGTH];
-	char serial_number[DRIVE_SERIAL_NUMBER_LENGTH];
-	char model_number[DRIVE_MODEL_NUMBER_LENGTH];
+	u16 controller_index;
+	u16 device_index;
+	string_t* serial_number_NEW;
+	string_t* model_number_NEW;
 	u64 block_count;
 	u64 block_size;
 	void* extra_data;
+	partition_table_descriptor_t* partition_table_descriptor;
 } drive_t;
 
 

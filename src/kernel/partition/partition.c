@@ -41,7 +41,7 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
 		if (descriptor->load_callback(drive)){
-			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number,descriptor->name);
+			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number_NEW->data,descriptor->name);
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
@@ -60,7 +60,7 @@ void partition_unregister_table_descriptor(partition_table_descriptor_t* descrip
 
 
 void partition_load_from_drive(drive_t* drive){
-	LOG("Loading partitions from drive '%s'...",drive->model_number);
+	LOG("Loading partitions from drive '%s'...",drive->model_number_NEW->data);
 	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR){
 		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
@@ -72,13 +72,13 @@ void partition_load_from_drive(drive_t* drive){
 		handle_release(&(descriptor->handle));
 	}
 	drive->partition_table_descriptor=NULL;
-	WARN("Unable to detect partition type of drive '%s'",drive->model_number);
+	WARN("Unable to detect partition type of drive '%s'",drive->model_number_NEW->data);
 }
 
 
 
 partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 end_lba){
-	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number);
+	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number_NEW->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	partition_t* out=omm_alloc(&_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
@@ -89,7 +89,8 @@ partition_t* partition_create(drive_t* drive,const char* name,u64 start_lba,u64 
 	out->end_lba=end_lba;
 	out->fs=fs_load(out);
 	if (!out->fs){
-		WARN("No filesystem detected on partition '%s/%s'",drive->name,name);
+		// Add partition index to the line below
+		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,name);
 	}
 	return out;
 }

@@ -243,13 +243,13 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count)
 
 
 static drive_type_t _usb_msc_drive_type={
-	"usb_msc",
+	"usb",
 	_usb_msc_read_write
 };
 
 
 
-static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
+static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	INFO("Setting up LUN %u...",lun);
 	usb_msc_lun_context_t* context=omm_alloc(&_usb_msc_lun_context_allocator);
 	context->driver=driver;
@@ -264,16 +264,18 @@ static void _setup_drive(usb_msc_driver_t* driver,u8 lun){
 	}
 	context->next=driver->lun_context;
 	driver->lun_context=context;
+	char model_number_buffer[41];
+	memcpy_trunc_spaces(model_number_buffer,inquiry_data->product,16);
 	drive_config_t config={
-		.type=&_usb_msc_drive_type,
-		.block_count=__builtin_bswap32(read_capacity_10_data->sectors),
-		.block_size=__builtin_bswap32(read_capacity_10_data->block_size),
-		.extra_data=context
+		&_usb_msc_drive_type,
+		device_index,
+		lun,
+		smm_alloc("",0),
+		smm_alloc(model_number_buffer,0),
+		__builtin_bswap32(read_capacity_10_data->sectors),
+		__builtin_bswap32(read_capacity_10_data->block_size),
+		context
 	};
-	format_string(config.name,DRIVE_NAME_LENGTH,"usb%ud%u",_usb_msc_index,lun);
-	_usb_msc_index++;
-	memcpy_trunc_spaces(config.serial_number,inquiry_data->rev,4);
-	memcpy_trunc_spaces(config.model_number,inquiry_data->product,16);
 	drive_create(&config);
 	goto _cleanup;
 _error:
@@ -322,8 +324,10 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	};
 	u8 max_lun;
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,&max_lun);
+	u16 device_index=_usb_msc_index;
+	_usb_msc_index++;
 	for (u16 i=0;i<=max_lun;i++){
-		_setup_drive(driver,i);
+		_setup_drive(driver,device_index,i);
 	}
 	return 1;
 }

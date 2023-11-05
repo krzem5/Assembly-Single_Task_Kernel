@@ -39,16 +39,14 @@ void initramfs_drive_init(void){
 	INFO("Creating virtual initramfs drive...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	drive_config_t config={
-		.type=&_initramfs_drive_type,
-		.name="initramfs",
-		.serial_number="initramfs",
-		.model_number="initramfs",
-		.controller_index=0,
-		.device_index=0,
-		.serial_number_NEW=smm_alloc("initramfs",0),
-		.model_number_NEW=smm_alloc("initramfs",0),
-		.block_count=pmm_align_up_address(kernel_data.initramfs_size),
-		.block_size=1
+		&_initramfs_drive_type,
+		0,
+		0,
+		smm_alloc("initramfs",0),
+		smm_alloc("initramfs",0),
+		pmm_align_up_address(kernel_data.initramfs_size),
+		1,
+		NULL
 	};
 	drive_create(&config);
 }
