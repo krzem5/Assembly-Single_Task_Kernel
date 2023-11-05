@@ -23,8 +23,8 @@ static vfs_node_t* _get_or_alloc_node(vfs_node_t* parent,u8 index){
 static void _create_device_data_node(vfs_node_t* parent,const char* name,const char* format,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,format);
-	char buffer[18];
-	devfs_create_node(parent,name,smm_alloc(buffer,format_string_va(buffer,18,format,&va)));
+	char buffer[16];
+	devfs_create_node(parent,name,smm_alloc(buffer,format_string_va(buffer,16,format,&va)));
 	__builtin_va_end(va);
 }
 

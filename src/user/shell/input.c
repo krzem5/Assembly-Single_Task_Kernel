@@ -317,7 +317,7 @@ void input_get(void){
 	_input_history[_input_history_index].length=0;
 	_input_cursor=0;
 	while (1){
-		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[38;2;78;154;6mroot\x1b[0m:\x1b[1m\x1b[38;2;52;101;164m%s\x1b[0m$ %s\x1b[%uG",cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
+		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[32mroot\x1b[0m:\x1b[1m\x1b[34m%s\x1b[0m$ %s\x1b[%uG",cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
 			_ensure_top_of_history(1);
