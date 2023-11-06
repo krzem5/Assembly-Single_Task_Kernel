@@ -20,6 +20,19 @@ typedef struct _FRAME{
 
 
 
+static void _print_file_name(const fd_stat_t* stat,const char* name){
+	const char* prefix="";
+	if (stat->type==FD_STAT_TYPE_DIRECTORY){
+		prefix="\x1b[1;34m";
+	}
+	else if (stat->type==FD_STAT_TYPE_LINK){
+		prefix="\x1b[1;36m";
+	}
+	printf("%s%s\x1b[0m",prefix,name);
+}
+
+
+
 static void _list_files(s64 fd,u32 level,frame_t* frame){
 	if (level>=MAX_LEVELS){
 		return;
@@ -30,7 +43,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 			iter=fd_iter_next(iter);
 			continue;
 		}
-		s64 child=fd_open(fd,name,0);
+		s64 child=fd_open(fd,name,FD_FLAG_READ);
 		if (child<0){
 			iter=fd_iter_next(iter);
 			continue;
@@ -46,7 +59,29 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		for (u32 i=0;i<level;i++){
 			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
 		}
-		printf("%s── %s%s\x1b[0m\n",(has_next_sibling?"├":"└"),(stat.type==FD_STAT_TYPE_DIRECTORY?"\x1b[1m\x1b[34m":""),stat.name);
+		printf("%s── ",(has_next_sibling?"├":"└"));
+		_print_file_name(&stat,stat.name);
+		if (stat.type==FD_STAT_TYPE_LINK){
+			printf(" -> ");
+			char link_buffer[4096];
+			if (fd_read(child,link_buffer,4096)<=0){
+				printf("???");
+			}
+			else{
+				int link_fd=fd_open(fd,link_buffer,0);
+				fd_stat_t link_stat;
+				if (link_fd<0||fd_stat(link_fd,&link_stat)<0){
+					printf("???");
+				}
+				else{
+					_print_file_name(&link_stat,link_buffer);
+				}
+				if (link_fd>=0){
+					fd_close(link_fd);
+				}
+			}
+		}
+		putchar('\n');
 		if (stat.type==FD_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;
 			u64 mask=1ull<<(level&63);
