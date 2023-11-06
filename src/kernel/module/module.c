@@ -244,7 +244,7 @@ module_t* module_load(const char* name){
 		}
 		handle_release(handle);
 	}
-	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY);
+	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0);
 	if (!directory){
 		panic("Unable to find module root directory");
 	}

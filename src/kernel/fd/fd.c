@@ -53,7 +53,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&FD_FLAG_CREATE){
 		panic("FD_FLAG_CREATE");
 	}
-	vfs_node_t* node=vfs_lookup(root_node,buffer);
+	vfs_node_t* node=vfs_lookup(root_node,buffer,1);
 	if (root_handle){
 		handle_release(root_handle);
 	}

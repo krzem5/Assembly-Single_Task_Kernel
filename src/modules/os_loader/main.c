@@ -17,7 +17,7 @@
 
 
 static void _load_modules_from_order_file(const char* order_file_path,_Bool early){
-	vfs_node_t* file=vfs_lookup(NULL,order_file_path);
+	vfs_node_t* file=vfs_lookup(NULL,order_file_path,0);
 	if (!file){
 		panic("Unable to locate module order file");
 	}
@@ -63,7 +63,7 @@ _check_next_fs:
 	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
-	if (!elf_load(vfs_lookup(NULL,"/shell.elf"))){
+	if (!elf_load(vfs_lookup(NULL,"/shell.elf",1))){
 		panic("Unable to load user shell");
 	}
 	return 1;

@@ -13,7 +13,7 @@ static vfs_node_t* _vfs_root_node=NULL;
 
 
 
-static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,vfs_node_t** parent,const char** child_name){
+static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_links,vfs_node_t** parent,const char** child_name){
 	if (!root||path[0]=='/'){
 		root=_vfs_root_node;
 	}
@@ -22,6 +22,16 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,vfs_node_t** p
 		*child_name=NULL;
 	}
 	while (root&&path[0]){
+		if (follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+			char buffer[4096];
+			if (vfs_node_read(root,0,buffer,4096)<=0){
+				return NULL;
+			}
+			root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);
+			if (!root){
+				return NULL;
+			}
+		}
 		if (path[0]=='/'){
 			path++;
 			continue;
@@ -57,6 +67,16 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,vfs_node_t** p
 		}
 		root=child;
 	}
+	if (root&&follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		char buffer[4096];
+		if (vfs_node_read(root,0,buffer,4096)<=0){
+			return NULL;
+		}
+		root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);
+		if (!root){
+			return NULL;
+		}
+	}
 	return root;
 }
 
@@ -72,7 +92,7 @@ void vfs_mount(filesystem_t* fs,const char* path){
 	}
 	vfs_node_t* parent;
 	const char* child_name;
-	if (_lookup_node(NULL,path,&parent,&child_name)){
+	if (_lookup_node(NULL,path,0,&parent,&child_name)){
 		panic("vfs_mount: node already exists");
 	}
 	spinlock_acquire_exclusive(&(fs->root->lock));
@@ -84,6 +104,6 @@ void vfs_mount(filesystem_t* fs,const char* path){
 
 
 
-vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path){
-	return _lookup_node(root,path,NULL,NULL);
+vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,_Bool follow_links){
+	return _lookup_node(root,path,follow_links,NULL,NULL);
 }

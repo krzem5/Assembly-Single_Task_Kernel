@@ -9,7 +9,7 @@ void vfs_mount(filesystem_t* fs,const char* path);
 
 
 
-vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path);
+vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,_Bool follow_links);
 
 
 
