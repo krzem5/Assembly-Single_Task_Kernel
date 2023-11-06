@@ -21,6 +21,7 @@ void devfs_drive_init(void){
 		devfs_create_node(node,"model_number",smm_duplicate(drive->model_number));
 		devfs_create_data_node(node,"block_count","%lu",drive->block_count);
 		devfs_create_data_node(node,"block_size","%lu",drive->block_size);
+		devfs_create_node(node,"partition",NULL);
 		handle_release(handle);
 	}
 }
