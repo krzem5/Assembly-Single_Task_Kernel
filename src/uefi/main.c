@@ -61,8 +61,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 		uint64_t triple;
 		uint64_t quadruple;
 	} data;
-	uint16_t hard_link_count;
-	uint16_t flags;
+	uint32_t flags;
 	uint32_t crc;
 } kfs2_node_t;
 

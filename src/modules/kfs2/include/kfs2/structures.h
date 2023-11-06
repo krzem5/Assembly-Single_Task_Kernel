@@ -54,8 +54,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 		u64 triple;
 		u64 quadruple;
 	} data;
-	u16 hard_link_count;
-	u16 flags;
+	u32 flags;
 	union{
 		u32 crc;
 		u32 _inode;

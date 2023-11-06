@@ -140,19 +140,17 @@ class KFS2RootBlock(object):
 
 
 class KFS2Node(object):
-	def __init__(self,backend,offset,size,hard_link_count,flags,data):
+	def __init__(self,backend,offset,size,flags,data):
 		self._backend=backend
 		self._offset=offset
 		self.size=size
-		self.hard_link_count=hard_link_count
 		self.flags=flags
 		self.data=bytearray(data)
 
 	def save(self):
-		header=struct.pack(f"<Q48sHH",
+		header=struct.pack(f"<Q48sI",
 			self.size,
 			self.data,
-			self.hard_link_count,
 			self.flags
 		)
 		self._backend.seek(self._offset)
@@ -163,15 +161,14 @@ class KFS2Node(object):
 		backend.seek(offset)
 		header=backend.read(KFS2_INODE_SIZE)
 		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<Q48sHHI",header)
-		if (data[4]!=crc):
+		data=struct.unpack(f"<Q48sII",header)
+		if (data[3]!=crc):
 			raise RuntimeError
 		return KFS2Node(
 			backend,
 			offset,
 			data[0],
 			data[2],
-			data[3],
 			data[1]
 		)
 
@@ -449,7 +446,6 @@ def _init_node_as_file(backend,root_block,inode):
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		0,
-		1,
 		KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE,
 		[0]*48
 	)
@@ -462,7 +458,6 @@ def _init_node_as_directory(backend,root_block,inode):
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		48,
-		1,
 		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
 		KFS2DirectoryEntry(0,48,0,b"").encode()
 	)
