@@ -22,4 +22,8 @@ void devfs_create_data_node(vfs_node_t* parent,const char* name,const char* form
 
 
 
+void devfs_create_link_node(vfs_node_t* parent,const char* name,const char* format,...);
+
+
+
 #endif

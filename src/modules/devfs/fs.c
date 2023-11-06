@@ -125,3 +125,14 @@ void devfs_create_data_node(vfs_node_t* parent,const char* name,const char* form
 	devfs_create_node(parent,name,smm_alloc(buffer,format_string_va(buffer,256,format,&va)));
 	__builtin_va_end(va);
 }
+
+
+
+void devfs_create_link_node(vfs_node_t* parent,const char* name,const char* format,...){
+	__builtin_va_list va;
+	__builtin_va_start(va,format);
+	char buffer[256];
+	vfs_node_t* node=devfs_create_node(parent,name,smm_alloc(buffer,format_string_va(buffer,256,format,&va)));
+	node->flags=(node->flags&(~VFS_NODE_TYPE_MASK))|VFS_NODE_TYPE_LINK;
+	__builtin_va_end(va);
+}
