@@ -21,7 +21,7 @@
 #define FD_FLAG_APPEND 4
 #define FD_FLAG_CREATE 8
 #define FD_FLAG_DIRECTORY 16
-#define FD_FLAG_DELETE_AT_EXIT 32
+#define FD_FLAG_IGNORE_LINKS 32
 
 #define FD_SEEK_SET 0
 #define FD_SEEK_ADD 1

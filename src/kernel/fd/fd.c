@@ -32,7 +32,7 @@ static HANDLE_DECLARE_TYPE(FD_ITERATOR,{
 
 
 s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
 	char buffer[4096];
@@ -53,7 +53,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&FD_FLAG_CREATE){
 		panic("FD_FLAG_CREATE");
 	}
-	vfs_node_t* node=vfs_lookup(root_node,buffer,1);
+	vfs_node_t* node=vfs_lookup(root_node,buffer,!(flags&FD_FLAG_IGNORE_LINKS));
 	if (root_handle){
 		handle_release(root_handle);
 	}

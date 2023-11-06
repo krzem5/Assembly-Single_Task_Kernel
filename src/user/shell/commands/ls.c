@@ -16,13 +16,22 @@
 
 
 
+static const char* _ls_type_names[]={
+	[0]="<unknown>",
+	[FD_STAT_TYPE_FILE]="file",
+	[FD_STAT_TYPE_DIRECTORY]="directory",
+	[FD_STAT_TYPE_LINK]="link"
+};
+
+
+
 static void _list_files(s64 fd){
 	for (s64 iter=fd_iter_start(fd);iter>=0;iter=fd_iter_next(iter)){
 		char name[256];
 		if (fd_iter_get(iter,name,256)<=0){
 			continue;
 		}
-		s64 child=fd_open(fd,name,0);
+		s64 child=fd_open(fd,name,FD_FLAG_IGNORE_LINKS);
 		if (child<0){
 			continue;
 		}
@@ -31,7 +40,7 @@ static void _list_files(s64 fd){
 			fd_close(child);
 			continue;
 		}
-		printf("\x1b[1m%s\x1b[0m:\t%v\t%s\n",name,stat.size,(stat.type==FD_STAT_TYPE_FILE?"file":"directory"));
+		printf("\x1b[1m%s\x1b[0m:\t%v\t%s\n",name,stat.size,_ls_type_names[stat.type]);
 		fd_close(child);
 	}
 }

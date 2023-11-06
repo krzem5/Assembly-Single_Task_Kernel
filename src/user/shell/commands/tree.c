@@ -43,7 +43,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 			iter=fd_iter_next(iter);
 			continue;
 		}
-		s64 child=fd_open(fd,name,FD_FLAG_READ);
+		s64 child=fd_open(fd,name,FD_FLAG_READ|FD_FLAG_IGNORE_LINKS);
 		if (child<0){
 			iter=fd_iter_next(iter);
 			continue;
