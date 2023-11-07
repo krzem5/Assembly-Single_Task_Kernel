@@ -24,6 +24,10 @@ static void _listener(void* object,u32 type){
 		devfs_create_data_node(node,"block_count","%lu",drive->block_count);
 		devfs_create_data_node(node,"block_size","%lu",drive->block_size);
 		devfs_create_node(node,"partition",NULL);
+		return;
+	}
+	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
+		WARN("%p",handle);
 	}
 }
 
