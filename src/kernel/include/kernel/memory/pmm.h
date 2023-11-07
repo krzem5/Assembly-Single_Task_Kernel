@@ -26,9 +26,11 @@
 
 
 
-typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
+typedef struct __attribute__((aligned(8))) _PMM_ALLOCATOR_PAGE_HEADER{
 	u64 prev;
 	u64 next;
+	struct _PMM_ALLOCATOR_PAGE_HEADER* clear_queue_prev;
+	struct _PMM_ALLOCATOR_PAGE_HEADER* clear_queue_next;
 	u64 cleared_pages;
 	_Atomic u32 lock;
 	u8 idx;
@@ -44,6 +46,13 @@ typedef struct _PMM_ALLOCATOR{
 	spinlock_t lock;
 	u16 block_bitmap;
 } pmm_allocator_t;
+
+
+
+typedef struct _PMM_CLEAR_QUEUE{
+	pmm_allocator_page_header_t* head;
+	spinlock_t lock;
+} pmm_clear_queue_t;
 
 
 
