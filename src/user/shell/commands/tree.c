@@ -113,6 +113,18 @@ void tree_main(int argc,const char*const* argv){
 			return;
 		}
 	}
+	s64 fd=(directory?fd_open(cwd_fd,directory,0):cwd_fd);
+	if (fd<0){
+		printf("tree: unable to open file '%s': error %d\n",directory,fd);
+		return;
+	}
+	fd_stat_t stat;
+	if (fd_stat(fd,&stat)<0){
+		printf("tree: unable to stat file '%s'\n",(directory?directory:"."));
+		return;
+	}
+	_print_file_name(&stat,(directory?directory:"."));
+	putchar('\n');
 	frame_t frame={
 		.file_count=0,
 		.directory_count=0
@@ -120,18 +132,8 @@ void tree_main(int argc,const char*const* argv){
 	for (u32 i=0;i<(MAX_LEVELS>>6);i++){
 		frame.bitmap[i]=0;
 	}
-	if (!directory){
-		printf(".\n");
-		_list_files(cwd_fd,0,&frame);
-	}
-	else{
-		s64 fd=fd_open(cwd_fd,directory,0);
-		if (fd<0){
-			printf("tree: unable to open file '%s': error %d\n",directory,fd);
-			return;
-		}
-		printf("%s\n",directory);
-		_list_files(fd,0,&frame);
+	_list_files(fd,0,&frame);
+	if (fd!=cwd_fd){
 		fd_close(fd);
 	}
 	printf("\n%lu director%s, %lu file%s\n",frame.directory_count,(frame.directory_count==1?"y":"ies"),frame.file_count,(frame.file_count==1?"":"s"));

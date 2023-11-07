@@ -102,7 +102,7 @@ void handle_destroy(handle_t* handle){
 
 
 
-void _handle_delete_internal(handle_t* handle){
+KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	if (handle->rc){
 		return;
 	}
