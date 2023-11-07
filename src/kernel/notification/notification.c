@@ -30,7 +30,7 @@ void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatch
 
 void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,void* object,u32 type){
 	spinlock_acquire_shared(&(dispatcher->lock));
-	for (const notification_listener_t* listener=dispatcher->head;listener;listener->next){
+	for (const notification_listener_t* listener=dispatcher->head;listener;listener=listener->next){
 		listener->callback(object,type);
 	}
 	spinlock_release_shared(&(dispatcher->lock));
