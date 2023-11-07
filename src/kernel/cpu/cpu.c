@@ -75,7 +75,7 @@ void _cpu_init_core(void){
 	_wakeup_cpu((index<<1)+1);
 	_wakeup_cpu((index+1)<<1);
 	if (index!=_cpu_bootstra_core_apic_id){
-		scheduler_start();
+		scheduler_yield();
 	}
 }
 

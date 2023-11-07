@@ -56,8 +56,9 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
+	pmm_register_memory_clear_thread();
 	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_main_thread,0x200000,0));
 	scheduler_enable();
-	scheduler_start();
+	scheduler_yield();
 	scheduler_task_wait_loop();
 }

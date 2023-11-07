@@ -1,11 +1,11 @@
-global scheduler_start
+global scheduler_yield
 global scheduler_task_wait_loop
 section .text exec nowrite
 
 
 
 [bits 64]
-scheduler_start:
+scheduler_yield:
 	pushfq
 	pop rax
 	sti

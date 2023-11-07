@@ -4,6 +4,9 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
+#include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -92,6 +95,15 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		allocator->block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
+}
+
+
+
+static void _memory_clear_thread(void){
+	WARN("Clearing memory...");
+	while (1){
+		scheduler_yield();
+	}
 }
 
 
@@ -261,4 +273,13 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	allocator->block_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
+}
+
+
+
+void pmm_register_memory_clear_thread(void){
+	LOG("Registering memory clearer thread...");
+	thread_t* thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x200000,0);
+	thread->priority=SCHEDULER_PRIORITY_BACKGROUND;
+	scheduler_enqueue_thread(thread);
 }

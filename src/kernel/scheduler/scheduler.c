@@ -82,7 +82,7 @@ void scheduler_resume(void){
 	u64 elapsed_us=(clock_ticks_to_time(clock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
 	asm volatile("sti":::"memory");
 	if (elapsed_us>=scheduler->pause_remaining_us){
-		scheduler_start();
+		scheduler_yield();
 	}
 	else{
 		lapic_timer_start(scheduler->pause_remaining_us-elapsed_us);

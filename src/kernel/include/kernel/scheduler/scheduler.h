@@ -64,7 +64,7 @@ void scheduler_set_timer(u8 timer);
 
 
 
-void scheduler_start(void);
+void scheduler_yield(void);
 
 
 

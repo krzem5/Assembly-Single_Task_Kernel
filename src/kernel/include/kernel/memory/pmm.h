@@ -111,4 +111,8 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter);
 
 
 
+void pmm_register_memory_clear_thread(void);
+
+
+
 #endif

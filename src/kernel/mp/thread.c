@@ -169,7 +169,7 @@ void KERNEL_NORETURN thread_terminate(void){
 	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
 	spinlock_release_exclusive(&(thread->lock));
-	scheduler_start();
+	scheduler_yield();
 	for (;;);
 }
 
@@ -196,5 +196,5 @@ void thread_await_event(event_t* event){
 	thread->state_not_present=1;
 	spinlock_release_exclusive(&(thread->lock));
 	spinlock_release_exclusive(&(event->lock));
-	scheduler_start();
+	scheduler_yield();
 }
