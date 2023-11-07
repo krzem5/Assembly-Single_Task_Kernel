@@ -1,6 +1,7 @@
 #ifndef _KERNEL_HANDLE_HANDLE_H_
 #define _KERNEL_HANDLE_HANDLE_H_ 1
 #include <kernel/lock/spinlock.h>
+#include <kernel/notification/notification.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -60,6 +61,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;
 	rb_tree_node_t rb_node;
+	notification_dispatcher_t notification_dispatcher;
 } handle_descriptor_t;
 
 

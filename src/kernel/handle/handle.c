@@ -2,6 +2,7 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/notification/notification.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -30,6 +31,7 @@ void handle_init(void){
 		spinlock_init(&(handle_descriptor->lock));
 		handle_descriptor->delete_callback=(*descriptor)->delete_callback;
 		rb_tree_init(&(handle_descriptor->tree));
+		notification_dispatcher_init(&(handle_descriptor->notification_dispatcher));
 		handle_descriptor->count=0;
 		handle_descriptor->active_count=0;
 		handle_descriptor->rb_node.key=handle_type_index;
