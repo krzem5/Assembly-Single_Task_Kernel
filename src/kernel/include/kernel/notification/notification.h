@@ -11,9 +11,9 @@
 
 
 typedef struct _NOTIFICATION_LISTENER{
+	void (*callback)(void*,u32);
 	struct _NOTIFICATION_LISTENER* prev;
 	struct _NOTIFICATION_LISTENER* next;
-	void (*callback)(void*,u32);
 } notification_listener_t;
 
 
