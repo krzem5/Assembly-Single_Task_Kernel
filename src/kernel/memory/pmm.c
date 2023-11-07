@@ -87,6 +87,8 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		pmm_allocator_page_header_t* header=_get_block_header(address);
 		header->prev=0;
 		header->next=allocator->blocks[idx];
+		header->cleared_pages=0;
+		header->lock=0;
 		header->idx=idx;
 		if (allocator->blocks[idx]){
 			_get_block_header(allocator->blocks[idx])->prev=address;
@@ -102,6 +104,11 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 static void _memory_clear_thread(void){
 	WARN("Clearing memory...");
 	while (1){
+		scheduler_pause();
+		// u32 expected=0;
+		// if (!__atomic_compare_exchange_n(&(header->lock),&expected,PMM_LOCK_FLAG_CLEAR,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){continue;}
+		// __atomic_fetch_xor(&(header->lock),PMM_LOCK_FLAG_CLEAR,__ATOMIC_SEQ_CST);
+		scheduler_resume();
 		scheduler_yield();
 	}
 }
@@ -186,6 +193,8 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	u8 j=__builtin_ffs(allocator->block_bitmap>>i)+i-1;
 	u64 out=(u64)(allocator->blocks[j]);
 	pmm_allocator_page_header_t* header=_get_block_header(out);
+	SPINLOOP(__atomic_fetch_or(&(header->lock),PMM_LOCK_FLAG_ALLOC,__ATOMIC_SEQ_CST)&PMM_LOCK_FLAG_CLEAR);
+	u64 first_uncleared_address=out+(header->cleared_pages<<PAGE_SIZE_SHIFT);
 	allocator->blocks[j]=header->next;
 	if (header->next){
 		_get_block_header(header->next)->prev=0;
@@ -199,6 +208,11 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		header=_get_block_header(child_block);
 		header->prev=0;
 		header->next=allocator->blocks[j];
+		header->cleared_pages=(first_uncleared_address<=child_block?0:(first_uncleared_address-child_block)>>PAGE_SIZE_SHIFT);
+		if (header->cleared_pages>(1ull<<j)){
+			header->cleared_pages=1ull<<j;
+		}
+		header->lock=0;
 		header->idx=j;
 		allocator->blocks[j]=child_block;
 		allocator->block_bitmap|=1<<j;
@@ -212,17 +226,9 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	scheduler_resume();
-	return out;
-}
-
-
-
-u64 pmm_alloc_zero(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
-	u64 out=pmm_alloc(count,counter,memory_hint);
-	if (!out){
-		return 0;
+	for (u64* ptr=(u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr<(u64*)(out+_get_block_size(i)+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr++){
+		*ptr=0;
 	}
-	memset((void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,count<<PAGE_SIZE_SHIFT);
 	return out;
 }
 
@@ -265,6 +271,8 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	pmm_allocator_page_header_t* header=_get_block_header(address);
 	header->prev=0;
 	header->next=allocator->blocks[i];
+	header->cleared_pages=0;
+	header->lock=0;
 	header->idx=i;
 	if (allocator->blocks[i]){
 		_get_block_header(allocator->blocks[i])->prev=address;

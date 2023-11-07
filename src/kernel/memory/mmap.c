@@ -230,7 +230,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 		}
 		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<length;i+=PAGE_SIZE){
-			vmm_map_page(mmap->pagemap,pmm_alloc_zero(1,pmm_counter,0),address+i,vmm_flags);
+			vmm_map_page(mmap->pagemap,pmm_alloc(1,pmm_counter,0),address+i,vmm_flags);
 		}
 	}
 	return region;

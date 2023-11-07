@@ -21,11 +21,16 @@
 
 #define PMM_COUNTER_INIT_STRUCT(name) {(name),NULL,0,HANDLE_INIT_STRUCT}
 
+#define PMM_LOCK_FLAG_ALLOC 1
+#define PMM_LOCK_FLAG_CLEAR 2
+
 
 
 typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 	u64 prev;
 	u64 next;
+	u64 cleared_pages;
+	_Atomic u32 lock;
 	u8 idx;
 } pmm_allocator_page_header_t;
 
@@ -100,10 +105,6 @@ void pmm_init_high_mem(void);
 
 
 u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
-
-
-
-u64 pmm_alloc_zero(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 
 

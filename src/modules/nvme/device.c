@@ -34,7 +34,7 @@ static KERNEL_INLINE void _init_queue(nvme_device_t* device,u16 queue_index,u16 
 
 static void _completion_queue_init(nvme_device_t* device,u16 queue_index,u16 queue_length,nvme_completion_queue_t* out){
 	_init_queue(device,queue_index,queue_length,&(out->queue));
-	out->entries=(void*)(pmm_alloc_zero(pmm_align_up_address(queue_length*sizeof(nvme_completion_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_completion_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->head=0;
 	out->phase=1;
 }
@@ -58,7 +58,7 @@ static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_que
 
 static void _submission_queue_init(nvme_device_t* device,nvme_completion_queue_t* completion_queue,u16 queue_index,u16 queue_length,nvme_submission_queue_t* out){
 	_init_queue(device,queue_index,queue_length,&(out->queue));
-	out->entries=(void*)(pmm_alloc_zero(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->completion_queue=completion_queue;
 	spinlock_init(&(out->lock));
 	out->head=0;

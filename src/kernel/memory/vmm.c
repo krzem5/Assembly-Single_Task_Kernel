@@ -80,7 +80,7 @@ static u64* _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present)
 		return NULL;
 	}
 	_increase_length(table);
-	u64 out=pmm_alloc_zero(1,&_vmm_pmm_counter,0);
+	u64 out=pmm_alloc(1,&_vmm_pmm_counter,0);
 	*entry=((u64)out)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	return entry;
 }
@@ -171,11 +171,11 @@ static u64 _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 void vmm_init(void){
 	LOG("Initializing virtual memory manager...");
-	vmm_kernel_pagemap.toplevel=pmm_alloc_zero(1,&_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
+	vmm_kernel_pagemap.toplevel=pmm_alloc(1,&_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
 	spinlock_init(&(vmm_kernel_pagemap.lock));
 	INFO("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
-		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc_zero(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
 	u64 kernel_length=pmm_align_up_address(kernel_data.first_free_address);
 	INFO("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
@@ -200,7 +200,7 @@ void vmm_init(void){
 
 
 void vmm_pagemap_init(vmm_pagemap_t* pagemap){
-	pagemap->toplevel=pmm_alloc_zero(1,&_vmm_pmm_counter,0);
+	pagemap->toplevel=pmm_alloc(1,&_vmm_pmm_counter,0);
 	spinlock_init(&(pagemap->lock));
 	for (u16 i=256;i<512;i++){
 		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i];

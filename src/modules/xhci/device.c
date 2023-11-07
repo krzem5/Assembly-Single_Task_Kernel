@@ -68,7 +68,7 @@ static u8 _speed_to_context_speed(u8 speed){
 
 
 static xhci_input_context_t* _alloc_input_context_raw(xhci_device_t* xhci_device){
-	return (void*)(pmm_alloc_zero(pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,&_xhci_input_context_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	return (void*)(pmm_alloc(pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,&_xhci_input_context_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 
@@ -310,7 +310,7 @@ static void _xhci_init_device(pci_device_t* device){
 	xhci_device->doorbell_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->dboff,xhci_device->ports*sizeof(xhci_doorbell_t));
 	xhci_device->interrupt_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->rtsoff+0x20,xhci_device->interrupts*sizeof(xhci_interrupt_registers_t));
 	INFO("Ports: %u, Interrupts: %u, Slots: %u, Context size: %u B",xhci_device->ports,xhci_device->interrupts,xhci_device->slots,(32<<xhci_device->is_context_64_bytes));
-	void* data=(void*)(pmm_alloc_zero(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* data=(void*)(pmm_alloc(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	xhci_device->device_context_base_array=data;
 	xhci_device->command_ring=_alloc_ring(1);
 	xhci_device->event_ring=_alloc_ring(1);
