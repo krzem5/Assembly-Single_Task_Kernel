@@ -29,6 +29,7 @@ event_t* event_new(void){
 	spinlock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 

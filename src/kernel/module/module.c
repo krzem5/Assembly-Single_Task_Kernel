@@ -278,6 +278,7 @@ module_t* module_load(const char* name){
 	vmm_adjust_flags(&vmm_kernel_pagemap,module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,module->rw_region.size>>PAGE_SIZE_SHIFT);
 	LOG("Module '%s' loaded successfully",name);
 	spinlock_release_exclusive(&_module_global_lock);
+	handle_finish_setup(&(module->handle));
 	module->descriptor->init_callback(module);
 	module->state=MODULE_STATE_RUNNING;
 	return module;

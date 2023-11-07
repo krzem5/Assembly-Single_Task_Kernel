@@ -31,6 +31,7 @@ HANDLE_DECLARE_TYPE(FS_DESCRIPTOR,{});
 void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
 	handle_new(descriptor,HANDLE_TYPE_FS_DESCRIPTOR,&(descriptor->handle));
+	handle_finish_setup(&(descriptor->handle));
 	if (!descriptor->load_callback){
 		return;
 	}
@@ -62,6 +63,7 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->extra_data=NULL;
 	out->root=NULL;
 	memset(out->uuid,0,16);
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 

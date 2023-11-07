@@ -24,7 +24,19 @@ void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,
 
 
 
-void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener);
+void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener){
+	spinlock_acquire_exclusive(&(dispatcher->lock));
+	if (listener->prev){
+		listener->prev->next=listener->next;
+	}
+	else{
+		dispatcher->head=listener->next;
+	}
+	if (listener->next){
+		listener->next->prev=listener->prev;
+	}
+	spinlock_release_exclusive(&(dispatcher->lock));
+}
 
 
 

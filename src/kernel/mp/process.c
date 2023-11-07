@@ -53,6 +53,7 @@ void process_init(void){
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
 		panic("Unable to reserve kernel memory");
 	}
+	handle_finish_setup(&(process_kernel->handle));
 }
 
 
@@ -64,5 +65,6 @@ process_t* process_new(void){
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));
+	handle_finish_setup(&(out->handle));
 	return out;
 }

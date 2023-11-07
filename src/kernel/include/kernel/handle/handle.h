@@ -82,6 +82,10 @@ void handle_new(void* object,handle_type_t type,handle_t* out);
 
 
 
+void handle_finish_setup(handle_t* handle);
+
+
+
 handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type);
 
 
@@ -91,6 +95,14 @@ void handle_destroy(handle_t* handle);
 
 
 void _handle_delete_internal(handle_t* handle);
+
+
+
+_Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener);
+
+
+
+_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener);
 
 
 

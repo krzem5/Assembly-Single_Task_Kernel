@@ -111,6 +111,7 @@ thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
 	out->gpr_state.rflags=0x0000000202;
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=0;
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 
@@ -140,6 +141,7 @@ thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,
 	out->gpr_state.rflags=0x0000000202;
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=(u64)out;
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 

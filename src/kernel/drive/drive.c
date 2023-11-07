@@ -31,6 +31,7 @@ HANDLE_DECLARE_TYPE(DRIVE_TYPE,{});
 void drive_register_type(drive_type_t* type){
 	LOG("Registering drive type '%s'...",type->name);
 	handle_new(type,HANDLE_TYPE_DRIVE_TYPE,&(type->handle));
+	handle_finish_setup(&(type->handle));
 }
 
 
@@ -62,6 +63,7 @@ drive_t* drive_create(const drive_config_t* config){
 		WARN("Drive block size is not a power of 2");
 	}
 	partition_load_from_drive(out);
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 

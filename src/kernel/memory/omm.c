@@ -46,6 +46,7 @@ void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	if (!allocator->handle.rb_node.key){
 		handle_new(allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(allocator->handle));
+		handle_finish_setup(&(allocator->handle));
 	}
 	if (allocator->object_size<sizeof(omm_object_t)){
 		allocator->object_size=sizeof(omm_object_t);

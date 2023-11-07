@@ -126,6 +126,9 @@ void pmm_init(void){
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
 	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
 	handle_new(&_pmm_total_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_total_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_kernel_image_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_total_pmm_counter.handle));
 	_pmm_pmm_counter.count+=pmm_align_up_address(low_bitmap_size+high_bitmap_size)>>PAGE_SIZE_SHIFT;
 	_pmm_kernel_image_pmm_counter.count+=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	kernel_data.first_free_address+=low_bitmap_size+high_bitmap_size;
@@ -193,6 +196,7 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	spinlock_release_exclusive(&(allocator->lock));
 	if (!counter->handle.rb_node.key){
 		handle_new(counter,HANDLE_TYPE_PMM_COUNTER,&(counter->handle));
+		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	scheduler_resume();

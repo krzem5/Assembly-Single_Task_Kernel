@@ -14,6 +14,7 @@ HANDLE_DECLARE_TYPE(USB_DRIVER_DESCRIPTOR,{});
 void usb_register_driver(usb_driver_descriptor_t* driver){
 	LOG("Registering USB driver '%s'...",driver->name);
 	handle_new(driver,HANDLE_TYPE_USB_DRIVER_DESCRIPTOR,&(driver->handle));
+	handle_finish_setup(&(driver->handle));
 }
 
 

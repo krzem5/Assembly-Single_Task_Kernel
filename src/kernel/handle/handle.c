@@ -40,6 +40,7 @@ void handle_init(void){
 	for (handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
 		handle_descriptor_t* handle_descriptor=*descriptor;
 		handle_new(handle_descriptor,HANDLE_TYPE_HANDLE,&(handle_descriptor->handle));
+		handle_finish_setup(&(handle_descriptor->handle));
 	}
 }
 
@@ -65,6 +66,15 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 	handle_descriptor->active_count++;
 	rb_tree_insert_node_increasing(&(handle_descriptor->tree),&(out->rb_node));
 	spinlock_release_exclusive(&(handle_descriptor->lock));
+}
+
+
+
+void handle_finish_setup(handle_t* handle){
+	handle_acquire(handle);
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
+	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_CREATE);
+	handle_release(handle);
 }
 
 
@@ -97,6 +107,7 @@ void _handle_delete_internal(handle_t* handle){
 		return;
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
+	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_DELETE);
 	spinlock_acquire_exclusive(&(handle_descriptor->lock));
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
 	spinlock_release_exclusive(&(handle_descriptor->lock));
@@ -105,4 +116,33 @@ void _handle_delete_internal(handle_t* handle){
 	handle_descriptor->active_count--;
 #pragma GCC diagnostic pop
 	handle_descriptor->delete_callback(handle);
+}
+
+
+
+_Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener){
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
+	if (!handle_descriptor){
+		return 0;
+	}
+	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	notification_dispatcher_add_listener(&(handle_descriptor->notification_dispatcher),listener);
+	for (handle_t* handle=HANDLE_ITER_START(handle_descriptor);handle;handle=HANDLE_ITER_NEXT(handle_descriptor,handle)){
+		listener->callback(handle,NOTIFICATION_TYPE_HANDLE_CREATE);
+	}
+	spinlock_release_exclusive(&(handle_descriptor->lock));
+	return 1;
+}
+
+
+
+_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener){
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
+	if (!handle_descriptor){
+		return 0;
+	}
+	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener);
+	spinlock_release_exclusive(&(handle_descriptor->lock));
+	return 1;
 }

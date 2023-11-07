@@ -34,6 +34,7 @@ HANDLE_DECLARE_TYPE(PARTITION_TABLE_DESCRIPTOR,{});
 void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Registering partition table descriptor '%s'...",descriptor->name);
 	handle_new(descriptor,HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR,&(descriptor->handle));
+	handle_finish_setup(&(descriptor->handle));
 	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
 		drive_t* drive=handle->object;
 		if (drive->partition_table_descriptor){
@@ -93,5 +94,6 @@ partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 star
 	if (!out->fs){
 		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,index,name);
 	}
+	handle_finish_setup(&(out->handle));
 	return out;
 }

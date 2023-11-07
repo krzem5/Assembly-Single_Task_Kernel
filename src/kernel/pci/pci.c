@@ -81,6 +81,7 @@ void pci_enumerate(void){
 						offset=(cap>>8);
 					}
 				}
+				handle_finish_setup(&(device->handle));
 				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%x:%x",device->address.bus,device->address.slot,device->address.func,device->class,device->subclass,device->progif,device->revision_id,device->device_id,device->vendor_id);
 			}
 		}

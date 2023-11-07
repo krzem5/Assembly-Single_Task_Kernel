@@ -66,6 +66,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
+	handle_finish_setup(&(out->handle));
 	return out->handle.rb_node.key;
 }
 
@@ -253,6 +254,7 @@ s64 fd_iter_start(handle_id_t fd){
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;
+	handle_finish_setup(&(out->handle));
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
