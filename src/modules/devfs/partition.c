@@ -28,8 +28,7 @@ static void _listener(void* object,u32 type){
 		devfs_create_data_node(node,"end_lba","%lu",partition->end_lba);
 		char path[64];
 		format_string(path,64,"drive/%s%ud%u/partition",drive->type->name,drive->controller_index,drive->device_index);
-		node=vfs_lookup(devfs->root,path,1);
-		devfs_create_link_node(node,buffer,"../../../partition/%s",buffer);
+		devfs_create_link_node(vfs_lookup(devfs->root,path,1),buffer,"../../../partition/%s",buffer);
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
