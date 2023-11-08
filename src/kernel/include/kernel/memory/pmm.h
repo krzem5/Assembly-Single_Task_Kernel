@@ -43,13 +43,6 @@ typedef struct _PMM_ALLOCATOR{
 
 
 
-typedef struct _PMM_CLEAR_QUEUE{
-	pmm_allocator_page_header_t* head;
-	spinlock_t lock;
-} pmm_clear_queue_t;
-
-
-
 typedef struct _PMM_COUNTER_DESCRIPTOR{
 	const char* name;
 	handle_id_t* var;
