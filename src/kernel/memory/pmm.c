@@ -94,10 +94,10 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 
 
 
-static void _memory_clear_thread(void){
+static void _memory_clear_thread(pmm_allocator_t* allocator){
 	while (1){
-		scheduler_pause();
-		scheduler_resume();
+		// scheduler_pause();
+		// scheduler_resume();
 		scheduler_yield();
 	}
 }
@@ -275,8 +275,11 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 
 
 void pmm_register_memory_clear_thread(void){
-	LOG("Registering memory clearer thread...");
-	thread_t* thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x200000,0);
+	LOG("Registering memory clearer threads...");
+	thread_t* thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x40000,1,&_pmm_low_allocator);
+	thread->priority=SCHEDULER_PRIORITY_BACKGROUND;
+	scheduler_enqueue_thread(thread);
+	thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x40000,1,&_pmm_high_allocator);
 	thread->priority=SCHEDULER_PRIORITY_BACKGROUND;
 	scheduler_enqueue_thread(thread);
 }
