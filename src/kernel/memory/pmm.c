@@ -29,12 +29,6 @@ static pmm_allocator_t _pmm_high_allocator;
 
 
 
-static KERNEL_INLINE pmm_allocator_page_header_t* _get_block_header(u64 address){
-	return (pmm_allocator_page_header_t*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-}
-
-
-
 static KERNEL_INLINE u64 _get_bitmap_size(const pmm_allocator_t* allocator){
 	return pmm_align_up_address(((((allocator->last_address-allocator->first_address)>>PAGE_SIZE_SHIFT)+64)>>6)*sizeof(u64));
 	 // 64 instead of 63 to add one more bit for the end of the last memory address
@@ -62,18 +56,6 @@ static KERNEL_INLINE u64 _get_block_size(u8 index){
 
 
 
-static void _add_page_to_memory_clear_queue(pmm_allocator_page_header_t* header){
-	return;
-}
-
-
-
-static void _remove_region_from_clear_queue(pmm_allocator_page_header_t* header){
-	return;
-}
-
-
-
 static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 	if (address>=end){
 		return;
@@ -94,16 +76,14 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 			size=_get_block_size(idx);
 		}
 		_pmm_total_pmm_counter.count+=size>>PAGE_SIZE_SHIFT;
-		pmm_allocator_page_header_t* header=_get_block_header(address);
-		header->prev=0;
+		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		header->prev=NULL;
 		header->next=allocator->blocks[idx];
-		header->cleared_pages=0;
 		header->idx=idx;
-		_add_page_to_memory_clear_queue(header);
 		if (allocator->blocks[idx]){
-			_get_block_header(allocator->blocks[idx])->prev=address;
+			allocator->blocks[idx]->prev=header;
 		}
-		allocator->blocks[idx]=address;
+		allocator->blocks[idx]=header;
 		allocator->block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -124,9 +104,11 @@ static void _memory_clear_thread(void){
 void pmm_init(void){
 	LOG("Initializing physical memory manager...");
 	LOG("Scanning memory...");
+	memset(&_pmm_low_allocator,0,sizeof(pmm_allocator_t));
 	_pmm_low_allocator.first_address=0;
 	_pmm_low_allocator.last_address=0;
 	spinlock_init(&(_pmm_low_allocator.lock));
+	memset(&_pmm_high_allocator,0,sizeof(pmm_allocator_t));
 	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
 	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
 	spinlock_init(&(_pmm_high_allocator.lock));
@@ -197,32 +179,22 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: out of memory");
 	}
 	u8 j=__builtin_ffs(allocator->block_bitmap>>i)+i-1;
-	u64 out=(u64)(allocator->blocks[j]);
-	pmm_allocator_page_header_t* header=_get_block_header(out);
-	_remove_region_from_clear_queue(header);
-	u64 first_uncleared_address=out+(header->cleared_pages<<PAGE_SIZE_SHIFT);
+	pmm_allocator_page_header_t* header=allocator->blocks[j];
+	u64 out=((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	allocator->blocks[j]=header->next;
 	if (header->next){
-		_get_block_header(header->next)->prev=0;
+		header->next->prev=0;
 	}
 	else{
 		allocator->block_bitmap&=~(1<<j);
 	}
 	while (j>i){
 		j--;
-		u64 child_block=out+_get_block_size(j);
-		header=_get_block_header(child_block);
+		header=(void*)(out+_get_block_size(j)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=0;
 		header->next=allocator->blocks[j];
-		header->cleared_pages=(first_uncleared_address<=child_block?0:(first_uncleared_address-child_block)>>PAGE_SIZE_SHIFT);
-		if (header->cleared_pages>=(1ull<<j)){
-			header->cleared_pages=1ull<<j;
-		}
-		else{
-			_add_page_to_memory_clear_queue(header);
-		}
 		header->idx=j;
-		allocator->blocks[j]=child_block;
+		allocator->blocks[j]=header;
 		allocator->block_bitmap|=1<<j;
 	}
 	_toggle_address_bit(allocator,out);
@@ -257,14 +229,13 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	_toggle_address_bit(allocator,address);
 	_toggle_address_bit(allocator,address+_get_block_size(i));
 	while (i<PMM_ALLOCATOR_SIZE_COUNT){
-		pmm_allocator_page_header_t* buddy=_get_block_header(address^_get_block_size(i));
+		pmm_allocator_page_header_t* buddy=(void*)((address^_get_block_size(i))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		if (((u64)buddy)>=allocator->last_address||_get_address_bit(allocator,address|_get_block_size(i))||buddy->idx!=i){
 			break;
 		}
-		_remove_region_from_clear_queue(buddy);
 		address&=~_get_block_size(i);
 		if (buddy->prev){
-			_get_block_header(buddy->prev)->next=buddy->next;
+			buddy->prev->next=buddy->next;
 		}
 		else{
 			allocator->blocks[i]=buddy->next;
@@ -273,20 +244,18 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 			}
 		}
 		if (buddy->next){
-			_get_block_header(buddy->next)->prev=buddy->prev;
+			buddy->next->prev=buddy->prev;
 		}
 		i++;
 	}
-	pmm_allocator_page_header_t* header=_get_block_header(address);
-	header->prev=0;
+	pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	header->prev=NULL;
 	header->next=allocator->blocks[i];
-	header->cleared_pages=0;
 	header->idx=i;
-	_add_page_to_memory_clear_queue(header);
 	if (allocator->blocks[i]){
-		_get_block_header(allocator->blocks[i])->prev=address;
+		allocator->blocks[i]->prev=header;
 	}
-	allocator->blocks[i]=address;
+	allocator->blocks[i]=header;
 	allocator->block_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();

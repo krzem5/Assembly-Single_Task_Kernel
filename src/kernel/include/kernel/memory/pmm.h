@@ -21,20 +21,13 @@
 
 #define PMM_COUNTER_INIT_STRUCT(name) {(name),NULL,0,HANDLE_INIT_STRUCT}
 
-#define PMM_LOCK_FLAG_ALLOC 1
-#define PMM_LOCK_FLAG_CLEAR 2
-
 
 
 typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
-	u64 prev;
-	u64 next;
-	struct _PMM_ALLOCATOR_PAGE_HEADER* clear_queue_prev;
-	struct _PMM_ALLOCATOR_PAGE_HEADER* clear_queue_next;
-	u64 cleared_pages;
-	_Atomic u32 lock;
+	struct _PMM_ALLOCATOR_PAGE_HEADER* prev;
+	struct _PMM_ALLOCATOR_PAGE_HEADER* next;
 	u8 idx;
-	u8 _padding[3];
+	u8 _padding[7];
 } pmm_allocator_page_header_t;
 
 
@@ -43,7 +36,7 @@ typedef struct _PMM_ALLOCATOR{
 	u64 first_address;
 	u64 last_address;
 	u64* bitmap;
-	u64 blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	struct _PMM_ALLOCATOR_PAGE_HEADER* blocks[PMM_ALLOCATOR_SIZE_COUNT];
 	spinlock_t lock;
 	u16 block_bitmap;
 } pmm_allocator_t;
