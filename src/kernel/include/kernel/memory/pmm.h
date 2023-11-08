@@ -13,7 +13,7 @@
 #define EXTRA_LARGE_PAGE_SIZE 1073741824
 #define EXTRA_LARGE_PAGE_SIZE_SHIFT 30
 
-#define PMM_ALLOCATOR_SIZE_COUNT 16
+#define PMM_ALLOCATOR_BLOCK_GROUP_COUNT 16
 
 #define PMM_LOW_ALLOCATOR_LIMIT 0x40000000ull
 
@@ -43,9 +43,9 @@ typedef struct _PMM_ALLOCATOR{
 	u64 first_address;
 	u64 last_address;
 	u64* bitmap;
-	pmm_allocator_block_group_t blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	pmm_allocator_block_group_t block_groups[PMM_ALLOCATOR_BLOCK_GROUP_COUNT];
+	u16 block_group_bitmap;
 	spinlock_t lock;
-	u16 block_bitmap;
 } pmm_allocator_t;
 
 
