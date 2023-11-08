@@ -13,7 +13,9 @@
 #define EXTRA_LARGE_PAGE_SIZE 1073741824
 #define EXTRA_LARGE_PAGE_SIZE_SHIFT 30
 
-#define PMM_ALLOCATOR_BLOCK_GROUP_COUNT 16
+#define PMM_ALLOCATOR_BLOCK_GROUP_COUNT 14
+#define PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT (PMM_ALLOCATOR_BLOCK_GROUP_COUNT+1+PAGE_SIZE_SHIFT)
+#define PMM_ALLOCATOR_MAX_REGION_SIZE (1ull<<PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT)
 
 #define PMM_LOW_ALLOCATOR_LIMIT 0x40000000ull
 
@@ -47,6 +49,14 @@ typedef struct _PMM_ALLOCATOR{
 	u16 block_group_bitmap;
 	spinlock_t lock;
 } pmm_allocator_t;
+
+
+
+typedef struct _PMM_ALLOCATOR2{
+	pmm_allocator_block_group_t block_groups[PMM_ALLOCATOR_BLOCK_GROUP_COUNT];
+	u16 block_group_bitmap;
+	spinlock_t lock;
+} pmm_allocator2_t;
 
 
 

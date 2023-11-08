@@ -189,7 +189,7 @@ void vmm_init(void){
 			highest_address=end;
 		}
 	}
-	INFO("Identity mapping first %v...",highest_address);
+	INFO("Mapping first %v...",highest_address);
 	for (u64 i=0;i<highest_address;i+=EXTRA_LARGE_PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i,i+VMM_HIGHER_HALF_ADDRESS_OFFSET,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_EXTRA_LARGE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
