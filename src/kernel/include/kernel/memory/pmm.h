@@ -32,11 +32,18 @@ typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 
 
 
+typedef struct _PMM_ALLOCATOR_BLOCK_GROUP{
+	pmm_allocator_page_header_t* head;
+	pmm_allocator_page_header_t* tail;
+} pmm_allocator_block_group_t;
+
+
+
 typedef struct _PMM_ALLOCATOR{
 	u64 first_address;
 	u64 last_address;
 	u64* bitmap;
-	struct _PMM_ALLOCATOR_PAGE_HEADER* blocks[PMM_ALLOCATOR_SIZE_COUNT];
+	pmm_allocator_block_group_t blocks[PMM_ALLOCATOR_SIZE_COUNT];
 	spinlock_t lock;
 	u16 block_bitmap;
 } pmm_allocator_t;

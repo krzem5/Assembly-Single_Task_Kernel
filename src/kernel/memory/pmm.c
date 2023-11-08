@@ -77,13 +77,16 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		}
 		_pmm_total_pmm_counter.count+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		header->prev=NULL;
-		header->next=allocator->blocks[idx];
+		header->prev=(allocator->blocks+idx)->tail;
+		header->next=NULL;
 		header->idx=idx;
-		if (allocator->blocks[idx]){
-			allocator->blocks[idx]->prev=header;
+		if (header->prev){
+			header->prev->next=header;
 		}
-		allocator->blocks[idx]=header;
+		else{
+			(allocator->blocks+idx)->head=header;
+		}
+		(allocator->blocks+idx)->tail=header;
 		allocator->block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -179,22 +182,24 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: out of memory");
 	}
 	u8 j=__builtin_ffs(allocator->block_bitmap>>i)+i-1;
-	pmm_allocator_page_header_t* header=allocator->blocks[j];
-	u64 out=((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET;
-	allocator->blocks[j]=header->next;
+	pmm_allocator_page_header_t* header=(allocator->blocks+j)->head;
+	(allocator->blocks+j)->head=header->next;
 	if (header->next){
 		header->next->prev=0;
 	}
 	else{
+		(allocator->blocks+j)->tail=NULL;
 		allocator->block_bitmap&=~(1<<j);
 	}
+	u64 out=((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	while (j>i){
 		j--;
 		header=(void*)(out+_get_block_size(j)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=0;
-		header->next=allocator->blocks[j];
+		header->next=0;
 		header->idx=j;
-		allocator->blocks[j]=header;
+		(allocator->blocks+j)->head=header;
+		(allocator->blocks+j)->tail=header;
 		allocator->block_bitmap|=1<<j;
 	}
 	_toggle_address_bit(allocator,out);
@@ -238,7 +243,7 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 			buddy->prev->next=buddy->next;
 		}
 		else{
-			allocator->blocks[i]=buddy->next;
+			(allocator->blocks+i)->head=buddy->next;
 			if (!buddy->next){
 				allocator->block_bitmap&=~(1<<i);
 			}
@@ -246,16 +251,22 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 		if (buddy->next){
 			buddy->next->prev=buddy->prev;
 		}
+		else{
+			(allocator->blocks+i)->tail=buddy->prev;
+		}
 		i++;
 	}
 	pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	header->prev=NULL;
-	header->next=allocator->blocks[i];
+	header->prev=(allocator->blocks+i)->tail;
+	header->next=0;
 	header->idx=i;
-	if (allocator->blocks[i]){
-		allocator->blocks[i]->prev=header;
+	if (header->prev){
+		header->prev->next=header;
 	}
-	allocator->blocks[i]=header;
+	else{
+		(allocator->blocks+i)->head=header;
+	}
+	(allocator->blocks+i)->tail=header;
 	allocator->block_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
