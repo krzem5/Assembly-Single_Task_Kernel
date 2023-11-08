@@ -20,15 +20,12 @@ static pmm_counter_descriptor_t _pmm_total_pmm_counter=PMM_COUNTER_INIT_STRUCT("
 
 
 
-HANDLE_DECLARE_TYPE(PMM_COUNTER,{
-	panic("Unable to delete	HANDLE_TYPE_PMM_COUNTER");
-});
+HANDLE_DECLARE_TYPE(PMM_COUNTER,{});
 
 
 
 static pmm_allocator_t _pmm_low_allocator;
 static pmm_allocator_t _pmm_high_allocator;
-static pmm_clear_queue_t _pmm_clear_queue;
 
 
 
@@ -66,32 +63,13 @@ static KERNEL_INLINE u64 _get_block_size(u8 index){
 
 
 static void _add_page_to_memory_clear_queue(pmm_allocator_page_header_t* header){
-	spinlock_acquire_exclusive(&(_pmm_clear_queue.lock));
-	header->clear_queue_prev=NULL;
-	header->clear_queue_next=_pmm_clear_queue.head;
-	if (_pmm_clear_queue.head){
-		_pmm_clear_queue.head->clear_queue_prev=header;
-	}
-	_pmm_clear_queue.head=header;
-	spinlock_release_exclusive(&(_pmm_clear_queue.lock));
+	return;
 }
 
 
 
 static void _remove_region_from_clear_queue(pmm_allocator_page_header_t* header){
-	SPINLOOP(__atomic_fetch_or(&(header->lock),PMM_LOCK_FLAG_ALLOC,__ATOMIC_SEQ_CST)&PMM_LOCK_FLAG_CLEAR);
-	spinlock_acquire_exclusive(&(_pmm_clear_queue.lock));
-	if (header->clear_queue_prev){
-		header->clear_queue_prev->clear_queue_next=header->clear_queue_next;
-	}
-	else{
-		_pmm_clear_queue.head=header->clear_queue_next;
-	}
-	if (header->clear_queue_next){
-		header->clear_queue_next->clear_queue_prev=header->clear_queue_prev;
-	}
-	spinlock_release_exclusive(&(_pmm_clear_queue.lock));
-	header->lock=0;
+	return;
 }
 
 
@@ -120,7 +98,6 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		header->prev=0;
 		header->next=allocator->blocks[idx];
 		header->cleared_pages=0;
-		header->lock=0;
 		header->idx=idx;
 		_add_page_to_memory_clear_queue(header);
 		if (allocator->blocks[idx]){
@@ -137,27 +114,6 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 static void _memory_clear_thread(void){
 	while (1){
 		scheduler_pause();
-		spinlock_acquire_exclusive(&(_pmm_clear_queue.lock));
-		pmm_allocator_page_header_t* header=_pmm_clear_queue.head;
-		if (!header){
-			goto _skip_clear;
-		}
-		u32 expected=0;
-		if (!__atomic_compare_exchange_n(&(header->lock),&expected,PMM_LOCK_FLAG_CLEAR,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){
-			panic("_memory_clear_thread: state error");
-		}
-		// spinlock_release_exclusive(&(_pmm_clear_queue.lock));
-		// u64 base=((u64)header)+(header->cleared_pages<<PAGE_SIZE_SHIFT);
-		// // ERROR("Clearing %p...",base);
-		// for (u64* ptr=(u64*)(base+(header->cleared_pages?0:sizeof(pmm_allocator_page_header_t)));ptr<(u64*)(base+PAGE_SIZE);ptr++){
-		// 	// *ptr=0;
-		// }
-		// header->cleared_pages++;
-		// spinlock_acquire_exclusive(&(_pmm_clear_queue.lock));
-		// remove from queue if empty
-		__atomic_fetch_xor(&(header->lock),PMM_LOCK_FLAG_CLEAR,__ATOMIC_SEQ_CST);
-_skip_clear:
-		spinlock_release_exclusive(&(_pmm_clear_queue.lock));
 		scheduler_resume();
 		scheduler_yield();
 	}
@@ -174,8 +130,6 @@ void pmm_init(void){
 	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
 	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
 	spinlock_init(&(_pmm_high_allocator.lock));
-	_pmm_clear_queue.head=NULL;
-	spinlock_init(&(_pmm_clear_queue.lock));
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		if (end>_pmm_low_allocator.last_address){
@@ -267,7 +221,6 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		else{
 			_add_page_to_memory_clear_queue(header);
 		}
-		header->lock=0;
 		header->idx=j;
 		allocator->blocks[j]=child_block;
 		allocator->block_bitmap|=1<<j;
@@ -328,7 +281,6 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	header->prev=0;
 	header->next=allocator->blocks[i];
 	header->cleared_pages=0;
-	header->lock=0;
 	header->idx=i;
 	_add_page_to_memory_clear_queue(header);
 	if (allocator->blocks[i]){

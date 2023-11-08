@@ -26,7 +26,7 @@
 
 
 
-typedef struct __attribute__((aligned(8))) _PMM_ALLOCATOR_PAGE_HEADER{
+typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 	u64 prev;
 	u64 next;
 	struct _PMM_ALLOCATOR_PAGE_HEADER* clear_queue_prev;
@@ -34,6 +34,7 @@ typedef struct __attribute__((aligned(8))) _PMM_ALLOCATOR_PAGE_HEADER{
 	u64 cleared_pages;
 	_Atomic u32 lock;
 	u8 idx;
+	u8 _padding[3];
 } pmm_allocator_page_header_t;
 
 
