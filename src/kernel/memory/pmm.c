@@ -79,7 +79,6 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=(allocator->blocks+idx)->tail;
 		header->next=NULL;
-		header->state=PMM_STATE_UNCLEARED;
 		header->idx=idx;
 		if (header->prev){
 			header->prev->next=header;
@@ -91,24 +90,6 @@ static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
 		allocator->block_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
-}
-
-
-
-static void _memory_clear_thread(pmm_allocator_t* allocator){
-	u8 i=0;
-	while (1){
-		scheduler_pause();
-		spinlock_acquire_exclusive(&(allocator->lock));
-		(allocator->blocks+i)->;
-		spinlock_release_exclusive(&(allocator->lock));
-		scheduler_resume();
-		i++;
-		if (i==PMM_ALLOCATOR_SIZE_COUNT){
-			i=0;
-		}
-		scheduler_yield();
-	}
 }
 
 
@@ -206,7 +187,6 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		header=(void*)(out+_get_block_size(j)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=0;
 		header->next=0;
-		header->state=PMM_STATE_UNCLEARED;
 		header->idx=j;
 		(allocator->blocks+j)->head=header;
 		(allocator->blocks+j)->tail=header;
@@ -269,7 +249,6 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	header->prev=(allocator->blocks+i)->tail;
 	header->next=0;
-	header->state=PMM_STATE_UNCLEARED;
 	header->idx=i;
 	if (header->prev){
 		header->prev->next=header;
@@ -281,16 +260,4 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	allocator->block_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
-}
-
-
-
-void pmm_register_memory_clear_thread(void){
-	LOG("Registering memory clearer threads...");
-	thread_t* thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x40000,1,&_pmm_low_allocator);
-	thread->priority=SCHEDULER_PRIORITY_BACKGROUND;
-	scheduler_enqueue_thread(thread);
-	thread=thread_new_kernel_thread(process_kernel,_memory_clear_thread,0x40000,1,&_pmm_high_allocator);
-	thread->priority=SCHEDULER_PRIORITY_BACKGROUND;
-	scheduler_enqueue_thread(thread);
 }
