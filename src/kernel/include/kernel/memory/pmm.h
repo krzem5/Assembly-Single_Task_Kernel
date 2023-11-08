@@ -21,13 +21,18 @@
 
 #define PMM_COUNTER_INIT_STRUCT(name) {(name),NULL,0,HANDLE_INIT_STRUCT}
 
+#define PMM_STATE_UNCLEARED 0
+#define PMM_STATE_CLEARING 1
+#define PMM_STATE_CLEARED 2
+
 
 
 typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 	struct _PMM_ALLOCATOR_PAGE_HEADER* prev;
 	struct _PMM_ALLOCATOR_PAGE_HEADER* next;
+	u32 state;
 	u8 idx;
-	u8 _padding[7];
+	u8 _padding[3];
 } pmm_allocator_page_header_t;
 
 
