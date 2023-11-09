@@ -87,7 +87,6 @@ static filesystem_descriptor_t _devfs_filesystem_descriptor={
 
 
 void devfs_create_fs(void){
-	(void)_devfs_read;
 	LOG("Creating devfs filesystem...");
 	fs_register_descriptor(&_devfs_filesystem_descriptor);
 	devfs=fs_create(&_devfs_filesystem_descriptor);

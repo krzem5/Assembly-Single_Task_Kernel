@@ -329,7 +329,7 @@ def _patch_kernel(file_path,kernel_symbols):
 
 
 
-def _compile_module(module):
+def _compile_module(module,shared_include_list):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
 	object_files=[]
@@ -346,7 +346,7 @@ def _compile_module(module):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-mcmodel=kernel","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-mcmodel=kernel","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+shared_include_list+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -575,8 +575,15 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _patch_kernel("build/kernel.bin",kernel_symbols)
 #####################################################################################################################################
+shared_include_list=[]
+with open("src/shared_modules.txt","r") as rf:
+	for line in rf.read().split("\n"):
+		line=line.strip()
+		if (not line):
+			continue
+		shared_include_list.append(f"-I{MODULE_FILE_DIRECTORY}/{line}/include")
 for module in os.listdir(MODULE_FILE_DIRECTORY):
-	_compile_module(module)
+	_compile_module(module,shared_include_list)
 #####################################################################################################################################
 runtime_object_files=_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
