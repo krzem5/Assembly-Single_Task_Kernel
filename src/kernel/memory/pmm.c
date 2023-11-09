@@ -29,6 +29,8 @@ static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
 
+pmm_load_balancer_stats_t* pmm_load_balancer_stats;
+
 
 
 static KERNEL_INLINE u64 _get_bitmap_size(u64 max_address){
@@ -129,6 +131,7 @@ void pmm_init(void){
 	_pmm_load_balancer.stats.hit_count=0;
 	_pmm_load_balancer.stats.miss_count=0;
 	_pmm_load_balancer.stats.miss_locked_count=0;
+	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
 	LOG("Registering counters...");
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
 	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
@@ -294,10 +297,4 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	allocator->block_group_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
-}
-
-
-
-void pmm_load_balancer_get_stats(pmm_load_balancer_stats_t* out){
-	*out=_pmm_load_balancer.stats;
 }

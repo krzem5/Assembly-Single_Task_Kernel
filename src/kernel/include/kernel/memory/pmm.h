@@ -21,7 +21,7 @@
 
 #define PMM_MEMORY_HINT_LOW_MEMORY 1
 
-#define PMM_COUNTER_INIT_STRUCT(name) {(name),NULL,0,HANDLE_INIT_STRUCT}
+#define PMM_COUNTER_INIT_STRUCT(name) {(name),0,HANDLE_INIT_STRUCT}
 
 
 
@@ -67,7 +67,6 @@ typedef struct _PMM_LOAD_BALANCER{
 
 typedef struct _PMM_COUNTER_DESCRIPTOR{
 	const char* name;
-	handle_id_t* var;
 	KERNEL_ATOMIC u64 count;
 	handle_t handle;
 } pmm_counter_descriptor_t;
@@ -75,6 +74,7 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 extern handle_type_t HANDLE_TYPE_PMM_COUNTER;
+extern pmm_load_balancer_stats_t* pmm_load_balancer_stats;
 
 
 
@@ -127,10 +127,6 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 
 void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter);
-
-
-
-void pmm_load_balancer_get_stats(pmm_load_balancer_stats_t* out);
 
 
 

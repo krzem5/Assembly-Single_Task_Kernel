@@ -35,6 +35,9 @@ static vfs_node_t* _dynamicfs_create(void){
 
 
 static s64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
+	if (!size){
+		return 0;
+	}
 	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
 	if (dynamicfs_node->read_callback){
 		return dynamicfs_node->read_callback(dynamicfs_node->read_callback_ctx,offset,buffer,size);
@@ -130,6 +133,9 @@ vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const
 u64 dynamicfs_integer_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char tmp[21];
 	u64 length=format_string(tmp,21,"%lu",*((u64*)ctx));
+	if (!buffer){
+		return length;
+	}
 	if (offset>=length){
 		return 0;
 	}
