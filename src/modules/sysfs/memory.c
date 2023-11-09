@@ -75,7 +75,7 @@ void sysfs_memory_init(void){
 	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"memory",VFS_NODE_TYPE_DIRECTORY,NULL);
 	_init_memory_load_balancer_data();
 	_sysfs_memory_pmm_counter_root=dynamicfs_create_node(_sysfs_memory_root,"counters",VFS_NODE_TYPE_DIRECTORY,NULL);
-	_sysfs_memory_object_counter_root=dynamicfs_create_node(_sysfs_memory_root,"object_counters",VFS_NODE_TYPE_DIRECTORY,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_PMM_COUNTER,&_sysfs_memory_pmm_counter_notification_listener);
+	_sysfs_memory_object_counter_root=dynamicfs_create_node(_sysfs_memory_root,"object_counters",VFS_NODE_TYPE_DIRECTORY,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_OMM_ALLOCATOR,&_sysfs_memory_omm_allocator_notification_listener);
 }
