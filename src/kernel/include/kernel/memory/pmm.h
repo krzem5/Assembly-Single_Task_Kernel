@@ -42,21 +42,10 @@ typedef struct _PMM_ALLOCATOR_BLOCK_GROUP{
 
 
 typedef struct _PMM_ALLOCATOR{
-	u64 first_address;
-	u64 last_address;
-	u64* bitmap;
 	pmm_allocator_block_group_t block_groups[PMM_ALLOCATOR_BLOCK_GROUP_COUNT];
 	u16 block_group_bitmap;
 	spinlock_t lock;
 } pmm_allocator_t;
-
-
-
-typedef struct _PMM_ALLOCATOR2{
-	pmm_allocator_block_group_t block_groups[PMM_ALLOCATOR_BLOCK_GROUP_COUNT];
-	u16 block_group_bitmap;
-	spinlock_t lock;
-} pmm_allocator2_t;
 
 
 

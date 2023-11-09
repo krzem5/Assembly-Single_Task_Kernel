@@ -24,37 +24,29 @@ HANDLE_DECLARE_TYPE(PMM_COUNTER,{});
 
 
 
-static pmm_allocator2_t* KERNEL_INIT_WRITE _pmm_allocators;
+static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
-static pmm_allocator_t _pmm_low_allocator;
-static pmm_allocator_t _pmm_high_allocator;
 
 
 
-static KERNEL_INLINE u64 _get_bitmap_size_NEW(u64 max_address){
+static KERNEL_INLINE u64 _get_bitmap_size(u64 max_address){
 	return pmm_align_up_address((((max_address>>PAGE_SIZE_SHIFT)+64)>>6)*sizeof(u64));
 	 // 64 instead of 63 to add one more bit for the end of the last memory address
 }
 
 
 
-static KERNEL_INLINE u64 _get_bitmap_size(const pmm_allocator_t* allocator){
-	return _get_bitmap_size_NEW(allocator->last_address-allocator->first_address);
-}
-
-
-
 static KERNEL_INLINE _Bool _get_address_bit(const pmm_allocator_t* allocator,u64 address){
-	address=(address-allocator->first_address)>>PAGE_SIZE_SHIFT;
-	return !!(allocator->bitmap[address>>6]&(1ull<<(address&63)));
+	address>>=PAGE_SIZE_SHIFT;
+	return !!(_pmm_bitmap[address>>6]&(1ull<<(address&63)));
 }
 
 
 
 static KERNEL_INLINE void _toggle_address_bit(const pmm_allocator_t* allocator,u64 address){
-	address=(address-allocator->first_address)>>PAGE_SIZE_SHIFT;
-	allocator->bitmap[address>>6]^=1ull<<(address&63);
+	address>>=PAGE_SIZE_SHIFT;
+	_pmm_bitmap[address>>6]^=1ull<<(address&63);
 }
 
 
@@ -65,57 +57,19 @@ static KERNEL_INLINE u64 _get_block_size(u8 index){
 
 
 
-static KERNEL_INLINE pmm_allocator2_t* _get_allocator_from_address(u64 address){
+static KERNEL_INLINE pmm_allocator_t* _get_allocator_from_address(u64 address){
 	return _pmm_allocators+(address>>PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT);
 }
 
 
 
-static void _add_memory_range(pmm_allocator_t* allocator,u64 address,u64 end){
+static void _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
 	do{
-		u8 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
-		if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
-			idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
-		}
-		u64 size=_get_block_size(idx);
-		u64 length=end-address;
-		if (size>length){
-			idx=63-__builtin_clzll(address)-PAGE_SIZE_SHIFT;
-			if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
-				idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
-			}
-			size=_get_block_size(idx);
-		}
-		_pmm_total_pmm_counter.count+=size>>PAGE_SIZE_SHIFT;
-		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		header->prev=(allocator->block_groups+idx)->tail;
-		header->next=NULL;
-		header->idx=idx;
-		if (header->prev){
-			header->prev->next=header;
-		}
-		else{
-			(allocator->block_groups+idx)->head=header;
-		}
-		(allocator->block_groups+idx)->tail=header;
-		allocator->block_group_bitmap|=1<<idx;
-		address+=size;
-	} while (address<end);
-}
-
-
-
-static void _add_memory_range_NEW(u64 address,u64 end){
-	if (address>=end){
-		return;
-	}
-	INFO("Registering memory range %p - %p",address,end);
-	do{
-		pmm_allocator2_t* allocator=_get_allocator_from_address(address);
+		pmm_allocator_t* allocator=_get_allocator_from_address(address);
 		u8 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
 		if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 			idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
@@ -151,7 +105,6 @@ static void _add_memory_range_NEW(u64 address,u64 end){
 void pmm_init(void){
 	LOG("Initializing physical memory manager...");
 	LOG("Scanning memory...");
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	u64 max_address=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
@@ -161,43 +114,15 @@ void pmm_init(void){
 	}
 	LOG("Allocating memory...");
 	_pmm_allocator_count=(max_address+PMM_ALLOCATOR_MAX_REGION_SIZE-1)>>PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT;
-	INFO("Allocator count: %u (%v)",_pmm_allocator_count,pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator2_t)));
+	INFO("Allocator count: %u (%v)",_pmm_allocator_count,pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)));
 	_pmm_allocators=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	kernel_data.first_free_address+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator2_t));
-	memset(_pmm_allocators,0,_pmm_allocator_count*sizeof(pmm_allocator2_t));
-	u64 bitmap_size=_get_bitmap_size_NEW(max_address);
+	kernel_data.first_free_address+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t));
+	memset(_pmm_allocators,0,_pmm_allocator_count*sizeof(pmm_allocator_t));
+	u64 bitmap_size=_get_bitmap_size(max_address);
 	INFO("Bitmap size: %v",bitmap_size);
 	_pmm_bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=bitmap_size;
 	memset(_pmm_bitmap,0,bitmap_size);
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	memset(&_pmm_low_allocator,0,sizeof(pmm_allocator_t));
-	_pmm_low_allocator.first_address=0;
-	_pmm_low_allocator.last_address=0;
-	spinlock_init(&(_pmm_low_allocator.lock));
-	memset(&_pmm_high_allocator,0,sizeof(pmm_allocator_t));
-	_pmm_high_allocator.first_address=PMM_LOW_ALLOCATOR_LIMIT;
-	_pmm_high_allocator.last_address=PMM_LOW_ALLOCATOR_LIMIT;
-	spinlock_init(&(_pmm_high_allocator.lock));
-	for (u16 i=0;i<kernel_data.mmap_size;i++){
-		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
-		if (end>_pmm_low_allocator.last_address){
-			_pmm_low_allocator.last_address=(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end);
-		}
-		if (end>_pmm_high_allocator.last_address){
-			_pmm_high_allocator.last_address=end;
-		}
-	}
-	u64 low_bitmap_size=_get_bitmap_size(&_pmm_low_allocator);
-	INFO("Low bitmap size: %v",low_bitmap_size);
-	_pmm_low_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	memset(_pmm_low_allocator.bitmap,0,low_bitmap_size);
-	u64 high_bitmap_size=_get_bitmap_size(&_pmm_high_allocator);
-	INFO("High bitmap size: %v",high_bitmap_size);
-	_pmm_high_allocator.bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+low_bitmap_size+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	memset(_pmm_high_allocator.bitmap,0,high_bitmap_size);
-	kernel_data.first_free_address+=low_bitmap_size+high_bitmap_size;
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	LOG("Registering counters...");
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
 	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
@@ -205,8 +130,7 @@ void pmm_init(void){
 	handle_finish_setup(&(_pmm_pmm_counter.handle));
 	handle_finish_setup(&(_pmm_kernel_image_pmm_counter.handle));
 	handle_finish_setup(&(_pmm_total_pmm_counter.handle));
-	_pmm_pmm_counter.count+=pmm_align_up_address(low_bitmap_size+high_bitmap_size)>>PAGE_SIZE_SHIFT;
-	_pmm_pmm_counter.count+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator2_t)+bitmap_size)>>PAGE_SIZE_SHIFT;
+	_pmm_pmm_counter.count+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)+bitmap_size)>>PAGE_SIZE_SHIFT;
 	_pmm_kernel_image_pmm_counter.count+=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -215,8 +139,7 @@ void pmm_init(void){
 			address=kernel_data.first_free_address;
 		}
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
-		_add_memory_range(&_pmm_low_allocator,address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
-		_add_memory_range_NEW(address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
+		_add_memory_range(address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
 	}
 }
 
@@ -227,8 +150,7 @@ void pmm_init_high_mem(void){
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
-		_add_memory_range(&_pmm_high_allocator,(address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
-		_add_memory_range_NEW((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
+		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
 }
 
@@ -243,7 +165,9 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	scheduler_pause();
-	pmm_allocator_t* allocator=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY||!_pmm_high_allocator.block_group_bitmap||__builtin_ffs(_pmm_high_allocator.block_group_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_group_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
+	// pmm_allocator_t* allocator=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY||!_pmm_high_allocator.block_group_bitmap||__builtin_ffs(_pmm_high_allocator.block_group_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_group_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
+	// WARN("Low memory: %u",PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1);
+	pmm_allocator_t* allocator=_pmm_allocators; // add PMM_MEMORY_HINT_LOW_MEMORY + load balancer/scheduler
 	spinlock_acquire_exclusive(&(allocator->lock));
 	if (!(allocator->block_group_bitmap>>i)){
 		spinlock_release_exclusive(&(allocator->lock));
@@ -297,13 +221,15 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
-	pmm_allocator_t* allocator=(address<PMM_LOW_ALLOCATOR_LIMIT?&_pmm_low_allocator:&_pmm_high_allocator);
+	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));
 	_toggle_address_bit(allocator,address);
 	_toggle_address_bit(allocator,address+_get_block_size(i));
+	u64 first_address=address&(-PMM_ALLOCATOR_MAX_REGION_SIZE);
+	u64 last_address=address+PMM_ALLOCATOR_MAX_REGION_SIZE;
 	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 		pmm_allocator_page_header_t* buddy=(void*)((address^_get_block_size(i))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		if (((u64)buddy)<allocator->first_address||((u64)buddy)>=allocator->last_address||_get_address_bit(allocator,address|_get_block_size(i))||buddy->idx!=i){
+		if (((u64)buddy)<first_address||((u64)buddy)>=last_address||_get_address_bit(allocator,address|_get_block_size(i))||buddy->idx!=i){
 			break;
 		}
 		address&=~_get_block_size(i);
