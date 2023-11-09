@@ -11,13 +11,13 @@
 
 void devfs_pci_init(void){
 	LOG("Creating pci subsystem...");
-	vfs_node_t* root=dynamicfs_create_node(devfs->root,"pci",VFS_NODE_TYPE_DIRECTORY,NULL);
+	vfs_node_t* root=dynamicfs_create_node(devfs->root,"pci",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		handle_acquire(handle);
-		pci_device_t* device=handle->object;
+		const pci_device_t* device=handle->object;
 		char buffer[32];
 		format_string(buffer,32,"b%us%uf%u",device->address.bus,device->address.slot,device->address.func);
-		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL);
+		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"device_id","%X%X",device->device_id>>8,device->device_id);
 		dynamicfs_create_data_node(node,"vendor_id","%X%X",device->vendor_id>>8,device->vendor_id);
 		dynamicfs_create_data_node(node,"class","%X",device->class);

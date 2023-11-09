@@ -61,13 +61,13 @@ void KERNEL_NOCOVERAGE strcpy_lowercase(char* dst,const char* src,u64 max_length
 	if (!max_length){
 		return;
 	}
-	for (u64 i=0;i<max_length;i++){
+	for (u64 i=0;i<max_length-1;i++){
 		dst[i]=convert_lowercase(src[i]);
 		if (!src[i]){
 			break;
 		}
 	}
-	dst[max_length]=0;
+	dst[max_length-1]=0;
 }
 
 
