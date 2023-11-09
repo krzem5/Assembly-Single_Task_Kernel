@@ -49,6 +49,16 @@ typedef struct _PMM_ALLOCATOR{
 
 
 
+typedef struct _PMM_LOAD_BALANCER{
+	spinlock_t lock;
+	u32 index;
+	KERNEL_ATOMIC u64 hit_count;
+	KERNEL_ATOMIC u64 miss_count;
+	KERNEL_ATOMIC u64 miss_locked_count;
+} pmm_load_balancer_t;
+
+
+
 typedef struct _PMM_COUNTER_DESCRIPTOR{
 	const char* name;
 	handle_id_t* var;

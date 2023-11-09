@@ -22,7 +22,7 @@ static pmm_counter_descriptor_t _cpu_pmm_counter=PMM_COUNTER_INIT_STRUCT("cpu");
 
 
 
-static _Atomic u16 KERNEL_INIT_WRITE _cpu_online_count;
+static KERNEL_ATOMIC u16 KERNEL_INIT_WRITE _cpu_online_count;
 static u16 KERNEL_INIT_WRITE _cpu_bootstra_core_apic_id;
 
 u16 KERNEL_INIT_WRITE cpu_count;

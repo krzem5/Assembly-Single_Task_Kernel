@@ -5,7 +5,7 @@
 
 
 typedef struct _CPU_MASK{
-	_Atomic u64 bitmap[0];
+	KERNEL_ATOMIC u64 bitmap[0];
 } cpu_mask_t;
 
 

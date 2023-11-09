@@ -27,6 +27,7 @@ HANDLE_DECLARE_TYPE(PMM_COUNTER,{});
 static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
+static pmm_load_balancer_t _pmm_load_balancer;
 
 
 
@@ -123,6 +124,11 @@ void pmm_init(void){
 	_pmm_bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=bitmap_size;
 	memset(_pmm_bitmap,0,bitmap_size);
+	spinlock_init(&(_pmm_load_balancer.lock));
+	_pmm_load_balancer.index=0;
+	_pmm_load_balancer.hit_count=0;
+	_pmm_load_balancer.miss_count=0;
+	_pmm_load_balancer.miss_locked_count=0;
 	LOG("Registering counters...");
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
 	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
@@ -165,14 +171,38 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	scheduler_pause();
-	// pmm_allocator_t* allocator=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY||!_pmm_high_allocator.block_group_bitmap||__builtin_ffs(_pmm_high_allocator.block_group_bitmap>>i)>__builtin_ffs(_pmm_low_allocator.block_group_bitmap>>i)?&_pmm_low_allocator:&_pmm_high_allocator);
-	// WARN("Low memory: %u",PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1);
-	pmm_allocator_t* allocator=_pmm_allocators; // add PMM_MEMORY_HINT_LOW_MEMORY + load balancer/scheduler
+	spinlock_acquire_exclusive(&_pmm_load_balancer.lock);
+	u32 index;
+	_pmm_load_balancer.miss_count--;
+	do{
+		_pmm_load_balancer.miss_count++;
+		index=_pmm_load_balancer.index;
+		_pmm_load_balancer.index++;
+		if (_pmm_load_balancer.index>=_pmm_allocator_count){
+			_pmm_load_balancer.index-=_pmm_allocator_count;
+		}
+	} while (!((_pmm_allocators+index)->block_group_bitmap>>i));
+	spinlock_release_exclusive(&_pmm_load_balancer.lock);
+	if (memory_hint==PMM_MEMORY_HINT_LOW_MEMORY){
+		index&=PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1;
+	}
+	u32 base_index=index;
+_retry_allocator:
+	pmm_allocator_t* allocator=_pmm_allocators+index;
 	spinlock_acquire_exclusive(&(allocator->lock));
 	if (!(allocator->block_group_bitmap>>i)){
 		spinlock_release_exclusive(&(allocator->lock));
+		index++;
+		_pmm_load_balancer.miss_locked_count++;
+		if (index==_pmm_allocator_count){
+			index=0;
+		}
+		if (index!=base_index){
+			goto _retry_allocator;
+		}
 		panic("pmm_alloc: out of memory");
 	}
+	_pmm_load_balancer.hit_count++;
 	u8 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	pmm_allocator_page_header_t* header=(allocator->block_groups+j)->head;
 	(allocator->block_groups+j)->head=header->next;

@@ -78,7 +78,7 @@ typedef struct _THREAD{
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
 	cpu_mask_t* cpu_mask;
-	_Atomic scheduler_priority_t priority;
+	KERNEL_ATOMIC scheduler_priority_t priority;
 	_Bool state_not_present;
 	thread_state_t state;
 	signal_state_t* signal_state;
