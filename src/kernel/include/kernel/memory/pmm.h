@@ -49,12 +49,18 @@ typedef struct _PMM_ALLOCATOR{
 
 
 
-typedef struct _PMM_LOAD_BALANCER{
-	spinlock_t lock;
-	u32 index;
+typedef struct _PMM_LOAD_BALANCER_STATS{
 	KERNEL_ATOMIC u64 hit_count;
 	KERNEL_ATOMIC u64 miss_count;
 	KERNEL_ATOMIC u64 miss_locked_count;
+} pmm_load_balancer_stats_t;
+
+
+
+typedef struct _PMM_LOAD_BALANCER{
+	spinlock_t lock;
+	u32 index;
+	pmm_load_balancer_stats_t stats;
 } pmm_load_balancer_t;
 
 
@@ -121,6 +127,10 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 
 void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter);
+
+
+
+void pmm_load_balancer_get_stats(pmm_load_balancer_stats_t* out);
 
 
 

@@ -126,9 +126,9 @@ void pmm_init(void){
 	memset(_pmm_bitmap,0,bitmap_size);
 	spinlock_init(&(_pmm_load_balancer.lock));
 	_pmm_load_balancer.index=0;
-	_pmm_load_balancer.hit_count=0;
-	_pmm_load_balancer.miss_count=0;
-	_pmm_load_balancer.miss_locked_count=0;
+	_pmm_load_balancer.stats.hit_count=0;
+	_pmm_load_balancer.stats.miss_count=0;
+	_pmm_load_balancer.stats.miss_locked_count=0;
 	LOG("Registering counters...");
 	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
 	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
@@ -173,9 +173,9 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&_pmm_load_balancer.lock);
 	u32 index;
-	_pmm_load_balancer.miss_count--;
+	_pmm_load_balancer.stats.miss_count--;
 	do{
-		_pmm_load_balancer.miss_count++;
+		_pmm_load_balancer.stats.miss_count++;
 		index=_pmm_load_balancer.index;
 		_pmm_load_balancer.index++;
 		if (_pmm_load_balancer.index>=_pmm_allocator_count){
@@ -193,7 +193,7 @@ _retry_allocator:
 	if (!(allocator->block_group_bitmap>>i)){
 		spinlock_release_exclusive(&(allocator->lock));
 		index++;
-		_pmm_load_balancer.miss_locked_count++;
+		_pmm_load_balancer.stats.miss_locked_count++;
 		if (index==_pmm_allocator_count){
 			index=0;
 		}
@@ -202,7 +202,7 @@ _retry_allocator:
 		}
 		panic("pmm_alloc: out of memory");
 	}
-	_pmm_load_balancer.hit_count++;
+	_pmm_load_balancer.stats.hit_count++;
 	u8 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	pmm_allocator_page_header_t* header=(allocator->block_groups+j)->head;
 	(allocator->block_groups+j)->head=header->next;
@@ -294,4 +294,10 @@ void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	allocator->block_group_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
+}
+
+
+
+void pmm_load_balancer_get_stats(pmm_load_balancer_stats_t* out){
+	*out=_pmm_load_balancer.stats;
 }
