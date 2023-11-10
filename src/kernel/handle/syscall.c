@@ -8,17 +8,6 @@
 
 #define HANDLE_INVALID 0xffffffffffffffffull
 
-#define HANDLE_DATA_NAME_LENGTH 64
-
-
-
-typedef struct _USER_HANDLE_DATA{
-	char name[HANDLE_DATA_NAME_LENGTH];
-	u64 count;
-	u64 active_count;
-	u16 type;
-} user_handle_data_t;
-
 
 
 void syscall_handle_get_type(isr_state_t* regs){
@@ -52,24 +41,4 @@ void syscall_handle_get_handle(isr_state_t* regs){
 	}
 	rb_tree_node_t* node=rb_tree_lookup_increasing_node(&(handle_descriptor->tree),regs->rsi);
 	regs->rax=(node?node->key:HANDLE_INVALID);
-}
-
-
-
-void syscall_handle_get_data(isr_state_t* regs){
-	if (regs->rdx!=sizeof(user_handle_data_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
-		return;
-	}
-	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_HANDLE);
-	if (!handle){
-		regs->rax=0;
-		return;
-	}
-	user_handle_data_t* out=(void*)(regs->rsi);
-	handle_descriptor_t* handle_descriptor=handle->object;
-	strcpy_lowercase(out->name,handle_descriptor->name,HANDLE_DATA_NAME_LENGTH);
-	out->count=handle_descriptor->count;
-	out->active_count=handle_descriptor->active_count;
-	out->type=handle_descriptor->rb_node.key;
-	regs->rax=1;
 }
