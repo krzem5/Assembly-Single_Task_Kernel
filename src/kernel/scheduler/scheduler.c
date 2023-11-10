@@ -159,12 +159,11 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 
 
-_Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out){
+const scheduler_timers_t* scheduler_get_timers(u16 cpu_index){
 	if (cpu_index>=cpu_count){
-		return 0;
+		return NULL;
 	}
-	*out=(_scheduler_data+cpu_index)->timers;
-	return 1;
+	return &((_scheduler_data+cpu_index)->timers);
 }
 
 

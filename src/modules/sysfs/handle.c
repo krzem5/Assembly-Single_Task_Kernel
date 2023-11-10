@@ -6,13 +6,11 @@
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
-#define KERNEL_LOG_NAME "sysfs_memory"
+#define KERNEL_LOG_NAME "sysfs_handle"
 
 
 
 static vfs_node_t* _sysfs_handle_type_root;
-
-vfs_node_t* sysfs_handle_root;
 
 
 
@@ -23,7 +21,6 @@ static void _listener(void* object,u32 type){
 		char buffer[64];
 		strcpy_lowercase(buffer,descriptor->name,64);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_handle_type_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		dynamicfs_create_data_node(node,"type","%u",HANDLE_ID_GET_INDEX(handle->rb_node.key));
 		dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->active_count)));
 		dynamicfs_create_node(node,"lifetime_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count)));
 		return;
@@ -43,7 +40,6 @@ static notification_listener_t _sysfs_handle_notification_listener={
 
 void sysfs_handle_init(void){
 	LOG("Creating handle subsystem...");
-	_sysfs_handle_type_root=dynamicfs_create_node(sysfs->root,"handle_type",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	_sysfs_handle_type_root=dynamicfs_create_node(sysfs->root,"handle",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_HANDLE,&_sysfs_handle_notification_listener);
-	sysfs_handle_root=dynamicfs_create_node(sysfs->root,"handle",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 }

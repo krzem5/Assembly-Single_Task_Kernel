@@ -56,7 +56,7 @@ void scheduler_enqueue_thread(thread_t* thread);
 
 
 
-_Bool scheduler_get_timers(u16 cpu_index,scheduler_timers_t* out);
+const scheduler_timers_t* scheduler_get_timers(u16 cpu_index);
 
 
 
