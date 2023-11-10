@@ -64,14 +64,16 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		if (stat.type==FD_STAT_TYPE_LINK){
 			printf(" -> ");
 			char link_buffer[4096];
-			if (fd_read(child,link_buffer,4096)<=0){
+			s64 size=fd_read(child,link_buffer,4095);
+			if (size<=0){
 				printf("???");
 			}
 			else{
+				link_buffer[size]=0;
 				int link_fd=fd_open(fd,link_buffer,0);
 				fd_stat_t link_stat;
 				if (link_fd<0||fd_stat(link_fd,&link_stat)<0){
-					printf("???");
+					printf("\x1b[1;31;40m%s\x1b[0m",link_buffer);
 				}
 				else{
 					_print_file_name(&link_stat,link_buffer);
