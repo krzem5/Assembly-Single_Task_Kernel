@@ -40,11 +40,11 @@ void memory_main(int argc,const char*const* argv){
 	if (command_type==MEMORY_SHOW_RANGES){
 		printf("Memory layout:\n");
 		u64 total_size=0;
-		memory_range_t range;
-		for (u32 i=0;memory_get_range(i,&range);i++){
-			printf("  %p - %p (\x1b[1m%v\x1b[0m)\n",range.base_address,range.base_address+range.length,range.length);
-			total_size+=range.length;
-		}
+		// memory_range_t range;
+		// for (u32 i=0;memory_get_range(i,&range);i++){
+		// 	printf("  %p - %p (\x1b[1m%v\x1b[0m)\n",range.base_address,range.base_address+range.length,range.length);
+		// 	total_size+=range.length;
+		// }
 		printf("Total: \x1b[1m%v\x1b[0m (\x1b[1m%lu\x1b[0m B)\n",total_size,total_size);
 		return;
 	}

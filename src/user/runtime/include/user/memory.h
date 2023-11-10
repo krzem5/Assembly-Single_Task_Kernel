@@ -9,17 +9,6 @@
 
 
 
-typedef struct _MEMORY_RANGE{
-	u64 base_address;
-	u64 length;
-} memory_range_t;
-
-
-
-_Bool memory_get_range(u32 index,memory_range_t* out);
-
-
-
 void* memory_map(u64 length,u8 flags);
 
 
