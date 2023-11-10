@@ -7,7 +7,7 @@
 
 
 
-#define PIPE_BUFFER_PAGE_COUNT 16
+#define PIPE_BUFFER_SIZE 0x10000
 
 
 

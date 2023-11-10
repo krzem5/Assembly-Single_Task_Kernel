@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <user/fd.h>
 #include <user/syscall.h>
 #include <user/types.h>
 
@@ -19,6 +20,29 @@ typedef struct _BUFFER_STATE{
 	char buffer[BUFFER_SIZE];
 	u32 offset;
 } buffer_state_t;
+
+
+
+static s64 _stdin_fd=-1;
+static s64 _stdout_fd=-1;
+
+
+
+static u32 _read_data_from_stdin(void* buffer,u32 size){
+	if (_stdin_fd==-1){
+		_stdin_fd=fd_open(0,"/dev/stdin",FD_FLAG_READ);
+	}
+	return fd_read(_stdin_fd,buffer,size);
+}
+
+
+
+static void _write_data_to_stdout(const void* buffer,u32 size){
+	if (_stdout_fd==-1){
+		_stdout_fd=fd_open(0,"/dev/stdout",FD_FLAG_WRITE);
+	}
+	fd_write(_stdout_fd,buffer,size);
+}
 
 
 
@@ -213,19 +237,19 @@ void printf(const char* template,...){
 		template++;
 	}
 	va_end(va);
-	_syscall_serial_send(out.buffer,out.offset);
+	_write_data_to_stdout(out.buffer,out.offset);
 }
 
 
 
 void print_buffer(const void* buffer,u32 length){
-	_syscall_serial_send(buffer,length);
+	_write_data_to_stdout(buffer,length);
 }
 
 
 
 void putchar(char c){
-	_syscall_serial_send(&c,1);
+	_write_data_to_stdout(&c,1);
 }
 
 
@@ -233,6 +257,7 @@ void putchar(char c){
 char getchar(void){
 	char out;
 	_syscall_serial_recv(&out,1,0);
+	(void)_read_data_from_stdin;
 	return out;
 }
 

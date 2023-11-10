@@ -156,7 +156,7 @@ _Bool vfs_node_unlink(vfs_node_t* node){
 
 
 s64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
-	if (!node->functions->read){
+	if (!size||!node->functions->read){
 		return 0;
 	}
 	return node->functions->read(node,offset,buffer,size);
@@ -165,7 +165,7 @@ s64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 s64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
-	if (!node->functions->write){
+	if (!size||!node->functions->write){
 		return 0;
 	}
 	return node->functions->write(node,offset,buffer,size);

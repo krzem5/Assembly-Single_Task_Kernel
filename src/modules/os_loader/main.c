@@ -5,6 +5,7 @@
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
+#include <kernel/pipe/pipe.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>

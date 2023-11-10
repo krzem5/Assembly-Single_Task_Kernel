@@ -181,7 +181,7 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	spinlock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->name_length=data->node->name->length;
-	out->fs_handle=data->node->fs->handle.rb_node.key;
+	out->fs_handle=(data->node->fs?data->node->fs->handle.rb_node.key:0);
 	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
 	memcpy(out->name,data->node->name->data,data->node->name->length+1);
 	spinlock_release_exclusive(&(data->lock));
