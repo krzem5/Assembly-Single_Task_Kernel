@@ -19,15 +19,3 @@ void* memory_map(u64 length,u8 flags){
 _Bool memory_unmap(void* address,u64 length){
 	return _syscall_memory_unmap(address,length);
 }
-
-
-
-_Bool memory_counter_get_data(u64 handle,memory_counter_data_t* out){
-	return _syscall_memory_counter_get_data(handle,out,sizeof(memory_counter_data_t));
-}
-
-
-
-_Bool memory_object_allocator_get_data(u64 handle,memory_object_allocator_data_t* out){
-	return _syscall_memory_object_allocator_get_data(handle,out,sizeof(memory_object_allocator_data_t));
-}

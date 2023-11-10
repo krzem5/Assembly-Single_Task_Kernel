@@ -29,11 +29,11 @@ void memory_main(int argc,const char*const* argv){
 	if (command_type==MEMORY_SHOW_OBJECT_COUNTERS){
 		handle_iterator_t iterator;
 		HANDLE_FOREACH(&iterator,"omm_allocator"){
-			memory_object_allocator_data_t data;
-			if (!memory_object_allocator_get_data(iterator.handle,&data)){
-				continue;
-			}
-			printf("%s:\t\x1b[1m%lu\x1b[0m\n",data.name,data.allocation_count-data.deallocation_count);
+			// memory_object_allocator_data_t data;
+			// if (!memory_object_allocator_get_data(iterator.handle,&data)){
+			// 	continue;
+			// }
+			// printf("%s:\t\x1b[1m%lu\x1b[0m\n",data.name,data.allocation_count-data.deallocation_count);
 		}
 		return;
 	}
@@ -50,11 +50,11 @@ void memory_main(int argc,const char*const* argv){
 	}
 	handle_iterator_t iterator;
 	HANDLE_FOREACH(&iterator,"pmm_counter"){
-		memory_counter_data_t data;
-		if (!memory_counter_get_data(iterator.handle,&data)){
-			continue;
-		}
-		printf("%s:\t\x1b[1m%v\x1b[0m\n",data.name,data.count<<12);
+		// memory_counter_data_t data;
+		// if (!memory_counter_get_data(iterator.handle,&data)){
+		// 	continue;
+		// }
+		// printf("%s:\t\x1b[1m%v\x1b[0m\n",data.name,data.count<<12);
 	}
 }
 
