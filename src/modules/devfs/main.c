@@ -1,3 +1,4 @@
+#include <devfs/bios.h>
 #include <devfs/drive.h>
 #include <devfs/fs.h>
 #include <devfs/partition.h>
@@ -8,6 +9,7 @@
 
 static _Bool _init(module_t* module){
 	devfs_create_fs();
+	devfs_bios_init();
 	devfs_drive_init();
 	devfs_partition_init();
 	devfs_pci_init();

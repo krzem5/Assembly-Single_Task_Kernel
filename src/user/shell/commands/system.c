@@ -9,9 +9,9 @@
 
 
 static void _get_string(u32 index,char* buffer){
-	if (system_get_string(index,buffer,BUFFER_SIZE)){
-		return;
-	}
+	// if (system_get_string(index,buffer,BUFFER_SIZE)){
+	// 	return;
+	// }
 	buffer[0]='<';
 	buffer[1]='U';
 	buffer[2]='n';
@@ -32,21 +32,21 @@ void system_main(int argc,const char*const* argv){
 		return;
 	}
 	char buffer[BUFFER_SIZE];
-	_get_string(SYSTEM_STRING_BIOS_VENDOR,buffer);
+	_get_string(0,buffer);
 	printf("BIOS vendor: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_BIOS_VERSION,buffer);
+	_get_string(0,buffer);
 	printf("BIOS version: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_MANUFACTURER,buffer);
+	_get_string(0,buffer);
 	printf("Manufacturer: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_PRODUCT,buffer);
+	_get_string(0,buffer);
 	printf("Product: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_VERSION,buffer);
+	_get_string(0,buffer);
 	printf("Version: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_SERIAL_NUMBER,buffer);
+	_get_string(0,buffer);
 	printf("Serial number: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_UUID,buffer);
+	_get_string(0,buffer);
 	printf("UUID: \x1b[1m%s\x1b[0m\n",buffer);
-	_get_string(SYSTEM_STRING_LAST_WAKEUP,buffer);
+	_get_string(0,buffer);
 	printf("Last wakeup: \x1b[1m%s\x1b[0m\n",buffer);
 }
 
