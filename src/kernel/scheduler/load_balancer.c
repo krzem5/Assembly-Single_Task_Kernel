@@ -173,10 +173,9 @@ void scheduler_load_balancer_add(thread_t* thread){
 
 
 
-_Bool scheduler_load_balancer_get_stats(u16 cpu_index,scheduler_load_balancer_stats_t* out){
+const scheduler_load_balancer_stats_t* scheduler_load_balancer_get_stats(u16 cpu_index){
 	if (cpu_index>=cpu_count){
-		return 0;
+		return NULL;
 	}
-	*out=(_scheduler_load_balancer_data+cpu_index)->stats;
-	return 1;
+	return &((_scheduler_load_balancer_data+cpu_index)->stats);
 }

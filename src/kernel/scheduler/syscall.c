@@ -8,10 +8,11 @@
 
 
 void syscall_scheduler_get_stats(isr_state_t* regs){
-	if (regs->rdx!=sizeof(scheduler_load_balancer_stats_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)||!scheduler_load_balancer_get_stats(regs->rdi,(void*)(regs->rsi))){
+	if (regs->rdx!=sizeof(scheduler_load_balancer_stats_t)||!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
 		regs->rax=0;
 		return;
 	}
+	*((scheduler_load_balancer_stats_t*)(regs->rsi))=*scheduler_load_balancer_get_stats(regs->rdi);
 	regs->rax=1;
 }
 

@@ -83,7 +83,7 @@ void scheduler_load_balancer_add(thread_t* thread);
 
 
 
-_Bool scheduler_load_balancer_get_stats(u16 cpu_index,scheduler_load_balancer_stats_t* out);
+const scheduler_load_balancer_stats_t* scheduler_load_balancer_get_stats(u16 cpu_index);
 
 
 
