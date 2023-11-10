@@ -8,11 +8,11 @@
 
 
 
-vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
-	if (!fs->functions->create){
+static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,const string_t* name){
+	if (!functions->create){
 		return NULL;
 	}
-	vfs_node_t* out=fs->functions->create();
+	vfs_node_t* out=functions->create();
 	if (!out){
 		return NULL;
 	}
@@ -27,7 +27,25 @@ vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
 	out->relatives.external_next_sibling=NULL;
 	out->relatives.external_child=NULL;
 	out->fs=fs;
-	out->functions=fs->functions;
+	out->functions=functions;
+	return out;
+}
+
+
+
+vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
+	return _init_node(fs,fs->functions,name);
+}
+
+
+
+vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name){
+	vfs_node_t* out=_init_node(NULL,functions,name);
+	if (!out){
+		return NULL;
+	}
+	out->flags|=VFS_NODE_FLAG_VIRTUAL;
+	vfs_node_attach_external_child(parent,out);
 	return out;
 }
 

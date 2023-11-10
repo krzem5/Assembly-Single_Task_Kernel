@@ -11,6 +11,7 @@
 #define VFS_NODE_TYPE_FILE 1
 #define VFS_NODE_TYPE_DIRECTORY 2
 #define VFS_NODE_TYPE_LINK 3
+#define VFS_NODE_TYPE_PIPE 4
 
 #define VFS_NODE_FLAG_DIRTY 16
 #define VFS_NODE_FLAG_VIRTUAL 32
@@ -58,6 +59,10 @@ typedef struct _VFS_NODE{
 
 
 vfs_node_t* vfs_node_create(struct _FILESYSTEM* fs,const string_t* name);
+
+
+
+vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name);
 
 
 

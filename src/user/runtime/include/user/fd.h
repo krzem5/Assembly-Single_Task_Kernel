@@ -30,6 +30,7 @@
 #define FD_STAT_TYPE_FILE 1
 #define FD_STAT_TYPE_DIRECTORY 2
 #define FD_STAT_TYPE_LINK 3
+#define FD_STAT_TYPE_PIPE 4
 
 
 

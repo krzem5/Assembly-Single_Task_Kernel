@@ -28,6 +28,9 @@ static void _print_file_name(const fd_stat_t* stat,const char* name){
 	else if (stat->type==FD_STAT_TYPE_LINK){
 		prefix="\x1b[1;36m";
 	}
+	else if (stat->type==FD_STAT_TYPE_PIPE){
+		prefix="\x1b[33;40m";
+	}
 	printf("%s%s\x1b[0m",prefix,name);
 }
 

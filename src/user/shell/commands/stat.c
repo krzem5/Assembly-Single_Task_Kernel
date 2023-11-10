@@ -9,7 +9,8 @@ static const char* _stat_type_names[]={
 	[0]="<unknown>",
 	[FD_STAT_TYPE_FILE]="file",
 	[FD_STAT_TYPE_DIRECTORY]="directory",
-	[FD_STAT_TYPE_LINK]="link"
+	[FD_STAT_TYPE_LINK]="link",
+	[FD_STAT_TYPE_PIPE]="pipe"
 };
 
 
