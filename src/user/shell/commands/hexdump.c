@@ -1,10 +1,8 @@
 #include <command.h>
 #include <cwd.h>
 #include <string.h>
-#include <user/drive.h>
 #include <user/fd.h>
 #include <user/io.h>
-#include <user/partition.h>
 #include <user/types.h>
 
 

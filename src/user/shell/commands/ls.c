@@ -1,11 +1,11 @@
 #include <command.h>
 #include <cwd.h>
 #include <string.h>
-#include <user/drive.h>
+// #include <user/drive.h>
 #include <user/fd.h>
-#include <user/handle.h>
+// #include <user/handle.h>
 #include <user/io.h>
-#include <user/partition.h>
+// #include <user/partition.h>
 #include <user/types.h>
 
 
@@ -70,28 +70,28 @@ void ls_main(int argc,const char*const* argv){
 		return;
 	}
 	if (type==LS_TYPE_DRIVES){
-		handle_iterator_t iterator;
-		HANDLE_FOREACH(&iterator,"drive"){
-			drive_data_t data;
-			if (!drive_get_data(iterator.handle,&data)){
-				continue;
-			}
-			printf("\x1b[1m%s\x1b[0m\t%v\t(%s)\n",data.name,data.block_count*data.block_size,data.model_number);
-		}
+		// handle_iterator_t iterator;
+		// HANDLE_FOREACH(&iterator,"drive"){
+		// 	drive_data_t data;
+		// 	if (!drive_get_data(iterator.handle,&data)){
+		// 		continue;
+		// 	}
+		// 	printf("\x1b[1m%s\x1b[0m\t%v\t(%s)\n",data.name,data.block_count*data.block_size,data.model_number);
+		// }
 	}
 	else if (type==LS_TYPE_PARTITIONS){
-		handle_iterator_t iterator;
-		HANDLE_FOREACH(&iterator,"partition"){
-			partition_data_t data;
-			if (!partition_get_data(iterator.handle,&data)){
-				continue;
-			}
-			drive_data_t drive_data;
-			if (!drive_get_data(data.drive_handle,&drive_data)){
-				continue;
-			}
-			printf("\x1b[1m%s\x1b[0m\t(%s)\t%v\n",data.name,data.partition_table_name,(data.end_lba-data.start_lba)*drive_data.block_size);
-		}
+		// handle_iterator_t iterator;
+		// HANDLE_FOREACH(&iterator,"partition"){
+		// 	partition_data_t data;
+		// 	if (!partition_get_data(iterator.handle,&data)){
+		// 		continue;
+		// 	}
+		// 	drive_data_t drive_data;
+		// 	if (!drive_get_data(data.drive_handle,&drive_data)){
+		// 		continue;
+		// 	}
+		// 	printf("\x1b[1m%s\x1b[0m\t(%s)\t%v\n",data.name,data.partition_table_name,(data.end_lba-data.start_lba)*drive_data.block_size);
+		// }
 	}
 	else if (!directory){
 		_list_files(cwd_fd);

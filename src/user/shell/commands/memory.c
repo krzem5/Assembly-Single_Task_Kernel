@@ -1,6 +1,6 @@
 #include <command.h>
 #include <string.h>
-#include <user/handle.h>
+// #include <user/handle.h>
 #include <user/io.h>
 #include <user/memory.h>
 
@@ -27,14 +27,14 @@ void memory_main(int argc,const char*const* argv){
 		}
 	}
 	if (command_type==MEMORY_SHOW_OBJECT_COUNTERS){
-		handle_iterator_t iterator;
-		HANDLE_FOREACH(&iterator,"omm_allocator"){
-			// memory_object_allocator_data_t data;
-			// if (!memory_object_allocator_get_data(iterator.handle,&data)){
-			// 	continue;
-			// }
-			// printf("%s:\t\x1b[1m%lu\x1b[0m\n",data.name,data.allocation_count-data.deallocation_count);
-		}
+		// handle_iterator_t iterator;
+		// HANDLE_FOREACH(&iterator,"omm_allocator"){
+		// 	memory_object_allocator_data_t data;
+		// 	if (!memory_object_allocator_get_data(iterator.handle,&data)){
+		// 		continue;
+		// 	}
+		// 	printf("%s:\t\x1b[1m%lu\x1b[0m\n",data.name,data.allocation_count-data.deallocation_count);
+		// }
 		return;
 	}
 	if (command_type==MEMORY_SHOW_RANGES){
@@ -48,14 +48,14 @@ void memory_main(int argc,const char*const* argv){
 		printf("Total: \x1b[1m%v\x1b[0m (\x1b[1m%lu\x1b[0m B)\n",total_size,total_size);
 		return;
 	}
-	handle_iterator_t iterator;
-	HANDLE_FOREACH(&iterator,"pmm_counter"){
-		// memory_counter_data_t data;
-		// if (!memory_counter_get_data(iterator.handle,&data)){
-		// 	continue;
-		// }
-		// printf("%s:\t\x1b[1m%v\x1b[0m\n",data.name,data.count<<12);
-	}
+	// handle_iterator_t iterator;
+	// HANDLE_FOREACH(&iterator,"pmm_counter"){
+	// 	memory_counter_data_t data;
+	// 	if (!memory_counter_get_data(iterator.handle,&data)){
+	// 		continue;
+	// 	}
+	// 	printf("%s:\t\x1b[1m%v\x1b[0m\n",data.name,data.count<<12);
+	// }
 }
 
 

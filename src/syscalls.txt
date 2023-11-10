@@ -1,6 +1,5 @@
 clock_get_converion(void) -> void
 cpu_get_count(void) -> u32
-drive_get_data(u32 handle,void* buffer,u32 size) -> _Bool
 fd_close(u64 fd) -> s64
 fd_dup(u64 fd,u32 flags) -> s64
 fd_iter_get(u64 iterator,char* buffer,u32 size) -> s64
@@ -14,16 +13,8 @@ fd_resize(u64 fd,u64 size,u32 flags) -> s64
 fd_seek(u64 fd,u64 offset,u32 type) -> s64
 fd_stat(u64 fd,void* ptr,u32 size) -> s64
 fd_write(u64 fd,const void* buffer,u32 size) -> s64
-handle_get_handle(u64 type,u64 handle) -> u64
-handle_get_type(const char* name,u32 length) -> u64
 memory_map(u64 length,u32 flags) -> void*
 memory_unmap(void* address,u64 length) -> _Bool
-network_layer1_get_mac_address(void* buffer,u32 size) -> _Bool
-network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
-network_layer2_send(const void* packet,u32 length) -> _Bool
-partition_get_data(u64 handle,void* buffer,u32 size) -> _Bool
-serial_recv(void* buffer,u32 length,u64 timeout) -> u32
-serial_send(const void* buffer,u32 length) -> void
 system_shutdown(u32 flags) noreturn -> void
 thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
 thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
@@ -31,3 +22,10 @@ thread_get_priority(u64 handle) -> u32
 thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
 thread_set_priority(u64 handle,u32 priority) -> _Bool
 thread_stop(void) noreturn -> void
+
+
+
+serial_recv(void* buffer,u32 length,u64 timeout) -> u32
+serial_send(const void* buffer,u32 length) -> void
+network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
+network_layer2_send(const void* packet,u32 length) -> _Bool

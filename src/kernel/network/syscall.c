@@ -1,20 +1,8 @@
 #include <kernel/isr/isr.h>
-#include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-
-
-
-void syscall_network_layer1_get_mac_address(isr_state_t* regs){
-	if (regs->rsi!=6||!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
-		regs->rax=0;
-		return;
-	}
-	memcpy((void*)(regs->rdi),network_layer1_mac_address,6);
-	regs->rax=1;
-}
 
 
 
