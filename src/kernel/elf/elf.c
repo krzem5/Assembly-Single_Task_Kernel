@@ -26,7 +26,7 @@ _Bool elf_load(vfs_node_t* file){
 	}
 	char image_buffer[4096];
 	vfs_path(file,image_buffer,4096);
-	process_t* process=process_new(image_buffer);
+	process_t* process=process_new(image_buffer,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);

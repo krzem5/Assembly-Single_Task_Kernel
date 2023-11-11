@@ -61,15 +61,14 @@ void process_init(void){
 
 
 
-process_t* process_new(const char* image){
+process_t* process_new(const char* image,const char* name){
 	process_t* out=omm_alloc(&_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));
-	char buffer[64];
-	out->name=smm_alloc(buffer,format_string(buffer,64,"process-%lu",HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
+	out->name=smm_alloc(name,0);
 	out->image=smm_alloc(image,0);
 	handle_finish_setup(&(out->handle));
 	return out;
