@@ -89,32 +89,17 @@ void serial_send(serial_port_t* port,const void* buffer,u32 length){
 
 
 
-u32 serial_recv(serial_port_t* port,void* buffer,u32 length,u64 timeout){
+u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
 	spinlock_acquire_exclusive(&(port->write_lock));
-	u32 out=0;
-	if (!timeout){
-		for (;out<length;out++){
-			while (!(io_port_in8(port->io_port+5)&0x01)){
-				thread_await_event(IRQ_EVENT(_serial_irq));
-			}
-			*((u8*)buffer)=io_port_in8(port->io_port);
-			buffer++;
+	for (u32 i=0;i<length;i++){
+		while (!(io_port_in8(port->io_port+5)&0x01)){
+			spinlock_release_exclusive(&(port->write_lock));
+			thread_await_event(IRQ_EVENT(_serial_irq));
+			spinlock_acquire_exclusive(&(port->write_lock));
 		}
-	}
-	else{
-		for (;out<length;out++){
-			u64 i=timeout-1;
-			do{
-				__pause();
-				i--;
-			} while (i&&!(io_port_in8(port->io_port+5)&0x01));
-			if (!i){
-				break;
-			}
-			*((u8*)buffer)=io_port_in8(port->io_port);
-			buffer++;
-		}
+		*((u8*)buffer)=io_port_in8(port->io_port);
+		buffer++;
 	}
 	spinlock_release_exclusive(&(port->write_lock));
-	return out;
+	return length;
 }

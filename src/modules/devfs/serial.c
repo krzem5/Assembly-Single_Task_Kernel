@@ -20,7 +20,7 @@
 static void _stdin_callback(vfs_node_t* node,serial_port_t* port){
 	u8 buffer[1];
 	while (1){
-		vfs_node_write(node,0,buffer,serial_recv(port,buffer,1,0),0);
+		vfs_node_write(node,0,buffer,serial_recv(port,buffer,1),0);
 	}
 }
 

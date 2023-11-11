@@ -34,7 +34,7 @@ void serial_send(serial_port_t* port,const void* buffer,u32 length);
 
 
 
-u32 serial_recv(serial_port_t* port,void* buffer,u32 length,u64 timeout);
+u32 serial_recv(serial_port_t* port,void* buffer,u32 length);
 
 
 
