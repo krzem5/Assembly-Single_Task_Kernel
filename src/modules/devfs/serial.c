@@ -56,4 +56,7 @@ void devfs_serial_init(void){
 		_create_pipe(node,"out",_stdout_callback,port);
 		dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer);
 	}
+	if (serial_default_port){
+		dynamicfs_create_link_node(devfs->root,"ser","ser%u",serial_default_port-serial_ports);
+	}
 }
