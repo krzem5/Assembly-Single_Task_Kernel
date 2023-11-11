@@ -24,7 +24,8 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_l
 	while (root&&path[0]){
 		if (follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
 			char buffer[4096];
-			if (vfs_node_read(root,0,buffer,4096)<=0){
+			buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
+			if (!buffer[0]){
 				return NULL;
 			}
 			root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);
@@ -69,7 +70,8 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_l
 	}
 	if (root&&follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
 		char buffer[4096];
-		if (vfs_node_read(root,0,buffer,4096)<=0){
+		buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
+		if (!buffer[0]){
 			return NULL;
 		}
 		root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);

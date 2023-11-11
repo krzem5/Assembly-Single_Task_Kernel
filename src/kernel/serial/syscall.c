@@ -5,15 +5,6 @@
 
 
 
-void syscall_serial_send(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
-		return;
-	}
-	serial_send((const void*)(regs->rdi),regs->rsi);
-}
-
-
-
 void syscall_serial_recv(isr_state_t* regs){
 	if (!syscall_sanatize_user_memory(regs->rdi,regs->rsi)){
 		regs->rax=0;

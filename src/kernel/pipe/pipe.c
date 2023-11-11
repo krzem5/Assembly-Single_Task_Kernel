@@ -56,13 +56,16 @@ static vfs_node_t* _pipe_create(void){
 
 
 
-static s64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
+static u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_read:
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(pipe->lock));
 	if (!pipe->is_full&&pipe->write_offset==pipe->read_offset){
 		spinlock_release_exclusive(&(pipe->lock));
+		if (flags&VFS_NODE_FLAG_NONBLOCKING){
+			return 0;
+		}
 		thread_await_event(pipe->write_event);
 		goto _retry_read;
 	}
@@ -91,13 +94,16 @@ _retry_read:
 
 
 
-static s64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
+static u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_write:
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(pipe->lock));
 	if (pipe->is_full){
 		spinlock_release_exclusive(&(pipe->lock));
+		if (flags&VFS_NODE_FLAG_NONBLOCKING){
+			return 0;
+		}
 		thread_await_event(pipe->read_event);
 		goto _retry_write;
 	}

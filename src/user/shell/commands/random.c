@@ -80,7 +80,7 @@ void random_main(int argc,const char*const* argv){
 	u32 i=0;
 	while (size){
 		u64 count=(size>512?512:size);
-		fd_read(fd,buffer,count);
+		fd_read(fd,buffer,count,0);
 		size-=count;
 		for (u32 j=0;j<count;j++){
 			if (i>=COLUMNS){

@@ -18,14 +18,14 @@ s64 fd_close(u64 fd){
 
 
 
-s64 fd_read(u64 fd,void* buffer,u32 size){
-	return _syscall_fd_read(fd,buffer,size);
+s64 fd_read(u64 fd,void* buffer,u64 size,u32 flags){
+	return _syscall_fd_read(fd,buffer,size,flags);
 }
 
 
 
-s64 fd_write(u64 fd,const void* buffer,u32 size){
-	return _syscall_fd_write(fd,buffer,size);
+s64 fd_write(u64 fd,const void* buffer,u64 size,u32 flags){
+	return _syscall_fd_write(fd,buffer,size,flags);
 }
 
 

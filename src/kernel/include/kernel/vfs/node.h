@@ -17,6 +17,7 @@
 #define VFS_NODE_FLAG_VIRTUAL 32
 #define VFS_NODE_FLAG_PERMANENT 64
 #define VFS_NODE_FLAG_RESIZE_RELATIVE 128
+#define VFS_NODE_FLAG_NONBLOCKING 256
 
 
 
@@ -27,9 +28,9 @@ typedef struct _VFS_FUNCTIONS{
 	u64 (*iterate)(struct _VFS_NODE*,u64,string_t**);
 	_Bool (*link)(struct _VFS_NODE*,struct _VFS_NODE*);
 	_Bool (*unlink)(struct _VFS_NODE*);
-	s64 (*read)(struct _VFS_NODE*,u64,void*,u64);
-	s64 (*write)(struct _VFS_NODE*,u64,const void*,u64);
-	s64 (*resize)(struct _VFS_NODE*,s64,u32);
+	u64 (*read)(struct _VFS_NODE*,u64,void*,u64,u32);
+	u64 (*write)(struct _VFS_NODE*,u64,const void*,u64,u32);
+	u64 (*resize)(struct _VFS_NODE*,s64,u32);
 	void (*flush)(struct _VFS_NODE*);
 } vfs_functions_t;
 
@@ -86,15 +87,15 @@ _Bool vfs_node_unlink(vfs_node_t* node);
 
 
 
-s64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size);
+u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags);
 
 
 
-s64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size);
+u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags);
 
 
 
-s64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags);
+u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags);
 
 
 

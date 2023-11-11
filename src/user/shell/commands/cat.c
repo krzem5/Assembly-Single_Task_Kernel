@@ -22,7 +22,7 @@ void cat_main(int argc,const char*const* argv){
 	}
 	char buffer[512];
 	while (1){
-		s64 length=fd_read(fd,buffer,512);
+		s64 length=fd_read(fd,buffer,512,0);
 		if (length<0){
 			printf("cat: unable to read from file '%s': error %d\n",argv[1],length);
 			goto _cleanup;

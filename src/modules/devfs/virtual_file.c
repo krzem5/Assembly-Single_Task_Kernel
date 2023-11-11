@@ -47,8 +47,7 @@ static u64 _random_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 static void _stdin_callback(vfs_node_t* node){
 	while (1){
 		u8 byte;
-		vfs_node_write(node,0,&byte,serial_recv(&byte,1,0));
-		return;
+		vfs_node_write(node,0,&byte,serial_recv(&byte,1,0),0);
 	}
 }
 
@@ -57,7 +56,7 @@ static void _stdin_callback(vfs_node_t* node){
 static void _stdout_callback(vfs_node_t* node){
 	while (1){
 		u8 byte;
-		serial_send(&byte,vfs_node_read(node,0,&byte,1));
+		serial_send(&byte,vfs_node_read(node,0,&byte,1,0));
 	}
 }
 

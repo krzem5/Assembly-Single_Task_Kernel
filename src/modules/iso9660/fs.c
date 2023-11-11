@@ -112,7 +112,7 @@ static u64 _iso9660_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 
-static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
+static u64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	iso9660_vfs_node_t* iso9660_node=(iso9660_vfs_node_t*)node;
 	drive_t* drive=node->fs->partition->drive;
 	if (size+offset>iso9660_node->data_length){
@@ -153,7 +153,7 @@ static s64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 
-static s64 _iso9660_resize(vfs_node_t* node,s64 size,u32 flags){
+static u64 _iso9660_resize(vfs_node_t* node,s64 size,u32 flags){
 	if (!(flags&VFS_NODE_FLAG_RESIZE_RELATIVE)||size){
 		return -1;
 	}

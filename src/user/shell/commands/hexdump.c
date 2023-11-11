@@ -42,7 +42,7 @@ void hexdump_main(int argc,const char*const* argv){
 	u8 buffer[512];
 	u32 i=0;
 	while (1){
-		s64 length=fd_read(fd,buffer,512);
+		s64 length=fd_read(fd,buffer,512,0);
 		if (length<0){
 			printf("hexdump: unable to read from file '%s': error %d\n",file,length);
 			goto _cleanup;

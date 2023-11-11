@@ -67,7 +67,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		if (stat.type==FD_STAT_TYPE_LINK){
 			printf(" -> ");
 			char link_buffer[4096];
-			s64 size=fd_read(child,link_buffer,4095);
+			s64 size=fd_read(child,link_buffer,4095,0);
 			if (size<=0){
 				printf("???");
 			}

@@ -28,7 +28,7 @@ void syscall_fd_read(isr_state_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_read(regs->rdi,(void*)(regs->rsi),regs->rdx);
+	regs->rax=fd_read(regs->rdi,(void*)(regs->rsi),regs->rdx,regs->r8);
 }
 
 
@@ -38,7 +38,7 @@ void syscall_fd_write(isr_state_t* regs){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_write(regs->rdi,(void*)(regs->rsi),regs->rdx);
+	regs->rax=fd_write(regs->rdi,(void*)(regs->rsi),regs->rdx,regs->r8);
 }
 
 

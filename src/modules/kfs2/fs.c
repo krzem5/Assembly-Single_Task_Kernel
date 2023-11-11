@@ -254,7 +254,7 @@ static _Bool _kfs2_unlink(vfs_node_t* node){
 
 
 
-static s64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
+static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff||offset>=kfs2_node->kfs2_node.size){
 		return 0;
@@ -291,13 +291,13 @@ static s64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
 
 
 
-static s64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
+static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	panic("_kfs2_write");
 }
 
 
 
-static s64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
+static u64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	if (kfs2_node->kfs2_node._inode==0xffffffff){
 		return 0;

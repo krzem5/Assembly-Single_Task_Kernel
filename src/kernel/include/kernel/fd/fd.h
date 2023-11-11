@@ -25,6 +25,7 @@
 #define FD_FLAG_CREATE 8
 #define FD_FLAG_DIRECTORY 16
 #define FD_FLAG_IGNORE_LINKS 32
+#define FD_FLAG_NONBLOCKING 64
 
 #define FD_SEEK_SET 0
 #define FD_SEEK_ADD 1
@@ -70,11 +71,11 @@ s64 fd_close(handle_id_t fd);
 
 
 
-s64 fd_read(handle_id_t fd,void* buffer,u64 count);
+s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags);
 
 
 
-s64 fd_write(handle_id_t fd,const void* buffer,u64 count);
+s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags);
 
 
 

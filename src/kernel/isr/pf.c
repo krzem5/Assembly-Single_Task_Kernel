@@ -24,7 +24,7 @@ _Bool pf_handle_fault(isr_state_t* isr_state){
 	}
 	u64 physical_address=pmm_alloc(1,region->pmm_counter,0);
 	if (region->file){
-		vfs_node_read(region->file,address-region->rb_node.key+(region->flags>>MMAP_REGION_FILE_OFFSET_SHIFT),(void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE);
+		vfs_node_read(region->file,address-region->rb_node.key+(region->flags>>MMAP_REGION_FILE_OFFSET_SHIFT),(void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
 	}
 	vmm_map_page(&(THREAD_DATA->process->pagemap),physical_address,address,mmap_get_vmm_flags(region));
 	pf_invalidate_tlb_entry(address);

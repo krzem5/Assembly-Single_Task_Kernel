@@ -155,25 +155,25 @@ _Bool vfs_node_unlink(vfs_node_t* node){
 
 
 
-s64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size){
+u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->read){
 		return 0;
 	}
-	return node->functions->read(node,offset,buffer,size);
+	return node->functions->read(node,offset,buffer,size,flags);
 }
 
 
 
-s64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size){
+u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->write){
 		return 0;
 	}
-	return node->functions->write(node,offset,buffer,size);
+	return node->functions->write(node,offset,buffer,size,flags);
 }
 
 
 
-s64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
+u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
 	if (!node->functions->resize){
 		return 0;
 	}

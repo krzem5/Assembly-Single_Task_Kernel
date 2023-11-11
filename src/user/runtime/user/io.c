@@ -28,11 +28,11 @@ static s64 _stdout_fd=-1;
 
 
 
-static u32 _read_data_from_stdin(void* buffer,u32 size){
+static u32 _read_data_from_stdin(void* buffer,u32 size,_Bool blocking){
 	if (_stdin_fd==-1){
 		_stdin_fd=fd_open(0,"/dev/stdin",FD_FLAG_READ);
 	}
-	return fd_read(_stdin_fd,buffer,size);
+	return fd_read(_stdin_fd,buffer,size,(blocking?0:FD_FLAG_NONBLOCKING));
 }
 
 
@@ -41,7 +41,7 @@ static void _write_data_to_stdout(const void* buffer,u32 size){
 	if (_stdout_fd==-1){
 		_stdout_fd=fd_open(0,"/dev/stdout",FD_FLAG_WRITE);
 	}
-	fd_write(_stdout_fd,buffer,size);
+	fd_write(_stdout_fd,buffer,size,0);
 }
 
 
@@ -256,8 +256,7 @@ void putchar(char c){
 
 char getchar(void){
 	char out;
-	_syscall_serial_recv(&out,1,0);
-	(void)_read_data_from_stdin;
+	_read_data_from_stdin(&out,1,1);
 	return out;
 }
 
@@ -265,5 +264,5 @@ char getchar(void){
 
 int getchar_timeout(u64 timeout){
 	char out;
-	return (_syscall_serial_recv(&out,1,timeout)?out:-1);
+	return (_read_data_from_stdin(&out,1,0)==1?out:-1);
 }
