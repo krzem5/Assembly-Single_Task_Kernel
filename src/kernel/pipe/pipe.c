@@ -69,7 +69,7 @@ _retry_read:
 		thread_await_event(pipe->write_event);
 		goto _retry_read;
 	}
-	u32 max_read_size=(pipe->read_offset-pipe->write_offset)&(PIPE_BUFFER_SIZE-1);
+	u32 max_read_size=(pipe->write_offset-pipe->read_offset)&(PIPE_BUFFER_SIZE-1);
 	if (!max_read_size){
 		max_read_size=PIPE_BUFFER_SIZE;
 	}

@@ -54,9 +54,9 @@ static void _stdin_callback(vfs_node_t* node){
 
 
 static void _stdout_callback(vfs_node_t* node){
+	u8 buffer[256];
 	while (1){
-		u8 byte;
-		serial_send(&byte,vfs_node_read(node,0,&byte,1,0));
+		serial_send(buffer,vfs_node_read(node,0,buffer,256,0));
 	}
 }
 

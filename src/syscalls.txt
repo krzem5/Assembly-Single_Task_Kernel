@@ -25,6 +25,5 @@ thread_stop(void) noreturn -> void
 
 
 
-serial_recv(void* buffer,u32 length,u64 timeout) -> u32
 network_layer2_poll(void* packet,u32 length,_Bool block) -> _Bool
 network_layer2_send(const void* packet,u32 length) -> _Bool
