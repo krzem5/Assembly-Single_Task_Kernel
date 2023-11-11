@@ -8,7 +8,6 @@
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <procfs/fs.h>
-#include <procfs/process.h>
 #define KERNEL_LOG_NAME "procfs_thread"
 
 
@@ -23,14 +22,14 @@ static void _listener(void* object,u32 type){
 		const thread_t* thread=handle->object;
 		char buffer[64];
 		format_string(buffer,64,"%lu/threads",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key));
-		vfs_node_t* root=vfs_lookup(procfs_process_root,buffer,0);
+		vfs_node_t* root=vfs_lookup(procfs->root,buffer,0);
 		if (!root){
 			return;
 		}
 		format_string(buffer,64,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"name","thread-%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
-		dynamicfs_create_link_node(_procfs_thread_root,buffer,"../process/%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
+		dynamicfs_create_link_node(_procfs_thread_root,buffer,"../%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
@@ -39,7 +38,7 @@ static void _listener(void* object,u32 type){
 		format_string(buffer,64,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		dynamicfs_delete_node(vfs_lookup(_procfs_thread_root,buffer,0),1);
 		format_string(buffer,64,"%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
-		vfs_node_t* node=vfs_lookup(procfs_process_root,buffer,0);
+		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0);
 		dynamicfs_delete_node(vfs_lookup(node,"name",0),1);
 		dynamicfs_delete_node(node,0);
 	}

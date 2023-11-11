@@ -37,8 +37,7 @@ static void _stdout_callback(vfs_node_t* node,serial_port_t* port){
 
 static void _create_pipe(vfs_node_t* parent,const char* name,void* callback,serial_port_t* port){
 	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
-	vfs_node_t* node=pipe_create(parent,name_string);
-	thread_t* thread=thread_new_kernel_thread(process_kernel,callback,0x10000,2,node,port);
+	thread_t* thread=thread_new_kernel_thread(process_kernel,callback,0x10000,2,pipe_create(parent,name_string),port);
 	thread->priority=SCHEDULER_PRIORITY_HIGH;
 	scheduler_enqueue_thread(thread);
 }

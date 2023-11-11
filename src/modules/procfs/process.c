@@ -12,19 +12,18 @@
 
 
 
-vfs_node_t* procfs_process_root;
-
-
-
 static void _listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const process_t* process=handle->object;
 		char buffer[32];
 		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
-		vfs_node_t* node=dynamicfs_create_node(procfs_process_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		vfs_node_t* node=dynamicfs_create_node(procfs->root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,NULL,dynamicfs_string_read_callback,(void*)(&(process->name)));
-		dynamicfs_create_node(node,"image",VFS_NODE_TYPE_LINK,process->image,NULL,NULL);
+		dynamicfs_create_node(node,"exe",VFS_NODE_TYPE_LINK,process->image,NULL,NULL);
+		dynamicfs_create_link_node(node,"stdin","/dev/ser/in");
+		dynamicfs_create_link_node(node,"stdout","/dev/ser/out");
+		dynamicfs_create_link_node(node,"stderr","/dev/ser/out");
 		dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		return;
 	}
@@ -50,7 +49,6 @@ static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 siz
 
 void procfs_process_init(void){
 	LOG("Creating process subsystem...");
-	procfs_process_root=dynamicfs_create_node(procfs->root,"process",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	dynamicfs_create_node(procfs_process_root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL);
+	dynamicfs_create_node(procfs->root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_PROCESS,&_procfs_process_notification_listener);
 }
