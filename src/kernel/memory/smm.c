@@ -17,8 +17,8 @@
 		out=omm_alloc(&_smm_allocator##size); \
 	}
 #define USE_ALLOCATOR_DEALLOC(size) \
-	if (name->length<(size)){ \
-		omm_dealloc(&_smm_allocator##size,name); \
+	if (string->length<(size)){ \
+		omm_dealloc(&_smm_allocator##size,string); \
 	}
 
 
@@ -39,11 +39,9 @@ DECLARE_ALLOCATOR(256);
 
 
 
-string_t* smm_alloc(const char* name,u32 length){
+string_t* smm_alloc(const char* data,u32 length){
 	if (!length){
-		while (name[length]){
-			length++;
-		}
+		length=smm_length(data);
 	}
 	string_t* out;
 	USE_ALLOCATOR(4)
@@ -59,14 +57,14 @@ string_t* smm_alloc(const char* name,u32 length){
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
 	else{
-		panic("smm_alloc: name too long");
+		panic("smm_alloc: string too long");
 	}
 	out->length=length;
 	out->hash=FNV_OFFSET_BASIS;
-	if (name){
+	if (data){
 		for (u32 i=0;i<length;i++){
-			out->data[i]=name[i];
-			out->hash=(out->hash^name[i])*FNV_PRIME;
+			out->data[i]=data[i];
+			out->hash=(out->hash^data[i])*FNV_PRIME;
 		}
 	}
 	else{
@@ -78,7 +76,7 @@ string_t* smm_alloc(const char* name,u32 length){
 
 
 
-void smm_dealloc(string_t* name){
+void smm_dealloc(string_t* string){
 	USE_ALLOCATOR_DEALLOC(4)
 	else USE_ALLOCATOR_DEALLOC(8)
 	else USE_ALLOCATOR_DEALLOC(12)
@@ -92,14 +90,14 @@ void smm_dealloc(string_t* name){
 	else USE_ALLOCATOR_DEALLOC(192)
 	else USE_ALLOCATOR_DEALLOC(256)
 	else{
-		panic("smm_dealloc: name too long");
+		panic("smm_dealloc: string too long");
 	}
 }
 
 
 
-string_t* smm_duplicate(const string_t* name){
-	u32 length=name->length;
+string_t* smm_duplicate(const string_t* string){
+	u32 length=string->length;
 	string_t* out;
 	USE_ALLOCATOR(4)
 	else USE_ALLOCATOR(8)
@@ -114,19 +112,27 @@ string_t* smm_duplicate(const string_t* name){
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
 	else{
-		panic("smm_alloc: name too long");
+		panic("smm_alloc: string too long");
 	}
-	memcpy(out,name,sizeof(string_t)+length+1);
+	memcpy(out,string,sizeof(string_t)+length+1);
 	return out;
 }
 
 
 
-void smm_rehash(string_t* name){
-	name->hash=FNV_OFFSET_BASIS;
-	for (u32 i=0;i<name->length;i++){
-		name->hash=(name->hash^name->data[i])*FNV_PRIME;
+void smm_rehash(string_t* string){
+	string->hash=FNV_OFFSET_BASIS;
+	for (u32 i=0;i<string->length;i++){
+		string->hash=(string->hash^string->data[i])*FNV_PRIME;
 	}
+}
+
+
+
+u32 smm_length(const char* data){
+	u32 out=0;
+	for (;data[out];out++);
+	return out;
 }
 
 

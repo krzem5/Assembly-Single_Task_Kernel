@@ -8,9 +8,9 @@
 
 #define MODULE_STATE_UNKNOWN 0
 #define MODULE_STATE_LOADING 1
-#define MODULE_STATE_RUNNING 2
+#define MODULE_STATE_LOADED 2
 #define MODULE_STATE_UNLOADING 3
-#define MODULE_STATE_REMOVED 4
+#define MODULE_STATE_UNLOADED 4
 
 #define MODULE_DECLARE(name,init_callback,deinit_callback) \
 	static const module_descriptor_t __attribute__((used,section(".module"))) _module_descriptor={ \

@@ -18,19 +18,23 @@ typedef struct _STRING{
 
 
 
-string_t* smm_alloc(const char* name,u32 length);
+string_t* smm_alloc(const char* data,u32 length);
 
 
 
-void smm_dealloc(string_t* name);
+void smm_dealloc(string_t* string);
 
 
 
-string_t* smm_duplicate(const string_t* name);
+string_t* smm_duplicate(const string_t* string);
 
 
 
-void smm_rehash(string_t* name);
+void smm_rehash(string_t* string);
+
+
+
+u32 smm_length(const char* data);
 
 
 

@@ -280,6 +280,6 @@ module_t* module_load(const char* name){
 	spinlock_release_exclusive(&_module_global_lock);
 	handle_finish_setup(&(module->handle));
 	module->descriptor->init_callback(module);
-	module->state=MODULE_STATE_RUNNING;
+	module->state=MODULE_STATE_LOADED;
 	return module;
 }
