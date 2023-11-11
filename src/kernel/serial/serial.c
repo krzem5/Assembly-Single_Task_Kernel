@@ -58,7 +58,7 @@ void serial_init(void){
 
 
 void serial_init_irq(void){
-	LOG("Enabling serial IRQ...");
+	LOG("Enabling serial IRQs...");
 	_serial_irq=isr_allocate();
 	INFO("Serial IRQ: %u",_serial_irq);
 	ioapic_redirect_irq(COM1_3_IRQ,_serial_irq);
