@@ -74,7 +74,9 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 			if (!fn_info||fn_info->key!=info){
 				continue;
 			}
-			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->ident),3*sizeof(u32));
+			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->ident),sizeof(u32));
+			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->lineno_checksum),sizeof(u32));
+			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->cfg_checksum),sizeof(u32));
 			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->ctrs->num),sizeof(u32));
 			serial_send(COVERAGE_SERIAL_PORT,fn_info->ctrs->values,fn_info->ctrs->num*sizeof(u64));
 		}
