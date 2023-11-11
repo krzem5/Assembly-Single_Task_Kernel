@@ -1,5 +1,4 @@
 #include <dynamicfs/dynamicfs.h>
-#include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/notification/notification.h>

@@ -25,7 +25,7 @@ static void _deinit(module_t* module){
 
 
 MODULE_DECLARE(
-	"devfs",
+	"sysfs",
 	_init,
 	_deinit
 );
