@@ -4,30 +4,55 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/serial/serial.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "serial"
 
 
 
-#define COM1_IRQ 4
+#define COM1_3_IRQ 4
+#define COM2_4_IRQ 3
 
 
 
-static spinlock_t _serial_read_lock=SPINLOCK_INIT_STRUCT;
-static spinlock_t _serial_write_lock=SPINLOCK_INIT_STRUCT;
 static u8 KERNEL_INIT_WRITE _serial_irq=0;
 
 
 
+serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT];
+serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
+
+
+
+static void _init_port(u16 io_port,serial_port_t* out){
+	out->io_port=0;
+	io_port_out8(io_port+1,0x00);
+	io_port_out8(io_port+3,0x80);
+	io_port_out8(io_port,0x03);
+	io_port_out8(io_port+1,0x00);
+	io_port_out8(io_port+3,0x03);
+	io_port_out8(io_port+2,0xc7);
+	io_port_out8(io_port+4,0x1e);
+	io_port_out8(io_port,0xa5);
+	if (io_port_in8(io_port)!=0xa5){
+		return;
+	}
+	io_port_out8(io_port+4,0x03);
+	spinlock_init(&(out->read_lock));
+	spinlock_init(&(out->write_lock));
+	out->io_port=io_port;
+	if (!serial_default_port){
+		serial_default_port=out;
+	}
+}
+
+
 void serial_init(void){
-	io_port_out8(0x3f9,0x00);
-	io_port_out8(0x3fb,0x80);
-	io_port_out8(0x3f8,0x03);
-	io_port_out8(0x3f9,0x00);
-	io_port_out8(0x3fb,0x03);
-	io_port_out8(0x3fa,0xc7);
-	io_port_out8(0x3fc,0x03);
+	_init_port(0x3f8,serial_ports);
+	_init_port(0x2f8,serial_ports+1);
+	_init_port(0x3e8,serial_ports+2);
+	_init_port(0x2e8,serial_ports+3);
 }
 
 
@@ -36,36 +61,43 @@ void serial_init_irq(void){
 	LOG("Enabling serial IRQ...");
 	_serial_irq=isr_allocate();
 	INFO("Serial IRQ: %u",_serial_irq);
-	ioapic_redirect_irq(COM1_IRQ,_serial_irq);
-	io_port_out8(0x3f9,0x01);
-	io_port_out8(0x3fc,0x0b);
+	ioapic_redirect_irq(COM1_3_IRQ,_serial_irq);
+	ioapic_redirect_irq(COM2_4_IRQ,_serial_irq);
+	for (u8 i=0;i<SERIAL_PORT_COUNT;i++){
+		serial_port_t* port=serial_ports+i;
+		if (!port->io_port){
+			continue;
+		}
+		io_port_out8(port->io_port+1,0x01);
+		io_port_out8(port->io_port+4,0x0b);
+	}
 }
 
 
 
-void serial_send(const void* buffer,u32 length){
+void serial_send(serial_port_t* port,const void* buffer,u32 length){
 	scheduler_pause();
-	spinlock_acquire_exclusive(&_serial_read_lock);
+	spinlock_acquire_exclusive(&(port->read_lock));
 	for (;length;length--){
-		SPINLOOP(!(io_port_in8(0x3fd)&0x20));
-		io_port_out8(0x3f8,*((const u8*)buffer));
+		SPINLOOP(!(io_port_in8(port->io_port+5)&0x20));
+		io_port_out8(port->io_port,*((const u8*)buffer));
 		buffer++;
 	}
-	spinlock_release_exclusive(&_serial_read_lock);
+	spinlock_release_exclusive(&(port->read_lock));
 	scheduler_resume();
 }
 
 
 
-u32 serial_recv(void* buffer,u32 length,u64 timeout){
-	spinlock_acquire_exclusive(&_serial_write_lock);
+u32 serial_recv(serial_port_t* port,void* buffer,u32 length,u64 timeout){
+	spinlock_acquire_exclusive(&(port->write_lock));
 	u32 out=0;
 	if (!timeout){
 		for (;out<length;out++){
-			while (!(io_port_in8(0x3fd)&0x01)){
+			while (!(io_port_in8(port->io_port+5)&0x01)){
 				thread_await_event(IRQ_EVENT(_serial_irq));
 			}
-			*((u8*)buffer)=io_port_in8(0x3f8);
+			*((u8*)buffer)=io_port_in8(port->io_port);
 			buffer++;
 		}
 	}
@@ -75,14 +107,14 @@ u32 serial_recv(void* buffer,u32 length,u64 timeout){
 			do{
 				__pause();
 				i--;
-			} while (i&&!(io_port_in8(0x3fd)&0x01));
+			} while (i&&!(io_port_in8(port->io_port+5)&0x01));
 			if (!i){
 				break;
 			}
-			*((u8*)buffer)=io_port_in8(0x3f8);
+			*((u8*)buffer)=io_port_in8(port->io_port);
 			buffer++;
 		}
 	}
-	spinlock_release_exclusive(&_serial_write_lock);
+	spinlock_release_exclusive(&(port->write_lock));
 	return out;
 }
