@@ -36,7 +36,7 @@ static omm_allocator_t _pipe_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("pipe_
 static vfs_node_t* _pipe_create(void){
 	pipe_vfs_node_t* out=omm_alloc(&_pipe_vfs_node_allocator);
 	spinlock_init(&(out->lock));
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,PIPE_BUFFER_SIZE,&_pipe_buffer_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_COMMIT,NULL);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,PIPE_BUFFER_SIZE,&_pipe_buffer_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!region){
 		panic("Unable to allocate pipe buffer");
 	}
