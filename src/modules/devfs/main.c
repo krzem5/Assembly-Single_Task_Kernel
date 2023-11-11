@@ -6,6 +6,7 @@
 #include <devfs/numa.h>
 #include <devfs/partition.h>
 #include <devfs/pci.h>
+#include <devfs/serial.h>
 #include <devfs/virtual_file.h>
 #include <kernel/module/module.h>
 
@@ -20,6 +21,7 @@ static _Bool _init(module_t* module){
 	devfs_numa_init();
 	devfs_partition_init();
 	devfs_pci_init();
+	devfs_serial_init();
 	devfs_virtual_file_init();
 	return 1;
 }
