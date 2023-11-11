@@ -50,8 +50,9 @@ typedef struct _VFS_NODE_RELATIVES{
 
 
 typedef struct _VFS_NODE{
-	u32 flags;
 	spinlock_t lock;
+	u32 flags;
+	KERNEL_ATOMIC u64 rc;
 	string_t* name;
 	vfs_node_relatives_t relatives;
 	struct _FILESYSTEM* fs;

@@ -16,8 +16,9 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	if (!out){
 		return NULL;
 	}
-	out->flags=0;
 	spinlock_init(&(out->lock));
+	out->flags=0;
+	out->rc=0;
 	out->name=smm_duplicate(name);
 	out->relatives.parent=NULL;
 	out->relatives.prev_sibling=NULL;
