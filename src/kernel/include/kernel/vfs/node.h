@@ -109,4 +109,8 @@ void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child);
 
 
 
+void vfs_node_dettach_external_child(vfs_node_t* node);
+
+
+
 #endif

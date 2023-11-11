@@ -27,6 +27,10 @@ vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const
 
 
 
+void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string);
+
+
+
 u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* buffer,u64 size);
 
 

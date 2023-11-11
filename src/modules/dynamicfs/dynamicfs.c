@@ -34,6 +34,12 @@ static vfs_node_t* _dynamicfs_create(void){
 
 
 
+static void _dynamicfs_delete(vfs_node_t* node){
+	omm_dealloc(&_dynamicfs_vfs_node_allocator,node);
+}
+
+
+
 static u64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	if (!size){
 		return 0;
@@ -69,7 +75,7 @@ static u64 _dynamicfs_resize(vfs_node_t* node,s64 size,u32 flags){
 
 static const vfs_functions_t _dynamicfs_functions={
 	_dynamicfs_create,
-	NULL,
+	_dynamicfs_delete,
 	NULL,
 	NULL,
 	NULL,
@@ -126,6 +132,21 @@ vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const
 	vfs_node_t* out=dynamicfs_create_node(parent,name,VFS_NODE_TYPE_LINK,smm_alloc(buffer,format_string_va(buffer,256,format,&va)),NULL,NULL);
 	__builtin_va_end(va);
 	return out;
+}
+
+
+
+void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
+	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
+	string_t* string=dynamicfs_node->data;
+	dynamicfs_node->data=NULL;
+	dynamicfs_node->read_callback=NULL;
+	dynamicfs_node->read_callback_ctx=NULL;
+	if (delete_string&&string){
+		smm_dealloc(string);
+	}
+	vfs_node_dettach_external_child(node);
+	vfs_node_delete(node);
 }
 
 

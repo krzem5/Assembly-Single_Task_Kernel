@@ -56,12 +56,13 @@ void vfs_node_delete(vfs_node_t* node){
 	if (!node->functions->delete){
 		panic("vfs_node_delete: node->functions->delete not present");
 	}
+	if (node->relatives.parent){
+		panic("vfs_node_delete: unlink parent");
+	}
 	if (node->relatives.child){
-		panic("vfs_node_delete: non-NULL node->relatives.child");
+		panic("vfs_node_delete: delete children");
 	}
-	if (node->relatives.prev_sibling||node->relatives.next_sibling){
-		panic("vfs_node_delete: relink prev/next sibling");
-	}
+	SPINLOOP(node->rc);
 	smm_dealloc(node->name);
 	node->functions->delete(node);
 }
@@ -201,5 +202,30 @@ void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child){
 		spinlock_release_exclusive(&(node->relatives.external_child->lock));
 	}
 	node->relatives.external_child=child;
+	spinlock_release_exclusive(&(node->lock));
+}
+
+
+
+void vfs_node_dettach_external_child(vfs_node_t* node){
+	spinlock_acquire_exclusive(&(node->lock));
+	if (node->relatives.parent){
+		if (node->relatives.external_prev_sibling){
+			spinlock_acquire_exclusive(&(node->relatives.external_prev_sibling->lock));
+			node->relatives.external_prev_sibling->relatives.external_next_sibling=node->relatives.external_next_sibling;
+			spinlock_release_exclusive(&(node->relatives.external_prev_sibling->lock));
+		}
+		else{
+			spinlock_acquire_exclusive(&(node->relatives.parent->lock));
+			node->relatives.parent->relatives.external_child=node->relatives.external_next_sibling;
+			spinlock_release_exclusive(&(node->relatives.parent->lock));
+		}
+		if (node->relatives.external_next_sibling){
+			spinlock_acquire_exclusive(&(node->relatives.external_next_sibling->lock));
+			node->relatives.external_next_sibling->relatives.external_prev_sibling=node->relatives.external_prev_sibling;
+			spinlock_release_exclusive(&(node->relatives.external_next_sibling->lock));
+		}
+		node->relatives.parent=NULL;
+	}
 	spinlock_release_exclusive(&(node->lock));
 }

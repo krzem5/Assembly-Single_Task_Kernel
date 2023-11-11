@@ -21,20 +21,27 @@ static void _listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const thread_t* thread=handle->object;
-		char buffer[32];
-		format_string(buffer,32,"%lu/threads",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key));
+		char buffer[64];
+		format_string(buffer,64,"%lu/threads",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key));
 		vfs_node_t* root=vfs_lookup(procfs_process_root,buffer,0);
 		if (!root){
 			return;
 		}
-		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
+		format_string(buffer,64,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"name","thread-%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		dynamicfs_create_link_node(_procfs_thread_root,buffer,"../process/%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
-		WARN("%p",handle->rb_node.key);
+		const thread_t* thread=handle->object;
+		char buffer[64];
+		format_string(buffer,64,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
+		dynamicfs_delete_node(vfs_lookup(_procfs_thread_root,buffer,0),1);
+		format_string(buffer,64,"%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
+		vfs_node_t* node=vfs_lookup(procfs_process_root,buffer,0);
+		dynamicfs_delete_node(vfs_lookup(node,"name",0),1);
+		dynamicfs_delete_node(node,0);
 	}
 }
 
