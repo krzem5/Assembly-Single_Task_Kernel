@@ -1,3 +1,4 @@
+#include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -49,6 +50,8 @@ void process_init(void){
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset(),&(process_kernel->mmap));
 	thread_list_init(&(process_kernel->thread_list));
+	process_kernel->name=smm_alloc("kernel",0);
+	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
 		panic("Unable to reserve kernel memory");
@@ -58,13 +61,16 @@ void process_init(void){
 
 
 
-process_t* process_new(void){
+process_t* process_new(const char* image){
 	process_t* out=omm_alloc(&_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
 	thread_list_init(&(out->thread_list));
+	char buffer[64];
+	out->name=smm_alloc(buffer,format_string(buffer,64,"process-%lu",HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
+	out->image=smm_alloc(image,0);
 	handle_finish_setup(&(out->handle));
 	return out;
 }

@@ -16,7 +16,7 @@ void process_init(void);
 
 
 
-process_t* process_new(void);
+process_t* process_new(const char* image);
 
 
 

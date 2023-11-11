@@ -40,6 +40,8 @@ typedef struct _PROCESS{
 	mmap_t mmap;
 	thread_list_t thread_list;
 	u64 signal_handler;
+	string_t* name;
+	string_t* image;
 } process_t;
 
 

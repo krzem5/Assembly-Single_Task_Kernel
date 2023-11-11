@@ -23,6 +23,8 @@ static void _listener(void* object,u32 type){
 		char buffer[32];
 		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
 		vfs_node_t* node=dynamicfs_create_node(procfs_process_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,NULL,dynamicfs_string_read_callback,(void*)(&(process->name)));
+		dynamicfs_create_node(node,"image",VFS_NODE_TYPE_LINK,process->image,NULL,NULL);
 		dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		return;
 	}
@@ -41,7 +43,7 @@ static notification_listener_t _procfs_process_notification_listener={
 
 static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char link[32];
-	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",HANDLE_ID_GET_INDEX(THREAD_DATA->process->handle.rb_node.key)),offset,buffer,size);
+	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",(THREAD_DATA->header.current_thread?HANDLE_ID_GET_INDEX(THREAD_DATA->process->handle.rb_node.key):0)),offset,buffer,size);
 }
 
 

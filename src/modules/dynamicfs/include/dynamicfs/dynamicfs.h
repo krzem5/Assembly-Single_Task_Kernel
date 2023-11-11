@@ -35,4 +35,8 @@ u64 dynamicfs_integer_read_callback(void* ctx,u64 offset,void* buffer,u64 size);
 
 
 
+u64 dynamicfs_string_read_callback(void* ctx,u64 offset,void* buffer,u64 size);
+
+
+
 #endif

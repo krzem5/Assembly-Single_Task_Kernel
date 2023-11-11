@@ -13,4 +13,8 @@ vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,_Bool follow_links);
 
 
 
+u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length);
+
+
+
 #endif

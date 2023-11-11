@@ -109,3 +109,27 @@ void vfs_mount(filesystem_t* fs,const char* path){
 vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,_Bool follow_links){
 	return _lookup_node(root,path,follow_links,NULL,NULL);
 }
+
+
+
+u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
+	u32 i=buffer_length;
+	for (;node;node=node->relatives.parent){
+		if (i<node->name->length+1){
+			return 0;
+		}
+		i-=node->name->length+1;
+		buffer[i]='/';
+		memcpy(buffer+i+1,node->name->data,node->name->length);
+	}
+	if (buffer_length-i==1){
+		i--;
+		buffer[i]='/';
+	}
+	i++;
+	for (u32 j=0;j<buffer_length-i;j++){
+		buffer[j]=buffer[i+j];
+	}
+	buffer[buffer_length-i]=0;
+	return buffer_length-i;
+}

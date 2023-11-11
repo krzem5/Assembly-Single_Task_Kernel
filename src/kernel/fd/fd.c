@@ -219,29 +219,10 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 	}
 	fd_t* data=fd_handle->object;
 	spinlock_acquire_exclusive(&(data->lock));
-	u32 i=buffer_length;
-	for (vfs_node_t* node=data->node;node;node=node->relatives.parent){
-		if (i<node->name->length+1){
-			spinlock_release_exclusive(&(data->lock));
-			handle_release(fd_handle);
-			return FD_ERROR_NO_SPACE;
-		}
-		i-=node->name->length+1;
-		buffer[i]='/';
-		memcpy(buffer+i+1,node->name->data,node->name->length);
-	}
-	if (buffer_length-i==1){
-		i--;
-		buffer[i]='/';
-	}
-	i++;
-	for (u32 j=0;j<buffer_length-i;j++){
-		buffer[j]=buffer[i+j];
-	}
-	buffer[buffer_length-i]=0;
+	u32 out=vfs_path(data->node,buffer,buffer_length);
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
-	return buffer_length-i;
+	return (!out&&buffer_length?FD_ERROR_NO_SPACE:out);
 }
 
 

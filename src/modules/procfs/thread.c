@@ -48,7 +48,7 @@ static notification_listener_t _procfs_thread_notification_listener={
 
 static u64 _thread_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char link[32];
-	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",HANDLE_ID_GET_INDEX(THREAD_DATA->handle.rb_node.key)),offset,buffer,size);
+	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",(THREAD_DATA->header.current_thread?HANDLE_ID_GET_INDEX(THREAD_DATA->handle.rb_node.key):0)),offset,buffer,size);
 }
 
 

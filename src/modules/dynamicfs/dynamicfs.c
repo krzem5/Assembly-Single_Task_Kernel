@@ -148,5 +148,12 @@ u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* b
 
 u64 dynamicfs_integer_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char ret[32];
-	return dynamicfs_process_simple_read(ret,format_string(ret,32,"%lu",*((u64*)ctx)),offset,buffer,size);
+	return dynamicfs_process_simple_read(ret,format_string(ret,32,"%lu",*((const u64*)ctx)),offset,buffer,size);
+}
+
+
+
+u64 dynamicfs_string_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	const string_t* string=*((const string_t*const*)ctx);
+	return dynamicfs_process_simple_read((string?string->data:""),(string?string->length:0),offset,buffer,size);
 }
