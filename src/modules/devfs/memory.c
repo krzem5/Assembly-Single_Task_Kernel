@@ -17,5 +17,6 @@ void devfs_memory_init(void){
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"address","%lu",(kernel_data.mmap+i)->base);
 		dynamicfs_create_data_node(node,"length","%lu",(kernel_data.mmap+i)->length);
+		dynamicfs_create_link_node(devfs->root,buffer,"memory/%s",buffer);
 	}
 }

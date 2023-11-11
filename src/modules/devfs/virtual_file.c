@@ -44,6 +44,6 @@ void devfs_virtual_file_init(void){
 	dynamicfs_create_node(devfs->root,"zero",VFS_NODE_TYPE_FILE,NULL,_zero_read_callback,NULL);
 	dynamicfs_create_node(devfs->root,"one",VFS_NODE_TYPE_FILE,NULL,_one_read_callback,NULL);
 	dynamicfs_create_node(devfs->root,"random",VFS_NODE_TYPE_FILE,NULL,_random_read_callback,NULL);
-	dynamicfs_create_link_node(devfs->root,"stdin","serial/ser0/in");
-	dynamicfs_create_link_node(devfs->root,"stdout","serial/ser0/out");
+	dynamicfs_create_link_node(devfs->root,"stdin","ser0/in");
+	dynamicfs_create_link_node(devfs->root,"stdout","ser0/out");
 }

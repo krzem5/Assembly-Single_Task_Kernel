@@ -17,7 +17,8 @@ void devfs_numa_init(void){
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"numa",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u32 i=0;i<numa_node_count;i++){
 		char buffer[16];
-		format_string(buffer,16,"%u",i);
+		format_string(buffer,16,"numa%u",i);
+		dynamicfs_create_link_node(devfs->root,buffer,"numa/%s",buffer);
 		const numa_node_t* numa_node=numa_nodes+i;
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		vfs_node_t* device_root=dynamicfs_create_node(node,"devices",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);

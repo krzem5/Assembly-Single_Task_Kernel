@@ -27,6 +27,7 @@ static void _listener(void* object,u32 type){
 		dynamicfs_create_data_node(node,"block_count","%lu",drive->block_count);
 		dynamicfs_create_data_node(node,"block_size","%lu",drive->block_size);
 		dynamicfs_create_node(node,"partition",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		dynamicfs_create_link_node(devfs->root,buffer,"drive/%s",buffer);
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){

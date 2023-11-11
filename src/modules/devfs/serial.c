@@ -46,4 +46,5 @@ void devfs_serial_init(void){
 	vfs_node_t* node=dynamicfs_create_node(root,"ser0",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	_create_pipe(node,"in",_stdin_callback);
 	_create_pipe(node,"out",_stdout_callback);
+	dynamicfs_create_link_node(devfs->root,"ser0","serial/ser0");
 }

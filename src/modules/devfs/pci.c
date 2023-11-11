@@ -16,7 +16,7 @@ void devfs_pci_init(void){
 		handle_acquire(handle);
 		const pci_device_t* device=handle->object;
 		char buffer[32];
-		format_string(buffer,32,"b%us%uf%u",device->address.bus,device->address.slot,device->address.func);
+		format_string(buffer,32,"pci%us%uf%u",device->address.bus,device->address.slot,device->address.func);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"handle","%lu",handle->rb_node.key);
 		dynamicfs_create_data_node(node,"device_id","%X%X",device->device_id>>8,device->device_id);
@@ -25,6 +25,7 @@ void devfs_pci_init(void){
 		dynamicfs_create_data_node(node,"subclass","%X",device->subclass);
 		dynamicfs_create_data_node(node,"progif","%X",device->progif);
 		dynamicfs_create_data_node(node,"revision_id","%X",device->revision_id);
+		dynamicfs_create_link_node(devfs->root,buffer,"pci/%s",buffer);
 		handle_release(handle);
 	}
 }
