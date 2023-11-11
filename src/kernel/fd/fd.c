@@ -85,7 +85,7 @@ s64 fd_close(handle_id_t fd){
 
 
 s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
-	if (flags&(~FD_FLAG_NONBLOCKING)){
+	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
@@ -98,7 +98,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	count=vfs_node_read(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0));
+	count=vfs_node_read(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
@@ -108,7 +108,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 
 
 s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
-	if (flags&(~FD_FLAG_NONBLOCKING)){
+	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
@@ -121,7 +121,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 		return FD_ERROR_UNSUPPORTED_OPERATION;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	count=vfs_node_write(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0));
+	count=vfs_node_write(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);

@@ -5,7 +5,6 @@
 #include <kernel/memory/smm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
-#include <kernel/notification/notification.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -31,10 +30,6 @@ typedef struct _PIPE_VFS_NODE{
 static pmm_counter_descriptor_t _pipe_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("pipe_buffer");
 static pmm_counter_descriptor_t _pipe_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_pipe_node");
 static omm_allocator_t _pipe_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("pipe_node",sizeof(pipe_vfs_node_t),8,4,&_pipe_node_omm_pmm_counter);
-
-
-
-static notification_dispatcher_t _pipe_notification_dispatcher=NOTIFICATION_DISPATCHER_INIT_STRUCT;
 
 
 
@@ -84,9 +79,11 @@ _retry_read:
 	if (size>chunk_size){
 		memcpy(buffer+chunk_size,pipe->buffer,size-chunk_size);
 	}
-	pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
-	pipe->is_full=0;
-	event_dispatch(pipe->read_event,1);
+	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
+		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
+		pipe->is_full=0;
+		event_dispatch(pipe->read_event,1);
+	}
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
 	return size;
@@ -151,16 +148,4 @@ vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 	vfs_node_t* out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);
 	out->flags|=VFS_NODE_TYPE_PIPE;
 	return out;
-}
-
-
-
-void pipe_register_notification_listener(notification_listener_t* listener){
-	notification_dispatcher_add_listener(&_pipe_notification_dispatcher,listener);
-}
-
-
-
-void pipe_unregister_notification_listener(notification_listener_t* listener){
-	notification_dispatcher_remove_listener(&_pipe_notification_dispatcher,listener);
 }
