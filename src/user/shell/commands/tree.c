@@ -1,8 +1,10 @@
+#include <color.h>
 #include <command.h>
 #include <cwd.h>
 #include <string.h>
 #include <user/fd.h>
 #include <user/io.h>
+#include <user/memory.h>
 #include <user/types.h>
 
 
@@ -17,22 +19,6 @@ typedef struct _FRAME{
 	u32 file_count;
 	u32 directory_count;
 } frame_t;
-
-
-
-static void _print_file_name(const fd_stat_t* stat,const char* name){
-	const char* prefix="";
-	if (stat->type==FD_STAT_TYPE_DIRECTORY){
-		prefix="\x1b[1;34m";
-	}
-	else if (stat->type==FD_STAT_TYPE_LINK){
-		prefix="\x1b[1;36m";
-	}
-	else if (stat->type==FD_STAT_TYPE_PIPE){
-		prefix="\x1b[33;40m";
-	}
-	printf("%s%s\x1b[0m",prefix,name);
-}
 
 
 
@@ -63,29 +49,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
 		}
 		printf("%s── ",(has_next_sibling?"├":"└"));
-		_print_file_name(&stat,stat.name);
-		if (stat.type==FD_STAT_TYPE_LINK){
-			printf(" -> ");
-			char link_buffer[4096];
-			s64 size=fd_read(child,link_buffer,4095,0);
-			if (size<=0){
-				printf("???");
-			}
-			else{
-				link_buffer[size]=0;
-				int link_fd=fd_open(fd,link_buffer,0);
-				fd_stat_t link_stat;
-				if (link_fd<0||fd_stat(link_fd,&link_stat)<0){
-					printf("\x1b[1;31;40m%s\x1b[0m",link_buffer);
-				}
-				else{
-					_print_file_name(&link_stat,link_buffer);
-				}
-				if (link_fd>=0){
-					fd_close(link_fd);
-				}
-			}
-		}
+		color_print_file_name(&stat,stat.name,fd,child);
 		putchar('\n');
 		if (stat.type==FD_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;
@@ -128,7 +92,7 @@ void tree_main(int argc,const char*const* argv){
 		printf("tree: unable to stat file '%s'\n",(directory?directory:"."));
 		return;
 	}
-	_print_file_name(&stat,(directory?directory:"."));
+	color_print_file_name(&stat,(directory?directory:"."),0,0);
 	putchar('\n');
 	frame_t frame={
 		.file_count=0,
