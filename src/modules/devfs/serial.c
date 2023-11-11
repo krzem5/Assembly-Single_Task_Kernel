@@ -13,19 +13,23 @@
 
 
 
+#define SERIAL_BUFFER_SIZE 256
+
+
+
 static void _stdin_callback(vfs_node_t* node,serial_port_t* port){
+	u8 buffer[1];
 	while (1){
-		u8 byte;
-		vfs_node_write(node,0,&byte,serial_recv(port,&byte,1,0),0);
+		vfs_node_write(node,0,buffer,serial_recv(port,buffer,1,0),0);
 	}
 }
 
 
 
 static void _stdout_callback(vfs_node_t* node,serial_port_t* port){
-	u8 buffer[256];
+	u8 buffer[SERIAL_BUFFER_SIZE];
 	while (1){
-		serial_send(port,buffer,vfs_node_read(node,0,buffer,256,0));
+		serial_send(port,buffer,vfs_node_read(node,0,buffer,SERIAL_BUFFER_SIZE,0));
 	}
 }
 
