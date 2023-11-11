@@ -18,10 +18,10 @@ static vfs_node_t* _sysfs_memory_object_counter_root;
 
 
 static void _init_memory_load_balancer_data(void){
-	vfs_node_t* root=dynamicfs_create_node(_sysfs_memory_root,"load_balancer",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	dynamicfs_create_node(root,"hit_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->hit_count)));
-	dynamicfs_create_node(root,"miss_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->miss_count)));
-	dynamicfs_create_node(root,"late_miss_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->miss_locked_count)));
+	vfs_node_t* root=dynamicfs_create_node(_sysfs_memory_root,"lb",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	dynamicfs_create_node(root,"hit",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->hit_count)));
+	dynamicfs_create_node(root,"miss",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->miss_count)));
+	dynamicfs_create_node(root,"late_miss",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_load_balancer_stats->miss_locked_count)));
 }
 
 
@@ -71,10 +71,10 @@ static notification_listener_t _sysfs_memory_omm_allocator_notification_listener
 
 void sysfs_memory_init(void){
 	LOG("Creating memory subsystem...");
-	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"memory",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"mem",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	_init_memory_load_balancer_data();
-	_sysfs_memory_pmm_counter_root=dynamicfs_create_node(_sysfs_memory_root,"counters",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	_sysfs_memory_pmm_counter_root=dynamicfs_create_node(_sysfs_memory_root,"physical",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_PMM_COUNTER,&_sysfs_memory_pmm_counter_notification_listener);
-	_sysfs_memory_object_counter_root=dynamicfs_create_node(_sysfs_memory_root,"object_counters",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	_sysfs_memory_object_counter_root=dynamicfs_create_node(_sysfs_memory_root,"object",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	handle_register_notification_listener(HANDLE_TYPE_OMM_ALLOCATOR,&_sysfs_memory_omm_allocator_notification_listener);
 }

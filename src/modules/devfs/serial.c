@@ -56,6 +56,7 @@ void devfs_serial_init(void){
 		char buffer[8];
 		format_string(buffer,8,"ser%u",i);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		dynamicfs_create_data_node(node,"id","%u",i);
 		_create_pipe(node,"in",_stdin_callback,port);
 		_create_pipe(node,"out",_stdout_callback,port);
 		dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer);

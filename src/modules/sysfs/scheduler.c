@@ -11,7 +11,7 @@
 
 void sysfs_scheduler_init(void){
 	LOG("Creating scheduler subsystem...");
-	vfs_node_t* root=dynamicfs_create_node(sysfs->root,"scheduler_time",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	vfs_node_t* root=dynamicfs_create_node(sysfs->root,"sched",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u16 i=0;i<cpu_count;i++){
 		char buffer[16];
 		format_string(buffer,16,"%u",i);

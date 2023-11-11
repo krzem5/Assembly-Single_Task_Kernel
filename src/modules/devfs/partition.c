@@ -24,12 +24,12 @@ static void _listener(void* object,u32 type){
 		char buffer[32];
 		format_string(buffer,32,"%s%ud%up%u",drive->type->name,drive->controller_index,drive->device_index,partition->index);
 		vfs_node_t* node=dynamicfs_create_node(_devfs_partition_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		dynamicfs_create_data_node(node,"handle","%lu",handle->rb_node.key);
+		dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key));
 		dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,smm_duplicate(partition->name),NULL,NULL);
 		dynamicfs_create_data_node(node,"start_lba","%lu",partition->start_lba);
 		dynamicfs_create_data_node(node,"end_lba","%lu",partition->end_lba);
 		char path[64];
-		format_string(path,64,"drive/%s%ud%u/partition",drive->type->name,drive->controller_index,drive->device_index);
+		format_string(path,64,"drive/%s%ud%u/partitions",drive->type->name,drive->controller_index,drive->device_index);
 		dynamicfs_create_link_node(vfs_lookup(devfs->root,path,1),buffer,"../../../partition/%s",buffer);
 		dynamicfs_create_link_node(devfs->root,buffer,"partition/%s",buffer);
 		return;
