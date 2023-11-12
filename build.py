@@ -114,27 +114,27 @@ MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
-LIB_HASH_FILE_SUFFIX={
+LIBRARY_HASH_FILE_SUFFIX={
 	MODE_NORMAL: ".txt",
 	MODE_COVERAGE: ".txt",
 	MODE_RELEASE: ".release.txt"
 }[mode]
-LIB_OBJECT_FILE_DIRECTORY={
+LIBRARY_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/lib_debug/",
 	MODE_COVERAGE: "build/objects/lib_debug/",
 	MODE_RELEASE: "build/objects/lib/"
 }[mode]
-LIB_EXTRA_COMPILER_OPTIONS={
+LIBRARY_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
-LIB_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
-LIB_EXTRA_LINKER_OPTIONS={
+LIBRARY_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections"]
@@ -168,7 +168,7 @@ SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 MODULE_FILE_DIRECTORY="src/modules"
-LIB_FILE_DIRECTORY="src/lib"
+LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 MODULE_ORDER_FILE_PATH="src/module_order.config"
 INSTALL_DISK_SIZE=262144
@@ -390,25 +390,25 @@ def _compile_module(module,shared_include_list):
 
 
 def _compile_lib_files(program):
-	hash_file_path=f"build/hashes/lib/"+program+LIB_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIB_FILE_DIRECTORY+"/"+program)
+	hash_file_path=f"build/hashes/lib/"+program+LIBRARY_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+program)
 	object_files=[]
 	error=False
-	for root,_,files in os.walk(LIB_FILE_DIRECTORY+"/"+program):
+	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
-			object_file=LIB_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps") and 0):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIB_FILE_DIRECTORY}/{program}/include",f"-I{LIB_FILE_DIRECTORY}/syscall/include"]+LIB_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{program}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+LIB_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
@@ -647,10 +647,10 @@ for module in os.listdir(MODULE_FILE_DIRECTORY):
 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
 syscall_object_files=_compile_lib_files("syscall")
-for program in os.listdir(LIB_FILE_DIRECTORY):
+for program in os.listdir(LIBRARY_FILE_DIRECTORY):
 	if (program=="syscall"):
 		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/{program}.so"]+syscall_object_files+_compile_lib_files(program)+LIB_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/{program}.so"]+syscall_object_files+_compile_lib_files(program)+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 syscall_object_files=_compile_user_files("syscall")
@@ -692,10 +692,9 @@ if (rebuild_data_partition):
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
-	with open("build/lib/linker.so","rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/ld.so"),rf.read())
-	with open("build/lib/test.so","rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/test.so"),rf.read())
+	for library in os.listdir("build/lib"):
+		with open(f"build/lib/{library}","rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}"),rf.read())
 	with open("build/user/shell.elf","rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
