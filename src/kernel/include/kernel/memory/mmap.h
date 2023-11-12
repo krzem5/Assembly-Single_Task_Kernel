@@ -72,7 +72,7 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region);
 
 
 
-_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,const void* data,u64 length);
+_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length);
 
 
 

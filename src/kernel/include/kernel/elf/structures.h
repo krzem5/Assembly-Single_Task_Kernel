@@ -43,10 +43,37 @@
 
 #define SHN_UNDEF 0
 
+#define DT_NULL 0
+#define DT_NEEDED 1
+#define DT_PLTRELSZ 2
+#define DT_PLTGOT 3
+#define DT_HASH 4
+#define DT_STRTAB 5
+#define DT_SYMTAB 6
+#define DT_RELA 7
+#define DT_RELASZ 8
+#define DT_RELAENT 9
+#define DT_STRSZ 10
+#define DT_SYMENT 11
+#define DT_INIT 12
+#define DT_FINI 13
+#define DT_SONAME 14
+#define DT_RPATH 15
+#define DT_SYMBOLIC 16
+#define DT_REL 17
+#define DT_RELSZ 18
+#define DT_RELENT 19
+#define DT_PLTREL 20
+#define DT_DEBUG 21
+#define DT_TEXTREL 22
+#define DT_JMPREL 23
+#define DT_ENCODING 32
+
 #define R_X86_64_NONE 0
 #define R_X86_64_64 1
 #define R_X86_64_PC32 2
 #define R_X86_64_PLT32 4
+#define R_X86_64_GLOB_DAT 6
 #define R_X86_64_32 10
 #define R_X86_64_32S 11
 

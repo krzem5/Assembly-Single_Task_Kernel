@@ -5,7 +5,7 @@
 
 
 
-const char interp[] __attribute__((used,section(".interp")))="/lib/ld.elf";
+const char interp[] __attribute__((used,section(".interp")))="/lib/ld.so";
 
 
 

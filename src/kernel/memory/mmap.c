@@ -264,7 +264,7 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
-_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,const void* data,u64 length){
+_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length){
 	spinlock_acquire_shared(&(mmap->lock));
 	if (!(region->flags&MMAP_REGION_FLAG_COMMIT)){
 		panic("mmap_set_memory: MMAP_REGION_FLAG_COMMIT flag missing");
@@ -272,12 +272,18 @@ _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,const void* data,u64 le
 	if (length>region->length){
 		length=region->length;
 	}
-	for (u64 i=0;i<length;i+=PAGE_SIZE){
+	u64 end=offset+length;
+	for (u64 i=pmm_align_down_address(offset);i<end;i+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,region->rb_node.key+i);
 		if (!physical_address){
 			panic("mmap_set_memory: wrong memory mapping");
 		}
-		memcpy((void*)(physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),data+i,(length-i>PAGE_SIZE?PAGE_SIZE:length-i));
+		offset&=PAGE_SIZE-1;
+		u64 chunk_size=(length>PAGE_SIZE-offset?PAGE_SIZE-offset:length);
+		memcpy((void*)(physical_address+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),data,chunk_size);
+		offset=0;
+		data+=chunk_size;
+		length-=chunk_size;
 	}
 	spinlock_release_shared(&(mmap->lock));
 	return 1;

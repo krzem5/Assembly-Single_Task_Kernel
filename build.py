@@ -35,17 +35,21 @@ BUILD_DIRECTORIES=[
 	"build",
 	"build/hashes",
 	"build/hashes/kernel",
+	"build/hashes/lib",
 	"build/hashes/modules",
 	"build/hashes/uefi",
 	"build/hashes/user",
 	"build/initramfs",
 	"build/initramfs/boot",
 	"build/initramfs/boot/module",
+	"build/lib",
 	"build/module",
 	"build/objects",
 	"build/objects/kernel",
 	"build/objects/kernel_coverage",
 	"build/objects/kernel_debug",
+	"build/objects/lib",
+	"build/objects/lib_debug",
 	"build/objects/modules",
 	"build/objects/modules_coverage",
 	"build/objects/modules_debug",
@@ -110,6 +114,31 @@ MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
+LIB_HASH_FILE_SUFFIX={
+	MODE_NORMAL: ".txt",
+	MODE_COVERAGE: ".txt",
+	MODE_RELEASE: ".release.txt"
+}[mode]
+LIB_OBJECT_FILE_DIRECTORY={
+	MODE_NORMAL: "build/objects/lib_debug/",
+	MODE_COVERAGE: "build/objects/lib_debug/",
+	MODE_RELEASE: "build/objects/lib/"
+}[mode]
+LIB_EXTRA_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
+}[mode]
+LIB_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3"]
+}[mode]
+LIB_EXTRA_LINKER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3","--gc-sections"]
+}[mode]
 USER_HASH_FILE_SUFFIX={
 	MODE_NORMAL: ".txt",
 	MODE_COVERAGE: ".txt",
@@ -117,12 +146,12 @@ USER_HASH_FILE_SUFFIX={
 }[mode]
 USER_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/user_debug/",
-	MODE_COVERAGE: "build/objects/user/",
+	MODE_COVERAGE: "build/objects/user_debug/",
 	MODE_RELEASE: "build/objects/user/"
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
@@ -139,6 +168,7 @@ SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 MODULE_FILE_DIRECTORY="src/modules"
+LIB_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 MODULE_ORDER_FILE_PATH="src/module_order.config"
 INSTALL_DISK_SIZE=262144
@@ -359,7 +389,38 @@ def _compile_module(module,shared_include_list):
 
 
 
-def _compile_user_files(program,is_linker=False):
+def _compile_lib_files(program):
+	hash_file_path=f"build/hashes/lib/"+program+LIB_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIB_FILE_DIRECTORY+"/"+program)
+	object_files=[]
+	error=False
+	for root,_,files in os.walk(LIB_FILE_DIRECTORY+"/"+program):
+		for file_name in files:
+			suffix=file_name[file_name.rindex("."):]
+			if (suffix not in SOURCE_FILE_SUFFIXES):
+				continue
+			file=os.path.join(root,file_name)
+			object_file=LIB_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			object_files.append(object_file)
+			if (_file_not_changed(changed_files,object_file+".deps") and 0):
+				continue
+			command=None
+			if (suffix==".c"):
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIB_FILE_DIRECTORY}/{program}/include",f"-I{LIB_FILE_DIRECTORY}/syscall/include"]+LIB_EXTRA_COMPILER_OPTIONS
+			else:
+				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+LIB_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+			print(file)
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+				del file_hash_list[file]
+				error=True
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
+	return object_files
+
+
+
+def _compile_user_files(program):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
@@ -377,8 +438,6 @@ def _compile_user_files(program,is_linker=False):
 			command=None
 			if (suffix==".c"):
 				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include",f"-I{USER_FILE_DIRECTORY}/syscall/include"]+USER_EXTRA_COMPILER_OPTIONS
-				if (is_linker):
-					command+=["-fplt"]
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -587,15 +646,19 @@ with open("src/shared_modules.txt","r") as rf:
 for module in os.listdir(MODULE_FILE_DIRECTORY):
 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
+syscall_object_files=_compile_lib_files("syscall")
+for program in os.listdir(LIB_FILE_DIRECTORY):
+	if (program=="syscall"):
+		continue
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/{program}.so"]+syscall_object_files+_compile_lib_files(program)+LIB_EXTRA_LINKER_OPTIONS).returncode!=0):
+		sys.exit(1)
+#####################################################################################################################################
 syscall_object_files=_compile_user_files("syscall")
-if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-e","_start","-r","-o","build/user/ld.elf"]+syscall_object_files+_compile_user_files("linker",True)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
-	sys.exit(1)
 runtime_object_files=syscall_object_files+_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime" or program=="linker" or program=="syscall"):
 		continue
-	# --gc-keep-exported keeps the .interp section even with --gc-sections
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","--gc-keep-exported","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","build/lib/test.so","-I/lib/ld.so","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
@@ -629,8 +692,10 @@ if (rebuild_data_partition):
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
-	with open("build/user/ld.elf","rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/ld.elf"),rf.read())
+	with open("build/lib/linker.so","rb") as rf:
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/ld.so"),rf.read())
+	with open("build/lib/test.so","rb") as rf:
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/test.so"),rf.read())
 	with open("build/user/shell.elf","rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
