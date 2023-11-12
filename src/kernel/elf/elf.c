@@ -89,7 +89,8 @@ static _Bool _check_elf_header(elf_loader_context_t* ctx){
 
 
 
-static _Bool _map_executable_and_locate_sections(elf_loader_context_t* ctx){
+static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
+	INFO("Mapping and locating sections...");
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
 		const elf_phdr_t* program_header=ctx->data+ctx->elf_header->e_phoff+i*ctx->elf_header->e_phentsize;
 		if (program_header->p_type==PT_PHDR){
@@ -130,10 +131,17 @@ static _Bool _map_executable_and_locate_sections(elf_loader_context_t* ctx){
 
 
 
+static void _create_executable_thread(elf_loader_context_t* ctx){
+	ctx->thread=thread_new_user_thread(ctx->process,ctx->elf_header->e_entry,0x200000);
+}
+
+
+
 static _Bool _load_interpreter(elf_loader_context_t* ctx){
 	if (!ctx->interpreter_path){
 		return 1;
 	}
+	INFO("Loading interpreter...");
 	vfs_node_t* file=vfs_lookup(NULL,ctx->interpreter_path,1);
 	if (!file){
 		ERROR("Unable to find interpreter '%s'",ctx->interpreter_path);
@@ -231,7 +239,8 @@ _error:
 
 
 
-static _Bool _init_input_data(elf_loader_context_t* ctx){
+static _Bool _generate_input_data(elf_loader_context_t* ctx){
+	INFO("Generating input data...");
 	u64 size=sizeof(u64);
 	u64 string_table_size=0;
 	for (u64 i=0;i<ctx->argc;i++){
@@ -296,6 +305,7 @@ _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const
 	if (!path){
 		return 0;
 	}
+	LOG("Loading executable '%s'...",path);
 	vfs_node_t* file=vfs_lookup(NULL,path,1);
 	if (!file){
 		ERROR("Unable to find executable '%s'",path);
@@ -303,6 +313,7 @@ _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const
 	}
 	process_t* process=process_new(path,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
+	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
 		path,
 		argc,
@@ -316,19 +327,17 @@ _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const
 		NULL,
 		0
 	};
-	void* file_data=(void*)(region->rb_node.key);
-	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	if (!_check_elf_header(&ctx)){
 		goto _error;
 	}
-	if (!_map_executable_and_locate_sections(&ctx)){
+	if (!_map_and_locate_sections(&ctx)){
 		goto _error;
 	}
-	ctx.thread=thread_new_user_thread(process,header.e_entry,0x200000);
+	_create_executable_thread(&ctx);
 	if (!_load_interpreter(&ctx)){
 		goto _error;
 	}
-	if (!_init_input_data(&ctx)){
+	if (!_generate_input_data(&ctx)){
 		goto _error;
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
