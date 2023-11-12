@@ -11,5 +11,6 @@ _start:
 	sub rsp, 8
 	and rsp, 0xfffffffffffffff0
 	mov rbp, rsp
+	mov rdi, r15
 	call [rel main wrt ..got]
 	jmp [rel _syscall_thread_stop wrt ..got]

@@ -5,12 +5,7 @@
 
 
 
-const char interp[] __attribute__((used,section(".interp")))="/lib/ld.so";
-
-
-
 void main(void){
-	clock_init();
 	cwd_init();
 	while (1){
 		input_get();

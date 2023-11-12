@@ -1,5 +1,5 @@
 extern _syscall_thread_stop
-extern main
+extern _entry
 global _start
 section .text exec nowrite
 
@@ -7,11 +7,9 @@ section .text exec nowrite
 
 [bits 64]
 _start:
-	;;; Fix stack
 	sub rsp, 8
 	and rsp, 0xfffffffffffffff0
 	mov rbp, rsp
-	;;; Start user code
-	call main
-	;;; Shutdown CPU
+	mov rdi, r15
+	call _entry
 	jmp _syscall_thread_stop

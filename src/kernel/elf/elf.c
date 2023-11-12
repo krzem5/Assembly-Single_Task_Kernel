@@ -1,12 +1,15 @@
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/elf/structures.h>
 #include <kernel/fd/fd.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
+#include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -16,11 +19,85 @@
 
 
 
+#define PUSH_DATA_VALUE(value) *(data_ptr++)=(u64)(value)
+#define PUSH_AUXV_VALUE(type,value) PUSH_DATA_VALUE((type));PUSH_DATA_VALUE((value))
+#define PUSH_STRING(string) \
+	do{ \
+		u32 __length=smm_length((string))+1; \
+		memcpy(string_table_ptr,(string),__length); \
+		string_table_ptr+=__length; \
+	} while (0)
+
+
+
 static pmm_counter_descriptor_t _user_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_image");
+static pmm_counter_descriptor_t _user_input_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_input_data");
 
 
 
-static void _load_interpreter(process_t* process,const char* path,thread_t* thread){
+static void _init_input_data(process_t* process,thread_t* thread,const elf_hdr_t* elf_header){
+	u64 interpreter_image_base=0x11223344aabbccddull;
+	u32 argc=3;
+	const char* argv[]={process->image->data,"arg1","arg2"};
+	const char* environ[]={"aaa","bbb","ccc","ddd",NULL};
+	u64 size=sizeof(u64);
+	u64 string_table_size=0;
+	for (u64 i=0;i<argc;i++){
+		size+=sizeof(u64);
+		string_table_size+=smm_length(argv[i])+1;
+	}
+	for (u64 i=0;environ[i];i++){
+		size+=sizeof(u64);
+		string_table_size+=smm_length(environ[i])+1;
+	}
+	size+=sizeof(u64); // environ NULL-terminator
+	string_table_size+=smm_length(ELF_AUXV_PLATFORM)+1;
+	string_table_size+=ELF_AUXV_RANDOM_DATA_SIZE+1;
+	string_table_size+=smm_length(process->image->data)+1;
+	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
+	u64 total_size=size+((string_table_size+7)&0xfffffff8);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	u64* data_ptr=buffer;
+	void* string_table_ptr=buffer+size;
+	PUSH_DATA_VALUE(argc);
+	for (u64 i=0;i<argc;i++){
+		PUSH_DATA_VALUE(string_table_ptr-buffer);
+		PUSH_STRING(argv[i]);
+	}
+	for (u64 i=0;environ[i];i++){
+		PUSH_DATA_VALUE(string_table_ptr-buffer);
+		PUSH_STRING(environ[i]);
+	}
+	PUSH_DATA_VALUE(0); // environ NULL-terminator
+	PUSH_AUXV_VALUE(AT_PHDR,elf_header->e_phoff);
+	PUSH_AUXV_VALUE(AT_PHENT,elf_header->e_phentsize);
+	PUSH_AUXV_VALUE(AT_PHNUM,elf_header->e_phnum);
+	PUSH_AUXV_VALUE(AT_PAGESZ,PAGE_SIZE);
+	PUSH_AUXV_VALUE(AT_BASE,interpreter_image_base);
+	PUSH_AUXV_VALUE(AT_FLAGS,0);
+	PUSH_AUXV_VALUE(AT_ENTRY,elf_header->e_entry);
+	PUSH_AUXV_VALUE(AT_PLATFORM,string_table_ptr-buffer);
+	PUSH_STRING(ELF_AUXV_PLATFORM);
+	PUSH_AUXV_VALUE(AT_HWCAP,0); // cpuid[1].edx
+	PUSH_AUXV_VALUE(AT_RANDOM,string_table_ptr-buffer);
+	random_generate(string_table_ptr,ELF_AUXV_RANDOM_DATA_SIZE);
+	string_table_ptr+=ELF_AUXV_RANDOM_DATA_SIZE;
+	PUSH_AUXV_VALUE(AT_HWCAP2,0);
+	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr-buffer);
+	PUSH_STRING(process->image->data);
+	PUSH_AUXV_VALUE(AT_NULL,0);
+	mmap_region_t* region=mmap_alloc(&(process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	if (!region){
+		panic("Unable to reserve process input data memory");
+	}
+	mmap_set_memory(&(process->mmap),region,0,buffer,total_size);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter);
+	thread->gpr_state.r15=region->rb_node.key;
+}
+
+
+
+static u64 _load_interpreter(process_t* process,const char* path){
 	vfs_node_t* file=vfs_lookup(NULL,path,1);
 	if (!file){
 		panic("Unable to find interpreter");
@@ -70,13 +147,13 @@ static void _load_interpreter(process_t* process,const char* path,thread_t* thre
 	for (;dyn->d_tag!=DT_NULL;dyn++){
 		switch (dyn->d_tag){
 			case DT_SYMTAB:
-				symbol_table=file_data+dyn->d_un.d_ptr;
+				symbol_table=file_data+((u64)(dyn->d_un.d_ptr));
 				break;
 			case DT_SYMENT:
 				symbol_table_entry_size=dyn->d_un.d_val;
 				break;
 			case DT_RELA:
-				relocations=file_data+dyn->d_un.d_ptr;
+				relocations=file_data+((u64)(dyn->d_un.d_ptr));
 				break;
 			case DT_RELASZ:
 				relocation_size=dyn->d_un.d_val;
@@ -109,10 +186,10 @@ static void _load_interpreter(process_t* process,const char* path,thread_t* thre
 	}
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	// thread->gpr_state.rip=header.e_entry+image_base;
-	return;
+	return header.e_entry+image_base;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
+	return 0;
 }
 
 
@@ -164,8 +241,9 @@ _Bool elf_load(vfs_node_t* file){
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	thread_t* thread=thread_new_user_thread(process,header.e_entry,0x200000);
+	_init_input_data(process,thread,&header);
 	if (interpreter){
-		_load_interpreter(process,interpreter,thread);
+		/*thread->gpr_state.rip=*/_load_interpreter(process,interpreter);
 	}
 	scheduler_enqueue_thread(thread);
 	return 1;
