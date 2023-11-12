@@ -661,9 +661,9 @@ with open("src/lib/dependencies.txt","r") as rf:
 syscall_object_files=_compile_user_files("syscall")
 runtime_object_files=syscall_object_files+_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
-	if (program=="runtime" or program=="linker" or program=="syscall"):
+	if (program=="runtime" or program=="syscall"):
 		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-ltest","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-ltest","-llinker","-o",f"build/user/{program}"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
@@ -705,8 +705,9 @@ if (rebuild_data_partition):
 	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so")
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
-	with open("build/user/shell.elf","rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
+	for program in os.listdir("build/user"):
+		with open(f"build/user/{program}","rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config"),rf.read())
 	for module in os.listdir(MODULE_FILE_DIRECTORY):
