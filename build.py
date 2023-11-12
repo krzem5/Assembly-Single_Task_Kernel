@@ -194,15 +194,15 @@ def _generate_syscalls(file_path):
 			syscalls.append((name,args,attrs,ret))
 	syscalls=sorted(syscalls,key=lambda e:e[0])
 	syscalls.insert(0,("invalid",tuple(),"","void"))
-	with open("src/user/syscall/syscall.asm","w") as wf:
+	with open("src/lib/core/core/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
 			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}\n_syscall_{name}:\n\tmov rax, {i}\n")
 			if (len(args)>3):
 				wf.write("\tmov r8, rcx\n")
 			wf.write("\tsyscall\n\tret\n")
-	with open("src/user/syscall/include/syscall/syscall.h","w") as wf:
-		wf.write("#ifndef _USER_SYSCALL_H_\n#define _USER_SYSCALL_H_ 1\n#include <user/types.h>\n\n\n\n")
+	with open("src/lib/core/include/core/syscall.h","w") as wf:
+		wf.write("#ifndef _CORE_SYSCALL_H_\n#define _CORE_SYSCALL_H_ 1\n#include <core/types.h>\n\n\n\n")
 		for name,args,attrs,ret in syscalls:
 			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
 		wf.write("#endif\n")
@@ -393,7 +393,7 @@ def _compile_library(library,dependencies):
 	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library)
 	object_files=[]
-	pic_object_files=[]
+	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
 	error=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
@@ -401,28 +401,26 @@ def _compile_library(library,dependencies):
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
-			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			pic_object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
+			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
 			object_files.append(object_file)
-			pic_object_files.append(pic_object_file)
-			if (_file_not_changed(changed_files,object_file+".deps") and 0):
+			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
 			command=None
-			pic_command=None
+			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
-				pic_command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",pic_object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-				pic_command=["nasm","-f","elf64","-Wall","-Werror","-O3","-DPIC","-o",pic_object_file,file]+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
-			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0 or subprocess.run(pic_command+["-MD","-MT",pic_object_file,"-MF",pic_object_file+".deps"]).returncode!=0):
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ar","rcs",f"build/lib/lib{library}.a"]+object_files).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+pic_object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	static_library_file=f"build/lib/lib{library}.a"
+	if (os.path.exists(static_library_file)):
+		os.remove(static_library_file)
+	if (error or subprocess.run(["ar","rcs",static_library_file]+object_files).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-	return pic_object_files
 
 
 

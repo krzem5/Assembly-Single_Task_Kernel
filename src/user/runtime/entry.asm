@@ -1,5 +1,5 @@
 extern _syscall_thread_stop
-extern _entry
+extern main
 global _start
 section .text exec nowrite
 
@@ -11,5 +11,5 @@ _start:
 	and rsp, 0xfffffffffffffff0
 	mov rbp, rsp
 	mov rdi, r15
-	call _entry
+	call main
 	jmp _syscall_thread_stop
