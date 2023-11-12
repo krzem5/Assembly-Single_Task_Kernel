@@ -301,7 +301,7 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 						*((u32*)relocation_address)=value;
 						break;
 					default:
-						WARN("Unknown relocation type: %u",entry->r_info&0xffffffff);
+						ERROR("Unknown relocation type: %u",entry->r_info&0xffffffff);
 						return 0;
 				}
 				entry++;
@@ -342,7 +342,7 @@ module_t* module_load(const char* name){
 	SMM_TEMPORARY_STRING name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
 	if (!module_file){
-		WARN("Unable to find module '%s'",name);
+		ERROR("Unable to find module '%s'",name);
 		spinlock_release_exclusive(&_module_global_lock);
 		return NULL;
 	}
