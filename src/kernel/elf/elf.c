@@ -30,16 +30,29 @@
 
 
 
+typedef struct _ELF_LOADER_CONTEXT{
+	const char* path;
+	process_t* process;
+	thread_t* thread;
+	void* data;
+	const elf_hdr_t* elf_header;
+	u64 user_phdr_address;
+	const char* interpreter_path;
+	u64 interpreter_image_base;
+} elf_loader_context_t;
+
+
+
 static pmm_counter_descriptor_t _user_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_image");
 static pmm_counter_descriptor_t _user_input_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_input_data");
 
 
 
-static void _init_input_data(process_t* process,thread_t* thread,const elf_hdr_t* elf_header){
-	u64 interpreter_image_base=0x11223344aabbccddull;
+static void _init_input_data(elf_loader_context_t* ctx){
 	u32 argc=3;
-	const char* argv[]={process->image->data,"arg1","arg2"};
+	const char* argv[]={ctx->path,"arg1","arg2"};
 	const char* environ[]={"aaa","bbb","ccc","ddd",NULL};
+	////////////////////////////////////////////////////
 	u64 size=sizeof(u64);
 	u64 string_table_size=0;
 	for (u64 i=0;i<argc;i++){
@@ -53,7 +66,7 @@ static void _init_input_data(process_t* process,thread_t* thread,const elf_hdr_t
 	size+=sizeof(u64); // environ NULL-terminator
 	string_table_size+=smm_length(ELF_AUXV_PLATFORM)+1;
 	string_table_size+=ELF_AUXV_RANDOM_DATA_SIZE+1;
-	string_table_size+=smm_length(process->image->data)+1;
+	string_table_size+=smm_length(ctx->path)+1;
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=size+((string_table_size+7)&0xfffffff8);
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -69,13 +82,13 @@ static void _init_input_data(process_t* process,thread_t* thread,const elf_hdr_t
 		PUSH_STRING(environ[i]);
 	}
 	PUSH_DATA_VALUE(0); // environ NULL-terminator
-	PUSH_AUXV_VALUE(AT_PHDR,elf_header->e_phoff);
-	PUSH_AUXV_VALUE(AT_PHENT,elf_header->e_phentsize);
-	PUSH_AUXV_VALUE(AT_PHNUM,elf_header->e_phnum);
+	PUSH_AUXV_VALUE(AT_PHDR,ctx->user_phdr_address);
+	PUSH_AUXV_VALUE(AT_PHENT,ctx->elf_header->e_phentsize);
+	PUSH_AUXV_VALUE(AT_PHNUM,ctx->elf_header->e_phnum);
 	PUSH_AUXV_VALUE(AT_PAGESZ,PAGE_SIZE);
-	PUSH_AUXV_VALUE(AT_BASE,interpreter_image_base);
+	PUSH_AUXV_VALUE(AT_BASE,ctx->interpreter_image_base);
 	PUSH_AUXV_VALUE(AT_FLAGS,0);
-	PUSH_AUXV_VALUE(AT_ENTRY,elf_header->e_entry);
+	PUSH_AUXV_VALUE(AT_ENTRY,ctx->elf_header->e_entry);
 	PUSH_AUXV_VALUE(AT_PLATFORM,string_table_ptr-buffer);
 	PUSH_STRING(ELF_AUXV_PLATFORM);
 	PUSH_AUXV_VALUE(AT_HWCAP,0); // cpuid[1].edx
@@ -84,15 +97,15 @@ static void _init_input_data(process_t* process,thread_t* thread,const elf_hdr_t
 	string_table_ptr+=ELF_AUXV_RANDOM_DATA_SIZE;
 	PUSH_AUXV_VALUE(AT_HWCAP2,0);
 	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr-buffer);
-	PUSH_STRING(process->image->data);
+	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
-	mmap_region_t* region=mmap_alloc(&(process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	if (!region){
 		panic("Unable to reserve process input data memory");
 	}
-	mmap_set_memory(&(process->mmap),region,0,buffer,total_size);
+	mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter);
-	thread->gpr_state.r15=region->rb_node.key;
+	ctx->thread->gpr_state.r15=region->rb_node.key;
 }
 
 
@@ -194,29 +207,44 @@ _error:
 
 
 
-_Bool elf_load(vfs_node_t* file){
+_Bool elf_load(const char* path){
+	if (!path){
+		return 0;
+	}
+	vfs_node_t* file=vfs_lookup(NULL,path,1);
 	if (!file){
 		return 0;
 	}
-	char image_buffer[4096];
-	vfs_path(file,image_buffer,4096);
-	process_t* process=process_new(image_buffer,file->name->data);
+	process_t* process=process_new(path,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
+	elf_loader_context_t ctx={
+		path,
+		process,
+		NULL,
+		(void*)(region->rb_node.key),
+		(void*)(region->rb_node.key),
+		0,
+		NULL,
+		0
+	};
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
-	if (header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_EXEC||header.e_machine!=0x3e||header.e_version!=1){
+	if (ctx.elf_header->e_ident.signature!=0x464c457f||ctx.elf_header->e_ident.word_size!=2||ctx.elf_header->e_ident.endianess!=1||ctx.elf_header->e_ident.header_version!=1||ctx.elf_header->e_ident.abi!=0||ctx.elf_header->e_type!=ET_EXEC||ctx.elf_header->e_machine!=0x3e||ctx.elf_header->e_version!=1){
 		goto _error;
 	}
-	const char* interpreter=NULL;
 	for (u16 i=0;i<header.e_phnum;i++){
 		const elf_phdr_t* program_header=file_data+header.e_phoff+i*header.e_phentsize;
+		if (program_header->p_type==PT_PHDR){
+			ctx.user_phdr_address=program_header->p_vaddr;
+			continue;
+		}
 		if (program_header->p_type==PT_INTERP){
-			if (interpreter){
+			if (ctx.interpreter_path){
 				ERROR("Multiple PT_INTERP program headers");
 				return 0;
 			}
-			interpreter=file_data+program_header->p_offset;
-			if (interpreter[program_header->p_filesz-1]){
+			ctx.interpreter_path=file_data+program_header->p_offset;
+			if (ctx.interpreter_path[program_header->p_filesz-1]){
 				ERROR("Interpreter string not null-terminated");
 				return 0;
 			}
@@ -239,13 +267,13 @@ _Bool elf_load(vfs_node_t* file){
 		}
 		mmap_set_memory(&(process->mmap),program_region,padding,file_data+program_header->p_offset,program_header->p_filesz);
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
-	thread_t* thread=thread_new_user_thread(process,header.e_entry,0x200000);
-	_init_input_data(process,thread,&header);
-	if (interpreter){
-		/*thread->gpr_state.rip=*/_load_interpreter(process,interpreter);
+	ctx.thread=thread_new_user_thread(process,header.e_entry,0x200000);
+	if (ctx.interpreter_path){
+		/*thread->gpr_state.rip=*/_load_interpreter(process,ctx.interpreter_path);
 	}
-	scheduler_enqueue_thread(thread);
+	_init_input_data(&ctx);
+	mmap_dealloc_region(&(process_kernel->mmap),region);
+	scheduler_enqueue_thread(ctx.thread);
 	return 1;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
