@@ -109,4 +109,3 @@ void panic(const char* error){
 	io_port_out16(0x604,0x2000);
 	for (;;);
 }
-
