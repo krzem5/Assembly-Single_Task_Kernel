@@ -124,7 +124,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base((u64)current_thread,0);
 		scheduler->current_thread=current_thread;
 		*state=current_thread->gpr_state;
-		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_bottom+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_region->rb_node.key+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		msr_set_fs_base(current_thread->fs_gs_state.fs);
 		msr_set_gs_base(current_thread->fs_gs_state.gs,1);
 		fpu_restore(current_thread->fpu_state);

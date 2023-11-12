@@ -71,11 +71,9 @@ typedef struct _THREAD{
 	spinlock_t lock;
 	process_t* process;
 	vmm_pagemap_t* pagemap;
-	u64 user_stack_bottom;
-	u64 kernel_stack_bottom;
-	u64 pf_stack_bottom;
-	u64 user_stack_size;
-	u64 kernel_stack_size;
+	mmap_region_t* user_stack_region;
+	mmap_region_t* kernel_stack_region;
+	mmap_region_t* pf_stack_region;
 	isr_state_t gpr_state;
 	thread_fs_gs_state_t fs_gs_state;
 	void* fpu_state;
