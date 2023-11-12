@@ -248,7 +248,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 		size+=sizeof(u64);
 		string_table_size+=smm_length(ctx->argv[i])+1;
 	}
-	for (u64 i=0;ctx->environ[i];i++){
+	for (u64 i=0;ctx->environ&&ctx->environ[i];i++){
 		size+=sizeof(u64);
 		string_table_size+=smm_length(ctx->environ[i])+1;
 	}
@@ -266,7 +266,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 		PUSH_DATA_VALUE(string_table_ptr-buffer);
 		PUSH_STRING(ctx->argv[i]);
 	}
-	for (u64 i=0;ctx->environ[i];i++){
+	for (u64 i=0;ctx->environ&&ctx->environ[i];i++){
 		PUSH_DATA_VALUE(string_table_ptr-buffer);
 		PUSH_STRING(ctx->environ[i]);
 	}
@@ -305,6 +305,10 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ){
 	if (!path){
 		return 0;
+	}
+	if (!argv){
+		argc=1;
+		argv=&path;
 	}
 	LOG("Loading executable '%s'...",path);
 	vfs_node_t* file=vfs_lookup(NULL,path,1);

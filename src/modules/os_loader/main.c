@@ -64,13 +64,7 @@ _check_next_fs:
 	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
-	const char* argv[]={
-		"/shell.elf"
-	};
-	const char* environ[]={
-		NULL
-	};
-	if (!elf_load("/shell.elf",1,argv,environ)){
+	if (!elf_load("/shell.elf",0,NULL,NULL)){
 		panic("Unable to load user shell");
 	}
 	return 1;
