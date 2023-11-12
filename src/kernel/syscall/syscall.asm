@@ -34,11 +34,10 @@ syscall_enable:
 
 _syscall_handler:
 	swapgs
-	push rbp
-	mov rbp, rsp
+	mov qword [gs:16], rsp
 	mov rsp, qword [gs:8]
 	push qword 0x1b
-	push rbp
+	push qword [gs:16]
 	push r11
 	push qword 0x23
 	push rcx
@@ -108,6 +107,5 @@ _syscall_handler:
 	add rsp, 8
 	pop r11
 	mov rsp, qword [rsp]
-	pop rbp
 	swapgs
 	o64 sysret

@@ -35,13 +35,17 @@ _Bool elf_load(vfs_node_t* file){
 	}
 	for (u16 i=0;i<header.e_phnum;i++){
 		const elf_phdr_t* program_header=file_data+header.e_phoff+i*sizeof(elf_phdr_t);
+		if (program_header->p_type==PT_INTERP){
+			WARN("Interpreter: %s",file_data+program_header->p_offset);
+			continue;
+		}
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
 		if (program_header->p_vaddr&(PAGE_SIZE-1)){
 			panic("elf_load: Non-page-aligned program header");
 		}
-		u64 flags=MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
+		u64 flags=MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
 		if (!(program_header->p_flags&PF_X)){
 			flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
 		}
