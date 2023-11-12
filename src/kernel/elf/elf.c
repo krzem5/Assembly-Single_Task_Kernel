@@ -231,7 +231,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 	}
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	// ctx->thread->gpr_state.rip=header.e_entry+image_base;
+	ctx->thread->gpr_state.rip=header.e_entry+image_base;
 	return 1;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
