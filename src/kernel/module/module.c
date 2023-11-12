@@ -51,6 +51,28 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 
 
+static _Bool _alloc_region_memory(module_address_range_t* region){
+	region->size=pmm_align_up_address((region->size?region->size:1));
+	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	if (!mmap_region){
+		ERROR("Unable to reserve module section memory");
+		return 0;
+	}
+	region->base=mmap_region->rb_node.key;
+	return 1;
+}
+
+
+
+static void _dealloc_region_memory(const module_address_range_t* region){
+	if (!region->size||!region->base){
+		return;
+	}
+	mmap_dealloc(&process_kernel_image_mmap,region->base,region->size);
+}
+
+
+
 static module_t* _lookup_module_by_name(const char* name){
 	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
 		handle_acquire(handle);
@@ -140,19 +162,6 @@ static _Bool _accumulate_sections(module_loader_context_t* ctx){
 		}
 		*var+=section_header->sh_size;
 	}
-	return 1;
-}
-
-
-
-static _Bool _alloc_region_memory(module_address_range_t* region){
-	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
-	if (!mmap_region){
-		ERROR("Unable to reserve module section memory");
-		return 0;
-	}
-	region->base=mmap_region->rb_node.key;
 	return 1;
 }
 
@@ -376,6 +385,9 @@ module_t* module_load(const char* name){
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
+	_dealloc_region_memory(&(module->ex_region));
+	_dealloc_region_memory(&(module->nx_region));
+	_dealloc_region_memory(&(module->rw_region));
 	handle_release(&(module->handle));
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	spinlock_release_exclusive(&_module_global_lock);
