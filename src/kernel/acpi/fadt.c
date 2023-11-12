@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/acpi/structures.h>
 #include <kernel/aml/parser.h>
 #include <kernel/aml/runtime.h>
 #include <kernel/io/io.h>
@@ -17,38 +18,13 @@
 
 
 
-typedef struct __attribute__((packed)) _FADT{
-	u8 _padding[40];
-	u32 dsdt;
-	u8 _padding2[2];
-	u16 sci_int;
-	u32 smi_command_port;
-	u8 acpi_enable;
-	u8 acpi_disable;
-	u8 _padding3[10];
-	u32 pm1a_control_block;
-	u32 pm1b_control_block;
-} fadt_t;
-
-
-
-typedef struct __attribute__((packed)) _DSDT{
-	u8 _padding[4];
-	u32 length;
-	u8 _padding2[28];
-	u8 data[];
-} dsdt_t;
-
-
-
 static u32 KERNEL_INIT_WRITE _fadt_pm1a_control_block;
 static u32 KERNEL_INIT_WRITE _fadt_pm1b_control_block;
 
 
 
-void acpi_fadt_load(const void* fadt_ptr){
+void acpi_fadt_load(const fadt_t* fadt){
 	LOG("Loading FADT...");
-	const fadt_t* fadt=fadt_ptr;
 	LOG("Enabling ACPI...");
 	if (io_port_in16(fadt->pm1a_control_block)&SCI_EN){
 		INFO("ACPI already enabled");
@@ -64,8 +40,8 @@ void acpi_fadt_load(const void* fadt_ptr){
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
 	const dsdt_t* dsdt=(void*)(u64)(fadt->dsdt);
-	dsdt=(void*)vmm_identity_map((u64)dsdt,((const dsdt_t*)vmm_identity_map((u64)dsdt,sizeof(dsdt_t)))->length);
-	aml_runtime_init(aml_parse(dsdt->data,dsdt->length-sizeof(dsdt_t)),fadt->sci_int);
+	dsdt=(void*)vmm_identity_map((u64)dsdt,((const dsdt_t*)vmm_identity_map((u64)dsdt,sizeof(dsdt_t)))->header.length);
+	aml_runtime_init(aml_parse(dsdt->data,dsdt->header.length-sizeof(dsdt_t)),fadt->sci_int);
 }
 
 

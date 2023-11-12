@@ -1,3 +1,4 @@
+#include <kernel/acpi/structures.h>
 #include <kernel/log/log.h>
 #include <kernel/numa/numa.h>
 #include <kernel/types.h>
@@ -6,19 +7,8 @@
 
 
 
-typedef struct __attribute__((packed)) _SLIT{
-	u32 signature;
-	u32 length;
-	u8 _padding[28];
-	u64 locality_count;
-	u8 data[];
-} slit_t;
-
-
-
-void acpi_slit_load(const void* slit_ptr){
+void acpi_slit_load(const slit_t* slit){
 	LOG("Loading SLIT...");
-	const slit_t* slit=slit_ptr;
 	if (numa_node_count!=slit->locality_count){
 		panic("SLIT: numa domain count mismatch");
 	}

@@ -3,41 +3,13 @@
 #include <kernel/acpi/madt.h>
 #include <kernel/acpi/slit.h>
 #include <kernel/acpi/srat.h>
+#include <kernel/acpi/structures.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "acpi"
-
-
-
-typedef struct __attribute__((packed)) _RSDP{
-	u64 signature;
-	u8 _padding[7];
-	u8 revision;
-	u32 rsdt_address;
-	u8 _padding2[4];
-	u64 xsdt_address;
-} rsdp_t;
-
-
-
-typedef struct __attribute__((packed)) _SDT{
-	u32 signature;
-	u32 length;
-	u8 _padding[28];
-} sdt_t;
-
-
-
-typedef struct __attribute__((packed)) _RSDT{
-	sdt_t header;
-	union{
-		u32 rsdt_data[0];
-		u64 xsdt_data[0];
-	};
-} rsdt_t;
 
 
 
@@ -58,32 +30,32 @@ void acpi_load(void){
 	}
 	rsdt=(void*)vmm_identity_map((u64)rsdt,((const rsdt_t*)vmm_identity_map((u64)rsdt,sizeof(rsdt_t)))->header.length);
 	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
-	const sdt_t* madt=NULL;
-	const sdt_t* fadt=NULL;
-	const sdt_t* hmat=NULL;
-	const sdt_t* srat=NULL;
-	const sdt_t* slit=NULL;
+	const madt_t* madt=NULL;
+	const fadt_t* fadt=NULL;
+	const hmat_t* hmat=NULL;
+	const srat_t* srat=NULL;
+	const slit_t* slit=NULL;
 	for (u32 i=0;i<entry_count;i++){
 		const sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
 		sdt=(void*)vmm_identity_map((u64)sdt,((const sdt_t*)vmm_identity_map((u64)sdt,sizeof(sdt_t)))->length);
 		if (sdt->signature==0x43495041){
-			madt=sdt;
+			madt=(const madt_t*)sdt;
 			INFO("Found MADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x50434146){
-			fadt=sdt;
+			fadt=(const fadt_t*)sdt;
 			INFO("Found FADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54414d48){
-			hmat=sdt;
+			hmat=(const hmat_t*)sdt;
 			INFO("Found HMAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54415253){
-			srat=sdt;
+			srat=(const srat_t*)sdt;
 			INFO("Found SRAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54494c53){
-			slit=sdt;
+			slit=(const slit_t*)sdt;
 			INFO("Found SLIT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 	}

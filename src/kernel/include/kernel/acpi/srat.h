@@ -1,9 +1,10 @@
 #ifndef _KERNEL_ACPI_SRAT_H_
 #define _KERNEL_ACPI_SRAT_H_ 1
+#include <kernel/acpi/structures.h>
 
 
 
-void acpi_srat_load(const void* srat_ptr);
+void acpi_srat_load(const srat_t* srat);
 
 
 

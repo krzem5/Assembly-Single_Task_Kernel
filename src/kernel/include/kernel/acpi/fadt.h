@@ -1,10 +1,11 @@
 #ifndef _KERNEL_ACPI_FADT_H_
 #define _KERNEL_ACPI_FADT_H_ 1
+#include <kernel/acpi/structures.h>
 #include <kernel/types.h>
 
 
 
-void acpi_fadt_load(const void* fadt_ptr);
+void acpi_fadt_load(const fadt_t* fadt);
 
 
 
