@@ -158,7 +158,7 @@ static _Bool _alloc_region_memory(module_address_range_t* region){
 
 
 
-static _Bool _map_section(module_loader_context_t* ctx){
+static _Bool _map_sections(module_loader_context_t* ctx){
 	INFO("Mapping sections...");
 	if (!_alloc_region_memory(&(ctx->module->ex_region))){
 		return 0;
@@ -182,13 +182,13 @@ static _Bool _map_section(module_loader_context_t* ctx){
 		u64* var=NULL;
 		switch (section_header->sh_flags&(SHF_WRITE|SHF_EXECINSTR)){
 			case 0:
-				var=&(nx_base);
+				var=&nx_base;
 				break;
 			case SHF_WRITE:
-				var=&(rw_base);
+				var=&rw_base;
 				break;
 			case SHF_EXECINSTR:
-				var=&(ex_base);
+				var=&ex_base;
 				break;
 		}
 		if (section_header->sh_addralign){
@@ -355,7 +355,7 @@ module_t* module_load(const char* name){
 	if (!_accumulate_sections(&ctx)){
 		goto _error;
 	}
-	if (!_map_section(&ctx)){
+	if (!_map_sections(&ctx)){
 		goto _error;
 	}
 	if (!_find_dynamic_elf_sections(&ctx)){
