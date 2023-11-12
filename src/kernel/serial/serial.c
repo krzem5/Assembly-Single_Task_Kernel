@@ -48,6 +48,7 @@ static void _init_port(u16 io_port,serial_port_t* out){
 }
 
 
+
 void serial_init(void){
 	_init_port(0x3f8,serial_ports);
 	_init_port(0x2f8,serial_ports+1);

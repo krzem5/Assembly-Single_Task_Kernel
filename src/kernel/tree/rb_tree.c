@@ -336,7 +336,6 @@ _cleanup:
 
 
 
-
 rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 	if (tree->root==NIL_NODE){
 		return NULL;

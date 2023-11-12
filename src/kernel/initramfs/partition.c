@@ -29,7 +29,6 @@ static partition_table_descriptor_t _initramfs_partition_table_descriptor={
 
 
 
-
 void initramfs_partition_init(void){
 	LOG("Registering initramfs partition descriptor...");
 	partition_register_table_descriptor(&_initramfs_partition_table_descriptor);

@@ -21,4 +21,5 @@ u8 usb_address_space_alloc(usb_address_space_t* address_space);
 void usb_address_space_dealloc(usb_address_space_t* address_space,u8 address);
 
 
+
 #endif

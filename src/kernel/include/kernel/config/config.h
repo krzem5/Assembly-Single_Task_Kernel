@@ -6,14 +6,12 @@
 
 
 
-
 typedef struct _CONFIG_ITEM{
 	struct _CONFIG_ITEM* prev;
 	struct _CONFIG_ITEM* next;
 	string_t* key;
 	string_t* value;
 } config_item_t;
-
 
 
 
