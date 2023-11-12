@@ -658,7 +658,7 @@ runtime_object_files=syscall_object_files+_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime" or program=="linker" or program=="syscall"):
 		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","build/lib/test.so","-I/lib/ld.so","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-l:test.so","-I/lib/ld.so","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
