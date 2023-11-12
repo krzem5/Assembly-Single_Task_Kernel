@@ -65,7 +65,7 @@ BUILD_DIRECTORIES=[
 	"src/user/syscall/include",
 	"src/user/syscall/include/syscall"
 ]
-SYSCALL_SOURCE_FILE_PATH="src/syscalls.txt"
+SYSCALL_SOURCE_FILE_PATH="src/kernel/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
@@ -167,10 +167,10 @@ USER_EXTRA_LINKER_OPTIONS={
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
-MODULE_FILE_DIRECTORY="src/modules"
+MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
-MODULE_ORDER_FILE_PATH="src/module_order.config"
+MODULE_ORDER_FILE_PATH="src/module/module_order.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 INITRAMFS_SIZE=512
@@ -359,10 +359,11 @@ def _patch_kernel(file_path,kernel_symbols):
 
 
 
-def _compile_module(module,shared_include_list):
+def _compile_module(module,dependencies):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
 	object_files=[]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
 	error=False
 	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
 		for file_name in files:
@@ -376,7 +377,7 @@ def _compile_module(module,shared_include_list):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-mcmodel=kernel","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+shared_include_list+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-mcmodel=kernel","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -640,15 +641,22 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _patch_kernel("build/kernel.bin",kernel_symbols)
 #####################################################################################################################################
-shared_include_list=[]
-with open("src/shared_modules.txt","r") as rf:
+with open("src/module/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
 		line=line.strip()
 		if (not line):
 			continue
-		shared_include_list.append(f"-I{MODULE_FILE_DIRECTORY}/{line}/include")
-for module in os.listdir(MODULE_FILE_DIRECTORY):
-	_compile_module(module,shared_include_list)
+		name,dependencies=line.split(":")
+		_compile_module(name,[dep.strip() for dep in dependencies.split(",")])
+# shared_include_list=[]
+# with open("src/shared_modules.txt","r") as rf:
+# 	for line in rf.read().split("\n"):
+# 		line=line.strip()
+# 		if (not line):
+# 			continue
+# 		shared_include_list.append(f"-I{MODULE_FILE_DIRECTORY}/{line}/include")
+# for module in os.listdir(MODULE_FILE_DIRECTORY):
+# 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
 with open("src/lib/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
@@ -712,9 +720,9 @@ if (rebuild_data_partition):
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config"),rf.read())
-	for module in os.listdir(MODULE_FILE_DIRECTORY):
-		with open(f"build/module/{module}.mod","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}.mod"),rf.read())
+	for module in os.listdir("build/module"):
+		with open(f"build/module/{module}","rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}"),rf.read())
 	data_fs.close()
 #####################################################################################################################################
 if ("--run" in sys.argv):
