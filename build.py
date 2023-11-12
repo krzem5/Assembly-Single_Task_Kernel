@@ -656,15 +656,17 @@ with open("src/lib/dependencies.txt","r") as rf:
 		if (not line):
 			continue
 		name,dependencies=line.split(":")
-		_compile_library(name,[e.strip() for e in dependencies.split(",")])
+		_compile_library(name,[dep.strip() for dep in dependencies.split(",")])
 #####################################################################################################################################
-syscall_object_files=_compile_user_files("syscall")
-runtime_object_files=syscall_object_files+_compile_user_files("runtime")
-for program in os.listdir(USER_FILE_DIRECTORY):
-	if (program=="runtime" or program=="syscall"):
-		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-ltest","-o",f"build/user/{program}"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
-		sys.exit(1)
+runtime_object_files=_compile_user_files("syscall")+_compile_user_files("runtime")
+with open("src/user/dependencies.txt","r") as rf:
+	for line in rf.read().split("\n"):
+		line=line.strip()
+		if (not line):
+			continue
+		name,dependencies=line.split(":")
+		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-o",f"build/user/{name}"]+[f"-l{dep.strip()}" for dep in dependencies.split(",") if dep.strip()]+runtime_object_files+_compile_user_files(name)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+			sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
