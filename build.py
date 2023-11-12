@@ -57,10 +57,9 @@ BUILD_DIRECTORIES=[
 	"build/user",
 	"build/vm",
 	"src/kernel/_generated",
-	"src/user/runtime/_generated",
-	"src/user/runtime/_generated/include",
-	"src/user/runtime/_generated/include/user",
-	"src/user/runtime/user/_generated"
+	"src/user/syscall",
+	"src/user/syscall/include",
+	"src/user/syscall/include/syscall"
 ]
 SYSCALL_SOURCE_FILE_PATH="src/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
@@ -165,14 +164,14 @@ def _generate_syscalls(file_path):
 			syscalls.append((name,args,attrs,ret))
 	syscalls=sorted(syscalls,key=lambda e:e[0])
 	syscalls.insert(0,("invalid",tuple(),"","void"))
-	with open("src/user/runtime/user/_generated/syscall.asm","w") as wf:
+	with open("src/user/syscall/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
 			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}\n_syscall_{name}:\n\tmov rax, {i}\n")
 			if (len(args)>3):
 				wf.write("\tmov r8, rcx\n")
 			wf.write("\tsyscall\n\tret\n")
-	with open("src/user/runtime/_generated/include/user/syscall.h","w") as wf:
+	with open("src/user/syscall/include/syscall/syscall.h","w") as wf:
 		wf.write("#ifndef _USER_SYSCALL_H_\n#define _USER_SYSCALL_H_ 1\n#include <user/types.h>\n\n\n\n")
 		for name,args,attrs,ret in syscalls:
 			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
@@ -360,7 +359,7 @@ def _compile_module(module,shared_include_list):
 
 
 
-def _compile_user_files(program):
+def _compile_user_files(program,is_linker=False):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
@@ -377,7 +376,9 @@ def _compile_user_files(program):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include",f"-I{USER_FILE_DIRECTORY}/runtime/_generated/include"]+USER_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include",f"-I{USER_FILE_DIRECTORY}/syscall/include"]+USER_EXTRA_COMPILER_OPTIONS
+				if (is_linker):
+					command+=["-fplt"]
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -586,12 +587,15 @@ with open("src/shared_modules.txt","r") as rf:
 for module in os.listdir(MODULE_FILE_DIRECTORY):
 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
-runtime_object_files=_compile_user_files("runtime")
+syscall_object_files=_compile_user_files("syscall")
+if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-e","_start","-r","-o","build/user/ld.elf"]+syscall_object_files+_compile_user_files("linker",True)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	sys.exit(1)
+runtime_object_files=syscall_object_files+_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
-	if (program=="runtime"):
+	if (program=="runtime" or program=="linker" or program=="syscall"):
 		continue
-	object_files=runtime_object_files+_compile_user_files(program)
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o",f"build/user/{program}.elf"]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	# --gc-keep-exported keeps the .interp section even with --gc-sections
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","--gc-keep-exported","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
@@ -625,6 +629,8 @@ if (rebuild_data_partition):
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
+	with open("build/user/ld.elf","rb") as rf:
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/lib/ld.elf"),rf.read())
 	with open("build/user/shell.elf","rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:

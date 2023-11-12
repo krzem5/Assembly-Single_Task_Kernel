@@ -9,9 +9,6 @@
 
 
 static void _get_string(u32 index,char* buffer){
-	// if (system_get_string(index,buffer,BUFFER_SIZE)){
-	// 	return;
-	// }
 	buffer[0]='<';
 	buffer[1]='U';
 	buffer[2]='n';

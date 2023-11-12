@@ -5,6 +5,10 @@
 
 
 
+const char interp[] __attribute__((used,section(".interp")))="/lib/ld.elf";
+
+
+
 void main(void){
 	clock_init();
 	cwd_init();
@@ -13,5 +17,3 @@ void main(void){
 		command_execute(input);
 	}
 }
-
-// const char interp[] __attribute__((used,section(".interp")))="/lib/ld-linux.so.2";
