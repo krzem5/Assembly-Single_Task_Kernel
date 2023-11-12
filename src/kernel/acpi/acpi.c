@@ -15,10 +15,10 @@
 
 void acpi_load(void){
 	LOG("Loading ACPI RSDP...");
-	const rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(rsdt_t));
+	const acpi_rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(acpi_rsdt_t));
 	INFO("Found RSDP at %p (revision %u)",((u64)rsdp)-VMM_HIGHER_HALF_ADDRESS_OFFSET,rsdp->revision);
 	_Bool is_xsdt=0;
-	const rsdt_t* rsdt;
+	const acpi_rsdt_t* rsdt;
 	if (!rsdp->revision||!rsdp->xsdt_address){
 		INFO("Found RSDT at %p",rsdp->rsdt_address);
 		rsdt=(void*)(u64)(rsdp->rsdt_address);
@@ -28,34 +28,34 @@ void acpi_load(void){
 		INFO("Found XSDT at %p",rsdp->xsdt_address);
 		rsdt=(void*)(rsdp->xsdt_address);
 	}
-	rsdt=(void*)vmm_identity_map((u64)rsdt,((const rsdt_t*)vmm_identity_map((u64)rsdt,sizeof(rsdt_t)))->header.length);
-	u32 entry_count=(rsdt->header.length-sizeof(rsdt_t))>>(2+is_xsdt);
-	const madt_t* madt=NULL;
-	const fadt_t* fadt=NULL;
-	const hmat_t* hmat=NULL;
-	const srat_t* srat=NULL;
-	const slit_t* slit=NULL;
+	rsdt=(void*)vmm_identity_map((u64)rsdt,((const acpi_rsdt_t*)vmm_identity_map((u64)rsdt,sizeof(acpi_rsdt_t)))->header.length);
+	u32 entry_count=(rsdt->header.length-sizeof(acpi_rsdt_t))>>(2+is_xsdt);
+	const acpi_madt_t* madt=NULL;
+	const acpi_fadt_t* fadt=NULL;
+	const acpi_hmat_t* hmat=NULL;
+	const acpi_srat_t* srat=NULL;
+	const acpi_slit_t* slit=NULL;
 	for (u32 i=0;i<entry_count;i++){
-		const sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
-		sdt=(void*)vmm_identity_map((u64)sdt,((const sdt_t*)vmm_identity_map((u64)sdt,sizeof(sdt_t)))->length);
+		const acpi_sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
+		sdt=(void*)vmm_identity_map((u64)sdt,((const acpi_sdt_t*)vmm_identity_map((u64)sdt,sizeof(acpi_sdt_t)))->length);
 		if (sdt->signature==0x43495041){
-			madt=(const madt_t*)sdt;
+			madt=(const acpi_madt_t*)sdt;
 			INFO("Found MADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x50434146){
-			fadt=(const fadt_t*)sdt;
+			fadt=(const acpi_fadt_t*)sdt;
 			INFO("Found FADT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54414d48){
-			hmat=(const hmat_t*)sdt;
+			hmat=(const acpi_hmat_t*)sdt;
 			INFO("Found HMAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54415253){
-			srat=(const srat_t*)sdt;
+			srat=(const acpi_srat_t*)sdt;
 			INFO("Found SRAT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 		else if (sdt->signature==0x54494c53){
-			slit=(const slit_t*)sdt;
+			slit=(const acpi_slit_t*)sdt;
 			INFO("Found SLIT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
 	}

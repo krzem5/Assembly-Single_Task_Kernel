@@ -11,11 +11,11 @@
 
 
 
-typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
+typedef struct KERNEL_PACKED _ISO9660_VOLUME_DESCRIPTOR{
 	u8 type;
 	u8 identifier[5];
 	u8 version;
-	struct __attribute__((packed)){
+	struct KERNEL_PACKED{
 		u8 _padding[33];
 		char volume_name[32];
 		u8 _padding2[8];
@@ -29,7 +29,7 @@ typedef struct __attribute__((packed)) _ISO9660_VOLUME_DESCRIPTOR{
 
 
 
-typedef struct __attribute__((packed)) _ISO9660_DIRECTORY{
+typedef struct KERNEL_PACKED _ISO9660_DIRECTORY{
 	u8 length;
 	u8 _padding;
 	u32 lba;

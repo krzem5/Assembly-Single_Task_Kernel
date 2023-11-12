@@ -31,27 +31,27 @@
 
 
 
-typedef struct __attribute__((packed)) _USB_MSC_CBW{
+typedef struct KERNEL_PACKED _USB_MSC_CBW{
 	u32 dCBWSignature;
 	u32 dCBWTag;
 	u32 dCBWDataTransferLength;
 	u8 bmCBWFlags;
 	u8 bCBWLUN;
 	u8 bCBWCBLength;
-	union __attribute__((packed)){
+	union KERNEL_PACKED{
 		u8 _data[16];
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 type;
 		} test_unit_ready;
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 type;
 			u8 _padding[3];
 			u8 size;
 		} inquiry;
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 type;
 		} read_capacity_10;
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 type;
 			u8 _padding;
 			u32 lba;
@@ -63,7 +63,7 @@ typedef struct __attribute__((packed)) _USB_MSC_CBW{
 
 
 
-typedef struct __attribute__((packed)) _USB_MSC_CSW{
+typedef struct KERNEL_PACKED _USB_MSC_CSW{
 	u32 dCSWSignature;
 	u32 dCSWTag;
 	u32 dCSWDataResidue;
@@ -72,7 +72,7 @@ typedef struct __attribute__((packed)) _USB_MSC_CSW{
 
 
 
-typedef struct __attribute__((packed)) _USB_SCSI_INQUIRY_RESPONCE{
+typedef struct KERNEL_PACKED _USB_SCSI_INQUIRY_RESPONCE{
 	u8 pdt;
 	u8 removable;
 	u8 _padding[6];
@@ -83,7 +83,7 @@ typedef struct __attribute__((packed)) _USB_SCSI_INQUIRY_RESPONCE{
 
 
 
-typedef struct __attribute__((packed)) _USB_SCSI_READ_CAPACITY_10_RESPONCE{
+typedef struct KERNEL_PACKED _USB_SCSI_READ_CAPACITY_10_RESPONCE{
 	u32 sectors;
 	u32 block_size;
 } usb_scsi_read_capacity_10_responce_t;

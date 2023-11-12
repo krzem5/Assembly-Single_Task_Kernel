@@ -23,7 +23,7 @@ static u32 KERNEL_INIT_WRITE _fadt_pm1b_control_block;
 
 
 
-void acpi_fadt_load(const fadt_t* fadt){
+void acpi_fadt_load(const acpi_fadt_t* fadt){
 	LOG("Loading FADT...");
 	LOG("Enabling ACPI...");
 	if (io_port_in16(fadt->pm1a_control_block)&SCI_EN){
@@ -39,9 +39,9 @@ void acpi_fadt_load(const fadt_t* fadt){
 	_fadt_pm1a_control_block=fadt->pm1a_control_block;
 	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
-	const dsdt_t* dsdt=(void*)(u64)(fadt->dsdt);
-	dsdt=(void*)vmm_identity_map((u64)dsdt,((const dsdt_t*)vmm_identity_map((u64)dsdt,sizeof(dsdt_t)))->header.length);
-	aml_runtime_init(aml_parse(dsdt->data,dsdt->header.length-sizeof(dsdt_t)),fadt->sci_int);
+	const acpi_dsdt_t* dsdt=(void*)(u64)(fadt->dsdt);
+	dsdt=(void*)vmm_identity_map((u64)dsdt,((const acpi_dsdt_t*)vmm_identity_map((u64)dsdt,sizeof(acpi_dsdt_t)))->header.length);
+	aml_runtime_init(aml_parse(dsdt->data,dsdt->header.length-sizeof(acpi_dsdt_t)),fadt->sci_int);
 }
 
 

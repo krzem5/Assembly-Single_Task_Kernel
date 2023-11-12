@@ -25,7 +25,7 @@
 
 
 
-typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
+typedef struct KERNEL_PACKED _KFS2_ROOT_BLOCK{
 	u64 signature;
 	u8 uuid[16];
 	u64 block_count;
@@ -45,7 +45,7 @@ typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 
 
 
-typedef struct __attribute__((packed)) _KFS2_NODE{
+typedef struct KERNEL_PACKED _KFS2_NODE{
 	u64 size;
 	union{
 		u8 inline_[48];
@@ -63,7 +63,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 
 
 
-typedef struct __attribute__((packed)) _KFS2_DIRECTORY_ENTRY{
+typedef struct KERNEL_PACKED _KFS2_DIRECTORY_ENTRY{
 	u32 inode;
 	u16 size;
 	u8 name_length;

@@ -4,7 +4,7 @@
 
 
 
-void acpi_srat_load(const srat_t* srat);
+void acpi_srat_load(const acpi_srat_t* srat);
 
 
 

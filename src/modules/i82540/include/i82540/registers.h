@@ -66,7 +66,7 @@
 
 
 
-typedef volatile struct __attribute__((packed)) _I82540_RX_DESCRIPTOR{
+typedef volatile struct KERNEL_PACKED _I82540_RX_DESCRIPTOR{
 	u64 address;
 	u16 length;
 	u8 _padding[2];
@@ -77,7 +77,7 @@ typedef volatile struct __attribute__((packed)) _I82540_RX_DESCRIPTOR{
 
 
 
-typedef volatile struct __attribute__((packed)) _I82540_TX_DESCRIPTOR{
+typedef volatile struct KERNEL_PACKED _I82540_TX_DESCRIPTOR{
 	u64 address;
 	u16 length;
 	u8 _padding[1];

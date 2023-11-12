@@ -5,7 +5,7 @@
 
 
 
-void acpi_fadt_load(const fadt_t* fadt);
+void acpi_fadt_load(const acpi_fadt_t* fadt);
 
 
 

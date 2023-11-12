@@ -9,6 +9,7 @@
 #define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define KERNEL_NOINLINE __attribute__((noinline))
 #define KERNEL_INLINE inline __attribute__((always_inline))
+#define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
 
 

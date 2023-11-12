@@ -18,13 +18,13 @@
 
 
 
-typedef struct __attribute__((packed)) _INITRAMFS_HEADER{
+typedef struct KERNEL_PACKED _INITRAMFS_HEADER{
 	u64 signature;
 } initramfs_header_t;
 
 
 
-typedef struct __attribute__((packed)) _INITRAMFS_NODE{
+typedef struct KERNEL_PACKED _INITRAMFS_NODE{
 	u32 size;
 	u32 data_size;
 	u16 child_count;

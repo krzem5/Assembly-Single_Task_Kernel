@@ -4,7 +4,7 @@
 
 
 
-typedef struct __attribute__((packed)) _TSS{
+typedef struct KERNEL_PACKED _TSS{
 	u8 _padding[4];
 	u64 rsp0;
 	u64 rsp1;

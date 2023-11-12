@@ -4,7 +4,7 @@
 
 
 
-void acpi_madt_load(const madt_t* madt);
+void acpi_madt_load(const acpi_madt_t* madt);
 
 
 

@@ -16,7 +16,7 @@
 
 
 
-typedef struct __attribute__((packed)) _SMBIOS{
+typedef struct KERNEL_PACKED _SMBIOS{
 	u32 entry_point_string;
 	u8 _padding[2];
 	u8 major_version;
@@ -28,16 +28,16 @@ typedef struct __attribute__((packed)) _SMBIOS{
 
 
 
-typedef struct __attribute__((packed)) _SMBIO_HEADER{
+typedef struct KERNEL_PACKED _SMBIO_HEADER{
 	u8 type;
 	u8 length;
 	u8 _padding[2];
 	union{
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 vendor;
 			u8 bios_version;
 		} bios_information;
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 manufacturer;
 			u8 product_name;
 			u8 version;
@@ -45,7 +45,7 @@ typedef struct __attribute__((packed)) _SMBIO_HEADER{
 			u8 uuid[16];
 			u8 wakeup_type;
 		} system_information;
-		struct __attribute__((packed)){
+		struct KERNEL_PACKED{
 			u8 _padding[3];
 			u8 serial_number;
 		} baseboard_information;

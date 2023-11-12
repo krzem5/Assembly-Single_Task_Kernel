@@ -4,7 +4,7 @@
 
 
 
-void acpi_slit_load(const slit_t* slit);
+void acpi_slit_load(const acpi_slit_t* slit);
 
 
 
