@@ -30,11 +30,11 @@ void _entry(const u64* data){
 	data++;
 	printf("argc=%u\n",argc);
 	for (u32 i=0;i<argc;i++){
-		printf("argv[%u]=%s\n",i,string_table+data[0]);
+		printf("argv[%u]=\"%s\"\n",i,string_table+data[0]);
 		data++;
 	}
 	for (u32 i=0;data[0];i++){
-		printf("environ[%u]=%s\n",i,string_table+data[0]);
+		printf("environ[%u]=\"%s\"\n",i,string_table+data[0]);
 		data++;
 	}
 	for (data++;data[0];data+=2){
@@ -64,7 +64,7 @@ void _entry(const u64* data){
 				printf("AT_ENTRY=%p\n",data[1]);
 				break;
 			case AT_PLATFORM:
-				printf("AT_PLATFORM=%s\n",string_table+data[1]);
+				printf("AT_PLATFORM=\"%s\"\n",string_table+data[1]);
 				break;
 			case AT_HWCAP:
 				printf("AT_HWCAP=%x\n",data[1]);
@@ -76,7 +76,7 @@ void _entry(const u64* data){
 				printf("AT_HWCAP2=%x\n",data[1]);
 				break;
 			case AT_EXECFN:
-				printf("AT_EXECFN=%s\n",string_table+data[1]);
+				printf("AT_EXECFN=\"%s\"\n",string_table+data[1]);
 				break;
 			default:
 				printf("AT_%u=%lx\n",data[0],data[1]);

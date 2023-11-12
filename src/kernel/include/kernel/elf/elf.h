@@ -1,5 +1,6 @@
 #ifndef _KERNEL_ELF_ELF_H_
 #define _KERNEL_ELF_ELF_H_ 1
+#include <kernel/types.h>
 
 
 
@@ -8,7 +9,7 @@
 
 
 
-_Bool elf_load(const char* path);
+_Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ);
 
 
 
