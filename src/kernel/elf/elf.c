@@ -171,6 +171,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 	}
 	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,&_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	if (!program_region){
+		ERROR("Unable to allocate interpreter program memory");
 		goto _error;
 	}
 	u64 image_base=program_region->rb_node.key;
