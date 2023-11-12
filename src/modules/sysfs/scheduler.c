@@ -16,10 +16,11 @@ void sysfs_scheduler_init(void){
 		char buffer[16];
 		format_string(buffer,16,"%u",i);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		vfs_node_t* time=dynamicfs_create_node(node,"time",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		const scheduler_timers_t* timers=scheduler_get_timers(i);
-		dynamicfs_create_node(node,"user",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_USER));
-		dynamicfs_create_node(node,"kernel",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_KERNEL));
-		dynamicfs_create_node(node,"scheduler",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_SCHEDULER));
-		dynamicfs_create_node(node,"none",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_NONE));
+		dynamicfs_create_node(time,"user",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_USER));
+		dynamicfs_create_node(time,"kernel",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_KERNEL));
+		dynamicfs_create_node(time,"scheduler",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_SCHEDULER));
+		dynamicfs_create_node(time,"none",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(timers->data+SCHEDULER_TIMER_NONE));
 	}
 }

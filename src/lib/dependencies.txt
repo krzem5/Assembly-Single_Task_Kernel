@@ -1,0 +1,3 @@
+syscall:
+linker:syscall
+test:syscall

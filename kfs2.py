@@ -15,21 +15,22 @@ KFS2_BLOCK_SIZE=4096
 
 KFS2_INODE_TYPE_FILE=0x0000
 KFS2_INODE_TYPE_DIRECTORY=0x0001
-KFS2_INODE_TYPE_MASK=0x0001
+KFS2_INODE_TYPE_LINK=0x0002
+KFS2_INODE_TYPE_MASK=0x0003
 
-KFS2_INODE_STORAGE_MASK=0x000e
+KFS2_INODE_STORAGE_MASK=0x001c
 KFS2_INODE_STORAGE_TYPE_INLINE=0x0000
-KFS2_INODE_STORAGE_TYPE_SINGLE=0x0002
-KFS2_INODE_STORAGE_TYPE_DOUBLE=0x0004
-KFS2_INODE_STORAGE_TYPE_TRIPLE=0x0006
-KFS2_INODE_STORAGE_TYPE_QUADRUPLE=0x0008
+KFS2_INODE_STORAGE_TYPE_SINGLE=0x0004
+KFS2_INODE_STORAGE_TYPE_DOUBLE=0x0008
+KFS2_INODE_STORAGE_TYPE_TRIPLE=0x000c
+KFS2_INODE_STORAGE_TYPE_QUADRUPLE=0x0010
 
 KFS2_NAME_FNV_OFFSET_BASIS=0x811c9dc5
 KFS2_NAME_FNV_PRIME=0x01000193
 
 
 
-__all__=["KFS2FileBackend","format_partition","get_inode","set_file_content","set_kernel_inode"]
+__all__=["KFS2FileBackend","format_partition","get_inode","set_file_content","convert_to_link","set_kernel_inode","set_initramfs_inode"]
 
 
 
@@ -588,6 +589,16 @@ def set_file_content(backend,inode,content):
 			chunk.data[i]=0
 		data_provider.save_chunk(chunk)
 		offset+=length
+	node.save()
+
+
+
+def convert_to_link(backend,inode):
+	root_block=KFS2RootBlock.load(backend)
+	if (inode>=root_block.inode_count):
+		raise RuntimeError
+	node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,inode))
+	node.flags=(node.flags&(~KFS2_INODE_TYPE_MASK))|KFS2_INODE_TYPE_LINK
 	node.save()
 
 

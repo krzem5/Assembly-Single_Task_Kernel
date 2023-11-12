@@ -389,34 +389,40 @@ def _compile_module(module,shared_include_list):
 
 
 
-def _compile_lib_files(program):
-	hash_file_path=f"build/hashes/lib/"+program+LIBRARY_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+program)
+def _compile_library(library,dependencies):
+	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library)
 	object_files=[]
+	pic_object_files=[]
 	error=False
-	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+program):
+	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
 			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			pic_object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
 			object_files.append(object_file)
+			pic_object_files.append(pic_object_file)
 			if (_file_not_changed(changed_files,object_file+".deps") and 0):
 				continue
 			command=None
+			pic_command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{program}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
+				pic_command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",pic_object_file,"-c",file,"-DNULL=((void*)0)",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/syscall/include"]+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+				pic_command=["nasm","-f","elf64","-Wall","-Werror","-O3","-DPIC","-o",pic_object_file,file]+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
-			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0 or subprocess.run(pic_command+["-MD","-MT",pic_object_file,"-MF",pic_object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error):
+	if (error or subprocess.run(["ar","rcs",f"build/lib/lib{library}.a"]+object_files).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+pic_object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-	return object_files
+	return pic_object_files
 
 
 
@@ -646,19 +652,20 @@ with open("src/shared_modules.txt","r") as rf:
 for module in os.listdir(MODULE_FILE_DIRECTORY):
 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
-syscall_object_files=_compile_lib_files("syscall")
-for program in os.listdir(LIBRARY_FILE_DIRECTORY):
-	if (program=="syscall"):
-		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/{program}.so"]+syscall_object_files+_compile_lib_files(program)+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
-		sys.exit(1)
+with open("src/lib/dependencies.txt","r") as rf:
+	for line in rf.read().split("\n"):
+		line=line.strip()
+		if (not line):
+			continue
+		name,dependencies=line.split(":")
+		_compile_library(name,[e.strip() for e in dependencies.split(",")])
 #####################################################################################################################################
 syscall_object_files=_compile_user_files("syscall")
 runtime_object_files=syscall_object_files+_compile_user_files("runtime")
 for program in os.listdir(USER_FILE_DIRECTORY):
 	if (program=="runtime" or program=="linker" or program=="syscall"):
 		continue
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-l:test.so","-I/lib/ld.so","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-ltest","-o",f"build/user/{program}.elf"]+runtime_object_files+_compile_user_files(program)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
@@ -693,8 +700,13 @@ if (rebuild_data_partition):
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	for library in os.listdir("build/lib"):
+		if (not library.endswith(".so")):
+			continue
 		with open(f"build/lib/{library}","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}"),rf.read())
+	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so")
+	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
+	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
 	with open("build/user/shell.elf","rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/shell.elf"),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
