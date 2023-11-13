@@ -267,12 +267,19 @@ static void _parse_dynamic_section(linker_context_t* ctx){
 			ctx->elf_symbol_table_entry_size=dyn->d_un.d_val;
 		}
 		else if (dyn->d_tag==DT_PLTGOT){
+			printf("PLT GOT: %p\n",dyn->d_un.d_ptr);
 			u64* got=dyn->d_un.d_ptr;
 			got[1]=0x11223344; // shared object identifier
 			got[2]=0; // shared object resolver
 		}
+		else if (dyn->d_tag==DT_JMPREL){
+			printf("PLT Relocations: %p [R_X86_64_JUMP_SLOT]\n",dyn->d_un.d_ptr);
+		}
 		else if (dyn->d_tag==DT_PLTREL){
-			printf("Relocations\n");
+			printf("PLT Relocation type: %s\n",(dyn->d_un.d_val==DT_RELA?"DT_RELA":"DT_REL"));
+		}
+		else if (dyn->d_tag==DT_PLTRELSZ){
+			printf("PLT Relocation section size: %u\n",dyn->d_un.d_val);
 		}
 	}
 	if (ctx->elf_string_table&&ctx->elf_hash_table&&ctx->elf_symbol_table&&ctx->elf_symbol_table_entry_size){

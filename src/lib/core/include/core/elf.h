@@ -118,6 +118,7 @@
 #define R_X86_64_PC32 2
 #define R_X86_64_PLT32 4
 #define R_X86_64_GLOB_DAT 6
+#define R_X86_64_JUMP_SLOT 7
 #define R_X86_64_RELATIVE 8
 #define R_X86_64_32 10
 #define R_X86_64_32S 11
