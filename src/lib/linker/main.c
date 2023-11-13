@@ -266,6 +266,14 @@ static void _parse_dynamic_section(linker_context_t* ctx){
 		else if (dyn->d_tag==DT_SYMENT){
 			ctx->elf_symbol_table_entry_size=dyn->d_un.d_val;
 		}
+		else if (dyn->d_tag==DT_PLTGOT){
+			u64* got=dyn->d_un.d_ptr;
+			got[1]=0x11223344; // shared object identifier
+			got[2]=0; // shared object resolver
+		}
+		else if (dyn->d_tag==DT_PLTREL){
+			printf("Relocations\n");
+		}
 	}
 	if (ctx->elf_string_table&&ctx->elf_hash_table&&ctx->elf_symbol_table&&ctx->elf_symbol_table_entry_size){
 		_load_symbols(ctx,0);
