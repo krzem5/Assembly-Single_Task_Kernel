@@ -213,9 +213,10 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 		goto _skip_dynamic_section;
 	}
 	while (1){
+		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
 		switch (relocations->r_info&0xffffffff){
 			case R_X86_64_GLOB_DAT:
-				elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
+			case R_X86_64_RELATIVE:
 				symbol->st_value+=image_base;
 				mmap_set_memory(&(ctx->process->mmap),program_region,relocations->r_offset,&(symbol->st_value),sizeof(u64));
 				break;
