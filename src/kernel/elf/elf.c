@@ -216,14 +216,16 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
 		switch (relocations->r_info&0xffffffff){
 			case R_X86_64_GLOB_DAT:
-			case R_X86_64_RELATIVE:
 				symbol->st_value+=image_base;
-				mmap_set_memory(&(ctx->process->mmap),program_region,relocations->r_offset,&(symbol->st_value),sizeof(u64));
+				break;
+			case R_X86_64_RELATIVE:
+				symbol->st_value=image_base+relocations->r_addend;
 				break;
 			default:
 				ERROR("Unknown relocation type: %u",relocations->r_info);
 				goto _error;
 		}
+		mmap_set_memory(&(ctx->process->mmap),program_region,relocations->r_offset,&(symbol->st_value),sizeof(u64));
 		if (relocation_size<=relocation_entry_size){
 			break;
 		}
