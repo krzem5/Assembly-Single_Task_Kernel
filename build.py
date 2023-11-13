@@ -377,7 +377,7 @@ def _compile_module(module,dependencies):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-mcmodel=kernel","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -390,11 +390,12 @@ def _compile_module(module,dependencies):
 
 
 
-def _compile_library(library,dependencies):
+def _compile_library(library,flags,dependencies):
 	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library)
 	object_files=[]
 	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
+	extra_compiler_options=(["-mno-mmx","-mno-sse","-mno-sse2"] if "nofloat" in flags else [])
 	error=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
@@ -409,7 +410,7 @@ def _compile_library(library,dependencies):
 			command=None
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+extra_compiler_options+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -417,10 +418,16 @@ def _compile_library(library,dependencies):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
+	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+		sys.exit(1)
+	if ("nostatic" in flags):
+		return
 	static_library_file=f"build/lib/lib{library}.a"
 	if (os.path.exists(static_library_file)):
 		os.remove(static_library_file)
-	if (error or subprocess.run(["ar","rcs",static_library_file]+object_files).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (subprocess.run(["ar","rcs",static_library_file]+object_files).returncode!=0):
 		sys.exit(1)
 
 
@@ -648,15 +655,6 @@ with open("src/module/dependencies.txt","r") as rf:
 			continue
 		name,dependencies=line.split(":")
 		_compile_module(name,[dep.strip() for dep in dependencies.split(",")])
-# shared_include_list=[]
-# with open("src/shared_modules.txt","r") as rf:
-# 	for line in rf.read().split("\n"):
-# 		line=line.strip()
-# 		if (not line):
-# 			continue
-# 		shared_include_list.append(f"-I{MODULE_FILE_DIRECTORY}/{line}/include")
-# for module in os.listdir(MODULE_FILE_DIRECTORY):
-# 	_compile_module(module,shared_include_list)
 #####################################################################################################################################
 with open("src/lib/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
@@ -664,7 +662,8 @@ with open("src/lib/dependencies.txt","r") as rf:
 		if (not line):
 			continue
 		name,dependencies=line.split(":")
-		_compile_library(name,[dep.strip() for dep in dependencies.split(",")])
+		flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
+		_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",")])
 #####################################################################################################################################
 runtime_object_files=_compile_user_files("syscall")+_compile_user_files("runtime")
 with open("src/user/dependencies.txt","r") as rf:
