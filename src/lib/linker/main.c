@@ -244,6 +244,23 @@ _skip_dynamic_section:
 
 
 
+extern void _resolve_symbol_trampoline(void);
+
+
+
+static u64 __TEST_FUNCTION_STUB(void){
+	return 12345;
+}
+
+
+
+u64 _resolve_symbol(u64 library,u64 index){
+	printf("RESOLVE SYMBOL: %u (got+%u) [%p]\n",index,index+3,library);
+	return (u64)__TEST_FUNCTION_STUB;
+}
+
+
+
 static void _parse_dynamic_section(linker_context_t* ctx){
 	ctx->elf_string_table=NULL;
 	ctx->elf_hash_table=NULL;
@@ -270,7 +287,7 @@ static void _parse_dynamic_section(linker_context_t* ctx){
 			printf("PLT GOT: %p\n",dyn->d_un.d_ptr);
 			u64* got=dyn->d_un.d_ptr;
 			got[1]=0x11223344; // shared object identifier
-			got[2]=0; // shared object resolver
+			got[2]=(u64)_resolve_symbol_trampoline; // shared object resolver
 		}
 		else if (dyn->d_tag==DT_JMPREL){
 			printf("PLT Relocations: %p [R_X86_64_JUMP_SLOT]\n",dyn->d_un.d_ptr);
