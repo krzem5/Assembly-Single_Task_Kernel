@@ -101,6 +101,10 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length);
 
 
 
+vfs_node_t* fd_get_node(handle_id_t fd);
+
+
+
 s64 fd_iter_start(handle_id_t fd);
 
 

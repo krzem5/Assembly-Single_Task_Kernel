@@ -227,6 +227,17 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 
 
 
+vfs_node_t* fd_get_node(handle_id_t fd){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	if (!fd_handle){
+		return NULL;
+	}
+	fd_t* data=fd_handle->object;
+	return data->node;
+}
+
+
+
 s64 fd_iter_start(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
 	if (!fd_handle){
