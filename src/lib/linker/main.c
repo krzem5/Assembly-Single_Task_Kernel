@@ -1,6 +1,7 @@
 #include <core/elf.h>
 #include <core/fd.h>
 #include <core/io.h>
+#include <core/memory.h>
 #include <core/types.h>
 #include <linker/resolver.h>
 #include <linker/symbol_table.h>
@@ -64,16 +65,181 @@ static void _find_dynamic_section(linker_context_t* ctx){
 
 
 
-static void _load_symbols(linker_context_t* ctx){
+static void _load_symbols(linker_context_t* ctx,u64 image_base){
 	for (u32 i=0;i<ctx->elf_hash_table->nbucket;i++){
 		for (u32 j=ctx->elf_hash_table->data[i];1;j=ctx->elf_hash_table->data[ctx->elf_hash_table->nbucket+j]){
 			const elf_sym_t* symbol=ctx->elf_symbol_table+j*ctx->elf_symbol_table_entry_size;
 			if (symbol->st_shndx==SHN_UNDEF){
 				break;
 			}
-			symbol_table_add(ctx->elf_string_table+symbol->st_name,symbol->st_value);
+			symbol_table_add(ctx->elf_string_table+symbol->st_name,image_base+symbol->st_value);
 		}
 	}
+}
+
+
+
+static _Bool _check_elf_header(const elf_hdr_t* header){
+	if (header->e_ident.signature!=0x464c457f){
+		printf("ELF header error: e_ident.signature != 0x464c457f\n");
+		return 0;
+	}
+	if (header->e_ident.word_size!=2){
+		printf("ELF header error: e_ident.word_size != 2\n");
+		return 0;
+	}
+	if (header->e_ident.endianess!=1){
+		printf("ELF header error: e_ident.endianess != 1\n");
+		return 0;
+	}
+	if (header->e_ident.header_version!=1){
+		printf("ELF header error: e_ident.header_version != 1\n");
+		return 0;
+	}
+	if (header->e_ident.abi!=0){
+		printf("ELF header error: e_ident.abi != 0\n");
+		return 0;
+	}
+	if (header->e_type!=ET_DYN){
+		printf("ELF header error: e_type != ET_EXEC\n");
+		return 0;
+	}
+	if (header->e_machine!=0x3e){
+		printf("ELF header error: machine != 0x3e\n");
+		return 0;
+	}
+	if (header->e_version!=1){
+		printf("ELF header error: version != 1\n");
+		return 0;
+	}
+	return 1;
+}
+
+
+
+static void* memcpy(void* dst,const void* src,u64 length){
+	u8* dst_ptr=dst;
+	const u8* src_ptr=src;
+	for (u64 i=0;i<length;i++){
+		dst_ptr[i]=src_ptr[i];
+	}
+	return dst;
+}
+
+
+
+static _Bool _load_shared_object(const char* name){
+	char buffer[4096];
+	s64 fd=resolve_library_name(name,buffer,4096);
+	if (!fd){
+		printf("Unable to find library '%s'\n",name);
+		return 0;
+	}
+	void* base_file_address=memory_map(0,MEMORY_FLAG_NOWRITEBACK|MEMORY_FLAG_FILE|MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,fd);
+	fd_close(fd);
+	const elf_hdr_t* header=base_file_address;
+	if (!_check_elf_header(header)){
+		return 0;
+	}
+	u64 max_address=0;
+	for (u16 i=0;i<header->e_phnum;i++){
+		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
+		if (program_header->p_type!=PT_LOAD){
+			continue;
+		}
+		u64 address=program_header->p_vaddr+program_header->p_memsz;
+		if (address>max_address){
+			max_address=address;
+		}
+	}
+	max_address=(max_address+4095)&0xfffffffffffff000ull;
+	void* image_base=memory_map(max_address,MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,0);
+	const elf_dyn_t* dynamic_section=NULL;
+	for (u16 i=0;i<header->e_phnum;i++){
+		elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
+		if (program_header->p_type==PT_DYNAMIC){
+			dynamic_section=image_base+program_header->p_vaddr;
+			continue;
+		}
+		if (program_header->p_type!=PT_LOAD){
+			continue;
+		}
+		program_header->p_vaddr+=(u64)image_base;
+		memcpy((void*)(program_header->p_vaddr),base_file_address+program_header->p_offset,program_header->p_filesz);
+	}
+	memory_unmap(base_file_address,0);
+	if (!dynamic_section){
+		return 1;
+	}
+	const void* hash_table=NULL;
+	const char* string_table=NULL;
+	void* symbol_table=NULL;
+	u64 symbol_table_entry_size=0;
+	const elf_rela_t* relocations=NULL;
+	u64 relocation_size=0;
+	u64 relocation_entry_size=0;
+	for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
+		switch (dyn->d_tag){
+			case DT_HASH:
+				hash_table=image_base+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_STRTAB:
+				string_table=image_base+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_SYMTAB:
+				symbol_table=image_base+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_SYMENT:
+				symbol_table_entry_size=dyn->d_un.d_val;
+				break;
+			case DT_RELA:
+				relocations=image_base+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_RELASZ:
+				relocation_size=dyn->d_un.d_val;
+				break;
+			case DT_RELAENT:
+				relocation_entry_size=dyn->d_un.d_val;
+				break;
+		}
+	}
+	if (!relocations){
+		goto _skip_dynamic_section;
+	}
+	while (1){
+		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
+		switch (relocations->r_info&0xffffffff){
+			case R_X86_64_GLOB_DAT:
+				*((u64*)(image_base+relocations->r_offset))=symbol->st_value+((u64)image_base);
+				break;
+			case R_X86_64_RELATIVE:
+				*((u64*)(image_base+relocations->r_offset))=((u64)image_base)+relocations->r_addend;
+				break;
+			default:
+				printf("Unknown relocation type: %u\n",relocations->r_info);
+				return 0;
+		}
+		if (relocation_size<=relocation_entry_size){
+			break;
+		}
+		relocations=(const elf_rela_t*)(((u64)relocations)+relocation_entry_size);
+		relocation_size-=relocation_entry_size;
+	}
+_skip_dynamic_section:
+	linker_context_t ctx={
+		image_base+header->e_phoff,
+		header->e_phentsize,
+		header->e_phnum,
+		0,
+		dynamic_section,
+		string_table,
+		hash_table,
+		symbol_table,
+		symbol_table_entry_size
+	};
+	printf("Found library: %s -> %p [%p]\n",buffer,image_base,max_address);
+	_load_symbols(&ctx,(u64)image_base);
+	return 1;
 }
 
 
@@ -102,7 +268,7 @@ static void _parse_dynamic_section(linker_context_t* ctx){
 		}
 	}
 	if (ctx->elf_string_table&&ctx->elf_hash_table&&ctx->elf_symbol_table&&ctx->elf_symbol_table_entry_size){
-		_load_symbols(ctx);
+		_load_symbols(ctx,0);
 	}
 	if (!has_imports){
 		return;
@@ -113,13 +279,7 @@ static void _parse_dynamic_section(linker_context_t* ctx){
 	}
 	for (const elf_dyn_t* dyn=ctx->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 		if (dyn->d_tag==DT_NEEDED){
-			char buffer[4096];
-			s64 fd=resolve_library_name(ctx->elf_string_table+dyn->d_un.d_val,buffer,4096);
-			if (!fd){
-				printf("Unable to find library '%s'\n",ctx->elf_string_table+dyn->d_un.d_val);
-				return;
-			}
-			printf("Found library: %s [%ld]\n",buffer,fd);
+			_load_shared_object(ctx->elf_string_table+dyn->d_un.d_val);
 		}
 	}
 }

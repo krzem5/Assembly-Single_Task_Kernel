@@ -249,7 +249,7 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		return 0;
 	}
 	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
-	if (region->rb_node.key!=address||region->length!=length){
+	if (region->rb_node.key!=address||(length&&region->length!=length)){
 		panic("mmap_dealloc: partial release");
 	}
 	return _dealloc_region(mmap,region);

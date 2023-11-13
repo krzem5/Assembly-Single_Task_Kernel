@@ -4,12 +4,15 @@
 
 
 
-#define MEMORY_FLAG_LARGE 1
-#define MEMORY_FLAG_EXTRA_LARGE 2
+#define MEMORY_FLAG_READ 1
+#define MEMORY_FLAG_WRITE 2
+#define MEMORY_FLAG_EXEC 4
+#define MEMORY_FLAG_FILE 8
+#define MEMORY_FLAG_NOWRITEBACK 16
 
 
 
-void* memory_map(u64 length,u8 flags);
+void* memory_map(u64 length,u32 flags,u64 fd);
 
 
 
