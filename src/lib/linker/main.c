@@ -27,10 +27,6 @@ typedef struct _DYNAMIC_SECTION_DATA{
 typedef struct _SHARED_OBJECT{
 	struct _SHARED_OBJECT* next;
 	u64 image_base;
-	const void* elf_phdr_entries;
-	u64 elf_phdr_entry_size;
-	u64 elf_phdr_entry_count;
-	const elf_dyn_t* elf_dynamic_section;
 	dynamic_section_data_t dynamic_section;
 } shared_object_t;
 
@@ -49,7 +45,7 @@ static shared_object_t* _alloc_shared_object(void){
 
 
 
-static _Bool _init_shared_object(shared_object_t* so);
+static _Bool _init_shared_object(shared_object_t* so,const elf_dyn_t* dynamic_section);
 
 
 
@@ -110,42 +106,42 @@ static void _parse_dynamic_section(const elf_dyn_t* dynamic_section,u64 image_ba
 
 
 
-static u64 _load_root_shared_object_data(const u64* data,shared_object_t* so){
-	so->next=NULL;
-	so->elf_phdr_entries=NULL;
-	so->elf_phdr_entry_size=0;
-	so->elf_phdr_entry_count=0;
-	u64 out=0;
+static u64 _load_root_shared_object_data(const u64* data,const elf_dyn_t** out){
+	const void* phdr_entries=NULL;
+	u64 phdr_entry_size=0;
+	u64 phdr_entry_count=0;
+	u64 ret=0;
 	for (data+=(data[0]+1);data[0];data++);
 	for (data++;data[0];data+=2){
 		if (data[0]==AT_PHDR){
-			so->elf_phdr_entries=(void*)data[1];
+			phdr_entries=(void*)data[1];
 		}
 		else if (data[0]==AT_PHENT){
-			so->elf_phdr_entry_size=data[1];
+			phdr_entry_size=data[1];
 		}
 		else if (data[0]==AT_PHNUM){
-			so->elf_phdr_entry_count=data[1];
+			phdr_entry_count=data[1];
 		}
 		else if (data[0]==AT_ENTRY){
-			out=data[1];
+			ret=data[1];
 		}
 	}
-	if (!so->elf_phdr_entries||!so->elf_phdr_entry_size||!so->elf_phdr_entry_count){
+	if (!phdr_entries||!phdr_entry_size||!phdr_entry_count){
 		printf("No PHDR supplied to the dynamic linker\n");
 	}
-	if (!out){
+	if (!ret){
 		printf("No entry address supplied to the dynamic linker\n");
 	}
-	so->elf_dynamic_section=NULL;
-	for (u16 i=0;i<so->elf_phdr_entry_count;i++){
-		const elf_phdr_t* program_header=so->elf_phdr_entries+i*so->elf_phdr_entry_size;
+	*out=NULL;
+	for (u16 i=0;i<phdr_entry_count;i++){
+		const elf_phdr_t* program_header=phdr_entries+i*phdr_entry_size;
 		if (program_header->p_type!=PT_DYNAMIC){
 			continue;
 		}
-		so->elf_dynamic_section=(void*)(program_header->p_vaddr);
+		*out=(void*)(program_header->p_vaddr);
+		break;
 	}
-	return out;
+	return ret;
 }
 
 
@@ -206,7 +202,7 @@ static _Bool _load_shared_object(const char* name){
 		printf("Unable to find library '%s'\n",name);
 		return 0;
 	}
-	void* base_file_address=memory_map(0,MEMORY_FLAG_NOWRITEBACK|MEMORY_FLAG_FILE|MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,fd);
+	const void* base_file_address=memory_map(0,MEMORY_FLAG_NOWRITEBACK|MEMORY_FLAG_FILE|MEMORY_FLAG_READ,fd);
 	fd_close(fd);
 	const elf_hdr_t* header=base_file_address;
 	if (!_check_elf_header(header)){
@@ -227,7 +223,7 @@ static _Bool _load_shared_object(const char* name){
 	void* image_base=memory_map(max_address,MEMORY_FLAG_EXEC|MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
-		elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
+		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
 		if (program_header->p_type==PT_DYNAMIC){
 			dynamic_section=image_base+program_header->p_vaddr;
 			continue;
@@ -235,21 +231,16 @@ static _Bool _load_shared_object(const char* name){
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		program_header->p_vaddr+=(u64)image_base;
-		memcpy((void*)(program_header->p_vaddr),base_file_address+program_header->p_offset,program_header->p_filesz);
+		memcpy(program_header->p_vaddr+image_base,base_file_address+program_header->p_offset,program_header->p_filesz);
 	}
-	memory_unmap(base_file_address,0);
+	memory_unmap((void*)base_file_address,0);
 	shared_object_t* so=_alloc_shared_object();
 	root_shared_object->next=so;
 	tail_shared_object=so;
 	so->next=NULL;
 	so->image_base=(u64)image_base;
-	so->elf_phdr_entries=image_base+header->e_phoff;
-	so->elf_phdr_entry_size=header->e_phentsize;
-	so->elf_phdr_entry_count=header->e_phnum;
-	so->elf_dynamic_section=dynamic_section;
 	printf("Found library: %s -> %p [%v]\n",buffer,image_base,max_address);
-	return _init_shared_object(so);
+	return _init_shared_object(so,dynamic_section);
 }
 
 
@@ -287,10 +278,6 @@ _skip_entry:
 
 
 
-extern void _resolve_symbol_trampoline(void);
-
-
-
 u64 _resolve_symbol(shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
@@ -310,20 +297,24 @@ u64 _resolve_symbol(shared_object_t* so,u64 index){
 
 
 
-static _Bool _init_shared_object(shared_object_t* so){
-	if (!so->elf_dynamic_section){
+extern void _resolve_symbol_trampoline(void);
+
+
+
+static _Bool _init_shared_object(shared_object_t* so,const elf_dyn_t* dynamic_section){
+	if (!dynamic_section){
 		return 1;
 	}
-	_parse_dynamic_section(so->elf_dynamic_section,so->image_base,&(so->dynamic_section));
+	_parse_dynamic_section(dynamic_section,so->image_base,&(so->dynamic_section));
+	if (!so->dynamic_section.string_table||!so->dynamic_section.hash_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
+		so->dynamic_section.hash_table=NULL;
+	}
 	if (so->dynamic_section.plt_got){
 		so->dynamic_section.plt_got[1]=(u64)so;
 		so->dynamic_section.plt_got[2]=(u64)_resolve_symbol_trampoline;
 	}
-	if (!so->dynamic_section.string_table||!so->dynamic_section.hash_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
-		so->dynamic_section.hash_table=NULL;
-	}
 	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
-		for (const elf_dyn_t* dyn=so->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
+		for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 			if (dyn->d_tag==DT_NEEDED){
 				_load_shared_object(so->dynamic_section.string_table+dyn->d_un.d_val);
 			}
@@ -344,7 +335,7 @@ static _Bool _init_shared_object(shared_object_t* so){
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
 					break;
 				default:
-					printf("Unknown relocation type: %u\n",relocation->r_info);
+					printf("Unknown relocation type: %u\n",relocation->r_info&0xffffffff);
 					return 0;
 			}
 		}
@@ -415,7 +406,10 @@ u64 main(const u64* data){
 		}
 	}
 	root_shared_object=_alloc_shared_object();
-	u64 entry_address=_load_root_shared_object_data(base_data,root_shared_object);
-	_init_shared_object(root_shared_object);
+	root_shared_object->next=NULL;
+	root_shared_object->image_base=0;
+	const elf_dyn_t* dynamic_section;
+	u64 entry_address=_load_root_shared_object_data(base_data,&dynamic_section);
+	_init_shared_object(root_shared_object,dynamic_section);
 	return entry_address;
 }
