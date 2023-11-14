@@ -1,6 +1,6 @@
 #include <command.h>
-#include <user/clock.h>
-#include <user/io.h>
+#include <core/clock.h>
+#include <core/io.h>
 
 
 

@@ -1,6 +1,6 @@
 #include <command.h>
-#include <user/io.h>
-#include <user/system.h>
+#include <core/io.h>
+#include <core/system.h>
 
 
 

@@ -197,10 +197,10 @@ def _generate_syscalls(file_path):
 	with open("src/lib/core/core/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
-			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}\n_syscall_{name}:\n\tmov rax, {i}\n")
+			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {i}\n")
 			if (len(args)>3):
 				wf.write("\tmov r8, rcx\n")
-			wf.write("\tsyscall\n\tret\n")
+			wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
 	with open("src/lib/core/include/core/syscall.h","w") as wf:
 		wf.write("#ifndef _CORE_SYSCALL_H_\n#define _CORE_SYSCALL_H_ 1\n#include <core/types.h>\n\n\n\n")
 		for name,args,attrs,ret in syscalls:
@@ -420,7 +420,7 @@ def _compile_library(library,flags,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
 		return
@@ -432,10 +432,11 @@ def _compile_library(library,flags,dependencies):
 
 
 
-def _compile_user_files(program):
+def _compile_user_files(program,dependencies):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
+	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
 	error=False
 	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
@@ -449,7 +450,7 @@ def _compile_user_files(program):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)",f"-I{USER_FILE_DIRECTORY}/{program}/include",f"-I{USER_FILE_DIRECTORY}/runtime/include",f"-I{USER_FILE_DIRECTORY}/syscall/include"]+USER_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -665,14 +666,14 @@ with open("src/lib/dependencies.txt","r") as rf:
 		flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
 		_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",")])
 #####################################################################################################################################
-runtime_object_files=_compile_user_files("syscall")+_compile_user_files("runtime")
 with open("src/user/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
 		line=line.strip()
 		if (not line):
 			continue
 		name,dependencies=line.split(":")
-		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-o",f"build/user/{name}"]+[f"-l{dep.strip()}" for dep in dependencies.split(",") if dep.strip()]+runtime_object_files+_compile_user_files(name)+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+		dependencies=[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()]
+		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+_compile_user_files(name,[dep[0] for dep in dependencies])+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 			sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):

@@ -1,8 +1,8 @@
 #include <command.h>
 #include <string.h>
-// #include <user/handle.h>
-#include <user/io.h>
-#include <user/memory.h>
+// #include <core/handle.h>
+#include <core/io.h>
+#include <core/memory.h>
 
 
 

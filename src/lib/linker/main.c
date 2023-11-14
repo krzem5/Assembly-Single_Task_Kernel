@@ -99,7 +99,7 @@ static void _parse_dynamic_section(const elf_dyn_t* dynamic_section,u64 image_ba
 				out->symbol_table_entry_size=dyn->d_un.d_val;
 				break;
 			case DT_PLTREL:
-				out->plt_relocation_entry_size=dyn->d_un.d_val;
+				out->plt_relocation_entry_size=(dyn->d_un.d_val==DT_RELA?sizeof(elf_rela_t):sizeof(elf_rel_t));
 				break;
 			case DT_JMPREL:
 				out->plt_relocations=image_base+dyn->d_un.d_ptr;
@@ -297,9 +297,7 @@ u64 _resolve_symbol(shared_object_t* so,u64 index){
 		return 0;
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
-	printf("Resolve symbol: %s+%u -> %p\n",so->dynamic_section.string_table+symbol->st_name,(so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)?relocation->r_addend:0),so->image_base+relocation->r_offset);
 	u64 resolved_symbol=_lookup_symbol(so->dynamic_section.string_table+symbol->st_name);
-	printf("==> %p\n",resolved_symbol);
 	if (!resolved_symbol){
 		return 0;
 	}
@@ -324,9 +322,12 @@ static _Bool _init_shared_object(shared_object_t* so){
 	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
 		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
 			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 			switch (relocation->r_info&0xffffffff){
+				case R_X86_64_COPY:
+					memcpy((void*)(so->image_base+relocation->r_offset),(void*)(so->image_base+symbol->st_value),symbol->st_size);
+					break;
 				case R_X86_64_GLOB_DAT:
-					const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+symbol->st_value;
 					break;
 				case R_X86_64_RELATIVE:

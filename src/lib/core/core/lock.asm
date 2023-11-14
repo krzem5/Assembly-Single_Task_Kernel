@@ -1,8 +1,8 @@
-global lock_init
-global lock_acquire_exclusive
-global lock_release_exclusive
-global lock_acquire_shared
-global lock_release_shared
+global lock_init:function _lock_init_size
+global lock_acquire_exclusive:function _lock_acquire_exclusive_size
+global lock_release_exclusive:function _lock_release_exclusive_size
+global lock_acquire_shared:function _lock_acquire_shared_size
+global lock_release_shared:function _lock_release_shared_size
 
 
 
@@ -11,6 +11,7 @@ section .text.lock_init exec nowrite
 lock_init:
 	mov dword [rdi], 0
 	ret
+_lock_init_size equ $-$$
 
 
 
@@ -23,6 +24,7 @@ lock_acquire_exclusive:
 	lock bts dword [rdi], 0
 	jc _lock_acquire_exclusive_global_wait
 	ret
+_lock_acquire_exclusive_size equ $-$$
 
 
 
@@ -30,6 +32,7 @@ section .text.lock_release_exclusive exec nowrite
 lock_release_exclusive:
 	btr dword [rdi], 0
 	ret
+_lock_release_exclusive_size equ $-$$
 
 
 
@@ -56,6 +59,7 @@ lock_acquire_shared:
 	add dword [rdi], 8
 	btr dword [rdi], 1
 	ret
+_lock_acquire_shared_size equ $-$$
 
 
 
@@ -75,3 +79,4 @@ lock_release_shared:
 ._still_used:
 	btr dword [rdi], 1
 	ret
+_lock_release_shared_size equ $-$$

@@ -1,7 +1,7 @@
 #include <command.h>
 #include <cwd.h>
-#include <user/fd.h>
-#include <user/io.h>
+#include <core/fd.h>
+#include <core/io.h>
 
 
 

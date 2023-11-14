@@ -1,10 +1,10 @@
 %include "core/types.inc"
 extern _syscall_clock_get_converion
-global clock_cpu_frequency
-global clock_init
-global clock_get_ticks
-global clock_get_time
-global clock_ticks_to_time
+global clock_cpu_frequency:data 8
+global clock_init:function _clock_init_size
+global clock_get_ticks:function _clock_get_ticks_size
+global clock_get_time:function _clock_get_time_size
+global clock_ticks_to_time:function _clock_ticks_to_time_size
 
 
 
@@ -16,6 +16,7 @@ clock_init:
 	mov dword [REF_DATA(_clock_conversion_shift)], edx
 	mov qword [REF_DATA(clock_cpu_frequency)], r8
 	ret
+_clock_init_size equ $-$$
 
 
 
@@ -25,6 +26,7 @@ clock_get_ticks:
 	shl rdx, 32
 	or rax, rdx
 	ret
+_clock_get_ticks_size equ $-$$
 
 
 
@@ -40,6 +42,7 @@ clock_get_time:
 	test cl, 64
 	cmovne rax, rdx
 	ret
+_clock_get_time_size equ $-$$
 
 
 
@@ -53,6 +56,7 @@ clock_ticks_to_time:
 	test cl, 64
 	cmovne rax, rdx
 	ret
+_clock_ticks_to_time_size equ $-$$
 
 
 

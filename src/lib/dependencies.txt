@@ -1,3 +1,4 @@
 core:
 linker@nostatic,nofloat:core
 test@nostatic:core
+runtime@nodynamic:core

@@ -1,3 +1,4 @@
+%include "core/types.inc"
 extern _syscall_thread_stop
 extern main
 global _start
@@ -11,5 +12,5 @@ _start:
 	and rsp, 0xfffffffffffffff0
 	mov rbp, rsp
 	mov rdi, r15
-	call main
-	jmp _syscall_thread_stop
+	call [REF(main)]
+	jmp [REF(_syscall_thread_stop)]

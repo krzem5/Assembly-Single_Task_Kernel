@@ -1,8 +1,8 @@
 #include <command.h>
 #include <string.h>
-#include <user/clock.h>
-#include <user/io.h>
-#include <user/types.h>
+#include <core/clock.h>
+#include <core/io.h>
+#include <core/types.h>
 
 
 

@@ -32,9 +32,3 @@ u32 thread_get_priority(u64 handle){
 _Bool thread_set_priority(u64 handle,u32 priority){
 	return _syscall_thread_set_priority(handle,priority);
 }
-
-
-
-u64 CORE_TEST_FUNC(void){
-	return 1234;
-}
