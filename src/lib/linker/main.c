@@ -319,26 +319,6 @@ static _Bool _init_shared_object(shared_object_t* so){
 		so->dynamic_section.plt_got[1]=(u64)so;
 		so->dynamic_section.plt_got[2]=(u64)_resolve_symbol_trampoline;
 	}
-	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
-		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
-			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
-			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
-			switch (relocation->r_info&0xffffffff){
-				case R_X86_64_COPY:
-					memcpy((void*)(so->image_base+relocation->r_offset),(void*)(so->image_base+symbol->st_value),symbol->st_size);
-					break;
-				case R_X86_64_GLOB_DAT:
-					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+symbol->st_value;
-					break;
-				case R_X86_64_RELATIVE:
-					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
-					break;
-				default:
-					printf("Unknown relocation type: %u\n",relocation->r_info);
-					return 0;
-			}
-		}
-	}
 	if (!so->dynamic_section.string_table||!so->dynamic_section.hash_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
 		so->dynamic_section.hash_table=NULL;
 	}
@@ -346,6 +326,26 @@ static _Bool _init_shared_object(shared_object_t* so){
 		for (const elf_dyn_t* dyn=so->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 			if (dyn->d_tag==DT_NEEDED){
 				_load_shared_object(so->dynamic_section.string_table+dyn->d_un.d_val);
+			}
+		}
+	}
+	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
+		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
+			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
+			switch (relocation->r_info&0xffffffff){
+				case R_X86_64_COPY:
+					memcpy((void*)(so->image_base+relocation->r_offset),(void*)_lookup_symbol(so->dynamic_section.string_table+symbol->st_name),symbol->st_size);
+					break;
+				case R_X86_64_GLOB_DAT:
+					*((u64*)(so->image_base+relocation->r_offset))=_lookup_symbol(so->dynamic_section.string_table+symbol->st_name);
+					break;
+				case R_X86_64_RELATIVE:
+					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
+					break;
+				default:
+					printf("Unknown relocation type: %u\n",relocation->r_info);
+					return 0;
 			}
 		}
 	}
