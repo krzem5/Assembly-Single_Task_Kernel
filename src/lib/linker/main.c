@@ -4,7 +4,6 @@
 #include <core/memory.h>
 #include <core/types.h>
 #include <linker/resolver.h>
-#include <linker/symbol_table.h>
 
 
 
@@ -26,6 +25,7 @@ typedef struct _DYNAMIC_SECTION_DATA{
 
 
 typedef struct _SHARED_OBJECT{
+	struct _SHARED_OBJECT* next;
 	u64 image_base;
 	const void* elf_phdr_entries;
 	u64 elf_phdr_entry_size;
@@ -36,11 +36,24 @@ typedef struct _SHARED_OBJECT{
 
 
 
-static void _parse_dynamic_section(shared_object_t* so);
+static shared_object_t* root_shared_object;
+static shared_object_t* tail_shared_object;
 
 
 
-static void _parse_dynamic_section2(const elf_dyn_t* dynamic_section,u64 image_base,dynamic_section_data_t* out){
+static shared_object_t* _alloc_shared_object(void){
+	static shared_object_t buffer[16];
+	static u8 index=0;
+	return buffer+(index++);
+}
+
+
+
+static _Bool _init_shared_object(shared_object_t* so);
+
+
+
+static void _parse_dynamic_section(const elf_dyn_t* dynamic_section,u64 image_base,dynamic_section_data_t* out){
 	out->has_needed_libraries=0;
 	out->plt_relocation_size=0;
 	out->plt_got=NULL;
@@ -98,6 +111,7 @@ static void _parse_dynamic_section2(const elf_dyn_t* dynamic_section,u64 image_b
 
 
 static u64 _load_root_shared_object_data(const u64* data,shared_object_t* so){
+	so->next=NULL;
 	so->elf_phdr_entries=NULL;
 	so->elf_phdr_entry_size=0;
 	so->elf_phdr_entry_count=0;
@@ -132,20 +146,6 @@ static u64 _load_root_shared_object_data(const u64* data,shared_object_t* so){
 		so->elf_dynamic_section=(void*)(program_header->p_vaddr);
 	}
 	return out;
-}
-
-
-
-static void _load_symbols(shared_object_t* so,u64 image_base){
-	for (u32 i=0;i<so->dynamic_section.hash_table->nbucket;i++){
-		for (u32 j=so->dynamic_section.hash_table->data[i];1;j=so->dynamic_section.hash_table->data[so->dynamic_section.hash_table->nbucket+j]){
-			const elf_sym_t* symbol=so->dynamic_section.symbol_table+j*so->dynamic_section.symbol_table_entry_size;
-			if (symbol->st_shndx==SHN_UNDEF){
-				break;
-			}
-			symbol_table_add(so->dynamic_section.string_table+symbol->st_name,image_base+symbol->st_value);
-		}
-	}
 }
 
 
@@ -224,7 +224,7 @@ static _Bool _load_shared_object(const char* name){
 		}
 	}
 	max_address=(max_address+4095)&0xfffffffffffff000ull;
-	void* image_base=memory_map(max_address,MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,0);
+	void* image_base=memory_map(max_address,MEMORY_FLAG_EXEC|MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
 		elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
@@ -239,27 +239,55 @@ static _Bool _load_shared_object(const char* name){
 		memcpy((void*)(program_header->p_vaddr),base_file_address+program_header->p_offset,program_header->p_filesz);
 	}
 	memory_unmap(base_file_address,0);
-	shared_object_t so={
-		(u64)image_base,
-		image_base+header->e_phoff,
-		header->e_phentsize,
-		header->e_phnum,
-		dynamic_section
-	};
+	shared_object_t* so=_alloc_shared_object();
+	root_shared_object->next=so;
+	tail_shared_object=so;
+	so->next=NULL;
+	so->image_base=(u64)image_base;
+	so->elf_phdr_entries=image_base+header->e_phoff;
+	so->elf_phdr_entry_size=header->e_phentsize;
+	so->elf_phdr_entry_count=header->e_phnum;
+	so->elf_dynamic_section=dynamic_section;
 	printf("Found library: %s -> %p [%v]\n",buffer,image_base,max_address);
-	_parse_dynamic_section(&so);
-	return 1;
+	return _init_shared_object(so);
+}
+
+
+
+static u64 _lookup_symbol(const char* name){
+	u32 hash=0;
+	for (const char* tmp=name;tmp[0];tmp++){
+		hash=(hash<<4)+tmp[0];
+		hash^=(hash>>24)&0xf0;
+	}
+	hash&=0x0fffffff;
+	for (const shared_object_t* so=root_shared_object;so;so=so->next){
+		if (!so->dynamic_section.hash_table){
+			continue;
+		}
+		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];1;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
+			if (symbol->st_shndx==SHN_UNDEF){
+				break;
+			}
+			const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
+			for (u32 j=0;1;j++){
+				if (name[j]!=symbol_name[j]){
+					goto _skip_entry;
+				}
+				if (!name[j]){
+					return so->image_base+symbol->st_value;
+				}
+			}
+_skip_entry:
+		}
+	}
+	return 0;
 }
 
 
 
 extern void _resolve_symbol_trampoline(void);
-
-
-
-static u64 __TEST_FUNCTION_STUB(void){
-	return 12345;
-}
 
 
 
@@ -270,7 +298,8 @@ u64 _resolve_symbol(shared_object_t* so,u64 index){
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 	printf("Resolve symbol: %s+%u -> %p\n",so->dynamic_section.string_table+symbol->st_name,(so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)?relocation->r_addend:0),so->image_base+relocation->r_offset);
-	u64 resolved_symbol=(u64)__TEST_FUNCTION_STUB;
+	u64 resolved_symbol=_lookup_symbol(so->dynamic_section.string_table+symbol->st_name);
+	printf("==> %p\n",resolved_symbol);
 	if (!resolved_symbol){
 		return 0;
 	}
@@ -283,11 +312,11 @@ u64 _resolve_symbol(shared_object_t* so,u64 index){
 
 
 
-static void _parse_dynamic_section(shared_object_t* so){
+static _Bool _init_shared_object(shared_object_t* so){
 	if (!so->elf_dynamic_section){
-		return;
+		return 1;
 	}
-	_parse_dynamic_section2(so->elf_dynamic_section,so->image_base,&(so->dynamic_section));
+	_parse_dynamic_section(so->elf_dynamic_section,so->image_base,&(so->dynamic_section));
 	if (so->dynamic_section.plt_got){
 		so->dynamic_section.plt_got[1]=(u64)so;
 		so->dynamic_section.plt_got[2]=(u64)_resolve_symbol_trampoline;
@@ -305,12 +334,12 @@ static void _parse_dynamic_section(shared_object_t* so){
 					break;
 				default:
 					printf("Unknown relocation type: %u\n",relocation->r_info);
-					return;
+					return 0;
 			}
 		}
 	}
-	if (so->dynamic_section.string_table&&so->dynamic_section.hash_table&&so->dynamic_section.symbol_table&&so->dynamic_section.symbol_table_entry_size){
-		_load_symbols(so,0);
+	if (!so->dynamic_section.string_table||!so->dynamic_section.hash_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
+		so->dynamic_section.hash_table=NULL;
 	}
 	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
 		for (const elf_dyn_t* dyn=so->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
@@ -319,6 +348,7 @@ static void _parse_dynamic_section(shared_object_t* so){
 			}
 		}
 	}
+	return 1;
 }
 
 
@@ -383,10 +413,8 @@ u64 main(const u64* data){
 				break;
 		}
 	}
-	static shared_object_t so;
-	u64 entry_address=_load_root_shared_object_data(base_data,&so);
-	if (so.elf_dynamic_section){
-		_parse_dynamic_section(&so);
-	}
+	root_shared_object=_alloc_shared_object();
+	u64 entry_address=_load_root_shared_object_data(base_data,root_shared_object);
+	_init_shared_object(root_shared_object);
 	return entry_address;
 }

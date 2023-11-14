@@ -4,7 +4,6 @@
 
 
 
-
 u64 resolve_library_name(const char* name,char* buffer,u32 buffer_length);
 
 
