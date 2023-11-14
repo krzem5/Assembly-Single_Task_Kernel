@@ -7,6 +7,10 @@
 
 
 
+#define PRINT_DEBUG_INFO 0
+
+
+
 #define NOFLOAT __attribute__((target("no-mmx","no-sse","no-sse2")))
 
 
@@ -243,7 +247,6 @@ static _Bool _load_shared_object(const char* name){
 	tail_shared_object=so;
 	so->next=NULL;
 	so->image_base=(u64)image_base;
-	printf("Found library: %s -> %p [%v]\n",buffer,image_base,max_address);
 	return _init_shared_object(so,dynamic_section);
 }
 
@@ -351,6 +354,7 @@ static _Bool _init_shared_object(shared_object_t* so,const elf_dyn_t* dynamic_se
 
 u64 main(const u64* data){
 	const u64* base_data=data;
+#if PRINT_DEBUG_INFO
 	const char* string_table=(const char*)data;
 	u32 argc=data[0];
 	data++;
@@ -409,6 +413,7 @@ u64 main(const u64* data){
 				break;
 		}
 	}
+#endif
 	root_shared_object=_alloc_shared_object();
 	root_shared_object->next=NULL;
 	root_shared_object->image_base=0;
