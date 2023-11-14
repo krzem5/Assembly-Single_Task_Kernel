@@ -36,17 +36,6 @@ typedef struct _SHARED_OBJECT{
 
 
 
-typedef struct _LINKER_CONTEXT{
-	const void* elf_phdr_entries;
-	u64 elf_phdr_entry_size;
-	u64 elf_phdr_entry_count;
-	u64 elf_entry_address;
-	const elf_dyn_t* elf_dynamic_section;
-	dynamic_section_data_t dynamic_section;
-} linker_context_t;
-
-
-
 static void _parse_dynamic_section(shared_object_t* so);
 
 
