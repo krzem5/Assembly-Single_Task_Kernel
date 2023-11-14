@@ -7,6 +7,10 @@
 
 
 
+#define NOFLOAT __attribute__((target("no-mmx","no-sse","no-sse2")))
+
+
+
 typedef struct _DYNAMIC_SECTION_DATA{
 	_Bool has_needed_libraries;
 	u64 plt_relocation_size;
@@ -245,7 +249,7 @@ static _Bool _load_shared_object(const char* name){
 
 
 
-static u64 _lookup_symbol(const char* name){
+static u64 NOFLOAT _lookup_symbol(const char* name){
 	u32 hash=0;
 	for (const char* tmp=name;tmp[0];tmp++){
 		hash=(hash<<4)+tmp[0];
@@ -278,7 +282,7 @@ _skip_entry:
 
 
 
-u64 _resolve_symbol(shared_object_t* so,u64 index){
+u64 NOFLOAT _resolve_symbol(shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
 		return 0;
