@@ -8,71 +8,153 @@
 
 
 
+typedef struct _DYNAMIC_SECTION_DATA{
+	_Bool has_needed_libraries;
+	u64 plt_relocation_size;
+	u64* plt_got;
+	const elf_hash_t* hash_table;
+	const char* string_table;
+	const void* symbol_table;
+	const void* relocations;
+	u64 relocation_size;
+	u64 relocation_entry_size;
+	u64 symbol_table_entry_size;
+	u64 plt_relocation_entry_size;
+	const void* plt_relocations;
+} dynamic_section_data_t;
+
+
+
+typedef struct _SHARED_OBJECT{
+	u64 image_base;
+	const void* elf_phdr_entries;
+	u64 elf_phdr_entry_size;
+	u64 elf_phdr_entry_count;
+	const elf_dyn_t* elf_dynamic_section;
+	dynamic_section_data_t dynamic_section;
+} shared_object_t;
+
+
+
 typedef struct _LINKER_CONTEXT{
 	const void* elf_phdr_entries;
 	u64 elf_phdr_entry_size;
 	u64 elf_phdr_entry_count;
 	u64 elf_entry_address;
 	const elf_dyn_t* elf_dynamic_section;
-	const char* elf_string_table;
-	const elf_hash_t* elf_hash_table;
-	const void* elf_symbol_table;
-	u64 elf_symbol_table_entry_size;
+	dynamic_section_data_t dynamic_section;
 } linker_context_t;
 
 
 
-static void _load_linker_context(const u64* data,linker_context_t* ctx){
-	ctx->elf_phdr_entries=NULL;
-	ctx->elf_phdr_entry_size=0;
-	ctx->elf_phdr_entry_count=0;
-	ctx->elf_entry_address=0;
+static void _parse_dynamic_section(shared_object_t* so);
+
+
+
+static void _parse_dynamic_section2(const elf_dyn_t* dynamic_section,u64 image_base,dynamic_section_data_t* out){
+	out->has_needed_libraries=0;
+	out->plt_relocation_size=0;
+	out->plt_got=NULL;
+	out->hash_table=NULL;
+	out->string_table=NULL;
+	out->symbol_table=NULL;
+	out->relocations=NULL;
+	out->relocation_size=0;
+	out->relocation_entry_size=0;
+	out->symbol_table_entry_size=0;
+	out->plt_relocation_entry_size=0;
+	out->plt_relocations=NULL;
+	for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
+		switch (dyn->d_tag){
+			case DT_NEEDED:
+				out->has_needed_libraries=1;
+				break;
+			case DT_PLTRELSZ:
+				out->plt_relocation_size=dyn->d_un.d_val;
+				break;
+			case DT_PLTGOT:
+				out->plt_got=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_HASH:
+				out->hash_table=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_STRTAB:
+				out->string_table=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_SYMTAB:
+				out->symbol_table=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_RELA:
+				out->relocations=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_RELASZ:
+				out->relocation_size=dyn->d_un.d_val;
+				break;
+			case DT_RELAENT:
+				out->relocation_entry_size=dyn->d_un.d_val;
+				break;
+			case DT_SYMENT:
+				out->symbol_table_entry_size=dyn->d_un.d_val;
+				break;
+			case DT_PLTREL:
+				out->plt_relocation_entry_size=dyn->d_un.d_val;
+				break;
+			case DT_JMPREL:
+				out->plt_relocations=image_base+dyn->d_un.d_ptr;
+				break;
+		}
+	}
+}
+
+
+
+static u64 _load_root_shared_object_data(const u64* data,shared_object_t* so){
+	so->elf_phdr_entries=NULL;
+	so->elf_phdr_entry_size=0;
+	so->elf_phdr_entry_count=0;
+	u64 out=0;
 	for (data+=(data[0]+1);data[0];data++);
 	for (data++;data[0];data+=2){
 		if (data[0]==AT_PHDR){
-			ctx->elf_phdr_entries=(void*)data[1];
+			so->elf_phdr_entries=(void*)data[1];
 		}
 		else if (data[0]==AT_PHENT){
-			ctx->elf_phdr_entry_size=data[1];
+			so->elf_phdr_entry_size=data[1];
 		}
 		else if (data[0]==AT_PHNUM){
-			ctx->elf_phdr_entry_count=data[1];
+			so->elf_phdr_entry_count=data[1];
 		}
 		else if (data[0]==AT_ENTRY){
-			ctx->elf_entry_address=data[1];
+			out=data[1];
 		}
 	}
-	if (!ctx->elf_phdr_entries||!ctx->elf_phdr_entry_size||!ctx->elf_phdr_entry_count){
+	if (!so->elf_phdr_entries||!so->elf_phdr_entry_size||!so->elf_phdr_entry_count){
 		printf("No PHDR supplied to the dynamic linker\n");
 	}
-	if (!ctx->elf_entry_address){
+	if (!out){
 		printf("No entry address supplied to the dynamic linker\n");
 	}
-}
-
-
-
-static void _find_dynamic_section(linker_context_t* ctx){
-	ctx->elf_dynamic_section=NULL;
-	for (u16 i=0;i<ctx->elf_phdr_entry_count;i++){
-		const elf_phdr_t* program_header=ctx->elf_phdr_entries+i*ctx->elf_phdr_entry_size;
+	so->elf_dynamic_section=NULL;
+	for (u16 i=0;i<so->elf_phdr_entry_count;i++){
+		const elf_phdr_t* program_header=so->elf_phdr_entries+i*so->elf_phdr_entry_size;
 		if (program_header->p_type!=PT_DYNAMIC){
 			continue;
 		}
-		ctx->elf_dynamic_section=(void*)(program_header->p_vaddr);
+		so->elf_dynamic_section=(void*)(program_header->p_vaddr);
 	}
+	return out;
 }
 
 
 
-static void _load_symbols(linker_context_t* ctx,u64 image_base){
-	for (u32 i=0;i<ctx->elf_hash_table->nbucket;i++){
-		for (u32 j=ctx->elf_hash_table->data[i];1;j=ctx->elf_hash_table->data[ctx->elf_hash_table->nbucket+j]){
-			const elf_sym_t* symbol=ctx->elf_symbol_table+j*ctx->elf_symbol_table_entry_size;
+static void _load_symbols(shared_object_t* so,u64 image_base){
+	for (u32 i=0;i<so->dynamic_section.hash_table->nbucket;i++){
+		for (u32 j=so->dynamic_section.hash_table->data[i];1;j=so->dynamic_section.hash_table->data[so->dynamic_section.hash_table->nbucket+j]){
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+j*so->dynamic_section.symbol_table_entry_size;
 			if (symbol->st_shndx==SHN_UNDEF){
 				break;
 			}
-			symbol_table_add(ctx->elf_string_table+symbol->st_name,image_base+symbol->st_value);
+			symbol_table_add(so->dynamic_section.string_table+symbol->st_name,image_base+symbol->st_value);
 		}
 	}
 }
@@ -168,77 +250,15 @@ static _Bool _load_shared_object(const char* name){
 		memcpy((void*)(program_header->p_vaddr),base_file_address+program_header->p_offset,program_header->p_filesz);
 	}
 	memory_unmap(base_file_address,0);
-	if (!dynamic_section){
-		return 1;
-	}
-	const void* hash_table=NULL;
-	const char* string_table=NULL;
-	void* symbol_table=NULL;
-	u64 symbol_table_entry_size=0;
-	const elf_rela_t* relocations=NULL;
-	u64 relocation_size=0;
-	u64 relocation_entry_size=0;
-	for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
-		switch (dyn->d_tag){
-			case DT_HASH:
-				hash_table=image_base+((u64)(dyn->d_un.d_ptr));
-				break;
-			case DT_STRTAB:
-				string_table=image_base+((u64)(dyn->d_un.d_ptr));
-				break;
-			case DT_SYMTAB:
-				symbol_table=image_base+((u64)(dyn->d_un.d_ptr));
-				break;
-			case DT_SYMENT:
-				symbol_table_entry_size=dyn->d_un.d_val;
-				break;
-			case DT_RELA:
-				relocations=image_base+((u64)(dyn->d_un.d_ptr));
-				break;
-			case DT_RELASZ:
-				relocation_size=dyn->d_un.d_val;
-				break;
-			case DT_RELAENT:
-				relocation_entry_size=dyn->d_un.d_val;
-				break;
-		}
-	}
-	if (!relocations){
-		goto _skip_dynamic_section;
-	}
-	while (1){
-		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
-		switch (relocations->r_info&0xffffffff){
-			case R_X86_64_GLOB_DAT:
-				*((u64*)(image_base+relocations->r_offset))=symbol->st_value+((u64)image_base);
-				break;
-			case R_X86_64_RELATIVE:
-				*((u64*)(image_base+relocations->r_offset))=((u64)image_base)+relocations->r_addend;
-				break;
-			default:
-				printf("Unknown relocation type: %u\n",relocations->r_info);
-				return 0;
-		}
-		if (relocation_size<=relocation_entry_size){
-			break;
-		}
-		relocations=(const elf_rela_t*)(((u64)relocations)+relocation_entry_size);
-		relocation_size-=relocation_entry_size;
-	}
-_skip_dynamic_section:
-	linker_context_t ctx={
+	shared_object_t so={
+		(u64)image_base,
 		image_base+header->e_phoff,
 		header->e_phentsize,
 		header->e_phnum,
-		0,
-		dynamic_section,
-		string_table,
-		hash_table,
-		symbol_table,
-		symbol_table_entry_size
+		dynamic_section
 	};
-	printf("Found library: %s -> %p [%p]\n",buffer,image_base,max_address);
-	_load_symbols(&ctx,(u64)image_base);
+	printf("Found library: %s -> %p [%v]\n",buffer,image_base,max_address);
+	_parse_dynamic_section(&so);
 	return 1;
 }
 
@@ -254,64 +274,60 @@ static u64 __TEST_FUNCTION_STUB(void){
 
 
 
-u64 _resolve_symbol(u64 library,u64 index){
-	printf("RESOLVE SYMBOL: %u (got+%u) [%p]\n",index,index+3,library);
-	return (u64)__TEST_FUNCTION_STUB;
+u64 _resolve_symbol(shared_object_t* so,u64 index){
+	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
+	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
+		return 0;
+	}
+	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
+	printf("Resolve symbol: %s+%u -> %p\n",so->dynamic_section.string_table+symbol->st_name,(so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)?relocation->r_addend:0),so->image_base+relocation->r_offset);
+	u64 resolved_symbol=(u64)__TEST_FUNCTION_STUB;
+	if (!resolved_symbol){
+		return 0;
+	}
+	if (so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)){
+		resolved_symbol+=relocation->r_addend;
+	}
+	*((u64*)(so->image_base+relocation->r_offset))=resolved_symbol;
+	return resolved_symbol;
 }
 
 
 
-static void _parse_dynamic_section(linker_context_t* ctx){
-	ctx->elf_string_table=NULL;
-	ctx->elf_hash_table=NULL;
-	ctx->elf_symbol_table=NULL;
-	ctx->elf_symbol_table_entry_size=0;
-	_Bool has_imports=0;
-	for (const elf_dyn_t* dyn=ctx->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
-		if (dyn->d_tag==DT_NEEDED){
-			has_imports=1;
-		}
-		else if (dyn->d_tag==DT_HASH){
-			ctx->elf_hash_table=dyn->d_un.d_ptr;
-		}
-		else if (dyn->d_tag==DT_STRTAB){
-			ctx->elf_string_table=dyn->d_un.d_ptr;
-		}
-		else if (dyn->d_tag==DT_SYMTAB){
-			ctx->elf_symbol_table=dyn->d_un.d_ptr;
-		}
-		else if (dyn->d_tag==DT_SYMENT){
-			ctx->elf_symbol_table_entry_size=dyn->d_un.d_val;
-		}
-		else if (dyn->d_tag==DT_PLTGOT){
-			printf("PLT GOT: %p\n",dyn->d_un.d_ptr);
-			u64* got=dyn->d_un.d_ptr;
-			got[1]=0x11223344; // shared object identifier
-			got[2]=(u64)_resolve_symbol_trampoline; // shared object resolver
-		}
-		else if (dyn->d_tag==DT_JMPREL){
-			printf("PLT Relocations: %p [R_X86_64_JUMP_SLOT]\n",dyn->d_un.d_ptr);
-		}
-		else if (dyn->d_tag==DT_PLTREL){
-			printf("PLT Relocation type: %s\n",(dyn->d_un.d_val==DT_RELA?"DT_RELA":"DT_REL"));
-		}
-		else if (dyn->d_tag==DT_PLTRELSZ){
-			printf("PLT Relocation section size: %u\n",dyn->d_un.d_val);
-		}
-	}
-	if (ctx->elf_string_table&&ctx->elf_hash_table&&ctx->elf_symbol_table&&ctx->elf_symbol_table_entry_size){
-		_load_symbols(ctx,0);
-	}
-	if (!has_imports){
+static void _parse_dynamic_section(shared_object_t* so){
+	if (!so->elf_dynamic_section){
 		return;
 	}
-	if (!ctx->elf_string_table){
-		printf("No string table found in the DYNAMIC section\n");
-		return;
+	_parse_dynamic_section2(so->elf_dynamic_section,so->image_base,&(so->dynamic_section));
+	if (so->dynamic_section.plt_got){
+		so->dynamic_section.plt_got[1]=(u64)so;
+		so->dynamic_section.plt_got[2]=(u64)_resolve_symbol_trampoline;
 	}
-	for (const elf_dyn_t* dyn=ctx->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
-		if (dyn->d_tag==DT_NEEDED){
-			_load_shared_object(ctx->elf_string_table+dyn->d_un.d_val);
+	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
+		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
+			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
+			switch (relocation->r_info&0xffffffff){
+				case R_X86_64_GLOB_DAT:
+					const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
+					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+symbol->st_value;
+					break;
+				case R_X86_64_RELATIVE:
+					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
+					break;
+				default:
+					printf("Unknown relocation type: %u\n",relocation->r_info);
+					return;
+			}
+		}
+	}
+	if (so->dynamic_section.string_table&&so->dynamic_section.hash_table&&so->dynamic_section.symbol_table&&so->dynamic_section.symbol_table_entry_size){
+		_load_symbols(so,0);
+	}
+	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
+		for (const elf_dyn_t* dyn=so->elf_dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
+			if (dyn->d_tag==DT_NEEDED){
+				_load_shared_object(so->dynamic_section.string_table+dyn->d_un.d_val);
+			}
 		}
 	}
 }
@@ -378,12 +394,10 @@ u64 main(const u64* data){
 				break;
 		}
 	}
-	linker_context_t ctx;
-	_load_linker_context(base_data,&ctx);
-	_find_dynamic_section(&ctx);
-	if (!ctx.elf_dynamic_section){
-		return ctx.elf_entry_address;
+	static shared_object_t so;
+	u64 entry_address=_load_root_shared_object_data(base_data,&so);
+	if (so.elf_dynamic_section){
+		_parse_dynamic_section(&so);
 	}
-	_parse_dynamic_section(&ctx);
-	return ctx.elf_entry_address;
+	return entry_address;
 }
