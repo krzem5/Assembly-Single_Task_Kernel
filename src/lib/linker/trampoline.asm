@@ -1,4 +1,4 @@
-%include "core/types.inc"
+%include "sys/types.inc"
 extern symbol_resolve_plt
 global symbol_resolve_plt_trampoline:function hidden
 section .text exec nowrite

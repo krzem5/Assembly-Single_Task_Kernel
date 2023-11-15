@@ -1,4 +1,4 @@
-%include "core/types.inc"
+%include "sys/types.inc"
 extern _syscall_clock_get_converion
 global clock_init:function _clock_init_size
 global clock_get_ticks:function _clock_get_ticks_size

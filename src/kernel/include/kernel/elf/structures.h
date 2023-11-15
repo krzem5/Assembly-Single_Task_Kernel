@@ -17,7 +17,7 @@
 #define ET_REL 1
 #define ET_EXEC 2
 #define ET_DYN 3
-#define ET_CORE 4
+#define ET_SYS 4
 
 #define PF_R 4
 #define PF_W 2

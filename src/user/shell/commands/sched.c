@@ -1,9 +1,9 @@
 #include <command.h>
 #include <string.h>
-#include <core/clock.h>
-#include <core/cpu.h>
-#include <core/io.h>
-// #include <core/scheduler.h>
+#include <sys/clock.h>
+#include <sys/cpu.h>
+#include <sys/io.h>
+// #include <sys/scheduler.h>
 
 
 

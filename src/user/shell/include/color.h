@@ -1,7 +1,7 @@
 #ifndef _COLOR_H_
 #define _COLOR_H_ 1
-#include <core/fd.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/types.h>
 
 
 

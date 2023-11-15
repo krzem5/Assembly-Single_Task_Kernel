@@ -1,6 +1,6 @@
 #include <command.h>
-#include <core/io.h>
-// #include <core/network.h>
+#include <sys/io.h>
+// #include <sys/network.h>
 
 
 

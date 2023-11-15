@@ -1,6 +1,6 @@
-#include <core/fd.h>
-#include <core/syscall.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 #include <stdarg.h>
 
 
@@ -112,7 +112,7 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 
 
 
-CORE_PUBLIC void printf(const char* template,...){
+SYS_PUBLIC void printf(const char* template,...){
 	buffer_state_t out={
 		.offset=0
 	};
@@ -242,19 +242,19 @@ CORE_PUBLIC void printf(const char* template,...){
 
 
 
-CORE_PUBLIC void print_buffer(const void* buffer,u32 length){
+SYS_PUBLIC void print_buffer(const void* buffer,u32 length){
 	_write_data_to_stdout(buffer,length);
 }
 
 
 
-CORE_PUBLIC void putchar(char c){
+SYS_PUBLIC void putchar(char c){
 	_write_data_to_stdout(&c,1);
 }
 
 
 
-CORE_PUBLIC char getchar(void){
+SYS_PUBLIC char getchar(void){
 	char out;
 	_read_data_from_stdin(&out,1,1);
 	return out;
@@ -262,7 +262,7 @@ CORE_PUBLIC char getchar(void){
 
 
 
-CORE_PUBLIC int getchar_timeout(u64 timeout){
+SYS_PUBLIC int getchar_timeout(u64 timeout){
 	char out;
 	return (_read_data_from_stdin(&out,1,0)==1?out:-1);
 }

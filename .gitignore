@@ -1,5 +1,5 @@
 *.pyc
 _generated
 build
-lib/core/core/syscall.asm
-lib/core/include/core/syscall.h
+lib/sys/sys/syscall.asm
+lib/sys/include/sys/syscall.h

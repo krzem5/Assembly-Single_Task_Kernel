@@ -1,6 +1,6 @@
 #ifndef _LINKER_SYMBOL_H_
 #define _LINKER_SYMBOL_H_ 1
-#include <core/types.h>
+#include <sys/types.h>
 #include <linker/shared_object.h>
 
 

@@ -1,8 +1,8 @@
 #include <command.h>
 #include <string.h>
-#include <core/io.h>
-#include <core/system.h>
-#include <core/types.h>
+#include <sys/io.h>
+#include <sys/system.h>
+#include <sys/types.h>
 
 
 

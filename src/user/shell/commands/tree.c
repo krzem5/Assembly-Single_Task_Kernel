@@ -2,10 +2,10 @@
 #include <command.h>
 #include <cwd.h>
 #include <string.h>
-#include <core/fd.h>
-#include <core/io.h>
-#include <core/memory.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/io.h>
+#include <sys/memory.h>
+#include <sys/types.h>
 
 
 

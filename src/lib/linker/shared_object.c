@@ -1,7 +1,7 @@
-#include <core/fd.h>
-#include <core/io.h>
-#include <core/memory.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/io.h>
+#include <sys/memory.h>
+#include <sys/types.h>
 #include <linker/search_path.h>
 #include <linker/shared_object.h>
 #include <linker/symbol.h>

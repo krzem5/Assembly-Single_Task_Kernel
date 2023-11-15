@@ -1,6 +1,6 @@
-#ifndef _CORE_LOCK_H_
-#define _CORE_LOCK_H_ 1
-#include <core/types.h>
+#ifndef _SYS_LOCK_H_
+#define _SYS_LOCK_H_ 1
+#include <sys/types.h>
 
 
 

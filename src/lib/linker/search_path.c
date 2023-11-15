@@ -1,5 +1,5 @@
-#include <core/fd.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/types.h>
 
 
 

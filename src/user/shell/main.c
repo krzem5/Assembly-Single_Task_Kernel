@@ -1,8 +1,8 @@
 #include <command.h>
 #include <cwd.h>
 #include <input.h>
-#include <core/clock.h>
-#include <core/io.h>
+#include <sys/clock.h>
+#include <sys/io.h>
 
 
 

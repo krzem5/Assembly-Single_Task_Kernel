@@ -1,6 +1,6 @@
-#ifndef _CORE_ELF_H_
-#define _CORE_ELF_H_ 1
-#include <core/types.h>
+#ifndef _SYS_ELF_H_
+#define _SYS_ELF_H_ 1
+#include <sys/types.h>
 
 
 
@@ -17,7 +17,7 @@
 #define ET_REL 1
 #define ET_EXEC 2
 #define ET_DYN 3
-#define ET_CORE 4
+#define ET_SYS 4
 
 #define PF_R 4
 #define PF_W 2

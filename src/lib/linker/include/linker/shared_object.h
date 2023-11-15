@@ -1,7 +1,7 @@
 #ifndef _LINKER_SHARED_OBJECT_H_
 #define _LINKER_SHARED_OBJECT_H_ 1
-#include <core/elf.h>
-#include <core/types.h>
+#include <sys/elf.h>
+#include <sys/types.h>
 
 
 

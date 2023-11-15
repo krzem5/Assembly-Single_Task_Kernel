@@ -1,6 +1,6 @@
-#ifndef _CORE_FD_H_
-#define _CORE_FD_H_ 1
-#include <core/types.h>
+#ifndef _SYS_FD_H_
+#define _SYS_FD_H_ 1
+#include <sys/types.h>
 
 
 

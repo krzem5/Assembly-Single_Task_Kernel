@@ -1,9 +1,9 @@
 #include <command.h>
 #include <string.h>
-// #include <core/drive.h>
-// #include <core/handle.h>
-#include <core/io.h>
-#include <core/types.h>
+// #include <sys/drive.h>
+// #include <sys/handle.h>
+#include <sys/io.h>
+#include <sys/types.h>
 
 
 

@@ -1,8 +1,8 @@
 #include <command.h>
 #include <cpuid.h>
-#include <core/clock.h>
-#include <core/cpu.h>
-#include <core/io.h>
+#include <sys/clock.h>
+#include <sys/cpu.h>
+#include <sys/io.h>
 
 
 

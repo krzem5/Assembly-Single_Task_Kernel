@@ -1,9 +1,9 @@
-#ifndef _CORE_TYPES_H_
-#define _CORE_TYPES_H_ 1
+#ifndef _SYS_TYPES_H_
+#define _SYS_TYPES_H_ 1
 
 
 
-#define CORE_PUBLIC __attribute__((visibility("default")))
+#define SYS_PUBLIC __attribute__((visibility("default")))
 
 
 

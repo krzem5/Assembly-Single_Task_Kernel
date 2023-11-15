@@ -1,6 +1,6 @@
-#include <core/fd.h>
-#include <core/io.h>
-#include <core/types.h>
+#include <sys/fd.h>
+#include <sys/io.h>
+#include <sys/types.h>
 
 
 

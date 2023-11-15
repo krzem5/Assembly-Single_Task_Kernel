@@ -1,6 +1,6 @@
-#ifndef _CORE_THREAD_H_
-#define _CORE_THREAD_H_ 1
-#include <core/types.h>
+#ifndef _SYS_THREAD_H_
+#define _SYS_THREAD_H_ 1
+#include <sys/types.h>
 
 
 

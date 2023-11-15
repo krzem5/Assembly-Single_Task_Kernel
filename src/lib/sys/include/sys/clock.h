@@ -1,6 +1,6 @@
-#ifndef _CORE_CLOCK_H_
-#define _CORE_CLOCK_H_ 1
-#include <core/types.h>
+#ifndef _SYS_CLOCK_H_
+#define _SYS_CLOCK_H_ 1
+#include <sys/types.h>
 
 
 

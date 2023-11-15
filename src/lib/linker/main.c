@@ -1,6 +1,6 @@
-#include <core/elf.h>
-#include <core/io.h>
-#include <core/types.h>
+#include <sys/elf.h>
+#include <sys/io.h>
+#include <sys/types.h>
 #include <linker/shared_object.h>
 
 

@@ -1,3 +1,3 @@
-core:
-linker@nostatic:core
-runtime@nodynamic:core
+sys:
+linker@nostatic:sys
+runtime@nodynamic:sys
