@@ -1,10 +1,10 @@
 %include "core/types.inc"
 extern _syscall_clock_get_converion
-global clock_cpu_frequency:data 8
 global clock_init:function _clock_init_size
 global clock_get_ticks:function _clock_get_ticks_size
 global clock_get_time:function _clock_get_time_size
 global clock_ticks_to_time:function _clock_ticks_to_time_size
+global clock_get_frequency:function _clock_get_frequency_size
 
 
 
@@ -14,7 +14,7 @@ clock_init:
 	call [REF(_syscall_clock_get_converion)]
 	mov qword [REF_DATA(_clock_conversion_factor)], rax
 	mov dword [REF_DATA(_clock_conversion_shift)], edx
-	mov qword [REF_DATA(clock_cpu_frequency)], r8
+	mov qword [REF_DATA(_clock_cpu_frequency)], r8
 	ret
 _clock_init_size equ $-$$
 
@@ -60,12 +60,20 @@ _clock_ticks_to_time_size equ $-$$
 
 
 
+section .text.clock_get_frequency exec nowrite
+clock_get_frequency:
+	mov rax, qword [REF_DATA(_clock_cpu_frequency)]
+	ret
+_clock_get_frequency_size equ $-$$
+
+
+
 section .data.clock_data noexec write
 
 
 
 align 8
-clock_cpu_frequency:
+_clock_cpu_frequency:
 	dq 0
 _clock_conversion_factor:
 	dq 0

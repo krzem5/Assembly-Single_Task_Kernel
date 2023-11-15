@@ -49,7 +49,7 @@ void cpu_main(int argc,const char*const* argv){
 	u32 max_level=cpuid.eax;
 	_execute_cpuid(0x80000000,&cpuid);
 	u32 max_extended_level=cpuid.eax-0x80000000;
-	printf("CPU count: \x1b[1m%u\x1b[0m\nCPU frequency: \x1b[1m%lu MHz\x1b[0m\nCPU signature: \x1b[1m%s\x1b[0m\nCPU basic/extended feature level: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",cpu_get_count(),(clock_cpu_frequency+500000)/1000000,signature,max_level,max_extended_level);
+	printf("CPU count: \x1b[1m%u\x1b[0m\nCPU frequency: \x1b[1m%lu MHz\x1b[0m\nCPU signature: \x1b[1m%s\x1b[0m\nCPU basic/extended feature level: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",cpu_get_count(),(clock_get_frequency()+500000)/1000000,signature,max_level,max_extended_level);
 	if (max_level>=1){
 		_execute_cpuid(1,&cpuid);
 		printf("CPU model/family/stepping: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",(cpuid.eax>>8)&15,(cpuid.eax>>4)&15,cpuid.eax&15);

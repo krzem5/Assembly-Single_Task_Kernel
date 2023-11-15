@@ -363,7 +363,7 @@ def _compile_module(module,dependencies):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	error=False
 	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
 		for file_name in files:
@@ -392,9 +392,9 @@ def _compile_module(module,dependencies):
 
 def _compile_library(library,flags,dependencies):
 	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library)
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library,*[LIBRARY_FILE_DIRECTORY+"/"+dep for dep in dependencies])
 	object_files=[]
-	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
+	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	error=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
@@ -419,7 +419,7 @@ def _compile_library(library,flags,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-s","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-s","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
 		return
@@ -433,7 +433,7 @@ def _compile_library(library,flags,dependencies):
 
 def _compile_user_files(program,dependencies):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,*[LIBRARY_FILE_DIRECTORY+"/"+dep[0] for dep in dependencies])
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
 	error=False
@@ -653,7 +653,7 @@ with open("src/module/dependencies.txt","r") as rf:
 		if (not line):
 			continue
 		name,dependencies=line.split(":")
-		_compile_module(name,[dep.strip() for dep in dependencies.split(",")])
+		_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
 #####################################################################################################################################
 with open("src/lib/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
@@ -662,7 +662,7 @@ with open("src/lib/dependencies.txt","r") as rf:
 			continue
 		name,dependencies=line.split(":")
 		flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
-		_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",")])
+		_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
 #####################################################################################################################################
 with open("src/user/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
