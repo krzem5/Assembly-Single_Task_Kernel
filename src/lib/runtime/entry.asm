@@ -1,7 +1,7 @@
 %include "core/types.inc"
 extern _syscall_thread_stop
 extern main
-global _start
+global _start:function hidden
 section .text exec nowrite
 
 

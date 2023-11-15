@@ -1,5 +1,5 @@
-global scheduler_yield
-global scheduler_task_wait_loop
+global scheduler_yield:function
+global scheduler_task_wait_loop:function
 section .text exec nowrite
 
 

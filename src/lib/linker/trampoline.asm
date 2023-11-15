@@ -1,6 +1,6 @@
 %include "core/types.inc"
 extern _resolve_symbol
-global _resolve_symbol_trampoline
+global _resolve_symbol_trampoline:function hidden
 section .text exec nowrite
 
 

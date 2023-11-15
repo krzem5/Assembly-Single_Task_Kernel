@@ -3,6 +3,10 @@
 
 
 
+#define CORE_PUBLIC __attribute__((visibility("default")))
+
+
+
 typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;

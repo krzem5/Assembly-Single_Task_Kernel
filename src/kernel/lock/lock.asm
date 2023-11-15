@@ -5,11 +5,11 @@
 
 
 
-global spinlock_init
-global spinlock_acquire_exclusive
-global spinlock_release_exclusive
-global spinlock_acquire_shared
-global spinlock_release_shared
+global spinlock_init:function
+global spinlock_acquire_exclusive:function
+global spinlock_release_exclusive:function
+global spinlock_acquire_shared:function
+global spinlock_release_shared:function
 section .text exec nowrite
 
 

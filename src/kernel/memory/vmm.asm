@@ -1,5 +1,5 @@
-global vmm_get_pagemap
-global vmm_switch_to_pagemap
+global vmm_get_pagemap:function
+global vmm_switch_to_pagemap:function
 section .text exec nowrite
 
 

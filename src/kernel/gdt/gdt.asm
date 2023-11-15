@@ -1,4 +1,4 @@
-global gdt_enable
+global gdt_enable:function
 section .text exec nowrite
 
 

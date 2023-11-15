@@ -404,12 +404,12 @@ def _compile_library(library,flags,dependencies):
 			file=os.path.join(root,file_name)
 			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
 			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
+			if (_file_not_changed(changed_files,object_file+".deps") and 0):
 				continue
 			command=None
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -419,7 +419,7 @@ def _compile_library(library,flags,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-s","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
 		return
@@ -435,7 +435,7 @@ def _compile_user_files(program,dependencies):
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,USER_FILE_DIRECTORY+"/runtime")
 	object_files=[]
-	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies if dep]
+	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
 	error=False
 	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
@@ -457,9 +457,8 @@ def _compile_user_files(program,dependencies):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error):
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
-	return object_files
 
 
 
@@ -671,9 +670,7 @@ with open("src/user/dependencies.txt","r") as rf:
 		if (not line):
 			continue
 		name,dependencies=line.split(":")
-		dependencies=[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()]
-		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+_compile_user_files(name,[dep[0] for dep in dependencies])+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
-			sys.exit(1)
+		_compile_user_files(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True

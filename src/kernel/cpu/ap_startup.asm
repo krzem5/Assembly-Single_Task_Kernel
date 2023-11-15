@@ -125,8 +125,8 @@ times 4096-($-$$) db 0
 
 
 
-global cpu_ap_startup_init
 extern vmm_kernel_pagemap
+global cpu_ap_startup_init:function
 section .text exec nowrite
 
 

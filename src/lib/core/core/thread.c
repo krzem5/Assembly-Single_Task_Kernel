@@ -11,24 +11,24 @@ static void _thread_bootstrap(void (*func)(void*),void* arg){
 
 
 
-void __attribute__((noreturn)) thread_stop(void){
+CORE_PUBLIC void __attribute__((noreturn)) thread_stop(void){
 	_syscall_thread_stop();
 }
 
 
 
-u64 thread_create(void (*func)(void*),void* arg,u64 stack_size){
+CORE_PUBLIC u64 thread_create(void (*func)(void*),void* arg,u64 stack_size){
 	return _syscall_thread_create((u64)_thread_bootstrap,(u64)func,(u64)arg,stack_size);
 }
 
 
 
-u32 thread_get_priority(u64 handle){
+CORE_PUBLIC u32 thread_get_priority(u64 handle){
 	return _syscall_thread_get_priority(handle);
 }
 
 
 
-_Bool thread_set_priority(u64 handle,u32 priority){
+CORE_PUBLIC _Bool thread_set_priority(u64 handle,u32 priority){
 	return _syscall_thread_set_priority(handle,priority);
 }

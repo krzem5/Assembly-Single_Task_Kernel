@@ -1,5 +1,5 @@
 extern log
-global cpu_check_features
+global cpu_check_features:function
 section .text exec nowrite
 
 

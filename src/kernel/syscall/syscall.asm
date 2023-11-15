@@ -4,7 +4,7 @@ extern _syscall_count
 extern _syscall_handlers
 extern scheduler_set_timer
 extern syscall_invalid
-global syscall_enable
+global syscall_enable:function
 section .text exec nowrite
 
 

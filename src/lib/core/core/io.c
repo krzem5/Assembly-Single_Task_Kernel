@@ -112,7 +112,7 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 
 
 
-void printf(const char* template,...){
+CORE_PUBLIC void printf(const char* template,...){
 	buffer_state_t out={
 		.offset=0
 	};
@@ -242,19 +242,19 @@ void printf(const char* template,...){
 
 
 
-void print_buffer(const void* buffer,u32 length){
+CORE_PUBLIC void print_buffer(const void* buffer,u32 length){
 	_write_data_to_stdout(buffer,length);
 }
 
 
 
-void putchar(char c){
+CORE_PUBLIC void putchar(char c){
 	_write_data_to_stdout(&c,1);
 }
 
 
 
-char getchar(void){
+CORE_PUBLIC char getchar(void){
 	char out;
 	_read_data_from_stdin(&out,1,1);
 	return out;
@@ -262,7 +262,7 @@ char getchar(void){
 
 
 
-int getchar_timeout(u64 timeout){
+CORE_PUBLIC int getchar_timeout(u64 timeout){
 	char out;
 	return (_read_data_from_stdin(&out,1,0)==1?out:-1);
 }

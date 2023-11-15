@@ -1,8 +1,8 @@
 extern clock_conversion_factor
 extern clock_conversion_shift
-global clock_get_ticks
-global clock_get_time
-global clock_ticks_to_time
+global clock_get_ticks:function
+global clock_get_time:function
+global clock_ticks_to_time:function
 section .text exec nowrite
 
 

@@ -1,8 +1,8 @@
-global msr_get_apic_id
-global msr_enable_apic
-global msr_set_fs_base
-global msr_set_gs_base
-global msr_enable_rdtsc
+global msr_get_apic_id:function
+global msr_enable_apic:function
+global msr_set_fs_base:function
+global msr_set_gs_base:function
+global msr_enable_rdtsc:function
 section .text exec nowrite
 
 
