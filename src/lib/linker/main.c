@@ -239,12 +239,15 @@ static _Bool _load_shared_object(const char* name){
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		u64 flags=MEMORY_FLAG_READ;
-		if (program_header->p_flags&PF_X){
-			flags|=MEMORY_FLAG_EXEC;
+		u64 flags=0;
+		if (program_header->p_flags&PF_R){
+			flags|=MEMORY_FLAG_READ;
 		}
 		if (program_header->p_flags&PF_W){
 			flags|=MEMORY_FLAG_WRITE;
+		}
+		if (program_header->p_flags&PF_X){
+			flags|=MEMORY_FLAG_EXEC;
 		}
 		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
 		memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
