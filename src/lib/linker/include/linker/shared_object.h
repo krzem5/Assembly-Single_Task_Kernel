@@ -34,7 +34,11 @@ extern shared_object_t* shared_object_root;
 
 
 
-shared_object_t* shared_object_alloc(u64 image_base);
+shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section);
+
+
+
+shared_object_t* shared_object_load(const char* name);
 
 
 

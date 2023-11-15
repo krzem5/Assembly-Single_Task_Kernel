@@ -11,7 +11,7 @@ static const char* _library_search_directories[]={
 
 
 
-u64 resolve_library_name(const char* name,char* buffer,u32 buffer_length){
+u64 search_path_find_library(const char* name,char* buffer,u32 buffer_length){
 	for (u32 i=0;_library_search_directories[i];i++){
 		s64 fd=fd_open(0,_library_search_directories[i],0);
 		if (fd<=0){
