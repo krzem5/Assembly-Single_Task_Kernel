@@ -143,7 +143,7 @@ static const elf_dyn_t* _load_root_shared_object_data(const u64* data,u64* out){
 	for (u16 i=0;i<phdr_entry_count;i++){
 		const elf_phdr_t* program_header=phdr_entries+i*phdr_entry_size;
 		if (program_header->p_type==PT_DYNAMIC){
-			return(void*)(program_header->p_vaddr);
+			return (void*)(program_header->p_vaddr);
 		}
 	}
 	return NULL;
