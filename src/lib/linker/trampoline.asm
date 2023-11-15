@@ -1,12 +1,12 @@
 %include "core/types.inc"
-extern _resolve_symbol
-global _resolve_symbol_trampoline:function hidden
+extern symbol_resolve_plt
+global symbol_resolve_plt_trampoline:function hidden
 section .text exec nowrite
 
 
 
 [bits 64]
-_resolve_symbol_trampoline:
+symbol_resolve_plt_trampoline:
 	push rax
 	push rcx
 	push rdx
@@ -18,7 +18,7 @@ _resolve_symbol_trampoline:
 	push r11
 	mov rdi, qword [rsp+0x48]
 	mov rsi, qword [rsp+0x50]
-	call [REF(_resolve_symbol)]
+	call [REF(symbol_resolve_plt)]
 	test rax, rax
 	mov qword [rsp+0x50], rax
 	pop r11
