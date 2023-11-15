@@ -4,8 +4,8 @@
 
 
 static const char* _library_search_directories[]={
-	".",
 	"/lib",
+	".",
 	NULL
 };
 
