@@ -16,12 +16,13 @@ _start:
 	lea rsi, qword [r15+8]
 	lea rdx, qword [rsi+rdi*8]
 	mov rcx, rdx
-._skip_entry:
 	cmp qword [rcx], 0
-	je ._found_environ_end
+	je ._empty_environ
+._skip_entry:
 	add rcx, 8
-	jmp ._skip_entry
-._found_environ_end:
+	cmp qword [rcx], 0
+	jne ._skip_entry
+._empty_environ:
 	add rcx, 8
 	call [REF(main)]
 	jmp [REF(_syscall_thread_stop)]
