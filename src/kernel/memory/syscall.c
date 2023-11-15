@@ -3,6 +3,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -43,6 +44,19 @@ void syscall_memory_map(isr_state_t* regs){
 	u64 length=pmm_align_up_address(regs->rdi);
 	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter,flags,file);
 	regs->rax=(out?out->rb_node.key:0);
+}
+
+
+
+void syscall_memory_change_flags(isr_state_t* regs){
+	u64 flags=0;
+	if (regs->rdx&MEMORY_FLAG_WRITE){
+		flags|=VMM_PAGE_FLAG_READWRITE;
+	}
+	if (!(regs->rdx&MEMORY_FLAG_EXEC)){
+		flags|=VMM_PAGE_FLAG_NOEXECUTE;
+	}
+	regs->rax=mmap_change_flags(&(THREAD_DATA->process->mmap),pmm_align_down_address(regs->rdi),pmm_align_up_address(regs->rsi+(regs->rdi&(PAGE_SIZE-1))),flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 }
 
 

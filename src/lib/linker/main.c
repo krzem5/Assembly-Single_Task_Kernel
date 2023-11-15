@@ -35,6 +35,9 @@ typedef struct _DYNAMIC_SECTION_DATA{
 typedef struct _SHARED_OBJECT{
 	struct _SHARED_OBJECT* next;
 	u64 image_base;
+	const void* elf_phdr_adddress;
+	u64 elf_phdr_entry_size;
+	u64 elf_phdr_count;
 	dynamic_section_data_t dynamic_section;
 } shared_object_t;
 
@@ -225,7 +228,7 @@ static _Bool _load_shared_object(const char* name){
 		}
 	}
 	max_address=(max_address+4095)&0xfffffffffffff000ull;
-	void* image_base=memory_map(max_address,MEMORY_FLAG_EXEC|MEMORY_FLAG_WRITE|MEMORY_FLAG_READ,0);
+	void* image_base=memory_map(max_address,MEMORY_FLAG_WRITE,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
 		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
@@ -236,7 +239,15 @@ static _Bool _load_shared_object(const char* name){
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		memcpy(program_header->p_vaddr+image_base,base_file_address+program_header->p_offset,program_header->p_filesz);
+		u64 flags=MEMORY_FLAG_READ;
+		if (program_header->p_flags&PF_X){
+			flags|=MEMORY_FLAG_EXEC;
+		}
+		if (program_header->p_flags&PF_W){
+			flags|=MEMORY_FLAG_WRITE;
+		}
+		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
+		memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
 	memory_unmap((void*)base_file_address,0);
 	shared_object_t* so=_alloc_shared_object();

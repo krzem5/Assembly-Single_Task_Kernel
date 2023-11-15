@@ -10,6 +10,12 @@ CORE_PUBLIC void* memory_map(u64 length,u32 flags,u64 fd){
 
 
 
+CORE_PUBLIC _Bool memory_change_flags(void* address,u64 length,u32 flags){
+	return _syscall_memory_change_flags(address,length,flags);
+}
+
+
+
 CORE_PUBLIC _Bool memory_unmap(void* address,u64 length){
 	return _syscall_memory_unmap(address,length);
 }

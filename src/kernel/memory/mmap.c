@@ -1,3 +1,4 @@
+#include <kernel/isr/pf.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
@@ -117,6 +118,22 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	// __DEBUG(mmap);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
+}
+
+
+
+static u64 _get_simple_flags(u64 flags){
+	u64 out=0;
+	if (flags&MMAP_REGION_FLAG_VMM_READWRITE){
+		out|=VMM_PAGE_FLAG_READWRITE;
+	}
+	if (flags&MMAP_REGION_FLAG_VMM_USER){
+		out|=VMM_PAGE_FLAG_USER;
+	}
+	if (flags&MMAP_REGION_FLAG_VMM_NOEXECUTE){
+		out|=VMM_PAGE_FLAG_NOEXECUTE;
+	}
+	return out;
 }
 
 
@@ -264,13 +281,43 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
+_Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u64 vmm_clear_flags){
+	if ((address|length)&(PAGE_SIZE-1)){
+		panic("mmap_change_flags: unaligned arguments");
+	}
+	spinlock_acquire_exclusive(&(mmap->lock));
+	rb_tree_node_t* rb_node=rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
+	if (!rb_node){
+		spinlock_release_exclusive(&(mmap->lock));
+		return 0;
+	}
+	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
+	if (length>region->length){
+		panic("mmap_change_flags: length too large for region");
+	}
+	for (u64 i=address;i<address+length;i+=PAGE_SIZE){
+		if (!vmm_virtual_to_physical(mmap->pagemap,i)){
+			if (region->file){
+				panic("mmap_change_flags: unable to change flags on nonaccessed file mapping");
+			}
+			vmm_map_page(mmap->pagemap,pmm_alloc(1,region->pmm_counter,0),i,mmap_get_vmm_flags(region));
+		}
+		vmm_adjust_flags(mmap->pagemap,i,vmm_set_flags,vmm_clear_flags,1);
+		pf_invalidate_tlb_entry(i);
+	}
+	spinlock_release_exclusive(&(mmap->lock));
+	return 0;
+}
+
+
+
 _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length){
 	spinlock_acquire_shared(&(mmap->lock));
 	if (!(region->flags&MMAP_REGION_FLAG_COMMIT)){
 		panic("mmap_set_memory: MMAP_REGION_FLAG_COMMIT flag missing");
 	}
 	if (length>region->length){
-		length=region->length;
+		panic("mmap_set_memory: length too large for region");
 	}
 	u64 end=offset+length;
 	for (u64 i=pmm_align_down_address(offset);i<end;i+=PAGE_SIZE){
@@ -301,15 +348,5 @@ mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 
 
 u64 mmap_get_vmm_flags(mmap_region_t* region){
-	u64 out=VMM_PAGE_FLAG_PRESENT;
-	if (region->flags&MMAP_REGION_FLAG_VMM_READWRITE){
-		out|=VMM_PAGE_FLAG_READWRITE;
-	}
-	if (region->flags&MMAP_REGION_FLAG_VMM_USER){
-		out|=VMM_PAGE_FLAG_USER;
-	}
-	if (region->flags&MMAP_REGION_FLAG_VMM_NOEXECUTE){
-		out|=VMM_PAGE_FLAG_NOEXECUTE;
-	}
-	return out;
+	return _get_simple_flags(region->flags)|VMM_PAGE_FLAG_PRESENT;
 }

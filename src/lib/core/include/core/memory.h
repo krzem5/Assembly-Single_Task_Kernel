@@ -16,6 +16,10 @@ void* memory_map(u64 length,u32 flags,u64 fd);
 
 
 
+_Bool memory_change_flags(void* address,u64 length,u32 flags);
+
+
+
 _Bool memory_unmap(void* address,u64 length);
 
 
