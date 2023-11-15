@@ -419,7 +419,7 @@ def _compile_library(library,flags,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies if dep]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
 		return
@@ -672,7 +672,7 @@ with open("src/user/dependencies.txt","r") as rf:
 			continue
 		name,dependencies=line.split(":")
 		dependencies=[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()]
-		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+_compile_user_files(name,[dep[0] for dep in dependencies])+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+		if (subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+_compile_user_files(name,[dep[0] for dep in dependencies])+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 			sys.exit(1)
 #####################################################################################################################################
 if (not os.path.exists("build/install_disk.img")):
