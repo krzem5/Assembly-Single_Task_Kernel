@@ -68,13 +68,15 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 		return 0;
 	}
 	for (u64 i=0;i<region->length;i+=PAGE_SIZE){
-		u64 physical_address=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
-		pf_invalidate_tlb_entry(region->rb_node.key+i);
-		if (physical_address){
+		u64 entry=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
+		if (entry){
+			pf_invalidate_tlb_entry(region->rb_node.key+i);
+		}
+		if (entry&VMM_PAGE_ADDRESS_MASK){
 			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_FILE_WRITEBACK)){
 				panic("mmap_dealloc: file-backed memory region writeback");
 			}
-			pmm_dealloc(physical_address,1,region->pmm_counter);
+			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,region->pmm_counter);
 		}
 	}
 	if (region->prev&&!region->prev->flags){
