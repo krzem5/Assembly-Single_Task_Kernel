@@ -214,8 +214,8 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 
 
 
-static _Bool _find_dynamic_elf_sections(module_loader_context_t* ctx){
-	INFO("Locating dynamic ELF sections...");
+static _Bool _find_elf_sections(module_loader_context_t* ctx){
+	INFO("Locating ELF sections...");
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
 		if (section_header->sh_type==SHT_SYMTAB){
@@ -367,7 +367,7 @@ module_t* module_load(const char* name){
 	if (!_map_sections(&ctx)){
 		goto _error;
 	}
-	if (!_find_dynamic_elf_sections(&ctx)){
+	if (!_find_elf_sections(&ctx)){
 		goto _error;
 	}
 	if (!_resolve_symbol_table(&ctx)){
