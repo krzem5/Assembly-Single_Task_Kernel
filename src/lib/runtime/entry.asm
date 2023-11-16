@@ -26,3 +26,4 @@ _start:
 	call [REF(main)]
 	mov rax, 25
 	syscall
+	jmp $
