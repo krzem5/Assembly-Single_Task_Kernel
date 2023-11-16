@@ -1,1 +1,1 @@
-shell:sys,runtime@static
+shell:runtime@static,sys

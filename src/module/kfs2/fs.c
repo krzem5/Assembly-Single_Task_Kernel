@@ -69,6 +69,7 @@ static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 	else{
 		out->node.flags|=VFS_NODE_TYPE_FILE;
 	}
+	out->node.flags|=((node->flags&KFS2_INODE_PERMISSION_MASK)>>KFS2_INODE_PERMISSION_SHIFT)<<VFS_NODE_PERMISSION_SHIFT;
 	out->kfs2_node=*node;
 	out->kfs2_node._inode=inode;
 _cleanup:
