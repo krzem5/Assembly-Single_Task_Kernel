@@ -287,15 +287,12 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 				u64 relocation_address=base+entry->r_offset;
 				u64 value=symbol->st_value+entry->r_addend+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
 				switch (entry->r_info&0xffffffff){
-					case R_X86_64_NONE:
-						break;
 					case R_X86_64_64:
 						*((u64*)relocation_address)=value;
 						break;
 					case R_X86_64_PC32:
 					case R_X86_64_PLT32:
-						*((u32*)relocation_address)=value-relocation_address;
-						break;
+						value-=relocation_address;
 					case R_X86_64_32:
 					case R_X86_64_32S:
 						*((u32*)relocation_address)=value;

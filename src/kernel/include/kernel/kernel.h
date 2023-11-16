@@ -28,6 +28,17 @@ typedef struct _KERNEL_DATA{
 	u64 initramfs_address;
 	u64 initramfs_size;
 	u8 boot_fs_uuid[16];
+	struct{
+		u16 year;
+		u8 month;
+		u8 day;
+		u8 hour;
+		u8 minute;
+		u8 second;
+		u32 nanosecond;
+		s16 timezone;
+		u64 measurement_offset;
+	} date;
 } kernel_data_t;
 
 

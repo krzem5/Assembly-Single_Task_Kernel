@@ -80,6 +80,17 @@ typedef struct _KERNEL_DATA{
 	uint64_t initramfs_address;
 	uint64_t initramfs_size;
 	uint8_t boot_fs_uuid[16];
+	struct{
+		uint16_t year;
+		uint8_t month;
+		uint8_t day;
+		uint8_t hour;
+		uint8_t minute;
+		uint8_t second;
+		uint32_t nanosecond;
+		int16_t timezone;
+		uint64_t measurement_offset;
+	} date;
 } kernel_data_t;
 
 
@@ -340,6 +351,22 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	for (uint8_t i=0;i<16;i++){
 		kernel_data->boot_fs_uuid[i]=boot_fs_uuid[i];
 	}
+	EFI_TIME time;
+	if (EFI_ERROR(system_table->RuntimeServices->GetTime(&time,NULL))){
+		return EFI_SUCCESS;
+	}
+	uint32_t measurement_offset_low;
+	uint32_t measurement_offset_high;
+	asm volatile("rdtsc":"=a"(measurement_offset_low),"=d"(measurement_offset_high));
+	kernel_data->date.year=time.Year;
+	kernel_data->date.month=time.Month;
+	kernel_data->date.day=time.Day;
+	kernel_data->date.hour=time.Hour;
+	kernel_data->date.minute=time.Minute;
+	kernel_data->date.second=time.Second;
+	kernel_data->date.nanosecond=time.Nanosecond;
+	kernel_data->date.timezone=time.TimeZone;
+	kernel_data->date.measurement_offset=(((uint64_t)measurement_offset_high)<<32)|measurement_offset_low;
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;
