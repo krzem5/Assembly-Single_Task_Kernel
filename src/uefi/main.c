@@ -88,7 +88,6 @@ typedef struct _KERNEL_DATA{
 		uint8_t minute;
 		uint8_t second;
 		uint32_t nanosecond;
-		int16_t timezone;
 		uint64_t measurement_offset;
 	} date;
 } kernel_data_t;
@@ -365,7 +364,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	kernel_data->date.minute=time.Minute;
 	kernel_data->date.second=time.Second;
 	kernel_data->date.nanosecond=time.Nanosecond;
-	kernel_data->date.timezone=time.TimeZone;
 	kernel_data->date.measurement_offset=(((uint64_t)measurement_offset_high)<<32)|measurement_offset_low;
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;

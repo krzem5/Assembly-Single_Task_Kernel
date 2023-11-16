@@ -19,6 +19,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/symbol/symbol.h>
+#include <kernel/time/time.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "main"
 
@@ -50,6 +51,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
 	symbol_init();
+	time_init();
 	clock_init();
 	isr_init();
 	acpi_load();

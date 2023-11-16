@@ -69,7 +69,7 @@ void _cpu_init_core(void){
 	msr_enable_rdtsc();
 	INFO("Enabling lAPIC...");
 	lapic_enable();
-	INFO("Calcularing topology...");
+	INFO("Calculating topology...");
 	topology_compute(index,&((cpu_extra_data+index)->topology));
 	_cpu_online_count++;
 	_wakeup_cpu((index<<1)+1);

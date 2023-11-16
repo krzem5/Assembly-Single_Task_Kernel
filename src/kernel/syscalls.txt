@@ -23,3 +23,4 @@ thread_get_priority(u64 handle) -> u32
 thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
 thread_set_priority(u64 handle,u32 priority) -> _Bool
 thread_stop(void) noreturn -> void
+time_get_boot_offset(void) -> u64

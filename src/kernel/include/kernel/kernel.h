@@ -36,7 +36,6 @@ typedef struct _KERNEL_DATA{
 		u8 minute;
 		u8 second;
 		u32 nanosecond;
-		s16 timezone;
 		u64 measurement_offset;
 	} date;
 } kernel_data_t;
