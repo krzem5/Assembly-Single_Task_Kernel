@@ -16,10 +16,10 @@
 
 static const char* _ls_type_names[]={
 	[0]="<unknown>",
-	[FD_STAT_TYPE_FILE]="file",
-	[FD_STAT_TYPE_DIRECTORY]="dir",
-	[FD_STAT_TYPE_LINK]="link",
-	[FD_STAT_TYPE_PIPE]="pipe"
+	[SYS_FD_STAT_TYPE_FILE]="file",
+	[SYS_FD_STAT_TYPE_DIRECTORY]="dir",
+	[SYS_FD_STAT_TYPE_LINK]="link",
+	[SYS_FD_STAT_TYPE_PIPE]="pipe"
 };
 
 
@@ -30,7 +30,7 @@ static void _list_files(s64 fd){
 		if (sys_fd_iter_get(iter,name,256)<=0){
 			continue;
 		}
-		s64 child=sys_fd_open(fd,name,FD_FLAG_IGNORE_LINKS|FD_FLAG_READ);
+		s64 child=sys_fd_open(fd,name,SYS_FD_FLAG_IGNORE_LINKS|SYS_FD_FLAG_READ);
 		if (child<0){
 			continue;
 		}

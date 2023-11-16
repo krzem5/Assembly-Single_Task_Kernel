@@ -14,7 +14,7 @@ void touch_main(int argc,const char*const* argv){
 		printf("touch: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_CREATE);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],SYS_FD_FLAG_CREATE);
 	if (fd<0){
 		printf("touch: unable to open file '%s': error %d\n",argv[1],fd);
 		return;

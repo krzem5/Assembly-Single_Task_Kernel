@@ -4,7 +4,7 @@
 
 
 
-#define SHUTDOWN_FLAG_RESTART 1
+#define SYS_SHUTDOWN_FLAG_RESTART 1
 
 
 

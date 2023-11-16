@@ -15,7 +15,7 @@ void cat_main(int argc,const char*const* argv){
 		printf("cat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_READ);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],SYS_FD_FLAG_READ);
 	if (fd<0){
 		printf("cat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;

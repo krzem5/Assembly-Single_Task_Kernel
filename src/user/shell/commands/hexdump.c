@@ -34,7 +34,7 @@ void hexdump_main(int argc,const char*const* argv){
 		printf("hexdump: no file supplied\n");
 		return;
 	}
-	s64 fd=sys_fd_open(cwd_fd,file,FD_FLAG_READ);
+	s64 fd=sys_fd_open(cwd_fd,file,SYS_FD_FLAG_READ);
 	if (fd<0){
 		printf("hexdump: unable to open file '%s': error %d\n",file,fd);
 		return;

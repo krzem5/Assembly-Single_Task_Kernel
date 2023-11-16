@@ -4,21 +4,21 @@
 
 
 
-#define THREAD_PRIORITY_BACKGROUND 1
-#define THREAD_PRIORITY_LOW 2
-#define THREAD_PRIORITY_NORMAL 3
-#define THREAD_PRIORITY_HIGH 4
-#define THREAD_PRIORITY_REALTIME 5
+#define SYS_THREAD_PRIORITY_BACKGROUND 1
+#define SYS_THREAD_PRIORITY_LOW 2
+#define SYS_THREAD_PRIORITY_NORMAL 3
+#define SYS_THREAD_PRIORITY_HIGH 4
+#define SYS_THREAD_PRIORITY_REALTIME 5
 
 
 
-typedef struct _THREAD{
+typedef struct _SYS_THREAD{
 	u32 id;
-} thread_t;
+} sys_thread_t;
 
 
 
-static inline const __seg_gs thread_t* sys_thread_current(void){
+static inline const __seg_gs sys_thread_t* sys_thread_current(void){
 	return NULL;
 }
 

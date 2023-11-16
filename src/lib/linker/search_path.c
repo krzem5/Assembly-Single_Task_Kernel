@@ -17,7 +17,7 @@ u64 search_path_find_library(const char* name,char* buffer,u32 buffer_length){
 		if (fd<=0){
 			continue;
 		}
-		s64 child=sys_fd_open(fd,name,FD_FLAG_READ);
+		s64 child=sys_fd_open(fd,name,SYS_FD_FLAG_READ);
 		sys_fd_close(fd);
 		if (child>0){
 			sys_fd_path(child,buffer,buffer_length);

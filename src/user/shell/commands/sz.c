@@ -79,7 +79,7 @@ void sz_main(int argc,const char*const* argv){
 			goto _cleanup;
 		}
 	}
-	printf("%lu\n",sys_fd_seek(fd,0,FD_SEEK_END));
+	printf("%lu\n",sys_fd_seek(fd,0,SYS_FD_SEEK_END));
 _cleanup:
 	sys_fd_close(fd);
 }

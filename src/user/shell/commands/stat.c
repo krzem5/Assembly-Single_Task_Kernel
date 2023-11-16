@@ -7,10 +7,10 @@
 
 static const char* _stat_type_names[]={
 	[0]="<unknown>",
-	[FD_STAT_TYPE_FILE]="file",
-	[FD_STAT_TYPE_DIRECTORY]="dir",
-	[FD_STAT_TYPE_LINK]="link",
-	[FD_STAT_TYPE_PIPE]="pipe"
+	[SYS_FD_STAT_TYPE_FILE]="file",
+	[SYS_FD_STAT_TYPE_DIRECTORY]="dir",
+	[SYS_FD_STAT_TYPE_LINK]="link",
+	[SYS_FD_STAT_TYPE_PIPE]="pipe"
 };
 
 
@@ -24,7 +24,7 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_IGNORE_LINKS);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],SYS_FD_FLAG_IGNORE_LINKS);
 	if (fd<0){
 		printf("stat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;

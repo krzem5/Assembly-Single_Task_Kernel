@@ -32,7 +32,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 			iter=sys_fd_iter_next(iter);
 			continue;
 		}
-		s64 child=sys_fd_open(fd,name,FD_FLAG_READ|FD_FLAG_IGNORE_LINKS);
+		s64 child=sys_fd_open(fd,name,SYS_FD_FLAG_READ|SYS_FD_FLAG_IGNORE_LINKS);
 		if (child<0){
 			iter=sys_fd_iter_next(iter);
 			continue;
@@ -51,7 +51,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		printf("%s── ",(has_next_sibling?"├":"└"));
 		color_print_file_name(&stat,stat.name,fd,child);
 		putchar('\n');
-		if (stat.type==FD_STAT_TYPE_DIRECTORY){
+		if (stat.type==SYS_FD_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;
 			u64 mask=1ull<<(level&63);
 			if (has_next_sibling){

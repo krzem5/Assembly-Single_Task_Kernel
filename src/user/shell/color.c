@@ -6,17 +6,17 @@
 
 void color_print_file_name(const sys_fd_stat_t* stat,const char* name,s64 parent_fd,s64 fd){
 	const char* prefix="";
-	if (stat->type==FD_STAT_TYPE_DIRECTORY){
+	if (stat->type==SYS_FD_STAT_TYPE_DIRECTORY){
 		prefix="\x1b[1;34m";
 	}
-	else if (stat->type==FD_STAT_TYPE_LINK){
+	else if (stat->type==SYS_FD_STAT_TYPE_LINK){
 		prefix="\x1b[1;36m";
 	}
-	else if (stat->type==FD_STAT_TYPE_PIPE){
+	else if (stat->type==SYS_FD_STAT_TYPE_PIPE){
 		prefix="\x1b[33;40m";
 	}
 	printf("%s%s\x1b[0m",prefix,name);
-	if (fd<=0||stat->type!=FD_STAT_TYPE_LINK){
+	if (fd<=0||stat->type!=SYS_FD_STAT_TYPE_LINK){
 		return;
 	}
 	printf(" -> ");
