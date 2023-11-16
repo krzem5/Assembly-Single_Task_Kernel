@@ -693,29 +693,29 @@ if (rebuild_data_partition):
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
 	with open("build/kernel.bin","rb") as rf:
-		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin")
+		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o777)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	with open("build/partitions/initramfs.img","rb") as rf:
-		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs")
+		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o777)
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	for library in os.listdir("build/lib"):
 		if (not library.endswith(".so")):
 			continue
 		with open(f"build/lib/{library}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}"),rf.read())
-	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so")
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o777),rf.read())
+	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o777)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
 	for program in os.listdir("build/user"):
 		with open(f"build/user/{program}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}"),rf.read())
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o777),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config"),rf.read())
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o777),rf.read())
 	for module in os.listdir("build/module"):
 		with open(f"build/module/{module}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}"),rf.read())
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o777),rf.read())
 	data_fs.close()
 #####################################################################################################################################
 if ("--run" in sys.argv):

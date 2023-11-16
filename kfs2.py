@@ -445,24 +445,24 @@ def _alloc_data_block(backend,root_block):
 
 
 
-def _init_node_as_file(backend,root_block,inode):
+def _init_node_as_file(backend,root_block,inode,permissions):
 	out=KFS2Node(
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		0,
-		KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE,
+		KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE|(permissions<<KFS2_INODE_PERMISSION_SHIFT),
 		[0]*48
 	)
 	return out
 
 
 
-def _init_node_as_directory(backend,root_block,inode):
+def _init_node_as_directory(backend,root_block,inode,permissions):
 	out=KFS2Node(
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		48,
-		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE,
+		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE|(permissions<<KFS2_INODE_PERMISSION_SHIFT),
 		KFS2DirectoryEntry(0,48,0,b"").encode()
 	)
 	return out
@@ -504,11 +504,11 @@ def format_partition(backend):
 	_init_bitmap(backend,first_bitmap_block*KFS2_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
 	if (_alloc_inode(backend,root_block)):
 		raise RuntimeError
-	_init_node_as_directory(backend,root_block,0).save()
+	_init_node_as_directory(backend,root_block,0,0o777).save()
 
 
 
-def get_inode(backend,path):
+def get_inode(backend,path,permissions):
 	root_block=KFS2RootBlock.load(backend)
 	node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,0))
 	out=0
@@ -564,9 +564,9 @@ def get_inode(backend,path):
 			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,b"").encode()
 		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_TYPE_DIRECTORY):
-			node=_init_node_as_directory(backend,root_block,child_inode)
+			node=_init_node_as_directory(backend,root_block,child_inode,0o777)
 		else:
-			node=_init_node_as_file(backend,root_block,child_inode)
+			node=_init_node_as_file(backend,root_block,child_inode,permissions)
 		node.save()
 		out=child_inode
 	return out

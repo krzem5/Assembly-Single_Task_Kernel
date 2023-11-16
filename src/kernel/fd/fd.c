@@ -192,6 +192,8 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	fd_t* data=fd_handle->object;
 	spinlock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
+	out->flags=((data->node->flags&VFS_NODE_FLAG_VIRTUAL)?FD_STAT_FLAG_VIRTUAL:0);
+	out->permissions=(data->node->flags&VFS_NODE_PERMISSION_MASK)>>VFS_NODE_PERMISSION_SHIFT;
 	out->name_length=data->node->name->length;
 	out->fs_handle=(data->node->fs?data->node->fs->handle.rb_node.key:0);
 	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);

@@ -33,6 +33,8 @@
 #define FD_SEEK_ADD 1
 #define FD_SEEK_END 2
 
+#define FD_STAT_FLAG_VIRTUAL 1
+
 
 
 typedef struct _FD{
@@ -47,6 +49,8 @@ typedef struct _FD{
 
 typedef struct _FD_STAT{
 	u8 type;
+	u8 flags;
+	u16 permissions;
 	u8 name_length;
 	u64 fs_handle;
 	u64 size;

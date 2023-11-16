@@ -35,7 +35,22 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unable to read data from file '%s': error %d\n",argv[1],error);
 		goto _cleanup;
 	}
-	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\n",stat.name,_stat_type_names[stat.type],stat.size,stat.size);
+	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\n",
+		stat.name,
+		_stat_type_names[stat.type],
+		((stat.flags&SYS_FD_STAT_FLAG_VIRTUAL)?" virtual":""),
+		((stat.permissions&SYS_FD_PERMISSION_ROOT_READ)?'r':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_ROOT_WRITE)?'w':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_ROOT_EXEC)?'x':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_USER_READ)?'r':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_USER_WRITE)?'w':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_USER_EXEC)?'x':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_OTHER_READ)?'r':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_OTHER_WRITE)?'w':'-'),
+		((stat.permissions&SYS_FD_PERMISSION_OTHER_EXEC)?'x':'-'),
+		stat.size,
+		stat.size
+	);
 _cleanup:
 	sys_fd_close(fd);
 }
