@@ -1,3 +1,4 @@
+#include <kernel/isr/pf.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -356,13 +357,16 @@ _cleanup:
 
 
 
-void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count){
+void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,_Bool invalidate_tlb){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(pagemap->lock));
 	for (;count;count--){
 		u64* entry=_lookup_virtual_address(pagemap,virtual_address);
 		if (entry){
 			*entry=((*entry)&(~clear_flags))|set_flags;
+			if (invalidate_tlb){
+				pf_invalidate_tlb_entry(virtual_address);
+			}
 		}
 		virtual_address+=PAGE_SIZE;
 	}

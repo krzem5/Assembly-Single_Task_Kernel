@@ -110,22 +110,6 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
-static u64 _get_simple_flags(u64 flags){
-	u64 out=0;
-	if (flags&MMAP_REGION_FLAG_VMM_READWRITE){
-		out|=VMM_PAGE_FLAG_READWRITE;
-	}
-	if (flags&MMAP_REGION_FLAG_VMM_USER){
-		out|=VMM_PAGE_FLAG_USER;
-	}
-	if (flags&MMAP_REGION_FLAG_VMM_NOEXECUTE){
-		out|=VMM_PAGE_FLAG_NOEXECUTE;
-	}
-	return out;
-}
-
-
-
 void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 	out->pagemap=pagemap;
 	spinlock_init(&(out->lock));
@@ -289,8 +273,7 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 			}
 			vmm_map_page(mmap->pagemap,pmm_alloc(1,region->pmm_counter,0),i,mmap_get_vmm_flags(region));
 		}
-		vmm_adjust_flags(mmap->pagemap,i,vmm_set_flags,vmm_clear_flags,1);
-		pf_invalidate_tlb_entry(i);
+		vmm_adjust_flags(mmap->pagemap,i,vmm_set_flags,vmm_clear_flags,1,1);
 	}
 	spinlock_release_exclusive(&(mmap->lock));
 	return 0;
@@ -335,5 +318,15 @@ mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 
 
 u64 mmap_get_vmm_flags(mmap_region_t* region){
-	return _get_simple_flags(region->flags)|VMM_PAGE_FLAG_PRESENT;
+	u64 out=VMM_PAGE_FLAG_PRESENT;
+	if (region->flags&MMAP_REGION_FLAG_VMM_READWRITE){
+		out|=VMM_PAGE_FLAG_READWRITE;
+	}
+	if (region->flags&MMAP_REGION_FLAG_VMM_USER){
+		out|=VMM_PAGE_FLAG_USER;
+	}
+	if (region->flags&MMAP_REGION_FLAG_VMM_NOEXECUTE){
+		out|=VMM_PAGE_FLAG_NOEXECUTE;
+	}
+	return out;
 }

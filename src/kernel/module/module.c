@@ -315,9 +315,9 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 
 static void _adjust_memory_flags(module_loader_context_t* ctx){
 	INFO("Adjusting memory flags...");
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,ctx->module->ex_region.size>>PAGE_SIZE_SHIFT);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,ctx->module->nx_region.size>>PAGE_SIZE_SHIFT);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,ctx->module->rw_region.size>>PAGE_SIZE_SHIFT);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,ctx->module->ex_region.size>>PAGE_SIZE_SHIFT,1);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,ctx->module->nx_region.size>>PAGE_SIZE_SHIFT,1);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,ctx->module->rw_region.size>>PAGE_SIZE_SHIFT,1);
 }
 
 
