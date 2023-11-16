@@ -15,14 +15,14 @@ void cat_main(int argc,const char*const* argv){
 		printf("cat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=fd_open(cwd_fd,argv[1],FD_FLAG_READ);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_READ);
 	if (fd<0){
 		printf("cat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;
 	}
 	char buffer[512];
 	while (1){
-		s64 length=fd_read(fd,buffer,512,0);
+		s64 length=sys_fd_read(fd,buffer,512,0);
 		if (length<0){
 			printf("cat: unable to read from file '%s': error %d\n",argv[1],length);
 			goto _cleanup;
@@ -34,7 +34,7 @@ void cat_main(int argc,const char*const* argv){
 	}
 	putchar('\n');
 _cleanup:
-	fd_close(fd);
+	sys_fd_close(fd);
 }
 
 

@@ -17,7 +17,7 @@ void time_main(int argc,const char*const* argv){
 			return;
 		}
 	}
-	u64 time=clock_get_time();
+	u64 time=sys_clock_get_time();
 	if (raw){
 		printf("%lu\n",time);
 		return;

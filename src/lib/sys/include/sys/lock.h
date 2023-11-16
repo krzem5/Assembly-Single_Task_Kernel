@@ -12,23 +12,23 @@ typedef u32 lock_t;
 
 
 
-void lock_init(lock_t* out);
+void sys_lock_init(lock_t* out);
 
 
 
-void lock_acquire_exclusive(lock_t* lock);
+void sys_lock_acquire_exclusive(lock_t* lock);
 
 
 
-void lock_release_exclusive(lock_t* lock);
+void sys_lock_release_exclusive(lock_t* lock);
 
 
 
-void lock_acquire_shared(lock_t* lock);
+void sys_lock_acquire_shared(lock_t* lock);
 
 
 
-void lock_release_shared(lock_t* lock);
+void sys_lock_release_shared(lock_t* lock);
 
 
 

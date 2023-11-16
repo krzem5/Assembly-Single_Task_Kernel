@@ -4,7 +4,7 @@
 
 
 
-u32 cpu_get_count(void);
+u32 sys_cpu_get_count(void);
 
 
 

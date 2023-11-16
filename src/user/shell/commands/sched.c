@@ -12,7 +12,7 @@ void sched_main(int argc,const char*const* argv){
 		printf("sched: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	u32 cpu_count=cpu_get_count();
+	u32 cpu_count=sys_cpu_get_count();
 	for (u32 i=0;i<cpu_count;i++){
 		// scheduler_stats_t stats;
 		// if (!scheduler_get_stats(i,&stats)){

@@ -26,24 +26,24 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 	if (level>=MAX_LEVELS){
 		return;
 	}
-	for (s64 iter=fd_iter_start(fd);iter>=0;){
+	for (s64 iter=sys_fd_iter_start(fd);iter>=0;){
 		char name[256];
-		if (fd_iter_get(iter,name,256)<=0){
-			iter=fd_iter_next(iter);
+		if (sys_fd_iter_get(iter,name,256)<=0){
+			iter=sys_fd_iter_next(iter);
 			continue;
 		}
-		s64 child=fd_open(fd,name,FD_FLAG_READ|FD_FLAG_IGNORE_LINKS);
+		s64 child=sys_fd_open(fd,name,FD_FLAG_READ|FD_FLAG_IGNORE_LINKS);
 		if (child<0){
-			iter=fd_iter_next(iter);
+			iter=sys_fd_iter_next(iter);
 			continue;
 		}
-		fd_stat_t stat;
-		if (fd_stat(child,&stat)<0){
-			fd_close(child);
-			iter=fd_iter_next(iter);
+		sys_fd_stat_t stat;
+		if (sys_fd_stat(child,&stat)<0){
+			sys_fd_close(child);
+			iter=sys_fd_iter_next(iter);
 			continue;
 		}
-		iter=fd_iter_next(iter);
+		iter=sys_fd_iter_next(iter);
 		_Bool has_next_sibling=(iter>=0);
 		for (u32 i=0;i<level;i++){
 			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
@@ -65,7 +65,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 		else{
 			frame->file_count++;
 		}
-		fd_close(child);
+		sys_fd_close(child);
 	}
 }
 
@@ -82,13 +82,13 @@ void tree_main(int argc,const char*const* argv){
 			return;
 		}
 	}
-	s64 fd=(directory?fd_open(cwd_fd,directory,0):cwd_fd);
+	s64 fd=(directory?sys_fd_open(cwd_fd,directory,0):cwd_fd);
 	if (fd<0){
 		printf("tree: unable to open file '%s': error %d\n",directory,fd);
 		return;
 	}
-	fd_stat_t stat;
-	if (fd_stat(fd,&stat)<0){
+	sys_fd_stat_t stat;
+	if (sys_fd_stat(fd,&stat)<0){
 		printf("tree: unable to stat file '%s'\n",(directory?directory:"."));
 		return;
 	}
@@ -103,7 +103,7 @@ void tree_main(int argc,const char*const* argv){
 	}
 	_list_files(fd,0,&frame);
 	if (fd!=cwd_fd){
-		fd_close(fd);
+		sys_fd_close(fd);
 	}
 	printf("\n%lu director%s, %lu file%s\n",frame.directory_count,(frame.directory_count==1?"y":"ies"),frame.file_count,(frame.file_count==1?"":"s"));
 }

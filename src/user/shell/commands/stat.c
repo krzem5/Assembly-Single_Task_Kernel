@@ -24,20 +24,20 @@ void stat_main(int argc,const char*const* argv){
 		printf("stat: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=fd_open(cwd_fd,argv[1],FD_FLAG_IGNORE_LINKS);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_IGNORE_LINKS);
 	if (fd<0){
 		printf("stat: unable to open file '%s': error %d\n",argv[1],fd);
 		return;
 	}
-	fd_stat_t stat;
-	int error=fd_stat(fd,&stat);
+	sys_fd_stat_t stat;
+	int error=sys_fd_stat(fd,&stat);
 	if (error<0){
 		printf("stat: unable to read data from file '%s': error %d\n",argv[1],error);
 		goto _cleanup;
 	}
 	printf("Name: \x1b[1m%s\x1b[0m\nType: \x1b[1m%s\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\n",stat.name,_stat_type_names[stat.type],stat.size,stat.size);
 _cleanup:
-	fd_close(fd);
+	sys_fd_close(fd);
 }
 
 

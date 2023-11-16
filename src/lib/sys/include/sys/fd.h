@@ -37,65 +37,65 @@
 
 
 
-typedef struct _FD_STAT{
+typedef struct _SYS_FD_STAT{
 	u8 type;
 	u8 name_length;
 	u64 fs_handle;
 	u64 size;
 	char name[256];
-} fd_stat_t;
+} sys_fd_stat_t;
 
 
 
-s64 fd_open(u64 fd,const char* path,u32 flags);
+s64 sys_fd_open(u64 fd,const char* path,u32 flags);
 
 
 
-s64 fd_close(u64 fd);
+s64 sys_fd_close(u64 fd);
 
 
 
-s64 fd_read(u64 fd,void* buffer,u64 size,u32 flags);
+s64 sys_fd_read(u64 fd,void* buffer,u64 size,u32 flags);
 
 
 
-s64 fd_write(u64 fd,const void* buffer,u64 size,u32 flags);
+s64 sys_fd_write(u64 fd,const void* buffer,u64 size,u32 flags);
 
 
 
-s64 fd_seek(u64 fd,u64 offset,u32 type);
+s64 sys_fd_seek(u64 fd,u64 offset,u32 type);
 
 
 
-s64 fd_resize(u64 fd,u64 size,u32 flags);
+s64 sys_fd_resize(u64 fd,u64 size,u32 flags);
 
 
 
-s64 fd_stat(u64 fd,fd_stat_t* out);
+s64 sys_fd_stat(u64 fd,sys_fd_stat_t* out);
 
 
 
-s64 fd_dup(u64 fd,u32 flags);
+s64 sys_fd_dup(u64 fd,u32 flags);
 
 
 
-s64 fd_path(u64 fd,char* buffer,u32 size);
+s64 sys_fd_path(u64 fd,char* buffer,u32 size);
 
 
 
-s64 fd_iter_start(u64 fd);
+s64 sys_fd_iter_start(u64 fd);
 
 
 
-s64 fd_iter_get(u64 iterator,char* buffer,u32 size);
+s64 sys_fd_iter_get(u64 iterator,char* buffer,u32 size);
 
 
 
-s64 fd_iter_next(u64 iterator);
+s64 sys_fd_iter_next(u64 iterator);
 
 
 
-s64 fd_iter_stop(u64 iterator);
+s64 sys_fd_iter_stop(u64 iterator);
 
 
 

@@ -71,7 +71,7 @@ void random_main(int argc,const char*const* argv){
 		printf("random: '%s' is not a valid size\n",argv[2]);
 		return;
 	}
-	s64 fd=fd_open(0,"/dev/random",FD_FLAG_READ);
+	s64 fd=sys_fd_open(0,"/dev/random",FD_FLAG_READ);
 	if (fd<0){
 		printf("random: unable to open random file\n");
 		return;
@@ -80,7 +80,7 @@ void random_main(int argc,const char*const* argv){
 	u32 i=0;
 	while (size){
 		u64 count=(size>512?512:size);
-		fd_read(fd,buffer,count,0);
+		sys_fd_read(fd,buffer,count,0);
 		size-=count;
 		for (u32 j=0;j<count;j++){
 			if (i>=COLUMNS){
@@ -96,7 +96,7 @@ void random_main(int argc,const char*const* argv){
 		}
 	}
 	putchar('\n');
-	fd_close(fd);
+	sys_fd_close(fd);
 }
 
 

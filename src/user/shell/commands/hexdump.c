@@ -34,7 +34,7 @@ void hexdump_main(int argc,const char*const* argv){
 		printf("hexdump: no file supplied\n");
 		return;
 	}
-	s64 fd=fd_open(cwd_fd,file,FD_FLAG_READ);
+	s64 fd=sys_fd_open(cwd_fd,file,FD_FLAG_READ);
 	if (fd<0){
 		printf("hexdump: unable to open file '%s': error %d\n",file,fd);
 		return;
@@ -42,7 +42,7 @@ void hexdump_main(int argc,const char*const* argv){
 	u8 buffer[512];
 	u32 i=0;
 	while (1){
-		s64 length=fd_read(fd,buffer,512,0);
+		s64 length=sys_fd_read(fd,buffer,512,0);
 		if (length<0){
 			printf("hexdump: unable to read from file '%s': error %d\n",file,length);
 			goto _cleanup;
@@ -65,7 +65,7 @@ void hexdump_main(int argc,const char*const* argv){
 	}
 	putchar('\n');
 _cleanup:
-	fd_close(fd);
+	sys_fd_close(fd);
 }
 
 

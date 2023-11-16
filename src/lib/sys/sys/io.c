@@ -30,18 +30,18 @@ static s64 _stdout_fd=-1;
 
 static u32 _read_data_from_stdin(void* buffer,u32 size,_Bool blocking){
 	if (_stdin_fd==-1){
-		_stdin_fd=fd_open(0,"/proc/self/stdin",FD_FLAG_READ);
+		_stdin_fd=sys_fd_open(0,"/proc/self/stdin",FD_FLAG_READ);
 	}
-	return fd_read(_stdin_fd,buffer,size,(blocking?0:FD_FLAG_NONBLOCKING));
+	return sys_fd_read(_stdin_fd,buffer,size,(blocking?0:FD_FLAG_NONBLOCKING));
 }
 
 
 
 static void _write_data_to_stdout(const void* buffer,u32 size){
 	if (_stdout_fd==-1){
-		_stdout_fd=fd_open(0,"/proc/self/stdout",FD_FLAG_WRITE);
+		_stdout_fd=sys_fd_open(0,"/proc/self/stdout",FD_FLAG_WRITE);
 	}
-	fd_write(_stdout_fd,buffer,size,0);
+	sys_fd_write(_stdout_fd,buffer,size,0);
 }
 
 

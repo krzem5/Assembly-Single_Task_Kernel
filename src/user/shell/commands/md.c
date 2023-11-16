@@ -14,12 +14,12 @@ void md_main(int argc,const char*const* argv){
 		printf("md: unrecognized option '%s'\n",argv[2]);
 		return;
 	}
-	s64 fd=fd_open(cwd_fd,argv[1],FD_FLAG_CREATE|FD_FLAG_DIRECTORY);
+	s64 fd=sys_fd_open(cwd_fd,argv[1],FD_FLAG_CREATE|FD_FLAG_DIRECTORY);
 	if (fd<0){
 		printf("md: unable to open directory '%s': error %d\n",argv[1],fd);
 		return;
 	}
-	fd_close(fd);
+	sys_fd_close(fd);
 }
 
 

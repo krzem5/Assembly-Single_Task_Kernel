@@ -1,5 +1,4 @@
 %include "sys/types.inc"
-extern _syscall_thread_stop
 extern main
 global _start:function hidden
 section .text exec nowrite
@@ -25,4 +24,5 @@ _start:
 ._empty_environ:
 	add rcx, 8
 	call [REF(main)]
-	jmp [REF(_syscall_thread_stop)]
+	mov rax, 25
+	syscall

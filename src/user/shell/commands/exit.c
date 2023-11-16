@@ -9,7 +9,7 @@ void exit_main(int argc,const char*const* argv){
 		printf("exit: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	system_shutdown(0);
+	sys_system_shutdown(0);
 }
 
 

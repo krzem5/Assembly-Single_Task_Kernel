@@ -18,25 +18,25 @@ typedef struct _THREAD{
 
 
 
-static inline const __seg_gs thread_t* thread_current(void){
+static inline const __seg_gs thread_t* sys_thread_current(void){
 	return NULL;
 }
 
 
 
-void __attribute__((noreturn)) thread_stop(void);
+void __attribute__((noreturn)) sys_thread_stop(void);
 
 
 
-u64 thread_create(void (*func)(void*),void* arg,u64 stack_size);
+u64 sys_thread_create(void (*func)(void*),void* arg,u64 stack_size);
 
 
 
-u32 thread_get_priority(u64 handle);
+u32 sys_thread_get_priority(u64 handle);
 
 
 
-_Bool thread_set_priority(u64 handle,u32 priority);
+_Bool sys_thread_set_priority(u64 handle,u32 priority);
 
 
 

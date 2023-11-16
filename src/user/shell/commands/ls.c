@@ -25,24 +25,24 @@ static const char* _ls_type_names[]={
 
 
 static void _list_files(s64 fd){
-	for (s64 iter=fd_iter_start(fd);iter>=0;iter=fd_iter_next(iter)){
+	for (s64 iter=sys_fd_iter_start(fd);iter>=0;iter=sys_fd_iter_next(iter)){
 		char name[256];
-		if (fd_iter_get(iter,name,256)<=0){
+		if (sys_fd_iter_get(iter,name,256)<=0){
 			continue;
 		}
-		s64 child=fd_open(fd,name,FD_FLAG_IGNORE_LINKS|FD_FLAG_READ);
+		s64 child=sys_fd_open(fd,name,FD_FLAG_IGNORE_LINKS|FD_FLAG_READ);
 		if (child<0){
 			continue;
 		}
-		fd_stat_t stat;
-		if (fd_stat(child,&stat)<0){
-			fd_close(child);
+		sys_fd_stat_t stat;
+		if (sys_fd_stat(child,&stat)<0){
+			sys_fd_close(child);
 			continue;
 		}
 		printf("%s\t%v\t",_ls_type_names[stat.type],stat.size);
 		color_print_file_name(&stat,name,fd,child);
 		putchar('\n');
-		fd_close(child);
+		sys_fd_close(child);
 	}
 }
 
@@ -98,13 +98,13 @@ void ls_main(int argc,const char*const* argv){
 		_list_files(cwd_fd);
 	}
 	else{
-		s64 fd=fd_open(cwd_fd,directory,0);
+		s64 fd=sys_fd_open(cwd_fd,directory,0);
 		if (fd<0){
 			printf("ls: unable to open file '%s': error %d\n",directory,fd);
 			return;
 		}
 		_list_files(fd);
-		fd_close(fd);
+		sys_fd_close(fd);
 	}
 }
 

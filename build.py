@@ -401,7 +401,7 @@ def _compile_library(library,flags,dependencies):
 			file=os.path.join(root,file_name)
 			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
 			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps") and 0):
+			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
 			command=None
 			command=None

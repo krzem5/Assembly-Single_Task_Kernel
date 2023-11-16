@@ -9,7 +9,7 @@ void ticks_main(int argc,const char*const* argv){
 		printf("ticks: unrecognized option '%s'\n",argv[1]);
 		return;
 	}
-	printf("%lu\n",clock_get_ticks());
+	printf("%lu\n",sys_clock_get_ticks());
 }
 
 

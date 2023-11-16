@@ -4,23 +4,23 @@
 
 
 
-void clock_init(void);
+void sys_clock_init(void);
 
 
 
-u64 clock_get_ticks(void);
+u64 sys_clock_get_ticks(void);
 
 
 
-u64 clock_get_time(void);
+u64 sys_clock_get_time(void);
 
 
 
-u64 clock_ticks_to_time(u64 ticks);
+u64 sys_clock_ticks_to_time(u64 ticks);
 
 
 
-u64 clock_get_frequency(void);
+u64 sys_clock_get_frequency(void);
 
 
 

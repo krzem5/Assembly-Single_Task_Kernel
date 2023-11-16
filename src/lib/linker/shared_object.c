@@ -146,8 +146,8 @@ shared_object_t* shared_object_load(const char* name){
 		printf("Unable to find library '%s'\n",name);
 		return NULL;
 	}
-	const void* base_file_address=memory_map(0,MEMORY_FLAG_NOWRITEBACK|MEMORY_FLAG_FILE|MEMORY_FLAG_READ,fd);
-	fd_close(fd);
+	const void* base_file_address=sys_memory_map(0,MEMORY_FLAG_NOWRITEBACK|MEMORY_FLAG_FILE|MEMORY_FLAG_READ,fd);
+	sys_fd_close(fd);
 	const elf_hdr_t* header=base_file_address;
 	if (header->e_ident.signature!=0x464c457f||header->e_ident.word_size!=2||header->e_ident.endianess!=1||header->e_ident.header_version!=1||header->e_ident.abi!=0||header->e_type!=ET_DYN||header->e_machine!=0x3e||header->e_version!=1){
 		return NULL;
@@ -164,7 +164,7 @@ shared_object_t* shared_object_load(const char* name){
 		}
 	}
 	max_address=(max_address+4095)&0xfffffffffffff000ull;
-	void* image_base=memory_map(max_address,MEMORY_FLAG_WRITE,0);
+	void* image_base=sys_memory_map(max_address,MEMORY_FLAG_WRITE,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
 		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
@@ -186,8 +186,8 @@ shared_object_t* shared_object_load(const char* name){
 			flags|=MEMORY_FLAG_EXEC;
 		}
 		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
-		memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
+		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
-	memory_unmap((void*)base_file_address,0);
+	sys_memory_unmap((void*)base_file_address,0);
 	return shared_object_init((u64)image_base,dynamic_section);
 }
