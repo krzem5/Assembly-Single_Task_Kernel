@@ -504,7 +504,7 @@ def format_partition(backend):
 	_init_bitmap(backend,first_bitmap_block*KFS2_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
 	if (_alloc_inode(backend,root_block)):
 		raise RuntimeError
-	_init_node_as_directory(backend,root_block,0,0o777).save()
+	_init_node_as_directory(backend,root_block,0,0o644).save()
 
 
 
@@ -564,7 +564,7 @@ def get_inode(backend,path,permissions):
 			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,b"").encode()
 		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_TYPE_DIRECTORY):
-			node=_init_node_as_directory(backend,root_block,child_inode,0o777)
+			node=_init_node_as_directory(backend,root_block,child_inode,0o666)
 		else:
 			node=_init_node_as_file(backend,root_block,child_inode,permissions)
 		node.save()
