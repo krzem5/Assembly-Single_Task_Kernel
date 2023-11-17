@@ -40,7 +40,7 @@ void stat_main(int argc,const char*const* argv){
 	s64 parent_fd=sys_fd_open(fd,"..",SYS_FD_FLAG_IGNORE_LINKS);
 	color_print_file_name(&stat,argv[1],parent_fd,fd);
 	sys_fd_close(parent_fd);
-	printf("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\n",
+	printf("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v (%lu B)\x1b[0m\nUid: \x1b[1m%u\x1b[0m\nGid: \x1b[1m%u\x1b[0m\nAccess: \x1b[1m%t\x1b[0m\nModify: \x1b[1m%t\x1b[0m\nChange: \x1b[1m%t\x1b[0m\nBirth: \x1b[1m%t\x1b[0m\n",
 		_stat_type_names[stat.type],
 		((stat.flags&SYS_FD_STAT_FLAG_VIRTUAL)?" virtual":""),
 		((stat.permissions&SYS_FD_PERMISSION_ROOT_READ)?'r':'-'),
@@ -53,7 +53,13 @@ void stat_main(int argc,const char*const* argv){
 		((stat.permissions&SYS_FD_PERMISSION_OTHER_WRITE)?'w':'-'),
 		((stat.permissions&SYS_FD_PERMISSION_OTHER_EXEC)?'x':'-'),
 		stat.size,
-		stat.size
+		stat.size,
+		stat.uid,
+		stat.gid,
+		stat.time_access,
+		stat.time_modify,
+		stat.time_change,
+		stat.time_birth
 	);
 _cleanup:
 	sys_fd_close(fd);

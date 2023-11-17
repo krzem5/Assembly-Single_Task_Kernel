@@ -29,6 +29,12 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	out->relatives.external_child=NULL;
 	out->fs=fs;
 	out->functions=functions;
+	out->time_access=0;
+	out->time_modify=0;
+	out->time_change=0;
+	out->time_birth=0;
+	out->gid=0;
+	out->uid=0;
 	return out;
 }
 

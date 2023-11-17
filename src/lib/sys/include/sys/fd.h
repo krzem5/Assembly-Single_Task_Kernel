@@ -56,6 +56,12 @@ typedef struct _SYS_FD_STAT{
 	u8 name_length;
 	u64 fs_handle;
 	u64 size;
+	u64 time_access;
+	u64 time_modify;
+	u64 time_change;
+	u64 time_birth;
+	u32 gid;
+	u32 uid;
 	char name[256];
 } sys_fd_stat_t;
 

@@ -1,5 +1,6 @@
 #include <sys/fd.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <stdarg.h>
 
@@ -60,13 +61,16 @@ static inline char _format_base16_char(u8 value){
 
 
 
-static inline void _print_int_base10(u64 value,buffer_state_t* out){
+static inline void _print_int_base10(u64 value,buffer_state_t* out,u8 min_length){
 	char buffer[20];
 	u8 i=0;
 	while (value){
 		buffer[i]=(value%10)+48;
 		i++;
 		value/=10;
+	}
+	for (;min_length>i;min_length--){
+		_buffer_state_add(out,'0');
 	}
 	while (i){
 		i--;
@@ -94,7 +98,7 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 		return;
 	}
 	if (!(flags&FLAG_HEX)){
-		_print_int_base10(data,out);
+		_print_int_base10(data,out,0);
 		return;
 	}
 	char buffer[16];
@@ -179,42 +183,42 @@ SYS_PUBLIC void printf(const char* template,...){
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x400){
-				_print_int_base10(size,&out);
+				_print_int_base10(size,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x100000){
-				_print_int_base10((size+0x200)>>10,&out);
+				_print_int_base10((size+0x200)>>10,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'K');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x40000000){
-				_print_int_base10((size+0x80000)>>20,&out);
+				_print_int_base10((size+0x80000)>>20,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'M');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x10000000000ull){
-				_print_int_base10((size+0x20000000)>>30,&out);
+				_print_int_base10((size+0x20000000)>>30,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'G');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x4000000000000ull){
-				_print_int_base10((size+0x8000000000ull)>>40,&out);
+				_print_int_base10((size+0x8000000000ull)>>40,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'T');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x1000000000000000ull){
-				_print_int_base10((size+0x2000000000000ull)>>50,&out);
+				_print_int_base10((size+0x2000000000000ull)>>50,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'P');
 				_buffer_state_add(&out,'B');
 			}
 			else{
-				_print_int_base10((size+0x800000000000000ull)>>60,&out);
+				_print_int_base10((size+0x800000000000000ull)>>60,&out,0);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'E');
 				_buffer_state_add(&out,'B');
@@ -230,6 +234,24 @@ SYS_PUBLIC void printf(const char* template,...){
 				shift-=4;
 				_buffer_state_add(&out,_format_base16_char(address>>shift));
 			}
+		}
+		else if (*template=='t'){
+			s64 time=va_arg(va,s64);
+			sys_time_t split_time;
+			sys_time_from_nanoseconds(time,&split_time);
+			_print_int_base10(split_time.years,&out,4);
+			_buffer_state_add(&out,'-');
+			_print_int_base10(split_time.months,&out,2);
+			_buffer_state_add(&out,'-');
+			_print_int_base10(split_time.days,&out,2);
+			_buffer_state_add(&out,' ');
+			_print_int_base10(split_time.hours,&out,2);
+			_buffer_state_add(&out,':');
+			_print_int_base10(split_time.minutes,&out,2);
+			_buffer_state_add(&out,':');
+			_print_int_base10(split_time.seconds,&out,2);
+			_buffer_state_add(&out,'.');
+			_print_int_base10(time%1000000000,&out,9);
 		}
 		else{
 			_buffer_state_add(&out,*template);

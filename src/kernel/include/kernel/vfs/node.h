@@ -60,6 +60,12 @@ typedef struct _VFS_NODE{
 	vfs_node_relatives_t relatives;
 	struct _FILESYSTEM* fs;
 	const vfs_functions_t* functions;
+	u64 time_access;
+	u64 time_modify;
+	u64 time_change;
+	u64 time_birth;
+	u32 gid;
+	u32 uid;
 } vfs_node_t;
 
 

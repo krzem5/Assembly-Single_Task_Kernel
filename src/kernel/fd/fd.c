@@ -197,6 +197,12 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 	out->name_length=data->node->name->length;
 	out->fs_handle=(data->node->fs?data->node->fs->handle.rb_node.key:0);
 	out->size=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
+	out->time_access=data->node->time_access;
+	out->time_modify=data->node->time_modify;
+	out->time_change=data->node->time_change;
+	out->time_birth=data->node->time_birth;
+	out->gid=data->node->gid;
+	out->uid=data->node->uid;
 	memcpy(out->name,data->node->name->data,data->node->name->length+1);
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
