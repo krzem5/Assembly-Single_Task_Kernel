@@ -1,8 +1,10 @@
+#include <kernel/clock/clock.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/smm.h>
+#include <kernel/time/time.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "vfs_node"
 
@@ -17,6 +19,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 		return NULL;
 	}
 	spinlock_init(&(out->lock));
+	u64 time=clock_get_time()+time_boot_offset;
 	out->flags=0;
 	out->rc=0;
 	out->name=smm_duplicate(name);
@@ -29,10 +32,10 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	out->relatives.external_child=NULL;
 	out->fs=fs;
 	out->functions=functions;
-	out->time_access=0;
-	out->time_modify=0;
-	out->time_change=0;
-	out->time_birth=0;
+	out->time_access=time;
+	out->time_modify=time;
+	out->time_change=time;
+	out->time_birth=time;
 	out->gid=0;
 	out->uid=0;
 	return out;

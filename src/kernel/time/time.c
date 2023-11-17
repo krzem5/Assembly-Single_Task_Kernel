@@ -1,3 +1,4 @@
+#include <kernel/clock/clock.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/time/time.h>
@@ -12,7 +13,7 @@ u64 time_boot_offset;
 
 void time_init(void){
 	LOG("Calculating boot time...");
-	time_boot_offset=time_to_nanoseconds(kernel_data.date.year,kernel_data.date.month,kernel_data.date.day,kernel_data.date.hour,kernel_data.date.minute,kernel_data.date.second)+kernel_data.date.nanosecond-kernel_data.date.measurement_offset;
+	time_boot_offset=time_to_nanoseconds(kernel_data.date.year,kernel_data.date.month,kernel_data.date.day,kernel_data.date.hour,kernel_data.date.minute,kernel_data.date.second)+kernel_data.date.nanosecond-clock_ticks_to_time(kernel_data.date.measurement_offset);
 	INFO("Boot time offset: %lu",time_boot_offset);
 }
 
