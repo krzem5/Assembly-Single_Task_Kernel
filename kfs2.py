@@ -1,6 +1,7 @@
 import array
 import binascii
 import struct
+import time
 import uuid
 
 
@@ -144,19 +145,31 @@ class KFS2RootBlock(object):
 
 
 class KFS2Node(object):
-	def __init__(self,backend,offset,size,flags,data):
+	def __init__(self,backend,offset,size,flags,time_access,time_modify,time_change,time_birth,gid,uid,data):
 		self._backend=backend
 		self._offset=offset
 		self.size=size
 		self.flags=flags
+		self.time_access=time_access
+		self.time_modify=time_modify
+		self.time_change=time_change
+		self.time_birth=time_birth
+		self.gid=gid
+		self.uid=uid
 		self.data=bytearray(data)
 
 	def save(self):
-		header=struct.pack(f"<Q48sI",
+		header=struct.pack(f"<Q48sIQQQQII24x",
 			self.size,
 			self.data,
-			self.flags
-		)+b"\x00"*64
+			self.flags,
+			self.time_access,
+			self.time_modify,
+			self.time_change,
+			self.time_birth,
+			self.gid,
+			self.uid
+		)
 		self._backend.seek(self._offset)
 		self._backend.write(header+struct.pack("<I",binascii.crc32(header)))
 
@@ -165,14 +178,20 @@ class KFS2Node(object):
 		backend.seek(offset)
 		header=backend.read(KFS2_INODE_SIZE)
 		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<Q48sI64xI",header)
-		if (data[3]!=crc):
+		data=struct.unpack(f"<Q48sIQQQQII24xI",header)
+		if (data[9]!=crc):
 			raise RuntimeError
 		return KFS2Node(
 			backend,
 			offset,
 			data[0],
 			data[2],
+			data[3],
+			data[4],
+			data[5],
+			data[6],
+			data[7],
+			data[8],
 			data[1]
 		)
 
@@ -446,11 +465,18 @@ def _alloc_data_block(backend,root_block):
 
 
 def _init_node_as_file(backend,root_block,inode,permissions):
+	node_time=time.time_ns()
 	out=KFS2Node(
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		0,
 		KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE|(permissions<<KFS2_INODE_PERMISSION_SHIFT),
+		node_time,
+		node_time,
+		node_time,
+		node_time,
+		0,
+		0,
 		[0]*48
 	)
 	return out
@@ -458,11 +484,18 @@ def _init_node_as_file(backend,root_block,inode,permissions):
 
 
 def _init_node_as_directory(backend,root_block,inode,permissions):
+	node_time=time.time_ns()
 	out=KFS2Node(
 		backend,
 		KFS2Node.index_to_offset(root_block,inode),
 		48,
 		KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE|(permissions<<KFS2_INODE_PERMISSION_SHIFT),
+		node_time,
+		node_time,
+		node_time,
+		node_time,
+		0,
+		0,
 		KFS2DirectoryEntry(0,48,0,b"").encode()
 	)
 	return out
