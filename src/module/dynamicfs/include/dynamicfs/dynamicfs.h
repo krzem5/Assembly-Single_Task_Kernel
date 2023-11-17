@@ -11,6 +11,12 @@ typedef	u64 (*dynamicfs_read_callback_t)(void*,u64,void*,u64);
 
 
 
+static inline void dynamicfs_set_root_only(vfs_node_t* node){
+	node->flags=(node->flags&(~VFS_NODE_PERMISSION_MASK))|(0400<<VFS_NODE_PERMISSION_SHIFT);
+}
+
+
+
 filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor);
 
 

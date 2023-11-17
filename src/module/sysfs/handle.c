@@ -20,8 +20,9 @@ static void _listener(void* object,u32 type){
 		char buffer[64];
 		strcpy_lowercase(buffer,descriptor->name,64);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_handle_type_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->active_count)));
-		dynamicfs_create_node(node,"lifetime_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count)));
+		dynamicfs_set_root_only(node);
+		dynamicfs_set_root_only(dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->active_count))));
+		dynamicfs_set_root_only(dynamicfs_create_node(node,"lifetime_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count))));
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
@@ -40,5 +41,6 @@ static notification_listener_t _sysfs_handle_notification_listener={
 void sysfs_handle_init(void){
 	LOG("Creating handle subsystem...");
 	_sysfs_handle_type_root=dynamicfs_create_node(sysfs->root,"handle",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	dynamicfs_set_root_only(_sysfs_handle_type_root);
 	handle_register_notification_listener(HANDLE_TYPE_HANDLE,&_sysfs_handle_notification_listener);
 }
