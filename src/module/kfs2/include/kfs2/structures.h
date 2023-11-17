@@ -59,6 +59,7 @@ typedef struct KERNEL_PACKED _KFS2_NODE{
 		u64 quadruple;
 	} data;
 	u32 flags;
+	u8 _padding[64];
 	union{
 		u32 crc;
 		u32 _inode;

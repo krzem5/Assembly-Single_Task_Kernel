@@ -7,7 +7,7 @@ import uuid
 
 KFS2_SIGNATURE=0x544f4f523253464b
 KFS2_BLOCKS_PER_INODE=64
-KFS2_INODE_SIZE=64
+KFS2_INODE_SIZE=128
 KFS2_MAX_INODES=0xffffffff
 KFS2_BITMAP_LEVEL_COUNT=5
 KFS2_MAX_DISK_SIZE=0x1000000000000
@@ -156,7 +156,7 @@ class KFS2Node(object):
 			self.size,
 			self.data,
 			self.flags
-		)
+		)+b"\x00"*64
 		self._backend.seek(self._offset)
 		self._backend.write(header+struct.pack("<I",binascii.crc32(header)))
 
@@ -165,7 +165,7 @@ class KFS2Node(object):
 		backend.seek(offset)
 		header=backend.read(KFS2_INODE_SIZE)
 		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<Q48sII",header)
+		data=struct.unpack(f"<Q48sI64xI",header)
 		if (data[3]!=crc):
 			raise RuntimeError
 		return KFS2Node(

@@ -63,6 +63,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 		uint64_t quadruple;
 	} data;
 	uint32_t flags;
+	uint8_t _padding[64];
 	uint32_t crc;
 } kfs2_node_t;
 
@@ -94,7 +95,7 @@ typedef struct _KERNEL_DATA{
 
 
 
-_Static_assert(sizeof(kfs2_node_t)==64);
+_Static_assert(sizeof(kfs2_node_t)==128);
 
 
 
