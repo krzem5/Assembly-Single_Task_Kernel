@@ -261,6 +261,11 @@ s64 fd_iter_start(handle_id_t fd){
 	}
 	fd_t* data=fd_handle->object;
 	spinlock_acquire_exclusive(&(data->lock));
+	if (!(vfs_node_get_permissions(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&4)){
+		spinlock_release_exclusive(&(data->lock));
+		handle_release(fd_handle);
+		return -1;
+	}
 	string_t* current_name;
 	u64 pointer=vfs_node_iterate(data->node,0,&current_name);
 	if (!pointer){
