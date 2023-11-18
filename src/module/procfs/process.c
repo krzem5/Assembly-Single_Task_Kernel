@@ -7,6 +7,7 @@
 #include <kernel/notification/notification.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #include <procfs/fs.h>
 #define KERNEL_LOG_NAME "procfs_process"
 
@@ -28,7 +29,17 @@ static void _listener(void* object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
-		WARN("%p",handle);
+		const process_t* process=handle->object;
+		char buffer[32];
+		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
+		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0,0,0);
+		dynamicfs_delete_node(vfs_lookup(node,"name",0,0,0),1);
+		dynamicfs_delete_node(vfs_lookup(node,"exe",0,0,0),0);
+		dynamicfs_delete_node(vfs_lookup(node,"stdin",0,0,0),1);
+		dynamicfs_delete_node(vfs_lookup(node,"stdout",0,0,0),1);
+		dynamicfs_delete_node(vfs_lookup(node,"stderr",0,0,0),1);
+		dynamicfs_delete_node(vfs_lookup(node,"threads",0,0,0),1);
+		dynamicfs_delete_node(node,0);
 	}
 }
 

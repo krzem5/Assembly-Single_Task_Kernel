@@ -129,7 +129,7 @@ void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 
 void mmap_deinit(mmap_t* mmap){
 	spinlock_acquire_exclusive(&(mmap->lock));
-	panic("mmap_deinit");
+	// panic("mmap_deinit");
 	rb_tree_init(&(mmap->offset_tree));
 	rb_tree_init(&(mmap->length_tree));
 }
