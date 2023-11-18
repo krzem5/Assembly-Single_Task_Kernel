@@ -67,7 +67,7 @@ _check_next_fs:
 	if (!elf_load("/bin/shell",0,NULL,NULL)){
 		panic("Unable to load user shell");
 	}
-	return 1;
+	return 0;
 }
 
 
@@ -81,5 +81,6 @@ static void _deinit(module_t* module){
 MODULE_DECLARE(
 	"os_loader",
 	_init,
-	_deinit
+	_deinit,
+	MODULE_FLAG_PREVENT_LOADS
 );

@@ -44,9 +44,7 @@ static spinlock_t _module_global_lock=SPINLOCK_INIT_STRUCT;
 
 
 HANDLE_DECLARE_TYPE(MODULE,{
-	module_t* module=handle->object;
-	ERROR("Delete module: %s",module->descriptor->name);
-	omm_dealloc(&_module_allocator,module);
+	omm_dealloc(&_module_allocator,handle->object);
 });
 
 
@@ -77,7 +75,7 @@ static module_t* _lookup_module_by_name(const char* name){
 	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
 		handle_acquire(handle);
 		module_t* module=handle->object;
-		if (streq(module->descriptor->name,name)){
+		if (streq(module->name->data,name)){
 			handle_release(handle);
 			return module;
 		}
@@ -377,8 +375,14 @@ module_t* module_load(const char* name){
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	LOG("Module '%s' loaded successfully",name);
 	spinlock_release_exclusive(&_module_global_lock);
+	module->name=smm_alloc(name,0);
 	handle_finish_setup(&(module->handle));
-	module->descriptor->init_callback(module);
+	module->flags=module->descriptor->flags;
+	*(module->descriptor->module_self_ptr)=module;
+	if (!module->descriptor->init_callback(module)){
+		module_unload(module);
+		return NULL;
+	}
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
@@ -389,4 +393,25 @@ _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	spinlock_release_exclusive(&_module_global_lock);
 	return NULL;
+}
+
+
+
+void module_unload(module_t* module){
+	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
+		return;
+	}
+	module->state=MODULE_STATE_UNLOADING;
+	module->descriptor->deinit_callback(module);
+	module->state=MODULE_STATE_UNLOADED;
+	_dealloc_region_memory(&(module->ex_region));
+	_dealloc_region_memory(&(module->nx_region));
+	_dealloc_region_memory(&(module->rw_region));
+	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
+		return;
+	}
+	spinlock_acquire_exclusive(&_module_global_lock);
+	smm_dealloc(module->name);
+	handle_release(&(module->handle));
+	spinlock_release_exclusive(&_module_global_lock);
 }

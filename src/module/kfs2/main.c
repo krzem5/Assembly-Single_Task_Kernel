@@ -19,5 +19,6 @@ static void _deinit(module_t* module){
 MODULE_DECLARE(
 	"kfs2",
 	_init,
-	_deinit
+	_deinit,
+	0
 );

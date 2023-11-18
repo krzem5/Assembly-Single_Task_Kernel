@@ -6,6 +6,7 @@
 #include <kernel/notification/notification.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #include <sysfs/fs.h>
 #define KERNEL_LOG_NAME "sysfs_module"
 
@@ -41,13 +42,17 @@ static void _listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const module_t* module=handle->object;
-		vfs_node_t* node=dynamicfs_create_node(_sysfs_module_type_root,module->descriptor->name,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		dynamicfs_create_link_node(node,"exe","/boot/module/%s.mod",module->descriptor->name);
+		vfs_node_t* node=dynamicfs_create_node(_sysfs_module_type_root,module->name->data,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		dynamicfs_create_link_node(node,"exe","/boot/module/%s.mod",module->name->data);
 		dynamicfs_create_node(node,"state",VFS_NODE_TYPE_FILE,NULL,_sysfs_module_state_read_callback,(void*)module);
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
-		WARN("%p",handle);
+		const module_t* module=handle->object;
+		vfs_node_t* node=vfs_lookup(_sysfs_module_type_root,module->name->data,0,0,0);
+		dynamicfs_delete_node(vfs_lookup(node,"exe",0,0,0),1);
+		dynamicfs_delete_node(vfs_lookup(node,"state",0,0,0),1);
+		dynamicfs_delete_node(node,0);
 	}
 }
 
