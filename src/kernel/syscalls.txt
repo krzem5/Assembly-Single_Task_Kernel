@@ -32,3 +32,4 @@ uid_get_name(u32 uid,char* buffer,u32 buffer_length) -> _Bool
 gid_get_name(u32 gid,char* buffer,u32 buffer_length) -> _Bool
 process_get_pid(void) -> u64
 thread_get_tid(void) -> u64
+process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags) -> u64

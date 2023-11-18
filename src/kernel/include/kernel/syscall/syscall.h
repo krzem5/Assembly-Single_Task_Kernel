@@ -13,6 +13,10 @@ u64 syscall_get_user_pointer_max_length(u64 address);
 
 
 
+u64 syscall_get_string_length(u64 address);
+
+
+
 void syscall_enable(void);
 
 

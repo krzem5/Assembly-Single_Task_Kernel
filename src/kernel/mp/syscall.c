@@ -1,4 +1,5 @@
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/isr/isr.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/cpu_mask.h>
@@ -23,7 +24,24 @@ void syscall_thread_get_tid(isr_state_t* regs){
 
 
 void syscall_process_start(isr_state_t* regs){
-	panic("syscall_process_start");
+	u64 path_length=syscall_get_string_length(regs->rdi);
+	if (!path_length){
+		regs->rax=0;
+		return;
+	}
+	u32 argc=regs->rsi;
+	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length(regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	for (u64 i=0;i<argc;i++){
+		if (!syscall_get_string_length(*((u64*)(regs->rdx+i*sizeof(u64))))){
+			regs->rax=0;
+			return;
+		}
+	}
+	// copy all vars to a temp buffer + check environ for overflow
+	regs->rax=elf_load((void*)(regs->rdi),argc,(void*)(regs->rdx),(void*)(regs->r8),regs->r9);
 }
 
 

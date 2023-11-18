@@ -77,7 +77,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->pf_stack_region=mmap_alloc(&(process->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	out->pf_stack_region=mmap_alloc(&(process_kernel->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}
@@ -149,7 +149,7 @@ void thread_delete(thread_t* thread){
 		mmap_dealloc_region(&(process->mmap),thread->user_stack_region);
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
-	mmap_dealloc_region(&(process->mmap),thread->pf_stack_region);
+	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
 	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){
 		spinlock_release_exclusive(&(thread->lock));

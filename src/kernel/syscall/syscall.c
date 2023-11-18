@@ -23,3 +23,12 @@ u64 syscall_get_user_pointer_max_length(u64 address){
 	}
 	return region->rb_node.key+region->length-address;
 }
+
+
+
+u64 syscall_get_string_length(u64 address){
+	u64 max_length=syscall_get_user_pointer_max_length(address);
+	u64 length=0;
+	for (;length<max_length&&*((const char*)(address+length));length++);
+	return (length>=max_length?0:length);
+}

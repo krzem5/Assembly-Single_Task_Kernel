@@ -64,6 +64,7 @@ void _isr_handler(isr_state_t* isr_state){
 		event_dispatch(IRQ_EVENT(isr_state->isr),1);
 		return;
 	}
+	scheduler_pause();
 	(void)_isr_to_signal_type;
 	// if (CPU_HEADER_DATA->current_thread&&isr_state->cs==0x23&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
 	// 	signal_send(CPU_HEADER_DATA->current_thread,isr_state,_isr_to_signal_type[isr_state->isr],0);

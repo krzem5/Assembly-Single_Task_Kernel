@@ -189,12 +189,13 @@ def _generate_syscalls(file_path):
 			attrs=line.split(")")[1].split("->")[0].strip()
 			ret=line.split("->")[1].strip()
 			syscalls.append((name,args,attrs,ret))
-	syscalls=sorted(syscalls,key=lambda e:e[0])
 	syscalls.insert(0,("invalid",tuple(),"","void"))
 	with open("src/lib/sys/sys/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
 			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {i}\n")
+			if (len(args)>4):
+				wf.write("\tmov r9, r8\n")
 			if (len(args)>3):
 				wf.write("\tmov r8, rcx\n")
 			wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")

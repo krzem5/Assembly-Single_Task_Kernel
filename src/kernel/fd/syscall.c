@@ -8,10 +8,8 @@
 
 
 void syscall_fd_open(isr_state_t* regs){
-	u64 max_length=syscall_get_user_pointer_max_length(regs->rsi);
-	u64 length=0;
-	for (;length<max_length&&*((const char*)(regs->rsi+length));length++);
-	if (length>=max_length){
+	u64 length=syscall_get_string_length(regs->rsi);
+	if (!length){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}

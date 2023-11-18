@@ -148,6 +148,7 @@ static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
 
 
 static void _create_executable_thread(elf_loader_context_t* ctx){
+	INFO("Creating main thread...");
 	ctx->thread=thread_new_user_thread(ctx->process,ctx->elf_header->e_entry,0x200000);
 }
 
@@ -184,7 +185,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,&_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,&_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		goto _error;
@@ -320,7 +321,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 
 
 
-_Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ){
+handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!path){
 		return 0;
 	}
@@ -363,8 +364,11 @@ _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const
 		goto _error;
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	scheduler_enqueue_thread(ctx.thread);
-	return 1;
+	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
+		scheduler_enqueue_thread(ctx.thread);
+	}
+	LOG("%p",ctx.thread->process->pagemap.toplevel);
+	return ctx.thread->handle.rb_node.key;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	handle_release(&(process->handle));

@@ -1,1 +1,2 @@
 shell:runtime@static,sys
+test:runtime@static,sys

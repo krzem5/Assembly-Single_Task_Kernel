@@ -64,7 +64,7 @@ _check_next_fs:
 	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
-	if (!elf_load("/bin/shell",0,NULL,NULL)){
+	if (!elf_load("/bin/shell",0,NULL,NULL,0)){
 		panic("Unable to load user shell");
 	}
 	return 0;

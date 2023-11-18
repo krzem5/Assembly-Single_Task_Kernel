@@ -230,7 +230,7 @@ void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addres
 			panic("vmm_map_page: invalid vmm_map_page arguments");
 		}
 		if (_get_table(pml3)->entries[j]&VMM_PAGE_FLAG_PRESENT){
-			panic("vmm_map_page: memory mapping already present");
+			panic("vmm_map_page: memory mapping already present (pml3)");
 		}
 		_increase_length_if_entry_empty(pml3,j);
 		_get_table(pml3)->entries[j]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
@@ -242,7 +242,7 @@ void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addres
 			panic("vmm_map_page: invalid vmm_map_page arguments");
 		}
 		if (_get_table(pml2)->entries[k]&VMM_PAGE_FLAG_PRESENT){
-			panic("vmm_map_page: memory mapping already present");
+			panic("vmm_map_page: memory mapping already present (pml2)");
 		}
 		_increase_length_if_entry_empty(pml2,k);
 		_get_table(pml2)->entries[k]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE))|VMM_PAGE_FLAG_LARGE;
@@ -253,7 +253,8 @@ void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addres
 	}
 	u64* pml1=_get_child_table(pml2,k,1);
 	if (_get_table(pml1)->entries[l]&VMM_PAGE_FLAG_PRESENT){
-		panic("vmm_map_page: memory mapping already present");
+		WARN("%p",_get_table(pml1)->entries[l]);
+		panic("vmm_map_page: memory mapping already present (pml1)");
 	}
 	_increase_length_if_entry_empty(pml1,l);
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));

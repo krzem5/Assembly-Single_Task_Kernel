@@ -79,6 +79,7 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,region->pmm_counter);
 		}
 	}
+	region->flags=0;
 	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
@@ -102,7 +103,6 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 		}
 		omm_dealloc(&_mmap_region_allocator,next_region);
 	}
-	region->flags=0;
 	_add_region_to_length_tree(mmap,region);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
@@ -217,7 +217,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 			panic("mmap_alloc: both file and MMAP_REGION_FLAG_COMMIT specfied");
 		}
 		u64 vmm_flags=mmap_get_vmm_flags(region);
-		for (u64 i=0;i<length;i+=PAGE_SIZE){
+		for (u64 i=0;i<region->length;i+=PAGE_SIZE){
 			vmm_map_page(mmap->pagemap,pmm_alloc(1,pmm_counter,0),address+i,vmm_flags);
 		}
 	}
