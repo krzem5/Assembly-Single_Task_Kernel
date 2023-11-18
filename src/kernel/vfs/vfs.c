@@ -7,6 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/permissions.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "vfs"
 
@@ -20,7 +21,7 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 	if (!(flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)){
 		return 1;
 	}
-	return !!(vfs_node_get_permissions(node,uid,gid)&4);
+	return !!(vfs_permissions_get(node,uid,gid)&VFS_PERMISSION_READ);
 }
 
 

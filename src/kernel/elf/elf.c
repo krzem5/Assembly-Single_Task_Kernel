@@ -14,6 +14,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/permissions.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "elf"
 
@@ -57,8 +58,8 @@ static vfs_node_t* _get_executable_file(const char* path){
 		ERROR("Unable to find executable '%s'",path);
 		return NULL;
 	}
-	if (!(vfs_node_get_permissions(out,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&1)){
-		ERROR("File '%s' is not executable",path);
+	if ((vfs_permissions_get(out,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&(VFS_PERMISSION_READ|VFS_PERMISSION_EXEC))!=(VFS_PERMISSION_READ|VFS_PERMISSION_EXEC)){
+		ERROR("File '%s' is not readable or executable",path);
 		return NULL;
 	}
 	return out;

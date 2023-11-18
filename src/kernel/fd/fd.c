@@ -9,6 +9,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/permissions.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "fd"
 
@@ -71,11 +72,11 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
-	u8 permissions=vfs_node_get_permissions(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
-	if (!(permissions&4)){
+	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	if (!(permissions&VFS_PERMISSION_READ)){
 		out->flags&=~FD_FLAG_READ;
 	}
-	if (!(permissions&2)){
+	if (!(permissions&VFS_PERMISSION_WRITE)){
 		out->flags&=~FD_FLAG_WRITE;
 	}
 	handle_finish_setup(&(out->handle));
@@ -261,7 +262,7 @@ s64 fd_iter_start(handle_id_t fd){
 	}
 	fd_t* data=fd_handle->object;
 	spinlock_acquire_exclusive(&(data->lock));
-	if (!(vfs_node_get_permissions(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&4)){
+	if (!(vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_READ)){
 		spinlock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
 		return -1;
