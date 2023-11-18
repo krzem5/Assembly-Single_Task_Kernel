@@ -277,16 +277,21 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	string_table_size+=smm_length(ctx->path)+1;
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=size+((string_table_size+7)&0xfffffff8);
+	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	if (!region){
+		ERROR("Unable to reserve process input data memory");
+		return 0;
+	}
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u64* data_ptr=buffer;
 	void* string_table_ptr=buffer+size;
 	PUSH_DATA_VALUE(ctx->argc);
 	for (u64 i=0;i<ctx->argc;i++){
-		PUSH_DATA_VALUE(string_table_ptr-buffer);
+		PUSH_DATA_VALUE(string_table_ptr-buffer+region->rb_node.key);
 		PUSH_STRING(ctx->argv[i]);
 	}
 	for (u64 i=0;ctx->environ&&ctx->environ[i];i++){
-		PUSH_DATA_VALUE(string_table_ptr-buffer);
+		PUSH_DATA_VALUE(string_table_ptr-buffer+region->rb_node.key);
 		PUSH_STRING(ctx->environ[i]);
 	}
 	PUSH_DATA_VALUE(0); // environ NULL-terminator
@@ -297,25 +302,19 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_BASE,ctx->interpreter_image_base);
 	PUSH_AUXV_VALUE(AT_FLAGS,0);
 	PUSH_AUXV_VALUE(AT_ENTRY,ctx->elf_header->e_entry);
-	PUSH_AUXV_VALUE(AT_PLATFORM,string_table_ptr-buffer);
+	PUSH_AUXV_VALUE(AT_PLATFORM,string_table_ptr-buffer+region->rb_node.key);
 	PUSH_STRING(ELF_AUXV_PLATFORM);
 	PUSH_AUXV_VALUE(AT_HWCAP,0); // cpuid[1].edx
-	PUSH_AUXV_VALUE(AT_RANDOM,string_table_ptr-buffer);
+	PUSH_AUXV_VALUE(AT_RANDOM,string_table_ptr-buffer+region->rb_node.key);
 	random_generate(string_table_ptr,ELF_AUXV_RANDOM_DATA_SIZE);
 	string_table_ptr+=ELF_AUXV_RANDOM_DATA_SIZE;
 	PUSH_AUXV_VALUE(AT_HWCAP2,0);
-	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr-buffer);
+	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr-buffer+region->rb_node.key);
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
-	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER,NULL);
-	if (region){
-		mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
-		ctx->thread->gpr_state.r15=region->rb_node.key;
-	}
-	else{
-		ERROR("Unable to reserve process input data memory");
-	}
+	mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter);
+	ctx->thread->gpr_state.r15=region->rb_node.key;
 	return !!region;
 }
 
@@ -367,7 +366,6 @@ handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
-	LOG("%p",ctx.thread->process->pagemap.toplevel);
 	return ctx.thread->handle.rb_node.key;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);

@@ -1,4 +1,5 @@
 #include <sys/io.h>
+#include <sys/syscall.h>
 
 
 
@@ -10,4 +11,5 @@ void main(int argc,const char*const* argv,const char*const* environ){
 	for (int i=0;environ[i];i++){
 		printf("environ[%u]=\"%s\"\n",i,environ[i]);
 	}
+	_syscall_thread_stop();
 }
