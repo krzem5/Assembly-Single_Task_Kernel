@@ -30,3 +30,5 @@ uid_set(u32 uid) -> _Bool
 gid_set(u32 gid) -> _Bool
 uid_get_name(u32 uid,char* buffer,u32 buffer_length) -> _Bool
 gid_get_name(u32 gid,char* buffer,u32 buffer_length) -> _Bool
+process_get_pid(void) -> u64
+thread_get_tid(void) -> u64

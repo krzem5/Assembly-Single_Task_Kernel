@@ -10,6 +10,24 @@
 
 
 
+void syscall_process_get_pid(isr_state_t* regs){
+	regs->rax=THREAD_DATA->process->handle.rb_node.key;
+}
+
+
+
+void syscall_thread_get_tid(isr_state_t* regs){
+	regs->rax=THREAD_DATA->handle.rb_node.key;
+}
+
+
+
+void syscall_process_start(isr_state_t* regs){
+	panic("syscall_process_start");
+}
+
+
+
 void syscall_thread_stop(isr_state_t* regs){
 	thread_terminate();
 }
