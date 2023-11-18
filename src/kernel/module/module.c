@@ -51,7 +51,7 @@ HANDLE_DECLARE_TYPE(MODULE,{
 
 static _Bool _alloc_region_memory(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!mmap_region){
 		ERROR("Unable to reserve module section memory");
 		return 0;
@@ -310,9 +310,9 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 
 static void _adjust_memory_flags(module_loader_context_t* ctx){
 	INFO("Adjusting memory flags...");
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->ex_region.base,0,VMM_PAGE_FLAG_READWRITE,ctx->module->ex_region.size>>PAGE_SIZE_SHIFT,1);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->nx_region.base,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,ctx->module->nx_region.size>>PAGE_SIZE_SHIFT,1);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->rw_region.base,VMM_PAGE_FLAG_NOEXECUTE,0,ctx->module->rw_region.size>>PAGE_SIZE_SHIFT,1);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->ex_region.base,0,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,ctx->module->ex_region.size>>PAGE_SIZE_SHIFT,1);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->nx_region.base,0,VMM_PAGE_FLAG_READWRITE,ctx->module->nx_region.size>>PAGE_SIZE_SHIFT,1);
+	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->rw_region.base,0,0,ctx->module->rw_region.size>>PAGE_SIZE_SHIFT,1);
 }
 
 
