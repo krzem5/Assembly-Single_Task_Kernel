@@ -1,5 +1,6 @@
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -25,8 +26,8 @@ typedef struct _UID_DATA{
 
 
 
-static pmm_counter_descriptor_t _uid_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_group");
 static pmm_counter_descriptor_t _uid_data_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_data");
+static pmm_counter_descriptor_t _uid_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_group");
 static omm_allocator_t _uid_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("uid_data",sizeof(uid_data_t),8,1,&_uid_data_omm_pmm_counter);
 static omm_allocator_t _uid_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("uid_group",sizeof(uid_group_t),8,1,&_uid_group_omm_pmm_counter);
 
@@ -38,7 +39,7 @@ static spinlock_t _uid_global_lock=SPINLOCK_INIT_STRUCT;
 
 
 void uid_init(void){
-	LOG("Initializing user ID tree...");
+	LOG("Initializing user tree...");
 	rb_tree_init(&_uid_tree);
 	INFO("Creating root user...");
 	if (!uid_create(0,"root")||!uid_add_group(0,0)){

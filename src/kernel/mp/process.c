@@ -52,6 +52,8 @@ void process_init(void){
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
+	process_kernel->uid=0;
+	process_kernel->gid=0;
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
 		panic("Unable to reserve kernel memory");
@@ -70,6 +72,8 @@ process_t* process_new(const char* image,const char* name){
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);
 	out->image=smm_alloc(image,0);
+	out->uid=0;
+	out->gid=0;
 	handle_finish_setup(&(out->handle));
 	return out;
 }

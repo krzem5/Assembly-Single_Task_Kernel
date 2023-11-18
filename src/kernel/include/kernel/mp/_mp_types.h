@@ -2,6 +2,8 @@
 #define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
+#include <kernel/id/group.h>
+#include <kernel/id/user.h>
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/mmap.h>
@@ -42,6 +44,8 @@ typedef struct _PROCESS{
 	u64 signal_handler;
 	string_t* name;
 	string_t* image;
+	uid_t uid;
+	gid_t gid;
 } process_t;
 
 
