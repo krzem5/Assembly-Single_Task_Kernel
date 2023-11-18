@@ -5,9 +5,7 @@
 
 
 SYS_PUBLIC s64 sys_fd_open(u64 fd,const char* path,u32 flags){
-	u64 length=0;
-	for (;path[length];length++);
-	return _syscall_fd_open(fd,path,length,flags);
+	return _syscall_fd_open(fd,path,flags);
 }
 
 

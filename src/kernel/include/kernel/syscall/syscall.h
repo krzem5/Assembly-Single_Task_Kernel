@@ -9,7 +9,7 @@ void syscall_invalid(isr_state_t* regs);
 
 
 
-_Bool syscall_sanatize_user_memory(u64 address,u64 size);
+u64 syscall_get_user_pointer_max_length(u64 address);
 
 
 

@@ -43,7 +43,7 @@ void syscall_gid_set(isr_state_t* regs){
 
 
 void syscall_uid_get_name(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
 		return;
 	}
@@ -53,7 +53,7 @@ void syscall_uid_get_name(isr_state_t* regs){
 
 
 void syscall_gid_get_name(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
 		return;
 	}

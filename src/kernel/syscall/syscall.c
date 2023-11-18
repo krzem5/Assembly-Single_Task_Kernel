@@ -16,9 +16,10 @@ void syscall_invalid(isr_state_t* regs){
 
 
 
-_Bool syscall_sanatize_user_memory(u64 address,u64 size){
-	if (!address||!size||(address|size|(address+size))>=VMM_HIGHER_HALF_ADDRESS_OFFSET){
+u64 syscall_get_user_pointer_max_length(u64 address){
+	mmap_region_t* region=mmap_lookup(&(THREAD_DATA->process->mmap),address);
+	if (!region||!(region->flags&MMAP_REGION_FLAG_VMM_USER)){
 		return 0;
 	}
-	return vmm_is_user_accessible(&(THREAD_DATA->process->pagemap),address,pmm_align_up_address(size)>>PAGE_SIZE_SHIFT);
+	return region->rb_node.key+region->length-address;
 }

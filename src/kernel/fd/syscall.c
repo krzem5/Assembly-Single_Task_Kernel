@@ -8,11 +8,14 @@
 
 
 void syscall_fd_open(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	u64 max_length=syscall_get_user_pointer_max_length(regs->rsi);
+	u64 length=0;
+	for (;length<max_length&&*((const char*)(regs->rsi+length));length++);
+	if (length>=max_length){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
-	regs->rax=fd_open(regs->rdi,(void*)(regs->rsi),regs->rdx,regs->r8);
+	regs->rax=fd_open(regs->rdi,(void*)(regs->rsi),length,regs->rdx);
 }
 
 
@@ -24,7 +27,7 @@ void syscall_fd_close(isr_state_t* regs){
 
 
 void syscall_fd_read(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
@@ -34,7 +37,7 @@ void syscall_fd_read(isr_state_t* regs){
 
 
 void syscall_fd_write(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
@@ -56,11 +59,7 @@ void syscall_fd_resize(isr_state_t* regs){
 
 
 void syscall_fd_stat(isr_state_t* regs){
-	if (regs->rdx!=sizeof(fd_stat_t)){
-		regs->rax=FD_ERROR_INVALID_POINTER;
-		return;
-	}
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx!=sizeof(fd_stat_t)||regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
@@ -76,7 +75,7 @@ void syscall_fd_dup(isr_state_t* regs){
 
 
 void syscall_fd_path(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}
@@ -92,7 +91,7 @@ void syscall_fd_iter_start(isr_state_t* regs){
 
 
 void syscall_fd_iter_get(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
 	}

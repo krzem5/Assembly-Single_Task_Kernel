@@ -35,7 +35,7 @@ void syscall_thread_stop(isr_state_t* regs){
 
 
 void syscall_thread_create(isr_state_t* regs){
-	if (!syscall_sanatize_user_memory(regs->rdi,1)){
+	if (!syscall_get_user_pointer_max_length(regs->rdi)){
 		regs->rax=0;
 		return;
 	}
@@ -93,7 +93,7 @@ void syscall_thread_set_priority(isr_state_t* regs){
 
 void syscall_thread_get_cpu_mask(isr_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
-	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
+	if (!regs->rdi||size>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
 		return;
 	}
@@ -112,7 +112,7 @@ void syscall_thread_get_cpu_mask(isr_state_t* regs){
 
 void syscall_thread_set_cpu_mask(isr_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
-	if (!regs->rdi||!syscall_sanatize_user_memory(regs->rsi,size)){
+	if (!regs->rdi||size>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
 		return;
 	}
