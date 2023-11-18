@@ -1,8 +1,10 @@
 #ifndef _KERNEL_VFS_NODE_H_
 #define _KERNEL_VFS_NODE_H_ 1
+#include <kernel/id/group.h>
+#include <kernel/id/user.h>
 #include <kernel/lock/spinlock.h>
-#include <kernel/types.h>
 #include <kernel/memory/smm.h>
+#include <kernel/types.h>
 
 
 
@@ -64,8 +66,8 @@ typedef struct _VFS_NODE{
 	u64 time_modify;
 	u64 time_change;
 	u64 time_birth;
-	u32 gid;
-	u32 uid;
+	gid_t gid;
+	uid_t uid;
 } vfs_node_t;
 
 

@@ -4,6 +4,8 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
+#include <kernel/id/group.h>
+#include <kernel/id/user.h>
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
@@ -51,10 +53,12 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
 	symbol_init();
-	time_init();
 	clock_init();
+	time_init();
 	isr_init();
 	acpi_load();
+	gid_init();
+	uid_init();
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
