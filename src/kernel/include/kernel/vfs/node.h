@@ -124,4 +124,8 @@ void vfs_node_dettach_external_child(vfs_node_t* node);
 
 
 
+u8 vfs_node_get_permissions(vfs_node_t* node,uid_t uid,gid_t gid);
+
+
+
 #endif

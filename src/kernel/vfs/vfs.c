@@ -1,10 +1,13 @@
 #include <kernel/fs/fs.h>
+#include <kernel/id/group.h>
+#include <kernel/id/user.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/smm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "vfs"
 
 
@@ -13,7 +16,16 @@ static vfs_node_t* _vfs_root_node=NULL;
 
 
 
-static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_links,vfs_node_t** parent,const char** child_name){
+static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gid){
+	if (!(flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)){
+		return 1;
+	}
+	return !!(vfs_node_get_permissions(node,uid,gid)&4);
+}
+
+
+
+static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
 	if (!root||path[0]=='/'){
 		root=_vfs_root_node;
 	}
@@ -22,13 +34,16 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_l
 		*child_name=NULL;
 	}
 	while (root&&path[0]){
-		if (follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		if ((flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+			if (!_has_read_permissions(root,flags,uid,gid)){
+				return NULL;
+			}
 			char buffer[4096];
 			buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
 			if (!buffer[0]){
 				return NULL;
 			}
-			root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);
+			root=_lookup_node(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
 			if (!root){
 				return NULL;
 			}
@@ -55,6 +70,9 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_l
 			path+=2;
 			continue;
 		}
+		if (!_has_read_permissions(root,flags,uid,gid)){
+			return NULL;
+		}
 		SMM_TEMPORARY_STRING name=smm_alloc(path,i);
 		vfs_node_t* child=vfs_node_lookup(root,name);
 		path+=i;
@@ -68,13 +86,16 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,_Bool follow_l
 		}
 		root=child;
 	}
-	if (root&&follow_links&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+	if (root&&(flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		if (!_has_read_permissions(root,flags,uid,gid)){
+			return NULL;
+		}
 		char buffer[4096];
 		buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
 		if (!buffer[0]){
 			return NULL;
 		}
-		root=_lookup_node(root->relatives.parent,buffer,1,NULL,NULL);
+		root=_lookup_node(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
 		if (!root){
 			return NULL;
 		}
@@ -94,7 +115,7 @@ void vfs_mount(filesystem_t* fs,const char* path){
 	}
 	vfs_node_t* parent;
 	const char* child_name;
-	if (_lookup_node(NULL,path,0,&parent,&child_name)){
+	if (_lookup_node(NULL,path,0,0,0,&parent,&child_name)){
 		panic("vfs_mount: node already exists");
 	}
 	spinlock_acquire_exclusive(&(fs->root->lock));
@@ -106,8 +127,8 @@ void vfs_mount(filesystem_t* fs,const char* path){
 
 
 
-vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,_Bool follow_links){
-	return _lookup_node(root,path,follow_links,NULL,NULL);
+vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
+	return _lookup_node(root,path,flags,uid,gid,NULL,NULL);
 }
 
 

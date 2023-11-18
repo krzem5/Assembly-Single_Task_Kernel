@@ -51,6 +51,21 @@ static pmm_counter_descriptor_t _user_input_data_pmm_counter=PMM_COUNTER_INIT_ST
 
 
 
+static vfs_node_t* _get_executable_file(const char* path){
+	vfs_node_t* out=vfs_lookup(NULL,path,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|VFS_LOOKUP_FLAG_FOLLOW_LINKS,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	if (!out){
+		ERROR("Unable to find executable '%s'",path);
+		return NULL;
+	}
+	if (!(vfs_node_get_permissions(out,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&1)){
+		ERROR("File '%s' is not executable",path);
+		return NULL;
+	}
+	return out;
+}
+
+
+
 static _Bool _check_elf_header(elf_loader_context_t* ctx){
 	if (ctx->elf_header->e_ident.signature!=0x464c457f){
 		ERROR("ELF header error: e_ident.signature != 0x464c457f");
@@ -142,9 +157,8 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 		return 1;
 	}
 	INFO("Loading interpreter...");
-	vfs_node_t* file=vfs_lookup(NULL,ctx->interpreter_path,1);
+	vfs_node_t* file=_get_executable_file(ctx->interpreter_path);
 	if (!file){
-		ERROR("Unable to find interpreter '%s'",ctx->interpreter_path);
 		return 0;
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
@@ -314,9 +328,8 @@ _Bool elf_load(const char* path,u32 argc,const char*const* argv,const char*const
 		argv=&path;
 	}
 	LOG("Loading executable '%s'...",path);
-	vfs_node_t* file=vfs_lookup(NULL,path,1);
+	vfs_node_t* file=_get_executable_file(path);
 	if (!file){
-		ERROR("Unable to find executable '%s'",path);
 		return 0;
 	}
 	process_t* process=process_new(path,file->name->data);

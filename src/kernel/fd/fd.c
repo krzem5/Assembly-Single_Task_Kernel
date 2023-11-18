@@ -5,6 +5,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -56,7 +57,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&FD_FLAG_CREATE){
 		panic("FD_FLAG_CREATE");
 	}
-	vfs_node_t* node=vfs_lookup(root_node,buffer,!(flags&FD_FLAG_IGNORE_LINKS));
+	vfs_node_t* node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
 	if (root_handle){
 		handle_release(root_handle);
 	}
@@ -70,6 +71,13 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
+	u8 permissions=vfs_node_get_permissions(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	if (!(permissions&4)){
+		out->flags&=~FD_FLAG_READ;
+	}
+	if (!(permissions&2)){
+		out->flags&=~FD_FLAG_WRITE;
+	}
 	handle_finish_setup(&(out->handle));
 	return out->handle.rb_node.key;
 }

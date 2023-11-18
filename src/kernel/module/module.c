@@ -331,7 +331,7 @@ module_t* module_load(const char* name){
 		spinlock_release_exclusive(&_module_global_lock);
 		return module;
 	}
-	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0);
+	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0,0,0);
 	if (!directory){
 		panic("Unable to find module root directory");
 	}

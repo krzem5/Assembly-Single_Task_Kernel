@@ -21,4 +21,8 @@ _Bool uid_add_group(uid_t uid,gid_t gid);
 
 
 
+_Bool uid_has_group(uid_t uid,gid_t gid);
+
+
+
 #endif

@@ -8,6 +8,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "uid"
 
 
@@ -78,4 +79,14 @@ _Bool uid_add_group(uid_t uid,gid_t gid){
 	rb_tree_insert_node(&(uid_data->group_tree),&(uid_group->rb_node));
 	spinlock_release_exclusive(&_uid_global_lock);
 	return 1;
+}
+
+
+
+_Bool uid_has_group(uid_t uid,gid_t gid){
+	spinlock_acquire_shared(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	_Bool out=(uid_data&&rb_tree_lookup_node(&(uid_data->group_tree),gid));
+	spinlock_release_shared(&_uid_global_lock);
+	return out;
 }

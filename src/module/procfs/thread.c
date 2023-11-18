@@ -22,7 +22,7 @@ static void _listener(void* object,u32 type){
 		const thread_t* thread=handle->object;
 		char buffer[64];
 		format_string(buffer,64,"%lu/threads",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key));
-		vfs_node_t* root=vfs_lookup(procfs->root,buffer,0);
+		vfs_node_t* root=vfs_lookup(procfs->root,buffer,0,0,0);
 		if (!root){
 			return;
 		}
@@ -36,10 +36,10 @@ static void _listener(void* object,u32 type){
 		const thread_t* thread=handle->object;
 		char buffer[64];
 		format_string(buffer,64,"%lu",HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
-		dynamicfs_delete_node(vfs_lookup(_procfs_thread_root,buffer,0),1);
+		dynamicfs_delete_node(vfs_lookup(_procfs_thread_root,buffer,0,0,0),1);
 		format_string(buffer,64,"%lu/threads/%lu",HANDLE_ID_GET_INDEX(thread->process->handle.rb_node.key),HANDLE_ID_GET_INDEX(thread->handle.rb_node.key));
-		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0);
-		dynamicfs_delete_node(vfs_lookup(node,"name",0),1);
+		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0,0,0);
+		dynamicfs_delete_node(vfs_lookup(node,"name",0,0,0),1);
 		dynamicfs_delete_node(node,0);
 	}
 }

@@ -18,7 +18,7 @@
 
 
 static void _load_modules_from_order_file(const char* order_file_path,_Bool early){
-	vfs_node_t* file=vfs_lookup(NULL,order_file_path,0);
+	vfs_node_t* file=vfs_lookup(NULL,order_file_path,0,0,0);
 	if (!file){
 		panic("Unable to locate module order file");
 	}
