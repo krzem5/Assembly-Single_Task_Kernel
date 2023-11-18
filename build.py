@@ -692,6 +692,10 @@ if (rebuild_data_partition):
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
+	kfs2.get_inode(data_fs,"/boot",0o000,True)
+	kfs2.get_inode(data_fs,"/boot/module",0o000,True)
+	kfs2.get_inode(data_fs,"/lib",0o644,True)
+	kfs2.get_inode(data_fs,"/bin",0o644,True)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o000)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
@@ -712,7 +716,7 @@ if (rebuild_data_partition):
 		with open(f"build/user/{program}","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o000),rf.read())
 	for module in os.listdir("build/module"):
 		with open(f"build/module/{module}","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o000),rf.read())

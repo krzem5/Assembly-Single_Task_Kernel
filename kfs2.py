@@ -541,7 +541,7 @@ def format_partition(backend):
 
 
 
-def get_inode(backend,path,permissions):
+def get_inode(backend,path,permissions,is_directory=False):
 	root_block=KFS2RootBlock.load(backend)
 	node=KFS2Node.load(backend,KFS2Node.index_to_offset(root_block,0))
 	out=0
@@ -586,7 +586,7 @@ def get_inode(backend,path,permissions):
 			chunk.data[best_entry_offset-chunk.offset:chunk.length]=KFS2DirectoryEntry(0,chunk.length-best_entry_offset+chunk.offset,0,b"").encode()
 			data_provider.save_chunk(chunk)
 			best_entry_padding=node.size-new_entry_size-best_entry_offset
-		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 else KFS2_INODE_TYPE_DIRECTORY)
+		type=(KFS2_INODE_TYPE_FILE if i==len(path)-1 and not is_directory else KFS2_INODE_TYPE_DIRECTORY)
 		if (best_entry_padding<12):
 			new_entry_size+=best_entry_padding
 			best_entry_padding=0
@@ -597,7 +597,7 @@ def get_inode(backend,path,permissions):
 			chunk.data[best_entry_offset+new_entry_size:best_entry_offset+new_entry_size+best_entry_padding]=KFS2DirectoryEntry(0,best_entry_padding,0,b"").encode()
 		data_provider.save_chunk(chunk)
 		if (type==KFS2_INODE_TYPE_DIRECTORY):
-			node=_init_node_as_directory(backend,root_block,child_inode,0o666)
+			node=_init_node_as_directory(backend,root_block,child_inode,(permissions if i==len(path)-1 else 0o666))
 		else:
 			node=_init_node_as_file(backend,root_block,child_inode,permissions)
 		node.save()
