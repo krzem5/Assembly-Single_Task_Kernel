@@ -62,11 +62,7 @@ static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 
-static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
-	if (!region->flags){
-		spinlock_release_exclusive(&(mmap->lock));
-		return 0;
-	}
+static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
 	for (u64 i=0;i<region->length;i+=PAGE_SIZE){
 		u64 entry=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
 		if (entry){
@@ -79,6 +75,16 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,region->pmm_counter);
 		}
 	}
+}
+
+
+
+static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
+	if (!region->flags){
+		spinlock_release_exclusive(&(mmap->lock));
+		return 0;
+	}
+	_delete_pagemap_pages(mmap,region);
 	region->flags=0;
 	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
@@ -129,7 +135,19 @@ void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 
 void mmap_deinit(mmap_t* mmap){
 	spinlock_acquire_exclusive(&(mmap->lock));
-	// panic("mmap_deinit");
+	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;){
+		mmap_region_t* region=(void*)rb_node;
+		rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node);
+		if (region->flags){
+			_delete_pagemap_pages(mmap,region);
+		}
+		omm_dealloc(&_mmap_region_allocator,region);
+	}
+	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->length_tree));rb_node;){
+		mmap_length_group_t* length_group=(void*)rb_node;
+		rb_node=rb_tree_iter_next(&(mmap->length_tree),rb_node);
+		omm_dealloc(&_mmap_length_group_allocator,length_group);
+	}
 	rb_tree_init(&(mmap->offset_tree));
 	rb_tree_init(&(mmap->length_tree));
 }
