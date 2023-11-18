@@ -17,7 +17,6 @@ static void _deinit(module_t* module){
 
 
 MODULE_DECLARE(
-	"i82540",
 	_init,
 	_deinit,
 	0

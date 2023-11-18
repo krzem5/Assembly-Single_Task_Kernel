@@ -15,7 +15,7 @@
 
 #define MODULE_FLAG_PREVENT_LOADS 1
 
-#define MODULE_DECLARE(name,init_callback,deinit_callback,flags) \
+#define MODULE_DECLARE(init_callback,deinit_callback,flags) \
 	module_t* module_self=NULL; \
 	static const module_descriptor_t __attribute__((used,section(".module"))) _module_descriptor={ \
 		(init_callback), \

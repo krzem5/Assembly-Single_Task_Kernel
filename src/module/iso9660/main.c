@@ -19,7 +19,6 @@ static void _deinit(module_t* module){
 
 
 MODULE_DECLARE(
-	"iso9660",
 	_init,
 	_deinit,
 	0

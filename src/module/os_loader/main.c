@@ -79,7 +79,6 @@ static void _deinit(module_t* module){
 
 
 MODULE_DECLARE(
-	"os_loader",
 	_init,
 	_deinit,
 	MODULE_FLAG_PREVENT_LOADS
