@@ -4,14 +4,13 @@
 
 
 static _Bool _init(module_t* module){
-	ata_locate_devices();
-	return 1;
+	return ata_locate_devices();
 }
 
 
 
 static void _deinit(module_t* module){
-	return;
+	ata_deinit();
 }
 
 

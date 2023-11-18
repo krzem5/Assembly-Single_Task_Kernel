@@ -401,6 +401,7 @@ void module_unload(module_t* module){
 	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
 		return;
 	}
+	LOG("Unloading module '%s'...",module->name->data);
 	module->state=MODULE_STATE_UNLOADING;
 	module->descriptor->deinit_callback(module);
 	module->state=MODULE_STATE_UNLOADED;
@@ -408,6 +409,7 @@ void module_unload(module_t* module){
 	_dealloc_region_memory(&(module->nx_region));
 	_dealloc_region_memory(&(module->rw_region));
 	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
+		INFO("Preventing future module loads...");
 		return;
 	}
 	spinlock_acquire_exclusive(&_module_global_lock);

@@ -229,15 +229,15 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 
 
 
-static void _ata_init_device(pci_device_t* device){
+static _Bool _ata_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x01||device->progif!=0x80){
-		return;
+		return 0;
 	}
 	pci_device_enable_memory_access(device);
 	pci_device_enable_bus_mastering(device);
 	pci_bar_t pci_bar;
 	if (!pci_device_get_bar(device,4,&pci_bar)){
-		return;
+		return 0;
 	}
 	LOG("Attached ATA driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	for (u8 i=0;i<4;i++){
@@ -250,15 +250,25 @@ static void _ata_init_device(pci_device_t* device){
 		}
 	}
 	_ata_device_index++;
+	return 1;
 }
 
 
 
-void ata_locate_devices(void){
+_Bool ata_locate_devices(void){
 	drive_register_type(&_ata_drive_type);
 	drive_register_type(&_atapi_drive_type);
+	_Bool out=0;
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
-		_ata_init_device(device);
+		out|=_ata_init_device(device);
 	}
+	return out;
+}
+
+
+
+void ata_deinit(void){
+	drive_unregister_type(&_ata_drive_type);
+	drive_unregister_type(&_atapi_drive_type);
 }

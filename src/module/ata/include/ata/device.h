@@ -13,7 +13,11 @@ typedef struct _ATA_DEVICE{
 
 
 
-void ata_locate_devices(void);
+_Bool ata_locate_devices(void);
+
+
+
+void ata_deinit(void);
 
 
 
