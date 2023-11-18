@@ -28,3 +28,5 @@ uid_get(void) -> u32
 gid_get(void) -> u32
 uid_set(u32 uid) -> _Bool
 gid_set(u32 gid) -> _Bool
+uid_get_name(u32 uid,char* buffer,u32 buffer_length) -> _Bool
+gid_get_name(u32 gid,char* buffer,u32 buffer_length) -> _Bool

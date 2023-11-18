@@ -25,4 +25,8 @@ _Bool uid_has_group(uid_t uid,gid_t gid);
 
 
 
+_Bool uid_get_name(uid_t uid,char* buffer,u32 buffer_length);
+
+
+
 #endif

@@ -2,6 +2,7 @@
 #include <kernel/id/user.h>
 #include <kernel/isr/isr.h>
 #include <kernel/mp/thread.h>
+#include <kernel/syscall/syscall.h>
 
 
 
@@ -37,4 +38,24 @@ void syscall_gid_set(isr_state_t* regs){
 	else{
 		regs->rax=0;
 	}
+}
+
+
+
+void syscall_uid_get_name(isr_state_t* regs){
+	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	regs->rax=uid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
+}
+
+
+
+void syscall_gid_get_name(isr_state_t* regs){
+	if (!syscall_sanatize_user_memory(regs->rsi,regs->rdx)){
+		regs->rax=0;
+		return;
+	}
+	regs->rax=gid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
 }

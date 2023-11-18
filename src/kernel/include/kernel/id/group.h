@@ -16,4 +16,8 @@ _Bool gid_create(gid_t gid,const char* name);
 
 
 
+_Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length);
+
+
+
 #endif

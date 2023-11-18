@@ -52,3 +52,20 @@ _Bool gid_create(gid_t gid,const char* name){
 	spinlock_release_exclusive(&_gid_global_lock);
 	return 1;
 }
+
+
+
+_Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
+	if (!buffer_length){
+		return 0;
+	}
+	spinlock_acquire_shared(&_gid_global_lock);
+	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
+	if (!gid_data){
+		spinlock_release_shared(&_gid_global_lock);
+		return 0;
+	}
+	strcpy(buffer,gid_data->name->data,buffer_length);
+	spinlock_release_shared(&_gid_global_lock);
+	return 1;
+}

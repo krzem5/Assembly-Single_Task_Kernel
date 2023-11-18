@@ -90,3 +90,20 @@ _Bool uid_has_group(uid_t uid,gid_t gid){
 	spinlock_release_shared(&_uid_global_lock);
 	return out;
 }
+
+
+
+_Bool uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
+	if (!buffer_length){
+		return 0;
+	}
+	spinlock_acquire_shared(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	if (!uid_data){
+		spinlock_release_shared(&_uid_global_lock);
+		return 0;
+	}
+	strcpy(buffer,uid_data->name->data,buffer_length);
+	spinlock_release_shared(&_uid_global_lock);
+	return 1;
+}
