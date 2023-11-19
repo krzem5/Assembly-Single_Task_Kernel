@@ -134,7 +134,7 @@ LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
 LIBRARY_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","--gc-sections"]
+	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 USER_HASH_FILE_SUFFIX={
 	MODE_NORMAL: ".txt",
@@ -159,7 +159,7 @@ USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
 USER_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","--gc-sections"]
+	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
@@ -417,7 +417,7 @@ def _compile_library(library,flags,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-s","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
 		return
