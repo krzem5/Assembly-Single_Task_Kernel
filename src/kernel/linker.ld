@@ -7,60 +7,68 @@
 
 ENTRY(_start)
 SECTIONS{
-    . = 0xffffffffc0100000;
-    DECLARE_SECTION_START(kernel);
-    DECLARE_SECTION_START(kernel_ex);
-    .kernel_ex : AT(ADDR(.kernel_ex) - BASE_ADDRESS_OFFSET){
-        *(.entry)
-        *(.text .text*)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(kernel_ex);
-    DECLARE_SECTION_START(kernel_nx);
-    .kernel_nx : AT(ADDR(.kernel_nx) - BASE_ADDRESS_OFFSET){
-        *(.rodata .rodata* .rdata .rdata*)
-        . = ALIGN(8);
-	    DECLARE_SECTION_START(cpu_local);
-        *(.cpulocal)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(cpu_local);
-	    DECLARE_SECTION_START(handle);
-        *(.handle)
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(handle);
-	    DECLARE_SECTION_START(gcov_info);
+	. = 0xffffffffc0100000;
+	DECLARE_SECTION_START(kernel);
+	DECLARE_SECTION_START(kernel_ex);
+	.kernel_ex : AT(ADDR(.kernel_ex) - BASE_ADDRESS_OFFSET){
+		*(.entry)
+		*(.text .text*)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_ex);
+	DECLARE_SECTION_START(kernel_nx);
+	.kernel_nx : AT(ADDR(.kernel_nx) - BASE_ADDRESS_OFFSET){
+		*(.rodata .rodata* .rdata .rdata*)
+		. = ALIGN(8);
+		DECLARE_SECTION_START(cpu_local);
+		*(.cpulocal)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(cpu_local);
+		DECLARE_SECTION_START(handle);
+		*(.handle)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(handle);
+		DECLARE_SECTION_START(spinlock_setup);
+		*(.spinlock_setup)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(spinlock_setup);
+		DECLARE_SECTION_START(spinlock);
+		*(.spinlock)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(spinlock);
+		DECLARE_SECTION_START(gcov_info);
 #ifdef _KERNEL_COVERAGE_BUILD_
-        *(.gcov_info)
+		*(.gcov_info)
 #endif
-        . = ALIGN(8);
-	    DECLARE_SECTION_END(gcov_info);
-        . = ALIGN(0x1000);
-        *(.ap_startup)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(kernel_nx);
-    DECLARE_SECTION_START(kernel_rw);
-    .kernel_rw : AT(ADDR(.kernel_rw) - BASE_ADDRESS_OFFSET){
-        *(.data .data*)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(kernel_rw);
-    DECLARE_SECTION_START(kernel_iw);
-    .kernel_iw : AT(ADDR(.kernel_iw) - BASE_ADDRESS_OFFSET){
-        *(.idata .idata*)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(kernel_iw);
-    DECLARE_SECTION_START(kernel_zw);
-    .kernel_zw : AT(ADDR(.kernel_zw) - BASE_ADDRESS_OFFSET){
-        *(.bss)
-        . = ALIGN(0x1000);
-    }
-    DECLARE_SECTION_END(kernel_zw);
-    DECLARE_SECTION_END(kernel);
+		. = ALIGN(8);
+		DECLARE_SECTION_END(gcov_info);
+		. = ALIGN(0x1000);
+		*(.ap_startup)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_nx);
+	DECLARE_SECTION_START(kernel_rw);
+	.kernel_rw : AT(ADDR(.kernel_rw) - BASE_ADDRESS_OFFSET){
+		*(.data .data*)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_rw);
+	DECLARE_SECTION_START(kernel_iw);
+	.kernel_iw : AT(ADDR(.kernel_iw) - BASE_ADDRESS_OFFSET){
+		*(.idata .idata*)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_iw);
+	DECLARE_SECTION_START(kernel_zw);
+	.kernel_zw : AT(ADDR(.kernel_zw) - BASE_ADDRESS_OFFSET){
+		*(.bss)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_zw);
+	DECLARE_SECTION_END(kernel);
 #ifndef _KERNEL_DEBUG_BUILD_
-    /DISCARD/ : {
-        *(*)
-    }
+	/DISCARD/ : {
+		*(*)
+	}
 #endif
 }

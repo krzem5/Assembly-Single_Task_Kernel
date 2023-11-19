@@ -71,8 +71,8 @@ _spinlock_release_shared_multiaccess_wait:
 spinlock_release_shared:
 	lock bts dword [rdi], 1
 	jc _spinlock_release_shared_multiaccess_wait
-	sub dword [rdi], 8
-	cmp dword [rdi], 8
+	sub word [rdi], 8
+	cmp word [rdi], 8
 	jge ._still_used
 	mov dword [rdi], 0
 	ret
