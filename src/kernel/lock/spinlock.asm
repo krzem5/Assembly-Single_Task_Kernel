@@ -58,7 +58,7 @@ spinlock_acquire_shared:
 	jc ._global_wait
 	bts dword [rdi], 2
 ._multiaccess_active:
-	add dword [rdi], 8
+	add word [rdi], 8
 	btr dword [rdi], 1
 	ret
 
@@ -74,7 +74,7 @@ spinlock_release_shared:
 	sub word [rdi], 8
 	cmp word [rdi], 8
 	jge ._still_used
-	mov dword [rdi], 0
+	mov word [rdi], 0
 	ret
 ._still_used:
 	btr dword [rdi], 1

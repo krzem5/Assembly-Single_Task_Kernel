@@ -50,6 +50,7 @@ _Bool lockfs_create_fs(void){
 			vfs_node_t* subnode=dynamicfs_create_node(node,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 			dynamicfs_create_node(subnode,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,&(((*(descriptor->data))+j)->count));
 			dynamicfs_create_node(subnode,"ticks",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,&(((*(descriptor->data))+j)->ticks));
+			dynamicfs_create_node(subnode,"max_ticks",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,&(((*(descriptor->data))+j)->max_ticks));
 		}
 	}
 	return 1;

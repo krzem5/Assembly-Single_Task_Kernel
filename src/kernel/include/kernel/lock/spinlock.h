@@ -14,6 +14,7 @@ typedef u32 spinlock_t;
 
 #if KERNEL_DISABLE_ASSERT==0
 #include <kernel/clock/clock.h>
+#include <kernel/kernel.h>
 
 
 
@@ -27,7 +28,7 @@ typedef u32 spinlock_t;
 		}; \
 		static const spinlock_profiling_setup_descriptor_t*const __attribute__((used,section(".spinlock_setup"))) __spinlock_profiling_setup_descriptor_ptr=&__spinlock_profiling_setup_descriptor; \
 		(func)(lock); \
-		*(lock)|=__spinlock_id<<16; \
+		(*(lock))|=/*((&__spinlock_profiling_setup_descriptor_ptr)-spinlock_profiling_get_setup_descriptors(NULL)+1)*/__spinlock_id<<16; \
 	} while (0)
 #define _spinlock_profile_function(func,lock) \
 	do{ \
@@ -42,8 +43,12 @@ typedef u32 spinlock_t;
 		(func)(lock); \
 		u64 __end_ticks=clock_get_ticks(); \
 		if (__spinlock_perf_data){ \
-			(__spinlock_perf_data+((*(lock))>>16))->ticks+=__end_ticks-__start_ticks; \
+			u64 __ticks=__end_ticks-__start_ticks; \
+			(__spinlock_perf_data+((*(lock))>>16))->ticks+=__ticks; \
 			(__spinlock_perf_data+((*(lock))>>16))->count++; \
+			if (__ticks>(__spinlock_perf_data+((*(lock))>>16))->max_ticks){ \
+				(__spinlock_perf_data+((*(lock))>>16))->max_ticks=__ticks; \
+			} \
 		} \
 	} while (0)
 
@@ -59,6 +64,7 @@ typedef u32 spinlock_t;
 typedef struct _SPINLOCK_PROFILING_DATA{
 	KERNEL_ATOMIC u64 count;
 	KERNEL_ATOMIC u64 ticks;
+	KERNEL_ATOMIC u64 max_ticks;
 } spinlock_profiling_data_t;
 
 

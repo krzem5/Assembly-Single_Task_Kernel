@@ -37,13 +37,17 @@ void spinlock_profiling_init(void){
 
 
 const spinlock_profiling_setup_descriptor_t*const* spinlock_profiling_get_setup_descriptors(u32* count){
-	*count=(kernel_section_spinlock_setup_end()-kernel_section_spinlock_setup_start())/sizeof(void*);
+	if (count){
+		*count=(kernel_section_spinlock_setup_end()-kernel_section_spinlock_setup_start())/sizeof(void*);
+	}
 	return (void*)kernel_section_spinlock_setup_start();
 }
 
 
 
 const spinlock_profiling_descriptor_t*const* spinlock_profiling_get_descriptors(u32* count){
-	*count=(kernel_section_spinlock_end()-kernel_section_spinlock_start())/sizeof(void*);
+	if (count){
+		*count=(kernel_section_spinlock_end()-kernel_section_spinlock_start())/sizeof(void*);
+	}
 	return (void*)kernel_section_spinlock_start();
 }
