@@ -15,7 +15,7 @@ static pmm_counter_descriptor_t _spinlock_profiling_buffer_pmm_counter=PMM_COUNT
 void spinlock_profiling_init(void){
 	LOG("Initializing spinlock profiling data...");
 	u16 max_lock_id=0;
-	for (const spinlock_setup_descriptor_t*const* descriptor=(void*)kernel_section_spinlock_setup_start();(u64)descriptor<kernel_section_spinlock_setup_end();descriptor++){
+	for (const spinlock_profiling_setup_descriptor_t*const* descriptor=(void*)kernel_section_spinlock_setup_start();(u64)descriptor<kernel_section_spinlock_setup_end();descriptor++){
 		max_lock_id++;
 		*((*descriptor)->id)=max_lock_id;
 		WARN("%s:%u -> %u",(*descriptor)->func,(*descriptor)->line,max_lock_id);
@@ -32,4 +32,18 @@ void spinlock_profiling_init(void){
 		WARN("%s:%u -> %p",(*descriptor)->func,(*descriptor)->line,data);
 		data+=max_lock_id+1;
 	}
+}
+
+
+
+const spinlock_profiling_setup_descriptor_t*const* spinlock_profiling_get_setup_descriptors(u32* count){
+	*count=(kernel_section_spinlock_setup_end()-kernel_section_spinlock_setup_start())/sizeof(void*);
+	return (void*)kernel_section_spinlock_setup_start();
+}
+
+
+
+const spinlock_profiling_descriptor_t*const* spinlock_profiling_get_descriptors(u32* count){
+	*count=(kernel_section_spinlock_end()-kernel_section_spinlock_start())/sizeof(void*);
+	return (void*)kernel_section_spinlock_start();
 }

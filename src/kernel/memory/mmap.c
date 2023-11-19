@@ -92,6 +92,7 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	}
 	_delete_pagemap_pages(mmap,region);
 	region->flags=0;
+	spinlock_release_exclusive(&(mmap->lock));return 1;
 	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));

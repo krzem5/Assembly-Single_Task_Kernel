@@ -7,6 +7,7 @@ gpt:
 i82540:
 iso9660:
 kfs2:
+lockfs:dynamicfs
 nvme:
 os_loader:
 procfs:dynamicfs
