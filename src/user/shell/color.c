@@ -26,7 +26,8 @@ void color_print_file_name(const sys_fd_stat_t* stat,const char* name,s64 parent
 		printf("\x1b[1;31;40m%s\x1b[0m",link_buffer);
 	}
 	else{
-		color_print_file_name(&link_stat,link_buffer,0,0);
+		dircolor_get_color(&link_stat,prefix);
+		printf("%s%s\x1b[0m",prefix,link_buffer);
 	}
 	if (link_fd>=0){
 		sys_fd_close(link_fd);

@@ -1,6 +1,7 @@
 #include <color.h>
 #include <command.h>
 #include <cwd.h>
+#include <dircolor/dircolor.h>
 #include <string.h>
 #include <sys/fd.h>
 #include <sys/io.h>
@@ -92,8 +93,9 @@ void tree_main(int argc,const char*const* argv){
 		printf("tree: unable to stat file '%s'\n",(directory?directory:"."));
 		return;
 	}
-	color_print_file_name(&stat,(directory?directory:"."),0,0);
-	putchar('\n');
+	char prefix[32];
+	dircolor_get_color(&stat,prefix);
+	printf("%s%s\x1b[0m\n",prefix,(directory?directory:"."));
 	frame_t frame={
 		.file_count=0,
 		.directory_count=0
