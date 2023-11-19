@@ -17,6 +17,7 @@ static const char* _ls_type_names[]={
 
 
 int main(int argc,const char** argv){
+	dircolor_init();
 	u32 i=sys_options_parse(argc,argv,NULL);
 	if (!i){
 		return 1;

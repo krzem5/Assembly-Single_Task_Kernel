@@ -70,6 +70,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 
 
 int main(int argc,const char** argv){
+	dircolor_init();
 	u32 i=sys_options_parse(argc,argv,NULL);
 	if (!i){
 		return 1;
