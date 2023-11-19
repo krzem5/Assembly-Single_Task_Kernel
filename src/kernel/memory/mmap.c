@@ -288,7 +288,7 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap_region_t* region=(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
-	if (!rb_node){
+	if (!region){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
