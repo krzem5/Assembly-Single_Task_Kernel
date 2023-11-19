@@ -1,8 +1,8 @@
-#include <command.h>
 #include <cpuid.h>
 #include <sys/clock.h>
 #include <sys/cpu.h>
 #include <sys/io.h>
+#include <sys/options.h>
 
 
 
@@ -34,11 +34,11 @@ static inline void _execute_cpuid_count(u32 level,u32 count,cpuid_data_t* out){
 
 
 
-void cpu_main(int argc,const char*const* argv){
-	if (argc>1){
-		printf("cpu: unrecognized option '%s'\n",argv[1]);
-		return;
+int main(int argc,const char** argv,const char** environ){
+	if (!sys_options_parse(argc,argv,NULL)){
+		return 1;
 	}
+	sys_clock_init();
 	cpuid_data_t cpuid;
 	char signature[13];
 	_execute_cpuid(0,&cpuid);
@@ -264,8 +264,5 @@ void cpu_main(int argc,const char*const* argv){
 		FEATURE(ebx,8,"wbnoinvd");
 	}
 	printf("\x1b[0m\n");
+	return 0;
 }
-
-
-
-DECLARE_COMMAND(cpu,"cpu");

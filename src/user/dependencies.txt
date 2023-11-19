@@ -1,4 +1,5 @@
 cat:runtime@static,sys
+cpu:runtime@static,sys
+random:runtime@static,sys
 shell:runtime@static,sys
-test:runtime@static,sys
 time:runtime@static,sys
