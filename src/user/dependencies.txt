@@ -2,9 +2,11 @@ cat:runtime@static,sys
 cpu:runtime@static,sys
 exit:runtime@static,sys
 hexdump:runtime@static,sys
+ls:runtime@static,sys,dircolor
 random:runtime@static,sys
 reboot:runtime@static,sys
 shell:runtime@static,sys,dircolor
 shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
 time:runtime@static,sys
+tree:runtime@static,sys,dircolor

@@ -1,5 +1,3 @@
-#include <command.h>
-#include <cwd.h>
 #include <dircolor/dircolor.h>
 #include <sys/fd.h>
 #include <sys/io.h>
@@ -71,30 +69,25 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 
 
 
-void tree_main(int argc,const char*const* argv){
-	const char* directory=NULL;
-	for (u32 i=1;i<argc;i++){
-		if (argv[i][0]!='-'&&!directory){
-			directory=argv[i];
-		}
-		else{
-			printf("tree: unrecognized option '%s'\n",argv[i]);
-			return;
-		}
+int main(int argc,const char** argv){
+	u32 i=sys_options_parse(argc,argv,NULL);
+	if (!i){
+		return 1;
 	}
-	s64 fd=(directory?sys_fd_open(cwd_fd,directory,0):cwd_fd);
+	const char* directory=(i<argc?argv[i]:".");
+	s64 fd=sys_fd_open(0,directory,0);
 	if (fd<0){
 		printf("tree: unable to open file '%s': error %d\n",directory,fd);
-		return;
+		return 1;
 	}
 	sys_fd_stat_t stat;
 	if (sys_fd_stat(fd,&stat)<0){
-		printf("tree: unable to stat file '%s'\n",(directory?directory:"."));
-		return;
+		printf("tree: unable to stat file '%s'\n",directory);
+		return 1;
 	}
 	char prefix[32];
 	dircolor_get_color(&stat,prefix);
-	printf("%s%s\x1b[0m\n",prefix,(directory?directory:"."));
+	printf("%s%s\x1b[0m\n",prefix,directory);
 	frame_t frame={
 		.file_count=0,
 		.directory_count=0
@@ -103,12 +96,7 @@ void tree_main(int argc,const char*const* argv){
 		frame.bitmap[i]=0;
 	}
 	_list_files(fd,0,&frame);
-	if (fd!=cwd_fd){
-		sys_fd_close(fd);
-	}
+	sys_fd_close(fd);
 	printf("\n%lu director%s, %lu file%s\n",frame.directory_count,(frame.directory_count==1?"y":"ies"),frame.file_count,(frame.file_count==1?"":"s"));
+	return 0;
 }
-
-
-
-DECLARE_COMMAND(tree,"tree [<directory>]");
