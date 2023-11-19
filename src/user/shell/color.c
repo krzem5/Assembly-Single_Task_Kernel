@@ -15,6 +15,9 @@ void color_print_file_name(const sys_fd_stat_t* stat,const char* name,s64 parent
 	else if (stat->type==SYS_FD_STAT_TYPE_PIPE){
 		prefix="\x1b[33;40m";
 	}
+	else if (stat->permissions&0111){
+		prefix="\x1b[1;32m";
+	}
 	printf("%s%s\x1b[0m",prefix,name);
 	if (fd<=0||stat->type!=SYS_FD_STAT_TYPE_LINK){
 		return;

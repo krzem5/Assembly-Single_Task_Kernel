@@ -1,5 +1,9 @@
 cat:runtime@static,sys
 cpu:runtime@static,sys
+exit:runtime@static,sys
+hexdump:runtime@static,sys
 random:runtime@static,sys
+reboot:runtime@static,sys
 shell:runtime@static,sys
+shutdown:runtime@static,sys
 time:runtime@static,sys

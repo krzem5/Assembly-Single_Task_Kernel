@@ -5,7 +5,7 @@
 
 
 
-int main(int argc,const char** argv,const char** environ){
+int main(int argc,const char** argv){
 	_Bool raw=0;
 	_Bool uptime=0;
 	sys_option_t options[]={

@@ -4,7 +4,7 @@
 
 
 
-int main(int argc,const char** argv,const char** environ){
+int main(int argc,const char** argv){
 	s64 columns=16;
 	s64 bytes=0;
 	sys_option_t options[]={
