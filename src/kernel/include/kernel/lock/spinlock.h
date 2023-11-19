@@ -42,7 +42,7 @@ typedef u32 spinlock_t;
 		(func)(lock); \
 		u64 __end_ticks=clock_get_ticks(); \
 		if (__spinlock_perf_data){ \
-			(__spinlock_perf_data+((*(lock))>>16))->time+=clock_ticks_to_time(__end_ticks-__start_ticks); \
+			(__spinlock_perf_data+((*(lock))>>16))->ticks+=__end_ticks-__start_ticks; \
 			(__spinlock_perf_data+((*(lock))>>16))->count++; \
 		} \
 	} while (0)
@@ -58,7 +58,7 @@ typedef u32 spinlock_t;
 
 typedef struct _SPINLOCK_PROFILING_DATA{
 	KERNEL_ATOMIC u64 count;
-	KERNEL_ATOMIC u64 time;
+	KERNEL_ATOMIC u64 ticks;
 } spinlock_profiling_data_t;
 
 
