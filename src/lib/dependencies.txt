@@ -1,3 +1,4 @@
 sys:
+dircolor:sys
 linker@nostatic:sys
 runtime@nodynamic:sys

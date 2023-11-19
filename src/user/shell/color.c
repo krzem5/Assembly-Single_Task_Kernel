@@ -1,3 +1,4 @@
+#include <dircolor/dircolor.h>
 #include <sys/fd.h>
 #include <sys/io.h>
 #include <sys/types.h>
@@ -5,19 +6,8 @@
 
 
 void color_print_file_name(const sys_fd_stat_t* stat,const char* name,s64 parent_fd,s64 fd){
-	const char* prefix="";
-	if (stat->type==SYS_FD_STAT_TYPE_DIRECTORY){
-		prefix="\x1b[1;34m";
-	}
-	else if (stat->type==SYS_FD_STAT_TYPE_LINK){
-		prefix="\x1b[1;36m";
-	}
-	else if (stat->type==SYS_FD_STAT_TYPE_PIPE){
-		prefix="\x1b[33;40m";
-	}
-	else if (stat->permissions&0111){
-		prefix="\x1b[1;32m";
-	}
+	char prefix[32];
+	dircolor_get_color(stat,prefix);
 	printf("%s%s\x1b[0m",prefix,name);
 	if (fd<=0||stat->type!=SYS_FD_STAT_TYPE_LINK){
 		return;

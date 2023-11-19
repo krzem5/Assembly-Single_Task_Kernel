@@ -8,12 +8,6 @@
 
 
 
-#define LS_TYPE_FILES 0
-#define LS_TYPE_DRIVES 1
-#define LS_TYPE_PARTITIONS 2
-
-
-
 static const char* _ls_type_names[]={
 	[0]="<unknown>",
 	[SYS_FD_STAT_TYPE_FILE]="file",

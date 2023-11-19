@@ -22,6 +22,9 @@ static omm_allocator_t _mmap_length_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("m
 
 
 static void _add_region_to_length_tree(mmap_t* mmap,mmap_region_t* region){
+	if (region->flags){
+		ERROR("AAAAAA");
+	}
 	mmap_length_group_t* length_group=(void*)rb_tree_lookup_node(&(mmap->length_tree),region->length);
 	if (length_group){
 		region->group_prev=NULL;
@@ -86,6 +89,7 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	}
 	_delete_pagemap_pages(mmap,region);
 	region->flags=0;
+	spinlock_release_exclusive(&(mmap->lock));return 1;
 	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));

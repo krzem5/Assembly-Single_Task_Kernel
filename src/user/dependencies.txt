@@ -4,6 +4,6 @@ exit:runtime@static,sys
 hexdump:runtime@static,sys
 random:runtime@static,sys
 reboot:runtime@static,sys
-shell:runtime@static,sys
+shell:runtime@static,sys,dircolor
 shutdown:runtime@static,sys
 time:runtime@static,sys
