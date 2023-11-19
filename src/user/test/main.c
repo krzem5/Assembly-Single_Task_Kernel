@@ -49,7 +49,7 @@ u32 parse_options(u32 argc,const char** argv,const option_t* options){
 		if (opt[0]=='-'){
 			is_long_opt=1;
 			opt++;
-			for (const option_t* option=options;option->var_type!=OPTION_VAR_TYPE_LAST;option++){
+			for (option=options;option&&option->var_type!=OPTION_VAR_TYPE_LAST;option++){
 				if (!option->long_name){
 					continue;
 				}
@@ -71,14 +71,14 @@ _check_next_option:
 			}
 		}
 		else{
-			for (const option_t* option=options;option->var_type!=OPTION_VAR_TYPE_LAST;option++){
+			for (option=options;option&&option->var_type!=OPTION_VAR_TYPE_LAST;option++){
 				if (option->short_name==opt[0]){
 					opt++;
 					break;
 				}
 			}
 		}
-		if (!option){
+		if (!option||option->var_type==OPTION_VAR_TYPE_LAST){
 			if (is_long_opt){
 				printf("%s: unrecognized option '%s'\n",argv[0],opt-2);
 			}
@@ -104,7 +104,7 @@ _check_next_option:
 			i++;
 		}
 		else{
-			arg=opt+1;
+			arg=opt+is_long_opt;
 		}
 		if (option->var_type!=OPTION_VAR_TYPE_INT){
 			if (option->flags&OPTION_FLAG_CALLBACK){
@@ -128,7 +128,7 @@ _check_next_option:
 				printf("%s: '%s' is not an integer\n",argv[0],arg);
 				return 0;
 			}
-			value=value*10+arg[0]-48;
+			value=value*10+arg[j]-48;
 		}
 		if (negative){
 			value=-value;
@@ -148,7 +148,22 @@ _check_next_option:
 
 
 void main(int argc,const char** argv,const char** environ){
-	printf("\nargc=%u\n",argc);
+	s64 columns=16;
+	option_t options[]={
+		{
+			.short_name='c',
+			.long_name="columns",
+			.var_type=OPTION_VAR_TYPE_INT,
+			.flags=0,
+			.var_int=&columns
+		},
+		{
+			.var_type=OPTION_VAR_TYPE_LAST
+		}
+	};
+	u32 first_arg_index=parse_options(argc,argv,options);
+	printf("\nfirst_arg_index: %u, columns: %ld\n",first_arg_index,columns);
+	printf("argc=%u\n",argc);
 	for (int i=0;i<argc;i++){
 		printf("argv[%u]=\"%s\"\n",i,argv[i]);
 	}
