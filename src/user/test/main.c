@@ -4,7 +4,7 @@
 
 
 
-void main(int argc,const char** argv,const char** environ){
+int main(int argc,const char** argv,const char** environ){
 	s64 columns=16;
 	sys_option_t options[]={
 		{
@@ -27,4 +27,5 @@ void main(int argc,const char** argv,const char** environ){
 	for (int i=0;environ[i];i++){
 		printf("environ[%u]=\"%s\"\n",i,environ[i]);
 	}
+	return 0;
 }

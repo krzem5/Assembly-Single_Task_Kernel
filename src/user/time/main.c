@@ -1,34 +1,43 @@
-#include <command.h>
-#include <string.h>
 #include <sys/clock.h>
 #include <sys/io.h>
+#include <sys/options.h>
 #include <sys/time.h>
-#include <sys/types.h>
 
 
 
-void time_main(int argc,const char*const* argv){
+int main(int argc,const char** argv,const char** environ){
 	_Bool raw=0;
 	_Bool uptime=0;
-	for (u32 i=1;i<argc;i++){
-		if (string_equal(argv[i],"-r")){
-			raw=1;
+	sys_option_t options[]={
+		{
+			.short_name='r',
+			.long_name="raw",
+			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
+			.flags=0,
+			.var_switch=&raw
+		},
+		{
+			.short_name='u',
+			.long_name="uptime",
+			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
+			.flags=0,
+			.var_switch=&uptime
+		},
+		{
+			.var_type=SYS_OPTION_VAR_TYPE_LAST
 		}
-		else if (string_equal(argv[i],"-u")){
-			uptime=1;
-		}
-		else{
-			printf("time: unrecognized option '%s'\n",argv[i]);
-			return;
-		}
+	};
+	if (!sys_options_parse(argc,argv,options)){
+		return 1;
 	}
+	sys_clock_init();
 	u64 time=sys_clock_get_time();
 	if (!uptime){
 		time+=sys_time_get_boot_offset();
 	}
 	if (raw){
 		printf("%lu\n",time);
-		return;
+		return 0;
 	}
 	sys_time_t split_time;
 	sys_time_from_nanoseconds(time,&split_time);
@@ -70,8 +79,5 @@ void time_main(int argc,const char*const* argv){
 		printf("\x1b[1m%lu\x1b[0mμs ",split_time.microseconds);
 	}
 	printf("\x1b[1m%lu\x1b[0mns\n",split_time.nanoseconds);
+	return 0;
 }
-
-
-
-DECLARE_COMMAND(time,"time [-r] [-u]");

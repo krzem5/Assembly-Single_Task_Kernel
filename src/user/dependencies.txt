@@ -1,2 +1,4 @@
+cat:runtime@static,sys
 shell:runtime@static,sys
 test:runtime@static,sys
+time:runtime@static,sys
