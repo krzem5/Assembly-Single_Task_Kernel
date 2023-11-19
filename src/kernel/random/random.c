@@ -48,7 +48,7 @@ static KERNEL_INLINE void _chacha_block(u32* state,u32* out){
 
 
 
-static spinlock_t _random_chacha_lock=SPINLOCK_INIT_STRUCT;
+static spinlock_t _random_chacha_lock;
 static u32 _random_chacha_state[16];
 static u32 _random_chacha_buffer[16];
 
@@ -56,6 +56,7 @@ static u32 _random_chacha_buffer[16];
 
 void random_init(void){
 	LOG("Initializing PRNG...");
+	spinlock_init(&_random_chacha_lock);
 	_random_init_entropy_pool();
 	_random_get_entropy(_random_chacha_state);
 }

@@ -39,12 +39,12 @@ static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUC
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
 static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
 
-static spinlock_t _module_global_lock=SPINLOCK_INIT_STRUCT;
-
 
 
 HANDLE_DECLARE_TYPE(MODULE,{
-	omm_dealloc(&_module_allocator,handle->object);
+	module_t* module=handle->object;
+	smm_dealloc(module->name);
+	omm_dealloc(&_module_allocator,module);
 });
 
 
@@ -322,11 +322,9 @@ module_t* module_load(const char* name){
 		return NULL;
 	}
 	LOG("Loading module '%s'...",name);
-	spinlock_acquire_exclusive(&_module_global_lock);
 	module_t* module=_lookup_module_by_name(name);
 	if (module){
 		INFO("Module '%s' already loaded",name);
-		spinlock_release_exclusive(&_module_global_lock);
 		return module;
 	}
 	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0,0,0);
@@ -338,7 +336,6 @@ module_t* module_load(const char* name){
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
 	if (!module_file){
 		ERROR("Unable to find module '%s'",name);
-		spinlock_release_exclusive(&_module_global_lock);
 		return NULL;
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
@@ -374,7 +371,6 @@ module_t* module_load(const char* name){
 	_adjust_memory_flags(&ctx);
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	LOG("Module '%s' loaded successfully",name);
-	spinlock_release_exclusive(&_module_global_lock);
 	module->name=smm_alloc(name,0);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
@@ -391,7 +387,6 @@ _error:
 	_dealloc_region_memory(&(module->rw_region));
 	handle_release(&(module->handle));
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	spinlock_release_exclusive(&_module_global_lock);
 	return NULL;
 }
 
@@ -412,8 +407,5 @@ void module_unload(module_t* module){
 		INFO("Preventing future module loads...");
 		return;
 	}
-	spinlock_acquire_exclusive(&_module_global_lock);
-	smm_dealloc(module->name);
 	handle_release(&(module->handle));
-	spinlock_release_exclusive(&_module_global_lock);
 }

@@ -24,12 +24,13 @@ static omm_allocator_t _gid_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("gid_data",
 
 
 static rb_tree_t _gid_tree;
-static spinlock_t _gid_global_lock=SPINLOCK_INIT_STRUCT;
+static spinlock_t _gid_global_lock;
 
 
 
 void gid_init(void){
 	LOG("Initializing group tree...");
+	spinlock_init(&_gid_global_lock);
 	rb_tree_init(&_gid_tree);
 	INFO("Creating root group...");
 	if (!gid_create(0,"root")){

@@ -35,12 +35,13 @@ static omm_allocator_t _uid_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("uid_group
 
 
 static rb_tree_t _uid_tree;
-static spinlock_t _uid_global_lock=SPINLOCK_INIT_STRUCT;
+static spinlock_t _uid_global_lock;
 
 
 
 void uid_init(void){
 	LOG("Initializing user tree...");
+	spinlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);
 	INFO("Creating root user...");
 	if (!uid_create(0,"root")||!uid_add_group(0,0)){
