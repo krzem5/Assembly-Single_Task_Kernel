@@ -22,9 +22,7 @@ static omm_allocator_t _mmap_length_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("m
 
 
 static void _add_region_to_length_tree(mmap_t* mmap,mmap_region_t* region){
-	if (region->flags){
-		ERROR("AAAAAA");
-	}
+	KERNEL_ASSERT(!region->flags,"Region is used");
 	mmap_length_group_t* length_group=(void*)rb_tree_lookup_node(&(mmap->length_tree),region->length);
 	if (length_group){
 		region->group_prev=NULL;
@@ -48,6 +46,7 @@ static void _add_region_to_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 	mmap_length_group_t* length_group=region->group;
+	KERNEL_ASSERT(length_group->rb_node.key==region->length,"Incorrect region->group");
 	if (region->group_prev){
 		region->group_prev->group_next=region->group_next;
 	}
@@ -66,6 +65,7 @@ static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)),"Lock is not held");
 	for (u64 i=0;i<region->length;i+=PAGE_SIZE){
 		u64 entry=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
 		if (entry){
@@ -83,13 +83,13 @@ static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
 
 
 static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)),"Lock is not held");
 	if (!region->flags){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
 	_delete_pagemap_pages(mmap,region);
 	region->flags=0;
-	spinlock_release_exclusive(&(mmap->lock));return 1;
 	if (region->prev&&!region->prev->flags){
 		mmap_region_t* prev_region=region->prev;
 		rb_tree_remove_node(&(mmap->offset_tree),&(region->rb_node));
@@ -114,6 +114,15 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 		omm_dealloc(&_mmap_region_allocator,next_region);
 	}
 	_add_region_to_length_tree(mmap,region);
+	KERNEL_ASSERT_BLOCK({
+		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node)){
+			mmap_region_t* region=(void*)rb_node;
+			KERNEL_ASSERT(region->prev==(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),rb_node->key-1),"Incorrect region->prev");
+			KERNEL_ASSERT(region->next==(mmap_region_t*)rb_tree_lookup_increasing_node(&(mmap->offset_tree),rb_node->key+1),"Incorrect region->next");
+			KERNEL_ASSERT(!region->next||rb_node->key+region->length==region->next->rb_node.key,"Incorrect region->length");
+			KERNEL_ASSERT(!region->next||region->flags||region->next->flags,"Unmerged region");
+		}
+	});
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
 }
@@ -253,12 +262,11 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		panic("mmap_dealloc: unaligned arguments");
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
-	rb_tree_node_t* rb_node=rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
-	if (!rb_node){
+	mmap_region_t* region=(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
+	if (!region){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
-	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
 	if (region->rb_node.key!=address||(length&&region->length!=length)){
 		panic("mmap_dealloc: partial release");
 	}
@@ -279,12 +287,11 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 		panic("mmap_change_flags: unaligned arguments");
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
-	rb_tree_node_t* rb_node=rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
+	mmap_region_t* region=(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
 	if (!rb_node){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
-	mmap_region_t* region=((void*)rb_node)-__builtin_offsetof(mmap_region_t,rb_node);
 	if (length>region->length){
 		panic("mmap_change_flags: length too large for region");
 	}

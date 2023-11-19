@@ -12,6 +12,19 @@
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
 
+#if _KERNEL_DISABLE_ASSERT_
+#define KERNEL_ASSERT(expression,error,...)
+#define KERNEL_ASSERT_BLOCK(block)
+#else
+#define KERNEL_ASSERT(expression,error,...) \
+	do{ \
+		if (!(expression)){ \
+			ERROR(error,##__VA_ARGS__); \
+		} \
+	} while (0)
+#define KERNEL_ASSERT_BLOCK(block) do{block} while(0)
+#endif
+
 
 
 typedef unsigned char u8;

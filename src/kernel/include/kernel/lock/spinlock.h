@@ -32,4 +32,8 @@ void spinlock_release_shared(spinlock_t* lock);
 
 
 
+_Bool spinlock_is_held(spinlock_t* lock);
+
+
+
 #endif

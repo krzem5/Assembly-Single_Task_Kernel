@@ -10,6 +10,7 @@ global spinlock_acquire_exclusive:function
 global spinlock_release_exclusive:function
 global spinlock_acquire_shared:function
 global spinlock_release_shared:function
+global spinlock_is_held:function
 section .text exec nowrite
 
 
@@ -77,4 +78,11 @@ spinlock_release_shared:
 	ret
 ._still_used:
 	btr dword [rdi], 1
+	ret
+
+
+
+spinlock_is_held:
+	test dword [rdi], 3
+	setne al
 	ret
