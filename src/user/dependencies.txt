@@ -6,4 +6,5 @@ random:runtime@static,sys
 reboot:runtime@static,sys
 shell:runtime@static,sys,dircolor
 shutdown:runtime@static,sys
+stat:runtime@static,sys,dircolor
 time:runtime@static,sys

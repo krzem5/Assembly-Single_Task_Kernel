@@ -1,10 +1,10 @@
 #include <command.h>
 #include <cwd.h>
 #include <dircolor/dircolor.h>
-#include <string.h>
 #include <sys/fd.h>
 #include <sys/io.h>
 #include <sys/memory.h>
+#include <sys/options.h>
 #include <sys/types.h>
 
 
