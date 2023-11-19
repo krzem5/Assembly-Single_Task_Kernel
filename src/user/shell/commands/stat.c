@@ -1,6 +1,6 @@
-#include <color.h>
 #include <command.h>
 #include <cwd.h>
+#include <dircolor/dircolor.h>
 #include <sys/fd.h>
 #include <sys/io.h>
 #include <sys/syscall.h>
@@ -38,9 +38,7 @@ void stat_main(int argc,const char*const* argv){
 		goto _cleanup;
 	}
 	printf("Name: ");
-	s64 parent_fd=sys_fd_open(fd,"..",SYS_FD_FLAG_IGNORE_LINKS);
-	color_print_file_name(&stat,argv[1],parent_fd,fd);
-	sys_fd_close(parent_fd);
+	dircolor_get_color_with_link(&stat,argv[1],fd);
 	char uid_name_buffer[256]="???";
 	_syscall_uid_get_name(stat.uid,uid_name_buffer,256);
 	char gid_name_buffer[256]="???";

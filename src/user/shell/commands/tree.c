@@ -1,4 +1,3 @@
-#include <color.h>
 #include <command.h>
 #include <cwd.h>
 #include <dircolor/dircolor.h>
@@ -50,7 +49,7 @@ static void _list_files(s64 fd,u32 level,frame_t* frame){
 			printf("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
 		}
 		printf("%s── ",(has_next_sibling?"├":"└"));
-		color_print_file_name(&stat,stat.name,fd,child);
+		dircolor_get_color_with_link(&stat,stat.name,child);
 		putchar('\n');
 		if (stat.type==SYS_FD_STAT_TYPE_DIRECTORY){
 			frame->directory_count++;

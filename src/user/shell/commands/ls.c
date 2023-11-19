@@ -1,6 +1,6 @@
-#include <color.h>
 #include <command.h>
 #include <cwd.h>
+#include <dircolor/dircolor.h>
 #include <string.h>
 #include <sys/fd.h>
 #include <sys/io.h>
@@ -34,7 +34,7 @@ static void _list_files(s64 fd){
 			continue;
 		}
 		printf("%s\t%v\t",_ls_type_names[stat.type],stat.size);
-		color_print_file_name(&stat,name,fd,child);
+		dircolor_get_color_with_link(&stat,name,child);
 		putchar('\n');
 		sys_fd_close(child);
 	}
