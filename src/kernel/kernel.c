@@ -23,8 +23,8 @@ kernel_data_t KERNEL_INIT_WRITE kernel_data;
 
 void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	LOG("Loading kernel data...");
-	LOG("Clearing .bss section (%v)...",kernel_section_kernel_bss_end()-kernel_section_kernel_bss_start());
-	for (u64* bss=(u64*)kernel_section_kernel_bss_start();bss<(u64*)kernel_section_kernel_bss_end();bss++){
+	LOG("Clearing .bss section (%v)...",kernel_section_kernel_zw_end()-kernel_section_kernel_zw_start());
+	for (u64* bss=(u64*)kernel_section_kernel_zw_start();bss<(u64*)kernel_section_kernel_zw_end();bss++){
 		*bss=0;
 	}
 	kernel_data=*bootloader_kernel_data;
@@ -35,7 +35,7 @@ void KERNEL_NOCOVERAGE kernel_init(const kernel_data_t* bootloader_kernel_data){
 	PRINT_SECTION_DATA(kernel_nx);
 	PRINT_SECTION_DATA(kernel_rw);
 	PRINT_SECTION_DATA(kernel_iw);
-	PRINT_SECTION_DATA(kernel_bss);
+	PRINT_SECTION_DATA(kernel_zw);
 	INFO("Mmap Data:");
 	u64 total=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -54,7 +54,7 @@ void kernel_adjust_memory_flags(void){
 	ADJUST_SECTION_FLAGS(kernel_nx,VMM_PAGE_FLAG_NOEXECUTE);
 	ADJUST_SECTION_FLAGS(kernel_rw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 	ADJUST_SECTION_FLAGS(kernel_iw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
-	ADJUST_SECTION_FLAGS(kernel_bss,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	ADJUST_SECTION_FLAGS(kernel_zw,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 }
 
 

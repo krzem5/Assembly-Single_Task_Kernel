@@ -12,7 +12,7 @@
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
 
-#if _KERNEL_DISABLE_ASSERT_
+#if KERNEL_DISABLE_ASSERT
 #define KERNEL_ASSERT(expression,error,...)
 #define KERNEL_ASSERT_BLOCK(block)
 #else

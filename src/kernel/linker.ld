@@ -51,12 +51,12 @@ SECTIONS{
         . = ALIGN(0x1000);
     }
     DECLARE_SECTION_END(kernel_iw);
-    DECLARE_SECTION_START(kernel_bss);
-    .bss : AT(ADDR(.bss) - BASE_ADDRESS_OFFSET){
+    DECLARE_SECTION_START(kernel_zw);
+    .kernel_zw : AT(ADDR(.kernel_zw) - BASE_ADDRESS_OFFSET){
         *(.bss)
         . = ALIGN(0x1000);
     }
-    DECLARE_SECTION_END(kernel_bss);
+    DECLARE_SECTION_END(kernel_zw);
     DECLARE_SECTION_END(kernel);
 #ifndef _KERNEL_DEBUG_BUILD_
     /DISCARD/ : {

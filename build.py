@@ -79,7 +79,7 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
-	MODE_RELEASE: ["-O3","-g0","-D_KERNEL_DISABLE_ASSERT_=1"]
+	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
 	MODE_NORMAL: ["-D_KERNEL_DEBUG_BUILD_=1"],
@@ -104,7 +104,7 @@ MODULE_OBJECT_FILE_DIRECTORY={
 MODULE_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
-	MODE_RELEASE: ["-O3","-g0"]
+	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-g"],
@@ -699,7 +699,7 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/bin",0o644,True)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o000)
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_bss_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_bss_START__"]))
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	with open("build/partitions/initramfs.img","rb") as rf:
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o000)
