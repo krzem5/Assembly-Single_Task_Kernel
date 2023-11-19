@@ -13,13 +13,13 @@
 #define KERNEL_ATOMIC _Atomic
 
 #if KERNEL_DISABLE_ASSERT
-#define KERNEL_ASSERT(expression,error,...)
+#define KERNEL_ASSERT(expression)
 #define KERNEL_ASSERT_BLOCK(block)
 #else
-#define KERNEL_ASSERT(expression,error,...) \
+#define KERNEL_ASSERT(expression) \
 	do{ \
 		if (!(expression)){ \
-			ERROR(error,##__VA_ARGS__); \
+			ERROR("[line %u] "#expression": Assertion Failed",__LINE__); \
 		} \
 	} while (0)
 #define KERNEL_ASSERT_BLOCK(block) do{block} while(0)

@@ -22,7 +22,8 @@ static omm_allocator_t _mmap_length_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("m
 
 
 static void _add_region_to_length_tree(mmap_t* mmap,mmap_region_t* region){
-	KERNEL_ASSERT(!region->flags,"Region is used");
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)));
+	KERNEL_ASSERT(!region->flags);
 	mmap_length_group_t* length_group=(void*)rb_tree_lookup_node(&(mmap->length_tree),region->length);
 	if (length_group){
 		region->group_prev=NULL;
@@ -45,8 +46,9 @@ static void _add_region_to_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)));
 	mmap_length_group_t* length_group=region->group;
-	KERNEL_ASSERT(length_group->rb_node.key==region->length,"Incorrect region->group");
+	KERNEL_ASSERT(length_group->rb_node.key==region->length);
 	if (region->group_prev){
 		region->group_prev->group_next=region->group_next;
 	}
@@ -65,7 +67,7 @@ static void _remove_region_from_length_tree(mmap_t* mmap,mmap_region_t* region){
 
 
 static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
-	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)),"Lock is not held");
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)));
 	for (u64 i=0;i<region->length;i+=PAGE_SIZE){
 		u64 entry=vmm_unmap_page(mmap->pagemap,region->rb_node.key+i)&VMM_PAGE_ADDRESS_MASK;
 		if (entry){
@@ -83,7 +85,7 @@ static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
 
 
 static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
-	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)),"Lock is not held");
+	KERNEL_ASSERT(spinlock_is_held(&(mmap->lock)));
 	if (!region->flags){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
@@ -117,10 +119,10 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	KERNEL_ASSERT_BLOCK({
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node)){
 			mmap_region_t* region=(void*)rb_node;
-			KERNEL_ASSERT(region->prev==(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),rb_node->key-1),"Incorrect region->prev");
-			KERNEL_ASSERT(region->next==(mmap_region_t*)rb_tree_lookup_increasing_node(&(mmap->offset_tree),rb_node->key+1),"Incorrect region->next");
-			KERNEL_ASSERT(!region->next||rb_node->key+region->length==region->next->rb_node.key,"Incorrect region->length");
-			KERNEL_ASSERT(!region->next||region->flags||region->next->flags,"Unmerged region");
+			KERNEL_ASSERT(region->prev==(mmap_region_t*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),rb_node->key-1));
+			KERNEL_ASSERT(region->next==(mmap_region_t*)rb_tree_lookup_increasing_node(&(mmap->offset_tree),rb_node->key+1));
+			KERNEL_ASSERT(!region->next||rb_node->key+region->length==region->next->rb_node.key);
+			KERNEL_ASSERT(!region->next||region->flags||region->next->flags);
 		}
 	});
 	spinlock_release_exclusive(&(mmap->lock));
@@ -130,8 +132,11 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
+	KERNEL_ASSERT(pagemap);
+	KERNEL_ASSERT(out);
 	out->pagemap=pagemap;
 	spinlock_init(&(out->lock));
+	spinlock_acquire_exclusive(&(out->lock));
 	rb_tree_init(&(out->offset_tree));
 	rb_tree_init(&(out->length_tree));
 	mmap_region_t* region=omm_alloc(&_mmap_region_allocator);
@@ -142,11 +147,13 @@ void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 	region->next=NULL;
 	rb_tree_insert_node(&(out->offset_tree),&(region->rb_node));
 	_add_region_to_length_tree(out,region);
+	spinlock_release_exclusive(&(out->lock));
 }
 
 
 
 void mmap_deinit(mmap_t* mmap){
+	KERNEL_ASSERT(mmap);
 	spinlock_acquire_exclusive(&(mmap->lock));
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;){
 		mmap_region_t* region=(void*)rb_node;
@@ -168,6 +175,7 @@ void mmap_deinit(mmap_t* mmap){
 
 
 mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file){
+	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
 	}
@@ -258,6 +266,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
+	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_dealloc: unaligned arguments");
 	}
@@ -276,6 +285,8 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 
 
 _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
+	KERNEL_ASSERT(mmap);
+	KERNEL_ASSERT(region);
 	spinlock_acquire_exclusive(&(mmap->lock));
 	return _dealloc_region(mmap,region);
 }
@@ -283,6 +294,7 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u64 vmm_clear_flags){
+	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_change_flags: unaligned arguments");
 	}
@@ -311,6 +323,9 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 
 
 _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length){
+	KERNEL_ASSERT(mmap);
+	KERNEL_ASSERT(region);
+	KERNEL_ASSERT(!length||data);
 	spinlock_acquire_shared(&(mmap->lock));
 	if (!(region->flags&MMAP_REGION_FLAG_COMMIT)){
 		panic("mmap_set_memory: MMAP_REGION_FLAG_COMMIT flag missing");
@@ -338,6 +353,7 @@ _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* 
 
 
 mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
+	KERNEL_ASSERT(mmap);
 	spinlock_acquire_shared(&(mmap->lock));
 	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
 	spinlock_release_shared(&(mmap->lock));
@@ -347,6 +363,7 @@ mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 
 
 u64 mmap_get_vmm_flags(mmap_region_t* region){
+	KERNEL_ASSERT(region);
 	u64 out=VMM_PAGE_FLAG_PRESENT;
 	if (region->flags&MMAP_REGION_FLAG_VMM_READWRITE){
 		out|=VMM_PAGE_FLAG_READWRITE;

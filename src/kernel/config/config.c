@@ -19,7 +19,7 @@ static omm_allocator_t _config_item_allocator=OMM_ALLOCATOR_INIT_STRUCT("config_
 
 
 config_t* config_load(vfs_node_t* file){
-	KERNEL_ASSERT(file,"NULL file");
+	KERNEL_ASSERT(file);
 	config_t* out=omm_alloc(&_config_allocator);
 	out->head=NULL;
 	out->tail=NULL;
@@ -68,6 +68,7 @@ config_t* config_load(vfs_node_t* file){
 
 
 void config_dealloc(config_t* config){
+	KERNEL_ASSERT(config);
 	for (config_item_t* item=config->head;item;){
 		config_item_t* next=item->next;
 		smm_dealloc(item->key);
