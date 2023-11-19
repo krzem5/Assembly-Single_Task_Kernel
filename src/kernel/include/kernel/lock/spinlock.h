@@ -28,26 +28,27 @@ typedef u32 spinlock_t;
 		}; \
 		static const spinlock_profiling_setup_descriptor_t*const __attribute__((used,section(".spinlock_setup"))) __spinlock_profiling_setup_descriptor_ptr=&__spinlock_profiling_setup_descriptor; \
 		(func)(lock); \
-		(*(lock))|=/*((&__spinlock_profiling_setup_descriptor_ptr)-spinlock_profiling_get_setup_descriptors(NULL)+1)*/__spinlock_id<<16; \
+		(*(lock))|=__spinlock_id<<16; \
 	} while (0)
 #define _spinlock_profile_function(func,lock) \
 	do{ \
-		static spinlock_profiling_data_t* __spinlock_perf_data=NULL; \
+		static spinlock_profiling_data_t* __spinlock_profiling_data=NULL; \
 		static const spinlock_profiling_descriptor_t __spinlock_profiling_descriptor={ \
 			__func__, \
 			__LINE__, \
-			&__spinlock_perf_data \
+			&__spinlock_profiling_data \
 		}; \
 		static const spinlock_profiling_descriptor_t*const __attribute__((used,section(".spinlock"))) __spinlock_profiling_descriptor_ptr=&__spinlock_profiling_descriptor; \
 		u64 __start_ticks=clock_get_ticks(); \
 		(func)(lock); \
 		u64 __end_ticks=clock_get_ticks(); \
-		if (__spinlock_perf_data){ \
+		if (__spinlock_profiling_data){ \
+			spinlock_profiling_data_t* __local_profiling_data=__spinlock_profiling_data+((*(lock))>>16); \
 			u64 __ticks=__end_ticks-__start_ticks; \
-			(__spinlock_perf_data+((*(lock))>>16))->ticks+=__ticks; \
-			(__spinlock_perf_data+((*(lock))>>16))->count++; \
-			if (__ticks>(__spinlock_perf_data+((*(lock))>>16))->max_ticks){ \
-				(__spinlock_perf_data+((*(lock))>>16))->max_ticks=__ticks; \
+			__local_profiling_data->ticks+=__ticks; \
+			__local_profiling_data->count++; \
+			if (__ticks>__local_profiling_data->max_ticks){ \
+				__local_profiling_data->max_ticks=__ticks; \
 			} \
 		} \
 	} while (0)
