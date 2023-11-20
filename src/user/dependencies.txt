@@ -2,6 +2,7 @@ cat:runtime@static,sys
 cpu:runtime@static,sys
 exit:runtime@static,sys
 hexdump:runtime@static,sys
+lockinfo:runtime@static,sys
 ls:runtime@static,sys,dircolor
 random:runtime@static,sys
 reboot:runtime@static,sys

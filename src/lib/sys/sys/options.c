@@ -91,22 +91,7 @@ _check_next_option:
 			}
 			continue;
 		}
-		_Bool negative=0;
-		u32 j=0;
-		for (;arg[j]=='+'||arg[j]=='-';j++){
-			negative=(arg[j]=='-');
-		}
-		s64 value=0;
-		for (;arg[j];j++){
-			if (arg[j]<48||arg[j]>57){
-				printf("%s: '%s' is not an integer\n",argv[0],arg);
-				return 0;
-			}
-			value=value*10+arg[j]-48;
-		}
-		if (negative){
-			value=-value;
-		}
+		s64 value=sys_options_atoi(arg);
 		if (option->flags&SYS_OPTION_FLAG_CALLBACK){
 			if (!option->var_int_callback(value)){
 				return 0;
@@ -117,4 +102,22 @@ _check_next_option:
 		}
 	}
 	return first_arg_index;
+}
+
+
+
+SYS_PUBLIC s64 sys_options_atoi(const char* str){
+	_Bool negative=0;
+	u32 i=0;
+	for (;str[i]=='+'||str[i]=='-';i++){
+		negative=(str[i]=='-');
+	}
+	s64 value=0;
+	for (;str[i];i++){
+		if (str[i]<48||str[i]>57){
+			return 0;
+		}
+		value=value*10+str[i]-48;
+	}
+	return (negative?-value:value);
 }

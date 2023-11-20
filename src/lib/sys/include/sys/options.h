@@ -35,4 +35,8 @@ u32 sys_options_parse(u32 argc,const char** argv,const sys_option_t* options);
 
 
 
+s64 sys_options_atoi(const char* str);
+
+
+
 #endif

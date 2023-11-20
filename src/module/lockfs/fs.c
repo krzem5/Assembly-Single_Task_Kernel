@@ -29,7 +29,7 @@ _Bool lockfs_create_fs(void){
 		return 0;
 	}
 	filesystem_t* fs=dynamicfs_init("/lock",&_lockfs_filesystem_descriptor);
-	vfs_node_t* setup_root=dynamicfs_create_node(fs->root,"setup",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	vfs_node_t* setup_root=dynamicfs_create_node(fs->root,"types",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u32 i=0;i<setup_descriptor_count;i++){
 		const spinlock_profiling_setup_descriptor_t* descriptor=setup_descriptors[i];
 		char buffer[32];
