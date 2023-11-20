@@ -1,3 +1,4 @@
+#include <sys/clock.h>
 #include <sys/fd.h>
 #include <sys/io.h>
 #include <sys/options.h>
@@ -29,6 +30,7 @@ static _Bool _read_file(s64 fd,const char* name,char* buffer,u32 buffer_length){
 
 
 int main(int argc,const char** argv){
+	sys_clock_init();
 	if (!sys_options_parse(argc,argv,NULL)){
 		return 1;
 	}
@@ -68,7 +70,6 @@ int main(int argc,const char** argv){
 		}
 		_read_file(fd,"location",(types+i)->location,48);
 		sys_fd_close(fd);
-		printf("%u: %s\n",i,(types+i)->location);
 	}
 	sys_fd_close(types_fd);
 	s64 data_fd=sys_fd_open(root_fd,"data",0);
@@ -86,6 +87,7 @@ int main(int argc,const char** argv){
 			sys_fd_close(fd);
 			continue;
 		}
+		_Bool header_printed=0;
 		for (s64 iter=sys_fd_iter_start(fd);iter>=0;iter=sys_fd_iter_next(iter)){
 			if (sys_fd_iter_get(iter,buffer,32)<=0||buffer[0]<48||buffer[0]>57){
 				continue;
@@ -94,7 +96,30 @@ int main(int argc,const char** argv){
 			if (type>max_type){
 				continue;
 			}
-			printf("%s:%s\n",location,buffer);
+			s64 subfd=sys_fd_open(fd,buffer,0);
+			if (subfd<=0){
+				continue;
+			}
+			if (!_read_file(subfd,"count",buffer,32)){
+				goto _cleanup_subfd;
+			}
+			u32 count=sys_options_atoi(buffer);
+			if (!count||!_read_file(subfd,"ticks",buffer,32)){
+				goto _cleanup_subfd;
+			}
+			u32 ticks=sys_options_atoi(buffer);
+			if (!_read_file(subfd,"max_ticks",buffer,32)){
+				goto _cleanup_subfd;
+			}
+			u32 max_ticks=sys_options_atoi(buffer);
+			if (!header_printed){
+				printf("%s\n",location);
+				header_printed=1;
+			}
+			printf("  %s\n",(type?(types+type)->location:"<other>"));
+			printf("    cnt: \x1b[1m%lu\x1b[0m\n    avg: \x1b[1m%lu\x1b[0m ns\n    max: \x1b[1m%lu\x1b[0m ns\n",count,sys_clock_ticks_to_time(ticks/count),sys_clock_ticks_to_time(max_ticks));
+_cleanup_subfd:
+			sys_fd_close(subfd);
 		}
 		sys_fd_close(fd);
 	}

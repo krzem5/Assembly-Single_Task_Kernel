@@ -28,6 +28,9 @@ typedef u32 spinlock_t;
 		}; \
 		static const spinlock_profiling_setup_descriptor_t*const __attribute__((used,section(".spinlock_setup"))) __spinlock_profiling_setup_descriptor_ptr=&__spinlock_profiling_setup_descriptor; \
 		(func)(lock); \
+		if (!__spinlock_id){ \
+			__spinlock_id=(&__spinlock_profiling_setup_descriptor_ptr)-spinlock_profiling_get_setup_descriptors(NULL)+1; \
+		} \
 		(*(lock))|=__spinlock_id<<16; \
 	} while (0)
 #define _spinlock_profile_function(func,lock) \
