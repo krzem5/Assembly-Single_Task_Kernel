@@ -149,7 +149,7 @@ static const opcode_t _aml_opcodes[]={
 
 
 static pmm_counter_descriptor_t _aml_object_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_object");
-static omm_allocator_t _aml_object_allocator=OMM_ALLOCATOR_INIT_STRUCT("aml_object",sizeof(aml_object_t),8,2,&_aml_object_omm_pmm_counter);
+static omm_allocator_t* _aml_object_allocator=NULL;
 
 
 
@@ -357,7 +357,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 			data+=_get_name_encoding_length(data);
 		}
 		else if (opcode->args[i]==AML_OBJECT_ARG_TYPE_OBJECT){
-			out->args[i].object=omm_alloc(&_aml_object_allocator);
+			out->args[i].object=omm_alloc(_aml_object_allocator);
 			data+=_parse_object(data,out->args[i].object);
 		}
 	}
@@ -377,7 +377,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 	out->data.child=NULL;
 	aml_object_t* last_child=NULL;
 	for (u32 i=0;i<out->data_length;i++){
-		aml_object_t* child=omm_alloc(&_aml_object_allocator);
+		aml_object_t* child=omm_alloc(_aml_object_allocator);
 		data+=_parse_object(data,child);
 		if (last_child){
 			last_child->next=child;
@@ -395,7 +395,8 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",data,length);
-	aml_object_t* root=omm_alloc(&_aml_object_allocator);
+	_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,2,&_aml_object_omm_pmm_counter);
+	aml_object_t* root=omm_alloc(_aml_object_allocator);
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;
 	root->arg_count=0;
@@ -410,7 +411,7 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 	aml_object_t* last_child=NULL;
 	u32 offset=0;
 	for (u32 i=0;i<root->data_length;i++){
-		aml_object_t* child=omm_alloc(&_aml_object_allocator);
+		aml_object_t* child=omm_alloc(_aml_object_allocator);
 		offset+=_parse_object(data+offset,child);
 		if (i){
 			last_child->next=child;

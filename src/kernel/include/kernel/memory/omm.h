@@ -67,7 +67,7 @@ extern handle_type_t HANDLE_TYPE_OMM_ALLOCATOR;
 
 
 
-void omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out);
+omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter);
 
 
 

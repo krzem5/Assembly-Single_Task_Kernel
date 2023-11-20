@@ -17,6 +17,14 @@ HANDLE_DECLARE_TYPE(OMM_ALLOCATOR,{
 
 
 
+static pmm_counter_descriptor_t _omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm");
+
+
+
+static omm_allocator_t* _omm_self_allocator=NULL;
+
+
+
 static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
 	page->prev=NULL;
 	page->next=*list_head;
@@ -42,9 +50,8 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 
-void omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
+static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
 	out->name=name;
-	handle_new(out,HANDLE_TYPE_OMM_ALLOCATOR,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->object_size=object_size;
 	out->alignment=alignment;
@@ -56,7 +63,24 @@ void omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_
 	out->page_full_head=0;
 	out->allocation_count=0;
 	out->deallocation_count=0;
+}
+
+
+
+omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
+	if (!_omm_self_allocator){
+		omm_allocator_t _tmp_allocator;
+		_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);
+		_omm_self_allocator=omm_alloc(&_tmp_allocator);
+		*_omm_self_allocator=_tmp_allocator;
+		handle_new(_omm_self_allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(_omm_self_allocator->handle));
+		handle_finish_setup(&(_omm_self_allocator->handle));
+	}
+	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
+	_init_allocator(name,object_size,alignment,page_count,pmm_counter,out);
+	handle_new(out,HANDLE_TYPE_OMM_ALLOCATOR,&(out->handle));
 	handle_finish_setup(&(out->handle));
+	return out;
 }
 
 
@@ -87,10 +111,10 @@ void* omm_alloc(omm_allocator_t* allocator){
 			head=object;
 		}
 		page=(void*)page_address;
-		_allocator_add_page(&(allocator->page_free_head),page);
 		page->head=head;
 		page->object_size=allocator->object_size;
 		page->used_count=0;
+		_allocator_add_page(&(allocator->page_free_head),page);
 	}
 	void* out=page->head;
 	page->head=page->head->next;
