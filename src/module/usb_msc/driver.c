@@ -116,8 +116,8 @@ typedef struct _USB_MSC_DRIVER{
 static pmm_counter_descriptor_t _usb_msc_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("usb_msc");
 static pmm_counter_descriptor_t _usb_msc_driver_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_driver");
 static pmm_counter_descriptor_t _usb_msc_lun_context_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_lun_context");
-static omm_allocator_t _usb_msc_driver_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,&_usb_msc_driver_omm_pmm_counter);
-static omm_allocator_t _usb_msc_lun_context_allocator=OMM_ALLOCATOR_INIT_STRUCT("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,&_usb_msc_lun_context_omm_pmm_counter);
+static omm_allocator_t* _usb_msc_driver_allocator=NULL;
+static omm_allocator_t* _usb_msc_lun_context_allocator=NULL;
 
 
 
@@ -251,7 +251,7 @@ static drive_type_t _usb_msc_drive_type={
 
 static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	INFO("Setting up LUN %u...",lun);
-	usb_msc_lun_context_t* context=omm_alloc(&_usb_msc_lun_context_allocator);
+	usb_msc_lun_context_t* context=omm_alloc(_usb_msc_lun_context_allocator);
 	context->driver=driver;
 	spinlock_init(&(context->lock));
 	context->tag=0;
@@ -280,7 +280,7 @@ static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	goto _cleanup;
 _error:
 	WARN("Failed to setup LUN %u",lun);
-	omm_dealloc(&_usb_msc_lun_context_allocator,context);
+	omm_dealloc(_usb_msc_lun_context_allocator,context);
 _cleanup:
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
 }
@@ -307,7 +307,7 @@ static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inte
 	if (!input_descriptor||!output_descriptor){
 		return 0;
 	}
-	usb_msc_driver_t* driver=omm_alloc(&_usb_msc_driver_allocator);
+	usb_msc_driver_t* driver=omm_alloc(_usb_msc_driver_allocator);
 	driver->driver.descriptor=&_usb_msc_driver_descriptor;
 	driver->device=device;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
@@ -343,5 +343,9 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor={
 
 void usb_msc_driver_install(void){
 	LOG("Installing USB MSC driver...");
+	_usb_msc_driver_allocator=omm_init("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,&_usb_msc_driver_omm_pmm_counter);
+	spinlock_init(&(_usb_msc_driver_allocator->lock));
+	_usb_msc_lun_context_allocator=omm_init("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,&_usb_msc_lun_context_omm_pmm_counter);
+	spinlock_init(&(_usb_msc_lun_context_allocator->lock));
 	usb_register_driver(&_usb_msc_driver_descriptor);
 }

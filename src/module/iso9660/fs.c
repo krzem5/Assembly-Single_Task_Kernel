@@ -22,7 +22,7 @@ typedef struct _ISO9660_VFS_NODE{
 
 
 static pmm_counter_descriptor_t _iso9660_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_iso9660_node");
-static omm_allocator_t _iso9660_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,&_iso9660_node_omm_pmm_counter);
+static omm_allocator_t* _iso9660_vfs_node_allocator=NULL;
 
 
 
@@ -31,7 +31,7 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor;
 
 
 static vfs_node_t* _iso9660_create(void){
-	iso9660_vfs_node_t* out=omm_alloc(&_iso9660_vfs_node_allocator);
+	iso9660_vfs_node_t* out=omm_alloc(_iso9660_vfs_node_allocator);
 	out->current_offset=0xffffffffffffffffull;
 	out->data_offset=0;
 	out->data_length=0;
@@ -41,7 +41,7 @@ static vfs_node_t* _iso9660_create(void){
 
 
 static void _iso9660_delete(vfs_node_t* node){
-	omm_dealloc(&_iso9660_vfs_node_allocator,node);
+	omm_dealloc(_iso9660_vfs_node_allocator,node);
 }
 
 
@@ -234,4 +234,6 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor={
 
 void iso9660_register_fs(void){
 	fs_register_descriptor(&_iso9660_filesystem_descriptor);
+	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,&_iso9660_node_omm_pmm_counter);
+	spinlock_init(&(_iso9660_vfs_node_allocator->lock));
 }

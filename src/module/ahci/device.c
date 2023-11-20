@@ -17,8 +17,8 @@
 static pmm_counter_descriptor_t _ahci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("ahci");
 static pmm_counter_descriptor_t _ahci_controller_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_ahci_controller");
 static pmm_counter_descriptor_t _ahci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_ahci_device");
-static omm_allocator_t _ahci_controller_allocator=OMM_ALLOCATOR_INIT_STRUCT("ahci_controller",sizeof(ahci_controller_t),8,1,&_ahci_controller_omm_pmm_counter);
-static omm_allocator_t _ahci_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("ahci_device",sizeof(ahci_device_t),8,1,&_ahci_device_omm_pmm_counter);
+static omm_allocator_t* _ahci_controller_allocator=NULL;
+static omm_allocator_t* _ahci_device_allocator=NULL;
 
 
 
@@ -181,7 +181,7 @@ static void _ahci_init_device(pci_device_t* device){
 		return;
 	}
 	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
-	ahci_controller_t* controller=omm_alloc(&_ahci_controller_allocator);
+	ahci_controller_t* controller=omm_alloc(_ahci_controller_allocator);
 	controller->registers=(void*)vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	INFO("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);
 	if (!(controller->registers->cap&CAP_S64A)){
@@ -209,7 +209,7 @@ static void _ahci_init_device(pci_device_t* device){
 		if (port_registers->sig!=0x00000101){
 			continue;
 		}
-		ahci_device_t* ahci_device=omm_alloc(&_ahci_device_allocator);
+		ahci_device_t* ahci_device=omm_alloc(_ahci_device_allocator);
 		ahci_device->controller=controller;
 		ahci_device->registers=port_registers;
 		_ahci_init(ahci_device,i);
@@ -220,6 +220,10 @@ static void _ahci_init_device(pci_device_t* device){
 
 void ahci_locate_devices(void){
 	drive_register_type(&_ahci_drive_type);
+	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1,&_ahci_controller_omm_pmm_counter);
+	spinlock_init(&(_ahci_controller_allocator->lock));
+	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1,&_ahci_device_omm_pmm_counter);
+	spinlock_init(&(_ahci_device_allocator->lock));
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
 		_ahci_init_device(device);

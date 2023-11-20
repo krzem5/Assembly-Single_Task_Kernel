@@ -25,7 +25,7 @@
 
 static pmm_counter_descriptor_t _i82540_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("i82540");
 static pmm_counter_descriptor_t _i82540_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_i82540_device");
-static omm_allocator_t _i82540_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("i82540_device",sizeof(i82540_device_t),8,1,&_i82540_device_omm_pmm_counter);
+static omm_allocator_t* _i82540_device_allocator=NULL;
 
 
 
@@ -114,7 +114,7 @@ static void _i82540_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	i82540_device_t* i82540_device=omm_alloc(&_i82540_device_allocator);
+	i82540_device_t* i82540_device=omm_alloc(_i82540_device_allocator);
 	i82540_device->mmio=(void*)vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
@@ -189,6 +189,8 @@ static void _i82540_init_device(pci_device_t* device){
 
 
 void i82540_locate_devices(void){
+	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,&_i82540_device_omm_pmm_counter);
+	spinlock_init(&(_i82540_device_allocator->lock));
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
 		_i82540_init_device(device);

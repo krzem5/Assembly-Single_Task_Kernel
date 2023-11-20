@@ -20,12 +20,12 @@ typedef struct _DYNAMICFS_VFS_NODE{
 
 
 static pmm_counter_descriptor_t _dynamicfs_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_dynamicfs_node");
-static omm_allocator_t _dynamicfs_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,&_dynamicfs_node_omm_pmm_counter);
+static omm_allocator_t* _dynamicfs_vfs_node_allocator=NULL;
 
 
 
 static vfs_node_t* _dynamicfs_create(void){
-	dynamicfs_vfs_node_t* out=omm_alloc(&_dynamicfs_vfs_node_allocator);
+	dynamicfs_vfs_node_t* out=omm_alloc(_dynamicfs_vfs_node_allocator);
 	out->data=NULL;
 	out->read_callback=NULL;
 	out->read_callback_ctx=NULL;
@@ -35,7 +35,7 @@ static vfs_node_t* _dynamicfs_create(void){
 
 
 static void _dynamicfs_delete(vfs_node_t* node){
-	omm_dealloc(&_dynamicfs_vfs_node_allocator,node);
+	omm_dealloc(_dynamicfs_vfs_node_allocator,node);
 }
 
 
@@ -89,6 +89,10 @@ static const vfs_functions_t _dynamicfs_functions={
 
 
 filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor){
+	if (!_dynamicfs_vfs_node_allocator){
+		_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,&_dynamicfs_node_omm_pmm_counter);
+		spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
+	}
 	fs_register_descriptor(fs_descriptor);
 	filesystem_t* out=fs_create(fs_descriptor);
 	out->functions=&_dynamicfs_functions;

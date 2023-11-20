@@ -33,8 +33,8 @@ static pmm_counter_descriptor_t _kfs2_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT
 static pmm_counter_descriptor_t _kfs2_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_kfs2_node");
 static pmm_counter_descriptor_t _kfs2_extra_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_kfs2_extra_data");
 static pmm_counter_descriptor_t _kfs2_chunk_pmm_counter=PMM_COUNTER_INIT_STRUCT("kfs2_chunk");
-static omm_allocator_t _kfs2_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,&_kfs2_node_omm_pmm_counter);
-static omm_allocator_t _kfs2_fs_extra_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,&_kfs2_extra_data_pmm_counter);
+static omm_allocator_t* _kfs2_vfs_node_allocator=NULL;
+static omm_allocator_t* _kfs2_fs_extra_data_allocator=NULL;
 
 
 
@@ -173,7 +173,7 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 static vfs_node_t* _kfs2_create(void){
-	kfs2_vfs_node_t* out=omm_alloc(&_kfs2_vfs_node_allocator);
+	kfs2_vfs_node_t* out=omm_alloc(_kfs2_vfs_node_allocator);
 	out->kfs2_node._inode=0xffffffff;
 	return (vfs_node_t*)out;
 }
@@ -181,7 +181,7 @@ static vfs_node_t* _kfs2_create(void){
 
 
 static void _kfs2_delete(vfs_node_t* node){
-	omm_dealloc(&_kfs2_vfs_node_allocator,node);
+	omm_dealloc(_kfs2_vfs_node_allocator,node);
 }
 
 
@@ -349,7 +349,7 @@ static const vfs_functions_t _kfs2_functions={
 
 
 static void _kfs2_fs_deinit(filesystem_t* fs){
-	omm_dealloc(&_kfs2_fs_extra_data_allocator,fs->extra_data);
+	omm_dealloc(_kfs2_fs_extra_data_allocator,fs->extra_data);
 	panic("_kfs2_deinit_callback");
 }
 
@@ -368,7 +368,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	if (root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_verify_crc(root_block,sizeof(kfs2_root_block_t))){
 		return NULL;
 	}
-	kfs2_fs_extra_data_t* extra_data=omm_alloc(&_kfs2_fs_extra_data_allocator);
+	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
 	filesystem_t* out=fs_create(&_kfs2_filesystem_descriptor);
@@ -394,4 +394,8 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor={
 
 void kfs2_register_fs(void){
 	fs_register_descriptor(&_kfs2_filesystem_descriptor);
+	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,&_kfs2_node_omm_pmm_counter);
+	spinlock_init(&(_kfs2_vfs_node_allocator->lock));
+	_kfs2_fs_extra_data_allocator=omm_init("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,&_kfs2_extra_data_pmm_counter);
+	spinlock_init(&(_kfs2_fs_extra_data_allocator->lock));
 }

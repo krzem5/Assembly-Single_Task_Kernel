@@ -57,10 +57,6 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor;
 
 
 static vfs_node_t* _initramfs_create(void){
-	if (!_initramfs_vfs_node_allocator){
-		_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,&_initramfs_node_omm_pmm_counter);
-		spinlock_init(&(_initramfs_vfs_node_allocator->lock));
-	}
 	initramfs_vfs_node_t* out=omm_alloc(_initramfs_vfs_node_allocator);
 	out->offset=0;
 	out->size=0;
@@ -230,5 +226,7 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor={
 
 void initramfs_fs_init(void){
 	LOG("Registering initramfs filesystem descriptor...");
+	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,&_initramfs_node_omm_pmm_counter);
+	spinlock_init(&(_initramfs_vfs_node_allocator->lock));
 	fs_register_descriptor(&_initramfs_filesystem_descriptor);
 }

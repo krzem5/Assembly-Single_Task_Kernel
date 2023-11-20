@@ -17,7 +17,7 @@
 
 static pmm_counter_descriptor_t _nvme_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("nvme");
 static pmm_counter_descriptor_t _nvme_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_nvme_device");
-static omm_allocator_t _nvme_device_allocator=OMM_ALLOCATOR_INIT_STRUCT("nvme_deivce",sizeof(nvme_device_t),8,1,&_nvme_device_omm_pmm_counter);
+static omm_allocator_t* _nvme_device_allocator=NULL;
 
 
 
@@ -193,7 +193,7 @@ static void _nvme_init_device(pci_device_t* device){
 		WARN("NVMe instruction set not supported");
 		return;
 	}
-	nvme_device_t* nvme_device=omm_alloc(&_nvme_device_allocator);
+	nvme_device_t* nvme_device=omm_alloc(_nvme_device_allocator);
 	nvme_device->registers=registers;
 	nvme_device->index=_nvme_device_index;
 	_nvme_device_index++;
@@ -226,6 +226,8 @@ static void _nvme_init_device(pci_device_t* device){
 
 
 void nvme_locate_devices(void){
+	_nvme_device_allocator=omm_init("nvme_deivce",sizeof(nvme_device_t),8,1,&_nvme_device_omm_pmm_counter);
+	spinlock_init(&(_nvme_device_allocator->lock));
 	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
 		pci_device_t* device=handle->object;
 		_nvme_init_device(device);
