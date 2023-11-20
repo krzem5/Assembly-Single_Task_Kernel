@@ -17,8 +17,8 @@
 
 static pmm_counter_descriptor_t _fd_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fd");
 static pmm_counter_descriptor_t _fd_iterator_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fd_iterator");
-static omm_allocator_t _fd_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd",sizeof(fd_t),8,4,&_fd_omm_pmm_counter);
-static omm_allocator_t _fd_iterator_allocator=OMM_ALLOCATOR_INIT_STRUCT("fd_iterator",sizeof(fd_iterator_t),8,4,&_fd_iterator_omm_pmm_counter);
+static omm_allocator_t* _fd_allocator=NULL;
+static omm_allocator_t* _fd_iterator_allocator=NULL;
 
 
 
@@ -27,11 +27,11 @@ static HANDLE_DECLARE_TYPE(FD,{
 	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
 		panic("FD_FLAG_DELETE_ON_EXIT");
 	}
-	omm_dealloc(&_fd_allocator,data);
+	omm_dealloc(_fd_allocator,data);
 });
 static HANDLE_DECLARE_TYPE(FD_ITERATOR,{
 	fd_iterator_t* data=handle->object;
-	omm_dealloc(&_fd_iterator_allocator,data);
+	omm_dealloc(_fd_iterator_allocator,data);
 });
 
 
@@ -66,7 +66,11 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 		return FD_ERROR_NOT_FOUND;
 	}
 	node->rc++;
-	fd_t* out=omm_alloc(&_fd_allocator);
+	if (!_fd_allocator){
+		_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,&_fd_omm_pmm_counter);
+		spinlock_init(&(_fd_allocator->lock));
+	}
+	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->node=node;
@@ -274,7 +278,11 @@ s64 fd_iter_start(handle_id_t fd){
 		handle_release(fd_handle);
 		return -1;
 	}
-	fd_iterator_t* out=omm_alloc(&_fd_iterator_allocator);
+	if (!_fd_iterator_allocator){
+		_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,&_fd_iterator_omm_pmm_counter);
+		spinlock_init(&(_fd_iterator_allocator->lock));
+	}
+	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(out,HANDLE_TYPE_FD_ITERATOR,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->node=data->node;

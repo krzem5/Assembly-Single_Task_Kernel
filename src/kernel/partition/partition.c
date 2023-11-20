@@ -15,7 +15,7 @@
 
 
 static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
-static omm_allocator_t _partition_allocator=OMM_ALLOCATOR_INIT_STRUCT("partition",sizeof(partition_t),8,4,&_partition_omm_pmm_counter);
+static omm_allocator_t* _partition_allocator=NULL;
 
 
 
@@ -25,7 +25,7 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 	if (partition->descriptor){
 		handle_release(&(partition->descriptor->handle));
 	}
-	omm_dealloc(&_partition_allocator,partition);
+	omm_dealloc(_partition_allocator,partition);
 });
 HANDLE_DECLARE_TYPE(PARTITION_TABLE_DESCRIPTOR,{});
 
@@ -82,7 +82,11 @@ void partition_load_from_drive(drive_t* drive){
 partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
-	partition_t* out=omm_alloc(&_partition_allocator);
+	if (!_partition_allocator){
+		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4,&_partition_omm_pmm_counter);
+		spinlock_init(&(_partition_allocator->lock));
+	}
+	partition_t* out=omm_alloc(_partition_allocator);
 	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
 	out->descriptor=drive->partition_table_descriptor;
 	out->drive=drive;

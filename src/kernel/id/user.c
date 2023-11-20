@@ -29,8 +29,8 @@ typedef struct _UID_DATA{
 
 static pmm_counter_descriptor_t _uid_data_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_data");
 static pmm_counter_descriptor_t _uid_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_group");
-static omm_allocator_t _uid_data_allocator=OMM_ALLOCATOR_INIT_STRUCT("uid_data",sizeof(uid_data_t),8,1,&_uid_data_omm_pmm_counter);
-static omm_allocator_t _uid_group_allocator=OMM_ALLOCATOR_INIT_STRUCT("uid_group",sizeof(uid_group_t),8,1,&_uid_group_omm_pmm_counter);
+static omm_allocator_t* _uid_data_allocator=NULL;
+static omm_allocator_t* _uid_group_allocator=NULL;
 
 
 
@@ -41,6 +41,10 @@ static spinlock_t _uid_global_lock;
 
 void uid_init(void){
 	LOG("Initializing user tree...");
+	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,&_uid_data_omm_pmm_counter);
+	spinlock_init(&(_uid_data_allocator->lock));
+	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1,&_uid_group_omm_pmm_counter);
+	spinlock_init(&(_uid_group_allocator->lock));
 	spinlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);
 	INFO("Creating root user...");
@@ -57,7 +61,7 @@ _Bool uid_create(uid_t uid,const char* name){
 		spinlock_release_exclusive(&_uid_global_lock);
 		return 0;
 	}
-	uid_data_t* uid_data=omm_alloc(&_uid_data_allocator);
+	uid_data_t* uid_data=omm_alloc(_uid_data_allocator);
 	uid_data->rb_node.key=uid;
 	uid_data->name=smm_alloc(name,0);
 	rb_tree_init(&(uid_data->group_tree));
@@ -75,7 +79,7 @@ _Bool uid_add_group(uid_t uid,gid_t gid){
 		spinlock_release_exclusive(&_uid_global_lock);
 		return 0;
 	}
-	uid_group_t* uid_group=omm_alloc(&_uid_group_allocator);
+	uid_group_t* uid_group=omm_alloc(_uid_group_allocator);
 	uid_group->rb_node.key=gid;
 	rb_tree_insert_node(&(uid_data->group_tree),&(uid_group->rb_node));
 	spinlock_release_exclusive(&_uid_global_lock);

@@ -11,7 +11,7 @@
 
 
 static pmm_counter_descriptor_t _drive_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_drive");
-static omm_allocator_t _drive_allocator=OMM_ALLOCATOR_INIT_STRUCT("drive",sizeof(drive_t),8,4,&_drive_omm_pmm_counter);
+static omm_allocator_t* _drive_allocator=NULL;
 
 
 
@@ -22,7 +22,7 @@ HANDLE_DECLARE_TYPE(DRIVE,{
 	if (drive->partition_table_descriptor){
 		handle_release(&(drive->partition_table_descriptor->handle));
 	}
-	omm_dealloc(&_drive_allocator,drive);
+	omm_dealloc(_drive_allocator,drive);
 });
 HANDLE_DECLARE_TYPE(DRIVE_TYPE,{});
 
@@ -44,9 +44,13 @@ void drive_unregister_type(drive_type_t* type){
 
 
 drive_t* drive_create(const drive_config_t* config){
+	if (!_drive_allocator){
+		_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,&_drive_omm_pmm_counter);
+		spinlock_init(&(_drive_allocator->lock));
+	}
 	handle_acquire(&(config->type->handle));
 	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number->data,config->serial_number->data);
-	drive_t* out=omm_alloc(&_drive_allocator);
+	drive_t* out=omm_alloc(_drive_allocator);
 	handle_new(out,HANDLE_TYPE_DRIVE,&(out->handle));
 	out->type=config->type;
 	out->block_size_shift=__builtin_ctzll(config->block_size);

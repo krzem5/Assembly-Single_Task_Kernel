@@ -33,7 +33,7 @@ typedef struct _RUNTIME_LOCAL_STATE{
 
 
 static pmm_counter_descriptor_t _aml_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_node");
-static omm_allocator_t _aml_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("aml_node",sizeof(aml_node_t),8,4,&_aml_node_omm_pmm_counter);
+static omm_allocator_t* _aml_node_allocator=NULL;
 
 
 
@@ -204,7 +204,7 @@ static void _write_field_unit(aml_node_t* node,aml_node_t* value){
 
 
 static aml_node_t* _alloc_node(const char* name,u8 type,aml_node_t* parent){
-	aml_node_t* out=omm_alloc(&_aml_node_allocator);
+	aml_node_t* out=omm_alloc(_aml_node_allocator);
 	if (name){
 		for (u8 i=0;i<4;i++){
 			out->name[i]=name[i];
@@ -402,7 +402,7 @@ static aml_node_t* _execute(runtime_local_state_t* local,const aml_object_t* obj
 				for (aml_object_t* child=object->data.child;child;child=child->next){
 					aml_node_t* value=_execute(local,child);
 					if (value->flags&AML_NODE_FLAG_LOCAL){
-						aml_node_t* new_node=omm_alloc(&_aml_node_allocator);
+						aml_node_t* new_node=omm_alloc(_aml_node_allocator);
 						*new_node=*value;
 						value=new_node;
 					}
@@ -989,6 +989,8 @@ _end:
 
 void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
+	_aml_node_allocator=omm_init("aml_node",sizeof(aml_node_t),8,4,&_aml_node_omm_pmm_counter);
+	spinlock_init(&(_aml_node_allocator->lock));
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
 	runtime_local_state_t local={
 		aml_root_node

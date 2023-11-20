@@ -13,7 +13,7 @@
 
 
 static pmm_counter_descriptor_t _event_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_event");
-static omm_allocator_t _event_allocator=OMM_ALLOCATOR_INIT_STRUCT("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
+static omm_allocator_t* _event_allocator=NULL;
 
 
 
@@ -24,7 +24,11 @@ static HANDLE_DECLARE_TYPE(EVENT,{
 
 
 event_t* event_new(void){
-	event_t* out=omm_alloc(&_event_allocator);
+	if (!_event_allocator){
+		_event_allocator=omm_init("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
+		spinlock_init(&(_event_allocator->lock));
+	}
+	event_t* out=omm_alloc(_event_allocator);
 	handle_new(out,HANDLE_TYPE_EVENT,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->head=NULL;
@@ -41,7 +45,7 @@ void event_delete(event_t* event){
 		panic("Referenced events cannot be deleted");
 	}
 	spinlock_release_exclusive(&(event->lock));
-	omm_dealloc(&_event_allocator,event);
+	omm_dealloc(_event_allocator,event);
 }
 
 

@@ -58,9 +58,9 @@ static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 p
 	out->page_count=page_count;
 	out->max_used_count=((page_count<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/((object_size+alignment-1)&(-alignment));
 	out->pmm_counter=pmm_counter;
-	out->page_free_head=0;
-	out->page_used_head=0;
-	out->page_full_head=0;
+	out->page_free_head=NULL;
+	out->page_used_head=NULL;
+	out->page_full_head=NULL;
 	out->allocation_count=0;
 	out->deallocation_count=0;
 }

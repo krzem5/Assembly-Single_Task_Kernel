@@ -11,14 +11,18 @@
 #define FNV_OFFSET_BASIS 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
-#define DECLARE_ALLOCATOR(size) static omm_allocator_t _smm_allocator##size=OMM_ALLOCATOR_INIT_STRUCT("smm["#size"]",sizeof(string_t)+size,4,2,&_smm_omm_pmm_counter);
+#define DECLARE_ALLOCATOR(size) static omm_allocator_t* _smm_allocator##size=NULL;
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
-		out=omm_alloc(&_smm_allocator##size); \
+		if (!_smm_allocator##size){ \
+			_smm_allocator##size=omm_init("smm["#size"]",sizeof(string_t)+size,4,2,&_smm_omm_pmm_counter); \
+			spinlock_init(&(_smm_allocator##size->lock)); \
+		} \
+		out=omm_alloc(_smm_allocator##size); \
 	}
 #define USE_ALLOCATOR_DEALLOC(size) \
 	if (string->length<(size)){ \
-		omm_dealloc(&_smm_allocator##size,string); \
+		omm_dealloc(_smm_allocator##size,string); \
 	}
 
 

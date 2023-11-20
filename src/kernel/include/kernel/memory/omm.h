@@ -7,18 +7,15 @@
 
 
 
-#define OMM_ALLOCATOR_INIT_LATER_STRUCT {.object_size=0}
-#define OMM_ALLOCATOR_IS_UNINITIALISED(allocator) (!(allocator)->object_size)
-
 #define OMM_ALLOCATOR_INIT_STRUCT(name,object_size,alignment,page_count,pmm_counter) \
 	(omm_allocator_t){ \
 		(name), \
 		HANDLE_INIT_STRUCT, \
 		SPINLOCK_INIT_STRUCT, \
-		((object_size)+alignment-1)&(-(alignment)), \
+		((object_size)+(alignment)-1)&(-(alignment)), \
 		(alignment), \
 		(page_count), \
-		(((page_count)<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/(((object_size)+alignment-1)&(-(alignment))), \
+		(((page_count)<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+(alignment)-1)&(-(alignment))))/(((object_size)+(alignment)-1)&(-(alignment))), \
 		(pmm_counter), \
 		NULL, \
 		NULL, \

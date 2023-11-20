@@ -48,7 +48,7 @@ typedef struct _INITRAMFS_VFS_NODE{
 
 
 static pmm_counter_descriptor_t _initramfs_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_initramfs_node");
-static omm_allocator_t _initramfs_vfs_node_allocator=OMM_ALLOCATOR_INIT_STRUCT("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,&_initramfs_node_omm_pmm_counter);
+static omm_allocator_t* _initramfs_vfs_node_allocator=NULL;
 
 
 
@@ -57,7 +57,11 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor;
 
 
 static vfs_node_t* _initramfs_create(void){
-	initramfs_vfs_node_t* out=omm_alloc(&_initramfs_vfs_node_allocator);
+	if (!_initramfs_vfs_node_allocator){
+		_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,&_initramfs_node_omm_pmm_counter);
+		spinlock_init(&(_initramfs_vfs_node_allocator->lock));
+	}
+	initramfs_vfs_node_t* out=omm_alloc(_initramfs_vfs_node_allocator);
 	out->offset=0;
 	out->size=0;
 	out->data_size=0;
@@ -70,7 +74,7 @@ static vfs_node_t* _initramfs_create(void){
 
 
 static void _initramfs_delete(vfs_node_t* node){
-	omm_dealloc(&_initramfs_vfs_node_allocator,node);
+	omm_dealloc(_initramfs_vfs_node_allocator,node);
 }
 
 

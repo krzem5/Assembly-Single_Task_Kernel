@@ -13,14 +13,22 @@
 
 static pmm_counter_descriptor_t _config_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_config");
 static pmm_counter_descriptor_t _config_item_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_config_item");
-static omm_allocator_t _config_allocator=OMM_ALLOCATOR_INIT_STRUCT("config",sizeof(config_t),8,1,&_config_omm_pmm_counter);
-static omm_allocator_t _config_item_allocator=OMM_ALLOCATOR_INIT_STRUCT("config_item",sizeof(config_item_t),8,1,&_config_item_omm_pmm_counter);
+static omm_allocator_t* _config_allocator=NULL;
+static omm_allocator_t* _config_item_allocator=NULL;
 
 
 
 config_t* config_load(vfs_node_t* file){
 	KERNEL_ASSERT(file);
-	config_t* out=omm_alloc(&_config_allocator);
+	if (!_config_allocator){
+		_config_allocator=omm_init("config",sizeof(config_t),8,1,&_config_omm_pmm_counter);
+		spinlock_init(&(_config_allocator->lock));
+	}
+	if (!_config_item_allocator){
+		_config_item_allocator=omm_init("config_item",sizeof(config_item_t),8,1,&_config_item_omm_pmm_counter);
+		spinlock_init(&(_config_item_allocator->lock));
+	}
+	config_t* out=omm_alloc(_config_allocator);
 	out->head=NULL;
 	out->tail=NULL;
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE,file);
@@ -36,7 +44,7 @@ config_t* config_load(vfs_node_t* file){
 		}
 		u64 j=i;
 		for (;j<region->length&&buffer[j]&&buffer[j]!='\n'&&buffer[j]!='=';j++);
-		config_item_t* item=omm_alloc(&_config_item_allocator);
+		config_item_t* item=omm_alloc(_config_item_allocator);
 		item->prev=out->tail;
 		item->next=NULL;
 		item->key=smm_alloc(buffer+i,j-i);
@@ -75,8 +83,8 @@ void config_dealloc(config_t* config){
 		if (item->value){
 			smm_dealloc(item->value);
 		}
-		omm_dealloc(&_config_item_allocator,item);
+		omm_dealloc(_config_item_allocator,item);
 		item=next;
 	}
-	omm_dealloc(&_config_allocator,config);
+	omm_dealloc(_config_allocator,config);
 }

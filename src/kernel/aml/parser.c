@@ -396,6 +396,7 @@ aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",data,length);
 	_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,2,&_aml_object_omm_pmm_counter);
+	spinlock_init(&(_aml_object_allocator->lock));
 	aml_object_t* root=omm_alloc(_aml_object_allocator);
 	root->opcode[0]=AML_OPCODE_ROOT;
 	root->opcode[1]=0;

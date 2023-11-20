@@ -22,7 +22,7 @@
 
 
 static pmm_counter_descriptor_t _process_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_process");
-static omm_allocator_t _process_allocator=OMM_ALLOCATOR_INIT_STRUCT("process",sizeof(process_t),8,2,&_process_omm_pmm_counter);
+static omm_allocator_t* _process_allocator=NULL;
 
 
 
@@ -33,7 +33,7 @@ HANDLE_DECLARE_TYPE(PROCESS,{
 	}
 	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
-	omm_dealloc(&_process_allocator,process);
+	omm_dealloc(_process_allocator,process);
 });
 
 process_t* process_kernel;
@@ -43,7 +43,9 @@ mmap_t process_kernel_image_mmap;
 
 void process_init(void){
 	LOG("Creating kernel process...");
-	process_kernel=omm_alloc(&_process_allocator);
+	_process_allocator=omm_init("process",sizeof(process_t),8,2,&_process_omm_pmm_counter);
+	spinlock_init(&(_process_allocator->lock));
+	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
@@ -64,7 +66,7 @@ void process_init(void){
 
 
 process_t* process_new(const char* image,const char* name){
-	process_t* out=omm_alloc(&_process_allocator);
+	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));

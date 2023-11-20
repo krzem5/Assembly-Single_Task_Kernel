@@ -32,8 +32,8 @@ static pmm_counter_descriptor_t _thread_user_stack_pmm_counter=PMM_COUNTER_INIT_
 static pmm_counter_descriptor_t _thread_kernel_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("kernel_stack");
 static pmm_counter_descriptor_t _thread_pf_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("pf_stack");
 static pmm_counter_descriptor_t _thread_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_thread");
-static omm_allocator_t _thread_allocator=OMM_ALLOCATOR_INIT_STRUCT("thread",sizeof(thread_t),8,4,&_thread_omm_pmm_counter);
-static omm_allocator_t _thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_LATER_STRUCT;
+static omm_allocator_t* _thread_allocator=NULL;
+static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
 
 
@@ -47,18 +47,23 @@ HANDLE_DECLARE_TYPE(THREAD,{
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
 	}
-	omm_dealloc(&_thread_allocator,thread);
+	omm_dealloc(_thread_allocator,thread);
 });
 
 
 
 static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel_stack_size){
-	if (OMM_ALLOCATOR_IS_UNINITIALISED(&_thread_fpu_state_allocator)){
-		_thread_fpu_state_allocator=OMM_ALLOCATOR_INIT_STRUCT("fpu_state",fpu_state_size,64,4,&_thread_omm_pmm_counter);
+	if (!_thread_allocator){
+		_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,&_thread_omm_pmm_counter);
+		spinlock_init(&(_thread_allocator->lock));
+	}
+	if (!_thread_fpu_state_allocator){
+		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,&_thread_omm_pmm_counter);
+		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	user_stack_size=pmm_align_up_address(user_stack_size);
 	kernel_stack_size=pmm_align_up_address(kernel_stack_size);
-	thread_t* out=omm_alloc(&_thread_allocator);
+	thread_t* out=omm_alloc(_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
 	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
@@ -81,7 +86,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->fpu_state=omm_alloc(&_thread_fpu_state_allocator);
+	out->fpu_state=omm_alloc(_thread_fpu_state_allocator);
 	fpu_init(out->fpu_state);
 	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
@@ -150,7 +155,7 @@ void thread_delete(thread_t* thread){
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
 	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
-	omm_dealloc(&_thread_fpu_state_allocator,thread->fpu_state);
+	omm_dealloc(_thread_fpu_state_allocator,thread->fpu_state);
 	if (handle_release(&(thread->handle))){
 		spinlock_release_exclusive(&(thread->lock));
 	}

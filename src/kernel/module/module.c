@@ -37,14 +37,14 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("module_image");
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
-static omm_allocator_t _module_allocator=OMM_ALLOCATOR_INIT_STRUCT("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
+static omm_allocator_t* _module_allocator=NULL;
 
 
 
 HANDLE_DECLARE_TYPE(MODULE,{
 	module_t* module=handle->object;
 	smm_dealloc(module->name);
-	omm_dealloc(&_module_allocator,module);
+	omm_dealloc(_module_allocator,module);
 });
 
 
@@ -340,7 +340,11 @@ module_t* module_load(const char* name){
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
 	INFO("Module file size: %v",region->length);
-	module=omm_alloc(&_module_allocator);
+	if (!_module_allocator){
+		_module_allocator=omm_init("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
+		spinlock_init(&(_module_allocator->lock));
+	}
+	module=omm_alloc(_module_allocator);
 	memset(module,0,sizeof(module_t));
 	module->state=MODULE_STATE_LOADING;
 	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
