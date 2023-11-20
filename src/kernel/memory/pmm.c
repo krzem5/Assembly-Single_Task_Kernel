@@ -121,6 +121,9 @@ void pmm_init(void){
 	_pmm_allocators=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t));
 	memset(_pmm_allocators,0,_pmm_allocator_count*sizeof(pmm_allocator_t));
+	for (u32 i=0;i<_pmm_allocator_count;i++){
+		spinlock_init(&((_pmm_allocators+i)->lock));
+	}
 	u64 bitmap_size=_get_bitmap_size(max_address);
 	INFO("Bitmap size: %v",bitmap_size);
 	_pmm_bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -174,7 +177,7 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&_pmm_load_balancer.lock);
+	spinlock_acquire_exclusive(&(_pmm_load_balancer.lock));
 	u32 index;
 	_pmm_load_balancer.stats.miss_count--;
 	do{
@@ -185,7 +188,7 @@ u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 			_pmm_load_balancer.index-=_pmm_allocator_count;
 		}
 	} while (!((_pmm_allocators+index)->block_group_bitmap>>i));
-	spinlock_release_exclusive(&_pmm_load_balancer.lock);
+	spinlock_release_exclusive(&(_pmm_load_balancer.lock));
 	if (memory_hint==PMM_MEMORY_HINT_LOW_MEMORY){
 		index&=PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1;
 	}

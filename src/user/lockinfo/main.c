@@ -116,8 +116,8 @@ int main(int argc,const char** argv){
 				printf("%s\n",location);
 				header_printed=1;
 			}
-			printf("  %s\n",(type?(types+type)->location:"<other>"));
-			printf("    cnt: \x1b[1m%lu\x1b[0m\n    avg: \x1b[1m%lu\x1b[0m ns\n    max: \x1b[1m%lu\x1b[0m ns\n",count,sys_clock_ticks_to_time(ticks/count),sys_clock_ticks_to_time(max_ticks));
+			printf("    %s\n",(type?(types+type)->location:"<other>"));
+			printf("        cnt: \x1b[1m%lu\x1b[0m\n        avg: \x1b[1m%lu\x1b[0m ns\n        max: \x1b[1m%lu\x1b[0m ns\n",count,sys_clock_ticks_to_time(ticks/count),sys_clock_ticks_to_time(max_ticks));
 _cleanup_subfd:
 			sys_fd_close(subfd);
 		}
