@@ -7,25 +7,6 @@
 
 
 
-#define OMM_ALLOCATOR_INIT_STRUCT(name,object_size,alignment,page_count,pmm_counter) \
-	(omm_allocator_t){ \
-		(name), \
-		HANDLE_INIT_STRUCT, \
-		SPINLOCK_INIT_STRUCT, \
-		((object_size)+(alignment)-1)&(-(alignment)), \
-		(alignment), \
-		(page_count), \
-		(((page_count)<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+(alignment)-1)&(-(alignment))))/(((object_size)+(alignment)-1)&(-(alignment))), \
-		(pmm_counter), \
-		NULL, \
-		NULL, \
-		NULL, \
-		0, \
-		0 \
-	}
-
-
-
 typedef struct _OMM_OBJECT{
 	struct _OMM_OBJECT* next;
 } omm_object_t;

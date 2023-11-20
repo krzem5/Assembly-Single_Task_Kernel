@@ -51,12 +51,21 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
+	if (object_size<sizeof(omm_object_t)){
+		object_size=sizeof(omm_object_t);
+	}
+	if (alignment&(alignment-1)){
+		panic("omm_init: alignment must be a power of 2");
+	}
+	if (page_count&(page_count-1)){
+		panic("omm_init: page_count must be a power of 2");
+	}
 	out->name=name;
 	spinlock_init(&(out->lock));
-	out->object_size=object_size;
+	out->object_size=(object_size+alignment-1)&(-alignment);
 	out->alignment=alignment;
 	out->page_count=page_count;
-	out->max_used_count=((page_count<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/((object_size+alignment-1)&(-alignment));
+	out->max_used_count=((page_count<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/out->object_size;
 	out->pmm_counter=pmm_counter;
 	out->page_free_head=NULL;
 	out->page_used_head=NULL;
@@ -87,19 +96,6 @@ omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 pag
 
 void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
-	if (!allocator->handle.rb_node.key){
-		handle_new(allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(allocator->handle));
-		handle_finish_setup(&(allocator->handle));
-	}
-	if (allocator->object_size<sizeof(omm_object_t)){
-		allocator->object_size=sizeof(omm_object_t);
-	}
-	if (allocator->alignment&(allocator->alignment-1)){
-		panic("omm_allocator_t alignment must be a power of 2");
-	}
-	if (allocator->page_count&(allocator->page_count-1)){
-		panic("omm_allocator_t page_count must be a power of 2");
-	}
 	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
