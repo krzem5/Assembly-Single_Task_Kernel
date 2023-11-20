@@ -42,6 +42,25 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 
+void omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
+	out->name=name;
+	handle_new(out,HANDLE_TYPE_OMM_ALLOCATOR,&(out->handle));
+	spinlock_init(&(out->lock));
+	out->object_size=object_size;
+	out->alignment=alignment;
+	out->page_count=page_count;
+	out->max_used_count=((page_count<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/((object_size+alignment-1)&(-alignment));
+	out->pmm_counter=pmm_counter;
+	out->page_free_head=0;
+	out->page_used_head=0;
+	out->page_full_head=0;
+	out->allocation_count=0;
+	out->deallocation_count=0;
+	handle_finish_setup(&(out->handle));
+}
+
+
+
 void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	if (!allocator->handle.rb_node.key){
