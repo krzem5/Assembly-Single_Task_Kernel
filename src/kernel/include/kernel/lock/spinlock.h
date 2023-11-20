@@ -101,6 +101,10 @@ const spinlock_profiling_descriptor_t*const* spinlock_profiling_get_descriptors(
 
 
 
+spinlock_profiling_data_t* __spinlock_profiling_init_data(const char* name,u32 line);
+
+
+
 void (spinlock_init)(spinlock_t* out);
 
 

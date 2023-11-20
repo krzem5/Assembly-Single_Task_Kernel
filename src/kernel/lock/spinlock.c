@@ -8,7 +8,11 @@
 
 
 
-static pmm_counter_descriptor_t _spinlock_profiling_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("spinlock_profiling_buffer");
+#define SPINLOCK_MAX_LOCK_TYPES 4096
+
+
+
+static pmm_counter_descriptor_t _spinlock_profiling_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("spinlock_profiling_data");
 
 
 
@@ -27,7 +31,7 @@ void spinlock_profiling_init(void){
 	}
 	u64 buffer_size=pmm_align_up_address((max_lock_id+1)*(kernel_section_spinlock_end()-kernel_section_spinlock_start())/sizeof(void*)*sizeof(spinlock_profiling_data_t));
 	INFO("Lock profiling buffer size: %v",buffer_size);
-	spinlock_profiling_data_t* data=(void*)(pmm_alloc(buffer_size>>PAGE_SIZE_SHIFT,&_spinlock_profiling_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	spinlock_profiling_data_t* data=(void*)(pmm_alloc(buffer_size>>PAGE_SIZE_SHIFT,&_spinlock_profiling_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (const spinlock_profiling_descriptor_t*const* descriptor=(void*)kernel_section_spinlock_start();(u64)descriptor<kernel_section_spinlock_end();descriptor++){
 		*((*descriptor)->data)=data;
 		data+=max_lock_id+1;
@@ -50,4 +54,10 @@ const spinlock_profiling_descriptor_t*const* spinlock_profiling_get_descriptors(
 		*count=(kernel_section_spinlock_end()-kernel_section_spinlock_start())/sizeof(void*);
 	}
 	return (void*)kernel_section_spinlock_start();
+}
+
+
+
+spinlock_profiling_data_t* __spinlock_profiling_init_data(const char* name,u32 line){
+	return (void*)(pmm_alloc(SPINLOCK_MAX_LOCK_TYPES*sizeof(spinlock_profiling_data_t),&_spinlock_profiling_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
