@@ -102,8 +102,8 @@ MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/modules/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DISABLE_ASSERT=1"],
+	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1","-DKERNEL_DISABLE_ASSERT=1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
