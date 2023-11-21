@@ -59,14 +59,14 @@ u16 __lock_profiling_alloc_type(const char* func,u32 line,u16* out){
 		_lock_profiling_type_descriptors=(void*)(data+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		lock_profiling_type_descriptors=_lock_profiling_type_descriptors;
 		if (*out!=SPINLOCK_EARLY_LOCK_TYPES){
-			panic("Not enough early locks");
+			panic("SPINLOCK_EARLY_LOCK_TYPES too large");
 		}
 		for (u16 i=0;i<SPINLOCK_EARLY_LOCK_TYPES;i++){
 			*(_lock_profiling_type_descriptors+i)=*(_lock_profiling_early_types+i);
 		}
 _skip_alloc:
 		if (!_lock_profiling_type_descriptors&&*out>=SPINLOCK_EARLY_LOCK_TYPES){
-			panic("Too many early locks");
+			panic("SPINLOCK_EARLY_LOCK_TYPES too small");
 		}
 		lock_profiling_type_descriptor_t* lock_profiling_type_descriptor=(_lock_profiling_type_descriptors?_lock_profiling_type_descriptors:_lock_profiling_early_types)+(*out);
 		lock_profiling_type_descriptor->func=func;

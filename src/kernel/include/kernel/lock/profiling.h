@@ -26,8 +26,4 @@ extern const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_he
 
 
 
-void lock_profiling_init(void);
-
-
-
 #endif
