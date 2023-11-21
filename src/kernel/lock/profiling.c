@@ -1,6 +1,5 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/_profiling_overload.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -13,16 +12,11 @@
 
 
 
-#define SPINLOCK_MAX_LOCK_TYPES 4096
-#define SPINLOCK_EARLY_LOCK_TYPES 8
-
-
-
 static pmm_counter_descriptor_t _lock_profiling_pmm_counter=PMM_COUNTER_INIT_STRUCT("lock_profiling");
 static spinlock_t _lock_profiling_data_lock=SPINLOCK_INIT_STRUCT;
 static KERNEL_ATOMIC u16 KERNEL_NOBSS _lock_next_type_id=0;
 static lock_profiling_type_descriptor_t* _lock_profiling_type_descriptors=NULL;
-static lock_profiling_type_descriptor_t KERNEL_NOBSS _lock_profiling_early_types[SPINLOCK_EARLY_LOCK_TYPES]={
+static lock_profiling_type_descriptor_t KERNEL_NOBSS _lock_profiling_early_types[LOCK_PROFILING_EARLY_LOCK_TYPES]={
 	{
 		.func="<unknown>",
 		.line=0
@@ -36,12 +30,6 @@ const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL
 
 
 
-void lock_profiling_init(void){
-	LOG("Initializing lock profiling data...");
-}
-
-
-
 u16 __lock_profiling_alloc_type(const char* func,u32 line,u16* out){
 	if (((u16)((*out)+1))>1){
 		return *out;
@@ -52,21 +40,21 @@ u16 __lock_profiling_alloc_type(const char* func,u32 line,u16* out){
 		if (_lock_profiling_type_descriptors){
 			goto _skip_alloc;
 		}
-		u64 data=pmm_alloc(pmm_align_up_address(SPINLOCK_MAX_LOCK_TYPES*sizeof(lock_profiling_type_descriptor_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
+		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_profiling_type_descriptor_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
 		if (!data){
 			goto _skip_alloc;
 		}
 		_lock_profiling_type_descriptors=(void*)(data+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		lock_profiling_type_descriptors=_lock_profiling_type_descriptors;
-		if (*out!=SPINLOCK_EARLY_LOCK_TYPES){
-			panic("SPINLOCK_EARLY_LOCK_TYPES too large");
+		if (*out!=LOCK_PROFILING_EARLY_LOCK_TYPES){
+			panic("LOCK_PROFILING_EARLY_LOCK_TYPES too large");
 		}
-		for (u16 i=0;i<SPINLOCK_EARLY_LOCK_TYPES;i++){
+		for (u16 i=0;i<LOCK_PROFILING_EARLY_LOCK_TYPES;i++){
 			*(_lock_profiling_type_descriptors+i)=*(_lock_profiling_early_types+i);
 		}
 _skip_alloc:
-		if (!_lock_profiling_type_descriptors&&*out>=SPINLOCK_EARLY_LOCK_TYPES){
-			panic("SPINLOCK_EARLY_LOCK_TYPES too small");
+		if (!_lock_profiling_type_descriptors&&*out>=LOCK_PROFILING_EARLY_LOCK_TYPES){
+			panic("LOCK_PROFILING_EARLY_LOCK_TYPES too small");
 		}
 		lock_profiling_type_descriptor_t* lock_profiling_type_descriptor=(_lock_profiling_type_descriptors?_lock_profiling_type_descriptors:_lock_profiling_early_types)+(*out);
 		lock_profiling_type_descriptor->func=func;
@@ -81,7 +69,7 @@ _skip_alloc:
 lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,u16 offset,u64* ptr){
 	u64 expected=0;
 	if (__atomic_compare_exchange_n(ptr,&expected,1,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){
-		u64 data=pmm_alloc(pmm_align_up_address(SPINLOCK_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
+		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
 		if (!data){
 			return NULL;
 		}

@@ -39,7 +39,7 @@ int main(int argc,const char** argv){
 		printf("lockinfo: unable to open lockfs\n");
 		return 1;
 	}
-	s64 types_fd=sys_fd_open(root_fd,"types",0);
+	s64 types_fd=sys_fd_open(root_fd,"type",0);
 	u32 max_type=0;
 	for (s64 iter=sys_fd_iter_start(types_fd);iter>=0;iter=sys_fd_iter_next(iter)){
 		char name[32];
