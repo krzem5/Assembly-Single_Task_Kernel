@@ -20,7 +20,7 @@ static u8 KERNEL_INIT_WRITE _serial_irq=0;
 
 
 
-serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT];
+serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT]; // not defined as KERNEL_INIT_WRITE due to inline spinlocks
 serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
 
 

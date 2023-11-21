@@ -7,7 +7,7 @@
 
 
 
-u64 time_boot_offset;
+u64 KERNEL_INIT_WRITE time_boot_offset;
 
 
 

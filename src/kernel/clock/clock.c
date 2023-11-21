@@ -10,9 +10,9 @@
 
 
 
-u64 clock_cpu_frequency;
-u64 clock_conversion_factor;
-u32 clock_conversion_shift;
+u64 KERNEL_INIT_WRITE clock_cpu_frequency;
+u64 KERNEL_INIT_WRITE clock_conversion_factor;
+u32 KERNEL_INIT_WRITE clock_conversion_shift;
 
 
 

@@ -30,7 +30,7 @@ static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
 static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
 
-pmm_load_balancer_stats_t* pmm_load_balancer_stats;
+pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
 
 
 

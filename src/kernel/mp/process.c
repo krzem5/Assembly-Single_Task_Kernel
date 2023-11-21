@@ -22,7 +22,7 @@
 
 
 static pmm_counter_descriptor_t _process_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_process");
-static omm_allocator_t* _process_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
 
 
@@ -36,7 +36,7 @@ HANDLE_DECLARE_TYPE(PROCESS,{
 	omm_dealloc(_process_allocator,process);
 });
 
-process_t* process_kernel;
+process_t* KERNEL_INIT_WRITE process_kernel;
 mmap_t process_kernel_image_mmap;
 
 
