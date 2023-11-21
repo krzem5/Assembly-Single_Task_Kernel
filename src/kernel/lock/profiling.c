@@ -17,20 +17,12 @@
 
 
 static pmm_counter_descriptor_t _lock_profiling_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("lock_profiling_data");
-static pmm_counter_descriptor_t _lock_lock_type_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_lock_lock_type");
-static omm_allocator_t* _lock_lock_type_allocator=NULL;
 static u16 _lock_next_type_id=0;
-
-
-
-HANDLE_DECLARE_TYPE(LOCK_TYPE,{});
-HANDLE_DECLARE_TYPE(LOCK_DATA,{});
 
 
 
 void lock_profiling_init(void){
 	LOG("Initializing lock profiling data...");
-	_lock_lock_type_allocator=omm_init("lock_lock_type",sizeof(lock_profiling_type_descriptor_t),8,1,&_lock_lock_type_omm_pmm_counter);
 }
 
 

@@ -4,13 +4,13 @@
 
 
 
-#define __lock_override_type_function(func,lock) \
+#define __lock_overload_type_function(func,lock) \
 	do{ \
 		static u16 KERNEL_NOBSS __lock_id=0; \
 		(func)(lock); \
 		(*(lock))|=__lock_profiling_alloc_type(__func__,__LINE__,&__lock_id)<<16; \
 	} while (0)
-#define __lock_override_data_function(func,lock) \
+#define __lock_overload_data_function(func,lock) \
 	do{ \
 		extern u64 clock_get_ticks(void); \
 		static u64 KERNEL_NOBSS __lock_profiling_data=0; \
