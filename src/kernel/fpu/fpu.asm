@@ -32,9 +32,9 @@ fpu_enable:
 	add ecx, 63
 	and ecx, 0xffffffc0
 	cmp ecx, dword [fpu_state_size]
-	jl ._smaller_fpu_state
+	jl ._skip_fpu_state_size_update
 	mov dword [fpu_state_size], ecx
-._smaller_fpu_state:
+._skip_fpu_state_size_update:
 	pop rbx
 	ret
 
@@ -79,7 +79,7 @@ fpu_restore:
 
 
 
-section .data noexec write
+section .idata noexec write
 
 
 
