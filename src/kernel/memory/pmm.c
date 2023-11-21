@@ -28,6 +28,7 @@ static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
+static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
 
 pmm_load_balancer_stats_t* pmm_load_balancer_stats;
 
@@ -153,6 +154,7 @@ void pmm_init(void){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
 	}
+	_pmm_initialized=1;
 }
 
 
@@ -169,6 +171,9 @@ void pmm_init_high_mem(void){
 
 
 u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
+	if (!_pmm_initialized){
+		return 0;
+	}
 	if (!count){
 		panic("pmm_alloc: trying to allocate zero physical pages");
 	}

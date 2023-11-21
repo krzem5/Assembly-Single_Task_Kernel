@@ -20,33 +20,18 @@ typedef u32 spinlock_t;
 
 #define _spinlock_profile_setup_function(func,lock) \
 	do{ \
-		static u16 __spinlock_id=0; \
-		static const spinlock_profiling_setup_descriptor_t __spinlock_profiling_setup_descriptor={ \
-			__func__, \
-			__LINE__, \
-			&__spinlock_id \
-		}; \
-		static const spinlock_profiling_setup_descriptor_t*const __attribute__((used,section(".spinlock_setup"))) __spinlock_profiling_setup_descriptor_ptr=&__spinlock_profiling_setup_descriptor; \
+		static u16 KERNEL_NOBSS __spinlock_id=0; \
 		(func)(lock); \
-		if (!__spinlock_id){ \
-			__spinlock_id=(&__spinlock_profiling_setup_descriptor_ptr)-spinlock_profiling_get_setup_descriptors(NULL)+1; \
-		} \
-		(*(lock))|=__spinlock_id<<16; \
+		(*(lock))|=__spinlock_profiling_alloc_lock_type(__func__,__LINE__,&__spinlock_id)<<16; \
 	} while (0)
 #define _spinlock_profile_function(func,lock) \
 	do{ \
-		static spinlock_profiling_data_t* __spinlock_profiling_data=NULL; \
-		static const spinlock_profiling_descriptor_t __spinlock_profiling_descriptor={ \
-			__func__, \
-			__LINE__, \
-			&__spinlock_profiling_data \
-		}; \
-		static const spinlock_profiling_descriptor_t*const __attribute__((used,section(".spinlock"))) __spinlock_profiling_descriptor_ptr=&__spinlock_profiling_descriptor; \
+		static u64 KERNEL_NOBSS __spinlock_profiling_data=0; \
+		spinlock_profiling_data_t* __local_profiling_data=__spinlock_profiling_process_data(__func__,__LINE__,(lock),&__spinlock_profiling_data); \
 		u64 __start_ticks=clock_get_ticks(); \
 		(func)(lock); \
 		u64 __end_ticks=clock_get_ticks(); \
-		if (__spinlock_profiling_data){ \
-			spinlock_profiling_data_t* __local_profiling_data=__spinlock_profiling_data+((*(lock))>>16); \
+		if (__local_profiling_data){ \
 			u64 __ticks=__end_ticks-__start_ticks; \
 			__local_profiling_data->ticks+=__ticks; \
 			__local_profiling_data->count++; \
@@ -73,35 +58,11 @@ typedef struct _SPINLOCK_PROFILING_DATA{
 
 
 
-typedef struct _SPINLOCK_PROFILING_SETUP_DESCRIPTOR{
-	const char* func;
-	u32 line;
-	u16* id;
-} spinlock_profiling_setup_descriptor_t;
+u16 __spinlock_profiling_alloc_lock_type(const char* func,u32 line,u16* out);
 
 
 
-typedef struct _SPINLOCK_PROFILING_DESCRIPTOR{
-	const char* func;
-	u32 line;
-	spinlock_profiling_data_t** data;
-} spinlock_profiling_descriptor_t;
-
-
-
-void spinlock_profiling_init(void);
-
-
-
-const spinlock_profiling_setup_descriptor_t*const* spinlock_profiling_get_setup_descriptors(u32* count);
-
-
-
-const spinlock_profiling_descriptor_t*const* spinlock_profiling_get_descriptors(u32* count);
-
-
-
-spinlock_profiling_data_t* __spinlock_profiling_init_data(const char* name,u32 line);
+spinlock_profiling_data_t* __spinlock_profiling_process_data(const char* func,u32 line,const spinlock_t* lock,u64* ptr);
 
 
 

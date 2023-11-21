@@ -9,7 +9,7 @@
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>

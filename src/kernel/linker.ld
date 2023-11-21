@@ -28,14 +28,6 @@ SECTIONS{
 		*(.handle)
 		. = ALIGN(8);
 		DECLARE_SECTION_END(handle);
-		DECLARE_SECTION_START(spinlock_setup);
-		*(.spinlock_setup)
-		. = ALIGN(8);
-		DECLARE_SECTION_END(spinlock_setup);
-		DECLARE_SECTION_START(spinlock);
-		*(.spinlock)
-		. = ALIGN(8);
-		DECLARE_SECTION_END(spinlock);
 		DECLARE_SECTION_START(gcov_info);
 #ifdef _KERNEL_COVERAGE_BUILD_
 		*(.gcov_info)
