@@ -2,6 +2,7 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/_profiling_overload.h>
 #include <kernel/lock/profiling.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -17,7 +18,12 @@
 
 
 static pmm_counter_descriptor_t _lock_profiling_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("lock_profiling_data");
+static spinlock_t _lock_profiling_data_lock=SPINLOCK_INIT_STRUCT;
 static u16 _lock_next_type_id=0;
+
+
+
+const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL;
 
 
 
@@ -51,6 +57,10 @@ lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 li
 		lock_profiling_data_descriptor_t* descriptor=(void*)data;
 		descriptor->func=func;
 		descriptor->line=line;
+		(spinlock_acquire_exclusive)(&_lock_profiling_data_lock);
+		descriptor->next=lock_profiling_data_descriptor_head;
+		lock_profiling_data_descriptor_head=descriptor;
+		(spinlock_release_exclusive)(&_lock_profiling_data_lock);
 		*ptr=data+sizeof(lock_profiling_data_descriptor_t);
 	}
 	if (*ptr<2){

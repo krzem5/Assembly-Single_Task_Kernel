@@ -14,6 +14,7 @@ typedef struct _LOCK_PROFILING_TYPE_DESCRIPTOR{
 
 
 typedef struct _LOCK_PROFILING_DATA_DESCRIPTOR{
+	const struct _LOCK_PROFILING_DATA_DESCRIPTOR* next;
 	const char* func;
 	u32 line;
 	lock_local_profiling_data_t data[];
