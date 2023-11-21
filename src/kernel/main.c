@@ -53,7 +53,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	vmm_init();
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
-	spinlock_profiling_init();
+	lock_profiling_init();
 	symbol_init();
 	clock_init();
 	time_init();
