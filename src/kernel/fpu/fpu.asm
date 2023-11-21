@@ -1,4 +1,4 @@
-global fpu_state_size:function
+global fpu_state_size:data 4
 global fpu_enable:function
 global fpu_init:function
 global fpu_save:function

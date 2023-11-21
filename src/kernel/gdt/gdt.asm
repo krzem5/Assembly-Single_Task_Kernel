@@ -14,47 +14,47 @@ gdt_enable:
 	and ecx, 0xff000000
 	shl rcx, 32
 	or rax, rcx
-	mov qword [gdt_tss], rax
+	mov qword [gdt.tss], rax
 	shr rdi, 32
-	mov qword [gdt_tss+8], rdi
+	mov qword [gdt.tss+8], rdi
 	lgdt [gdt_pointer]
-	push (gdt_kernel_code-gdt_start)
+	push (gdt.kernel_code-gdt)
 	push ._update_cs
 	retfq
 ._update_cs:
 	xor eax, eax
-	mov ax, (gdt_kernel_data-gdt_start)
+	mov ax, (gdt.kernel_data-gdt)
 	mov ds, ax
 	mov es, ax
 	mov ss, ax
-	mov ax, (gdt_user_data-gdt_start)
+	mov ax, (gdt.user_data-gdt)
 	mov fs, ax
 	mov gs, ax
-	mov ax, (gdt_tss-gdt_start)
+	mov ax, (gdt.tss-gdt)
 	ltr ax
 	ret
 
 
 
-section .data noexec write
+section .idata noexec write
 
 
 
 align 16
-gdt_start:
+gdt:
 	dq 0x0000000000000000
-gdt_kernel_code:
+.kernel_code:
 	dq 0x00209a0000000000
-gdt_kernel_data:
+.kernel_data:
 	dq 0x0000920000000000
-gdt_user_data:
+.user_data:
 	dq 0x0000f20000000000
-gdt_user_code:
+.user_code:
 	dq 0x0020fa0000000000
-gdt_tss:
+.tss:
 	dq 0x0000000000000000
 	dq 0x0000000000000000
-gdt_end:
+.end equ $
 
 
 
@@ -63,5 +63,5 @@ section .rdata noexec nowrite
 
 
 gdt_pointer:
-	dw gdt_end-gdt_start-1
-	dq gdt_start
+	dw gdt.end-gdt-1
+	dq gdt

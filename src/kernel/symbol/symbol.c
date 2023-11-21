@@ -33,7 +33,12 @@ void symbol_init(void){
 
 
 void symbol_add(const char* module,const char* name,u64 address){
-	symbol_t* symbol=omm_alloc(_symbol_allocator);
+	symbol_t* symbol=(symbol_t*)rb_tree_lookup_node(&_symbol_tree,address);
+	if (symbol){
+		ERROR("Conflicting symbols: '%s' and '%s'",name,symbol->name->data);
+		panic("Conflicting symbols");
+	}
+	symbol=omm_alloc(_symbol_allocator);
 	symbol->rb_node.key=address;
 	symbol->module=module;
 	symbol->name=smm_alloc(name,0);
