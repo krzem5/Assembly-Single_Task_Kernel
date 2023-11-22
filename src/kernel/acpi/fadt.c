@@ -46,7 +46,7 @@ void acpi_fadt_load(const acpi_fadt_t* fadt){
 
 
 
-void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
+KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
 	asm volatile("cli":::"memory");
 	if (restart){
 		_acpi_fadt_reboot();
