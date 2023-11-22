@@ -39,13 +39,15 @@ static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUC
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
 static omm_allocator_t* _module_allocator=NULL;
 
+handle_type_t module_handle_type=0;
 
 
-HANDLE_DECLARE_TYPE(MODULE,{
+
+static void _module_handle_destructor(handle_t* handle){
 	module_t* module=handle->object;
 	smm_dealloc(module->name);
 	omm_dealloc(_module_allocator,module);
-});
+}
 
 
 
@@ -72,7 +74,7 @@ static void _dealloc_region_memory(const module_address_range_t* region){
 
 
 static module_t* _lookup_module_by_name(const char* name){
-	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
+	HANDLE_FOREACH(module_handle_type){
 		handle_acquire(handle);
 		module_t* module=handle->object;
 		if (streq(module->name->data,name)){
@@ -344,10 +346,13 @@ module_t* module_load(const char* name){
 		_module_allocator=omm_init("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
 		spinlock_init(&(_module_allocator->lock));
 	}
+	if (!module_handle_type){
+		module_handle_type=handle_alloc("module",_module_handle_destructor);
+	}
 	module=omm_alloc(_module_allocator);
 	memset(module,0,sizeof(module_t));
 	module->state=MODULE_STATE_LOADING;
-	handle_new(module,HANDLE_TYPE_MODULE,&(module->handle));
+	handle_new(module,module_handle_type,&(module->handle));
 	module_loader_context_t ctx={
 		name,
 		module,

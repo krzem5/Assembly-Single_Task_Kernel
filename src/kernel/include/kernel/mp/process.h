@@ -6,7 +6,7 @@
 
 
 
-extern handle_type_t HANDLE_TYPE_PROCESS;
+extern handle_type_t process_handle_type;
 extern process_t* process_kernel;
 extern mmap_t process_kernel_image_mmap;
 

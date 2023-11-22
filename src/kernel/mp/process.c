@@ -26,7 +26,13 @@ static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
 
 
-HANDLE_DECLARE_TYPE(PROCESS,{
+handle_type_t process_handle_type;
+process_t* KERNEL_INIT_WRITE process_kernel;
+mmap_t process_kernel_image_mmap;
+
+
+
+static void _process_handle_destructor(handle_t* handle){
 	process_t* process=handle->object;
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
@@ -34,10 +40,7 @@ HANDLE_DECLARE_TYPE(PROCESS,{
 	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);
-});
-
-process_t* KERNEL_INIT_WRITE process_kernel;
-mmap_t process_kernel_image_mmap;
+}
 
 
 
@@ -45,8 +48,9 @@ void process_init(void){
 	LOG("Creating kernel process...");
 	_process_allocator=omm_init("process",sizeof(process_t),8,2,&_process_omm_pmm_counter);
 	spinlock_init(&(_process_allocator->lock));
+	process_handle_type=handle_alloc("process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
-	handle_new(process_kernel,HANDLE_TYPE_PROCESS,&(process_kernel->handle));
+	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
@@ -67,7 +71,7 @@ void process_init(void){
 
 process_t* process_new(const char* image,const char* name){
 	process_t* out=omm_alloc(_process_allocator);
-	handle_new(out,HANDLE_TYPE_PROCESS,&(out->handle));
+	handle_new(out,process_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));

@@ -19,20 +19,25 @@ static pmm_counter_descriptor_t _fd_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm
 static pmm_counter_descriptor_t _fd_iterator_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fd_iterator");
 static omm_allocator_t* _fd_allocator=NULL;
 static omm_allocator_t* _fd_iterator_allocator=NULL;
+static handle_type_t _fd_handle_type=0;
+static handle_type_t _fd_iterator_handle_type=0;
 
 
 
-static HANDLE_DECLARE_TYPE(FD,{
+static void _fd_handle_destructor(handle_t* handle){
 	fd_t* data=handle->object;
 	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
 		panic("FD_FLAG_DELETE_ON_EXIT");
 	}
 	omm_dealloc(_fd_allocator,data);
-});
-static HANDLE_DECLARE_TYPE(FD_ITERATOR,{
+}
+
+
+
+static void _fd_iterator_handle_destructor(handle_t* handle){
 	fd_iterator_t* data=handle->object;
 	omm_dealloc(_fd_iterator_allocator,data);
-});
+}
 
 
 
@@ -49,7 +54,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	handle_t* root_handle=NULL;
 	vfs_node_t* root_node=NULL;
 	if (root){
-		root_handle=handle_lookup_and_acquire(root,HANDLE_TYPE_FD);
+		root_handle=handle_lookup_and_acquire(root,_fd_handle_type);
 		if (!root_handle){
 			return FD_ERROR_INVALID_FD;
 		}
@@ -70,8 +75,11 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 		_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,&_fd_omm_pmm_counter);
 		spinlock_init(&(_fd_allocator->lock));
 	}
+	if (!_fd_handle_type){
+		_fd_handle_type=handle_alloc("fd",_fd_handle_destructor);
+	}
 	fd_t* out=omm_alloc(_fd_allocator);
-	handle_new(out,HANDLE_TYPE_FD,&(out->handle));
+	handle_new(out,_fd_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
@@ -90,7 +98,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 
 
 s64 fd_close(handle_id_t fd){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -107,7 +115,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -130,7 +138,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -150,7 +158,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 
 
 s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -180,7 +188,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 
 
 s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -198,7 +206,7 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 s64 fd_stat(handle_id_t fd,fd_stat_t* out){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -234,7 +242,7 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 	if (buffer_length<2){
 		return FD_ERROR_NO_SPACE;
 	}
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -249,7 +257,7 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 
 
 vfs_node_t* fd_get_node(handle_id_t fd){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return NULL;
 	}
@@ -260,7 +268,7 @@ vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 s64 fd_iter_start(handle_id_t fd){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,HANDLE_TYPE_FD);
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -282,8 +290,11 @@ s64 fd_iter_start(handle_id_t fd){
 		_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,&_fd_iterator_omm_pmm_counter);
 		spinlock_init(&(_fd_iterator_allocator->lock));
 	}
+	if (!_fd_iterator_handle_type){
+		_fd_iterator_handle_type=handle_alloc("fd_iterator",_fd_iterator_handle_destructor);
+	}
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
-	handle_new(out,HANDLE_TYPE_FD_ITERATOR,&(out->handle));
+	handle_new(out,_fd_iterator_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->node=data->node;
 	out->pointer=pointer;
@@ -297,7 +308,7 @@ s64 fd_iter_start(handle_id_t fd){
 
 
 s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
-	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,HANDLE_TYPE_FD_ITERATOR);
+	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return FD_ERROR_INVALID_FD;
 	}
@@ -324,7 +335,7 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 
 
 s64 fd_iter_next(handle_id_t iterator){
-	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,HANDLE_TYPE_FD_ITERATOR);
+	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return FD_ERROR_INVALID_FD;
 	}

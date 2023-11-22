@@ -61,5 +61,5 @@ static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 siz
 void procfs_process_init(void){
 	LOG("Creating process subsystem...");
 	dynamicfs_create_node(procfs->root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL);
-	handle_register_notification_listener(HANDLE_TYPE_PROCESS,&_procfs_process_notification_listener);
+	handle_register_notification_listener(process_handle_type,&_procfs_process_notification_listener);
 }

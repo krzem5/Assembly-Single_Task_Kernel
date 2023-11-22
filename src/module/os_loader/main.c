@@ -44,7 +44,7 @@ static _Bool _init(module_t* module){
 	_load_modules_from_order_file(MODULE_ORDER_FILE,1);
 	LOG("Searching for boot filesystem...");
 	filesystem_t* boot_fs=NULL;
-	HANDLE_FOREACH(HANDLE_TYPE_FS){
+	HANDLE_FOREACH(fs_handle_type){
 		handle_acquire(handle);
 		filesystem_t* fs=handle->object;
 		for (u8 i=0;i<16;i++){

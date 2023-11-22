@@ -95,7 +95,7 @@ void KERNEL_NOCOVERAGE coverage_export(void){
 	u64 size;
 	u64 base=kernel_gcov_info_data(&size);
 	_process_gcov_info_section(base,size);
-	HANDLE_FOREACH(HANDLE_TYPE_MODULE){
+	HANDLE_FOREACH(module_handle_type){
 		module_t* module=handle->object;
 		if (module->state==MODULE_STATE_LOADED&&module->gcov_info.size){
 			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.size);

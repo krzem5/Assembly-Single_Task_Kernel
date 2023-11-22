@@ -56,7 +56,7 @@ typedef struct _MODULE_DESCRIPTOR{
 
 
 
-extern handle_type_t HANDLE_TYPE_MODULE;
+extern handle_type_t module_handle_type;
 extern module_t* module_self;
 
 

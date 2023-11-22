@@ -16,16 +16,17 @@
 static pmm_counter_descriptor_t _fs_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fs");
 static omm_allocator_t* _fs_allocator=NULL;
 
+handle_type_t fs_handle_type=0;
 handle_type_t fs_descriptor_handle_type=0;
 
 
 
-HANDLE_DECLARE_TYPE(FS,{
+static void _fs_handle_destructor(handle_t* handle){
 	filesystem_t* fs=handle->object;
 	WARN("Delete filesystem: %p",fs);
 	handle_release(&(fs->descriptor->handle));
 	omm_dealloc(_fs_allocator,fs);
-});
+}
 
 
 
@@ -63,8 +64,11 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4,&_fs_omm_pmm_counter);
 		spinlock_init(&(_fs_allocator->lock));
 	}
+	if (!fs_handle_type){
+		fs_handle_type=handle_alloc("fs",_fs_handle_destructor);
+	}
 	filesystem_t* out=omm_alloc(_fs_allocator);
-	handle_new(out,HANDLE_TYPE_FS,&(out->handle));
+	handle_new(out,fs_handle_type,&(out->handle));
 	out->descriptor=descriptor;
 	out->functions=NULL;
 	out->partition=NULL;

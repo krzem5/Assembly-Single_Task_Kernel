@@ -14,12 +14,13 @@
 
 static pmm_counter_descriptor_t _event_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_event");
 static omm_allocator_t* _event_allocator=NULL;
+static handle_type_t _event_handle_type=0;
 
 
 
-static HANDLE_DECLARE_TYPE(EVENT,{
+static void _event_handle_destructor(handle_t* handle){
 	ERROR("Delete EVENT %p",handle);
-});
+}
 
 
 
@@ -28,8 +29,11 @@ event_t* event_new(void){
 		_event_allocator=omm_init("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
 		spinlock_init(&(_event_allocator->lock));
 	}
+	if (!_event_handle_type){
+		_event_handle_type=handle_alloc("event",_event_handle_destructor);
+	}
 	event_t* out=omm_alloc(_event_allocator);
-	handle_new(out,HANDLE_TYPE_EVENT,&(out->handle));
+	handle_new(out,_event_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
