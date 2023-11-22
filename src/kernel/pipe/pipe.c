@@ -148,7 +148,7 @@ static const vfs_functions_t _pipe_vfs_functions={
 
 
 
-vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
+KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 	vfs_node_t* out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);
 	out->flags|=VFS_NODE_TYPE_PIPE;
 	return out;

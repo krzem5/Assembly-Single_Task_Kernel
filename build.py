@@ -79,7 +79,7 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
 	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
-	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
+	MODE_RELEASE: ["-O3","-g0","-s","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
 	MODE_NORMAL: ["-D_KERNEL_DEBUG_BUILD_=1"],
@@ -283,11 +283,11 @@ def _file_not_changed(changed_files,deps_file_path):
 
 def _read_kernel_symbols(file_path):
 	out={}
-	for line in subprocess.run(["nm","-f","bsd",file_path],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-		line=line.strip().split(" ")
-		if (len(line)<3 or line[2].startswith("__func__") or "." in line[2]):
+	for line in subprocess.run(["objdump","-t",file_path],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+		line=line.strip().split("\t")
+		if (len(line)!=2 or line[1].startswith("__func__") or "." in line[1].split(" ")[-1]):
 			continue
-		out[line[2]]=int(line[0],16)
+		out[line[1].split(" ")[-1]]=(int(line[0][:16],16),".hidden" not in line[1] and line[0][17]=="g")
 	return out
 
 
@@ -327,18 +327,18 @@ def _generate_symbol_file(kernel_symbols,file_path):
 
 
 def _patch_kernel(file_path,kernel_symbols):
-	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"]
+	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"][0]
 	with open(file_path,"r+b") as wf:
-		wf.seek(kernel_symbols["_idt_data"]-address_offset)
+		wf.seek(kernel_symbols["_idt_data"][0]-address_offset)
 		for i in range(0,256):
-			address=kernel_symbols[f"_isr_entry_{i}"]
+			address=kernel_symbols[f"_isr_entry_{i}"][0]
 			ist=0
 			if (i==14):
 				ist=1
 			elif (i==32):
 				ist=2
 			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
-		offset=kernel_symbols["_raw_kernel_symbols"]-address_offset
+		offset=kernel_symbols["_raw_kernel_symbols"][0]-address_offset
 		while (True):
 			wf.seek(offset+8)
 			name_address=struct.unpack("<Q",wf.read(8))[0]
@@ -352,7 +352,7 @@ def _patch_kernel(file_path,kernel_symbols):
 					break
 				name+=chr(char)
 			wf.seek(offset)
-			wf.write(struct.pack("<Q",kernel_symbols[name]))
+			wf.write(struct.pack("<Q",kernel_symbols[name][0]^((not kernel_symbols[name][1])<<63)))
 			offset+=16
 
 
@@ -375,7 +375,7 @@ def _compile_module(module,dependencies):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding","-fvisibility=hidden","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
@@ -628,7 +628,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		command=None
 		rebuild_data_partition=True
 		if (suffix==".c"):
-			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding","-fvisibility=hidden","-m64","-Wall","-Werror","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		print(file)
@@ -699,7 +699,7 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/bin",0o644,True)
 	with open("build/kernel.bin","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o000)
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"]))
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	with open("build/partitions/initramfs.img","rb") as rf:
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o000)

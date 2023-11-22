@@ -17,7 +17,7 @@ static omm_allocator_t* _signal_state_allocator=NULL;
 
 
 
-void signal_send(thread_t* thread,isr_state_t* isr_state,signal_type_t type,u64 arg){
+KERNEL_PUBLIC void signal_send(thread_t* thread,isr_state_t* isr_state,signal_type_t type,u64 arg){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
 	if (thread->signal_state){

@@ -39,7 +39,7 @@ static spinlock_t _uid_global_lock;
 
 
 
-void uid_init(void){
+KERNEL_PUBLIC void uid_init(void){
 	LOG("Initializing user tree...");
 	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,&_uid_data_omm_pmm_counter);
 	spinlock_init(&(_uid_data_allocator->lock));
@@ -55,7 +55,7 @@ void uid_init(void){
 
 
 
-_Bool uid_create(uid_t uid,const char* name){
+KERNEL_PUBLIC _Bool uid_create(uid_t uid,const char* name){
 	spinlock_acquire_exclusive(&_uid_global_lock);
 	if (rb_tree_lookup_node(&_uid_tree,uid)){
 		spinlock_release_exclusive(&_uid_global_lock);
@@ -72,7 +72,7 @@ _Bool uid_create(uid_t uid,const char* name){
 
 
 
-_Bool uid_add_group(uid_t uid,gid_t gid){
+KERNEL_PUBLIC _Bool uid_add_group(uid_t uid,gid_t gid){
 	spinlock_acquire_exclusive(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
 	if (!uid_data||rb_tree_lookup_node(&(uid_data->group_tree),gid)){
@@ -88,7 +88,7 @@ _Bool uid_add_group(uid_t uid,gid_t gid){
 
 
 
-_Bool uid_has_group(uid_t uid,gid_t gid){
+KERNEL_PUBLIC _Bool uid_has_group(uid_t uid,gid_t gid){
 	spinlock_acquire_shared(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
 	_Bool out=(uid_data&&rb_tree_lookup_node(&(uid_data->group_tree),gid));
@@ -98,7 +98,7 @@ _Bool uid_has_group(uid_t uid,gid_t gid){
 
 
 
-_Bool uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
+KERNEL_PUBLIC _Bool uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return 0;
 	}

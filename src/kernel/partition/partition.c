@@ -17,8 +17,8 @@
 static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
 static omm_allocator_t* _partition_allocator=NULL;
 
-handle_type_t partition_handle_type=0;
-handle_type_t partition_table_descriptor_handle_type=0;
+KERNEL_PUBLIC handle_type_t partition_handle_type=0;
+KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
 
 
 
@@ -33,7 +33,7 @@ static void _partition_handle_destructor(handle_t* handle){
 
 
 
-void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
+KERNEL_PUBLIC void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Registering partition table descriptor '%s'...",descriptor->name);
 	if (!partition_table_descriptor_handle_type){
 		partition_table_descriptor_handle_type=handle_alloc("partition_table_descriptor",0);
@@ -59,14 +59,14 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 
 
 
-void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
+KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Unregistering partition table descriptor '%s'...",descriptor->name);
 	handle_destroy(&(descriptor->handle));
 }
 
 
 
-void partition_load_from_drive(drive_t* drive){
+KERNEL_PUBLIC void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
 	HANDLE_FOREACH(partition_table_descriptor_handle_type){
 		partition_table_descriptor_t* descriptor=handle->object;
@@ -84,7 +84,7 @@ void partition_load_from_drive(drive_t* drive){
 
 
 
-partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba){
+KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	if (!_partition_allocator){

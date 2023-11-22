@@ -24,11 +24,9 @@
 static pmm_counter_descriptor_t _process_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_process");
 static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
-
-
-handle_type_t process_handle_type;
-process_t* KERNEL_INIT_WRITE process_kernel;
-mmap_t process_kernel_image_mmap;
+KERNEL_PUBLIC handle_type_t process_handle_type;
+KERNEL_PUBLIC process_t* KERNEL_INIT_WRITE process_kernel;
+KERNEL_PUBLIC mmap_t process_kernel_image_mmap;
 
 
 
@@ -69,7 +67,7 @@ void process_init(void){
 
 
 
-process_t* process_new(const char* image,const char* name){
+KERNEL_PUBLIC process_t* process_new(const char* image,const char* name){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,process_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));

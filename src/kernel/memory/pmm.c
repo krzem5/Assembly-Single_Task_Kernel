@@ -24,8 +24,8 @@ static pmm_load_balancer_t _pmm_load_balancer;
 static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
 static _Bool KERNEL_INIT_WRITE _pmm_high_mem_initialized=0;
 
-handle_type_t pmm_counter_handle_type=0;
-const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
+KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
+KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
 
 
 
@@ -167,7 +167,7 @@ void pmm_init_high_mem(void){
 
 
 
-u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
+KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	if (!_pmm_initialized){
 		return 0;
 	}
@@ -249,7 +249,7 @@ _retry_allocator:
 
 
 
-void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
+KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");

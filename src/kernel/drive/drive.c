@@ -30,7 +30,7 @@ static void _drive_handle_destructor(handle_t* handle){
 
 
 
-void drive_register_type(drive_type_t* type){
+KERNEL_PUBLIC void drive_register_type(drive_type_t* type){
 	LOG("Registering drive type '%s'...",type->name);
 	if (!drive_type_handle_type){
 		drive_type_handle_type=handle_alloc("drive_type",NULL);
@@ -41,14 +41,14 @@ void drive_register_type(drive_type_t* type){
 
 
 
-void drive_unregister_type(drive_type_t* type){
+KERNEL_PUBLIC void drive_unregister_type(drive_type_t* type){
 	LOG("Unregistering drive type '%s'...",type->name);
 	handle_destroy(&(type->handle));
 }
 
 
 
-drive_t* drive_create(const drive_config_t* config){
+KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	if (!_drive_allocator){
 		_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,&_drive_omm_pmm_counter);
 		spinlock_init(&(_drive_allocator->lock));
@@ -81,12 +81,12 @@ drive_t* drive_create(const drive_config_t* config){
 
 
 
-u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
+KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
 	return drive->type->io_callback(drive,offset&DRIVE_OFFSET_MASK,buffer,size);
 }
 
 
 
-u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
+KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
 	return drive->type->io_callback(drive,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,size);
 }

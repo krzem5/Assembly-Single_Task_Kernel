@@ -7,7 +7,7 @@
 
 
 
-u64 KERNEL_INIT_WRITE time_boot_offset;
+KERNEL_PUBLIC u64 KERNEL_INIT_WRITE time_boot_offset;
 
 
 
@@ -20,7 +20,7 @@ void time_init(void){
 
 
 // Based on https://howardhinnant.github.io/date_algorithms.html#days_from_civil
-s64 time_to_nanoseconds(s16 year,u8 month,u8 day,u8 hour,u8 minute,u8 second){
+KERNEL_PUBLIC s64 time_to_nanoseconds(s16 year,u8 month,u8 day,u8 hour,u8 minute,u8 second){
 	year-=(month<=2);
 	u32 era=(year>=0?year:year-399)/400;
 	u32 year_of_era=year-era*400;

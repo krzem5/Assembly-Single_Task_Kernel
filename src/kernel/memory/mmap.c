@@ -132,7 +132,7 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
-void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
+KERNEL_PUBLIC void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 	KERNEL_ASSERT(pagemap);
 	KERNEL_ASSERT(out);
 	if (!_mmap_region_allocator){
@@ -161,7 +161,7 @@ void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 
 
 
-void mmap_deinit(mmap_t* mmap){
+KERNEL_PUBLIC void mmap_deinit(mmap_t* mmap){
 	KERNEL_ASSERT(mmap);
 	spinlock_acquire_exclusive(&(mmap->lock));
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;){
@@ -183,7 +183,7 @@ void mmap_deinit(mmap_t* mmap){
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file){
+KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file){
 	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
@@ -274,7 +274,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descri
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
+KERNEL_PUBLIC _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_dealloc: unaligned arguments");
@@ -293,7 +293,7 @@ _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 
 
 
-_Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
+KERNEL_PUBLIC _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	KERNEL_ASSERT(mmap);
 	KERNEL_ASSERT(region);
 	spinlock_acquire_exclusive(&(mmap->lock));
@@ -302,7 +302,7 @@ _Bool mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
-_Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u64 vmm_clear_flags){
+KERNEL_PUBLIC _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u64 vmm_clear_flags){
 	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_change_flags: unaligned arguments");
@@ -331,7 +331,7 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 
 
 
-_Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length){
+KERNEL_PUBLIC _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length){
 	KERNEL_ASSERT(mmap);
 	KERNEL_ASSERT(region);
 	KERNEL_ASSERT(!length||data);
@@ -361,7 +361,7 @@ _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* 
 
 
 
-mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
+KERNEL_PUBLIC mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 	KERNEL_ASSERT(mmap);
 	spinlock_acquire_shared(&(mmap->lock));
 	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->offset_tree),address);
@@ -371,7 +371,7 @@ mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 
 
 
-u64 mmap_get_vmm_flags(mmap_region_t* region){
+KERNEL_PUBLIC u64 mmap_get_vmm_flags(mmap_region_t* region){
 	KERNEL_ASSERT(region);
 	u64 out=VMM_PAGE_FLAG_PRESENT;
 	if (region->flags&MMAP_REGION_FLAG_VMM_READWRITE){

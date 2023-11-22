@@ -17,11 +17,11 @@ static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
 static handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
 
-handle_type_t handle_handle_type=0;
+KERNEL_PUBLIC handle_type_t handle_handle_type=0;
 
 
 
-handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
+KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
 	if (!_handle_descriptor_allocator){
 		omm_init_self();
 		rb_tree_init(&_handle_type_tree);
@@ -62,14 +62,14 @@ handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete
 
 
 
-handle_descriptor_t* handle_get_descriptor(handle_type_t type){
+KERNEL_PUBLIC handle_descriptor_t* handle_get_descriptor(handle_type_t type){
 	u64 out=(u64)rb_tree_lookup_node(&_handle_type_tree,type);
 	return (out?(handle_descriptor_t*)(out-__builtin_offsetof(handle_descriptor_t,rb_node)):NULL);
 }
 
 
 
-void handle_new(void* object,handle_type_t type,handle_t* out){
+KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		panic("Invalid handle type");
@@ -86,7 +86,7 @@ void handle_new(void* object,handle_type_t type,handle_t* out){
 
 
 
-void handle_finish_setup(handle_t* handle){
+KERNEL_PUBLIC void handle_finish_setup(handle_t* handle){
 	handle_acquire(handle);
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
 	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_CREATE);
@@ -95,7 +95,7 @@ void handle_finish_setup(handle_t* handle){
 
 
 
-handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
+KERNEL_PUBLIC handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(id));
 	if (!handle_descriptor||(type!=HANDLE_TYPE_ANY&&type!=HANDLE_ID_GET_TYPE(id))){
 		return NULL;
@@ -111,14 +111,14 @@ handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type){
 
 
 
-void handle_destroy(handle_t* handle){
+KERNEL_PUBLIC void handle_destroy(handle_t* handle){
 	SPINLOOP(handle->rc>1);
 	_handle_delete_internal(handle);
 }
 
 
 
-KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
+KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	if (handle->rc){
 		return;
 	}
@@ -138,7 +138,7 @@ KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 
 
 
-_Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener){
+KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;
@@ -154,7 +154,7 @@ _Bool handle_register_notification_listener(handle_type_t type,notification_list
 
 
 
-_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener){
+KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;

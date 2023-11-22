@@ -39,7 +39,7 @@ static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUC
 static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
 static omm_allocator_t* _module_allocator=NULL;
 
-handle_type_t module_handle_type=0;
+KERNEL_PUBLIC handle_type_t module_handle_type=0;
 
 
 
@@ -258,7 +258,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 			}
 		}
 		else if (elf_symbol->st_value){
-			symbol_add(ctx->name,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr);
+			symbol_add(ctx->name,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 		}
 	}
 	return ret;
@@ -319,7 +319,7 @@ static void _adjust_memory_flags(module_loader_context_t* ctx){
 
 
 
-module_t* module_load(const char* name){
+KERNEL_PUBLIC module_t* module_load(const char* name){
 	if (!name){
 		return NULL;
 	}
@@ -401,7 +401,7 @@ _error:
 
 
 
-void module_unload(module_t* module){
+KERNEL_PUBLIC void module_unload(module_t* module){
 	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
 		return;
 	}

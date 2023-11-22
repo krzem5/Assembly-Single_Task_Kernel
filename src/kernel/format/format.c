@@ -86,7 +86,7 @@ static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* ou
 
 
 
-u32 format_string(char* buffer,u32 length,const char* template,...){
+KERNEL_PUBLIC u32 format_string(char* buffer,u32 length,const char* template,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,template);
 	u32 out=format_string_va(buffer,length,template,&va);
@@ -96,7 +96,7 @@ u32 format_string(char* buffer,u32 length,const char* template,...){
 
 
 
-u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va){
+KERNEL_PUBLIC u32 format_string_va(char* buffer,u32 length,const char* template,__builtin_va_list* va){
 	if (!length){
 		return 0;
 	}

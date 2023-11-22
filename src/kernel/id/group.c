@@ -42,7 +42,7 @@ void gid_init(void){
 
 
 
-_Bool gid_create(gid_t gid,const char* name){
+KERNEL_PUBLIC _Bool gid_create(gid_t gid,const char* name){
 	spinlock_acquire_exclusive(&_gid_global_lock);
 	if (rb_tree_lookup_node(&_gid_tree,gid)){
 		spinlock_release_exclusive(&_gid_global_lock);
@@ -58,7 +58,7 @@ _Bool gid_create(gid_t gid,const char* name){
 
 
 
-_Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
+KERNEL_PUBLIC _Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return 0;
 	}

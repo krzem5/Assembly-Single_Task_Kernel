@@ -63,7 +63,7 @@ void random_init(void){
 
 
 
-void random_generate(void* buffer,u64 length){
+KERNEL_PUBLIC void random_generate(void* buffer,u64 length){
 	spinlock_acquire_exclusive(&_random_chacha_lock);
 	_random_get_entropy(_random_chacha_state);
 	u8* buffer_ptr=buffer;

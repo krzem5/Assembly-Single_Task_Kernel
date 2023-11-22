@@ -13,7 +13,7 @@ static omm_allocator_t* _usb_controller_allocator=NULL;
 
 
 
-usb_root_controller_t* usb_root_controller_alloc(void){
+KERNEL_PUBLIC usb_root_controller_t* usb_root_controller_alloc(void){
 	if (!_usb_root_controller_allocator){
 		_usb_root_controller_allocator=omm_init("usb_root_controller",sizeof(usb_root_controller_t),8,2,&_usb_root_controller_omm_pmm_counter);
 		spinlock_init(&(_usb_root_controller_allocator->lock));
@@ -25,7 +25,7 @@ usb_root_controller_t* usb_root_controller_alloc(void){
 
 
 
-usb_controller_t* usb_controller_alloc(usb_root_controller_t* root_controller){
+KERNEL_PUBLIC usb_controller_t* usb_controller_alloc(usb_root_controller_t* root_controller){
 	if (!_usb_controller_allocator){
 		_usb_controller_allocator=omm_init("usb_controller",sizeof(usb_controller_t),8,2,&_usb_controller_omm_pmm_counter);
 		spinlock_init(&(_usb_controller_allocator->lock));
@@ -37,12 +37,12 @@ usb_controller_t* usb_controller_alloc(usb_root_controller_t* root_controller){
 
 
 
-void usb_root_controller_dealloc(usb_root_controller_t* root_controller){
+KERNEL_PUBLIC void usb_root_controller_dealloc(usb_root_controller_t* root_controller){
 	omm_dealloc(_usb_root_controller_allocator,root_controller);
 }
 
 
 
-void usb_controller_dealloc(usb_controller_t* controller){
+KERNEL_PUBLIC void usb_controller_dealloc(usb_controller_t* controller){
 	omm_dealloc(_usb_controller_allocator,controller);
 }

@@ -46,7 +46,7 @@ void scheduler_enable(void){
 
 
 
-void scheduler_pause(void){
+KERNEL_PUBLIC void scheduler_pause(void){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -67,7 +67,7 @@ void scheduler_pause(void){
 
 
 
-void scheduler_resume(void){
+KERNEL_PUBLIC void scheduler_resume(void){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -145,7 +145,7 @@ void scheduler_isr_handler(isr_state_t* state){
 
 
 
-void scheduler_enqueue_thread(thread_t* thread){
+KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
 	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
@@ -159,7 +159,7 @@ void scheduler_enqueue_thread(thread_t* thread){
 
 
 
-const scheduler_timers_t* scheduler_get_timers(u16 cpu_index){
+KERNEL_PUBLIC const scheduler_timers_t* scheduler_get_timers(u16 cpu_index){
 	if (cpu_index>=cpu_count){
 		return NULL;
 	}

@@ -43,13 +43,13 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 
 
 
-vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
+KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
 	return _init_node(fs,fs->functions,name);
 }
 
 
 
-vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name){
+KERNEL_PUBLIC vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name){
 	vfs_node_t* out=_init_node(NULL,functions,name);
 	if (!out){
 		return NULL;
@@ -61,7 +61,7 @@ vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* fu
 
 
 
-void vfs_node_delete(vfs_node_t* node){
+KERNEL_PUBLIC void vfs_node_delete(vfs_node_t* node){
 	if (!node->functions->delete){
 		panic("vfs_node_delete: node->functions->delete not present");
 	}
@@ -78,7 +78,7 @@ void vfs_node_delete(vfs_node_t* node){
 
 
 
-vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name){
+KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name){
 	vfs_node_t* out=node->relatives.child;
 	for (;out;out=out->relatives.next_sibling){
 		if (out->name->length!=name->length||out->name->hash!=name->hash){
@@ -127,7 +127,7 @@ _check_next_external_sibling:
 
 
 
-u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
+KERNEL_PUBLIC u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	if ((pointer>>63)||(!pointer&&node->relatives.external_child)){
 		vfs_node_t* child=(pointer?((vfs_node_t*)pointer)->relatives.external_next_sibling:node->relatives.external_child);
 		if (child){
@@ -148,7 +148,7 @@ u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 
-_Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
+KERNEL_PUBLIC _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 	if (!node->functions->link){
 		return 0;
 	}
@@ -157,7 +157,7 @@ _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 
 
 
-_Bool vfs_node_unlink(vfs_node_t* node){
+KERNEL_PUBLIC _Bool vfs_node_unlink(vfs_node_t* node){
 	if (!node->functions->unlink){
 		return 0;
 	}
@@ -166,7 +166,7 @@ _Bool vfs_node_unlink(vfs_node_t* node){
 
 
 
-u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+KERNEL_PUBLIC u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->read){
 		return 0;
 	}
@@ -175,7 +175,7 @@ u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 
 
 
-u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
+KERNEL_PUBLIC u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->write){
 		return 0;
 	}
@@ -184,7 +184,7 @@ u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 f
 
 
 
-u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
+KERNEL_PUBLIC u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
 	if (!node->functions->resize){
 		return 0;
 	}
@@ -193,7 +193,7 @@ u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
 
 
 
-void vfs_node_flush(vfs_node_t* node){
+KERNEL_PUBLIC void vfs_node_flush(vfs_node_t* node){
 	if (node->functions->flush){
 		node->functions->flush(node);
 	}
@@ -201,7 +201,7 @@ void vfs_node_flush(vfs_node_t* node){
 
 
 
-void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child){
+KERNEL_PUBLIC void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child){
 	spinlock_acquire_exclusive(&(node->lock));
 	child->relatives.parent=node;
 	child->relatives.external_next_sibling=node->relatives.external_child;
@@ -216,7 +216,7 @@ void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child){
 
 
 
-void vfs_node_dettach_external_child(vfs_node_t* node){
+KERNEL_PUBLIC void vfs_node_dettach_external_child(vfs_node_t* node){
 	spinlock_acquire_exclusive(&(node->lock));
 	if (node->relatives.parent){
 		if (node->relatives.external_prev_sibling){

@@ -166,7 +166,7 @@ static void _configure_device(usb_device_t* device){
 
 
 
-usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
+KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
 	if (!_usb_device_allocator){
 		_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2,&_usb_device_omm_pmm_counter);
 		spinlock_init(&(_usb_device_allocator->lock));
@@ -217,7 +217,7 @@ usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent
 
 
 
-_Bool usb_device_set_configuration(usb_device_t* device,u8 value){
+KERNEL_PUBLIC _Bool usb_device_set_configuration(usb_device_t* device,u8 value){
 	usb_configuration_descriptor_t* configuration_descriptor=device->configuration_descriptor;
 	for (;configuration_descriptor&&configuration_descriptor->value!=value;configuration_descriptor=configuration_descriptor->next);
 	if (!configuration_descriptor){

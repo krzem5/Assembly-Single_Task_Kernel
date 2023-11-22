@@ -18,7 +18,7 @@ static omm_allocator_t* _config_item_allocator=NULL;
 
 
 
-config_t* config_load(vfs_node_t* file){
+KERNEL_PUBLIC config_t* config_load(vfs_node_t* file){
 	KERNEL_ASSERT(file);
 	if (!_config_allocator){
 		_config_allocator=omm_init("config",sizeof(config_t),8,1,&_config_omm_pmm_counter);
@@ -75,7 +75,7 @@ config_t* config_load(vfs_node_t* file){
 
 
 
-void config_dealloc(config_t* config){
+KERNEL_PUBLIC void config_dealloc(config_t* config){
 	KERNEL_ASSERT(config);
 	for (config_item_t* item=config->head;item;){
 		config_item_t* next=item->next;

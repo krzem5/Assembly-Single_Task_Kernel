@@ -5,7 +5,7 @@
 
 
 
-u8 vfs_permissions_get(vfs_node_t* node,uid_t uid,gid_t gid){
+KERNEL_PUBLIC u8 vfs_permissions_get(vfs_node_t* node,uid_t uid,gid_t gid){
 	u16 permissions=(node->flags&VFS_NODE_PERMISSION_MASK)>>VFS_NODE_PERMISSION_SHIFT;
 	if (!uid||!gid){
 		permissions|=permissions>>6;

@@ -1,4 +1,4 @@
-global idt_enable:function
+global idt_enable:function hidden
 section .text exec nowrite
 
 

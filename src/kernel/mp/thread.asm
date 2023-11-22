@@ -1,5 +1,5 @@
 extern thread_terminate
-global _thread_bootstrap_kernel_thread:function
+global _thread_bootstrap_kernel_thread:function hidden
 section .text exec nowrite
 
 

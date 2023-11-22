@@ -2,10 +2,10 @@
 
 
 
-global _random_entropy_pool:function
-global _random_entropy_pool_length:function
-global _random_init_entropy_pool:function
-global _random_get_entropy:function
+global _random_entropy_pool:data hidden
+global _random_entropy_pool_length:data hidden
+global _random_init_entropy_pool:function hidden
+global _random_get_entropy:function hidden
 section .text exec nowrite
 
 

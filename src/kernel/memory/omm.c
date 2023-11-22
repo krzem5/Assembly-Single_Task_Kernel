@@ -14,7 +14,7 @@
 static pmm_counter_descriptor_t _omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm");
 static omm_allocator_t* _omm_self_allocator=NULL;
 
-handle_type_t omm_handle_type=0;
+KERNEL_PUBLIC handle_type_t omm_handle_type=0;
 
 
 
@@ -88,7 +88,7 @@ void omm_init_handle_type(omm_allocator_t* handle_allocator){
 
 
 
-omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
+KERNEL_PUBLIC omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
 	if (!_omm_self_allocator){
 		panic("omm allocator not initialized yet");
 	}
@@ -103,7 +103,7 @@ omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 pag
 
 
 
-void* omm_alloc(omm_allocator_t* allocator){
+KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
@@ -140,7 +140,7 @@ void* omm_alloc(omm_allocator_t* allocator){
 
 
 
-void omm_dealloc(omm_allocator_t* allocator,void* object){
+KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));

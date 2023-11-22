@@ -18,10 +18,8 @@
 
 static u8 KERNEL_INIT_WRITE _serial_irq=0;
 
-
-
-serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT]; // not defined as KERNEL_INIT_WRITE due to inline spinlocks
-serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
+KERNEL_PUBLIC serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT]; // not defined as KERNEL_INIT_WRITE due to inline spinlocks
+KERNEL_PUBLIC serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
 
 
 
@@ -76,7 +74,7 @@ void serial_init_irq(void){
 
 
 
-void serial_send(serial_port_t* port,const void* buffer,u32 length){
+KERNEL_PUBLIC void serial_send(serial_port_t* port,const void* buffer,u32 length){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(port->read_lock));
 	for (;length;length--){
@@ -90,7 +88,7 @@ void serial_send(serial_port_t* port,const void* buffer,u32 length){
 
 
 
-u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
+KERNEL_PUBLIC u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
 	spinlock_acquire_exclusive(&(port->write_lock));
 	for (u32 i=0;i<length;i++){
 		while (!(io_port_in8(port->io_port+5)&0x01)){

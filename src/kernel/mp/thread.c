@@ -35,9 +35,7 @@ static pmm_counter_descriptor_t _thread_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT(
 static omm_allocator_t* _thread_allocator=NULL;
 static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
-
-
-handle_type_t thread_handle_type=0;
+KERNEL_PUBLIC handle_type_t thread_handle_type=0;
 
 
 
@@ -106,7 +104,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 
 
 
-thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
+KERNEL_PUBLIC thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
 	thread_t* out=_thread_alloc(process,stack_size,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->gpr_state.rip=rip;
@@ -124,7 +122,7 @@ thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
 
 
 
-thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,u8 arg_count,...){
+KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,u8 arg_count,...){
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
@@ -154,7 +152,7 @@ thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,
 
 
 
-void thread_delete(thread_t* thread){
+KERNEL_PUBLIC void thread_delete(thread_t* thread){
 	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
 	if (thread->user_stack_region){
@@ -170,7 +168,7 @@ void thread_delete(thread_t* thread){
 
 
 
-void KERNEL_NORETURN thread_terminate(void){
+KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	spinlock_acquire_exclusive(&(thread->lock));
@@ -182,7 +180,7 @@ void KERNEL_NORETURN thread_terminate(void){
 
 
 
-void thread_await_event(event_t* event){
+KERNEL_PUBLIC void thread_await_event(event_t* event){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	spinlock_acquire_exclusive(&(event->lock));

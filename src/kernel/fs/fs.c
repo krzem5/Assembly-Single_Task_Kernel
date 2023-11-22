@@ -30,7 +30,7 @@ static void _fs_handle_destructor(handle_t* handle){
 
 
 
-void fs_register_descriptor(filesystem_descriptor_t* descriptor){
+KERNEL_PUBLIC void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
 	if (!fs_descriptor_handle_type){
 		fs_descriptor_handle_type=handle_alloc("fs_descriptor",NULL);
@@ -51,14 +51,14 @@ void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 
 
 
-void fs_unregister_descriptor(filesystem_descriptor_t* descriptor){
+KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Unregistering filesystem descriptor '%s'...",descriptor->name);
 	handle_destroy(&(descriptor->handle));
 }
 
 
 
-filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
+KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	if (!_fs_allocator){
 		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4,&_fs_omm_pmm_counter);
@@ -81,7 +81,7 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 
 
 
-filesystem_t* fs_load(partition_t* partition){
+KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 	HANDLE_FOREACH(fs_descriptor_handle_type){
 		filesystem_descriptor_t* descriptor=handle->object;
 		if (!descriptor->load_callback){

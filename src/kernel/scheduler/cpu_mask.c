@@ -13,7 +13,7 @@ static pmm_counter_descriptor_t _scheduler_cpu_mask_omm_pmm_counter=PMM_COUNTER_
 static omm_allocator_t* KERNEL_INIT_WRITE _scheduler_cpu_mask_allocator;
 static u64 KERNEL_INIT_WRITE _scheduler_last_bitmap_entry;
 
-u32 KERNEL_INIT_WRITE cpu_mask_size;
+KERNEL_PUBLIC u32 KERNEL_INIT_WRITE cpu_mask_size;
 
 
 
@@ -27,7 +27,7 @@ void cpu_mask_init(void){
 
 
 
-cpu_mask_t* cpu_mask_new(void){
+KERNEL_PUBLIC cpu_mask_t* cpu_mask_new(void){
 	cpu_mask_t* out=omm_alloc(_scheduler_cpu_mask_allocator);
 	for (u16 i=0;i<(cpu_count>>6);i++){
 		out->bitmap[i]=0xffffffffffffffffull;
@@ -40,6 +40,6 @@ cpu_mask_t* cpu_mask_new(void){
 
 
 
-void cpu_mask_delete(cpu_mask_t* cpu_mask){
+KERNEL_PUBLIC void cpu_mask_delete(cpu_mask_t* cpu_mask){
 	omm_dealloc(_scheduler_cpu_mask_allocator,cpu_mask);
 }

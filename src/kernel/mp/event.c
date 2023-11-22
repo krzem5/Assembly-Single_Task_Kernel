@@ -24,7 +24,7 @@ static void _event_handle_destructor(handle_t* handle){
 
 
 
-event_t* event_new(void){
+KERNEL_PUBLIC event_t* event_new(void){
 	if (!_event_allocator){
 		_event_allocator=omm_init("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
 		spinlock_init(&(_event_allocator->lock));
@@ -43,7 +43,7 @@ event_t* event_new(void){
 
 
 
-void event_delete(event_t* event){
+KERNEL_PUBLIC void event_delete(event_t* event){
 	spinlock_acquire_exclusive(&(event->lock));
 	if (event->head||event->handle.rc){
 		panic("Referenced events cannot be deleted");
@@ -54,7 +54,7 @@ void event_delete(event_t* event){
 
 
 
-void event_dispatch(event_t* event,_Bool dispatch_all){
+KERNEL_PUBLIC void event_dispatch(event_t* event,_Bool dispatch_all){
 	spinlock_acquire_exclusive(&(event->lock));
 	while (event->head){
 		thread_t* thread=event->head;

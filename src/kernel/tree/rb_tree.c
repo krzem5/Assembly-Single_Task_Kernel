@@ -55,14 +55,14 @@ static KERNEL_INLINE void _replace_node(rb_tree_t* tree,rb_tree_node_t* old,rb_t
 
 
 
-void rb_tree_init(rb_tree_t* tree){
+KERNEL_PUBLIC void rb_tree_init(rb_tree_t* tree){
 	tree->root=NIL_NODE;
 	spinlock_init(&(tree->lock));
 }
 
 
 
-void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
+KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_exclusive(&(tree->lock));
 	x->rb_left=NIL_NODE;
 	x->rb_right=NIL_NODE;
@@ -133,7 +133,7 @@ _cleanup:
 
 
 
-void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x){
+KERNEL_PUBLIC void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_exclusive(&(tree->lock));
 	x->rb_left=NIL_NODE;
 	x->rb_right=NIL_NODE;
@@ -184,7 +184,7 @@ _cleanup:
 
 
 
-rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	for (rb_tree_node_t* x=tree->root;x!=NIL_NODE;x=x->rb_nodes[x->key<key]){
 		if (x->key==key){
@@ -198,7 +198,7 @@ rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 
 
 
-rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	while (x&&x->key!=key){
@@ -226,7 +226,7 @@ rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
 
 
 
-rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	while (x&&x->key!=key){
@@ -254,7 +254,7 @@ rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 
 
 
-void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
+KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_exclusive(&(tree->lock));
 	_Bool skip_recursive_fix=_get_color(x);
 	rb_tree_node_t* z;
@@ -336,7 +336,7 @@ _cleanup:
 
 
 
-rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 	if (tree->root==NIL_NODE){
 		return NULL;
 	}
@@ -349,7 +349,7 @@ rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 
 
 
-rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_shared(&(tree->lock));
 	if (x->rb_right!=NIL_NODE){
 		for (x=x->rb_right;x->rb_left!=NIL_NODE;x=x->rb_left);

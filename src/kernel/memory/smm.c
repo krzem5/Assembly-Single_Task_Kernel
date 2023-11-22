@@ -43,7 +43,7 @@ DECLARE_ALLOCATOR(256);
 
 
 
-string_t* smm_alloc(const char* data,u32 length){
+KERNEL_PUBLIC string_t* smm_alloc(const char* data,u32 length){
 	if (!length){
 		length=smm_length(data);
 	}
@@ -80,7 +80,7 @@ string_t* smm_alloc(const char* data,u32 length){
 
 
 
-void smm_dealloc(string_t* string){
+KERNEL_PUBLIC void smm_dealloc(string_t* string){
 	USE_ALLOCATOR_DEALLOC(4)
 	else USE_ALLOCATOR_DEALLOC(8)
 	else USE_ALLOCATOR_DEALLOC(12)
@@ -100,7 +100,7 @@ void smm_dealloc(string_t* string){
 
 
 
-string_t* smm_duplicate(const string_t* string){
+KERNEL_PUBLIC string_t* smm_duplicate(const string_t* string){
 	u32 length=string->length;
 	string_t* out;
 	USE_ALLOCATOR(4)
@@ -124,7 +124,7 @@ string_t* smm_duplicate(const string_t* string){
 
 
 
-void smm_rehash(string_t* string){
+KERNEL_PUBLIC void smm_rehash(string_t* string){
 	string->hash=FNV_OFFSET_BASIS;
 	for (u32 i=0;i<string->length;i++){
 		string->hash=(string->hash^string->data[i])*FNV_PRIME;
@@ -133,7 +133,7 @@ void smm_rehash(string_t* string){
 
 
 
-u32 smm_length(const char* data){
+KERNEL_PUBLIC u32 smm_length(const char* data){
 	u32 out=0;
 	for (;data[out];out++);
 	return out;
@@ -141,6 +141,6 @@ u32 smm_length(const char* data){
 
 
 
-void _smm_cleanup(string_t** string){
+KERNEL_PUBLIC void _smm_cleanup(string_t** string){
 	smm_dealloc(*string);
 }

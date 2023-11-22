@@ -18,9 +18,9 @@ static numa_memory_range_t* KERNEL_INIT_WRITE _numa_memory_ranges;
 static u32 KERNEL_INIT_WRITE _numa_remaining_cpus;
 static u32 KERNEL_INIT_WRITE _numa_remaining_memory_ranges;
 
-u32 KERNEL_INIT_WRITE numa_node_count=0;
-numa_node_t* KERNEL_INIT_WRITE numa_nodes;
-u8* KERNEL_INIT_WRITE numa_node_locality_matrix;
+KERNEL_PUBLIC u32 KERNEL_INIT_WRITE numa_node_count=0;
+KERNEL_PUBLIC numa_node_t* KERNEL_INIT_WRITE numa_nodes;
+KERNEL_PUBLIC u8* KERNEL_INIT_WRITE numa_node_locality_matrix;
 
 
 

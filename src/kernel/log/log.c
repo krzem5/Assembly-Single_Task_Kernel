@@ -8,7 +8,7 @@
 
 
 
-void log(const char* template,...){
+KERNEL_PUBLIC void log(const char* template,...){
 	char buffer[BUFFER_SIZE];
 	__builtin_va_list va;
 	__builtin_va_start(va,template);

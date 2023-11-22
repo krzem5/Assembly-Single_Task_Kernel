@@ -1,4 +1,4 @@
-global topology_get_cpu_bits:function
+global topology_get_cpu_bits:function hidden
 section .text exec nowrite
 
 

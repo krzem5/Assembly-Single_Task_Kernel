@@ -4,14 +4,14 @@
 
 
 
-void notification_dispatcher_init(notification_dispatcher_t* dispatcher){
+KERNEL_PUBLIC void notification_dispatcher_init(notification_dispatcher_t* dispatcher){
 	spinlock_init(&(dispatcher->lock));
 	dispatcher->head=NULL;
 }
 
 
 
-void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener){
+KERNEL_PUBLIC void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener){
 	spinlock_acquire_exclusive(&(dispatcher->lock));
 	listener->prev=NULL;
 	listener->next=dispatcher->head;
@@ -24,7 +24,7 @@ void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,
 
 
 
-void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener){
+KERNEL_PUBLIC void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener){
 	spinlock_acquire_exclusive(&(dispatcher->lock));
 	if (listener->prev){
 		listener->prev->next=listener->next;
@@ -40,7 +40,7 @@ void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatch
 
 
 
-void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,void* object,u32 type){
+KERNEL_PUBLIC void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,void* object,u32 type){
 	spinlock_acquire_shared(&(dispatcher->lock));
 	for (const notification_listener_t* listener=dispatcher->head;listener;listener=listener->next){
 		listener->callback(object,type);

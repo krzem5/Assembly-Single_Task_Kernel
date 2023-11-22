@@ -106,7 +106,7 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_
 
 
 
-void vfs_mount(filesystem_t* fs,const char* path){
+KERNEL_PUBLIC void vfs_mount(filesystem_t* fs,const char* path){
 	if (!path){
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
@@ -128,13 +128,13 @@ void vfs_mount(filesystem_t* fs,const char* path){
 
 
 
-vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
+KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
 	return _lookup_node(root,path,flags,uid,gid,NULL,NULL);
 }
 
 
 
-u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
+KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 	u32 i=buffer_length;
 	for (;node;node=node->relatives.parent){
 		if (i<node->name->length+1){

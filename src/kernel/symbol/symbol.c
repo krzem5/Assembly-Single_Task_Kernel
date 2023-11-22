@@ -26,13 +26,13 @@ void symbol_init(void){
 	spinlock_init(&(_symbol_allocator->lock));
 	rb_tree_init(&_symbol_tree);
 	for (u32 i=0;_raw_kernel_symbols[i];i+=2){
-		symbol_add("kernel",(const char*)(_raw_kernel_symbols[i+1]),_raw_kernel_symbols[i]);
+		symbol_add("kernel",(const char*)(_raw_kernel_symbols[i+1]),_raw_kernel_symbols[i]|0x8000000000000000ull,_raw_kernel_symbols[i]>>63);
 	}
 }
 
 
 
-void symbol_add(const char* module,const char* name,u64 address){
+void symbol_add(const char* module,const char* name,u64 address,_Bool is_public){
 	symbol_t* symbol=(symbol_t*)rb_tree_lookup_node(&_symbol_tree,address);
 	if (symbol){
 		ERROR("Conflicting symbols: '%s' and '%s'",name,symbol->name->data);

@@ -1,4 +1,4 @@
-global _acpi_fadt_reboot:function
+global _acpi_fadt_reboot:function hidden
 section .text exec nowrite
 
 

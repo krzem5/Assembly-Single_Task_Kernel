@@ -1,8 +1,8 @@
-global fpu_state_size:data 4
-global fpu_enable:function
-global fpu_init:function
-global fpu_save:function
-global fpu_restore:function
+global fpu_state_size:data hidden 4
+global fpu_enable:function hidden
+global fpu_init:function hidden
+global fpu_save:function hidden
+global fpu_restore:function hidden
 section .text exec nowrite
 
 

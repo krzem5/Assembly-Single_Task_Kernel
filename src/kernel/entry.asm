@@ -3,7 +3,7 @@
 
 
 extern main
-global _start:function
+global _start:function hidden
 section .entry exec nowrite
 
 

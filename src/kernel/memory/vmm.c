@@ -15,7 +15,7 @@ static pmm_counter_descriptor_t _vmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm");
 
 
 
-vmm_pagemap_t vmm_kernel_pagemap;
+KERNEL_PUBLIC vmm_pagemap_t vmm_kernel_pagemap;
 
 
 
@@ -216,7 +216,7 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 
 
-void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
+KERNEL_PUBLIC void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
 	scheduler_pause();
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -265,7 +265,7 @@ _cleanup:
 
 
 
-void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags,u64 count){
+KERNEL_PUBLIC void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags,u64 count){
 	if (!count){
 		return;
 	}
@@ -286,7 +286,7 @@ void vmm_map_pages(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_addre
 
 
 
-u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
+KERNEL_PUBLIC u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	if (virtual_address&(PAGE_SIZE-1)){
 		return 0;
 	}
@@ -300,7 +300,7 @@ u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 
-u64 vmm_identity_map(u64 physical_address,u64 size){
+KERNEL_PUBLIC u64 vmm_identity_map(u64 physical_address,u64 size){
 	if (!size){
 		return physical_address+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	}
@@ -317,7 +317,7 @@ u64 vmm_identity_map(u64 physical_address,u64 size){
 
 
 
-u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
+KERNEL_PUBLIC u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 out=0;
 	scheduler_pause();
 	spinlock_acquire_shared(&(pagemap->lock));
@@ -358,7 +358,7 @@ _cleanup:
 
 
 
-void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,_Bool invalidate_tlb){
+KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,_Bool invalidate_tlb){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(pagemap->lock));
 	for (;count;count--){
@@ -377,7 +377,7 @@ void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u
 
 
 
-_Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
+KERNEL_PUBLIC _Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	scheduler_pause();
 	spinlock_acquire_shared(&(pagemap->lock));
 	_Bool out=1;

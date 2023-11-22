@@ -173,7 +173,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 
 
 
-const scheduler_load_balancer_stats_t* scheduler_load_balancer_get_stats(u16 cpu_index){
+KERNEL_PUBLIC const scheduler_load_balancer_stats_t* scheduler_load_balancer_get_stats(u16 cpu_index){
 	if (cpu_index>=cpu_count){
 		return NULL;
 	}

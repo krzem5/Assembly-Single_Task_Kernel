@@ -320,7 +320,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 
 
 
-handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
+KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!path){
 		return 0;
 	}

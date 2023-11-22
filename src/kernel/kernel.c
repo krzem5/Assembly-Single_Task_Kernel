@@ -66,7 +66,7 @@ void kernel_adjust_memory_flags_after_init(void){
 
 
 
-u64 kernel_gcov_info_data(u64* size){
+KERNEL_PUBLIC u64 kernel_gcov_info_data(u64* size){
 	*size=kernel_section_gcov_info_end()-kernel_section_gcov_info_start();
 	return kernel_section_gcov_info_start();
 }

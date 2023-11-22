@@ -2,6 +2,6 @@
 
 
 
-void KERNEL_NOCOVERAGE __gcov_merge_add(void){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE __gcov_merge_add(void){
 	return;
 }
