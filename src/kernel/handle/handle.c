@@ -21,27 +21,20 @@ handle_type_t handle_handle_type=0;
 
 
 
-void _handle_allocator_handle_fix(void){
-	handle_handle_type=handle_alloc("handle",NULL);
-	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){
-		handle_descriptor_t* descriptor=(handle_descriptor_t*)(((u64)rb_node)-__builtin_offsetof(handle_descriptor_t,rb_node));
-		if (!descriptor->handle.rb_node.key){
-			handle_new(descriptor,handle_handle_type,&(descriptor->handle));
-			handle_finish_setup(&(descriptor->handle));
-		}
-	}
-	handle_new(_handle_descriptor_allocator,omm_handle_type,&(_handle_descriptor_allocator->handle));
-	handle_finish_setup(&(_handle_descriptor_allocator->handle));
-}
-
-
-
 handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
 	if (!_handle_descriptor_allocator){
 		omm_init_self();
 		rb_tree_init(&_handle_type_tree);
 		_handle_descriptor_allocator=omm_init("handle_descriptor",sizeof(handle_descriptor_t),8,2,&_handle_descriptor_omm_pmm_counter);
 		omm_init_handle_type(_handle_descriptor_allocator);
+		handle_handle_type=handle_alloc("handle",NULL);
+		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){
+			handle_descriptor_t* descriptor=(handle_descriptor_t*)(((u64)rb_node)-__builtin_offsetof(handle_descriptor_t,rb_node));
+			if (!descriptor->handle.rb_node.key){
+				handle_new(descriptor,handle_handle_type,&(descriptor->handle));
+				handle_finish_setup(&(descriptor->handle));
+			}
+		}
 	}
 	handle_type_t out=__atomic_add_fetch(&_handle_max_type,1,__ATOMIC_SEQ_CST);
 	handle_descriptor_t* descriptor=omm_alloc(_handle_descriptor_allocator);

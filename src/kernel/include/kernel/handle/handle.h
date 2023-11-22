@@ -60,10 +60,6 @@ extern handle_type_t handle_handle_type;
 
 
 
-void _handle_allocator_handle_fix(void);
-
-
-
 void handle_init(void);
 
 
