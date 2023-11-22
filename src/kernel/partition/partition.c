@@ -39,7 +39,7 @@ void partition_register_table_descriptor(partition_table_descriptor_t* descripto
 	}
 	handle_new(descriptor,partition_table_descriptor_handle_type,&(descriptor->handle));
 	handle_finish_setup(&(descriptor->handle));
-	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
+	HANDLE_FOREACH(drive_handle_type){
 		drive_t* drive=handle->object;
 		if (drive->partition_table_descriptor){
 			continue;

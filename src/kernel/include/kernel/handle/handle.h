@@ -27,7 +27,7 @@
 
 #define HANDLE_ITER_START(descriptor) ((handle_t*)rb_tree_iter_start(&((descriptor)->tree)))
 #define HANDLE_ITER_NEXT(descriptor,handle) ((handle_t*)rb_tree_iter_next(&((descriptor)->tree),&((handle)->rb_node)))
-#define HANDLE_FOREACH(type) handle_descriptor_t* __descriptor=handle_get_descriptor((type));for (handle_t* handle=HANDLE_ITER_START(__descriptor);handle;handle=HANDLE_ITER_NEXT(__descriptor,handle))
+#define HANDLE_FOREACH(type) handle_descriptor_t* __descriptor=handle_get_descriptor((type));if (__descriptor)for (handle_t* handle=HANDLE_ITER_START(__descriptor);handle;handle=HANDLE_ITER_NEXT(__descriptor,handle))
 
 
 

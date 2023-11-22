@@ -17,20 +17,15 @@
 static pmm_counter_descriptor_t _pmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("pmm");
 static pmm_counter_descriptor_t _pmm_kernel_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("kernel_image");
 static pmm_counter_descriptor_t _pmm_total_pmm_counter=PMM_COUNTER_INIT_STRUCT("total");
-
-
-
-HANDLE_DECLARE_TYPE(PMM_COUNTER,{});
-
-
-
 static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
 static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
+static _Bool KERNEL_INIT_WRITE _pmm_high_mem_initialized=0;
 
-pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
+handle_type_t pmm_counter_handle_type=0;
+const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
 
 
 
@@ -136,13 +131,7 @@ void pmm_init(void){
 	_pmm_load_balancer.stats.miss_count=0;
 	_pmm_load_balancer.stats.miss_locked_count=0;
 	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
-	LOG("Registering counters...");
-	handle_new(&_pmm_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_pmm_counter.handle));
-	handle_new(&_pmm_kernel_image_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_kernel_image_pmm_counter.handle));
-	handle_new(&_pmm_total_pmm_counter,HANDLE_TYPE_PMM_COUNTER,&(_pmm_total_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_kernel_image_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_total_pmm_counter.handle));
+	LOG("Initializing coutners...");
 	_pmm_pmm_counter.count+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)+bitmap_size)>>PAGE_SIZE_SHIFT;
 	_pmm_kernel_image_pmm_counter.count+=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	LOG("Registering low memory...");
@@ -166,6 +155,15 @@ void pmm_init_high_mem(void){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
+	INFO("Registering counters...");
+	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
+	handle_new(&_pmm_pmm_counter,pmm_counter_handle_type,&(_pmm_pmm_counter.handle));
+	handle_new(&_pmm_kernel_image_pmm_counter,pmm_counter_handle_type,&(_pmm_kernel_image_pmm_counter.handle));
+	handle_new(&_pmm_total_pmm_counter,pmm_counter_handle_type,&(_pmm_total_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_kernel_image_pmm_counter.handle));
+	handle_finish_setup(&(_pmm_total_pmm_counter.handle));
+	_pmm_high_mem_initialized=1;
 }
 
 
@@ -239,8 +237,8 @@ _retry_allocator:
 	_toggle_address_bit(allocator,out+_get_block_size(i));
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
-	if (!counter->handle.rb_node.key){
-		handle_new(counter,HANDLE_TYPE_PMM_COUNTER,&(counter->handle));
+	if (_pmm_high_mem_initialized&&!counter->handle.rb_node.key){
+		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
 		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;

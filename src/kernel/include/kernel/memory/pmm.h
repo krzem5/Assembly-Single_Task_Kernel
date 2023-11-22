@@ -73,8 +73,8 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 
-extern handle_type_t HANDLE_TYPE_PMM_COUNTER;
-extern pmm_load_balancer_stats_t* pmm_load_balancer_stats;
+extern handle_type_t pmm_counter_handle_type;
+extern const pmm_load_balancer_stats_t* pmm_load_balancer_stats;
 
 
 
