@@ -97,7 +97,7 @@ void ioapic_add_override(u8 irq,u32 gsi,u16 flags){
 
 
 
-void ioapic_redirect_irq(u8 irq,u8 vector){
+KERNEL_PUBLIC void ioapic_redirect_irq(u8 irq,u8 vector){
 	u16 flags=0;
 	const ioapic_override_t* ioapic_override=_ioapic_override_data;
 	for (u16 i=0;i<_ioapic_override_count;i++){

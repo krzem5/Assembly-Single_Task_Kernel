@@ -42,6 +42,7 @@ void symbol_add(const char* module,const char* name,u64 address,_Bool is_public)
 	symbol->rb_node.key=address;
 	symbol->module=module;
 	symbol->name=smm_alloc(name,0);
+	symbol->is_public=is_public;
 	rb_tree_insert_node(&_symbol_tree,&(symbol->rb_node));
 }
 

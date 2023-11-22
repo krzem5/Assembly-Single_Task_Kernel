@@ -88,7 +88,7 @@ static const vfs_functions_t _dynamicfs_functions={
 
 
 
-filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor){
+KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor){
 	if (!_dynamicfs_vfs_node_allocator){
 		_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,&_dynamicfs_node_omm_pmm_counter);
 		spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
@@ -105,7 +105,7 @@ filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descri
 
 
 
-vfs_node_t* dynamicfs_create_node(vfs_node_t* parent,const char* name,u32 type,string_t* data,dynamicfs_read_callback_t read_callback,void* read_callback_ctx){
+KERNEL_PUBLIC vfs_node_t* dynamicfs_create_node(vfs_node_t* parent,const char* name,u32 type,string_t* data,dynamicfs_read_callback_t read_callback,void* read_callback_ctx){
 	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
 	dynamicfs_vfs_node_t* out=(dynamicfs_vfs_node_t*)vfs_node_create(parent->fs,name_string);
 	out->node.flags|=VFS_NODE_FLAG_VIRTUAL|type|(0444<<VFS_NODE_PERMISSION_SHIFT);
@@ -118,7 +118,7 @@ vfs_node_t* dynamicfs_create_node(vfs_node_t* parent,const char* name,u32 type,s
 
 
 
-vfs_node_t* dynamicfs_create_data_node(vfs_node_t* parent,const char* name,const char* format,...){
+KERNEL_PUBLIC vfs_node_t* dynamicfs_create_data_node(vfs_node_t* parent,const char* name,const char* format,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,format);
 	char buffer[256];
@@ -129,7 +129,7 @@ vfs_node_t* dynamicfs_create_data_node(vfs_node_t* parent,const char* name,const
 
 
 
-vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const char* format,...){
+KERNEL_PUBLIC vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const char* format,...){
 	__builtin_va_list va;
 	__builtin_va_start(va,format);
 	char buffer[256];
@@ -140,7 +140,7 @@ vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const
 
 
 
-void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
+KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
 	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
 	string_t* string=dynamicfs_node->data;
 	dynamicfs_node->data=NULL;
@@ -155,7 +155,7 @@ void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
 
 
 
-u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* buffer,u64 size){
+KERNEL_PUBLIC u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* buffer,u64 size){
 	if (!buffer){
 		return length;
 	}
@@ -171,14 +171,14 @@ u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* b
 
 
 
-u64 dynamicfs_integer_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
+KERNEL_PUBLIC u64 dynamicfs_integer_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char ret[32];
 	return dynamicfs_process_simple_read(ret,format_string(ret,32,"%lu",*((const u64*)ctx)),offset,buffer,size);
 }
 
 
 
-u64 dynamicfs_string_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
+KERNEL_PUBLIC u64 dynamicfs_string_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	const string_t* string=*((const string_t*const*)ctx);
 	return dynamicfs_process_simple_read((string?string->data:""),(string?string->length:0),offset,buffer,size);
 }

@@ -17,7 +17,7 @@
 
 
 
-kernel_data_t KERNEL_INIT_WRITE kernel_data;
+KERNEL_PUBLIC kernel_data_t KERNEL_INIT_WRITE kernel_data;
 
 
 

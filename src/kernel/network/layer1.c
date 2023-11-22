@@ -10,11 +10,11 @@
 static network_layer1_device_t _layer1_device;
 
 const char* network_layer1_name;
-mac_address_t network_layer1_mac_address;
+KERNEL_PUBLIC mac_address_t network_layer1_mac_address;
 
 
 
-void network_layer1_set_device(const network_layer1_device_t* device){
+KERNEL_PUBLIC void network_layer1_set_device(const network_layer1_device_t* device){
 	if (network_layer1_name){
 		WARN("Layer1 network device already installed");
 		return;

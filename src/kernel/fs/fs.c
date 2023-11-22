@@ -16,8 +16,8 @@
 static pmm_counter_descriptor_t _fs_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fs");
 static omm_allocator_t* _fs_allocator=NULL;
 
-handle_type_t fs_handle_type=0;
-handle_type_t fs_descriptor_handle_type=0;
+KERNEL_PUBLIC handle_type_t fs_handle_type=0;
+KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
 
 
 

@@ -249,7 +249,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 		elf_sym_t* elf_symbol=ctx->elf_symbol_table+i;
 		if (elf_symbol->st_shndx==SHN_UNDEF&&ctx->elf_symbol_string_table[elf_symbol->st_name]){
 			const symbol_t* symbol=symbol_lookup_by_name(ctx->elf_symbol_string_table+elf_symbol->st_name);
-			if (symbol){
+			if (symbol&&symbol->is_public){
 				elf_symbol->st_value=symbol->rb_node.key;
 			}
 			else{
@@ -351,6 +351,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	}
 	module=omm_alloc(_module_allocator);
 	memset(module,0,sizeof(module_t));
+	module->name=smm_alloc(name,0);
 	module->state=MODULE_STATE_LOADING;
 	handle_new(module,module_handle_type,&(module->handle));
 	module_loader_context_t ctx={
@@ -380,7 +381,6 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	_adjust_memory_flags(&ctx);
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	LOG("Module '%s' loaded successfully",name);
-	module->name=smm_alloc(name,0);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
 	*(module->descriptor->module_self_ptr)=module;

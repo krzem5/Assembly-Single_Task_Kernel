@@ -10,6 +10,7 @@ typedef struct _SYMBOL{
 	rb_tree_node_t rb_node;
 	const char* module;
 	string_t* name;
+	_Bool is_public;
 } symbol_t;
 
 

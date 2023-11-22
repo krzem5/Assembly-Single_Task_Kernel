@@ -23,10 +23,8 @@ static lock_profiling_type_descriptor_t KERNEL_NOBSS _lock_profiling_early_types
 	}
 };
 
-
-
-const lock_profiling_type_descriptor_t* lock_profiling_type_descriptors=NULL;
-const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL;
+KERNEL_PUBLIC const lock_profiling_type_descriptor_t* lock_profiling_type_descriptors=NULL;
+KERNEL_PUBLIC const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL;
 
 
 
