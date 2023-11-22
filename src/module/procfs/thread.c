@@ -63,5 +63,5 @@ void procfs_thread_init(void){
 	LOG("Creating thread subsystem...");
 	_procfs_thread_root=dynamicfs_create_node(procfs->root,"thread",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_create_node(_procfs_thread_root,"self",VFS_NODE_TYPE_LINK,NULL,_thread_self_read_callback,NULL);
-	handle_register_notification_listener(HANDLE_TYPE_THREAD,&_procfs_thread_notification_listener);
+	handle_register_notification_listener(thread_handle_type,&_procfs_thread_notification_listener);
 }

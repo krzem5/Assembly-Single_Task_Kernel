@@ -40,7 +40,7 @@ void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	if (!descriptor->load_callback){
 		return;
 	}
-	HANDLE_FOREACH(HANDLE_TYPE_PARTITION){
+	HANDLE_FOREACH(partition_handle_type){
 		partition_t* partition=handle->object;
 		if (partition->fs){
 			continue;

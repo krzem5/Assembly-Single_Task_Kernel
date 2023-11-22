@@ -70,6 +70,7 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
+	WARN("ALLOC (O): %s",name);
 	if (!_omm_self_allocator){
 		omm_allocator_t _tmp_allocator;
 		_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);

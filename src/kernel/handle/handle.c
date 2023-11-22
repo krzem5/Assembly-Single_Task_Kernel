@@ -36,30 +36,11 @@ void _handle_allocator_handle_fix(void){
 
 
 
-void handle_init(void){
-	LOG("Initializing handle types...");
-	rb_tree_init(&_handle_type_tree);
-	for (handle_descriptor_t*const* descriptor=(void*)kernel_section_handle_start();(u64)descriptor<kernel_section_handle_end();descriptor++){
-		_handle_max_type++;
-		handle_descriptor_t* handle_descriptor=*descriptor;
-		*((*descriptor)->var)=_handle_max_type;
-		spinlock_init(&(handle_descriptor->lock));
-		handle_descriptor->delete_callback=(*descriptor)->delete_callback;
-		handle_descriptor->handle.rb_node.key=0;
-		rb_tree_init(&(handle_descriptor->tree));
-		notification_dispatcher_init(&(handle_descriptor->notification_dispatcher));
-		handle_descriptor->count=0;
-		handle_descriptor->active_count=0;
-		handle_descriptor->rb_node.key=_handle_max_type;
-		rb_tree_insert_node_increasing(&_handle_type_tree,&(handle_descriptor->rb_node));
-	}
-}
-
-
-
 handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
+	WARN("ALLOC (H): %s",name);
 	if (!_handle_descriptor_allocator){
 		_handle_descriptor_allocator=omm_init("handle_descriptor",sizeof(handle_descriptor_t),8,2,&_handle_descriptor_omm_pmm_counter);
+		ERROR("_handle_descriptor_allocator=%p",_handle_descriptor_allocator);
 	}
 	handle_type_t out=__atomic_add_fetch(&_handle_max_type,1,__ATOMIC_SEQ_CST);
 	handle_descriptor_t* descriptor=omm_alloc(_handle_descriptor_allocator);

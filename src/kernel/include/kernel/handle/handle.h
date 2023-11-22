@@ -15,16 +15,6 @@
 
 #define HANDLE_INIT_STRUCT {.rb_node={.key=0}}
 
-#define HANDLE_DECLARE_TYPE(name,delete_code) \
-	handle_type_t HANDLE_TYPE_##name; \
-	static void _handle_delete_callback_##name(handle_t* handle){delete_code;} \
-	static handle_descriptor_t _handle_descriptor_##name={ \
-		#name, \
-		&(HANDLE_TYPE_##name), \
-		_handle_delete_callback_##name \
-	}; \
-	static handle_descriptor_t*const __attribute__((used,section(".handle"))) _handle_descriptor_ptr_##name=&_handle_descriptor_##name;
-
 #define HANDLE_ITER_START(descriptor) ((handle_t*)rb_tree_iter_start(&((descriptor)->tree)))
 #define HANDLE_ITER_NEXT(descriptor,handle) ((handle_t*)rb_tree_iter_next(&((descriptor)->tree),&((handle)->rb_node)))
 #define HANDLE_FOREACH(type) handle_descriptor_t* __descriptor=handle_get_descriptor((type));if (__descriptor)for (handle_t* handle=HANDLE_ITER_START(__descriptor);handle;handle=HANDLE_ITER_NEXT(__descriptor,handle))
@@ -71,10 +61,6 @@ extern handle_type_t handle_handle_type;
 
 
 void _handle_allocator_handle_fix(void);
-
-
-
-void handle_init(void);
 
 
 

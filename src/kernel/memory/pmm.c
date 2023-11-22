@@ -147,7 +147,6 @@ void pmm_init(void){
 }
 
 
-
 void pmm_init_high_mem(void){
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){

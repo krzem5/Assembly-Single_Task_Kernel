@@ -17,18 +17,19 @@
 static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
 static omm_allocator_t* _partition_allocator=NULL;
 
+handle_type_t partition_handle_type=0;
 handle_type_t partition_table_descriptor_handle_type=0;
 
 
 
-HANDLE_DECLARE_TYPE(PARTITION,{
+static void _partition_handle_destructor(handle_t* handle){
 	partition_t* partition=handle->object;
 	WARN("Delete partition: %s",partition->name);
 	if (partition->descriptor){
 		handle_release(&(partition->descriptor->handle));
 	}
 	omm_dealloc(_partition_allocator,partition);
-});
+}
 
 
 
@@ -90,8 +91,11 @@ partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 star
 		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4,&_partition_omm_pmm_counter);
 		spinlock_init(&(_partition_allocator->lock));
 	}
+	if (!partition_handle_type){
+		partition_handle_type=handle_alloc("partition",_partition_handle_destructor);
+	}
 	partition_t* out=omm_alloc(_partition_allocator);
-	handle_new(out,HANDLE_TYPE_PARTITION,&(out->handle));
+	handle_new(out,partition_handle_type,&(out->handle));
 	out->descriptor=drive->partition_table_descriptor;
 	out->drive=drive;
 	out->index=index;

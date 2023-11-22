@@ -37,7 +37,11 @@ static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
 
 
-HANDLE_DECLARE_TYPE(THREAD,{
+handle_type_t thread_handle_type=0;
+
+
+
+static void _thread_handle_destructor(handle_t* handle){
 	thread_t* thread=handle->object;
 	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
@@ -48,7 +52,7 @@ HANDLE_DECLARE_TYPE(THREAD,{
 		handle_release(&(process->handle));
 	}
 	omm_dealloc(_thread_allocator,thread);
-});
+}
 
 
 
@@ -61,12 +65,15 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,&_thread_omm_pmm_counter);
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
+	if (!thread_handle_type){
+		thread_handle_type=handle_alloc("thread",_thread_handle_destructor);
+	}
 	user_stack_size=pmm_align_up_address(user_stack_size);
 	kernel_stack_size=pmm_align_up_address(kernel_stack_size);
 	thread_t* out=omm_alloc(_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
-	handle_new(out,HANDLE_TYPE_THREAD,&(out->handle));
+	handle_new(out,thread_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->process=process;
 	if (user_stack_size){

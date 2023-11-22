@@ -23,7 +23,7 @@ typedef struct _PARTITION{
 
 
 
-extern handle_type_t HANDLE_TYPE_PARTITION;
+extern handle_type_t partition_handle_type;
 extern handle_type_t partition_table_descriptor_handle_type;
 
 

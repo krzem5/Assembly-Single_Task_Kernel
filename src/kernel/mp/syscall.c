@@ -75,7 +75,7 @@ void syscall_thread_get_priority(isr_state_t* regs){
 		regs->rax=0;
 		return;
 	}
-	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,thread_handle_type);
 	if (!handle){
 		regs->rax=0;
 		return;
@@ -91,7 +91,7 @@ void syscall_thread_set_priority(isr_state_t* regs){
 		regs->rax=0;
 		return;
 	}
-	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,thread_handle_type);
 	if (!handle){
 		regs->rax=0;
 		return;
@@ -115,7 +115,7 @@ void syscall_thread_get_cpu_mask(isr_state_t* regs){
 		regs->rax=0;
 		return;
 	}
-	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,thread_handle_type);
 	if (!handle){
 		regs->rax=0;
 		return;
@@ -134,7 +134,7 @@ void syscall_thread_set_cpu_mask(isr_state_t* regs){
 		regs->rax=0;
 		return;
 	}
-	handle_t* handle=handle_lookup_and_acquire(regs->rdi,HANDLE_TYPE_THREAD);
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,thread_handle_type);
 	if (!handle){
 		regs->rax=0;
 		return;

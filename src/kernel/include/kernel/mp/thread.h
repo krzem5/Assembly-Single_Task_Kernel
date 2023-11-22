@@ -15,7 +15,7 @@
 
 
 
-extern handle_type_t HANDLE_TYPE_THREAD;
+extern handle_type_t thread_handle_type;
 
 
 

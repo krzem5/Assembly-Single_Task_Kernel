@@ -24,10 +24,6 @@ SECTIONS{
 		*(.cpulocal)
 		. = ALIGN(8);
 		DECLARE_SECTION_END(cpu_local);
-		DECLARE_SECTION_START(handle);
-		*(.handle)
-		. = ALIGN(8);
-		DECLARE_SECTION_END(handle);
 		DECLARE_SECTION_START(gcov_info);
 #ifdef _KERNEL_COVERAGE_BUILD_
 		*(.gcov_info)

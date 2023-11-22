@@ -3,7 +3,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/handle/handle.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/initramfs/initramfs.h>
@@ -48,7 +47,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE main(const kernel_data_t* bootloader_kern
 	cpu_check_features();
 	LOG("Starting kernel...");
 	kernel_init(bootloader_kernel_data);
-	handle_init();
 	pmm_init();
 	vmm_init();
 	pmm_init_high_mem();
