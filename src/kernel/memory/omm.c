@@ -25,31 +25,6 @@ static omm_allocator_t* _omm_self_allocator=NULL;
 
 
 
-static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
-	page->prev=NULL;
-	page->next=*list_head;
-	if (*list_head){
-		(*list_head)->prev=page;
-	}
-	*list_head=page;
-}
-
-
-
-static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
-	if (page->prev){
-		page->prev->next=page->next;
-	}
-	else{
-		*list_head=page->next;
-	}
-	if (page->next){
-		page->next->prev=page->prev;
-	}
-}
-
-
-
 static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
 	if (object_size<sizeof(omm_object_t)){
 		object_size=sizeof(omm_object_t);
@@ -76,6 +51,31 @@ static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 p
 
 
 
+static void _allocator_add_page(omm_page_header_t** list_head,omm_page_header_t* page){
+	page->prev=NULL;
+	page->next=*list_head;
+	if (*list_head){
+		(*list_head)->prev=page;
+	}
+	*list_head=page;
+}
+
+
+
+static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header_t* page){
+	if (page->prev){
+		page->prev->next=page->next;
+	}
+	else{
+		*list_head=page->next;
+	}
+	if (page->next){
+		page->next->prev=page->prev;
+	}
+}
+
+
+
 omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
 	if (!_omm_self_allocator){
 		omm_allocator_t _tmp_allocator;
@@ -84,6 +84,7 @@ omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 pag
 		*_omm_self_allocator=_tmp_allocator;
 		handle_new(_omm_self_allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(_omm_self_allocator->handle));
 		handle_finish_setup(&(_omm_self_allocator->handle));
+		// call handle_init on HANDLE_TYPE_OMM_ALLOCATOR => [calls omm_init on _handle_data_allocator => [ignore lines 91/92 below b/c HANDLE_TYPE_OMM_ALLOCATOR==0]] => call _handle_allocator_handle_fix => [lines 91/92 are executed on _handle_data_allocator]
 	}
 	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
 	_init_allocator(name,object_size,alignment,page_count,pmm_counter,out);
