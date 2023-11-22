@@ -2,6 +2,8 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/notification/notification.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -16,7 +18,22 @@ HANDLE_DECLARE_TYPE(HANDLE,{
 
 
 
+static pmm_counter_descriptor_t _handle_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
+
+
+
+static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
+static handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
+
+
+
+void _handle_allocator_handle_fix(void){
+	// HANDLE_TYPE_HANDLE=handle_init_NEW("handle",_handle_delete_callback_HANDLE);
+	// iterate _handle_type_tree and init descriptor handles
+	// handle_new(_handle_descriptor_allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(_handle_descriptor_allocator->handle));
+	// handle_finish_setup(&(_handle_descriptor_allocator->handle));
+}
 
 
 
@@ -42,6 +59,31 @@ void handle_init(void){
 		handle_new(handle_descriptor,HANDLE_TYPE_HANDLE,&(handle_descriptor->handle));
 		handle_finish_setup(&(handle_descriptor->handle));
 	}
+}
+
+
+
+handle_type_t handle_init_NEW(const char* name,handle_type_delete_callback_t delete_callback){
+	_handle_descriptor_allocator=omm_init("handle_descriptor",sizeof(handle_descriptor_t),8,2,&_handle_descriptor_omm_pmm_counter);
+	handle_type_t out=__atomic_add_fetch(&_handle_max_type,1,__ATOMIC_SEQ_CST);
+	handle_descriptor_t* descriptor=omm_alloc(_handle_descriptor_allocator);
+	descriptor->name=name;
+	descriptor->var=NULL;
+	descriptor->delete_callback=delete_callback;
+	if (HANDLE_TYPE_HANDLE){
+		handle_new(descriptor,HANDLE_TYPE_HANDLE,&(descriptor->handle));
+	}
+	spinlock_init(&(descriptor->lock));
+	rb_tree_init(&(descriptor->tree));
+	descriptor->count=0;
+	descriptor->active_count=0;
+	descriptor->rb_node.key=out;
+	notification_dispatcher_init(&(descriptor->notification_dispatcher));
+	rb_tree_insert_node_increasing(&_handle_type_tree,&(descriptor->rb_node));
+	if (HANDLE_TYPE_HANDLE){
+		handle_finish_setup(&(descriptor->handle));
+	}
+	return out;
 }
 
 

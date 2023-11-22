@@ -70,7 +70,15 @@ extern handle_type_t HANDLE_TYPE_HANDLE;
 
 
 
+void _handle_allocator_handle_fix(void);
+
+
+
 void handle_init(void);
+
+
+
+handle_type_t handle_init_NEW(const char* name,handle_type_delete_callback_t delete_callback);
 
 
 
