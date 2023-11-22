@@ -261,7 +261,7 @@ _Bool ata_locate_devices(void){
 	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,&_ata_device_omm_pmm_counter);
 	spinlock_init(&(_ata_device_allocator->lock));
 	_Bool out=0;
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		out|=_ata_init_device(device);
 	}

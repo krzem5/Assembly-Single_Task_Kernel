@@ -27,11 +27,7 @@ static omm_allocator_t* _usb_configuration_descriptor_allocator=NULL;
 static omm_allocator_t* _usb_interface_descriptor_allocator=NULL;
 static omm_allocator_t* _usb_endpoint_descriptor_allocator=NULL;
 
-
-
-HANDLE_DECLARE_TYPE(USB_DEVICE,{
-	panic("Delete USB_DEVICE");
-});
+handle_type_t usb_device_handle_type=0;
 
 
 
@@ -191,8 +187,11 @@ usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent
 		_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,&_usb_endpoint_descriptor_omm_pmm_counter);
 		spinlock_init(&(_usb_endpoint_descriptor_allocator->lock));
 	}
+	if (!usb_device_handle_type){
+		usb_device_handle_type=handle_alloc("usb_device",NULL);
+	}
 	usb_device_t* out=omm_alloc(_usb_device_allocator);
-	handle_new(out,HANDLE_TYPE_USB_DEVICE,&(out->handle));
+	handle_new(out,usb_device_handle_type,&(out->handle));
 	out->controller=controller;
 	out->parent=parent;
 	out->prev=NULL;
@@ -237,7 +236,7 @@ _Bool usb_device_set_configuration(usb_device_t* device,u8 value){
 	};
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
 	for (usb_interface_descriptor_t* interface_descriptor=configuration_descriptor->interface;interface_descriptor;interface_descriptor=interface_descriptor->next){
-		HANDLE_FOREACH(HANDLE_TYPE_USB_DRIVER_DESCRIPTOR){
+		HANDLE_FOREACH(usb_driver_descriptor_handle_type){
 			handle_acquire(handle);
 			usb_driver_descriptor_t* descriptor=handle->object;
 			if (!descriptor->load_callback(device,interface_descriptor)){

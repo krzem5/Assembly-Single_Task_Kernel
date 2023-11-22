@@ -4,7 +4,7 @@
 
 
 
-extern handle_type_t HANDLE_TYPE_USB_DRIVER_DESCRIPTOR;
+extern handle_type_t usb_driver_descriptor_handle_type;
 
 
 

@@ -62,7 +62,7 @@ typedef struct _PCI_BAR{
 
 
 
-extern handle_type_t HANDLE_TYPE_PCI_DEVICE;
+extern handle_type_t pci_device_handle_type;
 
 
 

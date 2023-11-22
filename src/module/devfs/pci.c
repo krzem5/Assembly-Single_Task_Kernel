@@ -12,7 +12,7 @@
 void devfs_pci_init(void){
 	LOG("Creating pci subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"pci",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		handle_acquire(handle);
 		const pci_device_t* device=handle->object;
 		char buffer[32];

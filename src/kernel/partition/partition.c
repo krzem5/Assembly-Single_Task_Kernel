@@ -17,6 +17,8 @@
 static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
 static omm_allocator_t* _partition_allocator=NULL;
 
+handle_type_t partition_table_descriptor_handle_type=0;
+
 
 
 HANDLE_DECLARE_TYPE(PARTITION,{
@@ -27,13 +29,15 @@ HANDLE_DECLARE_TYPE(PARTITION,{
 	}
 	omm_dealloc(_partition_allocator,partition);
 });
-HANDLE_DECLARE_TYPE(PARTITION_TABLE_DESCRIPTOR,{});
 
 
 
 void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
 	LOG("Registering partition table descriptor '%s'...",descriptor->name);
-	handle_new(descriptor,HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR,&(descriptor->handle));
+	if (!partition_table_descriptor_handle_type){
+		partition_table_descriptor_handle_type=handle_alloc("partition_table_descriptor",0);
+	}
+	handle_new(descriptor,partition_table_descriptor_handle_type,&(descriptor->handle));
 	handle_finish_setup(&(descriptor->handle));
 	HANDLE_FOREACH(HANDLE_TYPE_DRIVE){
 		drive_t* drive=handle->object;
@@ -63,7 +67,7 @@ void partition_unregister_table_descriptor(partition_table_descriptor_t* descrip
 
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
-	HANDLE_FOREACH(HANDLE_TYPE_PARTITION_TABLE_DESCRIPTOR){
+	HANDLE_FOREACH(partition_table_descriptor_handle_type){
 		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;

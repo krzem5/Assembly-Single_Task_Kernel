@@ -368,7 +368,7 @@ void xhci_locate_devices(void){
 	spinlock_init(&(_xhci_ring_allocator->lock));
 	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2,&_xhci_pipe_omm_pmm_counter);
 	spinlock_init(&(_xhci_pipe_allocator->lock));
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_xhci_init_device(device);
 	}

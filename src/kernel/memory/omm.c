@@ -11,17 +11,10 @@
 
 
 
-HANDLE_DECLARE_TYPE(OMM_ALLOCATOR,{
-	panic("Unable to delete HANDLE_TYPE_OMM_ALLOCATOR");
-});
-
-
-
 static pmm_counter_descriptor_t _omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm");
-
-
-
 static omm_allocator_t* _omm_self_allocator=NULL;
+
+handle_type_t omm_handle_type=0;
 
 
 
@@ -82,16 +75,15 @@ omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 pag
 		_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);
 		_omm_self_allocator=omm_alloc(&_tmp_allocator);
 		*_omm_self_allocator=_tmp_allocator;
-		// HANDLE_TYPE_OMM_ALLOCATOR=handle_init_NEW("omm_allocator",_handle_delete_callback_OMM_ALLOCATOR);
-		// _handle_allocator_handle_fix();
-		// call handle_init on HANDLE_TYPE_OMM_ALLOCATOR => [calls omm_init on _handle_data_allocator => [ignore lines 91/92 below b/c HANDLE_TYPE_OMM_ALLOCATOR==0]] => call _handle_allocator_handle_fix => [lines 91/92 are executed on _handle_data_allocator]
-		handle_new(_omm_self_allocator,HANDLE_TYPE_OMM_ALLOCATOR,&(_omm_self_allocator->handle));
+		omm_handle_type=handle_alloc("omm_allocator",NULL);
+		_handle_allocator_handle_fix();
+		handle_new(_omm_self_allocator,omm_handle_type,&(_omm_self_allocator->handle));
 		handle_finish_setup(&(_omm_self_allocator->handle));
 	}
 	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
 	_init_allocator(name,object_size,alignment,page_count,pmm_counter,out);
-	if (HANDLE_TYPE_OMM_ALLOCATOR){
-		handle_new(out,HANDLE_TYPE_OMM_ALLOCATOR,&(out->handle));
+	if (omm_handle_type){
+		handle_new(out,omm_handle_type,&(out->handle));
 		handle_finish_setup(&(out->handle));
 	}
 	return out;

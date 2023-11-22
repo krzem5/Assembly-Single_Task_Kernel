@@ -16,6 +16,8 @@
 static pmm_counter_descriptor_t _fs_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fs");
 static omm_allocator_t* _fs_allocator=NULL;
 
+handle_type_t fs_descriptor_handle_type=0;
+
 
 
 HANDLE_DECLARE_TYPE(FS,{
@@ -24,13 +26,15 @@ HANDLE_DECLARE_TYPE(FS,{
 	handle_release(&(fs->descriptor->handle));
 	omm_dealloc(_fs_allocator,fs);
 });
-HANDLE_DECLARE_TYPE(FS_DESCRIPTOR,{});
 
 
 
 void fs_register_descriptor(filesystem_descriptor_t* descriptor){
 	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
-	handle_new(descriptor,HANDLE_TYPE_FS_DESCRIPTOR,&(descriptor->handle));
+	if (!fs_descriptor_handle_type){
+		fs_descriptor_handle_type=handle_alloc("fs_descriptor",NULL);
+	}
+	handle_new(descriptor,fs_descriptor_handle_type,&(descriptor->handle));
 	handle_finish_setup(&(descriptor->handle));
 	if (!descriptor->load_callback){
 		return;
@@ -74,7 +78,7 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 
 
 filesystem_t* fs_load(partition_t* partition){
-	HANDLE_FOREACH(HANDLE_TYPE_FS_DESCRIPTOR){
+	HANDLE_FOREACH(fs_descriptor_handle_type){
 		filesystem_descriptor_t* descriptor=handle->object;
 		if (!descriptor->load_callback){
 			continue;

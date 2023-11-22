@@ -228,7 +228,7 @@ static void _nvme_init_device(pci_device_t* device){
 void nvme_locate_devices(void){
 	_nvme_device_allocator=omm_init("nvme_deivce",sizeof(nvme_device_t),8,1,&_nvme_device_omm_pmm_counter);
 	spinlock_init(&(_nvme_device_allocator->lock));
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_nvme_init_device(device);
 	}

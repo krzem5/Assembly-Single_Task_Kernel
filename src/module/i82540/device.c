@@ -191,7 +191,7 @@ static void _i82540_init_device(pci_device_t* device){
 void i82540_locate_devices(void){
 	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,&_i82540_device_omm_pmm_counter);
 	spinlock_init(&(_i82540_device_allocator->lock));
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_i82540_init_device(device);
 	}

@@ -13,6 +13,8 @@
 static pmm_counter_descriptor_t _drive_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_drive");
 static omm_allocator_t* _drive_allocator=NULL;
 
+handle_type_t drive_type_handle_type=0;
+
 
 
 HANDLE_DECLARE_TYPE(DRIVE,{
@@ -24,13 +26,15 @@ HANDLE_DECLARE_TYPE(DRIVE,{
 	}
 	omm_dealloc(_drive_allocator,drive);
 });
-HANDLE_DECLARE_TYPE(DRIVE_TYPE,{});
 
 
 
 void drive_register_type(drive_type_t* type){
 	LOG("Registering drive type '%s'...",type->name);
-	handle_new(type,HANDLE_TYPE_DRIVE_TYPE,&(type->handle));
+	if (!drive_type_handle_type){
+		drive_type_handle_type=handle_alloc("drive_type",NULL);
+	}
+	handle_new(type,drive_type_handle_type,&(type->handle));
 	handle_finish_setup(&(type->handle));
 }
 

@@ -41,7 +41,7 @@ typedef struct _OMM_ALLOCATOR{
 
 
 
-extern handle_type_t HANDLE_TYPE_OMM_ALLOCATOR;
+extern handle_type_t omm_handle_type;
 
 
 

@@ -58,7 +58,7 @@ typedef struct _DRIVE{
 
 
 extern handle_type_t HANDLE_TYPE_DRIVE;
-extern handle_type_t HANDLE_TYPE_DRIVE_TYPE;
+extern handle_type_t drive_type_handle_type;
 
 
 

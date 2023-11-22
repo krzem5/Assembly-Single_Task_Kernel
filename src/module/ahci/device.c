@@ -224,7 +224,7 @@ void ahci_locate_devices(void){
 	spinlock_init(&(_ahci_controller_allocator->lock));
 	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1,&_ahci_device_omm_pmm_counter);
 	spinlock_init(&(_ahci_device_allocator->lock));
-	HANDLE_FOREACH(HANDLE_TYPE_PCI_DEVICE){
+	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_ahci_init_device(device);
 	}

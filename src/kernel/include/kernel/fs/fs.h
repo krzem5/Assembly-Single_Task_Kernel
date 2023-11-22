@@ -19,7 +19,7 @@ typedef struct _FILESYSTEM_DESCRIPTOR{
 
 
 extern handle_type_t HANDLE_TYPE_FS;
-extern handle_type_t HANDLE_TYPE_FS_DESCRIPTOR;
+extern handle_type_t fs_descriptor_handle_type;
 
 
 

@@ -66,7 +66,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 
 
 
-extern handle_type_t HANDLE_TYPE_HANDLE;
+extern handle_type_t handle_handle_type;
 
 
 
@@ -78,7 +78,7 @@ void handle_init(void);
 
 
 
-handle_type_t handle_init_NEW(const char* name,handle_type_delete_callback_t delete_callback);
+handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback);
 
 
 
