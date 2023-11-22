@@ -90,10 +90,7 @@ void omm_init_handle_type(omm_allocator_t* handle_allocator){
 
 omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
 	if (!_omm_self_allocator){
-		omm_allocator_t _tmp_allocator;
-		_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);
-		_omm_self_allocator=omm_alloc(&_tmp_allocator);
-		*_omm_self_allocator=_tmp_allocator;
+		panic("omm allocator not initialized yet");
 	}
 	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
 	_init_allocator(name,object_size,alignment,page_count,pmm_counter,out);
