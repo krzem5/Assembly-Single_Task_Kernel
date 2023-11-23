@@ -38,6 +38,7 @@ void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC kernel_init(const kernel_data_t* bootlo
 	}
 	kernel_data=*bootloader_kernel_data;
 	INFO("Version: %lx",kernel_get_version());
+	INFO("Build: %s",kernel_get_build_name());
 	INFO("Sections:");
 	PRINT_SECTION_DATA(kernel);
 	PRINT_SECTION_DATA(kernel_ue);

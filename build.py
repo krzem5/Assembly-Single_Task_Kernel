@@ -215,10 +215,10 @@ def _generate_syscalls(file_path):
 
 
 
-def _generate_kernel_version():
+def _generate_kernel_build_info():
 	version=time.time_ns()
-	with open("src/kernel/_generated/version.c","w") as wf:
-		wf.write(f"#include <kernel/types.h>\n\n\n\nconst KERNEL_PUBLIC u64 __version=0x{version:016x};\n")
+	with open("src/kernel/_generated/build_info.c","w") as wf:
+		wf.write(f"#include <kernel/types.h>\n\n\n\nKERNEL_PUBLIC const u64 __version=0x{version:016x};\nKERNEL_PUBLIC const char* __build_name=\"x86_64 { {MODE_NORMAL:'debug',MODE_COVERAGE:'coverage',MODE_RELEASE:'release'}[mode]}\";\n")
 	return version
 
 
@@ -612,7 +612,7 @@ _save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
 if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
 	sys.exit(1)
 #####################################################################################################################################
-version=_generate_kernel_version()
+version=_generate_kernel_build_info()
 changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 object_files=[]
 rebuild_data_partition=False

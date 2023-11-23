@@ -43,6 +43,7 @@ typedef struct _KERNEL_DATA{
 
 
 extern const u64 __version;
+extern const char* __build_name;
 extern const u64 _raw_kernel_symbols[];
 extern kernel_data_t kernel_data;
 
@@ -50,6 +51,12 @@ extern kernel_data_t kernel_data;
 
 static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_get_version(void){
 	return __version;
+}
+
+
+
+static KERNEL_INLINE const char* KERNEL_NOCOVERAGE kernel_get_build_name(void){
+	return __build_name;
 }
 
 
