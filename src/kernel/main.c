@@ -20,6 +20,7 @@
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
+#include <kernel/shutdown/shutdown.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
@@ -29,6 +30,7 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
+	shutdown_init();
 	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();

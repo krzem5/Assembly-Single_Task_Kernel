@@ -13,4 +13,5 @@ os_loader:
 procfs:dynamicfs
 sysfs:dynamicfs
 usb_msc:
+vm_shutdown:
 xhci:
