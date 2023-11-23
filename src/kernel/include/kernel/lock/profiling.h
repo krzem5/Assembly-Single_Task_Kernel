@@ -13,13 +13,13 @@
 	do{ \
 		static u16 KERNEL_NOBSS __lock_id=0; \
 		(func)(lock); \
-		(*(lock))|=__lock_profiling_alloc_type(__func__,__LINE__,&__lock_id)<<16; \
+		(*(lock))|=__lock_profiling_alloc_type(__func__,__LINE__,#lock,&__lock_id)<<16; \
 	} while (0)
 #define __lock_overload_data_function(func,lock) \
 	do{ \
 		extern u64 clock_get_ticks(void); \
 		static u64 KERNEL_NOBSS __lock_profiling_data=0; \
-		lock_local_profiling_data_t* __local_profiling_data=__lock_profiling_alloc_data(__func__,__LINE__,(*(lock))>>16,&__lock_profiling_data); \
+		lock_local_profiling_data_t* __local_profiling_data=__lock_profiling_alloc_data(__func__,__LINE__,#lock,(*(lock))>>16,&__lock_profiling_data); \
 		u64 __start_ticks=clock_get_ticks(); \
 		(func)(lock); \
 		u64 __end_ticks=clock_get_ticks(); \
@@ -46,6 +46,7 @@ typedef struct _LOCK_LOCAL_PROFILING_DATA{
 typedef struct _LOCK_PROFILING_TYPE_DESCRIPTOR{
 	const char* func;
 	u32 line;
+	const char* arg;
 } lock_profiling_type_descriptor_t;
 
 
@@ -54,6 +55,7 @@ typedef struct _LOCK_PROFILING_DATA_DESCRIPTOR{
 	const struct _LOCK_PROFILING_DATA_DESCRIPTOR* next;
 	const char* func;
 	u32 line;
+	const char* arg;
 	lock_local_profiling_data_t data[];
 } lock_profiling_data_descriptor_t;
 
@@ -64,11 +66,11 @@ extern const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_he
 
 
 
-u16 __lock_profiling_alloc_type(const char* func,u32 line,u16* out);
+u16 __lock_profiling_alloc_type(const char* func,u32 line,const char* arg,u16* out);
 
 
 
-lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,u16 offset,u64* ptr);
+lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr);
 
 
 

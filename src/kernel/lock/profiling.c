@@ -28,7 +28,7 @@ KERNEL_PUBLIC const lock_profiling_data_descriptor_t* lock_profiling_data_descri
 
 
 
-KERNEL_PUBLIC u16 __lock_profiling_alloc_type(const char* func,u32 line,u16* out){
+KERNEL_PUBLIC u16 __lock_profiling_alloc_type(const char* func,u32 line,const char* arg,u16* out){
 	if (((u16)((*out)+1))>1){
 		return *out;
 	}
@@ -57,6 +57,7 @@ _skip_alloc:
 		lock_profiling_type_descriptor_t* lock_profiling_type_descriptor=(_lock_profiling_type_descriptors?_lock_profiling_type_descriptors:_lock_profiling_early_types)+(*out);
 		lock_profiling_type_descriptor->func=func;
 		lock_profiling_type_descriptor->line=line;
+		lock_profiling_type_descriptor->arg=arg;
 	}
 	SPINLOOP(*out==0xffff);
 	return *out;
@@ -64,7 +65,7 @@ _skip_alloc:
 
 
 
-KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,u16 offset,u64* ptr){
+KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr){
 	u64 expected=0;
 	if (__atomic_compare_exchange_n(ptr,&expected,1,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){
 		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
@@ -75,6 +76,7 @@ KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const cha
 		lock_profiling_data_descriptor_t* descriptor=(void*)data;
 		descriptor->func=func;
 		descriptor->line=line;
+		descriptor->arg=arg;
 		(spinlock_acquire_exclusive)(&_lock_profiling_data_lock);
 		descriptor->next=lock_profiling_data_descriptor_head;
 		lock_profiling_data_descriptor_head=descriptor;

@@ -7,6 +7,7 @@
 
 typedef struct _LOCK_TYPE_DATA{
 	char location[48];
+	char name[48];
 } lock_type_data_t;
 
 
@@ -54,6 +55,7 @@ int main(int argc,const char** argv){
 	lock_type_data_t types[max_type+1];
 	for (u32 i=0;i<=max_type;i++){
 		types[i].location[0]=0;
+		types[i].name[0]=0;
 	}
 	for (s64 iter=sys_fd_iter_start(types_fd);iter>=0;iter=sys_fd_iter_next(iter)){
 		char buffer[32];
@@ -69,6 +71,7 @@ int main(int argc,const char** argv){
 			continue;
 		}
 		_read_file(fd,"location",(types+i)->location,48);
+		_read_file(fd,"name",(types+i)->name,48);
 		sys_fd_close(fd);
 	}
 	sys_fd_close(types_fd);
@@ -84,6 +87,11 @@ int main(int argc,const char** argv){
 		}
 		char location[48];
 		if (!_read_file(fd,"location",location,48)){
+			sys_fd_close(fd);
+			continue;
+		}
+		char name[48];
+		if (!_read_file(fd,"name",name,48)){
 			sys_fd_close(fd);
 			continue;
 		}
@@ -113,10 +121,15 @@ int main(int argc,const char** argv){
 			}
 			u32 max_ticks=sys_options_atoi(buffer);
 			if (!header_printed){
-				printf("%s\n",location);
+				printf("%s \x1b[2;3m%s\x1b[0m\n",location,name);
 				header_printed=1;
 			}
-			printf("    %s\n",(type?(types+type)->location:"<other>"));
+			if (type){
+				printf("    %s \x1b[2;3m%s\x1b[0m\n",(types+type)->location,(types+type)->name);
+			}
+			else{
+				printf("    %s\n",(types+type)->location);
+			}
 			printf("        cnt: \x1b[1m%lu\x1b[0m\n        avg: \x1b[1m%lu\x1b[0m ns\n        max: \x1b[1m%lu\x1b[0m ns\n",count,sys_clock_ticks_to_time(ticks/count),sys_clock_ticks_to_time(max_ticks));
 _cleanup_subfd:
 			sys_fd_close(subfd);

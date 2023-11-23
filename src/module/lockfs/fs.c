@@ -36,6 +36,7 @@ _Bool lockfs_create_fs(void){
 		format_string(buffer,32,"%u",lock_count);
 		vfs_node_t* node=dynamicfs_create_node(type_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"location","%s:%u",(lock_profiling_type_descriptors+lock_count)->func,(lock_profiling_type_descriptors+lock_count)->line);
+		dynamicfs_create_data_node(node,"name","%s",(lock_profiling_type_descriptors+lock_count)->arg);
 	}
 	vfs_node_t* data_root=dynamicfs_create_node(fs->root,"data",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	u32 i=0;
@@ -44,6 +45,7 @@ _Bool lockfs_create_fs(void){
 		format_string(buffer,32,"%u",i);
 		vfs_node_t* node=dynamicfs_create_node(data_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"location","%s:%u",descriptor->func,descriptor->line);
+		dynamicfs_create_data_node(node,"name","%s",descriptor->arg);
 		for (u32 j=0;j<lock_count;j++){
 			char buffer[32];
 			format_string(buffer,32,"%u",j);
