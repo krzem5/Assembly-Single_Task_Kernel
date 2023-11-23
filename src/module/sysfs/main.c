@@ -1,6 +1,7 @@
 #include <kernel/module/module.h>
 #include <sysfs/fs.h>
 #include <sysfs/handle.h>
+#include <sysfs/kernel.h>
 #include <sysfs/load_balancer.h>
 #include <sysfs/memory.h>
 #include <sysfs/module.h>
@@ -11,6 +12,7 @@
 static _Bool _init(module_t* module){
 	sysfs_create_fs();
 	sysfs_handle_init();
+	sysfs_kernel_init();
 	sysfs_load_balancer_init();
 	sysfs_memory_init();
 	sysfs_module_init();
