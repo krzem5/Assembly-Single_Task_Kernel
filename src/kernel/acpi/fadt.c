@@ -1,6 +1,4 @@
 #include <kernel/acpi/structures.h>
-#include <kernel/aml/parser.h>
-#include <kernel/aml/runtime.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -12,8 +10,6 @@
 
 // PM1x flags
 #define SCI_EN 0x0001
-#define SLP_TYP_SHIFT 10
-#define SLP_EN 0x2000
 
 
 
@@ -38,18 +34,4 @@ void KERNEL_EARLY_EXEC acpi_fadt_load(const acpi_fadt_t* fadt){
 	INFO("Found DSDT at %p",fadt->dsdt);
 	acpi_fadt=fadt;
 	acpi_dsdt=(void*)vmm_identity_map(fadt->dsdt,((const acpi_dsdt_t*)vmm_identity_map(fadt->dsdt,sizeof(acpi_dsdt_t)))->header.length);
-	aml_runtime_init(aml_parse(acpi_dsdt->data,acpi_dsdt->header.length-sizeof(acpi_dsdt_t)),fadt->sci_int);
-}
-
-
-
-KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
-	asm volatile("cli":::"memory");
-	u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	io_port_out16(acpi_fadt->pm1a_control_block,pm1a_value);
-	if (acpi_fadt->pm1b_control_block){
-		io_port_out16(acpi_fadt->pm1b_control_block,pm1b_value);
-	}
-	for (;;);
 }

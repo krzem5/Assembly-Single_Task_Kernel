@@ -1,5 +1,4 @@
 #include <kernel/acpi/acpi.h>
-#include <kernel/aml/bus.h>
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
@@ -34,7 +33,6 @@ static void _main_thread(void){
 	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();
-	aml_bus_enumerate();
 	network_layer2_init();
 	random_init();
 	serial_init_irq();
