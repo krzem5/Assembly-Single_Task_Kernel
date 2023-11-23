@@ -22,10 +22,7 @@ typedef struct _ISO9660_VFS_NODE{
 
 
 static omm_allocator_t* _iso9660_vfs_node_allocator=NULL;
-
-
-
-static filesystem_descriptor_t _iso9660_filesystem_descriptor;
+static filesystem_descriptor_t* _iso9660_filesystem_descriptor=NULL;
 
 
 
@@ -210,7 +207,7 @@ static filesystem_t* _iso9660_fs_load(partition_t* partition){
 		block_index++;
 	}
 _directory_lba_found:
-	filesystem_t* out=fs_create(&_iso9660_filesystem_descriptor);
+	filesystem_t* out=fs_create(_iso9660_filesystem_descriptor);
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
@@ -223,7 +220,7 @@ _directory_lba_found:
 
 
 
-static filesystem_descriptor_t _iso9660_filesystem_descriptor={
+static const filesystem_descriptor_config_t _iso9660_filesystem_descriptor_config={
 	"iso9660",
 	_iso9660_fs_deinit,
 	_iso9660_fs_load
@@ -232,7 +229,7 @@ static filesystem_descriptor_t _iso9660_filesystem_descriptor={
 
 
 void iso9660_register_fs(void){
-	fs_register_descriptor(&_iso9660_filesystem_descriptor);
+	_iso9660_filesystem_descriptor=fs_register_descriptor(&_iso9660_filesystem_descriptor_config);
 	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,pmm_alloc_counter("omm_iso9660_node"));
 	spinlock_init(&(_iso9660_vfs_node_allocator->lock));
 }

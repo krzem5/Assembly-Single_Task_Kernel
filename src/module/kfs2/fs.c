@@ -33,10 +33,7 @@ static pmm_counter_descriptor_t* _kfs2_buffer_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _kfs2_chunk_pmm_counter=NULL;
 static omm_allocator_t* _kfs2_vfs_node_allocator=NULL;
 static omm_allocator_t* _kfs2_fs_extra_data_allocator=NULL;
-
-
-
-static filesystem_descriptor_t _kfs2_filesystem_descriptor;
+static filesystem_descriptor_t* _kfs2_filesystem_descriptor=NULL;
 
 
 
@@ -369,7 +366,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
-	filesystem_t* out=fs_create(&_kfs2_filesystem_descriptor);
+	filesystem_t* out=fs_create(_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
@@ -382,7 +379,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 
 
 
-static filesystem_descriptor_t _kfs2_filesystem_descriptor={
+static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 	"kfs2",
 	_kfs2_fs_deinit,
 	_kfs2_fs_load
@@ -391,7 +388,7 @@ static filesystem_descriptor_t _kfs2_filesystem_descriptor={
 
 
 void kfs2_register_fs(void){
-	fs_register_descriptor(&_kfs2_filesystem_descriptor);
+	_kfs2_filesystem_descriptor=fs_register_descriptor(&_kfs2_filesystem_descriptor_config);
 	_kfs2_buffer_pmm_counter=pmm_alloc_counter("kfs2_buffer");
 	_kfs2_chunk_pmm_counter=pmm_alloc_counter("kfs2_chunk");
 	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,pmm_alloc_counter("omm_kfs2_node"));

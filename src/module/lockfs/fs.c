@@ -11,7 +11,7 @@
 
 
 
-static filesystem_descriptor_t _lockfs_filesystem_descriptor={
+static const filesystem_descriptor_config_t _lockfs_filesystem_descriptor_config={
 	"lockfs",
 	NULL,
 	NULL
@@ -25,7 +25,7 @@ _Bool lockfs_create_fs(void){
 		WARN("No lock profiling data present");
 		return 0;
 	}
-	filesystem_t* fs=dynamicfs_init("/lock",&_lockfs_filesystem_descriptor);
+	filesystem_t* fs=dynamicfs_init("/lock",&_lockfs_filesystem_descriptor_config);
 	vfs_node_t* type_root=dynamicfs_create_node(fs->root,"type",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	u32 lock_count=0;
 	for (;lock_count<LOCK_PROFILING_MAX_LOCK_TYPES;lock_count++){

@@ -17,7 +17,7 @@ static inline void dynamicfs_set_root_only(vfs_node_t* node){
 
 
 
-filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor);
+filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config);
 
 
 

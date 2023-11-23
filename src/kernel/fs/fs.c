@@ -14,6 +14,7 @@
 
 
 static omm_allocator_t* _fs_allocator=NULL;
+static omm_allocator_t* _fs_descriptor_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t fs_handle_type=0;
 KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
@@ -29,30 +30,37 @@ static void _fs_handle_destructor(handle_t* handle){
 
 
 
-KERNEL_PUBLIC void fs_register_descriptor(filesystem_descriptor_t* descriptor){
-	LOG("Registering filesystem descriptor '%s'...",descriptor->name);
+KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config){
+	LOG("Registering filesystem descriptor '%s'...",config->name);
 	if (!fs_descriptor_handle_type){
 		fs_descriptor_handle_type=handle_alloc("fs_descriptor",NULL);
 	}
-	handle_new(descriptor,fs_descriptor_handle_type,&(descriptor->handle));
-	handle_finish_setup(&(descriptor->handle));
-	if (!descriptor->load_callback){
-		return;
+	if (!_fs_descriptor_allocator){
+		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2,pmm_alloc_counter("omm_fs_descriptor"));
+	}
+	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
+	out->config=config;
+	handle_new(out,fs_descriptor_handle_type,&(out->handle));
+	handle_finish_setup(&(out->handle));
+	if (!config->load_callback){
+		return out;
 	}
 	HANDLE_FOREACH(partition_handle_type){
 		partition_t* partition=handle->object;
 		if (partition->fs){
 			continue;
 		}
-		descriptor->load_callback(partition);
+		config->load_callback(partition);
 	}
+	return out;
 }
 
 
 
 KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor){
-	LOG("Unregistering filesystem descriptor '%s'...",descriptor->name);
+	LOG("Unregistering filesystem descriptor '%s'...",descriptor->config->name);
 	handle_destroy(&(descriptor->handle));
+	omm_dealloc(_fs_descriptor_allocator,descriptor);
 }
 
 
@@ -83,10 +91,10 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 	HANDLE_FOREACH(fs_descriptor_handle_type){
 		filesystem_descriptor_t* descriptor=handle->object;
-		if (!descriptor->load_callback){
+		if (!descriptor->config->load_callback){
 			continue;
 		}
-		filesystem_t* out=descriptor->load_callback(partition);
+		filesystem_t* out=descriptor->config->load_callback(partition);
 		if (out){
 			return out;
 		}

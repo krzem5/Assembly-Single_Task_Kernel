@@ -1,8 +1,8 @@
+dynamicfs:
 ahci:
 ata:
 coverage:
 devfs:dynamicfs
-dynamicfs:
 gpt:
 i82540:
 iso9660:

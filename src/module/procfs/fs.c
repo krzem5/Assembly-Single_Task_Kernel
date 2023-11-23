@@ -9,7 +9,7 @@ filesystem_t* procfs;
 
 
 
-static filesystem_descriptor_t _procfs_filesystem_descriptor={
+static const filesystem_descriptor_config_t _procfs_filesystem_descriptor_config={
 	"procfs",
 	NULL,
 	NULL
@@ -19,5 +19,5 @@ static filesystem_descriptor_t _procfs_filesystem_descriptor={
 
 void procfs_create_fs(void){
 	LOG("Creating procfs filesystem...");
-	procfs=dynamicfs_init("/proc",&_procfs_filesystem_descriptor);
+	procfs=dynamicfs_init("/proc",&_procfs_filesystem_descriptor_config);
 }

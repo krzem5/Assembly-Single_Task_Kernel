@@ -9,7 +9,7 @@ filesystem_t* sysfs;
 
 
 
-static filesystem_descriptor_t _sysfs_filesystem_descriptor={
+static const filesystem_descriptor_config_t _sysfs_filesystem_descriptor_config={
 	"sysfs",
 	NULL,
 	NULL
@@ -19,5 +19,5 @@ static filesystem_descriptor_t _sysfs_filesystem_descriptor={
 
 void sysfs_create_fs(void){
 	LOG("Creating sysfs filesystem...");
-	sysfs=dynamicfs_init("/sys",&_sysfs_filesystem_descriptor);
+	sysfs=dynamicfs_init("/sys",&_sysfs_filesystem_descriptor_config);
 }

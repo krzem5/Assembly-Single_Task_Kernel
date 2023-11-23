@@ -9,7 +9,7 @@ filesystem_t* devfs;
 
 
 
-static filesystem_descriptor_t _devfs_filesystem_descriptor={
+static const filesystem_descriptor_config_t _devfs_filesystem_descriptor_config={
 	"devfs",
 	NULL,
 	NULL
@@ -19,5 +19,5 @@ static filesystem_descriptor_t _devfs_filesystem_descriptor={
 
 void devfs_create_fs(void){
 	LOG("Creating devfs filesystem...");
-	devfs=dynamicfs_init("/dev",&_devfs_filesystem_descriptor);
+	devfs=dynamicfs_init("/dev",&_devfs_filesystem_descriptor_config);
 }

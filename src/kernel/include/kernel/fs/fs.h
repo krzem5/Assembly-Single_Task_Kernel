@@ -9,10 +9,16 @@
 
 
 
-typedef struct _FILESYSTEM_DESCRIPTOR{
+typedef struct _FILESYSTEM_DESCRIPTOR_CONFIG{
 	const char* name;
 	void (*deinit_callback)(filesystem_t*);
 	filesystem_t* (*load_callback)(partition_t*);
+} filesystem_descriptor_config_t;
+
+
+
+typedef struct _FILESYSTEM_DESCRIPTOR{
+	const filesystem_descriptor_config_t* config;
 	handle_t handle;
 } filesystem_descriptor_t;
 
@@ -23,7 +29,7 @@ extern handle_type_t fs_descriptor_handle_type;
 
 
 
-void fs_register_descriptor(filesystem_descriptor_t* descriptor);
+filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config);
 
 
 

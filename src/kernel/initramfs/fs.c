@@ -48,10 +48,7 @@ typedef struct _INITRAMFS_VFS_NODE{
 
 
 static omm_allocator_t* _initramfs_vfs_node_allocator=NULL;
-
-
-
-static filesystem_descriptor_t _initramfs_filesystem_descriptor;
+static filesystem_descriptor_t* _initramfs_filesystem_descriptor=NULL;
 
 
 
@@ -198,7 +195,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	if (drive_read(drive,sizeof(initramfs_header_t),&node,sizeof(initramfs_node_t))!=sizeof(initramfs_node_t)){
 		return NULL;
 	}
-	filesystem_t* out=fs_create(&_initramfs_filesystem_descriptor);
+	filesystem_t* out=fs_create(_initramfs_filesystem_descriptor);
 	out->functions=&_initramfs_functions;
 	out->partition=partition;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
@@ -215,7 +212,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 
 
 
-static filesystem_descriptor_t _initramfs_filesystem_descriptor={
+static const filesystem_descriptor_config_t _initramfs_filesystem_descriptor_config={
 	"initramfs",
 	_initramfs_fs_deinit,
 	_initramfs_fs_load
@@ -227,5 +224,5 @@ void initramfs_fs_init(void){
 	LOG("Registering initramfs filesystem descriptor...");
 	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,pmm_alloc_counter("omm_initramfs_node"));
 	spinlock_init(&(_initramfs_vfs_node_allocator->lock));
-	fs_register_descriptor(&_initramfs_filesystem_descriptor);
+	_initramfs_filesystem_descriptor=fs_register_descriptor(&_initramfs_filesystem_descriptor_config);
 }

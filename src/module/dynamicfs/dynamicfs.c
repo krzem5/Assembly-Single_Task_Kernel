@@ -87,13 +87,12 @@ static const vfs_functions_t _dynamicfs_functions={
 
 
 
-KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,filesystem_descriptor_t* fs_descriptor){
+KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config){
 	if (!_dynamicfs_vfs_node_allocator){
 		_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,pmm_alloc_counter("omm_dynamicfs_node"));
 		spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
 	}
-	fs_register_descriptor(fs_descriptor);
-	filesystem_t* out=fs_create(fs_descriptor);
+	filesystem_t* out=fs_create(fs_register_descriptor(fs_descriptor_config));
 	out->functions=&_dynamicfs_functions;
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);
 	out->root=vfs_node_create(out,name_string);
