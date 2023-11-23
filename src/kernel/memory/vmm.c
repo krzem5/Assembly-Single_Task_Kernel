@@ -11,7 +11,7 @@
 
 
 
-static pmm_counter_descriptor_t _vmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("vmm");
+static pmm_counter_descriptor_t _vmm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("vmm");
 
 
 

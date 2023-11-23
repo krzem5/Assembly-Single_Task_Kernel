@@ -12,7 +12,7 @@
 
 
 
-static pmm_counter_descriptor_t _handle_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
+static pmm_counter_descriptor_t _handle_descriptor_omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
 static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
 static handle_type_t _handle_max_type=HANDLE_TYPE_ANY;

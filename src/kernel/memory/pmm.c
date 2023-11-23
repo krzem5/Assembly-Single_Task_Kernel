@@ -260,7 +260,6 @@ _retry_allocator:
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 	if (_pmm_high_mem_initialized&&!counter->handle.rb_node.key){
-		WARN("Init pmm_counter: %s",counter->name);
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
 		handle_finish_setup(&(counter->handle));
 	}

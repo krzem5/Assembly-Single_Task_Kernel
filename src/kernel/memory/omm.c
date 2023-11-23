@@ -11,7 +11,7 @@
 
 
 
-static pmm_counter_descriptor_t _omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm");
+static pmm_counter_descriptor_t _omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm");
 static omm_allocator_t* _omm_self_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t omm_handle_type=0;

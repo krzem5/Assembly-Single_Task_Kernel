@@ -12,11 +12,11 @@
 
 
 
-static pmm_counter_descriptor_t _lock_profiling_pmm_counter=PMM_COUNTER_INIT_STRUCT("lock_profiling");
+static pmm_counter_descriptor_t _lock_profiling_pmm_counter=_PMM_COUNTER_INIT_STRUCT("lock_profiling");
 static spinlock_t _lock_profiling_data_lock=SPINLOCK_INIT_STRUCT;
 static KERNEL_ATOMIC u16 KERNEL_NOBSS _lock_next_type_id=0;
 static lock_profiling_type_descriptor_t* _lock_profiling_type_descriptors=NULL;
-static lock_profiling_type_descriptor_t KERNEL_NOBSS _lock_profiling_early_types[LOCK_PROFILING_EARLY_LOCK_TYPES]={
+static lock_profiling_type_descriptor_t KERNEL_INIT_WRITE _lock_profiling_early_types[LOCK_PROFILING_EARLY_LOCK_TYPES]={
 	{
 		.func="<unknown>",
 		.line=0
