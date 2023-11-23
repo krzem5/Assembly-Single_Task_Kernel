@@ -17,8 +17,8 @@
 
 
 
-static u32 KERNEL_INIT_WRITE _fadt_pm1a_control_block;
-static u32 KERNEL_INIT_WRITE _fadt_pm1b_control_block;
+const acpi_fadt_t* KERNEL_INIT_WRITE acpi_fadt=NULL;
+const acpi_dsdt_t* KERNEL_INIT_WRITE acpi_dsdt=NULL;
 
 
 
@@ -35,12 +35,10 @@ void KERNEL_EARLY_EXEC acpi_fadt_load(const acpi_fadt_t* fadt){
 			SPINLOOP(!(io_port_in16(fadt->pm1b_control_block)&SCI_EN));
 		}
 	}
-	_fadt_pm1a_control_block=fadt->pm1a_control_block;
-	_fadt_pm1b_control_block=fadt->pm1b_control_block;
 	INFO("Found DSDT at %p",fadt->dsdt);
-	const acpi_dsdt_t* dsdt=(void*)(u64)(fadt->dsdt);
-	dsdt=(void*)vmm_identity_map((u64)dsdt,((const acpi_dsdt_t*)vmm_identity_map((u64)dsdt,sizeof(acpi_dsdt_t)))->header.length);
-	aml_runtime_init(aml_parse(dsdt->data,dsdt->header.length-sizeof(acpi_dsdt_t)),fadt->sci_int);
+	acpi_fadt=fadt;
+	acpi_dsdt=(void*)vmm_identity_map(fadt->dsdt,((const acpi_dsdt_t*)vmm_identity_map(fadt->dsdt,sizeof(acpi_dsdt_t)))->header.length);
+	aml_runtime_init(aml_parse(acpi_dsdt->data,acpi_dsdt->header.length-sizeof(acpi_dsdt_t)),fadt->sci_int);
 }
 
 
@@ -49,9 +47,9 @@ KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool re
 	asm volatile("cli":::"memory");
 	u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	io_port_out16(_fadt_pm1a_control_block,pm1a_value);
-	if (_fadt_pm1b_control_block){
-		io_port_out16(_fadt_pm1b_control_block,pm1b_value);
+	io_port_out16(acpi_fadt->pm1a_control_block,pm1a_value);
+	if (acpi_fadt->pm1b_control_block){
+		io_port_out16(acpi_fadt->pm1b_control_block,pm1b_value);
 	}
 	for (;;);
 }
