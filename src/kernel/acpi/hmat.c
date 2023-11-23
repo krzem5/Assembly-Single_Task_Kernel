@@ -5,6 +5,6 @@
 
 
 
-void acpi_hmat_load(const acpi_hmat_t* hmat){
+void KERNEL_EARLY_EXEC acpi_hmat_load(const acpi_hmat_t* hmat){
 	LOG("Loading HMAT...");
 }

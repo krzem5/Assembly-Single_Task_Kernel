@@ -18,8 +18,8 @@
 
 
 
-static KERNEL_ATOMIC u16 KERNEL_INIT_WRITE _cpu_online_count;
-static u16 KERNEL_INIT_WRITE _cpu_bootstra_core_apic_id;
+static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count;
+static u16 KERNEL_EARLY_WRITE _cpu_bootstra_core_apic_id;
 
 KERNEL_PUBLIC u16 KERNEL_INIT_WRITE cpu_count;
 KERNEL_INIT_WRITE CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
@@ -30,7 +30,7 @@ void _cpu_init_core(void);
 
 
 
-static void _wakeup_cpu(u8 idx){
+static void KERNEL_EARLY_EXEC _wakeup_cpu(u8 idx){
 	if (idx>=cpu_count){
 		return;
 	}
@@ -48,7 +48,7 @@ static void _wakeup_cpu(u8 idx){
 
 
 
-void _cpu_init_core(void){
+void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	u8 index=msr_get_apic_id();
 	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_extra_data+index)->topology.domain,(cpu_extra_data+index)->topology.chip,(cpu_extra_data+index)->topology.core,(cpu_extra_data+index)->topology.thread);
 	INFO("Loading IDT, GDT, TSS, FS and GS...");
@@ -77,7 +77,7 @@ void _cpu_init_core(void){
 
 
 
-void cpu_init(u16 count){
+void KERNEL_EARLY_EXEC cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
 	cpu_count=count;
@@ -94,7 +94,7 @@ void cpu_init(u16 count){
 
 
 
-void cpu_start_all_cores(void){
+void KERNEL_EARLY_EXEC cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
 	pmm_counter_descriptor_t* cpu_pmm_counter=pmm_alloc_counter("cpu");
 	u64* cpu_stack_list=(u64*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,cpu_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);

@@ -11,15 +11,12 @@
 
 
 
-static omm_allocator_t* _symbol_allocator=NULL;
-
-
-
+static omm_allocator_t* KERNEL_INIT_WRITE _symbol_allocator=NULL;
 static rb_tree_t _symbol_tree;
 
 
 
-void symbol_init(void){
+void KERNEL_EARLY_EXEC symbol_init(void){
 	LOG("Initializing symbol tree...");
 	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2,pmm_alloc_counter("omm_symbol"));
 	spinlock_init(&(_symbol_allocator->lock));

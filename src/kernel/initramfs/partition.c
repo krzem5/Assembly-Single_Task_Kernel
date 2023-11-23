@@ -29,7 +29,7 @@ static const partition_table_descriptor_config_t _initramfs_partition_table_desc
 
 
 
-void initramfs_partition_init(void){
+void KERNEL_EARLY_EXEC initramfs_partition_init(void){
 	LOG("Registering initramfs partition descriptor...");
 	partition_register_table_descriptor(&_initramfs_partition_table_descriptor);
 }

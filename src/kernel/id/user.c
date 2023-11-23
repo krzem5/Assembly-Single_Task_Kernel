@@ -29,15 +29,12 @@ typedef struct _UID_DATA{
 
 static omm_allocator_t* _uid_data_allocator=NULL;
 static omm_allocator_t* _uid_group_allocator=NULL;
-
-
-
 static rb_tree_t _uid_tree;
 static spinlock_t _uid_global_lock;
 
 
 
-KERNEL_PUBLIC void uid_init(void){
+void KERNEL_EARLY_EXEC uid_init(void){
 	LOG("Initializing user tree...");
 	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,pmm_alloc_counter("omm_uid_data"));
 	spinlock_init(&(_uid_data_allocator->lock));

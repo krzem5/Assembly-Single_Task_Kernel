@@ -9,7 +9,7 @@
 
 
 
-void cpu_local_init(void){
+void KERNEL_EARLY_EXEC cpu_local_init(void){
 	LOG("Allocating cpu-local data...");
 	u32 total_size=0;
 	for (const cpu_local_data_descriptor_t*const* descriptor=(void*)kernel_section_cpu_local_start();(u64)descriptor<kernel_section_cpu_local_end();descriptor++){

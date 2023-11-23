@@ -1,5 +1,5 @@
 global topology_get_cpu_bits:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 

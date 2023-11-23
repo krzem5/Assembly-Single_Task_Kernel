@@ -220,7 +220,7 @@ static const filesystem_descriptor_config_t _initramfs_filesystem_descriptor_con
 
 
 
-void initramfs_fs_init(void){
+void KERNEL_EARLY_EXEC initramfs_fs_init(void){
 	LOG("Registering initramfs filesystem descriptor...");
 	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,pmm_alloc_counter("omm_initramfs_node"));
 	spinlock_init(&(_initramfs_vfs_node_allocator->lock));

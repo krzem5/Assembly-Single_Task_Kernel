@@ -1,9 +1,5 @@
-global fpu_state_size:data hidden 4
 global fpu_enable:function hidden
-global fpu_init:function hidden
-global fpu_save:function hidden
-global fpu_restore:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -40,6 +36,15 @@ fpu_enable:
 
 
 
+global fpu_state_size:data hidden 4
+global fpu_init:function hidden
+global fpu_save:function hidden
+global fpu_restore:function hidden
+section .text exec nowrite
+
+
+
+[bits 64]
 fpu_init:
 	push rdi
 	xor eax, eax

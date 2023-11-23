@@ -31,7 +31,7 @@ KERNEL_PUBLIC event_t* KERNEL_INIT_WRITE irq_events[223];
 
 
 
-void isr_init(void){
+void KERNEL_EARLY_EXEC isr_init(void){
 	LOG("Initializing ISR events...");
 	for (u8 i=0;i<223;i++){
 		irq_events[i]=event_new();

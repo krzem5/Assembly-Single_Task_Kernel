@@ -9,10 +9,10 @@
 
 
 
-static numa_cpu_t* KERNEL_INIT_WRITE _numa_cpus;
-static numa_memory_range_t* KERNEL_INIT_WRITE _numa_memory_ranges;
-static u32 KERNEL_INIT_WRITE _numa_remaining_cpus;
-static u32 KERNEL_INIT_WRITE _numa_remaining_memory_ranges;
+static numa_cpu_t* KERNEL_EARLY_WRITE _numa_cpus;
+static numa_memory_range_t* KERNEL_EARLY_WRITE _numa_memory_ranges;
+static u32 KERNEL_EARLY_WRITE _numa_remaining_cpus;
+static u32 KERNEL_EARLY_WRITE _numa_remaining_memory_ranges;
 
 KERNEL_PUBLIC u32 KERNEL_INIT_WRITE numa_node_count=0;
 KERNEL_PUBLIC numa_node_t* KERNEL_INIT_WRITE numa_nodes;
@@ -20,7 +20,7 @@ KERNEL_PUBLIC u8* KERNEL_INIT_WRITE numa_node_locality_matrix;
 
 
 
-void numa_init(u32 proximity_domain_count,u32 cpu_count,u32 memory_range_count){
+void KERNEL_EARLY_EXEC numa_init(u32 proximity_domain_count,u32 cpu_count,u32 memory_range_count){
 	LOG("Initializing NUMA...");
 	INFO("Proximity domain count: %u",proximity_domain_count);
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(numa_cpu_t)+memory_range_count*sizeof(numa_memory_range_t)+numa_node_count*sizeof(numa_node_t)+numa_node_count*numa_node_count*sizeof(u8))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("numa"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -48,7 +48,7 @@ void numa_init(u32 proximity_domain_count,u32 cpu_count,u32 memory_range_count){
 
 
 
-void numa_set_locality(u32 from,u32 to,u8 value){
+void KERNEL_EARLY_EXEC numa_set_locality(u32 from,u32 to,u8 value){
 	if (from>=numa_node_count||to>=numa_node_count){
 		panic("NUMA index out-of-range");
 	}
@@ -57,7 +57,7 @@ void numa_set_locality(u32 from,u32 to,u8 value){
 
 
 
-void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
+void KERNEL_EARLY_EXEC numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 	if (node_index>=numa_node_count||!_numa_remaining_cpus){
 		panic("NUMA index out-of-range");
 	}
@@ -73,7 +73,7 @@ void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 
 
 
-void numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_pluggable){
+void KERNEL_EARLY_EXEC numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_pluggable){
 	if (node_index>=numa_node_count||!_numa_remaining_memory_ranges){
 		panic("NUMA index out-of-range");
 	}

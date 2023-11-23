@@ -5,7 +5,7 @@
 
 
 
-void topology_compute(u8 apic_id,topology_t* out){
+void KERNEL_EARLY_EXEC topology_compute(u8 apic_id,topology_t* out){
 	u64 bits=topology_get_cpu_bits();
 	u32 thread_bits=bits;
 	u32 core_bits=bits>>32;

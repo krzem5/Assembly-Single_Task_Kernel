@@ -31,10 +31,10 @@ typedef struct _IOAPIC_OVERRIDE{
 
 static ioapic_t* KERNEL_INIT_WRITE _ioapic_data;
 static u16 KERNEL_INIT_WRITE _ioapic_count;
-static u16 KERNEL_INIT_WRITE _ioapic_index;
+static u16 KERNEL_EARLY_WRITE _ioapic_index;
 static ioapic_override_t* KERNEL_INIT_WRITE _ioapic_override_data;
 static u16 KERNEL_INIT_WRITE _ioapic_override_count;
-static u16 KERNEL_INIT_WRITE _ioapic_override_index;
+static u16 KERNEL_EARLY_WRITE _ioapic_override_index;
 static u16 KERNEL_INIT_WRITE _ioapic_irq_destination_cpu;
 
 
@@ -53,7 +53,7 @@ static KERNEL_INLINE void _write_register(const ioapic_t* ioapic,u32 reg,u32 val
 
 
 
-void ioapic_init(u16 count,u16 override_count){
+void KERNEL_EARLY_EXEC ioapic_init(u16 count,u16 override_count){
 	LOG("Initializing IOAPIC controller...");
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("ioapic"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_ioapic_data=buffer;
@@ -70,7 +70,7 @@ void ioapic_init(u16 count,u16 override_count){
 
 
 
-void ioapic_add(u8 apic_id,u32 address,u32 gsi_base){
+void KERNEL_EARLY_EXEC ioapic_add(u8 apic_id,u32 address,u32 gsi_base){
 	ioapic_t* ioapic=_ioapic_data+_ioapic_index;
 	_ioapic_index++;
 	ioapic->apic_id=apic_id;
@@ -84,7 +84,7 @@ void ioapic_add(u8 apic_id,u32 address,u32 gsi_base){
 
 
 
-void ioapic_add_override(u8 irq,u32 gsi,u16 flags){
+void KERNEL_EARLY_EXEC ioapic_add_override(u8 irq,u32 gsi,u16 flags){
 	(_ioapic_override_data+_ioapic_override_index)->irq=irq;
 	(_ioapic_override_data+_ioapic_override_index)->flags=flags;
 	(_ioapic_override_data+_ioapic_override_index)->gsi=gsi;

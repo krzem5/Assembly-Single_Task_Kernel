@@ -21,12 +21,11 @@ static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
 static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
 static _Bool KERNEL_INIT_WRITE _pmm_high_mem_initialized=0;
-static u64 KERNEL_INIT_WRITE _pmm_early_counter_pmm=0;
-static u64 KERNEL_INIT_WRITE _pmm_early_counter_kernel_image=0;
-static u64 KERNEL_INIT_WRITE _pmm_early_counter_total=0;
-
-static pmm_counter_descriptor_t* _pmm_counter_omm_pmm_counter=NULL;
-static omm_allocator_t* _pmm_counter_allocator=NULL;
+static u64 KERNEL_EARLY_WRITE _pmm_early_counter_pmm=0;
+static u64 KERNEL_EARLY_WRITE _pmm_early_counter_kernel_image=0;
+static u64 KERNEL_EARLY_WRITE _pmm_early_counter_total=0;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _pmm_counter_omm_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
@@ -66,7 +65,7 @@ static KERNEL_INLINE pmm_allocator_t* _get_allocator_from_address(u64 address){
 
 
 
-static void _add_memory_range(u64 address,u64 end){
+static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
@@ -105,7 +104,7 @@ static void _add_memory_range(u64 address,u64 end){
 
 
 
-void pmm_init(void){
+void KERNEL_EARLY_EXEC pmm_init(void){
 	LOG("Initializing physical memory manager...");
 	LOG("Scanning memory...");
 	u64 max_address=0;
@@ -152,7 +151,7 @@ void pmm_init(void){
 
 
 
-void pmm_init_high_mem(void){
+void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);

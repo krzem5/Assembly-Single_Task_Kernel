@@ -8,7 +8,7 @@
 
 
 
-void acpi_madt_load(const acpi_madt_t* madt){
+void KERNEL_EARLY_EXEC acpi_madt_load(const acpi_madt_t* madt){
 	LOG("Loading MADT...");
 	u16 cpu_count=0;
 	u16 ioapic_count=0;

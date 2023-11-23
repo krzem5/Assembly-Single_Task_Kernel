@@ -58,7 +58,7 @@ KERNEL_PUBLIC bios_data_t KERNEL_INIT_WRITE bios_data;
 
 
 
-static u64 _get_header_length(const smbios_header_t* header){
+static u64 KERNEL_EARLY_EXEC _get_header_length(const smbios_header_t* header){
 	const u8* ptr=((const u8*)header)+header->length;
 	while (ptr[0]||ptr[1]){
 		ptr++;
@@ -68,7 +68,7 @@ static u64 _get_header_length(const smbios_header_t* header){
 
 
 
-static const char* _get_header_string(const smbios_header_t* header,u8 index){
+static const char* KERNEL_EARLY_EXEC _get_header_string(const smbios_header_t* header,u8 index){
 	if (!index){
 		return "";
 	}
@@ -85,7 +85,7 @@ static const char* _get_header_string(const smbios_header_t* header,u8 index){
 
 
 
-void bios_get_system_data(void){
+void KERNEL_EARLY_EXEC bios_get_system_data(void){
 	LOG("Loading BIOS data...");
 	const smbios_t* smbios=(void*)vmm_identity_map(kernel_data.smbios_address,sizeof(smbios_t));
 	INFO("Found SMBIOS at %p (revision %u.%u)",((u64)smbios)-VMM_HIGHER_HALF_ADDRESS_OFFSET,smbios->major_version,smbios->minor_version);

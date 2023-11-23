@@ -6,7 +6,7 @@
 
 
 
-void acpi_srat_load(const acpi_srat_t* srat){
+void KERNEL_EARLY_EXEC acpi_srat_load(const acpi_srat_t* srat){
 	LOG("Loading SRAT...");
 	u32 max_proximity_domain=0;
 	u32 numa_cpu_count=0;

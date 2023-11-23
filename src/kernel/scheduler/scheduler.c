@@ -27,7 +27,7 @@ static KERNEL_INIT_WRITE CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
 
 
-void scheduler_init(void){
+void KERNEL_EARLY_EXEC scheduler_init(void){
 	LOG("Initializing scheduler...");
 	cpu_mask_init();
 	scheduler_load_balancer_init();
@@ -39,7 +39,7 @@ void scheduler_init(void){
 
 
 
-void scheduler_enable(void){
+void KERNEL_EARLY_EXEC scheduler_enable(void){
 	LOG("Enabling scheduler...");
 	_scheduler_enabled=1;
 }

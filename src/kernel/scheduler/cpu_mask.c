@@ -16,7 +16,7 @@ KERNEL_PUBLIC u32 KERNEL_INIT_WRITE cpu_mask_size;
 
 
 
-void cpu_mask_init(void){
+void KERNEL_EARLY_EXEC cpu_mask_init(void){
 	LOG("Initializing default CPU mask...");
 	cpu_mask_size=((cpu_count+63)>>6)*sizeof(u64);
 	_scheduler_cpu_mask_allocator=omm_init("cpu_mask",cpu_mask_size,8,1,pmm_alloc_counter("omm_cpu_mask"));

@@ -1,6 +1,6 @@
 extern log
 global cpu_check_features:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -97,7 +97,7 @@ cpu_check_features:
 
 
 
-section .rdata noexec nowrite
+section .erdata noexec nowrite
 
 
 

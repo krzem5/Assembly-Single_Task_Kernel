@@ -9,13 +9,13 @@
 
 
 
-static omm_allocator_t* _pci_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _pci_device_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t pci_device_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pci_device_handle_type=0;
 
 
 
-KERNEL_PUBLIC void pci_enumerate(void){
+KERNEL_PUBLIC void KERNEL_EARLY_EXEC pci_enumerate(void){
 	LOG("Scanning PCI devices...");
 	pci_device_handle_type=handle_alloc("pci_device",NULL);
 	_pci_device_allocator=omm_init("pci_device",sizeof(pci_device_t),8,1,pmm_alloc_counter("omm_pci_device"));

@@ -35,7 +35,7 @@ static volatile u32* KERNEL_INIT_WRITE _lapic_registers;
 
 
 
-void lapic_init(u64 base,u16 cpu_count){
+void KERNEL_EARLY_EXEC lapic_init(u64 base,u16 cpu_count){
 	LOG("Initializing lAPIC controller...");
 	INFO("lAPIC base: %p",base);
 	_lapic_registers=(void*)vmm_identity_map(base,(REGISTER_MAX+1)*sizeof(u32));
@@ -61,7 +61,7 @@ void lapic_eoi(void){
 
 
 
-void lapic_enable(void){
+void KERNEL_EARLY_EXEC lapic_enable(void){
 	_lapic_registers[REGISTER_SVR]=0x100|LAPIC_SPURIOUS_VECTOR;
 	_lapic_registers[REGISTER_ESR]=0;
 	_lapic_registers[REGISTER_ESR]=0;

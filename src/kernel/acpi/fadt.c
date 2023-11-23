@@ -23,7 +23,7 @@ static u32 KERNEL_INIT_WRITE _fadt_pm1b_control_block;
 
 
 
-void acpi_fadt_load(const acpi_fadt_t* fadt){
+void KERNEL_EARLY_EXEC acpi_fadt_load(const acpi_fadt_t* fadt){
 	LOG("Loading FADT...");
 	LOG("Enabling ACPI...");
 	if (io_port_in16(fadt->pm1a_control_block)&SCI_EN){

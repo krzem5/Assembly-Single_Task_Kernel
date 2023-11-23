@@ -9,7 +9,7 @@
 
 #define CPU_LOCAL_DATA(type,name) \
 	type* name; \
-	static const cpu_local_data_descriptor_t _cpu_local_data_descriptor_##name={ \
+	static const cpu_local_data_descriptor_t KERNEL_EARLY_READ _cpu_local_data_descriptor_##name={ \
 		(void**)(&name), \
 		sizeof(type) \
 	}; \

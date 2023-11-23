@@ -1,11 +1,5 @@
-extern _random_entropy_pool
-extern _random_entropy_pool_length
-extern _syscall_count
-extern _syscall_handlers
-extern scheduler_set_timer
-extern syscall_invalid
 global syscall_enable:function
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -32,6 +26,17 @@ syscall_enable:
 
 
 
+extern _random_entropy_pool
+extern _random_entropy_pool_length
+extern _syscall_count
+extern _syscall_handlers
+extern scheduler_set_timer
+extern syscall_invalid
+section .text exec nowrite
+
+
+
+[bits 64]
 _syscall_handler:
 	swapgs
 	mov qword [gs:16], rsp

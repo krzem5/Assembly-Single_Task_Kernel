@@ -2,11 +2,8 @@
 
 
 
-global _random_entropy_pool:data hidden
-global _random_entropy_pool_length:data hidden
 global _random_init_entropy_pool:function hidden
-global _random_get_entropy:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -29,6 +26,14 @@ _random_init_entropy_pool:
 
 
 
+global _random_entropy_pool:data hidden
+global _random_entropy_pool_length:data hidden
+global _random_get_entropy:function hidden
+section .text exec nowrite
+
+
+
+[bits 64]
 _random_get_entropy:
 	cmp qword [_random_entropy_pool_length], MIN_ENTROPY_POOL_SIZE
 	jl ._not_enough_entropy

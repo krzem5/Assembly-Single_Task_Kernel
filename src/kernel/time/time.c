@@ -11,7 +11,7 @@ KERNEL_PUBLIC u64 KERNEL_INIT_WRITE time_boot_offset;
 
 
 
-void time_init(void){
+void KERNEL_EARLY_EXEC time_init(void){
 	LOG("Calculating boot time...");
 	time_boot_offset=time_to_nanoseconds(kernel_data.date.year,kernel_data.date.month,kernel_data.date.day,kernel_data.date.hour,kernel_data.date.minute,kernel_data.date.second)+kernel_data.date.nanosecond-clock_ticks_to_time(kernel_data.date.measurement_offset);
 	INFO("Boot time offset: %lu",time_boot_offset);

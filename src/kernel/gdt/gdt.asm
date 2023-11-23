@@ -1,5 +1,5 @@
 global gdt_enable:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -58,7 +58,7 @@ gdt:
 
 
 
-section .rdata noexec nowrite
+section .erdata noexec nowrite
 
 
 

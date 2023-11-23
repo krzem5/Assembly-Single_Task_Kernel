@@ -9,9 +9,34 @@ ENTRY(_start)
 SECTIONS{
 	. = 0xffffffffc0100000;
 	DECLARE_SECTION_START(kernel);
+	DECLARE_SECTION_START(kernel_ue);
+	.kernel_ue : AT(ADDR(.kernel_ue) - BASE_ADDRESS_OFFSET){
+		*(.entry)
+		*(.etext .etext*)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_ue);
+	DECLARE_SECTION_START(kernel_ur);
+	.kernel_ur : AT(ADDR(.kernel_ur) - BASE_ADDRESS_OFFSET){
+		*(.erdata .erdata*)
+		. = ALIGN(8);
+		DECLARE_SECTION_START(cpu_local);
+		*(.cpulocal)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(cpu_local);
+		. = ALIGN(0x1000);
+		*(.ap_startup)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_ur);
+	DECLARE_SECTION_START(kernel_uw);
+	.kernel_uw : AT(ADDR(.kernel_uw) - BASE_ADDRESS_OFFSET){
+		*(.edata .edata*)
+		. = ALIGN(0x1000);
+	}
+	DECLARE_SECTION_END(kernel_uw);
 	DECLARE_SECTION_START(kernel_ex);
 	.kernel_ex : AT(ADDR(.kernel_ex) - BASE_ADDRESS_OFFSET){
-		*(.entry)
 		*(.text .text*)
 		. = ALIGN(0x1000);
 	}
@@ -20,18 +45,12 @@ SECTIONS{
 	.kernel_nx : AT(ADDR(.kernel_nx) - BASE_ADDRESS_OFFSET){
 		*(.rodata .rodata* .rdata .rdata*)
 		. = ALIGN(8);
-		DECLARE_SECTION_START(cpu_local);
-		*(.cpulocal)
-		. = ALIGN(8);
-		DECLARE_SECTION_END(cpu_local);
 		DECLARE_SECTION_START(gcov_info);
 #ifdef _KERNEL_COVERAGE_BUILD_
 		*(.gcov_info)
 #endif
 		. = ALIGN(8);
 		DECLARE_SECTION_END(gcov_info);
-		. = ALIGN(0x1000);
-		*(.ap_startup)
 		. = ALIGN(0x1000);
 	}
 	DECLARE_SECTION_END(kernel_nx);

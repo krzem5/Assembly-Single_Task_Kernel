@@ -313,10 +313,14 @@ def _extract_object_file_symbol_names(object_file,out):
 
 
 def _generate_symbol_file(kernel_symbols,file_path):
+	kernel_symbols=tuple(sorted(set(kernel_symbols)))
 	with open(file_path,"w") as wf:
-		wf.write("typedef unsigned long long int u64;\nconst u64 _raw_kernel_symbols[]={\n")
-		for symbol in sorted(set(kernel_symbols)):
-			wf.write(f"\t0,(u64)\"{symbol}\",\n")
+		wf.write("typedef unsigned long long int u64;\n")
+		for i,symbol in enumerate(kernel_symbols):
+			wf.write(f"static const char __attribute__((section(\".erdata\"))) _sym_{i}[]=\"{symbol}\";\n")
+		wf.write("const u64 __attribute__((section(\".erdata\"))) _raw_kernel_symbols[]={\n")
+		for i in range(0,len(kernel_symbols)):
+			wf.write(f"\t0,(u64)_sym_{i},\n")
 		wf.write("\t0,0\n};\n")
 	object_file=KERNEL_OBJECT_FILE_DIRECTORY+file_path.replace("/","#")+".o"
 	if (subprocess.run(["gcc-12","-mcmodel=large","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-O3","-g0","-o",object_file,"-c",file_path]).returncode!=0):

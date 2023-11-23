@@ -7,7 +7,7 @@
 
 
 
-void acpi_slit_load(const acpi_slit_t* slit){
+void KERNEL_EARLY_EXEC acpi_slit_load(const acpi_slit_t* slit){
 	LOG("Loading SLIT...");
 	if (numa_node_count!=slit->locality_count){
 		panic("SLIT: numa domain count mismatch");

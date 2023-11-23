@@ -35,7 +35,7 @@ static const drive_type_t _initramfs_drive_type_config={
 
 
 
-void initramfs_drive_init(void){
+void KERNEL_EARLY_EXEC initramfs_drive_init(void){
 	INFO("Creating virtual initramfs drive...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	drive_config_t config={

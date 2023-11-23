@@ -69,7 +69,7 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 
 
-void omm_init_self(void){
+void KERNEL_EARLY_EXEC omm_init_self(void){
 	omm_allocator_t _tmp_allocator;
 	_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);
 	_omm_self_allocator=omm_alloc(&_tmp_allocator);
@@ -78,7 +78,7 @@ void omm_init_self(void){
 
 
 
-void omm_init_handle_type(omm_allocator_t* handle_allocator){
+void KERNEL_EARLY_EXEC omm_init_handle_type(omm_allocator_t* handle_allocator){
 	omm_handle_type=handle_alloc("omm_allocator",NULL);
 	handle_new(_omm_self_allocator,omm_handle_type,&(_omm_self_allocator->handle));
 	handle_finish_setup(&(_omm_self_allocator->handle));

@@ -1,9 +1,7 @@
 global msr_get_apic_id:function hidden
 global msr_enable_apic:function hidden
-global msr_set_fs_base:function hidden
-global msr_set_gs_base:function hidden
 global msr_enable_rdtsc:function hidden
-section .text exec nowrite
+section .etext exec nowrite
 
 
 
@@ -28,6 +26,21 @@ msr_enable_apic:
 
 
 
+msr_enable_rdtsc:
+	mov rax, cr4
+	and rax, 0xfffffffffffffffb
+	mov cr4, rax
+	ret
+
+
+
+global msr_set_fs_base:function hidden
+global msr_set_gs_base:function hidden
+section .text exec nowrite
+
+
+
+[bits 64]
 msr_set_fs_base:
 	mov rdx, rdi
 	mov eax, edi
@@ -46,12 +59,4 @@ msr_set_gs_base:
 	add ecx, esi
 	shr rdx, 32
 	wrmsr
-	ret
-
-
-
-msr_enable_rdtsc:
-	mov rax, cr4
-	and rax, 0xfffffffffffffffb
-	mov cr4, rax
 	ret

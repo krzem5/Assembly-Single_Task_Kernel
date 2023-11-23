@@ -12,15 +12,15 @@ void msr_enable_apic(void);
 
 
 
+void msr_enable_rdtsc(void);
+
+
+
 void msr_set_fs_base(u64 fs_base);
 
 
 
 void msr_set_gs_base(u64 gs_base,_Bool is_alternate_gs);
-
-
-
-void msr_enable_rdtsc(void);
 
 
 

@@ -170,7 +170,7 @@ static u64 _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 
 
-void vmm_init(void){
+void KERNEL_EARLY_EXEC vmm_init(void){
 	LOG("Initializing virtual memory manager...");
 	vmm_kernel_pagemap.toplevel=pmm_alloc(1,&_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
 	spinlock_init(&(vmm_kernel_pagemap.lock));

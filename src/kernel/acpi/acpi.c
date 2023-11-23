@@ -13,7 +13,7 @@
 
 
 
-void acpi_load(void){
+void KERNEL_EARLY_EXEC acpi_load(void){
 	LOG("Loading ACPI RSDP...");
 	const acpi_rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(acpi_rsdt_t));
 	INFO("Found RSDP at %p (revision %u)",((u64)rsdp)-VMM_HIGHER_HALF_ADDRESS_OFFSET,rsdp->revision);
