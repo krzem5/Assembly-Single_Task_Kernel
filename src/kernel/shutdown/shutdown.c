@@ -1,5 +1,6 @@
 #include <kernel/io/io.h>
 #include <kernel/notification/notification.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/shutdown/shutdown.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -22,6 +23,7 @@ static void _init_notification_dispatcher(void){
 
 
 KERNEL_PUBLIC void KERNEL_NORETURN shutdown(_Bool restart){
+	scheduler_pause();
 	_init_notification_dispatcher();
 	notification_dispatcher_dispatch(&_shutdown_notification_dispatcher,NULL,(restart?NOTIFICATION_TYPE_SHUTDOWN_RESTART:NOTIFICATION_TYPE_SHUTDOWN_POWEROFF));
 	if (restart){
