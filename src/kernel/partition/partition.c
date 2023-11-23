@@ -33,7 +33,7 @@ static void _partition_handle_destructor(handle_t* handle){
 
 
 
-KERNEL_PUBLIC void partition_register_table_descriptor(const partition_table_descriptor_config_t* config){
+KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(const partition_table_descriptor_config_t* config){
 	LOG("Registering partition table descriptor '%s'...",config->name);
 	if (!partition_table_descriptor_handle_type){
 		partition_table_descriptor_handle_type=handle_alloc("partition_table_descriptor",0);
@@ -41,38 +41,34 @@ KERNEL_PUBLIC void partition_register_table_descriptor(const partition_table_des
 	if (!_partition_table_descriptor_allocator){
 		_partition_table_descriptor_allocator=omm_init("partition_table_descriptor",sizeof(partition_table_descriptor_t),8,1,pmm_alloc_counter("omm_partition_table_descriptor"));
 	}
-	partition_table_descriptor_t* descriptor=omm_alloc(_partition_table_descriptor_allocator);
-	descriptor->config=config;
-	handle_new(descriptor,partition_table_descriptor_handle_type,&(descriptor->handle));
-	handle_finish_setup(&(descriptor->handle));
+	partition_table_descriptor_t* out=omm_alloc(_partition_table_descriptor_allocator);
+	out->config=config;
+	handle_new(out,partition_table_descriptor_handle_type,&(out->handle));
+	handle_finish_setup(&(out->handle));
 	HANDLE_FOREACH(drive_handle_type){
 		drive_t* drive=handle->object;
 		if (drive->partition_table_descriptor){
 			continue;
 		}
-		handle_acquire(&(descriptor->handle));
-		drive->partition_table_descriptor=descriptor;
+		handle_acquire(&(out->handle));
+		drive->partition_table_descriptor=out;
 		if (config->load_callback(drive)){
 			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,config->name);
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
-			handle_release(&(descriptor->handle));
+			handle_release(&(out->handle));
 		}
 	}
+	return out;
 }
 
 
 
-KERNEL_PUBLIC void partition_unregister_table_descriptor(const partition_table_descriptor_config_t* config){
-	LOG("Unregistering partition table descriptor '%s'...",config->name);
-	HANDLE_FOREACH(partition_table_descriptor_handle_type){
-		partition_table_descriptor_t* descriptor=handle->object;
-		if (descriptor->config==config){
-			handle_destroy(&(descriptor->handle));
-			return;
-		}
-	}
+KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
+	LOG("Unregistering partition table descriptor '%s'...",descriptor->config->name);
+	handle_destroy(&(descriptor->handle));
+	omm_dealloc(_partition_table_descriptor_allocator,descriptor);
 }
 
 
