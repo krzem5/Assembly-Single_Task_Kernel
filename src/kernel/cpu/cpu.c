@@ -18,10 +18,6 @@
 
 
 
-static pmm_counter_descriptor_t _cpu_pmm_counter=PMM_COUNTER_INIT_STRUCT("cpu");
-
-
-
 static KERNEL_ATOMIC u16 KERNEL_INIT_WRITE _cpu_online_count;
 static u16 KERNEL_INIT_WRITE _cpu_bootstra_core_apic_id;
 
@@ -100,7 +96,8 @@ void cpu_init(u16 count){
 
 void cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
-	u64* cpu_stack_list=(u64*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,&_cpu_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	pmm_counter_descriptor_t* cpu_pmm_counter=pmm_alloc_counter("cpu");
+	u64* cpu_stack_list=(u64*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,cpu_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u16 i=0;i<cpu_count;i++){
 		cpu_stack_list[i]=(cpu_extra_data+i)->header.kernel_rsp;
 	}
@@ -110,5 +107,5 @@ void cpu_start_all_cores(void){
 	_wakeup_cpu(0);
 	SPINLOOP(_cpu_online_count!=cpu_count);
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
-	pmm_dealloc(((u64)cpu_stack_list)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,&_cpu_pmm_counter);
+	pmm_dealloc(((u64)cpu_stack_list)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,cpu_pmm_counter);
 }

@@ -15,7 +15,7 @@
 #define USE_ALLOCATOR(size) \
 	if (length<(size)){ \
 		if (!_smm_allocator##size){ \
-			_smm_allocator##size=omm_init("smm["#size"]",sizeof(string_t)+size,4,2,&_smm_omm_pmm_counter); \
+			_smm_allocator##size=omm_init("smm["#size"]",sizeof(string_t)+size,4,2,_smm_omm_pmm_counter); \
 			spinlock_init(&(_smm_allocator##size->lock)); \
 		} \
 		out=omm_alloc(_smm_allocator##size); \
@@ -27,7 +27,7 @@
 
 
 
-static pmm_counter_descriptor_t _smm_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_smm");
+static pmm_counter_descriptor_t* _smm_omm_pmm_counter=NULL;
 DECLARE_ALLOCATOR(4);
 DECLARE_ALLOCATOR(8);
 DECLARE_ALLOCATOR(12);
@@ -44,6 +44,9 @@ DECLARE_ALLOCATOR(256);
 
 
 KERNEL_PUBLIC string_t* smm_alloc(const char* data,u32 length){
+	if (!_smm_omm_pmm_counter){
+		_smm_omm_pmm_counter=pmm_alloc_counter("omm_smm");
+	}
 	if (!length){
 		length=smm_length(data);
 	}

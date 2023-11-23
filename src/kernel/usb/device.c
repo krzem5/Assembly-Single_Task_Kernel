@@ -15,12 +15,7 @@
 
 
 
-static pmm_counter_descriptor_t _usb_buffer_pmm_counter=PMM_COUNTER_INIT_STRUCT("usb_buffer");
-static pmm_counter_descriptor_t _usb_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
-static pmm_counter_descriptor_t _usb_device_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_device");
-static pmm_counter_descriptor_t _usb_configuration_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_configuration_descriptor");
-static pmm_counter_descriptor_t _usb_interface_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_interface_descriptor");
-static pmm_counter_descriptor_t _usb_endpoint_descriptor_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_endpoint_descriptor");
+static pmm_counter_descriptor_t* _usb_buffer_pmm_counter=NULL;
 static omm_allocator_t* _usb_device_allocator=NULL;
 static omm_allocator_t* _usb_device_descriptor_allocator=NULL;
 static omm_allocator_t* _usb_configuration_descriptor_allocator=NULL;
@@ -153,12 +148,12 @@ static void _configure_device(usb_device_t* device){
 	usb_pipe_resize(device,device->default_pipe,device->device_descriptor->max_packet_size);
 	device->configuration_descriptor=NULL;
 	device->current_configuration_descriptor=NULL;
-	void* buffer=(void*)(pmm_alloc(1,&_usb_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(1,_usb_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u8 i=descriptor.bNumConfigurations;i;){
 		i--;
 		_load_configuration_descriptor(device,buffer,i);
 	}
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,&_usb_buffer_pmm_counter);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_usb_buffer_pmm_counter);
 	if (device->configuration_descriptor){
 		usb_device_set_configuration(device,device->configuration_descriptor->value);
 	}
@@ -167,24 +162,27 @@ static void _configure_device(usb_device_t* device){
 
 
 KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
+	if (!_usb_buffer_pmm_counter){
+		_usb_buffer_pmm_counter=pmm_alloc_counter("usb_buffer");
+	}
 	if (!_usb_device_allocator){
-		_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2,&_usb_device_omm_pmm_counter);
+		_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2,pmm_alloc_counter("omm_usb_device"));
 		spinlock_init(&(_usb_device_allocator->lock));
 	}
 	if (!_usb_device_descriptor_allocator){
-		_usb_device_descriptor_allocator=omm_init("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,&_usb_device_descriptor_omm_pmm_counter);
+		_usb_device_descriptor_allocator=omm_init("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,pmm_alloc_counter("omm_usb_device_descriptor"));
 		spinlock_init(&(_usb_device_descriptor_allocator->lock));
 	}
 	if (!_usb_configuration_descriptor_allocator){
-		_usb_configuration_descriptor_allocator=omm_init("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,&_usb_configuration_descriptor_omm_pmm_counter);
+		_usb_configuration_descriptor_allocator=omm_init("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,pmm_alloc_counter("omm_usb_configuration_descriptor"));
 		spinlock_init(&(_usb_configuration_descriptor_allocator->lock));
 	}
 	if (!_usb_interface_descriptor_allocator){
-		_usb_interface_descriptor_allocator=omm_init("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,&_usb_interface_descriptor_omm_pmm_counter);
+		_usb_interface_descriptor_allocator=omm_init("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,pmm_alloc_counter("omm_usb_interface_descriptor"));
 		spinlock_init(&(_usb_interface_descriptor_allocator->lock));
 	}
 	if (!_usb_endpoint_descriptor_allocator){
-		_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,&_usb_endpoint_descriptor_omm_pmm_counter);
+		_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,pmm_alloc_counter("omm_usb_endpoint_descriptor"));
 		spinlock_init(&(_usb_endpoint_descriptor_allocator->lock));
 	}
 	if (!usb_device_handle_type){

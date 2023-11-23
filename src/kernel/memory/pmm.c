@@ -3,6 +3,7 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -14,15 +15,18 @@
 
 
 
-static pmm_counter_descriptor_t _pmm_pmm_counter=PMM_COUNTER_INIT_STRUCT("pmm");
-static pmm_counter_descriptor_t _pmm_kernel_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("kernel_image");
-static pmm_counter_descriptor_t _pmm_total_pmm_counter=PMM_COUNTER_INIT_STRUCT("total");
 static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static u64* KERNEL_INIT_WRITE _pmm_bitmap;
 static pmm_load_balancer_t _pmm_load_balancer;
 static _Bool KERNEL_INIT_WRITE _pmm_initialized=0;
 static _Bool KERNEL_INIT_WRITE _pmm_high_mem_initialized=0;
+static u64 KERNEL_INIT_WRITE _pmm_early_counter_pmm=0;
+static u64 KERNEL_INIT_WRITE _pmm_early_counter_kernel_image=0;
+static u64 KERNEL_INIT_WRITE _pmm_early_counter_total=0;
+
+static pmm_counter_descriptor_t* _pmm_counter_omm_pmm_counter=NULL;
+static omm_allocator_t* _pmm_counter_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
@@ -82,7 +86,7 @@ static void _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
-		_pmm_total_pmm_counter.count+=size>>PAGE_SIZE_SHIFT;
+		_pmm_early_counter_total+=size>>PAGE_SIZE_SHIFT;
 		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=(allocator->block_groups+idx)->tail;
 		header->next=NULL;
@@ -132,8 +136,8 @@ void pmm_init(void){
 	_pmm_load_balancer.stats.miss_locked_count=0;
 	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
 	LOG("Initializing coutners...");
-	_pmm_pmm_counter.count+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)+bitmap_size)>>PAGE_SIZE_SHIFT;
-	_pmm_kernel_image_pmm_counter.count+=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
+	_pmm_early_counter_pmm=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)+bitmap_size)>>PAGE_SIZE_SHIFT;
+	_pmm_early_counter_kernel_image=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
@@ -147,6 +151,7 @@ void pmm_init(void){
 }
 
 
+
 void pmm_init_high_mem(void){
 	LOG("Registering high memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -156,13 +161,31 @@ void pmm_init_high_mem(void){
 	}
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
-	handle_new(&_pmm_pmm_counter,pmm_counter_handle_type,&(_pmm_pmm_counter.handle));
-	handle_new(&_pmm_kernel_image_pmm_counter,pmm_counter_handle_type,&(_pmm_kernel_image_pmm_counter.handle));
-	handle_new(&_pmm_total_pmm_counter,pmm_counter_handle_type,&(_pmm_total_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_kernel_image_pmm_counter.handle));
-	handle_finish_setup(&(_pmm_total_pmm_counter.handle));
+	pmm_counter_descriptor_t tmp={
+		.count=0
+	};
+	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1,&tmp);
+	_pmm_counter_omm_pmm_counter=omm_alloc(_pmm_counter_allocator);
+	_pmm_counter_omm_pmm_counter->name="pmm_counter";
+	_pmm_counter_omm_pmm_counter->count=tmp.count;
+	handle_new(_pmm_counter_omm_pmm_counter,pmm_counter_handle_type,&(_pmm_counter_omm_pmm_counter->handle));
+	handle_finish_setup(&(_pmm_counter_omm_pmm_counter->handle));
+	_pmm_counter_allocator->pmm_counter=_pmm_counter_omm_pmm_counter;
+	pmm_alloc_counter("pmm")->count=_pmm_early_counter_pmm;
+	pmm_alloc_counter("kernel_image")->count=_pmm_early_counter_kernel_image;
+	pmm_alloc_counter("total")->count=_pmm_early_counter_total;
 	_pmm_high_mem_initialized=1;
+}
+
+
+
+KERNEL_PUBLIC pmm_counter_descriptor_t* pmm_alloc_counter(const char* name){
+	pmm_counter_descriptor_t* out=omm_alloc(_pmm_counter_allocator);
+	out->name=name;
+	out->count=0;
+	handle_new(out,pmm_counter_handle_type,&(out->handle));
+	handle_finish_setup(&(out->handle));
+	return out;
 }
 
 
@@ -237,6 +260,7 @@ _retry_allocator:
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 	if (_pmm_high_mem_initialized&&!counter->handle.rb_node.key){
+		WARN("Init pmm_counter: %s",counter->name);
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
 		handle_finish_setup(&(counter->handle));
 	}

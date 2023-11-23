@@ -15,8 +15,6 @@
 
 
 
-static pmm_counter_descriptor_t _fd_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fd");
-static pmm_counter_descriptor_t _fd_iterator_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fd_iterator");
 static omm_allocator_t* _fd_allocator=NULL;
 static omm_allocator_t* _fd_iterator_allocator=NULL;
 static handle_type_t _fd_handle_type=0;
@@ -72,7 +70,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	}
 	node->rc++;
 	if (!_fd_allocator){
-		_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,&_fd_omm_pmm_counter);
+		_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,pmm_alloc_counter("omm_fd"));
 		spinlock_init(&(_fd_allocator->lock));
 	}
 	if (!_fd_handle_type){
@@ -287,7 +285,7 @@ s64 fd_iter_start(handle_id_t fd){
 		return -1;
 	}
 	if (!_fd_iterator_allocator){
-		_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,&_fd_iterator_omm_pmm_counter);
+		_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,pmm_alloc_counter("omm_fd_iterator"));
 		spinlock_init(&(_fd_iterator_allocator->lock));
 	}
 	if (!_fd_iterator_handle_type){

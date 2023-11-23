@@ -18,7 +18,6 @@ typedef struct _GID_DATA{
 
 
 
-static pmm_counter_descriptor_t _gid_data_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_gid_data");
 static omm_allocator_t* _gid_data_allocator=NULL;
 
 
@@ -30,7 +29,7 @@ static spinlock_t _gid_global_lock;
 
 void gid_init(void){
 	LOG("Initializing group tree...");
-	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1,&_gid_data_omm_pmm_counter);
+	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1,pmm_alloc_counter("omm_gid_data"));
 	spinlock_init(&(_gid_data_allocator->lock));
 	spinlock_init(&_gid_global_lock);
 	rb_tree_init(&_gid_tree);

@@ -32,7 +32,6 @@ typedef struct _RUNTIME_LOCAL_STATE{
 
 
 
-static pmm_counter_descriptor_t _aml_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_node");
 static omm_allocator_t* _aml_node_allocator=NULL;
 
 
@@ -989,7 +988,7 @@ _end:
 
 void aml_runtime_init(aml_object_t* root,u16 irq){
 	LOG("Building AML runtime...");
-	_aml_node_allocator=omm_init("aml_node",sizeof(aml_node_t),8,4,&_aml_node_omm_pmm_counter);
+	_aml_node_allocator=omm_init("aml_node",sizeof(aml_node_t),8,4,pmm_alloc_counter("omm_aml_node"));
 	spinlock_init(&(_aml_node_allocator->lock));
 	aml_root_node=_alloc_node("\\\x00\x00\x00",AML_NODE_TYPE_SCOPE,NULL);
 	runtime_local_state_t local={

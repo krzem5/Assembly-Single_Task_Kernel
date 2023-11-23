@@ -10,10 +10,6 @@
 
 
 
-static pmm_counter_descriptor_t _network_pmm_counter=PMM_COUNTER_INIT_STRUCT("network");
-
-
-
 static spinlock_t _layer2_lock;
 static u64 _layer2_physical_send_buffer_address;
 static u8* _layer2_physical_send_buffer;
@@ -23,7 +19,7 @@ static u8* _layer2_physical_send_buffer;
 void network_layer2_init(void){
 	LOG("Initializing layer2 network...");
 	spinlock_init(&_layer2_lock);
-	_layer2_physical_send_buffer_address=pmm_alloc(1,&_network_pmm_counter,0);
+	_layer2_physical_send_buffer_address=pmm_alloc(1,pmm_alloc_counter("network"),0);
 	_layer2_physical_send_buffer=(void*)(_layer2_physical_send_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 

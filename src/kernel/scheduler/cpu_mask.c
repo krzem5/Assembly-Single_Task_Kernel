@@ -9,7 +9,6 @@
 
 
 
-static pmm_counter_descriptor_t _scheduler_cpu_mask_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_cpu_mask");
 static omm_allocator_t* KERNEL_INIT_WRITE _scheduler_cpu_mask_allocator;
 static u64 KERNEL_INIT_WRITE _scheduler_cpu_mask_last_bitmap_entry;
 
@@ -20,7 +19,7 @@ KERNEL_PUBLIC u32 KERNEL_INIT_WRITE cpu_mask_size;
 void cpu_mask_init(void){
 	LOG("Initializing default CPU mask...");
 	cpu_mask_size=((cpu_count+63)>>6)*sizeof(u64);
-	_scheduler_cpu_mask_allocator=omm_init("cpu_mask",cpu_mask_size,8,1,&_scheduler_cpu_mask_omm_pmm_counter);
+	_scheduler_cpu_mask_allocator=omm_init("cpu_mask",cpu_mask_size,8,1,pmm_alloc_counter("omm_cpu_mask"));
 	spinlock_init(&(_scheduler_cpu_mask_allocator->lock));
 	_scheduler_cpu_mask_last_bitmap_entry=((cpu_count&63)?(1ull<<(cpu_count&63))-1:0);
 }

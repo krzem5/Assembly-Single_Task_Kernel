@@ -9,7 +9,6 @@
 
 
 
-static pmm_counter_descriptor_t _pci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_pci_device");
 static omm_allocator_t* _pci_device_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t pci_device_handle_type=0;
@@ -19,7 +18,7 @@ KERNEL_PUBLIC handle_type_t pci_device_handle_type=0;
 KERNEL_PUBLIC void pci_enumerate(void){
 	LOG("Scanning PCI devices...");
 	pci_device_handle_type=handle_alloc("pci_device",NULL);
-	_pci_device_allocator=omm_init("pci_device",sizeof(pci_device_t),8,1,&_pci_device_omm_pmm_counter);
+	_pci_device_allocator=omm_init("pci_device",sizeof(pci_device_t),8,1,pmm_alloc_counter("omm_pci_device"));
 	spinlock_init(&(_pci_device_allocator->lock));
 	pci_device_address_t device_address={
 		0,

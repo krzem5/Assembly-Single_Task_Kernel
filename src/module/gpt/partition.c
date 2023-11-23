@@ -10,7 +10,7 @@
 
 
 
-static pmm_counter_descriptor_t _gpt_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("gpt");
+static pmm_counter_descriptor_t* _gpt_driver_pmm_counter;
 
 
 
@@ -27,10 +27,10 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 		return 0;
 	}
 	u32 entry_buffer_size=header->entry_count*header->entry_size;
-	void* entry_buffer=(void*)(pmm_alloc(pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,&_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* entry_buffer=(void*)(pmm_alloc(pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u32 aligned_entry_buffer_size=(entry_buffer_size+drive->block_size-1)>>drive->block_size_shift;
 	if (drive_read(drive,header->entry_lba,entry_buffer,aligned_entry_buffer_size)!=aligned_entry_buffer_size){
-		pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,&_gpt_driver_pmm_counter);
+		pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 		return 0;
 	}
 	INFO("Found valid GPT partition table: %g",header->guid);
@@ -51,7 +51,7 @@ _valid_entry:
 		name_buffer[j]=0;
 		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba);
 	}
-	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,&_gpt_driver_pmm_counter);
+	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 	return 1;
 }
 
@@ -65,5 +65,6 @@ static partition_table_descriptor_t _gpt_partition_table_descriptor={
 
 
 void gpt_register_partition_table(void){
+	_gpt_driver_pmm_counter=pmm_alloc_counter("gpt");
 	partition_register_table_descriptor(&_gpt_partition_table_descriptor);
 }

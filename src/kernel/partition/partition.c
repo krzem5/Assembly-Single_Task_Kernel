@@ -14,7 +14,6 @@
 
 
 
-static pmm_counter_descriptor_t _partition_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_partition");
 static omm_allocator_t* _partition_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t partition_handle_type=0;
@@ -88,7 +87,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	if (!_partition_allocator){
-		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4,&_partition_omm_pmm_counter);
+		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4,pmm_alloc_counter("omm_partition"));
 		spinlock_init(&(_partition_allocator->lock));
 	}
 	if (!partition_handle_type){

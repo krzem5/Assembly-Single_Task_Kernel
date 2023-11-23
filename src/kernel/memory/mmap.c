@@ -12,10 +12,8 @@
 
 
 
-static pmm_counter_descriptor_t _mmap_file_pmm_counter=PMM_COUNTER_INIT_STRUCT("mmap_file");
-static pmm_counter_descriptor_t _mmap_generic_pmm_counter=PMM_COUNTER_INIT_STRUCT("mmap_generic");
-static pmm_counter_descriptor_t _mmap_region_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_mmap_region");
-static pmm_counter_descriptor_t _mmap_length_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_mmap_length_group");
+static pmm_counter_descriptor_t* _mmap_file_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _mmap_generic_pmm_counter=NULL;
 static omm_allocator_t* _mmap_region_allocator=NULL;
 static omm_allocator_t* _mmap_length_group_allocator=NULL;
 
@@ -136,11 +134,11 @@ KERNEL_PUBLIC void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out
 	KERNEL_ASSERT(pagemap);
 	KERNEL_ASSERT(out);
 	if (!_mmap_region_allocator){
-		_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4,&_mmap_region_omm_pmm_counter);
+		_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
 		spinlock_init(&(_mmap_region_allocator->lock));
 	}
 	if (!_mmap_length_group_allocator){
-		_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4,&_mmap_length_group_omm_pmm_counter);
+		_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4,pmm_alloc_counter("omm_mmap_length_group"));
 		spinlock_init(&(_mmap_length_group_allocator->lock));
 	}
 	out->pagemap=pagemap;
@@ -189,7 +187,13 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 		panic("mmap_alloc: unaligned arguments");
 	}
 	if (!pmm_counter){
-		pmm_counter=(file?&_mmap_file_pmm_counter:&_mmap_generic_pmm_counter);
+		if (!_mmap_file_pmm_counter){
+			_mmap_file_pmm_counter=pmm_alloc_counter("mmap_file");
+		}
+		if (!_mmap_generic_pmm_counter){
+			_mmap_generic_pmm_counter=pmm_alloc_counter("mmap_generic");
+		}
+		pmm_counter=(file?_mmap_file_pmm_counter:_mmap_generic_pmm_counter);
 	}
 	if (!length&&file){
 		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));

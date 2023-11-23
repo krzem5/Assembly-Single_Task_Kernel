@@ -18,11 +18,14 @@
 
 
 
-static pmm_counter_descriptor_t _user_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_data");
+static pmm_counter_descriptor_t* _user_data_pmm_counter=NULL;
 
 
 
 void syscall_memory_map(isr_state_t* regs){
+	if (!_user_data_pmm_counter){
+		_user_data_pmm_counter=pmm_alloc_counter("user_data");
+	}
 	u64 flags=MMAP_REGION_FLAG_VMM_USER;
 	vfs_node_t* file=NULL;
 	if (regs->rsi&MEMORY_FLAG_WRITE){
@@ -42,7 +45,7 @@ void syscall_memory_map(isr_state_t* regs){
 		flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
 	}
 	u64 length=pmm_align_up_address(regs->rdi);
-	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,&_user_data_pmm_counter,flags,file);
+	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,_user_data_pmm_counter,flags,file);
 	regs->rax=(out?out->rb_node.key:0);
 }
 

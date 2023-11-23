@@ -15,8 +15,7 @@
 
 
 
-static pmm_counter_descriptor_t _nvme_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("nvme");
-static pmm_counter_descriptor_t _nvme_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_nvme_device");
+static pmm_counter_descriptor_t* _nvme_driver_pmm_counter=NULL;
 static omm_allocator_t* _nvme_device_allocator=NULL;
 
 
@@ -34,7 +33,7 @@ static KERNEL_INLINE void _init_queue(nvme_device_t* device,u16 queue_index,u16 
 
 static void _completion_queue_init(nvme_device_t* device,u16 queue_index,u16 queue_length,nvme_completion_queue_t* out){
 	_init_queue(device,queue_index,queue_length,&(out->queue));
-	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_completion_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_completion_queue_entry_t))>>PAGE_SIZE_SHIFT,_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->head=0;
 	out->phase=1;
 }
@@ -58,7 +57,7 @@ static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_que
 
 static void _submission_queue_init(nvme_device_t* device,nvme_completion_queue_t* completion_queue,u16 queue_index,u16 queue_length,nvme_submission_queue_t* out){
 	_init_queue(device,queue_index,queue_length,&(out->queue));
-	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->completion_queue=completion_queue;
 	spinlock_init(&(out->lock));
 	out->head=0;
@@ -126,7 +125,7 @@ static u64 _nvme_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	if (count>(device->max_request_size>>drive->block_size_shift)){
 		count=device->max_request_size>>drive->block_size_shift;
 	}
-	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter,0);
+	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_nvme_driver_pmm_counter,0);
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,count<<drive->block_size_shift);
 	}
@@ -140,7 +139,7 @@ static u64 _nvme_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
 		memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),count<<drive->block_size_shift);
 	}
-	pmm_dealloc(aligned_buffer,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_nvme_driver_pmm_counter);
+	pmm_dealloc(aligned_buffer,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_nvme_driver_pmm_counter);
 	return 0;
 }
 
@@ -210,7 +209,7 @@ static void _nvme_init_device(pci_device_t* device){
 	registers->asq=((u64)(nvme_device->admin_submission_queue.entries))-VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	registers->cc=CC_EN|0x460000;
 	SPINLOOP(!(registers->csts&CSTS_RDY));
-	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(2,&_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	nvme_identify_data_t* identify_data=(void*)(pmm_alloc(2,_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_request_identify_data(nvme_device,((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,CNS_ID_CTRL,0);
 	nvme_device->max_request_size=PAGE_SIZE<<identify_data->controller.mdts;
 	INFO("Namespace count: %u, Maximum data transfer size: %v",identify_data->controller.nn,nvme_device->max_request_size);
@@ -219,14 +218,15 @@ static void _nvme_init_device(pci_device_t* device){
 	for (u32 i=0;i<identify_data->controller.nn;i++){
 		_load_namespace(nvme_device,i,identify_data,(void*)(((u64)identify_data)+PAGE_SIZE));
 	}
-	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,2,&_nvme_driver_pmm_counter);
+	pmm_dealloc(((u64)identify_data)-VMM_HIGHER_HALF_ADDRESS_OFFSET,2,_nvme_driver_pmm_counter);
 
 }
 
 
 
 void nvme_locate_devices(void){
-	_nvme_device_allocator=omm_init("nvme_deivce",sizeof(nvme_device_t),8,1,&_nvme_device_omm_pmm_counter);
+	_nvme_driver_pmm_counter=pmm_alloc_counter("nvme");
+	_nvme_device_allocator=omm_init("nvme_device",sizeof(nvme_device_t),8,1,pmm_alloc_counter("omm_nvme_device"));
 	spinlock_init(&(_nvme_device_allocator->lock));
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;

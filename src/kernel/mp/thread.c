@@ -28,10 +28,9 @@
 
 
 
-static pmm_counter_descriptor_t _thread_user_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_stack");
-static pmm_counter_descriptor_t _thread_kernel_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("kernel_stack");
-static pmm_counter_descriptor_t _thread_pf_stack_pmm_counter=PMM_COUNTER_INIT_STRUCT("pf_stack");
-static pmm_counter_descriptor_t _thread_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_thread");
+static pmm_counter_descriptor_t* _thread_user_stack_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _thread_kernel_stack_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _thread_pf_stack_pmm_counter=NULL;
 static omm_allocator_t* _thread_allocator=NULL;
 static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
@@ -55,12 +54,21 @@ static void _thread_handle_destructor(handle_t* handle){
 
 
 static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel_stack_size){
+	if (!_thread_user_stack_pmm_counter){
+		_thread_user_stack_pmm_counter=pmm_alloc_counter("user_stack");
+	}
+	if (!_thread_kernel_stack_pmm_counter){
+		_thread_kernel_stack_pmm_counter=pmm_alloc_counter("kernel_stack");
+	}
+	if (!_thread_pf_stack_pmm_counter){
+		_thread_pf_stack_pmm_counter=pmm_alloc_counter("pf_stack");
+	}
 	if (!_thread_allocator){
-		_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,&_thread_omm_pmm_counter);
+		_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,pmm_alloc_counter("omm_thread"));
 		spinlock_init(&(_thread_allocator->lock));
 	}
 	if (!_thread_fpu_state_allocator){
-		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,&_thread_omm_pmm_counter);
+		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,pmm_alloc_counter("omm_thread_fpu_state"));
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	if (!thread_handle_type){
@@ -75,7 +83,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	spinlock_init(&(out->lock));
 	out->process=process;
 	if (user_stack_size){
-		out->user_stack_region=mmap_alloc(&(process->mmap),0,user_stack_size,&_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+		out->user_stack_region=mmap_alloc(&(process->mmap),0,user_stack_size,_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 		if (!out->user_stack_region){
 			panic("Unable to reserve thread stack");
 		}
@@ -83,11 +91,11 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	else{
 		out->user_stack_region=NULL;
 	}
-	out->kernel_stack_region=mmap_alloc(&(process_kernel->mmap),0,kernel_stack_size,&_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	out->kernel_stack_region=mmap_alloc(&(process_kernel->mmap),0,kernel_stack_size,_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->pf_stack_region=mmap_alloc(&(process_kernel->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,&_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	out->pf_stack_region=mmap_alloc(&(process_kernel->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}

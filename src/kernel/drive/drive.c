@@ -10,7 +10,6 @@
 
 
 
-static pmm_counter_descriptor_t _drive_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_drive");
 static omm_allocator_t* _drive_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t drive_handle_type=0;
@@ -50,7 +49,7 @@ KERNEL_PUBLIC void drive_unregister_type(drive_type_t* type){
 
 KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	if (!_drive_allocator){
-		_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,&_drive_omm_pmm_counter);
+		_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,pmm_alloc_counter("omm_drive"));
 		spinlock_init(&(_drive_allocator->lock));
 	}
 	if (!drive_handle_type){

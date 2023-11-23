@@ -13,7 +13,6 @@
 
 
 
-static pmm_counter_descriptor_t _fs_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_fs");
 static omm_allocator_t* _fs_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t fs_handle_type=0;
@@ -61,7 +60,7 @@ KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor)
 KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	if (!_fs_allocator){
-		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4,&_fs_omm_pmm_counter);
+		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4,pmm_alloc_counter("omm_fs"));
 		spinlock_init(&(_fs_allocator->lock));
 	}
 	if (!fs_handle_type){

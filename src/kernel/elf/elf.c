@@ -47,8 +47,8 @@ typedef struct _ELF_LOADER_CONTEXT{
 
 
 
-static pmm_counter_descriptor_t _user_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_image");
-static pmm_counter_descriptor_t _user_input_data_pmm_counter=PMM_COUNTER_INIT_STRUCT("user_input_data");
+static pmm_counter_descriptor_t* _user_image_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _user_input_data_pmm_counter=NULL;
 
 
 
@@ -136,7 +136,7 @@ static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
 		if (program_header->p_flags&PF_W){
 			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 		}
-		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),&_user_image_pmm_counter,flags,NULL);
+		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),_user_image_pmm_counter,flags,NULL);
 		if (!program_region){
 			return 0;
 		}
@@ -185,7 +185,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,&_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		goto _error;
@@ -277,12 +277,12 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	string_table_size+=smm_length(ctx->path)+1;
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=size+((string_table_size+7)&0xfffffff8);
-	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),&_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	if (!region){
 		ERROR("Unable to reserve process input data memory");
 		return 0;
 	}
-	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u64* data_ptr=buffer;
 	void* string_table_ptr=buffer+size;
 	PUSH_DATA_VALUE(ctx->argc);
@@ -313,7 +313,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
 	mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,&_user_input_data_pmm_counter);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,_user_input_data_pmm_counter);
 	ctx->thread->gpr_state.r15=region->rb_node.key;
 	return !!region;
 }
@@ -323,6 +323,12 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!path){
 		return 0;
+	}
+	if (!_user_image_pmm_counter){
+		_user_image_pmm_counter=pmm_alloc_counter("user_image");
+	}
+	if (!_user_input_data_pmm_counter){
+		_user_input_data_pmm_counter=pmm_alloc_counter("user_input_data");
 	}
 	if (!argv){
 		argc=1;

@@ -15,11 +15,8 @@
 
 
 
-static pmm_counter_descriptor_t _xhci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("xhci");
-static pmm_counter_descriptor_t _xhci_input_context_pmm_counter=PMM_COUNTER_INIT_STRUCT("xhci_input_context");
-static pmm_counter_descriptor_t _xhci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_device");
-static pmm_counter_descriptor_t _xhci_ring_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_ring");
-static pmm_counter_descriptor_t _xhci_pipe_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_xhci_pipe");
+static pmm_counter_descriptor_t* _xhci_driver_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _xhci_input_context_pmm_counter=NULL;
 static omm_allocator_t* _xhci_device_allocator=NULL;
 static omm_allocator_t* _xhci_ring_allocator=NULL;
 static omm_allocator_t* _xhci_pipe_allocator=NULL;
@@ -68,7 +65,7 @@ static u8 _speed_to_context_speed(u8 speed){
 
 
 static xhci_input_context_t* _alloc_input_context_raw(xhci_device_t* xhci_device){
-	return (void*)(pmm_alloc(pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,&_xhci_input_context_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	return (void*)(pmm_alloc(pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,_xhci_input_context_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 
@@ -95,7 +92,7 @@ static xhci_input_context_t* _alloc_input_context(xhci_device_t* xhci_device,usb
 
 
 static void _dealloc_input_context(xhci_device_t* xhci_device,xhci_input_context_t* input_context){
-	pmm_dealloc(((u64)input_context)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,&_xhci_input_context_pmm_counter);
+	pmm_dealloc(((u64)input_context)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address((sizeof(xhci_input_context_t)<<xhci_device->is_context_64_bytes)*33)>>PAGE_SIZE_SHIFT,_xhci_input_context_pmm_counter);
 }
 
 
@@ -310,7 +307,7 @@ static void _xhci_init_device(pci_device_t* device){
 	xhci_device->doorbell_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->dboff,xhci_device->ports*sizeof(xhci_doorbell_t));
 	xhci_device->interrupt_registers=(void*)vmm_identity_map(pci_bar.address+xhci_device->registers->rtsoff+0x20,xhci_device->interrupts*sizeof(xhci_interrupt_registers_t));
 	INFO("Ports: %u, Interrupts: %u, Slots: %u, Context size: %u B",xhci_device->ports,xhci_device->interrupts,xhci_device->slots,(32<<xhci_device->is_context_64_bytes));
-	void* data=(void*)(pmm_alloc(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,&_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* data=(void*)(pmm_alloc(pmm_align_up_address(_get_total_memory_size(xhci_device))>>PAGE_SIZE_SHIFT,_xhci_driver_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	xhci_device->device_context_base_array=data;
 	xhci_device->command_ring=_alloc_ring(1);
 	xhci_device->event_ring=_alloc_ring(1);
@@ -362,11 +359,13 @@ static void _xhci_init_device(pci_device_t* device){
 
 
 void xhci_locate_devices(void){
-	_xhci_device_allocator=omm_init("xhci_device",sizeof(xhci_device_t),8,1,&_xhci_device_omm_pmm_counter);
+	_xhci_driver_pmm_counter=pmm_alloc_counter("xhci");
+	_xhci_input_context_pmm_counter=pmm_alloc_counter("xhci_input_context");
+	_xhci_device_allocator=omm_init("xhci_device",sizeof(xhci_device_t),8,1,pmm_alloc_counter("omm_xhci_device"));
 	spinlock_init(&(_xhci_device_allocator->lock));
-	_xhci_ring_allocator=omm_init("xhci_ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4,&_xhci_ring_omm_pmm_counter);
+	_xhci_ring_allocator=omm_init("xhci_ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4,pmm_alloc_counter("omm_xhci_ring"));
 	spinlock_init(&(_xhci_ring_allocator->lock));
-	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2,&_xhci_pipe_omm_pmm_counter);
+	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2,pmm_alloc_counter("omm_xhci_pipe"));
 	spinlock_init(&(_xhci_pipe_allocator->lock));
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;

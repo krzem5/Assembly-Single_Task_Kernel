@@ -19,7 +19,6 @@
 
 
 
-static pmm_counter_descriptor_t _ata_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_ata_device");
 static omm_allocator_t* _ata_device_allocator=NULL;
 
 
@@ -258,7 +257,7 @@ static _Bool _ata_init_device(pci_device_t* device){
 _Bool ata_locate_devices(void){
 	drive_register_type(&_ata_drive_type);
 	drive_register_type(&_atapi_drive_type);
-	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,&_ata_device_omm_pmm_counter);
+	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,pmm_alloc_counter("omm_ata_device"));
 	spinlock_init(&(_ata_device_allocator->lock));
 	_Bool out=0;
 	HANDLE_FOREACH(pci_device_handle_type){

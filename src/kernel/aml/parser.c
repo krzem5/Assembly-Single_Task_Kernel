@@ -148,7 +148,6 @@ static const opcode_t _aml_opcodes[]={
 
 
 
-static pmm_counter_descriptor_t _aml_object_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_aml_object");
 static omm_allocator_t* _aml_object_allocator=NULL;
 
 
@@ -395,7 +394,7 @@ static u32 _parse_object(const u8* data,aml_object_t* out){
 aml_object_t* aml_parse(const u8* data,u32 length){
 	LOG("Loading AML...");
 	INFO("Found AML code at %p (%v)",data,length);
-	_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,2,&_aml_object_omm_pmm_counter);
+	_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,2,pmm_alloc_counter("omm_aml_object"));
 	spinlock_init(&(_aml_object_allocator->lock));
 	aml_object_t* root=omm_alloc(_aml_object_allocator);
 	root->opcode[0]=AML_OPCODE_ROOT;

@@ -113,9 +113,7 @@ typedef struct _USB_MSC_DRIVER{
 
 
 
-static pmm_counter_descriptor_t _usb_msc_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("usb_msc");
-static pmm_counter_descriptor_t _usb_msc_driver_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_driver");
-static pmm_counter_descriptor_t _usb_msc_lun_context_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_usb_msc_lun_context");
+static pmm_counter_descriptor_t* _usb_msc_driver_pmm_counter=NULL;
 static omm_allocator_t* _usb_msc_driver_allocator=NULL;
 static omm_allocator_t* _usb_msc_lun_context_allocator=NULL;
 
@@ -210,7 +208,7 @@ static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_rea
 static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	usb_msc_lun_context_t* context=drive->extra_data;
 	usb_msc_driver_t* driver=context->driver;
-	void* linear_buffer=(void*)(pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* linear_buffer=(void*)(pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		memcpy(linear_buffer,buffer,count<<drive->block_size_shift);
 	}
@@ -236,7 +234,7 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count)
 	}
 	u64 out=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus?((count<<drive->block_size_shift)-context->csw.dCSWDataResidue)>>drive->block_size_shift:0);
 	spinlock_release_exclusive(&(context->lock));
-	pmm_dealloc(((u64)linear_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
+	pmm_dealloc(((u64)linear_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter);
 	return out;
 }
 
@@ -256,7 +254,7 @@ static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	spinlock_init(&(context->lock));
 	context->tag=0;
 	context->lun=lun;
-	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	usb_scsi_inquiry_responce_t* inquiry_data=buffer;
 	usb_scsi_read_capacity_10_responce_t* read_capacity_10_data=buffer+sizeof(usb_scsi_inquiry_responce_t);
 	if (!_fetch_inquiry(context,inquiry_data)||!_wait_for_device(context)||!_fetch_read_capacity_10(context,read_capacity_10_data)){
@@ -282,7 +280,7 @@ _error:
 	WARN("Failed to setup LUN %u",lun);
 	omm_dealloc(_usb_msc_lun_context_allocator,context);
 _cleanup:
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,&_usb_msc_driver_pmm_counter);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter);
 }
 
 
@@ -343,9 +341,10 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor={
 
 void usb_msc_driver_install(void){
 	LOG("Installing USB MSC driver...");
-	_usb_msc_driver_allocator=omm_init("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,&_usb_msc_driver_omm_pmm_counter);
+	_usb_msc_driver_pmm_counter=pmm_alloc_counter("usb_msc");
+	_usb_msc_driver_allocator=omm_init("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,pmm_alloc_counter("omm_usb_msc_driver"));
 	spinlock_init(&(_usb_msc_driver_allocator->lock));
-	_usb_msc_lun_context_allocator=omm_init("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,&_usb_msc_lun_context_omm_pmm_counter);
+	_usb_msc_lun_context_allocator=omm_init("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,pmm_alloc_counter("omm_usb_msc_lun_context"));
 	spinlock_init(&(_usb_msc_lun_context_allocator->lock));
 	usb_register_driver(&_usb_msc_driver_descriptor);
 }

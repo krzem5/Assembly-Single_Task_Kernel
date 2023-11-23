@@ -12,7 +12,6 @@
 
 
 
-static pmm_counter_descriptor_t _event_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_event");
 static omm_allocator_t* _event_allocator=NULL;
 static handle_type_t _event_handle_type=0;
 
@@ -26,7 +25,7 @@ static void _event_handle_destructor(handle_t* handle){
 
 KERNEL_PUBLIC event_t* event_new(void){
 	if (!_event_allocator){
-		_event_allocator=omm_init("event",sizeof(event_t),8,2,&_event_omm_pmm_counter);
+		_event_allocator=omm_init("event",sizeof(event_t),8,2,pmm_alloc_counter("omm_event"));
 		spinlock_init(&(_event_allocator->lock));
 	}
 	if (!_event_handle_type){

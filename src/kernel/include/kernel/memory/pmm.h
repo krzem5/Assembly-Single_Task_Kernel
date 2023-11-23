@@ -122,6 +122,10 @@ void pmm_init_high_mem(void);
 
 
 
+pmm_counter_descriptor_t* pmm_alloc_counter(const char* name);
+
+
+
 u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
 
 

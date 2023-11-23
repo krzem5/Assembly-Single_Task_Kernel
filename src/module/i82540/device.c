@@ -23,8 +23,7 @@
 
 
 
-static pmm_counter_descriptor_t _i82540_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("i82540");
-static pmm_counter_descriptor_t _i82540_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_i82540_device");
+static pmm_counter_descriptor_t* _i82540_driver_pmm_counter=NULL;
 static omm_allocator_t* _i82540_device_allocator=NULL;
 
 
@@ -133,11 +132,11 @@ static void _i82540_init_device(pci_device_t* device){
 			return;
 		}
 	}
-	u64 rx_desc_base=pmm_alloc(pmm_align_up_address(RX_DESCRIPTOR_COUNT*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,&_i82540_driver_pmm_counter,0);
+	u64 rx_desc_base=pmm_alloc(pmm_align_up_address(RX_DESCRIPTOR_COUNT*sizeof(i82540_rx_descriptor_t))>>PAGE_SIZE_SHIFT,_i82540_driver_pmm_counter,0);
 	i82540_device->rx_desc_base=rx_desc_base+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	for (u16 i=0;i<RX_DESCRIPTOR_COUNT;i++){
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(i82540_device,rx,i);
-		desc->address=pmm_alloc(1,&_i82540_driver_pmm_counter,0);
+		desc->address=pmm_alloc(1,_i82540_driver_pmm_counter,0);
 		desc->status=0;
 	}
 	i82540_device->mmio[REG_RDBAH]=rx_desc_base>>32;
@@ -146,7 +145,7 @@ static void _i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_RDH]=0;
 	i82540_device->mmio[REG_RDT]=RX_DESCRIPTOR_COUNT-1;
 	i82540_device->mmio[REG_RCTL]=RCTL_EN|RCTL_SBP|RCTL_UPE|RCTL_MPE|RCTL_LPE|RCTL_BAM|RCTL_BSIZE_4096|RCTL_PMCF|RCTL_SECRC;
-	u64 tx_desc_base=pmm_alloc(pmm_align_up_address(TX_DESCRIPTOR_COUNT*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,&_i82540_driver_pmm_counter,0);
+	u64 tx_desc_base=pmm_alloc(pmm_align_up_address(TX_DESCRIPTOR_COUNT*sizeof(i82540_tx_descriptor_t))>>PAGE_SIZE_SHIFT,_i82540_driver_pmm_counter,0);
 	i82540_device->tx_desc_base=tx_desc_base+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	for (u16 i=0;i<TX_DESCRIPTOR_COUNT;i++){
 		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(i82540_device,tx,i);
@@ -189,7 +188,8 @@ static void _i82540_init_device(pci_device_t* device){
 
 
 void i82540_locate_devices(void){
-	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,&_i82540_device_omm_pmm_counter);
+	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540");
+	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,pmm_alloc_counter("omm_i82540_device"));
 	spinlock_init(&(_i82540_device_allocator->lock));
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;

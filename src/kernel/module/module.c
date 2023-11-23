@@ -35,8 +35,7 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 
 
-static pmm_counter_descriptor_t _module_image_pmm_counter=PMM_COUNTER_INIT_STRUCT("module_image");
-static pmm_counter_descriptor_t _module_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_module");
+static pmm_counter_descriptor_t* _module_image_pmm_counter=NULL;
 static omm_allocator_t* _module_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t module_handle_type=0;
@@ -53,7 +52,7 @@ static void _module_handle_destructor(handle_t* handle){
 
 static _Bool _alloc_region_memory(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,&_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!mmap_region){
 		ERROR("Unable to reserve module section memory");
 		return 0;
@@ -342,8 +341,11 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
 	INFO("Module file size: %v",region->length);
+	if (!_module_image_pmm_counter){
+		_module_image_pmm_counter=pmm_alloc_counter("module_image");
+	}
 	if (!_module_allocator){
-		_module_allocator=omm_init("module",sizeof(module_t),8,4,&_module_omm_pmm_counter);
+		_module_allocator=omm_init("module",sizeof(module_t),8,4,pmm_alloc_counter("omm_module"));
 		spinlock_init(&(_module_allocator->lock));
 	}
 	if (!module_handle_type){

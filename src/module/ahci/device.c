@@ -14,9 +14,7 @@
 
 
 
-static pmm_counter_descriptor_t _ahci_driver_pmm_counter=PMM_COUNTER_INIT_STRUCT("ahci");
-static pmm_counter_descriptor_t _ahci_controller_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_ahci_controller");
-static pmm_counter_descriptor_t _ahci_device_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_ahci_device");
+static pmm_counter_descriptor_t* _ahci_driver_pmm_counter=NULL;
 static omm_allocator_t* _ahci_controller_allocator=NULL;
 static omm_allocator_t* _ahci_device_allocator=NULL;
 
@@ -61,7 +59,7 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;
 	}
-	u64 aligned_buffer=pmm_alloc((dbc+1)>>9,&_ahci_driver_pmm_counter,0);
+	u64 aligned_buffer=pmm_alloc((dbc+1)>>9,_ahci_driver_pmm_counter,0);
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,dbc+1);
 	}
@@ -95,7 +93,7 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
 		memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),dbc+1);
 	}
-	pmm_dealloc(aligned_buffer,(dbc+1)>>9,&_ahci_driver_pmm_counter);
+	pmm_dealloc(aligned_buffer,(dbc+1)>>9,_ahci_driver_pmm_counter);
 	return (dbc+1)>>9;
 }
 
@@ -109,17 +107,17 @@ static drive_type_t _ahci_drive_type={
 
 
 static void _ahci_init(ahci_device_t* device,u8 port_index){
-	u64 command_list=pmm_alloc(1,&_ahci_driver_pmm_counter,0);
+	u64 command_list=pmm_alloc(1,_ahci_driver_pmm_counter,0);
 	device->command_list=(void*)(command_list+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	device->registers->clb=command_list;
 	device->registers->clbu=command_list>>32;
 	for (u8 i=0;i<32;i++){
-		u64 command_table=pmm_alloc(1,&_ahci_driver_pmm_counter,0);
+		u64 command_table=pmm_alloc(1,_ahci_driver_pmm_counter,0);
 		device->command_tables[i]=(void*)(command_table+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		(device->command_list->commands+i)->ctba=command_table;
 		(device->command_list->commands+i)->ctbau=command_table>>32;
 	}
-	u64 fis_base=pmm_alloc(1,&_ahci_driver_pmm_counter,0);
+	u64 fis_base=pmm_alloc(1,_ahci_driver_pmm_counter,0);
 	device->registers->fb=fis_base;
 	device->registers->fbu=fis_base>>32;
 	device->registers->cmd|=CMD_ST|CMD_FRE;
@@ -127,7 +125,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
-	u64 buffer=pmm_alloc(1,&_ahci_driver_pmm_counter,0);
+	u64 buffer=pmm_alloc(1,_ahci_driver_pmm_counter,0);
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
 	command_table->prdt_entry->dba=buffer;
 	command_table->prdt_entry->dbau=buffer>>32;
@@ -165,7 +163,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 		512,
 		device
 	};
-	pmm_dealloc(buffer,1,&_ahci_driver_pmm_counter);
+	pmm_dealloc(buffer,1,_ahci_driver_pmm_counter);
 	drive_create(&config);
 }
 
@@ -220,9 +218,10 @@ static void _ahci_init_device(pci_device_t* device){
 
 void ahci_locate_devices(void){
 	drive_register_type(&_ahci_drive_type);
-	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1,&_ahci_controller_omm_pmm_counter);
+	_ahci_driver_pmm_counter=pmm_alloc_counter("ahci");
+	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1,pmm_alloc_counter("omm_ahci_controller"));
 	spinlock_init(&(_ahci_controller_allocator->lock));
-	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1,&_ahci_device_omm_pmm_counter);
+	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1,pmm_alloc_counter("omm_ahci_device"));
 	spinlock_init(&(_ahci_device_allocator->lock));
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;

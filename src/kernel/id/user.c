@@ -27,8 +27,6 @@ typedef struct _UID_DATA{
 
 
 
-static pmm_counter_descriptor_t _uid_data_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_data");
-static pmm_counter_descriptor_t _uid_group_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_uid_group");
 static omm_allocator_t* _uid_data_allocator=NULL;
 static omm_allocator_t* _uid_group_allocator=NULL;
 
@@ -41,9 +39,9 @@ static spinlock_t _uid_global_lock;
 
 KERNEL_PUBLIC void uid_init(void){
 	LOG("Initializing user tree...");
-	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,&_uid_data_omm_pmm_counter);
+	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,pmm_alloc_counter("omm_uid_data"));
 	spinlock_init(&(_uid_data_allocator->lock));
-	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1,&_uid_group_omm_pmm_counter);
+	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1,pmm_alloc_counter("omm_uid_group"));
 	spinlock_init(&(_uid_group_allocator->lock));
 	spinlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);

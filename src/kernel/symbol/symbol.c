@@ -11,7 +11,6 @@
 
 
 
-static pmm_counter_descriptor_t _symbol_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_symbol");
 static omm_allocator_t* _symbol_allocator=NULL;
 
 
@@ -22,7 +21,7 @@ static rb_tree_t _symbol_tree;
 
 void symbol_init(void){
 	LOG("Initializing symbol tree...");
-	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2,&_symbol_omm_pmm_counter);
+	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2,pmm_alloc_counter("omm_symbol"));
 	spinlock_init(&(_symbol_allocator->lock));
 	rb_tree_init(&_symbol_tree);
 	for (u32 i=0;_raw_kernel_symbols[i];i+=2){

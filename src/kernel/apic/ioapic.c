@@ -29,10 +29,6 @@ typedef struct _IOAPIC_OVERRIDE{
 
 
 
-static pmm_counter_descriptor_t _ioapic_pmm_counter=PMM_COUNTER_INIT_STRUCT("ioapic");
-
-
-
 static ioapic_t* KERNEL_INIT_WRITE _ioapic_data;
 static u16 KERNEL_INIT_WRITE _ioapic_count;
 static u16 KERNEL_INIT_WRITE _ioapic_index;
@@ -59,7 +55,7 @@ static KERNEL_INLINE void _write_register(const ioapic_t* ioapic,u32 reg,u32 val
 
 void ioapic_init(u16 count,u16 override_count){
 	LOG("Initializing IOAPIC controller...");
-	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,&_ioapic_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("ioapic"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_ioapic_data=buffer;
 	_ioapic_count=count;
 	_ioapic_index=0;

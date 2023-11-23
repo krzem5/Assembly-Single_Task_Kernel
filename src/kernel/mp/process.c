@@ -21,7 +21,6 @@
 
 
 
-static pmm_counter_descriptor_t _process_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_process");
 static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t process_handle_type;
@@ -44,7 +43,7 @@ static void _process_handle_destructor(handle_t* handle){
 
 void process_init(void){
 	LOG("Creating kernel process...");
-	_process_allocator=omm_init("process",sizeof(process_t),8,2,&_process_omm_pmm_counter);
+	_process_allocator=omm_init("process",sizeof(process_t),8,2,pmm_alloc_counter("omm_process"));
 	spinlock_init(&(_process_allocator->lock));
 	process_handle_type=handle_alloc("process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);

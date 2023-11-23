@@ -47,7 +47,6 @@ typedef struct _INITRAMFS_VFS_NODE{
 
 
 
-static pmm_counter_descriptor_t _initramfs_node_omm_pmm_counter=PMM_COUNTER_INIT_STRUCT("omm_initramfs_node");
 static omm_allocator_t* _initramfs_vfs_node_allocator=NULL;
 
 
@@ -226,7 +225,7 @@ static filesystem_descriptor_t _initramfs_filesystem_descriptor={
 
 void initramfs_fs_init(void){
 	LOG("Registering initramfs filesystem descriptor...");
-	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,&_initramfs_node_omm_pmm_counter);
+	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,pmm_alloc_counter("omm_initramfs_node"));
 	spinlock_init(&(_initramfs_vfs_node_allocator->lock));
 	fs_register_descriptor(&_initramfs_filesystem_descriptor);
 }
