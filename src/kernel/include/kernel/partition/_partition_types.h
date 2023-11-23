@@ -8,9 +8,15 @@ struct _DRIVE;
 
 
 
-typedef struct _PARTITION_TABLE_DESCRIPTOR{
+typedef struct _PARTITION_TABLE_DESCRIPTOR_CONFIG{
 	const char* name;
 	_Bool (*load_callback)(struct _DRIVE*);
+} partition_table_descriptor_config_t;
+
+
+
+typedef struct _PARTITION_TABLE_DESCRIPTOR{
+	const partition_table_descriptor_config_t* config;
 	handle_t handle;
 } partition_table_descriptor_t;
 

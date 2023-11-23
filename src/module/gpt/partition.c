@@ -57,7 +57,7 @@ _valid_entry:
 
 
 
-static partition_table_descriptor_t _gpt_partition_table_descriptor={
+static const partition_table_descriptor_config_t _gpt_partition_table_descriptor={
 	"gpt",
 	_gpt_load_partitions
 };

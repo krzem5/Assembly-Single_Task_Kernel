@@ -28,11 +28,11 @@ extern handle_type_t partition_table_descriptor_handle_type;
 
 
 
-void partition_register_table_descriptor(partition_table_descriptor_t* descriptor);
+void partition_register_table_descriptor(const partition_table_descriptor_config_t* config);
 
 
 
-void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor);
+void partition_unregister_table_descriptor(const partition_table_descriptor_config_t* config);
 
 
 

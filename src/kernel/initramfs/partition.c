@@ -22,7 +22,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 
 
 
-static partition_table_descriptor_t _initramfs_partition_table_descriptor={
+static const partition_table_descriptor_config_t _initramfs_partition_table_descriptor={
 	"initramfs",
 	_initramfs_init_partitions
 };

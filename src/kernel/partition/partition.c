@@ -15,6 +15,7 @@
 
 
 static omm_allocator_t* _partition_allocator=NULL;
+static omm_allocator_t* _partition_table_descriptor_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t partition_handle_type=0;
 KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
@@ -32,11 +33,16 @@ static void _partition_handle_destructor(handle_t* handle){
 
 
 
-KERNEL_PUBLIC void partition_register_table_descriptor(partition_table_descriptor_t* descriptor){
-	LOG("Registering partition table descriptor '%s'...",descriptor->name);
+KERNEL_PUBLIC void partition_register_table_descriptor(const partition_table_descriptor_config_t* config){
+	LOG("Registering partition table descriptor '%s'...",config->name);
 	if (!partition_table_descriptor_handle_type){
 		partition_table_descriptor_handle_type=handle_alloc("partition_table_descriptor",0);
 	}
+	if (!_partition_table_descriptor_allocator){
+		_partition_table_descriptor_allocator=omm_init("partition_table_descriptor",sizeof(partition_table_descriptor_t),8,1,pmm_alloc_counter("omm_partition_table_descriptor"));
+	}
+	partition_table_descriptor_t* descriptor=omm_alloc(_partition_table_descriptor_allocator);
+	descriptor->config=config;
 	handle_new(descriptor,partition_table_descriptor_handle_type,&(descriptor->handle));
 	handle_finish_setup(&(descriptor->handle));
 	HANDLE_FOREACH(drive_handle_type){
@@ -46,8 +52,8 @@ KERNEL_PUBLIC void partition_register_table_descriptor(partition_table_descripto
 		}
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
-		if (descriptor->load_callback(drive)){
-			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,descriptor->name);
+		if (config->load_callback(drive)){
+			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,config->name);
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
@@ -58,9 +64,15 @@ KERNEL_PUBLIC void partition_register_table_descriptor(partition_table_descripto
 
 
 
-KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descriptor_t* descriptor){
-	LOG("Unregistering partition table descriptor '%s'...",descriptor->name);
-	handle_destroy(&(descriptor->handle));
+KERNEL_PUBLIC void partition_unregister_table_descriptor(const partition_table_descriptor_config_t* config){
+	LOG("Unregistering partition table descriptor '%s'...",config->name);
+	HANDLE_FOREACH(partition_table_descriptor_handle_type){
+		partition_table_descriptor_t* descriptor=handle->object;
+		if (descriptor->config==config){
+			handle_destroy(&(descriptor->handle));
+			return;
+		}
+	}
 }
 
 
@@ -71,8 +83,8 @@ KERNEL_PUBLIC void partition_load_from_drive(drive_t* drive){
 		partition_table_descriptor_t* descriptor=handle->object;
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
-		if (descriptor->load_callback(drive)){
-			INFO("Detected drive partitioning as '%s'",descriptor->name);
+		if (descriptor->config->load_callback(drive)){
+			INFO("Detected drive partitioning as '%s'",descriptor->config->name);
 			return;
 		}
 		handle_release(&(descriptor->handle));
