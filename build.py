@@ -218,7 +218,7 @@ def _generate_syscalls(file_path):
 def _generate_kernel_version():
 	version=time.time_ns()
 	with open("src/kernel/_generated/version.c","w") as wf:
-		wf.write(f"#include <kernel/types.h>\n\n\n\nconst u64 __version=0x{version:016x};\n")
+		wf.write(f"#include <kernel/types.h>\n\n\n\nconst KERNEL_PUBLIC u64 __version=0x{version:016x};\n")
 	return version
 
 

@@ -1,5 +1,6 @@
 #ifndef _KERNEL_USB_DEVICE_H_
 #define _KERNEL_USB_DEVICE_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/types.h>
 #include <kernel/usb/_usb_types.h>
 
@@ -10,6 +11,10 @@
 #define USB_DEVICE_SPEED_LOW 2
 #define USB_DEVICE_SPEED_HIGH 3
 #define USB_DEVICE_SPEED_SUPER 4
+
+
+
+extern handle_type_t usb_device_handle_type;
 
 
 

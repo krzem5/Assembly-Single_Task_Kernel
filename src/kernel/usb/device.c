@@ -22,7 +22,7 @@ static omm_allocator_t* _usb_configuration_descriptor_allocator=NULL;
 static omm_allocator_t* _usb_interface_descriptor_allocator=NULL;
 static omm_allocator_t* _usb_endpoint_descriptor_allocator=NULL;
 
-handle_type_t usb_device_handle_type=0;
+KERNEL_PUBLIC handle_type_t usb_device_handle_type=0;
 
 
 

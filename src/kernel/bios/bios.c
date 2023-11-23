@@ -54,7 +54,7 @@ typedef struct KERNEL_PACKED _SMBIO_HEADER{
 
 
 
-KERNEL_PUBLIC bios_data_t bios_data;
+KERNEL_PUBLIC bios_data_t KERNEL_INIT_WRITE bios_data;
 
 
 
