@@ -1,4 +1,3 @@
-#include <kernel/acpi/fadt.h>
 #include <kernel/acpi/structures.h>
 #include <kernel/aml/parser.h>
 #include <kernel/aml/runtime.h>
@@ -48,9 +47,6 @@ void KERNEL_EARLY_EXEC acpi_fadt_load(const acpi_fadt_t* fadt){
 
 KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE acpi_fadt_shutdown(_Bool restart){
 	asm volatile("cli":::"memory");
-	if (restart){
-		_acpi_fadt_reboot();
-	}
 	u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	io_port_out16(_fadt_pm1a_control_block,pm1a_value);

@@ -1,9 +1,9 @@
-#include <kernel/acpi/fadt.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
 #include <kernel/serial/serial.h>
+#include <kernel/shutdown/shutdown.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -101,5 +101,5 @@ void KERNEL_NOCOVERAGE coverage_export(void){
 			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.size);
 		}
 	}
-	acpi_fadt_shutdown(0);
+	shutdown(0);
 }

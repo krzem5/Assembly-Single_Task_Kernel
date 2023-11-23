@@ -1,5 +1,5 @@
-#include <kernel/acpi/fadt.h>
 #include <kernel/isr/isr.h>
+#include <kernel/shutdown/shutdown.h>
 #include <kernel/types.h>
 
 
@@ -9,5 +9,5 @@
 
 
 void KERNEL_NORETURN syscall_system_shutdown(isr_state_t* regs){
-	acpi_fadt_shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
+	shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
 }
