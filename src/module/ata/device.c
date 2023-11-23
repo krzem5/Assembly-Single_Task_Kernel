@@ -131,11 +131,11 @@ static u64 _atapi_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 
-static drive_type_t _ata_drive_type={
+static const drive_type_t _ata_drive_type_config={
 	"ata",
 	_ata_read_write
 };
-static drive_type_t _atapi_drive_type={
+static const drive_type_t _atapi_drive_type_config={
 	"atapi",
 	_atapi_read_write
 };
@@ -213,7 +213,7 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 	memcpy_bswap16_trunc_spaces(buffer+10,10,serial_number_buffer);
 	memcpy_bswap16_trunc_spaces(buffer+27,20,model_number_buffer);
 	drive_config_t config={
-		(device->is_atapi?&_atapi_drive_type:&_ata_drive_type),
+		(device->is_atapi?&_atapi_drive_type_config:&_ata_drive_type_config),
 		_ata_device_index,
 		index,
 		smm_alloc(serial_number_buffer,0),
@@ -255,8 +255,6 @@ static _Bool _ata_init_device(pci_device_t* device){
 
 
 _Bool ata_locate_devices(void){
-	drive_register_type(&_ata_drive_type);
-	drive_register_type(&_atapi_drive_type);
 	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,pmm_alloc_counter("omm_ata_device"));
 	spinlock_init(&(_ata_device_allocator->lock));
 	_Bool out=0;
@@ -270,6 +268,4 @@ _Bool ata_locate_devices(void){
 
 
 void ata_deinit(void){
-	drive_unregister_type(&_ata_drive_type);
-	drive_unregister_type(&_atapi_drive_type);
 }

@@ -99,7 +99,7 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 
-static drive_type_t _ahci_drive_type={
+static const drive_type_t _ahci_drive_type_config={
 	"ahci",
 	_ahci_read_write
 };
@@ -154,7 +154,7 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,serial_number_buffer);
 	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,model_number_buffer);
 	drive_config_t config={
-		&_ahci_drive_type,
+		&_ahci_drive_type_config,
 		device->controller->index,
 		port_index,
 		smm_alloc(serial_number_buffer,0),
@@ -217,7 +217,6 @@ static void _ahci_init_device(pci_device_t* device){
 
 
 void ahci_locate_devices(void){
-	drive_register_type(&_ahci_drive_type);
 	_ahci_driver_pmm_counter=pmm_alloc_counter("ahci");
 	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1,pmm_alloc_counter("omm_ahci_controller"));
 	spinlock_init(&(_ahci_controller_allocator->lock));

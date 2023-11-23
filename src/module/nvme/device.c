@@ -145,7 +145,7 @@ static u64 _nvme_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 
 
 
-static drive_type_t _nvme_drive_type={
+static const drive_type_t _nvme_drive_type_config={
 	"nvme",
 	_nvme_read_write
 };
@@ -162,7 +162,7 @@ static void _load_namespace(nvme_device_t* device,u32 namespace_id,const nvme_id
 	memcpy_trunc_spaces(serial_number_buffer,(const char*)(controller_identify_data->controller.sn),20);
 	memcpy_trunc_spaces(model_number_buffer,(const char*)(controller_identify_data->controller.mn),40);
 	drive_config_t config={
-		&_nvme_drive_type,
+		&_nvme_drive_type_config,
 		device->index,
 		namespace_id,
 		smm_alloc(serial_number_buffer,0),

@@ -16,20 +16,15 @@ struct _DRIVE;
 
 
 
-typedef u64 (*drive_io_callback_t)(struct _DRIVE*,u64,void*,u64);
-
-
-
 typedef struct _DRIVE_TYPE{
 	const char* name;
-	drive_io_callback_t io_callback;
-	handle_t handle;
+	u64 (*io_callback)(struct _DRIVE*,u64,void*,u64);
 } drive_type_t;
 
 
 
 typedef struct _DRIVE_CONFIG{
-	drive_type_t* type;
+	const drive_type_t* type;
 	u32 controller_index;
 	u32 device_index;
 	string_t* serial_number;
@@ -43,7 +38,7 @@ typedef struct _DRIVE_CONFIG{
 
 typedef struct _DRIVE{
 	handle_t handle;
-	drive_type_t* type;
+	const drive_type_t* type;
 	u8 block_size_shift;
 	u16 controller_index;
 	u16 device_index;
@@ -58,15 +53,6 @@ typedef struct _DRIVE{
 
 
 extern handle_type_t drive_handle_type;
-extern handle_type_t drive_type_handle_type;
-
-
-
-void drive_register_type(drive_type_t* type);
-
-
-
-void drive_unregister_type(drive_type_t* type);
 
 
 

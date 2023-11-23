@@ -13,36 +13,16 @@
 static omm_allocator_t* _drive_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t drive_handle_type=0;
-KERNEL_PUBLIC handle_type_t drive_type_handle_type=0;
 
 
 
 static void _drive_handle_destructor(handle_t* handle){
 	drive_t* drive=handle->object;
 	WARN("Delete drive: %s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
-	handle_release(&(drive->type->handle));
 	if (drive->partition_table_descriptor){
 		handle_release(&(drive->partition_table_descriptor->handle));
 	}
 	omm_dealloc(_drive_allocator,drive);
-}
-
-
-
-KERNEL_PUBLIC void drive_register_type(drive_type_t* type){
-	LOG("Registering drive type '%s'...",type->name);
-	if (!drive_type_handle_type){
-		drive_type_handle_type=handle_alloc("drive_type",NULL);
-	}
-	handle_new(type,drive_type_handle_type,&(type->handle));
-	handle_finish_setup(&(type->handle));
-}
-
-
-
-KERNEL_PUBLIC void drive_unregister_type(drive_type_t* type){
-	LOG("Unregistering drive type '%s'...",type->name);
-	handle_destroy(&(type->handle));
 }
 
 
@@ -55,7 +35,6 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	if (!drive_handle_type){
 		drive_handle_type=handle_alloc("drive",_drive_handle_destructor);
 	}
-	handle_acquire(&(config->type->handle));
 	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number->data,config->serial_number->data);
 	drive_t* out=omm_alloc(_drive_allocator);
 	handle_new(out,drive_handle_type,&(out->handle));

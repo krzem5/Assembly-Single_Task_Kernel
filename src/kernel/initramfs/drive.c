@@ -28,7 +28,7 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,void* buffer,u64 coun
 
 
 
-static drive_type_t _initramfs_drive_type={
+static const drive_type_t _initramfs_drive_type_config={
 	"initramfs",
 	_initramfs_read_write
 };
@@ -39,7 +39,7 @@ void initramfs_drive_init(void){
 	INFO("Creating virtual initramfs drive...");
 	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
 	drive_config_t config={
-		&_initramfs_drive_type,
+		&_initramfs_drive_type_config,
 		0,
 		0,
 		smm_alloc("initramfs",0),

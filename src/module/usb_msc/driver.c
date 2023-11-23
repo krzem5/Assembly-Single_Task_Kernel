@@ -240,7 +240,7 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count)
 
 
 
-static drive_type_t _usb_msc_drive_type={
+static const drive_type_t _usb_msc_drive_type_config={
 	"usb",
 	_usb_msc_read_write
 };
@@ -265,7 +265,7 @@ static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	char model_number_buffer[41];
 	memcpy_trunc_spaces(model_number_buffer,inquiry_data->product,16);
 	drive_config_t config={
-		&_usb_msc_drive_type,
+		&_usb_msc_drive_type_config,
 		device_index,
 		lun,
 		smm_alloc("",0),
