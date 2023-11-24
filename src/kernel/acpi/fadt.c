@@ -13,8 +13,8 @@
 
 
 
-const acpi_fadt_t* KERNEL_INIT_WRITE acpi_fadt=NULL;
-const acpi_dsdt_t* KERNEL_INIT_WRITE acpi_dsdt=NULL;
+KERNEL_PUBLIC const acpi_fadt_t* KERNEL_INIT_WRITE acpi_fadt=NULL;
+KERNEL_PUBLIC const acpi_dsdt_t* KERNEL_INIT_WRITE acpi_dsdt=NULL;
 
 
 

@@ -1,8 +1,12 @@
+#include <kernel/acpi/fadt.h>
 #include <kernel/module/module.h>
 
 
 
 static _Bool _init(module_t* module){
+	if (!acpi_dsdt||!acpi_dsdt->header.length){
+		return 0;
+	}
 	// // PM1x flags
 	// #define SLP_TYP_SHIFT 10
 	// #define SLP_EN 0x2000
@@ -14,8 +18,7 @@ static _Bool _init(module_t* module){
 	// if (acpi_fadt->pm1b_control_block){
 	// 	io_port_out16(acpi_fadt->pm1b_control_block,pm1b_value);
 	// }
-	// for (;;);
-	return 0;
+	return 1;
 }
 
 
