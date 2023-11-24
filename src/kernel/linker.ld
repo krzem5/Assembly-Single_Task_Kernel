@@ -7,7 +7,7 @@
 
 ENTRY(_start)
 SECTIONS{
-	. = 0xffffffffc0100000;
+	. = BASE_ADDRESS_OFFSET + 0x100000;
 	DECLARE_SECTION_START(kernel);
 	DECLARE_SECTION_START(kernel_ue);
 	.kernel_ue : AT(ADDR(.kernel_ue) - BASE_ADDRESS_OFFSET){
