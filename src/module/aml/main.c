@@ -1,5 +1,7 @@
 #include <kernel/acpi/fadt.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/util/util.h>
@@ -127,6 +129,68 @@
 
 
 
+#define AML_OBJECT_TYPE_NONE 0
+#define AML_OBJECT_TYPE_INT 1
+#define AML_OBJECT_TYPE_STRING 2
+
+
+
+typedef struct _AML_OBJECT{
+	u8 type;
+	union{
+		u64 int_;
+		string_t* string;
+	};
+} aml_object_t;
+
+
+
+static omm_allocator_t* _aml_object_allocator=NULL;
+
+
+
+static aml_object_t* _alloc_object(u8 type){
+	if (!_aml_object_allocator){
+		_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,4,pmm_alloc_counter("omm_aml_object"));
+	}
+	aml_object_t* out=omm_alloc(_aml_object_allocator);
+	out->type=type;
+	return out;
+}
+
+
+
+static KERNEL_INLINE aml_object_t* _alloc_object_none(void){
+	return _alloc_object(AML_OBJECT_TYPE_NONE);
+}
+
+
+
+static KERNEL_INLINE aml_object_t* _alloc_object_int(u64 value){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_INT);
+	out->int_=value;
+	return out;
+}
+
+
+
+static KERNEL_INLINE aml_object_t* _alloc_object_string(string_t* value){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_STRING);
+	out->string=value;
+	return out;
+}
+
+
+
+static void _dealloc_object(aml_object_t* object){
+	if (object->type==AML_OBJECT_TYPE_STRING){
+		smm_dealloc(object->string);
+	}
+	omm_dealloc(_aml_object_allocator,object);
+}
+
+
+
 typedef struct _AML_READER_CONTEXT{
 	const u8*const data;
 	const u64 length;
@@ -135,11 +199,11 @@ typedef struct _AML_READER_CONTEXT{
 
 
 
-typedef _Bool (*opcode_func_t)(aml_reader_context_t*);
+typedef aml_object_t* (*opcode_func_t)(aml_reader_context_t*);
 
 
 
-static _Bool _execute_aml_single(aml_reader_context_t* ctx);
+static aml_object_t* _execute_aml_single(aml_reader_context_t* ctx);
 
 
 
@@ -221,78 +285,69 @@ static u32 _get_uint32(aml_reader_context_t* ctx){
 
 
 
-static _Bool _exec_opcode_zero(aml_reader_context_t* ctx){
-	ERROR("zero");
-	return 1;
+static aml_object_t* _exec_opcode_zero(aml_reader_context_t* ctx){
+	return _alloc_object_int(0);
 }
 
 
 
-static _Bool _exec_opcode_one(aml_reader_context_t* ctx){
-	ERROR("one");
-	return 1;
+static aml_object_t* _exec_opcode_one(aml_reader_context_t* ctx){
+	return _alloc_object_int(1);
 }
 
 
 
-static _Bool _exec_opcode_alias(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_alias(aml_reader_context_t* ctx){
 	ERROR("alias");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_name(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_name(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
-	_Bool object=_execute_aml_single(ctx);
+	aml_object_t* object=_execute_aml_single(ctx);
 	ERROR("name (name=%s, ref=%p)",name->data,object);
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_byte_prefix(aml_reader_context_t* ctx){
-	u8 out=_get_uint8(ctx);
-	ERROR("byte_prefix (value=%u)",out);
-	return 1;
+static aml_object_t* _exec_opcode_byte_prefix(aml_reader_context_t* ctx){
+	return _alloc_object_int(_get_uint8(ctx));
 }
 
 
 
-static _Bool _exec_opcode_word_prefix(aml_reader_context_t* ctx){
-	u16 out=_get_uint16(ctx);
-	ERROR("word_prefix (value=%u)",out);
-	return 1;
+static aml_object_t* _exec_opcode_word_prefix(aml_reader_context_t* ctx){
+	return _alloc_object_int(_get_uint16(ctx));
 }
 
 
 
-static _Bool _exec_opcode_dword_prefix(aml_reader_context_t* ctx){
-	u32 out=_get_uint32(ctx);
-	ERROR("dword_prefix (value=%u)",out);
-	return 0;
+static aml_object_t* _exec_opcode_dword_prefix(aml_reader_context_t* ctx){
+	return _alloc_object_int(_get_uint32(ctx));
 }
 
 
 
-static _Bool _exec_opcode_string_prefix(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_string_prefix(aml_reader_context_t* ctx){
 	u32 length=0;
 	for (;ctx->data[ctx->offset+length];length++);
-	ERROR("string_prefix (data=%s)",ctx->data+ctx->offset);
 	ctx->offset+=length+1;
-	return 1;
+	return _alloc_object_string(smm_alloc((const char*)(ctx->data+ctx->offset-length-1),length));
 }
 
 
 
-static _Bool _exec_opcode_qword_prefix(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_qword_prefix(aml_reader_context_t* ctx){
 	ERROR("qword_prefix");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_scope(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_scope(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	ERROR("scope (name=%s)",name->data);
@@ -301,25 +356,25 @@ static _Bool _exec_opcode_scope(aml_reader_context_t* ctx){
 		end_offset-ctx->offset
 	};
 	if (!_execute_aml(&child_ctx)){
-		return 0;
+		return NULL;
 	}
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_buffer(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_buffer(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
-	_Bool buffer_size=_execute_aml_single(ctx);
+	aml_object_t* buffer_size=_execute_aml_single(ctx);
 	ERROR("buffer (buffer_size=%p)",buffer_size);
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_package(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_package(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	u8 num_elements=_get_uint8(ctx);
 	ERROR("package (num_elements=%p)",num_elements);
@@ -328,689 +383,688 @@ static _Bool _exec_opcode_package(aml_reader_context_t* ctx){
 		end_offset-ctx->offset
 	};
 	if (!_execute_aml(&child_ctx)){
-		return 0;
+		return NULL;
 	}
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_var_package(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_var_package(aml_reader_context_t* ctx){
 	ERROR("var_package");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_method(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_method(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	u8 arg_count=_get_uint8(ctx);
 	ERROR("method (name=%s, arg_count=%u)",name->data,arg_count);
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_name_reference(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_name_reference(aml_reader_context_t* ctx){
 	ctx->offset--;
 	string_t* name=_get_name(ctx);
 	ERROR("name_reference: %s",name->data);
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_local0(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local0(aml_reader_context_t* ctx){
 	ERROR("local0");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local1(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local1(aml_reader_context_t* ctx){
 	ERROR("local1");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local2(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local2(aml_reader_context_t* ctx){
 	ERROR("local2");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local3(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local3(aml_reader_context_t* ctx){
 	ERROR("local3");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local4(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local4(aml_reader_context_t* ctx){
 	ERROR("local4");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local5(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local5(aml_reader_context_t* ctx){
 	ERROR("local5");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local6(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local6(aml_reader_context_t* ctx){
 	ERROR("local6");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_local7(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_local7(aml_reader_context_t* ctx){
 	ERROR("local7");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg0(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg0(aml_reader_context_t* ctx){
 	ERROR("arg0");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg1(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg1(aml_reader_context_t* ctx){
 	ERROR("arg1");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg2(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg2(aml_reader_context_t* ctx){
 	ERROR("arg2");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg3(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg3(aml_reader_context_t* ctx){
 	ERROR("arg3");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg4(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg4(aml_reader_context_t* ctx){
 	ERROR("arg4");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg5(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg5(aml_reader_context_t* ctx){
 	ERROR("arg5");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_arg6(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_arg6(aml_reader_context_t* ctx){
 	ERROR("arg6");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_store(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_store(aml_reader_context_t* ctx){
 	ERROR("store");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ref_of(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ref_of(aml_reader_context_t* ctx){
 	ERROR("ref_of");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_add(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_add(aml_reader_context_t* ctx){
 	ERROR("add");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_concat(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_concat(aml_reader_context_t* ctx){
 	ERROR("concat");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_subtract(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_subtract(aml_reader_context_t* ctx){
 	ERROR("subtract");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_increment(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_increment(aml_reader_context_t* ctx){
 	ERROR("increment");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_decrement(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_decrement(aml_reader_context_t* ctx){
 	ERROR("decrement");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_multiply(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_multiply(aml_reader_context_t* ctx){
 	ERROR("multiply");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_divide(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_divide(aml_reader_context_t* ctx){
 	ERROR("divide");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_shift_left(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_shift_left(aml_reader_context_t* ctx){
 	ERROR("shift_left");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_shift_right(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_shift_right(aml_reader_context_t* ctx){
 	ERROR("shift_right");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_and(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_and(aml_reader_context_t* ctx){
 	ERROR("and");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_nand(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_nand(aml_reader_context_t* ctx){
 	ERROR("nand");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_or(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_or(aml_reader_context_t* ctx){
 	ERROR("or");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_nor(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_nor(aml_reader_context_t* ctx){
 	ERROR("nor");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_xor(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_xor(aml_reader_context_t* ctx){
 	ERROR("xor");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_not(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_not(aml_reader_context_t* ctx){
 	ERROR("not");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_find_set_left_bit(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_find_set_left_bit(aml_reader_context_t* ctx){
 	ERROR("find_set_left_bit");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_find_set_right_bit(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_find_set_right_bit(aml_reader_context_t* ctx){
 	ERROR("find_set_right_bit");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_deref_of(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_deref_of(aml_reader_context_t* ctx){
 	ERROR("deref_of");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_concat_res(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_concat_res(aml_reader_context_t* ctx){
 	ERROR("concat_res");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_mod(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_mod(aml_reader_context_t* ctx){
 	ERROR("mod");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_notify(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_notify(aml_reader_context_t* ctx){
 	ERROR("notify");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_size_of(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_size_of(aml_reader_context_t* ctx){
 	ERROR("size_of");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_index(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_index(aml_reader_context_t* ctx){
 	ERROR("index");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_match(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_match(aml_reader_context_t* ctx){
 	ERROR("match");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_create_dword_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_create_dword_field(aml_reader_context_t* ctx){
 	ERROR("create_dword_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_create_word_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_create_word_field(aml_reader_context_t* ctx){
 	ERROR("create_word_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_create_byte_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_create_byte_field(aml_reader_context_t* ctx){
 	ERROR("create_byte_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_create_bit_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_create_bit_field(aml_reader_context_t* ctx){
 	ERROR("create_bit_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_object_type(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_object_type(aml_reader_context_t* ctx){
 	ERROR("object_type");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_create_qword_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_create_qword_field(aml_reader_context_t* ctx){
 	ERROR("create_qword_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_and(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_and(aml_reader_context_t* ctx){
 	ERROR("l_and");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_or(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_or(aml_reader_context_t* ctx){
 	ERROR("l_or");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_not(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_not(aml_reader_context_t* ctx){
 	ERROR("l_not");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_equal(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_equal(aml_reader_context_t* ctx){
 	ERROR("l_equal");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_greater(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_greater(aml_reader_context_t* ctx){
 	ERROR("l_greater");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_l_less(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_l_less(aml_reader_context_t* ctx){
 	ERROR("l_less");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_to_buffer(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_to_buffer(aml_reader_context_t* ctx){
 	ERROR("to_buffer");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_to_decimal_string(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_to_decimal_string(aml_reader_context_t* ctx){
 	ERROR("to_decimal_string");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_to_hex_string(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_to_hex_string(aml_reader_context_t* ctx){
 	ERROR("to_hex_string");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_to_integer(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_to_integer(aml_reader_context_t* ctx){
 	ERROR("to_integer");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_to_string(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_to_string(aml_reader_context_t* ctx){
 	ERROR("to_string");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_copy_object(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_copy_object(aml_reader_context_t* ctx){
 	ERROR("copy_object");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_mid(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_mid(aml_reader_context_t* ctx){
 	ERROR("mid");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_continue(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_continue(aml_reader_context_t* ctx){
 	ERROR("continue");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_if(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_if(aml_reader_context_t* ctx){
 	ERROR("if");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_else(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_else(aml_reader_context_t* ctx){
 	ERROR("else");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_while(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_while(aml_reader_context_t* ctx){
 	ERROR("while");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_noop(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_noop(aml_reader_context_t* ctx){
 	ERROR("noop");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_return(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_return(aml_reader_context_t* ctx){
 	ERROR("return");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_break(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_break(aml_reader_context_t* ctx){
 	ERROR("break");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_break_point(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_break_point(aml_reader_context_t* ctx){
 	ERROR("break_point");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ones(aml_reader_context_t* ctx){
-	ERROR("ones");
-	return 0;
+static aml_object_t* _exec_opcode_ones(aml_reader_context_t* ctx){
+	return _alloc_object_int(0xffffffffffffffffull);
 }
 
 
 
-static _Bool _exec_opcode_ext_mutex(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_mutex(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
 	u8 sync_flags=_get_uint8(ctx);
 	ERROR("ext_mutex (name=%s, sync_flags=%u)",name->data,sync_flags);
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_ext_event(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_event(aml_reader_context_t* ctx){
 	ERROR("ext_event");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_cond_ref_of(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_cond_ref_of(aml_reader_context_t* ctx){
 	ERROR("ext_cond_ref_of");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_create_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_create_field(aml_reader_context_t* ctx){
 	ERROR("ext_create_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_load_table(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_load_table(aml_reader_context_t* ctx){
 	ERROR("ext_load_table");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_load(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_load(aml_reader_context_t* ctx){
 	ERROR("ext_load");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_stall(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_stall(aml_reader_context_t* ctx){
 	ERROR("ext_stall");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_sleep(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_sleep(aml_reader_context_t* ctx){
 	ERROR("ext_sleep");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_acquire(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_acquire(aml_reader_context_t* ctx){
 	ERROR("ext_acquire");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_signal(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_signal(aml_reader_context_t* ctx){
 	ERROR("ext_signal");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_wait(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_wait(aml_reader_context_t* ctx){
 	ERROR("ext_wait");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_reset(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_reset(aml_reader_context_t* ctx){
 	ERROR("ext_reset");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_release(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_release(aml_reader_context_t* ctx){
 	ERROR("ext_release");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_from_bcd(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_from_bcd(aml_reader_context_t* ctx){
 	ERROR("ext_from_bcd");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_to_bcd(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_to_bcd(aml_reader_context_t* ctx){
 	ERROR("ext_to_bcd");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_unload(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_unload(aml_reader_context_t* ctx){
 	ERROR("ext_unload");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_revision(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_revision(aml_reader_context_t* ctx){
 	ERROR("ext_revision");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_debug(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_debug(aml_reader_context_t* ctx){
 	ERROR("ext_debug");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_fatal(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_fatal(aml_reader_context_t* ctx){
 	ERROR("ext_fatal");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_timer(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_timer(aml_reader_context_t* ctx){
 	ERROR("ext_timer");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_region(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_region(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
 	u8 region_space=_get_uint8(ctx);
-	_Bool region_offset=_execute_aml_single(ctx);
-	_Bool region_length=_execute_aml_single(ctx);
+	aml_object_t* region_offset=_execute_aml_single(ctx);
+	aml_object_t* region_length=_execute_aml_single(ctx);
 	ERROR("ext_region (name=%s, region_space=%u, region_offset=%p, region_length=%p)",name->data,region_space,region_offset,region_length);
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_ext_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_field(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	u8 field_flags=_get_uint8(ctx);
 	ERROR("ext_field (name=%s, field_flags=%u)",name->data,field_flags);
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_ext_device(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_device(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	ERROR("ext_device (name=%s)",name->data);
@@ -1019,15 +1073,15 @@ static _Bool _exec_opcode_ext_device(aml_reader_context_t* ctx){
 		end_offset-ctx->offset
 	};
 	if (!_execute_aml(&child_ctx)){
-		return 0;
+		return NULL;
 	}
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_ext_processor(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_processor(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	u8 processor_id=_get_uint8(ctx);
@@ -1039,45 +1093,45 @@ static _Bool _exec_opcode_ext_processor(aml_reader_context_t* ctx){
 		end_offset-ctx->offset
 	};
 	if (!_execute_aml(&child_ctx)){
-		return 0;
+		return NULL;
 	}
 	ctx->offset=end_offset;
-	return 1;
+	return _alloc_object_none();
 }
 
 
 
-static _Bool _exec_opcode_ext_power_res(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_power_res(aml_reader_context_t* ctx){
 	ERROR("ext_power_res");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_thermal_zone(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_thermal_zone(aml_reader_context_t* ctx){
 	ERROR("ext_thermal_zone");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_index_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_index_field(aml_reader_context_t* ctx){
 	ERROR("ext_index_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_bank_field(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_bank_field(aml_reader_context_t* ctx){
 	ERROR("ext_bank_field");
-	return 0;
+	return NULL;
 }
 
 
 
-static _Bool _exec_opcode_ext_data_region(aml_reader_context_t* ctx){
+static aml_object_t* _exec_opcode_ext_data_region(aml_reader_context_t* ctx){
 	ERROR("ext_data_region");
-	return 0;
+	return NULL;
 }
 
 
@@ -1245,7 +1299,7 @@ static const opcode_func_t _aml_extended_opcodes[256]={
 
 
 
-static opcode_func_t _parse_opcode(aml_reader_context_t* ctx){
+static aml_object_t* _execute_aml_single(aml_reader_context_t* ctx){
 	const opcode_func_t* table=_aml_opcodes;
 	if (ctx->data[ctx->offset]==AML_EXTENDED_OPCODE){
 		ctx->offset++;
@@ -1254,7 +1308,7 @@ static opcode_func_t _parse_opcode(aml_reader_context_t* ctx){
 	opcode_func_t out=table[ctx->data[ctx->offset]];
 	if (out){
 		ctx->offset++;
-		return out;
+		return out(ctx);
 	}
 	ERROR("Unknown AML opcode '%s%X'",(table==_aml_extended_opcodes?"5b ":""),ctx->data[ctx->offset]);
 	return NULL;
@@ -1262,23 +1316,14 @@ static opcode_func_t _parse_opcode(aml_reader_context_t* ctx){
 
 
 
-static _Bool _execute_aml_single(aml_reader_context_t* ctx){
-	opcode_func_t opcode=_parse_opcode(ctx);
-	if (!opcode||!opcode(ctx)){
-		return 0;
-	}
-	return 1;
-}
-
-
-
 static _Bool _execute_aml(aml_reader_context_t* ctx){
 	ctx->offset=0;
 	while (ctx->offset<ctx->length){
-		opcode_func_t opcode=_parse_opcode(ctx);
-		if (!opcode||!opcode(ctx)){
+		aml_object_t* value=_execute_aml_single(ctx);
+		if (!value){
 			return 0;
 		}
+		_dealloc_object(value);
 	}
 	return 1;
 }
