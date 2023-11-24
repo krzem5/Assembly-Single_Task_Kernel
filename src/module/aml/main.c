@@ -130,16 +130,80 @@
 
 
 #define AML_OBJECT_TYPE_NONE 0
-#define AML_OBJECT_TYPE_INT 1
-#define AML_OBJECT_TYPE_STRING 2
+#define AML_OBJECT_TYPE_BUFFER 1
+#define AML_OBJECT_TYPE_BUFFER_FIELD 2
+#define AML_OBJECT_TYPE_DEBUG 3
+#define AML_OBJECT_TYPE_DEVICE 4
+#define AML_OBJECT_TYPE_EVENT 5
+#define AML_OBJECT_TYPE_FIELD_UNIT 6
+#define AML_OBJECT_TYPE_INTEGER 7
+#define AML_OBJECT_TYPE_METHOD 8
+#define AML_OBJECT_TYPE_MUTEX 9
+#define AML_OBJECT_TYPE_PACKAGE 10
+#define AML_OBJECT_TYPE_POWER_RESOURCE 11
+#define AML_OBJECT_TYPE_PROCESSOR 12
+#define AML_OBJECT_TYPE_REFERENCE 13
+#define AML_OBJECT_TYPE_REGION 14
+#define AML_OBJECT_TYPE_SCOPE 15
+#define AML_OBJECT_TYPE_STRING 16
+#define AML_OBJECT_TYPE_THERMAL_ZONE 17
 
 
 
 typedef struct _AML_OBJECT{
 	u8 type;
 	union{
-		u64 int_;
+		string_t* buffer;
+		struct{
+			// undefined
+		} buffer_field;
+		struct{
+			// undefined
+		} debug;
+		struct{
+			// undefined
+		} device;
+		struct{
+			// undefined
+		} event;
+		struct{
+			// undefined
+		} field_unit;
+		u64 integer;
+		struct{
+			u8 flags;
+			const u8* code;
+			u64 code_length;
+		} method;
+		struct{
+			// undefined
+		} mutex;
+		struct{
+			// undefined
+		} package;
+		struct{
+			// undefined
+		} power_resource;
+		struct{
+			u8 id;
+			u64 block_address;
+			u8 block_length;
+		} processor;
+		struct{
+			// undefined
+		} reference;
+		struct{
+			// undefined
+		} region;
+		struct{
+			u8 type;
+			u64 address;
+			u64 length;
+		} scope;
 		string_t* string;
+		struct{
+			// undefined
+		} thermal_zone;
 	};
 } aml_object_t;
 
@@ -166,17 +230,27 @@ static KERNEL_INLINE aml_object_t* _alloc_object_none(void){
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_int(u64 value){
-	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_INT);
-	out->int_=value;
+static KERNEL_INLINE aml_object_t* _alloc_object_int(u64 integer){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_INTEGER);
+	out->integer=integer;
 	return out;
 }
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_string(string_t* value){
+static KERNEL_INLINE aml_object_t* _alloc_object_method(u8 flags,const u8* code,u64 code_length){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_METHOD);
+	out->method.flags=flags;
+	out->method.code=code;
+	out->method.code_length=code_length;
+	return out;
+}
+
+
+
+static KERNEL_INLINE aml_object_t* _alloc_object_string(string_t* string){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_STRING);
-	out->string=value;
+	out->string=string;
 	return out;
 }
 
@@ -334,8 +408,9 @@ static aml_object_t* _exec_opcode_dword_prefix(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_string_prefix(aml_reader_context_t* ctx){
 	u32 length=0;
 	for (;ctx->data[ctx->offset+length];length++);
+	aml_object_t* out=_alloc_object_string(smm_alloc((const char*)(ctx->data+ctx->offset),length));
 	ctx->offset+=length+1;
-	return _alloc_object_string(smm_alloc((const char*)(ctx->data+ctx->offset-length-1),length));
+	return out;
 }
 
 
@@ -401,10 +476,10 @@ static aml_object_t* _exec_opcode_var_package(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_method(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
-	u8 arg_count=_get_uint8(ctx);
-	ERROR("method (name=%s, arg_count=%u)",name->data,arg_count);
+	(void)name;
+	aml_object_t* out=_alloc_object_method(_get_uint8(ctx),ctx->data+ctx->offset,end_offset-ctx->offset);
 	ctx->offset=end_offset;
-	return _alloc_object_none();
+	return out;
 }
 
 
