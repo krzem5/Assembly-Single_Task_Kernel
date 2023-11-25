@@ -7,6 +7,23 @@
 
 
 
+static void _parse_device(aml_namespace_t* device){
+	for (aml_namespace_t* child=device->first_child;child;child=child->next_sibling){
+		if (!child->value||child->value->type==AML_OBJECT_TYPE_DEVICE||child->name[0]!='_'||(child->value->type==AML_OBJECT_TYPE_METHOD&&(child->value->method.flags&7))){
+			continue;
+		}
+		aml_object_t* value=aml_runtime_execute_method(child->value,0,NULL);
+		if (!value){
+			continue;
+		}
+		log("[%s:%s.%s] ",device->parent->name,device->name,child->name);
+		aml_object_print(value);
+		aml_object_dealloc(value);
+	}
+}
+
+
+
 static void _enumerate_system_bus(aml_namespace_t* bus){
 	for (aml_namespace_t* device=bus->first_child;device;device=device->next_sibling){
 		if (!device->value||device->value->type!=AML_OBJECT_TYPE_DEVICE){
@@ -30,21 +47,9 @@ static void _enumerate_system_bus(aml_namespace_t* bus){
 		if (!(status&8)){
 			continue;
 		}
-		for (aml_namespace_t* child=device->first_child;child;child=child->next_sibling){
-			if (!child->value||child->value->type==AML_OBJECT_TYPE_DEVICE||child->name[0]!='_'||(child->value->type==AML_OBJECT_TYPE_METHOD&&(child->value->method.flags&7))){
-				continue;
-			}
-			aml_object_t* value=aml_runtime_execute_method(child->value,0,NULL);
-			if (!value){
-				continue;
-			}
-			log("[%s:%s.%s] ",bus->name,device->name,child->name);
-			aml_object_print(value);
-			aml_object_dealloc(value);
+		if (status&1){
+			_parse_device(device);
 		}
-		// if (status&1){
-		// 	_parse_device(device);
-		// }
 		_enumerate_system_bus(device);
 	}
 }

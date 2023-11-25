@@ -12,10 +12,6 @@
 
 
 
-// opcode parser table: https://github.com/krzem5/Assembly-Single_User_Kernel/blob/9687e45bd042c74e0f7212cb1ed52193084c1349/src/module/aml/aml/parser.c#L35-L149
-
-
-
 static u32 _get_pkglength(aml_runtime_context_t* ctx){
 	u32 out=ctx->data[ctx->offset]&0x3f;
 	for (u8 i=0;i<(ctx->data[ctx->offset]>>6);i++){
