@@ -21,15 +21,6 @@ static _Bool _init(module_t* module){
 	}
 	// INFO("Registering AML IRQ...");
 	// ioapic_redirect_irq(fadt->sci_int,isr_allocate());
-	// // PM1x flags
-	// #define SLP_TYP_SHIFT 10
-	// #define SLP_EN 0x2000
-	// u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	// u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
-	// io_port_out16(acpi_fadt->pm1a_control_block,pm1a_value);
-	// if (acpi_fadt->pm1b_control_block){
-	// 	io_port_out16(acpi_fadt->pm1b_control_block,pm1b_value);
-	// }
 	return 1;
 }
 

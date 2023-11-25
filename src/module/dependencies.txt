@@ -1,6 +1,7 @@
 dynamicfs:
 ahci:
 aml:
+aml_shutdown:aml
 ata:
 coverage:
 devfs:dynamicfs
