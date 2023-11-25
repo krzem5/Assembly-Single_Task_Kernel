@@ -66,9 +66,15 @@ extern handle_type_t pci_device_handle_type;
 
 
 
-static KERNEL_INLINE u32 pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
-	io_port_out32(0xcf8,(device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000);
+static KERNEL_INLINE u32 pci_device_read_config(u32 offset){
+	io_port_out32(0xcf8,offset);
 	return io_port_in32(0xcfc);
+}
+
+
+
+static KERNEL_INLINE u32 pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
+	return pci_device_read_config((device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000);
 }
 
 

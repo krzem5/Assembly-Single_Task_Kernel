@@ -1,3 +1,4 @@
+#include <aml/field.h>
 #include <aml/namespace.h>
 #include <aml/object.h>
 #include <aml/opcode.h>
@@ -163,7 +164,8 @@ static aml_object_t* _exec_opcode_scope(aml_runtime_context_t* ctx){
 	aml_runtime_context_t child_ctx={
 		ctx->data+ctx->offset,
 		end_offset-ctx->offset,
-		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE)
+		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE),
+		NULL
 	};
 	smm_dealloc(name);
 	if (!aml_runtime_execute(&child_ctx)){
@@ -203,6 +205,7 @@ static aml_object_t* _exec_opcode_package(aml_runtime_context_t* ctx){
 		ctx->data+ctx->offset,
 		end_offset-ctx->offset,
 		NULL,
+		NULL,
 		0
 	};
 	aml_object_t* out=aml_object_alloc_package(num_elements);
@@ -239,7 +242,7 @@ static aml_object_t* _exec_opcode_var_package(aml_runtime_context_t* ctx){
 static aml_object_t* _exec_opcode_method(aml_runtime_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
-	aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)->value=aml_object_alloc_method(_get_uint8(ctx),ctx->data+ctx->offset,end_offset-ctx->offset);
+	aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)->value=aml_object_alloc_method(_get_uint8(ctx),ctx->data+ctx->offset,end_offset-ctx->offset,ctx->namespace);
 	smm_dealloc(name);
 	ctx->offset=end_offset;
 	return aml_object_alloc_none();
@@ -250,8 +253,36 @@ static aml_object_t* _exec_opcode_method(aml_runtime_context_t* ctx){
 static aml_object_t* _exec_opcode_name_reference(aml_runtime_context_t* ctx){
 	ctx->offset--;
 	string_t* name=_get_name(ctx);
-	ERROR("name_reference: %s",name->data);
-	return aml_object_alloc_none();
+	aml_namespace_t* value=aml_namespace_lookup(ctx->namespace,name->data,0);
+	if (!value||!value->value){
+		panic("_exec_opcode_name_reference: object not found");
+	}
+	smm_dealloc(name);
+	if (value->value->type==AML_OBJECT_TYPE_FIELD_UNIT){
+		return aml_field_read(value->value);
+	}
+	if (value->value->type!=AML_OBJECT_TYPE_METHOD){
+		value->value->rc++;
+		return value->value;
+	}
+	u8 arg_count=value->value->method.flags&7;
+	aml_object_t* args[7]={NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+	for (u8 i=0;i<arg_count;i++){
+		args[i]=aml_runtime_execute_single(ctx);
+		if (args[i]){
+			continue;
+		}
+		while (i){
+			i--;
+			aml_object_dealloc(args[i]);
+		}
+		return NULL;
+	}
+	aml_object_t* new_value=aml_runtime_execute_method(value->value,arg_count,args);
+	for (u8 i=0;i<arg_count;i++){
+		// aml_object_dealloc(args[i]);
+	}
+	return new_value;
 }
 
 
@@ -313,8 +344,11 @@ static aml_object_t* _exec_opcode_local7(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_arg0(aml_runtime_context_t* ctx){
-	ERROR("arg0");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_arg0: arg0 outside of method");
+	}
+	ctx->vars->args[0]->rc++;
+	return ctx->vars->args[0];
 }
 
 
@@ -439,8 +473,22 @@ static aml_object_t* _exec_opcode_shift_right(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_and(aml_runtime_context_t* ctx){
-	ERROR("and");
-	return NULL;
+	aml_object_t* left=aml_runtime_execute_single(ctx);
+	if (!left){
+		return NULL;
+	}
+	aml_object_t* right=aml_runtime_execute_single(ctx);
+	if (!right){
+		aml_object_dealloc(left);
+		return NULL;
+	}
+	if (left->type!=AML_OBJECT_TYPE_INTEGER||right->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_and: left or right is not and integer");
+	}
+	u64 out=left->integer&right->integer;
+	aml_object_dealloc(left);
+	aml_object_dealloc(right);
+	return aml_object_alloc_integer(out);
 }
 
 
@@ -607,8 +655,25 @@ static aml_object_t* _exec_opcode_l_not(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_l_equal(aml_runtime_context_t* ctx){
-	ERROR("l_equal");
-	return NULL;
+	aml_object_t* left=aml_runtime_execute_single(ctx);
+	if (!left){
+		return NULL;
+	}
+	aml_object_t* right=aml_runtime_execute_single(ctx);
+	if (!right){
+		aml_object_dealloc(left);
+		return NULL;
+	}
+	_Bool out=0;
+	if (left->type==AML_OBJECT_TYPE_INTEGER&&right->type==AML_OBJECT_TYPE_INTEGER){
+		out=(left->integer==right->integer);
+	}
+	else{
+		panic("_exec_opcode_l_equal: unable to compare types");
+	}
+	aml_object_dealloc(left);
+	aml_object_dealloc(right);
+	return aml_object_alloc_integer(out);
 }
 
 
@@ -684,14 +749,38 @@ static aml_object_t* _exec_opcode_continue(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_if(aml_runtime_context_t* ctx){
-	ERROR("if");
-	return NULL;
+	u64 end_offset=ctx->offset+_get_pkglength(ctx);
+	aml_object_t* predicate=aml_runtime_execute_single(ctx);
+	if (!predicate){
+		return NULL;
+	}
+	if (predicate->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_if: predicate is not an integer");
+	}
+	_Bool execute_branch=!!predicate->integer;
+	aml_object_dealloc(predicate);
+	if (execute_branch){
+		aml_runtime_context_t child_ctx={
+			ctx->data+ctx->offset,
+			end_offset-ctx->offset,
+			ctx->namespace,
+			ctx->vars
+		};
+		if (!aml_runtime_execute(&child_ctx)){
+			return NULL;
+		}
+	}
+	ctx->offset=end_offset;
+	if (ctx->data[ctx->offset]==AML_OPCODE_ELSE){
+		panic("_exec_opcode_else");
+	}
+	return aml_object_alloc_none();
 }
 
 
 
 static aml_object_t* _exec_opcode_else(aml_runtime_context_t* ctx){
-	ERROR("else");
+	panic("_exec_opcode_else: else without an if");
 	return NULL;
 }
 
@@ -712,8 +801,15 @@ static aml_object_t* _exec_opcode_noop(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_return(aml_runtime_context_t* ctx){
-	ERROR("return");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_return: return outside of method");
+	}
+	aml_object_t* value=aml_runtime_execute_single(ctx);
+	if (!value){
+		return NULL;
+	}
+	ctx->vars->ret=value;
+	return aml_object_alloc_none();
 }
 
 
@@ -960,8 +1056,10 @@ static aml_object_t* _exec_opcode_ext_device(aml_runtime_context_t* ctx){
 	aml_runtime_context_t child_ctx={
 		ctx->data+ctx->offset,
 		end_offset-ctx->offset,
-		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)
+		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR),
+		NULL
 	};
+	child_ctx.namespace->value=aml_object_alloc_device();
 	smm_dealloc(name);
 	if (!aml_runtime_execute(&child_ctx)){
 		return NULL;
@@ -981,7 +1079,8 @@ static aml_object_t* _exec_opcode_ext_processor(aml_runtime_context_t* ctx){
 	aml_runtime_context_t child_ctx={
 		ctx->data+ctx->offset,
 		end_offset-ctx->offset,
-		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)
+		aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR),
+		NULL
 	};
 	child_ctx.namespace->value=aml_object_alloc_processor(processor_id,processor_block_address,processor_block_length);
 	smm_dealloc(name);
@@ -1187,7 +1286,7 @@ static aml_object_t*(*const _aml_opcode_table[512])(aml_runtime_context_t*)={
 
 
 
-aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ctx){
+KERNEL_PUBLIC aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ctx){
 	u16 key=ctx->data[ctx->offset];
 	ctx->offset++;
 	if (key==AML_EXTENDED_OPCODE){
@@ -1203,7 +1302,7 @@ aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ctx){
 
 
 
-_Bool aml_runtime_execute(aml_runtime_context_t* ctx){
+KERNEL_PUBLIC _Bool aml_runtime_execute(aml_runtime_context_t* ctx){
 	ctx->offset=0;
 	while (ctx->offset<ctx->length){
 		aml_object_t* value=aml_runtime_execute_single(ctx);
@@ -1211,6 +1310,48 @@ _Bool aml_runtime_execute(aml_runtime_context_t* ctx){
 			return 0;
 		}
 		aml_object_dealloc(value);
+		if (ctx->vars&&ctx->vars->ret){
+			return 1;
+		}
 	}
 	return 1;
+}
+
+
+
+KERNEL_PUBLIC aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 arg_count,aml_object_t*const* args){
+	if (method->type!=AML_OBJECT_TYPE_METHOD){
+		method->rc++;
+		return method;
+	}
+	if (arg_count>(method->method.flags&7)){
+		arg_count=method->method.flags&7;
+	}
+	aml_runtime_vars_t vars;
+	for (u8 i=0;i<8;i++){
+		if (i<7){
+			vars.args[i]=aml_object_alloc_none();
+		}
+		vars.locals[i]=aml_object_alloc_none();
+	}
+	vars.ret=NULL;
+	for (u8 i=0;i<arg_count;i++){
+		aml_object_dealloc(vars.args[i]);
+		args[i]->rc++;
+		vars.args[i]=args[i];
+	}
+	aml_runtime_context_t ctx={
+		method->method.code,
+		method->method.code_length,
+		method->method.namespace,
+		&vars
+	};
+	_Bool ret=aml_runtime_execute(&ctx);
+	for (u8 i=0;i<8;i++){
+		if (i<7){
+			aml_object_dealloc(vars.args[i]);
+		}
+		aml_object_dealloc(vars.locals[i]);
+	}
+	return (ret?vars.ret:NULL);
 }

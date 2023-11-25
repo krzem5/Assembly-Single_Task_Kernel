@@ -14,10 +14,10 @@ static _Bool _init(module_t* module){
 		aml_runtime_context_t ctx={
 			acpi_dsdt->data,
 			acpi_dsdt->header.length-sizeof(acpi_dsdt_t),
+			NULL,
 			NULL
 		};
 		aml_runtime_execute(&ctx);
-		// panic("test");
 	}
 	// INFO("Registering AML IRQ...");
 	// ioapic_redirect_irq(fadt->sci_int,isr_allocate());

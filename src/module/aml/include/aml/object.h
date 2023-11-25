@@ -27,6 +27,7 @@
 
 typedef struct _AML_OBJECT{
 	u8 type;
+	u32 rc;
 	union{
 		string_t* buffer;
 		struct{
@@ -53,6 +54,7 @@ typedef struct _AML_OBJECT{
 			u8 flags;
 			const u8* code;
 			u64 code_length;
+			struct _AML_NAMESPACE* namespace;
 		} method;
 		struct{
 			u8 sync_flags;
@@ -122,7 +124,7 @@ aml_object_t* aml_object_alloc_integer(u64 integer);
 
 
 
-aml_object_t* aml_object_alloc_method(u8 flags,const u8* code,u64 code_length);
+aml_object_t* aml_object_alloc_method(u8 flags,const u8* code,u64 code_length,struct _AML_NAMESPACE* namespace);
 
 
 

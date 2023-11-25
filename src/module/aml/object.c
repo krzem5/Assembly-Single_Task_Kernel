@@ -16,6 +16,7 @@ static aml_object_t* _alloc_object(u8 type){
 	}
 	aml_object_t* out=omm_alloc(_aml_object_allocator);
 	out->type=type;
+	out->rc=1;
 	return out;
 }
 
@@ -83,11 +84,12 @@ KERNEL_PUBLIC aml_object_t* aml_object_alloc_integer(u64 integer){
 
 
 
-KERNEL_PUBLIC aml_object_t* aml_object_alloc_method(u8 flags,const u8* code,u64 code_length){
+KERNEL_PUBLIC aml_object_t* aml_object_alloc_method(u8 flags,const u8* code,u64 code_length,struct _AML_NAMESPACE* namespace){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_METHOD);
 	out->method.flags=flags;
 	out->method.code=code;
 	out->method.code_length=code_length;
+	out->method.namespace=namespace;
 	return out;
 }
 
@@ -160,6 +162,13 @@ KERNEL_PUBLIC aml_object_t* aml_object_alloc_thermal_zone(void){
 
 
 KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
+	if (!object){
+		return;
+	}
+	object->rc--;
+	if (!object->rc){
+		return;
+	}
 	if (object->type==AML_OBJECT_TYPE_BUFFER){
 		smm_dealloc(object->buffer);
 	}
