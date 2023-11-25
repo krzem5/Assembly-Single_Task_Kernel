@@ -93,8 +93,6 @@
 #define AML_OPCODE_RETURN 0xa4
 #define AML_OPCODE_BREAK 0xa5
 #define AML_OPCODE_BREAK_POINT 0xcc
-#define AML_OPCODE_NAME_REFERENCE 0xfd
-#define AML_OPCODE_ROOT 0xfe
 #define AML_OPCODE_ONES 0xff
 
 #define AML_OPCODE_EXT_MUTEX 0x01
@@ -1698,6 +1696,7 @@ static void _print_namespace_recursive(aml_namespace_t* namespace,u32 indent){
 
 static _Bool _init(module_t* module){
 	if (!acpi_dsdt||!acpi_dsdt->header.length){
+		WARN("No AML code present");
 		return 0;
 	}
 	aml_reader_context_t ctx={
@@ -1707,11 +1706,11 @@ static _Bool _init(module_t* module){
 	};
 	_execute_aml(&ctx);
 	_print_namespace_recursive(_aml_root_namespace,0);
+	// INFO("Registering AML IRQ...");
+	// ioapic_redirect_irq(fadt->sci_int,isr_allocate());
 	// // PM1x flags
 	// #define SLP_TYP_SHIFT 10
 	// #define SLP_EN 0x2000
-	// aml_runtime_init(aml_parse(acpi_dsdt->data,acpi_dsdt->header.length-sizeof(acpi_dsdt_t)),fadt->sci_int);
-	// asm volatile("cli":::"memory");
 	// u16 pm1a_value=(aml_runtime_get_node(NULL,"\\_S5_[0]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	// u16 pm1b_value=(aml_runtime_get_node(NULL,"\\_S5_[1]")->data.integer<<SLP_TYP_SHIFT)|SLP_EN;
 	// io_port_out16(acpi_fadt->pm1a_control_block,pm1a_value);
