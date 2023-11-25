@@ -166,7 +166,7 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 		return;
 	}
 	object->rc--;
-	if (!object->rc){
+	if (object->rc){
 		return;
 	}
 	if (object->type==AML_OBJECT_TYPE_BUFFER){

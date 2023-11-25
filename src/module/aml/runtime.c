@@ -5,6 +5,7 @@
 #include <aml/runtime.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aml_runtime"
@@ -85,6 +86,39 @@ static u32 _get_uint32(aml_runtime_context_t* ctx){
 	u32 out=(ctx->data[ctx->offset+3]<<24)|(ctx->data[ctx->offset+2]<<16)|(ctx->data[ctx->offset+1]<<8)|ctx->data[ctx->offset];
 	ctx->offset+=4;
 	return out;
+}
+
+
+
+static _Bool _store_value(aml_object_t* value,aml_runtime_context_t* ctx){
+	u8 type=ctx->data[ctx->offset];
+	if (!type){
+		ctx->offset++;
+		aml_object_dealloc(value);
+		return 1;
+	}
+	if (AML_OPCODE_LOCAL0<=type&&type<=AML_OPCODE_LOCAL7){
+		ctx->offset++;
+		aml_object_dealloc(ctx->vars->locals[type-AML_OPCODE_LOCAL0]);
+		ctx->vars->locals[type-AML_OPCODE_LOCAL0]=value;
+		return 1;
+	}
+	if (type=='\\'||type=='^'||type=='.'||type=='/'||(type>47&&type<58)||type=='_'||(type>64&&type<91)){
+		string_t* name=_get_name(ctx);
+		aml_namespace_t* container=aml_namespace_lookup(ctx->namespace,name->data,0);
+		smm_dealloc(name);
+		if (!container||!container->value){
+			panic("_store_value: object not found");
+			return 0;
+		}
+		if (container->value->type==AML_OBJECT_TYPE_FIELD_UNIT){
+			return aml_field_write(container->value,value);
+		}
+		ERROR("_store_value: container of type %u",container->value->type);
+	}
+	WARN("_store_value: %X %X",ctx->data[ctx->offset],ctx->data[ctx->offset+1]);
+	panic("_store_value: unable to store value");
+	return 0;
 }
 
 
@@ -288,57 +322,81 @@ static aml_object_t* _exec_opcode_name_reference(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_local0(aml_runtime_context_t* ctx){
-	ERROR("local0");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local0: local0 outside of method");
+	}
+	ctx->vars->locals[0]->rc++;
+	return ctx->vars->locals[0];
 }
 
 
 
 static aml_object_t* _exec_opcode_local1(aml_runtime_context_t* ctx){
-	ERROR("local1");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local1: local1 outside of method");
+	}
+	ctx->vars->locals[1]->rc++;
+	return ctx->vars->locals[1];
 }
 
 
 
 static aml_object_t* _exec_opcode_local2(aml_runtime_context_t* ctx){
-	ERROR("local2");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local2: local2 outside of method");
+	}
+	ctx->vars->locals[2]->rc++;
+	return ctx->vars->locals[2];
 }
 
 
 
 static aml_object_t* _exec_opcode_local3(aml_runtime_context_t* ctx){
-	ERROR("local3");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local3: local3 outside of method");
+	}
+	ctx->vars->locals[3]->rc++;
+	return ctx->vars->locals[3];
 }
 
 
 
 static aml_object_t* _exec_opcode_local4(aml_runtime_context_t* ctx){
-	ERROR("local4");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local4: local4 outside of method");
+	}
+	ctx->vars->locals[4]->rc++;
+	return ctx->vars->locals[4];
 }
 
 
 
 static aml_object_t* _exec_opcode_local5(aml_runtime_context_t* ctx){
-	ERROR("local5");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local5: local5 outside of method");
+	}
+	ctx->vars->locals[5]->rc++;
+	return ctx->vars->locals[5];
 }
 
 
 
 static aml_object_t* _exec_opcode_local6(aml_runtime_context_t* ctx){
-	ERROR("local6");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local6: local6 outside of method");
+	}
+	ctx->vars->locals[6]->rc++;
+	return ctx->vars->locals[6];
 }
 
 
 
 static aml_object_t* _exec_opcode_local7(aml_runtime_context_t* ctx){
-	ERROR("local7");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_local7: local7 outside of method");
+	}
+	ctx->vars->locals[7]->rc++;
+	return ctx->vars->locals[7];
 }
 
 
@@ -396,8 +454,14 @@ static aml_object_t* _exec_opcode_arg6(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_store(aml_runtime_context_t* ctx){
-	ERROR("store");
-	return NULL;
+	if (!ctx->vars){
+		panic("_exec_opcode_store: store outside of method");
+	}
+	aml_object_t* value=aml_runtime_execute_single(ctx);
+	if (!value){
+		return NULL;
+	}
+	return (_store_value(value,ctx)?aml_object_alloc_none():NULL);
 }
 
 
@@ -466,8 +530,22 @@ static aml_object_t* _exec_opcode_shift_left(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_shift_right(aml_runtime_context_t* ctx){
-	ERROR("shift_right");
-	return NULL;
+	aml_object_t* value=aml_runtime_execute_single(ctx);
+	if (!value){
+		return NULL;
+	}
+	aml_object_t* shift=aml_runtime_execute_single(ctx);
+	if (!shift){
+		aml_object_dealloc(value);
+		return NULL;
+	}
+	if (value->type!=AML_OBJECT_TYPE_INTEGER||shift->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_shift_right: value or shift is not and integer");
+	}
+	u64 out=value->integer>>shift->integer;
+	aml_object_dealloc(value);
+	aml_object_dealloc(shift);
+	return aml_object_alloc_integer(out);
 }
 
 
@@ -641,8 +719,25 @@ static aml_object_t* _exec_opcode_l_and(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_l_or(aml_runtime_context_t* ctx){
-	ERROR("l_or");
-	return NULL;
+	aml_object_t* left=aml_runtime_execute_single(ctx);
+	if (!left){
+		return NULL;
+	}
+	if (left->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_l_or: left is not an integer");
+	}
+	if (left->integer){
+		return left;
+	}
+	aml_object_dealloc(left);
+	aml_object_t* right=aml_runtime_execute_single(ctx);
+	if (!right){
+		return NULL;
+	}
+	if (right->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_l_or: right is not an integer");
+	}
+	return right;
 }
 
 
@@ -679,8 +774,25 @@ static aml_object_t* _exec_opcode_l_equal(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_l_greater(aml_runtime_context_t* ctx){
-	ERROR("l_greater");
-	return NULL;
+	aml_object_t* left=aml_runtime_execute_single(ctx);
+	if (!left){
+		return NULL;
+	}
+	aml_object_t* right=aml_runtime_execute_single(ctx);
+	if (!right){
+		aml_object_dealloc(left);
+		return NULL;
+	}
+	_Bool out=0;
+	if (left->type==AML_OBJECT_TYPE_INTEGER&&right->type==AML_OBJECT_TYPE_INTEGER){
+		out=(left->integer>right->integer);
+	}
+	else{
+		panic("_exec_opcode_l_greater: unable to compare types");
+	}
+	aml_object_dealloc(left);
+	aml_object_dealloc(right);
+	return aml_object_alloc_integer(out);
 }
 
 
@@ -714,7 +826,49 @@ static aml_object_t* _exec_opcode_to_hex_string(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_to_integer(aml_runtime_context_t* ctx){
-	ERROR("to_integer");
+	aml_object_t* value=aml_runtime_execute_single(ctx);
+	if (!value){
+		return NULL;
+	}
+	aml_object_t* ret=NULL;
+	if (value->type==AML_OBJECT_TYPE_INTEGER){
+		ret=value;
+	}
+	else if (value->type==AML_OBJECT_TYPE_STRING){
+		u64 out=0;
+		if (!value->string->length){
+			goto _skip_string_parse;
+		}
+		if (value->string->length==1){
+			out=value->string->data[0]-48;
+			goto _skip_string_parse;
+		}
+		if (value->string->data[0]=='0'&&value->string->data[1]=='x'){
+			for (u32 i=2;i<value->string->length;i++){
+				out=(out<<4)+value->string->data[i]-((75<=value->string->data[i]&&value->string->data[i]<=90)||(97<=value->string->data[i]&&value->string->data[i]<=122)?87:48);
+			}
+			goto _skip_string_parse;
+		}
+		for (u32 i=2;i<value->string->length;i++){
+			out=out*10+value->string->data[i]-48;
+		}
+_skip_string_parse:
+		aml_object_dealloc(value);
+		ret=aml_object_alloc_integer(out);
+	}
+	else if (value->type==AML_OBJECT_TYPE_BUFFER){
+		ERROR("to_integer: buffer -> integer");
+		return NULL;
+	}
+	else{
+		panic("_exec_opcode_to_integer: unable to convert object to integer");
+	}
+	ret->rc++;
+	if (_store_value(ret,ctx)){
+		return ret;
+	}
+	aml_object_dealloc(ret);
+	aml_object_dealloc(ret);
 	return NULL;
 }
 
@@ -893,8 +1047,14 @@ static aml_object_t* _exec_opcode_ext_sleep(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_ext_acquire(aml_runtime_context_t* ctx){
-	ERROR("ext_acquire");
-	return NULL;
+	aml_object_t* mutex=aml_runtime_execute_single(ctx);
+	if (!mutex){
+		return NULL;
+	}
+	aml_object_dealloc(mutex);
+	u16 timeout=_get_uint16(ctx);
+	(void)timeout;
+	return aml_object_alloc_none();
 }
 
 
@@ -921,8 +1081,12 @@ static aml_object_t* _exec_opcode_ext_reset(aml_runtime_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_ext_release(aml_runtime_context_t* ctx){
-	ERROR("ext_release");
-	return NULL;
+	aml_object_t* mutex=aml_runtime_execute_single(ctx);
+	if (!mutex){
+		return NULL;
+	}
+	aml_object_dealloc(mutex);
+	return aml_object_alloc_none();
 }
 
 
@@ -992,6 +1156,9 @@ static aml_object_t* _exec_opcode_ext_region(aml_runtime_context_t* ctx){
 	}
 	if (region_length->type!=AML_OBJECT_TYPE_INTEGER){
 		panic("_exec_opcode_ext_region: region_length is not an integer");
+	}
+	if (!region_space){
+		region_offset->integer=vmm_identity_map(region_offset->integer,region_length->integer>>3);
 	}
 	aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)->value=aml_object_alloc_region(region_space,region_offset->integer,region_length->integer);
 	smm_dealloc(name);
