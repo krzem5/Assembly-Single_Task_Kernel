@@ -7,6 +7,10 @@
 
 
 
+#define PRINT_BUFFER_BYTES_PER_LINE 16
+
+
+
 static omm_allocator_t* _aml_object_allocator=NULL;
 
 
@@ -36,7 +40,32 @@ static void _print_object(aml_object_t* object,u32 indent){
 			log("<none>");
 			break;
 		case AML_OBJECT_TYPE_BUFFER:
-			log("buffer");
+			if (!object->buffer->length){
+				log("[0]{}");
+				break;
+			}
+			log("[%u]{",object->buffer->length);
+			if (object->buffer->length<=PRINT_BUFFER_BYTES_PER_LINE){
+				for (u32 i=0;i<object->buffer->length;i++){
+					log("%s%X",(i?" ":""),object->buffer->data[i]);
+				}
+				log("}");
+				break;
+			}
+			for (u8 i=0;i<object->buffer->length;i++){
+				if (!(i&(PRINT_BUFFER_BYTES_PER_LINE-1))){
+					log("\n   ");
+					for (u32 i=0;i<indent;i++){
+						log(" ");
+					}
+				}
+				log(" %X",object->buffer->data[i]);
+			}
+			log("\n");
+			for (u32 i=0;i<indent;i++){
+				log(" ");
+			}
+			log("}");
 			break;
 		case AML_OBJECT_TYPE_BUFFER_FIELD:
 			log("buffer_field");
@@ -63,7 +92,24 @@ static void _print_object(aml_object_t* object,u32 indent){
 			log("mutex");
 			break;
 		case AML_OBJECT_TYPE_PACKAGE:
-			log("package");
+			if (!object->package.length){
+				log("{}");
+				break;
+			}
+			log("{\n");
+			for (u8 i=0;i<object->package.length;i++){
+				_print_object(object->package.data[i],indent+4);
+				if (i<object->package.length-1){
+					log(",\n");
+				}
+				else{
+					log("\n");
+				}
+			}
+			for (u32 i=0;i<indent;i++){
+				log(" ");
+			}
+			log("}");
 			break;
 		case AML_OBJECT_TYPE_POWER_RESOURCE:
 			log("power_resource");
@@ -240,6 +286,12 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 	}
 	else if (object->type==AML_OBJECT_TYPE_STRING){
 		smm_dealloc(object->string);
+	}
+	else if (object->type==AML_OBJECT_TYPE_PACKAGE){
+		for (u8 i=0;i<object->package.length;i++){
+			aml_object_dealloc(object->package.data[i]);
+		}
+		smm_dealloc((void*)(((u64)(object->package.data))-__builtin_offsetof(string_t,data)));
 	}
 	omm_dealloc(_aml_object_allocator,object);
 }

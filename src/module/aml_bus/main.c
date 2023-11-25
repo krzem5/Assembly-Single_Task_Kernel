@@ -57,7 +57,7 @@ static _Bool _init(module_t* module){
 		return 0;
 	}
 	_enumerate_system_bus(system_bus);
-	// for (;;);
+	for (;;);
 	return 1;
 }
 
