@@ -182,7 +182,8 @@ typedef struct _AML_OBJECT{
 			u8 sync_flags;
 		} mutex;
 		struct{
-			// undefined
+			u8 length;
+			struct _AML_OBJECT** data;
 		} package;
 		struct{
 			// undefined
@@ -230,8 +231,9 @@ aml_object_t* _alloc_object_none(void){
 
 
 
-aml_object_t* _alloc_object_buffer(void){
+aml_object_t* _alloc_object_buffer(string_t* buffer){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_BUFFER);
+	out->buffer=buffer;
 	return out;
 }
 
@@ -303,8 +305,10 @@ aml_object_t* _alloc_object_mutex(u8 sync_flags){
 
 
 
-aml_object_t* _alloc_object_package(void){
+aml_object_t* _alloc_object_package(u8 length){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_PACKAGE);
+	out->package.length=length;
+	out->package.data=(void*)(smm_alloc(NULL,length*sizeof(aml_object_t*))->data);
 	return out;
 }
 
@@ -566,7 +570,14 @@ static aml_object_t* _exec_opcode_alias(aml_reader_context_t* ctx){
 
 static aml_object_t* _exec_opcode_name(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
-	_lookup_namespace(ctx->namespace,name->data,1,1)->value=_execute_aml_single(ctx);
+	aml_object_t* value=_execute_aml_single(ctx);
+	if (!value){
+		return NULL;
+	}
+	if (value->type==AML_OBJECT_TYPE_NONE){
+		panic("_exec_opcode_name: value is not an object");
+	}
+	_lookup_namespace(ctx->namespace,name->data,1,1)->value=value;
 	return _alloc_object_none();
 }
 
@@ -628,9 +639,20 @@ static aml_object_t* _exec_opcode_scope(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_buffer(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	aml_object_t* buffer_size=_execute_aml_single(ctx);
-	ERROR("buffer (buffer_size=%p)",buffer_size->integer);
+	if (!buffer_size){
+		return NULL;
+	}
+	if (buffer_size->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_name: buffer_size is not an integer");
+	}
+	string_t* buffer=smm_alloc(NULL,buffer_size->integer);
+	u64 size=end_offset-ctx->offset;
+	if (size>buffer_size->integer){
+		size=buffer_size->integer;
+	}
+	memcpy(buffer->data,ctx->data+ctx->offset,size);
 	ctx->offset=end_offset;
-	return _alloc_object_none();
+	return _alloc_object_buffer(buffer);
 }
 
 
@@ -638,17 +660,32 @@ static aml_object_t* _exec_opcode_buffer(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_package(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	u8 num_elements=_get_uint8(ctx);
-	ERROR("package (num_elements=%p)",num_elements);
 	aml_reader_context_t child_ctx={
 		ctx->data+ctx->offset,
 		end_offset-ctx->offset,
-		NULL
+		NULL,
+		0
 	};
-	if (!_execute_aml(&child_ctx)){
-		return NULL;
+	aml_object_t* out=_alloc_object_package(num_elements);
+	u8 i=0;
+	while (child_ctx.offset<child_ctx.length){
+		aml_object_t* value=_execute_aml_single(&child_ctx);
+		if (!value){
+			return NULL;
+		}
+		if (i>=num_elements){
+			_dealloc_object(value);
+		}
+		else{
+			out->package.data[i]=value;
+			i++;
+		}
+	}
+	for (;i<num_elements;i++){
+		out->package.data[i]=_alloc_object_integer(0);
 	}
 	ctx->offset=end_offset;
-	return _alloc_object_none();
+	return out;
 }
 
 
@@ -1308,9 +1345,15 @@ static aml_object_t* _exec_opcode_ext_region(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
 	u8 region_space=_get_uint8(ctx);
 	aml_object_t* region_offset=_execute_aml_single(ctx);
-	aml_object_t* region_length=_execute_aml_single(ctx);
+	if (!region_offset){
+		return NULL;
+	}
 	if (region_offset->type!=AML_OBJECT_TYPE_INTEGER){
 		panic("_exec_opcode_ext_region: region_offset is not an integer");
+	}
+	aml_object_t* region_length=_execute_aml_single(ctx);
+	if (!region_length){
+		return NULL;
 	}
 	if (region_length->type!=AML_OBJECT_TYPE_INTEGER){
 		panic("_exec_opcode_ext_region: region_length is not an integer");
@@ -1642,7 +1685,6 @@ static _Bool _execute_aml(aml_reader_context_t* ctx){
 
 
 static void _print_namespace_recursive(aml_namespace_t* namespace,u32 indent){
-	return;
 	for (u32 i=0;i<indent;i++){
 		log(" ");
 	}
@@ -1665,7 +1707,6 @@ static _Bool _init(module_t* module){
 	};
 	_execute_aml(&ctx);
 	_print_namespace_recursive(_aml_root_namespace,0);
-	// panic("test");
 	// // PM1x flags
 	// #define SLP_TYP_SHIFT 10
 	// #define SLP_EN 0x2000
