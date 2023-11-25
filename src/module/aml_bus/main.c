@@ -30,7 +30,18 @@ static void _enumerate_system_bus(aml_namespace_t* bus){
 		if (!(status&8)){
 			continue;
 		}
-		WARN("%s: %x",device->name,status);
+		for (aml_namespace_t* child=device->first_child;child;child=child->next_sibling){
+			if (!child->value||child->value->type==AML_OBJECT_TYPE_DEVICE||child->name[0]!='_'||(child->value->type==AML_OBJECT_TYPE_METHOD&&(child->value->method.flags&7))){
+				continue;
+			}
+			aml_object_t* value=aml_runtime_execute_method(child->value,0,NULL);
+			if (!value){
+				continue;
+			}
+			log("[%s:%s.%s] ",bus->name,device->name,child->name);
+			aml_object_print(value);
+			aml_object_dealloc(value);
+		}
 		// if (status&1){
 		// 	_parse_device(device);
 		// }

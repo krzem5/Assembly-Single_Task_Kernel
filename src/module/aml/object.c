@@ -1,4 +1,5 @@
 #include <aml/object.h>
+#include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
@@ -18,6 +19,71 @@ static aml_object_t* _alloc_object(u8 type){
 	out->type=type;
 	out->rc=1;
 	return out;
+}
+
+
+
+static void _print_object(aml_object_t* object,u32 indent){
+	if (!object){
+		log("(null)");
+		return;
+	}
+	for (u32 i=0;i<indent;i++){
+		log(" ");
+	}
+	switch (object->type){
+		case AML_OBJECT_TYPE_NONE:
+			log("<none>");
+			break;
+		case AML_OBJECT_TYPE_BUFFER:
+			log("buffer");
+			break;
+		case AML_OBJECT_TYPE_BUFFER_FIELD:
+			log("buffer_field");
+			break;
+		case AML_OBJECT_TYPE_DEBUG:
+			log("debug");
+			break;
+		case AML_OBJECT_TYPE_DEVICE:
+			log("device");
+			break;
+		case AML_OBJECT_TYPE_EVENT:
+			log("event");
+			break;
+		case AML_OBJECT_TYPE_FIELD_UNIT:
+			log("field_unit");
+			break;
+		case AML_OBJECT_TYPE_INTEGER:
+			log("0x%lx",object->integer);
+			break;
+		case AML_OBJECT_TYPE_METHOD:
+			log("method");
+			break;
+		case AML_OBJECT_TYPE_MUTEX:
+			log("mutex");
+			break;
+		case AML_OBJECT_TYPE_PACKAGE:
+			log("package");
+			break;
+		case AML_OBJECT_TYPE_POWER_RESOURCE:
+			log("power_resource");
+			break;
+		case AML_OBJECT_TYPE_PROCESSOR:
+			log("processor");
+			break;
+		case AML_OBJECT_TYPE_REFERENCE:
+			log("reference");
+			break;
+		case AML_OBJECT_TYPE_REGION:
+			log("region");
+			break;
+		case AML_OBJECT_TYPE_STRING:
+			log("\"%s\"",object->string->data);
+			break;
+		case AML_OBJECT_TYPE_THERMAL_ZONE:
+			log("thermal_zone");
+			break;
+	}
 }
 
 
@@ -176,4 +242,11 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 		smm_dealloc(object->string);
 	}
 	omm_dealloc(_aml_object_allocator,object);
+}
+
+
+
+KERNEL_PUBLIC void aml_object_print(aml_object_t* object){
+	_print_object(object,0);
+	log("\n");
 }

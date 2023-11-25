@@ -164,4 +164,8 @@ void aml_object_dealloc(aml_object_t* object);
 
 
 
+void aml_object_print(aml_object_t* object);
+
+
+
 #endif

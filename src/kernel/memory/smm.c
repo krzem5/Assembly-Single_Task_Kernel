@@ -40,6 +40,11 @@ DECLARE_ALLOCATOR(96);
 DECLARE_ALLOCATOR(128);
 DECLARE_ALLOCATOR(192);
 DECLARE_ALLOCATOR(256);
+DECLARE_ALLOCATOR(384);
+DECLARE_ALLOCATOR(512);
+DECLARE_ALLOCATOR(768);
+DECLARE_ALLOCATOR(1024);
+DECLARE_ALLOCATOR(2048);
 
 
 
@@ -63,6 +68,11 @@ KERNEL_PUBLIC string_t* smm_alloc(const char* data,u32 length){
 	else USE_ALLOCATOR(128)
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
+	else USE_ALLOCATOR(384)
+	else USE_ALLOCATOR(512)
+	else USE_ALLOCATOR(768)
+	else USE_ALLOCATOR(1024)
+	else USE_ALLOCATOR(2048)
 	else{
 		panic("smm_alloc: string too long");
 	}
@@ -96,6 +106,11 @@ KERNEL_PUBLIC void smm_dealloc(string_t* string){
 	else USE_ALLOCATOR_DEALLOC(128)
 	else USE_ALLOCATOR_DEALLOC(192)
 	else USE_ALLOCATOR_DEALLOC(256)
+	else USE_ALLOCATOR_DEALLOC(384)
+	else USE_ALLOCATOR_DEALLOC(512)
+	else USE_ALLOCATOR_DEALLOC(768)
+	else USE_ALLOCATOR_DEALLOC(1024)
+	else USE_ALLOCATOR_DEALLOC(2048)
 	else{
 		panic("smm_dealloc: string too long");
 	}
@@ -118,6 +133,11 @@ KERNEL_PUBLIC string_t* smm_duplicate(const string_t* string){
 	else USE_ALLOCATOR(128)
 	else USE_ALLOCATOR(192)
 	else USE_ALLOCATOR(256)
+	else USE_ALLOCATOR(384)
+	else USE_ALLOCATOR(512)
+	else USE_ALLOCATOR(768)
+	else USE_ALLOCATOR(1024)
+	else USE_ALLOCATOR(2048)
 	else{
 		panic("smm_alloc: string too long");
 	}

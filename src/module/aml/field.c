@@ -61,11 +61,11 @@ aml_object_t* aml_field_read(aml_object_t* object){
 		case 0x02:
 			switch (object->field_unit.size){
 				case 8:
-					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3))&0xff);
+					return aml_object_alloc_integer(pci_device_read_config8(object->field_unit.address+(object->field_unit.offset>>3)));
 				case 16:
-					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3))&0xffff);
+					return aml_object_alloc_integer(pci_device_read_config16(object->field_unit.address+(object->field_unit.offset>>3)));
 				case 32:
-					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3)));
+					return aml_object_alloc_integer(pci_device_read_config32(object->field_unit.address+(object->field_unit.offset>>3)));
 			}
 			panic("aml_field_read: PCI_Config");
 			break;
@@ -129,6 +129,20 @@ _Bool aml_field_write(aml_object_t* object,aml_object_t* value){
 			panic("aml_field_write: SystemIO");
 			break;
 		case 0x02:
+			if (value->type!=AML_OBJECT_TYPE_INTEGER){
+				panic("aml_field_write: SystemIO: value is not an integer");
+			}
+			switch (object->field_unit.size){
+				case 8:
+					pci_device_write_config8(object->field_unit.address+(object->field_unit.offset>>3),value->integer);
+					return 1;
+				case 16:
+					pci_device_write_config16(object->field_unit.address+(object->field_unit.offset>>3),value->integer);
+					return 1;
+				case 32:
+					pci_device_write_config32(object->field_unit.address+(object->field_unit.offset>>3),value->integer);
+					return 1;
+			}
 			panic("aml_field_write: PCI_Config");
 			break;
 		case 0x03:
