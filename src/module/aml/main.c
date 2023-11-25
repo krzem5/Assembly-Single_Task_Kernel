@@ -144,9 +144,8 @@
 #define AML_OBJECT_TYPE_PROCESSOR 12
 #define AML_OBJECT_TYPE_REFERENCE 13
 #define AML_OBJECT_TYPE_REGION 14
-#define AML_OBJECT_TYPE_SCOPE 15
-#define AML_OBJECT_TYPE_STRING 16
-#define AML_OBJECT_TYPE_THERMAL_ZONE 17
+#define AML_OBJECT_TYPE_STRING 15
+#define AML_OBJECT_TYPE_THERMAL_ZONE 16
 
 
 
@@ -167,7 +166,11 @@ typedef struct _AML_OBJECT{
 			// undefined
 		} event;
 		struct{
-			// undefined
+			u8 type;
+			u8 flags;
+			u64 address;
+			u32 offset;
+			u32 size;
 		} field_unit;
 		u64 integer;
 		struct{
@@ -176,7 +179,7 @@ typedef struct _AML_OBJECT{
 			u64 code_length;
 		} method;
 		struct{
-			// undefined
+			u8 sync_flags;
 		} mutex;
 		struct{
 			// undefined
@@ -186,20 +189,17 @@ typedef struct _AML_OBJECT{
 		} power_resource;
 		struct{
 			u8 id;
-			u64 block_address;
+			u32 block_address;
 			u8 block_length;
 		} processor;
 		struct{
 			// undefined
 		} reference;
 		struct{
-			// undefined
-		} region;
-		struct{
 			u8 type;
 			u64 address;
 			u64 length;
-		} scope;
+		} region;
 		string_t* string;
 		struct{
 			// undefined
@@ -224,13 +224,60 @@ static aml_object_t* _alloc_object(u8 type){
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_none(void){
+aml_object_t* _alloc_object_none(void){
 	return _alloc_object(AML_OBJECT_TYPE_NONE);
 }
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_int(u64 integer){
+aml_object_t* _alloc_object_buffer(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_BUFFER);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_buffer_field(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_BUFFER_FIELD);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_debug(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_DEBUG);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_device(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_DEVICE);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_event(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_EVENT);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_field_unit(u8 type,u8 flags,u64 address,u32 offset,u32 size){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_FIELD_UNIT);
+	out->field_unit.type=type;
+	out->field_unit.flags=flags;
+	out->field_unit.address=address;
+	out->field_unit.offset=offset;
+	out->field_unit.size=size;
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_integer(u64 integer){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_INTEGER);
 	out->integer=integer;
 	return out;
@@ -238,7 +285,7 @@ static KERNEL_INLINE aml_object_t* _alloc_object_int(u64 integer){
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_method(u8 flags,const u8* code,u64 code_length){
+aml_object_t* _alloc_object_method(u8 flags,const u8* code,u64 code_length){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_METHOD);
 	out->method.flags=flags;
 	out->method.code=code;
@@ -248,7 +295,56 @@ static KERNEL_INLINE aml_object_t* _alloc_object_method(u8 flags,const u8* code,
 
 
 
-static KERNEL_INLINE aml_object_t* _alloc_object_string(string_t* string){
+aml_object_t* _alloc_object_mutex(u8 sync_flags){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_MUTEX);
+	out->mutex.sync_flags=sync_flags;
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_package(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_PACKAGE);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_power_resource(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_POWER_RESOURCE);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_processor(u8 id,u32 block_address,u8 block_length){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_PROCESSOR);
+	out->processor.id=id;
+	out->processor.block_address=block_address;
+	out->processor.block_length=block_length;
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_reference(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_REFERENCE);
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_region(u8 type,u64 address,u64 length){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_REGION);
+	out->region.type=type;
+	out->region.address=address;
+	out->region.length=length;
+	return out;
+}
+
+
+
+aml_object_t* _alloc_object_string(string_t* string){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_STRING);
 	out->string=string;
 	return out;
@@ -256,7 +352,14 @@ static KERNEL_INLINE aml_object_t* _alloc_object_string(string_t* string){
 
 
 
-static void _dealloc_object(aml_object_t* object){
+aml_object_t* _alloc_object_thermal_zone(void){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_THERMAL_ZONE);
+	return out;
+}
+
+
+
+void _dealloc_object(aml_object_t* object){
 	if (object->type==AML_OBJECT_TYPE_STRING){
 		smm_dealloc(object->string);
 	}
@@ -265,9 +368,92 @@ static void _dealloc_object(aml_object_t* object){
 
 
 
+typedef struct _AML_NAMESPACE{
+	char name[5];
+	aml_object_t* value;
+	struct _AML_NAMESPACE* parent;
+	struct _AML_NAMESPACE* prev_sibling;
+	struct _AML_NAMESPACE* next_sibling;
+	struct _AML_NAMESPACE* first_child;
+} aml_namespace_t;
+
+
+
+static omm_allocator_t* _aml_namespace_allocator=NULL;
+static aml_namespace_t* _aml_root_namespace=NULL;
+
+
+
+static aml_namespace_t* _lookup_namespace(aml_namespace_t* root,const char* path,_Bool create_if_not_found,_Bool delete_value){
+	if (!_aml_root_namespace){
+		_aml_namespace_allocator=omm_init("aml_namespace",sizeof(aml_namespace_t),8,2,pmm_alloc_counter("omm_aml_namespace"));
+		_aml_root_namespace=omm_alloc(_aml_namespace_allocator);
+		_aml_root_namespace->name[0]='\\';
+		_aml_root_namespace->name[1]=0;
+		_aml_root_namespace->value=NULL;
+		_aml_root_namespace->parent=_aml_root_namespace;
+		_aml_root_namespace->prev_sibling=NULL;
+		_aml_root_namespace->next_sibling=NULL;
+		_aml_root_namespace->first_child=NULL;
+	}
+	if (!root){
+		root=_aml_root_namespace;
+	}
+	if (path[0]=='\\'){
+		root=_aml_root_namespace;
+		path++;
+	}
+	while (root&&path[0]){
+		if (path[0]=='^'){
+			root=root->parent;
+			path++;
+		}
+		else if (path[0]=='.'){
+			path++;
+		}
+		else{
+			for (aml_namespace_t* child=root->first_child;child;child=child->next_sibling){
+				if (*((const u32*)(child->name))==*((const u32*)path)){
+					root=child;
+					goto _child_found;
+				}
+			}
+			if (!create_if_not_found){
+				return NULL;
+			}
+			aml_namespace_t* child=omm_alloc(_aml_namespace_allocator);
+			child->name[0]=path[0];
+			child->name[1]=path[1];
+			child->name[2]=path[2];
+			child->name[3]=path[3];
+			child->name[4]=0;
+			child->value=NULL;
+			child->parent=root;
+			child->prev_sibling=NULL;
+			child->next_sibling=root->first_child;
+			child->first_child=NULL;
+			if (root->first_child){
+				root->first_child->prev_sibling=child;
+			}
+			root->first_child=child;
+			root=child;
+_child_found:
+			path+=4;
+		}
+	}
+	if (delete_value&&root&&root->value){
+		_dealloc_object(root->value);
+		root->value=0;
+	}
+	return root;
+}
+
+
+
 typedef struct _AML_READER_CONTEXT{
 	const u8*const data;
 	const u64 length;
+	aml_namespace_t* namespace;
 	u64 offset;
 } aml_reader_context_t;
 
@@ -344,7 +530,7 @@ static u8 _get_uint8(aml_reader_context_t* ctx){
 
 
 static u16 _get_uint16(aml_reader_context_t* ctx){
-	u16 out=(ctx->data[ctx->offset]<<8)|ctx->data[ctx->offset+1];
+	u16 out=(ctx->data[ctx->offset+1]<<8)|ctx->data[ctx->offset];
 	ctx->offset+=2;
 	return out;
 }
@@ -352,7 +538,7 @@ static u16 _get_uint16(aml_reader_context_t* ctx){
 
 
 static u32 _get_uint32(aml_reader_context_t* ctx){
-	u32 out=(ctx->data[ctx->offset]<<24)|(ctx->data[ctx->offset+1]<<16)|(ctx->data[ctx->offset+2]<<8)|ctx->data[ctx->offset+3];
+	u32 out=(ctx->data[ctx->offset+3]<<24)|(ctx->data[ctx->offset+2]<<16)|(ctx->data[ctx->offset+1]<<8)|ctx->data[ctx->offset];
 	ctx->offset+=4;
 	return out;
 }
@@ -360,13 +546,13 @@ static u32 _get_uint32(aml_reader_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_zero(aml_reader_context_t* ctx){
-	return _alloc_object_int(0);
+	return _alloc_object_integer(0);
 }
 
 
 
 static aml_object_t* _exec_opcode_one(aml_reader_context_t* ctx){
-	return _alloc_object_int(1);
+	return _alloc_object_integer(1);
 }
 
 
@@ -380,27 +566,26 @@ static aml_object_t* _exec_opcode_alias(aml_reader_context_t* ctx){
 
 static aml_object_t* _exec_opcode_name(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
-	aml_object_t* object=_execute_aml_single(ctx);
-	ERROR("name (name=%s, ref=%p)",name->data,object);
+	_lookup_namespace(ctx->namespace,name->data,1,1)->value=_execute_aml_single(ctx);
 	return _alloc_object_none();
 }
 
 
 
 static aml_object_t* _exec_opcode_byte_prefix(aml_reader_context_t* ctx){
-	return _alloc_object_int(_get_uint8(ctx));
+	return _alloc_object_integer(_get_uint8(ctx));
 }
 
 
 
 static aml_object_t* _exec_opcode_word_prefix(aml_reader_context_t* ctx){
-	return _alloc_object_int(_get_uint16(ctx));
+	return _alloc_object_integer(_get_uint16(ctx));
 }
 
 
 
 static aml_object_t* _exec_opcode_dword_prefix(aml_reader_context_t* ctx){
-	return _alloc_object_int(_get_uint32(ctx));
+	return _alloc_object_integer(_get_uint32(ctx));
 }
 
 
@@ -425,11 +610,12 @@ static aml_object_t* _exec_opcode_qword_prefix(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_scope(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
-	ERROR("scope (name=%s)",name->data);
 	aml_reader_context_t child_ctx={
 		ctx->data+ctx->offset,
-		end_offset-ctx->offset
+		end_offset-ctx->offset,
+		_lookup_namespace(ctx->namespace,name->data,1,0)
 	};
+	smm_dealloc(name);
 	if (!_execute_aml(&child_ctx)){
 		return NULL;
 	}
@@ -442,7 +628,7 @@ static aml_object_t* _exec_opcode_scope(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_buffer(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	aml_object_t* buffer_size=_execute_aml_single(ctx);
-	ERROR("buffer (buffer_size=%p)",buffer_size);
+	ERROR("buffer (buffer_size=%p)",buffer_size->integer);
 	ctx->offset=end_offset;
 	return _alloc_object_none();
 }
@@ -455,7 +641,8 @@ static aml_object_t* _exec_opcode_package(aml_reader_context_t* ctx){
 	ERROR("package (num_elements=%p)",num_elements);
 	aml_reader_context_t child_ctx={
 		ctx->data+ctx->offset,
-		end_offset-ctx->offset
+		end_offset-ctx->offset,
+		NULL
 	};
 	if (!_execute_aml(&child_ctx)){
 		return NULL;
@@ -476,10 +663,10 @@ static aml_object_t* _exec_opcode_var_package(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_method(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
-	(void)name;
-	aml_object_t* out=_alloc_object_method(_get_uint8(ctx),ctx->data+ctx->offset,end_offset-ctx->offset);
+	_lookup_namespace(ctx->namespace,name->data,1,1)->value=_alloc_object_method(_get_uint8(ctx),ctx->data+ctx->offset,end_offset-ctx->offset);
+	smm_dealloc(name);
 	ctx->offset=end_offset;
-	return out;
+	return _alloc_object_none();
 }
 
 
@@ -970,7 +1157,7 @@ static aml_object_t* _exec_opcode_break_point(aml_reader_context_t* ctx){
 
 
 static aml_object_t* _exec_opcode_ones(aml_reader_context_t* ctx){
-	return _alloc_object_int(0xffffffffffffffffull);
+	return _alloc_object_integer(0xffffffffffffffffull);
 }
 
 
@@ -978,7 +1165,7 @@ static aml_object_t* _exec_opcode_ones(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_ext_mutex(aml_reader_context_t* ctx){
 	string_t* name=_get_name(ctx);
 	u8 sync_flags=_get_uint8(ctx);
-	ERROR("ext_mutex (name=%s, sync_flags=%u)",name->data,sync_flags);
+	_lookup_namespace(ctx->namespace,name->data,1,1)->value=_alloc_object_mutex(sync_flags);
 	return _alloc_object_none();
 }
 
@@ -1122,7 +1309,14 @@ static aml_object_t* _exec_opcode_ext_region(aml_reader_context_t* ctx){
 	u8 region_space=_get_uint8(ctx);
 	aml_object_t* region_offset=_execute_aml_single(ctx);
 	aml_object_t* region_length=_execute_aml_single(ctx);
-	ERROR("ext_region (name=%s, region_space=%u, region_offset=%p, region_length=%p)",name->data,region_space,region_offset,region_length);
+	if (region_offset->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_ext_region: region_offset is not an integer");
+	}
+	if (region_length->type!=AML_OBJECT_TYPE_INTEGER){
+		panic("_exec_opcode_ext_region: region_length is not an integer");
+	}
+	_lookup_namespace(ctx->namespace,name->data,1,1)->value=_alloc_object_region(region_space,region_offset->integer,region_length->integer);
+	smm_dealloc(name);
 	return _alloc_object_none();
 }
 
@@ -1132,7 +1326,46 @@ static aml_object_t* _exec_opcode_ext_field(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
 	u8 field_flags=_get_uint8(ctx);
-	ERROR("ext_field (name=%s, field_flags=%u)",name->data,field_flags);
+	aml_namespace_t* namespace=_lookup_namespace(ctx->namespace,name->data,0,0);
+	smm_dealloc(name);
+	if (!namespace){
+		panic("_exec_opcode_ext_field: namespace not found");
+	}
+	if (!namespace->value||namespace->value->type!=AML_OBJECT_TYPE_REGION){
+		panic("_exec_opcode_ext_field: namespace is not a region");
+	}
+	u64 offset=0;
+	while (ctx->offset<end_offset){
+		if (!ctx->data[ctx->offset]){
+			ctx->offset++;
+			offset+=_get_pkglength(ctx);
+		}
+		else if (ctx->data[ctx->offset]==1){
+			panic("_exec_opcode_ext_field: access field");
+		}
+		else if (ctx->data[ctx->offset]==2){
+			panic("_exec_opcode_ext_field: connect field");
+		}
+		else if (ctx->data[ctx->offset]==3){
+			panic("_exec_opcode_ext_field: extended access field");
+		}
+		else{
+			char name[5]={
+				ctx->data[ctx->offset],
+				ctx->data[ctx->offset+1],
+				ctx->data[ctx->offset+2],
+				ctx->data[ctx->offset+3],
+				0
+			};
+			ctx->offset+=4;
+			u32 size=_get_pkglength(ctx);
+			_lookup_namespace(ctx->namespace,name,1,1)->value=_alloc_object_field_unit(namespace->value->region.type,field_flags,namespace->value->region.address,offset,size);
+			offset+=size;
+		}
+	}
+	if (((offset+7)>>3)>namespace->value->region.length){
+		WARN("_exec_opcode_ext_field: overflowing fields");
+	}
 	ctx->offset=end_offset;
 	return _alloc_object_none();
 }
@@ -1142,11 +1375,12 @@ static aml_object_t* _exec_opcode_ext_field(aml_reader_context_t* ctx){
 static aml_object_t* _exec_opcode_ext_device(aml_reader_context_t* ctx){
 	u64 end_offset=ctx->offset+_get_pkglength(ctx);
 	string_t* name=_get_name(ctx);
-	ERROR("ext_device (name=%s)",name->data);
 	aml_reader_context_t child_ctx={
 		ctx->data+ctx->offset,
-		end_offset-ctx->offset
+		end_offset-ctx->offset,
+		_lookup_namespace(ctx->namespace,name->data,1,1)
 	};
+	smm_dealloc(name);
 	if (!_execute_aml(&child_ctx)){
 		return NULL;
 	}
@@ -1162,11 +1396,13 @@ static aml_object_t* _exec_opcode_ext_processor(aml_reader_context_t* ctx){
 	u8 processor_id=_get_uint8(ctx);
 	u32 processor_block_address=_get_uint32(ctx);
 	u8 processor_block_length=_get_uint8(ctx);
-	ERROR("ext_processor (name=%s, processor_id=%u, processor_block_address=%u, processor_block_length=%u)",name->data,processor_id,processor_block_address,processor_block_length);
 	aml_reader_context_t child_ctx={
 		ctx->data+ctx->offset,
-		end_offset-ctx->offset
+		end_offset-ctx->offset,
+		_lookup_namespace(ctx->namespace,name->data,1,1)
 	};
+	child_ctx.namespace->value=_alloc_object_processor(processor_id,processor_block_address,processor_block_length);
+	smm_dealloc(name);
 	if (!_execute_aml(&child_ctx)){
 		return NULL;
 	}
@@ -1405,15 +1641,30 @@ static _Bool _execute_aml(aml_reader_context_t* ctx){
 
 
 
+static void _print_namespace_recursive(aml_namespace_t* namespace,u32 indent){
+	return;
+	for (u32 i=0;i<indent;i++){
+		log(" ");
+	}
+	log("%s\n",namespace->name);
+	for (aml_namespace_t* child=namespace->first_child;child;child=child->next_sibling){
+		_print_namespace_recursive(child,indent+2);
+	}
+}
+
+
+
 static _Bool _init(module_t* module){
 	if (!acpi_dsdt||!acpi_dsdt->header.length){
 		return 0;
 	}
 	aml_reader_context_t ctx={
 		acpi_dsdt->data,
-		acpi_dsdt->header.length-sizeof(acpi_dsdt_t)
+		acpi_dsdt->header.length-sizeof(acpi_dsdt_t),
+		NULL
 	};
 	_execute_aml(&ctx);
+	_print_namespace_recursive(_aml_root_namespace,0);
 	// panic("test");
 	// // PM1x flags
 	// #define SLP_TYP_SHIFT 10
