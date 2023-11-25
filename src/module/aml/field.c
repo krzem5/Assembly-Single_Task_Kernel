@@ -25,7 +25,11 @@ aml_object_t* aml_field_read(aml_object_t* object){
 			}
 			switch (object->field_unit.size){
 				case 8:
-					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3))&255);
+					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3))&0xff);
+				case 16:
+					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3))&0xffff);
+				case 32:
+					return aml_object_alloc_integer(pci_device_read_config(object->field_unit.address+(object->field_unit.offset>>3)));
 			}
 			panic("aml_field_read: PCI_Config");
 			break;
