@@ -1,6 +1,7 @@
 #include <aml/namespace.h>
 #include <aml/object.h>
 #include <aml/runtime.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -13,30 +14,41 @@
 #define AML_BUS_ADDRESS_TYPE_HID 1
 #define AML_BUS_ADDRESS_TYPE_HID_STR 2
 
+#define AML_BUS_UID_TYPE_INT 0
+#define AML_BUS_UID_TYPE_STR 1
+
 #define AML_BUS_DEVICE_SLOT_UNKNOWN 0xffffffffffffffffull
 
 
 
 typedef struct _AML_BUS_DEVICE{
 	u8 address_type;
+	u8 uid_type;
 	union{
 		u64 adr;
 		u64 hid;
 		string_t* hid_str;
 	} address;
+	handle_t handle;
 	aml_namespace_t* device;
 	struct _AML_BUS_DEVICE* parent;
 	u64 slot_unique_id;
-	string_t* uid;
+	union{
+		u64 uid;
+		string_t* uid_str;
+	};
 } aml_bus_device_t;
 
 
 
 static omm_allocator_t* _aml_bus_device_allocator=NULL;
 
+KERNEL_PUBLIC handle_type_t aml_bus_device_handle_type=0;
+
 
 
 static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bus_device_t* out){
+	out->uid_type=AML_BUS_UID_TYPE_INT;
 	out->device=device;
 	out->parent=NULL;
 	out->slot_unique_id=AML_BUS_DEVICE_SLOT_UNKNOWN;
@@ -54,8 +66,37 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 		out->slot_unique_id=value->integer;
 		aml_object_dealloc(value);
 	}
+	aml_namespace_t* uid_object=aml_namespace_lookup(device,"_UID",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
+	if (uid_object&&uid_object->value){
+		aml_object_t* value=aml_runtime_execute_method(uid_object->value,0,NULL);
+		if (!value){
+			goto _cleanup;
+		}
+		if (value->type!=AML_OBJECT_TYPE_INTEGER&&value->type!=AML_OBJECT_TYPE_STRING){
+			ERROR("_UID object is not an integer or string");
+			aml_object_dealloc(value);
+			goto _cleanup;
+		}
+		if (value->type==AML_OBJECT_TYPE_INTEGER){
+			out->uid_type=AML_BUS_UID_TYPE_INT;
+			out->uid=value->integer;
+		}
+		else{
+			out->uid_type=AML_BUS_UID_TYPE_STR;
+			out->uid_str=smm_duplicate(value->string);
+		}
+		aml_object_dealloc(value);
+	}
+	handle_new(out,aml_bus_device_handle_type,&(out->handle));
+	handle_finish_setup(&(out->handle));
 	return out;
 _cleanup:
+	if (out->address_type==AML_BUS_ADDRESS_TYPE_HID_STR){
+		smm_dealloc(out->address.hid_str);
+	}
+	if (out->uid_type==AML_BUS_UID_TYPE_STR){
+		smm_dealloc(out->uid_str);
+	}
 	omm_dealloc(_aml_bus_device_allocator,out);
 	return NULL;
 }
@@ -101,7 +142,7 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 			continue;
 		}
 		u64 status=0xf;
-		aml_namespace_t* sta_object=aml_namespace_lookup(device,"_STA",0);
+		aml_namespace_t* sta_object=aml_namespace_lookup(device,"_STA",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
 		if (sta_object&&sta_object->value){
 			aml_object_t* value=aml_runtime_execute_method(sta_object->value,0,NULL);
 			if (!value){
@@ -142,6 +183,8 @@ static _Bool _init(module_t* module){
 		return 0;
 	}
 	_aml_bus_device_allocator=omm_init("aml_bus_device",sizeof(aml_bus_device_t),8,2,pmm_alloc_counter("omm_aml_bus_device"));
+	spinlock_init(&(_aml_bus_device_allocator->lock));
+	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 	_enumerate_system_bus(system_bus,NULL);
 	// for (;;);
 	return 1;
