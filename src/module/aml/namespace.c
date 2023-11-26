@@ -73,7 +73,7 @@ _child_found:
 		}
 	}
 	if (!node){
-		if (root->parent==root){
+		if ((flags&AML_NAMESPACE_LOOKUP_FLAG_LOCAL)||root->parent==root){
 			return NULL;
 		}
 		root=root->parent;

@@ -11,6 +11,7 @@ static _Bool _init(module_t* module){
 		WARN("No AML code present");
 	}
 	else{
+		aml_runtime_register_irq(acpi_fadt->sci_int);
 		aml_runtime_context_t ctx={
 			acpi_dsdt->data,
 			acpi_dsdt->header.length-sizeof(acpi_dsdt_t),
@@ -19,8 +20,6 @@ static _Bool _init(module_t* module){
 		};
 		aml_runtime_execute(&ctx);
 	}
-	// INFO("Registering AML IRQ...");
-	// ioapic_redirect_irq(fadt->sci_int,isr_allocate());
 	return 1;
 }
 

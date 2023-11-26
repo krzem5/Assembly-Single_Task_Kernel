@@ -36,4 +36,8 @@ aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 arg_count,aml_o
 
 
 
+void aml_runtime_register_irq(u8 irq);
+
+
+
 #endif

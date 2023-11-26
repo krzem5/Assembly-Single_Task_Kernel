@@ -3,6 +3,8 @@
 #include <aml/object.h>
 #include <aml/opcode.h>
 #include <aml/runtime.h>
+#include <kernel/apic/ioapic.h>
+#include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
@@ -1926,4 +1928,10 @@ KERNEL_PUBLIC aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 a
 		aml_object_dealloc(vars.locals[i]);
 	}
 	return (ret?vars.ret:NULL);
+}
+
+
+
+void aml_runtime_register_irq(u8 irq){
+	ioapic_redirect_irq(irq,isr_allocate());
 }
