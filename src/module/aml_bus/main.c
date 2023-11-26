@@ -47,6 +47,124 @@ KERNEL_PUBLIC handle_type_t aml_bus_device_handle_type=0;
 
 
 
+KERNEL_PUBLIC _Bool aml_bus_device_get_crs(aml_bus_device_t* device){
+	aml_namespace_t* crs_object=aml_namespace_lookup(device->device,"_CRS",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
+	if (!crs_object||!crs_object->value){
+		return 0;
+	}
+	aml_object_t* value=aml_runtime_execute_method(crs_object->value,0,NULL);
+	if (!value){
+		return 0;
+	}
+	if (value->type!=AML_OBJECT_TYPE_BUFFER){
+		ERROR("_CRS object is not a buffer");
+		aml_object_dealloc(value);
+		return 0;
+	}
+	string_t* data=value->buffer;
+	for (u32 i=0;i<data->length;){
+		u8 type=data->data[i];
+		i++;
+		u16 length=0;
+		if (type>>7){
+			length=data->data[i]|(data->data[i+1]<<8);
+			i+=2;
+		}
+		else{
+			length=type&7;
+			type>>=3;
+		}
+		if (type==0x0f){
+			break;
+		}
+		switch (type){
+			case 0x04:
+				INFO("IRQ Format Descriptor");
+				break;
+			case 0x05:
+				INFO("DMA Format Descriptor");
+				break;
+			case 0x06:
+				INFO("Start Dependent Functions Descriptor");
+				break;
+			case 0x07:
+				INFO("End Dependent Functions Descriptor");
+				break;
+			case 0x08:
+				INFO("I/O Port Descriptor");
+				break;
+			case 0x09:
+				INFO("Fixed Location I/O Port Descriptor");
+				break;
+			case 0x0a:
+				INFO("Fixed DMA Descriptor");
+				break;
+			case 0x0e:
+				INFO("Vendor Defined Descriptor");
+				break;
+			case 0x81:
+				INFO("24-Bit Memory Range Descriptor");
+				break;
+			case 0x82:
+				INFO("Generic Register Descriptor");
+				break;
+			case 0x84:
+				INFO("Vendor-Defined Descriptor");
+				break;
+			case 0x85:
+				INFO("32-Bit Memory Range Descriptor");
+				break;
+			case 0x86:
+				INFO("32-Bit Fixed Memory Range Descriptor: %p - %p (%s)",*((const u32*)(data->data+i+1)),*((const u32*)(data->data+i+5)),((data->data[0]&1)?"RW":"RD"));
+				break;
+			case 0x87:
+				INFO("Address Space Resource Descriptors");
+				break;
+			case 0x88:
+				INFO("Word Address Space Descriptor");
+				break;
+			case 0x89:
+				INFO("Extended Interrupt Descriptor");
+				break;
+			case 0x8a:
+				INFO("QWord Address Space Descriptor");
+				break;
+			case 0x8b:
+				INFO("Extended Address Space Descriptor");
+				break;
+			case 0x8c:
+				INFO("GPIO Connection Descriptor");
+				break;
+			case 0x8d:
+				INFO("Pin Function Descriptor");
+				break;
+			case 0x8e:
+				INFO("GenericSerialBus Connection Descriptors");
+				break;
+			case 0x8f:
+				INFO("Pin Configuration Descriptor");
+				break;
+			case 0x90:
+				INFO("Pin Group Descriptor");
+				break;
+			case 0x91:
+				INFO("Pin Group Function Descriptor");
+				break;
+			case 0x92:
+				INFO("Pin Group Configuration Descriptor");
+				break;
+			default:
+				ERROR("Unrecognized _CRS tag: %X [%u bytes]",type,length);
+				break;
+		}
+		i+=length;
+	}
+	aml_object_dealloc(value);
+	return 1;
+}
+
+
+
 static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bus_device_t* out){
 	out->uid_type=AML_BUS_UID_TYPE_INT;
 	out->device=device;
@@ -89,6 +207,7 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 	}
 	handle_new(out,aml_bus_device_handle_type,&(out->handle));
 	handle_finish_setup(&(out->handle));
+	aml_bus_device_get_crs(out);
 	return out;
 _cleanup:
 	if (out->address_type==AML_BUS_ADDRESS_TYPE_HID_STR){
