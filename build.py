@@ -1,5 +1,6 @@
 import array
 import binascii
+import compression
 import hashlib
 import initramfs
 import kfs2
@@ -361,6 +362,12 @@ def _patch_kernel(file_path,kernel_symbols):
 
 
 
+def _compress(file_path):
+	with open(file_path,"rb") as rf,open(file_path+".compressed","wb") as wf:
+		compression.compress(rf.read(),compression.COMPRESSION_LEVEL_NONE,wf)
+
+
+
 def _compile_module(module,dependencies):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
@@ -648,6 +655,7 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _patch_kernel("build/kernel.bin",kernel_symbols)
+_compress("build/kernel.bin")
 #####################################################################################################################################
 with open("src/module/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
@@ -695,6 +703,7 @@ if (rebuild_data_partition):
 		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 	_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
+	_compress("build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
 	kfs2.get_inode(data_fs,"/boot",0o000,True)
