@@ -214,31 +214,8 @@ static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint
 
 
 
-static inline char _int_to_hex(uint8_t v){
-	v&=15;
-	return v+(v>9?87:48);
-}
-
-
-
-static inline void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
-	uint16_t buffer[17];
-	for (uint8_t i=0;i<16;i++){
-		uint8_t j=(value>>((15-i)<<2))&0xf;
-		buffer[i]=j+(j>9?87:48);
-	}
-	buffer[16]=0;
-	system_table->ConOut->OutputString(system_table->ConOut,buffer);
-}
-
-
-
 static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint64_t address){
 	uint32_t out_length=*((const uint32_t*)data);
-	_output_int_hex(system_table,out_length);
-	system_table->ConOut->OutputString(system_table->ConOut,L", ");
-	_output_int_hex(system_table,data_length);
-	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	data+=sizeof(uint32_t);
 	data_length-=sizeof(uint32_t);
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
@@ -262,8 +239,6 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 	if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 		return 0;
 	}
-	_output_int_hex(system_table,node.size);
-	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	uint64_t buffer_page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
 	void* buffer=NULL;
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,buffer_page_count,(EFI_PHYSICAL_ADDRESS*)(&buffer)))){
@@ -378,8 +353,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	*((uint64_t*)(kernel_pagemap+0x3ff8))=0x00000083;
 	kernel_data->mmap_size=0;
 	kernel_data->first_free_address=first_free_address;
-	_output_int_hex(system_table,first_free_address);
-	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	kernel_data->rsdp_address=0;
 	kernel_data->smbios_address=0;
 	for (uint64_t i=0;i<system_table->NumberOfTableEntries;i++){
