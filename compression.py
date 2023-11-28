@@ -3,7 +3,7 @@ import array
 
 
 MIN_MATCH_LENGTH=4
-MAX_NON_MATCH_LENGTH=(1<<15)-1
+MAX_NON_MATCH_LENGTH=(1<<14)-1
 MAX_MATCH_LENGTH=(1<<13)-1
 MATCH_ALIGNMENT=8
 
@@ -28,16 +28,18 @@ def compress(data,compression_level,out):
 	length=len(data)
 	out.write(bytearray([length&0xff,(length>>8)&0xff,(length>>16)&0xff,length>>24]))
 	if (compression_level==COMPRESSION_LEVEL_NONE):
-		out.write(data)
-		# while (offset<length):
-		# 	chunk=length-offset
-		# 	if (chunk>MAX_NON_MATCH_LENGTH):
-		# 		chunk=MAX_NON_MATCH_LENGTH
-		# 	out.write(bytearray([(chunk&0x7f)<<1]))
-		# 	if (chunk>>6):
-		# 		out.write(bytearray([chunk>>7]))
-		# 	out.write(data[offset:offset+chunk])
-		# 	offset+=chunk
+		# out.write(data)
+		while (offset<length):
+			chunk=length-offset
+			if (chunk>MAX_NON_MATCH_LENGTH):
+				chunk=MAX_NON_MATCH_LENGTH
+			print(hex(chunk))
+			out.write(bytearray([((chunk&0x3f)<<2)|((chunk>63)<<1)]))
+			if (chunk>63):
+				out.write(bytearray([chunk>>6]))
+			out.write(data[offset:offset+chunk])
+			offset+=chunk
+		print("~~~",hex(out.tell()))
 		return
 	elif (compression_level==COMPRESSION_LEVEL_FAST):
 		window_size=WINDOW_SIZE_FAST

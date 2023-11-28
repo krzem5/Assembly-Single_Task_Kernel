@@ -171,7 +171,20 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint8_t* out){
+static inline void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
+	uint16_t buffer[17];
+	for (uint8_t i=0;i<16;i++){
+		uint8_t j=(value>>((15-i)<<2))&0xf;
+		buffer[i]=j+(j>9?87:48);
+	}
+	buffer[16]=0;
+	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
+}
+
+
+
+static inline void _decompress_raw(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint8_t* out){
 	const uint8_t* data_end=data+data_length;
 	while (data<data_end){
 		const uint8_t* src=NULL;
@@ -184,13 +197,18 @@ static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint
 			data+=2;
 		}
 		else{
-			if (len>>6){
+			if (len&1){
 				len|=data[0]<<7;
 				data++;
 			}
+			len>>=1;
 			src=data;
 			data+=len;
 		}
+		// for (uint32_t i=0;i<len;i++){
+		// 	out[i]=src[i];
+		// }
+		// out+=len;
 		uint8_t padding=(-((uint64_t)out))&7;
 		if (padding){
 			*((uint64_t*)out)=*((const uint64_t*)src);
@@ -221,10 +239,10 @@ static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* d
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
-	// _decompress_raw(data,data_length,(uint8_t*)address);
-	for (uint32_t i=0;i<out_length;i++){
-		*((uint8_t*)(address+i))=data[i];
-	}
+	_decompress_raw(system_table,data,data_length,(uint8_t*)address);
+	// for (uint32_t i=0;i<out_length;i++){
+	// 	*((uint8_t*)(address+i))=data[i];
+	// }
 	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
 }
 
@@ -274,7 +292,7 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
 			break;
 	}
-	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,buffer_page_count<<PAGE_SIZE_SHIFT,address);
+	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,node.size,address);
 	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
 	return out;
 _cleanup:
