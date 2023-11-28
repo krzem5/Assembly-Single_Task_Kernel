@@ -655,6 +655,8 @@ if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_
 	sys.exit(1)
 kernel_symbols=_read_kernel_symbols("build/kernel.elf")
 _patch_kernel("build/kernel.bin",kernel_symbols)
+with open("build/kernel.bin","ab+") as wf:
+	wf.write(b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
 _compress("build/kernel.bin")
 #####################################################################################################################################
 with open("src/module/dependencies.txt","r") as rf:
@@ -712,7 +714,7 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/bin",0o644,True)
 	with open("build/kernel.bin.compressed","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o000)
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
+		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	with open("build/partitions/initramfs.img.compressed","rb") as rf:
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o000)
