@@ -364,7 +364,7 @@ def _patch_kernel(file_path,kernel_symbols):
 
 def _compress(file_path):
 	with open(file_path,"rb") as rf,open(file_path+".compressed","wb") as wf:
-		compression.compress(rf.read(),compression.COMPRESSION_LEVEL_NONE,wf)
+		compression.compress(rf.read(),compression.COMPRESSION_LEVEL_FAST,wf)
 
 
 

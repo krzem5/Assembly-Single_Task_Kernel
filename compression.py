@@ -23,23 +23,25 @@ __all__=["COMPRESSION_LEVEL_NONE","COMPRESSION_LEVEL_FAST","COMPRESSION_LEVEL_FU
 
 
 
+def _encode_non_match(non_match_length,out):
+	out.write(bytearray([((non_match_length&0x3f)<<2)|((non_match_length>63)<<1)]))
+	if (non_match_length>63):
+		out.write(bytearray([non_match_length>>6]))
+
+
+
 def compress(data,compression_level,out):
 	offset=0
 	length=len(data)
 	out.write(bytearray([length&0xff,(length>>8)&0xff,(length>>16)&0xff,length>>24]))
 	if (compression_level==COMPRESSION_LEVEL_NONE):
-		# out.write(data)
 		while (offset<length):
 			chunk=length-offset
 			if (chunk>MAX_NON_MATCH_LENGTH):
 				chunk=MAX_NON_MATCH_LENGTH
-			print(hex(chunk))
-			out.write(bytearray([((chunk&0x3f)<<2)|((chunk>63)<<1)]))
-			if (chunk>63):
-				out.write(bytearray([chunk>>6]))
+			_encode_non_match(chunk,out)
 			out.write(data[offset:offset+chunk])
 			offset+=chunk
-		print("~~~",hex(out.tell()))
 		return
 	elif (compression_level==COMPRESSION_LEVEL_FAST):
 		window_size=WINDOW_SIZE_FAST
@@ -92,9 +94,7 @@ def compress(data,compression_level,out):
 			while (match_length<capped_data_length and data[offset+match_length]==data[offset-match_offset+match_length]):
 				match_length+=1
 		if (non_match_length==MAX_NON_MATCH_LENGTH or (non_match_length and match_length>=MIN_MATCH_LENGTH)):
-			out.write(bytearray([(non_match_length&0x7f)<<1]))
-			if (non_match_length>>6):
-				out.write(bytearray([non_match_length>>7]))
+			_encode_non_match(non_match_length,out)
 			out.write(data[offset-non_match_length:offset])
 			non_match_length=0
 		if (match_length<MIN_MATCH_LENGTH):
@@ -108,7 +108,5 @@ def compress(data,compression_level,out):
 			]))
 			offset+=match_length
 	if (non_match_length):
-		out.write(bytearray([(non_match_length&0x7f)<<1]))
-		if (non_match_length>>6):
-			out.write(bytearray([non_match_length>>7]))
+		_encode_non_match(non_match_length,out)
 		out.write(data[offset-non_match_length:offset])
