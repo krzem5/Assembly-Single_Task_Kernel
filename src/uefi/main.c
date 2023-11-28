@@ -172,7 +172,7 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint8_t* out){
-	// volatile has to be used as source and destination could overlap
+	// volatile has to be used as source and destination can overlap
 	const uint8_t* data_end=data+data_length;
 	while (data<data_end){
 		const uint8_t* src=NULL;

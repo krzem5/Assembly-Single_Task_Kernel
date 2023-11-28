@@ -169,6 +169,7 @@ MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 MODULE_ORDER_FILE_PATH="src/module/module_order.config"
+COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_FAST
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 INITRAMFS_SIZE=512
@@ -364,7 +365,7 @@ def _patch_kernel(file_path,kernel_symbols):
 
 def _compress(file_path):
 	with open(file_path,"rb") as rf,open(file_path+".compressed","wb") as wf:
-		compression.compress(rf.read(),compression.COMPRESSION_LEVEL_FULL,wf)
+		compression.compress(rf.read(),COMPRESSION_LEVEL,wf)
 
 
 
