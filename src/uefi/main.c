@@ -214,18 +214,41 @@ static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint
 
 
 
+static inline char _int_to_hex(uint8_t v){
+	v&=15;
+	return v+(v>9?87:48);
+}
+
+
+
+static inline void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
+	uint16_t buffer[17];
+	for (uint8_t i=0;i<16;i++){
+		uint8_t j=(value>>((15-i)<<2))&0xf;
+		buffer[i]=j+(j>9?87:48);
+	}
+	buffer[16]=0;
+	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+}
+
+
+
 static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint64_t address){
 	uint32_t out_length=*((const uint32_t*)data);
+	_output_int_hex(system_table,out_length);
+	system_table->ConOut->OutputString(system_table->ConOut,L", ");
+	_output_int_hex(system_table,data_length);
+	system_table->ConOut->OutputString(system_table->ConOut,L"\r\n");
 	data+=sizeof(uint32_t);
 	data_length-=sizeof(uint32_t);
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+18*PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
 	// _decompress_raw(data,data_length,(uint8_t*)address);
 	for (uint32_t i=0;i<out_length;i++){
 		*((uint8_t*)(address+i))=data[i];
 	}
-	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
+	return address+((out_length+18*PAGE_SIZE)&(-PAGE_SIZE));
 }
 
 

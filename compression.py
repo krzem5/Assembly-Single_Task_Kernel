@@ -26,6 +26,7 @@ __all__=["COMPRESSION_LEVEL_NONE","COMPRESSION_LEVEL_FAST","COMPRESSION_LEVEL_FU
 def compress(data,compression_level,out):
 	offset=0
 	length=len(data)
+	print(hex(length))
 	out.write(bytearray([length&0xff,(length>>8)&0xff,(length>>16)&0xff,length>>24]))
 	if (compression_level==COMPRESSION_LEVEL_NONE):
 		out.write(data)
