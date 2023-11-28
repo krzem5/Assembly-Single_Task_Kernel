@@ -617,7 +617,7 @@ changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FI
 object_files=[]
 rebuild_data_partition=False
 error=False
-kernel_symbols=[]
+kernel_symbol_names=[]
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 	for file_name in files:
 		suffix=file_name[file_name.rindex("."):]
@@ -627,7 +627,7 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
-			_read_extracted_object_file_symbols(object_file,kernel_symbols)
+			_read_extracted_object_file_symbols(object_file,kernel_symbol_names)
 			continue
 		command=None
 		rebuild_data_partition=True
@@ -640,9 +640,9 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 			del file_hash_list[file]
 			error=True
 		else:
-			_extract_object_file_symbol_names(object_file,kernel_symbols)
+			_extract_object_file_symbol_names(object_file,kernel_symbol_names)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-object_files.append(_generate_symbol_file(kernel_symbols,KERNEL_SYMBOL_FILE_PATH))
+object_files.append(_generate_symbol_file(kernel_symbol_names,KERNEL_SYMBOL_FILE_PATH))
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
 	sys.exit(1)
