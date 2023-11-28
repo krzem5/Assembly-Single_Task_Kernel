@@ -171,7 +171,8 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-static inline void _decompress_raw(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint8_t* out){
+static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint8_t* out){
+	// volatile has to be used as source and destination could overlap
 	const uint8_t* data_end=data+data_length;
 	while (data<data_end){
 		const uint8_t* src=NULL;
@@ -192,28 +193,24 @@ static inline void _decompress_raw(EFI_SYSTEM_TABLE* system_table,const uint8_t*
 			src=data;
 			data+=len;
 		}
-		for (uint32_t i=0;i<len;i++){
-			out[i]=src[i];
+		uint8_t padding=(-((uint64_t)out))&7;
+		if (padding){
+			*((volatile uint64_t*)out)=*((const volatile uint64_t*)src);
+			if (padding>=len){
+				out+=len;
+				continue;
+			}
+			src+=padding;
+			out+=padding;
+			len-=padding;
 		}
-		out+=len;
-		// uint8_t padding=(-((uint64_t)out))&7;
-		// if (padding){
-		// 	*((uint64_t*)out)=*((const uint64_t*)src);
-		// 	if (padding>=len){
-		// 		out+=len;
-		// 		continue;
-		// 	}
-		// 	src+=padding;
-		// 	out+=padding;
-		// 	len-=padding;
-		// }
-		// padding=(-len)&7;
-		// for (len=(len+7)>>3;len;len--){
-		// 	*((uint64_t*)out)=*((const uint64_t*)src);
-		// 	src+=8;
-		// 	out+=8;
-		// }
-		// out-=padding;
+		padding=(-len)&7;
+		for (len=(len+7)>>3;len;len--){
+			*((volatile uint64_t*)out)=*((const volatile uint64_t*)src);
+			src+=8;
+			out+=8;
+		}
+		out-=padding;
 	}
 }
 
@@ -226,10 +223,7 @@ static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* d
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
-	_decompress_raw(system_table,data,data_length,(uint8_t*)address);
-	// for (uint32_t i=0;i<out_length;i++){
-	// 	*((uint8_t*)(address+i))=data[i];
-	// }
+	_decompress_raw(data,data_length,(uint8_t*)address);
 	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
 }
 
