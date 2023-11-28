@@ -28,15 +28,16 @@ def compress(data,compression_level,out):
 	length=len(data)
 	out.write(bytearray([length&0xff,(length>>8)&0xff,(length>>16)&0xff,length>>24]))
 	if (compression_level==COMPRESSION_LEVEL_NONE):
-		while (offset<length):
-			chunk=length-offset
-			if (chunk>MAX_NON_MATCH_LENGTH):
-				chunk=MAX_NON_MATCH_LENGTH
-			out.write(bytearray([(chunk&127)<<1]))
-			if (chunk>>6):
-				out.write(bytearray([chunk>>7]))
-			out.write(data[offset:offset+chunk])
-			offset+=chunk
+		out.write(data)
+		# while (offset<length):
+		# 	chunk=length-offset
+		# 	if (chunk>MAX_NON_MATCH_LENGTH):
+		# 		chunk=MAX_NON_MATCH_LENGTH
+		# 	out.write(bytearray([(chunk&0x7f)<<1]))
+		# 	if (chunk>>6):
+		# 		out.write(bytearray([chunk>>7]))
+		# 	out.write(data[offset:offset+chunk])
+		# 	offset+=chunk
 		return
 	elif (compression_level==COMPRESSION_LEVEL_FAST):
 		window_size=WINDOW_SIZE_FAST
@@ -89,7 +90,7 @@ def compress(data,compression_level,out):
 			while (match_length<capped_data_length and data[offset+match_length]==data[offset-match_offset+match_length]):
 				match_length+=1
 		if (non_match_length==MAX_NON_MATCH_LENGTH or (non_match_length and match_length>=MIN_MATCH_LENGTH)):
-			out.write(bytearray([(non_match_length&127)<<1]))
+			out.write(bytearray([(non_match_length&0x7f)<<1]))
 			if (non_match_length>>6):
 				out.write(bytearray([non_match_length>>7]))
 			out.write(data[offset-non_match_length:offset])
@@ -99,13 +100,13 @@ def compress(data,compression_level,out):
 			offset+=1
 		else:
 			out.write(bytearray([
-				((match_length&127)<<1)|1,
+				((match_length&0x7f)<<1)|1,
 				((match_offset&3)<<6)|(match_length>>7),
 				match_offset>>2
 			]))
 			offset+=match_length
 	if (non_match_length):
-		out.write(bytearray([(non_match_length&127)<<1]))
+		out.write(bytearray([(non_match_length&0x7f)<<1]))
 		if (non_match_length>>6):
 			out.write(bytearray([non_match_length>>7]))
 		out.write(data[offset-non_match_length:offset])

@@ -710,11 +710,11 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/boot/module",0o000,True)
 	kfs2.get_inode(data_fs,"/lib",0o644,True)
 	kfs2.get_inode(data_fs,"/bin",0o644,True)
-	with open("build/kernel.bin","rb") as rf:
+	with open("build/kernel.bin.compressed","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o000)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read()+b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
-	with open("build/partitions/initramfs.img","rb") as rf:
+	with open("build/partitions/initramfs.img.compressed","rb") as rf:
 		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o000)
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)

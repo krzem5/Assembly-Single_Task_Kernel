@@ -171,47 +171,17 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-static inline void _output_int(EFI_SYSTEM_TABLE* system_table,uint64_t value){
-	uint16_t buffer[21];
-	buffer[20]=0;
-	uint8_t i=20;
-	do{
-		i--;
-		buffer[i]=(value%10)+48;
-		value/=10;
-	} while (value);
-	system_table->ConOut->OutputString(system_table->ConOut,buffer+i);
-}
-
-
-
-static inline char _int_to_hex(uint8_t v){
-	v&=15;
-	return v+(v>9?87:48);
-}
-
-
-
-static inline void _output_int_hex(EFI_SYSTEM_TABLE* system_table,uint64_t value){
-	uint16_t buffer[17];
-	for (uint8_t i=0;i<16;i++){
-		uint8_t j=(value>>((15-i)<<2))&0xf;
-		buffer[i]=j+(j>9?87:48);
+static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint64_t address){
+	uint32_t out_length=*((const uint32_t*)data);
+	data+=sizeof(uint32_t);
+	data_length-=sizeof(uint32_t);
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
+		return 0;
 	}
-	buffer[16]=0;
-	system_table->ConOut->OutputString(system_table->ConOut,buffer);
-}
-
-
-
-static inline void _output_int_hex32(EFI_SYSTEM_TABLE* system_table,uint32_t value){
-	uint16_t buffer[9];
-	for (uint8_t i=0;i<8;i++){
-		uint8_t j=(value>>((7-i)<<2))&0xf;
-		buffer[i]=j+(j>9?87:48);
+	for (uint32_t i=0;i<out_length;i++){
+		*((uint8_t*)(address+i))=data[i];
 	}
-	buffer[8]=0;
-	system_table->ConOut->OutputString(system_table->ConOut,buffer);
+	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
 }
 
 
@@ -225,8 +195,9 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 	if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 		return 0;
 	}
-	uint64_t page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,page_count,&address))){
+	uint64_t buffer_page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
+	void* buffer=NULL;
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,buffer_page_count,(EFI_PHYSICAL_ADDRESS*)(&buffer)))){
 		return 0;
 	}
 	switch (node.flags&KFS2_INODE_STORAGE_MASK){
@@ -242,7 +213,7 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 			if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+node.data.double_)<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
 				goto _cleanup;
 			}
-			void* buffer_ptr=(void*)address;
+			void* buffer_ptr=buffer;
 			for (uint16_t i=0;i<(node.size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i++){
 				if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+(*((const uint64_t*)(disk_buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
 					goto _cleanup;
@@ -259,9 +230,11 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
 			break;
 	}
-	return address+(page_count<<PAGE_SIZE_SHIFT);
+	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,buffer_page_count<<PAGE_SIZE_SHIFT,address);
+	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	return out;
 _cleanup:
-	system_table->BootServices->FreePages(address,page_count);
+	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
 	return 0;
 }
 
