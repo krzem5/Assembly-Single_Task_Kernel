@@ -171,6 +171,49 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
+static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint8_t* out){
+	const uint8_t* data_end=data+data_length;
+	while (data<data_end){
+		const uint8_t* src=NULL;
+		_Bool match=data[0]&1;
+		uint16_t len=data[0]>>1;
+		data++;
+		if (match){
+			src=out-((data[0]>>6)|(data[1]<<2));
+			len|=(data[0]&0x3f)<<7;
+			data+=2;
+		}
+		else{
+			if (len>>6){
+				len|=data[0]<<7;
+				data++;
+			}
+			src=data;
+			data+=len;
+		}
+		uint8_t padding=(-((uint64_t)out))&7;
+		if (padding){
+			*((uint64_t*)out)=*((const uint64_t*)src);
+			if (padding>=len){
+				out+=len;
+				continue;
+			}
+			src+=padding;
+			out+=padding;
+			len-=padding;
+		}
+		padding=(-len)&7;
+		for (len=(len+7)>>3;len;len--){
+			*((uint64_t*)out)=*((const uint64_t*)src);
+			src+=8;
+			out+=8;
+		}
+		out-=padding;
+	}
+}
+
+
+
 static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint64_t address){
 	uint32_t out_length=*((const uint32_t*)data);
 	data+=sizeof(uint32_t);
@@ -178,6 +221,7 @@ static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* d
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
+	// _decompress_raw(data,data_length,(uint8_t*)address);
 	for (uint32_t i=0;i<out_length;i++){
 		*((uint8_t*)(address+i))=data[i];
 	}
