@@ -1,4 +1,5 @@
 #include <efi.h>
+#include <uefi/compression.h>
 #include <uefi/relocator.h>
 
 
@@ -167,51 +168,6 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 		}
 	}
 	return 1;
-}
-
-
-
-static inline void _decompress_raw(const uint8_t* data,uint32_t data_length,uint8_t* out){
-	// volatile has to be used as source and destination can overlap
-	const uint8_t* data_end=data+data_length;
-	while (data<data_end){
-		const uint8_t* src=NULL;
-		_Bool match=data[0]&1;
-		uint16_t len=data[0]>>1;
-		data++;
-		if (match){
-			src=out-((data[0]>>6)|(data[1]<<2));
-			len|=(data[0]&0x3f)<<7;
-			data+=2;
-		}
-		else{
-			if (len&1){
-				len|=data[0]<<7;
-				data++;
-			}
-			len>>=1;
-			src=data;
-			data+=len;
-		}
-		uint8_t padding=(-((uint64_t)out))&7;
-		if (padding){
-			*((volatile uint64_t*)out)=*((const volatile uint64_t*)src);
-			if (padding>=len){
-				out+=len;
-				continue;
-			}
-			src+=padding;
-			out+=padding;
-			len-=padding;
-		}
-		padding=(-len)&7;
-		for (len=(len+7)>>3;len;len--){
-			*((volatile uint64_t*)out)=*((const volatile uint64_t*)src);
-			src+=8;
-			out+=8;
-		}
-		out-=padding;
-	}
 }
 
 
