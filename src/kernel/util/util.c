@@ -5,12 +5,6 @@
 
 
 
-_Bool __attribute__((weak)) _user_panic_handler(const char* error){
-	return 0;
-}
-
-
-
 KERNEL_PUBLIC _Bool KERNEL_NOCOVERAGE streq(const char* a,const char* b){
 	while (*a&&*a==*b){
 		a++;
@@ -74,7 +68,6 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE memcpy_bswap16_trunc_spaces(const u16* src,
 
 
 KERNEL_PUBLIC void panic(const char* error){
-	_user_panic_handler(error);
 	log("\x1b[1m\x1b[1m\x1b[38;2;192;28;40mFatal error: %s\x1b[0m\n",error);
 	io_port_out16(0x604,0x2000);
 	for (;;);
