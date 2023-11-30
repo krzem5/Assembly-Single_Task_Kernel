@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 build.py "$@"
+python3 src/_build/main.py "$@"
