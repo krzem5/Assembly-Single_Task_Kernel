@@ -12,9 +12,31 @@ _Bool __attribute__((weak)) _user_panic_handler(const char* error){
 
 
 KERNEL_PUBLIC void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memcpy)(void* dst,const void* src,u64 length){
-	u8* dst_ptr=dst;
+	if (!length){
+		return dst;
+	}
 	const u8* src_ptr=src;
-	for (u64 i=0;i<length;i++){
+	u8* dst_ptr=dst;
+	if (length<16){
+		for (u64 i=0;i<length;i++){
+			dst_ptr[i]=src_ptr[i];
+		}
+		return dst;
+	}
+	u8 padding=(-((u64)dst_ptr))&7;
+	if (padding){
+		for (u64 i=0;i<padding;i++){
+			dst_ptr[i]=src_ptr[i];
+		}
+		src_ptr+=padding;
+		dst_ptr+=padding;
+		length-=padding;
+	}
+	u64 i=0;
+	for (;i+8<=length;i+=8){
+		*((u64*)(dst_ptr+i))=*((u64*)(src_ptr+i));
+	}
+	for (;i<length;i++){
 		dst_ptr[i]=src_ptr[i];
 	}
 	return dst;
