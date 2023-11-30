@@ -30,11 +30,6 @@ KERNEL_PUBLIC _Bool KERNEL_NOCOVERAGE streq(const char* a,const char* b){
 			return 0;
 		}
 	}
-	// while (*a&&*a==*b){
-	// 	a++;
-	// 	b++;
-	// }
-	// return (!*a&&!*b);
 }
 
 
