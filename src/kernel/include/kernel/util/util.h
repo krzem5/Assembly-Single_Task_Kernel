@@ -94,10 +94,6 @@ void strcpy_lowercase(char* dst,const char* src,u64 max_length);
 
 
 
-char* memcpy_lowercase(char* dst,const char* src,u64 length);
-
-
-
 void memcpy_trunc_spaces(char* dst,const char* src,u8 length);
 
 
