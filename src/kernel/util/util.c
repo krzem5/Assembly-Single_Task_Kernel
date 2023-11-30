@@ -45,8 +45,30 @@ KERNEL_PUBLIC void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memcpy)(void* dst,const void
 
 
 KERNEL_PUBLIC void* KERNEL_NOCOVERAGE KERNEL_NOOPT (memset)(void* dst,u8 value,u64 length){
+	if (!length){
+		return dst;
+	}
 	u8* ptr=dst;
-	for (u64 i=0;i<length;i++){
+	if (length<16){
+		for (u64 i=0;i<length;i++){
+			ptr[i]=value;
+		}
+		return dst;
+	}
+	u8 padding=(-((u64)ptr))&7;
+	if (padding){
+		for (u64 i=0;i<padding;i++){
+			ptr[i]=0;
+		}
+		ptr+=padding;
+		length-=padding;
+	}
+	u64 extended_value=0x0101010101010101ull*value;
+	u64 i=0;
+	for (;i+8<=length;i+=8){
+		*((u64*)(ptr+i))=extended_value;
+	}
+	for (;i<length;i++){
 		ptr[i]=value;
 	}
 	return dst;
