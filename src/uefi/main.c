@@ -1,98 +1,15 @@
 #include <efi.h>
 #include <uefi/compression.h>
+#include <uefi/kernel_data.h>
+#include <uefi/kfs2.h>
 #include <uefi/relocator.h>
 
 
 
-#define KFS2_BLOCK_SIZE 4096
-
-#define KFS2_ROOT_BLOCK_SIGNATURE 0x544f4f523253464b
-#define KFS2_BITMAP_LEVEL_COUNT 5
-
-#define KFS2_INODE_GET_BLOCK_INDEX(inode) ((inode)/(KFS2_BLOCK_SIZE/sizeof(kfs2_node_t)))
-#define KFS2_INODE_GET_NODE_INDEX(inode) ((inode)%(KFS2_BLOCK_SIZE/sizeof(kfs2_node_t)))
-
-#define KFS2_INODE_TYPE_FILE 0x00000000
-#define KFS2_INODE_TYPE_DIRECTORY 0x00000001
-#define KFS2_INODE_TYPE_LINK 0x00000002
-#define KFS2_INODE_TYPE_MASK 0x00000003
-
-#define KFS2_INODE_STORAGE_MASK 0x0000001c
-#define KFS2_INODE_STORAGE_TYPE_INLINE 0x00000000
-#define KFS2_INODE_STORAGE_TYPE_SINGLE 0x00000004
-#define KFS2_INODE_STORAGE_TYPE_DOUBLE 0x00000008
-#define KFS2_INODE_STORAGE_TYPE_TRIPLE 0x0000000c
-#define KFS2_INODE_STORAGE_TYPE_QUADRUPLE 0x00000010
-
 #define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
-
-#define KERNEL_MEMORY_ADDRESS 0x100000
-#define KERNEL_STACK_PAGE_COUNT 3
 
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_SHIFT 12
-
-
-
-typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
-	uint64_t signature;
-	uint8_t uuid[16];
-	uint64_t block_count;
-	uint64_t inode_count;
-	uint64_t data_block_count;
-	uint64_t first_inode_block;
-	uint64_t first_data_block;
-	uint64_t first_bitmap_block;
-	uint64_t inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
-	uint64_t data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
-	uint16_t inode_allocation_bitmap_highest_level_length;
-	uint16_t data_block_allocation_bitmap_highest_level_length;
-	uint32_t kernel_inode;
-	uint32_t initramfs_inode;
-	uint32_t crc;
-} kfs2_root_block_t;
-
-
-
-typedef struct __attribute__((packed)) _KFS2_NODE{
-	uint64_t size;
-	union{
-		uint8_t inline_[48];
-		uint64_t single[6];
-		uint64_t double_;
-		uint64_t triple;
-		uint64_t quadruple;
-	} data;
-	uint32_t flags;
-	uint8_t _padding[64];
-	uint32_t crc;
-} kfs2_node_t;
-
-
-
-typedef struct _KERNEL_DATA{
-	uint16_t mmap_size;
-	struct{
-		uint64_t base;
-		uint64_t length;
-	} mmap[42];
-	uint64_t first_free_address;
-	uint64_t rsdp_address;
-	uint64_t smbios_address;
-	uint64_t initramfs_address;
-	uint64_t initramfs_size;
-	uint8_t boot_fs_uuid[16];
-	struct{
-		uint16_t year;
-		uint8_t month;
-		uint8_t day;
-		uint8_t hour;
-		uint8_t minute;
-		uint8_t second;
-		uint32_t nanosecond;
-		uint64_t measurement_offset;
-	} date;
-} kernel_data_t;
 
 
 
