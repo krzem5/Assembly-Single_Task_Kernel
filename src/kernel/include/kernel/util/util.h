@@ -90,15 +90,11 @@ void strcpy(char* dst,const char* src,u64 max_length);
 
 
 
-void strcpy_lowercase(char* dst,const char* src,u64 max_length);
+void memcpy_trunc_spaces(char* dst,const char* src,u64 length);
 
 
 
-void memcpy_trunc_spaces(char* dst,const char* src,u8 length);
-
-
-
-void memcpy_bswap16_trunc_spaces(const u16* src,u8 length,char* dst);
+void memcpy_bswap16_trunc_spaces(const u16* src,u64 length,char* dst);
 
 
 

@@ -17,9 +17,7 @@ static void _listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const handle_descriptor_t* descriptor=handle->object;
-		char buffer[64];
-		strcpy_lowercase(buffer,descriptor->name,64);
-		vfs_node_t* node=dynamicfs_create_node(_sysfs_handle_type_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+		vfs_node_t* node=dynamicfs_create_node(_sysfs_handle_type_root,descriptor->name,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_set_root_only(node);
 		dynamicfs_set_root_only(dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->active_count))));
 		dynamicfs_set_root_only(dynamicfs_create_node(node,"lifetime_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count))));
