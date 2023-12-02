@@ -1,10 +1,10 @@
+#include <ip/ip4.h>
 #include <kernel/module/module.h>
-#include <net_ip/ip4.h>
 
 
 
 static _Bool _init(module_t* module){
-	net_ip4_register_protocol();
+	ip4_register_protocol();
 	return 1;
 }
 

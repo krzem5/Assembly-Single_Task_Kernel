@@ -3,7 +3,12 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
+#include <kernel/network/layer2.h>
+#include <kernel/scheduler/load_balancer.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "network_layer1"
@@ -24,10 +29,31 @@ KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
 
 
 
+static void _packet_thread(void){
+	while (1){
+		if (!network_layer1_device){
+			scheduler_yield();
+			continue;
+		}
+		network_layer1_device->descriptor->wait(network_layer1_device->extra_data);
+		network_layer1_packet_t* packet=network_layer1_device->descriptor->rx(network_layer1_device->extra_data);
+		if (!packet){
+			continue;
+		}
+		network_layer2_process_packet(packet);
+		network_layer1_delete_packet(packet);
+	}
+}
+
+
+
 void KERNEL_EARLY_EXEC network_layer1_init(void){
 	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("network_layer1_device",sizeof(network_layer1_device_t),8,1,pmm_alloc_counter("omm_network_layer1_device"));
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
+	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_thread,0x200000,0);
+	thread->priority=SCHEDULER_PRIORITY_HIGH;
+	scheduler_enqueue_thread(thread);
 }
 
 
@@ -36,6 +62,7 @@ KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_desc
 	LOG("Creating network layer1 device '%s/%X:%X:%X:%X:%X:%X'...",descriptor->name,(*mac_address)[0],(*mac_address)[1],(*mac_address)[2],(*mac_address)[3],(*mac_address)[4],(*mac_address)[5]);
 	network_layer1_device_t* out=omm_alloc(_network_layer1_device_allocator);
 	handle_new(out,network_layer1_device_handle_type,&(out->handle));
+	out->descriptor=descriptor;
 	memcpy(out->mac_address,*mac_address,sizeof(mac_address_t));
 	out->extra_data=extra_data;
 	handle_finish_setup(&(out->handle));

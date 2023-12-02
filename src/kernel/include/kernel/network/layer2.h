@@ -32,4 +32,8 @@ void network_layer2_unregister_descriptor(const network_layer2_protocol_descript
 
 
 
+void network_layer2_process_packet(const network_layer1_packet_t* packet);
+
+
+
 #endif

@@ -1,5 +1,5 @@
-dynamicfs:
 aml:
+dynamicfs:
 
 ahci:
 aml_bus:aml
@@ -9,10 +9,10 @@ coverage:
 devfs:dynamicfs
 gpt:
 i82540:
+ip:
 iso9660:
 kfs2:
 lockfs:dynamicfs
-net_ip:
 nvme:
 os_loader:
 procfs:dynamicfs
