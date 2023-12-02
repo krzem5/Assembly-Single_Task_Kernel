@@ -17,7 +17,7 @@
 
 // layer1: driver I/O
 // layer2: ARP (0x0806), IPv4 (0x0800), IPv6 (0x86dd)
-// layer3: TCP, UDP
+// layer3: TCP, UDP, ...
 // layer4: DHCP, DNS, HTTP, ...
 
 
