@@ -18,7 +18,7 @@ static omm_allocator_t* _net_udp_packet_allocator=NULL;
 
 
 static void _rx_callback(const net_ip4_packet_t* packet){
-	WARN("PACKED (UDP)");
+	WARN("PACKET (UDP)");
 }
 
 
@@ -77,4 +77,3 @@ KERNEL_PUBLIC void net_udp_send_packet(net_udp_packet_t* packet){
 	net_ip4_send_packet(packet->raw_packet);
 	omm_dealloc(_net_udp_packet_allocator,packet);
 }
-
