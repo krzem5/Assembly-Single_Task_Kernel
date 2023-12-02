@@ -150,8 +150,11 @@ KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* address,u32 address
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	if (!socket_node->handler||socket_node->handler_ctx){
+	if (!socket_node->handler){
 		return 0;
+	}
+	if (socket_node->handler_ctx){
+		socket_node->handler->descriptor->deinit(socket_node->handler_ctx);
 	}
 	socket_node->handler_ctx=socket_node->handler->descriptor->init(address,address_length);
 	return !!socket_node->handler_ctx;
