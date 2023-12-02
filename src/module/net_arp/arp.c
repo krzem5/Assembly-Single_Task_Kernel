@@ -56,7 +56,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		return 0;
 	}
 	mac_address_t dst_mac_address={0xff,0xff,0xff,0xff,0xff,0xff};
-	network_layer1_packet_t* packet=network_layer1_create_packet(sizeof(net_arp_packet_t),&dst_mac_address,&(network_layer1_device->mac_address),ETHER_TYPE);
+	network_layer1_packet_t* packet=network_layer1_create_packet(sizeof(net_arp_packet_t),&(network_layer1_device->mac_address),&dst_mac_address,ETHER_TYPE);
 	net_arp_packet_t* arp_packet=(net_arp_packet_t*)(packet->data);
 	arp_packet->htype=__builtin_bswap16(NET_ARP_HTYPE_ETHERNET);
 	arp_packet->ptype=__builtin_bswap16(NET_ARP_PTYPE_IPV4);

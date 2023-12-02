@@ -9,21 +9,26 @@ typedef u32 net_ip4_address_t;
 
 
 
-typedef u16 net_ip4_protocol_type_t;
+typedef u8 net_ip4_protocol_type_t;
 
 
 
 typedef struct KERNEL_PACKED _NET_IP4_PACKET_DATA{
-	u8 version_and_ihl;
-	u8 dscp_and_ecn;
-	u16 total_length;
-	u16 identification;
-	u16 fragment;
-	u8 ttl;
-	u8 protocol;
-	u16 checksum;
-	u32 src_address;
-	u32 dst_address;
+	union{
+		struct KERNEL_PACKED{
+			u8 version_and_ihl;
+			u8 dscp_and_ecn;
+			u16 total_length;
+			u16 identification;
+			u16 fragment;
+			u8 ttl;
+			u8 protocol;
+			u16 checksum;
+			u32 src_address;
+			u32 dst_address;
+		};
+		u16 _raw_words[10];
+	};
 	u8 data[];
 } net_ip4_packet_data_t;
 
@@ -64,7 +69,7 @@ void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol_descriptor_t*
 
 
 
-net_ip4_packet_t* net_ip4_create_packet(u16 length);
+net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address_t src_address,net_ip4_address_t dst_address,net_ip4_protocol_type_t protocol_type);
 
 
 

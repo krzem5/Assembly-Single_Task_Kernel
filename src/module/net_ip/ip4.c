@@ -19,7 +19,8 @@
 
 static spinlock_t _net_ip4_protocol_lock;
 static rb_tree_t _net_ip4_protocol_type_tree;
-static KERNEL_INIT_WRITE omm_allocator_t* _net_ip4_protocol_allocator=NULL;
+static omm_allocator_t* _net_ip4_protocol_allocator=NULL;
+static omm_allocator_t* _net_ip4_packet_allocator=NULL;
 
 
 
@@ -43,7 +44,7 @@ void net_ip4_init(void){
 	spinlock_init(&_net_ip4_protocol_lock);
 	rb_tree_init(&_net_ip4_protocol_type_tree);
 	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1,pmm_alloc_counter("omm_net_ip4_protocol"));
-	/*****/mac_address_t tmp;net_arp_resolve_address(0x0a000203,&tmp);/*****/
+	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4,pmm_alloc_counter("omm_net_ip4_packet"));
 }
 
 
@@ -79,12 +80,44 @@ KERNEL_PUBLIC void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol
 
 
 
-KERNEL_PUBLIC net_ip4_packet_t* net_ip4_create_packet(u16 length);
+KERNEL_PUBLIC net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address_t src_address,net_ip4_address_t dst_address,net_ip4_protocol_type_t protocol_type){
+	mac_address_t dst_mac_address;
+	if (!net_arp_resolve_address(dst_address,&dst_mac_address)){
+		return NULL;
+	}
+	net_ip4_packet_t* out=omm_alloc(_net_ip4_packet_allocator);
+	out->length=length;
+	out->raw_packet=network_layer1_create_packet(length+sizeof(net_ip4_packet_data_t),&(network_layer1_device->mac_address),&dst_mac_address,ETHER_TYPE);
+	out->packet=(net_ip4_packet_data_t*)(out->raw_packet->data);
+	out->packet->version_and_ihl=0x45;
+	out->packet->dscp_and_ecn=0x00;
+	out->packet->total_length=__builtin_bswap16(length+sizeof(net_ip4_packet_data_t));
+	out->packet->identification=0x0000;
+	out->packet->fragment=0x0000;
+	out->packet->ttl=0xff;
+	out->packet->protocol=protocol_type;
+	out->packet->src_address=src_address;
+	out->packet->dst_address=dst_address;
+	return out;
+}
 
 
 
-KERNEL_PUBLIC void net_ip4_delete_packet(net_ip4_packet_t* packet);
+KERNEL_PUBLIC void net_ip4_delete_packet(net_ip4_packet_t* packet){
+	network_layer1_delete_packet(packet->raw_packet);
+	omm_dealloc(_net_ip4_packet_allocator,packet);
+}
 
 
 
-KERNEL_PUBLIC void net_ip4_send_packet(net_ip4_packet_t* packet);
+KERNEL_PUBLIC void net_ip4_send_packet(net_ip4_packet_t* packet){
+	packet->packet->checksum=0x0000;
+	u32 checksum=0;
+	for (u32 i=0;i<10;i++){
+		checksum+=packet->packet->_raw_words[i];
+	}
+	checksum=(checksum&0xffff)+(checksum>>16);
+	packet->packet->checksum=~(checksum+(checksum>>16));
+	network_layer1_send_packet(packet->raw_packet);
+	omm_dealloc(_net_ip4_packet_allocator,packet);
+}

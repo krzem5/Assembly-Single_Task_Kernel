@@ -73,7 +73,7 @@ KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_desc
 
 
 
-KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 size,const mac_address_t* dst_mac_address,const mac_address_t* src_mac_address,ether_type_t ether_type){
+KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 size,const mac_address_t* src_mac_address,const mac_address_t* dst_mac_address,ether_type_t ether_type){
 	network_layer1_packet_t* out=(void*)(smm_alloc(NULL,sizeof(network_layer1_packet_t)+size)->data);
 	out->length=size;
 	if (dst_mac_address){
