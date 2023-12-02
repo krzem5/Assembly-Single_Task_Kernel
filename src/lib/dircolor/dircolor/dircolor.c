@@ -42,6 +42,16 @@ SYS_PUBLIC void dircolor_get_color(const sys_fd_stat_t* stat,char* buffer){
 		buffer[7]='m';
 		buffer[8]=0;
 	}
+	else if (stat->type==SYS_FD_STAT_TYPE_SOCKET){
+		buffer[0]=0x1b;
+		buffer[1]='[';
+		buffer[2]='1';
+		buffer[3]=';';
+		buffer[4]='3';
+		buffer[5]='5';
+		buffer[6]='m';
+		buffer[7]=0;
+	}
 	else if (stat->permissions&0111){
 		buffer[0]=0x1b;
 		buffer[1]='[';

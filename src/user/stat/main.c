@@ -11,7 +11,8 @@ static const char* _stat_type_names[]={
 	[SYS_FD_STAT_TYPE_FILE]="file",
 	[SYS_FD_STAT_TYPE_DIRECTORY]="dir",
 	[SYS_FD_STAT_TYPE_LINK]="link",
-	[SYS_FD_STAT_TYPE_PIPE]="pipe"
+	[SYS_FD_STAT_TYPE_PIPE]="pipe",
+	[SYS_FD_STAT_TYPE_SOCKET]="socket"
 };
 
 

@@ -21,6 +21,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/shutdown/shutdown.h>
+#include <kernel/socket/socket.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
@@ -35,6 +36,7 @@ static void _main_thread(void){
 	initramfs_init();
 	pci_enumerate();
 	random_init();
+	socket_init();
 	network_layer1_init();
 	network_layer2_init();
 	serial_init_irq();
