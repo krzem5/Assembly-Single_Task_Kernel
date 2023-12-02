@@ -5,6 +5,14 @@
 
 
 
+typedef struct _NET_UDP_ADDRESS{
+	net_ip4_address_t dst_address;
+	u16 src_port;
+	u16 dst_port;
+} net_udp_address_t;
+
+
+
 typedef struct KERNEL_PACKED _NET_UDP_IPV4_PSEUDO_HEADER{
 	net_ip4_address_t src_address;
 	net_ip4_address_t dst_address;

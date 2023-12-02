@@ -1,6 +1,8 @@
 #ifndef _KERNEL_SOCKET_SOCKET_H_
 #define _KERNEL_SOCKET_SOCKET_H_ 1
+#include <kernel/lock/spinlock.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/event.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -38,6 +40,9 @@ typedef struct _SOCKET_DTP_DESCRIPTOR{
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
+	void* (*init)(const void*,u32);
+	void (*deinit)(void*);
+	void (*write)(void*,const void*,u64);
 } socket_dtp_descriptor_t;
 
 
@@ -62,6 +67,10 @@ void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor)
 
 
 vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol);
+
+
+
+_Bool socket_bind(vfs_node_t* node,const void* address,u32 address_length);
 
 
 

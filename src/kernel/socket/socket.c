@@ -21,13 +21,14 @@
 
 typedef struct _SOCKET_VFS_NODE{
 	vfs_node_t node;
-	spinlock_t lock;
+	spinlock_t read_lock;
+	spinlock_t write_lock;
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
 	socket_dtp_handler_t* handler;
+	void* handler_ctx;
 	event_t* read_event;
-	event_t* write_event;
 } socket_vfs_node_t;
 
 
@@ -41,13 +42,14 @@ static omm_allocator_t* KERNEL_INIT_WRITE _socket_vfs_node_allocator=NULL;
 
 static vfs_node_t* _socket_create(void){
 	socket_vfs_node_t* out=omm_alloc(_socket_vfs_node_allocator);
-	spinlock_init(&(out->lock));
+	spinlock_init(&(out->read_lock));
+	spinlock_init(&(out->write_lock));
 	out->domain=SOCKET_DOMAIN_NONE;
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;
 	out->handler=NULL;
+	out->handler_ctx=NULL;
 	out->read_event=event_new();
-	out->write_event=event_new();
 	return (vfs_node_t*)out;
 }
 
@@ -139,4 +141,18 @@ KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,
 	((socket_vfs_node_t*)out)->protocol=protocol;
 	((socket_vfs_node_t*)out)->handler=(socket_dtp_handler_t*)handler;
 	return out;
+}
+
+
+
+KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* address,u32 address_length){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!address||!address_length){
+		return 0;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	if (!socket_node->handler||socket_node->handler_ctx){
+		return 0;
+	}
+	socket_node->handler_ctx=socket_node->handler->descriptor->init(address,address_length);
+	return !!socket_node->handler_ctx;
 }

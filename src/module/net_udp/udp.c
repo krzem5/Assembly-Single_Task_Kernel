@@ -3,6 +3,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #include <net/common.h>
 #include <net/ip4.h>
 #include <net/udp.h>
@@ -18,11 +19,36 @@ static omm_allocator_t* _net_udp_packet_allocator=NULL;
 
 
 
+static void* _socket_init_callback(const void* address,u32 address_length){
+	if (address_length!=sizeof(net_udp_address_t)){
+		return NULL;
+	}
+	// panic("_socket_init_callback");
+	return NULL;
+}
+
+
+
+static void _socket_deinit_callback(void* ctx){
+	panic("_socket_deinit_callback");
+}
+
+
+
+static void _socket_write_callback(void* ctx,const void* buffer,u64 length){
+	panic("_socket_write_callback");
+}
+
+
+
 static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	"UDP",
 	SOCKET_DOMAIN_INET,
 	SOCKET_TYPE_DGRAM,
-	SOCKET_PROTOCOL_UDP
+	SOCKET_PROTOCOL_UDP,
+	_socket_init_callback,
+	_socket_deinit_callback,
+	_socket_write_callback
 };
 
 
