@@ -58,12 +58,12 @@ KERNEL_PUBLIC void network_layer2_unregister_descriptor(const network_layer2_pro
 
 void network_layer2_process_packet(const network_layer1_packet_t* packet){
 	spinlock_acquire_shared(&_network_layer2_lock);
-	rb_tree_node_t* node=rb_tree_lookup_node(&_network_layer2_ether_type_tree,packet->ether_type);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_network_layer2_ether_type_tree,__builtin_bswap16(packet->ether_type));
 	if (node){
 		((network_layer2_protocol_t*)node)->descriptor->rx_callback(packet);
 	}
 	else{
-		WARN("Unhandled packet '%X%X'",packet->ether_type>>8,packet->ether_type);
+		WARN("Unhandled packet '%X%X'",packet->ether_type,packet->ether_type>>8);
 	}
 	spinlock_release_shared(&_network_layer2_lock);
 }

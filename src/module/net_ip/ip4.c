@@ -2,6 +2,8 @@
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/types.h>
+#include <net/arp.h>
+#include <net/ip4.h>
 #define KERNEL_LOG_NAME "net_ip4"
 
 
@@ -27,4 +29,5 @@ static network_layer2_protocol_descriptor_t _net_ip4_network_layer2_protocol_des
 void net_ip4_register_protocol(void){
 	LOG("Registering IPv4 protocol...");
 	network_layer2_register_descriptor(&_net_ip4_network_layer2_protocol_descriptor);
+	mac_address_t tmp;net_arp_resolve_address(0x0a000203,&tmp);
 }

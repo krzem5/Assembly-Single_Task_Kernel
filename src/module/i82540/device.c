@@ -52,6 +52,7 @@ static void _i82540_tx(void* extra_data,const network_layer1_packet_t* packet){
 	}
 	device->mmio[REG_TDT]=tail;
 	SPINLOOP(!(desc->status&0x0f));
+	spinlock_release_exclusive(&(device->lock));
 }
 
 

@@ -17,7 +17,7 @@
 
 // layer1: driver I/O
 // layer2: ARP (0x0806), IPv4 (0x0800), IPv6 (0x86dd)
-// layer3: TCP, UDP, ...
+// layer3: TCP, UDP
 // layer4: DHCP, DNS, HTTP, ...
 
 
@@ -82,7 +82,7 @@ KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 size,con
 	if (src_mac_address){
 		memcpy(out->src_mac,*src_mac_address,sizeof(mac_address_t));
 	}
-	out->ether_type=ether_type;
+	out->ether_type=__builtin_bswap16(ether_type);
 	return out;
 }
 

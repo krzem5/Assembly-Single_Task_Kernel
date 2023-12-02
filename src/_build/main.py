@@ -742,6 +742,7 @@ if ("--run" in sys.argv):
 		# Network
 		"-netdev","user,id=network",
 		"-device","e1000,netdev=network",
+		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
 		"-object","memory-backend-ram,size=1G,id=mem0",
