@@ -1,6 +1,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/socket/socket.h>
 #include <kernel/types.h>
 #include <net/common.h>
 #include <net/ip4.h>
@@ -14,6 +15,15 @@
 
 
 static omm_allocator_t* _net_udp_packet_allocator=NULL;
+
+
+
+static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
+	"UDP",
+	SOCKET_DOMAIN_INET,
+	SOCKET_TYPE_DGRAM,
+	SOCKET_PROTOCOL_UDP
+};
 
 
 
@@ -33,6 +43,7 @@ static net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
 
 void net_udp_init(void){
 	LOG("Registering UDP protocol...");
+	socket_register_dtp_descriptor(&_net_udp_socket_dtp_descriptor);
 	net_ip4_register_protocol_descriptor(&_net_udp_ip4_protocol_descriptor);
 	_net_udp_packet_allocator=omm_init("net_udp_packet",sizeof(net_udp_packet_t),8,4,pmm_alloc_counter("omm_net_udp_packet"));
 	net_udp_send_packet(net_udp_create_packet(0,0xffffffff,68,67));

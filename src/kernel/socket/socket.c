@@ -33,6 +33,7 @@ typedef struct _SOCKET_VFS_NODE{
 
 static spinlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
+static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_vfs_node_allocator=NULL;
 
 
@@ -81,8 +82,42 @@ void KERNEL_EARLY_EXEC socket_init(void){
 	LOG("Initializing sockets...");
 	spinlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
+	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1,pmm_alloc_counter("omm_socket_dtp_handler"));
 	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4,pmm_alloc_counter("omm_socket_node"));
 	spinlock_init(&(_socket_vfs_node_allocator->lock));
+}
+
+
+
+KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
+	spinlock_acquire_exclusive(&_socket_dtp_lock);
+	LOG("Registering socket D/T/P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
+	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
+	if (node){
+		ERROR("Socket D/T/P %u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,((socket_dtp_handler_t*)node)->descriptor->name);
+		spinlock_release_exclusive(&_socket_dtp_lock);
+		return;
+	}
+	socket_dtp_handler_t* handler=omm_alloc(_socket_dtp_handler_allocator);
+	handler->rb_node.key=key;
+	handler->descriptor=descriptor;
+	rb_tree_insert_node(&_socket_dtp_tree,&(handler->rb_node));
+	spinlock_release_exclusive(&_socket_dtp_lock);
+}
+
+
+
+KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
+	spinlock_acquire_exclusive(&_socket_dtp_lock);
+	LOG("Unregistering socket D/T/P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
+	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
+	if (node){
+		rb_tree_remove_node(&_socket_dtp_tree,node);
+		omm_dealloc(_socket_dtp_handler_allocator,node);
+	}
+	spinlock_release_exclusive(&_socket_dtp_lock);
 }
 
 
