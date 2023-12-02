@@ -1,6 +1,7 @@
 dynamicfs:
-ahci:
 aml:
+
+ahci:
 aml_bus:aml
 aml_shutdown:aml
 ata:
@@ -11,6 +12,7 @@ i82540:
 iso9660:
 kfs2:
 lockfs:dynamicfs
+net_ip:
 nvme:
 os_loader:
 procfs:dynamicfs
