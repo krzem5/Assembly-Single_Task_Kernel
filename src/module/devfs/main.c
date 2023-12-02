@@ -2,7 +2,6 @@
 #include <devfs/drive.h>
 #include <devfs/fs.h>
 #include <devfs/memory.h>
-#include <devfs/network.h>
 #include <devfs/numa.h>
 #include <devfs/partition.h>
 #include <devfs/pci.h>
@@ -17,7 +16,6 @@ static _Bool _init(module_t* module){
 	devfs_bios_init();
 	devfs_drive_init();
 	devfs_memory_init();
-	devfs_network_init();
 	devfs_numa_init();
 	devfs_partition_init();
 	devfs_pci_init();

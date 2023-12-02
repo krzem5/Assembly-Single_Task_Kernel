@@ -5,11 +5,9 @@ import hashlib
 import initramfs
 import kfs2
 import os
-import socket
 import struct
 import subprocess
 import sys
-import threading
 import time
 
 
@@ -543,36 +541,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 
 
 
-def _process_packet(buffer):
-	return None
-
-
-
-def _l2tpv3_worker():
-	mac_address=b"\x5b\x9c\xc4\x41\x84\x2c"
-	recv_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	send_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	recv_socket.bind(("127.0.0.1",7556))
-	while (1):
-		data,_=recv_socket.recvfrom(8192)
-		if (len(data)<8):
-			continue
-		flags,version=struct.unpack("<BB",data[:2])
-		if (version==3 and (flags&1)==0):
-			buffer=_process_packet(bytearray(data[22:]))
-			if (buffer is not None):
-				data=data[:8]+data[14:20]+mac_address+data[20:22]+buffer
-				send_socket.sendto(data,("127.0.0.1",7555))
-
-
-
-def _start_l2tpv3_thread():
-	thread=threading.Thread(target=_l2tpv3_worker)
-	thread.daemon=True
-	thread.start()
-
-
-
 def _kvm_flags():
 	if (not os.path.exists("/dev/kvm")):
 		return []
@@ -752,7 +720,6 @@ if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
-	_start_l2tpv3_thread()
 	subprocess.run([
 		"qemu-system-x86_64",
 		# "-d","trace:usb*",
@@ -773,11 +740,10 @@ if ("--run" in sys.argv):
 		"-device","nec-usb-xhci,id=xhci",
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
-		"-netdev","l2tpv3,id=network,src=127.0.0.1,dst=127.0.0.1,udp=on,srcport=7555,dstport=7556,rxsession=0xffffffff,txsession=0xffffffff,counter=off",
+		"-netdev","user,id=network",
 		"-device","e1000,netdev=network",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
-		# "-mem-prealloc",
 		"-object","memory-backend-ram,size=1G,id=mem0",
 		"-object","memory-backend-ram,size=1G,id=mem1",
 		# CPU

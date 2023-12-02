@@ -4,6 +4,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -37,12 +38,16 @@ static KERNEL_INLINE void _consume_packet(i82540_device_t* device,u16 tail,i8254
 
 
 
-static void _i82540_tx(void* extra_data,u64 packet,u16 length){
+static void _i82540_tx(void* extra_data,const void* buffer,u16 buffer_length){
+	if (buffer_length>PAGE_SIZE){
+		buffer_length=PAGE_SIZE;
+	}
 	i82540_device_t* device=extra_data;
+	spinlock_acquire_exclusive(&(device->lock));
 	u16 tail=device->mmio[REG_TDT];
 	i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
-	desc->address=packet;
-	desc->length=length;
+	memcpy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,buffer_length);
+	desc->length=buffer_length;
 	desc->cmd=TXDESC_EOP|TXDESC_RS;
 	tail++;
 	if (tail==TX_DESCRIPTOR_COUNT){
@@ -56,6 +61,7 @@ static void _i82540_tx(void* extra_data,u64 packet,u16 length){
 
 static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	i82540_device_t* device=extra_data;
+	spinlock_acquire_exclusive(&(device->lock));
 	u16 tail=device->mmio[REG_RDT];
 	tail++;
 	if (tail==RX_DESCRIPTOR_COUNT){
@@ -63,10 +69,12 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	}
 	i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 	if (!(desc->status&RDESC_DD)){
+		spinlock_release_exclusive(&(device->lock));
 		return 0;
 	}
 	if (desc->length<60||!(desc->status&RDESC_EOP)||desc->errors){
 		_consume_packet(device,tail,desc);
+		spinlock_release_exclusive(&(device->lock));
 		return 0;
 	}
 	if (desc->length<buffer_length){
@@ -74,6 +82,7 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 	}
 	memcpy(buffer,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer_length);
 	_consume_packet(device,tail,desc);
+	spinlock_release_exclusive(&(device->lock));
 	return buffer_length;
 }
 
@@ -81,6 +90,7 @@ static u16 _i82540_rx(void* extra_data,void* buffer,u16 buffer_length){
 
 static void _i82540_wait(void* extra_data){
 	i82540_device_t* device=extra_data;
+	spinlock_acquire_exclusive(&(device->lock));
 	u16 tail=device->mmio[REG_RDT];
 	tail++;
 	if (tail==RX_DESCRIPTOR_COUNT){
@@ -88,7 +98,9 @@ static void _i82540_wait(void* extra_data){
 	}
 	i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 	while (!(desc->status&RDESC_DD)){
+		spinlock_release_exclusive(&(device->lock));
 		thread_await_event(IRQ_EVENT(device->irq));
+		spinlock_acquire_exclusive(&(device->lock));
 		u32 icr=device->mmio[REG_ICR];
 		if (icr&0x0004){
 			device->mmio[REG_CTRL]|=CTRL_SLU;
@@ -98,7 +110,17 @@ static void _i82540_wait(void* extra_data){
 		}
 		(void)device->mmio[REG_ICR];
 	}
+	spinlock_release_exclusive(&(device->lock));
 }
+
+
+
+static const network_layer1_device_descriptor_t _network_layer1_device_descriptor={
+	"i82540",
+	_i82540_tx,
+	_i82540_rx,
+	_i82540_wait
+};
 
 
 
@@ -114,6 +136,7 @@ static void _i82540_init_device(pci_device_t* device){
 		return;
 	}
 	i82540_device_t* i82540_device=omm_alloc(_i82540_device_allocator);
+	spinlock_init(&(i82540_device->lock));
 	i82540_device->mmio=(void*)vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
@@ -149,7 +172,7 @@ static void _i82540_init_device(pci_device_t* device){
 	i82540_device->tx_desc_base=tx_desc_base+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 	for (u16 i=0;i<TX_DESCRIPTOR_COUNT;i++){
 		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(i82540_device,tx,i);
-		desc->address=0;
+		desc->address=pmm_alloc(1,_i82540_driver_pmm_counter,0);
 		desc->cmd=0;
 		desc->status=0;
 	}
@@ -167,22 +190,15 @@ static void _i82540_init_device(pci_device_t* device){
 	(void)i82540_device->mmio[REG_ICR];
 	u32 rah=i82540_device->mmio[REG_RAH0];
 	u32 ral=i82540_device->mmio[REG_RAL0];
-	network_layer1_device_t layer1_device={
-		"i82540",
-		{
-			ral,
-			ral>>8,
-			ral>>16,
-			ral>>24,
-			rah,
-			rah>>8
-		},
-		_i82540_tx,
-		_i82540_rx,
-		_i82540_wait,
-		i82540_device
+	mac_address_t mac_address={
+		ral,
+		ral>>8,
+		ral>>16,
+		ral>>24,
+		rah,
+		rah>>8
 	};
-	network_layer1_set_device(&layer1_device);
+	network_layer1_create_device(&_network_layer1_device_descriptor,&mac_address,i82540_device);
 }
 
 

@@ -14,7 +14,6 @@
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
-#include <kernel/network/layer2.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
@@ -33,7 +32,6 @@ static void _main_thread(void){
 	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();
-	network_layer2_init();
 	random_init();
 	serial_init_irq();
 	kernel_adjust_memory_flags_after_init();
