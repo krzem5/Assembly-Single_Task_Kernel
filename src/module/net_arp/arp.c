@@ -11,8 +11,6 @@
 
 #define ETHER_TYPE 0x0806
 
-#define CURRENT_IP_ADDRESS 0x0a00020f
-
 
 
 static void _rx_callback(const network_layer1_packet_t* packet){
@@ -20,7 +18,7 @@ static void _rx_callback(const network_layer1_packet_t* packet){
 		return;
 	}
 	const net_arp_packet_t* arp_packet=(const net_arp_packet_t*)(packet->data);
-	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(CURRENT_IP_ADDRESS)){
+	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_ip4_address)){
 		return;
 	}
 	WARN("PACKET (ARP) %x -> %X:%X:%X:%X:%X:%X",__builtin_bswap32(arp_packet->spa),arp_packet->sha[0],arp_packet->sha[1],arp_packet->sha[2],arp_packet->sha[3],arp_packet->sha[4],arp_packet->sha[5]);
@@ -64,7 +62,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 	arp_packet->plen=sizeof(net_ip4_address_t);
 	arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REQUEST);
 	memcpy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
-	arp_packet->spa=__builtin_bswap32(CURRENT_IP_ADDRESS);
+	arp_packet->spa=__builtin_bswap32(net_ip4_address);
 	memset(arp_packet->tha,0,sizeof(mac_address_t));
 	arp_packet->tpa=__builtin_bswap32(address);
 	network_layer1_send_packet(packet);

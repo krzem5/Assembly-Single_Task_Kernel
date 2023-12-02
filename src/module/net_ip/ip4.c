@@ -8,6 +8,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <net/arp.h>
+#include <net/common.h>
 #include <net/ip4.h>
 #define KERNEL_LOG_NAME "net_ip4"
 
@@ -111,13 +112,7 @@ KERNEL_PUBLIC void net_ip4_delete_packet(net_ip4_packet_t* packet){
 
 
 KERNEL_PUBLIC void net_ip4_send_packet(net_ip4_packet_t* packet){
-	packet->packet->checksum=0x0000;
-	u32 checksum=0;
-	for (u32 i=0;i<10;i++){
-		checksum+=packet->packet->_raw_words[i];
-	}
-	checksum=(checksum&0xffff)+(checksum>>16);
-	packet->packet->checksum=~(checksum+(checksum>>16));
+	net_common_calculate_checksum(packet->packet,sizeof(net_ip4_packet_data_t),&(packet->packet->checksum));
 	network_layer1_send_packet(packet->raw_packet);
 	omm_dealloc(_net_ip4_packet_allocator,packet);
 }

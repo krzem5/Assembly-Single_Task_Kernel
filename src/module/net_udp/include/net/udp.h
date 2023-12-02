@@ -5,6 +5,16 @@
 
 
 
+typedef struct KERNEL_PACKED _NET_UDP_IPV4_PSEUDO_HEADER{
+	net_ip4_address_t src_address;
+	net_ip4_address_t dst_address;
+	u8 zero;
+	u8 protocol;
+	u16 length;
+} net_udp_ipv4_pseudo_header_t;
+
+
+
 typedef struct KERNEL_PACKED _NET_UDP_PACKET_DATA{
 	u16 src_port;
 	u16 dst_port;
@@ -23,11 +33,11 @@ typedef struct _NET_UDP_PACKET{
 
 
 
-void net_udp_register_protocol(void);
+void net_udp_init(void);
 
 
 
-net_udp_packet_t* net_udp_create_packet(u16 length);
+net_udp_packet_t* net_udp_create_packet(u16 length,net_ip4_address_t address,u16 src_port,u16 dst_port);
 
 
 

@@ -14,21 +14,16 @@ typedef u8 net_ip4_protocol_type_t;
 
 
 typedef struct KERNEL_PACKED _NET_IP4_PACKET_DATA{
-	union{
-		struct KERNEL_PACKED{
-			u8 version_and_ihl;
-			u8 dscp_and_ecn;
-			u16 total_length;
-			u16 identification;
-			u16 fragment;
-			u8 ttl;
-			u8 protocol;
-			u16 checksum;
-			u32 src_address;
-			u32 dst_address;
-		};
-		u16 _raw_words[10];
-	};
+	u8 version_and_ihl;
+	u8 dscp_and_ecn;
+	u16 total_length;
+	u16 identification;
+	u16 fragment;
+	u8 ttl;
+	u8 protocol;
+	u16 checksum;
+	u32 src_address;
+	u32 dst_address;
 	u8 data[];
 } net_ip4_packet_data_t;
 
@@ -54,6 +49,10 @@ typedef struct _NET_IP4_PROTOCOL{
 	rb_tree_node_t rb_node;
 	const net_ip4_protocol_descriptor_t* descriptor;
 } net_ip4_protocol_t;
+
+
+
+extern net_ip4_address_t net_ip4_address;
 
 
 

@@ -4,7 +4,7 @@
 
 
 static _Bool _init(module_t* module){
-	net_udp_register_protocol();
+	net_udp_init();
 	return 1;
 }
 
