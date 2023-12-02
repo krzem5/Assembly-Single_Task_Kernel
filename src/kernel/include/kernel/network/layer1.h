@@ -19,6 +19,7 @@ typedef u16 ether_type_t;
 
 typedef struct KERNEL_PACKED _NETWORK_LAYER1_PACKET{
 	u16 length;
+	u8 _padding[6];
 	u8 raw_data[0];
 	mac_address_t dst_mac;
 	mac_address_t src_mac;
