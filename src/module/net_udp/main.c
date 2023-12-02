@@ -1,10 +1,10 @@
 #include <kernel/module/module.h>
-#include <net/arp.h>
+#include <net/udp.h>
 
 
 
 static _Bool _init(module_t* module){
-	net_arp_init();
+	net_udp_register_protocol();
 	return 1;
 }
 

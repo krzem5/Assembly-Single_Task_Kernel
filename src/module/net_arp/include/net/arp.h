@@ -32,7 +32,7 @@ typedef struct KERNEL_PACKED _NET_ARP_PACKET{
 
 
 
-void net_arp_register_protocol(void);
+void net_arp_init(void);
 
 
 

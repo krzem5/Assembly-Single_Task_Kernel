@@ -16,7 +16,7 @@ static void _rx_callback(const network_layer1_packet_t* packet){
 
 
 
-static network_layer2_protocol_descriptor_t _net_ip6_network_layer2_protocol_descriptor={
+static network_layer2_protocol_descriptor_t _net_ip6_protocol_descriptor={
 	"IPv6",
 	ETHER_TYPE,
 	_rx_callback
@@ -24,7 +24,7 @@ static network_layer2_protocol_descriptor_t _net_ip6_network_layer2_protocol_des
 
 
 
-void net_ip6_register_protocol(void){
+void net_ip6_init(void){
 	LOG("Registering IPv6 protocol...");
-	network_layer2_register_descriptor(&_net_ip6_network_layer2_protocol_descriptor);
+	network_layer2_register_descriptor(&_net_ip6_protocol_descriptor);
 }

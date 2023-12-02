@@ -11,7 +11,7 @@ typedef struct _NET_IP6_ADDRESS{
 
 
 
-void net_ip6_register_protocol(void);
+void net_ip6_init(void);
 
 
 

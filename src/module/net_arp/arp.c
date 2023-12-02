@@ -28,7 +28,7 @@ static void _rx_callback(const network_layer1_packet_t* packet){
 
 
 
-static network_layer2_protocol_descriptor_t _net_arp_network_layer2_protocol_descriptor={
+static network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 	"ARP",
 	ETHER_TYPE,
 	_rx_callback
@@ -36,9 +36,9 @@ static network_layer2_protocol_descriptor_t _net_arp_network_layer2_protocol_des
 
 
 
-void net_arp_register_protocol(void){
+void net_arp_init(void){
 	LOG("Registering ARP protocol...");
-	network_layer2_register_descriptor(&_net_arp_network_layer2_protocol_descriptor);
+	network_layer2_register_descriptor(&_net_arp_protocol_descriptor);
 }
 
 

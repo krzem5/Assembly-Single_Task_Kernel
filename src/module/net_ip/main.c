@@ -5,8 +5,8 @@
 
 
 static _Bool _init(module_t* module){
-	net_ip4_register_protocol();
-	net_ip6_register_protocol();
+	net_ip4_init();
+	net_ip6_init();
 	return 1;
 }
 
