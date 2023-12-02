@@ -71,7 +71,7 @@ KERNEL_PUBLIC void net_udp_send_packet(net_udp_packet_t* packet){
 		packet->raw_packet->packet->dst_address,
 		0,
 		PROTOCOL_TYPE,
-		__builtin_bswap16(packet->length+sizeof(net_udp_packet_data_t))
+		packet->packet->length
 	};
 	net_common_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(packet->packet->checksum));
 	net_ip4_send_packet(packet->raw_packet);
