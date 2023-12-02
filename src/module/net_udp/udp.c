@@ -74,6 +74,9 @@ KERNEL_PUBLIC void net_udp_send_packet(net_udp_packet_t* packet){
 		packet->packet->length
 	};
 	net_common_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(packet->packet->checksum));
+	if (!packet->packet->checksum){
+		packet->packet->checksum=0xffff;
+	}
 	net_ip4_send_packet(packet->raw_packet);
 	omm_dealloc(_net_udp_packet_allocator,packet);
 }
