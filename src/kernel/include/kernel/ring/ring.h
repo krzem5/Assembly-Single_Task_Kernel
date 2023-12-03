@@ -6,17 +6,13 @@
 
 
 
-#define RING_FLAG_HAS_SPACE 1
-#define RING_FLAG_HAS_DATA 2
-
-
-
 typedef struct _RING{
 	void** data;
-	u16 mask;
-	u16 head;
-	u16 tail;
-	u16 flags;
+	u32 capacity;
+	u32 read_index;
+	u32 read_count;
+	u32 write_index;
+	u32 write_count;
 	spinlock_t read_lock;
 	spinlock_t write_lock;
 	event_t* read_event;
