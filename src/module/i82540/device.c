@@ -9,9 +9,12 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
+#include <kernel/scheduler/load_balancer.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
@@ -111,6 +114,25 @@ static void _i82540_wait(void* extra_data){
 
 
 
+static void _rx_thread(i82540_device_t* device){
+	while (1){
+		_i82540_wait(device);
+		network_layer1_push_packet(_i82540_rx(device));
+	}
+}
+
+
+
+static void _tx_thread(i82540_device_t* device){
+	while (1){
+		network_layer1_packet_t* packet=network_layer1_pop_packet();
+		_i82540_tx(device,packet);
+		network_layer1_delete_packet(packet);
+	}
+}
+
+
+
 static const network_layer1_device_descriptor_t _i82540_network_layer1_device_descriptor={
 	"i82540",
 	_i82540_tx,
@@ -195,6 +217,12 @@ static void _i82540_init_device(pci_device_t* device){
 		rah>>8
 	};
 	network_layer1_create_device(&_i82540_network_layer1_device_descriptor,&mac_address,i82540_device);
+	thread_t* thread=thread_new_kernel_thread(process_kernel,_rx_thread,0x10000,1,i82540_device);
+	thread->priority=SCHEDULER_PRIORITY_HIGH;
+	scheduler_enqueue_thread(thread);
+	thread=thread_new_kernel_thread(process_kernel,_tx_thread,0x10000,1,i82540_device);
+	thread->priority=SCHEDULER_PRIORITY_HIGH;
+	scheduler_enqueue_thread(thread);
 }
 
 

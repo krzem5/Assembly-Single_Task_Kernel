@@ -24,7 +24,8 @@
 
 
 static omm_allocator_t* _network_layer1_device_allocator=NULL;
-static ring_t* _network_layer1_packet_ring=NULL;
+static ring_t* _network_layer1_packet_rx_ring=NULL;
+static ring_t* _network_layer1_packet_tx_ring=NULL;
 
 KERNEL_PUBLIC handle_type_t network_layer1_device_handle_type=0;
 KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
@@ -33,18 +34,27 @@ KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
 
 static void _packet_thread(void){
 	while (1){
-		if (!network_layer1_device){
-			scheduler_yield();
-			continue;
-		}
-		network_layer1_device->descriptor->wait(network_layer1_device->extra_data);
-		network_layer1_packet_t* packet=network_layer1_device->descriptor->rx(network_layer1_device->extra_data);
-		if (!packet){
-			continue;
-		}
-		network_layer1_push_packet(packet);
+		network_layer1_packet_t* packet=ring_pop(_network_layer1_packet_rx_ring,1);
 		network_layer2_process_packet(packet);
 		network_layer1_delete_packet(packet);
+	}
+}
+
+
+
+static void _packet_thread2(void){
+	while (1){
+		return;
+		// if (!network_layer1_device){
+		// 	scheduler_yield();
+		// 	continue;
+		// }
+		// network_layer1_device->descriptor->wait(network_layer1_device->extra_data);
+		// network_layer1_packet_t* packet=network_layer1_device->descriptor->rx(network_layer1_device->extra_data);
+		// if (!packet){
+		// 	continue;
+		// }
+		// network_layer1_push_packet(packet,1);
 	}
 }
 
@@ -53,11 +63,13 @@ static void _packet_thread(void){
 void KERNEL_EARLY_EXEC network_layer1_init(void){
 	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("network_layer1_device",sizeof(network_layer1_device_t),8,1,pmm_alloc_counter("omm_network_layer1_device"));
-	_network_layer1_packet_ring=ring_init(16384);
+	_network_layer1_packet_rx_ring=ring_init(16384);
+	_network_layer1_packet_tx_ring=ring_init(16384);
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
 	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_thread,0x200000,0);
 	thread->priority=SCHEDULER_PRIORITY_HIGH;
 	scheduler_enqueue_thread(thread);
+	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_packet_thread2,0x200000,0));
 }
 
 
@@ -100,13 +112,21 @@ KERNEL_PUBLIC void network_layer1_delete_packet(network_layer1_packet_t* packet)
 
 KERNEL_PUBLIC void network_layer1_send_packet(network_layer1_packet_t* packet){
 	if (network_layer1_device){
-		network_layer1_device->descriptor->tx(network_layer1_device->extra_data,packet);
+		ring_push(_network_layer1_packet_tx_ring,packet,1);
 	}
-	network_layer1_delete_packet(packet);
+	else{
+		network_layer1_delete_packet(packet);
+	}
 }
 
 
 
 KERNEL_PUBLIC void network_layer1_push_packet(network_layer1_packet_t* packet){
-	ring_push(_network_layer1_packet_ring,packet,1);
+	ring_push(_network_layer1_packet_rx_ring,packet,1);
+}
+
+
+
+KERNEL_PUBLIC network_layer1_packet_t* network_layer1_pop_packet(void){
+	return ring_pop(_network_layer1_packet_tx_ring,1);
 }

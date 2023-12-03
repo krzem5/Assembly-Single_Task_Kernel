@@ -7,12 +7,12 @@
 
 
 typedef struct _RING{
-	void** data;
+	void** buffer;
 	u32 capacity;
 	u32 read_index;
-	u32 read_count;
+	KERNEL_ATOMIC u32 read_count;
 	u32 write_index;
-	u32 write_count;
+	KERNEL_ATOMIC u32 write_count;
 	spinlock_t read_lock;
 	spinlock_t write_lock;
 	event_t* read_event;

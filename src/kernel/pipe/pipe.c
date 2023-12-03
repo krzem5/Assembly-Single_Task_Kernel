@@ -65,6 +65,7 @@ _retry_read:
 	if (!pipe->is_full&&pipe->write_offset==pipe->read_offset){
 		spinlock_release_exclusive(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
+			scheduler_resume();
 			return 0;
 		}
 		thread_await_event(pipe->write_event);
@@ -105,6 +106,7 @@ _retry_write:
 	if (pipe->is_full){
 		spinlock_release_exclusive(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
+			scheduler_resume();
 			return 0;
 		}
 		thread_await_event(pipe->read_event);
@@ -127,7 +129,7 @@ _retry_write:
 	}
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
-	event_dispatch(pipe->write_event,1);
+	event_dispatch(pipe->write_event,0);
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
 	return size;
