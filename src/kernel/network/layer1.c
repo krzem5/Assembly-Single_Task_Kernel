@@ -32,29 +32,11 @@ KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
 
 
 
-static void _packet_thread(void){
+static void _packet_rx_thread(void){
 	while (1){
 		network_layer1_packet_t* packet=ring_pop(_network_layer1_packet_rx_ring,1);
 		network_layer2_process_packet(packet);
 		network_layer1_delete_packet(packet);
-	}
-}
-
-
-
-static void _packet_thread2(void){
-	while (1){
-		return;
-		// if (!network_layer1_device){
-		// 	scheduler_yield();
-		// 	continue;
-		// }
-		// network_layer1_device->descriptor->wait(network_layer1_device->extra_data);
-		// network_layer1_packet_t* packet=network_layer1_device->descriptor->rx(network_layer1_device->extra_data);
-		// if (!packet){
-		// 	continue;
-		// }
-		// network_layer1_push_packet(packet,1);
 	}
 }
 
@@ -66,10 +48,9 @@ void KERNEL_EARLY_EXEC network_layer1_init(void){
 	_network_layer1_packet_rx_ring=ring_init(16384);
 	_network_layer1_packet_tx_ring=ring_init(16384);
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
-	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_thread,0x200000,0);
+	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_rx_thread,0x200000,0);
 	thread->priority=SCHEDULER_PRIORITY_HIGH;
 	scheduler_enqueue_thread(thread);
-	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_packet_thread2,0x200000,0));
 }
 
 

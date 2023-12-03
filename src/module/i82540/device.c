@@ -31,93 +31,41 @@ static omm_allocator_t* _i82540_device_allocator=NULL;
 
 
 
-static KERNEL_INLINE void _consume_packet(i82540_device_t* device,u16 tail,i82540_rx_descriptor_t* desc){
-	desc->status=0;
-	if (device->mmio[REG_RDH]!=device->mmio[REG_RDT]){
-		device->mmio[REG_RDT]=tail;
-	}
-}
-
-
-
-static void _i82540_tx(void* extra_data,const network_layer1_packet_t* packet){
-	u16 length=(packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE>PAGE_SIZE?PAGE_SIZE:packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE);
-	i82540_device_t* device=extra_data;
-	spinlock_acquire_exclusive(&(device->lock));
-	u16 tail=device->mmio[REG_TDT];
-	i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
-	memcpy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),packet->raw_data,length);
-	desc->length=length;
-	desc->cmd=TXDESC_EOP|TXDESC_RS;
-	tail++;
-	if (tail==TX_DESCRIPTOR_COUNT){
-		tail=0;
-	}
-	device->mmio[REG_TDT]=tail;
-	SPINLOOP(!(desc->status&0x0f));
-	spinlock_release_exclusive(&(device->lock));
-}
-
-
-
-static network_layer1_packet_t* _i82540_rx(void* extra_data){
-	i82540_device_t* device=extra_data;
-	spinlock_acquire_exclusive(&(device->lock));
-	u16 tail=device->mmio[REG_RDT];
-	tail++;
-	if (tail==RX_DESCRIPTOR_COUNT){
-		tail=0;
-	}
-	i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
-	if (!(desc->status&RDESC_DD)){
-		spinlock_release_exclusive(&(device->lock));
-		return NULL;
-	}
-	if (desc->length<60||!(desc->status&RDESC_EOP)||desc->errors){
-		_consume_packet(device,tail,desc);
-		spinlock_release_exclusive(&(device->lock));
-		return NULL;
-	}
-	network_layer1_packet_t* out=network_layer1_create_packet(desc->length-NETWORK_LAYER1_PACKET_HEADER_SIZE,NULL,NULL,0);
-	memcpy(out->raw_data,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),desc->length);
-	_consume_packet(device,tail,desc);
-	spinlock_release_exclusive(&(device->lock));
-	return out;
-}
-
-
-
-static void _i82540_wait(void* extra_data){
-	i82540_device_t* device=extra_data;
-	spinlock_acquire_exclusive(&(device->lock));
-	u16 tail=device->mmio[REG_RDT];
-	tail++;
-	if (tail==RX_DESCRIPTOR_COUNT){
-		tail=0;
-	}
-	i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
-	while (!(desc->status&RDESC_DD)){
-		spinlock_release_exclusive(&(device->lock));
-		thread_await_event(IRQ_EVENT(device->irq));
-		spinlock_acquire_exclusive(&(device->lock));
-		u32 icr=device->mmio[REG_ICR];
-		if (icr&0x0004){
-			device->mmio[REG_CTRL]|=CTRL_SLU;
-		}
-		else if (icr&0x0080){
-			break;
-		}
-		(void)device->mmio[REG_ICR];
-	}
-	spinlock_release_exclusive(&(device->lock));
-}
-
-
-
 static void _rx_thread(i82540_device_t* device){
 	while (1){
-		_i82540_wait(device);
-		network_layer1_push_packet(_i82540_rx(device));
+		scheduler_pause();
+		spinlock_acquire_exclusive(&(device->lock));
+		u16 tail=device->mmio[REG_RDT];
+		tail++;
+		if (tail==RX_DESCRIPTOR_COUNT){
+			tail=0;
+		}
+		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
+		while (!(desc->status&RDESC_DD)){
+			spinlock_release_exclusive(&(device->lock));
+			thread_await_event(IRQ_EVENT(device->irq));
+			scheduler_pause();
+			spinlock_acquire_exclusive(&(device->lock));
+			u32 icr=device->mmio[REG_ICR];
+			if (icr&0x0004){
+				device->mmio[REG_CTRL]|=CTRL_SLU;
+			}
+			else if (icr&0x0080){
+				break;
+			}
+			(void)device->mmio[REG_ICR];
+		}
+		if (desc->length>=NETWORK_LAYER1_PACKET_HEADER_SIZE&&(desc->status&RDESC_EOP)&&!desc->errors){
+			network_layer1_packet_t* packet=network_layer1_create_packet(desc->length-NETWORK_LAYER1_PACKET_HEADER_SIZE,NULL,NULL,0);
+			memcpy(packet->raw_data,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),desc->length);
+			network_layer1_push_packet(packet);
+		}
+		desc->status=0;
+		if (device->mmio[REG_RDH]!=device->mmio[REG_RDT]){
+			device->mmio[REG_RDT]=tail;
+		}
+		spinlock_release_exclusive(&(device->lock));
+		scheduler_resume();
 	}
 }
 
@@ -126,18 +74,30 @@ static void _rx_thread(i82540_device_t* device){
 static void _tx_thread(i82540_device_t* device){
 	while (1){
 		network_layer1_packet_t* packet=network_layer1_pop_packet();
-		_i82540_tx(device,packet);
+		u16 length=(packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE>PAGE_SIZE?PAGE_SIZE:packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE);
+		scheduler_pause();
+		spinlock_acquire_exclusive(&(device->lock));
+		u16 tail=device->mmio[REG_TDT];
+		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
+		memcpy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),packet->raw_data,length);
 		network_layer1_delete_packet(packet);
+		desc->length=length;
+		desc->cmd=TXDESC_EOP|TXDESC_RS;
+		tail++;
+		if (tail==TX_DESCRIPTOR_COUNT){
+			tail=0;
+		}
+		device->mmio[REG_TDT]=tail;
+		SPINLOOP(!(desc->status&0x0f));
+		spinlock_release_exclusive(&(device->lock));
+		scheduler_resume();
 	}
 }
 
 
 
 static const network_layer1_device_descriptor_t _i82540_network_layer1_device_descriptor={
-	"i82540",
-	_i82540_tx,
-	_i82540_rx,
-	_i82540_wait
+	"i82540"
 };
 
 

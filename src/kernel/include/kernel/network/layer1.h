@@ -31,9 +31,6 @@ typedef struct KERNEL_PACKED _NETWORK_LAYER1_PACKET{
 
 typedef struct _NETWORK_LAYER1_DEVICE_DESCRIPTOR{
 	const char* name;
-	void (*tx)(void*,const network_layer1_packet_t*);
-	network_layer1_packet_t* (*rx)(void*);
-	void (*wait)(void*);
 } network_layer1_device_descriptor_t;
 
 
