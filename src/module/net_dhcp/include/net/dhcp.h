@@ -8,6 +8,16 @@
 #define NET_DHCP_OP_BOOTREQUEST 1
 #define NET_DHCP_OP_BOOTREPLY 2
 
+// Options
+#define NET_DHCP_OPTION_SUBNET_MASK 1
+#define NET_DHCP_OPTION_ROUTER 3
+#define NET_DHCP_OPTION_DOMAIN_NAME_SERVER 6
+#define NET_DHCP_OPTION_REQUESTED_IP_ADDRESS 50
+#define NET_DHCP_OPTION_IP_ADDRESS_LEASE_TIME 51
+#define NET_DHCP_OPTION_MESSAGE_TYPE 53
+#define NET_DHCP_OPTION_SERVER_IDENTIFIER 54
+#define NET_DHCP_OPTION_END 255
+
 // Message types
 #define NET_DHCP_MESSAGE_TYPE_NONE 0
 #define NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER 1
@@ -23,7 +33,7 @@
 
 
 
-#define NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet) for (u32 i=0;(dhcp_packet)->options[i]!=0xff;i+=((dhcp_packet)->options[i]?(dhcp_packet)->options[i+1]+2:1))
+#define NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet) for (u32 i=0;(dhcp_packet)->options[i]!=NET_DHCP_OPTION_END;i+=((dhcp_packet)->options[i]?(dhcp_packet)->options[i+1]+2:1))
 
 
 

@@ -52,10 +52,10 @@ static void _send_discover_request(void){
 	_net_dhcp_offer_address=0;
 	_net_dhcp_offer_server_address=0;
 	net_dhcp_packet_t* packet=_create_packet(4);
-	packet->options[0]=53;
+	packet->options[0]=NET_DHCP_OPTION_MESSAGE_TYPE;
 	packet->options[1]=1;
 	packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
-	packet->options[3]=255;
+	packet->options[3]=NET_DHCP_OPTION_END;
 	_send_packet(packet,4);
 }
 
@@ -77,7 +77,7 @@ static void _rx_thread(void){
 		}
 		u8 op=NET_DHCP_MESSAGE_TYPE_NONE;
 		NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
-			if (dhcp_packet->options[i]==53&&dhcp_packet->options[i+1]==1){
+			if (dhcp_packet->options[i]==NET_DHCP_OPTION_MESSAGE_TYPE&&dhcp_packet->options[i+1]==1){
 				op=dhcp_packet->options[i+2];
 				break;
 			}
@@ -88,22 +88,22 @@ static void _rx_thread(void){
 			INFO("IPv4 offer from %I: %I",_net_dhcp_offer_server_address,_net_dhcp_offer_address);
 			net_dhcp_packet_t* packet=_create_packet(16);
 			packet->siaddr=dhcp_packet->siaddr;
-			packet->options[0]=53;
+			packet->options[0]=NET_DHCP_OPTION_MESSAGE_TYPE;
 			packet->options[1]=1;
 			packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPREQUEST;
-			packet->options[3]=50;
+			packet->options[3]=NET_DHCP_OPTION_REQUESTED_IP_ADDRESS;
 			packet->options[4]=4;
 			packet->options[5]=_net_dhcp_offer_address>>24;
 			packet->options[6]=_net_dhcp_offer_address>>16;
 			packet->options[7]=_net_dhcp_offer_address>>8;
 			packet->options[8]=_net_dhcp_offer_address;
-			packet->options[9]=54;
+			packet->options[9]=NET_DHCP_OPTION_SERVER_IDENTIFIER;
 			packet->options[10]=4;
 			packet->options[11]=_net_dhcp_offer_server_address>>24;
 			packet->options[12]=_net_dhcp_offer_server_address>>16;
 			packet->options[13]=_net_dhcp_offer_server_address>>8;
 			packet->options[14]=_net_dhcp_offer_server_address;
-			packet->options[15]=255;
+			packet->options[15]=NET_DHCP_OPTION_END;
 			_send_packet(packet,16);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPACK){
@@ -119,16 +119,16 @@ static void _rx_thread(void){
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
 				u8 length=dhcp_packet->options[i+1];
-				if (type==1&&length==4){
+				if (type==NET_DHCP_OPTION_SUBNET_MASK&&length==4){
 					subnet_mask=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
-				else if (type==3&&length==4){
+				else if (type==NET_DHCP_OPTION_ROUTER&&length>=4){
 					router=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
-				else if (type==6&&length==4){
+				else if (type==NET_DHCP_OPTION_DOMAIN_NAME_SERVER&&length>=4){
 					dns=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
-				else if (type==51&&length==4){
+				else if (type==NET_DHCP_OPTION_IP_ADDRESS_LEASE_TIME&&length==4){
 					lease_time=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
 			}
