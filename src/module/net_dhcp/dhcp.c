@@ -26,7 +26,7 @@ static void _rx_thread(void){
 			continue;
 		}
 		net_dhcp_packet_t* dhcp_packet=(net_dhcp_packet_t*)buffer;
-		WARN("PACKET [%I %I %I %I]",dhcp_packet->ciaddr,dhcp_packet->yiaddr,dhcp_packet->siaddr,dhcp_packet->giaddr);
+		WARN("PACKET [%I %I %I %I]",__builtin_bswap32(dhcp_packet->ciaddr),__builtin_bswap32(dhcp_packet->yiaddr),__builtin_bswap32(dhcp_packet->siaddr),__builtin_bswap32(dhcp_packet->giaddr));
 	}
 }
 
