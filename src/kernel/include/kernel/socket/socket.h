@@ -59,7 +59,7 @@ typedef struct _SOCKET_DTP_DESCRIPTOR{
 	void (*debind)(socket_vfs_node_t*);
 	_Bool (*connect)(socket_vfs_node_t*,const void*,u32);
 	void (*deconnect)(socket_vfs_node_t*);
-	void (*write)(socket_vfs_node_t*,const void*,u64);
+	u64 (*write)(socket_vfs_node_t*,const void*,u64);
 } socket_dtp_descriptor_t;
 
 

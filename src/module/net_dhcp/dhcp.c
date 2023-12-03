@@ -1,6 +1,8 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
+#include <kernel/network/layer1.h>
 #include <kernel/socket/socket.h>
+#include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <net/dhcp.h>
@@ -33,4 +35,25 @@ void net_dhcp_init(void){
 		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
+	u8 buffer[sizeof(net_dhcp_packet_t)+4];
+	memset(buffer,0,sizeof(net_dhcp_packet_t)+4);
+	net_dhcp_packet_t* packet=(net_dhcp_packet_t*)buffer;
+	packet->op=1;
+	packet->htype=1;
+	packet->hlen=6;
+	packet->hops=0;
+	packet->xid=0xa5a5a5a5; // random
+	packet->secs=0;
+	packet->flags=0;
+	packet->ciaddr=0;
+	packet->yiaddr=0;
+	packet->siaddr=0;
+	packet->giaddr=0;
+	memcpy(packet->chaddr,network_layer1_device->mac_address,sizeof(mac_address_t));
+	packet->cookie=__builtin_bswap32(NET_DHCP_COOKIE);
+	packet->options[0]=53;
+	packet->options[1]=1;
+	packet->options[2]=1;
+	packet->options[3]=255;
+	vfs_node_write(_net_dhcp_socket,0,buffer,sizeof(net_dhcp_packet_t)+4,0);
 }

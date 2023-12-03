@@ -6,6 +6,7 @@
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/socket/port.h>
 #include <kernel/socket/socket.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -49,7 +50,11 @@ static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fl
 
 
 static u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
-	return 0;
+	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
+	spinlock_acquire_exclusive(&(socket->write_lock));
+	u64 out=(socket->handler_remote_ctx?socket->handler->descriptor->write(socket,buffer,size):0);
+	spinlock_release_exclusive(&(socket->write_lock));
+	return out;
 }
 
 
@@ -76,6 +81,7 @@ void KERNEL_EARLY_EXEC socket_init(void){
 	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1,pmm_alloc_counter("omm_socket_dtp_handler"));
 	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4,pmm_alloc_counter("omm_socket_node"));
 	spinlock_init(&(_socket_vfs_node_allocator->lock));
+	socket_port_init();
 }
 
 

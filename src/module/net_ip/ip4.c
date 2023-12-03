@@ -26,7 +26,19 @@ static omm_allocator_t* _net_ip4_packet_allocator=NULL;
 
 
 static void _rx_callback(const network_layer1_packet_t* packet){
-	WARN("PACKET (IPv4)");
+	if (packet->length<sizeof(net_ip4_packet_data_t)){
+		return;
+	}
+	const net_ip4_packet_data_t* header=(const net_ip4_packet_data_t*)(packet->data);
+	if (header->version_and_ihl!=0x45||!net_common_verify_checksum(header,sizeof(net_ip4_packet_data_t))){
+		ERROR("Wrong version or checksum");
+		return;
+	}
+	if (header->total_length!=__builtin_bswap16(packet->length)||header->fragment){
+		ERROR("Fragmented IPv4 packed");
+		return;
+	}
+	WARN("PACKET (IPv4) [%u]",header->protocol);
 }
 
 
