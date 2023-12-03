@@ -7,6 +7,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
+#include <kernel/ring/ring.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -23,6 +24,7 @@
 
 
 static omm_allocator_t* _network_layer1_device_allocator=NULL;
+static ring_t* _network_layer1_packet_ring=NULL;
 
 KERNEL_PUBLIC handle_type_t network_layer1_device_handle_type=0;
 KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
@@ -40,6 +42,7 @@ static void _packet_thread(void){
 		if (!packet){
 			continue;
 		}
+		network_layer1_push_packet(packet);
 		network_layer2_process_packet(packet);
 		network_layer1_delete_packet(packet);
 	}
@@ -50,6 +53,7 @@ static void _packet_thread(void){
 void KERNEL_EARLY_EXEC network_layer1_init(void){
 	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("network_layer1_device",sizeof(network_layer1_device_t),8,1,pmm_alloc_counter("omm_network_layer1_device"));
+	_network_layer1_packet_ring=ring_init(16384);
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
 	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_thread,0x200000,0);
 	thread->priority=SCHEDULER_PRIORITY_HIGH;
@@ -99,4 +103,10 @@ KERNEL_PUBLIC void network_layer1_send_packet(network_layer1_packet_t* packet){
 		network_layer1_device->descriptor->tx(network_layer1_device->extra_data,packet);
 	}
 	network_layer1_delete_packet(packet);
+}
+
+
+
+KERNEL_PUBLIC void network_layer1_push_packet(network_layer1_packet_t* packet){
+	ring_push(_network_layer1_packet_ring,packet,1);
 }

@@ -72,4 +72,8 @@ void network_layer1_send_packet(network_layer1_packet_t* packet);
 
 
 
+void network_layer1_push_packet(network_layer1_packet_t* packet);
+
+
+
 #endif

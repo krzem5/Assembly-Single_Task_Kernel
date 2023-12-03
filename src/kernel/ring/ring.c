@@ -48,7 +48,9 @@ KERNEL_PUBLIC void ring_deinit(ring_t* ring);
 
 
 
-KERNEL_PUBLIC _Bool ring_push(ring_t* ring,void* item,_Bool wait);
+KERNEL_PUBLIC _Bool ring_push(ring_t* ring,void* item,_Bool wait){
+	return 1;
+}
 
 
 
