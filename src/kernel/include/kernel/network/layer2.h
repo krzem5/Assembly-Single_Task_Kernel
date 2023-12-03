@@ -8,7 +8,7 @@
 typedef struct _NETWORK_LAYER2_PROTOCOL_DESCRIPTOR{
 	const char* name;
 	ether_type_t ether_type;
-	void (*rx_callback)(const network_layer1_packet_t* packet);
+	void (*rx_callback)(network_layer1_packet_t* packet);
 } network_layer2_protocol_descriptor_t;
 
 
@@ -32,7 +32,7 @@ void network_layer2_unregister_descriptor(const network_layer2_protocol_descript
 
 
 
-void network_layer2_process_packet(const network_layer1_packet_t* packet);
+void network_layer2_process_packet(network_layer1_packet_t* packet);
 
 
 

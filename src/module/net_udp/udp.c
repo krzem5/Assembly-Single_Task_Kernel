@@ -105,7 +105,10 @@ static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 
 
 
-static void _rx_callback(const net_ip4_packet_t* packet){
+static void _rx_callback(net_ip4_packet_t* packet){
+	if (packet->length<sizeof(net_udp_packet_t)){
+		return;
+	}
 	WARN("PACKET (UDP)");
 }
 

@@ -25,11 +25,11 @@ static omm_allocator_t* _net_ip4_packet_allocator=NULL;
 
 
 
-static void _rx_callback(const network_layer1_packet_t* packet){
+static void _rx_callback(network_layer1_packet_t* packet){
 	if (packet->length<sizeof(net_ip4_packet_data_t)){
 		return;
 	}
-	const net_ip4_packet_data_t* header=(const net_ip4_packet_data_t*)(packet->data);
+	net_ip4_packet_data_t* header=(net_ip4_packet_data_t*)(packet->data);
 	if (header->version_and_ihl!=0x45||!net_common_verify_checksum(header,sizeof(net_ip4_packet_data_t))){
 		ERROR("Wrong version or checksum");
 		return;
@@ -38,7 +38,20 @@ static void _rx_callback(const network_layer1_packet_t* packet){
 		ERROR("Fragmented IPv4 packed");
 		return;
 	}
-	WARN("PACKET (IPv4) [%u]",header->protocol);
+	spinlock_acquire_shared(&_net_ip4_protocol_lock);
+	const net_ip4_protocol_t* protocol=(const net_ip4_protocol_t*)rb_tree_lookup_node(&_net_ip4_protocol_type_tree,header->protocol);
+	if (protocol){
+		net_ip4_packet_t ip4_packet={
+			packet->length-sizeof(net_ip4_packet_data_t),
+			packet,
+			header
+		};
+		protocol->descriptor->rx_callback(&ip4_packet);
+	}
+	else{
+		WARN("Unhandled IPv4 packet '%u'",header->protocol);
+	}
+	spinlock_release_shared(&_net_ip4_protocol_lock);
 }
 
 

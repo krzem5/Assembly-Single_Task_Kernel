@@ -13,11 +13,11 @@
 
 
 
-static void _rx_callback(const network_layer1_packet_t* packet){
+static void _rx_callback(network_layer1_packet_t* packet){
 	if (packet->length<sizeof(net_arp_packet_t)){
 		return;
 	}
-	const net_arp_packet_t* arp_packet=(const net_arp_packet_t*)(packet->data);
+	net_arp_packet_t* arp_packet=(net_arp_packet_t*)(packet->data);
 	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_ip4_address)){
 		return;
 	}

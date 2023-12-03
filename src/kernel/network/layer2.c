@@ -56,7 +56,7 @@ KERNEL_PUBLIC void network_layer2_unregister_descriptor(const network_layer2_pro
 
 
 
-void network_layer2_process_packet(const network_layer1_packet_t* packet){
+void network_layer2_process_packet(network_layer1_packet_t* packet){
 	spinlock_acquire_shared(&_network_layer2_lock);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_network_layer2_ether_type_tree,__builtin_bswap16(packet->ether_type));
 	if (node){

@@ -10,7 +10,7 @@
 
 
 
-static void _rx_callback(const network_layer1_packet_t* packet){
+static void _rx_callback(network_layer1_packet_t* packet){
 	WARN("PACKET (IPv6)");
 }
 

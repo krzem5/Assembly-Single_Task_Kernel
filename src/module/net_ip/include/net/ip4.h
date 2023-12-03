@@ -40,7 +40,7 @@ typedef struct _NET_IP4_PACKET{
 typedef struct _NET_IP4_PROTOCOL_DESCRIPTOR{
 	const char* name;
 	net_ip4_protocol_type_t protocol_type;
-	void (*rx_callback)(const net_ip4_packet_t* packet);
+	void (*rx_callback)(net_ip4_packet_t* packet);
 } net_ip4_protocol_descriptor_t;
 
 
