@@ -48,9 +48,7 @@ void KERNEL_EARLY_EXEC network_layer1_init(void){
 	_network_layer1_packet_rx_ring=ring_init(16384);
 	_network_layer1_packet_tx_ring=ring_init(16384);
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
-	thread_t* thread=thread_new_kernel_thread(process_kernel,_packet_rx_thread,0x200000,0);
-	thread->priority=SCHEDULER_PRIORITY_HIGH;
-	scheduler_enqueue_thread(thread);
+	thread_new_kernel_thread(NULL,_packet_rx_thread,0x200000,0)->priority=SCHEDULER_PRIORITY_HIGH;
 }
 
 

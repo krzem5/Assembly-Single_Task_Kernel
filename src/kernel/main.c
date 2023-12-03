@@ -65,7 +65,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	scheduler_init();
 	process_init();
 	cpu_start_all_cores();
-	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_main_thread,0x200000,0));
+	thread_new_kernel_thread(NULL,_main_thread,0x200000,0);
 	scheduler_enable();
 	scheduler_yield();
 	scheduler_task_wait_loop();

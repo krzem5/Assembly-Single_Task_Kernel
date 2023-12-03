@@ -9,7 +9,6 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
@@ -177,12 +176,8 @@ static void _i82540_init_device(pci_device_t* device){
 		rah>>8
 	};
 	network_layer1_create_device(&_i82540_network_layer1_device_descriptor,&mac_address,i82540_device);
-	thread_t* thread=thread_new_kernel_thread(process_kernel,_rx_thread,0x10000,1,i82540_device);
-	thread->priority=SCHEDULER_PRIORITY_HIGH;
-	scheduler_enqueue_thread(thread);
-	thread=thread_new_kernel_thread(process_kernel,_tx_thread,0x10000,1,i82540_device);
-	thread->priority=SCHEDULER_PRIORITY_HIGH;
-	scheduler_enqueue_thread(thread);
+	thread_new_kernel_thread(NULL,_rx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
+	thread_new_kernel_thread(NULL,_tx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
 }
 
 

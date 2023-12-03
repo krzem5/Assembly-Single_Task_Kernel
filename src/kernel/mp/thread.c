@@ -134,7 +134,8 @@ KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
-	thread_t* out=_thread_alloc(process,0,stack_size);
+	_Bool start_thread=!process;
+	thread_t* out=_thread_alloc((process?process:process_kernel),0,stack_size);
 	out->gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
 	out->gpr_state.rax=(u64)func;
 	out->gpr_state.rsp=out->kernel_stack_region->rb_node.key+stack_size;
@@ -155,6 +156,9 @@ KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u
 	out->fs_gs_state.fs=0;
 	out->fs_gs_state.gs=(u64)out;
 	handle_finish_setup(&(out->handle));
+	if (start_thread){
+		scheduler_enqueue_thread(out);
+	}
 	return out;
 }
 

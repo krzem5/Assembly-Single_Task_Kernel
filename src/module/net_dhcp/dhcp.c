@@ -52,7 +52,7 @@ void net_dhcp_init(void){
 		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
-	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_rx_thread,0x200000,0));
+	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
 	u8 buffer[sizeof(net_dhcp_packet_t)+4];
 	memset(buffer,0,sizeof(net_dhcp_packet_t)+4);
 	net_dhcp_packet_t* packet=(net_dhcp_packet_t*)buffer;
