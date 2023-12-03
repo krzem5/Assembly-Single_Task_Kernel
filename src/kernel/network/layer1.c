@@ -1,8 +1,8 @@
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/memory/smm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
@@ -68,9 +68,9 @@ KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_desc
 
 
 
-KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 size,const mac_address_t* src_mac_address,const mac_address_t* dst_mac_address,ether_type_t ether_type){
-	network_layer1_packet_t* out=(void*)(smm_alloc(NULL,sizeof(network_layer1_packet_t)+size)->data);
-	out->length=size;
+KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 length,const mac_address_t* src_mac_address,const mac_address_t* dst_mac_address,ether_type_t ether_type){
+	network_layer1_packet_t* out=amm_alloc(length+sizeof(network_layer1_packet_t));
+	out->length=length;
 	if (dst_mac_address){
 		memcpy(out->dst_mac,*dst_mac_address,sizeof(mac_address_t));
 	}
@@ -84,7 +84,7 @@ KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 size,con
 
 
 KERNEL_PUBLIC void network_layer1_delete_packet(network_layer1_packet_t* packet){
-	smm_dealloc((void*)(((u64)packet)-__builtin_offsetof(string_t,data)));
+	amm_dealloc(packet);
 }
 
 

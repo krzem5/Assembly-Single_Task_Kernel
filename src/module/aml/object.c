@@ -1,5 +1,6 @@
 #include <aml/object.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
@@ -218,7 +219,7 @@ KERNEL_PUBLIC aml_object_t* aml_object_alloc_mutex(u8 sync_flags){
 KERNEL_PUBLIC aml_object_t* aml_object_alloc_package(u8 length){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_PACKAGE);
 	out->package.length=length;
-	out->package.data=(void*)(smm_alloc(NULL,length*sizeof(aml_object_t*))->data);
+	out->package.data=amm_alloc(length*sizeof(aml_object_t*));
 	return out;
 }
 
@@ -291,7 +292,7 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 		for (u8 i=0;i<object->package.length;i++){
 			aml_object_dealloc(object->package.data[i]);
 		}
-		smm_dealloc((void*)(((u64)(object->package.data))-__builtin_offsetof(string_t,data)));
+		amm_dealloc(object->package.data);
 	}
 	omm_dealloc(_aml_object_allocator,object);
 }

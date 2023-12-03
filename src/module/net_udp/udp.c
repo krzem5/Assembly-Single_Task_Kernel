@@ -1,4 +1,5 @@
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/socket/port.h>
@@ -67,7 +68,7 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 		length=packet->length;
 	}
 	memcpy(buffer,packet->data,length);
-	WARN("Dealloc UDP socket packet");
+	amm_dealloc(packet);
 	return length;
 }
 
@@ -149,14 +150,14 @@ static void _rx_callback(net_ip4_packet_t* packet){
 		ERROR("No UDP socket on port %u",port);
 		return;
 	}
-	net_udp_socket_packet_t* socket_packet=(void*)(smm_alloc(NULL,sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t))->data);
+	net_udp_socket_packet_t* socket_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t));
 	socket_packet->address=__builtin_bswap32(packet->packet->src_address);
 	socket_packet->port=__builtin_bswap16(udp_packet->src_port);
 	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
 	memcpy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
 	if (!ring_push(socket->rx_ring,socket_packet,0)){
+		amm_dealloc(packet);
 		ERROR("UDP packet dropped, socket rx ring full");
-		WARN("Dealloc UDP socket packet");
 	}
 }
 
