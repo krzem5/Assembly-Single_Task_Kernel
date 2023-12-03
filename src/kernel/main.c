@@ -9,6 +9,7 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
@@ -55,6 +56,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	vmm_init();
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
+	amm_init();
 	symbol_init();
 	clock_init();
 	time_init();

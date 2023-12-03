@@ -61,13 +61,12 @@ KERNEL_PUBLIC _Bool aml_bus_device_get_crs(aml_bus_device_t* device){
 		aml_object_dealloc(value);
 		return 0;
 	}
-	string_t* data=value->buffer;
-	for (u32 i=0;i<data->length;){
-		u8 type=data->data[i];
+	for (u32 i=0;i<value->buffer.size;){
+		u8 type=value->buffer.data[i];
 		i++;
 		u16 length=0;
 		if (type>>7){
-			length=data->data[i]|(data->data[i+1]<<8);
+			length=value->buffer.data[i]|(value->buffer.data[i+1]<<8);
 			i+=2;
 		}
 		else{
@@ -115,7 +114,7 @@ KERNEL_PUBLIC _Bool aml_bus_device_get_crs(aml_bus_device_t* device){
 				INFO("32-Bit Memory Range Descriptor");
 				break;
 			case 0x86:
-				INFO("32-Bit Fixed Memory Range Descriptor: %p - %p (%s)",*((const u32*)(data->data+i+1)),*((const u32*)(data->data+i+5)),((data->data[0]&1)?"RW":"RD"));
+				INFO("32-Bit Fixed Memory Range Descriptor: %p - %p (%s)",*((const u32*)(value->buffer.data+i+1)),*((const u32*)(value->buffer.data+i+5)),((value->buffer.data[0]&1)?"RW":"RD"));
 				break;
 			case 0x87:
 				INFO("Address Space Resource Descriptors");

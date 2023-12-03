@@ -6,6 +6,7 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
@@ -258,14 +259,14 @@ static aml_object_t* _exec_opcode_buffer(aml_runtime_context_t* ctx){
 		ERROR("_exec_opcode_name: buffer_size is not an integer");
 		return NULL;
 	}
-	string_t* buffer=smm_alloc(NULL,buffer_size->integer);
-	u64 size=end_offset-ctx->offset;
+	u8* buffer=amm_alloc(buffer_size->integer);
+	u32 size=end_offset-ctx->offset;
 	if (size>buffer_size->integer){
 		size=buffer_size->integer;
 	}
-	memcpy(buffer->data,ctx->data+ctx->offset,size);
+	memcpy(buffer,ctx->data+ctx->offset,size);
 	ctx->offset=end_offset;
-	return aml_object_alloc_buffer(buffer);
+	return aml_object_alloc_buffer(size,buffer);
 }
 
 
@@ -987,7 +988,7 @@ static aml_object_t* _exec_opcode_create_dword_field(aml_runtime_context_t* ctx)
 		return NULL;
 	}
 	string_t* name=_get_name(ctx);
-	aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)->value=aml_object_alloc_field_unit(0x00,0x03,(u64)(buffer->buffer->data),index->integer<<3,32);
+	aml_namespace_lookup(ctx->namespace,name->data,AML_NAMESPACE_LOOKUP_FLAG_CREATE|AML_NAMESPACE_LOOKUP_FLAG_CLEAR)->value=aml_object_alloc_field_unit(0x00,0x03,(u64)(buffer->buffer.data),index->integer<<3,32);
 	smm_dealloc(name);
 	aml_object_dealloc(buffer);
 	aml_object_dealloc(index);
@@ -1086,9 +1087,9 @@ static aml_object_t* _exec_opcode_l_equal(aml_runtime_context_t* ctx){
 		out=(left->integer==right->integer);
 	}
 	else if ((left->type==AML_OBJECT_TYPE_BUFFER&&right->type==AML_OBJECT_TYPE_BUFFER)||(left->type==AML_OBJECT_TYPE_STRING&&right->type==AML_OBJECT_TYPE_STRING)){
-		if (left->buffer->length==right->buffer->length){
-			for (u32 i=0;i<left->buffer->length;i++){
-				if (left->buffer->data[i]!=right->buffer->data[i]){
+		if (left->buffer.size==right->buffer.size){
+			for (u32 i=0;i<left->buffer.size;i++){
+				if (left->buffer.data[i]!=right->buffer.data[i]){
 					goto _unequal_data;
 				}
 			}

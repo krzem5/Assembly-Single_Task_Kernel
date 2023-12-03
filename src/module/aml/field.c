@@ -13,23 +13,6 @@ aml_object_t* aml_field_read(aml_object_t* object){
 		return NULL;
 	}
 	// ERROR("R: flags=%X, address=%p, offset=%u, size=%u",object->field_unit.flags,object->field_unit.address,object->field_unit.offset,object->field_unit.size);
-	// bit 0-3: AccessType
-	// 0 AnyAcc
-	// 1 ByteAcc
-	// 2 WordAcc
-	// 3 DWordAcc
-	// 4 QWordAcc
-	// 5 BufferAcc
-	// 6 Reserved
-	// 7-15 Reserved
-	// bit 4: LockRule
-	// 0 NoLock
-	// 1 Lock
-	// bit 5-6: UpdateRule
-	// 0 Preserve
-	// 1 WriteAsOnes
-	// 2 WriteAsZeros
-	// bit 7: Reserved (must be 0)
 	if (object->field_unit.offset&7){
 		panic("aml_field_read: sub-byte offsets not supported");
 	}

@@ -4,6 +4,17 @@
 
 
 
+typedef struct _AMM_HEADER{
+	u64 index;
+	u8 data[];
+} amm_header_t;
+
+
+
+void amm_init(void);
+
+
+
 void* amm_alloc(u32 length);
 
 

@@ -7,7 +7,6 @@
 #define KERNEL_EARLY_READ __attribute__((section(".erdata")))
 #define KERNEL_EARLY_WRITE __attribute__((section(".edata")))
 #define KERNEL_INIT_WRITE __attribute__((section(".idata")))
-#define KERNEL_BSS __attribute__((section(".bss")))
 #define KERNEL_NOBSS __attribute__((section(".data")))
 #define KERNEL_NORETURN __attribute__((noreturn))
 #define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))

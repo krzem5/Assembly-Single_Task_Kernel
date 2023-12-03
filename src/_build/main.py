@@ -369,7 +369,7 @@ def _compress(file_path):
 
 def _compile_module(module,dependencies):
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include")
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include",*[MODULE_FILE_DIRECTORY+"/"+dep for dep in dependencies])
 	object_files=[]
 	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	error=False

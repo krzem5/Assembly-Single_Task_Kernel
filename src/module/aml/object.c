@@ -41,26 +41,26 @@ static void _print_object(aml_object_t* object,u32 indent){
 			log("<none>");
 			break;
 		case AML_OBJECT_TYPE_BUFFER:
-			if (!object->buffer->length){
+			if (!object->buffer.size){
 				log("[0]{}");
 				break;
 			}
-			log("[%u]{",object->buffer->length);
-			if (object->buffer->length<=PRINT_BUFFER_BYTES_PER_LINE){
-				for (u32 i=0;i<object->buffer->length;i++){
-					log("%s%X",(i?" ":""),object->buffer->data[i]);
+			log("[%u]{",object->buffer.size);
+			if (object->buffer.size<=PRINT_BUFFER_BYTES_PER_LINE){
+				for (u32 i=0;i<object->buffer.size;i++){
+					log("%s%X",(i?" ":""),object->buffer.data[i]);
 				}
 				log("}");
 				break;
 			}
-			for (u8 i=0;i<object->buffer->length;i++){
+			for (u8 i=0;i<object->buffer.size;i++){
 				if (!(i&(PRINT_BUFFER_BYTES_PER_LINE-1))){
 					log("\n   ");
 					for (u32 i=0;i<indent;i++){
 						log(" ");
 					}
 				}
-				log(" %X",object->buffer->data[i]);
+				log(" %X",object->buffer.data[i]);
 			}
 			log("\n");
 			for (u32 i=0;i<indent;i++){
@@ -141,9 +141,10 @@ KERNEL_PUBLIC aml_object_t* aml_object_alloc_none(void){
 
 
 
-KERNEL_PUBLIC aml_object_t* aml_object_alloc_buffer(string_t* buffer){
+KERNEL_PUBLIC aml_object_t* aml_object_alloc_buffer(u32 size,u8* data){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_BUFFER);
-	out->buffer=buffer;
+	out->buffer.size=size;
+	out->buffer.data=data;
 	return out;
 }
 
@@ -283,7 +284,7 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 		return;
 	}
 	if (object->type==AML_OBJECT_TYPE_BUFFER){
-		smm_dealloc(object->buffer);
+		amm_dealloc(object->buffer.data);
 	}
 	else if (object->type==AML_OBJECT_TYPE_STRING){
 		smm_dealloc(object->string);

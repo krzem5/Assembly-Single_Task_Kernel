@@ -1,4 +1,7 @@
+#include <kernel/format/format.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -8,15 +11,12 @@
 
 
 
-static pmm_counter_descriptor_t* _amm_omm_pmm_counter=NULL;
-static omm_allocator_t* KERNEL_BSS _amm_allocators[(PAGE_SIZE_SHIFT-3)<<1];
+#define ALLOCATOR_COUNT ((PAGE_SIZE_SHIFT-3)<<1)
 
 
 
-typedef struct _AMM_HEADER{
-	u64 index;
-	u8 data[];
-} amm_header_t;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _amm_omm_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _amm_allocators[ALLOCATOR_COUNT];
 
 
 
@@ -35,18 +35,12 @@ static KERNEL_INLINE u64 _index_to_size(u64 index){
 
 
 static amm_header_t* _alloc_memory(u64 index){
-	if (!_amm_omm_pmm_counter){
-		_amm_omm_pmm_counter=pmm_alloc_counter("amm");
-	}
 	if (index>>PAGE_SIZE_SHIFT){
 		return (void*)(pmm_alloc(index>>PAGE_SIZE_SHIFT,_amm_omm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	}
-	omm_allocator_t** allocator=_amm_allocators+index;
-	if (!(*allocator)){
-		*allocator=omm_init("amm_allocator_???",_index_to_size(index)+sizeof(amm_header_t),4,2,_amm_omm_pmm_counter);
-		spinlock_init(&((*allocator)->lock));
+	else{
+		return omm_alloc(_amm_allocators[index]);
 	}
-	return omm_alloc(*allocator);
 }
 
 
@@ -57,6 +51,23 @@ static void _dealloc_memory(amm_header_t* header){
 	}
 	else{
 		omm_dealloc(_amm_allocators[header->index],header);
+	}
+}
+
+
+
+void amm_init(void){
+	LOG("Initializing arbitrary memory manager...");
+	_amm_omm_pmm_counter=pmm_alloc_counter("amm");
+	char* allocator_names=(void*)(pmm_alloc(pmm_align_up_address(20*ALLOCATOR_COUNT)>>PAGE_SIZE_SHIFT,_amm_omm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	for (u64 i=0;i<ALLOCATOR_COUNT;i++){
+		if (i==1){ // allocator of size 12 is impossible (qword alignment requirement)
+			continue;
+		}
+		const char* name=allocator_names;
+		allocator_names+=format_string(allocator_names,20,"amm_allocator_%u",_index_to_size(i))+1;
+		_amm_allocators[i]=omm_init(name,_index_to_size(i)+sizeof(amm_header_t),8,4,_amm_omm_pmm_counter);
+		spinlock_init(&(_amm_allocators[i]->lock));
 	}
 }
 

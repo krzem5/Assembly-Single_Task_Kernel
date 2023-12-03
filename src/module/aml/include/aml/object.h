@@ -29,7 +29,10 @@ typedef struct _AML_OBJECT{
 	u8 type;
 	u32 rc;
 	union{
-		string_t* buffer;
+		struct{
+			u32 size;
+			u8* data;
+		} buffer;
 		struct{
 			// undefined
 		} buffer_field;
@@ -96,7 +99,7 @@ aml_object_t* aml_object_alloc_none(void);
 
 
 
-aml_object_t* aml_object_alloc_buffer(string_t* buffer);
+aml_object_t* aml_object_alloc_buffer(u32 size,u8* data);
 
 
 
