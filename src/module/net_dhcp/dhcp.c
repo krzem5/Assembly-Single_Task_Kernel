@@ -65,7 +65,7 @@ void net_dhcp_init(void){
 	packet->htype=1;
 	packet->hlen=6;
 	packet->hops=0;
-	packet->xid=0xa5a5a5a5; // random
+	packet->xid=0xa5a5a5a5; // sequential
 	packet->secs=0;
 	packet->flags=0;
 	packet->ciaddr=0;
