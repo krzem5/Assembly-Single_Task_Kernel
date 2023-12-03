@@ -32,13 +32,12 @@ KERNEL_PUBLIC void net_common_update_checksum(const void* data,u16 length,u16* o
 
 
 
-KERNEL_PUBLIC _Bool net_common_verify_checksum(const void* data,u16 length){
-	u32 checksum=0;
+KERNEL_PUBLIC u16 net_common_verify_checksum(const void* data,u16 length,u32 checksum){
 	for (u16 i=0;i<length;i+=2){
 		checksum+=*((const u16*)(data+i));
 	}
 	checksum=(checksum&0xffff)+(checksum>>16);
-	return checksum+(checksum>>16)==0xffff;
+	return checksum+(checksum>>16);
 }
 
 

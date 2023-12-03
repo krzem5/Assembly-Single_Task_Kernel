@@ -30,7 +30,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		return;
 	}
 	net_ip4_packet_data_t* header=(net_ip4_packet_data_t*)(packet->data);
-	if (header->version_and_ihl!=0x45||!net_common_verify_checksum(header,sizeof(net_ip4_packet_data_t))){
+	if (header->version_and_ihl!=0x45||net_common_verify_checksum(header,sizeof(net_ip4_packet_data_t),0)!=0xffff){
 		ERROR("Wrong version or checksum");
 		return;
 	}

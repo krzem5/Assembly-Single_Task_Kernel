@@ -12,7 +12,7 @@ void net_common_update_checksum(const void* data,u16 length,u16* out);
 
 
 
-_Bool net_common_verify_checksum(const void* data,u16 length);
+u16 net_common_verify_checksum(const void* data,u16 length,u32 checksum);
 
 
 
