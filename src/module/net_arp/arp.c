@@ -21,7 +21,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_ip4_address)){
 		return;
 	}
-	WARN("PACKET (ARP) %x -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
+	WARN("ARP: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
 }
 
 
@@ -41,7 +41,7 @@ void net_arp_init(void){
 
 
 
-KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out){
+KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool only_from_cache){
 	if (!address){
 		memset(out,0,sizeof(mac_address_t));
 		return 1;
@@ -50,7 +50,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		memset(out,0xff,sizeof(mac_address_t));
 		return 1;
 	}
-	if (!network_layer1_device){
+	if (!network_layer1_device||only_from_cache){
 		return 0;
 	}
 	mac_address_t dst_mac_address={0xff,0xff,0xff,0xff,0xff,0xff};

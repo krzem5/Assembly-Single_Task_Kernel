@@ -108,7 +108,7 @@ KERNEL_PUBLIC void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol
 
 KERNEL_PUBLIC net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address_t src_address,net_ip4_address_t dst_address,net_ip4_protocol_type_t protocol_type){
 	mac_address_t dst_mac_address;
-	if (!net_arp_resolve_address(dst_address,&dst_mac_address)){
+	if (!net_arp_resolve_address(dst_address,&dst_mac_address,0)){
 		return NULL;
 	}
 	net_ip4_packet_t* out=omm_alloc(_net_ip4_packet_allocator);

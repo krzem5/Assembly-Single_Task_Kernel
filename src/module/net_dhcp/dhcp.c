@@ -1,3 +1,4 @@
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
@@ -10,12 +11,53 @@
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <net/dhcp.h>
+#include <net/ip4.h>
 #include <net/udp.h>
 #define KERNEL_LOG_NAME "net_dhcp"
 
 
 
 static vfs_node_t* _net_dhcp_socket=NULL;
+static spinlock_t _net_dhcp_lock;
+static u32 _net_dhcp_current_xid=0;
+static net_ip4_address_t _net_dhcp_offer_address=0;
+static net_ip4_address_t _net_dhcp_offer_server_address=0;
+
+
+
+static net_dhcp_packet_t* _create_packet(u32 option_size){
+	_net_dhcp_current_xid++;
+	option_size=(option_size+1)&0xfffffffe;
+	net_dhcp_packet_t* out=amm_alloc(sizeof(net_dhcp_packet_t)+option_size);
+	memset(out,0,sizeof(net_dhcp_packet_t)+option_size);
+	out->op=NET_DHCP_OP_BOOTREQUEST;
+	out->htype=1;
+	out->hlen=6;
+	out->xid=__builtin_bswap32(_net_dhcp_current_xid);
+	memcpy(out->chaddr,network_layer1_device->mac_address,sizeof(mac_address_t));
+	out->cookie=__builtin_bswap32(NET_DHCP_COOKIE);
+	return out;
+}
+
+
+
+static void _send_packet(net_dhcp_packet_t* packet,u32 option_size){
+	vfs_node_write(_net_dhcp_socket,0,packet,sizeof(net_dhcp_packet_t)+option_size,0);
+	amm_dealloc(packet);
+}
+
+
+
+static void _send_discover_request(void){
+	_net_dhcp_offer_address=0;
+	_net_dhcp_offer_server_address=0;
+	net_dhcp_packet_t* packet=_create_packet(4);
+	packet->options[0]=53;
+	packet->options[1]=1;
+	packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
+	packet->options[3]=255;
+	_send_packet(packet,4);
+}
 
 
 
@@ -25,12 +67,79 @@ static void _rx_thread(void){
 		if (!packet){
 			continue;
 		}
+		spinlock_acquire_exclusive(&_net_dhcp_lock);
 		if (packet->length<sizeof(net_dhcp_packet_t)){
 			goto _cleanup;
 		}
 		net_dhcp_packet_t* dhcp_packet=(net_dhcp_packet_t*)(packet->data);
-		WARN("PACKET [%I %I %I %I]",__builtin_bswap32(dhcp_packet->ciaddr),__builtin_bswap32(dhcp_packet->yiaddr),__builtin_bswap32(dhcp_packet->siaddr),__builtin_bswap32(dhcp_packet->giaddr));
+		if (dhcp_packet->op!=NET_DHCP_OP_BOOTREPLY||dhcp_packet->xid!=__builtin_bswap32(_net_dhcp_current_xid)||dhcp_packet->cookie!=__builtin_bswap32(NET_DHCP_COOKIE)){
+			goto _cleanup;
+		}
+		u8 op=NET_DHCP_MESSAGE_TYPE_NONE;
+		NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
+			if (dhcp_packet->options[i]==53&&dhcp_packet->options[i+1]==1){
+				op=dhcp_packet->options[i+2];
+				break;
+			}
+		}
+		if (op==NET_DHCP_MESSAGE_TYPE_DHCPOFFER){
+			_net_dhcp_offer_address=__builtin_bswap32(dhcp_packet->yiaddr);
+			_net_dhcp_offer_server_address=__builtin_bswap32(dhcp_packet->siaddr);
+			INFO("IPv4 offer from %I: %I",_net_dhcp_offer_server_address,_net_dhcp_offer_address);
+			net_dhcp_packet_t* packet=_create_packet(16);
+			packet->siaddr=dhcp_packet->siaddr;
+			packet->options[0]=53;
+			packet->options[1]=1;
+			packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPREQUEST;
+			packet->options[3]=50;
+			packet->options[4]=4;
+			packet->options[5]=_net_dhcp_offer_address>>24;
+			packet->options[6]=_net_dhcp_offer_address>>16;
+			packet->options[7]=_net_dhcp_offer_address>>8;
+			packet->options[8]=_net_dhcp_offer_address;
+			packet->options[9]=54;
+			packet->options[10]=4;
+			packet->options[11]=_net_dhcp_offer_server_address>>24;
+			packet->options[12]=_net_dhcp_offer_server_address>>16;
+			packet->options[13]=_net_dhcp_offer_server_address>>8;
+			packet->options[14]=_net_dhcp_offer_server_address;
+			packet->options[15]=255;
+			_send_packet(packet,16);
+		}
+		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPACK){
+			if (dhcp_packet->yiaddr!=__builtin_bswap32(_net_dhcp_offer_address)||_net_dhcp_offer_server_address!=__builtin_bswap32(dhcp_packet->siaddr)){
+				WARN("Received DHCPACK from wrong server");
+				goto _cleanup;
+			}
+			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
+			net_ip4_address_t subnet_mask=0;
+			net_ip4_address_t router=0;
+			net_ip4_address_t dns=0;
+			u32 lease_time=0;
+			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
+				u8 type=dhcp_packet->options[i];
+				u8 length=dhcp_packet->options[i+1];
+				if (type==1&&length==4){
+					subnet_mask=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+				}
+				else if (type==3&&length==4){
+					router=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+				}
+				else if (type==6&&length==4){
+					dns=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+				}
+				else if (type==51&&length==4){
+					lease_time=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+				}
+			}
+			LOG("New IPv4 address: %I",_net_dhcp_offer_address);
+			INFO("Subnet mask: %I, Router: %I, DNS: %I, Lease time: %u s",subnet_mask,router,dns,lease_time);
+		}
+		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK||/*timeout in any previous step*/0){
+			_send_discover_request();
+		}
 _cleanup:
+		spinlock_release_exclusive(&_net_dhcp_lock);
 		amm_dealloc(packet);
 	}
 }
@@ -57,26 +166,19 @@ void net_dhcp_init(void){
 		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
+	spinlock_init(&_net_dhcp_lock);
 	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
-	u8 buffer[sizeof(net_dhcp_packet_t)+4];
-	memset(buffer,0,sizeof(net_dhcp_packet_t)+4);
-	net_dhcp_packet_t* packet=(net_dhcp_packet_t*)buffer;
-	packet->op=1;
-	packet->htype=1;
-	packet->hlen=6;
-	packet->hops=0;
-	packet->xid=0xa5a5a5a5; // sequential
-	packet->secs=0;
-	packet->flags=0;
-	packet->ciaddr=0;
-	packet->yiaddr=0;
-	packet->siaddr=0;
-	packet->giaddr=0;
-	memcpy(packet->chaddr,network_layer1_device->mac_address,sizeof(mac_address_t));
-	packet->cookie=__builtin_bswap32(NET_DHCP_COOKIE);
-	packet->options[0]=53;
-	packet->options[1]=1;
-	packet->options[2]=1;
-	packet->options[3]=255;
-	vfs_node_write(_net_dhcp_socket,0,buffer,sizeof(net_dhcp_packet_t)+4,0);
+	net_dhcp_negotiate_address();
+}
+
+
+
+KERNEL_PUBLIC void net_dhcp_negotiate_address(void){
+	net_ip4_address=0;
+	if (!network_layer1_device){
+		return;
+	}
+	spinlock_acquire_exclusive(&_net_dhcp_lock);
+	_send_discover_request();
+	spinlock_release_exclusive(&_net_dhcp_lock);
 }

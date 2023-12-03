@@ -4,7 +4,26 @@
 
 
 
+// Packet types
+#define NET_DHCP_OP_BOOTREQUEST 1
+#define NET_DHCP_OP_BOOTREPLY 2
+
+// Message types
+#define NET_DHCP_MESSAGE_TYPE_NONE 0
+#define NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER 1
+#define NET_DHCP_MESSAGE_TYPE_DHCPOFFER 2
+#define NET_DHCP_MESSAGE_TYPE_DHCPREQUEST 3
+#define NET_DHCP_MESSAGE_TYPE_DHCPDECLINE 4
+#define NET_DHCP_MESSAGE_TYPE_DHCPACK 5
+#define NET_DHCP_MESSAGE_TYPE_DHCPNAK 6
+#define NET_DHCP_MESSAGE_TYPE_DHCPRELEASE 7
+#define NET_DHCP_MESSAGE_TYPE_DHCPINFORM 8
+
 #define NET_DHCP_COOKIE 0x63825363
+
+
+
+#define NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet) for (u32 i=0;(dhcp_packet)->options[i]!=0xff;i+=((dhcp_packet)->options[i]?(dhcp_packet)->options[i+1]+2:1))
 
 
 
@@ -30,6 +49,10 @@ typedef struct KERNEL_PACKED _NET_DHCP_PACKET{
 
 
 void net_dhcp_init(void);
+
+
+
+void net_dhcp_negotiate_address(void);
 
 
 
