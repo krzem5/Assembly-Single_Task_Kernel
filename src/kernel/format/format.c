@@ -37,11 +37,11 @@ static KERNEL_INLINE char _format_base16_char(u8 value){
 static KERNEL_INLINE void _format_base10_int(u64 value,format_buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
-	while (value){
+	do{
 		buffer[i]=(value%10)+48;
 		i++;
 		value/=10;
-	}
+	} while (value);
 	while (i){
 		i--;
 		_buffer_state_add(out,buffer[i]);
@@ -160,12 +160,7 @@ KERNEL_PUBLIC u32 format_string_va(char* buffer,u32 length,const char* template,
 		}
 		else if (*template=='v'){
 			u64 size=__builtin_va_arg(*va,u64);
-			if (!size){
-				_buffer_state_add(&out,'0');
-				_buffer_state_add(&out,' ');
-				_buffer_state_add(&out,'B');
-			}
-			else if (size<0x400){
+			if (size<0x400){
 				_format_base10_int(size,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'B');
@@ -225,6 +220,24 @@ KERNEL_PUBLIC u32 format_string_va(char* buffer,u32 length,const char* template,
 					_buffer_state_add(&out,'-');
 				}
 				_buffer_state_add(&out,_format_base16_char(guid[i>>1]>>((!(i&1))<<2)));
+			}
+		}
+		else if (*template=='M'){
+			const u8* mac_address=__builtin_va_arg(*va,const u8*);
+			for (u8 i=0;i<12;i++){
+				if (i&&!(i&1)){
+					_buffer_state_add(&out,':');
+				}
+				_buffer_state_add(&out,_format_base16_char(mac_address[i>>1]>>((!(i&1))<<2)));
+			}
+		}
+		else if (*template=='I'){
+			u32 ip4=__builtin_va_arg(*va,u32);
+			for (u8 i=0;i<4;i++){
+				if (i){
+					_buffer_state_add(&out,'.');
+				}
+				_format_base10_int((ip4>>(24-(i<<3)))&0xff,&out);
 			}
 		}
 		else{

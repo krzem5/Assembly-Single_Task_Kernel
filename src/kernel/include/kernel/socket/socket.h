@@ -2,7 +2,7 @@
 #define _KERNEL_SOCKET_SOCKET_H_ 1
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/smm.h>
-#include <kernel/mp/event.h>
+#include <kernel/ring/ring.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -45,7 +45,7 @@ typedef struct _SOCKET_VFS_NODE{
 	struct _SOCKET_DTP_HANDLER* handler;
 	void* handler_local_ctx;
 	void* handler_remote_ctx;
-	event_t* read_event;
+	ring_t* rx_ring;
 } socket_vfs_node_t;
 
 
@@ -59,6 +59,7 @@ typedef struct _SOCKET_DTP_DESCRIPTOR{
 	void (*debind)(socket_vfs_node_t*);
 	_Bool (*connect)(socket_vfs_node_t*,const void*,u32);
 	void (*deconnect)(socket_vfs_node_t*);
+	u64 (*read)(socket_vfs_node_t*,void*,u64,u32);
 	u64 (*write)(socket_vfs_node_t*,const void*,u64);
 } socket_dtp_descriptor_t;
 

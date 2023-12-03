@@ -6,6 +6,15 @@
 
 
 
+typedef struct _NET_UDP_SOCKET_PACKET{
+	net_ip4_address_t address;
+	socket_port_t port;
+	u16 length;
+	u8 data[];
+} net_udp_socket_packet_t;
+
+
+
 typedef struct _NET_UDP_ADDRESS{
 	net_ip4_address_t address;
 	socket_port_t port;

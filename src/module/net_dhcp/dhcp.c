@@ -1,6 +1,9 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/socket/socket.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -12,6 +15,20 @@
 
 
 static vfs_node_t* _net_dhcp_socket=NULL;
+
+
+
+static void _rx_thread(void){
+	u8 buffer[4096];
+	while (1){
+		u64 size=vfs_node_read(_net_dhcp_socket,0,buffer,4096,0);
+		if (size<sizeof(net_dhcp_packet_t)){
+			continue;
+		}
+		net_dhcp_packet_t* dhcp_packet=(net_dhcp_packet_t*)buffer;
+		WARN("PACKET [%I %I %I %I]",dhcp_packet->ciaddr,dhcp_packet->yiaddr,dhcp_packet->siaddr,dhcp_packet->giaddr);
+	}
+}
 
 
 
@@ -35,6 +52,7 @@ void net_dhcp_init(void){
 		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
+	scheduler_enqueue_thread(thread_new_kernel_thread(process_kernel,_rx_thread,0x200000,0));
 	u8 buffer[sizeof(net_dhcp_packet_t)+4];
 	memset(buffer,0,sizeof(net_dhcp_packet_t)+4);
 	net_dhcp_packet_t* packet=(net_dhcp_packet_t*)buffer;

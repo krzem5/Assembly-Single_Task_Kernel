@@ -21,7 +21,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_ip4_address)){
 		return;
 	}
-	WARN("PACKET (ARP) %x -> %X:%X:%X:%X:%X:%X",__builtin_bswap32(arp_packet->spa),arp_packet->sha[0],arp_packet->sha[1],arp_packet->sha[2],arp_packet->sha[3],arp_packet->sha[4],arp_packet->sha[5]);
+	WARN("PACKET (ARP) %x -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
 }
 
 

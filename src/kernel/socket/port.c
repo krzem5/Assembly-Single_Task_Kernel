@@ -22,6 +22,12 @@ void KERNEL_EARLY_EXEC socket_port_init(void){
 
 
 
+KERNEL_PUBLIC socket_vfs_node_t* socket_port_get(socket_port_t port){
+	return _socket_ports[port];
+}
+
+
+
 KERNEL_PUBLIC _Bool socket_port_reserve(socket_vfs_node_t* socket,socket_port_t port){
 	spinlock_acquire_exclusive(&_socket_port_lock);
 	_Bool out=!_socket_ports[port];

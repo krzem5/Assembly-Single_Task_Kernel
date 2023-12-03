@@ -58,6 +58,21 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 
+static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
+	net_udp_socket_packet_t* packet=ring_pop(socket_node->rx_ring,!(flags&VFS_NODE_FLAG_NONBLOCKING));
+	if (!packet){
+		return 0;
+	}
+	if (length>packet->length){
+		length=packet->length;
+	}
+	memcpy(buffer,packet->data,length);
+	WARN("Dealloc UDP socket packet");
+	return length;
+}
+
+
+
 static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
 	if (!socket_node->handler_local_ctx||!socket_node->handler_remote_ctx){
 		return 0;
@@ -100,6 +115,7 @@ static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	_socket_debind_callback,
 	_socket_connect_callback,
 	_socket_deconnect_callback,
+	_socket_read_callback,
 	_socket_write_callback
 };
 
@@ -109,7 +125,39 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	if (packet->length<sizeof(net_udp_packet_t)){
 		return;
 	}
-	WARN("PACKET (UDP)");
+	net_udp_packet_t* udp_packet=(net_udp_packet_t*)(packet->packet->data);
+	if (__builtin_bswap16(udp_packet->length)!=packet->length){
+		ERROR("Wrong UDP length");
+		return;
+	}
+	if (udp_packet->checksum){
+		net_udp_ipv4_pseudo_header_t pseudo_header={
+			packet->packet->src_address,
+			packet->packet->dst_address,
+			0,
+			PROTOCOL_TYPE,
+			udp_packet->length
+		};
+		if (net_common_verify_checksum(udp_packet,packet->length,net_common_verify_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),0))!=0xffff){
+			ERROR("Wrong UDP checksum");
+			return;
+		}
+	}
+	u16 port=__builtin_bswap16(udp_packet->dst_port);
+	socket_vfs_node_t* socket=socket_port_get(port);
+	if (!socket||socket->handler->descriptor!=&_net_udp_socket_dtp_descriptor){
+		ERROR("No UDP socket on port %u",port);
+		return;
+	}
+	net_udp_socket_packet_t* socket_packet=(void*)(smm_alloc(NULL,sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t))->data);
+	socket_packet->address=__builtin_bswap32(packet->packet->src_address);
+	socket_packet->port=__builtin_bswap16(udp_packet->src_port);
+	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
+	memcpy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
+	if (!ring_push(socket->rx_ring,socket_packet,0)){
+		ERROR("UDP packet dropped, socket rx ring full");
+		WARN("Dealloc UDP socket packet");
+	}
 }
 
 

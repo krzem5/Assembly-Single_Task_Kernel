@@ -37,14 +37,18 @@ static vfs_node_t* _socket_create(void){
 	out->handler=NULL;
 	out->handler_local_ctx=NULL;
 	out->handler_remote_ctx=NULL;
-	out->read_event=event_new();
+	out->rx_ring=ring_init(256);
 	return (vfs_node_t*)out;
 }
 
 
 
 static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
-	return 0;
+	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
+	spinlock_acquire_exclusive(&(socket->read_lock));
+	u64 out=(socket->handler_local_ctx?socket->handler->descriptor->read(socket,buffer,size,flags):0);
+	spinlock_release_exclusive(&(socket->read_lock));
+	return out;
 }
 
 
