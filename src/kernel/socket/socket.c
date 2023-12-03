@@ -19,20 +19,6 @@
 
 
 
-typedef struct _SOCKET_VFS_NODE{
-	vfs_node_t node;
-	spinlock_t read_lock;
-	spinlock_t write_lock;
-	socket_domain_t domain;
-	socket_type_t type;
-	socket_protocol_t protocol;
-	socket_dtp_handler_t* handler;
-	void* handler_ctx;
-	event_t* read_event;
-} socket_vfs_node_t;
-
-
-
 static spinlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
@@ -48,7 +34,8 @@ static vfs_node_t* _socket_create(void){
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;
 	out->handler=NULL;
-	out->handler_ctx=NULL;
+	out->handler_local_ctx=NULL;
+	out->handler_remote_ctx=NULL;
 	out->read_event=event_new();
 	return (vfs_node_t*)out;
 }
@@ -145,17 +132,32 @@ KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,
 
 
 
-KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* address,u32 address_length){
-	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!address||!address_length){
+KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!local_address||!local_address_length){
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
 	if (!socket_node->handler){
 		return 0;
 	}
-	if (socket_node->handler_ctx){
-		socket_node->handler->descriptor->deinit(socket_node->handler_ctx);
+	if (socket_node->handler_local_ctx){
+		socket_node->handler->descriptor->debind(socket_node);
 	}
-	socket_node->handler_ctx=socket_node->handler->descriptor->init(address,address_length);
-	return !!socket_node->handler_ctx;
+	return socket_node->handler->descriptor->bind(socket_node,local_address,local_address_length);
+}
+
+
+
+KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!remote_address||!remote_address_length){
+		return 0;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	if (!socket_node->handler){
+		return 0;
+	}
+	if (socket_node->handler_remote_ctx){
+		socket_node->handler->descriptor->deconnect(socket_node);
+	}
+	return socket_node->handler->descriptor->connect(socket_node,remote_address,remote_address_length);
 }

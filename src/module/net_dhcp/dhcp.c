@@ -17,13 +17,20 @@ void net_dhcp_init(void){
 	LOG("Initializing DHCP client...");
 	SMM_TEMPORARY_STRING name=smm_alloc("dhcp_socket",0);
 	_net_dhcp_socket=socket_create(vfs_lookup(NULL,"/",0,0,0),name,SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
-	net_udp_address_t address={
+	net_udp_address_t local_address={
+		0x00000000,
+		68
+	};
+	if (!socket_bind(_net_dhcp_socket,&local_address,sizeof(net_udp_address_t))){
+		ERROR("Failed to bind DHCP client socket");
+		return;
+	}
+	net_udp_address_t remote_address={
 		0xffffffff,
-		68,
 		67
 	};
-	if (!socket_bind(_net_dhcp_socket,&address,sizeof(net_udp_address_t))){
-		ERROR("Failed to bind DHCP client socket");
+	if (!socket_connect(_net_dhcp_socket,&remote_address,sizeof(net_udp_address_t))){
+		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
 }

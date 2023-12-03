@@ -19,23 +19,39 @@ static omm_allocator_t* _net_udp_packet_allocator=NULL;
 
 
 
-static void* _socket_init_callback(const void* address,u32 address_length){
+static _Bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	if (address_length!=sizeof(net_udp_address_t)){
-		return NULL;
+		return 0;
 	}
-	// panic("_socket_init_callback");
-	return NULL;
+	// panic("_socket_bind_callback");
+	return 0;
 }
 
 
 
-static void _socket_deinit_callback(void* ctx){
-	panic("_socket_deinit_callback");
+static void _socket_debind_callback(socket_vfs_node_t* socket_node){
+	panic("_socket_debind_callback");
 }
 
 
 
-static void _socket_write_callback(void* ctx,const void* buffer,u64 length){
+static _Bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
+	if (address_length!=sizeof(net_udp_address_t)){
+		return 0;
+	}
+	// panic("_socket_connect_callback");
+	return 0;
+}
+
+
+
+static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
+	panic("_socket_deconnect_callback");
+}
+
+
+
+static void _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
 	panic("_socket_write_callback");
 }
 
@@ -46,8 +62,10 @@ static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	SOCKET_DOMAIN_INET,
 	SOCKET_TYPE_DGRAM,
 	SOCKET_PROTOCOL_UDP,
-	_socket_init_callback,
-	_socket_deinit_callback,
+	_socket_bind_callback,
+	_socket_debind_callback,
+	_socket_connect_callback,
+	_socket_deconnect_callback,
 	_socket_write_callback
 };
 

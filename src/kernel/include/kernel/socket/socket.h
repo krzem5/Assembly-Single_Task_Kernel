@@ -35,14 +35,31 @@ typedef u8 socket_protocol_t;
 
 
 
+typedef struct _SOCKET_VFS_NODE{
+	vfs_node_t node;
+	spinlock_t read_lock;
+	spinlock_t write_lock;
+	socket_domain_t domain;
+	socket_type_t type;
+	socket_protocol_t protocol;
+	struct _SOCKET_DTP_HANDLER* handler;
+	void* handler_local_ctx;
+	void* handler_remote_ctx;
+	event_t* read_event;
+} socket_vfs_node_t;
+
+
+
 typedef struct _SOCKET_DTP_DESCRIPTOR{
 	const char* name;
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
-	void* (*init)(const void*,u32);
-	void (*deinit)(void*);
-	void (*write)(void*,const void*,u64);
+	_Bool (*bind)(socket_vfs_node_t*,const void*,u32);
+	void (*debind)(socket_vfs_node_t*);
+	_Bool (*connect)(socket_vfs_node_t*,const void*,u32);
+	void (*deconnect)(socket_vfs_node_t*);
+	void (*write)(socket_vfs_node_t*,const void*,u64);
 } socket_dtp_descriptor_t;
 
 
@@ -70,7 +87,11 @@ vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,socket_domain_
 
 
 
-_Bool socket_bind(vfs_node_t* node,const void* address,u32 address_length);
+_Bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length);
+
+
+
+_Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length);
 
 
 

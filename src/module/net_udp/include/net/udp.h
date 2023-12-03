@@ -6,9 +6,8 @@
 
 
 typedef struct _NET_UDP_ADDRESS{
-	net_ip4_address_t dst_address;
-	u16 src_port;
-	u16 dst_port;
+	net_ip4_address_t address;
+	u16 port;
 } net_udp_address_t;
 
 
