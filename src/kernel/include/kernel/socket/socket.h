@@ -96,4 +96,8 @@ _Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_addr
 
 
 
+void* socket_get_packet(vfs_node_t* node,_Bool nonblocking);
+
+
+
 #endif

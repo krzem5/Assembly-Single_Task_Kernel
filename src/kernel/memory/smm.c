@@ -17,14 +17,9 @@ KERNEL_PUBLIC string_t* smm_alloc(const char* data,u32 length){
 	string_t* out=amm_alloc(sizeof(string_t)+length+1);
 	out->length=length;
 	out->hash=FNV_OFFSET_BASIS;
-	if (data){
-		for (u32 i=0;i<length;i++){
-			out->data[i]=data[i];
-			out->hash=(out->hash^data[i])*FNV_PRIME;
-		}
-	}
-	else{
-		memset(out->data,0,length);
+	for (u32 i=0;i<length;i++){
+		out->data[i]=data[i];
+		out->hash=(out->hash^data[i])*FNV_PRIME;
 	}
 	out->data[length]=0;
 	return out;

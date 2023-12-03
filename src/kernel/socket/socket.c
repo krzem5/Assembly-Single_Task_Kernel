@@ -171,3 +171,16 @@ KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u
 	}
 	return socket_node->handler->descriptor->connect(socket_node,remote_address,remote_address_length);
 }
+
+
+
+KERNEL_PUBLIC void* socket_get_packet(vfs_node_t* node,_Bool nonblocking){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return NULL;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	spinlock_acquire_exclusive(&(socket_node->read_lock));
+	void* out=ring_pop(socket_node->rx_ring,!nonblocking);
+	spinlock_release_exclusive(&(socket_node->read_lock));
+	return out;
+}

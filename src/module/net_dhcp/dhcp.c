@@ -1,4 +1,5 @@
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -19,14 +20,18 @@ static vfs_node_t* _net_dhcp_socket=NULL;
 
 
 static void _rx_thread(void){
-	u8 buffer[4096];
 	while (1){
-		u64 size=vfs_node_read(_net_dhcp_socket,0,buffer,4096,0);
-		if (size<sizeof(net_dhcp_packet_t)){
+		net_udp_socket_packet_t* packet=socket_get_packet(_net_dhcp_socket,0);
+		if (!packet){
 			continue;
 		}
-		net_dhcp_packet_t* dhcp_packet=(net_dhcp_packet_t*)buffer;
+		if (packet->length<sizeof(net_dhcp_packet_t)){
+			goto _cleanup;
+		}
+		net_dhcp_packet_t* dhcp_packet=(net_dhcp_packet_t*)(packet->data);
 		WARN("PACKET [%I %I %I %I]",__builtin_bswap32(dhcp_packet->ciaddr),__builtin_bswap32(dhcp_packet->yiaddr),__builtin_bswap32(dhcp_packet->siaddr),__builtin_bswap32(dhcp_packet->giaddr));
+_cleanup:
+		amm_dealloc(packet);
 	}
 }
 
