@@ -174,8 +174,10 @@ void net_dhcp_init(void){
 
 
 KERNEL_PUBLIC void net_dhcp_negotiate_address(void){
+	LOG("Negotiating IPv4 address...");
 	net_ip4_address=0;
 	if (!network_layer1_device){
+		ERROR("Unable to negotiate IPv4 address, no network adapter found");
 		return;
 	}
 	spinlock_acquire_exclusive(&_net_dhcp_lock);
