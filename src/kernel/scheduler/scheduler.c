@@ -102,7 +102,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		spinlock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base((u64)CPU_LOCAL(cpu_extra_data),0);
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
-		if (current_thread->state.type==THREAD_STATE_TYPE_TERMINATED){
+		if (current_thread->state==THREAD_STATE_TYPE_TERMINATED){
 			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 			spinlock_release_exclusive(&(current_thread->lock));
 			thread_delete(current_thread);
@@ -110,9 +110,9 @@ void scheduler_isr_handler(isr_state_t* state){
 		else{
 			current_thread->gpr_state=*state;
 			fpu_save(current_thread->fpu_state);
-			current_thread->state_not_present=0;
+			current_thread->reg_state_not_present=0;
 			spinlock_release_exclusive(&(current_thread->lock));
-			if (current_thread->state.type==THREAD_STATE_TYPE_RUNNING){
+			if (current_thread->state==THREAD_STATE_TYPE_RUNNING){
 				scheduler_enqueue_thread(current_thread);
 			}
 		}
@@ -129,7 +129,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		msr_set_gs_base(current_thread->fs_gs_state.gs,1);
 		fpu_restore(current_thread->fpu_state);
 		vmm_switch_to_pagemap(&(current_thread->process->pagemap));
-		current_thread->state.type=THREAD_STATE_TYPE_RUNNING;
+		current_thread->state=THREAD_STATE_TYPE_RUNNING;
 		spinlock_release_exclusive(&(current_thread->lock));
 	}
 	else{
@@ -148,11 +148,11 @@ void scheduler_isr_handler(isr_state_t* state){
 KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
-	if (thread->state.type==THREAD_STATE_TYPE_QUEUED){
+	if (thread->state==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
 	scheduler_load_balancer_add(thread);
-	thread->state.type=THREAD_STATE_TYPE_QUEUED;
+	thread->state=THREAD_STATE_TYPE_QUEUED;
 	spinlock_release_exclusive(&(thread->lock));
 	scheduler_resume();
 }

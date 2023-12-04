@@ -97,7 +97,7 @@ void syscall_thread_set_priority(isr_state_t* regs){
 		return;
 	}
 	thread_t* thread=handle->object;
-	if (thread->state.type==THREAD_STATE_TYPE_TERMINATED){
+	if (thread->state==THREAD_STATE_TYPE_TERMINATED){
 		regs->rax=0;
 		handle_release(handle);
 		return;

@@ -35,10 +35,6 @@ void KERNEL_NORETURN thread_terminate(void);
 
 
 
-void thread_await_event(event_t* event);
-
-
-
 void KERNEL_NORETURN _thread_bootstrap_kernel_thread(void);
 
 

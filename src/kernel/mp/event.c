@@ -41,8 +41,6 @@ KERNEL_PUBLIC event_t* event_new(void){
 	spinlock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
-	out->head_NEW=NULL;
-	out->tail_NEW=NULL;
 	handle_finish_setup(&(out->handle));
 	return out;
 }
@@ -63,17 +61,19 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 KERNEL_PUBLIC void event_dispatch(event_t* event,_Bool dispatch_all){
 	spinlock_acquire_exclusive(&(event->lock));
 	while (event->head){
-		thread_t* thread=event->head;
-		event->head=thread->state.event.next;
-		if (thread->state.type!=THREAD_STATE_TYPE_AWAITING_EVENT){
+		event_thread_container_t* container=event->head;
+		event->head=container->next;
+		thread_t* thread=container->thread;
+		u64 sequence_id=container->sequence_id;
+		omm_dealloc(_event_thread_container_allocator,container);
+		if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT||thread->event_sequence_id!=sequence_id){
 			continue;
 		}
 		spinlock_acquire_exclusive(&(thread->lock));
-		thread->state.type=THREAD_STATE_TYPE_NONE;
-		thread->state.event.event=NULL;
-		thread->state.event.next=NULL;
+		thread->event_sequence_id++;
+		thread->state=THREAD_STATE_TYPE_NONE;
 		spinlock_release_exclusive(&(thread->lock));
-		SPINLOOP(thread->state_not_present);
+		SPINLOOP(thread->reg_state_not_present);
 		scheduler_enqueue_thread(thread);
 		if (!dispatch_all){
 			break;
@@ -81,27 +81,6 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,_Bool dispatch_all){
 	}
 	if (!event->head){
 		event->tail=NULL;
-	}
-	/////////////////////////////////////////////////////
-	while (event->head_NEW){
-		event_thread_container_t* container=event->head_NEW;
-		event->head_NEW=container->next;
-		thread_t* thread=container->thread;
-		omm_dealloc(_event_thread_container_allocator,container);
-		if (thread->state.type!=THREAD_STATE_TYPE_AWAITING_EVENT){
-			continue;
-		}
-		spinlock_acquire_exclusive(&(thread->lock));
-		thread->state.type=THREAD_STATE_TYPE_NONE;
-		spinlock_release_exclusive(&(thread->lock));
-		SPINLOOP(thread->state_not_present);
-		scheduler_enqueue_thread(thread);
-		if (!dispatch_all){
-			break;
-		}
-	}
-	if (!event->head_NEW){
-		event->tail_NEW=NULL;
 	}
 	spinlock_release_exclusive(&(event->lock));
 }
@@ -121,22 +100,23 @@ KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
 	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
-	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
-	thread->state_not_present=1;
+	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
+	thread->reg_state_not_present=1;
 	for (u32 i=0;i<count;i++){
 		event_t* event=events[i];
 		spinlock_acquire_exclusive(&(event->lock));
 		event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
 		container->thread=thread;
-		container->prev=event->tail_NEW;
+		container->prev=event->tail;
 		container->next=NULL;
-		if (event->tail_NEW){
-			event->tail_NEW->next=container;
+		container->sequence_id=thread->event_sequence_id;
+		if (event->tail){
+			event->tail->next=container;
 		}
 		else{
-			event->head_NEW=container;
+			event->head=container;
 		}
-		event->tail_NEW=container;
+		event->tail=container;
 		spinlock_release_exclusive(&(event->lock));
 	}
 	spinlock_release_exclusive(&(thread->lock));

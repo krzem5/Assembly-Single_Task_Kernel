@@ -15,7 +15,7 @@
 
 
 
-typedef u8 thread_state_type_t;
+typedef u8 thread_state_t;
 
 
 
@@ -23,6 +23,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 	struct _THREAD* thread;
 	struct _EVENT_THREAD_CONTAINER* prev;
 	struct _EVENT_THREAD_CONTAINER* next;
+	u64 sequence_id;
 } event_thread_container_t;
 
 
@@ -30,10 +31,8 @@ typedef struct _EVENT_THREAD_CONTAINER{
 typedef struct _EVENT{
 	handle_t handle;
 	spinlock_t lock;
-	struct _THREAD* head;
-	struct _THREAD* tail;
-	event_thread_container_t* head_NEW;
-	event_thread_container_t* tail_NEW;
+	event_thread_container_t* head;
+	event_thread_container_t* tail;
 } event_t;
 
 
@@ -67,18 +66,6 @@ typedef struct _THREAD_FS_GS_STATE{
 
 
 
-typedef struct _THREAD_STATE{
-	thread_state_type_t type;
-	union{
-		struct{
-			event_t* event;
-			struct _THREAD* next;
-		} event;
-	};
-} thread_state_t;
-
-
-
 typedef struct _THREAD{
 	cpu_header_t header;
 	handle_t handle;
@@ -93,9 +80,10 @@ typedef struct _THREAD{
 	void* fpu_state;
 	cpu_mask_t* cpu_mask;
 	KERNEL_ATOMIC scheduler_priority_t priority;
-	_Bool state_not_present;
+	_Bool reg_state_not_present;
 	thread_state_t state;
 	signal_state_t* signal_state;
+	u64 event_sequence_id;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;

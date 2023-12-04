@@ -40,7 +40,7 @@ KERNEL_PUBLIC handle_type_t thread_handle_type=0;
 
 static void _thread_handle_destructor(handle_t* handle){
 	thread_t* thread=handle->object;
-	if (thread->state.type!=THREAD_STATE_TYPE_TERMINATED){
+	if (thread->state!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
 	}
 	cpu_mask_delete(thread->cpu_mask);
@@ -103,9 +103,10 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	fpu_init(out->fpu_state);
 	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
-	out->state_not_present=0;
-	out->state.type=THREAD_STATE_TYPE_NONE;
+	out->reg_state_not_present=0;
+	out->state=THREAD_STATE_TYPE_NONE;
 	out->signal_state=NULL;
+	out->event_sequence_id=0;
 	thread_list_add(&(process->thread_list),out);
 	return out;
 }
@@ -184,34 +185,8 @@ KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	spinlock_acquire_exclusive(&(thread->lock));
-	thread->state.type=THREAD_STATE_TYPE_TERMINATED;
+	thread->state=THREAD_STATE_TYPE_TERMINATED;
 	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();
 	for (;;);
-}
-
-
-
-KERNEL_PUBLIC void thread_await_event(event_t* event){
-	scheduler_pause();
-	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	spinlock_acquire_exclusive(&(event->lock));
-	spinlock_acquire_exclusive(&(thread->lock));
-	thread->state.type=THREAD_STATE_TYPE_AWAITING_EVENT;
-	thread->state.event.event=event;
-	thread->state.event.next=NULL;
-	if (!event->head){
-		event->head=thread;
-		event->tail=thread;
-	}
-	else{
-		spinlock_acquire_exclusive(&(event->tail->lock));
-		event->tail->state.event.next=thread;
-		spinlock_release_exclusive(&(event->tail->lock));
-		event->tail=thread;
-	}
-	thread->state_not_present=1;
-	spinlock_release_exclusive(&(thread->lock));
-	spinlock_release_exclusive(&(event->lock));
-	scheduler_yield();
 }
