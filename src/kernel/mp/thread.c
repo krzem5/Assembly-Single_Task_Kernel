@@ -23,7 +23,7 @@
 #define SET_KERNEL_THREAD_ARG(register) \
 	if ((arg_count)){ \
 		(arg_count)--; \
-		out->gpr_state.register=__builtin_va_arg(va,u64); \
+		out->reg_state.gpr_state.register=__builtin_va_arg(va,u64); \
 	}
 
 
@@ -99,11 +99,11 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->fpu_state=omm_alloc(_thread_fpu_state_allocator);
-	fpu_init(out->fpu_state);
+	out->reg_state.reg_state_not_present=0;
+	out->reg_state.fpu_state=omm_alloc(_thread_fpu_state_allocator);
+	fpu_init(out->reg_state.fpu_state);
 	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
-	out->reg_state_not_present=0;
 	out->state=THREAD_STATE_TYPE_NONE;
 	out->signal_state=NULL;
 	out->event_sequence_id=0;
@@ -116,15 +116,15 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 KERNEL_PUBLIC thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
 	thread_t* out=_thread_alloc(process,stack_size,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->gpr_state.rip=rip;
-	out->gpr_state.rsp=out->user_stack_region->rb_node.key+stack_size;
-	out->gpr_state.cs=0x23;
-	out->gpr_state.ds=0x1b;
-	out->gpr_state.es=0x1b;
-	out->gpr_state.ss=0x1b;
-	out->gpr_state.rflags=0x0000000202;
-	out->fs_gs_state.fs=0;
-	out->fs_gs_state.gs=0;
+	out->reg_state.gpr_state.rip=rip;
+	out->reg_state.gpr_state.rsp=out->user_stack_region->rb_node.key+stack_size;
+	out->reg_state.gpr_state.cs=0x23;
+	out->reg_state.gpr_state.ds=0x1b;
+	out->reg_state.gpr_state.es=0x1b;
+	out->reg_state.gpr_state.ss=0x1b;
+	out->reg_state.gpr_state.rflags=0x0000000202;
+	out->reg_state.fs_gs_state.fs=0;
+	out->reg_state.fs_gs_state.gs=0;
 	handle_finish_setup(&(out->handle));
 	return out;
 }
@@ -137,9 +137,9 @@ KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u
 	}
 	_Bool start_thread=!process;
 	thread_t* out=_thread_alloc((process?process:process_kernel),0,stack_size);
-	out->gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
-	out->gpr_state.rax=(u64)func;
-	out->gpr_state.rsp=out->kernel_stack_region->rb_node.key+stack_size;
+	out->reg_state.gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
+	out->reg_state.gpr_state.rax=(u64)func;
+	out->reg_state.gpr_state.rsp=out->kernel_stack_region->rb_node.key+stack_size;
 	__builtin_va_list va;
 	__builtin_va_start(va,arg_count);
 	SET_KERNEL_THREAD_ARG(rdi);
@@ -149,13 +149,13 @@ KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u
 	SET_KERNEL_THREAD_ARG(r8);
 	SET_KERNEL_THREAD_ARG(r9);
 	__builtin_va_end(va);
-	out->gpr_state.cs=0x08;
-	out->gpr_state.ds=0x10;
-	out->gpr_state.es=0x10;
-	out->gpr_state.ss=0x10;
-	out->gpr_state.rflags=0x0000000202;
-	out->fs_gs_state.fs=0;
-	out->fs_gs_state.gs=(u64)out;
+	out->reg_state.gpr_state.cs=0x08;
+	out->reg_state.gpr_state.ds=0x10;
+	out->reg_state.gpr_state.es=0x10;
+	out->reg_state.gpr_state.ss=0x10;
+	out->reg_state.gpr_state.rflags=0x0000000202;
+	out->reg_state.fs_gs_state.fs=0;
+	out->reg_state.fs_gs_state.gs=(u64)out;
 	handle_finish_setup(&(out->handle));
 	if (start_thread){
 		scheduler_enqueue_thread(out);
@@ -173,7 +173,7 @@ KERNEL_PUBLIC void thread_delete(thread_t* thread){
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
 	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
-	omm_dealloc(_thread_fpu_state_allocator,thread->fpu_state);
+	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (handle_release(&(thread->handle))){
 		spinlock_release_exclusive(&(thread->lock));
 	}

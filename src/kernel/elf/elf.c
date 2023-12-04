@@ -250,7 +250,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 	}
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	ctx->thread->gpr_state.rip=header.e_entry+image_base;
+	ctx->thread->reg_state.gpr_state.rip=header.e_entry+image_base;
 	return 1;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
@@ -314,7 +314,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_NULL,0);
 	mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,_user_input_data_pmm_counter);
-	ctx->thread->gpr_state.r15=region->rb_node.key;
+	ctx->thread->reg_state.gpr_state.r15=region->rb_node.key;
 	return !!region;
 }
 

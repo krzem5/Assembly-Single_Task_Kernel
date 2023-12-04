@@ -62,8 +62,8 @@ void syscall_thread_create(isr_state_t* regs){
 		stack_size=THREAD_DATA->user_stack_region->length;
 	}
 	thread_t* thread=thread_new_user_thread(THREAD_DATA->process,regs->rdi,stack_size);
-	thread->gpr_state.rdi=regs->rsi;
-	thread->gpr_state.rsi=regs->rdx;
+	thread->reg_state.gpr_state.rdi=regs->rsi;
+	thread->reg_state.gpr_state.rsi=regs->rdx;
 	scheduler_enqueue_thread(thread);
 	regs->rax=thread->handle.rb_node.key;
 }

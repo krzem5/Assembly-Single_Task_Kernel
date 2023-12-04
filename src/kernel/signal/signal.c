@@ -23,7 +23,7 @@ KERNEL_PUBLIC void signal_send(thread_t* thread,isr_state_t* isr_state,signal_ty
 		return;
 	}
 	if (!isr_state){
-		isr_state=&(thread->gpr_state);
+		isr_state=&(thread->reg_state.gpr_state);
 	}
 	if (isr_state->cs!=0x23){
 		panic("signal_send: defer signal");

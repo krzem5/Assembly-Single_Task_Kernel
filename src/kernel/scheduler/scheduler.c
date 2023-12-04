@@ -108,9 +108,9 @@ void scheduler_isr_handler(isr_state_t* state){
 			thread_delete(current_thread);
 		}
 		else{
-			current_thread->gpr_state=*state;
-			fpu_save(current_thread->fpu_state);
-			current_thread->reg_state_not_present=0;
+			current_thread->reg_state.gpr_state=*state;
+			fpu_save(current_thread->reg_state.fpu_state);
+			current_thread->reg_state.reg_state_not_present=0;
 			spinlock_release_exclusive(&(current_thread->lock));
 			if (current_thread->state==THREAD_STATE_TYPE_RUNNING){
 				scheduler_enqueue_thread(current_thread);
@@ -123,11 +123,11 @@ void scheduler_isr_handler(isr_state_t* state){
 		current_thread->header.index=CPU_HEADER_DATA->index;
 		msr_set_gs_base((u64)current_thread,0);
 		scheduler->current_thread=current_thread;
-		*state=current_thread->gpr_state;
+		*state=current_thread->reg_state.gpr_state;
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_region->rb_node.key+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-		msr_set_fs_base(current_thread->fs_gs_state.fs);
-		msr_set_gs_base(current_thread->fs_gs_state.gs,1);
-		fpu_restore(current_thread->fpu_state);
+		msr_set_fs_base(current_thread->reg_state.fs_gs_state.fs);
+		msr_set_gs_base(current_thread->reg_state.fs_gs_state.gs,1);
+		fpu_restore(current_thread->reg_state.fpu_state);
 		vmm_switch_to_pagemap(&(current_thread->process->pagemap));
 		current_thread->state=THREAD_STATE_TYPE_RUNNING;
 		spinlock_release_exclusive(&(current_thread->lock));

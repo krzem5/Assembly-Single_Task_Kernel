@@ -75,12 +75,14 @@ typedef struct _THREAD{
 	mmap_region_t* user_stack_region;
 	mmap_region_t* kernel_stack_region;
 	mmap_region_t* pf_stack_region;
-	isr_state_t gpr_state;
-	thread_fs_gs_state_t fs_gs_state;
-	void* fpu_state;
+	struct{
+		_Bool reg_state_not_present;
+		isr_state_t gpr_state;
+		thread_fs_gs_state_t fs_gs_state;
+		void* fpu_state;
+	} reg_state;
 	cpu_mask_t* cpu_mask;
 	KERNEL_ATOMIC scheduler_priority_t priority;
-	_Bool reg_state_not_present;
 	thread_state_t state;
 	signal_state_t* signal_state;
 	u64 event_sequence_id;

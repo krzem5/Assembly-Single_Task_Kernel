@@ -73,7 +73,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,_Bool dispatch_all){
 		thread->event_sequence_id++;
 		thread->state=THREAD_STATE_TYPE_NONE;
 		spinlock_release_exclusive(&(thread->lock));
-		SPINLOOP(thread->reg_state_not_present);
+		SPINLOOP(thread->reg_state.reg_state_not_present);
 		scheduler_enqueue_thread(thread);
 		if (!dispatch_all){
 			break;
@@ -101,7 +101,7 @@ KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
-	thread->reg_state_not_present=1;
+	thread->reg_state.reg_state_not_present=1;
 	for (u32 i=0;i<count;i++){
 		event_t* event=events[i];
 		spinlock_acquire_exclusive(&(event->lock));
