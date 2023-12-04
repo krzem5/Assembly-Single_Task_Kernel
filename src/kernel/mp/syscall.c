@@ -152,15 +152,14 @@ void syscall_thread_set_cpu_mask(isr_state_t* regs){
 
 void syscall_thread_await_events(isr_state_t* regs){
 	if (!regs->rsi){
-		regs->rax=1;
+		regs->rax=-1;
 		return;
 	}
 	if (regs->rsi*sizeof(handle_id_t)>syscall_get_user_pointer_max_length(regs->rdi)){
-		regs->rax=0;
+		regs->rax=-1;
 		return;
 	}
-	event_await_multiple_handles((const handle_id_t*)(regs->rdi),regs->rsi);
-	regs->rax=1;
+	regs->rax=event_await_multiple_handles((const handle_id_t*)(regs->rdi),regs->rsi);
 }
 
 

@@ -184,3 +184,13 @@ KERNEL_PUBLIC void* socket_get_packet(vfs_node_t* node,_Bool nonblocking){
 	spinlock_release_exclusive(&(socket_node->read_lock));
 	return out;
 }
+
+
+
+KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return NULL;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	return socket_node->rx_ring->write_event;
+}

@@ -100,4 +100,8 @@ void* socket_get_packet(vfs_node_t* node,_Bool nonblocking);
 
 
 
+event_t* socket_get_event(vfs_node_t* node);
+
+
+
 #endif

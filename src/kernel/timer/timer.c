@@ -1,5 +1,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/handle/handle.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -26,7 +27,18 @@ void KERNEL_EARLY_EXEC timer_init(void){
 
 
 
-KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count);
+KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
+	timer_t* out=omm_alloc(_timer_allocator);
+	out->rb_node.key=0;
+	handle_new(out,timer_handle_type,&(out->handle));
+	spinlock_init(&(out->lock));
+	out->event=event_new();
+	out->interval=0;
+	out->count=0;
+	handle_finish_setup(&(out->handle));
+	timer_update(out,interval,count);
+	return out;
+}
 
 
 
@@ -34,11 +46,31 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer);
 
 
 
-KERNEL_PUBLIC u64 timer_get_deadline(timer_t* timer);
+KERNEL_PUBLIC u64 timer_get_deadline(timer_t* timer){
+	return timer->rb_node.key;
+}
 
 
 
-KERNEL_PUBLIC _Bool timer_update(timer_t* timer,u64 interval,u64 count);
+KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count){
+	spinlock_acquire_exclusive(&(timer->lock));
+	if (timer->rb_node.key){
+		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
+	}
+	if (count==TIMER_COUNT_ABSOLUTE_TIME){
+		timer->rb_node.key=interval;
+		timer->count=0;
+	}
+	else{
+		timer->rb_node.key=clock_get_time()+interval;
+		timer->interval=interval;
+		timer->count=count;
+	}
+	if (timer->rb_node.key){
+		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
+	}
+	spinlock_release_exclusive(&(timer->lock));
+}
 
 
 
@@ -48,13 +80,17 @@ void timer_dispatch_timers(void){
 	if (!timer){
 		return;
 	}
+	spinlock_acquire_exclusive(&(timer->lock));
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	event_dispatch(timer->event,1);
 	if (timer->count<=1){
+		timer->rb_node.key=0;
 		timer->count=0;
-		return;
 	}
-	timer->count--;
-	timer->rb_node.key=time+timer->interval;
-	rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
+	else{
+		timer->count--;
+		timer->rb_node.key=time+timer->interval;
+		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
+	}
+	spinlock_release_exclusive(&(timer->lock));
 }

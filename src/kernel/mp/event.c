@@ -24,13 +24,14 @@ static void _event_handle_destructor(handle_t* handle){
 
 
 
-static void _await_event(thread_t* thread,event_t* event){
+static void _await_event(thread_t* thread,event_t* event,u32 index){
 	spinlock_acquire_exclusive(&(event->lock));
 	event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
 	container->thread=thread;
 	container->prev=event->tail;
 	container->next=NULL;
 	container->sequence_id=thread->event_sequence_id;
+	container->index=index;
 	if (event->tail){
 		event->tail->next=container;
 	}
@@ -89,13 +90,15 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,_Bool dispatch_all){
 		event->head=container->next;
 		thread_t* thread=container->thread;
 		u64 sequence_id=container->sequence_id;
+		u64 index=container->index;
 		omm_dealloc(_event_thread_container_allocator,container);
 		if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT||thread->event_sequence_id!=sequence_id){
 			continue;
 		}
 		spinlock_acquire_exclusive(&(thread->lock));
-		thread->event_sequence_id++;
 		thread->state=THREAD_STATE_TYPE_NONE;
+		thread->event_sequence_id++;
+		thread->event_wakeup_index=index;
 		spinlock_release_exclusive(&(thread->lock));
 		SPINLOOP(thread->reg_state.reg_state_not_present);
 		scheduler_enqueue_thread(thread);
@@ -117,9 +120,9 @@ KERNEL_PUBLIC void event_await(event_t* event){
 
 
 
-KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
+KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 	if (!count||!CPU_HEADER_DATA->current_thread){
-		return;
+		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
@@ -127,17 +130,18 @@ KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
 	for (u32 i=0;i<count;i++){
-		_await_event(thread,events[i]);
+		_await_event(thread,events[i],i);
 	}
 	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();
+	return thread->event_wakeup_index;
 }
 
 
 
-void event_await_multiple_handles(const handle_id_t* handles,u32 count){
+KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 count){
 	if (!count||!CPU_HEADER_DATA->current_thread){
-		return;
+		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
@@ -149,9 +153,10 @@ void event_await_multiple_handles(const handle_id_t* handles,u32 count){
 		if (!handle_event){
 			continue;
 		}
-		_await_event(thread,handle_event->object);
+		_await_event(thread,handle_event->object,i);
 		handle_release(handle_event);
 	}
 	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();
+	return thread->event_wakeup_index;
 }

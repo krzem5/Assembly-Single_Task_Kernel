@@ -24,6 +24,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 	struct _EVENT_THREAD_CONTAINER* prev;
 	struct _EVENT_THREAD_CONTAINER* next;
 	u64 sequence_id;
+	u64 index;
 } event_thread_container_t;
 
 
@@ -87,6 +88,7 @@ typedef struct _THREAD{
 	thread_state_t state;
 	signal_state_t* signal_state;
 	u64 event_sequence_id;
+	u64 event_wakeup_index;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;

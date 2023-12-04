@@ -22,11 +22,11 @@ void event_await(event_t* event);
 
 
 
-void event_await_multiple(event_t*const* events,u32 count);
+u32 event_await_multiple(event_t*const* events,u32 count);
 
 
 
-void event_await_multiple_handles(const handle_id_t* handles,u32 count);
+u32 event_await_multiple_handles(const handle_id_t* handles,u32 count);
 
 
 

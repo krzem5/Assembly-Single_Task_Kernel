@@ -1,6 +1,7 @@
 #ifndef _KERNEL_TIMER_TIMER_H_
 #define _KERNEL_TIMER_TIMER_H_ 1
 #include <kernel/handle/handle.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -13,6 +14,8 @@
 
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
+	handle_t handle;
+	spinlock_t lock;
 	event_t* event;
 	u64 interval;
 	u64 count;
@@ -40,7 +43,7 @@ u64 timer_get_deadline(timer_t* timer);
 
 
 
-_Bool timer_update(timer_t* timer,u64 interval,u64 count);
+void timer_update(timer_t* timer,u64 interval,u64 count);
 
 
 

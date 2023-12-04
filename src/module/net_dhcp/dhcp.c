@@ -2,11 +2,13 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/socket/socket.h>
+#include <kernel/timer/timer.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
@@ -17,7 +19,12 @@
 
 
 
+#define DHCP_TIMEOUT_NS 10000000000
+
+
+
 static vfs_node_t* _net_dhcp_socket=NULL;
+static timer_t* _net_dhcp_timeout_timer=NULL;
 static spinlock_t _net_dhcp_lock;
 static u32 _net_dhcp_current_xid=0;
 static net_ip4_address_t _net_dhcp_offer_address=0;
@@ -42,6 +49,7 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 
 
 static void _send_packet(net_dhcp_packet_t* packet,u32 option_size){
+	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1);
 	vfs_node_write(_net_dhcp_socket,0,packet,sizeof(net_dhcp_packet_t)+option_size,0);
 	amm_dealloc(packet);
 }
@@ -63,8 +71,16 @@ static void _send_discover_request(void){
 
 static void _rx_thread(void){
 	while (1){
-		net_udp_socket_packet_t* packet=socket_get_packet(_net_dhcp_socket,0);
+		net_udp_socket_packet_t* packet=socket_get_packet(_net_dhcp_socket,1);
 		if (!packet){
+			event_t* events[2]={
+				_net_dhcp_timeout_timer->event,
+				socket_get_event(_net_dhcp_socket)
+			};
+			if (!event_await_multiple(events,2)){
+				WARN("DHCP timeout");
+				_send_discover_request();
+			}
 			continue;
 		}
 		spinlock_acquire_exclusive(&_net_dhcp_lock);
@@ -111,6 +127,7 @@ static void _rx_thread(void){
 				WARN("Received DHCPACK from wrong server");
 				goto _cleanup;
 			}
+			timer_update(_net_dhcp_timeout_timer,0,0);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
 			net_ip4_address_t subnet_mask=0;
 			net_ip4_address_t router=0;
@@ -166,6 +183,7 @@ void net_dhcp_init(void){
 		ERROR("Failed to connect DHCP client socket");
 		return;
 	}
+	_net_dhcp_timeout_timer=timer_create(0,0);
 	spinlock_init(&_net_dhcp_lock);
 	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
 	net_dhcp_negotiate_address();
