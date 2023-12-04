@@ -94,10 +94,10 @@ KERNEL_PUBLIC void event_await(event_t* event){
 
 
 KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
-	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	if (!thread){
+	if (!count||!CPU_HEADER_DATA->current_thread){
 		return;
 	}
+	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
