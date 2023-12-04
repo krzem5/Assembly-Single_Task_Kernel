@@ -152,7 +152,7 @@ static void _rx_thread(void){
 			LOG("New IPv4 address: %I",_net_dhcp_offer_address);
 			INFO("Subnet mask: %I, Router: %I, DNS: %I, Lease time: %u s",subnet_mask,router,dns,lease_time);
 		}
-		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK||/*timeout in any previous step*/0){
+		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
 			_send_discover_request();
 		}
 _cleanup:
