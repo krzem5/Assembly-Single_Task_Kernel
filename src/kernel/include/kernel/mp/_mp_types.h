@@ -19,11 +19,21 @@ typedef u8 thread_state_type_t;
 
 
 
+typedef struct _EVENT_THREAD_CONTAINER{
+	struct _THREAD* thread;
+	struct _EVENT_THREAD_CONTAINER* prev;
+	struct _EVENT_THREAD_CONTAINER* next;
+} event_thread_container_t;
+
+
+
 typedef struct _EVENT{
 	handle_t handle;
 	spinlock_t lock;
 	struct _THREAD* head;
 	struct _THREAD* tail;
+	event_thread_container_t* head_NEW;
+	event_thread_container_t* tail_NEW;
 } event_t;
 
 

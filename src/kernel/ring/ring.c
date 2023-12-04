@@ -4,7 +4,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
-#include <kernel/mp/thread.h>
 #include <kernel/ring/ring.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -59,7 +58,7 @@ _retry_push:
 			scheduler_resume();
 			return 0;
 		}
-		thread_await_event(ring->read_event);
+		event_await(ring->read_event);
 		goto _retry_push;
 	}
 	ring->buffer[ring->write_index]=item;
@@ -84,7 +83,7 @@ _retry_pop:
 			scheduler_resume();
 			return NULL;
 		}
-		thread_await_event(ring->write_event);
+		event_await(ring->write_event);
 		goto _retry_pop;
 	}
 	void* out=ring->buffer[ring->read_index];

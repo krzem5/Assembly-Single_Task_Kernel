@@ -42,7 +42,7 @@ static void _rx_thread(i82540_device_t* device){
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 		while (!(desc->status&RDESC_DD)){
 			spinlock_release_exclusive(&(device->lock));
-			thread_await_event(IRQ_EVENT(device->irq));
+			event_await(IRQ_EVENT(device->irq));
 			scheduler_pause();
 			spinlock_acquire_exclusive(&(device->lock));
 			u32 icr=device->mmio[REG_ICR];
