@@ -1,6 +1,8 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/isr/isr.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -144,4 +146,32 @@ void syscall_thread_set_cpu_mask(isr_state_t* regs){
 	memset((void*)(((u64)(thread->cpu_mask))+size),0,cpu_mask_size-size);
 	handle_release(handle);
 	regs->rax=1;
+}
+
+
+
+void syscall_thread_await_events(isr_state_t* regs){
+	if (!regs->rsi){
+		regs->rax=1;
+		return;
+	}
+	if (regs->rsi*sizeof(handle_id_t)>syscall_get_user_pointer_max_length(regs->rdi)){
+		regs->rax=0;
+		return;
+	}
+	event_await_multiple_handles((const handle_id_t*)(regs->rdi),regs->rsi);
+	regs->rax=1;
+}
+
+
+
+void syscall_process_get_event(isr_state_t* regs){
+	handle_t* handle=handle_lookup_and_acquire(regs->rdi,process_handle_type);
+	if (!handle){
+		regs->rax=0;
+		return;
+	}
+	process_t* process=handle->object;
+	regs->rax=process->event->handle.rb_node.key;
+	handle_release(handle);
 }

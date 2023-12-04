@@ -55,6 +55,7 @@ typedef struct _PROCESS{
 	string_t* image;
 	uid_t uid;
 	gid_t gid;
+	event_t* event;
 } process_t;
 
 

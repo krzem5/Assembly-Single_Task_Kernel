@@ -24,6 +24,25 @@ static void _event_handle_destructor(handle_t* handle){
 
 
 
+static void _await_event(thread_t* thread,event_t* event){
+	spinlock_acquire_exclusive(&(event->lock));
+	event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
+	container->thread=thread;
+	container->prev=event->tail;
+	container->next=NULL;
+	container->sequence_id=thread->event_sequence_id;
+	if (event->tail){
+		event->tail->next=container;
+	}
+	else{
+		event->head=container;
+	}
+	event->tail=container;
+	spinlock_release_exclusive(&(event->lock));
+}
+
+
+
 KERNEL_PUBLIC event_t* event_new(void){
 	if (!_event_allocator){
 		_event_allocator=omm_init("event",sizeof(event_t),8,2,pmm_alloc_counter("omm_event"));
@@ -51,6 +70,11 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 	spinlock_acquire_exclusive(&(event->lock));
 	if (event->head||event->handle.rc){
 		panic("Referenced events cannot be deleted");
+	}
+	while (event->head){
+		event_thread_container_t* container=event->head;
+		event->head=container->next;
+		omm_dealloc(_event_thread_container_allocator,container);
 	}
 	spinlock_release_exclusive(&(event->lock));
 	omm_dealloc(_event_allocator,event);
@@ -103,21 +127,30 @@ KERNEL_PUBLIC void event_await_multiple(event_t*const* events,u32 count){
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
 	for (u32 i=0;i<count;i++){
-		event_t* event=events[i];
-		spinlock_acquire_exclusive(&(event->lock));
-		event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
-		container->thread=thread;
-		container->prev=event->tail;
-		container->next=NULL;
-		container->sequence_id=thread->event_sequence_id;
-		if (event->tail){
-			event->tail->next=container;
+		_await_event(thread,events[i]);
+	}
+	spinlock_release_exclusive(&(thread->lock));
+	scheduler_yield();
+}
+
+
+
+void event_await_multiple_handles(const handle_id_t* handles,u32 count){
+	if (!count||!CPU_HEADER_DATA->current_thread){
+		return;
+	}
+	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	scheduler_pause();
+	spinlock_acquire_exclusive(&(thread->lock));
+	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
+	thread->reg_state.reg_state_not_present=1;
+	for (u32 i=0;i<count;i++){
+		handle_t* handle_event=handle_lookup_and_acquire(handles[i],_event_handle_type);
+		if (!handle_event){
+			continue;
 		}
-		else{
-			event->head=container;
-		}
-		event->tail=container;
-		spinlock_release_exclusive(&(event->lock));
+		_await_event(thread,handle_event->object);
+		handle_release(handle_event);
 	}
 	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();

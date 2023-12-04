@@ -30,15 +30,16 @@ int main(int argc,const char** argv){
 			if (!length){
 				break;
 			}
+			u32 k=0;
 			for (u32 j=0;j<length;j++){
-				if (i>=columns){
-					i=0;
+				if (k>=columns){
+					k=0;
 					putchar('\n');
 				}
-				else if (i){
+				else if (k){
 					putchar(' ');
 				}
-				i++;
+				k++;
 				printf("%X",buffer[j]);
 			}
 		}

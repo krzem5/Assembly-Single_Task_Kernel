@@ -372,7 +372,7 @@ KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* a
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
-	return ctx.thread->handle.rb_node.key;
+	return process->handle.rb_node.key;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	handle_release(&(process->handle));

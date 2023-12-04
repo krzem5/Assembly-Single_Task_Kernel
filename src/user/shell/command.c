@@ -64,7 +64,14 @@ void command_execute(const char* command){
 		char path[4096];
 		sys_fd_path(fd,path,4096);
 		sys_fd_close(fd);
-		_syscall_process_start(path,argc,argv,NULL,0);
+		u64 process=_syscall_process_start(path,argc,argv,NULL,0);
+		if (!process){
+			return;
+		}
+		u64 events[1]={
+			_syscall_process_get_event(process)
+		};
+		_syscall_thread_await_events(events,1);
 		return;
 	}
 	printf("%s: command not found\n",buffer);

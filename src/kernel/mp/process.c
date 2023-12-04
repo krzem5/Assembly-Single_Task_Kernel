@@ -6,6 +6,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread_list.h>
 #include <kernel/types.h>
@@ -34,6 +35,7 @@ static void _process_handle_destructor(handle_t* handle){
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
+	event_dispatch(process->event,1);
 	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);
@@ -57,6 +59,7 @@ void KERNEL_EARLY_EXEC process_init(void){
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
 	process_kernel->uid=0;
 	process_kernel->gid=0;
+	process_kernel->event=event_new();
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
 		panic("Unable to reserve kernel memory");
@@ -77,6 +80,7 @@ KERNEL_PUBLIC process_t* process_new(const char* image,const char* name){
 	out->image=smm_alloc(image,0);
 	out->uid=0;
 	out->gid=0;
+	out->event=event_new();
 	handle_finish_setup(&(out->handle));
 	return out;
 }
