@@ -83,10 +83,10 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
 	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
-	if (!(permissions&VFS_PERMISSION_READ)){
+	if (!(permissions&VFS_PERMISSION_READ)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_READ;
 	}
-	if (!(permissions&VFS_PERMISSION_WRITE)){
+	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_WRITE;
 	}
 	handle_finish_setup(&(out->handle));
