@@ -25,6 +25,7 @@
 #include <kernel/socket/socket.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/time/time.h>
+#include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "main"
 
@@ -65,6 +66,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	gid_init();
 	uid_init();
 	scheduler_init();
+	timer_init();
 	process_init();
 	cpu_start_all_cores();
 	thread_new_kernel_thread(NULL,_main_thread,0x200000,0);

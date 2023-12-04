@@ -7,11 +7,12 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/mp/thread.h>
+#include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "scheduler"
@@ -117,6 +118,7 @@ void scheduler_isr_handler(isr_state_t* state){
 			}
 		}
 	}
+	timer_dispatch_timers();
 	current_thread=scheduler_load_balancer_get();
 	if (current_thread){
 		spinlock_acquire_exclusive(&(current_thread->lock));
