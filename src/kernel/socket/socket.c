@@ -192,5 +192,5 @@ KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	return socket_node->rx_ring->write_event;
+	return socket_node->rx_ring->read_event;
 }

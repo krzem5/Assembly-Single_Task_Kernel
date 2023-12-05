@@ -89,7 +89,7 @@ _retry_read:
 	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
 		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
 		pipe->is_full=0;
-		event_dispatch(pipe->read_event,1);
+		event_dispatch(pipe->read_event,0);
 	}
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();

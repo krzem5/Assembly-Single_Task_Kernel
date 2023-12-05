@@ -35,7 +35,7 @@ static void _process_handle_destructor(handle_t* handle){
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
-	event_dispatch(process->event,1);
+	event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE);
 	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);

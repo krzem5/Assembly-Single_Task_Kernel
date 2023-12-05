@@ -82,7 +82,7 @@ void timer_dispatch_timers(void){
 	}
 	spinlock_acquire_exclusive(&(timer->lock));
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
-	event_dispatch(timer->event,1);
+	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 	if (timer->count<=1){
 		timer->rb_node.key=0;
 		timer->count=0;

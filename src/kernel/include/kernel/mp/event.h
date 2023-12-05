@@ -6,6 +6,11 @@
 
 
 
+#define EVENT_DISPATCH_FLAG_DISPATCH_ALL 1
+#define EVENT_DISPATCH_FLAG_SET_ACTIVE 2
+
+
+
 event_t* event_new(void);
 
 
@@ -14,7 +19,7 @@ void event_delete(event_t* event);
 
 
 
-void event_dispatch(event_t* event,_Bool dispatch_all);
+void event_dispatch(event_t* event,u32 flags);
 
 
 
@@ -27,6 +32,10 @@ u32 event_await_multiple(event_t*const* events,u32 count);
 
 
 u32 event_await_multiple_handles(const handle_id_t* handles,u32 count);
+
+
+
+void event_set_active(event_t* event,_Bool active);
 
 
 

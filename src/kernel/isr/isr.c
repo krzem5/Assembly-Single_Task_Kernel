@@ -61,7 +61,7 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	if (isr_state->isr>32){
 		lapic_eoi();
-		event_dispatch(IRQ_EVENT(isr_state->isr),1);
+		event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 		return;
 	}
 	scheduler_pause();

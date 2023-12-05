@@ -32,6 +32,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 typedef struct _EVENT{
 	handle_t handle;
 	spinlock_t lock;
+	_Bool is_active;
 	event_thread_container_t* head;
 	event_thread_container_t* tail;
 } event_t;
