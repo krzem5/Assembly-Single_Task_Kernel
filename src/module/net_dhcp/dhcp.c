@@ -133,6 +133,9 @@ static void _rx_thread(void){
 			net_ip4_address_t router=0;
 			net_ip4_address_t dns=0;
 			u32 lease_time=0;
+			// reset network state
+			// set new network state + load all DNS servers and routers
+			// scheduler DNS resets after the lease expires (+ load the last used ip address after restart)
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
 				u8 length=dhcp_packet->options[i+1];
