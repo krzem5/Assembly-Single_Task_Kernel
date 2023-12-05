@@ -136,6 +136,7 @@ static void _rx_thread(void){
 			// reset network state
 			// set new network state + load all DNS servers and routers
 			// scheduler DNS resets after the lease expires (+ load the last used ip address after restart)
+			// add net_dns driver from https://www.ietf.org/rfc/rfc1035.txt
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
 				u8 length=dhcp_packet->options[i+1];
