@@ -189,11 +189,10 @@ def _generate_syscalls(file_path):
 			attrs=line.split(")")[1].split("->")[0].strip()
 			ret=line.split("->")[1].strip()
 			syscalls.append((name,args,attrs,ret))
-	syscalls.insert(0,("invalid",tuple(),"","void"))
 	with open("src/lib/sys/sys/syscall.asm","w") as wf:
 		wf.write("[bits 64]\n")
 		for i,(name,args,_,ret) in enumerate(syscalls):
-			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {i}\n")
+			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {i+1}\n")
 			if (len(args)>4):
 				wf.write("\tmov r9, r8\n")
 			if (len(args)>3):
@@ -208,7 +207,7 @@ def _generate_syscalls(file_path):
 		wf.write("#include <kernel/isr/isr.h>\n#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"extern void syscall_{name}(isr_state_t* regs);\n")
-		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)};\n\n\n\nconst void*const _syscall_handlers[{len(syscalls)}]={{\n")
+		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)+1};\n\n\n\nconst void*const _syscall_handlers[{len(syscalls)+1}]={{\n\tNULL,\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"\tsyscall_{name},\n")
 		wf.write("};\n")

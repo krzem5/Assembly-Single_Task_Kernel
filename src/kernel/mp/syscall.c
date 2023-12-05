@@ -26,8 +26,7 @@ void syscall_thread_get_tid(isr_state_t* regs){
 
 
 void syscall_process_start(isr_state_t* regs){
-	u64 path_length=syscall_get_string_length(regs->rdi);
-	if (!path_length){
+	if (!syscall_get_string_length(regs->rdi)){
 		regs->rax=0;
 		return;
 	}

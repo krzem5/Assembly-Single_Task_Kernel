@@ -24,6 +24,7 @@
 #include <kernel/shutdown/shutdown.h>
 #include <kernel/socket/socket.h>
 #include <kernel/symbol/symbol.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/time/time.h>
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
@@ -34,6 +35,7 @@
 static void _main_thread(void){
 	LOG("Main thread started");
 	shutdown_init();
+	syscall_init();
 	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();

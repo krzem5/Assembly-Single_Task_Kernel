@@ -5,7 +5,15 @@
 
 
 
-void syscall_invalid(isr_state_t* regs);
+typedef void (*syscall_callback_t)(isr_state_t*);
+
+
+
+void syscall_init(void);
+
+
+
+u32 syscall_create_table(const char* name,const syscall_callback_t* functions,u32 function_count);
 
 
 

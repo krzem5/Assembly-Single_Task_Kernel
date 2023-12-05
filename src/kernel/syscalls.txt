@@ -35,3 +35,4 @@ thread_get_tid(void) -> u64
 process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags) -> u64
 thread_await_events(const u64* handles,u32 count) -> _Bool
 process_get_event(u64 handle) -> u64
+syscall_table_get_offset(const char* name) -> u64
