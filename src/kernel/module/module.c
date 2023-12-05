@@ -244,7 +244,7 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 	INFO("Resolving symbol table...");
 	_Bool ret=1;
-	for (u64 i=0;i<ctx->elf_symbol_table_size/sizeof(elf_sym_t);i++){
+	for (u64 i=1;i<ctx->elf_symbol_table_size/sizeof(elf_sym_t);i++){
 		elf_sym_t* elf_symbol=ctx->elf_symbol_table+i;
 		if (elf_symbol->st_shndx==SHN_UNDEF&&ctx->elf_symbol_string_table[elf_symbol->st_name]){
 			const symbol_t* symbol=symbol_lookup_by_name(ctx->elf_symbol_string_table+elf_symbol->st_name);
@@ -256,7 +256,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 				ret=0;
 			}
 		}
-		else if (elf_symbol->st_value){
+		else if (elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
 			symbol_add(ctx->name,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 		}
 	}

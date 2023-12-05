@@ -13,6 +13,7 @@
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <net/dhcp.h>
+#include <net/info.h>
 #include <net/ip4.h>
 #include <net/udp.h>
 #define KERNEL_LOG_NAME "net_dhcp"
@@ -129,32 +130,37 @@ static void _rx_thread(void){
 			}
 			timer_update(_net_dhcp_timeout_timer,0,0);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
-			net_ip4_address_t subnet_mask=0;
-			net_ip4_address_t router=0;
-			net_ip4_address_t dns=0;
 			u32 lease_time=0;
-			// reset network state
-			// set new network state + load all DNS servers and routers
 			// scheduler DNS resets after the lease expires (+ load the last used ip address after restart)
 			// add net_dns driver from https://www.ietf.org/rfc/rfc1035.txt
+			net_info_set_address(_net_dhcp_offer_address);
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
 				u8 length=dhcp_packet->options[i+1];
 				if (type==NET_DHCP_OPTION_SUBNET_MASK&&length==4){
-					subnet_mask=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+					net_info_set_subnet_mask(__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2))));
 				}
 				else if (type==NET_DHCP_OPTION_ROUTER&&length>=4){
-					router=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+					net_info_add_router(__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2))));
 				}
 				else if (type==NET_DHCP_OPTION_DOMAIN_NAME_SERVER&&length>=4){
-					dns=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
+					net_info_add_dns(__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2))));
 				}
 				else if (type==NET_DHCP_OPTION_IP_ADDRESS_LEASE_TIME&&length==4){
 					lease_time=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
 			}
-			LOG("New IPv4 address: %I",_net_dhcp_offer_address);
-			INFO("Subnet mask: %I, Router: %I, DNS: %I, Lease time: %u s",subnet_mask,router,dns,lease_time);
+			LOG("IPv4 address: %I",_net_dhcp_offer_address);
+			INFO("Subnet mask: %I",net_info_get_subnet_mask());
+			INFO("Router:");
+			for (const net_info_address_list_entry_t* router=net_info_get_router_entries();router;router=router->next){
+				INFO("- %I",router->address);
+			}
+			INFO("DNS:");
+			for (const net_info_address_list_entry_t* router=net_info_get_dns_entries();router;router=router->next){
+				INFO("- %I",router->address);
+			}
+			INFO("Lease time: %u s",lease_time);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
 			_send_discover_request();
@@ -197,6 +203,7 @@ void net_dhcp_init(void){
 
 KERNEL_PUBLIC void net_dhcp_negotiate_address(void){
 	LOG("Negotiating IPv4 address...");
+	net_info_reset();
 	net_ip4_address=0;
 	if (!network_layer1_device){
 		ERROR("Unable to negotiate IPv4 address, no network adapter found");
