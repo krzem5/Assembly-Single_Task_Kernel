@@ -138,7 +138,6 @@ static void _rx_thread(void){
 			timer_update(_net_dhcp_timeout_timer,0,0);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
 			u32 lease_time=0;
-			// scheduler DNS resets after the lease expires (+ load the last used ip address after restart)
 			// add net_dns driver from https://www.ietf.org/rfc/rfc1035.txt
 			net_info_set_address(_net_dhcp_offer_address);
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
