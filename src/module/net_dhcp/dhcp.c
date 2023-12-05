@@ -137,9 +137,8 @@ static void _rx_thread(void){
 			}
 			timer_update(_net_dhcp_timeout_timer,0,0);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
-			u32 lease_time=0;
 			// add net_dns driver from https://www.ietf.org/rfc/rfc1035.txt
-			net_info_set_address(_net_dhcp_offer_address);
+			u32 lease_time=0;
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
 				u8 length=dhcp_packet->options[i+1];
@@ -156,6 +155,7 @@ static void _rx_thread(void){
 					lease_time=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
 			}
+			net_info_set_address(_net_dhcp_offer_address);
 			if (!lease_time){
 				lease_time=1;
 			}
