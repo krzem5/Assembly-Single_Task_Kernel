@@ -28,10 +28,7 @@ syscall_enable:
 
 extern _random_entropy_pool
 extern _random_entropy_pool_length
-extern _syscall_count
-extern _syscall_handlers
-extern scheduler_set_timer
-extern syscall_invalid
+extern _syscall_execute
 section .text exec nowrite
 
 
@@ -72,18 +69,8 @@ _syscall_handler:
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
-	mov edi, 1
-	call scheduler_set_timer
-	mov rax, qword [rsp+16]
 	mov rdi, rsp
-	cmp rax, qword [_syscall_count]
-	cmovge rax, rbp
-	sti
-	cld
-	call qword [_syscall_handlers+rax*8]
-	cli
-	xor edi, edi
-	call scheduler_set_timer
+	call _syscall_execute
 	rdtsc
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
