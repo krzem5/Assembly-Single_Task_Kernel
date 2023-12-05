@@ -68,7 +68,7 @@ _retry_read:
 			scheduler_resume();
 			return 0;
 		}
-		event_await(pipe->write_event);
+		event_await(pipe->read_event);
 		goto _retry_read;
 	}
 	u32 max_read_size=(pipe->write_offset-pipe->read_offset)&(PIPE_BUFFER_SIZE-1);
@@ -89,7 +89,7 @@ _retry_read:
 	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
 		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
 		pipe->is_full=0;
-		event_dispatch(pipe->read_event,0);
+		event_dispatch(pipe->write_event,0);
 	}
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
@@ -109,7 +109,7 @@ _retry_write:
 			scheduler_resume();
 			return 0;
 		}
-		event_await(pipe->read_event);
+		event_await(pipe->write_event);
 		goto _retry_write;
 	}
 	u32 max_write_size=(pipe->read_offset-pipe->write_offset)&(PIPE_BUFFER_SIZE-1);
@@ -129,7 +129,7 @@ _retry_write:
 	}
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
-	event_dispatch(pipe->write_event,0);
+	event_dispatch(pipe->read_event,0);
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
 	return size;

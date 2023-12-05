@@ -35,7 +35,7 @@ u32 event_await_multiple_handles(const handle_id_t* handles,u32 count);
 
 
 
-void event_set_active(event_t* event,_Bool active);
+void event_set_active(event_t* event,_Bool is_active);
 
 
 
