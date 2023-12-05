@@ -20,7 +20,8 @@
 
 
 
-#define DHCP_TIMEOUT_NS 1000000000
+#define DHCP_TIMEOUT_NS 5000000000
+#define DHCP_LEASE_EXPIRY_EARLY_TIME_NS 1000000000
 
 
 
@@ -79,7 +80,13 @@ static void _rx_thread(void){
 				socket_get_event(_net_dhcp_socket)
 			};
 			if (!event_await_multiple(events,2)){
-				WARN("DHCP timeout");
+				if (net_info_get_address()){
+					LOG("IPv4 lease expired");
+					net_info_reset();
+				}
+				else{
+					WARN("DHCP timeout");
+				}
 				_send_discover_request();
 			}
 			continue;
@@ -150,6 +157,9 @@ static void _rx_thread(void){
 					lease_time=__builtin_bswap32(*((u32*)(dhcp_packet->options+i+2)));
 				}
 			}
+			if (!lease_time){
+				lease_time=1;
+			}
 			LOG("IPv4 address: %I",_net_dhcp_offer_address);
 			INFO("Subnet mask: %I",net_info_get_subnet_mask());
 			INFO("Router:");
@@ -161,6 +171,7 @@ static void _rx_thread(void){
 				INFO("- %I",router->address);
 			}
 			INFO("Lease time: %u s",lease_time);
+			timer_update(_net_dhcp_timeout_timer,lease_time*1000000000ull-DHCP_LEASE_EXPIRY_EARLY_TIME_NS,1);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
 			_send_discover_request();
