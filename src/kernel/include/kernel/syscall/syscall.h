@@ -9,6 +9,15 @@ typedef void (*syscall_callback_t)(isr_state_t*);
 
 
 
+typedef struct _SYSCALL_TABLE{
+	const char* name;
+	const syscall_callback_t* functions;
+	u32 function_count;
+	u32 index;
+} syscall_table_t;
+
+
+
 void syscall_init(void);
 
 

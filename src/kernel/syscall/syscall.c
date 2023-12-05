@@ -15,15 +15,6 @@
 
 
 
-typedef struct _SYSCALL_TABLE{
-	const char* name;
-	const syscall_callback_t* functions;
-	u32 function_count;
-	u32 index;
-} syscall_table_t;
-
-
-
 static spinlock_t _syscall_table_list_lock;
 static omm_allocator_t* KERNEL_INIT_WRITE _syscall_table_allocator=NULL;
 static syscall_table_t*volatile* _syscall_table_list=NULL;
