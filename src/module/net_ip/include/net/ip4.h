@@ -52,10 +52,6 @@ typedef struct _NET_IP4_PROTOCOL{
 
 
 
-extern net_ip4_address_t net_ip4_address;
-
-
-
 void net_ip4_init(void);
 
 

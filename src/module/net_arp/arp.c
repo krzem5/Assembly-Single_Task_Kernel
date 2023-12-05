@@ -4,6 +4,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <net/arp.h>
+#include <net/info.h>
 #include <net/ip4.h>
 #define KERNEL_LOG_NAME "net_arp"
 
@@ -18,7 +19,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		return;
 	}
 	net_arp_packet_t* arp_packet=(net_arp_packet_t*)(packet->data);
-	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_ip4_address)){
+	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)||arp_packet->tpa!=__builtin_bswap32(net_info_get_address())){
 		return;
 	}
 	WARN("ARP: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
@@ -62,7 +63,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 	arp_packet->plen=sizeof(net_ip4_address_t);
 	arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REQUEST);
 	memcpy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
-	arp_packet->spa=__builtin_bswap32(net_ip4_address);
+	arp_packet->spa=__builtin_bswap32(net_info_get_address());
 	memset(arp_packet->tha,0,sizeof(mac_address_t));
 	arp_packet->tpa=__builtin_bswap32(address);
 	network_layer1_send_packet(packet);

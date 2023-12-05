@@ -8,7 +8,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <net/arp.h>
-#include <net/common.h>
+#include <net/checksum.h>
 #include <net/ip4.h>
 #define KERNEL_LOG_NAME "net_ip4"
 
@@ -30,7 +30,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		return;
 	}
 	net_ip4_packet_data_t* header=(net_ip4_packet_data_t*)(packet->data);
-	if (header->version_and_ihl!=0x45||net_common_verify_checksum(header,sizeof(net_ip4_packet_data_t),0)!=0xffff){
+	if (header->version_and_ihl!=0x45||net_checksum_verify_checksum(header,sizeof(net_ip4_packet_data_t),0)!=0xffff){
 		ERROR("Wrong IPv4 version or checksum");
 		return;
 	}
@@ -137,7 +137,7 @@ KERNEL_PUBLIC void net_ip4_delete_packet(net_ip4_packet_t* packet){
 
 
 KERNEL_PUBLIC void net_ip4_send_packet(net_ip4_packet_t* packet){
-	net_common_calculate_checksum(packet->packet,sizeof(net_ip4_packet_data_t),&(packet->packet->checksum));
+	net_checksum_calculate_checksum(packet->packet,sizeof(net_ip4_packet_data_t),&(packet->packet->checksum));
 	network_layer1_send_packet(packet->raw_packet);
 	omm_dealloc(_net_ip4_packet_allocator,packet);
 }

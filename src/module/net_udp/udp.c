@@ -6,7 +6,7 @@
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <net/common.h>
+#include <net/checksum.h>
 #include <net/ip4.h>
 #include <net/udp.h>
 #define KERNEL_LOG_NAME "net_udp"
@@ -89,7 +89,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 	udp_packet->dst_port=__builtin_bswap16(udp_remote_address->port);
 	udp_packet->length=__builtin_bswap16(length+sizeof(net_udp_packet_t));
 	memcpy(udp_packet->data,buffer,length);
-	net_common_calculate_checksum(udp_packet,length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
+	net_checksum_calculate_checksum(udp_packet,length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
 	net_udp_ipv4_pseudo_header_t pseudo_header={
 		ip_packet->packet->src_address,
 		ip_packet->packet->dst_address,
@@ -97,7 +97,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 		PROTOCOL_TYPE,
 		udp_packet->length
 	};
-	net_common_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(udp_packet->checksum));
+	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(udp_packet->checksum));
 	if (!udp_packet->checksum){
 		udp_packet->checksum=0xffff;
 	}
@@ -139,7 +139,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 			PROTOCOL_TYPE,
 			udp_packet->length
 		};
-		if (net_common_verify_checksum(udp_packet,packet->length,net_common_verify_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),0))!=0xffff){
+		if (net_checksum_verify_checksum(udp_packet,packet->length,net_checksum_verify_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),0))!=0xffff){
 			ERROR("Wrong UDP checksum");
 			return;
 		}
