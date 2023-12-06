@@ -61,6 +61,7 @@ typedef struct _SOCKET_DTP_DESCRIPTOR{
 	void (*deconnect)(socket_vfs_node_t*);
 	u64 (*read)(socket_vfs_node_t*,void*,u64,u32);
 	u64 (*write)(socket_vfs_node_t*,const void*,u64);
+	_Bool (*write_packet)(socket_vfs_node_t*,const void*,u32);
 } socket_dtp_descriptor_t;
 
 
@@ -96,7 +97,11 @@ _Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_addr
 
 
 
-void* socket_get_packet(vfs_node_t* node,_Bool nonblocking);
+void* socket_pop_packet(vfs_node_t* node,_Bool nonblocking);
+
+
+
+_Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size);
 
 
 

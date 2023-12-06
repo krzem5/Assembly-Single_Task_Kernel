@@ -7,8 +7,10 @@
 
 
 typedef struct _NET_UDP_SOCKET_PACKET{
-	net_ip4_address_t address;
-	socket_port_t port;
+	net_ip4_address_t src_address;
+	net_ip4_address_t dst_address;
+	socket_port_t src_port;
+	socket_port_t dst_port;
 	u16 length;
 	u8 data[];
 } net_udp_socket_packet_t;

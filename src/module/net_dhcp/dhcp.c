@@ -52,10 +52,18 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 
 
 
-static void _send_packet(net_dhcp_packet_t* packet,u32 option_size){
+static void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_address){
 	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1);
-	vfs_node_write(_net_dhcp_socket,0,packet,sizeof(net_dhcp_packet_t)+option_size,0);
+	net_udp_socket_packet_t* udp_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
+	udp_packet->src_address=src_address;
+	udp_packet->dst_address=0xffffffff;
+	udp_packet->src_port=68;
+	udp_packet->dst_port=67;
+	udp_packet->length=sizeof(net_dhcp_packet_t)+option_size;
+	memcpy(udp_packet->data,packet,udp_packet->length);
 	amm_dealloc(packet);
+	socket_push_packet(_net_dhcp_socket,udp_packet,sizeof(net_udp_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
+	amm_dealloc(udp_packet);
 }
 
 
@@ -75,7 +83,7 @@ static void _send_discover_request(void){
 		packet->options[7]=_net_dhcp_preferred_address>>8;
 		packet->options[8]=_net_dhcp_preferred_address;
 		packet->options[9]=NET_DHCP_OPTION_END;
-		_send_packet(packet,10);
+		_send_packet(packet,10,0);
 	}
 	else{
 		net_dhcp_packet_t* packet=_create_packet(4);
@@ -83,7 +91,7 @@ static void _send_discover_request(void){
 		packet->options[1]=1;
 		packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
 		packet->options[3]=NET_DHCP_OPTION_END;
-		_send_packet(packet,4);
+		_send_packet(packet,4,0);
 	}
 }
 
@@ -91,7 +99,7 @@ static void _send_discover_request(void){
 
 static void _rx_thread(void){
 	while (1){
-		net_udp_socket_packet_t* packet=socket_get_packet(_net_dhcp_socket,1);
+		net_udp_socket_packet_t* packet=socket_pop_packet(_net_dhcp_socket,1);
 		if (!packet){
 			event_t* events[2]={
 				_net_dhcp_timeout_timer->event,
@@ -146,7 +154,7 @@ static void _rx_thread(void){
 			packet->options[13]=_net_dhcp_offer_server_address>>8;
 			packet->options[14]=_net_dhcp_offer_server_address;
 			packet->options[15]=NET_DHCP_OPTION_END;
-			_send_packet(packet,16);
+			_send_packet(packet,16,_net_dhcp_offer_address);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPACK){
 			if (dhcp_packet->yiaddr!=__builtin_bswap32(_net_dhcp_offer_address)||_net_dhcp_offer_server_address!=__builtin_bswap32(dhcp_packet->siaddr)){

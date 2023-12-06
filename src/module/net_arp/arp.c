@@ -27,7 +27,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 
 
 
-static network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
+static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 	"ARP",
 	ETHER_TYPE,
 	_rx_callback

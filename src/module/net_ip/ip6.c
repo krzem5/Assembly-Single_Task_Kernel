@@ -16,7 +16,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 
 
 
-static network_layer2_protocol_descriptor_t _net_ip6_protocol_descriptor={
+static const network_layer2_protocol_descriptor_t _net_ip6_protocol_descriptor={
 	"IPv6",
 	ETHER_TYPE,
 	_rx_callback

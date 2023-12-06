@@ -18,7 +18,7 @@ static vfs_node_t* _net_dns_socket=NULL;
 
 static void _rx_thread(void){
 	while (1){
-		net_udp_socket_packet_t* packet=socket_get_packet(_net_dns_socket,0);
+		net_udp_socket_packet_t* packet=socket_pop_packet(_net_dns_socket,0);
 		ERROR("%u",packet->length);
 		amm_dealloc(packet);
 	}

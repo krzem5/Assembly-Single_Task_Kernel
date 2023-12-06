@@ -107,7 +107,42 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 
 
 
-static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
+static _Bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
+	if (length<sizeof(net_udp_socket_packet_t)){
+		return 0;
+	}
+	const net_udp_socket_packet_t* packet=(const net_udp_socket_packet_t*)buffer;
+	if (packet->length+sizeof(net_udp_socket_packet_t)>length){
+		return 0;
+	}
+	net_ip4_packet_t* ip_packet=net_ip4_create_packet(packet->length+sizeof(net_udp_packet_t),packet->src_address,packet->dst_address,PROTOCOL_TYPE);
+	if (!ip_packet){
+		return 0;
+	}
+	net_udp_packet_t* udp_packet=(net_udp_packet_t*)(ip_packet->packet->data);
+	udp_packet->src_port=__builtin_bswap16(packet->src_port);
+	udp_packet->dst_port=__builtin_bswap16(packet->dst_port);
+	udp_packet->length=__builtin_bswap16(packet->length+sizeof(net_udp_packet_t));
+	memcpy(udp_packet->data,packet->data,packet->length);
+	net_checksum_calculate_checksum(udp_packet,packet->length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
+	net_udp_ipv4_pseudo_header_t pseudo_header={
+		ip_packet->packet->src_address,
+		ip_packet->packet->dst_address,
+		0,
+		PROTOCOL_TYPE,
+		udp_packet->length
+	};
+	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(udp_packet->checksum));
+	if (!udp_packet->checksum){
+		udp_packet->checksum=0xffff;
+	}
+	net_ip4_send_packet(ip_packet);
+	return 1;
+}
+
+
+
+static const socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	"UDP",
 	SOCKET_DOMAIN_INET,
 	SOCKET_TYPE_DGRAM,
@@ -117,7 +152,8 @@ static socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	_socket_connect_callback,
 	_socket_deconnect_callback,
 	_socket_read_callback,
-	_socket_write_callback
+	_socket_write_callback,
+	_socket_write_packet_callback
 };
 
 
@@ -151,8 +187,10 @@ static void _rx_callback(net_ip4_packet_t* packet){
 		return;
 	}
 	net_udp_socket_packet_t* socket_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t));
-	socket_packet->address=__builtin_bswap32(packet->packet->src_address);
-	socket_packet->port=__builtin_bswap16(udp_packet->src_port);
+	socket_packet->src_address=__builtin_bswap32(packet->packet->src_address);
+	socket_packet->dst_address=__builtin_bswap32(packet->packet->dst_address);
+	socket_packet->src_port=__builtin_bswap16(udp_packet->src_port);
+	socket_packet->dst_port=__builtin_bswap16(udp_packet->dst_port);
 	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
 	memcpy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
 	if (!ring_push(socket->rx_ring,socket_packet,0)){
@@ -163,7 +201,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 
 
 
-static net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
+static const net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
 	"UDP",
 	PROTOCOL_TYPE,
 	_rx_callback

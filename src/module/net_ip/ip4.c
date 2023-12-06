@@ -56,7 +56,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 
 
 
-static network_layer2_protocol_descriptor_t _net_ip4_protocol_descriptor={
+static const network_layer2_protocol_descriptor_t _net_ip4_protocol_descriptor={
 	"IPv4",
 	ETHER_TYPE,
 	_rx_callback
@@ -122,8 +122,8 @@ KERNEL_PUBLIC net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address
 	out->packet->fragment=0x0000;
 	out->packet->ttl=0xff;
 	out->packet->protocol=protocol_type;
-	out->packet->src_address=src_address;
-	out->packet->dst_address=dst_address;
+	out->packet->src_address=__builtin_bswap32(src_address);
+	out->packet->dst_address=__builtin_bswap32(dst_address);
 	return out;
 }
 
