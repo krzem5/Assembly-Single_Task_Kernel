@@ -31,6 +31,7 @@ static spinlock_t _net_dhcp_lock;
 static u32 _net_dhcp_current_xid=0;
 static net_ip4_address_t _net_dhcp_offer_address=0;
 static net_ip4_address_t _net_dhcp_offer_server_address=0;
+static net_ip4_address_t _net_dhcp_preferred_address=0;
 
 
 
@@ -61,12 +62,28 @@ static void _send_packet(net_dhcp_packet_t* packet,u32 option_size){
 static void _send_discover_request(void){
 	_net_dhcp_offer_address=0;
 	_net_dhcp_offer_server_address=0;
-	net_dhcp_packet_t* packet=_create_packet(4);
-	packet->options[0]=NET_DHCP_OPTION_MESSAGE_TYPE;
-	packet->options[1]=1;
-	packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
-	packet->options[3]=NET_DHCP_OPTION_END;
-	_send_packet(packet,4);
+	if (_net_dhcp_preferred_address){
+		net_dhcp_packet_t* packet=_create_packet(10);
+		packet->options[0]=NET_DHCP_OPTION_MESSAGE_TYPE;
+		packet->options[1]=1;
+		packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
+		packet->options[3]=NET_DHCP_OPTION_REQUESTED_IP_ADDRESS;
+		packet->options[4]=4;
+		packet->options[5]=_net_dhcp_preferred_address>>24;
+		packet->options[6]=_net_dhcp_preferred_address>>16;
+		packet->options[7]=_net_dhcp_preferred_address>>8;
+		packet->options[8]=_net_dhcp_preferred_address;
+		packet->options[9]=NET_DHCP_OPTION_END;
+		_send_packet(packet,10);
+	}
+	else{
+		net_dhcp_packet_t* packet=_create_packet(4);
+		packet->options[0]=NET_DHCP_OPTION_MESSAGE_TYPE;
+		packet->options[1]=1;
+		packet->options[2]=NET_DHCP_MESSAGE_TYPE_DHCPDISCOVER;
+		packet->options[3]=NET_DHCP_OPTION_END;
+		_send_packet(packet,4);
+	}
 }
 
 
@@ -156,6 +173,7 @@ static void _rx_thread(void){
 				}
 			}
 			net_info_set_address(_net_dhcp_offer_address);
+			_net_dhcp_preferred_address=_net_dhcp_offer_address;
 			if (!lease_time){
 				lease_time=1;
 			}
@@ -206,6 +224,7 @@ void net_dhcp_init(void){
 	_net_dhcp_timeout_timer=timer_create(0,0);
 	spinlock_init(&_net_dhcp_lock);
 	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
+	// load _net_dhcp_preferred_address
 	net_dhcp_negotiate_address();
 }
 
