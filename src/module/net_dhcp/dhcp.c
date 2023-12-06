@@ -9,6 +9,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/socket/socket.h>
 #include <kernel/timer/timer.h>
+#include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
