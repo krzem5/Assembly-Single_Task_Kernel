@@ -361,8 +361,10 @@ void input_get(void){
 					_move_cursor((key&KEY_MASK)==KEY_RIGHT,!!(key&KEY_FLAG_CTRL));
 					break;
 				case KEY_DELETE:
-					_ensure_top_of_history(1);
-					_delete_char();
+					if (_input_cursor<(_input_history+_input_history_index)->length){
+						_ensure_top_of_history(1);
+						_delete_char();
+					}
 					break;
 				case KEY_HOME:
 					_input_cursor=0;
