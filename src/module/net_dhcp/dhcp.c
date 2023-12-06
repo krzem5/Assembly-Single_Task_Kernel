@@ -137,7 +137,7 @@ static void _rx_thread(void){
 			}
 			timer_update(_net_dhcp_timeout_timer,0,0);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
-			// add net_dns driver from https://www.ietf.org/rfc/rfc1035.txt
+			// net_dns driver based on from https://www.ietf.org/rfc/rfc1035.txt
 			u32 lease_time=0;
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
 				u8 type=dhcp_packet->options[i];
