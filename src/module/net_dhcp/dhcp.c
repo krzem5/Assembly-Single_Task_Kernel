@@ -221,14 +221,6 @@ void net_dhcp_init(void){
 		ERROR("Failed to bind DHCP client socket");
 		return;
 	}
-	net_udp_address_t remote_address={
-		0xffffffff,
-		67
-	};
-	if (!socket_connect(_net_dhcp_socket,&remote_address,sizeof(net_udp_address_t))){
-		ERROR("Failed to connect DHCP client socket");
-		return;
-	}
 	_net_dhcp_timeout_timer=timer_create(0,0);
 	spinlock_init(&_net_dhcp_lock);
 	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);

@@ -51,6 +51,15 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		memset(out,0xff,sizeof(mac_address_t));
 		return 1;
 	}
+	if (address==0x0a000203){ // QEMU DNS server
+		(*out)[0]=0x52;
+		(*out)[1]=0x55;
+		(*out)[2]=0x0a;
+		(*out)[3]=0x00;
+		(*out)[4]=0x02;
+		(*out)[5]=0x03;
+		return 1;
+	}
 	if (!network_layer1_device||only_from_cache){
 		return 0;
 	}
