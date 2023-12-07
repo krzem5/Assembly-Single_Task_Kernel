@@ -1,5 +1,4 @@
 #include <kernel/fd/fd.h>
-#include <kernel/isr/isr.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -7,7 +6,7 @@
 
 
 
-void syscall_fd_open(isr_state_t* regs){
+void syscall_fd_open(syscall_reg_state_t* regs){
 	u64 length=syscall_get_string_length(regs->rsi);
 	if (!length){
 		regs->rax=FD_ERROR_INVALID_POINTER;
@@ -18,13 +17,13 @@ void syscall_fd_open(isr_state_t* regs){
 
 
 
-void syscall_fd_close(isr_state_t* regs){
+void syscall_fd_close(syscall_reg_state_t* regs){
 	regs->rax=fd_close(regs->rdi);
 }
 
 
 
-void syscall_fd_read(isr_state_t* regs){
+void syscall_fd_read(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -34,7 +33,7 @@ void syscall_fd_read(isr_state_t* regs){
 
 
 
-void syscall_fd_write(isr_state_t* regs){
+void syscall_fd_write(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -44,19 +43,19 @@ void syscall_fd_write(isr_state_t* regs){
 
 
 
-void syscall_fd_seek(isr_state_t* regs){
+void syscall_fd_seek(syscall_reg_state_t* regs){
 	regs->rax=fd_seek(regs->rdi,regs->rsi,regs->rdx);
 }
 
 
 
-void syscall_fd_resize(isr_state_t* regs){
+void syscall_fd_resize(syscall_reg_state_t* regs){
 	regs->rax=fd_resize(regs->rdi,regs->rsi,regs->rdx);
 }
 
 
 
-void syscall_fd_stat(isr_state_t* regs){
+void syscall_fd_stat(syscall_reg_state_t* regs){
 	if (regs->rdx!=sizeof(fd_stat_t)||regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -66,13 +65,13 @@ void syscall_fd_stat(isr_state_t* regs){
 
 
 
-void syscall_fd_dup(isr_state_t* regs){
+void syscall_fd_dup(syscall_reg_state_t* regs){
 	regs->rax=fd_dup(regs->rdi,regs->rsi);
 }
 
 
 
-void syscall_fd_path(isr_state_t* regs){
+void syscall_fd_path(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -82,13 +81,13 @@ void syscall_fd_path(isr_state_t* regs){
 
 
 
-void syscall_fd_iter_start(isr_state_t* regs){
+void syscall_fd_iter_start(syscall_reg_state_t* regs){
 	regs->rax=fd_iter_start(regs->rdi);
 }
 
 
 
-void syscall_fd_iter_get(isr_state_t* regs){
+void syscall_fd_iter_get(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=FD_ERROR_INVALID_POINTER;
 		return;
@@ -98,12 +97,12 @@ void syscall_fd_iter_get(isr_state_t* regs){
 
 
 
-void syscall_fd_iter_next(isr_state_t* regs){
+void syscall_fd_iter_next(syscall_reg_state_t* regs){
 	regs->rax=fd_iter_next(regs->rdi);
 }
 
 
 
-void syscall_fd_iter_stop(isr_state_t* regs){
+void syscall_fd_iter_stop(syscall_reg_state_t* regs){
 	regs->rax=fd_iter_stop(regs->rdi);
 }

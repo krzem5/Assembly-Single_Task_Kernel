@@ -1,5 +1,5 @@
-#include <kernel/isr/isr.h>
 #include <kernel/shutdown/shutdown.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 
 
@@ -8,6 +8,6 @@
 
 
 
-void KERNEL_NORETURN syscall_system_shutdown(isr_state_t* regs){
+void KERNEL_NORETURN syscall_system_shutdown(syscall_reg_state_t* regs){
 	shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
 }

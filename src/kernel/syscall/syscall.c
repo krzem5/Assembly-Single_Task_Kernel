@@ -1,4 +1,3 @@
-#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -22,7 +21,7 @@ static volatile u32 _syscall_table_list_length=0;
 
 
 
-void _syscall_execute(isr_state_t* regs){
+void _syscall_execute(syscall_reg_state_t* regs){
 	scheduler_set_timer(SCHEDULER_TIMER_KERNEL);
 	u32 table_index=regs->rax>>32;
 	u32 function_index=regs->rax&0xffffffff;
@@ -41,7 +40,7 @@ _invalid_syscall:
 
 
 
-void syscall_syscall_table_get_offset(isr_state_t* regs){
+void syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
 	regs->rax=-1;
 	if (!syscall_get_string_length(regs->rdi)){
 		return;

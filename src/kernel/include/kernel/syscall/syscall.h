@@ -23,18 +23,11 @@ typedef struct _SYSCALL_REG_STATE{
 	u64 r13;
 	u64 r14;
 	u64 r15;
-	u64 isr;
-	u64 error;
-	u64 rip;
-	u64 cs;
-	u64 rflags;
-	u64 rsp;
-	u64 ss;
 } syscall_reg_state_t;
 
 
 
-typedef void (*syscall_callback_t)(isr_state_t*);
+typedef void (*syscall_callback_t)(syscall_reg_state_t*);
 
 
 

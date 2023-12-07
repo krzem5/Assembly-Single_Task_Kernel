@@ -1,6 +1,5 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
-#include <kernel/isr/isr.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -13,19 +12,19 @@
 
 
 
-void syscall_process_get_pid(isr_state_t* regs){
+void syscall_process_get_pid(syscall_reg_state_t* regs){
 	regs->rax=THREAD_DATA->process->handle.rb_node.key;
 }
 
 
 
-void syscall_thread_get_tid(isr_state_t* regs){
+void syscall_thread_get_tid(syscall_reg_state_t* regs){
 	regs->rax=THREAD_DATA->handle.rb_node.key;
 }
 
 
 
-void syscall_process_start(isr_state_t* regs){
+void syscall_process_start(syscall_reg_state_t* regs){
 	if (!syscall_get_string_length(regs->rdi)){
 		regs->rax=0;
 		return;
@@ -47,13 +46,13 @@ void syscall_process_start(isr_state_t* regs){
 
 
 
-void syscall_thread_stop(isr_state_t* regs){
+void syscall_thread_stop(syscall_reg_state_t* regs){
 	thread_terminate();
 }
 
 
 
-void syscall_thread_create(isr_state_t* regs){
+void syscall_thread_create(syscall_reg_state_t* regs){
 	if (!syscall_get_user_pointer_max_length(regs->rdi)){
 		regs->rax=0;
 		return;
@@ -71,7 +70,7 @@ void syscall_thread_create(isr_state_t* regs){
 
 
 
-void syscall_thread_get_priority(isr_state_t* regs){
+void syscall_thread_get_priority(syscall_reg_state_t* regs){
 	if (!regs->rdi){
 		regs->rax=0;
 		return;
@@ -87,7 +86,7 @@ void syscall_thread_get_priority(isr_state_t* regs){
 
 
 
-void syscall_thread_set_priority(isr_state_t* regs){
+void syscall_thread_set_priority(syscall_reg_state_t* regs){
 	if (!regs->rdi||regs->rsi<SCHEDULER_PRIORITY_MIN||regs->rsi>SCHEDULER_PRIORITY_MAX){
 		regs->rax=0;
 		return;
@@ -110,7 +109,7 @@ void syscall_thread_set_priority(isr_state_t* regs){
 
 
 
-void syscall_thread_get_cpu_mask(isr_state_t* regs){
+void syscall_thread_get_cpu_mask(syscall_reg_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
 	if (!regs->rdi||size>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
@@ -129,7 +128,7 @@ void syscall_thread_get_cpu_mask(isr_state_t* regs){
 
 
 
-void syscall_thread_set_cpu_mask(isr_state_t* regs){
+void syscall_thread_set_cpu_mask(syscall_reg_state_t* regs){
 	u64 size=(regs->rdx>cpu_mask_size?cpu_mask_size:regs->rdx);
 	if (!regs->rdi||size>syscall_get_user_pointer_max_length(regs->rsi)){
 		regs->rax=0;
@@ -149,7 +148,7 @@ void syscall_thread_set_cpu_mask(isr_state_t* regs){
 
 
 
-void syscall_thread_await_events(isr_state_t* regs){
+void syscall_thread_await_events(syscall_reg_state_t* regs){
 	if (!regs->rsi){
 		regs->rax=-1;
 		return;
@@ -163,7 +162,7 @@ void syscall_thread_await_events(isr_state_t* regs){
 
 
 
-void syscall_process_get_event(isr_state_t* regs){
+void syscall_process_get_event(syscall_reg_state_t* regs){
 	handle_t* handle=handle_lookup_and_acquire(regs->rdi,process_handle_type);
 	if (!handle){
 		regs->rax=0;

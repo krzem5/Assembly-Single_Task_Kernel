@@ -1,5 +1,4 @@
 #include <kernel/fd/fd.h>
-#include <kernel/isr/isr.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -22,7 +21,7 @@ static pmm_counter_descriptor_t* _user_data_pmm_counter=NULL;
 
 
 
-void syscall_memory_map(isr_state_t* regs){
+void syscall_memory_map(syscall_reg_state_t* regs){
 	if (!_user_data_pmm_counter){
 		_user_data_pmm_counter=pmm_alloc_counter("user_data");
 	}
@@ -51,7 +50,7 @@ void syscall_memory_map(isr_state_t* regs){
 
 
 
-void syscall_memory_change_flags(isr_state_t* regs){
+void syscall_memory_change_flags(syscall_reg_state_t* regs){
 	u64 flags=0;
 	if (regs->rdx&MEMORY_FLAG_WRITE){
 		flags|=VMM_PAGE_FLAG_READWRITE;
@@ -64,6 +63,6 @@ void syscall_memory_change_flags(isr_state_t* regs){
 
 
 
-void syscall_memory_unmap(isr_state_t* regs){
+void syscall_memory_unmap(syscall_reg_state_t* regs){
 	regs->rax=mmap_dealloc(&(THREAD_DATA->process->mmap),regs->rdi,pmm_align_up_address(regs->rsi));
 }
