@@ -75,6 +75,7 @@ void net_dns_init(void){
 
 
 KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking){
+	// same cache as ARP, key=length<<32|hash (computed by string_t) + override entries if key matches but content does not
 	if (nonblocking){
 		return 0;
 	}

@@ -17,10 +17,12 @@
 
 #define ETHER_TYPE 0x0806
 
+#define ARP_TIMEOUT_NS 1000000000
+
 
 
 static omm_allocator_t* _net_arp_cache_entry_allocator=NULL;
-static event_t* _net_arp_event=NULL;
+static event_t* _net_arp_cache_resolution_event=NULL;
 static spinlock_t _net_arp_cache_lock;
 static rb_tree_t _net_arp_cache_address_tree;
 
@@ -37,14 +39,14 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	spinlock_acquire_exclusive(&_net_arp_cache_lock);
 	net_arp_cache_entry_t* cache_entry=(net_arp_cache_entry_t*)rb_tree_lookup_node(&_net_arp_cache_address_tree,__builtin_bswap32(arp_packet->spa));
 	if (cache_entry){
-		INFO("APR resolution: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
+		INFO("APR responce: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 		memcpy(&(cache_entry->address),arp_packet->sha,sizeof(mac_address_t));
 #pragma GCC diagnostic pop
 		cache_entry->resolved=1;
-		event_dispatch(_net_arp_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
+		event_dispatch(_net_arp_cache_resolution_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 	}
 	spinlock_release_exclusive(&_net_arp_cache_lock);
 }
@@ -62,7 +64,7 @@ static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 void net_arp_init(void){
 	LOG("Initializing ARP resolver...");
 	_net_arp_cache_entry_allocator=omm_init("net_arp_cache_entry",sizeof(net_arp_cache_entry_t),8,4,pmm_alloc_counter("omm_net_arp_cache_entry"));
-	_net_arp_event=event_new();
+	_net_arp_cache_resolution_event=event_new();
 	spinlock_init(&_net_arp_cache_lock);
 	rb_tree_init(&_net_arp_cache_address_tree);
 	network_layer2_register_descriptor(&_net_arp_protocol_descriptor);
@@ -115,10 +117,10 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		arp_packet->tpa=__builtin_bswap32(address);
 		network_layer1_send_packet(packet);
 	}
-	timer_t* timer=timer_create(1000000000,1);
+	timer_t* timer=timer_create(ARP_TIMEOUT_NS,1);
 	event_t* events[2]={
 		timer->event,
-		_net_arp_event
+		_net_arp_cache_resolution_event
 	};
 	while (event_await_multiple(events,2)&&!cache_entry->resolved);
 	timer_delete(timer);
