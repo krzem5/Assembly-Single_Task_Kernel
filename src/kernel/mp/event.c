@@ -75,16 +75,13 @@ KERNEL_PUBLIC event_t* event_new(void){
 
 KERNEL_PUBLIC void event_delete(event_t* event){
 	spinlock_acquire_exclusive(&(event->lock));
-	if (event->head||event->handle.rc){
-		panic("Referenced events cannot be deleted");
-	}
+	handle_destroy(&(event->handle));
 	while (event->head){
 		event_thread_container_t* container=event->head;
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
-	spinlock_release_exclusive(&(event->lock));
-	omm_dealloc(_event_allocator,event);
+	// omm_dealloc(_event_allocator,event);
 }
 
 

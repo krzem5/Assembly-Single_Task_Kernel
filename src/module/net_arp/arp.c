@@ -1,6 +1,8 @@
 #include <kernel/log/log.h>
+#include <kernel/mp/event.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
+#include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <net/arp.h>
@@ -14,6 +16,10 @@
 
 
 
+static event_t* _ent_arp_event=NULL;
+
+
+
 static void _rx_callback(network_layer1_packet_t* packet){
 	if (packet->length<sizeof(net_arp_packet_t)){
 		return;
@@ -23,6 +29,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		return;
 	}
 	WARN("ARP: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
+	event_dispatch(_ent_arp_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 }
 
 
@@ -36,13 +43,14 @@ static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 
 
 void net_arp_init(void){
-	LOG("Registering ARP protocol...");
+	LOG("Initializing ARP resolver...");
+	_ent_arp_event=event_new();
 	network_layer2_register_descriptor(&_net_arp_protocol_descriptor);
 }
 
 
 
-KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool only_from_cache){
+KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking){
 	if (!address){
 		memset(out,0,sizeof(mac_address_t));
 		return 1;
@@ -51,16 +59,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		memset(out,0xff,sizeof(mac_address_t));
 		return 1;
 	}
-	if (address==0x0a000203){ // QEMU DNS server
-		(*out)[0]=0x52;
-		(*out)[1]=0x55;
-		(*out)[2]=0x0a;
-		(*out)[3]=0x00;
-		(*out)[4]=0x02;
-		(*out)[5]=0x03;
-		return 1;
-	}
-	if (!network_layer1_device||only_from_cache){
+	if (!network_layer1_device||nonblocking){
 		return 0;
 	}
 	mac_address_t dst_mac_address={0xff,0xff,0xff,0xff,0xff,0xff};
@@ -76,5 +75,14 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 	memset(arp_packet->tha,0,sizeof(mac_address_t));
 	arp_packet->tpa=__builtin_bswap32(address);
 	network_layer1_send_packet(packet);
+	timer_t* timer=timer_create(1000000000,1);
+	event_t* events[2]={
+		timer->event,
+		_ent_arp_event
+	};
+	while (event_await_multiple(events,2)){
+		WARN("resolved?");
+	}
+	timer_delete(timer);
 	return 0;
 }

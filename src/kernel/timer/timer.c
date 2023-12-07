@@ -42,7 +42,15 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 
 
 
-KERNEL_PUBLIC void timer_delete(timer_t* timer);
+KERNEL_PUBLIC void timer_delete(timer_t* timer){
+	spinlock_acquire_exclusive(&(timer->lock));
+	if (timer->rb_node.key){
+		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
+	}
+	handle_destroy(&(timer->handle));
+	event_delete(timer->event);
+	omm_dealloc(_timer_allocator,timer);
+}
 
 
 

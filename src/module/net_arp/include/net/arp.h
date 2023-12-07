@@ -36,7 +36,7 @@ void net_arp_init(void);
 
 
 
-_Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool only_from_cache);
+_Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking);
 
 
 
