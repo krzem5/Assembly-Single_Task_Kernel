@@ -15,6 +15,7 @@
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/watchdog/watchdog.h>
 #define KERNEL_LOG_NAME "scheduler"
 
 
@@ -118,6 +119,9 @@ void scheduler_isr_handler(isr_state_t* state){
 			}
 		}
 	}
+#ifndef KERNEL_DISABLE_WATCHDOG
+	watchdog_update();
+#endif
 	timer_dispatch_timers();
 	current_thread=scheduler_load_balancer_get();
 	if (current_thread){
