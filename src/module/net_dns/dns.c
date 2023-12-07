@@ -69,6 +69,7 @@ void net_dns_init(void){
 		return;
 	}
 	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
+	thread_new_kernel_thread(NULL,net_dns_lookup_name,0x200000,2,"google.com",0);
 }
 
 
