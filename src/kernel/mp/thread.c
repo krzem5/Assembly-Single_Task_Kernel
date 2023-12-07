@@ -13,7 +13,6 @@
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/signal/signal.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
@@ -105,7 +104,6 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
-	out->signal_state=NULL;
 	out->event_sequence_id=0;
 	thread_list_add(&(process->thread_list),out);
 	return out;

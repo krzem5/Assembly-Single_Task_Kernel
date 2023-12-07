@@ -10,7 +10,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/scheduler/cpu_mask.h>
-#include <kernel/signal/_signal_types.h>
 #include <kernel/types.h>
 
 
@@ -52,7 +51,6 @@ typedef struct _PROCESS{
 	vmm_pagemap_t pagemap;
 	mmap_t mmap;
 	thread_list_t thread_list;
-	u64 signal_handler;
 	string_t* name;
 	string_t* image;
 	uid_t uid;
@@ -87,7 +85,6 @@ typedef struct _THREAD{
 	cpu_mask_t* cpu_mask;
 	KERNEL_ATOMIC scheduler_priority_t priority;
 	thread_state_t state;
-	signal_state_t* signal_state;
 	u64 event_sequence_id;
 	u64 event_wakeup_index;
 	struct _THREAD* thread_list_prev;

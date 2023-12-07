@@ -8,22 +8,12 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/signal/signal.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "isr"
 
 
-
-static const signal_type_t _isr_to_signal_type[]={
-	[0]=SIGNAL_TYPE_ZDE,
-	[6]=SIGNAL_TYPE_IOE,
-	[13]=SIGNAL_TYPE_GPF,
-	[14]=SIGNAL_TYPE_PF,
-	[16]=SIGNAL_TYPE_FPE,
-	[19]=SIGNAL_TYPE_FPE
-};
 
 static u8 _isr_next_irq_index=33;
 
@@ -65,11 +55,6 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 	scheduler_pause();
-	(void)_isr_to_signal_type;
-	// if (CPU_HEADER_DATA->current_thread&&isr_state->cs==0x23&&(0b00000000000010010110000001000001&(1<<isr_state->isr))){
-	// 	signal_send(CPU_HEADER_DATA->current_thread,isr_state,_isr_to_signal_type[isr_state->isr],0);
-	// 	return;
-	// }
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
 		panic("Page fault stack not present");
 	}
