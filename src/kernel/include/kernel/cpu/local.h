@@ -8,7 +8,7 @@
 #define CPU_LOCAL(name) ((name)+CPU_HEADER_DATA->index)
 
 #define CPU_LOCAL_DATA(type,name) \
-	KERNEL_INIT_WRITE type* name; \
+	KERNEL_INIT_WRITE type* name=NULL; \
 	static const cpu_local_data_descriptor_t KERNEL_EARLY_READ _cpu_local_data_descriptor_##name={ \
 		(void**)(&name), \
 		sizeof(type) \

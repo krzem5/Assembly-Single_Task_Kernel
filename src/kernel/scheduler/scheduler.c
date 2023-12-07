@@ -101,8 +101,8 @@ void scheduler_isr_handler(isr_state_t* state){
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
 	if (current_thread){
-		spinlock_acquire_exclusive(&(current_thread->lock));
 		msr_set_gs_base((u64)CPU_LOCAL(cpu_extra_data),0);
+		spinlock_acquire_exclusive(&(current_thread->lock));
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
 		if (current_thread->state==THREAD_STATE_TYPE_TERMINATED){
 			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
@@ -127,8 +127,6 @@ void scheduler_isr_handler(isr_state_t* state){
 	if (current_thread){
 		spinlock_acquire_exclusive(&(current_thread->lock));
 		current_thread->header.index=CPU_HEADER_DATA->index;
-		msr_set_gs_base((u64)current_thread,0);
-		scheduler->current_thread=current_thread;
 		*state=current_thread->reg_state.gpr_state;
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_region->rb_node.key+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 		msr_set_fs_base(current_thread->reg_state.fs_gs_state.fs);
@@ -142,10 +140,12 @@ void scheduler_isr_handler(isr_state_t* state){
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
 	lapic_timer_start(THREAD_TIMESLICE_US);
-	if (!scheduler->current_thread){
+	if (!current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
 		scheduler_task_wait_loop();
 	}
+	msr_set_gs_base((u64)current_thread,0);
+	scheduler->current_thread=current_thread;
 	scheduler_set_timer((state->cs==0x08?SCHEDULER_TIMER_KERNEL:SCHEDULER_TIMER_USER));
 }
 

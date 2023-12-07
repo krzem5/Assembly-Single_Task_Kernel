@@ -5,6 +5,7 @@
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/isr/_isr_types.h>
+#include <kernel/lock/profiling.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
@@ -90,6 +91,9 @@ typedef struct _THREAD{
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;
+#if KERNEL_DISABLE_ASSERT==0
+	lock_profiling_thread_data_t __lock_profiling_data;
+#endif
 } thread_t;
 
 

@@ -1,6 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
+#include <kernel/lock/profiling.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
@@ -105,6 +106,9 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
 	out->event_sequence_id=0;
+#if KERNEL_DISABLE_ASSERT==0
+	__lock_profiling_init_thread_data(&(out->__lock_profiling_data));
+#endif
 	thread_list_add(&(process->thread_list),out);
 	return out;
 }

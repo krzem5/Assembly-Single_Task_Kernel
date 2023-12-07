@@ -1,3 +1,5 @@
+#include <kernel/cpu/cpu.h>
+#include <kernel/cpu/local.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
@@ -6,6 +8,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "lock_profiling"
@@ -22,9 +25,27 @@ static lock_profiling_type_descriptor_t KERNEL_EARLY_WRITE _lock_profiling_early
 		.line=0
 	}
 };
+static lock_profiling_thread_data_t _early_lock_profiling_data={
+	.stack_size=0
+};
+static CPU_LOCAL_DATA(lock_profiling_thread_data_t,_lock_profiling_cpu_local_data);
 
 KERNEL_PUBLIC const lock_profiling_type_descriptor_t* lock_profiling_type_descriptors=NULL;
 KERNEL_PUBLIC const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL;
+
+
+
+static lock_profiling_thread_data_t* _get_lock_data(void){
+	if (!_lock_profiling_cpu_local_data){
+		return &_early_lock_profiling_data;
+	}
+#if KERNEL_DISABLE_ASSERT==0
+	if (CPU_HEADER_DATA->current_thread){
+		return &(CPU_HEADER_DATA->current_thread->__lock_profiling_data);
+	}
+#endif
+	return CPU_LOCAL(_lock_profiling_cpu_local_data);
+}
 
 
 
@@ -87,4 +108,40 @@ KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const cha
 		return NULL;
 	}
 	return (void*)((*ptr)+offset*sizeof(lock_local_profiling_data_t));
+}
+
+
+
+void __lock_profiling_init_thread_data(lock_profiling_thread_data_t* out){
+	out->stack_size=0;
+}
+
+
+
+KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func,u32 line){
+	lock_profiling_thread_data_t* data=_get_lock_data();
+	if (data->stack_size==LOCK_PROFILING_MAX_NESTED_LOCKS){
+		log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock stack too large\x1b[0m\n",func,line);
+		return;
+	}
+	data->stack[data->stack_size]=lock;
+	data->stack_size++;
+}
+
+
+
+#pragma GCC optimize ("no-tree-loop-distribute-patterns") // disable memmove
+KERNEL_PUBLIC void __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line){
+	lock_profiling_thread_data_t* data=_get_lock_data();
+	for (u64 i=data->stack_size;i;){
+		i--;
+		if (data->stack[i]==lock){
+			data->stack_size--;
+			for (;i<data->stack_size;i++){
+				data->stack[i]=data->stack[i+1];
+			}
+			return;
+		}
+	}
+	log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock '%p' not acquired in this context\x1b[0m\n",func,line,lock);
 }

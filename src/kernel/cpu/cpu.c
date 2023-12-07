@@ -20,6 +20,10 @@
 
 static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count;
 static u16 KERNEL_EARLY_WRITE _cpu_bootstra_core_apic_id;
+static cpu_header_t KERNEL_EARLY_WRITE _cpu_early_header={
+	.index=0,
+	.current_thread=NULL
+};
 
 KERNEL_PUBLIC u16 KERNEL_INIT_WRITE cpu_count;
 CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
@@ -50,13 +54,12 @@ static void KERNEL_EARLY_EXEC _wakeup_cpu(u8 idx){
 
 void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	u8 index=msr_get_apic_id();
-	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_extra_data+index)->topology.domain,(cpu_extra_data+index)->topology.chip,(cpu_extra_data+index)->topology.core,(cpu_extra_data+index)->topology.thread);
-	INFO("Loading IDT, GDT, TSS, FS and GS...");
 	idt_enable();
 	gdt_enable(&((cpu_extra_data+index)->tss));
 	msr_set_fs_base(0);
 	msr_set_gs_base((u64)(cpu_extra_data+index),0);
 	msr_set_gs_base((u64)(cpu_extra_data+index),1);
+	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_extra_data+index)->topology.domain,(cpu_extra_data+index)->topology.chip,(cpu_extra_data+index)->topology.core,(cpu_extra_data+index)->topology.thread);
 	INFO("Enabling FPU...");
 	fpu_enable();
 	INFO("Enabling SYSCALL/SYSRET...");
@@ -80,6 +83,8 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 void KERNEL_EARLY_EXEC cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
+	msr_set_gs_base((u64)(&_cpu_early_header),0);
+	msr_set_gs_base((u64)(&_cpu_early_header),1);
 	cpu_count=count;
 	cpu_local_init();
 	for (u16 i=0;i<count;i++){
