@@ -1,6 +1,7 @@
 #ifndef _NET_ARP_H_
 #define _NET_ARP_H_ 1
 #include <kernel/network/layer1.h>
+#include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <net/ip4.h>
 
@@ -29,6 +30,14 @@ typedef struct KERNEL_PACKED _NET_ARP_PACKET{
 	mac_address_t tha;
 	net_ip4_address_t tpa;
 } net_arp_packet_t;
+
+
+
+typedef struct _NET_ARP_CACHE_ENTRY{
+	rb_tree_node_t rb_node;
+	mac_address_t address;
+	_Bool resolved;
+} net_arp_cache_entry_t;
 
 
 

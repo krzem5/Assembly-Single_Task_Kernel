@@ -51,7 +51,7 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 
 KERNEL_PUBLIC event_t* event_new(void){
 	if (!_event_allocator){
-		_event_allocator=omm_init("event",sizeof(event_t),8,2,pmm_alloc_counter("omm_event"));
+		_event_allocator=omm_init("event",sizeof(event_t),8,4,pmm_alloc_counter("omm_event"));
 		spinlock_init(&(_event_allocator->lock));
 	}
 	if (!_event_thread_container_allocator){
