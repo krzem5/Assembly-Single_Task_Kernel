@@ -76,29 +76,29 @@ void KERNEL_EARLY_EXEC serial_init_irq(void){
 
 KERNEL_PUBLIC void serial_send(serial_port_t* port,const void* buffer,u32 length){
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(port->read_lock));
+	spinlock_acquire_exclusive(&(port->write_lock));
 	for (;length;length--){
 		SPINLOOP(!(io_port_in8(port->io_port+5)&0x20));
 		io_port_out8(port->io_port,*((const u8*)buffer));
 		buffer++;
 	}
-	spinlock_release_exclusive(&(port->read_lock));
+	spinlock_release_exclusive(&(port->write_lock));
 	scheduler_resume();
 }
 
 
 
 KERNEL_PUBLIC u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
-	spinlock_acquire_exclusive(&(port->write_lock));
+	spinlock_acquire_exclusive(&(port->read_lock));
 	for (u32 i=0;i<length;i++){
 		while (!(io_port_in8(port->io_port+5)&0x01)){
-			spinlock_release_exclusive(&(port->write_lock));
+			spinlock_release_exclusive(&(port->read_lock));
 			event_await(IRQ_EVENT(_serial_irq));
-			spinlock_acquire_exclusive(&(port->write_lock));
+			spinlock_acquire_exclusive(&(port->read_lock));
 		}
 		*((u8*)buffer)=io_port_in8(port->io_port);
 		buffer++;
 	}
-	spinlock_release_exclusive(&(port->write_lock));
+	spinlock_release_exclusive(&(port->read_lock));
 	return length;
 }
