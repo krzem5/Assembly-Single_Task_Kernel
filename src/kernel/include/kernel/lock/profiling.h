@@ -4,7 +4,8 @@
 
 
 
-#define LOCK_PROFILING_MAX_LOCK_TYPES 4096
+#define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12
+#define LOCK_PROFILING_MAX_LOCK_TYPES (1<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)
 #define LOCK_PROFILING_EARLY_LOCK_TYPES 5
 
 #define LOCK_PROFILING_MAX_NESTED_LOCKS 16
@@ -71,6 +72,7 @@ typedef struct _LOCK_PROFILING_DATA_DESCRIPTOR{
 
 typedef struct _LOCK_PROFILING_THREAD_DATA{
 	void* stack[LOCK_PROFILING_MAX_NESTED_LOCKS];
+	u16 id_stack[LOCK_PROFILING_MAX_NESTED_LOCKS];
 	u64 stack_size;
 } lock_profiling_thread_data_t;
 
@@ -86,6 +88,10 @@ u16 __lock_profiling_alloc_type(const char* func,u32 line,const char* arg,u16* o
 
 
 lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr);
+
+
+
+void __lock_profiling_enable_dependency_graph(void);
 
 
 

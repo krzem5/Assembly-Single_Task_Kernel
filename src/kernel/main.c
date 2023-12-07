@@ -64,6 +64,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	clock_init();
 	time_init();
 	isr_init();
+	__lock_profiling_enable_dependency_graph();
 	acpi_load();
 	gid_init();
 	uid_init();

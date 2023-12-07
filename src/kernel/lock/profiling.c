@@ -29,13 +29,14 @@ static lock_profiling_thread_data_t _early_lock_profiling_data={
 	.stack_size=0
 };
 static CPU_LOCAL_DATA(lock_profiling_thread_data_t,_lock_profiling_cpu_local_data);
+static KERNEL_ATOMIC u64* _lock_profiling_dependency_matrix=NULL;
 
 KERNEL_PUBLIC const lock_profiling_type_descriptor_t* lock_profiling_type_descriptors=NULL;
 KERNEL_PUBLIC const lock_profiling_data_descriptor_t* lock_profiling_data_descriptor_head=NULL;
 
 
 
-static lock_profiling_thread_data_t* _get_lock_data(void){
+static KERNEL_INLINE lock_profiling_thread_data_t* _get_lock_data(void){
 	if (!_lock_profiling_cpu_local_data){
 		return &_early_lock_profiling_data;
 	}
@@ -45,6 +46,12 @@ static lock_profiling_thread_data_t* _get_lock_data(void){
 	}
 #endif
 	return CPU_LOCAL(_lock_profiling_cpu_local_data);
+}
+
+
+
+static KERNEL_INLINE u32 _get_edge_index(u16 from,u16 to){
+	return (from<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)|to;
 }
 
 
@@ -112,6 +119,12 @@ KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const cha
 
 
 
+void __lock_profiling_enable_dependency_graph(void){
+	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<((LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1)-3))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+}
+
+
+
 void __lock_profiling_init_thread_data(lock_profiling_thread_data_t* out){
 	out->stack_size=0;
 }
@@ -119,29 +132,50 @@ void __lock_profiling_init_thread_data(lock_profiling_thread_data_t* out){
 
 
 KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func,u32 line){
+	if (!_lock_profiling_dependency_matrix){
+		return;
+	}
 	lock_profiling_thread_data_t* data=_get_lock_data();
 	if (data->stack_size==LOCK_PROFILING_MAX_NESTED_LOCKS){
 		log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock stack too large\x1b[0m\n",func,line);
 		return;
 	}
 	data->stack[data->stack_size]=lock;
+	data->id_stack[data->stack_size]=id;
 	data->stack_size++;
+	for (u64 i=0;i<data->stack_size-1;i++){
+		if (data->id_stack[i]==id&&data->stack[i]!=lock){
+			continue;
+		}
+		u32 edge=_get_edge_index(data->id_stack[i],id);
+		_lock_profiling_dependency_matrix[edge>>6]|=1ull<<(edge&63);
+		u32 inverse_edge=_get_edge_index(id,data->id_stack[i]);
+		if (_lock_profiling_dependency_matrix[inverse_edge>>6]&(1ull<<(inverse_edge&63))){
+			const lock_profiling_type_descriptor_t* src=lock_profiling_type_descriptors+data->id_stack[i];
+			const lock_profiling_type_descriptor_t* dst=lock_profiling_type_descriptors+id;
+			log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock '%s(%u)' deadlocked by '%s(%u)'\x1b[0m\n",func,line,src->func,src->line,dst->func,dst->line);
+		}
+	}
 }
 
 
 
 #pragma GCC optimize ("no-tree-loop-distribute-patterns") // disable memmove
 KERNEL_PUBLIC void __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line){
+	if (!_lock_profiling_dependency_matrix){
+		return;
+	}
 	lock_profiling_thread_data_t* data=_get_lock_data();
 	for (u64 i=data->stack_size;i;){
 		i--;
-		if (data->stack[i]==lock){
+		if (data->stack[i]==lock&&data->id_stack[i]==id){
 			data->stack_size--;
 			for (;i<data->stack_size;i++){
 				data->stack[i]=data->stack[i+1];
+				data->id_stack[i]=data->id_stack[i+1];
 			}
 			return;
 		}
 	}
-	log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock '%p' not acquired in this context\x1b[0m\n",func,line,lock);
+	log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock '%p (%u)' not acquired in this context\x1b[0m\n",func,line,lock,id);
 }
