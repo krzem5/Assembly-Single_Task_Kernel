@@ -11,7 +11,7 @@
 
 
 
-static KERNEL_INIT_WRITE CPU_LOCAL_DATA(KERNEL_ATOMIC u64,_watchdog_timers);
+static CPU_LOCAL_DATA(KERNEL_ATOMIC u64,_watchdog_timers);
 
 
 

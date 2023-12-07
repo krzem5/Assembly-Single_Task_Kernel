@@ -22,7 +22,7 @@ static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count;
 static u16 KERNEL_EARLY_WRITE _cpu_bootstra_core_apic_id;
 
 KERNEL_PUBLIC u16 KERNEL_INIT_WRITE cpu_count;
-KERNEL_INIT_WRITE CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
+CPU_LOCAL_DATA(cpu_extra_data_t,cpu_extra_data);
 
 
 

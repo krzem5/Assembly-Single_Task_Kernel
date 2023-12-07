@@ -13,9 +13,9 @@
 
 
 
-static KERNEL_INIT_WRITE CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_data);
-static KERNEL_INIT_WRITE CPU_LOCAL_DATA(scheduler_load_balancer_data_t*,_scheduler_load_balancer_priority_queue);
-static KERNEL_INIT_WRITE CPU_LOCAL_DATA(scheduler_load_balancer_group_t,_scheduler_load_balancer_groups);
+static CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_data);
+static CPU_LOCAL_DATA(scheduler_load_balancer_data_t*,_scheduler_load_balancer_priority_queue);
+static CPU_LOCAL_DATA(scheduler_load_balancer_group_t,_scheduler_load_balancer_groups);
 static scheduler_load_balancer_t _scheduler_load_balancer;
 
 
