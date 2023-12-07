@@ -111,5 +111,5 @@ KERNEL_PUBLIC const net_info_address_list_entry_t* net_info_get_dns_entries(void
 
 
 KERNEL_PUBLIC const net_info_address_list_entry_t* net_info_get_router_entries(void){
-	return _net_info_dns_address_list.tail;
+	return _net_info_router_address_list.tail;
 }
