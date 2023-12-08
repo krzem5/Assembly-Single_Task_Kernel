@@ -154,13 +154,14 @@ KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func
 			const lock_profiling_type_descriptor_t* src=lock_profiling_type_descriptors+data->id_stack[i];
 			const lock_profiling_type_descriptor_t* dst=lock_profiling_type_descriptors+id;
 			log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock '%s(%u)' deadlocked by '%s(%u)'\x1b[0m\n",func,line,src->func,src->line,dst->func,dst->line);
+			// *((char*)0)=0;
 		}
 	}
 }
 
 
 
-#pragma GCC optimize ("no-tree-loop-distribute-patterns") // disable memmove
+#pragma GCC optimize("no-tree-loop-distribute-patterns") // disable memmove
 KERNEL_PUBLIC void __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line){
 	if (!_lock_profiling_dependency_matrix){
 		return;

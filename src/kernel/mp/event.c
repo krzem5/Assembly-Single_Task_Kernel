@@ -30,6 +30,7 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 		spinlock_release_exclusive(&(event->lock));
 		return 1;
 	}
+	spinlock_acquire_exclusive(&(thread->lock));
 	event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
 	container->thread=thread;
 	container->prev=event->tail;
@@ -43,6 +44,7 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 		event->head=container;
 	}
 	event->tail=container;
+	spinlock_release_exclusive(&(thread->lock));
 	spinlock_release_exclusive(&(event->lock));
 	return 0;
 }
@@ -135,16 +137,15 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
+	spinlock_release_exclusive(&(thread->lock));
 	for (u32 i=0;i<count;i++){
 		if (!_await_event(thread,events[i],i)){
 			continue;
 		}
 		thread->event_wakeup_index=i;
-		spinlock_release_exclusive(&(thread->lock));
 		scheduler_resume();
 		return i;
 	}
-	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();
 	return thread->event_wakeup_index;
 }
@@ -160,6 +161,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 	spinlock_acquire_exclusive(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
+	spinlock_release_exclusive(&(thread->lock));
 	for (u32 i=0;i<count;i++){
 		handle_t* handle_event=handle_lookup_and_acquire(handles[i],_event_handle_type);
 		if (!handle_event){
@@ -169,12 +171,10 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		handle_release(handle_event);
 		if (is_active){
 			thread->event_wakeup_index=i;
-			spinlock_release_exclusive(&(thread->lock));
 			scheduler_resume();
 			return i;
 		}
 	}
-	spinlock_release_exclusive(&(thread->lock));
 	scheduler_yield();
 	return thread->event_wakeup_index;
 }
