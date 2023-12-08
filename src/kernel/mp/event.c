@@ -76,6 +76,7 @@ KERNEL_PUBLIC event_t* event_new(void){
 
 
 KERNEL_PUBLIC void event_delete(event_t* event){
+	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	handle_destroy(&(event->handle));
 	while (event->head){
@@ -83,12 +84,15 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
+	spinlock_release_exclusive(&(event->lock));
 	// omm_dealloc(_event_allocator,event);
+	scheduler_resume();
 }
 
 
 
 KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
+	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){
 		event->is_active=1;
@@ -118,6 +122,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		event->tail=NULL;
 	}
 	spinlock_release_exclusive(&(event->lock));
+	scheduler_resume();
 }
 
 
@@ -182,7 +187,9 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 
 
 KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active){
+	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	event->is_active=is_active;
 	spinlock_release_exclusive(&(event->lock));
+	scheduler_resume();
 }
