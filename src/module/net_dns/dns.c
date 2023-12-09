@@ -68,7 +68,7 @@ void net_dns_init(void){
 		ERROR("Failed to bind DNS client socket");
 		return;
 	}
-	thread_new_kernel_thread(NULL,_rx_thread,0x200000,0);
+	thread_new_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0x200000,0);
 }
 
 

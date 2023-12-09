@@ -73,6 +73,7 @@ typedef struct _THREAD{
 	handle_t handle;
 	spinlock_t lock;
 	process_t* process;
+	string_t* name;
 	vmm_pagemap_t* pagemap;
 	mmap_region_t* user_stack_region;
 	mmap_region_t* kernel_stack_region;

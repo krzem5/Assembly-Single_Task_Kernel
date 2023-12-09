@@ -33,10 +33,12 @@ static void _stdout_callback(vfs_node_t* node,serial_port_t* port){
 
 
 
-static vfs_node_t* _create_pipe(vfs_node_t* parent,const char* name,void* callback,serial_port_t* port){
+static vfs_node_t* _create_pipe(vfs_node_t* parent,u8 port_index,const char* name,void* callback,serial_port_t* port){
 	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
 	vfs_node_t* node=pipe_create(parent,name_string);
-	thread_new_kernel_thread(NULL,callback,0x10000,2,node,port)->priority=SCHEDULER_PRIORITY_HIGH;
+	char buffer[64];
+	format_string(buffer,64,"devfs-serial-pipe-ser%u%s",port_index,name);
+	thread_new_kernel_thread(NULL,buffer,callback,0x10000,2,node,port)->priority=SCHEDULER_PRIORITY_HIGH;
 	return node;
 }
 
@@ -54,8 +56,8 @@ void devfs_serial_init(void){
 		format_string(buffer,8,"ser%u",i);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_data_node(node,"id","%u",i);
-		_create_pipe(node,"in",_stdin_callback,port)->flags|=0444<<VFS_NODE_PERMISSION_SHIFT;
-		_create_pipe(node,"out",_stdout_callback,port)->flags|=0222<<VFS_NODE_PERMISSION_SHIFT;
+		_create_pipe(node,i,"in",_stdin_callback,port)->flags|=0444<<VFS_NODE_PERMISSION_SHIFT;
+		_create_pipe(node,i,"out",_stdout_callback,port)->flags|=0222<<VFS_NODE_PERMISSION_SHIFT;
 		dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer);
 	}
 	if (serial_default_port){

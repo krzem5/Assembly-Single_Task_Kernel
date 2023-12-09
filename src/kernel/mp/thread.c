@@ -1,4 +1,5 @@
 #include <kernel/cpu/cpu.h>
+#include <kernel/format/format.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/profiling.h>
@@ -7,6 +8,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -82,6 +84,8 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	handle_new(out,thread_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	out->process=process;
+	char buffer[32];
+	out->name=smm_alloc(buffer,format_string(buffer,32,"thread-%u",HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
 	if (user_stack_size){
 		out->user_stack_region=mmap_alloc(&(process->mmap),0,user_stack_size,_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 		if (!out->user_stack_region){
@@ -133,12 +137,16 @@ KERNEL_PUBLIC thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 st
 
 
 
-KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u64 stack_size,u8 arg_count,...){
+KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,const char* name,void* func,u64 stack_size,u8 arg_count,...){
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
 	_Bool start_thread=!process;
 	thread_t* out=_thread_alloc((process?process:process_kernel),0,stack_size);
+	if (name){
+		smm_dealloc(out->name);
+		out->name=smm_alloc(name,0);
+	}
 	out->reg_state.gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
 	out->reg_state.gpr_state.rax=(u64)func;
 	out->reg_state.gpr_state.rsp=out->kernel_stack_region->rb_node.key+stack_size;
@@ -170,6 +178,7 @@ KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,void* func,u
 KERNEL_PUBLIC void thread_delete(thread_t* thread){
 	spinlock_acquire_exclusive(&(thread->lock));
 	process_t* process=thread->process;
+	smm_dealloc(thread->name);
 	if (thread->user_stack_region){
 		mmap_dealloc_region(&(process->mmap),thread->user_stack_region);
 	}
