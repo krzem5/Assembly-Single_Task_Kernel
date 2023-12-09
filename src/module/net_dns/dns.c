@@ -122,7 +122,7 @@ static void _rx_thread(void){
 			goto _cleanup;
 		}
 		spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
-		net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,dns_packet->id);
+		net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,__builtin_bswap16(dns_packet->id));
 		if (!request){
 			goto _cleanup_and_release_lock;
 		}
@@ -163,6 +163,7 @@ _cleanup:
 static void _test_thread(void){
 	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
 	WARN("%I",net_dns_lookup_name("github.com",0));
+	WARN("%I",net_dns_lookup_name("google.com",0));
 	WARN("%I",net_dns_lookup_name("github.com",0));
 }
 
@@ -190,6 +191,7 @@ void net_dns_init(void){
 	thread_new_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0x200000,0);
 	thread_new_kernel_thread(NULL,NULL,_test_thread,0x200000,0);
 }
+
 
 
 KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking){
@@ -264,6 +266,7 @@ _invalid_cache_entry:
 		_net_dns_cache_resolution_event
 	};
 	while (event_await_multiple(events,2)&&!request->address);
+	timer_delete(timer);
 	spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
 	rb_tree_remove_node(&_net_dns_request_tree,&(request->rb_node));
 	spinlock_release_exclusive(&_net_dns_request_tree_lock);
