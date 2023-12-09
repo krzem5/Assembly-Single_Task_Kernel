@@ -271,7 +271,7 @@ _invalid_cache_entry:
 	rb_tree_remove_node(&_net_dns_request_tree,&(request->rb_node));
 	spinlock_release_exclusive(&_net_dns_request_tree_lock);
 	net_ip4_address_t out=request->address;
-	if (!out){
+	if (!out||!request->cache_duration){
 		smm_dealloc(request->name);
 	}
 	else{
