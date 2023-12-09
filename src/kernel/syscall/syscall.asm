@@ -69,8 +69,6 @@ _syscall_handler:
 	call scheduler_set_timer
 	mov rax, qword [rsp+16]
 	mov rdi, rsp
-	test eax, eax
-	jz _syscall_invalid
 	mov rbx, rax
 	shr rbx, 32
 	mov eax, eax
@@ -82,7 +80,7 @@ _syscall_handler:
 	jz _syscall_invalid
 	mov rdx, qword [rcx+8]
 	cmp eax, dword [rcx+16]
-	jz _syscall_invalid
+	jge _syscall_invalid
 	mov rax, qword [rdx+rax*8]
 	test rax, rax
 	jz _syscall_invalid
