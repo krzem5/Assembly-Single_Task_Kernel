@@ -742,7 +742,7 @@ if ("--run" in sys.argv):
 		"-device","nec-usb-xhci,id=xhci",
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
-		"-netdev","bridge,br=virbr0,id=network",
+		"-netdev","bridge,br=br1,id=network",
 		"-device","e1000,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
