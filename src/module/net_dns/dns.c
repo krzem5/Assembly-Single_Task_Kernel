@@ -58,7 +58,7 @@ static void _rx_thread(void){
 
 static void _test_thread(void){
 	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
-	WARN("%I",net_dns_lookup_name("google.com",0));
+	WARN("%I",net_dns_lookup_name("www.google.com",0));
 }
 
 
@@ -106,7 +106,7 @@ KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonbl
 		return 0;
 	}
 	net_dns_packet_question_t* question=(net_dns_packet_question_t*)(header->data+offset);
-	question->qtype=__builtin_bswap16(NET_DNS_QTYPE_ALL);
+	question->qtype=__builtin_bswap16(NET_DNS_TYPE_A);
 	question->qclass=__builtin_bswap16(NET_DNS_QCLASS_IN);
 	udp_packet->length=sizeof(net_dns_packet_t)+offset+sizeof(net_dns_packet_question_t);
 	socket_push_packet(_net_dns_socket,udp_packet,sizeof(net_udp_socket_packet_t)+udp_packet->length);
