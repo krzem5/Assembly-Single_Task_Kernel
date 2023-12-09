@@ -28,7 +28,10 @@ syscall_enable:
 
 extern _random_entropy_pool
 extern _random_entropy_pool_length
-extern _syscall_execute
+extern _syscall_invalid
+extern _syscall_table_list
+extern _syscall_table_list_length
+extern scheduler_set_timer
 section .text exec nowrite
 
 
@@ -62,8 +65,31 @@ _syscall_handler:
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
+	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
+	call scheduler_set_timer
+	mov rax, qword [rsp+16]
+	test eax, eax
+	jz ._invalid_syscall
+	mov rbx, rax
+	shr rbx, 32
+	mov eax, eax
+	cmp ebx, dword [_syscall_table_list_length]
+	jge ._invalid_syscall
+	mov rcx, qword [_syscall_table_list]
+	mov rcx, qword [rcx+rbx*8]
+	test rcx, rcx
+	jz ._invalid_syscall
+	mov rdx, qword [rcx+8]
+	cmp eax, dword [rcx+16]
+	jz ._invalid_syscall
+	mov rax, qword [rdx+rax*8]
+	test rax, rax
+	jz ._invalid_syscall
 	mov rdi, rsp
-	call _syscall_execute
+	call rax
+._return_from_syscall:
+	xor edi, edi ; SCHEDULER_TIMER_USER
+	call scheduler_set_timer
 	rdtsc
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
@@ -90,3 +116,7 @@ _syscall_handler:
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
+._invalid_syscall:
+	mov rdi, rsp
+	call _syscall_invalid
+	jmp ._return_from_syscall

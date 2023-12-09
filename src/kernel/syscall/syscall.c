@@ -16,26 +16,15 @@
 
 static spinlock_t _syscall_table_list_lock;
 static omm_allocator_t* KERNEL_INIT_WRITE _syscall_table_allocator=NULL;
-static syscall_table_t*volatile* _syscall_table_list=NULL;
-static volatile u32 _syscall_table_list_length=0;
+
+syscall_table_t*volatile* _syscall_table_list=NULL;
+volatile u32 _syscall_table_list_length=0;
 
 
 
-void _syscall_execute(syscall_reg_state_t* regs){
-	scheduler_set_timer(SCHEDULER_TIMER_KERNEL);
-	u32 table_index=regs->rax>>32;
-	u32 function_index=regs->rax&0xffffffff;
-	if (!function_index||table_index>=_syscall_table_list_length){
-_invalid_syscall:
-		ERROR("Invalid SYSCALL number: %lu",regs->rax);
-		panic("Invalid SYSCALL");
-	}
-	const syscall_table_t* table=_syscall_table_list[table_index];
-	if (!table||function_index>=table->function_count||!table->functions[function_index]){
-		goto _invalid_syscall;
-	}
-	table->functions[function_index](regs);
-	scheduler_set_timer(SCHEDULER_TIMER_USER);
+void KERNEL_NORETURN _syscall_invalid(syscall_reg_state_t* regs){
+	ERROR("Invalid SYSCALL number: %lu",regs->rax);
+	panic("Invalid SYSCALL");
 }
 
 
