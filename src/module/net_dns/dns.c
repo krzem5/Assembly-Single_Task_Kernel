@@ -1,8 +1,14 @@
+#include <kernel/clock/clock.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/socket/socket.h>
+#include <kernel/timer/timer.h>
+#include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -15,8 +21,66 @@
 
 
 
-static vfs_node_t* _net_dns_socket=NULL;
+#define DNS_TIMEOUT_NS 1000000000
+
+
+
+static omm_allocator_t* _net_dns_cache_entry_allocator=NULL;
+static omm_allocator_t* _net_dns_request_allocator=NULL;
+static event_t* _net_dns_cache_resolution_event=NULL;
+static spinlock_t _net_dns_cache_lock;
+static rb_tree_t _net_dns_cache_address_tree;
+static spinlock_t _net_dns_request_tree_lock;
+static rb_tree_t _net_dns_request_tree;
 static KERNEL_ATOMIC u16 _net_dns_request_id=0;
+static vfs_node_t* _net_dns_socket=NULL;
+
+
+
+static u32 _skip_name(const u8* data,u32 max_size){
+	u32 i=0;
+	while (i<max_size){
+		u8 j=data[i];
+		i++;
+		if (!j){
+			return i;
+		}
+		i+=((j>>6)==3?1:j);
+	}
+	return 0;
+}
+
+
+
+static u32 _decode_name(const u8* data,u32 offset,u32 max_size,char* out,u32 out_index,u32 out_length){
+	while (offset<max_size){
+		u8 i=data[offset];
+		offset++;
+		if (!i){
+			return offset;
+		}
+		if ((i>>6)==3){
+			u16 j=((i&0x3f)<<8)|data[offset];
+			offset++;
+			if (offset>max_size||j<sizeof(net_dns_packet_t)){
+				return 0;
+			}
+			return (_decode_name(data,j-sizeof(net_dns_packet_t),max_size,out,out_index,out_length)?offset:0);
+		}
+		if (i+out_index+1>out_length||i+offset>max_size){
+			return 0;
+		}
+		if (out_index){
+			out[out_index-1]='.';
+		}
+		memcpy(out+out_index,data+offset,i);
+		out_index+=i;
+		out[out_index]=0;
+		out_index++;
+		offset+=i;
+	}
+	return 0;
+}
 
 
 
@@ -49,7 +113,47 @@ static u32 _encode_name(const char* name,u8* out,u32 max_size){
 static void _rx_thread(void){
 	while (1){
 		net_udp_socket_packet_t* packet=socket_pop_packet(_net_dns_socket,0);
-		ERROR("PACKET: DNS (%u)",packet->length);
+		if (packet->length<sizeof(net_dns_packet_t)){
+			goto _cleanup;
+		}
+		net_dns_packet_t* dns_packet=(net_dns_packet_t*)(packet->data);
+		u16 flags=__builtin_bswap16(dns_packet->flags);
+		if (!(flags&NET_DNS_FLAG_QR)||!dns_packet->ancount||(flags&NET_DNS_RCODE_MASK)!=NET_DNS_RCODE_NO_ERROR){
+			goto _cleanup;
+		}
+		spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+		net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,dns_packet->id);
+		if (!request){
+			goto _cleanup_and_release_lock;
+		}
+		u32 offset=0;
+		for (u16 i=0;i<__builtin_bswap16(dns_packet->qdcount);i++){
+			offset=_skip_name(dns_packet->data+offset,packet->length-sizeof(net_dns_packet_t)-offset);
+			if (!offset){
+				goto _cleanup_and_release_lock;
+			}
+			offset+=sizeof(net_dns_packet_question_t);
+			if (offset+sizeof(net_dns_packet_t)>packet->length){
+				goto _cleanup_and_release_lock;
+			}
+		}
+		char buffer[256];
+		offset=_decode_name(dns_packet->data,offset,packet->length-sizeof(net_dns_packet_t),buffer,0,256);
+		if (!offset||offset+sizeof(net_dns_packet_resource_record_t)+sizeof(net_dns_packet_t)>packet->length){
+			goto _cleanup_and_release_lock;
+		}
+		net_dns_packet_resource_record_t* resouce_record=(net_dns_packet_resource_record_t*)(dns_packet->data+offset);
+		offset+=sizeof(net_dns_packet_resource_record_t)+__builtin_bswap16(resouce_record->rdlength);
+		if (offset+sizeof(net_dns_packet_t)>packet->length||resouce_record->type!=__builtin_bswap16(NET_DNS_TYPE_A)||resouce_record->class!=__builtin_bswap16(NET_DNS_QCLASS_IN)||resouce_record->rdlength!=__builtin_bswap16(sizeof(net_ip4_address_t))){
+			goto _cleanup_and_release_lock;
+		}
+		request->address=__builtin_bswap32(*((net_ip4_address_t*)(resouce_record->rdata)));
+		request->cache_duration=__builtin_bswap32(resouce_record->ttl);
+		INFO("DNS resolution: %s -> %I",buffer,request->address);
+		event_dispatch(_net_dns_cache_resolution_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
+_cleanup_and_release_lock:
+		spinlock_release_exclusive(&_net_dns_request_tree_lock);
+_cleanup:
 		amm_dealloc(packet);
 	}
 }
@@ -58,13 +162,21 @@ static void _rx_thread(void){
 
 static void _test_thread(void){
 	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
-	WARN("%I",net_dns_lookup_name("www.google.com",0));
+	WARN("%I",net_dns_lookup_name("github.com",0));
+	WARN("%I",net_dns_lookup_name("github.com",0));
 }
 
 
 
 void net_dns_init(void){
 	LOG("Initializing DNS resolver...");
+	_net_dns_cache_entry_allocator=omm_init("net_dns_cache_entry",sizeof(net_dns_cache_entry_t),8,4,pmm_alloc_counter("omm_net_dns_cache_entry"));
+	_net_dns_request_allocator=omm_init("net_dns_request",sizeof(net_dns_request_t),8,4,pmm_alloc_counter("omm_net_dns_request"));
+	_net_dns_cache_resolution_event=event_new();
+	spinlock_init(&_net_dns_cache_lock);
+	rb_tree_init(&_net_dns_cache_address_tree);
+	spinlock_init(&_net_dns_request_tree_lock);
+	rb_tree_init(&_net_dns_request_tree);
 	SMM_TEMPORARY_STRING name=smm_alloc("dns_socket",0);
 	_net_dns_socket=socket_create(vfs_lookup(NULL,"/",0,0,0),name,SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
@@ -80,14 +192,49 @@ void net_dns_init(void){
 }
 
 
-
 KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking){
-	// same cache as ARP, key=length<<32|hash (computed by string_t) + override entries if key matches but content does not
+	string_t* name_string=smm_alloc(name,0);
+	u64 key=(((u64)(name_string->length))<<32)|name_string->hash;
+	spinlock_acquire_exclusive(&_net_dns_cache_lock);
+	net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_tree_lookup_node(&_net_dns_cache_address_tree,key);
+	if (cache_entry){
+		if (cache_entry->last_valid_time<clock_get_time()){
+			goto _invalid_cache_entry;
+		}
+		for (u32 i=0;i<name_string->length;i++){
+			if (cache_entry->name->data[i]!=name[i]){
+				goto _invalid_cache_entry;
+			}
+		}
+		net_ip4_address_t out=cache_entry->address;
+		spinlock_release_exclusive(&_net_dns_cache_lock);
+		return out;
+_invalid_cache_entry:
+		rb_tree_remove_node(&_net_dns_cache_address_tree,&(cache_entry->rb_node));
+		smm_dealloc(cache_entry->name);
+		omm_dealloc(_net_dns_cache_entry_allocator,cache_entry);
+	}
+	spinlock_release_exclusive(&_net_dns_cache_lock);
 	const net_info_address_list_entry_t* dns_entry=net_info_get_dns_entries();
 	if (nonblocking||!dns_entry){
 		return 0;
 	}
+	spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+	u16 request_id=_net_dns_request_id;
 	_net_dns_request_id++;
+	net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,request_id);
+	if (request){
+		_net_dns_request_id--;
+		spinlock_release_exclusive(&_net_dns_request_tree_lock);
+		return 0;
+	}
+	request=omm_alloc(_net_dns_request_allocator);
+	request->rb_node.key=request_id;
+	request->name=name_string;
+	request->address=0;
+	rb_tree_insert_node(&_net_dns_request_tree,&(request->rb_node));
+	spinlock_release_exclusive(&_net_dns_request_tree_lock);
+	INFO("DNS request: %s",name);
 	u8 buffer[sizeof(net_udp_socket_packet_t)+512];
 	net_udp_socket_packet_t* udp_packet=(net_udp_socket_packet_t*)buffer;
 	udp_packet->src_address=net_info_get_address();
@@ -95,7 +242,7 @@ KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonbl
 	udp_packet->src_port=53;
 	udp_packet->dst_port=53;
 	net_dns_packet_t* header=(net_dns_packet_t*)(udp_packet->data);
-	header->id=__builtin_bswap16(_net_dns_request_id);
+	header->id=__builtin_bswap16(request_id);
 	header->flags=__builtin_bswap16(NET_DNS_OPCODE_QUERY);
 	header->qdcount=__builtin_bswap16(1);
 	header->ancount=0;
@@ -103,6 +250,7 @@ KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonbl
 	header->arcount=0;
 	u16 offset=_encode_name(name,header->data,512-sizeof(net_dns_packet_t));
 	if (!offset||512-sizeof(net_dns_packet_t)-offset<sizeof(net_dns_packet_question_t)){
+		WARN("Request too large for DNS over UDP");
 		return 0;
 	}
 	net_dns_packet_question_t* question=(net_dns_packet_question_t*)(header->data+offset);
@@ -110,5 +258,35 @@ KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonbl
 	question->qclass=__builtin_bswap16(NET_DNS_QCLASS_IN);
 	udp_packet->length=sizeof(net_dns_packet_t)+offset+sizeof(net_dns_packet_question_t);
 	socket_push_packet(_net_dns_socket,udp_packet,sizeof(net_udp_socket_packet_t)+udp_packet->length);
-	return 0;
+	timer_t* timer=timer_create(DNS_TIMEOUT_NS,1);
+	event_t* events[2]={
+		timer->event,
+		_net_dns_cache_resolution_event
+	};
+	while (event_await_multiple(events,2)&&!request->address);
+	spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+	rb_tree_remove_node(&_net_dns_request_tree,&(request->rb_node));
+	spinlock_release_exclusive(&_net_dns_request_tree_lock);
+	net_ip4_address_t out=request->address;
+	if (!out){
+		smm_dealloc(request->name);
+	}
+	else{
+		spinlock_acquire_exclusive(&_net_dns_cache_lock);
+		net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_tree_lookup_node(&_net_dns_cache_address_tree,key);
+		if (cache_entry){
+			smm_dealloc(cache_entry->name);
+		}
+		else{
+			cache_entry=omm_alloc(_net_dns_cache_entry_allocator);
+			cache_entry->rb_node.key=key;
+			rb_tree_insert_node(&_net_dns_cache_address_tree,&(cache_entry->rb_node));
+		}
+		cache_entry->name=request->name;
+		cache_entry->last_valid_time=clock_get_time()+request->cache_duration*1000000000ull;
+		cache_entry->address=request->address;
+		spinlock_release_exclusive(&_net_dns_cache_lock);
+	}
+	omm_dealloc(_net_dns_request_allocator,request);
+	return out;
 }

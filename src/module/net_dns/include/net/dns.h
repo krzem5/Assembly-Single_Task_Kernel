@@ -1,31 +1,33 @@
 #ifndef _NET_DNS_H_
 #define _NET_DNS_H_ 1
+#include <kernel/memory/smm.h>
+#include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <net/ip4.h>
 
 
 
 // DNS flags
-#define NET_DNS_FLAG_QR 1
-#define NET_DNS_FLAG_AA 32
-#define NET_DNS_FLAG_TC 64
-#define NET_DNS_FLAG_RD 128
-#define NET_DNS_FLAG_RA 256
+#define NET_DNS_FLAG_QR 0x8000
+#define NET_DNS_FLAG_AA 0x0400
+#define NET_DNS_FLAG_TC 0x0200
+#define NET_DNS_FLAG_RD 0x0100
+#define NET_DNS_FLAG_RA 0x0080
 
 // DNS opcode
-#define NET_DNS_OPCODE_MASK 0x1e
-#define NET_DNS_OPCODE_QUERY 0
-#define NET_DNS_OPCODE_IQUERY 2
-#define NET_DNS_OPCODE_STATUS 4
+#define NET_DNS_OPCODE_MASK 0x7800
+#define NET_DNS_OPCODE_QUERY 0x0000
+#define NET_DNS_OPCODE_IQUERY 0x0800
+#define NET_DNS_OPCODE_STATUS 0x1000
 
 // DNS return code
-#define NET_DNS_RCODE_MASK 0xf000
-#define NET_DNS_RCODE_NO_ERROR 0
-#define NET_DNS_RCODE_FORMAT_ERROR 4096
-#define NET_DNS_RCODE_SERVER_FAILURE 8192
-#define NET_DNS_RCODE_NAME_ERROR 12288
-#define NET_DNS_RCODE_NOT_IMPLEMENTED 16384
-#define NET_DNS_RCODE_REFUSED 20480
+#define NET_DNS_RCODE_MASK 0x000f
+#define NET_DNS_RCODE_NO_ERROR 0x0000
+#define NET_DNS_RCODE_FORMAT_ERROR 0x0001
+#define NET_DNS_RCODE_SERVER_FAILURE 0x0002
+#define NET_DNS_RCODE_NAME_ERROR 0x0003
+#define NET_DNS_RCODE_NOT_IMPLEMENTED 0x0004
+#define NET_DNS_RCODE_REFUSED 0x0005
 
 // DNS types
 #define NET_DNS_TYPE_A 1
@@ -75,6 +77,34 @@ typedef struct KERNEL_PACKED _NET_DNS_PACKET_QUESTION{
 	u16 qtype;
 	u16 qclass;
 } net_dns_packet_question_t;
+
+
+
+typedef struct KERNEL_PACKED _NET_DNS_PACKET_RESOURCE_RECORD{
+	u16 type;
+	u16 class;
+	u32 ttl;
+	u16 rdlength;
+	u8 rdata[];
+} net_dns_packet_resource_record_t;
+
+
+
+typedef struct _NET_DNS_CACHE_ENTRY{
+	rb_tree_node_t rb_node;
+	string_t* name;
+	u64 last_valid_time;
+	net_ip4_address_t address;
+} net_dns_cache_entry_t;
+
+
+
+typedef struct _NET_DNS_REQUEST{
+	rb_tree_node_t rb_node;
+	string_t* name;
+	net_ip4_address_t address;
+	u32 cache_duration;
+} net_dns_request_t;
 
 
 

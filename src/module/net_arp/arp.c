@@ -58,7 +58,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	spinlock_acquire_exclusive(&_net_arp_cache_lock);
 	net_arp_cache_entry_t* cache_entry=(net_arp_cache_entry_t*)rb_tree_lookup_node(&_net_arp_cache_address_tree,__builtin_bswap32(arp_packet->spa));
 	if (cache_entry){
-		INFO("APR responce: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
+		INFO("APR response: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
