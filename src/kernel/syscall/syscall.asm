@@ -56,22 +56,16 @@ _syscall_handler:
 	push rcx
 	push rbx
 	push rax
-	xor ebx, ebx
-	mov bx, ds
-	push rbx
-	mov bx, es
-	push rbx
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
+	mov rbx, rax
 	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
 	call scheduler_set_timer
-	mov rax, qword [rsp+16]
+	mov eax, ebx
 	mov rdi, rsp
-	mov rbx, rax
 	shr rbx, 32
-	mov eax, eax
 	cmp ebx, dword [_syscall_table_list_length]
 	jge _syscall_invalid
 	mov rcx, qword [_syscall_table_list]
@@ -92,10 +86,9 @@ _syscall_handler:
 	mov edx, dword [_random_entropy_pool_length]
 	and edx, 0x3c
 	lock xor dword [_random_entropy_pool+rdx], eax
-	pop rbx
-	mov es, bx
-	pop rbx
+	mov bx, 0x1b
 	mov ds, bx
+	mov es, bx
 	pop rax
 	pop rbx
 	pop rcx
