@@ -6,6 +6,7 @@ dnsmasq --interface=br0 --bind-interfaces --dhcp-range=172.20.0.2,172.20.255.254
 modprobe tun
 [[ ! -d /etc/qemu ]]&&mkdir /etc/qemu
 echo allow br0 > /etc/qemu/bridge.conf
+chmod +s /usr/lib/qemu/qemu-bridge-helper
 sysctl net.ipv4.ip_forward=1
 sysctl net.ipv6.conf.default.forwarding=1
 sysctl net.ipv6.conf.all.forwarding=1
