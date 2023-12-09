@@ -719,6 +719,9 @@ if ("--run" in sys.argv):
 	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
+	if (b"br0" not in subprocess.run(["brctl","show"],stdout=subprocess.PIPE).stdout):
+		if (subprocess.run(["sudo","bash","./src/_build/create_network_bridge.sh"]).returncode!=0):
+			sys.exit(1)
 	subprocess.run([
 		"qemu-system-x86_64",
 		# "-d","trace:usb*",
@@ -739,7 +742,8 @@ if ("--run" in sys.argv):
 		"-device","nec-usb-xhci,id=xhci",
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
-		"-netdev","user,id=network",
+		"-netdev","bridge,br=br0,id=network",
+		# "-netdev","user,id=network",
 		"-device","e1000,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
