@@ -192,9 +192,9 @@ KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 s
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	spinlock_acquire_exclusive(&(socket_node->read_lock));
+	spinlock_acquire_exclusive(&(socket_node->write_lock));
 	_Bool out=socket_node->handler->descriptor->write_packet(socket_node,packet,size);
-	spinlock_release_exclusive(&(socket_node->read_lock));
+	spinlock_release_exclusive(&(socket_node->write_lock));
 	return out;
 }
 

@@ -56,6 +56,13 @@ static void _rx_thread(void){
 
 
 
+static void _test_thread(void){
+	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
+	WARN("%I",net_dns_lookup_name("google.com",0));
+}
+
+
+
 void net_dns_init(void){
 	LOG("Initializing DNS resolver...");
 	SMM_TEMPORARY_STRING name=smm_alloc("dns_socket",0);
@@ -69,20 +76,22 @@ void net_dns_init(void){
 		return;
 	}
 	thread_new_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0x200000,0);
+	thread_new_kernel_thread(NULL,NULL,_test_thread,0x200000,0);
 }
 
 
 
 KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking){
 	// same cache as ARP, key=length<<32|hash (computed by string_t) + override entries if key matches but content does not
-	if (nonblocking){
+	const net_info_address_list_entry_t* dns_entry=net_info_get_dns_entries();
+	if (nonblocking||!dns_entry){
 		return 0;
 	}
 	_net_dns_request_id++;
 	u8 buffer[sizeof(net_udp_socket_packet_t)+512];
 	net_udp_socket_packet_t* udp_packet=(net_udp_socket_packet_t*)buffer;
-	udp_packet->src_address=0x0a00020f;
-	udp_packet->dst_address=0x0a000203;
+	udp_packet->src_address=net_info_get_address();
+	udp_packet->dst_address=dns_entry->address;
 	udp_packet->src_port=53;
 	udp_packet->dst_port=53;
 	net_dns_packet_t* header=(net_dns_packet_t*)(udp_packet->data);

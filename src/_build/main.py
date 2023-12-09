@@ -743,7 +743,6 @@ if ("--run" in sys.argv):
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
 		"-netdev","bridge,br=br0,id=network",
-		# "-netdev","user,id=network",
 		"-device","e1000,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
