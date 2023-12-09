@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup environment
-        run: sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools bridge-utils iptables dnsmasq
+        run: sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools bridge-utils iptables libvirtdnsmasq
       - name: Build & Test
         run: ./build.sh --coverage --run
       - name: Upload coverage
