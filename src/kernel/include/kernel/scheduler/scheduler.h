@@ -32,10 +32,6 @@ typedef struct _SCHEDULER{
 
 
 
-void scheduler_init(void);
-
-
-
 void scheduler_enable(void);
 
 

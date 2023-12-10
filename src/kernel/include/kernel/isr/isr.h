@@ -14,10 +14,6 @@ extern event_t* irq_events[223];
 
 
 
-void isr_init(void);
-
-
-
 u8 isr_allocate(void);
 
 

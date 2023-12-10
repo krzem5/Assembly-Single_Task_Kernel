@@ -14,10 +14,6 @@ extern u32 cpu_mask_size;
 
 
 
-void cpu_mask_init(void);
-
-
-
 cpu_mask_t* cpu_mask_new(void);
 
 

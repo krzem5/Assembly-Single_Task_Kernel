@@ -9,10 +9,6 @@ typedef u32 uid_t;
 
 
 
-void uid_init(void);
-
-
-
 _Bool uid_create(uid_t uid,const char* name);
 
 

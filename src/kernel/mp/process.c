@@ -46,7 +46,7 @@ static void _process_handle_destructor(handle_t* handle){
 
 
 
-void KERNEL_EARLY_EXEC process_init(void){
+KERNEL_EARLY_INIT(){
 	LOG("Creating kernel process...");
 	_process_allocator=omm_init("process",sizeof(process_t),8,2,pmm_alloc_counter("omm_process"));
 	spinlock_init(&(_process_allocator->lock));

@@ -16,7 +16,7 @@ static rb_tree_t _symbol_tree;
 
 
 
-void KERNEL_EARLY_EXEC symbol_init(void){
+KERNEL_EARLY_INIT(){
 	LOG("Initializing symbol tree...");
 	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2,pmm_alloc_counter("omm_symbol"));
 	spinlock_init(&(_symbol_allocator->lock));

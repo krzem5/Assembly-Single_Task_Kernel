@@ -130,17 +130,21 @@ static _Bool _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 
 
 
+KERNEL_EARLY_EARLY_INIT(){
+	LOG("Initializing mmap allocator...");
+	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
+	spinlock_init(&(_mmap_region_allocator->lock));
+	_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4,pmm_alloc_counter("omm_mmap_length_group"));
+	spinlock_init(&(_mmap_length_group_allocator->lock));
+	_mmap_file_pmm_counter=pmm_alloc_counter("mmap_file");
+	_mmap_generic_pmm_counter=pmm_alloc_counter("mmap_generic");
+}
+
+
+
 KERNEL_PUBLIC void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out){
 	KERNEL_ASSERT(pagemap);
 	KERNEL_ASSERT(out);
-	if (!_mmap_region_allocator){
-		_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
-		spinlock_init(&(_mmap_region_allocator->lock));
-	}
-	if (!_mmap_length_group_allocator){
-		_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4,pmm_alloc_counter("omm_mmap_length_group"));
-		spinlock_init(&(_mmap_length_group_allocator->lock));
-	}
 	out->pagemap=pagemap;
 	spinlock_init(&(out->lock));
 	spinlock_acquire_exclusive(&(out->lock));
@@ -187,12 +191,6 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 		panic("mmap_alloc: unaligned arguments");
 	}
 	if (!pmm_counter){
-		if (!_mmap_file_pmm_counter){
-			_mmap_file_pmm_counter=pmm_alloc_counter("mmap_file");
-		}
-		if (!_mmap_generic_pmm_counter){
-			_mmap_generic_pmm_counter=pmm_alloc_counter("mmap_generic");
-		}
 		pmm_counter=(file?_mmap_file_pmm_counter:_mmap_generic_pmm_counter);
 	}
 	if (!length&&file){

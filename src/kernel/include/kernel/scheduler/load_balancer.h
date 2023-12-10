@@ -71,10 +71,6 @@ typedef struct _SCHEDULER_LOAD_BALANCER{
 
 
 
-void scheduler_load_balancer_init(void);
-
-
-
 thread_t* scheduler_load_balancer_get(void);
 
 

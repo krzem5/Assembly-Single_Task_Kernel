@@ -8,10 +8,6 @@ typedef u32 gid_t;
 
 
 
-void gid_init(void);
-
-
-
 _Bool gid_create(gid_t gid,const char* name);
 
 

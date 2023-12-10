@@ -15,10 +15,6 @@ typedef struct _SYMBOL{
 
 
 
-void symbol_init(void);
-
-
-
 void symbol_add(const char* module,const char* name,u64 address,_Bool is_public);
 
 

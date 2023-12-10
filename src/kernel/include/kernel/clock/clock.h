@@ -10,10 +10,6 @@ extern u32 clock_conversion_shift;
 
 
 
-void clock_init(void);
-
-
-
 u64 clock_get_ticks(void);
 
 

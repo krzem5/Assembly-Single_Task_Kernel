@@ -81,7 +81,7 @@ static thread_t* _try_pop_from_queue(scheduler_load_balancer_thread_queue_t* que
 
 
 
-void KERNEL_EARLY_EXEC scheduler_load_balancer_init(void){
+KERNEL_EARLY_INIT(){
 	LOG("Initializing scheduler load balancer...");
 	spinlock_init(&(_scheduler_load_balancer.lock));
 	_scheduler_load_balancer.free_group=NULL;

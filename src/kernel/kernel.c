@@ -75,6 +75,17 @@ void KERNEL_EARLY_EXEC kernel_adjust_memory_flags(void){
 
 
 
+void KERNEL_EARLY_EXEC kernel_early_execute_initializers(void){
+	for (const kernel_initializer_t* func=(void*)kernel_section_early_early_initializers_start();(u64)func<kernel_section_early_early_initializers_end();func++){
+		(*func)();
+	}
+	for (const kernel_initializer_t* func=(void*)kernel_section_early_initializers_start();(u64)func<kernel_section_early_initializers_end();func++){
+		(*func)();
+	}
+}
+
+
+
 void KERNEL_EARLY_EXEC kernel_execute_initializers(void){
 	for (const kernel_initializer_t* func=(void*)kernel_section_initializers_start();(u64)func<kernel_section_initializers_end();func++){
 		(*func)();

@@ -87,6 +87,8 @@ _KERNEL_DECLARE_SECTION(kernel_iw);
 _KERNEL_DECLARE_SECTION(kernel_zw);
 
 _KERNEL_DECLARE_SECTION(cpu_local);
+_KERNEL_DECLARE_SECTION(early_early_initializers);
+_KERNEL_DECLARE_SECTION(early_initializers);
 _KERNEL_DECLARE_SECTION(initializers);
 _KERNEL_DECLARE_SECTION(gcov_info);
 
@@ -97,6 +99,10 @@ void kernel_init(const kernel_data_t* bootloader_kernel_data);
 
 
 void kernel_adjust_memory_flags(void);
+
+
+
+void kernel_early_execute_initializers(void);
 
 
 

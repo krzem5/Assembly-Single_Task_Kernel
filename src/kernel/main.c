@@ -1,5 +1,4 @@
 #include <kernel/acl/acl.h>
-#include <kernel/acpi/acpi.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/id/group.h>
@@ -44,17 +43,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	kernel_adjust_memory_flags();
 	cpu_init_early_header();
 	amm_init();
-	symbol_init();
 	acl_init();
-	clock_init();
-	time_init();
-	isr_init();
-	acpi_load();
-	gid_init();
-	uid_init();
-	scheduler_init();
-	timer_init();
-	process_init();
+	kernel_early_execute_initializers();
 	cpu_start_all_cores();
 	__lock_profiling_enable_dependency_graph();
 	thread_create_kernel_thread(NULL,"main",_main_thread,0x200000,0);

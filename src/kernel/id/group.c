@@ -24,7 +24,7 @@ static spinlock_t _gid_global_lock;
 
 
 
-void KERNEL_EARLY_EXEC gid_init(void){
+KERNEL_EARLY_INIT(){
 	LOG("Initializing group tree...");
 	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1,pmm_alloc_counter("omm_gid_data"));
 	spinlock_init(&(_gid_data_allocator->lock));

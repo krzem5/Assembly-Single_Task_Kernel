@@ -63,7 +63,7 @@ static u64 KERNEL_EARLY_EXEC _get_cpu_frequency(void){
 
 
 
-void KERNEL_EARLY_EXEC clock_init(void){
+KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing TSC clock source...");
 	INFO("Calculating clock frequency...");
 	clock_cpu_frequency=_get_cpu_frequency();

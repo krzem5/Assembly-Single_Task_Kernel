@@ -29,10 +29,8 @@ static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
 
 
-void KERNEL_EARLY_EXEC scheduler_init(void){
+KERNEL_EARLY_INIT(){
 	LOG("Initializing scheduler...");
-	cpu_mask_init();
-	scheduler_load_balancer_init();
 	for (u16 i=0;i<cpu_count;i++){
 		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
 		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;

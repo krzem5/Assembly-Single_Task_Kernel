@@ -53,18 +53,18 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 
 
 
+KERNEL_EARLY_EARLY_INIT(){
+	LOG("Initializing event allocator...");
+	_event_allocator=omm_init("event",sizeof(event_t),8,4,pmm_alloc_counter("omm_event"));
+	spinlock_init(&(_event_allocator->lock));
+	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4,pmm_alloc_counter("omm_event_thread_container"));
+	spinlock_init(&(_event_thread_container_allocator->lock));
+	_event_handle_type=handle_alloc("event",_event_handle_destructor);
+}
+
+
+
 KERNEL_PUBLIC event_t* event_create(void){
-	if (!_event_allocator){
-		_event_allocator=omm_init("event",sizeof(event_t),8,4,pmm_alloc_counter("omm_event"));
-		spinlock_init(&(_event_allocator->lock));
-	}
-	if (!_event_thread_container_allocator){
-		_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4,pmm_alloc_counter("omm_event_thread_container"));
-		spinlock_init(&(_event_thread_container_allocator->lock));
-	}
-	if (!_event_handle_type){
-		_event_handle_type=handle_alloc("event",_event_handle_destructor);
-	}
 	event_t* out=omm_alloc(_event_allocator);
 	handle_new(out,_event_handle_type,&(out->handle));
 	out->acl=acl_create();

@@ -17,7 +17,7 @@ static omm_allocator_t* _acl_tree_node_allocator=NULL;
 
 
 
-void acl_init(void){
+void KERNEL_EARLY_EXEC acl_init(void){
 	LOG("Initializing access control lists...");
 	_acl_allocator=omm_init("acl",sizeof(acl_t),8,4,pmm_alloc_counter("omm_acl"));
 	spinlock_init(&(_acl_allocator->lock));
