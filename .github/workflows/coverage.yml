@@ -22,7 +22,9 @@ jobs:
       - name: Setup environment
         run: sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools
       - name: Build & Test
-        run: ./build.sh --coverage --run
+        run: |
+          echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+          ./build.sh --coverage --run
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
         with:
