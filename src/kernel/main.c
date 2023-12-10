@@ -1,3 +1,4 @@
+#include <kernel/acl/acl.h>
 #include <kernel/acpi/acpi.h>
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
@@ -70,6 +71,7 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	uid_init();
 	scheduler_init();
 	timer_init();
+	acl_init();
 	process_init();
 	cpu_start_all_cores();
 	thread_new_kernel_thread(NULL,"main",_main_thread,0x200000,0);

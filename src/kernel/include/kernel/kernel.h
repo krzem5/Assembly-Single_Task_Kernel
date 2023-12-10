@@ -45,8 +45,11 @@ typedef struct _KERNEL_DATA{
 extern const u64 __version;
 extern const char* __build_name;
 extern const u64 _raw_kernel_symbols[];
-extern u32 _syscall_count;
-extern const void* _syscall_handlers[];
+extern u32 _syscalls_linux_count;
+extern const void* _syscalls_linux_functions[];
+extern u32 _syscalls_kernel_count;
+extern const void* _syscalls_kernel_functions[];
+
 extern kernel_data_t kernel_data;
 
 

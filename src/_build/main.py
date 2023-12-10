@@ -61,7 +61,6 @@ BUILD_DIRECTORIES=[
 	"build/vm",
 	"src/kernel/_generated"
 ]
-SYSCALL_SOURCE_FILE_PATH="src/kernel/syscalls.txt"
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
@@ -175,9 +174,9 @@ COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 
 
 
-def _generate_syscalls(file_path):
+def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,user_code_file_path):
 	syscalls=[]
-	with open(file_path,"r") as rf:
+	with open(src_file_path,"r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
 			if (not line):
@@ -189,25 +188,26 @@ def _generate_syscalls(file_path):
 			attrs=line.split(")")[1].split("->")[0].strip()
 			ret=line.split("->")[1].strip()
 			syscalls.append((name,args,attrs,ret))
-	with open("src/lib/sys/sys/syscall.asm","w") as wf:
-		wf.write("[bits 64]\n")
-		for i,(name,args,_,ret) in enumerate(syscalls):
-			wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {i+1}\n")
-			if (len(args)>4):
-				wf.write("\tmov r9, r8\n")
-			if (len(args)>3):
-				wf.write("\tmov r8, rcx\n")
-			wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
-	with open("src/lib/sys/include/sys/syscall.h","w") as wf:
-		wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/types.h>\n\n\n\n")
-		for name,args,attrs,ret in syscalls:
-			wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
-		wf.write("#endif\n")
-	with open("src/kernel/_generated/syscalls.c","w") as wf:
+	if (user_code_file_path is not None and user_header_file_path is not None):
+		with open(user_code_file_path,"w") as wf:
+			wf.write("[bits 64]\n")
+			for i,(name,args,_,ret) in enumerate(syscalls):
+				wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {hex((i+1)|(table_index<<32))}\n")
+				if (len(args)>4):
+					wf.write("\tmov r9, r8\n")
+				if (len(args)>3):
+					wf.write("\tmov r8, rcx\n")
+				wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
+		with open(user_header_file_path,"w") as wf:
+			wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/types.h>\n\n\n\n")
+			for name,args,attrs,ret in syscalls:
+				wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
+			wf.write("#endif\n")
+	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/isr/isr.h>\n#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"extern void syscall_{name}(isr_state_t* regs);\n")
-		wf.write(f"\n\n\nconst u64 _syscall_count={len(syscalls)+1};\n\n\n\nconst void*const _syscall_handlers[{len(syscalls)+1}]={{\n\tNULL,\n")
+		wf.write(f"\n\n\nconst u64 _syscalls_{table_name}_count={len(syscalls)+1};\n\n\n\nconst void*const _syscalls_{table_name}_functions[{len(syscalls)+1}]={{\n\tNULL,\n")
 		for name,_,_,_ in syscalls:
 			wf.write(f"\tsyscall_{name},\n")
 		wf.write("};\n")
@@ -557,7 +557,8 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
-_generate_syscalls(SYSCALL_SOURCE_FILE_PATH)
+_generate_syscalls("linux",0,"src/kernel/syscalls-linux.txt","src/kernel/_generated/syscalls_linux.c",None,None)
+_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall.h","src/lib/sys/sys/syscall.asm")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]

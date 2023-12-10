@@ -185,15 +185,6 @@ static void _cache_cleanup_thread(void){
 
 
 
-static void _test_thread(void){
-	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
-	WARN("%I",net_dns_lookup_name("github.com",0));
-	WARN("%I",net_dns_lookup_name("google.com",0));
-	WARN("%I",net_dns_lookup_name("github.com",0));
-}
-
-
-
 void net_dns_init(void){
 	LOG("Initializing DNS resolver...");
 	_net_dns_cache_entry_allocator=omm_init("net_dns_cache_entry",sizeof(net_dns_cache_entry_t),8,4,pmm_alloc_counter("omm_net_dns_cache_entry"));
@@ -215,7 +206,6 @@ void net_dns_init(void){
 	}
 	thread_new_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0x200000,0);
 	thread_new_kernel_thread(NULL,"net-dns-cache-cleanup-thread",_cache_cleanup_thread,0x200000,0);
-	thread_new_kernel_thread(NULL,NULL,_test_thread,0x200000,0);
 }
 
 
