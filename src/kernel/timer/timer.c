@@ -1,10 +1,13 @@
+#include <kernel/acl/acl.h>
 #include <kernel/clock/clock.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/timer/timer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -32,24 +35,32 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	timer_t* out=omm_alloc(_timer_allocator);
 	out->rb_node.key=0;
 	handle_new(out,timer_handle_type,&(out->handle));
+	out->acl=acl_create();
+	if (CPU_HEADER_DATA->current_thread){
+		acl_add(out->acl,THREAD_DATA->process,TIMER_ACL_FLAG_UPDATE|TIMER_ACL_FLAG_DELETE);
+	}
 	spinlock_init(&(out->lock));
 	out->event=event_create();
 	out->interval=0;
 	out->count=0;
 	handle_finish_setup(&(out->handle));
-	timer_update(out,interval,count);
+	timer_update(out,interval,count,1);
 	return out;
 }
 
 
 
 KERNEL_PUBLIC void timer_delete(timer_t* timer){
+	if (CPU_HEADER_DATA->current_thread&&!(acl_get(timer->acl,THREAD_DATA->process)&TIMER_ACL_FLAG_DELETE)){
+		return;
+	}
 	spinlock_acquire_exclusive(&(timer->lock));
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	}
 	handle_destroy(&(timer->handle));
 	event_delete(timer->event);
+	acl_delete(timer->acl);
 	omm_dealloc(_timer_allocator,timer);
 }
 
@@ -61,7 +72,10 @@ KERNEL_PUBLIC u64 timer_get_deadline(timer_t* timer){
 
 
 
-KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count){
+KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypass_acl){
+	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(timer->acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
+		return;
+	}
 	spinlock_acquire_exclusive(&(timer->lock));
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));

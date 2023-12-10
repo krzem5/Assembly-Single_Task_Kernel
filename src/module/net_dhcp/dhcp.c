@@ -53,7 +53,7 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 
 
 static void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_address){
-	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1);
+	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1,1);
 	net_udp_socket_packet_t* udp_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
 	udp_packet->src_address=src_address;
 	udp_packet->dst_address=0xffffffff;
@@ -161,7 +161,7 @@ static void _rx_thread(void){
 				WARN("Received DHCPACK from wrong server");
 				goto _cleanup;
 			}
-			timer_update(_net_dhcp_timeout_timer,0,0);
+			timer_update(_net_dhcp_timeout_timer,0,0,1);
 			_net_dhcp_current_xid++; // Ignore any subsequent DHCPACK/DHCPNAK messages
 			u32 lease_time=0;
 			NET_DHCP_PACKET_ITER_OPTIONS(dhcp_packet){
@@ -196,7 +196,7 @@ static void _rx_thread(void){
 				INFO("- %I",router->address);
 			}
 			INFO("Lease time: %u s",lease_time);
-			timer_update(_net_dhcp_timeout_timer,lease_time*1000000000ull-DHCP_LEASE_EXPIRY_EARLY_TIME_NS,1);
+			timer_update(_net_dhcp_timeout_timer,lease_time*1000000000ull-DHCP_LEASE_EXPIRY_EARLY_TIME_NS,1,1);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
 			_send_discover_request();
