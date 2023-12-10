@@ -26,10 +26,6 @@ void serial_init(void);
 
 
 
-void serial_init_irq(void);
-
-
-
 void serial_send(serial_port_t* port,const void* buffer,u32 length);
 
 

@@ -47,16 +47,7 @@ static void KERNEL_EARLY_EXEC _init_port(u16 io_port,serial_port_t* out){
 
 
 
-void KERNEL_EARLY_EXEC serial_init(void){
-	_init_port(0x3f8,serial_ports);
-	_init_port(0x2f8,serial_ports+1);
-	_init_port(0x3e8,serial_ports+2);
-	_init_port(0x2e8,serial_ports+3);
-}
-
-
-
-void KERNEL_EARLY_EXEC serial_init_irq(void){
+KERNEL_INIT({
 	LOG("Enabling serial IRQs...");
 	_serial_irq=isr_allocate();
 	INFO("Serial IRQ: %u",_serial_irq);
@@ -70,6 +61,15 @@ void KERNEL_EARLY_EXEC serial_init_irq(void){
 		io_port_out8(port->io_port+1,0x01);
 		io_port_out8(port->io_port+4,0x0b);
 	}
+});
+
+
+
+void KERNEL_EARLY_EXEC serial_init(void){
+	_init_port(0x3f8,serial_ports);
+	_init_port(0x2f8,serial_ports+1);
+	_init_port(0x3e8,serial_ports+2);
+	_init_port(0x2e8,serial_ports+3);
 }
 
 

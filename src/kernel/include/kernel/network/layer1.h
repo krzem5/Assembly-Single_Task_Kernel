@@ -49,10 +49,6 @@ extern network_layer1_device_t* network_layer1_device;
 
 
 
-void network_layer1_init(void);
-
-
-
 void network_layer1_create_device(const network_layer1_device_descriptor_t* descriptor,const mac_address_t* mac_address,void* extra_data);
 
 

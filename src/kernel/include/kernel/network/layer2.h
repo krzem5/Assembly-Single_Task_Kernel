@@ -20,10 +20,6 @@ typedef struct _NETWORK_LAYER2_PROTOCOL{
 
 
 
-void network_layer2_init(void);
-
-
-
 void network_layer2_register_descriptor(const network_layer2_protocol_descriptor_t* descriptor);
 
 

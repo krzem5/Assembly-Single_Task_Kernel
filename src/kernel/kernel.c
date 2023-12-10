@@ -75,6 +75,14 @@ void KERNEL_EARLY_EXEC kernel_adjust_memory_flags(void){
 
 
 
+void KERNEL_EARLY_EXEC kernel_execute_initializers(void){
+	for (const kernel_initializer_t* func=(void*)kernel_section_initializers_start();(u64)func<kernel_section_initializers_end();func++){
+		(*func)();
+	}
+}
+
+
+
 void kernel_adjust_memory_flags_after_init(void){
 	LOG("Adjusting memory flags (after init)...");
 	_unmap_section(kernel_section_kernel_ue_start(),kernel_section_kernel_ue_end());

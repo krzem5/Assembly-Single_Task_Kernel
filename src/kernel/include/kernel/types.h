@@ -16,6 +16,8 @@
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
 
+#define KERNEL_INIT(code) static KERNEL_EARLY_EXEC void __initializer(void){code};static void* __attribute__((section(".initializer"),used)) __initializer_ptr=__initializer
+
 #if KERNEL_DISABLE_ASSERT
 #define KERNEL_ASSERT(expression)
 #define KERNEL_ASSERT_BLOCK(block)

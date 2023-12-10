@@ -24,6 +24,10 @@ SECTIONS{
 		*(.cpulocal)
 		. = ALIGN(8);
 		DECLARE_SECTION_END(cpu_local);
+		DECLARE_SECTION_START(initializers);
+		*(.initializer)
+		. = ALIGN(8);
+		DECLARE_SECTION_END(initializers);
 		. = ALIGN(0x1000);
 		*(.ap_startup)
 		. = ALIGN(0x1000);

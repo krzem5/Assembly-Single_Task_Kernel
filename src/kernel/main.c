@@ -17,8 +17,6 @@
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
-#include <kernel/network/layer1.h>
-#include <kernel/network/layer2.h>
 #include <kernel/pci/pci.h>
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
@@ -44,9 +42,7 @@ static void _main_thread(void){
 	elf_init();
 	random_init();
 	socket_init();
-	network_layer1_init();
-	network_layer2_init();
-	serial_init_irq();
+	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();
 	module_load("os_loader");
 }

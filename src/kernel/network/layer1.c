@@ -35,14 +35,14 @@ static void _packet_rx_thread(void){
 
 
 
-void KERNEL_EARLY_EXEC network_layer1_init(void){
+KERNEL_INIT({
 	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("network_layer1_device",sizeof(network_layer1_device_t),8,1,pmm_alloc_counter("omm_network_layer1_device"));
 	_network_layer1_packet_rx_ring=ring_init(16384);
 	_network_layer1_packet_tx_ring=ring_init(16384);
 	network_layer1_device_handle_type=handle_alloc("network_layer1_device",NULL);
 	thread_create_kernel_thread(NULL,"network-layer1-packet-rx-thread",_packet_rx_thread,0x200000,0)->priority=SCHEDULER_PRIORITY_HIGH;
-}
+});
 
 
 
