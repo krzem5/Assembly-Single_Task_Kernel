@@ -80,11 +80,17 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 
 
 
+void KERNEL_EARLY_EXEC cpu_init_early_header(void){
+	LOG("Initializing early CPU header...");
+	msr_set_gs_base((u64)(&_cpu_early_header),0);
+	msr_set_gs_base((u64)(&_cpu_early_header),1);
+}
+
+
+
 void KERNEL_EARLY_EXEC cpu_init(u16 count){
 	LOG("Initializing CPU manager...");
 	INFO("CPU count: %u",count);
-	msr_set_gs_base((u64)(&_cpu_early_header),0);
-	msr_set_gs_base((u64)(&_cpu_early_header),1);
 	cpu_count=count;
 	cpu_local_init();
 	for (u16 i=0;i<count;i++){

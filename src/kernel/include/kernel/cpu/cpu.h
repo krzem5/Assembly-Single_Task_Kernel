@@ -47,6 +47,10 @@ void cpu_check_features(void);
 
 
 
+void cpu_init_early_header(void);
+
+
+
 void cpu_init(u16 count);
 
 

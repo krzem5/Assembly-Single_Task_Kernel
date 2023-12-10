@@ -1,3 +1,5 @@
+#include <kernel/acl/acl.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -51,7 +53,7 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 
 
 
-KERNEL_PUBLIC event_t* event_new(void){
+KERNEL_PUBLIC event_t* event_create(void){
 	if (!_event_allocator){
 		_event_allocator=omm_init("event",sizeof(event_t),8,4,pmm_alloc_counter("omm_event"));
 		spinlock_init(&(_event_allocator->lock));
@@ -65,6 +67,10 @@ KERNEL_PUBLIC event_t* event_new(void){
 	}
 	event_t* out=omm_alloc(_event_allocator);
 	handle_new(out,_event_handle_type,&(out->handle));
+	out->acl=acl_create();
+	if (CPU_HEADER_DATA->current_thread){
+		acl_add(out->acl,THREAD_DATA->process,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
+	}
 	spinlock_init(&(out->lock));
 	out->is_active=0;
 	out->head=NULL;
@@ -76,6 +82,9 @@ KERNEL_PUBLIC event_t* event_new(void){
 
 
 KERNEL_PUBLIC void event_delete(event_t* event){
+	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
+		return;
+	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	handle_destroy(&(event->handle));
@@ -84,14 +93,17 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
+	acl_delete(event->acl);
 	spinlock_release_exclusive(&(event->lock));
-	// omm_dealloc(_event_allocator,event);
 	scheduler_resume();
 }
 
 
 
 KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
+	if (!(flags&EVENT_DISPATCH_FLAG_BYPASS_ACL)&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+		return;
+	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){

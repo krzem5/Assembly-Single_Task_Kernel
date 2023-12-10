@@ -2,7 +2,6 @@
 #define _KERNEL_ACL_ACL_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
-#include <kernel/mp/process.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -12,9 +11,27 @@
 
 
 
+struct _PROCESS;
+
+
+
+typedef struct _ACL_CACHE_ENTRY{
+	u64 key;
+	u64 flags;
+} acl_cache_entry_t;
+
+
+
+typedef struct _ACL_TREE_NODE{
+	rb_tree_node_t rb_node;
+	u64 flags;
+} acl_tree_node_t;
+
+
+
 typedef struct _ACL{
 	spinlock_t lock;
-	handle_id_t cache[ACL_PROCESS_CACHE_SIZE];
+	acl_cache_entry_t cache[ACL_PROCESS_CACHE_SIZE];
 	rb_tree_t tree;
 } acl_t;
 
@@ -32,15 +49,15 @@ void acl_delete(acl_t* acl);
 
 
 
-_Bool acl_check(acl_t* acl,process_t* process);
+u64 acl_get(acl_t* acl,struct _PROCESS* process);
 
 
 
-void acl_add(acl_t* acl,process_t* process);
+void acl_add(acl_t* acl,struct _PROCESS* process,u64 flags);
 
 
 
-void acl_remove(acl_t* acl,process_t* process);
+void acl_remove(acl_t* acl,struct _PROCESS* process,u64 flags);
 
 
 

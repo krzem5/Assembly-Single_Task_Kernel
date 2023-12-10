@@ -1,5 +1,6 @@
 #ifndef _KERNEL_MP__MP_TYPES_H_
 #define _KERNEL_MP__MP_TYPES_H_ 1
+#include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/id/group.h>
@@ -31,6 +32,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 
 typedef struct _EVENT{
 	handle_t handle;
+	acl_t* acl;
 	spinlock_t lock;
 	_Bool is_active;
 	event_thread_container_t* head;
@@ -48,6 +50,7 @@ typedef struct _THREAD_LIST{
 
 typedef struct _PROCESS{
 	handle_t handle;
+	acl_t* acl;
 	spinlock_t lock;
 	vmm_pagemap_t pagemap;
 	mmap_t mmap;
@@ -71,6 +74,7 @@ typedef struct _THREAD_FS_GS_STATE{
 typedef struct _THREAD{
 	cpu_header_t header;
 	handle_t handle;
+	acl_t* acl;
 	spinlock_t lock;
 	process_t* process;
 	string_t* name;

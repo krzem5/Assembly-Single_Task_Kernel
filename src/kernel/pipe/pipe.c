@@ -50,8 +50,8 @@ static vfs_node_t* _pipe_create(void){
 	out->write_offset=0;
 	out->read_offset=0;
 	out->is_full=0;
-	out->read_event=event_new();
-	out->write_event=event_new();
+	out->read_event=event_create();
+	out->write_event=event_create();
 	return (vfs_node_t*)out;
 }
 
@@ -89,7 +89,7 @@ _retry_read:
 	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
 		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
 		pipe->is_full=0;
-		event_dispatch(pipe->write_event,0);
+		event_dispatch(pipe->write_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
@@ -129,7 +129,7 @@ _retry_write:
 	}
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
-	event_dispatch(pipe->read_event,0);
+	event_dispatch(pipe->read_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	spinlock_release_exclusive(&(pipe->lock));
 	scheduler_resume();
 	return size;

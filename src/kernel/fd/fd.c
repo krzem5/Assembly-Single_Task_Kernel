@@ -82,7 +82,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(out,_fd_handle_type,&(out->handle));
 	out->acl=acl_create();
-	acl_add(out->acl,THREAD_DATA->process);
+	acl_add(out->acl,THREAD_DATA->process,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO);
 	spinlock_init(&(out->lock));
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
@@ -106,7 +106,7 @@ s64 fd_close(handle_id_t fd){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -127,7 +127,7 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -154,7 +154,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -178,7 +178,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -212,7 +212,7 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -234,7 +234,7 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -274,7 +274,7 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -304,7 +304,7 @@ s64 fd_iter_start(handle_id_t fd){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return -1;
 	}
@@ -331,7 +331,7 @@ s64 fd_iter_start(handle_id_t fd){
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(out,_fd_iterator_handle_type,&(out->handle));
 	out->acl=acl_create();
-	acl_add(out->acl,THREAD_DATA->process);
+	acl_add(out->acl,THREAD_DATA->process,FD_ITERATOR_ACL_FLAG_ACCESS);
 	spinlock_init(&(out->lock));
 	out->node=data->node;
 	out->pointer=pointer;
@@ -350,7 +350,7 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
 		handle_release(fd_iterator_handle);
 		return -1;
 	}
@@ -381,7 +381,7 @@ s64 fd_iter_next(handle_id_t iterator){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
-	if (!acl_check(data->acl,THREAD_DATA->process)){
+	if (!(acl_get(data->acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
 		handle_release(fd_iterator_handle);
 		return -1;
 	}

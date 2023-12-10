@@ -33,7 +33,7 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	out->rb_node.key=0;
 	handle_new(out,timer_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
-	out->event=event_new();
+	out->event=event_create();
 	out->interval=0;
 	out->count=0;
 	handle_finish_setup(&(out->handle));
@@ -91,7 +91,7 @@ void timer_dispatch_timers(void){
 	}
 	spinlock_acquire_exclusive(&(timer->lock));
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
-	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
+	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	if (timer->count<=1){
 		timer->rb_node.key=0;
 		timer->count=0;

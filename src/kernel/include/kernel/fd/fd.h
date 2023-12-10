@@ -36,6 +36,12 @@
 
 #define FD_STAT_FLAG_VIRTUAL 1
 
+#define FD_ACL_FLAG_STAT 1
+#define FD_ACL_FLAG_DUP 2
+#define FD_ACL_FLAG_IO 4
+
+#define FD_ITERATOR_ACL_FLAG_ACCESS 1
+
 
 
 typedef struct _FD{

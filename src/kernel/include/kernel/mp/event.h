@@ -8,10 +8,14 @@
 
 #define EVENT_DISPATCH_FLAG_DISPATCH_ALL 1
 #define EVENT_DISPATCH_FLAG_SET_ACTIVE 2
+#define EVENT_DISPATCH_FLAG_BYPASS_ACL 4
+
+#define EVENT_ACL_FLAG_DISPATCH 1
+#define EVENT_ACL_FLAG_DELETE 2
 
 
 
-event_t* event_new(void);
+event_t* event_create(void);
 
 
 

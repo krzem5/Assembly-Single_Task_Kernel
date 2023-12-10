@@ -191,7 +191,7 @@ void net_dns_init(void){
 	spinlock_init(&(_net_dns_cache_entry_allocator->lock));
 	_net_dns_request_allocator=omm_init("net_dns_request",sizeof(net_dns_request_t),8,4,pmm_alloc_counter("omm_net_dns_request"));
 	spinlock_init(&(_net_dns_request_allocator->lock));
-	_net_dns_cache_resolution_event=event_new();
+	_net_dns_cache_resolution_event=event_create();
 	spinlock_init(&_net_dns_cache_lock);
 	rb_tree_init(&_net_dns_cache_address_tree);
 	spinlock_init(&_net_dns_request_tree_lock);
