@@ -14,6 +14,7 @@ static aml_namespace_t* _aml_namespace_root=NULL;
 KERNEL_PUBLIC aml_namespace_t* aml_namespace_lookup(aml_namespace_t* root,const char* path,u8 flags){
 	if (!_aml_namespace_root){
 		_aml_namespace_allocator=omm_init("aml_namespace",sizeof(aml_namespace_t),8,2,pmm_alloc_counter("omm_aml_namespace"));
+		spinlock_init(&(_aml_namespace_allocator->lock));
 		_aml_namespace_root=omm_alloc(_aml_namespace_allocator);
 		_aml_namespace_root->name[0]='\\';
 		_aml_namespace_root->name[1]=0;

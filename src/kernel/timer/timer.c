@@ -21,6 +21,7 @@ handle_type_t timer_handle_type=0;
 
 void KERNEL_EARLY_EXEC timer_init(void){
 	_timer_allocator=omm_init("timer",sizeof(timer_t),8,4,pmm_alloc_counter("omm_timer"));
+	spinlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
 	timer_handle_type=handle_alloc("timer",NULL);
 }

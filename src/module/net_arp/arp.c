@@ -83,6 +83,7 @@ static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 void net_arp_init(void){
 	LOG("Initializing ARP resolver...");
 	_net_arp_cache_entry_allocator=omm_init("net_arp_cache_entry",sizeof(net_arp_cache_entry_t),8,4,pmm_alloc_counter("omm_net_arp_cache_entry"));
+	spinlock_init(&(_net_arp_cache_entry_allocator->lock));
 	_net_arp_cache_resolution_event=event_new();
 	spinlock_init(&_net_arp_cache_lock);
 	rb_tree_init(&_net_arp_cache_address_tree);

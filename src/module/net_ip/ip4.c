@@ -70,7 +70,9 @@ void net_ip4_init(void){
 	spinlock_init(&_net_ip4_protocol_lock);
 	rb_tree_init(&_net_ip4_protocol_type_tree);
 	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1,pmm_alloc_counter("omm_net_ip4_protocol"));
+	spinlock_init(&(_net_ip4_protocol_allocator->lock));
 	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4,pmm_alloc_counter("omm_net_ip4_packet"));
+	spinlock_init(&(_net_ip4_packet_allocator->lock));
 }
 
 
