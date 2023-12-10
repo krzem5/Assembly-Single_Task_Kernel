@@ -9,6 +9,7 @@
 
 
 #define TIMER_COUNT_ABSOLUTE_TIME 0
+#define TIMER_COUNT_INFINITE 0xffffffffffffffffull
 
 
 

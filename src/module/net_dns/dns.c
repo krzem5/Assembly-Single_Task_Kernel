@@ -21,7 +21,8 @@
 
 
 
-#define DNS_TIMEOUT_NS 1000000000
+#define DNS_TIMEOUT_NS 1000000000 // 1 s
+#define DNS_CACHE_CLEAR_INTERVAL_NS 1800000000000 // 30 min
 
 
 
@@ -160,6 +161,30 @@ _cleanup:
 
 
 
+static void _cache_cleanup_thread(void){
+	timer_t* timer=timer_create(DNS_CACHE_CLEAR_INTERVAL_NS,TIMER_COUNT_INFINITE);
+	while (1){
+		event_await(timer->event);
+		INFO("Cleaning-up expired cache...");
+		spinlock_acquire_exclusive(&_net_dns_cache_lock);
+		u64 time=clock_get_time();
+		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_net_dns_cache_address_tree);rb_node;){
+			net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_node;
+			rb_node=rb_tree_iter_next(&_net_dns_cache_address_tree,rb_node);
+			if (cache_entry->last_valid_time>=time){
+				continue;
+			}
+			INFO("Deleting entry for '%s'...",cache_entry->name->data);
+			rb_tree_remove_node(&_net_dns_cache_address_tree,&(cache_entry->rb_node));
+			smm_dealloc(cache_entry->name);
+			omm_dealloc(_net_dns_cache_entry_allocator,cache_entry);
+		}
+		spinlock_release_exclusive(&_net_dns_cache_lock);
+	}
+}
+
+
+
 static void _test_thread(void){
 	SPINLOOP(!net_info_get_address()||!net_info_get_dns_entries());
 	WARN("%I",net_dns_lookup_name("github.com",0));
@@ -189,6 +214,7 @@ void net_dns_init(void){
 		return;
 	}
 	thread_new_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0x200000,0);
+	thread_new_kernel_thread(NULL,"net-dns-cache-cleanup-thread",_cache_cleanup_thread,0x200000,0);
 	thread_new_kernel_thread(NULL,NULL,_test_thread,0x200000,0);
 }
 
