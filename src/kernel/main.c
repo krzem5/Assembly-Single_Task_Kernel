@@ -3,6 +3,7 @@
 #include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/initramfs/initramfs.h>
@@ -40,6 +41,7 @@ static void _main_thread(void){
 	bios_get_system_data();
 	initramfs_init();
 	pci_enumerate();
+	elf_init();
 	random_init();
 	socket_init();
 	network_layer1_init();
@@ -67,7 +69,6 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	clock_init();
 	time_init();
 	isr_init();
-	__lock_profiling_enable_dependency_graph();
 	acpi_load();
 	gid_init();
 	uid_init();
@@ -75,7 +76,8 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	timer_init();
 	process_init();
 	cpu_start_all_cores();
-	thread_new_kernel_thread(NULL,"main",_main_thread,0x200000,0);
+	__lock_profiling_enable_dependency_graph();
+	thread_create_kernel_thread(NULL,"main",_main_thread,0x200000,0);
 	scheduler_enable();
 	scheduler_yield();
 	scheduler_task_wait_loop();

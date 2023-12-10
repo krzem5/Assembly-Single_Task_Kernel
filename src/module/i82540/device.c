@@ -176,8 +176,8 @@ static void _i82540_init_device(pci_device_t* device){
 		rah>>8
 	};
 	network_layer1_create_device(&_i82540_network_layer1_device_descriptor,&mac_address,i82540_device);
-	thread_new_kernel_thread(NULL,"i82540-rx-thread",_rx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
-	thread_new_kernel_thread(NULL,"i82540-tx-thread",_tx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
+	thread_create_kernel_thread(NULL,"i82540-rx-thread",_rx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
+	thread_create_kernel_thread(NULL,"i82540-tx-thread",_tx_thread,0x10000,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
 }
 
 

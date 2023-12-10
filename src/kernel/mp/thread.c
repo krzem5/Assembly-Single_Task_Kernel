@@ -123,7 +123,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 
 
 
-KERNEL_PUBLIC thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 stack_size){
+KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 stack_size){
 	thread_t* out=_thread_alloc(process,stack_size,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
 	out->reg_state.gpr_state.rip=rip;
@@ -141,7 +141,7 @@ KERNEL_PUBLIC thread_t* thread_new_user_thread(process_t* process,u64 rip,u64 st
 
 
 
-KERNEL_PUBLIC thread_t* thread_new_kernel_thread(process_t* process,const char* name,void* func,u64 stack_size,u8 arg_count,...){
+KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u64 stack_size,u8 arg_count,...){
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}

@@ -49,6 +49,7 @@ typedef struct _ELF_LOADER_CONTEXT{
 
 static pmm_counter_descriptor_t* _user_image_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _user_input_data_pmm_counter=NULL;
+static u32 _elf_hwcap=0;
 
 
 
@@ -149,7 +150,7 @@ static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
 
 static void _create_executable_thread(elf_loader_context_t* ctx){
 	INFO("Creating main thread...");
-	ctx->thread=thread_new_user_thread(ctx->process,ctx->elf_header->e_entry,0x200000);
+	ctx->thread=thread_create_user_thread(ctx->process,ctx->elf_header->e_entry,0x200000);
 }
 
 
@@ -304,7 +305,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_ENTRY,ctx->elf_header->e_entry);
 	PUSH_AUXV_VALUE(AT_PLATFORM,string_table_ptr-buffer+region->rb_node.key);
 	PUSH_STRING(ELF_AUXV_PLATFORM);
-	PUSH_AUXV_VALUE(AT_HWCAP,0); // cpuid[1].edx
+	PUSH_AUXV_VALUE(AT_HWCAP,_elf_hwcap);
 	PUSH_AUXV_VALUE(AT_RANDOM,string_table_ptr-buffer+region->rb_node.key);
 	random_generate(string_table_ptr,ELF_AUXV_RANDOM_DATA_SIZE);
 	string_table_ptr+=ELF_AUXV_RANDOM_DATA_SIZE;
@@ -320,15 +321,17 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 
 
 
+void KERNEL_EARLY_EXEC elf_init(void){
+	_user_image_pmm_counter=pmm_alloc_counter("user_image");
+	_user_input_data_pmm_counter=pmm_alloc_counter("user_input_data");
+	_elf_hwcap=elf_get_hwcap();
+}
+
+
+
 KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!path){
 		return 0;
-	}
-	if (!_user_image_pmm_counter){
-		_user_image_pmm_counter=pmm_alloc_counter("user_image");
-	}
-	if (!_user_input_data_pmm_counter){
-		_user_input_data_pmm_counter=pmm_alloc_counter("user_input_data");
 	}
 	if (!argv){
 		argc=1;
@@ -339,7 +342,7 @@ KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* a
 	if (!file){
 		return 0;
 	}
-	process_t* process=process_new(path,file->name->data);
+	process_t* process=process_create(path,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={

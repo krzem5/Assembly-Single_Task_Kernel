@@ -21,7 +21,7 @@ void process_init(void);
 
 
 
-process_t* process_new(const char* image,const char* name);
+process_t* process_create(const char* image,const char* name);
 
 
 

@@ -61,7 +61,7 @@ void syscall_thread_create(syscall_reg_state_t* regs){
 	if (!stack_size){
 		stack_size=THREAD_DATA->user_stack_region->length;
 	}
-	thread_t* thread=thread_new_user_thread(THREAD_DATA->process,regs->rdi,stack_size);
+	thread_t* thread=thread_create_user_thread(THREAD_DATA->process,regs->rdi,stack_size);
 	thread->reg_state.gpr_state.rdi=regs->rsi;
 	thread->reg_state.gpr_state.rsi=regs->rdx;
 	scheduler_enqueue_thread(thread);

@@ -73,7 +73,7 @@ void KERNEL_EARLY_EXEC process_init(void){
 
 
 
-KERNEL_PUBLIC process_t* process_new(const char* image,const char* name){
+KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,process_handle_type,&(out->handle));
 	process_kernel->acl=acl_create();
