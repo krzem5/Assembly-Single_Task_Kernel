@@ -37,6 +37,7 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 	}
 	if (!_fs_descriptor_allocator){
 		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2,pmm_alloc_counter("omm_fs_descriptor"));
+		spinlock_init(&(_fs_descriptor_allocator->lock));
 	}
 	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
 	out->config=config;

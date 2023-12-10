@@ -164,6 +164,7 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 		.count=0
 	};
 	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1,&tmp);
+	spinlock_init(&(_pmm_counter_allocator->lock));
 	_pmm_counter_omm_pmm_counter=omm_alloc(_pmm_counter_allocator);
 	_pmm_counter_omm_pmm_counter->name="pmm_counter";
 	_pmm_counter_omm_pmm_counter->count=tmp.count;
