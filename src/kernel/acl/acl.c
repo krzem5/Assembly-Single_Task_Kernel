@@ -35,15 +35,54 @@ KERNEL_PUBLIC acl_t* acl_create(void){
 
 
 
-KERNEL_PUBLIC void acl_delete(acl_t* acl);
+KERNEL_PUBLIC void acl_delete(acl_t* acl){
+	spinlock_acquire_exclusive(&(acl->lock));
+	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(acl->tree));rb_node;){
+		rb_tree_node_t* next_rb_node=rb_tree_iter_next(&(acl->tree),rb_node);
+		rb_tree_remove_node(&(acl->tree),rb_node);
+		omm_dealloc(_acl_tree_node_allocator,rb_node);
+		rb_node=next_rb_node;
+	}
+	spinlock_release_exclusive(&(acl->lock));
+	omm_dealloc(_acl_allocator,acl);
+}
 
 
 
-KERNEL_PUBLIC _Bool acl_check(acl_t* acl,process_t* process);
+KERNEL_PUBLIC _Bool acl_check(acl_t* acl,process_t* process){
+	handle_id_t key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
+	_Bool out=0;
+	spinlock_acquire_exclusive(&(acl->lock));
+	if (acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]==key){
+		out=1;
+	}
+	else{
+		rb_tree_node_t* rb_node=rb_tree_lookup_node(&(acl->tree),key);
+		if (rb_node){
+			acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]=key;
+			out=1;
+		}
+	}
+	spinlock_release_exclusive(&(acl->lock));
+	return out;
+}
 
 
 
-KERNEL_PUBLIC void acl_add(acl_t* acl,process_t* process);
+KERNEL_PUBLIC void acl_add(acl_t* acl,process_t* process){
+	handle_id_t key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
+	spinlock_acquire_exclusive(&(acl->lock));
+	if (!acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]){
+		acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]=key;
+	}
+	rb_tree_node_t* rb_node=rb_tree_lookup_node(&(acl->tree),key);
+	if (!rb_node){
+		rb_node=omm_alloc(_acl_tree_node_allocator);
+		rb_node->key=key;
+		rb_tree_insert_node(&(acl->tree),rb_node);
+	}
+	spinlock_release_exclusive(&(acl->lock));
+}
 
 
 

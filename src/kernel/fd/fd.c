@@ -1,3 +1,4 @@
+#include <kernel/acl/acl.h>
 #include <kernel/fd/fd.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
@@ -27,6 +28,7 @@ static void _fd_handle_destructor(handle_t* handle){
 	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
 		panic("FD_FLAG_DELETE_ON_EXIT");
 	}
+	acl_delete(data->acl);
 	omm_dealloc(_fd_allocator,data);
 }
 
@@ -34,6 +36,7 @@ static void _fd_handle_destructor(handle_t* handle){
 
 static void _fd_iterator_handle_destructor(handle_t* handle){
 	fd_iterator_t* data=handle->object;
+	acl_delete(data->acl);
 	omm_dealloc(_fd_iterator_allocator,data);
 }
 
@@ -78,6 +81,8 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	}
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(out,_fd_handle_type,&(out->handle));
+	out->acl=acl_create();
+	acl_add(out->acl,THREAD_DATA->process);
 	spinlock_init(&(out->lock));
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
@@ -101,6 +106,10 @@ s64 fd_close(handle_id_t fd){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	data->node->rc--;
 	handle_release(fd_handle);
 	handle_release(fd_handle);
@@ -118,6 +127,10 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	if (!(data->flags&FD_FLAG_READ)){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -141,6 +154,10 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	if (!(data->flags&FD_FLAG_WRITE)){
 		handle_release(fd_handle);
 		return FD_ERROR_UNSUPPORTED_OPERATION;
@@ -161,6 +178,10 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	switch (type){
 		case FD_SEEK_SET:
@@ -191,6 +212,10 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	s64 out=(vfs_node_resize(data->node,size,0)?0:FD_ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
@@ -209,6 +234,10 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->flags=((data->node->flags&VFS_NODE_FLAG_VIRTUAL)?FD_STAT_FLAG_VIRTUAL:0);
@@ -245,6 +274,10 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	u32 out=vfs_path(data->node,buffer,buffer_length);
 	spinlock_release_exclusive(&(data->lock));
@@ -271,6 +304,10 @@ s64 fd_iter_start(handle_id_t fd){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_t* data=fd_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	if (!(vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_READ)){
 		spinlock_release_exclusive(&(data->lock));
@@ -293,6 +330,8 @@ s64 fd_iter_start(handle_id_t fd){
 	}
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(out,_fd_iterator_handle_type,&(out->handle));
+	out->acl=acl_create();
+	acl_add(out->acl,THREAD_DATA->process);
 	spinlock_init(&(out->lock));
 	out->node=data->node;
 	out->pointer=pointer;
@@ -311,6 +350,10 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_iterator_handle);
+		return -1;
+	}
 	spinlock_acquire_shared(&(data->lock));
 	if (data->current_name){
 		if (buffer_length>data->current_name->length+1){
@@ -338,6 +381,10 @@ s64 fd_iter_next(handle_id_t iterator){
 		return FD_ERROR_INVALID_FD;
 	}
 	fd_iterator_t* data=fd_iterator_handle->object;
+	if (!acl_check(data->acl,THREAD_DATA->process)){
+		handle_release(fd_iterator_handle);
+		return -1;
+	}
 	spinlock_acquire_exclusive(&(data->lock));
 	s64 out=-1;
 	if (data->current_name){

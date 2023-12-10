@@ -24,6 +24,6 @@ _start:
 ._empty_environ:
 	add rcx, 8
 	call [REF(main)]
-	mov rax, 25
+	mov rax, 0x100000019
 	syscall
 	jmp $

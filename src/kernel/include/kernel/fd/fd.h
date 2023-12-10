@@ -1,8 +1,9 @@
 #ifndef _KERNEL_FD_FD_H_
 #define _KERNEL_FD_FD_H_ 1
+#include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
-#include <kernel/types.h>
 #include <kernel/memory/smm.h>
+#include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
 
@@ -39,6 +40,7 @@
 
 typedef struct _FD{
 	handle_t handle;
+	acl_t* acl;
 	spinlock_t lock;
 	vfs_node_t* node;
 	u64 offset;
@@ -67,6 +69,7 @@ typedef struct _FD_STAT{
 
 typedef struct _FD_ITERATOR{
 	handle_t handle;
+	acl_t* acl;
 	spinlock_t lock;
 	vfs_node_t* node;
 	u64 pointer;
