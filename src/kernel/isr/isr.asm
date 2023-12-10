@@ -1,13 +1,12 @@
 extern _isr_handler
 extern _random_entropy_pool
 extern _random_entropy_pool_length
-global _isr_common_handler
 section .text exec nowrite
 
 
 
 [bits 64]
-_isr_common_handler:
+_isr_trampoline:
 	cmp qword [rsp+24], 0x08
 	je ._kernel_entry
 	swapgs
@@ -84,6 +83,6 @@ _isr_entry_%+idx:
 	push qword 0
 %endif
 	push qword idx
-	jmp _isr_common_handler
+	jmp _isr_trampoline
 %assign idx idx+1
 %endrep

@@ -22,7 +22,7 @@ KERNEL_PUBLIC event_t* KERNEL_INIT_WRITE irq_events[223];
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing ISR events...");
+	LOG("Initializing IRQ events...");
 	for (u8 i=0;i<223;i++){
 		irq_events[i]=event_create();
 	}
@@ -51,7 +51,7 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	if (isr_state->isr>32){
 		lapic_eoi();
-		event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		// event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		return;
 	}
 	scheduler_pause();

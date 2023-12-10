@@ -27,14 +27,16 @@ static void _drive_handle_destructor(handle_t* handle){
 
 
 
+KERNEL_EARLY_EARLY_INIT(){
+	LOG("Initializing drive allocator...");
+	_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,pmm_alloc_counter("omm_drive"));
+	spinlock_init(&(_drive_allocator->lock));
+	drive_handle_type=handle_alloc("drive",_drive_handle_destructor);
+}
+
+
+
 KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
-	if (!_drive_allocator){
-		_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,pmm_alloc_counter("omm_drive"));
-		spinlock_init(&(_drive_allocator->lock));
-	}
-	if (!drive_handle_type){
-		drive_handle_type=handle_alloc("drive",_drive_handle_destructor);
-	}
 	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number->data,config->serial_number->data);
 	drive_t* out=omm_alloc(_drive_allocator);
 	handle_new(out,drive_handle_type,&(out->handle));

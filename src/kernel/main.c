@@ -1,9 +1,5 @@
 #include <kernel/acl/acl.h>
-#include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/id/group.h>
-#include <kernel/id/user.h>
-#include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
@@ -15,9 +11,6 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
-#include <kernel/symbol/symbol.h>
-#include <kernel/time/time.h>
-#include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "main"
 
