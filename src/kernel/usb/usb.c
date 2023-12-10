@@ -14,6 +14,7 @@ handle_type_t usb_driver_descriptor_handle_type=0;
 KERNEL_INIT(){
 	LOG("Initializing USB drivers...");
 	usb_driver_descriptor_handle_type=handle_alloc("usb_driver_descriptor",NULL);
+	ERROR("Initialized");
 }
 
 
