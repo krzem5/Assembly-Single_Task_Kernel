@@ -39,7 +39,7 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	spinlock_init(&(out->write_lock));
 	out->read_event=event_create();
 	out->write_event=event_create();
-	event_set_active(out->write_event,1);
+	event_set_active(out->write_event,1,1);
 	return out;
 }
 
@@ -67,7 +67,7 @@ _retry_push:
 	ring->write_count--;
 	ring->write_index++;
 	if (!ring->write_count){
-		event_set_active(ring->write_event,0);
+		event_set_active(ring->write_event,0,1);
 	}
 	event_dispatch(ring->read_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	spinlock_release_exclusive(&(ring->write_lock));
@@ -95,7 +95,7 @@ _retry_pop:
 	ring->read_count--;
 	ring->write_count++;
 	if (!ring->read_count){
-		event_set_active(ring->read_event,0);
+		event_set_active(ring->read_event,0,1);
 	}
 	event_dispatch(ring->write_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	spinlock_release_exclusive(&(ring->read_lock));

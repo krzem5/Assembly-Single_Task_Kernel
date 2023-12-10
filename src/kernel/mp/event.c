@@ -198,7 +198,10 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 
 
 
-KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active){
+KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active,_Bool bypass_acl){
+	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+		return;
+	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
 	event->is_active=is_active;
