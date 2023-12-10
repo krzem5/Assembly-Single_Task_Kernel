@@ -175,7 +175,6 @@ KERNEL_INIT(){
 	_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,pmm_alloc_counter("omm_usb_endpoint_descriptor"));
 	spinlock_init(&(_usb_endpoint_descriptor_allocator->lock));
 	usb_device_handle_type=handle_alloc("usb_device",NULL);
-	ERROR("Initialized");
 }
 
 
