@@ -42,7 +42,6 @@ KERNEL_PUBLIC u8 isr_allocate(void){
 
 
 void _isr_handler(isr_state_t* isr_state){
-	return;
 	if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
 		return;
@@ -50,6 +49,7 @@ void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==14&&pf_handle_fault(isr_state)){
 		return;
 	}
+	return;
 	if (isr_state->isr>32){
 		lapic_eoi();
 		event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
