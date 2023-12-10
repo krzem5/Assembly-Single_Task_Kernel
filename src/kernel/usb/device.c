@@ -161,33 +161,25 @@ static void _configure_device(usb_device_t* device){
 
 
 
+KERNEL_INIT(){
+	LOG("Initializing USB devices...");
+	_usb_buffer_pmm_counter=pmm_alloc_counter("usb_buffer");
+	_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2,pmm_alloc_counter("omm_usb_device"));
+	spinlock_init(&(_usb_device_allocator->lock));
+	_usb_device_descriptor_allocator=omm_init("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,pmm_alloc_counter("omm_usb_device_descriptor"));
+	spinlock_init(&(_usb_device_descriptor_allocator->lock));
+	_usb_configuration_descriptor_allocator=omm_init("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,pmm_alloc_counter("omm_usb_configuration_descriptor"));
+	spinlock_init(&(_usb_configuration_descriptor_allocator->lock));
+	_usb_interface_descriptor_allocator=omm_init("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,pmm_alloc_counter("omm_usb_interface_descriptor"));
+	spinlock_init(&(_usb_interface_descriptor_allocator->lock));
+	_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,pmm_alloc_counter("omm_usb_endpoint_descriptor"));
+	spinlock_init(&(_usb_endpoint_descriptor_allocator->lock));
+	usb_device_handle_type=handle_alloc("usb_device",NULL);
+}
+
+
+
 KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
-	if (!_usb_buffer_pmm_counter){
-		_usb_buffer_pmm_counter=pmm_alloc_counter("usb_buffer");
-	}
-	if (!_usb_device_allocator){
-		_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2,pmm_alloc_counter("omm_usb_device"));
-		spinlock_init(&(_usb_device_allocator->lock));
-	}
-	if (!_usb_device_descriptor_allocator){
-		_usb_device_descriptor_allocator=omm_init("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2,pmm_alloc_counter("omm_usb_device_descriptor"));
-		spinlock_init(&(_usb_device_descriptor_allocator->lock));
-	}
-	if (!_usb_configuration_descriptor_allocator){
-		_usb_configuration_descriptor_allocator=omm_init("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4,pmm_alloc_counter("omm_usb_configuration_descriptor"));
-		spinlock_init(&(_usb_configuration_descriptor_allocator->lock));
-	}
-	if (!_usb_interface_descriptor_allocator){
-		_usb_interface_descriptor_allocator=omm_init("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4,pmm_alloc_counter("omm_usb_interface_descriptor"));
-		spinlock_init(&(_usb_interface_descriptor_allocator->lock));
-	}
-	if (!_usb_endpoint_descriptor_allocator){
-		_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4,pmm_alloc_counter("omm_usb_endpoint_descriptor"));
-		spinlock_init(&(_usb_endpoint_descriptor_allocator->lock));
-	}
-	if (!usb_device_handle_type){
-		usb_device_handle_type=handle_alloc("usb_device",NULL);
-	}
 	usb_device_t* out=omm_alloc(_usb_device_allocator);
 	handle_new(out,usb_device_handle_type,&(out->handle));
 	out->controller=controller;

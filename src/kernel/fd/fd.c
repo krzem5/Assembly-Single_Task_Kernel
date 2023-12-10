@@ -42,6 +42,18 @@ static void _fd_iterator_handle_destructor(handle_t* handle){
 
 
 
+KERNEL_INIT(){
+	LOG("Initializing file descriptors...");
+	_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,pmm_alloc_counter("omm_fd"));
+	spinlock_init(&(_fd_allocator->lock));
+	_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,pmm_alloc_counter("omm_fd_iterator"));
+	spinlock_init(&(_fd_iterator_allocator->lock));
+	_fd_iterator_handle_type=handle_alloc("fd_iterator",_fd_iterator_handle_destructor);
+	_fd_handle_type=handle_alloc("fd",_fd_handle_destructor);
+}
+
+
+
 s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
 		return FD_ERROR_INVALID_FLAGS;
@@ -72,13 +84,6 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 		return FD_ERROR_NOT_FOUND;
 	}
 	node->rc++;
-	if (!_fd_allocator){
-		_fd_allocator=omm_init("fd",sizeof(fd_t),8,4,pmm_alloc_counter("omm_fd"));
-		spinlock_init(&(_fd_allocator->lock));
-	}
-	if (!_fd_handle_type){
-		_fd_handle_type=handle_alloc("fd",_fd_handle_destructor);
-	}
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(out,_fd_handle_type,&(out->handle));
 	out->acl=acl_create();
@@ -320,13 +325,6 @@ s64 fd_iter_start(handle_id_t fd){
 		spinlock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
 		return -1;
-	}
-	if (!_fd_iterator_allocator){
-		_fd_iterator_allocator=omm_init("fd_iterator",sizeof(fd_iterator_t),8,4,pmm_alloc_counter("omm_fd_iterator"));
-		spinlock_init(&(_fd_iterator_allocator->lock));
-	}
-	if (!_fd_iterator_handle_type){
-		_fd_iterator_handle_type=handle_alloc("fd_iterator",_fd_iterator_handle_destructor);
 	}
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(out,_fd_iterator_handle_type,&(out->handle));

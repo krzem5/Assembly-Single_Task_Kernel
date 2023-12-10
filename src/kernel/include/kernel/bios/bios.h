@@ -30,8 +30,4 @@ extern bios_data_t bios_data;
 
 
 
-void bios_get_system_data(void);
-
-
-
 #endif

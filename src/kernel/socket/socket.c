@@ -6,7 +6,6 @@
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/scheduler/scheduler.h>
-#include <kernel/socket/port.h>
 #include <kernel/socket/socket.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -78,7 +77,7 @@ static const vfs_functions_t _socket_vfs_functions={
 
 
 
-void KERNEL_EARLY_EXEC socket_init(void){
+KERNEL_INIT(){
 	LOG("Initializing sockets...");
 	spinlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
@@ -86,7 +85,6 @@ void KERNEL_EARLY_EXEC socket_init(void){
 	spinlock_init(&(_socket_dtp_handler_allocator->lock));
 	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4,pmm_alloc_counter("omm_socket_node"));
 	spinlock_init(&(_socket_vfs_node_allocator->lock));
-	socket_port_init();
 }
 
 

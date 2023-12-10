@@ -14,7 +14,7 @@ static socket_vfs_node_t** KERNEL_INIT_WRITE _socket_ports=NULL;
 
 
 
-void KERNEL_EARLY_EXEC socket_port_init(void){
+KERNEL_INIT(){
 	LOG("Initializing socket ports...");
 	spinlock_init(&_socket_port_lock);
 	_socket_ports=(void*)(pmm_alloc(pmm_align_up_address((SOCKET_PORT_MAX+1)*sizeof(socket_vfs_node_t*))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("socket_port"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);

@@ -12,10 +12,6 @@
 
 
 
-void elf_init(void);
-
-
-
 handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags);
 
 

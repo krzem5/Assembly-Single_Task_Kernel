@@ -7,7 +7,7 @@
 
 
 
-void KERNEL_EARLY_EXEC initramfs_init(void){
+KERNEL_INIT(){
 	LOG("Loading initramfs...");
 	initramfs_fs_init();
 	initramfs_partition_init();

@@ -33,13 +33,6 @@ static omm_allocator_t* _pipe_vfs_node_allocator=NULL;
 
 
 static vfs_node_t* _pipe_create(void){
-	if (!_pipe_buffer_pmm_counter){
-		_pipe_buffer_pmm_counter=pmm_alloc_counter("pipe_buffer");
-	}
-	if (!_pipe_vfs_node_allocator){
-		_pipe_vfs_node_allocator=omm_init("pipe_node",sizeof(pipe_vfs_node_t),8,4,pmm_alloc_counter("omm_pipe_node"));
-		spinlock_init(&(_pipe_vfs_node_allocator->lock));
-	}
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
 	spinlock_init(&(out->lock));
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,PIPE_BUFFER_SIZE,_pipe_buffer_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
@@ -149,6 +142,15 @@ static const vfs_functions_t _pipe_vfs_functions={
 	NULL,
 	NULL
 };
+
+
+
+KERNEL_INIT(){
+	LOG("Initializing pipe filesystem...");
+	_pipe_buffer_pmm_counter=pmm_alloc_counter("pipe_buffer");
+	_pipe_vfs_node_allocator=omm_init("pipe_node",sizeof(pipe_vfs_node_t),8,4,pmm_alloc_counter("omm_pipe_node"));
+	spinlock_init(&(_pipe_vfs_node_allocator->lock));
+}
 
 
 

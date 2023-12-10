@@ -44,7 +44,7 @@ void syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
 
 
 
-void KERNEL_EARLY_EXEC syscall_init(void){
+KERNEL_INIT(){
 	LOG("Initializing syscall tables...");
 	spinlock_init(&_syscall_table_list_lock);
 	_syscall_table_allocator=omm_init("syscall_table",sizeof(syscall_table_t),8,1,pmm_alloc_counter("omm_syscall_table"));

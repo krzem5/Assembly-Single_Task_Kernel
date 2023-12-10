@@ -13,10 +13,6 @@ typedef u16 socket_port_t;
 
 
 
-void socket_port_init(void);
-
-
-
 socket_vfs_node_t* socket_port_get(socket_port_t port);
 
 

@@ -1,4 +1,5 @@
 #include <kernel/lock/spinlock.h>
+#include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/notification/notification.h>
@@ -6,6 +7,7 @@
 #include <kernel/shutdown/shutdown.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#define KERNEL_LOG_NAME "shutdown"
 
 
 
@@ -16,7 +18,8 @@ static spinlock_t _shutdown_function_lock;
 
 
 
-void KERNEL_EARLY_EXEC shutdown_init(void){
+KERNEL_INIT(){
+	LOG("Initializing shutdown list...");
 	notification_dispatcher_init(&_shutdown_notification_dispatcher);
 	_shutdown_function_allocator=omm_init("shutdown_function",sizeof(shutdown_function_t),8,1,pmm_alloc_counter("omm_shutdown_function"));
 	spinlock_init(&_shutdown_function_lock);

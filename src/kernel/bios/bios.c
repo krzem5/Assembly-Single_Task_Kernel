@@ -85,7 +85,7 @@ static const char* KERNEL_EARLY_EXEC _get_header_string(const smbios_header_t* h
 
 
 
-void KERNEL_EARLY_EXEC bios_get_system_data(void){
+KERNEL_INIT(){
 	LOG("Loading BIOS data...");
 	const smbios_t* smbios=(void*)vmm_identity_map(kernel_data.smbios_address,sizeof(smbios_t));
 	INFO("Found SMBIOS at %p (revision %u.%u)",((u64)smbios)-VMM_HIGHER_HALF_ADDRESS_OFFSET,smbios->major_version,smbios->minor_version);

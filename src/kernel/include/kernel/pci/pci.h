@@ -150,10 +150,6 @@ static KERNEL_INLINE void pci_device_enable_bus_mastering(const pci_device_t* de
 
 
 
-void pci_enumerate(void);
-
-
-
 _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
 
 

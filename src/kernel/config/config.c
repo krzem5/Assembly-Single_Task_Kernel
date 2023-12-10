@@ -16,16 +16,18 @@ static omm_allocator_t* _config_item_allocator=NULL;
 
 
 
+KERNEL_INIT(){
+	LOG("Initializing config file parser...");
+	_config_allocator=omm_init("config",sizeof(config_t),8,1,pmm_alloc_counter("omm_config"));
+	spinlock_init(&(_config_allocator->lock));
+	_config_item_allocator=omm_init("config_item",sizeof(config_item_t),8,1,pmm_alloc_counter("omm_config_item"));
+	spinlock_init(&(_config_item_allocator->lock));
+}
+
+
+
 KERNEL_PUBLIC config_t* config_load(vfs_node_t* file){
 	KERNEL_ASSERT(file);
-	if (!_config_allocator){
-		_config_allocator=omm_init("config",sizeof(config_t),8,1,pmm_alloc_counter("omm_config"));
-		spinlock_init(&(_config_allocator->lock));
-	}
-	if (!_config_item_allocator){
-		_config_item_allocator=omm_init("config_item",sizeof(config_item_t),8,1,pmm_alloc_counter("omm_config_item"));
-		spinlock_init(&(_config_item_allocator->lock));
-	}
 	config_t* out=omm_alloc(_config_allocator);
 	out->head=NULL;
 	out->tail=NULL;

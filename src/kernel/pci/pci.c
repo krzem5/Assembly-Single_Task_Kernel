@@ -15,7 +15,7 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pci_device_handle_type=0;
 
 
 
-KERNEL_PUBLIC void KERNEL_EARLY_EXEC pci_enumerate(void){
+KERNEL_INIT(){
 	LOG("Scanning PCI devices...");
 	pci_device_handle_type=handle_alloc("pci_device",NULL);
 	_pci_device_allocator=omm_init("pci_device",sizeof(pci_device_t),8,1,pmm_alloc_counter("omm_pci_device"));

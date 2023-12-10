@@ -4,10 +4,6 @@
 
 
 
-void random_init(void);
-
-
-
 void random_generate(void* buffer,u64 length);
 
 

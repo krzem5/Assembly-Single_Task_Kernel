@@ -73,10 +73,6 @@ typedef struct _SOCKET_DTP_HANDLER{
 
 
 
-void socket_init(void);
-
-
-
 void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor);
 
 

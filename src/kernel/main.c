@@ -1,12 +1,9 @@
 #include <kernel/acl/acl.h>
 #include <kernel/acpi/acpi.h>
-#include <kernel/bios/bios.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/elf/elf.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
-#include <kernel/initramfs/initramfs.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
@@ -17,14 +14,9 @@
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
-#include <kernel/pci/pci.h>
-#include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
-#include <kernel/shutdown/shutdown.h>
-#include <kernel/socket/socket.h>
 #include <kernel/symbol/symbol.h>
-#include <kernel/syscall/syscall.h>
 #include <kernel/time/time.h>
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
@@ -34,14 +26,6 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
-	shutdown_init();
-	syscall_init();
-	bios_get_system_data();
-	initramfs_init();
-	pci_enumerate();
-	elf_init();
-	random_init();
-	socket_init();
 	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();
 	module_load("os_loader");

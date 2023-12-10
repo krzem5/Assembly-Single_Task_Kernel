@@ -17,10 +17,6 @@ typedef struct _SHUTDOWN_FUNCTION{
 
 
 
-void shutdown_init(void);
-
-
-
 void KERNEL_NORETURN shutdown(_Bool restart);
 
 
