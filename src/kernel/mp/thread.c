@@ -1,3 +1,4 @@
+#include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/format/format.h>
 #include <kernel/fpu/fpu.h>
@@ -50,6 +51,7 @@ static void _thread_handle_destructor(handle_t* handle){
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
 	}
+	acl_delete(thread->acl);
 	omm_dealloc(_thread_allocator,thread);
 }
 
@@ -82,6 +84,8 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	memset(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
 	handle_new(out,thread_handle_type,&(out->handle));
+	out->acl=acl_create();
+	acl_add(out->acl,process,THREAD_STATE_TYPE_TERMINATED);
 	spinlock_init(&(out->lock));
 	out->process=process;
 	char buffer[32];

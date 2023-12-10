@@ -1,3 +1,5 @@
+#include <kernel/acl/acl.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -8,6 +10,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -50,6 +53,7 @@ void KERNEL_EARLY_EXEC process_init(void){
 	process_handle_type=handle_alloc("process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
+	process_kernel->acl=acl_create();
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
@@ -72,6 +76,10 @@ void KERNEL_EARLY_EXEC process_init(void){
 KERNEL_PUBLIC process_t* process_new(const char* image,const char* name){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,process_handle_type,&(out->handle));
+	process_kernel->acl=acl_create();
+	if (CPU_HEADER_DATA->current_thread){
+		acl_add(process_kernel->acl,THREAD_DATA->process,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
+	}
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
