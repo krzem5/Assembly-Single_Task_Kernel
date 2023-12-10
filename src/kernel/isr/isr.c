@@ -42,6 +42,7 @@ KERNEL_PUBLIC u8 isr_allocate(void){
 
 
 void _isr_handler(isr_state_t* isr_state){
+	ERROR("ISR%u",isr_state->isr);
 	if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
 		return;
