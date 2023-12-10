@@ -86,4 +86,16 @@ KERNEL_PUBLIC void acl_add(acl_t* acl,process_t* process){
 
 
 
-KERNEL_PUBLIC void acl_remove(acl_t* acl,process_t* process);
+KERNEL_PUBLIC void acl_remove(acl_t* acl,process_t* process){
+	handle_id_t key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
+	spinlock_acquire_exclusive(&(acl->lock));
+	if (acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]==key){
+		acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)]=0;
+	}
+	rb_tree_node_t* rb_node=rb_tree_lookup_node(&(acl->tree),key);
+	if (rb_node){
+		rb_tree_remove_node(&(acl->tree),rb_node);
+		omm_dealloc(_acl_tree_node_allocator,rb_node);
+	}
+	spinlock_release_exclusive(&(acl->lock));
+}

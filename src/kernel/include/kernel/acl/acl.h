@@ -8,7 +8,7 @@
 
 
 
-#define ACL_PROCESS_CACHE_SIZE 16
+#define ACL_PROCESS_CACHE_SIZE 16 // power of 2
 
 
 
