@@ -322,6 +322,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 
 
 KERNEL_INIT(){
+	LOG("Initializing ELF loader...");
 	_user_image_pmm_counter=pmm_alloc_counter("user_image");
 	_user_input_data_pmm_counter=pmm_alloc_counter("user_input_data");
 	_elf_hwcap=elf_get_hwcap();
