@@ -10,12 +10,6 @@ void syscall_linux_socket(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_shutdown(syscall_reg_state_t* regs){
-	panic("syscall_linux_shutdown");
-}
-
-
-
 void syscall_linux_socketpair(syscall_reg_state_t* regs){
 	panic("syscall_linux_socketpair");
 }

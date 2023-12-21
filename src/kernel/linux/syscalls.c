@@ -10,36 +10,6 @@ void syscall_linux_getpid(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_sendfile(syscall_reg_state_t* regs){
-	panic("syscall_linux_sendfile");
-}
-
-
-
-void syscall_linux_clone(syscall_reg_state_t* regs){
-	panic("syscall_linux_clone");
-}
-
-
-
-void syscall_linux_fork(syscall_reg_state_t* regs){
-	panic("syscall_linux_fork");
-}
-
-
-
-void syscall_linux_vfork(syscall_reg_state_t* regs){
-	panic("syscall_linux_vfork");
-}
-
-
-
-void syscall_linux_execve(syscall_reg_state_t* regs){
-	panic("syscall_linux_execve");
-}
-
-
-
 void syscall_linux_exit(syscall_reg_state_t* regs){
 	panic("syscall_linux_exit");
 }
@@ -94,18 +64,6 @@ void syscall_linux_flock(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_fsync(syscall_reg_state_t* regs){
-	panic("syscall_linux_fsync");
-}
-
-
-
-void syscall_linux_fdatasync(syscall_reg_state_t* regs){
-	panic("syscall_linux_fdatasync");
-}
-
-
-
 void syscall_linux_truncate(syscall_reg_state_t* regs){
 	panic("syscall_linux_truncate");
 }
@@ -156,12 +114,6 @@ void syscall_linux_mkdir(syscall_reg_state_t* regs){
 
 void syscall_linux_rmdir(syscall_reg_state_t* regs){
 	panic("syscall_linux_rmdir");
-}
-
-
-
-void syscall_linux_creat(syscall_reg_state_t* regs){
-	panic("syscall_linux_creat");
 }
 
 
@@ -226,12 +178,6 @@ void syscall_linux_umask(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_gettimeofday(syscall_reg_state_t* regs){
-	panic("syscall_linux_gettimeofday");
-}
-
-
-
 void syscall_linux_sysinfo(syscall_reg_state_t* regs){
 	panic("syscall_linux_sysinfo");
 }
@@ -286,90 +232,6 @@ void syscall_linux_utime(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_getpriority(syscall_reg_state_t* regs){
-	panic("syscall_linux_getpriority");
-}
-
-
-
-void syscall_linux_setpriority(syscall_reg_state_t* regs){
-	panic("syscall_linux_setpriority");
-}
-
-
-
-void syscall_linux_sched_get_priority_max(syscall_reg_state_t* regs){
-	panic("syscall_linux_sched_get_priority_max");
-}
-
-
-
-void syscall_linux_sched_get_priority_min(syscall_reg_state_t* regs){
-	panic("syscall_linux_sched_get_priority_min");
-}
-
-
-
-void syscall_linux_sched_rr_get_interval(syscall_reg_state_t* regs){
-	panic("syscall_linux_sched_rr_get_interval");
-}
-
-
-
-void syscall_linux_mlock(syscall_reg_state_t* regs){
-	panic("syscall_linux_mlock");
-}
-
-
-
-void syscall_linux_munlock(syscall_reg_state_t* regs){
-	panic("syscall_linux_munlock");
-}
-
-
-
-void syscall_linux_mlockall(syscall_reg_state_t* regs){
-	panic("syscall_linux_mlockall");
-}
-
-
-
-void syscall_linux_munlockall(syscall_reg_state_t* regs){
-	panic("syscall_linux_munlockall");
-}
-
-
-
-void syscall_linux_prctl(syscall_reg_state_t* regs){
-	panic("syscall_linux_prctl");
-}
-
-
-
-void syscall_linux_settimeofday(syscall_reg_state_t* regs){
-	panic("syscall_linux_settimeofday");
-}
-
-
-
-void syscall_linux_mount(syscall_reg_state_t* regs){
-	panic("syscall_linux_mount");
-}
-
-
-
-void syscall_linux_umount2(syscall_reg_state_t* regs){
-	panic("syscall_linux_umount2");
-}
-
-
-
-void syscall_linux_reboot(syscall_reg_state_t* regs){
-	panic("syscall_linux_reboot");
-}
-
-
-
 void syscall_linux_sethostname(syscall_reg_state_t* regs){
 	panic("syscall_linux_sethostname");
 }
@@ -388,24 +250,6 @@ void syscall_linux_gettid(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_time(syscall_reg_state_t* regs){
-	panic("syscall_linux_time");
-}
-
-
-
-void syscall_linux_sched_setaffinity(syscall_reg_state_t* regs){
-	panic("syscall_linux_sched_setaffinity");
-}
-
-
-
-void syscall_linux_sched_getaffinity(syscall_reg_state_t* regs){
-	panic("syscall_linux_sched_getaffinity");
-}
-
-
-
 void syscall_linux_getdents64(syscall_reg_state_t* regs){
 	panic("syscall_linux_getdents64");
 }
@@ -414,72 +258,6 @@ void syscall_linux_getdents64(syscall_reg_state_t* regs){
 
 void syscall_linux_fadvise64(syscall_reg_state_t* regs){
 	panic("syscall_linux_fadvise64");
-}
-
-
-
-void syscall_linux_timer_create(syscall_reg_state_t* regs){
-	panic("syscall_linux_timer_create");
-}
-
-
-
-void syscall_linux_timer_settime(syscall_reg_state_t* regs){
-	panic("syscall_linux_timer_settime");
-}
-
-
-
-void syscall_linux_timer_gettime(syscall_reg_state_t* regs){
-	panic("syscall_linux_timer_gettime");
-}
-
-
-
-void syscall_linux_timer_getoverrun(syscall_reg_state_t* regs){
-	panic("syscall_linux_timer_getoverrun");
-}
-
-
-
-void syscall_linux_timer_delete(syscall_reg_state_t* regs){
-	panic("syscall_linux_timer_delete");
-}
-
-
-
-void syscall_linux_clock_settime(syscall_reg_state_t* regs){
-	panic("syscall_linux_clock_settime");
-}
-
-
-
-void syscall_linux_clock_gettime(syscall_reg_state_t* regs){
-	panic("syscall_linux_clock_gettime");
-}
-
-
-
-void syscall_linux_clock_getres(syscall_reg_state_t* regs){
-	panic("syscall_linux_clock_getres");
-}
-
-
-
-void syscall_linux_clock_nanosleep(syscall_reg_state_t* regs){
-	panic("syscall_linux_clock_nanosleep");
-}
-
-
-
-void syscall_linux_exit_group(syscall_reg_state_t* regs){
-	panic("syscall_linux_exit_group");
-}
-
-
-
-void syscall_linux_openat(syscall_reg_state_t* regs){
-	panic("syscall_linux_openat");
 }
 
 
@@ -538,12 +316,6 @@ void syscall_linux_fchmodat(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_faccessat(syscall_reg_state_t* regs){
-	panic("syscall_linux_faccessat");
-}
-
-
-
 void syscall_linux_splice(syscall_reg_state_t* regs){
 	panic("syscall_linux_splice");
 }
@@ -556,54 +328,6 @@ void syscall_linux_tee(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_accept4(syscall_reg_state_t* regs){
-	panic("syscall_linux_accept4");
-}
-
-
-
-void syscall_linux_dup3(syscall_reg_state_t* regs){
-	panic("syscall_linux_dup3");
-}
-
-
-
-void syscall_linux_pipe2(syscall_reg_state_t* regs){
-	panic("syscall_linux_pipe2");
-}
-
-
-
 void syscall_linux_renameat2(syscall_reg_state_t* regs){
 	panic("syscall_linux_renameat2");
-}
-
-
-
-void syscall_linux_getrandom(syscall_reg_state_t* regs){
-	panic("syscall_linux_getrandom");
-}
-
-
-
-void syscall_linux_execveat(syscall_reg_state_t* regs){
-	panic("syscall_linux_execveat");
-}
-
-
-
-void syscall_linux_clone3(syscall_reg_state_t* regs){
-	panic("syscall_linux_clone3");
-}
-
-
-
-void syscall_linux_openat2(syscall_reg_state_t* regs){
-	panic("syscall_linux_openat2");
-}
-
-
-
-void syscall_linux_faccessat2(syscall_reg_state_t* regs){
-	panic("syscall_linux_faccessat2");
 }

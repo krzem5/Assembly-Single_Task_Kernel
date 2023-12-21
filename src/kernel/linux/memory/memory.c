@@ -43,3 +43,27 @@ void syscall_linux_mincore(syscall_reg_state_t* regs){
 void syscall_linux_madvise(syscall_reg_state_t* regs){
 	panic("syscall_linux_madvise");
 }
+
+
+
+void syscall_linux_mlock(syscall_reg_state_t* regs){
+	panic("syscall_linux_mlock");
+}
+
+
+
+void syscall_linux_munlock(syscall_reg_state_t* regs){
+	panic("syscall_linux_munlock");
+}
+
+
+
+void syscall_linux_mlockall(syscall_reg_state_t* regs){
+	panic("syscall_linux_mlockall");
+}
+
+
+
+void syscall_linux_munlockall(syscall_reg_state_t* regs){
+	panic("syscall_linux_munlockall");
+}

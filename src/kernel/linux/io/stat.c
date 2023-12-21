@@ -19,9 +19,3 @@ void syscall_linux_fstat(syscall_reg_state_t* regs){
 void syscall_linux_lstat(syscall_reg_state_t* regs){
 	panic("syscall_linux_lstat");
 }
-
-
-
-void syscall_linux_access(syscall_reg_state_t* regs){
-	panic("syscall_linux_access");
-}

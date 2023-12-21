@@ -37,3 +37,9 @@ void syscall_linux_getsockname(syscall_reg_state_t* regs){
 void syscall_linux_getpeername(syscall_reg_state_t* regs){
 	panic("syscall_linux_getpeername");
 }
+
+
+
+void syscall_linux_accept4(syscall_reg_state_t* regs){
+	panic("syscall_linux_accept4");
+}

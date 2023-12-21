@@ -68,8 +68,6 @@
 67,linux_shmdt(void) -> void
 72,linux_fcntl(void) -> void
 73,linux_flock(void) -> void
-74,linux_fsync(void) -> void
-75,linux_fdatasync(void) -> void
 76,linux_truncate(void) -> void
 77,linux_ftruncate(void) -> void
 78,linux_getdents(void) -> void
@@ -114,10 +112,7 @@
 150,linux_munlock(void) -> void
 151,linux_mlockall(void) -> void
 152,linux_munlockall(void) -> void
-157,linux_prctl(void) -> void
 164,linux_settimeofday(void) -> void
-165,linux_mount(void) -> void
-166,linux_umount2(void) -> void
 169,linux_reboot(void) -> void
 170,linux_sethostname(void) -> void
 171,linux_setdomainname(void) -> void
@@ -136,7 +131,6 @@
 228,linux_clock_gettime(void) -> void
 229,linux_clock_getres(void) -> void
 230,linux_clock_nanosleep(void) -> void
-231,linux_exit_group(void) -> void
 257,linux_openat(void) -> void
 258,linux_mkdirat(void) -> void
 260,linux_fchownat(void) -> void
