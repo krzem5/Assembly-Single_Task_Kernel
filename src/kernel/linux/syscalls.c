@@ -232,18 +232,6 @@ void syscall_linux_utime(syscall_reg_state_t* regs){
 
 
 
-void syscall_linux_sethostname(syscall_reg_state_t* regs){
-	panic("syscall_linux_sethostname");
-}
-
-
-
-void syscall_linux_setdomainname(syscall_reg_state_t* regs){
-	panic("syscall_linux_setdomainname");
-}
-
-
-
 void syscall_linux_gettid(syscall_reg_state_t* regs){
 	panic("syscall_linux_gettid");
 }
