@@ -7,7 +7,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
-#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>

@@ -58,6 +58,10 @@ static void _thread_handle_destructor(handle_t* handle){
 
 
 static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel_stack_size){
+	if (!_thread_fpu_state_allocator){
+		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,pmm_alloc_counter("omm_thread_fpu_state"));
+		spinlock_init(&(_thread_fpu_state_allocator->lock));
+	}
 	user_stack_size=pmm_align_up_address(user_stack_size);
 	kernel_stack_size=pmm_align_up_address(kernel_stack_size);
 	thread_t* out=omm_alloc(_thread_allocator);
@@ -110,8 +114,6 @@ KERNEL_EARLY_INIT(){
 	_thread_pf_stack_pmm_counter=pmm_alloc_counter("pf_stack");
 	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,pmm_alloc_counter("omm_thread"));
 	spinlock_init(&(_thread_allocator->lock));
-	_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,pmm_alloc_counter("omm_thread_fpu_state"));
-	spinlock_init(&(_thread_fpu_state_allocator->lock));
 	thread_handle_type=handle_alloc("thread",_thread_handle_destructor);
 }
 

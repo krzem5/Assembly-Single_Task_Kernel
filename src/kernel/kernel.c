@@ -18,7 +18,7 @@
 
 
 static void _unmap_section(u64 start,u64 end){
-	INFO("Unmapping region %p - %p [%v]",start,end,pmm_align_up_address(start-end));
+	INFO("Unmapping region %p - %p [%v]",start,end,pmm_align_up_address(end-start));
 	for (;start<end;start+=PAGE_SIZE){
 		vmm_unmap_page(&vmm_kernel_pagemap,start);
 	}
