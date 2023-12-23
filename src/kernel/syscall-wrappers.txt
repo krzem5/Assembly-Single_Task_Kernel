@@ -1,13 +1,50 @@
+# b = bool
+# B = byte
+# H = word
+# I = dword
+# Q = qword
+# S = str
+# Z = buffer
+# @<index> = second arg index
+# *<type> = element type
+# -"<error>" = error
+# | = return value separator
+
 fd_close:int
+# Q|b
+
 fd_dup:int,int
+# QI|Q
+
 fd_iter_get:int,buffer@2,int
+# QZ@2-"-1"Q|Q
+
 fd_iter_next:int
+# Q|Q
+
 fd_iter_start:int
+# Q|Q
+
 fd_iter_stop:int
+# Q|Q
+
 fd_open:int,string,int
+# QS-"-1"I|Q
+
 fd_path:int,buffer@2,int
+# QZ@2-"-1"Q|Q
+
 fd_read:int,buffer@2,int,int
+# QZ@2-"-1"QI|Q
+
 fd_resize:int,int,int
+# QQI|Q
+
 fd_seek:int,int,int
+# QQI|Q
+
 fd_stat:int,buffer@2,int
+# QZ@2-"-1"Q|Q
+
 fd_write:int,buffer@2,int,int
+# QZ@2-"-1"QI|Q
