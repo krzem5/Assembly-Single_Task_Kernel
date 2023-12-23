@@ -216,6 +216,36 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 
 
 
+def _generate_syscall_wrappers(src_file_path,dst_file_path):
+	REGS=["rdi","rsi","rdx","r8","r9"]
+	with open(src_file_path,"r") as rf,open(dst_file_path,"w") as wf:
+		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n")
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
+			wf.write(f"\n\n\nextern u64 {func}();\nvoid syscall_{func}(syscall_reg_state_t* regs){{\n")
+			i=0
+			call_args=[]
+			for type_ in args.split(","):
+				type_,idx=(type_.strip().split("@")+[0])[:2]
+				if (type_=="int"):
+					call_args.append(f"regs->{REGS[i]}")
+				elif (type_=="string"):
+					wf.write(f"\tu64 {REGS[i]}_length=syscall_get_string_length(regs->{REGS[i]});\n\tif (!{REGS[i]}_length){{\n\t\treturn;\n\t}}\n")
+					call_args.append(f"(void*)(regs->{REGS[i]})")
+					call_args.append(f"{REGS[i]}_length")
+				elif (type_=="buffer"):
+					wf.write(f"\tif (regs->{REGS[int(idx)]}>syscall_get_user_pointer_max_length(regs->{REGS[i]})){{\n\t\treturn;\n\t}}\n")
+					call_args.append(f"(void*)(regs->{REGS[i]})")
+				else:
+					raise RuntimeError(type_)
+				i+=1
+			wf.write(f"\tregs->rax={func}({','.join(call_args)});\n}}\n")
+
+
+
 def _generate_kernel_build_info():
 	version=time.time_ns()
 	with open("src/kernel/_generated/build_info.c","w") as wf:
@@ -561,6 +591,7 @@ for dir in BUILD_DIRECTORIES:
 		os.mkdir(dir)
 _generate_syscalls("linux",0,"src/kernel/syscalls-linux.txt","src/kernel/_generated/syscalls_linux.c",None,None)
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall.h","src/lib/sys/sys/syscall.asm")
+_generate_syscall_wrappers("src/kernel/syscall-wrappers.txt","src/kernel/_generated/syscal_wrappers.c")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]

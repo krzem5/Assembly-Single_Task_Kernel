@@ -1,0 +1,13 @@
+fd_close:int
+fd_dup:int,int
+fd_iter_get:int,buffer@2,int
+fd_iter_next:int
+fd_iter_start:int
+fd_iter_stop:int
+fd_open:int,string,int
+fd_path:int,buffer@2,int
+fd_read:int,buffer@2,int,int
+fd_resize:int,int,int
+fd_seek:int,int,int
+fd_stat:int,buffer@2,int
+fd_write:int,buffer@2,int,int

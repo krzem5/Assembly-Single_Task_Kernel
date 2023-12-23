@@ -323,5 +323,6 @@ void syscall_linux_renameat2(syscall_reg_state_t* regs){
 // TODO APIs:
 // better memory api (alloc + counters + locks)
 // drive buffering (internal)
+// process_get_acl(handle), thread_get_acl(handle)
 // ACLs -> acl_get_permissions(handle), acl_set_permissions(handle,clear,set)
 // sockets -> socket_create(domain,type,protocol), socket_create_pair(out[2]), socket_connect(handle,address,address_length), socket_bind(handle,address,address_length), socket_listen(handle,max_connections), socket_accept(handle), socket_getsockname, socket_getpeername, socket_recvfrom, socket_recvmsg, socket_sento, socket_sendmsg, socket_shutdown
