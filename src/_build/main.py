@@ -222,7 +222,7 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n")
 		for line in rf.read().split("\n"):
 			line=line.strip()
-			if (not line):
+			if (not line or line[0]=="#"):
 				continue
 			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
 			wf.write(f"\n\n\nextern u64 {func}();\nvoid syscall_{func}(syscall_reg_state_t* regs){{\n")
