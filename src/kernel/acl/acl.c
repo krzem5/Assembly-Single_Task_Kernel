@@ -16,8 +16,6 @@
 static omm_allocator_t* _acl_allocator=NULL;
 static omm_allocator_t* _acl_tree_node_allocator=NULL;
 
-static handle_type_t _acl_handle_type=0;
-
 
 
 void KERNEL_EARLY_EXEC acl_init(void){
@@ -26,14 +24,12 @@ void KERNEL_EARLY_EXEC acl_init(void){
 	spinlock_init(&(_acl_allocator->lock));
 	_acl_tree_node_allocator=omm_init("acl_tree_node",sizeof(acl_tree_node_t),8,4,pmm_alloc_counter("omm_acl_tree_node"));
 	spinlock_init(&(_acl_tree_node_allocator->lock));
-	_acl_handle_type=handle_alloc("acl",NULL);
 }
 
 
 
 KERNEL_PUBLIC acl_t* acl_create(void){
 	acl_t* out=omm_alloc(_acl_allocator);
-	handle_new(out,_acl_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	memset(out->cache,0,ACL_PROCESS_CACHE_SIZE*sizeof(acl_cache_entry_t));
 	rb_tree_init(&(out->tree));
@@ -51,7 +47,6 @@ KERNEL_PUBLIC void acl_delete(acl_t* acl){
 		rb_node=next_rb_node;
 	}
 	spinlock_release_exclusive(&(acl->lock));
-	handle_release(&(acl->handle));
 	omm_dealloc(_acl_allocator,acl);
 }
 
@@ -112,9 +107,9 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 
 
 
-u64 syscall_acl_get_permissions(handle_id_t acl_handle,handle_id_t process_handle_id){
-	handle_t* handle=handle_lookup_and_acquire(acl_handle,_acl_handle_type);
-	if (!handle){
+u64 syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	if (!handle||!handle->acl){
 		return 0;
 	}
 	handle_t* process_handle=NULL;
@@ -125,8 +120,7 @@ u64 syscall_acl_get_permissions(handle_id_t acl_handle,handle_id_t process_handl
 			return 0;
 		}
 	}
-	acl_t* acl=handle->object;
-	u64 out=acl_get(acl,(process_handle?process_handle->object:THREAD_DATA->process));
+	u64 out=acl_get(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process));
 	if (process_handle){
 		handle_release(process_handle);
 	}
@@ -136,10 +130,9 @@ u64 syscall_acl_get_permissions(handle_id_t acl_handle,handle_id_t process_handl
 
 
 
-u64 syscall_acl_set_permissions(handle_id_t acl_handle,handle_id_t process_handle_id,u64 clear,u64 set){
-	// add an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
-	handle_t* handle=handle_lookup_and_acquire(acl_handle,_acl_handle_type);
-	if (!handle){
+u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 clear,u64 set){
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	if (!handle||!handle->acl){
 		return 0;
 	}
 	handle_t* process_handle=NULL;
@@ -150,14 +143,24 @@ u64 syscall_acl_set_permissions(handle_id_t acl_handle,handle_id_t process_handl
 			return 0;
 		}
 	}
-	acl_t* acl=handle->object;
 	if (!process_is_root()){
-		set&=acl_get(acl,THREAD_DATA->process);
+		set&=acl_get(handle->acl,THREAD_DATA->process);
 	}
-	acl_set(acl,(process_handle?process_handle->object:THREAD_DATA->process),clear,set);
+	acl_set(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process),clear,set);
 	if (process_handle){
 		handle_release(process_handle);
 	}
 	handle_release(handle);
 	return 1;
+}
+
+
+
+u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
+	if (!process_handle_id){
+		process_handle_id=THREAD_DATA->process->handle.rb_node.key;
+	}
+	// pass the argument triplet via a socket to an sbin executable (module-installed callback function)
+	// call an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
+	return 0;
 }

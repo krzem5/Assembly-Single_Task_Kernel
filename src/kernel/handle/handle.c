@@ -170,15 +170,3 @@ KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,n
 	spinlock_release_exclusive(&(handle_descriptor->lock));
 	return 1;
 }
-
-
-
-u64 syscall_handle_get_acl(handle_id_t handle_id){
-	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
-	if (!handle){
-		return 0;
-	}
-	u64 out=(handle->acl?handle->acl->handle.rb_node.key:0);
-	handle_release(handle);
-	return out;
-}

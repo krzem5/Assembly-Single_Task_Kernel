@@ -37,6 +37,5 @@
 37,process_get_event(u64 handle) -> u64
 38,syscall_table_get_offset(const char* name) -> u64
 39,scheduler_yield(void) -> void
-40,handle_get_acl(u64 handle) -> u64
-41,acl_get_permissions(u64 acl,u64 process) -> u64
-42,acl_set_permissions(u64 acl,u64 process,u64 clear,u64 set) -> _Bool
+40,acl_get_permissions(u64 acl,u64 process) -> u64
+41,acl_set_permissions(u64 acl,u64 process,u64 clear,u64 set) -> _Bool

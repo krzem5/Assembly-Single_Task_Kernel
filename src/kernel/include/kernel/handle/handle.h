@@ -1,5 +1,6 @@
 #ifndef _KERNEL_HANDLE_HANDLE_H_
 #define _KERNEL_HANDLE_HANDLE_H_ 1
+#include <kernel/acl/acl.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/notification/notification.h>
 #include <kernel/tree/rb_tree.h>
@@ -33,7 +34,7 @@ typedef struct _HANDLE{
 	rb_tree_node_t rb_node;
 	void* object;
 	KERNEL_ATOMIC u64 rc;
-	struct _ACL* acl;
+	acl_t* acl;
 } handle_t;
 
 
