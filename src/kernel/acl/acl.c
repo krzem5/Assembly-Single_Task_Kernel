@@ -15,6 +15,8 @@
 static omm_allocator_t* _acl_allocator=NULL;
 static omm_allocator_t* _acl_tree_node_allocator=NULL;
 
+static handle_type_t _acl_handle_type=0;
+
 
 
 void KERNEL_EARLY_EXEC acl_init(void){
@@ -23,12 +25,14 @@ void KERNEL_EARLY_EXEC acl_init(void){
 	spinlock_init(&(_acl_allocator->lock));
 	_acl_tree_node_allocator=omm_init("acl_tree_node",sizeof(acl_tree_node_t),8,4,pmm_alloc_counter("omm_acl_tree_node"));
 	spinlock_init(&(_acl_tree_node_allocator->lock));
+	_acl_handle_type=handle_alloc("acl",NULL);
 }
 
 
 
 KERNEL_PUBLIC acl_t* acl_create(void){
 	acl_t* out=omm_alloc(_acl_allocator);
+	handle_new(out,_acl_handle_type,&(out->handle));
 	spinlock_init(&(out->lock));
 	memset(out->cache,0,ACL_PROCESS_CACHE_SIZE*sizeof(acl_cache_entry_t));
 	rb_tree_init(&(out->tree));
@@ -46,6 +50,7 @@ KERNEL_PUBLIC void acl_delete(acl_t* acl){
 		rb_node=next_rb_node;
 	}
 	spinlock_release_exclusive(&(acl->lock));
+	handle_release(&(acl->handle));
 	omm_dealloc(_acl_allocator,acl);
 }
 

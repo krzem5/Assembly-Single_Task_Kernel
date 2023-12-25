@@ -37,3 +37,5 @@
 37,process_get_event(u64 handle) -> u64
 38,syscall_table_get_offset(const char* name) -> u64
 39,scheduler_yield(void) -> void
+40,process_get_acl(u64 process) -> u64
+41,thread_get_acl(u64 thread) -> u64

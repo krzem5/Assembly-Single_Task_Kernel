@@ -307,3 +307,19 @@ u64 syscall_thread_await_events(const handle_id_t* events,u64 event_count){
 	}
 	return event_await_multiple_handles(events,event_count);
 }
+
+
+
+u64 syscall_thread_get_acl(handle_id_t thread_handle){
+	if (!thread_handle){
+		return THREAD_DATA->acl->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(thread_handle,process_handle_type);
+	if (!handle){
+		return 0;
+	}
+	thread_t* thread=handle->object;
+	u64 out=thread->acl->handle.rb_node.key;
+	handle_release(handle);
+	return out;
+}

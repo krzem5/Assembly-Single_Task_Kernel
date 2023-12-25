@@ -131,3 +131,19 @@ u64 syscall_process_get_event(handle_id_t process_handle){
 	handle_release(handle);
 	return out;
 }
+
+
+
+u64 syscall_process_get_acl(handle_id_t process_handle){
+	if (!process_handle){
+		return THREAD_DATA->process->acl->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return 0;
+	}
+	process_t* process=handle->object;
+	u64 out=process->acl->handle.rb_node.key;
+	handle_release(handle);
+	return out;
+}

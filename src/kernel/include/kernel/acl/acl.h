@@ -30,6 +30,7 @@ typedef struct _ACL_TREE_NODE{
 
 
 typedef struct _ACL{
+	handle_t handle;
 	spinlock_t lock;
 	acl_cache_entry_t cache[ACL_PROCESS_CACHE_SIZE];
 	rb_tree_t tree;
