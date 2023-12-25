@@ -1,3 +1,4 @@
+#include <kernel/format/format.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -10,6 +11,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "pipe"
 
 
@@ -29,6 +31,8 @@ typedef struct _PIPE_VFS_NODE{
 
 static pmm_counter_descriptor_t* _pipe_buffer_pmm_counter=NULL;
 static omm_allocator_t* _pipe_vfs_node_allocator=NULL;
+static vfs_node_t* _pipe_root=NULL;
+static KERNEL_ATOMIC u64 _pipe_next_id=0;
 
 
 
@@ -146,7 +150,7 @@ static const vfs_functions_t _pipe_vfs_functions={
 
 
 KERNEL_INIT(){
-	LOG("Initializing pipe filesystem...");
+	LOG("Initializing pipes...");
 	_pipe_buffer_pmm_counter=pmm_alloc_counter("pipe_buffer");
 	_pipe_vfs_node_allocator=omm_init("pipe_node",sizeof(pipe_vfs_node_t),8,4,pmm_alloc_counter("omm_pipe_node"));
 	spinlock_init(&(_pipe_vfs_node_allocator->lock));
@@ -155,7 +159,20 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
-	vfs_node_t* out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);
+	vfs_node_t* out;
+	if (parent&&name){
+		out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);
+	}
+	else{
+		if (!_pipe_root){
+			SMM_TEMPORARY_STRING dir_name=smm_alloc("pipes",0);
+			_pipe_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
+			_pipe_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
+		}
+		char buffer[64];
+		SMM_TEMPORARY_STRING file_name=smm_alloc(buffer,format_string(buffer,64,"%lu:%s",__atomic_fetch_add(&_pipe_next_id,1,__ATOMIC_SEQ_CST),(name?name->data:"")));
+		out=vfs_node_create_virtual(_pipe_root,&_pipe_vfs_functions,file_name);
+	}
 	out->flags|=VFS_NODE_TYPE_PIPE;
 	return out;
 }

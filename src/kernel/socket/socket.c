@@ -1,3 +1,4 @@
+#include <kernel/format/format.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
@@ -11,6 +12,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "socket"
 
 
@@ -23,6 +25,8 @@ static spinlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_vfs_node_allocator=NULL;
+static vfs_node_t* _socket_root=NULL;
+static KERNEL_ATOMIC u64 _socket_next_id=0;
 
 
 
@@ -130,8 +134,21 @@ KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,
 		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
 		return NULL;
 	}
-	vfs_node_t* out=vfs_node_create_virtual(parent,&_socket_vfs_functions,name);
-	out->flags|=VFS_NODE_TYPE_SOCKET;
+	vfs_node_t* out;
+	if (parent&&name){
+		out=vfs_node_create_virtual(parent,&_socket_vfs_functions,name);
+	}
+	else{
+		if (!_socket_root){
+			SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
+			_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
+			_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
+		}
+		char buffer[64];
+		SMM_TEMPORARY_STRING file_name=smm_alloc(buffer,format_string(buffer,64,"%lu:%s",__atomic_fetch_add(&_socket_next_id,1,__ATOMIC_SEQ_CST),(name?name->data:"")));
+		out=vfs_node_create_virtual(_socket_root,&_socket_vfs_functions,file_name);
+	}
+	out->flags|=VFS_NODE_TYPE_SOCKET|(0000<<VFS_NODE_PERMISSION_SHIFT);
 	((socket_vfs_node_t*)out)->domain=domain;
 	((socket_vfs_node_t*)out)->type=type;
 	((socket_vfs_node_t*)out)->protocol=protocol;

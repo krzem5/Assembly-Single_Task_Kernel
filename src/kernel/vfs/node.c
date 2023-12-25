@@ -1,12 +1,46 @@
 #include <kernel/clock/clock.h>
 #include <kernel/fs/fs.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "vfs_node"
+
+
+
+static omm_allocator_t* _vfs_node_empty_node_allocator=NULL;
+
+
+
+static vfs_node_t* _empty_node_alloc(void){
+	return omm_alloc(_vfs_node_empty_node_allocator);
+}
+
+
+
+static void _empty_node_dealloc(vfs_node_t* node){
+	omm_dealloc(_vfs_node_empty_node_allocator,node);
+}
+
+
+
+static const vfs_functions_t _vfs_node_empty_functions={
+	_empty_node_alloc,
+	_empty_node_dealloc,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
 
 
 
@@ -43,6 +77,14 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 
 
 
+KERNEL_INIT(){
+	LOG("Initializing VFS nodes...");
+	_vfs_node_empty_node_allocator=omm_init("vfs_empty_node",sizeof(vfs_node_t),8,1,pmm_alloc_counter("omm_vfs_empty_node"));
+	spinlock_init(&(_vfs_node_empty_node_allocator->lock));
+}
+
+
+
 KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
 	return _init_node(fs,fs->functions,name);
 }
@@ -50,7 +92,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name)
 
 
 KERNEL_PUBLIC vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name){
-	vfs_node_t* out=_init_node(NULL,functions,name);
+	vfs_node_t* out=_init_node(NULL,(functions?functions:&_vfs_node_empty_functions),name);
 	if (!out){
 		return NULL;
 	}

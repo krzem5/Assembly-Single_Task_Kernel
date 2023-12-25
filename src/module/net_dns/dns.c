@@ -12,7 +12,6 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
-#include <kernel/vfs/vfs.h>
 #include <net/dns.h>
 #include <net/info.h>
 #include <net/ip4.h>
@@ -197,7 +196,7 @@ void net_dns_init(void){
 	spinlock_init(&_net_dns_request_tree_lock);
 	rb_tree_init(&_net_dns_request_tree);
 	SMM_TEMPORARY_STRING name=smm_alloc("dns_socket",0);
-	_net_dns_socket=socket_create(vfs_lookup(NULL,"/",0,0,0),name,SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
+	_net_dns_socket=socket_create(NULL,name,SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
 		0x00000000,
 		53
