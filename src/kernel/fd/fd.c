@@ -233,7 +233,10 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-s64 fd_stat(handle_id_t fd,fd_stat_t* out){
+s64 fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
+	if (buffer_length<sizeof(fd_stat_t)){
+		return -1;
+	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;

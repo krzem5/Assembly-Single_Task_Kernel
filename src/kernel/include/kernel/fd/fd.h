@@ -108,7 +108,7 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags);
 
 
 
-s64 fd_stat(handle_id_t fd,fd_stat_t* out);
+s64 fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length);
 
 
 

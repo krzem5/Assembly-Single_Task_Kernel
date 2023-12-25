@@ -9,6 +9,8 @@
 # <type> = element type
 # | = return value separator
 
+%kernel/fd/fd.h
+
 fd_close:Q|b
 fd_dup:QI|Q
 fd_iter_get:QZ@2Q|Q

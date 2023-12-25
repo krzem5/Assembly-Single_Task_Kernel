@@ -224,100 +224,78 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 			line=line.strip()
 			if (not line or line[0]=="#"):
 				continue
+			if (line[0]=="%"):
+				wf.write(f"#include <{line[1:]}>\n")
+				continue
 			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
 			wf.write(f"\n\n\nvoid syscall_{func}(syscall_reg_state_t* regs){{\n")
 			i=0
 			return_type="u64"
-			decl_args=[]
 			call_args=[]
-			if (not args.islower()):
-				is_return_value=False
-				return_type=None
-				idx=0
-				while (i<len(args)):
-					if (args[i]=="|"):
-						i+=1
-						if (is_return_value):
-							raise RuntimeError("Return delimeter already present")
-						is_return_value=True
-						continue
-					if (args[i] not in "bBHIQSZ"):
-						raise RuntimeError(f"Invalid type: {args[i]}")
-					type_=args[i]
-					other_index=0
-					element_type=""
+			is_return_value=False
+			return_type=None
+			idx=0
+			while (i<len(args)):
+				if (args[i]=="|"):
 					i+=1
-					while (i<len(args)):
-						if (args[i]=="@"):
-							other_index=ord(args[i+1])-48
-							i+=2
-						elif (args[i]=="<"):
-							i+=1
-							raise RuntimeError("type")
-						else:
-							break
 					if (is_return_value):
-						if (return_type is not None):
-							raise RuntimeError("Multiple return values")
-						if (type_=="b"):
-							return_type="_Bool"
-						elif (type_=="B"):
-							return_type="u8"
-						elif (type_=="H"):
-							return_type="u15"
-						elif (type_=="I"):
-							return_type="u32"
-						elif (type_=="Q"):
-							return_type="u64"
-						else:
-							raise RuntimeError(f"Invalid return type: {type_}")
-						continue
+						raise RuntimeError("Return delimeter already present")
+					is_return_value=True
+					continue
+				if (args[i] not in "bBHIQSZ"):
+					raise RuntimeError(f"Invalid type: {args[i]}")
+				type_=args[i]
+				other_index=0
+				element_type=""
+				i+=1
+				while (i<len(args)):
+					if (args[i]=="@"):
+						other_index=ord(args[i+1])-48
+						i+=2
+					elif (args[i]=="<"):
+						i+=1
+						raise RuntimeError("type")
+					else:
+						break
+				if (is_return_value):
+					if (return_type is not None):
+						raise RuntimeError("Multiple return values")
 					if (type_=="b"):
-						decl_args.append("_Bool")
-						call_args.append(f"regs->{REGS[idx]}")
+						return_type="_Bool"
 					elif (type_=="B"):
-						decl_args.append("u8")
-						call_args.append(f"regs->{REGS[idx]}")
+						return_type="u8"
 					elif (type_=="H"):
-						decl_args.append("u15")
-						call_args.append(f"regs->{REGS[idx]}")
+						return_type="u15"
 					elif (type_=="I"):
-						decl_args.append("u32")
-						call_args.append(f"regs->{REGS[idx]}")
+						return_type="u32"
 					elif (type_=="Q"):
-						decl_args.append("u64")
-						call_args.append(f"regs->{REGS[idx]}")
-					elif (type_=="S"):
-						decl_args.append("char*")
-						decl_args.append("u64")
-						call_args.append(f"(void*)(regs->{REGS[idx]})")
-						call_args.append(f"{REGS[idx]}_length")
-						wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length(regs->{REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn;\n\t}}\n")
-					elif (type_=="Z"):
-						decl_args.append("void*")
-						call_args.append(f"(void*)(regs->{REGS[idx]})")
-						wf.write(f"\tif (regs->{REGS[other_index]}>syscall_get_user_pointer_max_length(regs->{REGS[idx]})){{\n\t\treturn;\n\t}}\n")
+						return_type="u64"
 					else:
-						raise RuntimeError(f"Invalid type: {type_}")
-					idx+=1
-				if (return_type is None):
-					raise RuntimeError("No return value provided")
-			else:
-				for type_ in args.split(","):
-					type_,idx=(type_.strip().split("@")+[0])[:2]
-					if (type_=="int"):
-						call_args.append(f"regs->{REGS[i]}")
-					elif (type_=="string"):
-						wf.write(f"\tu64 {REGS[i]}_length=syscall_get_string_length(regs->{REGS[i]});\n\tif (!{REGS[i]}_length){{\n\t\treturn;\n\t}}\n")
-						call_args.append(f"(void*)(regs->{REGS[i]})")
-						call_args.append(f"{REGS[i]}_length")
-					elif (type_=="buffer"):
-						wf.write(f"\tif (regs->{REGS[int(idx)]}>syscall_get_user_pointer_max_length(regs->{REGS[i]})){{\n\t\treturn;\n\t}}\n")
-						call_args.append(f"(void*)(regs->{REGS[i]})")
-					else:
-						raise RuntimeError(type_)
-					i+=1
-			wf.write(f"\textern {return_type} {func}({','.join(decl_args)});\n\tregs->rax={func}({','.join(call_args)});\n}}\n")
+						raise RuntimeError(f"Invalid return type: {type_}")
+					continue
+				if (type_=="b"):
+					call_args.append(f"regs->{REGS[idx]}")
+				elif (type_=="B"):
+					call_args.append(f"regs->{REGS[idx]}")
+				elif (type_=="H"):
+					call_args.append(f"regs->{REGS[idx]}")
+				elif (type_=="I"):
+					call_args.append(f"regs->{REGS[idx]}")
+				elif (type_=="Q"):
+					call_args.append(f"regs->{REGS[idx]}")
+				elif (type_=="S"):
+					call_args.append(f"(void*)(regs->{REGS[idx]})")
+					call_args.append(f"{REGS[idx]}_length")
+					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length(regs->{REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn;\n\t}}\n")
+				elif (type_=="Z"):
+					call_args.append(f"(void*)(regs->{REGS[idx]})")
+					wf.write(f"\tif (regs->{REGS[other_index]}>syscall_get_user_pointer_max_length(regs->{REGS[idx]})){{\n\t\treturn;\n\t}}\n")
+				else:
+					raise RuntimeError(f"Invalid type: {type_}")
+				idx+=1
+			if (return_type is None):
+				raise RuntimeError("No return value provided")
+			wf.write(f"\tregs->rax={func}({','.join(call_args)});\n}}\n")
 
 
 
