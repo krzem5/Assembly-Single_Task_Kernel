@@ -16,7 +16,7 @@
 static omm_allocator_t* _acl_allocator=NULL;
 static omm_allocator_t* _acl_tree_node_allocator=NULL;
 
-acl_request_callback_t acl_request_callback=NULL;
+KERNEL_ATOMIC acl_request_callback_t acl_request_callback=NULL;
 
 
 
@@ -161,5 +161,28 @@ u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle
 u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
 	// pass the argument triplet (handle_id,process_handle_id,flags) via a socket to an sbin executable (module-installed callback function)
 	// call an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
-	return (acl_request_callback?acl_request_callback(handle_id,(process_handle_id?process_handle_id:THREAD_DATA->process->handle.rb_node.key),flags):0);
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	if (!handle||!handle->acl){
+		return 0;
+	}
+	handle_t* process_handle=NULL;
+	if (process_handle_id){
+		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
+		if (!process_handle){
+			handle_release(handle);
+			return 0;
+		}
+	}
+	_Bool out=0;
+	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
+	acl_request_callback_t callback=acl_request_callback;
+	if (callback&&callback(handle,process,flags)){
+		acl_set(handle->acl,process,0,flags);
+		out=1;
+	}
+	if (process_handle){
+		handle_release(process_handle);
+	}
+	handle_release(handle);
+	return out;
 }
