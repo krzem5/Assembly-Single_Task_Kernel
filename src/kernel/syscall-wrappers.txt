@@ -10,20 +10,6 @@
 
 %kernel/fd/fd.h
 
-fd_close:Q
-fd_dup:QI
-fd_iter_get:QZ@2Q
-fd_iter_next:Q
-fd_iter_start:Q
-fd_iter_stop:Q
-fd_open:QSI
-fd_path:QZ@2Q
-fd_read:QZ@2QI
-fd_resize:QQI
-fd_seek:QQI
-fd_stat:QZ@2Q
-fd_write:QZ@2QI
-
 # TODO APIs:
 # better memory api (alloc + counters + locks)
 # drive buffering (internal)

@@ -7,6 +7,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -54,16 +55,28 @@ KERNEL_INIT(){
 
 
 
-s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
+vfs_node_t* fd_get_node(handle_id_t fd){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return NULL;
+	}
+	fd_t* data=fd_handle->object;
+	return data->node;
+}
+
+
+
+u64 syscall_fd_open(handle_id_t root,const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
-	char buffer[4096];
-	if (length>4095){
+	u64 path_length=syscall_get_string_length((u64)path);
+	if (!path_length||path_length>4095){
 		return FD_ERROR_INVALID_POINTER;
 	}
-	memcpy(buffer,path,length);
-	buffer[length]=0;
+	char buffer[4096];
+	memcpy(buffer,path,path_length);
+	buffer[path_length]=0;
 	handle_t* root_handle=NULL;
 	vfs_node_t* root_node=NULL;
 	if (root){
@@ -105,7 +118,7 @@ s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags){
 
 
 
-s64 fd_close(handle_id_t fd){
+u64 syscall_fd_close(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
@@ -123,7 +136,10 @@ s64 fd_close(handle_id_t fd){
 
 
 
-s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
+u64 syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length((u64)buffer)){
+		return -1;
+	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
@@ -150,7 +166,10 @@ s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 
 
 
-s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
+u64 syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length((u64)buffer)){
+		return -1;
+	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return FD_ERROR_INVALID_FLAGS;
 	}
@@ -177,7 +196,7 @@ s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 
 
 
-s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
+u64 syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
@@ -211,7 +230,7 @@ s64 fd_seek(handle_id_t fd,u64 offset,u32 type){
 
 
 
-s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
+u64 syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
@@ -233,8 +252,8 @@ s64 fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-s64 fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
-	if (buffer_length<sizeof(fd_stat_t)){
+u64 syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
+	if (buffer_length<sizeof(fd_stat_t)||buffer_length>syscall_get_user_pointer_max_length((u64)out)){
 		return -1;
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
@@ -267,13 +286,16 @@ s64 fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
 
 
 
-s64 fd_dup(handle_id_t fd,u32 flags){
+u64 syscall_fd_dup(handle_id_t fd,u32 flags){
 	panic("fd_dup");
 }
 
 
 
-s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
+u64 syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+		return -1;
+	}
 	if (buffer_length<2){
 		return FD_ERROR_NO_SPACE;
 	}
@@ -295,18 +317,7 @@ s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 
 
 
-vfs_node_t* fd_get_node(handle_id_t fd){
-	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
-	if (!fd_handle){
-		return NULL;
-	}
-	fd_t* data=fd_handle->object;
-	return data->node;
-}
-
-
-
-s64 fd_iter_start(handle_id_t fd){
+u64 syscall_fd_iter_start(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return FD_ERROR_INVALID_FD;
@@ -345,7 +356,10 @@ s64 fd_iter_start(handle_id_t fd){
 
 
 
-s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
+u64 syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+		return -1;
+	}
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return FD_ERROR_INVALID_FD;
@@ -376,7 +390,7 @@ s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 
 
 
-s64 fd_iter_next(handle_id_t iterator){
+u64 syscall_fd_iter_next(handle_id_t iterator){
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return FD_ERROR_INVALID_FD;
@@ -405,6 +419,6 @@ s64 fd_iter_next(handle_id_t iterator){
 
 
 
-s64 fd_iter_stop(handle_id_t iterator){
-	panic("fd_iter_stop");
+u64 syscall_fd_iter_stop(handle_id_t iterator){
+	panic("syscall_fd_iter_stop");
 }

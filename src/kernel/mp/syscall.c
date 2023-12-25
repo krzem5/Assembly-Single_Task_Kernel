@@ -63,9 +63,6 @@ u64 syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
 
 
 u64 syscall_thread_get_priority(handle_id_t thread_handle){
-	if (!thread_handle){
-		return 0;
-	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
 	if (!handle){
 		return 0;
@@ -78,7 +75,7 @@ u64 syscall_thread_get_priority(handle_id_t thread_handle){
 
 
 u64 syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
-	if (!thread_handle||priority<SCHEDULER_PRIORITY_MIN||priority>SCHEDULER_PRIORITY_MAX){
+	if (priority<SCHEDULER_PRIORITY_MIN||priority>SCHEDULER_PRIORITY_MAX){
 		return 0;
 	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
@@ -101,7 +98,7 @@ u64 syscall_thread_get_cpu_mask(handle_id_t thread_handle,void* buffer,u32 buffe
 	if (buffer_size>cpu_mask_size){
 		buffer_size=cpu_mask_size;
 	}
-	if (!thread_handle||buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
+	if (buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
 		return 0;
 	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
@@ -120,7 +117,7 @@ u64 syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32
 	if (buffer_size>cpu_mask_size){
 		buffer_size=cpu_mask_size;
 	}
-	if (!thread_handle||buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
+	if (buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
 		return 0;
 	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
@@ -137,10 +134,7 @@ u64 syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32
 
 
 u64 syscall_thread_await_events(const handle_id_t* events,u64 event_count){
-	if (!event_count){
-		return -1;
-	}
-	if (event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((u64)events)){
+	if (!event_count||event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((u64)events)){
 		return -1;
 	}
 	return event_await_multiple_handles(events,event_count);
@@ -149,9 +143,6 @@ u64 syscall_thread_await_events(const handle_id_t* events,u64 event_count){
 
 
 u64 syscall_process_get_event(handle_id_t process_handle){
-	if (!process_handle){
-		return 0;
-	}
 	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
 	if (!handle){
 		return 0;

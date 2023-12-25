@@ -84,59 +84,7 @@ typedef struct _FD_ITERATOR{
 
 
 
-s64 fd_open(handle_id_t root,const char* path,u32 length,u32 flags);
-
-
-
-s64 fd_close(handle_id_t fd);
-
-
-
-s64 fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags);
-
-
-
-s64 fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags);
-
-
-
-s64 fd_seek(handle_id_t fd,u64 offset,u32 type);
-
-
-
-s64 fd_resize(handle_id_t fd,u64 size,u32 flags);
-
-
-
-s64 fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length);
-
-
-
-s64 fd_dup(handle_id_t fd,u32 flags);
-
-
-
-s64 fd_path(handle_id_t fd,char* buffer,u32 buffer_length);
-
-
-
 vfs_node_t* fd_get_node(handle_id_t fd);
-
-
-
-s64 fd_iter_start(handle_id_t fd);
-
-
-
-s64 fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length);
-
-
-
-s64 fd_iter_next(handle_id_t iterator);
-
-
-
-s64 fd_iter_stop(handle_id_t iterator);
 
 
 
