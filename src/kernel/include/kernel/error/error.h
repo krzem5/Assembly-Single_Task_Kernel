@@ -4,7 +4,7 @@
 
 
 
-#define IS_ERROR(x) ((x)<0)
+#define IS_ERROR(x) (((s64)(x))<0)
 
 #define _ERROR(x) (-((s64)(x)))
 
@@ -18,6 +18,7 @@
 #define ERROR_UNSUPPORTED_OPERATION _ERROR(0x0007)
 #define ERROR_NO_SPACE _ERROR(0x0008)
 #define ERROR_EOF _ERROR(0x0009)
+#define ERROR_INVALID_FORMAT _ERROR(0x000a)
 
 
 

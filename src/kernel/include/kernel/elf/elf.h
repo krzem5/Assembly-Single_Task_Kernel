@@ -1,6 +1,6 @@
 #ifndef _KERNEL_ELF_ELF_H_
 #define _KERNEL_ELF_ELF_H_ 1
-#include <kernel/handle/handle.h>
+#include <kernel/error/error.h>
 #include <kernel/types.h>
 
 
@@ -12,7 +12,7 @@
 
 
 
-handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags);
+error_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags);
 
 
 

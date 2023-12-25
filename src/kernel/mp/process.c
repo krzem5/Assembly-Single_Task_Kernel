@@ -124,8 +124,7 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 		}
 	}
 	// copy all vars to a temp buffer + check environ for overflow
-	handle_id_t out=elf_load(path,argc,argv,environ,flags);
-	return (out?out:ERROR_NOT_FOUND);
+	return elf_load(path,argc,argv,environ,flags);
 }
 
 

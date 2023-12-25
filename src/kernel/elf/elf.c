@@ -1,6 +1,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/elf/structures.h>
+#include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
@@ -68,45 +69,45 @@ static vfs_node_t* _get_executable_file(const char* path){
 
 
 
-static _Bool _check_elf_header(elf_loader_context_t* ctx){
+static error_t _check_elf_header(elf_loader_context_t* ctx){
 	if (ctx->elf_header->e_ident.signature!=0x464c457f){
 		ERROR("ELF header error: e_ident.signature != 0x464c457f");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_ident.word_size!=2){
 		ERROR("ELF header error: e_ident.word_size != 2");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_ident.endianess!=1){
 		ERROR("ELF header error: e_ident.endianess != 1");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_ident.header_version!=1){
 		ERROR("ELF header error: e_ident.header_version != 1");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_ident.abi!=0){
 		ERROR("ELF header error: e_ident.abi != 0");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_type!=ET_EXEC){
 		ERROR("ELF header error: e_type != ET_EXEC");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_machine!=0x3e){
 		ERROR("ELF header error: machine != 0x3e");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
 	if (ctx->elf_header->e_version!=1){
 		ERROR("ELF header error: version != 1");
-		return 0;
+		return ERROR_INVALID_FORMAT;
 	}
-	return 1;
+	return ERROR_OK;
 }
 
 
 
-static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
+static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 	INFO("Mapping and locating sections...");
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
 		const elf_phdr_t* program_header=ctx->data+ctx->elf_header->e_phoff+i*ctx->elf_header->e_phentsize;
@@ -117,12 +118,12 @@ static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
 		if (program_header->p_type==PT_INTERP){
 			if (ctx->interpreter_path){
 				ERROR("Multiple PT_INTERP program headers");
-				return 0;
+				return ERROR_INVALID_FORMAT;
 			}
 			ctx->interpreter_path=ctx->data+program_header->p_offset;
 			if (ctx->interpreter_path[program_header->p_filesz-1]){
 				ERROR("Interpreter string not null-terminated");
-				return 0;
+				return ERROR_INVALID_FORMAT;
 			}
 			continue;
 		}
@@ -139,11 +140,11 @@ static _Bool _map_and_locate_sections(elf_loader_context_t* ctx){
 		}
 		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),_user_image_pmm_counter,flags,NULL);
 		if (!program_region){
-			return 0;
+			return ERROR_NO_SPACE;
 		}
 		mmap_set_memory(&(ctx->process->mmap),program_region,padding,ctx->data+program_header->p_offset,program_header->p_filesz);
 	}
-	return 1;
+	return ERROR_OK;
 }
 
 
@@ -155,19 +156,21 @@ static void _create_executable_thread(elf_loader_context_t* ctx){
 
 
 
-static _Bool _load_interpreter(elf_loader_context_t* ctx){
+static error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!ctx->interpreter_path){
-		return 1;
+		return ERROR_OK;
 	}
 	INFO("Loading interpreter...");
 	vfs_node_t* file=_get_executable_file(ctx->interpreter_path);
 	if (!file){
-		return 0;
+		return ERROR_NOT_FOUND;
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
+	error_t out=ERROR_OK;
 	if (header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_DYN||header.e_machine!=0x3e||header.e_version!=1){
+		out=ERROR_INVALID_FORMAT;
 		goto _error;
 	}
 	u64 max_address=0;
@@ -189,6 +192,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
+		out=ERROR_NO_SPACE;
 		goto _error;
 	}
 	u64 image_base=program_region->rb_node.key;
@@ -240,6 +244,7 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 				break;
 			default:
 				ERROR("Unknown relocation type: %u",relocations->r_info);
+				out=ERROR_INVALID_FORMAT;
 				goto _error;
 		}
 		mmap_set_memory(&(ctx->process->mmap),program_region,relocations->r_offset,&(symbol->st_value),sizeof(u64));
@@ -252,15 +257,15 @@ static _Bool _load_interpreter(elf_loader_context_t* ctx){
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	ctx->thread->reg_state.gpr_state.rip=header.e_entry+image_base;
-	return 1;
+	return ERROR_OK;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	return 0;
+	return out;
 }
 
 
 
-static _Bool _generate_input_data(elf_loader_context_t* ctx){
+static error_t _generate_input_data(elf_loader_context_t* ctx){
 	INFO("Generating input data...");
 	u64 size=sizeof(u64);
 	u64 string_table_size=0;
@@ -281,7 +286,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	if (!region){
 		ERROR("Unable to reserve process input data memory");
-		return 0;
+		return ERROR_NO_SPACE;
 	}
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,_user_input_data_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u64* data_ptr=buffer;
@@ -316,7 +321,7 @@ static _Bool _generate_input_data(elf_loader_context_t* ctx){
 	mmap_set_memory(&(ctx->process->mmap),region,0,buffer,total_size);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(total_size)>>PAGE_SIZE_SHIFT,_user_input_data_pmm_counter);
 	ctx->thread->reg_state.gpr_state.r15=region->rb_node.key;
-	return !!region;
+	return ERROR_OK;
 }
 
 
@@ -330,9 +335,9 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
+KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!path){
-		return 0;
+		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (!argv){
 		argc=1;
@@ -341,7 +346,7 @@ KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* a
 	LOG("Loading executable '%s'...",path);
 	vfs_node_t* file=_get_executable_file(path);
 	if (!file){
-		return 0;
+		return ERROR_NOT_FOUND;
 	}
 	process_t* process=process_create(path,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
@@ -359,17 +364,21 @@ KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* a
 		NULL,
 		0
 	};
-	if (!_check_elf_header(&ctx)){
+	error_t out=_check_elf_header(&ctx);
+	if (out!=ERROR_OK){
 		goto _error;
 	}
-	if (!_map_and_locate_sections(&ctx)){
+	out=_map_and_locate_sections(&ctx);
+	if (out!=ERROR_OK){
 		goto _error;
 	}
 	_create_executable_thread(&ctx);
-	if (!_load_interpreter(&ctx)){
+	out=_load_interpreter(&ctx);
+	if (out!=ERROR_OK){
 		goto _error;
 	}
-	if (!_generate_input_data(&ctx)){
+	out=_generate_input_data(&ctx);
+	if (out!=ERROR_OK){
 		goto _error;
 	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
@@ -380,5 +389,5 @@ KERNEL_PUBLIC handle_id_t elf_load(const char* path,u32 argc,const char*const* a
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	handle_release(&(process->handle));
-	return 0;
+	return out;
 }
