@@ -681,18 +681,17 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/lib",0o644,True)
 	kfs2.get_inode(data_fs,"/bin",0o644,True)
 	with open("build/kernel.bin.compressed","rb") as rf:
-		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.bin",0o400)
+		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
 	with open("build/partitions/initramfs.img.compressed","rb") as rf:
-		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs",0o400)
+		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400)
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	for library in os.listdir("build/lib"):
-		if (not library.endswith(".so")):
-			continue
-		with open(f"build/lib/{library}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
+		if (library.endswith(".so")):
+			with open(f"build/lib/{library}","rb") as rf:
+				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
 	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o644)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
