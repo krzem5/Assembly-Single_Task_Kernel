@@ -44,3 +44,5 @@
 44,socket_recv(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
 45,socket_send(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
 46,socket_shutdown(u64 fd,u32 flags) -> u64
+47,socket_bind(u64 fd,const void* address,u32 address_length) -> u64
+48,socket_connect(u64 fd,const void* address,u32 address_length) -> u64

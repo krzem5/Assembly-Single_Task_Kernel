@@ -314,6 +314,38 @@ error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 
 
 
+error_t syscall_socket_bind(handle_id_t fd,const void* address,u32 address_length){
+	if (address_length>syscall_get_user_pointer_max_length(address)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	vfs_node_t* node=fd_get_node(fd);
+	if (!node){
+		return ERROR_INVALID_HANDLE;
+	}
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	return (socket_bind(node,address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+}
+
+
+
+error_t syscall_socket_connect(handle_id_t fd,const void* address,u32 address_length){
+	if (address_length>syscall_get_user_pointer_max_length(address)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	vfs_node_t* node=fd_get_node(fd);
+	if (!node){
+		return ERROR_INVALID_HANDLE;
+	}
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	return (socket_connect(node,address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+}
+
+
+
 error_t syscall_socket_recv(handle_id_t fd,void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
