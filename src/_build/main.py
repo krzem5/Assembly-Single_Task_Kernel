@@ -214,62 +214,6 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 
 
 
-def _generate_syscall_wrappers(src_file_path,dst_file_path):
-	REGS=["rdi","rsi","rdx","rcx","r8","r9"]
-	with open(src_file_path,"r") as rf,open(dst_file_path,"w") as wf:
-		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n")
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line or line[0]=="#"):
-				continue
-			if (line[0]=="%"):
-				wf.write(f"#include <{line[1:]}>\n")
-				continue
-			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
-			wf.write(f"\n\n\nu64 syscall_{func}(u64 rdi,u64 rsi,u64 rdx,u64 rcx,u64 r8,u64 r9){{\n")
-			call_args=[]
-			idx=0
-			i=0
-			while (i<len(args)):
-				if (args[i] not in "bBHIQSZ"):
-					raise RuntimeError(f"Invalid type: {args[i]}")
-				type_=args[i]
-				other_index=0
-				element_type=""
-				i+=1
-				while (i<len(args)):
-					if (args[i]=="@"):
-						other_index=ord(args[i+1])-48
-						i+=2
-					elif (args[i]=="<"):
-						i+=1
-						raise RuntimeError("type")
-					else:
-						break
-				if (type_=="b"):
-					call_args.append(f"{REGS[idx]}")
-				elif (type_=="B"):
-					call_args.append(f"{REGS[idx]}")
-				elif (type_=="H"):
-					call_args.append(f"{REGS[idx]}")
-				elif (type_=="I"):
-					call_args.append(f"{REGS[idx]}")
-				elif (type_=="Q"):
-					call_args.append(f"{REGS[idx]}")
-				elif (type_=="S"):
-					call_args.append(f"(void*)({REGS[idx]})")
-					call_args.append(f"{REGS[idx]}_length")
-					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length({REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn -1;\n\t}}\n")
-				elif (type_=="Z"):
-					call_args.append(f"(void*)({REGS[idx]})")
-					wf.write(f"\tif ({REGS[other_index]}>syscall_get_user_pointer_max_length({REGS[idx]})){{\n\t\treturn -1;\n\t}}\n")
-				else:
-					raise RuntimeError(f"Invalid type: {type_}")
-				idx+=1
-			wf.write(f"\treturn {func}({','.join(call_args)});\n}}\n")
-
-
-
 def _generate_kernel_build_info():
 	version=time.time_ns()
 	with open("src/kernel/_generated/build_info.c","w") as wf:
@@ -614,7 +558,6 @@ for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall.h","src/lib/sys/sys/syscall.asm")
-_generate_syscall_wrappers("src/kernel/syscall-wrappers.txt","src/kernel/_generated/syscal_wrappers.c")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]
