@@ -54,11 +54,7 @@ u64 acl_get(acl_t* acl,struct _PROCESS* process);
 
 
 
-void acl_add(acl_t* acl,struct _PROCESS* process,u64 flags);
-
-
-
-void acl_remove(acl_t* acl,struct _PROCESS* process,u64 flags);
+void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set);
 
 
 

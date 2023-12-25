@@ -52,7 +52,6 @@ static void _thread_handle_destructor(handle_t* handle){
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
 	}
-	acl_delete(thread->acl);
 	omm_dealloc(_thread_allocator,thread);
 }
 
@@ -69,8 +68,8 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	memset(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
 	handle_new(out,thread_handle_type,&(out->handle));
-	out->acl=acl_create();
-	acl_add(out->acl,process,THREAD_STATE_TYPE_TERMINATED);
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,process,0,THREAD_STATE_TYPE_TERMINATED);
 	spinlock_init(&(out->lock));
 	out->process=process;
 	char buffer[32];
@@ -306,20 +305,4 @@ u64 syscall_thread_await_events(const handle_id_t* events,u64 event_count){
 		return -1;
 	}
 	return event_await_multiple_handles(events,event_count);
-}
-
-
-
-u64 syscall_thread_get_acl(handle_id_t thread_handle){
-	if (!thread_handle){
-		return THREAD_DATA->acl->handle.rb_node.key;
-	}
-	handle_t* handle=handle_lookup_and_acquire(thread_handle,process_handle_type);
-	if (!handle){
-		return 0;
-	}
-	thread_t* thread=handle->object;
-	u64 out=thread->acl->handle.rb_node.key;
-	handle_release(handle);
-	return out;
 }

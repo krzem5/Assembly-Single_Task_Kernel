@@ -33,6 +33,7 @@ typedef struct _HANDLE{
 	rb_tree_node_t rb_node;
 	void* object;
 	KERNEL_ATOMIC u64 rc;
+	struct _ACL* acl;
 } handle_t;
 
 

@@ -5,6 +5,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -80,48 +81,82 @@ KERNEL_PUBLIC u64 acl_get(acl_t* acl,process_t* process){
 
 
 
-KERNEL_PUBLIC void acl_add(acl_t* acl,process_t* process,u64 flags){
+KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set){
 	u64 key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
 	if (!key){
 		return;
 	}
 	spinlock_acquire_exclusive(&(acl->lock));
 	acl_tree_node_t* node=(acl_tree_node_t*)rb_tree_lookup_node(&(acl->tree),key);
-	if (!node){
+	if (!node&&set){
 		node=omm_alloc(_acl_tree_node_allocator);
 		node->rb_node.key=key;
-		node->flags=0;
+		node->flags=set;
 		rb_tree_insert_node(&(acl->tree),&(node->rb_node));
 	}
-	node->flags|=flags;
-	if (!acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].key){
-		acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].key=key;
-		acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].flags=node->flags;
+	else if (node){
+		node->flags=(node->flags&(~clear))|set;
+		if (!node->flags){
+			rb_tree_remove_node(&(acl->tree),&(node->rb_node));
+			omm_dealloc(_acl_tree_node_allocator,node);
+			node=NULL;
+		}
+	}
+	acl_cache_entry_t* cache_entry=acl->cache+(key&(ACL_PROCESS_CACHE_SIZE-1));
+	if (node&&(!cache_entry->key||cache_entry->key==node->rb_node.key)){
+		cache_entry->key=node->rb_node.key;
+		cache_entry->flags=node->flags;
 	}
 	spinlock_release_exclusive(&(acl->lock));
 }
 
 
 
-KERNEL_PUBLIC void acl_remove(acl_t* acl,process_t* process,u64 flags){
-	u64 key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
-	if (!key){
-		return;
+u64 syscall_acl_get_permissions(handle_id_t acl_handle,handle_id_t process_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(acl_handle,_acl_handle_type);
+	if (!handle){
+		return 0;
 	}
-	spinlock_acquire_exclusive(&(acl->lock));
-	if (acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].key==key){
-		acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].flags&=~flags;
-		if (!acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].flags){
-			acl->cache[key&(ACL_PROCESS_CACHE_SIZE-1)].key=0;
+	handle_t* process_handle=NULL;
+	if (process_handle_id){
+		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
+		if (!process_handle){
+			handle_release(handle);
+			return 0;
 		}
 	}
-	acl_tree_node_t* node=(acl_tree_node_t*)rb_tree_lookup_node(&(acl->tree),key);
-	if (node){
-		node->flags&=~flags;
-		if (!node->flags){
-			rb_tree_remove_node(&(acl->tree),&(node->rb_node));
-			omm_dealloc(_acl_tree_node_allocator,node);
+	acl_t* acl=handle->object;
+	u64 out=acl_get(acl,(process_handle?process_handle->object:THREAD_DATA->process));
+	if (process_handle){
+		handle_release(process_handle);
+	}
+	handle_release(handle);
+	return out;
+}
+
+
+
+u64 syscall_acl_set_permissions(handle_id_t acl_handle,handle_id_t process_handle_id,u64 clear,u64 set){
+	handle_t* handle=handle_lookup_and_acquire(acl_handle,_acl_handle_type);
+	if (!handle){
+		return 0;
+	}
+	handle_t* process_handle=NULL;
+	if (process_handle_id){
+		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
+		if (!process_handle){
+			handle_release(handle);
+			return 0;
 		}
 	}
-	spinlock_release_exclusive(&(acl->lock));
+	acl_t* acl=handle->object;
+	if (!process_is_root()){
+		set&=acl_get(acl,THREAD_DATA->process);
+	}
+	acl_set(acl,(process_handle?process_handle->object:THREAD_DATA->process),clear,set);
+	if (process_handle){
+		handle_release(process_handle);
+	}
+	handle_release(handle);
+	return 1;
 }

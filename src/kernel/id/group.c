@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
@@ -80,7 +81,7 @@ u64 syscall_gid_get(void){
 
 
 u64 syscall_gid_set(u64 gid){
-	if (!THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0)){
+	if (process_is_root()){
 		THREAD_DATA->process->gid=gid;
 		return 1;
 	}

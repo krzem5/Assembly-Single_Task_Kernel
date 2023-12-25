@@ -3,6 +3,7 @@
 #include <kernel/elf/elf.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
+#include <kernel/id/user.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -55,7 +56,7 @@ KERNEL_EARLY_INIT(){
 	process_handle_type=handle_alloc("process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
-	process_kernel->acl=acl_create();
+	process_kernel->handle.acl=acl_create();
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
@@ -78,9 +79,9 @@ KERNEL_EARLY_INIT(){
 KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,process_handle_type,&(out->handle));
-	process_kernel->acl=acl_create();
+	process_kernel->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
-		acl_add(process_kernel->acl,THREAD_DATA->process,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
+		acl_set(process_kernel->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
 	}
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
@@ -93,6 +94,12 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	out->event=event_create();
 	handle_finish_setup(&(out->handle));
 	return out;
+}
+
+
+
+KERNEL_PUBLIC _Bool process_is_root(void){
+	return !THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0);
 }
 
 
@@ -128,22 +135,6 @@ u64 syscall_process_get_event(handle_id_t process_handle){
 	}
 	process_t* process=handle->object;
 	u64 out=process->event->handle.rb_node.key;
-	handle_release(handle);
-	return out;
-}
-
-
-
-u64 syscall_process_get_acl(handle_id_t process_handle){
-	if (!process_handle){
-		return THREAD_DATA->process->acl->handle.rb_node.key;
-	}
-	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
-	if (!handle){
-		return 0;
-	}
-	process_t* process=handle->object;
-	u64 out=process->acl->handle.rb_node.key;
 	handle_release(handle);
 	return out;
 }

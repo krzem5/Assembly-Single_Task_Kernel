@@ -25,4 +25,8 @@ process_t* process_create(const char* image,const char* name);
 
 
 
+_Bool process_is_root(void);
+
+
+
 #endif

@@ -20,7 +20,6 @@
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
 	handle_t handle;
-	acl_t* acl;
 	spinlock_t lock;
 	event_t* event;
 	u64 interval;
@@ -30,10 +29,6 @@ typedef struct _TIMER{
 
 
 extern handle_type_t timer_handle_type;
-
-
-
-void timer_init(void);
 
 
 

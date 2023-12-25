@@ -67,9 +67,9 @@ KERNEL_EARLY_EARLY_INIT(){
 KERNEL_PUBLIC event_t* event_create(void){
 	event_t* out=omm_alloc(_event_allocator);
 	handle_new(out,_event_handle_type,&(out->handle));
-	out->acl=acl_create();
+	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
-		acl_add(out->acl,THREAD_DATA->process,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
+		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
 	}
 	spinlock_init(&(out->lock));
 	out->is_active=0;
@@ -82,7 +82,7 @@ KERNEL_PUBLIC event_t* event_create(void){
 
 
 KERNEL_PUBLIC void event_delete(event_t* event){
-	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
+	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
 		return;
 	}
 	scheduler_pause();
@@ -93,7 +93,6 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
-	acl_delete(event->acl);
 	spinlock_release_exclusive(&(event->lock));
 	scheduler_resume();
 }
@@ -101,7 +100,7 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 
 
 KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
-	if (!(flags&EVENT_DISPATCH_FLAG_BYPASS_ACL)&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+	if (!(flags&EVENT_DISPATCH_FLAG_BYPASS_ACL)&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		return;
 	}
 	scheduler_pause();
@@ -199,7 +198,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 
 
 KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active,_Bool bypass_acl){
-	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		return;
 	}
 	scheduler_pause();

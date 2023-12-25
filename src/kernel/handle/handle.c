@@ -1,3 +1,4 @@
+#include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -15,7 +16,7 @@
 static pmm_counter_descriptor_t _handle_descriptor_omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
 static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
-static handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
+static KERNEL_ATOMIC handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
 
 KERNEL_PUBLIC handle_type_t handle_handle_type=0;
 
@@ -74,8 +75,9 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	if (!handle_descriptor){
 		panic("Invalid handle type");
 	}
-	out->rc=1;
 	out->object=object;
+	out->rc=1;
+	out->acl=NULL;
 	spinlock_acquire_exclusive(&(handle_descriptor->lock));
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;
@@ -131,6 +133,10 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 	handle_descriptor->active_count--;
 #pragma GCC diagnostic pop
+	if (handle->acl){
+		acl_delete(handle->acl);
+		handle->acl=NULL;
+	}
 	if (handle_descriptor->delete_callback){
 		handle_descriptor->delete_callback(handle);
 	}
@@ -163,4 +169,16 @@ KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,n
 	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener);
 	spinlock_release_exclusive(&(handle_descriptor->lock));
 	return 1;
+}
+
+
+
+u64 syscall_handle_get_acl(handle_id_t handle_id){
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	if (!handle){
+		return 0;
+	}
+	u64 out=(handle->acl?handle->acl->handle.rb_node.key:0);
+	handle_release(handle);
+	return out;
 }
