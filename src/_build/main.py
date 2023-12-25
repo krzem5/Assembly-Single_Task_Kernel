@@ -615,7 +615,6 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
-_generate_syscalls("linux",0,"src/kernel/syscalls-linux.txt","src/kernel/_generated/syscalls_linux.c",None,None)
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall.h","src/lib/sys/sys/syscall.asm")
 _generate_syscall_wrappers("src/kernel/syscall-wrappers.txt","src/kernel/_generated/syscal_wrappers.c")
 #####################################################################################################################################

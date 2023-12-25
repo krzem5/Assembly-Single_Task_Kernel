@@ -46,20 +46,27 @@ _syscall_handler:
 	push r13
 	push r12
 	push r11
+	push rbp
+	push rcx
+	push rbx
+	;;;
 	push r10
 	push r9
 	push r8
-	push rbp
 	push rdi
 	push rsi
 	push rdx
-	push rcx
-	push rbx
 	push rax
+	;;;
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
+	xor r11, r11
+	xor r12, r12
+	xor r13, r13
+	xor r14, r14
+	xor r15, r15
 	mov rbx, rax
 	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
 	call scheduler_set_timer
@@ -89,16 +96,18 @@ _syscall_handler:
 	mov bx, 0x1b
 	mov ds, bx
 	mov es, bx
+	;;;
 	pop rax
-	pop rbx
-	pop rcx
 	pop rdx
 	pop rsi
 	pop rdi
-	pop rbp
 	pop r8
 	pop r9
 	pop r10
+	;;;
+	pop rbx
+	pop rcx
+	pop rbp
 	pop r11
 	pop r12
 	pop r13

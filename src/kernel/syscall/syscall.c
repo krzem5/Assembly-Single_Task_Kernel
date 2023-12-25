@@ -49,7 +49,7 @@ KERNEL_INIT(){
 	spinlock_init(&_syscall_table_list_lock);
 	_syscall_table_allocator=omm_init("syscall_table",sizeof(syscall_table_t),8,1,pmm_alloc_counter("omm_syscall_table"));
 	spinlock_init(&(_syscall_table_allocator->lock));
-	syscall_create_table("linux",(const syscall_callback_t*)_syscalls_linux_functions,_syscalls_linux_count);
+	syscall_create_table("linux",NULL,0);
 	syscall_create_table("kernel",(const syscall_callback_t*)_syscalls_kernel_functions,_syscalls_kernel_count);
 }
 
