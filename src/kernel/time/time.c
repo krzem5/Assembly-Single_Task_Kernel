@@ -29,3 +29,9 @@ KERNEL_PUBLIC s64 time_to_nanoseconds(s16 year,u8 month,u8 day,u8 hour,u8 minute
 	u64 days=era*146097+day_of_era-719468;
 	return (((days*24+hour)*60+minute)*60+second)*1000000000;
 }
+
+
+
+u64 syscall_time_get_boot_offset(void){
+	return time_boot_offset;
+}

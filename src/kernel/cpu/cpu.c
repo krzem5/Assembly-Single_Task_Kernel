@@ -120,3 +120,9 @@ void KERNEL_EARLY_EXEC cpu_start_all_cores(void){
 	vmm_unmap_page(&vmm_kernel_pagemap,CPU_AP_STARTUP_MEMORY_ADDRESS);
 	pmm_dealloc(((u64)cpu_stack_list)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,cpu_pmm_counter);
 }
+
+
+
+u64 syscall_cpu_get_count(void){
+	return cpu_count;
+}

@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/elf/elf.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -12,6 +13,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "process"
@@ -90,5 +92,42 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	out->gid=0;
 	out->event=event_create();
 	handle_finish_setup(&(out->handle));
+	return out;
+}
+
+
+
+u64 syscall_process_get_pid(void){
+	return THREAD_DATA->process->handle.rb_node.key;
+}
+
+
+
+u64 syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
+	if (!syscall_get_string_length((u64)path)){
+		return 0;
+	}
+	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length((u64)argv)){
+		return 0;
+	}
+	for (u64 i=0;i<argc;i++){
+		if (!syscall_get_string_length((u64)(argv[i]))){
+			return 0;
+		}
+	}
+	// copy all vars to a temp buffer + check environ for overflow
+	return elf_load(path,argc,argv,environ,flags);
+}
+
+
+
+u64 syscall_process_get_event(handle_id_t process_handle){
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return 0;
+	}
+	process_t* process=handle->object;
+	u64 out=process->event->handle.rb_node.key;
+	handle_release(handle);
 	return out;
 }
