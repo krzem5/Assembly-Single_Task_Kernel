@@ -137,6 +137,7 @@ u64 syscall_acl_get_permissions(handle_id_t acl_handle,handle_id_t process_handl
 
 
 u64 syscall_acl_set_permissions(handle_id_t acl_handle,handle_id_t process_handle_id,u64 clear,u64 set){
+	// add an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
 	handle_t* handle=handle_lookup_and_acquire(acl_handle,_acl_handle_type);
 	if (!handle){
 		return 0;

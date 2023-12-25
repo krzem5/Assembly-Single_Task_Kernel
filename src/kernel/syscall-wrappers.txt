@@ -11,5 +11,5 @@
 %kernel/fd/fd.h
 
 # TODO APIs:
-# better memory api (alloc + counters + locks)
+# better memory api (alloc + counters)
 # sockets -> socket_create(domain,type,protocol), socket_create_pair(out[2]), socket_connect(handle,address,address_length), socket_bind(handle,address,address_length), socket_listen(handle,max_connections), socket_accept(handle), socket_getsockname, socket_getpeername, socket_recvfrom, socket_recvmsg, socket_sento, socket_sendmsg, socket_shutdown
