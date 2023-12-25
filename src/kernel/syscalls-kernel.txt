@@ -1,4 +1,4 @@
-1,clock_get_converion(void) -> void
+1,clock_get_converion(u64* buffer) -> void
 2,cpu_get_count(void) -> u32
 3,fd_close(u64 fd) -> s64
 4,fd_dup(u64 fd,u32 flags) -> s64

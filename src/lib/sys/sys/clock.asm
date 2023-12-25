@@ -11,11 +11,8 @@ global sys_clock_get_frequency:function _sys_clock_get_frequency_size
 [bits 64]
 section .text.sys_clock_init exec nowrite
 sys_clock_init:
-	call [REF(_syscall_clock_get_converion)]
-	mov qword [REF_DATA(_sys_clock_conversion_factor)], rax
-	mov dword [REF_DATA(_sys_clock_conversion_shift)], edx
-	mov qword [REF_DATA(_sys_clock_cpu_frequency)], r8
-	ret
+	lea rdi, [REF_DATA(_sys_clock_conversion_factor)]
+	jmp [REF(_syscall_clock_get_converion)]
 _sys_clock_init_size equ $-$$
 
 
@@ -73,9 +70,9 @@ section .data.sys_clock_data noexec write
 
 
 align 8
-_sys_clock_cpu_frequency:
-	dq 0
 _sys_clock_conversion_factor:
 	dq 0
 _sys_clock_conversion_shift:
-	dd 0
+	dq 0
+_sys_clock_cpu_frequency:
+	dq 0
