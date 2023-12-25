@@ -1,18 +1,6 @@
 #ifndef _KERNEL_SYSCALL_SYSCALL_H_
 #define _KERNEL_SYSCALL_SYSCALL_H_ 1
-#include <kernel/isr/isr.h>
 #include <kernel/types.h>
-
-
-
-typedef struct _SYSCALL_REG_STATE{
-	u64 rdi;
-	u64 rsi;
-	u64 rdx;
-	u64 rcx;
-	u64 r8;
-	u64 r9;
-} syscall_reg_state_t;
 
 
 
