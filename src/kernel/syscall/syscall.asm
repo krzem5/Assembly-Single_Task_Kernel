@@ -49,18 +49,20 @@ _syscall_handler:
 	push rbp
 	push rcx
 	push rbx
+	mov rcx, r10
 	;;;
-	push r10
 	push r9
 	push r8
-	push rdi
-	push rsi
+	push rcx
 	push rdx
+	push rsi
+	push rdi
 	;;;
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
 	xor rbp, rbp
+	xor r10, r10
 	xor r11, r11
 	xor r12, r12
 	xor r13, r13
@@ -74,14 +76,14 @@ _syscall_handler:
 	shr rbx, 32
 	cmp ebx, dword [_syscall_table_list_length]
 	jge ._syscall_return
-	mov rcx, qword [_syscall_table_list]
-	mov rcx, qword [rcx+rbx*8]
-	test rcx, rcx
+	mov r10, qword [_syscall_table_list]
+	mov r10, qword [r10+rbx*8]
+	test r10, r10
 	jz ._syscall_return
-	mov rdx, qword [rcx+8]
-	cmp eax, dword [rcx+16]
+	mov r11, qword [r10+8]
+	cmp eax, dword [r10+16]
 	jge ._syscall_return
-	mov rax, qword [rdx+rax*8]
+	mov rax, qword [r11+rax*8]
 	test rax, rax
 	jz ._syscall_return
 	call rax
@@ -96,15 +98,14 @@ _syscall_handler:
 	mov bx, 0x1b
 	mov ds, bx
 	mov es, bx
-	;;;
 	mov rax, r15
-	pop rdx
-	pop rsi
-	pop rdi
-	pop r8
-	pop r9
-	pop r10
-	;;;
+	xor rdx, rdx
+	xor rdi, rdi
+	xor rsi, rsi
+	xor r8, r8
+	xor r9, r9
+	xor r10, r10
+	add rsp, 48
 	pop rbx
 	pop rcx
 	pop rbp

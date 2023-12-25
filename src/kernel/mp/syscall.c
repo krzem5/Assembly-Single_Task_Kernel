@@ -12,13 +12,13 @@
 
 
 
-u64 syscall_process_get_pid(syscall_reg_state_t* regs){
+u64 syscall_process_get_pid(void){
 	return THREAD_DATA->process->handle.rb_node.key;
 }
 
 
 
-u64 syscall_thread_get_tid(syscall_reg_state_t* regs){
+u64 syscall_thread_get_tid(void){
 	return THREAD_DATA->handle.rb_node.key;
 }
 
@@ -38,12 +38,12 @@ u64 syscall_process_start(syscall_reg_state_t* regs){
 		}
 	}
 	// copy all vars to a temp buffer + check environ for overflow
-	return elf_load((void*)(regs->rdi),argc,(void*)(regs->rdx),(void*)(regs->r8),regs->r9);
+	return elf_load((void*)(regs->rdi),argc,(void*)(regs->rdx),(void*)(regs->rcx),regs->r8);
 }
 
 
 
-u64 syscall_thread_stop(syscall_reg_state_t* regs){
+u64 syscall_thread_stop(void){
 	thread_terminate();
 }
 

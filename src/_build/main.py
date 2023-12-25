@@ -194,10 +194,8 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 			wf.write("[bits 64]\n")
 			for index,(name,args,_,ret) in syscalls.items():
 				wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {hex(index|(table_index<<32))}\n")
-				if (len(args)>4):
-					wf.write("\tmov r9, r8\n")
 				if (len(args)>3):
-					wf.write("\tmov r8, rcx\n")
+					wf.write("\tmov r10, rcx\n")
 				wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
 		with open(user_header_file_path,"w") as wf:
 			wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/types.h>\n\n\n\n")
@@ -217,7 +215,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 
 
 def _generate_syscall_wrappers(src_file_path,dst_file_path):
-	REGS=["rdi","rsi","rdx","r8","r9"]
+	REGS=["rdi","rsi","rdx","rcx","r8","r9"]
 	with open(src_file_path,"r") as rf,open(dst_file_path,"w") as wf:
 		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n")
 		for line in rf.read().split("\n"):
