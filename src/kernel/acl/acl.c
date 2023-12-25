@@ -160,7 +160,7 @@ u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_ha
 	if (!process_handle_id){
 		process_handle_id=THREAD_DATA->process->handle.rb_node.key;
 	}
-	// pass the argument triplet via a socket to an sbin executable (module-installed callback function)
+	// pass the argument triplet (handle_id,process_handle_id,flags) via a socket to an sbin executable (module-installed callback function)
 	// call an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
 	return 0;
 }
