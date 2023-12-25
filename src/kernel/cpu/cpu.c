@@ -2,6 +2,7 @@
 #include <kernel/cpu/ap_startup.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
+#include <kernel/error/error.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/gdt/gdt.h>
 #include <kernel/idt/idt.h>
@@ -123,6 +124,6 @@ void KERNEL_EARLY_EXEC cpu_start_all_cores(void){
 
 
 
-u64 syscall_cpu_get_count(void){
+error_t syscall_cpu_get_count(void){
 	return cpu_count;
 }

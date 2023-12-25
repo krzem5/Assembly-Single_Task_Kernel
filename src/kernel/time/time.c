@@ -1,4 +1,5 @@
 #include <kernel/clock/clock.h>
+#include <kernel/error/error.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/time/time.h>
@@ -32,6 +33,6 @@ KERNEL_PUBLIC s64 time_to_nanoseconds(s16 year,u8 month,u8 day,u8 hour,u8 minute
 
 
 
-u64 syscall_time_get_boot_offset(void){
+error_t syscall_time_get_boot_offset(void){
 	return time_boot_offset;
 }

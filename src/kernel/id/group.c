@@ -75,13 +75,13 @@ KERNEL_PUBLIC _Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 
 
 
-u64 syscall_gid_get(void){
+error_t syscall_gid_get(void){
 	return THREAD_DATA->process->gid;
 }
 
 
 
-u64 syscall_gid_set(u64 gid){
+error_t syscall_gid_set(u64 gid){
 	if (process_is_root()){
 		THREAD_DATA->process->gid=gid;
 		return ERROR_OK;
@@ -91,11 +91,11 @@ u64 syscall_gid_set(u64 gid){
 
 
 
-u64 syscall_gid_get_name(u64 gid,char* buffer,u32 buffer_length){
+error_t syscall_gid_get_name(u64 gid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	return (gid_get_name(gid,buffer,buffer_length)?ERROR_OK:ERROR_NOT_FOUND);

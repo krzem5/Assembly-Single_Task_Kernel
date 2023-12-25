@@ -110,7 +110,7 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 
 
 
-u64 syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
+error_t syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
@@ -136,7 +136,7 @@ u64 syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle
 
 
 
-u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 clear,u64 set){
+error_t syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 clear,u64 set){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
@@ -165,7 +165,7 @@ u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle
 
 
 
-u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
+error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
 	if (!handle){
 		return ERROR_INVALID_HANDLE;

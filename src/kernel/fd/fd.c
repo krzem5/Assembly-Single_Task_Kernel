@@ -65,11 +65,11 @@ vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 
-u64 syscall_fd_open(handle_id_t root,const char* path,u32 flags){
+error_t syscall_fd_open(handle_id_t root,const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	u64 path_length=syscall_get_string_length((u64)path);
+	u64 path_length=syscall_get_string_length(path);
 	if (!path_length||path_length>4095){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -117,7 +117,7 @@ u64 syscall_fd_open(handle_id_t root,const char* path,u32 flags){
 
 
 
-u64 syscall_fd_close(handle_id_t fd){
+error_t syscall_fd_close(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -135,8 +135,8 @@ u64 syscall_fd_close(handle_id_t fd){
 
 
 
-u64 syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
-	if (count>syscall_get_user_pointer_max_length((u64)buffer)){
+error_t syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
@@ -165,8 +165,8 @@ u64 syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 
 
 
-u64 syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
-	if (count>syscall_get_user_pointer_max_length((u64)buffer)){
+error_t syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
@@ -195,7 +195,7 @@ u64 syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 
 
 
-u64 syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
+error_t syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -229,7 +229,7 @@ u64 syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
 
 
 
-u64 syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
+error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -251,11 +251,11 @@ u64 syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-u64 syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
+error_t syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
 	if (buffer_length<sizeof(fd_stat_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)out)){
+	if (buffer_length>syscall_get_user_pointer_max_length(out)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
@@ -288,14 +288,14 @@ u64 syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
 
 
 
-u64 syscall_fd_dup(handle_id_t fd,u32 flags){
+error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	panic("fd_dup");
 }
 
 
 
-u64 syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+error_t syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	if (buffer_length<2){
@@ -319,7 +319,7 @@ u64 syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 
 
 
-u64 syscall_fd_iter_start(handle_id_t fd){
+error_t syscall_fd_iter_start(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -358,8 +358,8 @@ u64 syscall_fd_iter_start(handle_id_t fd){
 
 
 
-u64 syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+error_t syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
@@ -392,7 +392,7 @@ u64 syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
 
 
 
-u64 syscall_fd_iter_next(handle_id_t iterator){
+error_t syscall_fd_iter_next(handle_id_t iterator){
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return ERROR_INVALID_HANDLE;
@@ -421,6 +421,6 @@ u64 syscall_fd_iter_next(handle_id_t iterator){
 
 
 
-u64 syscall_fd_iter_stop(handle_id_t iterator){
+error_t syscall_fd_iter_stop(handle_id_t iterator){
 	panic("syscall_fd_iter_stop");
 }

@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
@@ -80,9 +81,9 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-u64 syscall_clock_get_converion(u64* buffer){
+error_t syscall_clock_get_converion(u64* buffer){
 	buffer[0]=clock_conversion_factor;
 	buffer[1]=clock_conversion_shift;
 	buffer[2]=clock_cpu_frequency;
-	return 0;
+	return ERROR_OK;
 }

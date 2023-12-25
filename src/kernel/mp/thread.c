@@ -205,14 +205,14 @@ KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 
 
 
-u64 syscall_thread_get_tid(void){
+error_t syscall_thread_get_tid(void){
 	return THREAD_DATA->handle.rb_node.key;
 }
 
 
 
-u64 syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
-	if (!syscall_get_user_pointer_max_length(func)){
+error_t syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
+	if (!syscall_get_user_pointer_max_length((void*)func)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	thread_t* thread=thread_create_user_thread(THREAD_DATA->process,func,(stack_size?stack_size:THREAD_DATA->user_stack_region->length));
@@ -224,13 +224,13 @@ u64 syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
 
 
 
-u64 syscall_thread_stop(void){
+error_t syscall_thread_stop(void){
 	thread_terminate();
 }
 
 
 
-u64 syscall_thread_get_priority(handle_id_t thread_handle){
+error_t syscall_thread_get_priority(handle_id_t thread_handle){
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
@@ -242,7 +242,7 @@ u64 syscall_thread_get_priority(handle_id_t thread_handle){
 
 
 
-u64 syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
+error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 	if (priority<SCHEDULER_PRIORITY_MIN||priority>SCHEDULER_PRIORITY_MAX){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -262,11 +262,11 @@ u64 syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 
 
 
-u64 syscall_thread_get_cpu_mask(handle_id_t thread_handle,void* buffer,u32 buffer_size){
+error_t syscall_thread_get_cpu_mask(handle_id_t thread_handle,void* buffer,u32 buffer_size){
 	if (buffer_size>cpu_mask_size){
 		buffer_size=cpu_mask_size;
 	}
-	if (buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
+	if (buffer_size>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
@@ -281,11 +281,11 @@ u64 syscall_thread_get_cpu_mask(handle_id_t thread_handle,void* buffer,u32 buffe
 
 
 
-u64 syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32 buffer_size){
+error_t syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32 buffer_size){
 	if (buffer_size>cpu_mask_size){
 		buffer_size=cpu_mask_size;
 	}
-	if (buffer_size>syscall_get_user_pointer_max_length((u64)buffer)){
+	if (buffer_size>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
@@ -301,11 +301,11 @@ u64 syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32
 
 
 
-u64 syscall_thread_await_events(const handle_id_t* events,u64 event_count){
+error_t syscall_thread_await_events(const handle_id_t* events,u64 event_count){
 	if (!event_count){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	if (event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((u64)events)){
+	if (event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length(events)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	return event_await_multiple_handles(events,event_count);

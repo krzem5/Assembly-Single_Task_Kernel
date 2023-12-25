@@ -23,8 +23,8 @@ volatile u32 _syscall_table_list_length=0;
 
 
 
-u64 syscall_syscall_table_get_offset(const char* table_name){
-	if (!syscall_get_string_length((u64)table_name)){
+error_t syscall_syscall_table_get_offset(const char* table_name){
+	if (!syscall_get_string_length(table_name)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	for (u32 i=0;i<_syscall_table_list_length;i++){
@@ -68,17 +68,17 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 
 
 
-KERNEL_PUBLIC u64 syscall_get_user_pointer_max_length(u64 address){
-	mmap_region_t* region=mmap_lookup(&(THREAD_DATA->process->mmap),address);
+KERNEL_PUBLIC u64 syscall_get_user_pointer_max_length(const void* address){
+	mmap_region_t* region=mmap_lookup(&(THREAD_DATA->process->mmap),(u64)address);
 	if (!region||!(region->flags&MMAP_REGION_FLAG_VMM_USER)){
 		return 0;
 	}
-	return region->rb_node.key+region->length-address;
+	return region->rb_node.key+region->length-((u64)address);
 }
 
 
 
-KERNEL_PUBLIC u64 syscall_get_string_length(u64 address){
+KERNEL_PUBLIC u64 syscall_get_string_length(const void* address){
 	u64 max_length=syscall_get_user_pointer_max_length(address);
 	if (!max_length){
 		return 0;

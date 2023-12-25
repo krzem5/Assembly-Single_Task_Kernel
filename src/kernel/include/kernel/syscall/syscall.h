@@ -21,11 +21,11 @@ u32 syscall_create_table(const char* name,const syscall_callback_t* functions,u3
 
 
 
-u64 syscall_get_user_pointer_max_length(u64 address);
+u64 syscall_get_user_pointer_max_length(const void* ptr);
 
 
 
-u64 syscall_get_string_length(u64 address);
+u64 syscall_get_string_length(const void* ptr);
 
 
 

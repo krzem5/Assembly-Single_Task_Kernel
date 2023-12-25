@@ -185,7 +185,7 @@ void scheduler_set_timer(u8 timer){
 
 
 
-u64 syscall_scheduler_yield(void){
+error_t syscall_scheduler_yield(void){
 	scheduler_yield();
 	return ERROR_OK;
 }

@@ -105,21 +105,21 @@ KERNEL_PUBLIC _Bool process_is_root(void){
 
 
 
-u64 syscall_process_get_pid(void){
+error_t syscall_process_get_pid(void){
 	return THREAD_DATA->process->handle.rb_node.key;
 }
 
 
 
-u64 syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
-	if (!syscall_get_string_length((u64)path)){
+error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
+	if (!syscall_get_string_length(path)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length((u64)argv)){
+	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length(argv)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	for (u64 i=0;i<argc;i++){
-		if (!syscall_get_string_length((u64)(argv[i]))){
+		if (!syscall_get_string_length(argv[i])){
 			return ERROR_INVALID_ARGUMENT(1);
 		}
 	}
@@ -130,7 +130,7 @@ u64 syscall_process_start(const char* path,u32 argc,const char*const* argv,const
 
 
 
-u64 syscall_process_get_event(handle_id_t process_handle){
+error_t syscall_process_get_event(handle_id_t process_handle){
 	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;

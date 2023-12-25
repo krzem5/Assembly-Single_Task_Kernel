@@ -19,4 +19,8 @@
 
 
 
+typedef u64 error_t;
+
+
+
 #endif

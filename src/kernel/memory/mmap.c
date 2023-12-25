@@ -403,7 +403,7 @@ KERNEL_PUBLIC u64 mmap_get_vmm_flags(mmap_region_t* region){
 
 
 
-u64 syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
+error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	u64 mmap_flags=MMAP_REGION_FLAG_VMM_USER;
 	vfs_node_t* file=NULL;
 	if (flags&USER_MEMORY_FLAG_WRITE){
@@ -427,7 +427,7 @@ u64 syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 
 
 
-u64 syscall_memory_change_flags(u64 address,u64 size,u64 flags){
+error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	u64 mmap_flags=0;
 	if (flags&USER_MEMORY_FLAG_WRITE){
 		mmap_flags|=VMM_PAGE_FLAG_READWRITE;
@@ -440,6 +440,6 @@ u64 syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 
 
 
-u64 syscall_memory_unmap(u64 address,u64 size){
+error_t syscall_memory_unmap(u64 address,u64 size){
 	return (mmap_dealloc(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))))?ERROR_OK:ERROR_INVALID_ARGUMENT(0));
 }
