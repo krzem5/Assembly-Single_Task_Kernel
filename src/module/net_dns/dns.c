@@ -1,7 +1,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mp/event.h>
@@ -112,7 +111,8 @@ static u32 _encode_name(const char* name,u8* out,u32 max_size){
 
 static void _rx_thread(void){
 	while (1){
-		net_udp_socket_packet_t* packet=socket_pop_packet(_net_dns_socket,0);
+		socket_packet_t* socket_packet=socket_pop_packet(_net_dns_socket,0);
+		net_udp_socket_packet_t* packet=socket_packet->data;
 		if (packet->length<sizeof(net_dns_packet_t)){
 			goto _cleanup;
 		}
@@ -154,7 +154,7 @@ static void _rx_thread(void){
 _cleanup_and_release_lock:
 		spinlock_release_exclusive(&_net_dns_request_tree_lock);
 _cleanup:
-		amm_dealloc(packet);
+		socket_dealloc_packet(socket_packet);
 	}
 }
 

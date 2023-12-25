@@ -193,7 +193,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	socket_packet->dst_port=__builtin_bswap16(udp_packet->dst_port);
 	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
 	memcpy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
-	if (!ring_push(socket->rx_ring,socket_packet,0)){
+	if (!socket_alloc_packet(&(socket->node),socket_packet,sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t))){
 		amm_dealloc(packet);
 		ERROR("UDP packet dropped, socket rx ring full");
 	}

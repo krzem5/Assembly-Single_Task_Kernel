@@ -8,18 +8,6 @@
 
 
 
-#define FD_ERROR_INVALID_FLAGS -1
-#define FD_ERROR_INVALID_FD -2
-#define FD_ERROR_INVALID_POINTER -3
-#define FD_ERROR_OUT_OF_FDS -4
-#define FD_ERROR_NOT_FOUND -5
-#define FD_ERROR_UNSUPPORTED_OPERATION -6
-#define FD_ERROR_NO_RELATIVE -7
-#define FD_ERROR_NOT_EMPTY -8
-#define FD_ERROR_DIFFERENT_FS -9
-#define FD_ERROR_DIFFERENT_TYPE -10
-#define FD_ERROR_NO_SPACE -11
-
 #define FD_FLAG_READ 1
 #define FD_FLAG_WRITE 2
 #define FD_FLAG_APPEND 4
@@ -79,6 +67,10 @@ typedef struct _FD_ITERATOR{
 	u64 pointer;
 	string_t* current_name;
 } fd_iterator_t;
+
+
+
+error_t fd_from_node(vfs_node_t* node,u32 flags);
 
 
 

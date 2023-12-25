@@ -16,6 +16,36 @@ static pmm_counter_descriptor_t* _ring_buffer_pmm_counter=NULL;
 
 
 
+static void* _get_item(ring_t* ring,_Bool wait,_Bool pop){
+_retry_pop:
+	scheduler_pause();
+	spinlock_acquire_exclusive(&(ring->read_lock));
+	if (!ring->read_count){
+		spinlock_release_exclusive(&(ring->read_lock));
+		if (!wait){
+			scheduler_resume();
+			return NULL;
+		}
+		event_await(ring->read_event);
+		goto _retry_pop;
+	}
+	void* out=ring->buffer[ring->read_index];
+	if (pop){
+		ring->read_index++;
+		ring->read_count--;
+		ring->write_count++;
+		if (!ring->read_count){
+			event_set_active(ring->read_event,0,1);
+		}
+		event_dispatch(ring->write_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	}
+	spinlock_release_exclusive(&(ring->read_lock));
+	scheduler_resume();
+	return out;
+}
+
+
+
 KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	if (capacity&(capacity-1)){
 		ERROR("Ring capacity must be a power of 2");
@@ -78,27 +108,11 @@ _retry_push:
 
 
 KERNEL_PUBLIC void* ring_pop(ring_t* ring,_Bool wait){
-_retry_pop:
-	scheduler_pause();
-	spinlock_acquire_exclusive(&(ring->read_lock));
-	if (!ring->read_count){
-		spinlock_release_exclusive(&(ring->read_lock));
-		if (!wait){
-			scheduler_resume();
-			return NULL;
-		}
-		event_await(ring->read_event);
-		goto _retry_pop;
-	}
-	void* out=ring->buffer[ring->read_index];
-	ring->read_index++;
-	ring->read_count--;
-	ring->write_count++;
-	if (!ring->read_count){
-		event_set_active(ring->read_event,0,1);
-	}
-	event_dispatch(ring->write_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	spinlock_release_exclusive(&(ring->read_lock));
-	scheduler_resume();
-	return out;
+	return _get_item(ring,wait,1);
+}
+
+
+
+KERNEL_PUBLIC void* ring_peek(ring_t* ring,_Bool wait){
+	return _get_item(ring,wait,0);
 }

@@ -73,6 +73,13 @@ typedef struct _SOCKET_DTP_HANDLER{
 
 
 
+typedef struct _SOCKET_PACKET{
+	u64 size;
+	void* data;
+} socket_packet_t;
+
+
+
 void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor);
 
 
@@ -93,11 +100,23 @@ _Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_addr
 
 
 
-void* socket_pop_packet(vfs_node_t* node,_Bool nonblocking);
+socket_packet_t* socket_peek_packet(vfs_node_t* node,_Bool nonblocking);
+
+
+
+socket_packet_t* socket_pop_packet(vfs_node_t* node,_Bool nonblocking);
 
 
 
 _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size);
+
+
+
+_Bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size);
+
+
+
+void socket_dealloc_packet(socket_packet_t* packet);
 
 
 

@@ -37,4 +37,8 @@ void* ring_pop(ring_t* ring,_Bool wait);
 
 
 
+void* ring_peek(ring_t* ring,_Bool wait);
+
+
+
 #endif

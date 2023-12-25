@@ -54,7 +54,30 @@ KERNEL_INIT(){
 
 
 
-vfs_node_t* fd_get_node(handle_id_t fd){
+KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
+	node->rc++;
+	fd_t* out=omm_alloc(_fd_allocator);
+	handle_new(out,_fd_handle_type,&(out->handle));
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO);
+	spinlock_init(&(out->lock));
+	out->node=node;
+	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
+	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
+	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	if (!(permissions&VFS_PERMISSION_READ)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
+		out->flags&=~FD_FLAG_READ;
+	}
+	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
+		out->flags&=~FD_FLAG_WRITE;
+	}
+	handle_finish_setup(&(out->handle));
+	return out->handle.rb_node.key;
+}
+
+
+
+KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return NULL;
@@ -92,27 +115,7 @@ error_t syscall_fd_open(handle_id_t root,const char* path,u32 flags){
 	if (root_handle){
 		handle_release(root_handle);
 	}
-	if (!node){
-		return ERROR_NOT_FOUND;
-	}
-	node->rc++;
-	fd_t* out=omm_alloc(_fd_allocator);
-	handle_new(out,_fd_handle_type,&(out->handle));
-	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO);
-	spinlock_init(&(out->lock));
-	out->node=node;
-	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
-	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
-	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
-	if (!(permissions&VFS_PERMISSION_READ)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
-		out->flags&=~FD_FLAG_READ;
-	}
-	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
-		out->flags&=~FD_FLAG_WRITE;
-	}
-	handle_finish_setup(&(out->handle));
-	return out->handle.rb_node.key;
+	return (node?fd_from_node(node,flags):ERROR_NOT_FOUND);
 }
 
 
@@ -240,7 +243,7 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return ERROR_DENIED;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	s64 out=(vfs_node_resize(data->node,size,0)?0:FD_ERROR_NO_SPACE);
+	error_t out=(vfs_node_resize(data->node,size,0)?0:ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
@@ -340,7 +343,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 	if (!pointer){
 		spinlock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
-		return ERROR_EOF;
+		return ERROR_NO_DATA;
 	}
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(out,_fd_iterator_handle_type,&(out->handle));
@@ -403,7 +406,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 		return ERROR_DENIED;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	s64 out=ERROR_EOF;
+	s64 out=ERROR_NO_DATA;
 	if (data->current_name){
 		smm_dealloc(data->current_name);
 		data->pointer=vfs_node_iterate(data->node,data->pointer,&(data->current_name));

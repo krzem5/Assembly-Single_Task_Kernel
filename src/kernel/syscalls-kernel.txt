@@ -1,42 +1,44 @@
-1,clock_get_converion(u64* buffer) -> void
-2,cpu_get_count(void) -> u32
-3,fd_close(u64 fd) -> s64
-4,fd_dup(u64 fd,u32 flags) -> s64
-5,fd_iter_get(u64 iterator,char* buffer,u32 size) -> s64
-6,fd_iter_next(u64 iterator) -> s64
-7,fd_iter_start(u64 fd) -> s64
-8,fd_iter_stop(u64 iterator) -> s64
-9,fd_open(u64 fd,const char* path,u32 flags) -> s64
-10,fd_path(u64 fd,char* buffer,u32 size) -> s64
-11,fd_read(u64 fd,void* buffer,u64 size,u32 flags) -> s64
-12,fd_resize(u64 fd,u64 size,u32 flags) -> s64
-13,fd_seek(u64 fd,u64 offset,u32 type) -> s64
-14,fd_stat(u64 fd,void* ptr,u32 size) -> s64
-15,fd_write(u64 fd,const void* buffer,u64 size,u32 flags) -> s64
+1,clock_get_converion(u64* buffer) -> u64
+2,cpu_get_count(void) -> u64
+3,fd_close(u64 fd) -> u64
+4,fd_dup(u64 fd,u32 flags) -> u64
+5,fd_iter_get(u64 iterator,char* buffer,u32 size) -> u64
+6,fd_iter_next(u64 iterator) -> u64
+7,fd_iter_start(u64 fd) -> u64
+8,fd_iter_stop(u64 iterator) -> u64
+9,fd_open(u64 fd,const char* path,u32 flags) -> u64
+10,fd_path(u64 fd,char* buffer,u32 size) -> u64
+11,fd_read(u64 fd,void* buffer,u64 size,u32 flags) -> u64
+12,fd_resize(u64 fd,u64 size,u32 flags) -> u64
+13,fd_seek(u64 fd,u64 offset,u32 type) -> u64
+14,fd_stat(u64 fd,void* ptr,u32 size) -> u64
+15,fd_write(u64 fd,const void* buffer,u64 size,u32 flags) -> u64
 16,memory_map(u64 length,u32 flags,u64 fd) -> void*
-17,memory_change_flags(void* address,u64 length,u32 flags) -> _Bool
-18,memory_unmap(void* address,u64 length) -> _Bool
-19,system_shutdown(u32 flags) noreturn -> void
+17,memory_change_flags(void* address,u64 length,u32 flags) -> u64
+18,memory_unmap(void* address,u64 length) -> u64
+19,system_shutdown(u32 flags) noreturn -> u64
 20,thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
-21,thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
-22,thread_get_priority(u64 handle) -> u32
-23,thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> _Bool
-24,thread_set_priority(u64 handle,u32 priority) -> _Bool
+21,thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> u64
+22,thread_get_priority(u64 handle) -> u64
+23,thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> u64
+24,thread_set_priority(u64 handle,u32 priority) -> u64
 25,thread_stop(void) noreturn -> void
 26,time_get_boot_offset(void) -> u64
-27,uid_get(void) -> u32
-28,gid_get(void) -> u32
-29,uid_set(u32 uid) -> _Bool
-30,gid_set(u32 gid) -> _Bool
-31,uid_get_name(u32 uid,char* buffer,u32 buffer_length) -> _Bool
-32,gid_get_name(u32 gid,char* buffer,u32 buffer_length) -> _Bool
+27,uid_get(void) -> u64
+28,gid_get(void) -> u64
+29,uid_set(u32 uid) -> u64
+30,gid_set(u32 gid) -> u64
+31,uid_get_name(u32 uid,char* buffer,u32 buffer_length) -> u64
+32,gid_get_name(u32 gid,char* buffer,u32 buffer_length) -> u64
 33,process_get_pid(void) -> u64
 34,thread_get_tid(void) -> u64
 35,process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags) -> u64
-36,thread_await_events(const u64* handles,u32 count) -> _Bool
+36,thread_await_events(const u64* handles,u32 count) -> u64
 37,process_get_event(u64 handle) -> u64
 38,syscall_table_get_offset(const char* name) -> u64
 39,scheduler_yield(void) -> void
 40,acl_get_permissions(u64 handle,u64 process) -> u64
-41,acl_set_permissions(u64 handle,u64 process,u64 clear,u64 set) -> _Bool
-42,acl_request_permissions(u64 handle,u64 process,u64 flags) -> _Bool
+41,acl_set_permissions(u64 handle,u64 process,u64 clear,u64 set) -> u64
+42,acl_request_permissions(u64 handle,u64 process,u64 flags) -> u64
+43,socket_create(const char* name,u8 domain,u8 type,u8 protocol) -> u64
+44,socket_recv(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64

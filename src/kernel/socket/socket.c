@@ -1,6 +1,8 @@
+#include <kernel/error/error.h>
+#include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
@@ -8,6 +10,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/socket/socket.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -25,6 +28,7 @@ static spinlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_vfs_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _socket_packet_allocator=NULL;
 static vfs_node_t* _socket_root=NULL;
 static KERNEL_ATOMIC u64 _socket_next_id=0;
 
@@ -89,6 +93,8 @@ KERNEL_INIT(){
 	spinlock_init(&(_socket_dtp_handler_allocator->lock));
 	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4,pmm_alloc_counter("omm_socket_node"));
 	spinlock_init(&(_socket_vfs_node_allocator->lock));
+	_socket_packet_allocator=omm_init("socket_packet",sizeof(socket_packet_t),8,4,pmm_alloc_counter("omm_socket_packet"));
+	spinlock_init(&(_socket_packet_allocator->lock));
 }
 
 
@@ -190,13 +196,26 @@ KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u
 
 
 
-KERNEL_PUBLIC void* socket_pop_packet(vfs_node_t* node,_Bool nonblocking){
+KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,_Bool nonblocking){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
 	spinlock_acquire_exclusive(&(socket_node->read_lock));
-	void* out=ring_pop(socket_node->rx_ring,!nonblocking);
+	socket_packet_t* out=ring_peek(socket_node->rx_ring,!nonblocking);
+	spinlock_release_exclusive(&(socket_node->read_lock));
+	return out;
+}
+
+
+
+KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,_Bool nonblocking){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return NULL;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	spinlock_acquire_exclusive(&(socket_node->read_lock));
+	socket_packet_t* out=ring_pop(socket_node->rx_ring,!nonblocking);
 	spinlock_release_exclusive(&(socket_node->read_lock));
 	return out;
 }
@@ -216,10 +235,80 @@ KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 s
 
 
 
+KERNEL_PUBLIC _Bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return 0;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	socket_packet_t* packet=omm_alloc(_socket_packet_allocator);
+	packet->size=size;
+	packet->data=data;
+	return ring_push(socket_node->rx_ring,packet,0);
+}
+
+
+
+KERNEL_PUBLIC void socket_dealloc_packet(socket_packet_t* packet){
+	amm_dealloc(packet->data);
+	omm_dealloc(_socket_packet_allocator,packet);
+}
+
+
+
 KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
 	return socket_node->rx_ring->read_event;
+}
+
+
+
+error_t syscall_socket_create(const char* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+	string_t* socket_name=NULL;
+	if (name){
+		u64 name_length=syscall_get_string_length(name);
+		if (!name_length){
+			return ERROR_INVALID_ARGUMENT(0);
+		}
+		socket_name=smm_alloc(name,name_length);
+	}
+	vfs_node_t* out=socket_create(NULL,socket_name,domain,type,protocol);
+	if (socket_name){
+		smm_dealloc(socket_name);
+	}
+	return (out?fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE):ERROR_INVALID_FORMAT);
+}
+
+
+
+error_t syscall_socket_recv(handle_id_t fd,void* buffer,u32 buffer_length,u32 flags){
+	if (flags&(~FD_FLAG_NONBLOCKING)){
+		return ERROR_INVALID_ARGUMENT(3);
+	}
+	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	vfs_node_t* node=fd_get_node(fd);
+	if (!node){
+		return ERROR_INVALID_HANDLE;
+	}
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	if (!buffer){
+		socket_packet_t* packet=socket_peek_packet(node,!!(flags&FD_FLAG_NONBLOCKING));
+		if (!packet){
+			return ERROR_NO_DATA;
+		}
+		return packet->size;
+	}
+	socket_packet_t* packet=socket_pop_packet(node,!!(flags&FD_FLAG_NONBLOCKING));
+	if (!packet){
+		return ERROR_NO_DATA;
+	}
+	memcpy(buffer,packet->data,(packet->size>buffer_length?buffer_length:packet->size));
+	socket_dealloc_packet(packet);
+	return (packet->size>buffer_length?ERROR_NO_SPACE:ERROR_OK);
 }

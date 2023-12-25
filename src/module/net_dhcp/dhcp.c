@@ -97,13 +97,13 @@ static void _send_discover_request(void){
 
 
 static void _rx_thread(void){
+	event_t* events[2]={
+		_net_dhcp_timeout_timer->event,
+		socket_get_event(_net_dhcp_socket)
+	};
 	while (1){
-		net_udp_socket_packet_t* packet=socket_pop_packet(_net_dhcp_socket,1);
-		if (!packet){
-			event_t* events[2]={
-				_net_dhcp_timeout_timer->event,
-				socket_get_event(_net_dhcp_socket)
-			};
+		socket_packet_t* socket_packet=socket_pop_packet(_net_dhcp_socket,1);
+		if (!socket_packet){
 			if (!event_await_multiple(events,2)){
 				if (net_info_get_address()){
 					LOG("IPv4 lease expired");
@@ -116,6 +116,7 @@ static void _rx_thread(void){
 			}
 			continue;
 		}
+		net_udp_socket_packet_t* packet=socket_packet->data;
 		spinlock_acquire_exclusive(&_net_dhcp_lock);
 		if (packet->length<sizeof(net_dhcp_packet_t)){
 			goto _cleanup;
@@ -202,7 +203,7 @@ static void _rx_thread(void){
 		}
 _cleanup:
 		spinlock_release_exclusive(&_net_dhcp_lock);
-		amm_dealloc(packet);
+		socket_dealloc_packet(socket_packet);
 	}
 }
 
