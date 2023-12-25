@@ -36,6 +36,14 @@ typedef struct _ACL{
 
 
 
+typedef _Bool (*acl_request_callback_t)(u64,u64,u64);
+
+
+
+extern acl_request_callback_t acl_request_callback;
+
+
+
 void acl_init(void);
 
 

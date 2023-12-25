@@ -16,6 +16,8 @@
 static omm_allocator_t* _acl_allocator=NULL;
 static omm_allocator_t* _acl_tree_node_allocator=NULL;
 
+acl_request_callback_t acl_request_callback=NULL;
+
 
 
 void KERNEL_EARLY_EXEC acl_init(void){
@@ -157,10 +159,7 @@ u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle
 
 
 u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
-	if (!process_handle_id){
-		process_handle_id=THREAD_DATA->process->handle.rb_node.key;
-	}
 	// pass the argument triplet (handle_id,process_handle_id,flags) via a socket to an sbin executable (module-installed callback function)
 	// call an external executable (sbin) that asks the user to grant specific permissions in case an app wants them
-	return 0;
+	return (acl_request_callback?acl_request_callback(handle_id,(process_handle_id?process_handle_id:THREAD_DATA->process->handle.rb_node.key),flags):0);
 }
