@@ -158,8 +158,20 @@ KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,
 	((socket_vfs_node_t*)out)->domain=domain;
 	((socket_vfs_node_t*)out)->type=type;
 	((socket_vfs_node_t*)out)->protocol=protocol;
+	((socket_vfs_node_t*)out)->flags=SOCKET_FLAG_READ|SOCKET_FLAG_WRITE;
 	((socket_vfs_node_t*)out)->handler=(socket_dtp_handler_t*)handler;
 	return out;
+}
+
+
+
+KERNEL_PUBLIC _Bool socket_shutdown(vfs_node_t* node,u8 flags){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return 0;
+	}
+	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	socket_node->flags&=~flags;
+	return 1;
 }
 
 
@@ -227,6 +239,9 @@ KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 s
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	if (!(socket_node->flags&SOCKET_FLAG_WRITE)){
+		return 0;
+	}
 	spinlock_acquire_exclusive(&(socket_node->write_lock));
 	_Bool out=socket_node->handler->descriptor->write_packet(socket_node,packet,size);
 	spinlock_release_exclusive(&(socket_node->write_lock));
@@ -240,6 +255,9 @@ KERNEL_PUBLIC _Bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
+	if (!(socket_node->flags&SOCKET_FLAG_READ)){
+		return 0;
+	}
 	socket_packet_t* packet=omm_alloc(_socket_packet_allocator);
 	packet->size=size;
 	packet->data=data;
@@ -279,6 +297,19 @@ error_t syscall_socket_create(const char* name,socket_domain_t domain,socket_typ
 		smm_dealloc(socket_name);
 	}
 	return (out?fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE):ERROR_INVALID_FORMAT);
+}
+
+
+
+error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
+	if (flags&(~(SOCKET_FLAG_READ|SOCKET_FLAG_WRITE))){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	vfs_node_t* node=fd_get_node(fd);
+	if (!node){
+		return ERROR_INVALID_HANDLE;
+	}
+	return (socket_shutdown(node,flags)?ERROR_OK:ERROR_UNSUPPORTED_OPERATION);
 }
 
 
@@ -329,7 +360,7 @@ error_t syscall_socket_send(handle_id_t fd,void* buffer,u32 buffer_length,u32 fl
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
-	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!(((socket_vfs_node_t*)node)->flags&SOCKET_FLAG_WRITE)){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	return (socket_push_packet(node,buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);

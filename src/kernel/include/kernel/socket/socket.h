@@ -21,6 +21,9 @@
 #define SOCKET_PROTOCOL_TCP 6
 #define SOCKET_PROTOCOL_UDP 17
 
+#define SOCKET_FLAG_READ 0x01
+#define SOCKET_FLAG_WRITE 0x02
+
 
 
 typedef u8 socket_domain_t;
@@ -42,6 +45,7 @@ typedef struct _SOCKET_VFS_NODE{
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
+	u8 flags;
 	struct _SOCKET_DTP_HANDLER* handler;
 	void* handler_local_ctx;
 	void* handler_remote_ctx;
@@ -89,6 +93,10 @@ void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor)
 
 
 vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol);
+
+
+
+_Bool socket_shutdown(vfs_node_t* node,u8 flags);
 
 
 
