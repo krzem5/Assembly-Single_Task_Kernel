@@ -3,8 +3,8 @@
 
 
 
-void syscall_clock_get_converion(syscall_reg_state_t* regs){
-	regs->rax=clock_conversion_factor;
+u64 syscall_clock_get_converion(syscall_reg_state_t* regs){
 	regs->rdx=clock_conversion_shift;
 	regs->r8=clock_cpu_frequency;
+	return clock_conversion_factor;
 }

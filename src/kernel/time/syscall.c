@@ -3,6 +3,6 @@
 
 
 
-void syscall_time_get_boot_offset(syscall_reg_state_t* regs){
-	regs->rax=time_boot_offset;
+u64 syscall_time_get_boot_offset(syscall_reg_state_t* regs){
+	return time_boot_offset;
 }

@@ -29,17 +29,16 @@ void KERNEL_NORETURN _syscall_invalid(syscall_reg_state_t* regs){
 
 
 
-void syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
-	regs->rax=-1;
+u64 syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
 	if (!syscall_get_string_length(regs->rdi)){
-		return;
+		return -1;
 	}
 	for (u32 i=0;i<_syscall_table_list_length;i++){
 		if (_syscall_table_list[i]&&streq(_syscall_table_list[i]->name,(const char*)(regs->rdi))){
-			regs->rax=((u64)(_syscall_table_list[i]->index))<<32;
-			return;
+			return ((u64)(_syscall_table_list[i]->index))<<32;
 		}
 	}
+	return -1;
 }
 
 

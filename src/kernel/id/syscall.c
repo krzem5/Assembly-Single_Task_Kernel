@@ -5,56 +5,50 @@
 
 
 
-void syscall_uid_get(syscall_reg_state_t* regs){
-	regs->rax=THREAD_DATA->process->uid;
+u64 syscall_uid_get(syscall_reg_state_t* regs){
+	return THREAD_DATA->process->uid;
 }
 
 
 
-void syscall_gid_get(syscall_reg_state_t* regs){
-	regs->rax=THREAD_DATA->process->gid;
+u64 syscall_gid_get(syscall_reg_state_t* regs){
+	return THREAD_DATA->process->gid;
 }
 
 
 
-void syscall_uid_set(syscall_reg_state_t* regs){
+u64 syscall_uid_set(syscall_reg_state_t* regs){
 	if (!THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0)){
 		THREAD_DATA->process->uid=regs->rdi;
-		regs->rax=1;
+		return 1;
 	}
-	else{
-		regs->rax=0;
-	}
+	return 0;
 }
 
 
 
-void syscall_gid_set(syscall_reg_state_t* regs){
+u64 syscall_gid_set(syscall_reg_state_t* regs){
 	if (!THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0)){
 		THREAD_DATA->process->gid=regs->rdi;
-		regs->rax=1;
+		return 1;
 	}
-	else{
-		regs->rax=0;
-	}
+	return 0;
 }
 
 
 
-void syscall_uid_get_name(syscall_reg_state_t* regs){
+u64 syscall_uid_get_name(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
-		regs->rax=0;
-		return;
+		return 0;
 	}
-	regs->rax=uid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
+	return uid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
 }
 
 
 
-void syscall_gid_get_name(syscall_reg_state_t* regs){
+u64 syscall_gid_get_name(syscall_reg_state_t* regs){
 	if (regs->rdx>syscall_get_user_pointer_max_length(regs->rsi)){
-		regs->rax=0;
-		return;
+		return 0;
 	}
-	regs->rax=gid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
+	return gid_get_name(regs->rdi,(char*)(regs->rsi),regs->rdx);
 }

@@ -86,7 +86,7 @@ _syscall_handler:
 	test rax, rax
 	jz _syscall_invalid
 	call rax
-._return_from_syscall:
+	mov r15, rax
 	xor edi, edi ; SCHEDULER_TIMER_USER
 	call scheduler_set_timer
 	rdtsc
@@ -98,6 +98,7 @@ _syscall_handler:
 	mov es, bx
 	;;;
 	pop rax
+	mov rax, r15
 	pop rdx
 	pop rsi
 	pop rdi

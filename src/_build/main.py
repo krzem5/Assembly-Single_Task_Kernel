@@ -228,7 +228,7 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 				wf.write(f"#include <{line[1:]}>\n")
 				continue
 			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
-			wf.write(f"\n\n\nvoid syscall_{func}(syscall_reg_state_t* regs){{\n")
+			wf.write(f"\n\n\nu64 syscall_{func}(syscall_reg_state_t* regs){{\n")
 			call_args=[]
 			idx=0
 			i=0
@@ -261,14 +261,14 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 				elif (type_=="S"):
 					call_args.append(f"(void*)(regs->{REGS[idx]})")
 					call_args.append(f"{REGS[idx]}_length")
-					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length(regs->{REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn;\n\t}}\n")
+					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length(regs->{REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn -1;\n\t}}\n")
 				elif (type_=="Z"):
 					call_args.append(f"(void*)(regs->{REGS[idx]})")
-					wf.write(f"\tif (regs->{REGS[other_index]}>syscall_get_user_pointer_max_length(regs->{REGS[idx]})){{\n\t\treturn;\n\t}}\n")
+					wf.write(f"\tif (regs->{REGS[other_index]}>syscall_get_user_pointer_max_length(regs->{REGS[idx]})){{\n\t\treturn -1;\n\t}}\n")
 				else:
 					raise RuntimeError(f"Invalid type: {type_}")
 				idx+=1
-			wf.write(f"\tregs->rax={func}({','.join(call_args)});\n}}\n")
+			wf.write(f"\treturn {func}({','.join(call_args)});\n}}\n")
 
 
 
