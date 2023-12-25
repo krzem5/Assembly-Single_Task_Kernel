@@ -229,19 +229,10 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 				continue
 			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
 			wf.write(f"\n\n\nvoid syscall_{func}(syscall_reg_state_t* regs){{\n")
-			i=0
-			return_type="u64"
 			call_args=[]
-			is_return_value=False
-			return_type=None
 			idx=0
+			i=0
 			while (i<len(args)):
-				if (args[i]=="|"):
-					i+=1
-					if (is_return_value):
-						raise RuntimeError("Return delimeter already present")
-					is_return_value=True
-					continue
 				if (args[i] not in "bBHIQSZ"):
 					raise RuntimeError(f"Invalid type: {args[i]}")
 				type_=args[i]
@@ -257,22 +248,6 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 						raise RuntimeError("type")
 					else:
 						break
-				if (is_return_value):
-					if (return_type is not None):
-						raise RuntimeError("Multiple return values")
-					if (type_=="b"):
-						return_type="_Bool"
-					elif (type_=="B"):
-						return_type="u8"
-					elif (type_=="H"):
-						return_type="u15"
-					elif (type_=="I"):
-						return_type="u32"
-					elif (type_=="Q"):
-						return_type="u64"
-					else:
-						raise RuntimeError(f"Invalid return type: {type_}")
-					continue
 				if (type_=="b"):
 					call_args.append(f"regs->{REGS[idx]}")
 				elif (type_=="B"):
@@ -293,8 +268,6 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 				else:
 					raise RuntimeError(f"Invalid type: {type_}")
 				idx+=1
-			if (return_type is None):
-				raise RuntimeError("No return value provided")
 			wf.write(f"\tregs->rax={func}({','.join(call_args)});\n}}\n")
 
 

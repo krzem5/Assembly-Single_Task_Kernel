@@ -7,20 +7,19 @@
 # Z = buffer
 # @index = second arg index
 # <type> = element type
-# | = return value separator
 
 %kernel/fd/fd.h
 
-fd_close:Q|b
-fd_dup:QI|Q
-fd_iter_get:QZ@2Q|Q
-fd_iter_next:Q|Q
-fd_iter_start:Q|Q
-fd_iter_stop:Q|Q
-fd_open:QSI|Q
-fd_path:QZ@2Q|Q
-fd_read:QZ@2QI|Q
-fd_resize:QQI|Q
-fd_seek:QQI|Q
-fd_stat:QZ@2Q|Q
-fd_write:QZ@2QI|Q
+fd_close:Q
+fd_dup:QI
+fd_iter_get:QZ@2Q
+fd_iter_next:Q
+fd_iter_start:Q
+fd_iter_stop:Q
+fd_open:QSI
+fd_path:QZ@2Q
+fd_read:QZ@2QI
+fd_resize:QQI
+fd_seek:QQI
+fd_stat:QZ@2Q
+fd_write:QZ@2QI
