@@ -1,5 +1,6 @@
 #include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
+#include <kernel/error/error.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -24,7 +25,7 @@ static void _load_modules_from_order_file(const char* order_file_path,_Bool earl
 	}
 	config_t* config=config_load(file);
 	for (config_item_t* item=config->head;item;item=item->next){
-		if (early&&(!item->value||!streq(item->value->data,"early"))){
+		if (early!=(item->value&&streq(item->value->data,"early"))){
 			continue;
 		}
 #if !KERNEL_COVERAGE_ENABLED
@@ -64,7 +65,7 @@ _check_next_fs:
 	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
-	if (!elf_load("/bin/shell",0,NULL,NULL,0)){
+	if (IS_ERROR(elf_load("/bin/shell",0,NULL,NULL,0))){
 		panic("Unable to load user shell");
 	}
 	return 0;

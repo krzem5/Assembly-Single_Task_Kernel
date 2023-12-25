@@ -1,10 +1,11 @@
 #ifndef _KERNEL_SYSCALL_SYSCALL_H_
 #define _KERNEL_SYSCALL_SYSCALL_H_ 1
+#include <kernel/error/error.h>
 #include <kernel/types.h>
 
 
 
-typedef u64 (*syscall_callback_t)();
+typedef error_t (*syscall_callback_t)();
 
 
 
