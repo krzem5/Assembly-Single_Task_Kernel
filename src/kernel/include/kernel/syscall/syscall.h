@@ -6,7 +6,6 @@
 
 
 typedef struct _SYSCALL_REG_STATE{
-	u64 rax;
 	u64 rdx;
 	u64 rsi;
 	u64 rdi;

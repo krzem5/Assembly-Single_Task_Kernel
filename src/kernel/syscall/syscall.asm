@@ -56,7 +56,6 @@ _syscall_handler:
 	push rdi
 	push rsi
 	push rdx
-	push rax
 	;;;
 	mov bx, 0x10
 	mov ds, bx
@@ -66,7 +65,7 @@ _syscall_handler:
 	xor r12, r12
 	xor r13, r13
 	xor r14, r14
-	xor r15, r15
+	mov r15, -0xaabb ; INVALID_SYSCALL_ERROR
 	mov rbx, rax
 	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
 	call scheduler_set_timer
@@ -74,19 +73,20 @@ _syscall_handler:
 	mov rdi, rsp
 	shr rbx, 32
 	cmp ebx, dword [_syscall_table_list_length]
-	jge _syscall_invalid
+	jge ._syscall_return
 	mov rcx, qword [_syscall_table_list]
 	mov rcx, qword [rcx+rbx*8]
 	test rcx, rcx
-	jz _syscall_invalid
+	jz ._syscall_return
 	mov rdx, qword [rcx+8]
 	cmp eax, dword [rcx+16]
-	jge _syscall_invalid
+	jge ._syscall_return
 	mov rax, qword [rdx+rax*8]
 	test rax, rax
-	jz _syscall_invalid
+	jz ._syscall_return
 	call rax
 	mov r15, rax
+._syscall_return:
 	xor edi, edi ; SCHEDULER_TIMER_USER
 	call scheduler_set_timer
 	rdtsc
@@ -97,7 +97,6 @@ _syscall_handler:
 	mov ds, bx
 	mov es, bx
 	;;;
-	pop rax
 	mov rax, r15
 	pop rdx
 	pop rsi

@@ -22,13 +22,6 @@ volatile u32 _syscall_table_list_length=0;
 
 
 
-void KERNEL_NORETURN _syscall_invalid(syscall_reg_state_t* regs){
-	ERROR("Invalid SYSCALL number: %lu",regs->rax);
-	panic("Invalid SYSCALL");
-}
-
-
-
 u64 syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
 	if (!syscall_get_string_length(regs->rdi)){
 		return -1;
