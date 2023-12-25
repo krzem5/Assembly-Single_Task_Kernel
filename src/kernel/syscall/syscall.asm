@@ -49,30 +49,32 @@ _syscall_handler:
 	push rbp
 	push rcx
 	push rbx
-	mov rcx, r10
-	;;;
 	push r9
 	push r8
-	push rcx
+	push r10
 	push rdx
 	push rsi
 	push rdi
-	;;;
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
-	xor rbp, rbp
-	xor r10, r10
-	xor r11, r11
-	xor r12, r12
-	xor r13, r13
-	xor r14, r14
 	mov r15, -0xaabb ; INVALID_SYSCALL_ERROR
+	xor r14, r14
+	xor r13, r13
+	xor r12, r12
+	xor r11, r11
+	xor r10, r10
+	xor rbp, rbp
 	mov rbx, rax
 	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
 	call scheduler_set_timer
+	pop rdi
+	pop rsi
+	pop rdx
+	pop rcx
+	pop r8
+	pop r9
 	mov eax, ebx
-	mov rdi, rsp
 	shr rbx, 32
 	cmp ebx, dword [_syscall_table_list_length]
 	jge ._syscall_return
@@ -105,7 +107,6 @@ _syscall_handler:
 	xor r8, r8
 	xor r9, r9
 	xor r10, r10
-	add rsp, 48 ;;;
 	pop rbx
 	pop rcx
 	pop rbp

@@ -1,4 +1,5 @@
 #include <kernel/fd/fd.h>
+#include <kernel/handle/handle.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -21,47 +22,46 @@ static pmm_counter_descriptor_t* _user_data_pmm_counter=NULL;
 
 
 
-u64 syscall_memory_map(syscall_reg_state_t* regs){
+u64 syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	if (!_user_data_pmm_counter){
 		_user_data_pmm_counter=pmm_alloc_counter("user_data");
 	}
-	u64 flags=MMAP_REGION_FLAG_VMM_USER;
+	u64 mmap_flags=MMAP_REGION_FLAG_VMM_USER;
 	vfs_node_t* file=NULL;
-	if (regs->rsi&MEMORY_FLAG_WRITE){
-		flags|=MMAP_REGION_FLAG_VMM_READWRITE;
+	if (flags&MEMORY_FLAG_WRITE){
+		mmap_flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 	}
-	if (!(regs->rsi&MEMORY_FLAG_EXEC)){
-		flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
+	if (!(flags&MEMORY_FLAG_EXEC)){
+		mmap_flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
 	}
-	if (regs->rsi&MEMORY_FLAG_FILE){
-		file=fd_get_node(regs->rdx);
+	if (flags&MEMORY_FLAG_FILE){
+		file=fd_get_node(fd);
 		if (!file){
 			return 0;
 		}
 	}
-	if (regs->rsi&MEMORY_FLAG_NOWRITEBACK){
-		flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
+	if (flags&MEMORY_FLAG_NOWRITEBACK){
+		mmap_flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
 	}
-	u64 length=pmm_align_up_address(regs->rdi);
-	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,length,_user_data_pmm_counter,flags,file);
+	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,pmm_align_up_address(size),_user_data_pmm_counter,mmap_flags,file);
 	return (out?out->rb_node.key:0);
 }
 
 
 
-u64 syscall_memory_change_flags(syscall_reg_state_t* regs){
-	u64 flags=0;
-	if (regs->rdx&MEMORY_FLAG_WRITE){
-		flags|=VMM_PAGE_FLAG_READWRITE;
+u64 syscall_memory_change_flags(u64 address,u64 size,u64 flags){
+	u64 mmap_flags=0;
+	if (flags&MEMORY_FLAG_WRITE){
+		mmap_flags|=VMM_PAGE_FLAG_READWRITE;
 	}
-	if (!(regs->rdx&MEMORY_FLAG_EXEC)){
-		flags|=VMM_PAGE_FLAG_NOEXECUTE;
+	if (!(flags&MEMORY_FLAG_EXEC)){
+		mmap_flags|=VMM_PAGE_FLAG_NOEXECUTE;
 	}
-	return mmap_change_flags(&(THREAD_DATA->process->mmap),pmm_align_down_address(regs->rdi),pmm_align_up_address(regs->rsi+(regs->rdi&(PAGE_SIZE-1))),flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	return mmap_change_flags(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))),mmap_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
 }
 
 
 
-u64 syscall_memory_unmap(syscall_reg_state_t* regs){
-	return mmap_dealloc(&(THREAD_DATA->process->mmap),regs->rdi,pmm_align_up_address(regs->rsi));
+u64 syscall_memory_unmap(u64 address,u64 size){
+	return mmap_dealloc(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))));
 }

@@ -16,7 +16,7 @@ typedef struct _SYSCALL_REG_STATE{
 
 
 
-typedef void (*syscall_callback_t)(syscall_reg_state_t*);
+typedef u64 (*syscall_callback_t)();
 
 
 

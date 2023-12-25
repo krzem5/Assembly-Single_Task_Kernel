@@ -22,12 +22,12 @@ volatile u32 _syscall_table_list_length=0;
 
 
 
-u64 syscall_syscall_table_get_offset(syscall_reg_state_t* regs){
-	if (!syscall_get_string_length(regs->rdi)){
+u64 syscall_syscall_table_get_offset(const char* table_name){
+	if (!syscall_get_string_length((u64)table_name)){
 		return -1;
 	}
 	for (u32 i=0;i<_syscall_table_list_length;i++){
-		if (_syscall_table_list[i]&&streq(_syscall_table_list[i]->name,(const char*)(regs->rdi))){
+		if (_syscall_table_list[i]&&streq(_syscall_table_list[i]->name,table_name)){
 			return ((u64)(_syscall_table_list[i]->index))<<32;
 		}
 	}

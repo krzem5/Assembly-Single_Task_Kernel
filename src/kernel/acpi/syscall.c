@@ -8,6 +8,6 @@
 
 
 
-void KERNEL_NORETURN syscall_system_shutdown(syscall_reg_state_t* regs){
-	shutdown(!!(regs->rdi&USER_SHUTDOWN_FLAG_RESTART));
+void KERNEL_NORETURN syscall_system_shutdown(u32 flags){
+	shutdown(!!(flags&USER_SHUTDOWN_FLAG_RESTART));
 }

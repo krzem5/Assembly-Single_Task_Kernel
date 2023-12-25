@@ -205,7 +205,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls.values():
-			wf.write(f"extern void syscall_{name}(syscall_reg_state_t* regs);\n")
+			wf.write(f"extern u64 syscall_{name}();\n")
 		size=max(syscalls.keys())+1
 		wf.write(f"\n\n\nconst u64 _syscalls_{table_name}_count={size};\n\n\n\nconst void*const _syscalls_{table_name}_functions[{size}]={{\n")
 		for index,(name,_,_,_) in syscalls.items():
@@ -226,7 +226,7 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 				wf.write(f"#include <{line[1:]}>\n")
 				continue
 			func,args=line[:line.index(":")].strip(),line[line.index(":")+1:].strip()
-			wf.write(f"\n\n\nu64 syscall_{func}(syscall_reg_state_t* regs){{\n")
+			wf.write(f"\n\n\nu64 syscall_{func}(u64 rdi,u64 rsi,u64 rdx,u64 rcx,u64 r8,u64 r9){{\n")
 			call_args=[]
 			idx=0
 			i=0
@@ -247,22 +247,22 @@ def _generate_syscall_wrappers(src_file_path,dst_file_path):
 					else:
 						break
 				if (type_=="b"):
-					call_args.append(f"regs->{REGS[idx]}")
+					call_args.append(f"{REGS[idx]}")
 				elif (type_=="B"):
-					call_args.append(f"regs->{REGS[idx]}")
+					call_args.append(f"{REGS[idx]}")
 				elif (type_=="H"):
-					call_args.append(f"regs->{REGS[idx]}")
+					call_args.append(f"{REGS[idx]}")
 				elif (type_=="I"):
-					call_args.append(f"regs->{REGS[idx]}")
+					call_args.append(f"{REGS[idx]}")
 				elif (type_=="Q"):
-					call_args.append(f"regs->{REGS[idx]}")
+					call_args.append(f"{REGS[idx]}")
 				elif (type_=="S"):
-					call_args.append(f"(void*)(regs->{REGS[idx]})")
+					call_args.append(f"(void*)({REGS[idx]})")
 					call_args.append(f"{REGS[idx]}_length")
-					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length(regs->{REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn -1;\n\t}}\n")
+					wf.write(f"\tu64 {REGS[idx]}_length=syscall_get_string_length({REGS[idx]});\n\tif (!{REGS[idx]}_length){{\n\t\treturn -1;\n\t}}\n")
 				elif (type_=="Z"):
-					call_args.append(f"(void*)(regs->{REGS[idx]})")
-					wf.write(f"\tif (regs->{REGS[other_index]}>syscall_get_user_pointer_max_length(regs->{REGS[idx]})){{\n\t\treturn -1;\n\t}}\n")
+					call_args.append(f"(void*)({REGS[idx]})")
+					wf.write(f"\tif ({REGS[other_index]}>syscall_get_user_pointer_max_length({REGS[idx]})){{\n\t\treturn -1;\n\t}}\n")
 				else:
 					raise RuntimeError(f"Invalid type: {type_}")
 				idx+=1
