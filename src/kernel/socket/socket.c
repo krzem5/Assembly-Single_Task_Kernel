@@ -392,8 +392,11 @@ error_t syscall_socket_send(handle_id_t fd,void* buffer,u32 buffer_length,u32 fl
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
-	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!(((socket_vfs_node_t*)node)->flags&SOCKET_FLAG_WRITE)){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	if (!(((socket_vfs_node_t*)node)->flags&SOCKET_FLAG_WRITE)){
+		return ERROR_DISABLED_OPERATION;
 	}
 	return (socket_push_packet(node,buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);
 }

@@ -6,7 +6,7 @@
 
 #define IS_ERROR(x) (((s64)(x))<0)
 
-#define _ERROR(x) (-((s64)(x)))
+#define _ERROR(x) ((u64)(-((s64)(x))))
 
 #define ERROR_OK _ERROR(0x0000)
 #define ERROR_INVALID_SYSCALL _ERROR(0x0001)
@@ -20,6 +20,7 @@
 #define ERROR_NO_DATA _ERROR(0x0009)
 #define ERROR_INVALID_FORMAT _ERROR(0x000a)
 #define ERROR_INVALID_ADDRESS _ERROR(0x000b)
+#define ERROR_DISABLED_OPERATION _ERROR(0x000c)
 
 
 
