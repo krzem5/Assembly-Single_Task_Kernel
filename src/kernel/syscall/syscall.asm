@@ -58,7 +58,7 @@ _syscall_handler:
 	mov bx, 0x10
 	mov ds, bx
 	mov es, bx
-	mov r15, -0xaabb ; INVALID_SYSCALL_ERROR
+	mov r15, -0x0001 ; ERROR_INVALID_SYSCALL
 	xor r14, r14
 	xor r13, r13
 	xor r12, r12

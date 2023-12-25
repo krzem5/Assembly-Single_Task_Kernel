@@ -2,6 +2,7 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
+#include <kernel/error/error.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/spinlock.h>
@@ -186,5 +187,5 @@ void scheduler_set_timer(u8 timer){
 
 u64 syscall_scheduler_yield(void){
 	scheduler_yield();
-	return 0;
+	return ERROR_OK;
 }

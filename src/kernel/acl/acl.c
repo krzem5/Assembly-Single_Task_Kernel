@@ -1,4 +1,5 @@
 #include <kernel/acl/acl.h>
+#include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -57,7 +58,7 @@ KERNEL_PUBLIC void acl_delete(acl_t* acl){
 KERNEL_PUBLIC u64 acl_get(acl_t* acl,process_t* process){
 	u64 key=HANDLE_ID_GET_INDEX(process->handle.rb_node.key);
 	if (!key){
-		return 0xffffffffffffffffull;
+		return 0x7fffffffffffffffull;
 	}
 	u64 out=0;
 	spinlock_acquire_exclusive(&(acl->lock));
@@ -111,15 +112,18 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 
 u64 syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
-	if (!handle||!handle->acl){
-		return 0;
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!handle->acl){
+		return ERROR_NO_ACL;
 	}
 	handle_t* process_handle=NULL;
 	if (process_handle_id){
 		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
 		if (!process_handle){
 			handle_release(handle);
-			return 0;
+			return ERROR_INVALID_HANDLE;
 		}
 	}
 	u64 out=acl_get(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process));
@@ -134,15 +138,18 @@ u64 syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle
 
 u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 clear,u64 set){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
-	if (!handle||!handle->acl){
-		return 0;
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!handle->acl){
+		return ERROR_NO_ACL;
 	}
 	handle_t* process_handle=NULL;
 	if (process_handle_id){
 		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
 		if (!process_handle){
 			handle_release(handle);
-			return 0;
+			return ERROR_INVALID_HANDLE;
 		}
 	}
 	if (!process_is_root()){
@@ -153,30 +160,33 @@ u64 syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_handle
 		handle_release(process_handle);
 	}
 	handle_release(handle);
-	return 1;
+	return ERROR_OK;
 }
 
 
 
 u64 syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
-	if (!handle||!handle->acl){
-		return 0;
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!handle->acl){
+		return ERROR_NO_ACL;
 	}
 	handle_t* process_handle=NULL;
 	if (process_handle_id){
 		process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
 		if (!process_handle){
 			handle_release(handle);
-			return 0;
+			return ERROR_INVALID_HANDLE;
 		}
 	}
-	_Bool out=0;
+	u64 out=ERROR_DENIED;
 	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
 	acl_request_callback_t callback=acl_request_callback;
 	if (callback&&callback(handle,process,flags)){
 		acl_set(handle->acl,process,0,flags);
-		out=1;
+		out=ERROR_OK;
 	}
 	if (process_handle){
 		handle_release(process_handle);

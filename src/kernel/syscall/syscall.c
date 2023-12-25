@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -24,14 +25,14 @@ volatile u32 _syscall_table_list_length=0;
 
 u64 syscall_syscall_table_get_offset(const char* table_name){
 	if (!syscall_get_string_length((u64)table_name)){
-		return -1;
+		return ERROR_INVALID_ARGUMENT(0);
 	}
 	for (u32 i=0;i<_syscall_table_list_length;i++){
 		if (_syscall_table_list[i]&&streq(_syscall_table_list[i]->name,table_name)){
 			return ((u64)(_syscall_table_list[i]->index))<<32;
 		}
 	}
-	return -1;
+	return ERROR_NOT_FOUND;
 }
 
 

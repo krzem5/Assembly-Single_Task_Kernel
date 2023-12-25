@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/lock/spinlock.h>
@@ -122,16 +123,19 @@ u64 syscall_uid_get(void){
 u64 syscall_uid_set(u64 uid){
 	if (process_is_root()){
 		THREAD_DATA->process->uid=uid;
-		return 1;
+		return ERROR_OK;
 	}
-	return 0;
+	return ERROR_DENIED;
 }
 
 
 
 u64 syscall_uid_get_name(u64 uid,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
-		return 0;
+	if (!buffer_length){
+		return ERROR_INVALID_ARGUMENT(2);
 	}
-	return uid_get_name(uid,buffer,buffer_length);
+	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	return (uid_get_name(uid,buffer,buffer_length)?ERROR_OK:ERROR_NOT_FOUND);
 }

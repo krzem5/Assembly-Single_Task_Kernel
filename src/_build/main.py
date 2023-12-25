@@ -203,7 +203,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 				wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
 			wf.write("#endif\n")
 	with open(kernel_file_path,"w") as wf:
-		wf.write("#include <kernel/syscall/syscall.h>\n#include <kernel/types.h>\n\n\n\n")
+		wf.write("#include <kernel/types.h>\n\n\n\n")
 		for name,_,_,_ in syscalls.values():
 			wf.write(f"extern u64 syscall_{name}();\n")
 		size=max(syscalls.keys())+1

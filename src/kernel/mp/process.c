@@ -1,6 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
+#include <kernel/error/error.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/id/user.h>
@@ -112,18 +113,19 @@ u64 syscall_process_get_pid(void){
 
 u64 syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
 	if (!syscall_get_string_length((u64)path)){
-		return 0;
+		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length((u64)argv)){
-		return 0;
+		return ERROR_INVALID_ARGUMENT(1);
 	}
 	for (u64 i=0;i<argc;i++){
 		if (!syscall_get_string_length((u64)(argv[i]))){
-			return 0;
+			return ERROR_INVALID_ARGUMENT(1);
 		}
 	}
 	// copy all vars to a temp buffer + check environ for overflow
-	return elf_load(path,argc,argv,environ,flags);
+	handle_id_t out=elf_load(path,argc,argv,environ,flags);
+	return (out?out:ERROR_NOT_FOUND);
 }
 
 
@@ -131,7 +133,7 @@ u64 syscall_process_start(const char* path,u32 argc,const char*const* argv,const
 u64 syscall_process_get_event(handle_id_t process_handle){
 	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
 	if (!handle){
-		return 0;
+		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=handle->object;
 	u64 out=process->event->handle.rb_node.key;

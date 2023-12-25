@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/id/group.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -83,16 +84,19 @@ u64 syscall_gid_get(void){
 u64 syscall_gid_set(u64 gid){
 	if (process_is_root()){
 		THREAD_DATA->process->gid=gid;
-		return 1;
+		return ERROR_OK;
 	}
-	return 0;
+	return ERROR_DENIED;
 }
 
 
 
 u64 syscall_gid_get_name(u64 gid,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
-		return 0;
+	if (!buffer_length){
+		return ERROR_INVALID_ARGUMENT(2);
 	}
-	return gid_get_name(gid,buffer,buffer_length);
+	if (buffer_length>syscall_get_user_pointer_max_length((u64)buffer)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	return (gid_get_name(gid,buffer,buffer_length)?ERROR_OK:ERROR_NOT_FOUND);
 }

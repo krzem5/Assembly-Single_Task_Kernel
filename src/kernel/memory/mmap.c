@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/isr/pf.h>
 #include <kernel/lock/spinlock.h>
@@ -414,14 +415,14 @@ u64 syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	if (flags&USER_MEMORY_FLAG_FILE){
 		file=fd_get_node(fd);
 		if (!file){
-			return 0;
+			return ERROR_INVALID_HANDLE;
 		}
 	}
 	if (flags&USER_MEMORY_FLAG_NOWRITEBACK){
 		mmap_flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
 	}
 	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,pmm_align_up_address(size),_mmap_user_data_pmm_counter,mmap_flags,file);
-	return (out?out->rb_node.key:0);
+	return (out?out->rb_node.key:ERROR_NO_SPACE);
 }
 
 
@@ -434,12 +435,11 @@ u64 syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	if (!(flags&USER_MEMORY_FLAG_EXEC)){
 		mmap_flags|=VMM_PAGE_FLAG_NOEXECUTE;
 	}
-	return mmap_change_flags(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))),mmap_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE);
+	return (mmap_change_flags(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))),mmap_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE)?ERROR_OK:ERROR_INVALID_ARGUMENT(0));
 }
 
 
 
 u64 syscall_memory_unmap(u64 address,u64 size){
-	return mmap_dealloc(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))));
+	return (mmap_dealloc(&(THREAD_DATA->process->mmap),pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))))?ERROR_OK:ERROR_INVALID_ARGUMENT(0));
 }
-
