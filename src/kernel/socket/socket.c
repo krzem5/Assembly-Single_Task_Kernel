@@ -312,3 +312,25 @@ error_t syscall_socket_recv(handle_id_t fd,void* buffer,u32 buffer_length,u32 fl
 	socket_dealloc_packet(packet);
 	return (packet->size>buffer_length?ERROR_NO_SPACE:ERROR_OK);
 }
+
+
+
+error_t syscall_socket_send(handle_id_t fd,void* buffer,u32 buffer_length,u32 flags){
+	if (flags&(~FD_FLAG_NONBLOCKING)){
+		return ERROR_INVALID_ARGUMENT(3);
+	}
+	if (!buffer_length){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	vfs_node_t* node=fd_get_node(fd);
+	if (!node){
+		return ERROR_INVALID_HANDLE;
+	}
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	return (socket_push_packet(node,buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);
+}

@@ -42,3 +42,4 @@
 42,acl_request_permissions(u64 handle,u64 process,u64 flags) -> u64
 43,socket_create(const char* name,u8 domain,u8 type,u8 protocol) -> u64
 44,socket_recv(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
+45,socket_send(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
