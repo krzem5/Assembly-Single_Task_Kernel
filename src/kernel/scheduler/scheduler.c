@@ -181,3 +181,10 @@ void scheduler_set_timer(u8 timer){
 	scheduler->current_timer=timer;
 	scheduler_resume();
 }
+
+
+
+u64 syscall_scheduler_yield(void){
+	scheduler_yield();
+	return 0;
+}

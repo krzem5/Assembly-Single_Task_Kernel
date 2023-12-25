@@ -36,3 +36,4 @@
 36,thread_await_events(const u64* handles,u32 count) -> _Bool
 37,process_get_event(u64 handle) -> u64
 38,syscall_table_get_offset(const char* name) -> u64
+39,scheduler_yield(void) -> void
