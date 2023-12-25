@@ -105,7 +105,7 @@ _syscall_handler:
 	xor r8, r8
 	xor r9, r9
 	xor r10, r10
-	add rsp, 48
+	add rsp, 48 ;;;
 	pop rbx
 	pop rcx
 	pop rbp
