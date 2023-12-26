@@ -41,9 +41,9 @@ static vfs_node_t* _socket_create(void){
 	out->domain=SOCKET_DOMAIN_NONE;
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;
-	out->handler=NULL;
-	out->handler_local_ctx=NULL;
-	out->handler_remote_ctx=NULL;
+	out->descriptor=NULL;
+	out->local_ctx=NULL;
+	out->remote_ctx=NULL;
 	out->rx_ring=ring_init(256);
 	return (vfs_node_t*)out;
 }
@@ -53,7 +53,7 @@ static vfs_node_t* _socket_create(void){
 static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
 	spinlock_acquire_exclusive(&(socket->read_lock));
-	u64 out=(socket->handler_local_ctx?socket->handler->descriptor->read(socket,buffer,size,flags):0);
+	u64 out=(socket->local_ctx?socket->descriptor->read(socket,buffer,size,flags):0);
 	spinlock_release_exclusive(&(socket->read_lock));
 	return out;
 }
@@ -63,7 +63,7 @@ static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fl
 static u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
 	spinlock_acquire_exclusive(&(socket->write_lock));
-	u64 out=(socket->handler_remote_ctx?socket->handler->descriptor->write(socket,buffer,size):0);
+	u64 out=(socket->remote_ctx?socket->descriptor->write(socket,buffer,size):0);
 	spinlock_release_exclusive(&(socket->write_lock));
 	return out;
 }
@@ -159,7 +159,7 @@ KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,
 	((socket_vfs_node_t*)out)->type=type;
 	((socket_vfs_node_t*)out)->protocol=protocol;
 	((socket_vfs_node_t*)out)->flags=SOCKET_FLAG_READ|SOCKET_FLAG_WRITE;
-	((socket_vfs_node_t*)out)->handler=(socket_dtp_handler_t*)handler;
+	((socket_vfs_node_t*)out)->descriptor=((socket_dtp_handler_t*)handler)->descriptor;
 	return out;
 }
 
@@ -181,13 +181,14 @@ KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* local_address,u32 l
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	if (!socket_node->handler){
+	if (!socket_node->descriptor){
 		return 0;
 	}
-	if (socket_node->handler_local_ctx){
-		socket_node->handler->descriptor->debind(socket_node);
+	if (socket_node->local_ctx){
+		socket_node->descriptor->debind(socket_node);
+		socket_node->local_ctx=NULL;
 	}
-	return socket_node->handler->descriptor->bind(socket_node,local_address,local_address_length);
+	return socket_node->descriptor->bind(socket_node,local_address,local_address_length);
 }
 
 
@@ -197,13 +198,14 @@ KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u
 		return 0;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	if (!socket_node->handler){
+	if (!socket_node->descriptor){
 		return 0;
 	}
-	if (socket_node->handler_remote_ctx){
-		socket_node->handler->descriptor->deconnect(socket_node);
+	if (socket_node->remote_ctx){
+		socket_node->descriptor->deconnect(socket_node);
+		socket_node->remote_ctx=NULL;
 	}
-	return socket_node->handler->descriptor->connect(socket_node,remote_address,remote_address_length);
+	return socket_node->descriptor->connect(socket_node,remote_address,remote_address_length);
 }
 
 
@@ -243,7 +245,7 @@ KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 s
 		return 0;
 	}
 	spinlock_acquire_exclusive(&(socket_node->write_lock));
-	_Bool out=socket_node->handler->descriptor->write_packet(socket_node,packet,size);
+	_Bool out=socket_node->descriptor->write_packet(socket_node,packet,size);
 	spinlock_release_exclusive(&(socket_node->write_lock));
 	return out;
 }

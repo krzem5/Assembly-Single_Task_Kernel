@@ -46,9 +46,9 @@ typedef struct _SOCKET_VFS_NODE{
 	socket_type_t type;
 	socket_protocol_t protocol;
 	u8 flags;
-	struct _SOCKET_DTP_HANDLER* handler;
-	void* handler_local_ctx;
-	void* handler_remote_ctx;
+	const struct _SOCKET_DTP_DESCRIPTOR* descriptor;
+	void* local_ctx;
+	void* remote_ctx;
 	ring_t* rx_ring;
 } socket_vfs_node_t;
 

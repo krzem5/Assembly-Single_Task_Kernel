@@ -28,7 +28,7 @@ static _Bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* ad
 	}
 	net_udp_address_t* local_ctx=omm_alloc(_net_udp_address_allocator);
 	*local_ctx=*udp_address;
-	socket_node->handler_local_ctx=local_ctx;
+	socket_node->local_ctx=local_ctx;
 	return 1;
 }
 
@@ -47,7 +47,7 @@ static _Bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void*
 	}
 	net_udp_address_t* remote_ctx=omm_alloc(_net_udp_address_allocator);
 	*remote_ctx=*udp_address;
-	socket_node->handler_remote_ctx=remote_ctx;
+	socket_node->remote_ctx=remote_ctx;
 	return 1;
 }
 
@@ -75,11 +75,11 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 
 
 static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
-	if (!socket_node->handler_local_ctx||!socket_node->handler_remote_ctx){
+	if (!socket_node->local_ctx||!socket_node->remote_ctx){
 		return 0;
 	}
-	const net_udp_address_t* udp_local_address=(const net_udp_address_t*)(socket_node->handler_local_ctx);
-	const net_udp_address_t* udp_remote_address=(const net_udp_address_t*)(socket_node->handler_remote_ctx);
+	const net_udp_address_t* udp_local_address=(const net_udp_address_t*)(socket_node->local_ctx);
+	const net_udp_address_t* udp_remote_address=(const net_udp_address_t*)(socket_node->remote_ctx);
 	net_ip4_packet_t* ip_packet=net_ip4_create_packet(length+sizeof(net_udp_packet_t),udp_local_address->address,udp_remote_address->address,PROTOCOL_TYPE);
 	if (!ip_packet){
 		return 0;
@@ -182,7 +182,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	}
 	u16 port=__builtin_bswap16(udp_packet->dst_port);
 	socket_vfs_node_t* socket=socket_port_get(port);
-	if (!socket||socket->handler->descriptor!=&_net_udp_socket_dtp_descriptor){
+	if (!socket||socket->descriptor!=&_net_udp_socket_dtp_descriptor){
 		ERROR("No UDP socket on port %u",port);
 		return;
 	}
