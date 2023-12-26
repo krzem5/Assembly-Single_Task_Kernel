@@ -49,6 +49,7 @@ static u64 _virtio_read_port(virtio_field_t field,u8 size){
 				return io_port_in32(field)|(((u64)io_port_in32(field+4))<<32);
 		}
 	}
+	panic("_virtio_read_port: invalid size");
 }
 
 
@@ -80,6 +81,7 @@ static void _virtio_write_port(virtio_field_t field,u8 size,u32 value){
 				return;
 		}
 	}
+	panic("_virtio_write_port: invalid size");
 }
 
 
@@ -128,7 +130,6 @@ static void _virtio_init_device(pci_device_t* device){
 	virtio_device->type=pci_device_read_data(device,0x2c)>>16;
 	spinlock_init(&(virtio_device->lock));
 	_virtio_write_port(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
-	_virtio_write_port(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
 	handle_finish_setup(&(virtio_device->handle));
 }
 
@@ -153,18 +154,25 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 		if (device->type!=driver->type){
 			continue;
 		}
-		(void)_virtio_read_port;
-		// INFO("Found matching VirtIO device attached to port %x",device->port);
-		// io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
-		// io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
-		// u32 features=io_port_in32(device->port+VIRTIO_REG_DEVICE_FEATURES)&(~driver->features);
-		// io_port_out32(device->port+VIRTIO_REG_GUEST_FEATURES,features);
-		// io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
-		// if (!(io_port_in8(device->port+VIRTIO_REG_DEVICE_STATUS)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
-		// 	ERROR("Failed to initialize VirtIO device");
-		// 	io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
-		// 	continue;
-		// }
+		_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_FEATURE_SELECT,4,0);
+		u64 features=_virtio_read_port(device->common_field+VIRTIO_REG_DEVICE_FEATURE,4);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_FEATURE_SELECT,4,1);
+		features|=_virtio_read_port(device->common_field+VIRTIO_REG_DEVICE_FEATURE,4)<<32;
+		features&=driver->features;
+		_virtio_write_port(device->common_field+VIRTIO_REG_DRIVER_FEATURE_SELECT,4,0);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DRIVER_FEATURE,4,features);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DRIVER_FEATURE_SELECT,4,1);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DRIVER_FEATURE,4,features>>32);
+		_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+		if (!(_virtio_read_port(device->common_field+VIRTIO_REG_DEVICE_STATUS,1)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
+			ERROR("Failed to negotiate VirtIO device features");
+			_virtio_write_port(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
+			continue;
+		}
+		INFO("Negotiated device features: %p",features);
+		// panic("A");
 	}
 	return 1;
 }
