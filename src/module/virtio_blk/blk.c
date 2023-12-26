@@ -35,6 +35,9 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 		ERROR("Wrong device version");
 		return 0;
 	}
+	virtio_init_queue(device,0);
+	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+	// panic("A");
 	drive_config_t config={
 		&_virtio_blk_drive_type_config,
 		device->index,
@@ -43,7 +46,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 		smm_alloc("VirtIO",0),
 		virtio_read(device->device_field+VIRTIO_BLK_REG_CAPACITY,8),
 		((features&(1<<VIRTIO_BLK_F_BLK_SIZE))?virtio_read(device->device_field+VIRTIO_BLK_REG_BLK_SIZE,4):VIRTIO_DEFAULT_BLOCK_SIZE),
-		device
+		/*alloc device*/NULL
 	};
 	drive_create(&config);
 	return 1;

@@ -720,6 +720,7 @@ if ("--run" in sys.argv):
 			sys.exit(1)
 	subprocess.run([
 		"qemu-system-x86_64",
+		"-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset","--no-reboot",

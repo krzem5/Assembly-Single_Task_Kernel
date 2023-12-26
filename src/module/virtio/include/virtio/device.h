@@ -15,6 +15,49 @@ typedef u64 virtio_field_t;
 
 
 
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_DESCRIPTOR{
+	u64 address;
+	u32 length;
+	u16 flags;
+	u16 next;
+} virtio_queue_descriptor_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_AVAILABLE{
+	u16 flags;
+	u16 index;
+	u16 ring[];
+} virtio_queue_available_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_USED_ENTRY{
+	u32 index;
+	u32 length;
+} virtio_queue_used_entry_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_USED{
+	u16 flags;
+	u16 index;
+	virtio_queue_used_entry_t ring[];
+} virtio_queue_used_t;
+
+
+
+typedef struct _VIRTIO_QUEUE{
+	u16 index;
+	u16 size;
+	u16 notify_offset;
+	virtio_queue_descriptor_t* descriptors;
+	virtio_queue_available_t* available;
+	virtio_queue_used_t* used;
+} virtio_queue_t;
+
+
+
 typedef struct _VIRTIO_DEVICE{
 	handle_t handle;
 	virtio_device_type_t type;
@@ -58,6 +101,10 @@ u64 virtio_read(virtio_field_t field,u8 size);
 
 
 void virtio_write(virtio_field_t field,u8 size,u32 value);
+
+
+
+virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u16 index);
 
 
 
