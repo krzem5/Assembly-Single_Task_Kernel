@@ -309,7 +309,7 @@ error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_p
 
 
 error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,u64* out){
-	if (syscall_get_user_pointer_max_length(out)!=2*sizeof(handle_id_t)){
+	if (syscall_get_user_pointer_max_length(out)<2*sizeof(handle_id_t)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
 	socket_pair_t pair;
