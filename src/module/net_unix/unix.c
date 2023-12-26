@@ -3,37 +3,67 @@
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #include <net/unix.h>
 #define KERNEL_LOG_NAME "net_unix"
 
 
 
+static const socket_dtp_descriptor_t _net_unix_socket_dtp_descriptor;
+
+
+
 static void _socket_create_pair_callback(socket_pair_t* pair){
-	panic("_socket_create_pair_callback");
+	pair->sockets[0]->remote_ctx=pair->sockets[1];
+	pair->sockets[1]->remote_ctx=pair->sockets[0];
 }
 
 
 
 static _Bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
-	panic("_socket_bind_callback");
+	if (address_length!=sizeof(net_unix_address_t)){
+		return 0;
+	}
+	net_unix_address_t fixed_address=*((const net_unix_address_t*)address);
+	fixed_address.path[255]=0;
+	return socket_move(&(socket_node->node),fixed_address.path);
 }
 
 
 
 static void _socket_debind_callback(socket_vfs_node_t* socket_node){
-	panic("_socket_debind_callback");
+	socket_move(&(socket_node->node),NULL);
 }
 
 
 
 static _Bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
-	panic("_socket_connect_callback");
+	if (address_length!=sizeof(net_unix_address_t)){
+		return 0;
+	}
+	net_unix_address_t fixed_address=*((const net_unix_address_t*)address);
+	fixed_address.path[255]=0;
+	vfs_node_t* other_node=vfs_lookup(NULL,fixed_address.path,0,0,0);
+	if (!other_node||(other_node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return 0;
+	}
+	socket_vfs_node_t* other_socket_node=(socket_vfs_node_t*)other_node;
+	if (other_socket_node->descriptor!=&_net_unix_socket_dtp_descriptor){
+		ERROR("Not a UNIX datagram socket");
+		return 0;
+	}
+	other_node->rc++;
+	socket_node->remote_ctx=other_node;
+	return 1;
 }
 
 
 
 static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
-	panic("_socket_deconnect_callback");
+	if (socket_node->remote_ctx){
+		((vfs_node_t*)(socket_node->remote_ctx))->rc--;
+	}
+	socket_node->remote_ctx=NULL;
 }
 
 
@@ -51,7 +81,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 
 
 static _Bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
-	panic("_socket_write_packet_callback");
+	return _socket_write_callback(socket_node,buffer,length)==length;
 }
 
 

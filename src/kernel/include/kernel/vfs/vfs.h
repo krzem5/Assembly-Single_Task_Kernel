@@ -20,6 +20,10 @@ vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid
 
 
 
+vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name);
+
+
+
 u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length);
 
 

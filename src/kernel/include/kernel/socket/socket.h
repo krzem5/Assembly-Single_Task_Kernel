@@ -144,4 +144,8 @@ event_t* socket_get_event(vfs_node_t* node);
 
 
 
+_Bool socket_move(vfs_node_t* node,const char* path);
+
+
+
 #endif

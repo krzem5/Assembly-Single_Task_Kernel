@@ -85,14 +85,20 @@ static const vfs_functions_t _socket_vfs_functions={
 
 
 
+static string_t* _get_unique_id(void){
+	char buffer[32];
+	return smm_alloc(buffer,format_string(buffer,32,"%lu",__atomic_add_fetch(&_socket_next_id,1,__ATOMIC_SEQ_CST)));
+}
+
+
+
 static vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
 	if (!_socket_root){
 		SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
 		_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
 		_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
 	}
-	char buffer[32];
-	SMM_TEMPORARY_STRING name=smm_alloc(buffer,format_string(buffer,32,"%lu",__atomic_fetch_add(&_socket_next_id,1,__ATOMIC_SEQ_CST)));
+	SMM_TEMPORARY_STRING name=_get_unique_id();
 	vfs_node_t* out=vfs_node_create_virtual(_socket_root,&_socket_vfs_functions,name);
 	out->flags|=VFS_NODE_TYPE_SOCKET|(0000<<VFS_NODE_PERMISSION_SHIFT);
 	((socket_vfs_node_t*)out)->domain=domain;
@@ -301,6 +307,35 @@ KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
 	return socket_node->rx_ring->read_event;
+}
+
+
+
+KERNEL_PUBLIC _Bool socket_move(vfs_node_t* node,const char* path){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return 0;
+	}
+	vfs_node_dettach_external_child(node);
+	if (!path){
+		spinlock_acquire_exclusive(&(node->lock));
+		smm_dealloc(node->name);
+		node->name=_get_unique_id();
+		spinlock_release_exclusive(&(node->lock));
+		vfs_node_attach_external_child(_socket_root,node);
+		return 1;
+	}
+	vfs_node_t* parent;
+	const char* child_name;
+	if (vfs_lookup_for_creation(NULL,path,0,0,0,&parent,&child_name)){
+		ERROR("socket_move: node already exists");
+		return 0;
+	}
+	spinlock_acquire_exclusive(&(node->lock));
+	smm_dealloc(node->name);
+	node->name=smm_alloc(child_name,0);
+	spinlock_release_exclusive(&(node->lock));
+	vfs_node_attach_external_child(parent,node);
+	return 1;
 }
 
 

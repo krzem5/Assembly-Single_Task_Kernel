@@ -26,7 +26,35 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 
 
 
-static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
+KERNEL_PUBLIC void vfs_mount(filesystem_t* fs,const char* path){
+	if (!path){
+		_vfs_root_node=fs->root;
+		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
+		_vfs_root_node->relatives.parent=NULL;
+		spinlock_release_exclusive(&(_vfs_root_node->lock));
+		return;
+	}
+	vfs_node_t* parent;
+	const char* child_name;
+	if (vfs_lookup_for_creation(NULL,path,0,0,0,&parent,&child_name)){
+		panic("vfs_mount: node already exists");
+	}
+	spinlock_acquire_exclusive(&(fs->root->lock));
+	smm_dealloc(fs->root->name);
+	fs->root->name=smm_alloc(child_name,0);
+	spinlock_release_exclusive(&(fs->root->lock));
+	vfs_node_attach_external_child(parent,fs->root);
+}
+
+
+
+KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
+	return vfs_lookup_for_creation(root,path,flags,uid,gid,NULL,NULL);
+}
+
+
+
+KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
 	if (!root||path[0]=='/'){
 		root=_vfs_root_node;
 	}
@@ -44,7 +72,7 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_
 			if (!buffer[0]){
 				return NULL;
 			}
-			root=_lookup_node(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
+			root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
 			if (!root){
 				return NULL;
 			}
@@ -83,7 +111,7 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_
 				*child_name=path-i;
 				return NULL;
 			}
-			panic("_lookup_node: alloc virtual node");
+			panic("vfs_lookup_for_creation: alloc virtual node");
 		}
 		root=child;
 	}
@@ -96,40 +124,12 @@ static vfs_node_t* _lookup_node(vfs_node_t* root,const char* path,u32 flags,uid_
 		if (!buffer[0]){
 			return NULL;
 		}
-		root=_lookup_node(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
+		root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
 		if (!root){
 			return NULL;
 		}
 	}
 	return root;
-}
-
-
-
-KERNEL_PUBLIC void vfs_mount(filesystem_t* fs,const char* path){
-	if (!path){
-		_vfs_root_node=fs->root;
-		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
-		_vfs_root_node->relatives.parent=NULL;
-		spinlock_release_exclusive(&(_vfs_root_node->lock));
-		return;
-	}
-	vfs_node_t* parent;
-	const char* child_name;
-	if (_lookup_node(NULL,path,0,0,0,&parent,&child_name)){
-		panic("vfs_mount: node already exists");
-	}
-	spinlock_acquire_exclusive(&(fs->root->lock));
-	smm_dealloc(fs->root->name);
-	fs->root->name=smm_alloc(child_name,0);
-	spinlock_release_exclusive(&(fs->root->lock));
-	vfs_node_attach_external_child(parent,fs->root);
-}
-
-
-
-KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
-	return _lookup_node(root,path,flags,uid,gid,NULL,NULL);
 }
 
 
