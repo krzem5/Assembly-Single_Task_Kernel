@@ -35,42 +35,42 @@ KERNEL_EARLY_INIT(){
 	spinlock_init(&_gid_global_lock);
 	rb_tree_init(&_gid_tree);
 	INFO("Creating root group...");
-	if (!gid_create(0,"root")){
+	if (gid_create(0,"root")!=ERROR_OK){
 		panic("Unable to create root group");
 	}
 }
 
 
 
-KERNEL_PUBLIC _Bool gid_create(gid_t gid,const char* name){
+KERNEL_PUBLIC error_t gid_create(gid_t gid,const char* name){
 	spinlock_acquire_exclusive(&_gid_global_lock);
 	if (rb_tree_lookup_node(&_gid_tree,gid)){
 		spinlock_release_exclusive(&_gid_global_lock);
-		return 0;
+		return ERROR_ALREADY_PRESENT;
 	}
 	gid_data_t* gid_data=omm_alloc(_gid_data_allocator);
 	gid_data->rb_node.key=gid;
 	gid_data->name=smm_alloc(name,0);
 	rb_tree_insert_node(&_gid_tree,&(gid_data->rb_node));
 	spinlock_release_exclusive(&_gid_global_lock);
-	return 1;
+	return ERROR_OK;
 }
 
 
 
-KERNEL_PUBLIC _Bool gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
+KERNEL_PUBLIC error_t gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
-		return 0;
+		return ERROR_NO_SPACE;
 	}
 	spinlock_acquire_shared(&_gid_global_lock);
 	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
 	if (!gid_data){
 		spinlock_release_shared(&_gid_global_lock);
-		return 0;
+		return ERROR_NOT_FOUND;
 	}
 	strcpy(buffer,gid_data->name->data,buffer_length);
 	spinlock_release_shared(&_gid_global_lock);
-	return 1;
+	return ERROR_OK;
 }
 
 
@@ -98,5 +98,5 @@ error_t syscall_gid_get_name(u64 gid,char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	return (gid_get_name(gid,buffer,buffer_length)?ERROR_OK:ERROR_NOT_FOUND);
+	return gid_get_name(gid,buffer,buffer_length);
 }

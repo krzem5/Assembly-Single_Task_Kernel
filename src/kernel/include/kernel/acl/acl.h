@@ -1,5 +1,6 @@
 #ifndef _KERNEL_ACL_ACL_H_
 #define _KERNEL_ACL_ACL_H_ 1
+#include <kernel/error/error.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -37,7 +38,7 @@ typedef struct _ACL{
 
 
 
-typedef _Bool (*acl_request_callback_t)(struct _HANDLE*,struct _PROCESS*,u64);
+typedef error_t (*acl_request_callback_t)(struct _HANDLE*,struct _PROCESS*,u64);
 
 
 

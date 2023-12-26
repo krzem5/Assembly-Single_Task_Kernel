@@ -47,18 +47,18 @@ KERNEL_EARLY_INIT(){
 	spinlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);
 	INFO("Creating root user...");
-	if (!uid_create(0,"root")||!uid_add_group(0,0)){
+	if (uid_create(0,"root")!=ERROR_OK||uid_add_group(0,0)!=ERROR_OK){
 		panic("Unable to create root user");
 	}
 }
 
 
 
-KERNEL_PUBLIC _Bool uid_create(uid_t uid,const char* name){
+KERNEL_PUBLIC error_t uid_create(uid_t uid,const char* name){
 	spinlock_acquire_exclusive(&_uid_global_lock);
 	if (rb_tree_lookup_node(&_uid_tree,uid)){
 		spinlock_release_exclusive(&_uid_global_lock);
-		return 0;
+		return ERROR_ALREADY_PRESENT;
 	}
 	uid_data_t* uid_data=omm_alloc(_uid_data_allocator);
 	uid_data->rb_node.key=uid;
@@ -66,50 +66,50 @@ KERNEL_PUBLIC _Bool uid_create(uid_t uid,const char* name){
 	rb_tree_init(&(uid_data->group_tree));
 	rb_tree_insert_node(&_uid_tree,&(uid_data->rb_node));
 	spinlock_release_exclusive(&_uid_global_lock);
-	return 1;
+	return ERROR_OK;
 }
 
 
 
-KERNEL_PUBLIC _Bool uid_add_group(uid_t uid,gid_t gid){
+KERNEL_PUBLIC error_t uid_add_group(uid_t uid,gid_t gid){
 	spinlock_acquire_exclusive(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
 	if (!uid_data||rb_tree_lookup_node(&(uid_data->group_tree),gid)){
 		spinlock_release_exclusive(&_uid_global_lock);
-		return 0;
+		return (uid_data?ERROR_ALREADY_PRESENT:ERROR_NOT_FOUND);
 	}
 	uid_group_t* uid_group=omm_alloc(_uid_group_allocator);
 	uid_group->rb_node.key=gid;
 	rb_tree_insert_node(&(uid_data->group_tree),&(uid_group->rb_node));
 	spinlock_release_exclusive(&_uid_global_lock);
-	return 1;
+	return ERROR_OK;
 }
 
 
 
-KERNEL_PUBLIC _Bool uid_has_group(uid_t uid,gid_t gid){
+KERNEL_PUBLIC error_t uid_has_group(uid_t uid,gid_t gid){
 	spinlock_acquire_shared(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
-	_Bool out=(uid_data&&rb_tree_lookup_node(&(uid_data->group_tree),gid));
+	error_t out=(uid_data?!!rb_tree_lookup_node(&(uid_data->group_tree),gid):ERROR_NOT_FOUND);
 	spinlock_release_shared(&_uid_global_lock);
 	return out;
 }
 
 
 
-KERNEL_PUBLIC _Bool uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
+KERNEL_PUBLIC error_t uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
-		return 0;
+		return ERROR_NO_SPACE;
 	}
 	spinlock_acquire_shared(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
 	if (!uid_data){
 		spinlock_release_shared(&_uid_global_lock);
-		return 0;
+		return ERROR_NOT_FOUND;
 	}
 	strcpy(buffer,uid_data->name->data,buffer_length);
 	spinlock_release_shared(&_uid_global_lock);
-	return 1;
+	return ERROR_OK;
 }
 
 
@@ -137,5 +137,5 @@ error_t syscall_uid_get_name(u64 uid,char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	return (uid_get_name(uid,buffer,buffer_length)?ERROR_OK:ERROR_NOT_FOUND);
+	return uid_get_name(uid,buffer,buffer_length);
 }

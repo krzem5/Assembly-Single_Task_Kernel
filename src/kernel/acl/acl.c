@@ -181,12 +181,11 @@ error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t proces
 			return ERROR_INVALID_HANDLE;
 		}
 	}
-	u64 out=ERROR_DENIED;
 	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
 	acl_request_callback_t callback=acl_request_callback;
-	if (callback&&callback(handle,process,flags)){
+	u64 out=(callback?callback(handle,process,flags):ERROR_DENIED);
+	if (out==ERROR_OK){
 		acl_set(handle->acl,process,0,flags);
-		out=ERROR_OK;
 	}
 	if (process_handle){
 		handle_release(process_handle);
