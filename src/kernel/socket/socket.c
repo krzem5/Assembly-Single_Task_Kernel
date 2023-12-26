@@ -20,7 +20,7 @@
 
 
 
-#define CREATE_DTP_KEY(domain,type,protocol) (((domain)<<16)|((type)<<8)|(protocol))
+#define CREATE_DTPI_KEY(domain,type,protocol,is_ipc) (((domain)<<17)|((type)<<9)|((protocol)<<1)|(is_ipc))
 
 
 
@@ -85,6 +85,26 @@ static const vfs_functions_t _socket_vfs_functions={
 
 
 
+static vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
+	if (!_socket_root){
+		SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
+		_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
+		_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
+	}
+	char buffer[32];
+	SMM_TEMPORARY_STRING name=smm_alloc(buffer,format_string(buffer,32,"%lu",__atomic_fetch_add(&_socket_next_id,1,__ATOMIC_SEQ_CST)));
+	vfs_node_t* out=vfs_node_create_virtual(_socket_root,&_socket_vfs_functions,name);
+	out->flags|=VFS_NODE_TYPE_SOCKET|(0000<<VFS_NODE_PERMISSION_SHIFT);
+	((socket_vfs_node_t*)out)->domain=domain;
+	((socket_vfs_node_t*)out)->type=type;
+	((socket_vfs_node_t*)out)->protocol=protocol;
+	((socket_vfs_node_t*)out)->flags=SOCKET_FLAG_READ|SOCKET_FLAG_WRITE;
+	((socket_vfs_node_t*)out)->descriptor=descriptor;
+	return out;
+}
+
+
+
 KERNEL_INIT(){
 	LOG("Initializing sockets...");
 	spinlock_init(&_socket_dtp_lock);
@@ -101,11 +121,11 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
 	spinlock_acquire_exclusive(&_socket_dtp_lock);
-	LOG("Registering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
-	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
+	LOG("Registering socket D:T:P:I handler '%s/%u:%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
+	u32 key=CREATE_DTPI_KEY(descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
 	if (node){
-		ERROR("Socket D:T:P %u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,((socket_dtp_handler_t*)node)->descriptor->name);
+		ERROR("Socket D:T:P:I %u:%u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair,((socket_dtp_handler_t*)node)->descriptor->name);
 		spinlock_release_exclusive(&_socket_dtp_lock);
 		return;
 	}
@@ -120,8 +140,8 @@ KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t*
 
 KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
 	spinlock_acquire_exclusive(&_socket_dtp_lock);
-	LOG("Unregistering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
-	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
+	LOG("Unregistering socket D:T:P:I handler '%s/%u:%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
+	u32 key=CREATE_DTPI_KEY(descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
 	if (node){
 		rb_tree_remove_node(&_socket_dtp_tree,node);
@@ -132,35 +152,31 @@ KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_
 
 
 
-KERNEL_PUBLIC vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
 	spinlock_acquire_shared(&_socket_dtp_lock);
-	rb_tree_node_t* handler=rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
+	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTPI_KEY(domain,type,protocol,0));
 	spinlock_release_shared(&_socket_dtp_lock);
 	if (!handler){
-		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
+		ERROR("Invalid socket D:T:P:I combination: %u:%u:%u:%u",domain,type,protocol,0);
 		return NULL;
 	}
-	vfs_node_t* out;
-	if (parent&&name){
-		out=vfs_node_create_virtual(parent,&_socket_vfs_functions,name);
+	return _create_socket_node(domain,type,protocol,handler->descriptor);
+}
+
+
+
+KERNEL_PUBLIC _Bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
+	spinlock_acquire_shared(&_socket_dtp_lock);
+	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTPI_KEY(domain,type,protocol,1));
+	spinlock_release_shared(&_socket_dtp_lock);
+	if (!handler){
+		ERROR("Invalid socket D:T:P:I combination: %u:%u:%u:%u",domain,type,protocol,1);
+		return 0;
 	}
-	else{
-		if (!_socket_root){
-			SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
-			_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
-			_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
-		}
-		char buffer[64];
-		SMM_TEMPORARY_STRING file_name=smm_alloc(buffer,format_string(buffer,64,"%lu:%s",__atomic_fetch_add(&_socket_next_id,1,__ATOMIC_SEQ_CST),(name?name->data:"")));
-		out=vfs_node_create_virtual(_socket_root,&_socket_vfs_functions,file_name);
-	}
-	out->flags|=VFS_NODE_TYPE_SOCKET|(0000<<VFS_NODE_PERMISSION_SHIFT);
-	((socket_vfs_node_t*)out)->domain=domain;
-	((socket_vfs_node_t*)out)->type=type;
-	((socket_vfs_node_t*)out)->protocol=protocol;
-	((socket_vfs_node_t*)out)->flags=SOCKET_FLAG_READ|SOCKET_FLAG_WRITE;
-	((socket_vfs_node_t*)out)->descriptor=((socket_dtp_handler_t*)handler)->descriptor;
-	return out;
+	out->sockets[0]=(socket_vfs_node_t*)_create_socket_node(domain,type,protocol,handler->descriptor);
+	out->sockets[1]=(socket_vfs_node_t*)_create_socket_node(domain,type,protocol,handler->descriptor);
+	handler->descriptor->create_pair(out);
+	return 1;
 }
 
 
@@ -285,19 +301,8 @@ KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 
 
 
-error_t syscall_socket_create(const char* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
-	string_t* socket_name=NULL;
-	if (name){
-		u64 name_length=syscall_get_string_length(name);
-		if (!name_length){
-			return ERROR_INVALID_ARGUMENT(0);
-		}
-		socket_name=smm_alloc(name,name_length);
-	}
-	vfs_node_t* out=socket_create(NULL,socket_name,domain,type,protocol);
-	if (socket_name){
-		smm_dealloc(socket_name);
-	}
+error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+	vfs_node_t* out=socket_create(domain,type,protocol);
 	return (out?fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE):ERROR_INVALID_FORMAT);
 }
 

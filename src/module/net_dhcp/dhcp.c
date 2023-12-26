@@ -211,8 +211,7 @@ _cleanup:
 
 void net_dhcp_init(void){
 	LOG("Initializing DHCP client...");
-	SMM_TEMPORARY_STRING name=smm_alloc("dhcp_socket",0);
-	_net_dhcp_socket=socket_create(NULL,name,SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
+	_net_dhcp_socket=socket_create(SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
 		0x00000000,
 		68

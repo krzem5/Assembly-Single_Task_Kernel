@@ -147,6 +147,7 @@ static const socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 	SOCKET_DOMAIN_INET,
 	SOCKET_TYPE_DGRAM,
 	SOCKET_PROTOCOL_UDP,
+	NULL,
 	_socket_bind_callback,
 	_socket_debind_callback,
 	_socket_connect_callback,

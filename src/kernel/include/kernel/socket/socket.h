@@ -54,11 +54,18 @@ typedef struct _SOCKET_VFS_NODE{
 
 
 
+typedef struct _SOCKET_PAIR{
+	socket_vfs_node_t* sockets[2];
+} socket_pair_t;
+
+
+
 typedef struct _SOCKET_DTP_DESCRIPTOR{
 	const char* name;
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
+	void (*create_pair)(socket_pair_t*);
 	_Bool (*bind)(socket_vfs_node_t*,const void*,u32);
 	void (*debind)(socket_vfs_node_t*);
 	_Bool (*connect)(socket_vfs_node_t*,const void*,u32);
@@ -92,7 +99,11 @@ void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor)
 
 
 
-vfs_node_t* socket_create(vfs_node_t* parent,const string_t* name,socket_domain_t domain,socket_type_t type,socket_protocol_t protocol);
+vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol);
+
+
+
+_Bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out);
 
 
 
