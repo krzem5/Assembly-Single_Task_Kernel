@@ -767,9 +767,9 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		# "-display","none",
-		"-device","virtio-vga-gl",
-		"-display","gtk,gl=on",
+		"-display","none",
+		# "-device","virtio-vga-gl",
+		# "-display","gtk,gl=on",
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
@@ -777,7 +777,7 @@ if ("--run" in sys.argv):
 		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER"
-	])
+	]+_kvm_flags())
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")
