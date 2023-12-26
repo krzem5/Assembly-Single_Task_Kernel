@@ -23,5 +23,7 @@ os_loader:
 procfs:dynamicfs
 sysfs:dynamicfs
 usb_msc:
+virtio:
+virtio_net:virtio
 vm_shutdown:
 xhci:

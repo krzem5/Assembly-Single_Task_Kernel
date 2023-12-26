@@ -739,7 +739,8 @@ if ("--run" in sys.argv):
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
 		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
-		"-device","e1000,netdev=network",
+		# "-device","e1000,netdev=network", ### 'Real' network card
+		"-device","virtio-net,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
