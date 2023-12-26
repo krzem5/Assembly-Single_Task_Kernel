@@ -8,6 +8,10 @@
 #define VIRTIO_BLK_F_SEG_MAX 2
 #define VIRTIO_BLK_F_BLK_SIZE 6
 
+// Registers
+#define VIRTIO_BLK_REG_CAPACITY 0x00
+#define VIRTIO_BLK_REG_BLK_SIZE 0x14
+
 
 
 #endif

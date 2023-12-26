@@ -43,6 +43,7 @@
 // Features
 #define VIRTIO_F_RING_INDIRECT_DESC 28
 #define VIRTIO_F_RING_EVENT_IDX 29
+#define VIRTIO_F_VERSION_1 32
 
 
 
