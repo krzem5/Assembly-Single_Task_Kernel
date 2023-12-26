@@ -20,7 +20,7 @@
 
 
 
-#define CREATE_DTPI_KEY(domain,type,protocol,is_ipc) (((domain)<<17)|((type)<<9)|((protocol)<<1)|(is_ipc))
+#define CREATE_DTP_KEY(domain,type,protocol) (((domain)<<16)|((type)<<8)|(protocol))
 
 
 
@@ -121,11 +121,11 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
 	spinlock_acquire_exclusive(&_socket_dtp_lock);
-	LOG("Registering socket D:T:P:I handler '%s/%u:%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
-	u32 key=CREATE_DTPI_KEY(descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
+	LOG("Registering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
+	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
 	if (node){
-		ERROR("Socket D:T:P:I %u:%u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair,((socket_dtp_handler_t*)node)->descriptor->name);
+		ERROR("Socket D:T:P %u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,((socket_dtp_handler_t*)node)->descriptor->name);
 		spinlock_release_exclusive(&_socket_dtp_lock);
 		return;
 	}
@@ -140,8 +140,8 @@ KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t*
 
 KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
 	spinlock_acquire_exclusive(&_socket_dtp_lock);
-	LOG("Unregistering socket D:T:P:I handler '%s/%u:%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
-	u32 key=CREATE_DTPI_KEY(descriptor->domain,descriptor->type,descriptor->protocol,!!descriptor->create_pair);
+	LOG("Unregistering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
+	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
 	if (node){
 		rb_tree_remove_node(&_socket_dtp_tree,node);
@@ -154,10 +154,10 @@ KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_
 
 KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
 	spinlock_acquire_shared(&_socket_dtp_lock);
-	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTPI_KEY(domain,type,protocol,0));
+	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	spinlock_release_shared(&_socket_dtp_lock);
 	if (!handler){
-		ERROR("Invalid socket D:T:P:I combination: %u:%u:%u:%u",domain,type,protocol,0);
+		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
 		return NULL;
 	}
 	return _create_socket_node(domain,type,protocol,handler->descriptor);
@@ -167,10 +167,14 @@ KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t typ
 
 KERNEL_PUBLIC _Bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
 	spinlock_acquire_shared(&_socket_dtp_lock);
-	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTPI_KEY(domain,type,protocol,1));
+	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	spinlock_release_shared(&_socket_dtp_lock);
 	if (!handler){
-		ERROR("Invalid socket D:T:P:I combination: %u:%u:%u:%u",domain,type,protocol,1);
+		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
+		return 0;
+	}
+	if (!handler->descriptor->create_pair){
+		ERROR("Unable to create a socket pair from '%s'",handler->descriptor->name);
 		return 0;
 	}
 	out->sockets[0]=(socket_vfs_node_t*)_create_socket_node(domain,type,protocol,handler->descriptor);
