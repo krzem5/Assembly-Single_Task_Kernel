@@ -43,19 +43,6 @@ static void _virtio_init_device(pci_device_t* device){
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,0x00);
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
 	handle_finish_setup(&(virtio_device->handle));
-	// io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
-	// // negotiate features
-	// io_port_out32(virtio_device->port+VIRTIO_REGISTER_GUEST_FEATURES,io_port_in32(virtio_device->port+VIRTIO_REGISTER_DEVICE_FEATURES));
-	// io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
-	// if (!(io_port_in8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
-	// 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
-	// 	ERROR("Failed to initialize virtio device");
-	// 	omm_dealloc(_virtio_device_allocator,virtio_device);
-	// 	return;
-	// }
-	// WARN("%u %x",device->interrupt_line,virtio_device->port);
-	// // VIRTIO_DEVICE_STATUS_FLAG_DRIVER_READY
-	// panic("A");
 }
 
 
