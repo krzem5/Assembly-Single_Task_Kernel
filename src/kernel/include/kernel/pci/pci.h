@@ -12,6 +12,10 @@
 
 #define PCI_BAR_FLAG_MEMORY 1
 
+#define PCI_CAP_ID_MSI 5
+#define PCI_CAP_ID_VENDOR 9
+#define PCI_CAP_ID_MSIX 17
+
 
 
 typedef struct _PCI_INTERRUPT_STATE{
@@ -66,6 +70,12 @@ extern handle_type_t pci_device_handle_type;
 
 
 
+static KERNEL_INLINE u32 pci_device_get_offset(const pci_device_address_t* device_address){
+	return (device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|0x80000000;
+}
+
+
+
 static KERNEL_INLINE u8 pci_device_read_config8(u32 offset){
 	io_port_out32(0xcf8,offset);
 	return io_port_in8(0xcfc);
@@ -109,7 +119,7 @@ static KERNEL_INLINE void pci_device_write_config32(u32 offset,u32 value){
 
 
 static KERNEL_INLINE u32 pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
-	return pci_device_read_config32((device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000);
+	return pci_device_read_config32(pci_device_get_offset(device_address)|(offset&0xfc));
 }
 
 
@@ -121,7 +131,7 @@ static KERNEL_INLINE u32 pci_device_read_data(const pci_device_t* device,u8 offs
 
 
 static KERNEL_INLINE void pci_device_write_data_raw(const pci_device_address_t* device_address,u8 offset,u32 value){
-	pci_device_write_config32((device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|(offset&0xfc)|0x80000000,value);
+	pci_device_write_config32(pci_device_get_offset(device_address)|(offset&0xfc),value);
 }
 
 
@@ -151,6 +161,10 @@ static KERNEL_INLINE void pci_device_enable_bus_mastering(const pci_device_t* de
 
 
 _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
+
+
+
+u8 pci_device_get_cap(const pci_device_t* device,u8 cap,u8 offset);
 
 
 

@@ -728,12 +728,13 @@ if ("--run" in sys.argv):
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
 		# Drive files
 		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
-		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
+		# "-drive","file=build/vm/ssd.qcow2,if=virtio,id=ssd",
+		"-drive","file=build/vm/ssd.qcow2,if=virtio,id=ssd",
 		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
 		# Drives
 		"-device","ahci,id=ahci",
 		"-device","ide-hd,drive=hdd,bus=ahci.0",
-		"-device","nvme,serial=00112233,drive=ssd",
+		# "-device","nvme,serial=00112233,drive=ssd",
 		# USB
 		"-device","nec-usb-xhci,id=xhci",
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",

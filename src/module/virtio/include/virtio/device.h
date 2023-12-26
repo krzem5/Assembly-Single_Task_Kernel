@@ -11,11 +11,18 @@ typedef u16 virtio_device_type_t;
 
 
 
+typedef u64 virtio_field_t;
+
+
+
 typedef struct _VIRTIO_DEVICE{
 	handle_t handle;
 	virtio_device_type_t type;
-	u16 port;
 	spinlock_t lock;
+	virtio_field_t common_field;
+	virtio_field_t notify_field;
+	virtio_field_t isr_field;
+	u32 notify_off_multiplier;
 } virtio_device_t;
 
 

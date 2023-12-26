@@ -10,7 +10,7 @@
 
 static const virtio_device_driver_t _virtio_blk_device_driver={
 	"Block Device",
-	0x0001,
+	0x0002,
 	(1<<VIRTIO_BLK_F_SIZE_MAX)|(1<<VIRTIO_BLK_F_SEG_MAX)|(1<<VIRTIO_BLK_F_BLK_SIZE)
 };
 

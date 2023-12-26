@@ -60,25 +60,20 @@ KERNEL_INIT(){
 				device->header_type=data[3]>>16;
 				device->interrupt_line=pci_device_read_data(device,60);
 				device->interrupt_state.state=PCI_INTERRUPT_STATE_NONE;
-				if (data[1]&0x100000){
-					u8 offset=pci_device_read_data(device,52);
-					while (offset){
-						u32 cap=pci_device_read_data(device,offset);
-						if ((cap&0xff)==5){
-							device->interrupt_state.state=PCI_INTERRUPT_STATE_MSI;
-							device->interrupt_state.msi.offset=offset;
-							break;
-						}
-						if ((cap&0xff)==17){
-							device->interrupt_state.state=PCI_INTERRUPT_STATE_MSIX;
-							device->interrupt_state.msix.offset=offset;
-							device->interrupt_state.msix.next_table_index=0;
-							device->interrupt_state.msix.table_size=(cap>>16)&0x1ff;
-							break;
-						}
-						offset=(cap>>8);
-					}
+				u8 msi_offset=pci_device_get_cap(device,PCI_CAP_ID_MSI,0);
+				if (msi_offset){
+					device->interrupt_state.state=PCI_INTERRUPT_STATE_MSI;
+					device->interrupt_state.msi.offset=msi_offset;
+					goto _skip_msix_discovery;
 				}
+				u8 msix_offset=pci_device_get_cap(device,PCI_CAP_ID_MSIX,0);
+				if (msix_offset){
+					device->interrupt_state.state=PCI_INTERRUPT_STATE_MSIX;
+					device->interrupt_state.msi.offset=msix_offset;
+					device->interrupt_state.msix.next_table_index=0;
+					device->interrupt_state.msix.table_size=(pci_device_read_data(device,msix_offset)>>16)&0x1ff;
+				}
+_skip_msix_discovery:
 				handle_finish_setup(&(device->handle));
 				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%X%X:%X%X",device->address.bus,device->address.slot,device->address.func,device->class,device->subclass,device->progif,device->revision_id,device->device_id>>8,device->device_id,device->vendor_id>>8,device->vendor_id);
 			}
@@ -95,12 +90,12 @@ KERNEL_PUBLIC _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,p
 		return 0;
 	}
 	u32 bar_high=0;
-	u32 size_high=0;
+	u32 size_high=0xffffffff;
 	u8 flags=0;
 	u32 mask=0xfffffffc;
 	if (!(bar&1)){
 		flags|=PCI_BAR_FLAG_MEMORY;
-		if (bar&6){
+		if ((bar&6)==4){
 			bar_high=pci_device_read_data(device,register_index+4);
 			pci_device_write_data(device,register_index+4,0xffffffff);
 			size_high=pci_device_read_data(device,register_index+4);
@@ -108,7 +103,6 @@ KERNEL_PUBLIC _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,p
 		}
 		if (bar&8){
 			WARN("Prefeachable PCI BAR is unimplemented!");
-			return 0;
 		}
 		mask=0xfffffff0;
 	}
@@ -118,4 +112,21 @@ KERNEL_PUBLIC _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,p
 	pci_device_write_data(device,register_index,bar);
 	out->flags=flags;
 	return 1;
+}
+
+
+
+KERNEL_PUBLIC u8 pci_device_get_cap(const pci_device_t* device,u8 cap,u8 offset){
+	if (!(pci_device_read_data(device,4)&0x100000)){
+		return 0;
+	}
+	offset=(offset?pci_device_read_data(device,offset)>>8:pci_device_read_data(device,0x34));
+	while (offset){
+		u32 header=pci_device_read_data(device,offset);
+		if ((header&0xff)==cap){
+			return offset;
+		}
+		offset=header>>8;
+	}
+	return 0;
 }
