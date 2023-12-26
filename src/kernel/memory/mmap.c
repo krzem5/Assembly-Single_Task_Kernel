@@ -422,7 +422,7 @@ error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 		mmap_flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
 	}
 	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,pmm_align_up_address(size),_mmap_user_data_pmm_counter,mmap_flags,file);
-	return (out?out->rb_node.key:ERROR_NO_SPACE);
+	return (out?out->rb_node.key:ERROR_NO_MEMORY);
 }
 
 
