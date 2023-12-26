@@ -308,6 +308,24 @@ error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_p
 
 
 
+error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,u64* out){
+	if (syscall_get_user_pointer_max_length(out)!=2*sizeof(handle_id_t)){
+		return ERROR_INVALID_ARGUMENT(3);
+	}
+	socket_pair_t pair;
+	if (!socket_create_pair(domain,type,protocol,&pair)){
+		return ERROR_INVALID_FORMAT;
+	}
+	out[0]=fd_from_node((vfs_node_t*)(pair.sockets[0]),FD_FLAG_READ|FD_FLAG_WRITE);
+	if (IS_ERROR(out[0])){
+		return out[0];
+	}
+	out[1]=fd_from_node((vfs_node_t*)(pair.sockets[1]),FD_FLAG_READ|FD_FLAG_WRITE);
+	return (IS_ERROR(out[1])?out[1]:ERROR_OK);
+}
+
+
+
 error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 	if (flags&(~(SOCKET_FLAG_READ|SOCKET_FLAG_WRITE))){
 		return ERROR_INVALID_ARGUMENT(1);

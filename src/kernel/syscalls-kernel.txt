@@ -46,3 +46,4 @@
 46,socket_shutdown(u64 fd,u32 flags) -> u64
 47,socket_bind(u64 fd,const void* address,u32 address_length) -> u64
 48,socket_connect(u64 fd,const void* address,u32 address_length) -> u64
+49,socket_create_pair(u8 domain,u8 type,u8 protocol,u64* out) -> u64
