@@ -39,6 +39,7 @@ static void _virtio_init_device(pci_device_t* device){
 	virtio_device->type=pci_device_read_data(device,0x2c)>>16;
 	virtio_device->port=pci_bar.address;
 	spinlock_init(&(virtio_device->lock));
+	INFO("Device type: %u, Device port: %x",virtio_device->type,virtio_device->port);
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,0x00);
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
 	handle_finish_setup(&(virtio_device->handle));
