@@ -25,5 +25,6 @@ sysfs:dynamicfs
 usb_msc:
 virtio:
 virtio_blk:virtio
+virtio_gpu:virtio
 vm_shutdown:
 xhci:

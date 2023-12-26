@@ -54,7 +54,7 @@ static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,void* buffer,u64 cou
 	};
 	virtio_queue_transfer(blk_device->queue,buffers,1+is_write,1+(!is_write));
 	virtio_queue_wait(blk_device->queue);
-	virtio_queue_pop(blk_device->queue);
+	virtio_queue_pop(blk_device->queue,NULL);
 	if (!is_write){
 		memcpy(buffer,(void*)(physical_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),count<<drive->block_size_shift);
 	}

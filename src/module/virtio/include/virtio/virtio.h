@@ -95,7 +95,7 @@ void virtio_queue_wait(virtio_queue_t* queue);
 
 
 
-u32 virtio_queue_pop(virtio_queue_t* queue);
+u32 virtio_queue_pop(virtio_queue_t* queue,u32* length);
 
 
 

@@ -13,6 +13,7 @@ import time
 
 
 BYPASS_KVM_LOCK=False
+NO_DISPLAY=False
 
 
 
@@ -720,7 +721,8 @@ if ("--run" in sys.argv):
 			sys.exit(1)
 	subprocess.run([
 		"qemu-system-x86_64",
-		"-d","trace:virtio*,trace:virtio_blk*",
+		# "-d","trace:virtio*,trace:virtio_blk*",
+		"-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset","--no-reboot",
@@ -769,9 +771,7 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		"-display","none",
-		# "-device","virtio-vga-gl",
-		# "-display","gtk,gl=on",
+		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl","-display","gtk,gl=on"]),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),

@@ -22,7 +22,7 @@
 
 
 
-typedef volatile struct KERNEL_PACKED _VIRTIO_BLK_REQUEST_HEADER{
+typedef struct KERNEL_PACKED _VIRTIO_BLK_REQUEST_HEADER{
 	u32 type;
 	u32 _zero;
 	u64 sector;

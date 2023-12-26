@@ -74,7 +74,7 @@ static void _virtio_init_device(pci_device_t* device){
 		return;
 	}
 	handle_new(virtio_device,_virtio_device_handle_type,&(virtio_device->handle));
-	virtio_device->type=pci_device_read_data(device,0x2c)>>16;
+	virtio_device->type=device->device_id-(device->device_id>=0x1040?0x1040:0x1000);
 	virtio_device->index=_virtio_device_next_index;
 	_virtio_device_next_index++;
 	spinlock_init(&(virtio_device->lock));
@@ -235,7 +235,7 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 	out->size=size;
 	out->notify_offset=virtio_read(device->common_field+VIRTIO_REG_QUEUE_NOTIFY_OFF,2);
 	out->first_free_index=0;
-	out->last_used_index=0xffff;
+	out->last_used_index=0;
 	out->descriptors=(void*)(queue_descriptors+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->available=(void*)(queue_available+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used=(void*)(queue_used+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -279,9 +279,12 @@ KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 
 
 
-KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue){
-	u32 out=(queue->used->ring+queue->last_used_index)->length;
+KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
 	queue->last_used_index=(queue->last_used_index+1==queue->size?0:queue->last_used_index+1);
+	if (length){
+		*length=(queue->used->ring+queue->last_used_index)->length;
+	}
+	u32 out=(queue->used->ring+queue->last_used_index)->index;
 	virtio_read(queue->device->isr_field,1);
 	return out;
 }
