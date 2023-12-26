@@ -69,13 +69,31 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
-	panic("_socket_read_callback");
+	socket_packet_t* socket_packet=socket_pop_packet(&(socket_node->node),!(flags&VFS_NODE_FLAG_NONBLOCKING));
+	if (!socket_packet){
+		return 0;
+	}
+	if (length>socket_packet->size){
+		length=socket_packet->size;
+	}
+	memcpy(buffer,socket_packet->data,length);
+	socket_dealloc_packet(socket_packet);
+	return length;
 }
 
 
 
 static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
-	panic("_socket_write_callback");
+	if (!socket_node->remote_ctx){
+		return 0;
+	}
+	void* data=amm_alloc(length);
+	memcpy(data,buffer,length);
+	if (socket_alloc_packet(&(socket_node->node),data,length)){
+		return length;
+	}
+	amm_dealloc(data);
+	return 0;
 }
 
 

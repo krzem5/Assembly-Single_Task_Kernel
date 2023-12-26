@@ -60,15 +60,16 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
-	net_udp_socket_packet_t* packet=ring_pop(socket_node->rx_ring,!(flags&VFS_NODE_FLAG_NONBLOCKING));
-	if (!packet){
+	socket_packet_t* socket_packet=socket_pop_packet(&(socket_node->node),!(flags&VFS_NODE_FLAG_NONBLOCKING));
+	if (!socket_packet){
 		return 0;
 	}
+	net_udp_socket_packet_t* packet=socket_packet->data;
 	if (length>packet->length){
 		length=packet->length;
 	}
 	memcpy(buffer,packet->data,length);
-	amm_dealloc(packet);
+	socket_dealloc_packet(socket_packet);
 	return length;
 }
 
