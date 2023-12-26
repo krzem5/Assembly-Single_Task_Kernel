@@ -739,8 +739,8 @@ if ("--run" in sys.argv):
 		"-device","usb-storage,bus=xhci.0,drive=bootusb",
 		# Network
 		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
-		# "-device","e1000,netdev=network", ### 'Real' network card
-		"-device","virtio-net,netdev=network",
+		"-device","e1000,netdev=network", ### 'Real' network card
+		# "-device","virtio-net,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
@@ -767,7 +767,9 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		"-display","none",
+		# "-display","none",
+		"-device","virtio-vga-gl",
+		"-display","gtk,gl=on",
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),

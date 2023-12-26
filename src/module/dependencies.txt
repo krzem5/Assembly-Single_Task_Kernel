@@ -24,6 +24,6 @@ procfs:dynamicfs
 sysfs:dynamicfs
 usb_msc:
 virtio:
-virtio_net:virtio
+virtio_blk:virtio
 vm_shutdown:
 xhci:

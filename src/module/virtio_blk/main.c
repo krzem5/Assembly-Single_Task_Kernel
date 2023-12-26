@@ -1,10 +1,10 @@
 #include <kernel/module/module.h>
-#include <virtio/net.h>
+#include <virtio/blk.h>
 
 
 
 static _Bool _init(module_t* module){
-	virtio_net_init();
+	virtio_blk_init();
 	return 1;
 }
 

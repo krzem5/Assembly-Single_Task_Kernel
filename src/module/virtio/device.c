@@ -40,14 +40,14 @@ static void _virtio_init_device(pci_device_t* device){
 	virtio_device->port=pci_bar.address;
 	spinlock_init(&(virtio_device->lock));
 	INFO("Device type: %u, Device port: %x",virtio_device->type,virtio_device->port);
-	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,0x00);
-	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
+	io_port_out8(virtio_device->port+VIRTIO_REG_DEVICE_STATUS,0x00);
+	io_port_out8(virtio_device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
 	handle_finish_setup(&(virtio_device->handle));
 }
 
 
 
-KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* driver){
+KERNEL_PUBLIC _Bool virtio_reG_device_driver(const virtio_device_driver_t* driver){
 	spinlock_acquire_exclusive(&_virtio_device_driver_tree_lock);
 	LOG("Registering VirtIO device driver '%s/%X%X'...",driver->name,driver->type>>8,driver->type);
 	virtio_device_driver_node_t* node=(virtio_device_driver_node_t*)rb_tree_lookup_node(&_virtio_device_driver_tree,driver->type);
@@ -67,14 +67,14 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 			continue;
 		}
 		INFO("Found matching VirtIO device attached to port %x",device->port);
-		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
-		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
-		u32 features=io_port_in32(device->port+VIRTIO_REGISTER_DEVICE_FEATURES)&(~driver->features);
-		io_port_out32(device->port+VIRTIO_REGISTER_GUEST_FEATURES,features);
-		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
-		if (!(io_port_in8(device->port+VIRTIO_REGISTER_DEVICE_STATUS)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
+		io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
+		io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
+		u32 features=io_port_in32(device->port+VIRTIO_REG_DEVICE_FEATURES)&(~driver->features);
+		io_port_out32(device->port+VIRTIO_REG_GUEST_FEATURES,features);
+		io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+		if (!(io_port_in8(device->port+VIRTIO_REG_DEVICE_STATUS)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
 			ERROR("Failed to initialize VirtIO device");
-			io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
+			io_port_out8(device->port+VIRTIO_REG_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
 			continue;
 		}
 	}
