@@ -43,7 +43,6 @@ static void _virtio_init_device(pci_device_t* device){
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,0x00);
 	io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
 	handle_finish_setup(&(virtio_device->handle));
-	// // Lookup driver base on virtio_device->type
 	// io_port_out8(virtio_device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
 	// // negotiate features
 	// io_port_out32(virtio_device->port+VIRTIO_REGISTER_GUEST_FEATURES,io_port_in32(virtio_device->port+VIRTIO_REGISTER_DEVICE_FEATURES));
@@ -62,13 +61,52 @@ static void _virtio_init_device(pci_device_t* device){
 
 
 KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* driver){
-	return 0;
+	spinlock_acquire_exclusive(&_virtio_device_driver_tree_lock);
+	LOG("Registering VirtIO device driver '%s/%X%X'...",driver->name,driver->type>>8,driver->type);
+	virtio_device_driver_node_t* node=(virtio_device_driver_node_t*)rb_tree_lookup_node(&_virtio_device_driver_tree,driver->type);
+	if (node){
+		ERROR("VirtIO device type %X%X is already allocated by '%s'",driver->type>>8,driver->type,node->driver->name);
+		spinlock_release_exclusive(&_virtio_device_driver_tree_lock);
+		return 0;
+	}
+	node=omm_alloc(_virtio_device_driver_node_allocator);
+	node->rb_node.key=driver->type;
+	node->driver=driver;
+	rb_tree_insert_node(&_virtio_device_driver_tree,&(node->rb_node));
+	spinlock_release_exclusive(&_virtio_device_driver_tree_lock);
+	HANDLE_FOREACH(_virtio_device_handle_type){
+		virtio_device_t* device=handle->object;
+		if (device->type!=driver->type){
+			continue;
+		}
+		INFO("Found matching VirtIO device attached to port %x",device->port);
+		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);
+		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER);
+		u32 features=io_port_in32(device->port+VIRTIO_REGISTER_DEVICE_FEATURES)&(~driver->features);
+		io_port_out32(device->port+VIRTIO_REGISTER_GUEST_FEATURES,features);
+		io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+		if (!(io_port_in8(device->port+VIRTIO_REGISTER_DEVICE_STATUS)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
+			ERROR("Failed to initialize VirtIO device");
+			io_port_out8(device->port+VIRTIO_REGISTER_DEVICE_STATUS,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
+			continue;
+		}
+	}
+	return 1;
 }
 
 
 
 KERNEL_PUBLIC _Bool virtio_unregister_device_driver(const virtio_device_driver_t* driver){
-	return 0;
+	spinlock_acquire_exclusive(&_virtio_device_driver_tree_lock);
+	LOG("Unregistering VirtIO device driver '%s/%X%X'...",driver->name,driver->type>>8,driver->type);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_virtio_device_driver_tree,driver->type);
+	_Bool out=!!node;
+	if (node){
+		rb_tree_remove_node(&_virtio_device_driver_tree,node);
+		omm_dealloc(_virtio_device_driver_node_allocator,node);
+	}
+	spinlock_release_exclusive(&_virtio_device_driver_tree_lock);
+	return out;
 }
 
 
