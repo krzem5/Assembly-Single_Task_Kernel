@@ -48,8 +48,44 @@
 #define VIRTIO_F_RING_EVENT_IDX 29
 #define VIRTIO_F_VERSION_1 32
 
+// Descriptor flags
+#define VIRTQ_DESC_F_NEXT 1
+#define VIRTQ_DESC_F_WRITE 2
+
 // Queue Available flags
 #define VIRTQ_AVAIL_F_NO_INTERRUPT 1
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_DESCRIPTOR{
+	u64 address;
+	u32 length;
+	u16 flags;
+	u16 next;
+} virtio_queue_descriptor_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_AVAILABLE{
+	u16 flags;
+	u16 index;
+	u16 ring[];
+} virtio_queue_available_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_USED_ENTRY{
+	u32 index;
+	u32 length;
+} virtio_queue_used_entry_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_USED{
+	u16 flags;
+	u16 index;
+	virtio_queue_used_entry_t ring[];
+} virtio_queue_used_t;
 
 
 

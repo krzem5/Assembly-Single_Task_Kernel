@@ -8,8 +8,8 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#include <virtio/device.h>
 #include <virtio/registers.h>
+#include <virtio/virtio.h>
 #define KERNEL_LOG_NAME "virtio"
 
 
@@ -226,19 +226,22 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 		ERROR("virtio_init_queue: queue already initialized");
 		return NULL;
 	}
-	virtio_queue_t* out=omm_alloc(_virtio_queue_allocator);
 	u64 queue_descriptors=pmm_alloc((pmm_align_up_address(size*sizeof(virtio_queue_descriptor_t)+sizeof(virtio_queue_available_t)+size*sizeof(u16))+pmm_align_up_address(sizeof(virtio_queue_used_t)+size*sizeof(virtio_queue_used_entry_t)))>>PAGE_SIZE_SHIFT,_virtio_queue_pmm_counter,0);
 	u64 queue_available=queue_descriptors+size*sizeof(virtio_queue_descriptor_t);
 	u64 queue_used=queue_available+sizeof(virtio_queue_available_t)+size*sizeof(u16);
+	virtio_queue_t* out=omm_alloc(_virtio_queue_allocator);
+	out->device=device;
 	out->index=index;
 	out->size=size;
+	out->notify_offset=virtio_read(device->common_field+VIRTIO_REG_QUEUE_NOTIFY_OFF,2);
+	out->first_free_index=0;
+	out->last_used_index=0xffff;
 	out->descriptors=(void*)(queue_descriptors+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->available=(void*)(queue_available+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used=(void*)(queue_used+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	for (u16 i=0;i<size-1;i++){
+	for (u16 i=0;i<size-1;i++){ // last entry is zero-initialized by pmm_alloc
 		(out->descriptors+i)->next=i+1;
 	}
-	(out->descriptors+size-1)->next=0;
 	out->available->flags=VIRTQ_AVAIL_F_NO_INTERRUPT;
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DESC_LO,4,queue_descriptors);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DESC_HI,4,queue_descriptors>>32);
@@ -247,7 +250,39 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DEVICE_LO,4,queue_used);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DEVICE_HI,4,queue_used>>32);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_ENABLE,2,1);
-	out->notify_offset=virtio_read(device->common_field+VIRTIO_REG_QUEUE_NOTIFY_OFF,2);
+	return out;
+}
+
+
+
+KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buffer_t* buffers,u16 tx_count,u16 rx_count){
+	u16 i=queue->first_free_index;
+	for (u16 count=tx_count+rx_count;count;count--){
+		(queue->descriptors+i)->flags=(count>1?VIRTQ_DESC_F_NEXT:0)|(count>rx_count?0:VIRTQ_DESC_F_WRITE);
+		(queue->descriptors+i)->address=buffers->address;
+		(queue->descriptors+i)->length=buffers->length;
+		i=(queue->descriptors+i)->next;
+		buffers++;
+	}
+	u16 available_index=queue->available->index;
+	queue->available->ring[available_index]=queue->first_free_index;
+	queue->available->index=(available_index+1==queue->size?0:available_index+1);
+	queue->first_free_index=i;
+	virtio_write(queue->device->notify_field+queue->notify_offset*queue->device->notify_off_multiplier,2,queue->index);
+}
+
+
+
+KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
+	SPINLOOP(queue->last_used_index==queue->used->index);
+}
+
+
+
+KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue){
+	u32 out=(queue->used->ring+queue->last_used_index)->length;
+	queue->last_used_index=(queue->last_used_index+1==queue->size?0:queue->last_used_index+1);
+	virtio_read(queue->device->isr_field,1);
 	return out;
 }
 
