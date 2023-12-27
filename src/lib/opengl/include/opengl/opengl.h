@@ -8,4 +8,8 @@ void opengl_init(void);
 
 
 
+void opengl_create_state(u16 min_version);
+
+
+
 #endif
