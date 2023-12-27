@@ -12,7 +12,7 @@ import time
 
 
 
-BYPASS_KVM_LOCK=True
+BYPASS_KVM_LOCK=False
 NO_DISPLAY=False
 
 
