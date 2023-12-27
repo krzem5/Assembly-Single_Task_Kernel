@@ -187,6 +187,64 @@ static const ui_display_driver_t _virtio_gpu_display_driver={
 
 
 
+static void _load_capsets(virtio_gpu_device_t* gpu_device){
+	virtio_gpu_get_capset_info_t* request_get_capset_info=amm_alloc(sizeof(virtio_gpu_get_capset_info_t));
+	request_get_capset_info->header.type=VIRTIO_GPU_CMD_GET_CAPSET_INFO;
+	request_get_capset_info->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_get_capset_info->header.fence_id=0;
+	virtio_gpu_resp_capset_info_t* response_capset_info=amm_alloc(sizeof(virtio_gpu_resp_capset_info_t));
+	virtio_buffer_t buffers_get_capset_info[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_get_capset_info),
+			sizeof(virtio_gpu_get_capset_info_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response_capset_info),
+			sizeof(virtio_gpu_resp_capset_info_t)
+		}
+	};
+	virtio_gpu_get_capset_t* request_get_capset=amm_alloc(sizeof(virtio_gpu_get_capset_t));
+	request_get_capset->header.type=VIRTIO_GPU_CMD_GET_CAPSET;
+	request_get_capset->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_get_capset->header.fence_id=0;
+	virtio_buffer_t buffers_get_capset[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_get_capset),
+			sizeof(virtio_gpu_get_capset_t)
+		}
+	};
+	u32 max_capset=virtio_read(gpu_device->device->device_field+VIRTIO_GPU_REG_NUM_CAPSETS,4);
+	for (u32 i=0;i<max_capset;i++){
+		request_get_capset_info->capset_index=i;
+		virtio_queue_transfer(gpu_device->controlq,buffers_get_capset_info,1,1);
+		virtio_queue_wait(gpu_device->controlq);
+		virtio_queue_pop(gpu_device->controlq,NULL);
+		if (response_capset_info->header.type!=VIRTIO_GPU_RESP_OK_CAPSET_INFO){
+			WARN("Unable to get capset info from capset #%u",i);
+			continue;
+		}
+		request_get_capset->capset_id=response_capset_info->capset_id;
+		request_get_capset->capset_version=response_capset_info->capset_max_version;
+		virtio_gpu_resp_capset_t* response_capset=amm_alloc(sizeof(virtio_gpu_resp_capset_t)+response_capset_info->capset_max_size);
+		buffers_get_capset[1].address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response_capset);
+		buffers_get_capset[1].length=sizeof(virtio_gpu_resp_capset_t)+response_capset_info->capset_max_size;
+		virtio_queue_transfer(gpu_device->controlq,buffers_get_capset,1,1);
+		virtio_queue_wait(gpu_device->controlq);
+		virtio_queue_pop(gpu_device->controlq,NULL);
+		if (response_capset->header.type==VIRTIO_GPU_RESP_OK_CAPSET){
+			if (request_get_capset->capset_id==VIRTIO_GPU_CAPSET_VIRGL2){
+				WARN("virtgl2 capset data for OpenGL driver");
+			}
+		}
+		amm_dealloc(response_capset);
+	}
+	amm_dealloc(request_get_capset);
+	amm_dealloc(request_get_capset_info);
+	amm_dealloc(response_capset_info);
+}
+
+
+
 static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 	virtio_gpu_get_edid_t* request_get_edid=amm_alloc(sizeof(virtio_gpu_get_edid_t));
 	request_get_edid->header.type=VIRTIO_GPU_CMD_GET_EDID;
@@ -220,7 +278,7 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 
 
 
-static _Bool _fetch_display_info(virtio_gpu_device_t* gpu_device){
+static void _fetch_display_info(virtio_gpu_device_t* gpu_device){
 	virtio_write(gpu_device->device->device_field+VIRTIO_GPU_REG_EVENTS_CLEAR,4,VIRTIO_GPU_EVENT_DISPLAY);
 	virtio_gpu_control_header_t* request_display_info=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	request_display_info->type=VIRTIO_GPU_CMD_GET_DISPLAY_INFO;
@@ -240,7 +298,6 @@ static _Bool _fetch_display_info(virtio_gpu_device_t* gpu_device){
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
 	virtio_queue_wait(gpu_device->controlq);
 	virtio_queue_pop(gpu_device->controlq,NULL);
-	_Bool out=0;
 	if (response->header.type!=VIRTIO_GPU_RESP_OK_DISPLAY_INFO){
 		goto _cleanup;
 	}
@@ -260,11 +317,10 @@ static _Bool _fetch_display_info(virtio_gpu_device_t* gpu_device){
 			WARN("Unable to find matching display mode");
 		}
 	}
-	out=1;
 _cleanup:
 	amm_dealloc(request_display_info);
 	amm_dealloc(response);
-	return out;
+	return;
 }
 
 
@@ -293,6 +349,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 		gpu_device->framebuffer_resources[i]=VIRTIO_GPU_NO_RESOURCE;
 	}
 	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+	_load_capsets(gpu_device);
 	_fetch_edid_data(gpu_device);
 	_fetch_display_info(gpu_device);
 	return 1;

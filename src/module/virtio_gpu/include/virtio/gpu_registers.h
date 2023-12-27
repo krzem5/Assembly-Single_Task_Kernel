@@ -78,6 +78,13 @@
 #define VIRTIO_GPU_FORMAT_A8B8G8R8_UNORM 121
 #define VIRTIO_GPU_FORMAT_R8G8B8X8_UNORM 134
 
+// Capset types
+#define VIRTIO_GPU_CAPSET_VIRGL 1
+#define VIRTIO_GPU_CAPSET_VIRGL2 2
+#define VIRTIO_GPU_CAPSET_GFXSTREAM 3
+#define VIRTIO_GPU_CAPSET_VENUS 4
+#define VIRTIO_GPU_CAPSET_CROSS_DOMAIN 5
+
 
 
 typedef u32 virtio_gpu_resource_id_t;
@@ -184,6 +191,39 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_FLUSH{
 	virtio_gpu_resource_id_t resource_id;
 	u32 _padding;
 } virtio_gpu_resource_flush_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_GET_CAPSET_INFO{
+	virtio_gpu_control_header_t header;
+	u32 capset_index;
+	u32 _padding;
+} virtio_gpu_get_capset_info_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_CAPSET_INFO{
+	virtio_gpu_control_header_t header;
+	u32 capset_id;
+	u32 capset_max_version;
+	u32 capset_max_size;
+	u32 _padding;
+} virtio_gpu_resp_capset_info_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_GET_CAPSET{
+	virtio_gpu_control_header_t header;
+	u32 capset_id;
+	u32 capset_version;
+} virtio_gpu_get_capset_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_CAPSET{
+	virtio_gpu_control_header_t header;
+	u8 capset_data[];
+} virtio_gpu_resp_capset_t;
 
 
 
