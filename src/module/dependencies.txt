@@ -19,6 +19,7 @@ net_ip:net_arp,net_info
 net_udp:net_info,net_ip
 net_unix:
 nvme:
+opengl:
 os_loader:
 procfs:dynamicfs
 sysfs:dynamicfs
@@ -26,6 +27,6 @@ ui_display:
 usb_msc:
 virtio:
 virtio_blk:virtio
-virtio_gpu:ui_display,virtio
+virtio_gpu:opengl,ui_display,virtio
 vm_shutdown:
 xhci:

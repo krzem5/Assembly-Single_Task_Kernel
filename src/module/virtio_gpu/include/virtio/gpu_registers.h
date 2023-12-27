@@ -38,7 +38,7 @@
 #define VIRTIO_GPU_CMD_RESOURCE_ASSIGN_UUID 0x010b
 #define VIRTIO_GPU_CMD_RESOURCE_CREATE_BLOB 0x010c
 #define VIRTIO_GPU_CMD_SET_SCANOUT_BLOB 0x010d
-#define VIRTIO_GPU_CMD_CTX_CREATE 0x0200e
+#define VIRTIO_GPU_CMD_CTX_CREATE 0x0200
 #define VIRTIO_GPU_CMD_CTX_DESTROY 0x0201
 #define VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE 0x0202
 #define VIRTIO_GPU_CMD_CTX_DETACH_RESOURCE 0x0203
@@ -224,6 +224,15 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_CAPSET{
 	virtio_gpu_control_header_t header;
 	u8 capset_data[];
 } virtio_gpu_resp_capset_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_CREATE{
+	virtio_gpu_control_header_t header;
+	u32 debug_name_length;
+	u32 context_init;
+	char debug_name[64];
+} virtio_gpu_ctx_create_t;
 
 
 

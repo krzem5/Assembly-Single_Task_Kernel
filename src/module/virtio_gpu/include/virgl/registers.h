@@ -1,7 +1,6 @@
-#include <kernel/log/log.h>
+#ifndef _VIRGL_REGISTERS_H_
+#define _VIRGL_REGISTERS_H_ 1
 #include <kernel/types.h>
-#include <kernel/util/util.h>
-#define KERNEL_LOG_NAME "virtio_gpu_virtgl"
 
 
 
@@ -192,13 +191,4 @@ typedef struct _VIRGL_CAPS_V2{
 
 
 
-void virtio_gpu_virgl_load_opengl_from_capset(_Bool is_v2,const void* data,u32 size){
-	LOG("Initializing OpenGL with virgl%s backend...",(is_v2?"2":""));
-	if (size<sizeof(virgl_caps_v2_t)){
-		WARN("Incomplete virgl caps (partial read?)");
-		return;
-	}
-	const virgl_caps_v2_t* caps=data;
-	WARN("Renderer: %s [GLSL: %u]",caps->renderer,caps->glsl_level);
-	// panic("AAA");
-}
+#endif

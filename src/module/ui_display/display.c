@@ -12,7 +12,6 @@
 
 
 
-
 static omm_allocator_t* _ui_display_allocator=NULL;
 static handle_type_t _ui_display_handle_type=0;
 
