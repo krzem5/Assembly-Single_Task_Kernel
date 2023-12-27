@@ -22,9 +22,10 @@ nvme:
 os_loader:
 procfs:dynamicfs
 sysfs:dynamicfs
+ui_display:
 usb_msc:
 virtio:
 virtio_blk:virtio
-virtio_gpu:virtio
+virtio_gpu:ui_display,virtio
 vm_shutdown:
 xhci:

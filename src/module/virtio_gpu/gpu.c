@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <ui/display.h>
 #include <virtio/gpu.h>
 #include <virtio/gpu_registers.h>
 #include <virtio/registers.h>
@@ -53,6 +54,19 @@ _cleanup:
 
 
 
+static _Bool _display_resize(ui_display_t* display){
+	panic("_display_resize");
+}
+
+
+
+static const ui_display_driver_t _virtio_gpu_display_driver={
+	"VirtIO GPU",
+	_display_resize
+};
+
+
+
 static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 	virtio_gpu_get_edid_t __attribute__((aligned(sizeof(virtio_gpu_get_edid_t)))) request={ // alignment prevents splits across stack pages
 		.header.type=VIRTIO_GPU_CMD_GET_EDID,
@@ -78,7 +92,7 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 			WARN("No EDID response from display #%u",i);
 			continue;
 		}
-		// pass EDID to display module along with the tuple (gpu_device,i)
+		ui_add_display(&_virtio_gpu_display_driver,gpu_device,i,resp->edid,1024);
 	}
 	amm_dealloc(resp);
 }
@@ -105,7 +119,6 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
 	_fetch_edid_data(gpu_device);
 	_fetch_display_info(gpu_device);
-	// panic("A");
 	return 1;
 }
 
