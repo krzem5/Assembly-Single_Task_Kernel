@@ -30,6 +30,10 @@ typedef struct _OPENGL_DRIVER_INSTANCE{
 
 
 
+extern handle_type_t opengl_driver_instance_handle_type;
+
+
+
 void opengl_init(void);
 
 
