@@ -45,9 +45,36 @@ static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t i
 
 
 
+static error_t _syscall_create_state(opengl_user_driver_instance_t instance){
+	handle_t* driver_instance_handle=handle_lookup_and_acquire(instance,opengl_driver_instance_handle_type);
+	if (!driver_instance_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	opengl_driver_instance_t* driver_instance=driver_instance_handle->object;
+	opengl_state_t* state=opengl_create_state(driver_instance);
+	handle_release(driver_instance_handle);
+	return (state?state->handle.rb_node.key:ERROR_NO_MEMORY);
+}
+
+
+
+static error_t _syscall_delete_state(opengl_user_state_t state){
+	handle_t* state_handle=handle_lookup_and_acquire(state,opengl_state_handle_type);
+	if (!state_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	handle_release(state_handle);
+	opengl_delete_state(state_handle->object);
+	return ERROR_OK;
+}
+
+
+
 static syscall_callback_t const _opengl_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_get_driver_instance,
-	[2]=(syscall_callback_t)_syscall_get_driver_instance_data
+	[2]=(syscall_callback_t)_syscall_get_driver_instance_data,
+	[3]=(syscall_callback_t)_syscall_create_state,
+	[4]=(syscall_callback_t)_syscall_delete_state,
 };
 
 

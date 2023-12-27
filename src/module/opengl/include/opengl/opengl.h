@@ -6,8 +6,9 @@
 
 
 typedef struct _OPENGL_STATE{
+	handle_t handle;
 	struct _OPENGL_DRIVER_INSTANCE* driver_instance;
-	u64 id;
+	void* ctx;
 } opengl_state_t;
 
 
@@ -15,7 +16,7 @@ typedef struct _OPENGL_STATE{
 typedef struct _OPENGL_DRIVER{
 	const char* name;
 	u16 opengl_version;
-	void (*init_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
+	_Bool (*init_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
 	void (*deinit_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
 } opengl_driver_t;
 
@@ -31,6 +32,7 @@ typedef struct _OPENGL_DRIVER_INSTANCE{
 
 
 extern handle_type_t opengl_driver_instance_handle_type;
+extern handle_type_t opengl_state_handle_type;
 
 
 
@@ -39,6 +41,14 @@ void opengl_init(void);
 
 
 opengl_driver_instance_t* opengl_create_driver_instance(const opengl_driver_t* driver,const char* renderer,void* ctx);
+
+
+
+opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance);
+
+
+
+void opengl_delete_state(opengl_state_t* state);
 
 
 #endif

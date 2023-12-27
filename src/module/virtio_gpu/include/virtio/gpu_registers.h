@@ -236,4 +236,12 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_CREATE{
 
 
 
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_SUBMIT{
+	virtio_gpu_control_header_t header;
+	u32 size;
+	u32 _padding;
+} virtio_gpu_cmd_submit_t;
+
+
+
 #endif

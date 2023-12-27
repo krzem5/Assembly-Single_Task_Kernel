@@ -16,6 +16,10 @@ typedef struct _OPENGL_DRIVER_INSTANCE_DATA{
 
 
 
+typedef u64 opengl_state_t;
+
+
+
 _Bool opengl_syscalls_init(void);
 
 
@@ -25,6 +29,14 @@ opengl_driver_instance_t opengl_syscall_get_driver_instance(u16 min_version);
 
 
 _Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out);
+
+
+
+opengl_state_t opengl_syscall_create_state(opengl_driver_instance_t instance);
+
+
+
+_Bool opengl_syscall_delete_state(opengl_state_t state);
 
 
 

@@ -11,8 +11,10 @@
 
 
 static omm_allocator_t* _opengl_driver_instance_allocator=NULL;
+static omm_allocator_t* _opengl_state_allocator=NULL;
 
 handle_type_t opengl_driver_instance_handle_type=0;
+handle_type_t opengl_state_handle_type=0;
 
 
 
@@ -20,7 +22,10 @@ void opengl_init(void){
 	LOG("Initializing OpenGL...");
 	_opengl_driver_instance_allocator=omm_init("opengl_driver_instance",sizeof(opengl_driver_instance_t),8,2,pmm_alloc_counter("omm_opengl_driver_instance"));
 	spinlock_init(&(_opengl_driver_instance_allocator->lock));
+	_opengl_state_allocator=omm_init("opengl_state",sizeof(opengl_state_t),8,2,pmm_alloc_counter("omm_opengl_state"));
+	spinlock_init(&(_opengl_state_allocator->lock));
 	opengl_driver_instance_handle_type=handle_alloc("opengl_driver_instance",NULL);
+	opengl_state_handle_type=handle_alloc("opengl_state",NULL);
 }
 
 
@@ -34,4 +39,27 @@ KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const open
 	out->ctx=ctx;
 	handle_finish_setup(&(out->handle));
 	return out;
+}
+
+
+
+opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
+	opengl_state_t* out=omm_alloc(_opengl_state_allocator);
+	handle_new(out,opengl_state_handle_type,&(out->handle));
+	out->driver_instance=driver_instance;
+	out->ctx=NULL;
+	_Bool ret=driver_instance->driver->init_state(driver_instance,out);
+	handle_finish_setup(&(out->handle));
+	if (ret){
+		return out;
+	}
+	handle_destroy(&(out->handle));
+	omm_dealloc(_opengl_state_allocator,out);
+	return NULL;
+}
+
+
+
+void opengl_delete_state(opengl_state_t* state){
+	panic("opengl_delete_state");
 }

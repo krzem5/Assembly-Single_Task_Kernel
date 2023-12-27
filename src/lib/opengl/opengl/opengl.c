@@ -30,4 +30,6 @@ SYS_PUBLIC void opengl_create_state(u16 min_version){
 		return;
 	}
 	printf("Driver: %s/%s, %u\n",driver_instance_data.driver_name,driver_instance_data.renderer_name,driver_instance_data.opengl_version);
+	opengl_state_t state=opengl_syscall_create_state(driver_instance);
+	printf("State: %p\n",state);
 }
