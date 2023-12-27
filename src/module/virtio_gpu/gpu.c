@@ -52,6 +52,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	virtio_gpu_resource_create_2d_t* request_resource_create_2d=amm_alloc(sizeof(virtio_gpu_resource_create_2d_t));
 	request_resource_create_2d->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_2D;
 	request_resource_create_2d->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_resource_create_2d->header.fence_id=0;
 	request_resource_create_2d->resource_id=gpu_device->framebuffer_resources[display->index];
 	request_resource_create_2d->format=VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM;
 	request_resource_create_2d->width=display->framebuffer->width;
@@ -79,6 +80,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	virtio_gpu_resource_attach_backing_t* request_resource_attach_backing=amm_alloc(sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t));
 	request_resource_attach_backing->header.type=VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING;
 	request_resource_attach_backing->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_resource_attach_backing->header.fence_id=0;
 	request_resource_attach_backing->resource_id=gpu_device->framebuffer_resources[display->index];
 	request_resource_attach_backing->entry_count=1;
 	request_resource_attach_backing->entries[0].address=display->framebuffer->address;
@@ -97,6 +99,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	virtio_gpu_set_scanout_t* request_set_scanout=amm_alloc(sizeof(virtio_gpu_set_scanout_t));
 	request_set_scanout->header.type=VIRTIO_GPU_CMD_SET_SCANOUT;
 	request_set_scanout->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_set_scanout->header.fence_id=0;
 	request_set_scanout->rect.x=0;
 	request_set_scanout->rect.y=0;
 	request_set_scanout->rect.width=display->framebuffer->width;
@@ -130,6 +133,7 @@ static void _display_flush_framebuffer(ui_display_t* display){
 	virtio_gpu_transfer_to_host_2d_t* request_transfer_to_host_2d=amm_alloc(sizeof(virtio_gpu_transfer_to_host_2d_t));
 	request_transfer_to_host_2d->header.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_2D;
 	request_transfer_to_host_2d->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_transfer_to_host_2d->header.fence_id=0;
 	request_transfer_to_host_2d->rect.x=0;
 	request_transfer_to_host_2d->rect.y=0;
 	request_transfer_to_host_2d->rect.width=display->framebuffer->width;
@@ -187,6 +191,7 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 	virtio_gpu_get_edid_t* request_get_edid=amm_alloc(sizeof(virtio_gpu_get_edid_t));
 	request_get_edid->header.type=VIRTIO_GPU_CMD_GET_EDID;
 	request_get_edid->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_get_edid->header.fence_id=0;
 	virtio_gpu_resp_edid_t* response=amm_alloc(sizeof(virtio_gpu_resp_edid_t));
 	virtio_buffer_t buffers[2]={
 		{
@@ -220,6 +225,7 @@ static _Bool _fetch_display_info(virtio_gpu_device_t* gpu_device){
 	virtio_gpu_control_header_t* request_display_info=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	request_display_info->type=VIRTIO_GPU_CMD_GET_DISPLAY_INFO;
 	request_display_info->flags=VIRTIO_GPU_FLAG_FENCE;
+	request_display_info->fence_id=0;
 	virtio_gpu_resp_display_info_t* response=amm_alloc(sizeof(virtio_gpu_resp_display_info_t));
 	virtio_buffer_t buffers[2]={
 		{
@@ -242,8 +248,17 @@ static _Bool _fetch_display_info(virtio_gpu_device_t* gpu_device){
 		if (!gpu_device->displays[i]){
 			continue;
 		}
-		// config
-		WARN("[%u]: (%u, %u)",i,(response->displays+i)->rect.x,(response->displays+i)->rect.y,(response->displays+i)->rect.width,(response->displays+i)->rect.height);
+		INFO("Detected size of display #%u: %u x %u",i,(response->displays+i)->rect.width,(response->displays+i)->rect.height);
+		const ui_display_info_mode_t* mode=ui_display_info_find_mode(gpu_device->displays[i]->display_info,(response->displays+i)->rect.width,(response->displays+i)->rect.height,0);
+		if (!mode){
+			mode=gpu_device->displays[i]->display_info->modes;
+		}
+		if (mode){
+			ui_display_set_mode(gpu_device->displays[i],mode);
+		}
+		else{
+			WARN("Unable to find matching display mode");
+		}
 	}
 	out=1;
 _cleanup:

@@ -162,7 +162,7 @@ void ui_display_info_init(void){
 
 
 
-ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 edid_length){
+KERNEL_PUBLIC ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 edid_length){
 	LOG("Parsing display EDID...");
 	if (edid_length<128||edid_length<((edid[126]+1)<<7)){
 		WARN("Invalid EDID size");
@@ -315,4 +315,15 @@ ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 edid_length){
 		}
 	}
 	return out;
+}
+
+
+
+KERNEL_PUBLIC const ui_display_info_mode_t* ui_display_info_find_mode(const ui_display_info_t* display_info,u32 width,u32 height,u32 freq){
+	for (const ui_display_info_mode_t* mode=display_info->modes;mode;mode=mode->next){
+		if ((!width||mode->width==width)&&(!height||mode->height==height)&&(!freq||mode->freq==freq)){
+			return mode;
+		}
+	}
+	return NULL;
 }

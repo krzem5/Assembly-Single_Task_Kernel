@@ -46,4 +46,8 @@ ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 edid_length);
 
 
 
+const ui_display_info_mode_t* ui_display_info_find_mode(const ui_display_info_t* display_info,u32 width,u32 height,u32 freq);
+
+
+
 #endif
