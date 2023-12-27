@@ -1,4 +1,5 @@
 #include <opengl/syscalls.h>
+#include <sys/error.h>
 #include <sys/syscall.h>
 #include <sys/syscall_generic.h>
 #include <sys/types.h>
@@ -27,5 +28,5 @@ opengl_driver_instance_t opengl_syscall_get_driver_instance(u16 min_version){
 
 
 _Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out){
-	return _syscall3(_opengl_syscall_offset|0x00000002,instance,(u64)out,sizeof(opengl_driver_instance_data_t))==0;
+	return _syscall3(_opengl_syscall_offset|0x00000002,instance,(u64)out,sizeof(opengl_driver_instance_data_t))==SYS_ERROR_OK;
 }
