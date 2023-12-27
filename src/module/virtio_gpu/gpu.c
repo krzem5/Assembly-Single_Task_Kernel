@@ -7,7 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <ui/display.h>
-#include <virgl/virtio_gpu.h>
+#include <virgl/virgl.h>
 #include <virtio/gpu.h>
 #include <virtio/gpu_registers.h>
 #include <virtio/registers.h>

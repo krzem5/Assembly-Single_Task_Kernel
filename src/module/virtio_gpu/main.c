@@ -1,9 +1,11 @@
 #include <kernel/module/module.h>
+#include <virgl/virgl.h>
 #include <virtio/gpu.h>
 
 
 
 static _Bool _init(module_t* module){
+	virgl_init();
 	virtio_gpu_init();
 	return 1;
 }

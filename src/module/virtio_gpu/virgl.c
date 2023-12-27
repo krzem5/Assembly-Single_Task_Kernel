@@ -1,10 +1,14 @@
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
 #include <virgl/registers.h>
+#include <virgl/virgl.h>
 #include <virtio/gpu.h>
 #include <virtio/virtio.h>
 #define KERNEL_LOG_NAME "virgl_virtio_gpu"
@@ -13,6 +17,10 @@
 
 #define DEBUG_NAME "virgl_virtio_gpu_opengl_context"
 #define CONTEXT_ID 0x00000001
+
+
+
+static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 
 
 
@@ -34,6 +42,13 @@ static const opengl_driver_t _virgl_opengl_driver={
 	_init_state,
 	_deinit_state
 };
+
+
+
+void virgl_init(void){
+	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_context"));
+	spinlock_init(&(_virgl_opengl_context_allocator->lock));
+}
 
 
 
@@ -77,6 +92,8 @@ void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_
 		return;
 	}
 	amm_dealloc(response);
-	opengl_create_driver_instance(&_virgl_opengl_driver,caps->renderer,NULL);
-	// panic("AAA");
+	virgl_opengl_context_t* ctx=omm_alloc(_virgl_opengl_context_allocator);
+	ctx->gpu_device=gpu_device;
+	ctx->caps=*caps;
+	opengl_create_driver_instance(&_virgl_opengl_driver,caps->renderer,ctx);
 }
