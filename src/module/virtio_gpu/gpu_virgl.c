@@ -199,6 +199,6 @@ void virtio_gpu_virgl_load_opengl_from_capset(_Bool is_v2,const void* data,u32 s
 		return;
 	}
 	const virgl_caps_v2_t* caps=data;
-	WARN("Renderer: %s",caps->renderer);
+	WARN("Renderer: %s [GLSL: %u]",caps->renderer,caps->glsl_level);
 	// panic("AAA");
 }
