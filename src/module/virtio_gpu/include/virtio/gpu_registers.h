@@ -6,6 +6,8 @@
 
 #define VIRTIO_GPU_MAX_SCANOUTS 16
 
+#define VIRTIO_GPU_NO_RESOURCE 0
+
 
 
 // Features
@@ -66,6 +68,20 @@
 #define VIRTIO_GPU_FLAG_FENCE 0x01
 #define VIRTIO_GPU_FLAG_INFO_RING_IDX 0x02
 
+// GPU Resource Formats
+#define VIRTIO_GPU_FORMAT_B8G8R8A8_UNORM 1
+#define VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM 2
+#define VIRTIO_GPU_FORMAT_A8R8G8B8_UNORM 3
+#define VIRTIO_GPU_FORMAT_X8R8G8B8_UNORM 4
+#define VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM 67
+#define VIRTIO_GPU_FORMAT_X8B8G8R8_UNORM 68
+#define VIRTIO_GPU_FORMAT_A8B8G8R8_UNORM 121
+#define VIRTIO_GPU_FORMAT_R8G8B8X8_UNORM 134
+
+
+
+typedef u32 virtio_gpu_resource_id_t;
+
 
 
 typedef struct KERNEL_PACKED _VIRTIO_GPU_CONTROL_HEADER{
@@ -113,6 +129,61 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_EDID{
 	u32 _padding;
 	u8 edid[1024];
 } virtio_gpu_resp_edid_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_2D{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_resource_id_t resource_id;
+	u32 format;
+	u32 width;
+	u32 height;
+} virtio_gpu_resource_create_2d_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_MEM_ENTRY{
+	u64 address;
+	u32 length;
+	u32 _padding;
+} virtio_gpu_mem_entry_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_ATTACH_BACKING{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_resource_id_t resource_id;
+	u32 entry_count;
+	virtio_gpu_mem_entry_t entries[];
+} virtio_gpu_resource_attach_backing_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_SET_SCANOUT{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_rect_t rect;
+	u32 scanout_id;
+	virtio_gpu_resource_id_t resource_id;
+} virtio_gpu_set_scanout_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_TRANSFER_TO_HOST_2D{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_rect_t rect;
+	u64 offset;
+	virtio_gpu_resource_id_t resource_id;
+	u32 _padding;
+} virtio_gpu_transfer_to_host_2d_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_FLUSH{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_rect_t rect;
+	virtio_gpu_resource_id_t resource_id;
+	u32 _padding;
+} virtio_gpu_resource_flush_t;
 
 
 

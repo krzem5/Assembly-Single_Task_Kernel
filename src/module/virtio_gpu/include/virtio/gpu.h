@@ -1,6 +1,7 @@
 #ifndef _VIRTIO_GPU_H_
 #define _VIRTIO_GPU_H_ 1
 #include <kernel/types.h>
+#include <virtio/gpu_registers.h>
 #include <virtio/virtio.h>
 
 
@@ -10,6 +11,7 @@ typedef struct _VIRTIO_GPU_DEVICE{
 	virtio_queue_t* controlq;
 	virtio_queue_t* cursorq;
 	u32 scanout_count;
+	virtio_gpu_resource_id_t* framebuffer_resources;
 } virtio_gpu_device_t;
 
 
