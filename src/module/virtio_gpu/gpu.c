@@ -92,7 +92,7 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 			WARN("No EDID response from display #%u",i);
 			continue;
 		}
-		ui_add_display(&_virtio_gpu_display_driver,gpu_device,i,resp->edid,1024);
+		ui_display_add(&_virtio_gpu_display_driver,gpu_device,i,resp->edid,1024);
 	}
 	amm_dealloc(resp);
 }

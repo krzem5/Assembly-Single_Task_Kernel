@@ -1,10 +1,12 @@
 #include <kernel/module/module.h>
 #include <ui/display.h>
+#include <ui/display_info.h>
 
 
 
 static _Bool _init(module_t* module){
 	ui_display_init();
+	ui_display_info_init();
 	return 1;
 }
 
