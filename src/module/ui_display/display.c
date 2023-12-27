@@ -7,6 +7,7 @@
 #include <kernel/util/util.h>
 #include <ui/display.h>
 #include <ui/display_info.h>
+#include <ui/framebuffer.h>
 #define KERNEL_LOG_NAME "ui_display"
 
 
@@ -26,7 +27,7 @@ void ui_display_init(void){
 
 
 
-KERNEL_PUBLIC ui_display_t* ui_display_add(const ui_display_driver_t* driver,void* ctx,u32 index,const u8* edid,u32 edid_length){
+KERNEL_PUBLIC ui_display_t* ui_display_create(const ui_display_driver_t* driver,void* ctx,u32 index,const u8* edid,u32 edid_length){
 	ui_display_info_t* info=ui_display_info_parse_edid(edid,edid_length);
 	if (!info){
 		return NULL;
@@ -37,8 +38,33 @@ KERNEL_PUBLIC ui_display_t* ui_display_add(const ui_display_driver_t* driver,voi
 	out->ctx=ctx;
 	out->index=index;
 	out->display_info=info;
-	out->selected_mode=NULL;
+	out->mode=NULL;
+	out->framebuffer=NULL;
 	handle_finish_setup(&(out->handle));
-	// panic("A");
 	return out;
+}
+
+
+
+KERNEL_PUBLIC _Bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode){
+	ui_framebuffer_t* last_framebuffer=display->framebuffer;
+	const ui_display_info_mode_t* last_mode=display->mode;
+	display->mode=mode;
+	if (!mode){
+		if (last_framebuffer){
+			ui_framebuffer_delete(last_framebuffer);
+		}
+		display->framebuffer=NULL;
+		return 1;
+	}
+	display->framebuffer=display->driver->resize(display);
+	if (display->framebuffer){
+		if (last_framebuffer){
+			ui_framebuffer_delete(last_framebuffer);
+		}
+		return 1;
+	}
+	display->mode=last_mode;
+	display->framebuffer=last_framebuffer;
+	return 0;
 }

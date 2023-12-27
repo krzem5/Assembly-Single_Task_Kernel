@@ -54,8 +54,13 @@ _cleanup:
 
 
 
-static _Bool _display_resize(ui_display_t* display){
-	panic("_display_resize");
+static ui_framebuffer_t* _display_resize(ui_display_t* display){
+	ui_framebuffer_t* fb=ui_framebuffer_create(display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
+	if (!fb){
+		return NULL;
+	}
+	// panic("_display_resize");
+	return fb;
 }
 
 
@@ -92,7 +97,8 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 			WARN("No EDID response from display #%u",i);
 			continue;
 		}
-		ui_display_add(&_virtio_gpu_display_driver,gpu_device,i,resp->edid,1024);
+		ui_display_t* display=ui_display_create(&_virtio_gpu_display_driver,gpu_device,i,resp->edid,1024);
+		ui_display_set_mode(display,display->display_info->modes);
 	}
 	amm_dealloc(resp);
 }
