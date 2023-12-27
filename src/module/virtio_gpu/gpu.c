@@ -9,6 +9,7 @@
 #include <ui/display.h>
 #include <virtio/gpu.h>
 #include <virtio/gpu_registers.h>
+#include <virtio/gpu_virtgl.h>
 #include <virtio/registers.h>
 #include <virtio/virtio.h>
 #define KERNEL_LOG_NAME "virtio_gpu"
@@ -233,7 +234,7 @@ static void _load_capsets(virtio_gpu_device_t* gpu_device){
 		virtio_queue_pop(gpu_device->controlq,NULL);
 		if (response_capset->header.type==VIRTIO_GPU_RESP_OK_CAPSET){
 			if (request_get_capset->capset_id==VIRTIO_GPU_CAPSET_VIRGL2){
-				WARN("virtgl2 capset data for OpenGL driver");
+				virtio_gpu_virtgl_load_opengl_from_capset(1,response_capset->capset_data,response_capset_info->capset_max_size);
 			}
 		}
 		amm_dealloc(response_capset);
