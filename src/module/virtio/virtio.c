@@ -109,6 +109,8 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 		u64 features=virtio_read(device->common_field+VIRTIO_REG_DEVICE_FEATURE,4);
 		virtio_write(device->common_field+VIRTIO_REG_DEVICE_FEATURE_SELECT,4,1);
 		features|=virtio_read(device->common_field+VIRTIO_REG_DEVICE_FEATURE,4)<<32;
+		INFO("Device features: %p",features);
+		INFO("Driver features: %p",driver->features);
 		features&=driver->features;
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE_SELECT,4,0);
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE,4,features);
@@ -120,7 +122,7 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 			virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
 			continue;
 		}
-		INFO("Negotiated device features: %p",features);
+		LOG("Negotiated device features: %p",features);
 		if (!driver->init(device,features)){
 			virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
 		}

@@ -30,10 +30,10 @@ static virtio_gpu_resource_id_t _alloc_resource_id(void){
 static _Bool _display_resize_framebuffer(ui_display_t* display){
 	virtio_gpu_device_t* gpu_device=display->ctx;
 	if (display->framebuffer){
+		// 1. VIRTIO_GPU_CMD_SET_SCANOUT with VIRTIO_GPU_NO_RESOURCE
+		// 2. VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING
+		// 3. VIRTIO_GPU_CMD_RESOURCE_UNREF
 		panic("_display_resize_framebuffer: dealloc framebuffer");
-		// VIRTIO_GPU_CMD_SET_SCANOUT with VIRTIO_GPU_NO_RESOURCE
-		// VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING
-		// VIRTIO_GPU_CMD_RESOURCE_UNREF
 		ui_framebuffer_delete(display->framebuffer);
 		display->framebuffer=NULL;
 	}
