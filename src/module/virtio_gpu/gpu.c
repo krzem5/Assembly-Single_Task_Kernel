@@ -54,20 +54,27 @@ _cleanup:
 
 
 
-static ui_framebuffer_t* _display_resize(ui_display_t* display){
-	ui_framebuffer_t* fb=ui_framebuffer_create(display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
-	if (!fb){
-		return NULL;
+static _Bool _display_resize_framebuffer(ui_display_t* display){
+	if (display->framebuffer){
+		ui_framebuffer_delete(display->framebuffer);
+		display->framebuffer=NULL;
+	}
+	if (!display->mode){
+		return 1;
+	}
+	display->framebuffer=ui_framebuffer_create(display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
+	if (!display->framebuffer){
+		return 0;
 	}
 	// panic("_display_resize");
-	return fb;
+	return 1;
 }
 
 
 
 static const ui_display_driver_t _virtio_gpu_display_driver={
 	"VirtIO GPU",
-	_display_resize
+	_display_resize_framebuffer
 };
 
 

@@ -47,24 +47,6 @@ KERNEL_PUBLIC ui_display_t* ui_display_create(const ui_display_driver_t* driver,
 
 
 KERNEL_PUBLIC _Bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode){
-	ui_framebuffer_t* last_framebuffer=display->framebuffer;
-	const ui_display_info_mode_t* last_mode=display->mode;
 	display->mode=mode;
-	if (!mode){
-		if (last_framebuffer){
-			ui_framebuffer_delete(last_framebuffer);
-		}
-		display->framebuffer=NULL;
-		return 1;
-	}
-	display->framebuffer=display->driver->resize(display);
-	if (display->framebuffer){
-		if (last_framebuffer){
-			ui_framebuffer_delete(last_framebuffer);
-		}
-		return 1;
-	}
-	display->mode=last_mode;
-	display->framebuffer=last_framebuffer;
-	return 0;
+	return display->driver->resize_framebuffer(display);
 }

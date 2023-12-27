@@ -21,7 +21,7 @@ typedef struct _UI_DISPLAY{
 
 typedef struct _UI_DISPLAY_DRIVER{
 	const char* name;
-	ui_framebuffer_t* (*resize)(ui_display_t*);
+	_Bool (*resize_framebuffer)(ui_display_t*);
 } ui_display_driver_t;
 
 
