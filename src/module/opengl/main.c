@@ -1,10 +1,12 @@
 #include <kernel/module/module.h>
 #include <opengl/opengl.h>
+#include <opengl/syscall.h>
 
 
 
 static _Bool _init(module_t* module){
 	opengl_init();
+	opengl_syscall_init();
 	return 1;
 }
 

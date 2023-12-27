@@ -1,4 +1,5 @@
 sys:
 dircolor:sys
 linker@nostatic:sys
+opengl@nostatic:sys
 runtime@nodynamic:sys
