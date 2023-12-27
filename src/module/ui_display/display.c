@@ -1,4 +1,5 @@
 #include <kernel/handle/handle.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -10,8 +11,17 @@
 
 
 
+
+static omm_allocator_t* _ui_display_allocator=NULL;
+static handle_type_t _ui_display_handle_type=0;
+
+
+
 void ui_display_init(void){
 	LOG("Initializing UI displays...");
+	_ui_display_allocator=omm_init("ui_display",sizeof(ui_display_t),8,2,pmm_alloc_counter("omm_ui_display"));
+	spinlock_init(&(_ui_display_allocator->lock));
+	_ui_display_handle_type=handle_alloc("ui_display",NULL);
 }
 
 
@@ -21,6 +31,14 @@ KERNEL_PUBLIC ui_display_t* ui_display_add(const ui_display_driver_t* driver,voi
 	if (!info){
 		return NULL;
 	}
+	ui_display_t* out=omm_alloc(_ui_display_allocator);
+	handle_new(out,_ui_display_handle_type,&(out->handle));
+	out->driver=driver;
+	out->ctx=ctx;
+	out->index=index;
+	out->display_info=info;
+	out->selected_mode=NULL;
+	handle_finish_setup(&(out->handle));
 	// panic("A");
-	return NULL;
+	return out;
 }
