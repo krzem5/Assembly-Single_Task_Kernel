@@ -56,7 +56,7 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	scheduler_pause();
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
-		panic("Page fault stack not present");
+		ERROR("Page fault stack not present");
 	}
 	else if (isr_state->isr==14){
 		ERROR("Page fault");
