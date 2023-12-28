@@ -68,6 +68,10 @@ _check_next_fs:
 	if (IS_ERROR(elf_load("/bin/shell",0,NULL,NULL,0))){
 		panic("Unable to load user shell");
 	}
+	LOG("Loading UI...");
+	if (vfs_lookup(NULL,"/bin/ui",0,0,0)&&IS_ERROR(elf_load("/bin/ui",0,NULL,NULL,0))){
+		panic("Unable to load UI");
+	}
 	return 0;
 }
 
