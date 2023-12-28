@@ -9,6 +9,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <ui/common.h>
 #include <ui/display.h>
 #include <ui/display_syscall.h>
 #include <ui/framebuffer.h>
@@ -100,7 +101,7 @@ static error_t _syscall_map_framebuffer(handle_id_t framebuffer_handle_id){
 		return ERROR_INVALID_HANDLE;
 	}
 	ui_framebuffer_t* framebuffer=framebuffer_handle->object;
-	if (!process_is_root()&&!(acl_get(framebuffer->handle.acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_MAP)){
+	if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer->handle.acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_MAP)){
 		handle_release(framebuffer_handle);
 		return ERROR_DENIED;
 	}

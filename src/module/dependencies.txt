@@ -23,7 +23,9 @@ opengl:
 os_loader:
 procfs:dynamicfs
 sysfs:dynamicfs
-ui_display:
+ui_common:
+ui_display:ui_common
+ui_launcher:ui_common
 usb_msc:
 virtio:
 virtio_blk:virtio
