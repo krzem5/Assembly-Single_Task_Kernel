@@ -15,9 +15,11 @@ int main(int argc,const char** argv){
 			continue;
 		}
 		printf("Display %p: #%u, %u x %u @ %u Hz\n",display,data.index,data.mode.width,data.mode.height,data.mode.freq);
+		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer(display);
 		ui_display_framebuffer_t config;
-		u32* framebuffer_address=(u32*)ui_display_flush_framebuffer(display,NULL,&config);
-		printf("Framebuffer: %p, %v, %u x %u, [%u]\n",framebuffer_address,config.size,config.width,config.height,config.format);
+		ui_display_get_framebuffer_config(framebuffer,&config);
+		u32* framebuffer_address=(u32*)ui_display_map_framebuffer(framebuffer);
+		printf("Framebuffer: %p, %v, %u x %u, [%u]\n",framebuffer,config.size,config.width,config.height,config.format);
 		for (u32 i=0;i<config.width*config.height;i++){
 			framebuffer_address[i]=0x000000;
 		}
@@ -28,7 +30,7 @@ int main(int argc,const char** argv){
 			for (u32 i=0;i<config.width*config.height;i++){
 				framebuffer_address[i]=i*0x010101-t;
 			}
-			ui_display_flush_framebuffer(display,framebuffer_address,&config);
+			ui_display_flush_display_framebuffer(display);
 			t++;
 		}
 	}

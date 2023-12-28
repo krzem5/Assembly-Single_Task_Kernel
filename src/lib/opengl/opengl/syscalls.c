@@ -1,4 +1,4 @@
-#include <opengl/syscalls.h>
+#include <opengl/opengl.h>
 #include <sys/error.h>
 #include <sys/syscall.h>
 #include <sys/syscall_generic.h>

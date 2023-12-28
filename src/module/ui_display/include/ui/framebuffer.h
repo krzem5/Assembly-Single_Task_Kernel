@@ -1,5 +1,6 @@
 #ifndef _UI_FRAMEBUFFER_H_
 #define _UI_FRAMEBUFFER_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/types.h>
 
 
@@ -13,17 +14,23 @@
 #define UI_FRAMEBUFFER_FORMAT_MIN UI_FRAMEBUFFER_FORMAT_BGRX
 #define UI_FRAMEBUFFER_FORMAT_MAX UI_FRAMEBUFFER_FORMAT_XRGB
 
+#define UI_FRAMEBUFFER_ACL_FLAG_MAP 1
+
 
 
 typedef struct _UI_FRAMEBUFFER{
+	handle_t handle;
 	u32* data;
 	u64 address;
 	u64 size;
 	u32 width;
 	u32 height;
 	u32 format;
-	_Bool _is_user_mapped;
 } ui_framebuffer_t;
+
+
+
+extern handle_type_t ui_framebuffer_handle_type;
 
 
 

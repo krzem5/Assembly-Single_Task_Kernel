@@ -1,8 +1,11 @@
+#include <kernel/acl/acl.h>
+#include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <ui/framebuffer.h>
@@ -13,6 +16,8 @@
 static pmm_counter_descriptor_t* _ui_framebuffer_pmm_counter=NULL;
 static omm_allocator_t* _ui_framebuffer_allocator=NULL;
 
+handle_type_t ui_framebuffer_handle_type=0;
+
 
 
 void ui_framebuffer_init(void){
@@ -20,6 +25,7 @@ void ui_framebuffer_init(void){
 	_ui_framebuffer_pmm_counter=pmm_alloc_counter("ui_framebuffer");
 	_ui_framebuffer_allocator=omm_init("ui_framebuffer",sizeof(ui_framebuffer_t),8,2,pmm_alloc_counter("omm_ui_framebuffer"));
 	spinlock_init(&(_ui_framebuffer_allocator->lock));
+	ui_framebuffer_handle_type=handle_alloc("ui_framebuffer",NULL);
 }
 
 
@@ -36,13 +42,16 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 f
 		return NULL;
 	}
 	ui_framebuffer_t* out=omm_alloc(_ui_framebuffer_allocator);
+	handle_new(out,ui_framebuffer_handle_type,&(out->handle));
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,THREAD_DATA->process,0,UI_FRAMEBUFFER_ACL_FLAG_MAP);
 	out->data=(void*)(raw_data+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->address=raw_data;
 	out->size=size;
 	out->width=width;
 	out->height=height;
 	out->format=format;
-	out->_is_user_mapped=0;
+	handle_finish_setup(&(out->handle));
 	return out;
 }
 

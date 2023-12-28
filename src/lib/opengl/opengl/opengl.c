@@ -20,16 +20,15 @@ SYS_PUBLIC void opengl_init(void){
 
 
 
-SYS_PUBLIC void opengl_create_state(u16 min_version){
+SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	if (!_opengl_initialized){
-		return;
+		return 0;
 	}
 	opengl_driver_instance_t driver_instance=opengl_syscall_get_driver_instance(min_version);
 	opengl_driver_instance_data_t driver_instance_data;
 	if (!driver_instance||!opengl_syscall_get_driver_instance_data(driver_instance,&driver_instance_data)){
-		return;
+		return 0;
 	}
 	printf("Driver: %s/%s, %u\n",driver_instance_data.driver_name,driver_instance_data.renderer_name,driver_instance_data.opengl_version);
-	opengl_state_t state=opengl_syscall_create_state(driver_instance);
-	printf("State: %p\n",state);
+	return opengl_syscall_create_state(driver_instance);
 }

@@ -18,6 +18,10 @@ typedef u64 ui_display_handle_t;
 
 
 
+typedef u64 ui_framebuffer_handle_t;
+
+
+
 typedef struct _UI_DISPLAY_MODE{
 	u32 width;
 	u32 height;
@@ -72,7 +76,19 @@ u64 ui_display_get_info(ui_display_handle_t handle,ui_display_info_t* buffer,u32
 
 
 
-u64 ui_display_flush_framebuffer(ui_display_handle_t handle,const void* address,ui_display_framebuffer_t* config);
+u64 ui_display_get_display_framebuffer(ui_display_handle_t handle);
+
+
+
+u64 ui_display_get_framebuffer_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out);
+
+
+
+u64 ui_display_map_framebuffer(ui_framebuffer_handle_t handle);
+
+
+
+u64 ui_display_flush_display_framebuffer(ui_display_handle_t handle);
 
 
 

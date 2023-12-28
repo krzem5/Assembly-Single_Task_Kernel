@@ -1,22 +1,7 @@
 #ifndef _OPENGL_SYSCALLS_H_
 #define _OPENGL_SYSCALLS_H_ 1
+#include <opengl/opengl.h>
 #include <sys/types.h>
-
-
-
-typedef u64 opengl_driver_instance_t;
-
-
-
-typedef struct _OPENGL_DRIVER_INSTANCE_DATA{
-	u16 opengl_version;
-	char driver_name[32];
-	char renderer_name[64];
-} opengl_driver_instance_data_t;
-
-
-
-typedef u64 opengl_state_t;
 
 
 
