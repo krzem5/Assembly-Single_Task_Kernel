@@ -69,7 +69,6 @@ static error_t _syscall_flush_framebuffer(handle_id_t display_handle_id,u64 addr
 	if (!display_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	u64 out=ERROR_OK;
 	ui_display_t* display=display_handle->object;
 	if (address&&(!display->framebuffer||(display->framebuffer->width!=current_config->width||display->framebuffer->height!=current_config->height||display->framebuffer->format!=current_config->format))){
 		mmap_dealloc(&(THREAD_DATA->process->mmap),address,current_config->size);
@@ -80,21 +79,21 @@ static error_t _syscall_flush_framebuffer(handle_id_t display_handle_id,u64 addr
 		current_config->format=UI_FRAMEBUFFER_FORMAT_NONE;
 	}
 	if (!display->framebuffer){
-		goto _return;
+		handle_release(display_handle);
+		return ERROR_OK;
 	}
-	if (!address){
-		current_config->size=display->framebuffer->size;
-		current_config->width=display->framebuffer->width;
-		current_config->height=display->framebuffer->height;
-		current_config->format=display->framebuffer->format;
-		mmap_region_t* region=mmap_alloc(&(THREAD_DATA->process->mmap),0,display->framebuffer->size,NULL,MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_NOEXECUTE,NULL,display->framebuffer->address);
-		out=(region?region->rb_node.key:ERROR_NO_MEMORY);
-		goto _return;
+	if (address){
+		display->driver->flush_framebuffer(display);
+		handle_release(display_handle);
+		return ERROR_OK;
 	}
-	display->driver->flush_framebuffer(display);
-_return:
+	current_config->size=display->framebuffer->size;
+	current_config->width=display->framebuffer->width;
+	current_config->height=display->framebuffer->height;
+	current_config->format=display->framebuffer->format;
+	mmap_region_t* region=mmap_alloc(&(THREAD_DATA->process->mmap),0,display->framebuffer->size,NULL,MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_NOEXECUTE,NULL,display->framebuffer->address);
 	handle_release(display_handle);
-	return out;
+	return (region?region->rb_node.key:ERROR_NO_MEMORY);
 }
 
 
