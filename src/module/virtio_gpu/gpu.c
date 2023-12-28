@@ -28,8 +28,10 @@ static virtio_gpu_resource_id_t _alloc_resource_id(void){
 
 
 static _Bool _display_resize_framebuffer(ui_display_t* display){
+	LOG("Resizing display #%u framebuffer...",display->index);
 	virtio_gpu_device_t* gpu_device=display->ctx;
 	if (display->framebuffer){
+		INFO("Deleting old framebuffer...");
 		// 1. VIRTIO_GPU_CMD_SET_SCANOUT with VIRTIO_GPU_NO_RESOURCE
 		// 2. VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING
 		// 3. VIRTIO_GPU_CMD_RESOURCE_UNREF
@@ -40,12 +42,10 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	if (!display->mode){
 		return 1;
 	}
+	INFO("Allocating new %u x %u framebuffer...",display->mode->width,display->mode->height);
 	display->framebuffer=ui_framebuffer_create(display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
 	if (!display->framebuffer){
 		return 0;
-	}
-	for (u32 x=0;x<display->framebuffer->size;x++){
-		display->framebuffer->data[x]=x;
 	}
 	if (!gpu_device->framebuffer_resources[display->index]){
 		gpu_device->framebuffer_resources[display->index]=_alloc_resource_id();

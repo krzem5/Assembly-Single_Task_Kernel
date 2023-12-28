@@ -72,14 +72,14 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	INFO("Registering memory range %p - %p",address,end);
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
-		u8 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
+		u32 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
 		if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 			idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
 		}
 		u64 size=_get_block_size(idx);
 		u64 length=end-address;
 		if (size>length){
-			idx=63-__builtin_clzll(address)-PAGE_SIZE_SHIFT;
+			idx=63-__builtin_clzll(length)-PAGE_SIZE_SHIFT;
 			if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 				idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
 			}
@@ -326,3 +326,36 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }
+
+
+
+#ifndef KERNEL_DISABLE_ASSERT
+// Usage: /*DEBUG*/extern void __debug_pmm_verify_all(void);__debug_pmm_verify_all();/*DEBUG*/
+KERNEL_PUBLIC void __debug_pmm_verify_all(void){
+	for (u32 i=0;i<_pmm_allocator_count;i++){
+		pmm_allocator_t* allocator=_pmm_allocators+i;
+		spinlock_acquire_exclusive(&(allocator->lock));
+		for (u32 j=0;j<PMM_ALLOCATOR_BLOCK_GROUP_COUNT;j++){
+			if (!(allocator->block_group_bitmap&(1<<j))){
+				continue;
+			}
+			pmm_allocator_page_header_t* tail=(allocator->block_groups+j)->tail;
+			for (pmm_allocator_page_header_t* block=(allocator->block_groups+j)->head;block!=tail;block=block->next){
+				if (((u64)block)&((1<<(j+12))-1)){
+					ERROR("Wrong block @ %p",block);
+					*((char*)0)=0;
+				}
+				if (!block->next&&block!=tail){
+					ERROR("Broken chain @ %p",block);
+					*((char*)0)=0;
+				}
+				else if (!(((u64)(block->next))>>63)){
+					ERROR("Memory overwrite @ %p",block);
+					*((char*)0)=0;
+				}
+			}
+		}
+		spinlock_release_exclusive(&(allocator->lock));
+	}
+}
+#endif

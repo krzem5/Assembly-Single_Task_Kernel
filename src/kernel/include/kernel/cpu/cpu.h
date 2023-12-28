@@ -17,7 +17,7 @@
 
 
 
-typedef struct _CPU_HEADER{
+typedef volatile struct _CPU_HEADER{
 	u8 index;
 	u8 _padding[7];
 	u64 kernel_rsp;
