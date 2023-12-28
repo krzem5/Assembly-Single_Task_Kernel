@@ -48,8 +48,16 @@ static void _thread_handle_destructor(handle_t* handle){
 	if (thread->state!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
 	}
-	cpu_mask_delete(thread->cpu_mask);
 	process_t* process=thread->process;
+	smm_dealloc(thread->name);
+	thread->name=NULL;
+	if (thread->user_stack_region){
+		mmap_dealloc_region(&(process->mmap),thread->user_stack_region);
+	}
+	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
+	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
+	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
+	cpu_mask_delete(thread->cpu_mask);
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
 	}
@@ -177,18 +185,11 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 
 
 KERNEL_PUBLIC void thread_delete(thread_t* thread){
-	spinlock_acquire_exclusive(&(thread->lock));
-	process_t* process=thread->process;
-	smm_dealloc(thread->name);
-	if (thread->user_stack_region){
-		mmap_dealloc_region(&(process->mmap),thread->user_stack_region);
-	}
-	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
-	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
-	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
-	if (handle_release(&(thread->handle))){
-		spinlock_release_exclusive(&(thread->lock));
-	}
+	handle_release(&(thread->handle));
+	// spinlock_acquire_exclusive(&(thread->lock));
+	// if (handle_release(&(thread->handle))){
+	// 	spinlock_release_exclusive(&(thread->lock));
+	// }
 }
 
 
