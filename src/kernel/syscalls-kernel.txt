@@ -48,3 +48,8 @@
 47,socket_bind(u64 fd,const void* address,u32 address_length) -> u64
 48,socket_connect(u64 fd,const void* address,u32 address_length) -> u64
 49,socket_create_pair(u8 domain,u8 type,u8 protocol,u64* out) -> u64
+50,timer_create(u64 interval,u64 count) -> u64
+51,timer_delete(u64 timer) -> u64
+52,timer_get_deadline(u64 timer) -> u64
+53,timer_update(u64 timer,u64 interval,u64 count) -> u64
+54,timer_get_event(u64 timer) -> u64

@@ -1,6 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -116,4 +117,70 @@ void timer_dispatch_timers(void){
 		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
 	}
 	spinlock_release_exclusive(&(timer->lock));
+}
+
+
+
+error_t syscall_timer_create(u64 interval,u64 count){
+	return timer_create(interval,count)->handle.rb_node.key;
+}
+
+
+
+error_t syscall_timer_delete(handle_id_t timer_handle){
+	handle_t* handle=handle_lookup_and_acquire(timer_handle,timer_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	timer_t* timer=handle->object;
+	if (!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_DELETE)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	handle_release(handle);
+	timer_delete(timer);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_timer_get_deadline(handle_id_t timer_handle){
+	handle_t* handle=handle_lookup_and_acquire(timer_handle,timer_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	timer_t* timer=handle->object;
+	u64 out=timer_get_deadline(timer);
+	handle_release(handle);
+	return out;
+}
+
+
+
+error_t syscall_timer_update(handle_id_t timer_handle,u64 interval,u64 count){
+	handle_t* handle=handle_lookup_and_acquire(timer_handle,timer_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	timer_t* timer=handle->object;
+	if (!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	timer_update(timer,interval,count,0);
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_timer_get_event(handle_id_t timer_handle){
+	handle_t* handle=handle_lookup_and_acquire(timer_handle,timer_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	timer_t* timer=handle->object;
+	u64 out=timer->event->handle.rb_node.key;
+	handle_release(handle);
+	return out;
 }

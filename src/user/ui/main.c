@@ -1,6 +1,7 @@
 #include <opengl/opengl.h>
 #include <sys/error.h>
 #include <sys/io.h>
+#include <sys/syscall.h>
 #include <ui/display.h>
 
 
@@ -20,14 +21,15 @@ int main(int argc,const char** argv){
 		for (u32 i=0;i<config.width*config.height;i++){
 			framebuffer_address[i]=0x000000;
 		}
+		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(16000000,0xffffffffffffffffull));
 		u32 t=0;
 		while (1){
-			// for (u32 i=0;i<config.width*config.height;i++){
-			// 	framebuffer_address[i]=i*0x010101+t;
-			// }
+			_syscall_thread_await_events(&timer_event,1);
+			for (u32 i=0;i<config.width*config.height;i++){
+				framebuffer_address[i]=i*0x010101+t;
+			}
 			ui_display_flush_framebuffer(display,framebuffer_address,&config);
 			t++;
-			break;
 		}
 	}
 	return 0;
