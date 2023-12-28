@@ -263,12 +263,15 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 		(queue->descriptors+i)->flags=(count>1?VIRTQ_DESC_F_NEXT:0)|(count>rx_count?0:VIRTQ_DESC_F_WRITE);
 		(queue->descriptors+i)->address=buffers->address;
 		(queue->descriptors+i)->length=buffers->length;
-		i=(queue->descriptors+i)->next;
+		i++;
+		if (i>=queue->size){
+			i=0;
+		}
 		buffers++;
 	}
 	u16 available_index=queue->available->index;
-	queue->available->ring[available_index]=queue->first_free_index;
-	queue->available->index=(available_index+1==queue->size?0:available_index+1);
+	queue->available->ring[available_index%queue->size]=queue->first_free_index;
+	queue->available->index++;
 	queue->first_free_index=i;
 	virtio_write(queue->device->notify_field+queue->notify_offset*queue->device->notify_off_multiplier,2,queue->index);
 }
@@ -282,11 +285,12 @@ KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 
 
 KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
-	queue->last_used_index=(queue->last_used_index+1==queue->size?0:queue->last_used_index+1);
+	queue->last_used_index++;
+	u16 i=queue->last_used_index%queue->size;
 	if (length){
-		*length=(queue->used->ring+queue->last_used_index)->length;
+		*length=(queue->used->ring+i)->length;
 	}
-	u32 out=(queue->used->ring+queue->last_used_index)->index;
+	u32 out=(queue->used->ring+i)->index;
 	virtio_read(queue->device->isr_field,1);
 	return out;
 }
