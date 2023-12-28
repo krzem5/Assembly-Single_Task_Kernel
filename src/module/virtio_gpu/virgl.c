@@ -7,6 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
+#include <virgl/protocol.h>
 #include <virgl/registers.h>
 #include <virgl/virgl.h>
 #include <virtio/gpu.h>
@@ -83,7 +84,7 @@ static _Bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* stat
 		return 0;
 	}
 	u32 command[2]={
-		29|(1<<16),
+		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key)
 	};
 	_command_buffer_extend(instance->ctx,command,2,1);
@@ -159,6 +160,7 @@ void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_
 	ctx->gpu_device=gpu_device;
 	ctx->caps=*caps;
 	spinlock_init(&(ctx->command_buffer.lock));
+	INFO("Allocating command buffer..");
 	ctx->command_buffer.buffer_address=pmm_alloc(pmm_align_up_address(VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE*sizeof(u32))>>PAGE_SIZE_SHIFT,_virgl_opengl_context_commabd_buffer_pmm_counter,0);
 	ctx->command_buffer.buffer=(void*)(ctx->command_buffer.buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	ctx->command_buffer.size=0;

@@ -27,6 +27,10 @@ typedef struct _UI_DISPLAY_DRIVER{
 
 
 
+extern handle_type_t ui_display_handle_type;
+
+
+
 void ui_display_init(void);
 
 

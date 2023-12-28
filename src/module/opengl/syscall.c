@@ -6,7 +6,7 @@
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
 #include <opengl/syscall.h>
-#define KERNEL_LOG_NAME "opengl_syscalls"
+#define KERNEL_LOG_NAME "opengl_syscall"
 
 
 
