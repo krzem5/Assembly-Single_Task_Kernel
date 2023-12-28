@@ -4,7 +4,6 @@ exit:runtime@static,sys
 hexdump:runtime@static,sys
 lockinfo:runtime@static,sys
 ls:runtime@static,sys,dircolor
-opengl:runtime@static,sys,opengl
 random:runtime@static,sys
 reboot:runtime@static,sys
 shell:runtime@static,sys
@@ -12,3 +11,4 @@ shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor
+ui:runtime@static,sys,opengl
