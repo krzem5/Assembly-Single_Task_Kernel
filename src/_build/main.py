@@ -725,8 +725,8 @@ if ("--run" in sys.argv):
 		# "-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
-		"-d","int,cpu_reset",
-		"--no-reboot",
+		# "-d","int,cpu_reset",
+		# "--no-reboot",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",

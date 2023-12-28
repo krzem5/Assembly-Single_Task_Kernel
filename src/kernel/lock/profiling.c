@@ -137,7 +137,7 @@ KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func
 	}
 	lock_profiling_thread_data_t* data=_get_lock_data();
 	if (data->stack_size==LOCK_PROFILING_MAX_NESTED_LOCKS){
-		log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock stack too large\x1b[0m\n",func,line);
+		log("\x1b[1m\x1b[38;2;41;137;255m%s(%u): Lock stack too small\x1b[0m\n",func,line);
 		return;
 	}
 	data->stack[data->stack_size]=lock;
