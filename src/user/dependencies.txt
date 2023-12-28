@@ -11,4 +11,4 @@ shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor
-ui:runtime@static,sys,opengl
+ui:runtime@static,sys,opengl,ui_display

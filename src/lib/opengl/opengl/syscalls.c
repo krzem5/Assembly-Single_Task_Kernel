@@ -11,8 +11,8 @@ static u64 _opengl_syscall_offset=0xffffffffffffffffull;
 
 
 _Bool opengl_syscalls_init(void){
-	s64 offset=_syscall_syscall_table_get_offset("opengl");
-	if (offset<0){
+	u64 offset=_syscall_syscall_table_get_offset("opengl");
+	if (SYS_ERROR_IS_ERROR(offset)){
 		return 0;
 	}
 	_opengl_syscall_offset=offset;

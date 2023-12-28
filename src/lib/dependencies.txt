@@ -3,3 +3,4 @@ dircolor:sys
 linker@nostatic:sys
 opengl@nostatic:sys
 runtime@nodynamic:sys
+ui_display@nostatic:sys

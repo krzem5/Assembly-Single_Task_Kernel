@@ -27,8 +27,18 @@ typedef struct _UI_DISPLAY_USER_INFO{
 	u32 screen_width_cm;
 	u32 screen_height_cm;
 	char name[14];
+	u32 mode_count;
 	ui_display_user_mode_t modes[];
 } ui_display_user_info_t;
+
+
+
+typedef struct _UI_DISPLAY_USER_FRAMEBUFFER{
+	u64 size;
+	u32 width;
+	u32 height;
+	u32 format;
+} ui_display_user_framebuffer_t;
 
 
 
