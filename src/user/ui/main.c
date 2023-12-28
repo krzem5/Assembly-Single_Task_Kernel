@@ -18,15 +18,16 @@ int main(int argc,const char** argv){
 		u32* framebuffer_address=(u32*)ui_display_flush_framebuffer(display,NULL,&config);
 		printf("Framebuffer: %p, %v, %u x %u, [%u]\n",framebuffer_address,config.size,config.width,config.height,config.format);
 		for (u32 i=0;i<config.width*config.height;i++){
-			framebuffer_address[i]=i*0x010101;
+			framebuffer_address[i]=0x000000;
 		}
 		u32 t=0;
 		while (1){
-			for (u32 i=0;i<config.width*config.height;i++){
-				framebuffer_address[i]=i*0x010101+t;
-			}
+			// for (u32 i=0;i<config.width*config.height;i++){
+			// 	framebuffer_address[i]=i*0x010101+t;
+			// }
 			ui_display_flush_framebuffer(display,framebuffer_address,&config);
 			t++;
+			break;
 		}
 	}
 	return 0;
