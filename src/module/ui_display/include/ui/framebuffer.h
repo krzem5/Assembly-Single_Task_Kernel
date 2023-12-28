@@ -22,6 +22,7 @@ typedef struct _UI_FRAMEBUFFER{
 	u32 width;
 	u32 height;
 	u32 format;
+	_Bool _is_user_mapped;
 } ui_framebuffer_t;
 
 

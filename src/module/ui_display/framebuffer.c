@@ -42,6 +42,7 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 f
 	out->width=width;
 	out->height=height;
 	out->format=format;
+	out->_is_user_mapped=0;
 	return out;
 }
 

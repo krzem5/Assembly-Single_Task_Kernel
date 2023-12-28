@@ -87,11 +87,17 @@ static error_t _syscall_flush_framebuffer(handle_id_t display_handle_id,u64 addr
 		handle_release(display_handle);
 		return ERROR_OK;
 	}
+	if (display->framebuffer->_is_user_mapped){
+		return ERROR_DENIED;
+	}
 	current_config->size=display->framebuffer->size;
 	current_config->width=display->framebuffer->width;
 	current_config->height=display->framebuffer->height;
 	current_config->format=display->framebuffer->format;
 	mmap_region_t* region=mmap_alloc(&(THREAD_DATA->process->mmap),0,display->framebuffer->size,NULL,MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_NOEXECUTE,NULL,display->framebuffer->address);
+	if (region){
+		display->framebuffer->_is_user_mapped=1;
+	}
 	handle_release(display_handle);
 	return (region?region->rb_node.key:ERROR_NO_MEMORY);
 }
