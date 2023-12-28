@@ -26,7 +26,7 @@ int main(int argc,const char** argv){
 		while (1){
 			_syscall_thread_await_events(&timer_event,1);
 			for (u32 i=0;i<config.width*config.height;i++){
-				framebuffer_address[i]=i*0x010101+t;
+				framebuffer_address[i]=i*0x010101-t;
 			}
 			ui_display_flush_framebuffer(display,framebuffer_address,&config);
 			t++;
