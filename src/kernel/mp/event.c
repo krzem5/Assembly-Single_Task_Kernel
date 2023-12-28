@@ -105,13 +105,6 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(event->lock));
-	// //////////////
-	// if (THREAD_DATA->header.current_thread){
-	// 	for (u32 i=0;i<THREAD_DATA->__lock_profiling_data.stack_size;i++){
-	// 		ERROR("[%p:%u]: %s:%u '%s'",THREAD_DATA->header.current_thread,i,(lock_profiling_type_descriptors+THREAD_DATA->__lock_profiling_data.id_stack[i])->func,(lock_profiling_type_descriptors+THREAD_DATA->__lock_profiling_data.id_stack[i])->line,(lock_profiling_type_descriptors+THREAD_DATA->__lock_profiling_data.id_stack[i])->arg);
-	// 	}
-	// }
-	// //////////////
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){
 		event->is_active=1;
 	}
