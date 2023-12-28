@@ -87,10 +87,11 @@ static error_t _syscall_flush_framebuffer(handle_id_t display_handle_id,u64 addr
 		current_config->width=display->framebuffer->width;
 		current_config->height=display->framebuffer->height;
 		current_config->format=display->framebuffer->format;
-		// out=mmap_alloc(&(THREAD_DATA->process->mmap),...);
+		mmap_region_t* region=mmap_alloc(&(THREAD_DATA->process->mmap),0,display->framebuffer->size,NULL,MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_NOEXECUTE,NULL,display->framebuffer->address);
+		out=(region?region->rb_node.key:ERROR_NO_MEMORY);
 		goto _return;
 	}
-	panic("_syscall_flush_framebuffer: perform flush");
+	display->driver->flush_framebuffer(display);
 _return:
 	handle_release(display_handle);
 	return out;

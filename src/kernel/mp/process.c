@@ -69,7 +69,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->gid=0;
 	process_kernel->event=event_create();
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
-	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL)){
+	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL,0)){
 		panic("Unable to reserve kernel memory");
 	}
 	handle_finish_setup(&(process_kernel->handle));

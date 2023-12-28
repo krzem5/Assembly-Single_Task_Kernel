@@ -15,7 +15,6 @@
 #define MMAP_REGION_FLAG_VMM_NOEXECUTE 8
 #define MMAP_REGION_FLAG_COMMIT 16
 #define MMAP_REGION_FLAG_NO_FILE_WRITEBACK 32
-#define MMAP_REGION_FLAG_MEMORY_BACKED 64
 
 #define MMAP_REGION_FILE_OFFSET_SHIFT 6
 #define MMAP_REGION_FILE_OFFSET(offset) (((u64)(offset))<<MMAP_REGION_FILE_OFFSET_SHIFT)
@@ -61,7 +60,7 @@ void mmap_deinit(mmap_t* mmap);
 
 
 
-mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file);
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file,u64 physical_address);
 
 
 

@@ -29,8 +29,8 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 f
 		ERROR("Invalid framebuffer format");
 		return NULL;
 	}
-	u64 size=((u64)width)*height*sizeof(u32);
-	u64 raw_data=pmm_alloc(pmm_align_up_address(size)>>PAGE_SIZE_SHIFT,_ui_framebuffer_pmm_counter,0);
+	u64 size=pmm_align_up_address(((u64)width)*height*sizeof(u32));
+	u64 raw_data=pmm_alloc(size>>PAGE_SIZE_SHIFT,_ui_framebuffer_pmm_counter,0);
 	if (!raw_data){
 		ERROR("Unable to create framebuffer");
 		return NULL;
@@ -48,6 +48,6 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 f
 
 
 KERNEL_PUBLIC void ui_framebuffer_delete(ui_framebuffer_t* fb){
-	pmm_dealloc(fb->address,pmm_align_up_address(fb->size)>>PAGE_SIZE_SHIFT,_ui_framebuffer_pmm_counter);
+	pmm_dealloc(fb->address,fb->size>>PAGE_SIZE_SHIFT,_ui_framebuffer_pmm_counter);
 	omm_dealloc(_ui_framebuffer_allocator,fb);
 }

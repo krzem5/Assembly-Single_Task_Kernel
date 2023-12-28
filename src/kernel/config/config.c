@@ -31,7 +31,7 @@ KERNEL_PUBLIC config_t* config_load(vfs_node_t* file){
 	config_t* out=omm_alloc(_config_allocator);
 	out->head=NULL;
 	out->tail=NULL;
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE,file);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE,file,0);
 	const char* buffer=(const char*)(region->rb_node.key);
 	for (u64 i=0;i<region->length&&buffer[i];){
 		if (buffer[i]=='#'){

@@ -83,7 +83,7 @@ static void _delete_pagemap_pages(mmap_t* mmap,mmap_region_t* region){
 		if (entry){
 			pf_invalidate_tlb_entry(region->rb_node.key+i);
 		}
-		if (entry&VMM_PAGE_ADDRESS_MASK){
+		if ((entry&VMM_PAGE_ADDRESS_MASK)&&region->pmm_counter){
 			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_FILE_WRITEBACK)){
 				panic("mmap_dealloc: file-backed memory region writeback");
 			}
@@ -198,13 +198,16 @@ KERNEL_PUBLIC void mmap_deinit(mmap_t* mmap){
 
 
 
-KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file){
+KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_counter_descriptor_t* pmm_counter,u64 flags,vfs_node_t* file,u64 physical_address){
 	KERNEL_ASSERT(mmap);
 	if ((address|length)&(PAGE_SIZE-1)){
 		panic("mmap_alloc: unaligned arguments");
 	}
 	if (!pmm_counter){
 		pmm_counter=(file?_mmap_file_pmm_counter:_mmap_generic_pmm_counter);
+	}
+	if (physical_address){
+		pmm_counter=NULL;
 	}
 	if (!length&&file){
 		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));
@@ -222,7 +225,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 		}
 	}
 	else{
-		mmap_length_group_t* length_group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),address);
+		mmap_length_group_t* length_group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),length);
 		if (!length_group){
 			spinlock_release_exclusive(&(mmap->lock));
 			return NULL;
@@ -275,11 +278,16 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 	region->pmm_counter=pmm_counter;
 	region->file=file;
 	spinlock_release_exclusive(&(mmap->lock));
-	if (flags&MMAP_REGION_FLAG_COMMIT){
+	u64 vmm_flags=mmap_get_vmm_flags(region);
+	if (physical_address){
+		for (u64 i=0;i<region->length;i+=PAGE_SIZE){
+			vmm_map_page(mmap->pagemap,physical_address+i,address+i,vmm_flags);
+		}
+	}
+	else if (flags&MMAP_REGION_FLAG_COMMIT){
 		if (file){
 			panic("mmap_alloc: both file and MMAP_REGION_FLAG_COMMIT specfied");
 		}
-		u64 vmm_flags=mmap_get_vmm_flags(region);
 		for (u64 i=0;i<region->length;i+=PAGE_SIZE){
 			vmm_map_page(mmap->pagemap,pmm_alloc(1,pmm_counter,0),address+i,vmm_flags);
 		}
@@ -421,7 +429,7 @@ error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	if (flags&USER_MEMORY_FLAG_NOWRITEBACK){
 		mmap_flags|=MMAP_REGION_FLAG_NO_FILE_WRITEBACK;
 	}
-	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,pmm_align_up_address(size),_mmap_user_data_pmm_counter,mmap_flags,file);
+	mmap_region_t* out=mmap_alloc(&(THREAD_DATA->process->mmap),0,pmm_align_up_address(size),_mmap_user_data_pmm_counter,mmap_flags,file,0);
 	return (out?out->rb_node.key:ERROR_NO_MEMORY);
 }
 

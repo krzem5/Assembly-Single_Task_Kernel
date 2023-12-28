@@ -52,7 +52,7 @@ static void _module_handle_destructor(handle_t* handle){
 
 static _Bool _alloc_region_memory(module_address_range_t* region){
 	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
 	if (!mmap_region){
 		ERROR("Unable to reserve module section memory");
 		return 0;
@@ -349,7 +349,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		ERROR("Unable to find module '%s'",name);
 		return NULL;
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file,0);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
 	memset(module,0,sizeof(module_t));

@@ -138,7 +138,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		if (program_header->p_flags&PF_W){
 			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
 		}
-		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),_user_image_pmm_counter,flags,NULL);
+		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),_user_image_pmm_counter,flags,NULL,0);
 		if (!program_region){
 			return ERROR_NO_MEMORY;
 		}
@@ -165,7 +165,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	error_t out=ERROR_OK;
@@ -189,7 +189,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL);
+	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		out=ERROR_NO_MEMORY;
@@ -283,7 +283,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	string_table_size+=smm_length(ctx->path)+1;
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=size+((string_table_size+7)&0xfffffff8);
-	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* region=mmap_alloc(&(ctx->process->mmap),0,pmm_align_up_address(total_size),_user_input_data_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
 	if (!region){
 		ERROR("Unable to reserve process input data memory");
 		return ERROR_NO_MEMORY;
@@ -349,7 +349,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		return ERROR_NOT_FOUND;
 	}
 	process_t* process=process_create(path,file->name->data);
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file);
+	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
 		path,
