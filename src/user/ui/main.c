@@ -21,7 +21,7 @@ int main(int argc,const char** argv){
 		for (u32 i=0;i<config.width*config.height;i++){
 			framebuffer_address[i]=0x000000;
 		}
-		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(16000000,0xffffffffffffffffull));
+		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(data.mode.freq,0xffffffffffffffffull));
 		u32 t=0;
 		while (1){
 			_syscall_thread_await_events(&timer_event,1);
