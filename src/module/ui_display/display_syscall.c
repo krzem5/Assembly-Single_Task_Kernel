@@ -3,7 +3,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
-#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
@@ -113,7 +112,7 @@ static error_t _syscall_map_framebuffer(handle_id_t framebuffer_handle_id){
 
 
 static error_t _syscall_flush_display_framebuffer(handle_id_t display_handle_id){
-	if (!process_is_root()){
+	if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key){
 		return ERROR_DENIED;
 	}
 	handle_t* display_handle=handle_lookup_and_acquire(display_handle_id,ui_display_handle_type);
