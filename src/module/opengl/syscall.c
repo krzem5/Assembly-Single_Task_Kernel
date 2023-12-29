@@ -97,7 +97,13 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 
 
 
-static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,void* buffer,u32 buffer_size){
+static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,void* buffer,u32 buffer_length){
+	if (buffer_length&(sizeof(u32)-1)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
 	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
 	if (!state_handle){
 		return ERROR_INVALID_HANDLE;
@@ -107,7 +113,7 @@ static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id
 		handle_release(state_handle);
 		return ERROR_DENIED;
 	}
-	ERROR("_syscall_flush_command_buffer");
+	state->driver_instance->driver->process_commands(state->driver_instance,state,buffer,buffer_length);
 	handle_release(state_handle);
 	return ERROR_OK;
 }
