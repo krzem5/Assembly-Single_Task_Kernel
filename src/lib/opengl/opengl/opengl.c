@@ -1,3 +1,5 @@
+#include <opengl/command_buffer.h>
+#include <opengl/opengl.h>
 #include <opengl/syscalls.h>
 #include <sys/io.h>
 #include <sys/syscall.h>
@@ -7,7 +9,8 @@
 
 
 static _Bool _opengl_initialized=0;
-static opengl_state_t _opengl_current_state=0;
+
+opengl_state_t opengl_current_state=0;
 
 
 
@@ -16,6 +19,7 @@ SYS_PUBLIC void opengl_init(void){
 		printf("OpenGL module is not loaded\n");
 		return;
 	}
+	opengl_command_buffer_init();
 	printf("OpenGL initialized\n");
 	_opengl_initialized=1;
 }
@@ -41,7 +45,12 @@ SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
 	if (!_opengl_initialized){
 		return 0;
 	}
-	_opengl_current_state=state;
+	opengl_command_buffer_flush();
+	if (!opengl_syscall_set_state(state)){
+		opengl_current_state=0;
+		return 0;
+	}
+	opengl_current_state=state;
 	return 1;
 }
 
@@ -51,5 +60,6 @@ SYS_PUBLIC _Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffe
 	if (!_opengl_initialized){
 		return 0;
 	}
+	opengl_command_buffer_flush();
 	return opengl_syscall_set_state_framebuffer(state,framebuffer);
 }

@@ -26,7 +26,15 @@ _Bool opengl_syscall_delete_state(opengl_state_t state);
 
 
 
+_Bool opengl_syscall_set_state(opengl_state_t state);
+
+
+
 _Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
+
+
+
+void opengl_syscall_flush_command_buffer(void* buffer,u32 buffer_size);
 
 
 

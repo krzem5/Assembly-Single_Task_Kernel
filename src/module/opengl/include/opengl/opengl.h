@@ -6,6 +6,10 @@
 
 
 
+#define OPENGL_STATE_ACL_FLAG_SEND_COMMANDS 1
+
+
+
 typedef struct _OPENGL_STATE{
 	handle_t handle;
 	struct _OPENGL_DRIVER_INSTANCE* driver_instance;

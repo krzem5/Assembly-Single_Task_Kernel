@@ -21,6 +21,10 @@ typedef u64 opengl_state_t;
 
 
 
+extern opengl_state_t opengl_current_state;
+
+
+
 void opengl_init(void);
 
 

@@ -1,8 +1,10 @@
+#include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
@@ -46,6 +48,8 @@ KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const open
 opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
 	opengl_state_t* out=omm_alloc(_opengl_state_allocator);
 	handle_new(out,opengl_state_handle_type,&(out->handle));
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,THREAD_DATA->process,0,OPENGL_STATE_ACL_FLAG_SEND_COMMANDS);
 	out->driver_instance=driver_instance;
 	out->ctx=NULL;
 	out->framebuffer=NULL;

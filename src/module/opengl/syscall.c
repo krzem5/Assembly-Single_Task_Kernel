@@ -1,6 +1,7 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -71,6 +72,18 @@ static error_t _syscall_delete_state(opengl_user_state_t state){
 
 
 
+static error_t _syscall_set_state(opengl_user_state_t state_handle_id){
+	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
+	if (!state_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	ERROR("_syscall_set_state");
+	handle_release(state_handle);
+	return ERROR_OK;
+}
+
+
+
 static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_id,handle_id_t framebuffer_handle_id){
 	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
 	if (!state_handle){
@@ -96,12 +109,31 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 
 
 
+static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,void* buffer,u32 buffer_size){
+	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
+	if (!state_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	opengl_state_t* state=state_handle->object;
+	if (!(acl_get(state->handle.acl,THREAD_DATA->process)&OPENGL_STATE_ACL_FLAG_SEND_COMMANDS)){
+		handle_release(state_handle);
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_flush_command_buffer");
+	handle_release(state_handle);
+	return ERROR_OK;
+}
+
+
+
 static syscall_callback_t const _opengl_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_get_driver_instance,
 	[2]=(syscall_callback_t)_syscall_get_driver_instance_data,
 	[3]=(syscall_callback_t)_syscall_create_state,
 	[4]=(syscall_callback_t)_syscall_delete_state,
-	[5]=(syscall_callback_t)_syscall_set_state_framebuffer,
+	[5]=(syscall_callback_t)_syscall_set_state,
+	[6]=(syscall_callback_t)_syscall_set_state_framebuffer,
+	[7]=(syscall_callback_t)_syscall_flush_command_buffer,
 };
 
 
