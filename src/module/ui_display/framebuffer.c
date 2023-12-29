@@ -16,7 +16,7 @@
 static pmm_counter_descriptor_t* _ui_framebuffer_pmm_counter=NULL;
 static omm_allocator_t* _ui_framebuffer_allocator=NULL;
 
-handle_type_t ui_framebuffer_handle_type=0;
+KERNEL_PUBLIC handle_type_t ui_framebuffer_handle_type=0;
 
 
 

@@ -14,7 +14,7 @@
 
 static omm_allocator_t* _ui_display_allocator=NULL;
 
-handle_type_t ui_display_handle_type;
+KERNEL_PUBLIC handle_type_t ui_display_handle_type;
 
 
 

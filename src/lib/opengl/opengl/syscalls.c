@@ -3,6 +3,7 @@
 #include <sys/syscall.h>
 #include <sys/syscall_generic.h>
 #include <sys/types.h>
+#include <ui/display.h>
 
 
 
@@ -42,4 +43,10 @@ opengl_state_t opengl_syscall_create_state(opengl_driver_instance_t instance){
 
 _Bool opengl_syscall_delete_state(opengl_state_t state){
 	return _syscall1(_opengl_syscall_offset|0x00000004,state)==SYS_ERROR_OK;
+}
+
+
+
+_Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
+	return _syscall2(_opengl_syscall_offset|0x00000005,state,framebuffer)==SYS_ERROR_OK;
 }

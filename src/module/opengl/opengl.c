@@ -48,6 +48,7 @@ opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
 	handle_new(out,opengl_state_handle_type,&(out->handle));
 	out->driver_instance=driver_instance;
 	out->ctx=NULL;
+	out->framebuffer=NULL;
 	_Bool ret=driver_instance->driver->init_state(driver_instance,out);
 	handle_finish_setup(&(out->handle));
 	if (ret){

@@ -2,10 +2,12 @@
 #include <sys/io.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <ui/display.h>
 
 
 
 static _Bool _opengl_initialized=0;
+static opengl_state_t _opengl_current_state=0;
 
 
 
@@ -31,4 +33,23 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	}
 	printf("Driver: %s/%s, %u\n",driver_instance_data.driver_name,driver_instance_data.renderer_name,driver_instance_data.opengl_version);
 	return opengl_syscall_create_state(driver_instance);
+}
+
+
+
+SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
+	if (!_opengl_initialized){
+		return 0;
+	}
+	_opengl_current_state=state;
+	return 1;
+}
+
+
+
+SYS_PUBLIC _Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
+	if (!_opengl_initialized){
+		return 0;
+	}
+	return opengl_syscall_set_state_framebuffer(state,framebuffer);
 }

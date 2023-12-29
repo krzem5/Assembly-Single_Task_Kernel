@@ -1,6 +1,6 @@
 sys:
+ui_display:sys
 dircolor:sys
 linker@nostatic:sys
-opengl@nostatic:sys
+opengl@nostatic:sys,ui_display
 runtime@nodynamic:sys
-ui_display@nostatic:sys

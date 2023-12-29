@@ -2,6 +2,7 @@
 #define _OPENGL_OPENGL_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/types.h>
+#include <ui/framebuffer.h>
 
 
 
@@ -9,6 +10,7 @@ typedef struct _OPENGL_STATE{
 	handle_t handle;
 	struct _OPENGL_DRIVER_INSTANCE* driver_instance;
 	void* ctx;
+	ui_framebuffer_t* framebuffer;
 } opengl_state_t;
 
 

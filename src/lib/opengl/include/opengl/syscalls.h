@@ -2,6 +2,7 @@
 #define _OPENGL_SYSCALLS_H_ 1
 #include <opengl/opengl.h>
 #include <sys/types.h>
+#include <ui/display.h>
 
 
 
@@ -22,6 +23,10 @@ opengl_state_t opengl_syscall_create_state(opengl_driver_instance_t instance);
 
 
 _Bool opengl_syscall_delete_state(opengl_state_t state);
+
+
+
+_Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
 
 
 
