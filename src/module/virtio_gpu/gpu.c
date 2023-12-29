@@ -807,11 +807,60 @@ void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,u32 ctx,u64 bu
 
 
 void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_cursor_pos_t* pos,u32 hot_x,u32 hot_y){
-	panic("virtio_gpu_command_update_cursor");
+	virtio_gpu_cmd_update_cursor_t* request=amm_alloc(sizeof(virtio_gpu_cmd_update_cursor_t));
+	request->header.type=VIRTIO_GPU_CMD_UPDATE_CURSOR;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->pos=*pos;
+	request->resource_id=resource_id;
+	request->hot_x=hot_x;
+	request->hot_y=hot_y;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_cmd_update_cursor_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		ERROR("virtio_gpu_command_update_cursor failed");
+	}
+	amm_dealloc(response);
 }
 
 
 
 void virtio_gpu_command_move_cursor(virtio_gpu_device_t* gpu_device,const virtio_gpu_cursor_pos_t* pos){
-	panic("virtio_gpu_command_move_cursor");
+	virtio_gpu_cmd_move_cursor_t* request=amm_alloc(sizeof(virtio_gpu_cmd_move_cursor_t));
+	request->header.type=VIRTIO_GPU_CMD_MOVE_CURSOR;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->pos=*pos;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_cmd_move_cursor_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		ERROR("virtio_gpu_command_move_cursor failed");
+	}
+	amm_dealloc(response);
 }
