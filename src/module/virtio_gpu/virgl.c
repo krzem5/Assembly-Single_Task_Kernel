@@ -180,11 +180,6 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	};
 	_command_buffer_extend(ctx,virgl_create_surface_and_set_framebuffer_state_command,10,0);
 	_command_buffer_extend(ctx,NULL,0,1);
-	// framebuffer setup:
-	// 1. create texture (done)
-	// 2. create surface w/ res_handle=texture
-	// 3. set framebuffer state w/ zsurf=0, surf[0]=surface
-	// 4. (after frame draw) transfer 3D from host
 }
 
 
