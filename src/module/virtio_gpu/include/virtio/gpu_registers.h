@@ -94,6 +94,43 @@ typedef u32 virtio_gpu_resource_id_t;
 
 
 
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RECT{
+	u32 x;
+	u32 y;
+	u32 width;
+	u32 height;
+} virtio_gpu_rect_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_BOX{
+	u32 x;
+	u32 y;
+	u32 z;
+	u32 width;
+	u32 height;
+	u32 depth;
+} virtio_gpu_box_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_MEM_ENTRY{
+	u64 address;
+	u32 length;
+	u32 _padding;
+} virtio_gpu_mem_entry_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CURSOR_POS{
+	u32 scanout_id;
+	u32 x;
+	u32 y;
+	u32 padding;
+} virtio_gpu_cursor_pos_t;
+
+
+
 typedef struct KERNEL_PACKED _VIRTIO_GPU_CONTROL_HEADER{
 	u32 type;
 	u32 flags;
@@ -102,15 +139,6 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_CONTROL_HEADER{
 	u8 ring_idx;
 	u8 _padding[3];
 } virtio_gpu_control_header_t;
-
-
-
-typedef struct KERNEL_PACKED _VIRTIO_GPU_RECT{
-	u32 x;
-	u32 y;
-	u32 width;
-	u32 height;
-} virtio_gpu_rect_t;
 
 
 
@@ -125,23 +153,6 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_DISPLAY_INFO{
 
 
 
-typedef struct KERNEL_PACKED _VIRTIO_GPU_GET_EDID{
-	virtio_gpu_control_header_t header;
-	u32 scanout;
-	u32 _padding;
-} virtio_gpu_get_edid_t;
-
-
-
-typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_EDID{
-	virtio_gpu_control_header_t header;
-	u32 size;
-	u32 _padding;
-	u8 edid[1024];
-} virtio_gpu_resp_edid_t;
-
-
-
 typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_2D{
 	virtio_gpu_control_header_t header;
 	virtio_gpu_resource_id_t resource_id;
@@ -152,20 +163,11 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_2D{
 
 
 
-typedef struct KERNEL_PACKED _VIRTIO_GPU_MEM_ENTRY{
-	u64 address;
-	u32 length;
-	u32 _padding;
-} virtio_gpu_mem_entry_t;
-
-
-
-typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_ATTACH_BACKING{
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_UNREF{
 	virtio_gpu_control_header_t header;
 	virtio_gpu_resource_id_t resource_id;
-	u32 entry_count;
-	virtio_gpu_mem_entry_t entries[];
-} virtio_gpu_resource_attach_backing_t;
+	u32 _padding;
+} virtio_gpu_resource_unref_t;
 
 
 
@@ -175,6 +177,15 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_SET_SCANOUT{
 	u32 scanout_id;
 	virtio_gpu_resource_id_t resource_id;
 } virtio_gpu_set_scanout_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_FLUSH{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_rect_t rect;
+	virtio_gpu_resource_id_t resource_id;
+	u32 _padding;
+} virtio_gpu_resource_flush_t;
 
 
 
@@ -188,12 +199,20 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_TRANSFER_TO_HOST_2D{
 
 
 
-typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_FLUSH{
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_ATTACH_BACKING{
 	virtio_gpu_control_header_t header;
-	virtio_gpu_rect_t rect;
+	virtio_gpu_resource_id_t resource_id;
+	u32 entry_count;
+	virtio_gpu_mem_entry_t entries[];
+} virtio_gpu_resource_attach_backing_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_DEATACH_BACKING{
+	virtio_gpu_control_header_t header;
 	virtio_gpu_resource_id_t resource_id;
 	u32 _padding;
-} virtio_gpu_resource_flush_t;
+} virtio_gpu_resource_detach_backing_t;
 
 
 
@@ -230,6 +249,23 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_CAPSET{
 
 
 
+typedef struct KERNEL_PACKED _VIRTIO_GPU_GET_EDID{
+	virtio_gpu_control_header_t header;
+	u32 scanout;
+	u32 _padding;
+} virtio_gpu_get_edid_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESP_EDID{
+	virtio_gpu_control_header_t header;
+	u32 size;
+	u32 _padding;
+	u8 edid[1024];
+} virtio_gpu_resp_edid_t;
+
+
+
 typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_CREATE{
 	virtio_gpu_control_header_t header;
 	u32 debug_name_length;
@@ -239,17 +275,25 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_CREATE{
 
 
 
-typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_SUBMIT{
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_ATTACH_RESOURCE{
 	virtio_gpu_control_header_t header;
-	u32 size;
+	virtio_gpu_resource_id_t resource_id;
 	u32 _padding;
-} virtio_gpu_cmd_submit_t;
+} virtio_gpu_ctx_attach_resource_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_DETACH_RESOURCE{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_resource_id_t resource_id;
+	u32 _padding;
+} virtio_gpu_ctx_detach_resource_t;
 
 
 
 typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_3D{
 	virtio_gpu_control_header_t header;
-	u32 resource_id;
+	virtio_gpu_resource_id_t resource_id;
 	u32 target;
 	u32 format;
 	u32 bind;
@@ -265,22 +309,15 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_3D{
 
 
 
-typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_ATACH_RESOURCE{
+typedef struct KERNEL_PACKED _VIRTIO_GPU_TRANSFER_TO_HOST_3D{
 	virtio_gpu_control_header_t header;
-	u32 resource_id;
-	u32 _padding;
-} virtio_gpu_ctx_attach_resource_t;
-
-
-
-typedef struct KERNEL_PACKED _VIRTIO_GPU_BOX{
-	u32 x;
-	u32 y;
-	u32 z;
-	u32 width;
-	u32 height;
-	u32 depth;
-} virtio_gpu_box_t;
+	virtio_gpu_box_t box;
+	u64 offset;
+	virtio_gpu_resource_id_t resource_id;
+	u32 level;
+	u32 stride;
+	u32 layer_stride;
+} virtio_gpu_transfer_to_host_3d_t;
 
 
 
@@ -288,11 +325,41 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_TRANSFER_FROM_HOST_3D{
 	virtio_gpu_control_header_t header;
 	virtio_gpu_box_t box;
 	u64 offset;
-	u32 resource_id;
+	virtio_gpu_resource_id_t resource_id;
 	u32 level;
 	u32 stride;
 	u32 layer_stride;
 } virtio_gpu_transfer_from_host_3d_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_SUBMIT_3D{
+	virtio_gpu_control_header_t header;
+	u32 size;
+	u32 _padding;
+} virtio_gpu_cmd_submit_3d_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_UPDATE_CURSOR{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_cursor_pos_t pos;
+	virtio_gpu_resource_id_t resource_id;
+	u32 hot_x;
+	u32 hot_y;
+	u32 _padding;
+} virtio_gpu_cmd_update_cursor_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_MOVE_CURSOR{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_cursor_pos_t pos;
+	virtio_gpu_resource_id_t resource_id;
+	u32 hot_x;
+	u32 hot_y;
+	u32 _padding;
+} virtio_gpu_cmd_move_cursor_t;
 
 
 

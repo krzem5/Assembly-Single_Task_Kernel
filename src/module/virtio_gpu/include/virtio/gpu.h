@@ -30,6 +30,10 @@ virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device
 
 
 
+void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id);
+
+
+
 void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display);
 
 
@@ -46,6 +50,10 @@ void virtio_gpu_command_resource_attach_backing(virtio_gpu_device_t* gpu_device,
 
 
 
+void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id);
+
+
+
 virtio_gpu_resp_capset_info_t* virtio_gpu_command_get_capset_info(virtio_gpu_device_t* gpu_device,u32 index);
 
 
@@ -55,6 +63,46 @@ virtio_gpu_resp_capset_t* virtio_gpu_command_get_capset(virtio_gpu_device_t* gpu
 
 
 virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_device_t* gpu_device,u32 scanout);
+
+
+
+// VIRTIO_GPU_CMD_CTX_CREATE
+
+
+
+// VIRTIO_GPU_CMD_CTX_DESTROY
+
+
+
+// VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE
+
+
+
+// VIRTIO_GPU_CMD_CTX_DETACH_RESOURCE
+
+
+
+// VIRTIO_GPU_CMD_RESOURCE_CREATE_3D
+
+
+
+// VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D
+
+
+
+// VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D
+
+
+
+// VIRTIO_GPU_CMD_SUBMIT_3D
+
+
+
+// VIRTIO_GPU_CMD_UPDATE_CURSOR
+
+
+
+// VIRTIO_GPU_CMD_MOVE_CURSOR
 
 
 

@@ -32,7 +32,7 @@ static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,_Bool flush_before){
 	spinlock_acquire_exclusive(&(ctx->command_buffer.lock));
 	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE||flush_before){
-		virtio_gpu_cmd_submit_t* request_submit_3d=amm_alloc(sizeof(virtio_gpu_cmd_submit_t));
+		virtio_gpu_cmd_submit_3d_t* request_submit_3d=amm_alloc(sizeof(virtio_gpu_cmd_submit_3d_t));
 		request_submit_3d->header.type=VIRTIO_GPU_CMD_SUBMIT_3D;
 		request_submit_3d->header.flags=VIRTIO_GPU_FLAG_FENCE;
 		request_submit_3d->header.fence_id=0;
@@ -42,7 +42,7 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 		virtio_buffer_t buffers[3]={
 			{
 				vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_submit_3d),
-				sizeof(virtio_gpu_cmd_submit_t)
+				sizeof(virtio_gpu_cmd_submit_3d_t)
 			},
 			{
 				ctx->command_buffer.buffer_address,
