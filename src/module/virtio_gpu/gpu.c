@@ -248,7 +248,7 @@ virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		ERROR("virtio_gpu_create_2d_resource failed");
+		ERROR("virtio_gpu_command_resource_create_2d failed");
 	}
 	amm_dealloc(response);
 	return resource_id;
@@ -602,31 +602,172 @@ void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_device,u32 ctx){
 
 
 void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
-	panic("virtio_gpu_command_ctx_attach_resource");
+	virtio_gpu_ctx_attach_resource_t* request=amm_alloc(sizeof(virtio_gpu_ctx_attach_resource_t));
+	request->header.type=VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->header.ctx_id=ctx;
+	request->resource_id=resource_id;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_ctx_attach_resource_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("virtio_gpu_command_ctx_attach_resource failed");
+	}
+	amm_dealloc(response);
 }
 
 
 
 void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
-	panic("virtio_gpu_command_ctx_detach_resource");
+	virtio_gpu_ctx_detach_resource_t* request=amm_alloc(sizeof(virtio_gpu_ctx_detach_resource_t));
+	request->header.type=VIRTIO_GPU_CMD_CTX_DETACH_RESOURCE;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->header.ctx_id=ctx;
+	request->resource_id=resource_id;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_ctx_detach_resource_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("virtio_gpu_command_ctx_detach_resource failed");
+	}
+	amm_dealloc(response);
 }
 
 
 
-void virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
-	panic("virtio_gpu_command_resource_create_3d");
+virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
+	if (!resource_id){
+		resource_id=_alloc_resource_id();
+	}
+	virtio_gpu_resource_create_3d_t* request=amm_alloc(sizeof(virtio_gpu_resource_create_3d_t));
+	request->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_3D;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->resource_id=resource_id;
+	request->target=target;
+	request->format=format;
+	request->bind=bind;
+	request->width=width;
+	request->height=height;
+	request->depth=depth;
+	request->array_size=array_size;
+	request->last_level=last_level;
+	request->nr_samples=nr_samples;
+	request->flags=0;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_resource_create_3d_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		ERROR("virtio_gpu_command_resource_create_3d failed");
+	}
+	amm_dealloc(response);
+	return resource_id;
 }
 
 
 
 void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
-	panic("virtio_gpu_command_transfer_to_host_3d");
+	virtio_gpu_transfer_to_host_3d_t* request=amm_alloc(sizeof(virtio_gpu_transfer_to_host_3d_t));
+	request->header.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->box=*box;
+	request->offset=0;
+	request->resource_id=resource_id;
+	request->level=level;
+	request->stride=stride;
+	request->layer_stride=layer_stride;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_transfer_to_host_3d_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		ERROR("virtio_gpu_command_transfer_to_host_3d failed");
+	}
+	amm_dealloc(response);
 }
 
 
 
 void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
-	panic("virtio_gpu_command_transfer_from_host_3d");
+	virtio_gpu_transfer_from_host_3d_t* request=amm_alloc(sizeof(virtio_gpu_transfer_from_host_3d_t));
+	request->header.type=VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->box=*box;
+	request->offset=0;
+	request->resource_id=resource_id;
+	request->level=level;
+	request->stride=stride;
+	request->layer_stride=layer_stride;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_transfer_from_host_3d_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		ERROR("virtio_gpu_command_transfer_from_host_3d failed");
+	}
+	amm_dealloc(response);
 }
 
 

@@ -69,78 +69,9 @@ static void _deinit_state(opengl_driver_instance_t* instance,opengl_state_t* sta
 
 static void _update_render_target(opengl_driver_instance_t* instance,opengl_state_t* state){
 	virgl_opengl_context_t* ctx=instance->ctx;
-	virtio_gpu_resource_create_3d_t* request_resource_create_3d=amm_alloc(sizeof(virtio_gpu_resource_create_3d_t));
-	request_resource_create_3d->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_3D;
-	request_resource_create_3d->header.flags=VIRTIO_GPU_FLAG_FENCE;
-	request_resource_create_3d->header.fence_id=0;
-	request_resource_create_3d->header.ctx_id=CONTEXT_ID;
-	request_resource_create_3d->resource_id=FRAMEBUFFER_RESOURCE_ID;
-	request_resource_create_3d->target=VIRGL_TARGET_TEXTURE_2D;
-	request_resource_create_3d->format=VIRGL_FORMAT_B8G8R8A8_UNORM;
-	request_resource_create_3d->bind=VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET;
-	request_resource_create_3d->width=state->framebuffer->width;
-	request_resource_create_3d->height=state->framebuffer->height;
-	request_resource_create_3d->depth=1;
-	request_resource_create_3d->array_size=1;
-	request_resource_create_3d->last_level=0;
-	request_resource_create_3d->nr_samples=0;
-	request_resource_create_3d->flags=0;
-	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
-	virtio_buffer_t buffers[2]={
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_resource_create_3d),
-			sizeof(virtio_gpu_resource_create_3d_t)
-		},
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
-			sizeof(virtio_gpu_control_header_t)
-		}
-	};
-	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
-	virtio_queue_wait(ctx->gpu_device->controlq);
-	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
-	amm_dealloc(request_resource_create_3d);
-	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		WARN("Unable to create framebuffer texture");
-		amm_dealloc(response);
-		return;
-	}
-	virtio_gpu_resource_attach_backing_t* request_resource_attach_backing=amm_alloc(sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t));
-	request_resource_attach_backing->header.type=VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING;
-	request_resource_attach_backing->header.flags=VIRTIO_GPU_FLAG_FENCE;
-	request_resource_attach_backing->header.fence_id=0;
-	request_resource_attach_backing->resource_id=FRAMEBUFFER_RESOURCE_ID;
-	request_resource_attach_backing->entry_count=1;
-	request_resource_attach_backing->entries[0].address=state->framebuffer->address;
-	request_resource_attach_backing->entries[0].length=pmm_align_up_address(state->framebuffer->size);
-	buffers[0].address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_resource_attach_backing);
-	buffers[0].length=sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t);
-	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
-	virtio_queue_wait(ctx->gpu_device->controlq);
-	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
-	amm_dealloc(request_resource_attach_backing);
-	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		WARN("Unable to attach framebuffer texture backing");
-		amm_dealloc(response);
-		return;
-	}
-	virtio_gpu_ctx_attach_resource_t* request_ctx_attach_resource=amm_alloc(sizeof(virtio_gpu_ctx_attach_resource_t));
-	request_ctx_attach_resource->header.type=VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE;
-	request_ctx_attach_resource->header.flags=VIRTIO_GPU_FLAG_FENCE;
-	request_ctx_attach_resource->header.fence_id=0;
-	request_ctx_attach_resource->resource_id=FRAMEBUFFER_RESOURCE_ID;
-	buffers[0].address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_ctx_attach_resource);
-	buffers[0].length=sizeof(virtio_gpu_ctx_attach_resource_t);
-	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
-	virtio_queue_wait(ctx->gpu_device->controlq);
-	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
-	amm_dealloc(request_ctx_attach_resource);
-	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		WARN("Unable to attach framebuffer texture backing");
-		amm_dealloc(response);
-		return;
-	}
-	amm_dealloc(response);
+	virtio_gpu_command_resource_create_3d(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,state->framebuffer->address,state->framebuffer->size);
+	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,FRAMEBUFFER_RESOURCE_ID);
 	u32 virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command[12]={
 		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key),
@@ -230,41 +161,15 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 	};
 	_command_buffer_extend(instance->ctx,virgl_memory_barrier_command,2,1);
 	// manually fetch the framebuffer
-	virtio_gpu_transfer_from_host_3d_t* request_transfer_from_host_3d=amm_alloc(sizeof(virtio_gpu_transfer_from_host_3d_t));
-	request_transfer_from_host_3d->header.type=VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D;
-	request_transfer_from_host_3d->header.flags=VIRTIO_GPU_FLAG_FENCE;
-	request_transfer_from_host_3d->header.fence_id=0;
-	request_transfer_from_host_3d->header.ctx_id=CONTEXT_ID;
-	request_transfer_from_host_3d->box.x=0;
-	request_transfer_from_host_3d->box.y=0;
-	request_transfer_from_host_3d->box.z=0;
-	request_transfer_from_host_3d->box.width=state->framebuffer->width;
-	request_transfer_from_host_3d->box.height=state->framebuffer->height;
-	request_transfer_from_host_3d->box.depth=1;
-	request_transfer_from_host_3d->offset=0;
-	request_transfer_from_host_3d->resource_id=FRAMEBUFFER_RESOURCE_ID;
-	request_transfer_from_host_3d->level=0;
-	request_transfer_from_host_3d->stride=0;
-	request_transfer_from_host_3d->layer_stride=0;
-	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
-	virtio_buffer_t buffers[2]={
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_transfer_from_host_3d),
-			sizeof(virtio_gpu_transfer_from_host_3d_t)
-		},
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
-			sizeof(virtio_gpu_control_header_t)
-		}
+	virtio_gpu_box_t box={
+		0,
+		0,
+		0,
+		state->framebuffer->width,
+		state->framebuffer->height,
+		1
 	};
-	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
-	virtio_queue_wait(ctx->gpu_device->controlq);
-	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
-	amm_dealloc(request_transfer_from_host_3d);
-	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		WARN("Unable to create transfer framebuffer from host");
-	}
-	amm_dealloc(response);
+	virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,&box,0,0,0);
 }
 
 

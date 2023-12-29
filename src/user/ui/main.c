@@ -24,9 +24,9 @@ int main(int argc,const char** argv){
 		for (u32 i=0;i<config.width*config.height;i++){
 			framebuffer_address[i]=0x000000;
 		}
-		// opengl_set_state_framebuffer(state,framebuffer);
-		// opengl_set_state(state);
-		// glViewport(0,0,config.width,config.height);
+		opengl_set_state_framebuffer(state,framebuffer);
+		opengl_set_state(state);
+		glViewport(0,0,config.width,config.height);
 		printf("State: %p\n",state);
 		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
 		u32 t=0;
@@ -34,9 +34,9 @@ int main(int argc,const char** argv){
 			for (u32 i=0;i<config.width*config.height;i++){
 				framebuffer_address[i]=i*0x010101-t;
 			}
-			// glClearColor(1.0f,0.5f,0.5f,1.0f);
-			// glClear(GL_COLOR_BUFFER_BIT);
-			// glFlush();
+			glClearColor(1.0f,0.5f,0.5f,1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			t++;
 			_syscall_thread_await_events(&timer_event,1);
