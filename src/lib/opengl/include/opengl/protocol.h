@@ -6,6 +6,12 @@
 
 #define OPENGL_PROTOCOL_TYPE_CREATE_RESOURCE 0x01
 #define OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE 0x02
+#define OPENGL_PROTOCOL_TYPE_CLEAR 0x03
+#define OPENGL_PROTOCOL_TYPE_SET_VIEWPORT 0x04
+
+#define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
+#define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
+#define OPENGL_PROTOCOL_CLEAR_FLAG_STENCIL 0x00000004
 
 
 
@@ -36,6 +42,26 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_DELETE_RESOURCE{
 	opengl_protocol_header_t header;
 	u32 sys_handle;
 } opengl_protocol_delete_resource_t;
+
+
+
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_CLEAR{
+	opengl_protocol_header_t header;
+	u32 flags;
+	float color[4];
+	double depth;
+	s32 stencil;
+} opengl_protocol_clear_t;
+
+
+
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
+	opengl_protocol_header_t header;
+	float tx;
+	float ty;
+	float sx;
+	float sy;
+} opengl_protocol_set_viewport_t;
 
 
 

@@ -36,6 +36,7 @@ int main(int argc,const char** argv){
 			}
 			glClearColor(1.0f,0.5f,0.5f,1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			t++;
 			_syscall_thread_await_events(&timer_event,1);

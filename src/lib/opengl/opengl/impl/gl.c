@@ -1,4 +1,6 @@
 #include <GL/gl.h>
+#include <opengl/command_buffer.h>
+#include <opengl/protocol.h>
 #include <sys/io.h>
 
 
@@ -7,6 +9,15 @@ static GLenum _gl_error=GL_NO_ERROR;
 static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,1.0f};
 static GLdouble _gl_clear_depth_value=0.0f;
 static GLint _gl_clear_stencil_value=0;
+
+
+
+static inline void _push_single_command(const opengl_protocol_header_t* header){
+	opengl_command_buffer_set_lock(1);
+	opengl_command_buffer_ensure_space(header->length);
+	opengl_command_buffer_push(header);
+	opengl_command_buffer_set_lock(0);
+}
 
 
 
@@ -168,11 +179,35 @@ SYS_PUBLIC void glClampColor(GLenum target,GLenum clamp){
 
 
 SYS_PUBLIC void glClear(GLbitfield mask){
+	if (!mask){
+		return;
+	}
 	if (mask&(~(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT))){
 		_gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glClear\x1b[0m\n");
+	u32 flags=0;
+	if (mask&GL_COLOR_BUFFER_BIT){
+		flags|=OPENGL_PROTOCOL_CLEAR_FLAG_COLOR;
+	}
+	if (mask&GL_DEPTH_BUFFER_BIT){
+		flags|=OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH;
+	}
+	if (mask&GL_STENCIL_BUFFER_BIT){
+		flags|=OPENGL_PROTOCOL_CLEAR_FLAG_STENCIL;
+	}
+	opengl_protocol_clear_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_CLEAR,
+		.header.length=sizeof(opengl_protocol_clear_t),
+		.flags=flags,
+		.color[0]=_gl_clear_color_value[0],
+		.color[1]=_gl_clear_color_value[1],
+		.color[2]=_gl_clear_color_value[2],
+		.color[3]=_gl_clear_color_value[3],
+		.depth=_gl_clear_depth_value,
+		.stencil=_gl_clear_stencil_value,
+	};
+	_push_single_command(&(command.header));
 }
 
 
@@ -551,7 +586,7 @@ SYS_PUBLIC void glFinish(void){
 
 
 SYS_PUBLIC void glFlush(void){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glFlush\x1b[0m\n");
+	opengl_command_buffer_flush();
 }
 
 
@@ -2105,7 +2140,15 @@ SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLbool
 
 
 SYS_PUBLIC void glViewport(GLint x,GLint y,GLsizei width,GLsizei height){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glViewport\x1b[0m\n");
+	opengl_protocol_set_viewport_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_SET_VIEWPORT,
+		.header.length=sizeof(opengl_protocol_set_viewport_t),
+		.tx=x+width/2.0f,
+		.ty=y+height/2.0f,
+		.sx=width/2.0f,
+		.sy=height/2.0f
+	};
+	_push_single_command(&(command.header));
 }
 
 
