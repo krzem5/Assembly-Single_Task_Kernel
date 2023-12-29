@@ -47,18 +47,12 @@ _Bool opengl_syscall_delete_state(opengl_state_t state){
 
 
 
-_Bool opengl_syscall_set_state(opengl_state_t state){
-	return _syscall1(_opengl_syscall_offset|0x00000005,state)==SYS_ERROR_OK;
-}
-
-
-
 _Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
-	return _syscall2(_opengl_syscall_offset|0x00000006,state,framebuffer)==SYS_ERROR_OK;
+	return _syscall2(_opengl_syscall_offset|0x00000005,state,framebuffer)==SYS_ERROR_OK;
 }
 
 
 
 void opengl_syscall_flush_command_buffer(void* buffer,u32 buffer_size){
-	_syscall3(_opengl_syscall_offset|0x00000007,opengl_current_state,(u64)buffer,buffer_size);
+	_syscall3(_opengl_syscall_offset|0x00000006,opengl_current_state,(u64)buffer,buffer_size);
 }

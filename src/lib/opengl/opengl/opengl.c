@@ -46,10 +46,6 @@ SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
 		return 0;
 	}
 	opengl_command_buffer_flush();
-	if (!opengl_syscall_set_state(state)){
-		opengl_current_state=0;
-		return 0;
-	}
 	opengl_current_state=state;
 	return 1;
 }

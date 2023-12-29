@@ -72,18 +72,6 @@ static error_t _syscall_delete_state(opengl_user_state_t state){
 
 
 
-static error_t _syscall_set_state(opengl_user_state_t state_handle_id){
-	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
-	if (!state_handle){
-		return ERROR_INVALID_HANDLE;
-	}
-	ERROR("_syscall_set_state");
-	handle_release(state_handle);
-	return ERROR_OK;
-}
-
-
-
 static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_id,handle_id_t framebuffer_handle_id){
 	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
 	if (!state_handle){
@@ -131,9 +119,8 @@ static syscall_callback_t const _opengl_syscall_functions[]={
 	[2]=(syscall_callback_t)_syscall_get_driver_instance_data,
 	[3]=(syscall_callback_t)_syscall_create_state,
 	[4]=(syscall_callback_t)_syscall_delete_state,
-	[5]=(syscall_callback_t)_syscall_set_state,
-	[6]=(syscall_callback_t)_syscall_set_state_framebuffer,
-	[7]=(syscall_callback_t)_syscall_flush_command_buffer,
+	[5]=(syscall_callback_t)_syscall_set_state_framebuffer,
+	[6]=(syscall_callback_t)_syscall_flush_command_buffer,
 };
 
 
