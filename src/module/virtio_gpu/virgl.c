@@ -141,7 +141,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				VIRGL_PROTOCOL_COMMAND_SET_VIEWPORT_STATE,
 				0,
 				command->sx.raw_value,
-				command->sy.raw_value^0x8000000,
+				command->sy.raw_value,
 				0x3f000000,
 				command->tx.raw_value,
 				command->ty.raw_value,
