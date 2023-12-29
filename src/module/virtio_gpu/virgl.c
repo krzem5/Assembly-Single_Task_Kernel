@@ -19,6 +19,8 @@
 
 #define DEBUG_NAME "virgl_virtio_gpu_opengl_context"
 #define CONTEXT_ID 0x00000001
+#define FRAMEBUFFER_SURFACE_ID 0xcceeccee
+#define FRAMEBUFFER_RESOURCE_ID 0xaabbccdd
 
 
 
@@ -73,11 +75,11 @@ static _Bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* stat
 		ERROR("Too many OpenGL states created over lifetime");
 		return 0;
 	}
-	u32 command[2]={
+	u32 virgl_create_sub_ctx_command[2]={
 		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key)
 	};
-	_command_buffer_extend(instance->ctx,command,2,0);
+	_command_buffer_extend(instance->ctx,virgl_create_sub_ctx_command,2,0);
 	_command_buffer_extend(instance->ctx,NULL,0,1);
 	return 1;
 }
@@ -86,6 +88,103 @@ static _Bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* stat
 
 static void _deinit_state(opengl_driver_instance_t* instance,opengl_state_t* state){
 	panic("_deinit_state");
+}
+
+
+
+static void _update_render_target(opengl_driver_instance_t* instance,opengl_state_t* state){
+	virgl_opengl_context_t* ctx=instance->ctx;
+	virtio_gpu_resource_create_3d_t* request_resource_create_3d=amm_alloc(sizeof(virtio_gpu_resource_create_3d_t));
+	request_resource_create_3d->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_3D;
+	request_resource_create_3d->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_resource_create_3d->header.fence_id=0;
+	request_resource_create_3d->header.ctx_id=CONTEXT_ID;
+	request_resource_create_3d->resource_id=FRAMEBUFFER_RESOURCE_ID;
+	request_resource_create_3d->target=VIRGL_TARGET_TEXTURE_2D;
+	request_resource_create_3d->format=VIRGL_FORMAT_B8G8R8X8_UNORM;
+	request_resource_create_3d->bind=VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET;
+	request_resource_create_3d->width=state->framebuffer->width;
+	request_resource_create_3d->height=state->framebuffer->height;
+	request_resource_create_3d->depth=1;
+	request_resource_create_3d->array_size=1;
+	request_resource_create_3d->last_level=0;
+	request_resource_create_3d->nr_samples=0;
+	request_resource_create_3d->flags=0;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_resource_create_3d),
+			sizeof(virtio_gpu_resource_create_3d_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(ctx->gpu_device->controlq);
+	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
+	amm_dealloc(request_resource_create_3d);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("Unable to create framebuffer texture");
+		amm_dealloc(response);
+		return;
+	}
+	virtio_gpu_resource_attach_backing_t* request_resource_attach_backing=amm_alloc(sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t));
+	request_resource_attach_backing->header.type=VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING;
+	request_resource_attach_backing->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_resource_attach_backing->header.fence_id=0;
+	request_resource_attach_backing->resource_id=FRAMEBUFFER_RESOURCE_ID;
+	request_resource_attach_backing->entry_count=1;
+	request_resource_attach_backing->entries[0].address=state->framebuffer->address;
+	request_resource_attach_backing->entries[0].length=pmm_align_up_address(state->framebuffer->size);
+	buffers[0].address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_resource_attach_backing);
+	buffers[0].length=sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t);
+	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(ctx->gpu_device->controlq);
+	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
+	amm_dealloc(request_resource_attach_backing);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("Unable to attach framebuffer texture backing");
+		amm_dealloc(response);
+		return;
+	}
+	virtio_gpu_ctx_attach_resource_t* request_ctx_attach_resource=amm_alloc(sizeof(virtio_gpu_ctx_attach_resource_t));
+	request_ctx_attach_resource->header.type=VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE;
+	request_ctx_attach_resource->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request_ctx_attach_resource->header.fence_id=0;
+	request_ctx_attach_resource->resource_id=FRAMEBUFFER_RESOURCE_ID;
+	buffers[0].address=vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_ctx_attach_resource);
+	buffers[0].length=sizeof(virtio_gpu_ctx_attach_resource_t);
+	virtio_queue_transfer(ctx->gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(ctx->gpu_device->controlq);
+	virtio_queue_pop(ctx->gpu_device->controlq,NULL);
+	amm_dealloc(request_ctx_attach_resource);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("Unable to attach framebuffer texture backing");
+		amm_dealloc(response);
+		return;
+	}
+	amm_dealloc(response);
+	u32 virgl_create_surface_and_set_framebuffer_state_command[10]={
+		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
+		FRAMEBUFFER_SURFACE_ID,
+		FRAMEBUFFER_RESOURCE_ID,
+		VIRGL_FORMAT_B8G8R8X8_UNORM,
+		0,
+		0,
+		VIRGL_PROTOCOL_COMMAND_SET_FRAMEBUFFER_STATE,
+		1,
+		0,
+		FRAMEBUFFER_SURFACE_ID
+	};
+	_command_buffer_extend(ctx,virgl_create_surface_and_set_framebuffer_state_command,10,0);
+	_command_buffer_extend(ctx,NULL,0,1);
+	// framebuffer setup:
+	// 1. create texture (done)
+	// 2. create surface w/ res_handle=texture
+	// 3. set framebuffer state w/ zsurf=0, surf[0]=surface
+	// 4. (after frame draw) transfer 3D from host
 }
 
 
@@ -112,13 +211,13 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			opengl_protocol_clear_t* command=(void*)header;
 			u32 flags=0;
 			if (command->flags&OPENGL_PROTOCOL_CLEAR_FLAG_COLOR){
-				flags|=0x03fc;
+				flags|=VIRGL_PROTOCOL_CLEAR_FLAG_COLOR;
 			}
 			if (command->flags&OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH){
-				flags|=0x0001;
+				flags|=VIRGL_PROTOCOL_CLEAR_FLAG_DEPTH;
 			}
 			if (command->flags&OPENGL_PROTOCOL_CLEAR_FLAG_STENCIL){
-				flags|=0x0002;
+				flags|=VIRGL_PROTOCOL_CLEAR_FLAG_STENCIL;
 			}
 			u32 virgl_set_viewport_state_command[9]={
 				VIRGL_PROTOCOL_COMMAND_CLEAR,
@@ -153,6 +252,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		offset+=header->length;
 	}
 	_command_buffer_extend(instance->ctx,NULL,0,1);
+	// manually fetch the framebuffer
 }
 
 
@@ -162,6 +262,7 @@ static const opengl_driver_t _virgl_opengl_driver={
 	330,
 	_init_state,
 	_deinit_state,
+	_update_render_target,
 	_process_commands
 };
 

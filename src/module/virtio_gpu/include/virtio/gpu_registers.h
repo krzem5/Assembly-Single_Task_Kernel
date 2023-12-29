@@ -78,6 +78,9 @@
 #define VIRTIO_GPU_FORMAT_A8B8G8R8_UNORM 121
 #define VIRTIO_GPU_FORMAT_R8G8B8X8_UNORM 134
 
+// GPU Resource flags
+#define VIRTIO_GPU_RESOURCE_FLAG_Y_0_TOP 1
+
 // Capset types
 #define VIRTIO_GPU_CAPSET_VIRGL 1
 #define VIRTIO_GPU_CAPSET_VIRGL2 2
@@ -241,6 +244,32 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_CMD_SUBMIT{
 	u32 size;
 	u32 _padding;
 } virtio_gpu_cmd_submit_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_RESOURCE_CREATE_3D{
+	virtio_gpu_control_header_t header;
+	u32 resource_id;
+	u32 target;
+	u32 format;
+	u32 bind;
+	u32 width;
+	u32 height;
+	u32 depth;
+	u32 array_size;
+	u32 last_level;
+	u32 nr_samples;
+	u32 flags;
+	u32 padding;
+} virtio_gpu_resource_create_3d_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_ATACH_RESOURCE{
+	virtio_gpu_control_header_t header;
+	u32 resource_id;
+	u32 _padding;
+} virtio_gpu_ctx_attach_resource_t;
 
 
 

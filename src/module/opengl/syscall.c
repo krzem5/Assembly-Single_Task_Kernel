@@ -87,10 +87,12 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 		framebuffer=framebuffer_handle->object;
 	}
 	opengl_state_t* state=state_handle->object;
-	if (state->framebuffer){
-		handle_release(&(state->framebuffer->handle));
-	}
+	ui_framebuffer_t* old_framebuffer=state->framebuffer;
 	state->framebuffer=framebuffer;
+	state->driver_instance->driver->update_render_target(state->driver_instance,state);
+	if (old_framebuffer){
+		handle_release(&(old_framebuffer->handle));
+	}
 	handle_release(state_handle);
 	return ERROR_OK;
 }
