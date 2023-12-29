@@ -4,6 +4,7 @@
 
 
 #define SYS_PUBLIC __attribute__((visibility("default")))
+#define SYS_PACKED __attribute__((packed))
 
 
 
