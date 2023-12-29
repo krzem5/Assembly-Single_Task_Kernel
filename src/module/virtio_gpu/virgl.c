@@ -29,42 +29,18 @@ static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 
 
 
-static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,_Bool flush_before){
+static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,_Bool flush){
 	spinlock_acquire_exclusive(&(ctx->command_buffer.lock));
-	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE||flush_before){
-		virtio_gpu_cmd_submit_3d_t* request_submit_3d=amm_alloc(sizeof(virtio_gpu_cmd_submit_3d_t));
-		request_submit_3d->header.type=VIRTIO_GPU_CMD_SUBMIT_3D;
-		request_submit_3d->header.flags=VIRTIO_GPU_FLAG_FENCE;
-		request_submit_3d->header.fence_id=0;
-		request_submit_3d->header.ctx_id=CONTEXT_ID;
-		request_submit_3d->size=ctx->command_buffer.size*sizeof(u32);
-		virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
-		virtio_buffer_t buffers[3]={
-			{
-				vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_submit_3d),
-				sizeof(virtio_gpu_cmd_submit_3d_t)
-			},
-			{
-				ctx->command_buffer.buffer_address,
-				ctx->command_buffer.size*sizeof(u32)
-			},
-			{
-				vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
-				sizeof(virtio_gpu_control_header_t)
-			}
-		};
-		virtio_queue_transfer(ctx->gpu_device->controlq,buffers,2,1);
-		virtio_queue_wait(ctx->gpu_device->controlq);
-		virtio_queue_pop(ctx->gpu_device->controlq,NULL);
-		amm_dealloc(request_submit_3d);
-		if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-			WARN("Unable to submit commands");
-		}
-		amm_dealloc(response);
+	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE){
+		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
 	}
 	memcpy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
 	ctx->command_buffer.size+=command_size;
+	if (flush){
+		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
+		ctx->command_buffer.size=0;
+	}
 	spinlock_release_exclusive(&(ctx->command_buffer.lock));
 }
 
@@ -79,8 +55,7 @@ static _Bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* stat
 		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key)
 	};
-	_command_buffer_extend(instance->ctx,virgl_create_sub_ctx_command,2,0);
-	_command_buffer_extend(instance->ctx,NULL,0,1);
+	_command_buffer_extend(instance->ctx,virgl_create_sub_ctx_command,2,1);
 	return 1;
 }
 
@@ -180,8 +155,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		0,
 		FRAMEBUFFER_SURFACE_ID
 	};
-	_command_buffer_extend(ctx,virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command,12,0);
-	_command_buffer_extend(ctx,NULL,0,1);
+	_command_buffer_extend(ctx,virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command,12,1);
 }
 
 
@@ -254,8 +228,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		VIRGL_PROTOCOL_COMMAND_MEMORY_BARRIER,
 		0x3fff
 	};
-	_command_buffer_extend(instance->ctx,virgl_memory_barrier_command,2,0);
-	_command_buffer_extend(instance->ctx,NULL,0,1);
+	_command_buffer_extend(instance->ctx,virgl_memory_barrier_command,2,1);
 	// manually fetch the framebuffer
 	virtio_gpu_transfer_from_host_3d_t* request_transfer_from_host_3d=amm_alloc(sizeof(virtio_gpu_transfer_from_host_3d_t));
 	request_transfer_from_host_3d->header.type=VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D;
@@ -326,35 +299,7 @@ void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_
 	}
 	const virgl_caps_v2_t* caps=data;
 	INFO("Renderer: %s",caps->renderer);
-	virtio_gpu_ctx_create_t* request_ctx_create=amm_alloc(sizeof(virtio_gpu_ctx_create_t));
-	request_ctx_create->header.type=VIRTIO_GPU_CMD_CTX_CREATE;
-	request_ctx_create->header.flags=VIRTIO_GPU_FLAG_FENCE;
-	request_ctx_create->header.fence_id=0;
-	request_ctx_create->header.ctx_id=CONTEXT_ID;
-	request_ctx_create->debug_name_length=sizeof(DEBUG_NAME)-1;
-	request_ctx_create->context_init=VIRTIO_GPU_CAPSET_VIRGL2;
-	memcpy(request_ctx_create->debug_name,DEBUG_NAME,sizeof(DEBUG_NAME));
-	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
-	virtio_buffer_t buffers[2]={
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request_ctx_create),
-			sizeof(virtio_gpu_ctx_create_t)
-		},
-		{
-			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
-			sizeof(virtio_gpu_control_header_t)
-		}
-	};
-	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
-	virtio_queue_wait(gpu_device->controlq);
-	virtio_queue_pop(gpu_device->controlq,NULL);
-	amm_dealloc(request_ctx_create);
-	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		WARN("Unable to create GPU context");
-		amm_dealloc(response);
-		return;
-	}
-	amm_dealloc(response);
+	virtio_gpu_command_ctx_create(gpu_device,CONTEXT_ID,VIRTIO_GPU_CAPSET_VIRGL2);
 	virgl_opengl_context_t* ctx=omm_alloc(_virgl_opengl_context_allocator);
 	ctx->gpu_device=gpu_device;
 	ctx->caps=*caps;

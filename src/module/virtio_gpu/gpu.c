@@ -16,6 +16,10 @@
 
 
 
+#define CONTEXT_NAME "virtio_gpu_ctx"
+
+
+
 static omm_allocator_t* _virtio_gpu_device_allocator=NULL;
 
 
@@ -532,4 +536,141 @@ virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_device_t* gpu_dev
 	ERROR("virtio_gpu_command_get_edid failed");
 	amm_dealloc(response);
 	return NULL;
+}
+
+
+
+void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device,u32 ctx,u32 type){
+	virtio_gpu_ctx_create_t* request=amm_alloc(sizeof(virtio_gpu_ctx_create_t));
+	request->header.type=VIRTIO_GPU_CMD_CTX_CREATE;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->header.ctx_id=ctx;
+	request->debug_name_length=sizeof(CONTEXT_NAME)-1;
+	request->context_init=type;
+	memcpy(request->debug_name,CONTEXT_NAME,sizeof(CONTEXT_NAME));
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_ctx_create_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("virtio_gpu_command_ctx_create failed");
+	}
+	amm_dealloc(response);
+}
+
+
+
+void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_device,u32 ctx){
+	virtio_gpu_control_header_t* request=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	request->type=VIRTIO_GPU_CMD_CTX_DESTROY;
+	request->flags=VIRTIO_GPU_FLAG_FENCE;
+	request->fence_id=0;
+	request->ctx_id=ctx;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_control_header_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("virtio_gpu_command_ctx_destroy failed");
+	}
+	amm_dealloc(response);
+}
+
+
+
+void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
+	panic("virtio_gpu_command_ctx_attach_resource");
+}
+
+
+
+void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
+	panic("virtio_gpu_command_ctx_detach_resource");
+}
+
+
+
+void virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
+	panic("virtio_gpu_command_resource_create_3d");
+}
+
+
+
+void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
+	panic("virtio_gpu_command_transfer_to_host_3d");
+}
+
+
+
+void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
+	panic("virtio_gpu_command_transfer_from_host_3d");
+}
+
+
+
+void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,u32 ctx,u64 buffer,u32 size){
+	virtio_gpu_cmd_submit_3d_t* request=amm_alloc(sizeof(virtio_gpu_cmd_submit_3d_t));
+	request->header.type=VIRTIO_GPU_CMD_SUBMIT_3D;
+	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
+	request->header.fence_id=0;
+	request->header.ctx_id=ctx;
+	request->size=size;
+	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
+	virtio_buffer_t buffers[3]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
+			sizeof(virtio_gpu_cmd_submit_3d_t)
+		},
+		{
+			buffer,
+			size
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
+			sizeof(virtio_gpu_control_header_t)
+		}
+	};
+	virtio_queue_transfer(gpu_device->controlq,buffers,2,1);
+	virtio_queue_wait(gpu_device->controlq);
+	virtio_queue_pop(gpu_device->controlq,NULL);
+	amm_dealloc(request);
+	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
+		WARN("virtio_gpu_command_submit_3d failed");
+	}
+	amm_dealloc(response);
+}
+
+
+
+void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_cursor_pos_t* pos,u32 hot_x,u32 hot_y){
+	panic("virtio_gpu_command_update_cursor");
+}
+
+
+
+void virtio_gpu_command_move_cursor(virtio_gpu_device_t* gpu_device,const virtio_gpu_cursor_pos_t* pos){
+	panic("virtio_gpu_command_move_cursor");
 }
