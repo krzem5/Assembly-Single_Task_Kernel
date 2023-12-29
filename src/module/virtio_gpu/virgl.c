@@ -101,7 +101,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	request_resource_create_3d->header.ctx_id=CONTEXT_ID;
 	request_resource_create_3d->resource_id=FRAMEBUFFER_RESOURCE_ID;
 	request_resource_create_3d->target=VIRGL_TARGET_TEXTURE_2D;
-	request_resource_create_3d->format=VIRGL_FORMAT_B8G8R8X8_UNORM;
+	request_resource_create_3d->format=VIRGL_FORMAT_B8G8R8A8_UNORM;
 	request_resource_create_3d->bind=VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET;
 	request_resource_create_3d->width=state->framebuffer->width;
 	request_resource_create_3d->height=state->framebuffer->height;
@@ -166,11 +166,13 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		return;
 	}
 	amm_dealloc(response);
-	u32 virgl_create_surface_and_set_framebuffer_state_command[10]={
+	u32 virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command[12]={
+		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
+		HANDLE_ID_GET_INDEX(state->handle.rb_node.key),
 		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
 		FRAMEBUFFER_SURFACE_ID,
 		FRAMEBUFFER_RESOURCE_ID,
-		VIRGL_FORMAT_B8G8R8X8_UNORM,
+		VIRGL_FORMAT_B8G8R8A8_UNORM,
 		0,
 		0,
 		VIRGL_PROTOCOL_COMMAND_SET_FRAMEBUFFER_STATE,
@@ -178,7 +180,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		0,
 		FRAMEBUFFER_SURFACE_ID
 	};
-	_command_buffer_extend(ctx,virgl_create_surface_and_set_framebuffer_state_command,10,0);
+	_command_buffer_extend(ctx,virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command,12,0);
 	_command_buffer_extend(ctx,NULL,0,1);
 }
 
@@ -234,12 +236,13 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				VIRGL_PROTOCOL_COMMAND_SET_VIEWPORT_STATE,
 				0,
 				command->sx.raw_value,
-				command->sy.raw_value,
-				0x3f800000,
+				command->sy.raw_value^0x8000000,
+				0x3f000000,
 				command->tx.raw_value,
 				command->ty.raw_value,
-				0x00000000
+				0x3f000000
 			};
+			(void)command;
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,8,0);
 		}
 		else{
