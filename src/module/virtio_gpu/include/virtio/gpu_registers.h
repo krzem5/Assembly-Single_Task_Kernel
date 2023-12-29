@@ -273,4 +273,27 @@ typedef struct KERNEL_PACKED _VIRTIO_GPU_CTX_ATACH_RESOURCE{
 
 
 
+typedef struct KERNEL_PACKED _VIRTIO_GPU_BOX{
+	u32 x;
+	u32 y;
+	u32 z;
+	u32 width;
+	u32 height;
+	u32 depth;
+} virtio_gpu_box_t;
+
+
+
+typedef struct KERNEL_PACKED _VIRTIO_GPU_TRANSFER_FROM_HOST_3D{
+	virtio_gpu_control_header_t header;
+	virtio_gpu_box_t box;
+	u64 offset;
+	u32 resource_id;
+	u32 level;
+	u32 stride;
+	u32 layer_stride;
+} virtio_gpu_transfer_from_host_3d_t;
+
+
+
 #endif
