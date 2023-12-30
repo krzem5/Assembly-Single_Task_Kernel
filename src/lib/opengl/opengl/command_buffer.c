@@ -45,7 +45,7 @@ void opengl_command_buffer_ensure_space(u32 length){
 
 const opengl_protocol_header_t* opengl_command_buffer_push(const opengl_protocol_header_t* header){
 	opengl_protocol_header_t* out=_opengl_command_buffer+_opengl_command_buffer_size;
-	for (u32 i=0;i<header->length;i+=sizeof(u32)){
+	for (u32 i=0;i<header->length/sizeof(u32);i++){
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wzero-length-bounds"
 		out->_data[i]=header->_data[i];

@@ -19,8 +19,6 @@
 
 #define DEBUG_NAME "virgl_virtio_gpu_opengl_context"
 #define CONTEXT_ID 0x00000001
-#define FRAMEBUFFER_SURFACE_ID 0xcceeccee
-#define FRAMEBUFFER_RESOURCE_ID 0xaabbccdd
 
 
 
@@ -69,24 +67,119 @@ static void _deinit_state(opengl_driver_instance_t* instance,opengl_state_t* sta
 
 static void _update_render_target(opengl_driver_instance_t* instance,opengl_state_t* state){
 	virgl_opengl_context_t* ctx=instance->ctx;
-	virtio_gpu_command_resource_create_3d(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
-	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,state->framebuffer->address,state->framebuffer->size);
-	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,FRAMEBUFFER_RESOURCE_ID);
-	u32 virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command[12]={
+	u32 framebuffer_renderbuffer_resource_id=0x00000011;
+	u32 framebuffer_depth_and_stencil_buffer_resource_id=0x00000022;
+	u32 framebuffer_renderbuffer_surface_id=0x00000033;
+	u32 framebuffer_depth_and_stencil_surface_id=0x00000044;
+	u32 dsa_id=0x00000055;
+	u32 rasterizer_id=0x00000066;
+	u32 blend_id=0x00000077;
+	virtio_gpu_command_resource_create_3d(ctx->gpu_device,framebuffer_renderbuffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET|VIRGL_PROTOCOL_BIND_FLAG_SAMPLER_VIEW|VIRGL_PROTOCOL_BIND_FLAG_GLOBAL|(1<<10),state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,framebuffer_renderbuffer_resource_id,state->framebuffer->address,state->framebuffer->size);
+	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_renderbuffer_resource_id);
+	virtio_gpu_command_resource_create_3d(ctx->gpu_device,framebuffer_depth_and_stencil_buffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_depth_and_stencil_buffer_resource_id);
+	u32 setup_commands[]={
+		// Sub ctx
 		VIRGL_PROTOCOL_COMMAND_CREATE_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key),
+		VIRGL_PROTOCOL_COMMAND_SET_SUB_CTX,
+		HANDLE_ID_GET_INDEX(state->handle.rb_node.key),
+		// Surfaces
 		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
-		FRAMEBUFFER_SURFACE_ID,
-		FRAMEBUFFER_RESOURCE_ID,
+		framebuffer_renderbuffer_surface_id,
+		framebuffer_renderbuffer_resource_id,
 		VIRGL_FORMAT_B8G8R8A8_UNORM,
 		0,
 		0,
+		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
+		framebuffer_depth_and_stencil_surface_id,
+		framebuffer_depth_and_stencil_buffer_resource_id,
+		VIRGL_FORMAT_S8_UINT_Z24_UNORM,
+		0,
+		0,
+		// DSA
+		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_DSA,
+		dsa_id,
+		0,
+		0,
+		0,
+		0,
+		VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_DSA,
+		dsa_id,
+		// Rasterizer
+		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_RASTERIZER,
+		rasterizer_id,
+		0x60008182,
+		0x3f800000,
+		0,
+		0xffff,
+		0x3f800000,
+		0,
+		0,
+		0,
+		VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_RASTERIZER,
+		rasterizer_id,
+		// Blend
+		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_BLEND,
+		blend_id,
+		0x00000004,
+		0,
+		0x78000000,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_BLEND,
+		blend_id,
+		// Polygon stipple
+		VIRGL_PROTOCOL_COMMAND_SET_POLYGON_STIPPLE,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+		// Viewport
+		VIRGL_PROTOCOL_COMMAND_SET_VIEWPORT_STATE,
+		0,
+		0x43160000,
+		0xc3160000,
+		0x3f000000,
+		0x43160000,
+		0x43160000,
+		0x3f000000,
+		// Scissors
+		VIRGL_PROTOCOL_COMMAND_SET_SCISSOR_STATE,
+		0,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		0x00000000,0x012c012c,
+		// Framebuffer
 		VIRGL_PROTOCOL_COMMAND_SET_FRAMEBUFFER_STATE,
 		1,
-		0,
-		FRAMEBUFFER_SURFACE_ID
+		framebuffer_depth_and_stencil_surface_id,
+		framebuffer_renderbuffer_surface_id
 	};
-	_command_buffer_extend(ctx,virgl_set_sub_ctx_and_create_surface_and_set_framebuffer_state_command,12,1);
+	_command_buffer_extend(ctx,setup_commands,sizeof(setup_commands)/sizeof(u32),1);
 }
 
 
@@ -147,7 +240,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->ty.raw_value,
 				0x3f000000
 			};
-			(void)command;
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,8,0);
 		}
 		else{
@@ -155,12 +247,9 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		}
 		offset+=header->length;
 	}
-	u32 virgl_memory_barrier_command[2]={
-		VIRGL_PROTOCOL_COMMAND_MEMORY_BARRIER,
-		0x3fff
-	};
-	_command_buffer_extend(instance->ctx,virgl_memory_barrier_command,2,1);
+	_command_buffer_extend(instance->ctx,NULL,0,1);
 	// manually fetch the framebuffer
+	u32 framebuffer_renderbuffer_resource_id=0x00000011;
 	virtio_gpu_box_t box={
 		0,
 		0,
@@ -169,7 +258,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		state->framebuffer->height,
 		1
 	};
-	virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,FRAMEBUFFER_RESOURCE_ID,&box,0,0,0);
+	virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,framebuffer_renderbuffer_resource_id,&box,0,0,0);
 }
 
 
