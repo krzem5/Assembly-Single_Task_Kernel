@@ -1,5 +1,6 @@
 #ifndef _KERNEL_RESOURCE_RESOURCE_H_
 #define _KERNEL_RESOURCE_RESOURCE_H_ 1
+#include <kernel/lock/spinlock.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -19,6 +20,8 @@ typedef struct _RESOURCE_REGION{
 
 typedef struct _RESOURCE_MANAGER{
 	rb_tree_t tree;
+	spinlock_t lock;
+	resource_t max;
 } resource_manager_t;
 
 
