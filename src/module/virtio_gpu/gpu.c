@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/resource/resource.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <ui/display.h>
@@ -21,13 +22,6 @@
 
 
 static omm_allocator_t* _virtio_gpu_device_allocator=NULL;
-
-
-
-static virtio_gpu_resource_id_t _alloc_resource_id(void){
-	static KERNEL_ATOMIC virtio_gpu_resource_id_t _next_id=1;
-	return _next_id++;
-}
 
 
 
@@ -155,6 +149,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	gpu_device->cursorq=cursorq;
 	gpu_device->scanout_count=virtio_read(device->device_field+VIRTIO_GPU_REG_NUM_SCANOUTS,4);
 	gpu_device->displays=amm_alloc(gpu_device->scanout_count*sizeof(ui_display_t*));
+	gpu_device->resource_manager=resource_manager_create(1,0xffffffff);
 	gpu_device->framebuffer_resources=amm_alloc(gpu_device->scanout_count*sizeof(virtio_gpu_resource_id_t));
 	for (u32 i=0;i<gpu_device->scanout_count;i++){
 		gpu_device->displays[i]=NULL;
@@ -221,7 +216,7 @@ virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_info(virtio_gpu_d
 
 virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device_t* gpu_device,u32 format,u32 width,u32 height,virtio_gpu_resource_id_t resource_id){
 	if (!resource_id){
-		resource_id=_alloc_resource_id();
+		resource_id=resource_alloc(gpu_device->resource_manager);
 	}
 	virtio_gpu_resource_create_2d_t* request=amm_alloc(sizeof(virtio_gpu_resource_create_2d_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_2D;
@@ -438,7 +433,7 @@ void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_t* gpu_device,
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
-		ERROR("virtio_gpu_command_resource_unref failed");
+		ERROR("virtio_gpu_command_resource_detach_backing failed");
 	}
 	amm_dealloc(response);
 }
@@ -662,7 +657,7 @@ void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 
 
 virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
 	if (!resource_id){
-		resource_id=_alloc_resource_id();
+		resource_id=resource_alloc(gpu_device->resource_manager);
 	}
 	virtio_gpu_resource_create_3d_t* request=amm_alloc(sizeof(virtio_gpu_resource_create_3d_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_CREATE_3D;
