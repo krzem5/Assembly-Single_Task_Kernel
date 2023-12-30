@@ -4,6 +4,7 @@
 #include <kernel/types.h>
 #include <virgl/registers.h>
 #include <virtio/gpu.h>
+#include <virtio/gpu_registers.h>
 
 
 
@@ -25,6 +26,12 @@ typedef struct _VIRGL_OPENGL_CONTEXT{
 	virgl_caps_v2_t caps;
 	virgl_opengl_context_buffer_t command_buffer;
 } virgl_opengl_context_t;
+
+
+
+typedef struct _VIRGL_OPENGL_STATE_CONTEXT{
+	virtio_gpu_resource_id_t framebuffer_resource_id;
+} virgl_opengl_state_context_t;
 
 
 

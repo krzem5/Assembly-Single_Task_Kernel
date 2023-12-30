@@ -24,6 +24,7 @@
 
 static pmm_counter_descriptor_t* _virgl_opengl_context_commabd_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
 
 
 
@@ -67,17 +68,21 @@ static void _deinit_state(opengl_driver_instance_t* instance,opengl_state_t* sta
 
 static void _update_render_target(opengl_driver_instance_t* instance,opengl_state_t* state){
 	virgl_opengl_context_t* ctx=instance->ctx;
-	u32 framebuffer_renderbuffer_resource_id=0x00000011;
-	u32 framebuffer_depth_and_stencil_buffer_resource_id=0x00000022;
+	virgl_opengl_state_context_t* state_ctx=state->ctx;
+	if (!state_ctx){
+		state_ctx=omm_alloc(_virgl_opengl_state_context_allocator);
+		state_ctx->framebuffer_resource_id=0;
+		state->ctx=state_ctx;
+	}
 	u32 framebuffer_renderbuffer_surface_id=0x00000033;
 	u32 framebuffer_depth_and_stencil_surface_id=0x00000044;
 	u32 dsa_id=0x00000055;
 	u32 rasterizer_id=0x00000066;
 	u32 blend_id=0x00000077;
-	virtio_gpu_command_resource_create_3d(ctx->gpu_device,framebuffer_renderbuffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET|VIRGL_PROTOCOL_BIND_FLAG_SAMPLER_VIEW|VIRGL_PROTOCOL_BIND_FLAG_GLOBAL|(1<<10),state->framebuffer->width,state->framebuffer->height,1,1,0,0);
-	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,framebuffer_renderbuffer_resource_id,state->framebuffer->address,state->framebuffer->size);
-	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_renderbuffer_resource_id);
-	virtio_gpu_command_resource_create_3d(ctx->gpu_device,framebuffer_depth_and_stencil_buffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	state_ctx->framebuffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,state_ctx->framebuffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET|VIRGL_PROTOCOL_BIND_FLAG_SAMPLER_VIEW|VIRGL_PROTOCOL_BIND_FLAG_GLOBAL|(1<<10),state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,state_ctx->framebuffer_resource_id,state->framebuffer->address,state->framebuffer->size);
+	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,state_ctx->framebuffer_resource_id);
+	u32 framebuffer_depth_and_stencil_buffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
 	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_depth_and_stencil_buffer_resource_id);
 	u32 setup_commands[]={
 		// Sub ctx
@@ -88,7 +93,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		// Surfaces
 		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
 		framebuffer_renderbuffer_surface_id,
-		framebuffer_renderbuffer_resource_id,
+		state_ctx->framebuffer_resource_id,
 		VIRGL_FORMAT_B8G8R8A8_UNORM,
 		0,
 		0,
@@ -145,15 +150,6 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
 		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
 		0xffffffff,0xffffffff,0xffffffff,0xffffffff,
-		// Viewport
-		VIRGL_PROTOCOL_COMMAND_SET_VIEWPORT_STATE,
-		0,
-		0x43160000,
-		0xc3160000,
-		0x3f000000,
-		0x43160000,
-		0x43160000,
-		0x3f000000,
 		// Scissors
 		VIRGL_PROTOCOL_COMMAND_SET_SCISSOR_STATE,
 		0,
@@ -186,6 +182,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 
 static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t* state,void* command_buffer,u32 command_buffer_size){
 	virgl_opengl_context_t* ctx=instance->ctx;
+	virgl_opengl_state_context_t* state_ctx=state->ctx;
 	u32 virgl_set_sub_ctx_command[2]={
 		VIRGL_PROTOCOL_COMMAND_SET_SUB_CTX,
 		HANDLE_ID_GET_INDEX(state->handle.rb_node.key)
@@ -248,8 +245,9 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		offset+=header->length;
 	}
 	_command_buffer_extend(instance->ctx,NULL,0,1);
-	// manually fetch the framebuffer
-	u32 framebuffer_renderbuffer_resource_id=0x00000011;
+	if (!state_ctx||!state_ctx->framebuffer_resource_id){
+		return;
+	}
 	virtio_gpu_box_t box={
 		0,
 		0,
@@ -258,7 +256,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		state->framebuffer->height,
 		1
 	};
-	virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,framebuffer_renderbuffer_resource_id,&box,0,0,0);
+	virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,state_ctx->framebuffer_resource_id,&box,0,0,0);
 }
 
 
@@ -278,6 +276,8 @@ void virgl_init(void){
 	_virgl_opengl_context_commabd_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
 	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_context"));
 	spinlock_init(&(_virgl_opengl_context_allocator->lock));
+	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_state_context"));
+	spinlock_init(&(_virgl_opengl_state_context_allocator->lock));
 }
 
 
