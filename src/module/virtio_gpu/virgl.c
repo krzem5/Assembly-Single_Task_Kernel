@@ -79,7 +79,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	u32 dsa_id=0x00000055;
 	u32 rasterizer_id=0x00000066;
 	u32 blend_id=0x00000077;
-	state_ctx->framebuffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,state_ctx->framebuffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET|VIRGL_PROTOCOL_BIND_FLAG_SAMPLER_VIEW|VIRGL_PROTOCOL_BIND_FLAG_GLOBAL|(1<<10),state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	state_ctx->framebuffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,state_ctx->framebuffer_resource_id,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_B8G8R8A8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
 	virtio_gpu_command_resource_attach_backing(ctx->gpu_device,state_ctx->framebuffer_resource_id,state->framebuffer->address,state->framebuffer->size);
 	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,state_ctx->framebuffer_resource_id);
 	u32 framebuffer_depth_and_stencil_buffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);

@@ -2146,7 +2146,7 @@ SYS_PUBLIC void glViewport(GLint x,GLint y,GLsizei width,GLsizei height){
 		.tx=x+width/2.0f,
 		.ty=y+height/2.0f,
 		.sx=width/2.0f,
-		.sy=-height/2.0f
+		.sy=height/2.0f
 	};
 	_push_single_command(&(command.header));
 }

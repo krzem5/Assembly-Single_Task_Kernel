@@ -34,7 +34,7 @@ void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gp
 
 
 
-void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display);
+void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display,virtio_gpu_resource_id_t resource_id);
 
 
 

@@ -36,10 +36,9 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	virtio_gpu_device_t* gpu_device=display->ctx;
 	if (display->framebuffer){
 		INFO("Deleting old framebuffer...");
-		// 1. VIRTIO_GPU_CMD_SET_SCANOUT with VIRTIO_GPU_NO_RESOURCE
-		// 2. VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING
-		// 3. VIRTIO_GPU_CMD_RESOURCE_UNREF
-		panic("_display_resize_framebuffer: dealloc framebuffer");
+		virtio_gpu_command_set_scanout(gpu_device,display,VIRTIO_GPU_NO_RESOURCE);
+		virtio_gpu_command_resource_detach_backing(gpu_device,gpu_device->framebuffer_resources[display->index]);;
+		virtio_gpu_command_resource_unref(gpu_device,gpu_device->framebuffer_resources[display->index]);
 		ui_framebuffer_delete(display->framebuffer);
 		display->framebuffer=NULL;
 	}
@@ -53,7 +52,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 	}
 	gpu_device->framebuffer_resources[display->index]=virtio_gpu_command_resource_create_2d(gpu_device,VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM,display->framebuffer->width,display->framebuffer->height,gpu_device->framebuffer_resources[display->index]);
 	virtio_gpu_command_resource_attach_backing(gpu_device,gpu_device->framebuffer_resources[display->index],display->framebuffer->address,display->framebuffer->size);
-	virtio_gpu_command_set_scanout(gpu_device,display);
+	virtio_gpu_command_set_scanout(gpu_device,display,gpu_device->framebuffer_resources[display->index]);
 	return 1;
 }
 
@@ -284,17 +283,17 @@ void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gp
 
 
 
-void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display){
+void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_set_scanout_t* request=amm_alloc(sizeof(virtio_gpu_set_scanout_t));
 	request->header.type=VIRTIO_GPU_CMD_SET_SCANOUT;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
 	request->header.fence_id=0;
 	request->rect.x=0;
 	request->rect.y=0;
-	request->rect.width=display->framebuffer->width;
-	request->rect.height=display->framebuffer->height;
+	request->rect.width=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer->width:0);
+	request->rect.height=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer->height:0);
 	request->scanout_id=display->index;
-	request->resource_id=gpu_device->framebuffer_resources[display->index];
+	request->resource_id=resource_id;
 	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	virtio_buffer_t buffers[2]={
 		{
