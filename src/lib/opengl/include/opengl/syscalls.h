@@ -18,19 +18,19 @@ _Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,
 
 
 
-opengl_state_t opengl_syscall_create_state(opengl_driver_instance_t instance);
+opengl_state_id_t opengl_syscall_create_state(opengl_driver_instance_t instance);
 
 
 
-_Bool opengl_syscall_delete_state(opengl_state_t state);
+_Bool opengl_syscall_delete_state(opengl_state_id_t state);
 
 
 
-_Bool opengl_syscall_set_state(opengl_state_t state);
+_Bool opengl_syscall_set_state(opengl_state_id_t state);
 
 
 
-_Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
+_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer);
 
 
 

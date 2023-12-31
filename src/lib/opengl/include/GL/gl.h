@@ -1,6 +1,11 @@
 #ifndef _GL_GL_H_
 #define _GL_GL_H_ 1
 #include <GL/glcorearb.h>
+#include <opengl/opengl.h>
+
+
+
+void _gl_set_internal_state(void* internal_state);
 
 
 

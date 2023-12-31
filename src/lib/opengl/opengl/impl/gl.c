@@ -24,12 +24,7 @@
 
 
 
-static GLenum _gl_error=GL_NO_ERROR;
-static GLuint _gl_active_texture=0;
-static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,0.0f};
-static GLdouble _gl_clear_depth_value=0.0f;
-static GLint _gl_clear_stencil_value=0;
-static GLint _gl_viewport[4]={0,0,0,0};
+static opengl_internal_state_t* _gl_internal_state=NULL;
 
 
 
@@ -40,7 +35,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 	const void* values;
 	switch (param){
 		case GL_ACTIVE_TEXTURE:
-			local_value=_gl_active_texture+GL_TEXTURE0;
+			local_value=_gl_internal_state->gl_active_texture+GL_TEXTURE0;
 			type=OPENGL_PARAMETER_TYPE_INT;
 			length=1;
 			values=&local_value;
@@ -84,7 +79,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 		case GL_COLOR_CLEAR_VALUE:
 			type=OPENGL_PARAMETER_TYPE_COLOR_OR_NORMAL;
 			length=4;
-			values=_gl_clear_color_value;
+			values=_gl_internal_state->gl_clear_color_value;
 			break;
 		case GL_COLOR_LOGIC_OP:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_COLOR_LOGIC_OP\x1b[0m\n");
@@ -104,7 +99,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 		case GL_DEPTH_CLEAR_VALUE:
 			type=OPENGL_PARAMETER_TYPE_DOUBLE;
 			length=1;
-			values=&_gl_clear_depth_value;
+			values=&_gl_internal_state->gl_clear_depth_value;
 			break;
 		case GL_DEPTH_FUNC:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DEPTH_FUNC\x1b[0m\n");
@@ -427,7 +422,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 		case GL_STENCIL_CLEAR_VALUE:
 			type=OPENGL_PARAMETER_TYPE_INT;
 			length=1;
-			values=&_gl_clear_stencil_value;
+			values=&_gl_internal_state->gl_clear_stencil_value;
 			break;
 		case GL_STENCIL_FAIL:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_FAIL\x1b[0m\n");
@@ -552,14 +547,14 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 		case GL_VIEWPORT:
 			type=OPENGL_PARAMETER_TYPE_INT;
 			length=4;
-			values=_gl_viewport;
+			values=_gl_internal_state->gl_viewport;
 			break;
 		default:
-			_gl_error=GL_INVALID_ENUM;
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return;
 	}
 	if (index!=OPENGL_PARAMETER_NO_INDEX&&length<=index){
-		_gl_error=GL_INVALID_VALUE;
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
 	for (u32 i=(index==OPENGL_PARAMETER_NO_INDEX?0:index);i<(index==OPENGL_PARAMETER_NO_INDEX?length:index+1);i++){
@@ -676,12 +671,18 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 
 
 
+void _gl_set_internal_state(void* internal_state){
+	_gl_internal_state=internal_state;
+}
+
+
+
 SYS_PUBLIC void glActiveTexture(GLenum texture){
 	if (texture<GL_TEXTURE0||texture>=GL_TEXTURE0+OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS){
-		_gl_error=GL_INVALID_ENUM;
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
 		return;
 	}
-	_gl_active_texture=texture-GL_TEXTURE0;
+	_gl_internal_state->gl_active_texture=texture-GL_TEXTURE0;
 }
 
 
@@ -842,7 +843,7 @@ SYS_PUBLIC void glClear(GLbitfield mask){
 		return;
 	}
 	if (mask&(~(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT))){
-		_gl_error=GL_INVALID_VALUE;
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
 	u32 flags=0;
@@ -859,12 +860,12 @@ SYS_PUBLIC void glClear(GLbitfield mask){
 		.header.type=OPENGL_PROTOCOL_TYPE_CLEAR,
 		.header.length=sizeof(opengl_protocol_clear_t),
 		.flags=flags,
-		.color[0]=_gl_clear_color_value[0],
-		.color[1]=_gl_clear_color_value[1],
-		.color[2]=_gl_clear_color_value[2],
-		.color[3]=_gl_clear_color_value[3],
-		.depth=_gl_clear_depth_value,
-		.stencil=_gl_clear_stencil_value,
+		.color[0]=_gl_internal_state->gl_clear_color_value[0],
+		.color[1]=_gl_internal_state->gl_clear_color_value[1],
+		.color[2]=_gl_internal_state->gl_clear_color_value[2],
+		.color[3]=_gl_internal_state->gl_clear_color_value[3],
+		.depth=_gl_internal_state->gl_clear_depth_value,
+		.stencil=_gl_internal_state->gl_clear_stencil_value,
 	};
 	opengl_command_buffer_push_single(&(command.header));
 }
@@ -896,22 +897,22 @@ SYS_PUBLIC void glClearBufferuiv(GLenum buffer,GLint drawbuffer,const GLuint* va
 
 
 SYS_PUBLIC void glClearColor(GLfloat red,GLfloat green,GLfloat blue,GLfloat alpha){
-	_gl_clear_color_value[0]=red;
-	_gl_clear_color_value[1]=green;
-	_gl_clear_color_value[2]=blue;
-	_gl_clear_color_value[3]=alpha;
+	_gl_internal_state->gl_clear_color_value[0]=red;
+	_gl_internal_state->gl_clear_color_value[1]=green;
+	_gl_internal_state->gl_clear_color_value[2]=blue;
+	_gl_internal_state->gl_clear_color_value[3]=alpha;
 }
 
 
 
 SYS_PUBLIC void glClearDepth(GLdouble depth){
-	_gl_clear_depth_value=depth;
+	_gl_internal_state->gl_clear_depth_value=depth;
 }
 
 
 
 SYS_PUBLIC void glClearStencil(GLint s){
-	_gl_clear_stencil_value=s;
+	_gl_internal_state->gl_clear_stencil_value=s;
 }
 
 
@@ -1444,8 +1445,8 @@ SYS_PUBLIC void glGetDoublev(GLenum pname,GLdouble* data){
 
 
 SYS_PUBLIC GLenum glGetError(void){
-	GLenum out=_gl_error;
-	_gl_error=GL_NO_ERROR;
+	GLenum out=_gl_internal_state->gl_error;
+	_gl_internal_state->gl_error=GL_NO_ERROR;
 	return out;
 }
 
@@ -1614,7 +1615,7 @@ SYS_PUBLIC const GLubyte* glGetString(GLenum name){
 		case GL_VERSION:
 			return (const GLubyte*)"3.3";
 		default:
-			_gl_error=GL_INVALID_ENUM;
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return NULL;
 	}
 }
@@ -1623,7 +1624,7 @@ SYS_PUBLIC const GLubyte* glGetString(GLenum name){
 
 SYS_PUBLIC const GLubyte* glGetStringi(GLenum name,GLuint index){
 	if (name!=GL_EXTENSIONS){
-		_gl_error=GL_INVALID_ENUM;
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
 		return NULL;
 	}
 	// no extensions supported
@@ -2814,10 +2815,10 @@ SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLbool
 
 
 SYS_PUBLIC void glViewport(GLint x,GLint y,GLsizei width,GLsizei height){
-	_gl_viewport[0]=x;
-	_gl_viewport[1]=y;
-	_gl_viewport[2]=width;
-	_gl_viewport[3]=height;
+	_gl_internal_state->gl_viewport[0]=x;
+	_gl_internal_state->gl_viewport[1]=y;
+	_gl_internal_state->gl_viewport[2]=width;
+	_gl_internal_state->gl_viewport[3]=height;
 	opengl_protocol_set_viewport_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_SET_VIEWPORT,
 		.header.length=sizeof(opengl_protocol_set_viewport_t),

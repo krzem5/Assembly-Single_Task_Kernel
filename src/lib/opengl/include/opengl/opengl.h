@@ -1,5 +1,6 @@
 #ifndef _OPENGL_OPENGL_H_
 #define _OPENGL_OPENGL_H_ 1
+#include <GL/gl.h>
 #include <sys/types.h>
 #include <ui/display.h>
 
@@ -17,11 +18,29 @@ typedef struct _OPENGL_DRIVER_INSTANCE_DATA{
 
 
 
-typedef u64 opengl_state_t;
+typedef u64 opengl_state_id_t;
 
 
 
-extern opengl_state_t opengl_current_state;
+typedef void* opengl_state_t;
+
+
+
+typedef struct _OPENGL_INTERNAL_STATE{
+	opengl_state_id_t state_id;
+	opengl_driver_instance_t driver_instance;
+	opengl_driver_instance_data_t driver_instance_data;
+	GLenum gl_error;
+	GLuint gl_active_texture;
+	GLfloat gl_clear_color_value[4];
+	GLdouble gl_clear_depth_value;
+	GLint gl_clear_stencil_value;
+	GLint gl_viewport[4];
+} opengl_internal_state_t;
+
+
+
+extern opengl_state_id_t opengl_current_state_id;
 
 
 

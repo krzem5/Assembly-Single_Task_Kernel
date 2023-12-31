@@ -34,25 +34,25 @@ _Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,
 
 
 
-opengl_state_t opengl_syscall_create_state(opengl_driver_instance_t instance){
+opengl_state_id_t opengl_syscall_create_state(opengl_driver_instance_t instance){
 	u64 out=_syscall1(_opengl_syscall_offset|0x00000003,instance);
 	return (SYS_ERROR_IS_ERROR(out)?0:out);
 }
 
 
 
-_Bool opengl_syscall_delete_state(opengl_state_t state){
+_Bool opengl_syscall_delete_state(opengl_state_id_t state){
 	return _syscall1(_opengl_syscall_offset|0x00000004,state)==SYS_ERROR_OK;
 }
 
 
 
-_Bool opengl_syscall_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
+_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer){
 	return _syscall2(_opengl_syscall_offset|0x00000005,state,framebuffer)==SYS_ERROR_OK;
 }
 
 
 
 void opengl_syscall_flush_command_buffer(void* buffer,u32 buffer_size){
-	_syscall3(_opengl_syscall_offset|0x00000006,opengl_current_state,(u64)buffer,buffer_size);
+	_syscall3(_opengl_syscall_offset|0x00000006,opengl_current_state_id,(u64)buffer,buffer_size);
 }

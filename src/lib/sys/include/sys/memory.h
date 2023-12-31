@@ -4,6 +4,8 @@
 
 
 
+#define SYS_PAGE_SIZE 4096
+
 #define SYS_MEMORY_FLAG_READ 1
 #define SYS_MEMORY_FLAG_WRITE 2
 #define SYS_MEMORY_FLAG_EXEC 4
