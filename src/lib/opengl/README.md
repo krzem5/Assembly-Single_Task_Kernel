@@ -1,6 +1,6 @@
 # OpenGL driver functions
 
-- [ ] `glActiveTexture`
+- [x] `glActiveTexture`
 - [ ] `glAttachShader`
 - [ ] `glBeginConditionalRender`
 - [ ] `glBeginQuery`
@@ -113,23 +113,23 @@
 - [ ] `glGetActiveUniformsiv`
 - [ ] `glGetAttachedShaders`
 - [ ] `glGetAttribLocation`
-- [ ] `glGetBooleani_v`
-- [ ] `glGetBooleanv`
+- [x] `glGetBooleani_v`
+- [x] `glGetBooleanv`
 - [ ] `glGetBufferParameteri64v`
 - [ ] `glGetBufferParameteriv`
 - [ ] `glGetBufferPointerv`
 - [ ] `glGetBufferSubData`
 - [ ] `glGetCompressedTexImage`
-- [ ] `glGetDoublev`
-- [ ] `glGetError`
-- [ ] `glGetFloatv`
+- [x] `glGetDoublev`
+- [x] `glGetError`
+- [x] `glGetFloatv`
 - [ ] `glGetFragDataIndex`
 - [ ] `glGetFragDataLocation`
 - [ ] `glGetFramebufferAttachmentParameteriv`
-- [ ] `glGetInteger64i_v`
-- [ ] `glGetInteger64v`
-- [ ] `glGetIntegeri_v`
-- [ ] `glGetIntegerv`
+- [x] `glGetInteger64i_v`
+- [x] `glGetInteger64v`
+- [x] `glGetIntegeri_v`
+- [x] `glGetIntegerv`
 - [ ] `glGetMultisamplefv`
 - [ ] `glGetPointerv`
 - [ ] `glGetProgramInfoLog`
@@ -147,8 +147,8 @@
 - [ ] `glGetShaderInfoLog`
 - [ ] `glGetShaderiv`
 - [ ] `glGetShaderSource`
-- [ ] `GLubyte`
-- [ ] `GLubyte`
+- [ ] `glGetString`
+- [ ] `glGetStringi`
 - [ ] `glGetSynciv`
 - [ ] `glGetTexImage`
 - [ ] `glGetTexLevelParameterfv`
@@ -186,8 +186,8 @@
 - [ ] `glLineWidth`
 - [ ] `glLinkProgram`
 - [ ] `glLogicOp`
- - [ ] `glMapBuffer`
- - [ ] `glMapBufferRange`
+- [ ] `glMapBuffer`
+- [ ] `glMapBufferRange`
 - [ ] `glMultiDrawArrays`
 - [ ] `glMultiDrawElements`
 - [ ] `glMultiDrawElementsBaseVertex`

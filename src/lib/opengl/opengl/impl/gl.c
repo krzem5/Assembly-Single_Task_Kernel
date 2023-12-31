@@ -1604,15 +1604,30 @@ SYS_PUBLIC void glGetShaderSource(GLuint shader,GLsizei bufSize,GLsizei* length,
 
 
 SYS_PUBLIC const GLubyte* glGetString(GLenum name){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetString\x1b[0m\n");
-	return NULL;
+	switch (name){
+		case GL_RENDERER:
+			return (const GLubyte*)"<fetch OpenGL renderer backend>";
+		case GL_SHADING_LANGUAGE_VERSION:
+			return (const GLubyte*)"GL_SHADING_LANGUAGE_VERSION";
+		case GL_VENDOR:
+			return (const GLubyte*)"libopengl";
+		case GL_VERSION:
+			return (const GLubyte*)"3.3";
+		default:
+			_gl_error=GL_INVALID_ENUM;
+			return NULL;
+	}
 }
 
 
 
 SYS_PUBLIC const GLubyte* glGetStringi(GLenum name,GLuint index){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetStringi\x1b[0m\n");
-	return NULL;
+	if (name!=GL_EXTENSIONS){
+		_gl_error=GL_INVALID_ENUM;
+		return NULL;
+	}
+	// no extensions supported
+	return (const GLubyte*)"";
 }
 
 
