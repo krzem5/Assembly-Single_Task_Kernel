@@ -5,25 +5,27 @@
 
 
 
-#define GL_PARAMETER_NO_INDEX 0xffffffffffffffff
+#define OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS 48 // at least 48
 
-#define GL_PARAMETER_TYPE_BOOL 0
-#define GL_PARAMETER_TYPE_INT 1
-#define GL_PARAMETER_TYPE_INT64 2
-#define GL_PARAMETER_TYPE_FLOAT 3
-#define GL_PARAMETER_TYPE_DOUBLE 4
-#define GL_PARAMETER_TYPE_COLOR_OR_NORMAL 5
+#define OPENGL_PARAMETER_NO_INDEX 0xffffffffffffffffull
 
-#define GL_PARAMETER_RETURN_TYPE_BOOL 0
-#define GL_PARAMETER_RETURN_TYPE_INT 1
-#define GL_PARAMETER_RETURN_TYPE_INT64 2
-#define GL_PARAMETER_RETURN_TYPE_FLOAT 3
-#define GL_PARAMETER_RETURN_TYPE_DOUBLE 4
+#define OPENGL_PARAMETER_TYPE_BOOL 0
+#define OPENGL_PARAMETER_TYPE_INT 1
+#define OPENGL_PARAMETER_TYPE_INT64 2
+#define OPENGL_PARAMETER_TYPE_FLOAT 3
+#define OPENGL_PARAMETER_TYPE_DOUBLE 4
+#define OPENGL_PARAMETER_TYPE_COLOR_OR_NORMAL 5
+
+#define OPENGL_PARAMETER_RETURN_TYPE_BOOL 0
+#define OPENGL_PARAMETER_RETURN_TYPE_INT 1
+#define OPENGL_PARAMETER_RETURN_TYPE_INT64 2
+#define OPENGL_PARAMETER_RETURN_TYPE_FLOAT 3
+#define OPENGL_PARAMETER_RETURN_TYPE_DOUBLE 4
 
 
 
 static GLenum _gl_error=GL_NO_ERROR;
-static GLenum _gl_active_texture=GL_TEXTURE0;
+static GLuint _gl_active_texture=0;
 static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,0.0f};
 static GLdouble _gl_clear_depth_value=0.0f;
 static GLint _gl_clear_stencil_value=0;
@@ -32,14 +34,16 @@ static GLint _gl_viewport[4]={0,0,0,0};
 
 
 static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
+	GLuint local_value;
 	u32 type;
 	u32 length;
 	const void* values;
 	switch (param){
 		case GL_ACTIVE_TEXTURE:
-			type=GL_PARAMETER_TYPE_INT;
+			local_value=_gl_active_texture+GL_TEXTURE0;
+			type=OPENGL_PARAMETER_TYPE_INT;
 			length=1;
-			values=&_gl_active_texture;
+			values=&local_value;
 			break;
 		case GL_ALIASED_LINE_WIDTH_RANGE:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ALIASED_LINE_WIDTH_RANGE\x1b[0m\n");
@@ -78,7 +82,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_SRC_RGB\x1b[0m\n");
 			return;
 		case GL_COLOR_CLEAR_VALUE:
-			type=GL_PARAMETER_TYPE_COLOR_OR_NORMAL;
+			type=OPENGL_PARAMETER_TYPE_COLOR_OR_NORMAL;
 			length=4;
 			values=_gl_clear_color_value;
 			break;
@@ -98,7 +102,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CURRENT_PROGRAM\x1b[0m\n");
 			return;
 		case GL_DEPTH_CLEAR_VALUE:
-			type=GL_PARAMETER_TYPE_DOUBLE;
+			type=OPENGL_PARAMETER_TYPE_DOUBLE;
 			length=1;
 			values=&_gl_clear_depth_value;
 			break;
@@ -178,8 +182,11 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS\x1b[0m\n");
 			return;
 		case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS\x1b[0m\n");
-			return;
+			local_value=OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS;
+			type=OPENGL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&local_value;
+			break;
 		case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS\x1b[0m\n");
 			return;
@@ -418,8 +425,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_WRITEMASK\x1b[0m\n");
 			return;
 		case GL_STENCIL_CLEAR_VALUE:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_CLEAR_VALUE\x1b[0m\n");
-			type=GL_PARAMETER_TYPE_INT;
+			type=OPENGL_PARAMETER_TYPE_INT;
 			length=1;
 			values=&_gl_clear_stencil_value;
 			break;
@@ -544,7 +550,7 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CONTEXT_FLAGS\x1b[0m\n");
 			return;
 		case GL_VIEWPORT:
-			type=GL_PARAMETER_TYPE_INT;
+			type=OPENGL_PARAMETER_TYPE_INT;
 			length=4;
 			values=_gl_viewport;
 			break;
@@ -552,95 +558,95 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			_gl_error=GL_INVALID_ENUM;
 			return;
 	}
-	if (index!=GL_PARAMETER_NO_INDEX&&length<=index){
+	if (index!=OPENGL_PARAMETER_NO_INDEX&&length<=index){
 		_gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	for (u32 i=(index==GL_PARAMETER_NO_INDEX?0:index);i<(index==GL_PARAMETER_NO_INDEX?length:index+1);i++){
-		if (type==GL_PARAMETER_TYPE_BOOL){
+	for (u32 i=(index==OPENGL_PARAMETER_NO_INDEX?0:index);i<(index==OPENGL_PARAMETER_NO_INDEX?length:index+1);i++){
+		if (type==OPENGL_PARAMETER_TYPE_BOOL){
 			GLboolean value=*(((const GLboolean*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
 				*(((GLint64*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
 				*(((GLdouble*)out)+i)=value;
 			}
 		}
-		else if (type==GL_PARAMETER_TYPE_INT){
+		else if (type==OPENGL_PARAMETER_TYPE_INT){
 			GLint value=*(((const GLint*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value?GL_TRUE:GL_FALSE);
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
 				*(((GLint64*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
 				*(((GLdouble*)out)+i)=value;
 			}
 		}
-		else if (type==GL_PARAMETER_TYPE_INT64){
+		else if (type==OPENGL_PARAMETER_TYPE_INT64){
 			GLint64 value=*(((const GLint64*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value?GL_TRUE:GL_FALSE);
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
 				*(((GLint64*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
 				*(((GLdouble*)out)+i)=value;
 			}
 		}
-		else if (type==GL_PARAMETER_TYPE_FLOAT){
+		else if (type==OPENGL_PARAMETER_TYPE_FLOAT){
 			GLfloat value=*(((const GLfloat*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value!=0.0f?GL_TRUE:GL_FALSE);
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
 				*(((GLint64*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
 				*(((GLdouble*)out)+i)=value;
 			}
 		}
-		else if (type==GL_PARAMETER_TYPE_DOUBLE){
+		else if (type==OPENGL_PARAMETER_TYPE_DOUBLE){
 			GLdouble value=*(((const GLdouble*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value!=0.0?GL_TRUE:GL_FALSE);
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
 				*(((GLint64*)out)+i)=value;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
@@ -649,16 +655,16 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 		}
 		else{
 			GLfloat value=*(((const GLfloat*)values)+i);
-			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			if (out_type==OPENGL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value!=0.0f?GL_TRUE:GL_FALSE);
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT){
 				*(((GLint*)out)+i)=(value+1)/2*0xffffffff-0x80000000;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
-				*(((GLint64*)out)+i)=(value+1)/2*0xffffffffffffffff-0x8000000000000000;
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=(value+1)/2*0xffffffffffffffffll-0x8000000000000000ll;
 			}
-			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			else if (out_type==OPENGL_PARAMETER_RETURN_TYPE_FLOAT){
 				*(((GLfloat*)out)+i)=value;
 			}
 			else{
@@ -671,11 +677,11 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 
 
 SYS_PUBLIC void glActiveTexture(GLenum texture){
-	if (texture<GL_TEXTURE0||texture>=GL_TEXTURE0+GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS){
+	if (texture<GL_TEXTURE0||texture>=GL_TEXTURE0+OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS){
 		_gl_error=GL_INVALID_ENUM;
 		return;
 	}
-	_gl_active_texture=texture;
+	_gl_active_texture=texture-GL_TEXTURE0;
 }
 
 
@@ -1390,13 +1396,13 @@ SYS_PUBLIC GLint glGetAttribLocation(GLuint program,const GLchar* name){
 
 
 SYS_PUBLIC void glGetBooleani_v(GLenum target,GLuint index,GLboolean* data){
-	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_BOOL);
+	_gl_get_parameter(target,index,data,OPENGL_PARAMETER_RETURN_TYPE_BOOL);
 }
 
 
 
 SYS_PUBLIC void glGetBooleanv(GLenum pname,GLboolean* data){
-	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_BOOL);
+	_gl_get_parameter(pname,OPENGL_PARAMETER_NO_INDEX,data,OPENGL_PARAMETER_RETURN_TYPE_BOOL);
 }
 
 
@@ -1432,7 +1438,7 @@ SYS_PUBLIC void glGetCompressedTexImage(GLenum target,GLint level,void* img){
 
 
 SYS_PUBLIC void glGetDoublev(GLenum pname,GLdouble* data){
-	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_DOUBLE);
+	_gl_get_parameter(pname,OPENGL_PARAMETER_NO_INDEX,data,OPENGL_PARAMETER_RETURN_TYPE_DOUBLE);
 }
 
 
@@ -1446,7 +1452,7 @@ SYS_PUBLIC GLenum glGetError(void){
 
 
 SYS_PUBLIC void glGetFloatv(GLenum pname,GLfloat* data){
-	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_FLOAT);
+	_gl_get_parameter(pname,OPENGL_PARAMETER_NO_INDEX,data,OPENGL_PARAMETER_RETURN_TYPE_FLOAT);
 }
 
 
@@ -1472,25 +1478,25 @@ SYS_PUBLIC void glGetFramebufferAttachmentParameteriv(GLenum target,GLenum attac
 
 
 SYS_PUBLIC void glGetInteger64i_v(GLenum target,GLuint index,GLint64* data){
-	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_INT64);
+	_gl_get_parameter(target,index,data,OPENGL_PARAMETER_RETURN_TYPE_INT64);
 }
 
 
 
 SYS_PUBLIC void glGetInteger64v(GLenum pname,GLint64* data){
-	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_INT64);
+	_gl_get_parameter(pname,OPENGL_PARAMETER_NO_INDEX,data,OPENGL_PARAMETER_RETURN_TYPE_INT64);
 }
 
 
 
 SYS_PUBLIC void glGetIntegeri_v(GLenum target,GLuint index,GLint* data){
-	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_INT);
+	_gl_get_parameter(target,index,data,OPENGL_PARAMETER_RETURN_TYPE_INT);
 }
 
 
 
 SYS_PUBLIC void glGetIntegerv(GLenum pname,GLint* data){
-	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_INT);
+	_gl_get_parameter(pname,OPENGL_PARAMETER_NO_INDEX,data,OPENGL_PARAMETER_RETURN_TYPE_INT);
 }
 
 
