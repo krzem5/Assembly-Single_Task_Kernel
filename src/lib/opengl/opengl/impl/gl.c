@@ -539,8 +539,10 @@ static void _gl_get_parameter(GLenum param,u32 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CONTEXT_FLAGS\x1b[0m\n");
 			return;
 		case GL_VIEWPORT:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_VIEWPORT\x1b[0m\n");
-			return;
+			type=GL_PARAMETER_TYPE_INT;
+			length=4;
+			values=_gl_viewport;
+			break;
 		default:
 			_gl_error=GL_INVALID_ENUM;
 			return;
@@ -549,9 +551,24 @@ static void _gl_get_parameter(GLenum param,u32 index,void* out,u32 out_type){
 		_gl_error=GL_INVALID_VALUE;
 		return;
 	}
+	values+=index;
 	if (type==GL_PARAMETER_TYPE_BOOL){
-		(void)values;
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_BOOL\x1b[0m\n");
+		_Bool value=*((_Bool*)values);
+		if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+			*((GLboolean*)out)=(value?GL_TRUE:GL_FALSE);
+		}
+		else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+			*((GLint*)out)=value;
+		}
+		else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+			*((GLint64*)out)=value;
+		}
+		else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+			*((GLfloat*)out)=value;
+		}
+		else{
+			*((GLdouble*)out)=value;
+		}
 	}
 	else if (type==GL_PARAMETER_TYPE_INT){
 		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT\x1b[0m\n");
