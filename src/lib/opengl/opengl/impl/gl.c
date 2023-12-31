@@ -5,19 +5,569 @@
 
 
 
+#define GL_PARAMETER_TYPE_BOOL 0
+#define GL_PARAMETER_TYPE_INT 1
+#define GL_PARAMETER_TYPE_INT64 2
+#define GL_PARAMETER_TYPE_FLOAT 3
+#define GL_PARAMETER_TYPE_DOUBLE 4
+#define GL_PARAMETER_TYPE_COLOR_OR_NORMAL 5
+
+#define GL_PARAMETER_RETURN_TYPE_BOOL 0
+#define GL_PARAMETER_RETURN_TYPE_INT 1
+#define GL_PARAMETER_RETURN_TYPE_INT64 2
+#define GL_PARAMETER_RETURN_TYPE_FLOAT 3
+#define GL_PARAMETER_RETURN_TYPE_DOUBLE 4
+
+
+
 static GLenum _gl_error=GL_NO_ERROR;
-static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,1.0f};
+static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,0.0f};
 static GLdouble _gl_clear_depth_value=0.0f;
 static GLint _gl_clear_stencil_value=0;
 static GLint _gl_viewport[4]={0,0,0,0};
 
 
 
-static inline void _push_single_command(const opengl_protocol_header_t* header){
-	opengl_command_buffer_set_lock(1);
-	opengl_command_buffer_ensure_space(header->length);
-	opengl_command_buffer_push(header);
-	opengl_command_buffer_set_lock(0);
+static void _gl_get_parameter(GLenum param,u32 index,void* out,u32 out_type){
+	u32 type;
+	u32 length;
+	const void* values;
+	switch (param){
+		case GL_ACTIVE_TEXTURE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ACTIVE_TEXTURE\x1b[0m\n");
+			return;
+		case GL_ALIASED_LINE_WIDTH_RANGE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ALIASED_LINE_WIDTH_RANGE\x1b[0m\n");
+			return;
+		case GL_SMOOTH_LINE_WIDTH_RANGE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SMOOTH_LINE_WIDTH_RANGE\x1b[0m\n");
+			return;
+		case GL_SMOOTH_LINE_WIDTH_GRANULARITY:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SMOOTH_LINE_WIDTH_GRANULARITY\x1b[0m\n");
+			return;
+		case GL_ARRAY_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ARRAY_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_BLEND:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND\x1b[0m\n");
+			return;
+		case GL_BLEND_COLOR:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_COLOR\x1b[0m\n");
+			return;
+		case GL_BLEND_DST_ALPHA:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_DST_ALPHA\x1b[0m\n");
+			return;
+		case GL_BLEND_DST_RGB:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_DST_RGB\x1b[0m\n");
+			return;
+		case GL_BLEND_EQUATION_RGB:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_EQUATION_RGB\x1b[0m\n");
+			return;
+		case GL_BLEND_EQUATION_ALPHA:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_EQUATION_ALPHA\x1b[0m\n");
+			return;
+		case GL_BLEND_SRC_ALPHA:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_SRC_ALPHA\x1b[0m\n");
+			return;
+		case GL_BLEND_SRC_RGB:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_BLEND_SRC_RGB\x1b[0m\n");
+			return;
+		case GL_COLOR_CLEAR_VALUE:
+			type=GL_PARAMETER_TYPE_COLOR_OR_NORMAL;
+			length=4;
+			values=_gl_clear_color_value;
+			break;
+		case GL_COLOR_LOGIC_OP:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_COLOR_LOGIC_OP\x1b[0m\n");
+			return;
+		case GL_COLOR_WRITEMASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_COLOR_WRITEMASK\x1b[0m\n");
+			return;
+		case GL_COMPRESSED_TEXTURE_FORMATS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_COMPRESSED_TEXTURE_FORMATS\x1b[0m\n");
+			return;
+		case GL_CULL_FACE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CULL_FACE\x1b[0m\n");
+			return;
+		case GL_CURRENT_PROGRAM:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CURRENT_PROGRAM\x1b[0m\n");
+			return;
+		case GL_DEPTH_CLEAR_VALUE:
+			type=GL_PARAMETER_TYPE_DOUBLE;
+			length=1;
+			values=&_gl_clear_depth_value;
+			break;
+		case GL_DEPTH_FUNC:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DEPTH_FUNC\x1b[0m\n");
+			return;
+		case GL_DEPTH_RANGE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DEPTH_RANGE\x1b[0m\n");
+			return;
+		case GL_DEPTH_TEST:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DEPTH_TEST\x1b[0m\n");
+			return;
+		case GL_DEPTH_WRITEMASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DEPTH_WRITEMASK\x1b[0m\n");
+			return;
+		case GL_DITHER:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DITHER\x1b[0m\n");
+			return;
+		case GL_DOUBLEBUFFER:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DOUBLEBUFFER\x1b[0m\n");
+			return;
+		case GL_DRAW_BUFFER:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DRAW_BUFFER\x1b[0m\n");
+			return;
+		case GL_DRAW_BUFFER0:
+		case GL_DRAW_BUFFER1:
+		case GL_DRAW_BUFFER2:
+		case GL_DRAW_BUFFER3:
+		case GL_DRAW_BUFFER4:
+		case GL_DRAW_BUFFER5:
+		case GL_DRAW_BUFFER6:
+		case GL_DRAW_BUFFER7:
+		case GL_DRAW_BUFFER8:
+		case GL_DRAW_BUFFER9:
+		case GL_DRAW_BUFFER10:
+		case GL_DRAW_BUFFER11:
+		case GL_DRAW_BUFFER12:
+		case GL_DRAW_BUFFER13:
+		case GL_DRAW_BUFFER14:
+		case GL_DRAW_BUFFER15:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DRAW_BUFFER%u\x1b[0m\n",param-GL_DRAW_BUFFER0);
+			return;
+		case GL_DRAW_FRAMEBUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_DRAW_FRAMEBUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_READ_FRAMEBUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_READ_FRAMEBUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_ELEMENT_ARRAY_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ELEMENT_ARRAY_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_RENDERBUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_RENDERBUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_FRAGMENT_SHADER_DERIVATIVE_HINT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_FRAGMENT_SHADER_DERIVATIVE_HINT\x1b[0m\n");
+			return;
+		case GL_LINE_SMOOTH:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_LINE_SMOOTH\x1b[0m\n");
+			return;
+		case GL_LINE_SMOOTH_HINT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_LINE_SMOOTH_HINT\x1b[0m\n");
+			return;
+		case GL_LINE_WIDTH:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_LINE_WIDTH\x1b[0m\n");
+			return;
+		case GL_LOGIC_OP_MODE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_LOGIC_OP_MODE\x1b[0m\n");
+			return;
+		case GL_MAX_3D_TEXTURE_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_3D_TEXTURE_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_CLIP_DISTANCES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_CLIP_DISTANCES\x1b[0m\n");
+			return;
+		case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS\x1b[0m\n");
+			return;
+		case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_COMBINED_UNIFORM_BLOCKS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COMBINED_UNIFORM_BLOCKS\x1b[0m\n");
+			return;
+		case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_CUBE_MAP_TEXTURE_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_DRAW_BUFFERS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_DRAW_BUFFERS\x1b[0m\n");
+			return;
+		case GL_MAX_DUAL_SOURCE_DRAW_BUFFERS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_DUAL_SOURCE_DRAW_BUFFERS\x1b[0m\n");
+			return;
+		case GL_MAX_ELEMENTS_INDICES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_ELEMENTS_INDICES\x1b[0m\n");
+			return;
+		case GL_MAX_ELEMENTS_VERTICES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_ELEMENTS_VERTICES\x1b[0m\n");
+			return;
+		case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_FRAGMENT_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_FRAGMENT_UNIFORM_BLOCKS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_FRAGMENT_UNIFORM_BLOCKS\x1b[0m\n");
+			return;
+		case GL_MAX_FRAGMENT_INPUT_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_FRAGMENT_INPUT_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MIN_PROGRAM_TEXEL_OFFSET:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MIN_PROGRAM_TEXEL_OFFSET\x1b[0m\n");
+			return;
+		case GL_MAX_PROGRAM_TEXEL_OFFSET:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_PROGRAM_TEXEL_OFFSET\x1b[0m\n");
+			return;
+		case GL_MAX_RECTANGLE_TEXTURE_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_RECTANGLE_TEXTURE_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_TEXTURE_IMAGE_UNITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_IMAGE_UNITS\x1b[0m\n");
+			return;
+		case GL_MAX_TEXTURE_LOD_BIAS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_LOD_BIAS\x1b[0m\n");
+			return;
+		case GL_MAX_TEXTURE_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_RENDERBUFFER_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_RENDERBUFFER_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_ARRAY_TEXTURE_LAYERS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_ARRAY_TEXTURE_LAYERS\x1b[0m\n");
+			return;
+		case GL_MAX_TEXTURE_BUFFER_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_BUFFER_SIZE\x1b[0m\n");
+			return;
+		case GL_MAX_VERTEX_ATTRIBS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_ATTRIBS\x1b[0m\n");
+			return;
+		case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS\x1b[0m\n");
+			return;
+		case GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS\x1b[0m\n");
+			return;
+		case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_VERTEX_OUTPUT_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_OUTPUT_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_GEOMETRY_UNIFORM_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_GEOMETRY_UNIFORM_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_SAMPLE_MASK_WORDS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_SAMPLE_MASK_WORDS\x1b[0m\n");
+			return;
+		case GL_MAX_COLOR_TEXTURE_SAMPLES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_COLOR_TEXTURE_SAMPLES\x1b[0m\n");
+			return;
+		case GL_MAX_DEPTH_TEXTURE_SAMPLES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_DEPTH_TEXTURE_SAMPLES\x1b[0m\n");
+			return;
+		case GL_MAX_INTEGER_SAMPLES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_INTEGER_SAMPLES\x1b[0m\n");
+			return;
+		case GL_MAX_SERVER_WAIT_TIMEOUT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_SERVER_WAIT_TIMEOUT\x1b[0m\n");
+			return;
+		case GL_MAX_UNIFORM_BUFFER_BINDINGS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_UNIFORM_BUFFER_BINDINGS\x1b[0m\n");
+			return;
+		case GL_MAX_UNIFORM_BLOCK_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_UNIFORM_BLOCK_SIZE\x1b[0m\n");
+			return;
+		case GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT\x1b[0m\n");
+			return;
+		case GL_MAX_VERTEX_UNIFORM_BLOCKS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_UNIFORM_BLOCKS\x1b[0m\n");
+			return;
+		case GL_MAX_GEOMETRY_UNIFORM_BLOCKS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_GEOMETRY_UNIFORM_BLOCKS\x1b[0m\n");
+			return;
+		case GL_MAX_GEOMETRY_INPUT_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_GEOMETRY_INPUT_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_GEOMETRY_OUTPUT_COMPONENTS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_GEOMETRY_OUTPUT_COMPONENTS\x1b[0m\n");
+			return;
+		case GL_MAX_VIEWPORT_DIMS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VIEWPORT_DIMS\x1b[0m\n");
+			return;
+		case GL_NUM_COMPRESSED_TEXTURE_FORMATS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_NUM_COMPRESSED_TEXTURE_FORMATS\x1b[0m\n");
+			return;
+		case GL_PACK_ALIGNMENT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_ALIGNMENT\x1b[0m\n");
+			return;
+		case GL_PACK_IMAGE_HEIGHT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_IMAGE_HEIGHT\x1b[0m\n");
+			return;
+		case GL_PACK_LSB_FIRST:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_LSB_FIRST\x1b[0m\n");
+			return;
+		case GL_PACK_ROW_LENGTH:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_ROW_LENGTH\x1b[0m\n");
+			return;
+		case GL_PACK_SKIP_IMAGES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_SKIP_IMAGES\x1b[0m\n");
+			return;
+		case GL_PACK_SKIP_PIXELS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_SKIP_PIXELS\x1b[0m\n");
+			return;
+		case GL_PACK_SKIP_ROWS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_SKIP_ROWS\x1b[0m\n");
+			return;
+		case GL_PACK_SWAP_BYTES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PACK_SWAP_BYTES\x1b[0m\n");
+			return;
+		case GL_PIXEL_PACK_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PIXEL_PACK_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_PIXEL_UNPACK_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PIXEL_UNPACK_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_POINT_FADE_THRESHOLD_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POINT_FADE_THRESHOLD_SIZE\x1b[0m\n");
+			return;
+		case GL_PRIMITIVE_RESTART_INDEX:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PRIMITIVE_RESTART_INDEX\x1b[0m\n");
+			return;
+		case GL_PROGRAM_POINT_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PROGRAM_POINT_SIZE\x1b[0m\n");
+			return;
+		case GL_PROVOKING_VERTEX:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_PROVOKING_VERTEX\x1b[0m\n");
+			return;
+		case GL_POINT_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POINT_SIZE\x1b[0m\n");
+			return;
+		case GL_POINT_SIZE_GRANULARITY:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POINT_SIZE_GRANULARITY\x1b[0m\n");
+			return;
+		case GL_POINT_SIZE_RANGE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POINT_SIZE_RANGE\x1b[0m\n");
+			return;
+		case GL_POLYGON_OFFSET_FACTOR:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_OFFSET_FACTOR\x1b[0m\n");
+			return;
+		case GL_POLYGON_OFFSET_UNITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_OFFSET_UNITS\x1b[0m\n");
+			return;
+		case GL_POLYGON_OFFSET_FILL:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_OFFSET_FILL\x1b[0m\n");
+			return;
+		case GL_POLYGON_OFFSET_LINE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_OFFSET_LINE\x1b[0m\n");
+			return;
+		case GL_POLYGON_OFFSET_POINT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_OFFSET_POINT\x1b[0m\n");
+			return;
+		case GL_POLYGON_SMOOTH:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_SMOOTH\x1b[0m\n");
+			return;
+		case GL_POLYGON_SMOOTH_HINT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_POLYGON_SMOOTH_HINT\x1b[0m\n");
+			return;
+		case GL_READ_BUFFER:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_READ_BUFFER\x1b[0m\n");
+			return;
+		case GL_SAMPLE_BUFFERS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SAMPLE_BUFFERS\x1b[0m\n");
+			return;
+		case GL_SAMPLE_COVERAGE_VALUE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SAMPLE_COVERAGE_VALUE\x1b[0m\n");
+			return;
+		case GL_SAMPLE_COVERAGE_INVERT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SAMPLE_COVERAGE_INVERT\x1b[0m\n");
+			return;
+		case GL_SAMPLER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SAMPLER_BINDING\x1b[0m\n");
+			return;
+		case GL_SAMPLES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SAMPLES\x1b[0m\n");
+			return;
+		case GL_SCISSOR_BOX:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SCISSOR_BOX\x1b[0m\n");
+			return;
+		case GL_SCISSOR_TEST:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SCISSOR_TEST\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_FAIL:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_FAIL\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_FUNC:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_FUNC\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_PASS_DEPTH_FAIL:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_PASS_DEPTH_FAIL\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_PASS_DEPTH_PASS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_PASS_DEPTH_PASS\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_REF:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_REF\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_VALUE_MASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_VALUE_MASK\x1b[0m\n");
+			return;
+		case GL_STENCIL_BACK_WRITEMASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_BACK_WRITEMASK\x1b[0m\n");
+			return;
+		case GL_STENCIL_CLEAR_VALUE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_CLEAR_VALUE\x1b[0m\n");
+			type=GL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&_gl_clear_stencil_value;
+			break;
+		case GL_STENCIL_FAIL:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_FAIL\x1b[0m\n");
+			return;
+		case GL_STENCIL_FUNC:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_FUNC\x1b[0m\n");
+			return;
+		case GL_STENCIL_PASS_DEPTH_FAIL:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_PASS_DEPTH_FAIL\x1b[0m\n");
+			return;
+		case GL_STENCIL_PASS_DEPTH_PASS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_PASS_DEPTH_PASS\x1b[0m\n");
+			return;
+		case GL_STENCIL_REF:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_REF\x1b[0m\n");
+			return;
+		case GL_STENCIL_TEST:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_TEST\x1b[0m\n");
+			return;
+		case GL_STENCIL_VALUE_MASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_VALUE_MASK\x1b[0m\n");
+			return;
+		case GL_STENCIL_WRITEMASK:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STENCIL_WRITEMASK\x1b[0m\n");
+			return;
+		case GL_STEREO:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_STEREO\x1b[0m\n");
+			return;
+		case GL_SUBPIXEL_BITS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_SUBPIXEL_BITS\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_1D:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_1D\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_1D_ARRAY:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_1D_ARRAY\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_2D:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_2D\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_2D_ARRAY:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_2D_ARRAY\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_2D_MULTISAMPLE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_2D_MULTISAMPLE\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_3D:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_3D\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_BUFFER:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_BUFFER\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_CUBE_MAP:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_CUBE_MAP\x1b[0m\n");
+			return;
+		case GL_TEXTURE_BINDING_RECTANGLE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_BINDING_RECTANGLE\x1b[0m\n");
+			return;
+		case GL_TEXTURE_COMPRESSION_HINT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TEXTURE_COMPRESSION_HINT\x1b[0m\n");
+			return;
+		case GL_TIMESTAMP:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TIMESTAMP\x1b[0m\n");
+			return;
+		case GL_TRANSFORM_FEEDBACK_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TRANSFORM_FEEDBACK_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_TRANSFORM_FEEDBACK_BUFFER_START:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TRANSFORM_FEEDBACK_BUFFER_START\x1b[0m\n");
+			return;
+		case GL_TRANSFORM_FEEDBACK_BUFFER_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_TRANSFORM_FEEDBACK_BUFFER_SIZE\x1b[0m\n");
+			return;
+		case GL_UNIFORM_BUFFER_BINDING:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNIFORM_BUFFER_BINDING\x1b[0m\n");
+			return;
+		case GL_UNIFORM_BUFFER_START:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNIFORM_BUFFER_START\x1b[0m\n");
+			return;
+		case GL_UNIFORM_BUFFER_SIZE:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNIFORM_BUFFER_SIZE\x1b[0m\n");
+			return;
+		case GL_UNPACK_ALIGNMENT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_ALIGNMENT\x1b[0m\n");
+			return;
+		case GL_UNPACK_IMAGE_HEIGHT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_IMAGE_HEIGHT\x1b[0m\n");
+			return;
+		case GL_UNPACK_LSB_FIRST:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_LSB_FIRST\x1b[0m\n");
+			return;
+		case GL_UNPACK_ROW_LENGTH:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_ROW_LENGTH\x1b[0m\n");
+			return;
+		case GL_UNPACK_SKIP_IMAGES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_SKIP_IMAGES\x1b[0m\n");
+			return;
+		case GL_UNPACK_SKIP_PIXELS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_SKIP_PIXELS\x1b[0m\n");
+			return;
+		case GL_UNPACK_SKIP_ROWS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_SKIP_ROWS\x1b[0m\n");
+			return;
+		case GL_UNPACK_SWAP_BYTES:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_SWAP_BYTES\x1b[0m\n");
+			return;
+		case GL_NUM_EXTENSIONS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_NUM_EXTENSIONS\x1b[0m\n");
+			return;
+		case GL_MAJOR_VERSION:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAJOR_VERSION\x1b[0m\n");
+			return;
+		case GL_MINOR_VERSION:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MINOR_VERSION\x1b[0m\n");
+			return;
+		case GL_CONTEXT_FLAGS:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CONTEXT_FLAGS\x1b[0m\n");
+			return;
+		case GL_VIEWPORT:
+			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_VIEWPORT\x1b[0m\n");
+			return;
+		default:
+			_gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	if (length<=index){
+		_gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (type==GL_PARAMETER_TYPE_BOOL){
+		(void)values;
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_BOOL\x1b[0m\n");
+	}
+	else if (type==GL_PARAMETER_TYPE_INT){
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT\x1b[0m\n");
+	}
+	else if (type==GL_PARAMETER_TYPE_INT64){
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT64\x1b[0m\n");
+	}
+	else if (type==GL_PARAMETER_TYPE_FLOAT){
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_FLOAT\x1b[0m\n");
+	}
+	else if (type==GL_PARAMETER_TYPE_DOUBLE){
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_DOUBLE\x1b[0m\n");
+	}
+	else{
+		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_COLOR_OR_NORMAL\x1b[0m\n");
+	}
 }
 
 
@@ -208,7 +758,7 @@ SYS_PUBLIC void glClear(GLbitfield mask){
 		.depth=_gl_clear_depth_value,
 		.stencil=_gl_clear_stencil_value,
 	};
-	_push_single_command(&(command.header));
+	opengl_command_buffer_push_single(&(command.header));
 }
 
 
@@ -738,13 +1288,13 @@ SYS_PUBLIC GLint glGetAttribLocation(GLuint program,const GLchar* name){
 
 
 SYS_PUBLIC void glGetBooleani_v(GLenum target,GLuint index,GLboolean* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetBooleani_v\x1b[0m\n");
+	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_BOOL);
 }
 
 
 
 SYS_PUBLIC void glGetBooleanv(GLenum pname,GLboolean* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetBooleanv\x1b[0m\n");
+	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_BOOL);
 }
 
 
@@ -780,7 +1330,7 @@ SYS_PUBLIC void glGetCompressedTexImage(GLenum target,GLint level,void* img){
 
 
 SYS_PUBLIC void glGetDoublev(GLenum pname,GLdouble* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetDoublev\x1b[0m\n");
+	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_DOUBLE);
 }
 
 
@@ -794,7 +1344,7 @@ SYS_PUBLIC GLenum glGetError(void){
 
 
 SYS_PUBLIC void glGetFloatv(GLenum pname,GLfloat* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetFloatv\x1b[0m\n");
+	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_FLOAT);
 }
 
 
@@ -820,25 +1370,25 @@ SYS_PUBLIC void glGetFramebufferAttachmentParameteriv(GLenum target,GLenum attac
 
 
 SYS_PUBLIC void glGetInteger64i_v(GLenum target,GLuint index,GLint64* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetInteger64i_v\x1b[0m\n");
+	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_INT64);
 }
 
 
 
 SYS_PUBLIC void glGetInteger64v(GLenum pname,GLint64* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetInteger64v\x1b[0m\n");
+	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_INT64);
 }
 
 
 
 SYS_PUBLIC void glGetIntegeri_v(GLenum target,GLuint index,GLint* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetIntegeri_v\x1b[0m\n");
+	_gl_get_parameter(target,index,data,GL_PARAMETER_RETURN_TYPE_INT);
 }
 
 
 
 SYS_PUBLIC void glGetIntegerv(GLenum pname,GLint* data){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetIntegerv\x1b[0m\n");
+	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_INT);
 }
 
 
@@ -2153,7 +2703,7 @@ SYS_PUBLIC void glViewport(GLint x,GLint y,GLsizei width,GLsizei height){
 		.sx=width/2.0f,
 		.sy=-height/2.0f
 	};
-	_push_single_command(&(command.header));
+	opengl_command_buffer_push_single(&(command.header));
 }
 
 
