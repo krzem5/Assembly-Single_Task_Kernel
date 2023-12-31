@@ -54,7 +54,6 @@ void _isr_handler(isr_state_t* isr_state){
 		event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		return;
 	}
-	scheduler_pause();
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
 		ERROR("Page fault stack not present");
 	}

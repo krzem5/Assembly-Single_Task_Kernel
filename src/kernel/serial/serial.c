@@ -75,9 +75,7 @@ void KERNEL_EARLY_EXEC serial_init(void){
 
 
 KERNEL_PUBLIC void serial_send(serial_port_t* port,const void* buffer,u32 length){
-#if KERNEL_DISABLE_ASSERT
 	scheduler_pause();
-#endif
 	spinlock_acquire_exclusive(&(port->write_lock));
 	for (;length;length--){
 		SPINLOOP(!(io_port_in8(port->io_port+5)&0x20));
@@ -85,9 +83,7 @@ KERNEL_PUBLIC void serial_send(serial_port_t* port,const void* buffer,u32 length
 		buffer++;
 	}
 	spinlock_release_exclusive(&(port->write_lock));
-#if KERNEL_DISABLE_ASSERT
 	scheduler_resume();
-#endif
 }
 
 

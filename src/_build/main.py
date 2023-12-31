@@ -727,6 +727,7 @@ if ("--run" in sys.argv):
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset",
 		# "--no-reboot",
+		"-d","guest_errors",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
@@ -779,7 +780,9 @@ if ("--run" in sys.argv):
 		# Config
 		"-machine","hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
-		"-smbios","type=2,serial=SERIAL_NUMBER"
+		"-smbios","type=2,serial=SERIAL_NUMBER",
+		# Debugging
+		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
 	]+_kvm_flags())
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
