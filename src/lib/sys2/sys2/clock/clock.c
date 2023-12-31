@@ -10,17 +10,11 @@ static u64 _sys2_clock_cpu_frequency=0;
 
 
 
-static inline u64 _get_ticks(void){
+SYS2_PUBLIC u64 sys2_clock_get_ticks(void){
 	u32 low;
 	u32 high;
 	asm volatile("rdtsc":"=a"(low),"=d"(high));
 	return (((u64)high)<<32)|low;
-}
-
-
-
-SYS2_PUBLIC u64 sys2_clock_get_ticks(void){
-	return _get_ticks();
 }
 
 
@@ -32,7 +26,7 @@ SYS2_PUBLIC double sys2_clock_get_time(void){
 
 
 SYS2_PUBLIC u64 sys2_clock_get_time_ns(void){
-	return (_get_ticks()*_sys2_clock_conversion_factor)>>_sys2_clock_conversion_shift;
+	return (sys2_clock_get_ticks()*_sys2_clock_conversion_factor)>>_sys2_clock_conversion_shift;
 }
 
 
