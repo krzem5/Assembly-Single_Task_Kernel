@@ -225,7 +225,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 		with open(user_header_file_path,"w") as wf:
 			wf.write(f"#ifndef {header_name}\n#define {header_name} 1\n#include <sys2/syscall/syscall.h>\n#include <sys2/types.h>\n\n\n\n")
 			for index,(name,args,ret) in syscalls.items():
-				wf.write(f"static inline {ret} _syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
+				wf.write(f"static inline {ret} _sys2_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_sys2_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
 			wf.write("#endif\n")
 	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/types.h>\n\n\n\n")

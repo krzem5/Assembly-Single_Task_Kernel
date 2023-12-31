@@ -12,7 +12,7 @@ static u64 _sys2_clock_cpu_frequency=0;
 
 static void SYS2_CONSTRUCTOR _init(void){
 	u64 buffer[3];
-	_syscall_clock_get_converion(buffer);
+	_sys2_syscall_clock_get_converion(buffer);
 	_sys2_clock_conversion_factor=buffer[0];
 	_sys2_clock_conversion_shift=buffer[1];
 	_sys2_clock_cpu_frequency=buffer[2];

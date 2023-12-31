@@ -5,5 +5,5 @@
 
 
 SYS2_PUBLIC sys2_error_t sys2_syscall_get_table_offset(const char* name){
-	return _syscall_syscall_table_get_offset(name);
+	return _sys2_syscall_syscall_table_get_offset(name);
 }
