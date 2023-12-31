@@ -1,8 +1,8 @@
 #include <dircolor/dircolor.h>
+#include <sys/_kernel_syscall.h>
 #include <sys/fd.h>
 #include <sys/io.h>
 #include <sys/options.h>
-#include <sys/syscall.h>
 
 
 

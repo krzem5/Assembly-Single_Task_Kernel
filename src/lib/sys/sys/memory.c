@@ -1,5 +1,5 @@
+#include <sys/_kernel_syscall.h>
 #include <sys/memory.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 
 

@@ -1,7 +1,7 @@
+#include <sys/_kernel_syscall.h>
 #include <sys/error.h>
 #include <sys/io.h>
 #include <sys/syscall.h>
-#include <sys/syscall_generic.h>
 #include <sys/types.h>
 #include <ui/display.h>
 

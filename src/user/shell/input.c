@@ -1,7 +1,7 @@
 #include <cwd.h>
 #include <input.h>
+#include <sys/_kernel_syscall.h>
 #include <sys/io.h>
-#include <sys/syscall.h>
 
 
 

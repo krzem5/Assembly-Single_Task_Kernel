@@ -1,8 +1,8 @@
 #include <GL/gl.h>
 #include <opengl/opengl.h>
+#include <sys/_kernel_syscall.h>
 #include <sys/error.h>
 #include <sys/io.h>
-#include <sys/syscall.h>
 #include <ui/display.h>
 
 
