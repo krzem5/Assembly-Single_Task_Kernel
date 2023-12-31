@@ -147,8 +147,8 @@
 - [ ] `glGetShaderInfoLog`
 - [ ] `glGetShaderiv`
 - [ ] `glGetShaderSource`
-- [ ] `glGetString`
-- [ ] `glGetStringi`
+- [x] `glGetString`
+- [x] `glGetStringi`
 - [ ] `glGetSynciv`
 - [ ] `glGetTexImage`
 - [ ] `glGetTexLevelParameterfv`
