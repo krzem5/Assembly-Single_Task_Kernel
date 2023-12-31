@@ -1,10 +1,19 @@
 #ifndef _SYS_IO_H_
 #define _SYS_IO_H_ 1
+#include <stdarg.h>
 #include <sys/types.h>
 
 
 
 void printf(const char* template,...);
+
+
+
+u32 sprintf(char* buffer,u32 size,const char* template,...);
+
+
+
+u32 svprintf(char* buffer,u32 size,const char* template,va_list va);
 
 
 

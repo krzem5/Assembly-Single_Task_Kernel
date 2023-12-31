@@ -29,7 +29,11 @@ typedef void* opengl_state_t;
 typedef struct _OPENGL_INTERNAL_STATE{
 	opengl_state_id_t state_id;
 	opengl_driver_instance_t driver_instance;
-	opengl_driver_instance_data_t driver_instance_data;
+	u16 driver_opengl_version;
+	char gl_renderer[64];
+	char gl_shading_language_version[16];
+	char gl_vendor[32];
+	char gl_version[16];
 	GLenum gl_error;
 	GLuint gl_active_texture;
 	GLfloat gl_clear_color_value[4];

@@ -43,7 +43,11 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	printf("State: %p @ %p\n",state_id,out);
 	out->state_id=state_id;
 	out->driver_instance=driver_instance;
-	out->driver_instance_data=driver_instance_data;
+	out->driver_opengl_version=driver_instance_data.opengl_version;
+	sprintf(out->gl_renderer,64,"%s",driver_instance_data.renderer_name);
+	sprintf(out->gl_shading_language_version,16,"1.0");
+	sprintf(out->gl_vendor,32,"opengl/%s",driver_instance_data.driver_name);
+	sprintf(out->gl_version,16,"%u.%u.%u",out->driver_opengl_version/100,(out->driver_opengl_version/10)%10,out->driver_opengl_version%10);
 	out->gl_error=GL_NO_ERROR;
 	out->gl_active_texture=0;
 	for (u8 i=0;i<4;i++){

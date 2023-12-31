@@ -1607,13 +1607,13 @@ SYS_PUBLIC void glGetShaderSource(GLuint shader,GLsizei bufSize,GLsizei* length,
 SYS_PUBLIC const GLubyte* glGetString(GLenum name){
 	switch (name){
 		case GL_RENDERER:
-			return (const GLubyte*)"<fetch OpenGL renderer backend>";
+			return (const GLubyte*)(_gl_internal_state->gl_renderer);
 		case GL_SHADING_LANGUAGE_VERSION:
-			return (const GLubyte*)"GL_SHADING_LANGUAGE_VERSION";
+			return (const GLubyte*)(_gl_internal_state->gl_shading_language_version);
 		case GL_VENDOR:
-			return (const GLubyte*)"libopengl";
+			return (const GLubyte*)(_gl_internal_state->gl_vendor);
 		case GL_VERSION:
-			return (const GLubyte*)"3.3";
+			return (const GLubyte*)(_gl_internal_state->gl_version);
 		default:
 			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return NULL;

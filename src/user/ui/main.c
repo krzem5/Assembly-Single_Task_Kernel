@@ -73,6 +73,10 @@ int main(int argc,const char** argv){
 		opengl_set_state(state);
 		glViewport(0,0,config.width,config.height);
 		printf("State: %p\n",state);
+		printf("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
+		printf("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
+		printf("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
+		printf("GL_VERSION: %s\n",glGetString(GL_VERSION));
 		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
 		u32 t=0;
 		while (1){

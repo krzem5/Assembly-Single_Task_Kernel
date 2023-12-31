@@ -1,4 +1,5 @@
 #include <sys/fd.h>
+#include <sys/io.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -6,7 +7,7 @@
 
 
 
-#define BUFFER_SIZE 512
+#define PRINTF_BUFFER_SIZE 512
 
 #define FLAG_SHORT_SHORT 1
 #define FLAG_SHORT 2
@@ -18,8 +19,9 @@
 
 
 typedef struct _BUFFER_STATE{
-	char buffer[BUFFER_SIZE];
+	char* buffer;
 	u32 offset;
+	u32 size;
 } buffer_state_t;
 
 
@@ -48,8 +50,11 @@ static void _write_data_to_stdout(const void* buffer,u32 size){
 
 
 static inline void _buffer_state_add(buffer_state_t* buffer_state,char c){
+	if (buffer_state->offset>=buffer_state->size){
+		return;
+	}
 	buffer_state->buffer[buffer_state->offset]=c;
-	buffer_state->offset+=(buffer_state->offset<BUFFER_SIZE);
+	buffer_state->offset++;
 }
 
 
@@ -117,12 +122,32 @@ static void _print_int(va_list va,u8 flags,buffer_state_t* out){
 
 
 SYS_PUBLIC void printf(const char* template,...){
-	buffer_state_t out={
-		.offset=0
-	};
+	char buffer[PRINTF_BUFFER_SIZE];
 	va_list va;
 	va_start(va,template);
-	while (*template){
+	_write_data_to_stdout(buffer,svprintf(buffer,PRINTF_BUFFER_SIZE,template,va));
+	va_end(va);
+}
+
+
+
+u32 sprintf(char* buffer,u32 size,const char* template,...){
+	va_list va;
+	va_start(va,template);
+	u32 out=svprintf(buffer,size,template,va);
+	va_end(va);
+	return out;
+}
+
+
+
+u32 svprintf(char* buffer,u32 size,const char* template,va_list va){
+	buffer_state_t out={
+		buffer,
+		0,
+		size
+	};
+	while (*template&&out.offset<out.size){
 		if (*template!='%'){
 			_buffer_state_add(&out,*template);
 			template++;
@@ -132,7 +157,7 @@ SYS_PUBLIC void printf(const char* template,...){
 		while (1){
 			template++;
 			if (!*template){
-				return;
+				return out.offset;
 			}
 			if (*template=='l'){
 				flags=(flags&(~MASK_SIZE))|FLAG_LONG;
@@ -258,8 +283,7 @@ SYS_PUBLIC void printf(const char* template,...){
 		}
 		template++;
 	}
-	va_end(va);
-	_write_data_to_stdout(out.buffer,out.offset);
+	return out.offset;
 }
 
 
