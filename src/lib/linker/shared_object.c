@@ -25,6 +25,21 @@ static void* memcpy(void* dst,const void* src,u64 length){
 
 
 
+static s32 strcmp(const char* a,const char* b){
+	while (1){
+		if (a[0]!=b[0]){
+			return (a[0]<b[0]?-1:1);
+		}
+		if (!a[0]){
+			return 0;
+		}
+		a++;
+		b++;
+	}
+}
+
+
+
 static shared_object_t* _alloc_shared_object(u64 image_base){
 	static shared_object_t buffer[16];
 	static u8 index=0;
@@ -188,6 +203,20 @@ shared_object_t* shared_object_load(const char* name){
 		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
+	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section);
+	if (!so){
+		goto _skip_initializer_lists;
+	}
+	const char* string_table=base_file_address+((const elf_shdr_t*)(base_file_address+header->e_shoff+header->e_shstrndx*header->e_shentsize))->sh_offset;
+	for (u16 i=0;i<header->e_shnum;i++){
+		const elf_shdr_t* section_header=(void*)(base_file_address+header->e_shoff+i*header->e_shentsize);
+		if (!strcmp(string_table+section_header->sh_name,".init_array")){
+			for (u64 i=0;i<section_header->sh_size;i+=sizeof(void*)){
+				((void (*)(void))(image_base+(*((const u64*)(base_file_address+section_header->sh_offset+i)))))();
+			}
+		}
+	}
+_skip_initializer_lists:
 	sys_memory_unmap((void*)base_file_address,0);
-	return shared_object_init((u64)image_base,dynamic_section);
+	return so;
 }
