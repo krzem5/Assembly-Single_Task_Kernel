@@ -23,6 +23,7 @@
 
 
 static GLenum _gl_error=GL_NO_ERROR;
+static GLenum _gl_active_texture=GL_TEXTURE0;
 static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,0.0f};
 static GLdouble _gl_clear_depth_value=0.0f;
 static GLint _gl_clear_stencil_value=0;
@@ -36,8 +37,10 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 	const void* values;
 	switch (param){
 		case GL_ACTIVE_TEXTURE:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ACTIVE_TEXTURE\x1b[0m\n");
-			return;
+			type=GL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&_gl_active_texture;
+			break;
 		case GL_ALIASED_LINE_WIDTH_RANGE:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_ALIASED_LINE_WIDTH_RANGE\x1b[0m\n");
 			return;
@@ -668,7 +671,11 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 
 
 SYS_PUBLIC void glActiveTexture(GLenum texture){
-	printf("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glActiveTexture\x1b[0m\n");
+	if (texture<GL_TEXTURE0||texture>=GL_TEXTURE0+GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS){
+		_gl_error=GL_INVALID_ENUM;
+		return;
+	}
+	_gl_active_texture=texture;
 }
 
 
