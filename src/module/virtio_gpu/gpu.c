@@ -69,7 +69,9 @@ static const ui_display_driver_t _virtio_gpu_display_driver={
 
 
 static void _load_capsets(virtio_gpu_device_t* gpu_device){
+	INFO("Loading capsets...");
 	u32 max_capset=virtio_read(gpu_device->device->device_field+VIRTIO_GPU_REG_NUM_CAPSETS,4);
+	ERROR("%u",max_capset);
 	for (u32 i=0;i<max_capset;i++){
 		virtio_gpu_resp_capset_info_t* response_capset_info=virtio_gpu_command_get_capset_info(gpu_device,i);
 		if (!response_capset_info){
@@ -83,6 +85,9 @@ static void _load_capsets(virtio_gpu_device_t* gpu_device){
 			}
 			amm_dealloc(response_capset);
 		}
+		else{
+			WARN("Unable to get capset data from capset #%u",i);
+		}
 		amm_dealloc(response_capset_info);
 	}
 }
@@ -90,6 +95,7 @@ static void _load_capsets(virtio_gpu_device_t* gpu_device){
 
 
 static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
+	INFO("Fetching EDID data...");
 	for (u32 i=0;i<gpu_device->scanout_count;i++){
 		virtio_gpu_resp_edid_t* edid=virtio_gpu_command_get_edid(gpu_device,i);
 		if (!edid){
@@ -104,6 +110,7 @@ static void _fetch_edid_data(virtio_gpu_device_t* gpu_device){
 
 
 static void _fetch_display_info(virtio_gpu_device_t* gpu_device){
+	INFO("Fetching display info...");
 	virtio_write(gpu_device->device->device_field+VIRTIO_GPU_REG_EVENTS_CLEAR,4,VIRTIO_GPU_EVENT_DISPLAY);
 	virtio_gpu_resp_display_info_t* display_info=virtio_gpu_command_get_display_info(gpu_device);
 	if (!display_info){
@@ -143,6 +150,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	if (!cursorq){
 		return 0;
 	}
+	INFO("Creating GPU device...");
 	virtio_gpu_device_t* gpu_device=omm_alloc(_virtio_gpu_device_allocator);
 	gpu_device->device=device;
 	gpu_device->controlq=controlq;

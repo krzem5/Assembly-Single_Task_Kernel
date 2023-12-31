@@ -9,6 +9,7 @@ static GLenum _gl_error=GL_NO_ERROR;
 static GLfloat _gl_clear_color_value[4]={0.0f,0.0f,0.0f,1.0f};
 static GLdouble _gl_clear_depth_value=0.0f;
 static GLint _gl_clear_stencil_value=0;
+static GLint _gl_viewport[4]={0,0,0,0};
 
 
 
@@ -2140,6 +2141,10 @@ SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLbool
 
 
 SYS_PUBLIC void glViewport(GLint x,GLint y,GLsizei width,GLsizei height){
+	_gl_viewport[0]=x;
+	_gl_viewport[1]=y;
+	_gl_viewport[2]=width;
+	_gl_viewport[3]=height;
 	opengl_protocol_set_viewport_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_SET_VIEWPORT,
 		.header.length=sizeof(opengl_protocol_set_viewport_t),
