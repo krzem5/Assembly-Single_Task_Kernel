@@ -37,11 +37,8 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	if (!driver_instance||!opengl_syscall_get_driver_instance_data(driver_instance,&driver_instance_data)){
 		return 0;
 	}
-	printf("Driver: %s/%s, %u\n",driver_instance_data.driver_name,driver_instance_data.renderer_name,driver_instance_data.opengl_version);
-	opengl_state_id_t state_id=opengl_syscall_create_state(driver_instance);
 	opengl_internal_state_t* out=sys_memory_map((sizeof(opengl_internal_state_t)+SYS_PAGE_SIZE-1)&(-SYS_PAGE_SIZE),SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
-	printf("State: %p @ %p\n",state_id,out);
-	out->state_id=state_id;
+	out->state_id=opengl_syscall_create_state(driver_instance);
 	out->driver_instance=driver_instance;
 	out->driver_opengl_version=driver_instance_data.opengl_version;
 	sprintf(out->gl_renderer,64,"%s",driver_instance_data.renderer_name);

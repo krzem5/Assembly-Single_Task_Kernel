@@ -63,20 +63,22 @@ int main(int argc,const char** argv){
 		if (SYS_ERROR_IS_ERROR(ui_display_get_data(display,&data))){
 			continue;
 		}
-		printf("Display %p: #%u, %u x %u @ %u Hz\n",display,data.index,data.mode.width,data.mode.height,data.mode.freq);
+		printf("Display #%u: %u x %u @ %u Hz\n",data.index,data.mode.width,data.mode.height,data.mode.freq);
 		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer(display);
 		ui_display_framebuffer_t config;
 		ui_display_get_framebuffer_config(framebuffer,&config);
 		u32* framebuffer_address=(u32*)ui_display_map_framebuffer(framebuffer);
-		printf("Framebuffer: %p, %v, %u x %u, [%u] -> %p\n",framebuffer,config.size,config.width,config.height,config.format,framebuffer_address);
+		printf("Framebuffer: %v, %u x %u, [%u] -> %p\n",config.size,config.width,config.height,config.format,framebuffer_address);
 		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
 		glViewport(0,0,config.width,config.height);
-		printf("State: %p\n",state);
 		printf("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
 		printf("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
 		printf("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
 		printf("GL_VERSION: %s\n",glGetString(GL_VERSION));
+		GLint extension_count=0xaa;
+		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
+		printf("Extensions: %u\n",extension_count);
 		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
 		u32 t=0;
 		while (1){

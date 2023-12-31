@@ -533,14 +533,23 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_UNPACK_SWAP_BYTES\x1b[0m\n");
 			return;
 		case GL_NUM_EXTENSIONS:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_NUM_EXTENSIONS\x1b[0m\n");
-			return;
+			local_value=0;
+			type=OPENGL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&local_value;
+			break;
 		case GL_MAJOR_VERSION:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAJOR_VERSION\x1b[0m\n");
-			return;
+			local_value=_gl_internal_state->driver_opengl_version/100;
+			type=OPENGL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&local_value;
+			break;
 		case GL_MINOR_VERSION:
-			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MINOR_VERSION\x1b[0m\n");
-			return;
+			local_value=(_gl_internal_state->driver_opengl_version/10)%10;
+			type=OPENGL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&local_value;
+			break;
 		case GL_CONTEXT_FLAGS:
 			printf("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_CONTEXT_FLAGS\x1b[0m\n");
 			return;
