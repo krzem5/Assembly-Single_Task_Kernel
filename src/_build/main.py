@@ -187,29 +187,28 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 			args=tuple(line.split("(")[1].split(")")[0].strip().split(","))
 			if (args==("void",)):
 				args=tuple()
-			attrs=line.split(")")[1].split("->")[0].strip()
 			ret=line.split("->")[1].strip()
-			syscalls[index]=(name,args,attrs,ret)
+			syscalls[index]=(name,args,ret)
 	if (user_code_file_path is not None and user_header_file_path is not None):
 		with open(user_code_file_path,"w") as wf:
 			wf.write("[bits 64]\n")
-			for index,(name,args,_,ret) in syscalls.items():
+			for index,(name,args,ret) in syscalls.items():
 				wf.write(f"\n\n\nsection .text._syscall_{name} exec nowrite\nglobal _syscall_{name}:function _syscall_{name}_size\n_syscall_{name}:\n\tmov rax, {hex(index|(table_index<<32))}\n")
 				if (len(args)>3):
 					wf.write("\tmov r10, rcx\n")
 				wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
 		with open(user_header_file_path,"w") as wf:
 			wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/syscall_generic.h>\n#include <sys/types.h>\n\n\n\n")
-			for index,(name,args,attrs,ret) in syscalls.items():
-				wf.write(f"static inline {ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
+			for index,(name,args,ret) in syscalls.items():
+				wf.write(f"static inline {ret} _syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
 			wf.write("#endif\n")
 	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/types.h>\n\n\n\n")
-		for name,_,_,_ in syscalls.values():
+		for name,_,_ in syscalls.values():
 			wf.write(f"extern u64 syscall_{name}();\n")
 		size=max(syscalls.keys())+1
 		wf.write(f"\n\n\nconst u64 _syscalls_{table_name}_count={size};\n\n\n\nconst void*const _syscalls_{table_name}_functions[{size}]={{\n")
-		for index,(name,_,_,_) in syscalls.items():
+		for index,(name,_,_) in syscalls.items():
 			wf.write(f"\t[{index}]=syscall_{name},\n")
 		wf.write("};\n")
 
