@@ -12,7 +12,8 @@ static void _sys_thread_bootstrap(void (*func)(void*),void* arg){
 
 
 SYS_PUBLIC void __attribute__((noreturn)) sys_thread_stop(void){
-	_syscall_thread_stop();
+	_syscall_thread_stop(0);
+	for (;;);
 }
 
 

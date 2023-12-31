@@ -199,9 +199,9 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 					wf.write("\tmov r10, rcx\n")
 				wf.write(f"\tsyscall\n\tret\n_syscall_{name}_size equ $-$$\n")
 		with open(user_header_file_path,"w") as wf:
-			wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/types.h>\n\n\n\n")
-			for name,args,attrs,ret in syscalls.values():
-				wf.write(f"{ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'});\n\n\n\n")
+			wf.write("#ifndef _SYS_SYSCALL_H_\n#define _SYS_SYSCALL_H_ 1\n#include <sys/syscall_generic.h>\n#include <sys/types.h>\n\n\n\n")
+			for index,(name,args,attrs,ret) in syscalls.items():
+				wf.write(f"static inline {ret} {'__attribute__(('+attrs+')) ' if attrs else ''}_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
 			wf.write("#endif\n")
 	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/types.h>\n\n\n\n")

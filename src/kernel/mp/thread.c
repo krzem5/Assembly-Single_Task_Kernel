@@ -225,7 +225,10 @@ error_t syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
 
 
 
-error_t syscall_thread_stop(void){
+error_t syscall_thread_stop(handle_id_t thread_handle){
+	if (thread_handle){
+		panic("syscall_thread_stop: stop other thread");
+	}
 	thread_terminate();
 }
 

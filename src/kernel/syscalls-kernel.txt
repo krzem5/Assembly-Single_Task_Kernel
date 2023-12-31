@@ -18,13 +18,13 @@
 16,memory_map(u64 length,u32 flags,u64 fd) -> void*
 17,memory_change_flags(void* address,u64 length,u32 flags) -> u64
 18,memory_unmap(void* address,u64 length) -> u64
-19,system_shutdown(u32 flags) noreturn -> u64
+19,system_shutdown(u32 flags) -> u64
 20,thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
-21,thread_get_cpu_mask(u64 handle,void* buffer,u32 size) -> u64
-22,thread_get_priority(u64 handle) -> u64
-23,thread_set_cpu_mask(u64 handle,void* buffer,u32 size) -> u64
-24,thread_set_priority(u64 handle,u32 priority) -> u64
-25,thread_stop(void) noreturn -> void
+21,thread_get_cpu_mask(u64 thread,void* buffer,u32 size) -> u64
+22,thread_get_priority(u64 thread) -> u64
+23,thread_set_cpu_mask(u64 thread,void* buffer,u32 size) -> u64
+24,thread_set_priority(u64 thread,u32 priority) -> u64
+25,thread_stop(u64 thread) -> u64
 27,uid_get(void) -> u64
 28,gid_get(void) -> u64
 29,uid_set(u32 uid) -> u64
