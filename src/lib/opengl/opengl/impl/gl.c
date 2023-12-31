@@ -555,7 +555,25 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 	}
 	for (u32 i=(index==GL_PARAMETER_NO_INDEX?0:index);i<(index==GL_PARAMETER_NO_INDEX?length:index+1);i++){
 		if (type==GL_PARAMETER_TYPE_BOOL){
-			_Bool value=*(((_Bool*)values)+i);
+			GLboolean value=*(((const GLboolean*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
+		}
+		else if (type==GL_PARAMETER_TYPE_INT){
+			GLint value=*(((const GLint*)values)+i);
 			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
 				*(((GLboolean*)out)+i)=(value?GL_TRUE:GL_FALSE);
 			}
@@ -572,20 +590,77 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 				*(((GLdouble*)out)+i)=value;
 			}
 		}
-		else if (type==GL_PARAMETER_TYPE_INT){
-			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT\x1b[0m\n");
-		}
 		else if (type==GL_PARAMETER_TYPE_INT64){
-			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT64\x1b[0m\n");
+			GLint64 value=*(((const GLint64*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=(value?GL_TRUE:GL_FALSE);
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
 		}
 		else if (type==GL_PARAMETER_TYPE_FLOAT){
-			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_FLOAT\x1b[0m\n");
+			GLfloat value=*(((const GLfloat*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=(value!=0.0f?GL_TRUE:GL_FALSE);
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
 		}
 		else if (type==GL_PARAMETER_TYPE_DOUBLE){
-			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_DOUBLE\x1b[0m\n");
+			GLdouble value=*(((const GLdouble*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=(value!=0.0?GL_TRUE:GL_FALSE);
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
 		}
 		else{
-			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_COLOR_OR_NORMAL\x1b[0m\n");
+			GLfloat value=*(((const GLfloat*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=(value!=0.0f?GL_TRUE:GL_FALSE);
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=(value+1)/2*0xffffffff-0x80000000;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=(value+1)/2*0xffffffffffffffff-0x8000000000000000;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
 		}
 	}
 }
