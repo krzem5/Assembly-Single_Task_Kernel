@@ -71,7 +71,6 @@ static const ui_display_driver_t _virtio_gpu_display_driver={
 static void _load_capsets(virtio_gpu_device_t* gpu_device){
 	INFO("Loading capsets...");
 	u32 max_capset=virtio_read(gpu_device->device->device_field+VIRTIO_GPU_REG_NUM_CAPSETS,4);
-	ERROR("%u",max_capset);
 	for (u32 i=0;i<max_capset;i++){
 		virtio_gpu_resp_capset_info_t* response_capset_info=virtio_gpu_command_get_capset_info(gpu_device,i);
 		if (!response_capset_info){
