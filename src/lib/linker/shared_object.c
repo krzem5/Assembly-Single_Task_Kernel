@@ -163,7 +163,7 @@ shared_object_t* shared_object_load(const char* name){
 			max_address=address;
 		}
 	}
-	max_address=(max_address+4095)&0xfffffffffffff000ull;
+	max_address=(max_address+SYS_PAGE_SIZE-1)&(-SYS_PAGE_SIZE);
 	void* image_base=sys_memory_map(max_address,SYS_MEMORY_FLAG_WRITE,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){

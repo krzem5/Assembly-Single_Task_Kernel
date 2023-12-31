@@ -5,6 +5,7 @@
 
 #define SYS2_PUBLIC __attribute__((visibility("default")))
 #define SYS2_PACKED __attribute__((packed))
+#define SYS2_CONSTRUCTOR __attribute__((constructor))
 
 
 
