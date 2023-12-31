@@ -76,7 +76,7 @@ int main(int argc,const char** argv){
 		printf("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
 		printf("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
 		printf("GL_VERSION: %s\n",glGetString(GL_VERSION));
-		GLint extension_count=0xaa;
+		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		printf("Extensions: %u\n",extension_count);
 		u64 timer_event=_syscall_timer_get_event(_syscall_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
