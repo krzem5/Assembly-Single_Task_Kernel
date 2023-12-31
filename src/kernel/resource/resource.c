@@ -46,7 +46,9 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 
 
 
-KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager);
+KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager){
+	panic("resource_manager_delete");
+}
 
 
 
@@ -95,4 +97,6 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 
 
 
-KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource);
+KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
+	panic("resource_dealloc");
+}

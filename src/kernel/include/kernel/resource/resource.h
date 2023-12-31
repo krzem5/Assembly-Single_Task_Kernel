@@ -6,13 +6,13 @@
 
 
 
-typedef u32 resource_t;
+typedef u64 resource_t;
 
 
 
 typedef struct _RESOURCE_REGION{
 	rb_tree_node_t rb_node;
-	u32 length;
+	u64 length;
 	_Bool is_used;
 } resource_region_t;
 

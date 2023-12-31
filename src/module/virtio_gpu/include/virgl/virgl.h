@@ -13,6 +13,10 @@
 
 
 
+typedef u32 virgl_resource_t;
+
+
+
 typedef struct _VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER{
 	spinlock_t lock;
 	u32* buffer;
