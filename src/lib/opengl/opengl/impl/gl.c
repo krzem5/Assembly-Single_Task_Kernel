@@ -5,6 +5,8 @@
 
 
 
+#define GL_PARAMETER_NO_INDEX 0xffffffffffffffff
+
 #define GL_PARAMETER_TYPE_BOOL 0
 #define GL_PARAMETER_TYPE_INT 1
 #define GL_PARAMETER_TYPE_INT64 2
@@ -28,7 +30,7 @@ static GLint _gl_viewport[4]={0,0,0,0};
 
 
 
-static void _gl_get_parameter(GLenum param,u32 index,void* out,u32 out_type){
+static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 	u32 type;
 	u32 length;
 	const void* values;
@@ -547,43 +549,44 @@ static void _gl_get_parameter(GLenum param,u32 index,void* out,u32 out_type){
 			_gl_error=GL_INVALID_ENUM;
 			return;
 	}
-	if (length<=index){
+	if (index!=GL_PARAMETER_NO_INDEX&&length<=index){
 		_gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	values+=index;
-	if (type==GL_PARAMETER_TYPE_BOOL){
-		_Bool value=*((_Bool*)values);
-		if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
-			*((GLboolean*)out)=(value?GL_TRUE:GL_FALSE);
+	for (u32 i=(index==GL_PARAMETER_NO_INDEX?0:index);i<(index==GL_PARAMETER_NO_INDEX?length:index+1);i++){
+		if (type==GL_PARAMETER_TYPE_BOOL){
+			_Bool value=*(((_Bool*)values)+i);
+			if (out_type==GL_PARAMETER_RETURN_TYPE_BOOL){
+				*(((GLboolean*)out)+i)=(value?GL_TRUE:GL_FALSE);
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
+				*(((GLint*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
+				*(((GLint64*)out)+i)=value;
+			}
+			else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
+				*(((GLfloat*)out)+i)=value;
+			}
+			else{
+				*(((GLdouble*)out)+i)=value;
+			}
 		}
-		else if (out_type==GL_PARAMETER_RETURN_TYPE_INT){
-			*((GLint*)out)=value;
+		else if (type==GL_PARAMETER_TYPE_INT){
+			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT\x1b[0m\n");
 		}
-		else if (out_type==GL_PARAMETER_RETURN_TYPE_INT64){
-			*((GLint64*)out)=value;
+		else if (type==GL_PARAMETER_TYPE_INT64){
+			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT64\x1b[0m\n");
 		}
-		else if (out_type==GL_PARAMETER_RETURN_TYPE_FLOAT){
-			*((GLfloat*)out)=value;
+		else if (type==GL_PARAMETER_TYPE_FLOAT){
+			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_FLOAT\x1b[0m\n");
+		}
+		else if (type==GL_PARAMETER_TYPE_DOUBLE){
+			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_DOUBLE\x1b[0m\n");
 		}
 		else{
-			*((GLdouble*)out)=value;
+			printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_COLOR_OR_NORMAL\x1b[0m\n");
 		}
-	}
-	else if (type==GL_PARAMETER_TYPE_INT){
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT\x1b[0m\n");
-	}
-	else if (type==GL_PARAMETER_TYPE_INT64){
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_INT64\x1b[0m\n");
-	}
-	else if (type==GL_PARAMETER_TYPE_FLOAT){
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_FLOAT\x1b[0m\n");
-	}
-	else if (type==GL_PARAMETER_TYPE_DOUBLE){
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_DOUBLE\x1b[0m\n");
-	}
-	else{
-		printf("\x1b[38;2;231;72;86mUnimplemented _gl_get_parameter.GL_PARAMETER_TYPE_COLOR_OR_NORMAL\x1b[0m\n");
 	}
 }
 
@@ -1311,7 +1314,7 @@ SYS_PUBLIC void glGetBooleani_v(GLenum target,GLuint index,GLboolean* data){
 
 
 SYS_PUBLIC void glGetBooleanv(GLenum pname,GLboolean* data){
-	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_BOOL);
+	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_BOOL);
 }
 
 
@@ -1347,7 +1350,7 @@ SYS_PUBLIC void glGetCompressedTexImage(GLenum target,GLint level,void* img){
 
 
 SYS_PUBLIC void glGetDoublev(GLenum pname,GLdouble* data){
-	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_DOUBLE);
+	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_DOUBLE);
 }
 
 
@@ -1361,7 +1364,7 @@ SYS_PUBLIC GLenum glGetError(void){
 
 
 SYS_PUBLIC void glGetFloatv(GLenum pname,GLfloat* data){
-	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_FLOAT);
+	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_FLOAT);
 }
 
 
@@ -1393,7 +1396,7 @@ SYS_PUBLIC void glGetInteger64i_v(GLenum target,GLuint index,GLint64* data){
 
 
 SYS_PUBLIC void glGetInteger64v(GLenum pname,GLint64* data){
-	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_INT64);
+	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_INT64);
 }
 
 
@@ -1405,7 +1408,7 @@ SYS_PUBLIC void glGetIntegeri_v(GLenum target,GLuint index,GLint* data){
 
 
 SYS_PUBLIC void glGetIntegerv(GLenum pname,GLint* data){
-	_gl_get_parameter(pname,0,data,GL_PARAMETER_RETURN_TYPE_INT);
+	_gl_get_parameter(pname,GL_PARAMETER_NO_INDEX,data,GL_PARAMETER_RETURN_TYPE_INT);
 }
 
 
