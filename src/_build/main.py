@@ -167,7 +167,7 @@ MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 MODULE_ORDER_FILE_PATH="src/module/module_order.config"
-COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_FAST
+COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_NONE
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 INITRAMFS_SIZE=512
@@ -397,6 +397,7 @@ def _compile_module(module,dependencies):
 	object_files=[]
 	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	error=False
+	relink=False
 	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -416,8 +417,9 @@ def _compile_module(module,dependencies):
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
+			relink=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or (relink and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0)):
 		sys.exit(1)
 
 
@@ -428,6 +430,7 @@ def _compile_library(library,flags,dependencies):
 	object_files=[]
 	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	error=False
+	relink=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -448,9 +451,12 @@ def _compile_library(library,flags,dependencies):
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
+				relink=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
+	if (not relink):
+		return
 	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[f"build/lib/lib{dep}.a" for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 	if ("nostatic" in flags):
@@ -469,6 +475,7 @@ def _compile_user_files(program,dependencies):
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
 	error=False
+	relink=False
 	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -488,8 +495,9 @@ def _compile_user_files(program,dependencies):
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
+			reilnk=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or (relink and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-L","build/lib","-I/lib/ld.so","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0)):
 		sys.exit(1)
 
 
