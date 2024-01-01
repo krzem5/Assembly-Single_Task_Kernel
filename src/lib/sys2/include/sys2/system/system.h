@@ -9,6 +9,10 @@
 
 
 
+void __sys2_init(void);
+
+
+
 sys2_error_t sys2_system_shutdown(u32 flags);
 
 

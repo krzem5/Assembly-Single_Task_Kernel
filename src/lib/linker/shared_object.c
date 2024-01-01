@@ -1,10 +1,10 @@
-#include <sys/fd.h>
-#include <sys/io.h>
-#include <sys/memory.h>
-#include <sys/types.h>
 #include <linker/search_path.h>
 #include <linker/shared_object.h>
 #include <linker/symbol.h>
+#include <sys2/fd/fd.h>
+#include <sys2/io/io.h>
+#include <sys2/memory/memory.h>
+#include <sys2/types.h>
 
 
 
@@ -58,11 +58,16 @@ static shared_object_t* _alloc_shared_object(u64 image_base){
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section){
+shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path){
 	shared_object_t* so=_alloc_shared_object(image_base);
 	if (!dynamic_section){
 		return so;
 	}
+	u16 i=0;
+	do{
+		so->path[i]=path[i];
+		i++;
+	} while (path[i-1]);
 	so->dynamic_section.has_needed_libraries=0;
 	so->dynamic_section.plt_relocation_size=0;
 	so->dynamic_section.plt_got=NULL;
@@ -137,6 +142,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 				case R_X86_64_COPY:
 					memcpy((void*)(so->image_base+relocation->r_offset),(void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),symbol->st_size);
 					break;
+				case R_X86_64_64:
 				case R_X86_64_GLOB_DAT:
 					*((u64*)(so->image_base+relocation->r_offset))=symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name);
 					break;
@@ -144,7 +150,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
 					break;
 				default:
-					printf("Unknown relocation type: %u\n",relocation->r_info&0xffffffff);
+					sys2_io_print("Unknown relocation type: %u\n",relocation->r_info&0xffffffff);
 					return NULL;
 			}
 		}
@@ -155,14 +161,19 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 
 
 shared_object_t* shared_object_load(const char* name){
-	char buffer[4096];
-	s64 fd=search_path_find_library(name,buffer,4096);
-	if (!fd){
-		printf("Unable to find library '%s'\n",name);
+	char buffer[256];
+	sys2_fd_t fd=search_path_find_library(name,buffer,256);
+	if (SYS2_IS_ERROR(fd)){
+		sys2_io_print("Unable to find library '%s'\n",name);
 		return NULL;
 	}
-	const void* base_file_address=sys_memory_map(0,SYS_MEMORY_FLAG_NOWRITEBACK|SYS_MEMORY_FLAG_FILE|SYS_MEMORY_FLAG_READ,fd);
-	sys_fd_close(fd);
+	for (shared_object_t* so=shared_object_root;so;so=so->next){
+		if (!strcmp(so->path,buffer)){
+			return so;
+		}
+	}
+	void* base_file_address=(void*)sys2_memory_map(0,SYS2_MEMORY_FLAG_READ|SYS2_MEMORY_FLAG_WRITE|SYS2_MEMORY_FLAG_FILE|SYS2_MEMORY_FLAG_NOWRITEBACK,fd);
+	sys2_fd_close(fd);
 	const elf_hdr_t* header=base_file_address;
 	if (header->e_ident.signature!=0x464c457f||header->e_ident.word_size!=2||header->e_ident.endianess!=1||header->e_ident.header_version!=1||header->e_ident.abi!=0||header->e_type!=ET_DYN||header->e_machine!=0x3e||header->e_version!=1){
 		return NULL;
@@ -178,8 +189,7 @@ shared_object_t* shared_object_load(const char* name){
 			max_address=address;
 		}
 	}
-	max_address=(max_address+SYS_PAGE_SIZE-1)&(-SYS_PAGE_SIZE);
-	void* image_base=sys_memory_map(max_address,SYS_MEMORY_FLAG_WRITE,0);
+	void* image_base=(void*)sys2_memory_map(sys2_memory_align_up_address(max_address),SYS2_MEMORY_FLAG_WRITE,0);
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
 		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
@@ -192,18 +202,18 @@ shared_object_t* shared_object_load(const char* name){
 		}
 		u64 flags=0;
 		if (program_header->p_flags&PF_R){
-			flags|=SYS_MEMORY_FLAG_READ;
+			flags|=SYS2_MEMORY_FLAG_READ;
 		}
 		if (program_header->p_flags&PF_W){
-			flags|=SYS_MEMORY_FLAG_WRITE;
+			flags|=SYS2_MEMORY_FLAG_WRITE;
 		}
 		if (program_header->p_flags&PF_X){
-			flags|=SYS_MEMORY_FLAG_EXEC;
+			flags|=SYS2_MEMORY_FLAG_EXEC;
 		}
 		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
-		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
+		sys2_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
-	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section);
+	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
 	if (!so){
 		goto _skip_initializer_lists;
 	}
@@ -217,6 +227,6 @@ shared_object_t* shared_object_load(const char* name){
 		}
 	}
 _skip_initializer_lists:
-	sys_memory_unmap((void*)base_file_address,0);
+	sys2_memory_unmap((void*)base_file_address,0);
 	return so;
 }

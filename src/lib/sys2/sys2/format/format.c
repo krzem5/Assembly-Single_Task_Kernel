@@ -1,4 +1,5 @@
 #include <sys2/format/format.h>
+#include <sys2/time/time.h>
 #include <sys2/types.h>
 #include <sys2/util/var_arg.h>
 
@@ -38,7 +39,7 @@ static inline char _format_base16_char(u8 value){
 
 
 
-static inline void _format_base10_int(u64 value,format_buffer_state_t* out){
+static inline void _format_base10_int(u64 value,u32 min_width,format_buffer_state_t* out){
 	char buffer[20];
 	u8 i=0;
 	do{
@@ -46,6 +47,9 @@ static inline void _format_base10_int(u64 value,format_buffer_state_t* out){
 		i++;
 		value/=10;
 	} while (value);
+	for (;min_width>i;min_width--){
+		_buffer_state_add(out,'0');
+	}
 	while (i){
 		i--;
 		_buffer_state_add(out,buffer[i]);
@@ -72,7 +76,7 @@ static void _format_int(sys2_var_arg_list_t* va,u8 flags,format_buffer_state_t* 
 		return;
 	}
 	if (!(flags&FLAG_HEX)){
-		_format_base10_int(data,out);
+		_format_base10_int(data,0,out);
 		return;
 	}
 	char buffer[16];
@@ -165,42 +169,42 @@ SYS2_PUBLIC u32 sys2_format_string_va(char* buffer,u32 length,const char* templa
 		else if (*template=='v'){
 			u64 size=sys2_var_arg_get(*va,u64);
 			if (size<0x400){
-				_format_base10_int(size,&out);
+				_format_base10_int(size,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x100000){
-				_format_base10_int((size+0x200)>>10,&out);
+				_format_base10_int((size+0x200)>>10,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'K');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x40000000){
-				_format_base10_int((size+0x80000)>>20,&out);
+				_format_base10_int((size+0x80000)>>20,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'M');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x10000000000ull){
-				_format_base10_int((size+0x20000000)>>30,&out);
+				_format_base10_int((size+0x20000000)>>30,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'G');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x4000000000000ull){
-				_format_base10_int((size+0x8000000000ull)>>40,&out);
+				_format_base10_int((size+0x8000000000ull)>>40,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'T');
 				_buffer_state_add(&out,'B');
 			}
 			else if (size<0x1000000000000000ull){
-				_format_base10_int((size+0x2000000000000ull)>>50,&out);
+				_format_base10_int((size+0x2000000000000ull)>>50,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'P');
 				_buffer_state_add(&out,'B');
 			}
 			else{
-				_format_base10_int((size+0x800000000000000ull)>>60,&out);
+				_format_base10_int((size+0x800000000000000ull)>>60,0,&out);
 				_buffer_state_add(&out,' ');
 				_buffer_state_add(&out,'E');
 				_buffer_state_add(&out,'B');
@@ -241,8 +245,26 @@ SYS2_PUBLIC u32 sys2_format_string_va(char* buffer,u32 length,const char* templa
 				if (i){
 					_buffer_state_add(&out,'.');
 				}
-				_format_base10_int((ip4>>(24-(i<<3)))&0xff,&out);
+				_format_base10_int((ip4>>(24-(i<<3)))&0xff,0,&out);
 			}
+		}
+		else if (*template=='t'){
+			s64 time=sys2_var_arg_get(*va,s64);
+			sys2_time_t split_time;
+			sys2_time_from_nanoseconds(time,&split_time);
+			_format_base10_int(split_time.years,4,&out);
+			_buffer_state_add(&out,'-');
+			_format_base10_int(split_time.months,2,&out);
+			_buffer_state_add(&out,'-');
+			_format_base10_int(split_time.days,2,&out);
+			_buffer_state_add(&out,' ');
+			_format_base10_int(split_time.hours,2,&out);
+			_buffer_state_add(&out,':');
+			_format_base10_int(split_time.minutes,2,&out);
+			_buffer_state_add(&out,':');
+			_format_base10_int(split_time.seconds,2,&out);
+			_buffer_state_add(&out,'.');
+			_format_base10_int(time%1000000000,9,&out);
 		}
 		else{
 			_buffer_state_add(&out,*template);

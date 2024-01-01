@@ -1,7 +1,7 @@
 #ifndef _LINKER_SYMBOL_H_
 #define _LINKER_SYMBOL_H_ 1
-#include <sys/types.h>
 #include <linker/shared_object.h>
+#include <sys2/types.h>
 
 
 

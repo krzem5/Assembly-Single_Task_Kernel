@@ -11,7 +11,7 @@ SYS2_PUBLIC sys2_fd_t sys2_io_error_fd=0;
 
 
 
-static void SYS2_CONSTRUCTOR _init(void){
+void __sys2_io_init(void){
 	sys2_io_input_fd=sys2_fd_open(0,"/proc/self/stdin",SYS2_FD_FLAG_READ);
 	sys2_io_output_fd=sys2_fd_open(0,"/proc/self/stdout",SYS2_FD_FLAG_WRITE);
 	sys2_io_error_fd=sys2_fd_open(0,"/proc/self/stderr",SYS2_FD_FLAG_WRITE);

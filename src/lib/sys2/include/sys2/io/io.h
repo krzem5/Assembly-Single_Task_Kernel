@@ -10,6 +10,10 @@ extern sys2_fd_t sys2_io_error_fd;
 
 
 
+void __sys2_io_init(void);
+
+
+
 u32 sys2_io_print(const char* template,...);
 
 

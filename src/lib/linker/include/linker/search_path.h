@@ -1,6 +1,6 @@
 #ifndef _LINKER_SEARCH_PATH_H_
 #define _LINKER_SEARCH_PATH_H_ 1
-#include <sys/types.h>
+#include <sys2/types.h>
 
 
 

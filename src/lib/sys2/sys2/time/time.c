@@ -14,14 +14,14 @@ static void SYS2_CONSTRUCTOR _init(void){
 
 
 
-SYS2_PUBLIC u64 sys_time_get_boot_offset(void){
+SYS2_PUBLIC u64 sys2_time_get_boot_offset(void){
 	return _sys2_time_boot_offset;
 }
 
 
 
 // Based on https://howardhinnant.github.io/date_algorithms.html#civil_from_days
-SYS2_PUBLIC void sys_time_from_nanoseconds(s64 time,sys2_time_t* out){
+SYS2_PUBLIC void sys2_time_from_nanoseconds(s64 time,sys2_time_t* out){
 	out->nanoseconds=time%1000;
 	time/=1000;
 	out->microseconds=time%1000;
