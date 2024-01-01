@@ -8,10 +8,16 @@
 #define OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE 0x02
 #define OPENGL_PROTOCOL_TYPE_CLEAR 0x03
 #define OPENGL_PROTOCOL_TYPE_SET_VIEWPORT 0x04
+#define OPENGL_PROTOCOL_TYPE_CREATE_SHADER 0x05
+#define OPENGL_PROTOCOL_TYPE_DELETE_SHADER 0x06
 
 #define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
 #define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
 #define OPENGL_PROTOCOL_CLEAR_FLAG_STENCIL 0x00000004
+
+#define OPENGL_PROTOCOL_SHADER_TYPE_VERTEX 0x0001
+
+#define OPENGL_PROTOCOL_SHADER_LANGUAGE_TGSI 0x0001
 
 
 
@@ -62,6 +68,24 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
 	float sx;
 	float sy;
 } opengl_protocol_set_viewport_t;
+
+
+
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_CREATE_SHADER{
+	opengl_protocol_header_t header;
+	u32 sys_handle;
+	u16 type;
+	u16 language;
+	u32 size;
+	const u8* data;
+} opengl_protocol_create_shader_t;
+
+
+
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_DELETE_SHADER{
+	opengl_protocol_header_t header;
+	u32 sys_handle;
+} opengl_protocol_delete_shader_t;
 
 
 

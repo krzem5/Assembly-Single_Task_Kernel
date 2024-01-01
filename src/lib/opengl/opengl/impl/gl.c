@@ -1,12 +1,11 @@
 #include <GL/gl.h>
 #include <opengl/command_buffer.h>
+#include <opengl/config.h>
 #include <opengl/protocol.h>
 #include <sys/io/io.h>
 #include <sys/types.h>
 
 
-
-#define OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS 48 // at least 48
 
 #define OPENGL_PARAMETER_NO_INDEX 0xffffffffffffffffull
 

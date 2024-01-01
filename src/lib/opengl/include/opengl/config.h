@@ -1,0 +1,10 @@
+#ifndef _OPENGL_CONFIG_H_
+#define _OPENGL_CONFIG_H_ 1
+
+
+
+#define OPENGL_CONFIG_MAX_COMBINED_TEXTURE_IMAGE_UNITS 48 // at least 48
+
+
+
+#endif
