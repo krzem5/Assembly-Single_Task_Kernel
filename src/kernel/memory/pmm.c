@@ -129,6 +129,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
+		WARN("%p: %x, %x | %u, %x",address,length,size,address&(_get_block_size(idx)-1),length-_get_block_size(idx));
 		_block_descriptor_set_prev_idx(address+_get_block_size(idx),idx);
 		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,idx);
 		if ((allocator->block_groups+idx)->tail){
@@ -169,7 +170,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=block_descriptor_array_size;
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
-		(_pmm_block_descriptors+i)->data[0]=0x3e0;
+		(_pmm_block_descriptors+i)->data[0]=0xffff;
 		(_pmm_block_descriptors+i)->data[1]=0;
 	}
 	spinlock_init(&(_pmm_load_balancer.lock));
@@ -201,6 +202,14 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 		total_memory+=end-address;
 		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
+	// u64 i=kernel_data.first_free_address;
+	// for (;i<=((kernel_data.mmap+kernel_data.mmap_size-1)->base+(kernel_data.mmap+kernel_data.mmap_size-1)->length);){
+	// 	if ((_pmm_block_descriptors+(i>>PAGE_SIZE_SHIFT))->data[0]!=0xffff){
+	// 		ERROR("[%p] %u | %u",i,_block_descriptor_get_prev_idx(i),_block_descriptor_get_idx(i));
+	// 	}
+	// 	i+=(_block_descriptor_get_idx(i)==0x1f?PAGE_SIZE:_get_block_size(_block_descriptor_get_idx(i)));
+	// }
+	// panic("AAA");
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
 	pmm_counter_descriptor_t tmp={
@@ -285,6 +294,7 @@ _retry_allocator:
 		allocator->block_group_bitmap&=~(1<<j);
 	}
 	_block_descriptor_deinit(out);
+	_block_descriptor_set_prev_idx(out+_get_block_size(i),i);
 	while (j>i){
 		j--;
 		u64 split_block=out+_get_block_size(j);
@@ -336,7 +346,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		// address&=~_get_block_size(i);
 		// u64 buddy_prev=_block_descriptor_get_prev(buddy);
 		// u64 buddy_next=_block_descriptor_get_next(buddy);
-		// _block_descriptor_deinit(buddy);
+		// // _block_descriptor_deinit(buddy);
 		// if (buddy_prev){
 		// 	_block_descriptor_set_next(buddy_prev,buddy_next);
 		// }
@@ -354,32 +364,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		// }
 		// i++;
 		break;
-	// u64 first_address=address&(-PMM_ALLOCATOR_MAX_REGION_SIZE);
-	// u64 last_address=first_address+PMM_ALLOCATOR_MAX_REGION_SIZE;
-	// 	u64 buddy=address^_get_block_size(i);
-	// 	if (buddy<first_address||buddy>=last_address||_block_descriptor_get_idx(buddy)!=i){
-	// 		break;
-	// 	}
-	// 	address&=~_get_block_size(i);
-	// 	u64 buddy_prev=_block_descriptor_get_prev(buddy);
-	// 	u64 buddy_next=_block_descriptor_get_next(buddy);
-	// 	_block_descriptor_deinit(buddy);
-	// 	if (buddy_prev){
-	// 		_block_descriptor_set_next(buddy_prev,buddy_next);
-	// 	}
-	// 	else{
-	// 		(allocator->block_groups+i)->head=buddy_next;
-	// 		if (!buddy_next){
-	// 			allocator->block_group_bitmap&=~(1<<i);
-	// 		}
-	// 	}
-	// 	if (buddy_next){
-	// 		_block_descriptor_set_prev(buddy_next,buddy_prev);
-	// 	}
-	// 	else{
-	// 		(allocator->block_groups+i)->tail=buddy_prev;
-	// 	}
-	// 	i++;
 	}
 	_block_descriptor_set_prev_idx(address+_get_block_size(i),i);
 	_block_descriptor_init(address,(allocator->block_groups+i)->tail,i);
