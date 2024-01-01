@@ -1,8 +1,8 @@
 cat:runtime@static,sys2
 cpu:runtime@static,sys2
-exit:runtime@static,sys,sys2
-hexdump:runtime@static,sys,sys2
-lockinfo:runtime@static,sys,sys2
+exit:runtime@static,sys2
+hexdump:runtime@static,sys2
+lockinfo:runtime@static,sys2
 ls:runtime@static,sys2,dircolor
 random:runtime@static,sys,sys2
 reboot:runtime@static,sys,sys2
