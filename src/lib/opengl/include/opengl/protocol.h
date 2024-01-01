@@ -17,7 +17,7 @@
 
 #define OPENGL_PROTOCOL_SHADER_TYPE_VERTEX 0x0001
 
-#define OPENGL_PROTOCOL_SHADER_LANGUAGE_TGSI 0x0001
+#define OPENGL_PROTOCOL_SHADER_FORMAT_TGSI 0x0001
 
 
 
@@ -75,7 +75,7 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_CREATE_SHADER{
 	opengl_protocol_header_t header;
 	u32 sys_handle;
 	u16 type;
-	u16 language;
+	u16 format;
 	u32 size;
 	const u8* data;
 } opengl_protocol_create_shader_t;
