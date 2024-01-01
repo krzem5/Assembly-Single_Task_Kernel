@@ -1,7 +1,7 @@
 #ifndef _OPENGL_OPENGL_H_
 #define _OPENGL_OPENGL_H_ 1
 #include <GL/gl.h>
-#include <sys/types.h>
+#include <sys2/types.h>
 #include <ui/display.h>
 
 

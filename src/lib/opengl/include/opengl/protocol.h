@@ -1,6 +1,6 @@
 #ifndef _OPENGL_PROTOCOL_H_
 #define _OPENGL_PROTOCOL_H_ 1
-#include <sys/types.h>
+#include <sys2/types.h>
 
 
 
@@ -15,7 +15,7 @@
 
 
 
-typedef struct SYS_PACKED _OPENGL_PROTOCOL_HEADER{
+typedef struct SYS2_PACKED _OPENGL_PROTOCOL_HEADER{
 	u32 _data[0];
 	u8 type;
 	u8 length;
@@ -24,7 +24,7 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_HEADER{
 
 
 
-typedef struct SYS_PACKED _OPENGL_PROTOCOL_CREATE_RESOURCE{
+typedef struct SYS2_PACKED _OPENGL_PROTOCOL_CREATE_RESOURCE{
 	opengl_protocol_header_t header;
 	u32 sys_handle;
 	u8 type;
@@ -38,14 +38,14 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_CREATE_RESOURCE{
 
 
 
-typedef struct SYS_PACKED _OPENGL_PROTOCOL_DELETE_RESOURCE{
+typedef struct SYS2_PACKED _OPENGL_PROTOCOL_DELETE_RESOURCE{
 	opengl_protocol_header_t header;
 	u32 sys_handle;
 } opengl_protocol_delete_resource_t;
 
 
 
-typedef struct SYS_PACKED _OPENGL_PROTOCOL_CLEAR{
+typedef struct SYS2_PACKED _OPENGL_PROTOCOL_CLEAR{
 	opengl_protocol_header_t header;
 	u32 flags;
 	float color[4];
@@ -55,7 +55,7 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_CLEAR{
 
 
 
-typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
+typedef struct SYS2_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
 	opengl_protocol_header_t header;
 	float tx;
 	float ty;

@@ -4,6 +4,10 @@
 
 
 
+void __sys2_clock_init(void);
+
+
+
 u64 sys2_clock_get_ticks(void);
 
 

@@ -1,34 +1,25 @@
 #include <opengl/command_buffer.h>
 #include <opengl/protocol.h>
 #include <opengl/syscalls.h>
-#include <sys/error.h>
-#include <sys/lock.h>
-#include <sys/memory.h>
-#include <sys/types.h>
+#include <sys2/memory/memory.h>
+#include <sys2/types.h>
 
 
 
-static lock_t _opengl_command_buffer_lock;
 static void* _opengl_command_buffer;
 static u32 _opengl_command_buffer_size;
 
 
 
 void opengl_command_buffer_init(void){
-	sys_lock_init(&_opengl_command_buffer_lock);
-	_opengl_command_buffer=sys_memory_map(OPENGL_COMMAND_BUFFER_SIZE,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
+	_opengl_command_buffer=(void*)sys2_memory_map(OPENGL_COMMAND_BUFFER_SIZE,SYS2_MEMORY_FLAG_READ|SYS2_MEMORY_FLAG_WRITE,0);
 	_opengl_command_buffer_size=0;
 }
 
 
 
 void opengl_command_buffer_set_lock(_Bool lock){
-	if (lock){
-		sys_lock_acquire_exclusive(&_opengl_command_buffer_lock);
-	}
-	else{
-		sys_lock_release_exclusive(&_opengl_command_buffer_lock);
-	}
+	// unimplemented
 }
 
 

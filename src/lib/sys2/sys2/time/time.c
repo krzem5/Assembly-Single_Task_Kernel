@@ -8,7 +8,7 @@ static u64 _sys2_time_boot_offset=0;
 
 
 
-static void SYS2_CONSTRUCTOR _init(void){
+void __sys2_time_init(void){
 	_sys2_time_boot_offset=_sys2_syscall_time_get_boot_offset();
 }
 

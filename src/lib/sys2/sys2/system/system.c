@@ -1,6 +1,8 @@
+#include <sys2/clock/clock.h>
 #include <sys2/error/error.h>
 #include <sys2/io/io.h>
 #include <sys2/syscall/kernel_syscalls.h>
+#include <sys2/time/time.h>
 #include <sys2/types.h>
 
 
@@ -14,7 +16,9 @@ static void SYS2_CONSTRUCTOR _execute_init(void){
 		return;
 	}
 	_sys2_initialized=1;
+	__sys2_clock_init();
 	__sys2_io_init();
+	__sys2_time_init();
 }
 
 
