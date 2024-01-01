@@ -1,7 +1,8 @@
 #include <cwd.h>
 #include <input.h>
-#include <sys/_kernel_syscall.h>
-#include <sys/io.h>
+#include <sys2/id/user.h>
+#include <sys2/io/io.h>
+#include <sys2/types.h>
 
 
 
@@ -48,11 +49,11 @@ u32 input_length;
 
 static int _get_key(void){
 _retry:
-	int c=getchar();
+	int c=sys2_io_input(1);
 	if (c!=27){
 		return c;
 	}
-	c=getchar();
+	c=sys2_io_input(1);
 	if (c!='['){
 		switch (c){
 			case 'A':
@@ -74,7 +75,7 @@ _retry:
 	u8 i=0;
 	u8 j=0xff;
 	for (;i<16;i++){
-		c=getchar_timeout(0xfff);
+		c=sys2_io_input(0);
 		if (c==-1){
 			break;
 		}
@@ -318,9 +319,9 @@ void input_get(void){
 	_input_history[_input_history_index].length=0;
 	_input_cursor=0;
 	char uid_name_buffer[256]="???";
-	_syscall_uid_get_name(_syscall_uid_get(),uid_name_buffer,256);
+	sys2_uid_get_name(sys2_uid_get(),uid_name_buffer,256);
 	while (1){
-		printf("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[32m%s\x1b[0m:\x1b[1m\x1b[34m%s\x1b[0m$ %s\x1b[%uG",uid_name_buffer,cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
+		sys2_io_print("\x1b[G\x1b[2K\x1b[\x1b[1m\x1b[32m%s\x1b[0m:\x1b[1m\x1b[34m%s\x1b[0m$ %s\x1b[%uG",uid_name_buffer,cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
 			_ensure_top_of_history(1);
@@ -338,7 +339,7 @@ void input_get(void){
 				case 10:
 				case 13:
 					_ensure_top_of_history(0);
-					printf("\x1b[%uG\n",input_length+cwd_length+8);
+					sys2_io_print("\x1b[%uG\n",input_length+cwd_length+8);
 					history_entry_t* entry=_input_history+_input_history_index;
 					input_length=entry->length;
 					for (u32 i=0;i<=input_length;i++){

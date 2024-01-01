@@ -1,4 +1,3 @@
-sys:
 sys2:
 ui_display:sys2@dynamic
 dircolor:sys2@dynamic

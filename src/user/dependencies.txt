@@ -6,9 +6,9 @@ lockinfo:runtime@static,sys2
 ls:runtime@static,sys2,dircolor
 random:runtime@static,sys2
 reboot:runtime@static,sys2
-shell:runtime@static,sys,sys2
+shell:runtime@static,sys2
 shutdown:runtime@static,sys2
 stat:runtime@static,sys2,dircolor
-time:runtime@static,sys,sys2
+time:runtime@static,sys2
 tree:runtime@static,sys2,dircolor
 ui:runtime@static,sys2,opengl,ui_display
