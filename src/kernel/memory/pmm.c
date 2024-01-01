@@ -52,47 +52,59 @@ static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
 
 
 static void _block_descriptor_deinit(u64 address){
-	_get_block_descriptor(address)->data[0]=0xff;
+	_get_block_descriptor(address)->data[0]|=0x1f;
 }
 
 
 
-static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u64 next,u32 idx){
+static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u32 idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[0]=prev|idx;
-	descriptor->data[1]=next|((address>>PAGE_SIZE_SHIFT)&1);
+	descriptor->data[0]=prev|(((address>>PAGE_SIZE_SHIFT)&1)<<10)|(descriptor->data[0]&0x3e0)|idx;
+	descriptor->data[1]=0;
+}
+
+
+
+static KERNEL_INLINE u64 _block_descriptor_get_prev_idx(u64 address){
+	return (_get_block_descriptor(address)->data[0]>>5)&0x1f;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_idx(u64 address){
-	return _get_block_descriptor(address)->data[0]&0xff;
+	return _get_block_descriptor(address)->data[0]&0x1f;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_prev(u64 address){
-	return _get_block_descriptor(address)->data[0]&0xffffffffffffff00ull;
+	return _get_block_descriptor(address)->data[0]&(-PAGE_SIZE);
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_next(u64 address){
-	return _get_block_descriptor(address)->data[1]&0xfffffffffffffffeull;
+	return _get_block_descriptor(address)->data[1];
+}
+
+
+
+static KERNEL_INLINE void _block_descriptor_set_prev_idx(u64 address,u32 prev_idx){
+	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
+	descriptor->data[0]=(descriptor->data[0]&0xfffffffffffffc1full)|(prev_idx<<5);
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_set_prev(u64 address,u64 prev){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[0]=(descriptor->data[0]&0xff)|prev;
+	descriptor->data[0]=(descriptor->data[0]&(PAGE_SIZE-1))|prev;
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_set_next(u64 address,u64 next){
-	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[1]=(descriptor->data[1]&1)|next;
+	_get_block_descriptor(address)->data[1]=next;
 }
 
 
@@ -117,7 +129,8 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
-		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,0,idx);
+		_block_descriptor_set_prev_idx(address+_get_block_size(idx),idx);
+		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,idx);
 		if ((allocator->block_groups+idx)->tail){
 			_block_descriptor_set_next((allocator->block_groups+idx)->tail,address);
 		}
@@ -151,11 +164,14 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	for (u32 i=0;i<_pmm_allocator_count;i++){
 		spinlock_init(&((_pmm_allocators+i)->lock));
 	}
-	u64 block_descriptor_array_size=pmm_align_up_address(((max_address+PAGE_SIZE*2-1)>>(PAGE_SIZE_SHIFT/*+1*/))*sizeof(pmm_block_descriptor_t));
+	u64 block_descriptor_array_size=pmm_align_up_address(((max_address+PAGE_SIZE)>>(PAGE_SIZE_SHIFT/*+1*/))*sizeof(pmm_block_descriptor_t));
 	INFO("Block descriptor array size: %v",block_descriptor_array_size);
 	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=block_descriptor_array_size;
-	memset(_pmm_block_descriptors,0,block_descriptor_array_size);
+	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
+		(_pmm_block_descriptors+i)->data[0]=0x3e0;
+		(_pmm_block_descriptors+i)->data[1]=0;
+	}
 	spinlock_init(&(_pmm_load_balancer.lock));
 	_pmm_load_balancer.index=0;
 	_pmm_load_balancer.stats.hit_count=0;
@@ -272,7 +288,8 @@ _retry_allocator:
 	while (j>i){
 		j--;
 		u64 split_block=out+_get_block_size(j);
-		_block_descriptor_init(split_block,0,0,j);
+		_block_descriptor_set_prev_idx(split_block+_get_block_size(j),j);
+		_block_descriptor_init(split_block,0,j);
 		(allocator->block_groups+j)->head=split_block;
 		(allocator->block_groups+j)->tail=split_block;
 		allocator->block_group_bitmap|=1<<j;
@@ -307,9 +324,38 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));
+	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
+		if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
+			break;
+		}
+		u64 buddy=address^_get_block_size(i);
+		if (_block_descriptor_get_idx(buddy)!=i){
+			break;
+		}
+		// WARN("Coalesce %p | %p -> %u %u",address,buddy,_block_descriptor_get_prev_idx(address),_block_descriptor_get_idx(buddy));
+		// address&=~_get_block_size(i);
+		// u64 buddy_prev=_block_descriptor_get_prev(buddy);
+		// u64 buddy_next=_block_descriptor_get_next(buddy);
+		// _block_descriptor_deinit(buddy);
+		// if (buddy_prev){
+		// 	_block_descriptor_set_next(buddy_prev,buddy_next);
+		// }
+		// else{
+		// 	(allocator->block_groups+i)->head=buddy_next;
+		// 	if (!buddy_next){
+		// 		allocator->block_group_bitmap&=~(1<<i);
+		// 	}
+		// }
+		// if (buddy_next){
+		// 	_block_descriptor_set_prev(buddy_next,buddy_prev);
+		// }
+		// else{
+		// 	(allocator->block_groups+i)->tail=buddy_prev;
+		// }
+		// i++;
+		break;
 	// u64 first_address=address&(-PMM_ALLOCATOR_MAX_REGION_SIZE);
 	// u64 last_address=first_address+PMM_ALLOCATOR_MAX_REGION_SIZE;
-	// while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 	// 	u64 buddy=address^_get_block_size(i);
 	// 	if (buddy<first_address||buddy>=last_address||_block_descriptor_get_idx(buddy)!=i){
 	// 		break;
@@ -334,8 +380,9 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	// 		(allocator->block_groups+i)->tail=buddy_prev;
 	// 	}
 	// 	i++;
-	// }
-	_block_descriptor_init(address,(allocator->block_groups+i)->tail,0,i);
+	}
+	_block_descriptor_set_prev_idx(address+_get_block_size(i),i);
+	_block_descriptor_init(address,(allocator->block_groups+i)->tail,i);
 	if ((allocator->block_groups+i)->tail){
 		_block_descriptor_set_next((allocator->block_groups+i)->tail,address);
 	}
