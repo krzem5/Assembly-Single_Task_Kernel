@@ -175,38 +175,6 @@ COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 
 
 
-def _generate_syscalls_OLD(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,header_name):
-	syscalls={}
-	with open(src_file_path,"r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			index,line=int(line[:line.index(",")]),line[line.index(",")+1:]
-			name=line.split("(")[0].strip()
-			args=tuple(line.split("(")[1].split(")")[0].strip().split(","))
-			if (args==("void",)):
-				args=tuple()
-			ret=line.split("->")[1].strip()
-			syscalls[index]=(name,args,ret)
-	if (user_header_file_path is not None):
-		with open(user_header_file_path,"w") as wf:
-			wf.write(f"#ifndef {header_name}\n#define {header_name} 1\n#include <sys/syscall.h>\n#include <sys/types.h>\n\n\n\n")
-			for index,(name,args,ret) in syscalls.items():
-				wf.write(f"static inline {ret} _syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
-			wf.write("#endif\n")
-	with open(kernel_file_path,"w") as wf:
-		wf.write("#include <kernel/types.h>\n\n\n\n")
-		for name,_,_ in syscalls.values():
-			wf.write(f"extern u64 syscall_{name}();\n")
-		size=max(syscalls.keys())+1
-		wf.write(f"\n\n\nconst u64 _syscalls_{table_name}_count={size};\n\n\n\nconst void*const _syscalls_{table_name}_functions[{size}]={{\n")
-		for index,(name,_,_) in syscalls.items():
-			wf.write(f"\t[{index}]=syscall_{name},\n")
-		wf.write("};\n")
-
-
-
 def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,header_name):
 	syscalls={}
 	with open(src_file_path,"r") as rf:
@@ -581,7 +549,6 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
-_generate_syscalls_OLD("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/_kernel_syscall.h","_SYS__KERNEL_SYSCALL_H_")
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys2/include/sys2/syscall/kernel_syscalls.h","_SYS2_SYSCALL_KERNEL_SYSCALLS_H_")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
