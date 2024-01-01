@@ -67,6 +67,27 @@ static KERNEL_INLINE pmm_allocator_t* _get_allocator_from_address(u64 address){
 
 
 
+static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
+	return _pmm_block_descriptors+(address>>(PAGE_SIZE_SHIFT+1));
+}
+
+
+
+static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u64 next,u8 idx){
+	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
+	descriptor->data[0]=prev|idx;
+	descriptor->data[1]=next|((address>>PAGE_SIZE_SHIFT)&1);
+}
+
+
+
+static KERNEL_INLINE void _block_descriptor_set_next(u64 address,u64 next){
+	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
+	descriptor->data[1]=(descriptor->data[1]&1)|next;
+}
+
+
+
 static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
@@ -87,6 +108,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
+		/**************************************/
 		pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		header->prev=(allocator->block_groups+idx)->tail;
 		header->next=NULL;
@@ -98,6 +120,16 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			(allocator->block_groups+idx)->head=header;
 		}
 		(allocator->block_groups+idx)->tail=header;
+		/**************************************/
+		_block_descriptor_init(address,(allocator->block_groups+idx)->NEW_tail,0,idx);
+		if ((allocator->block_groups+idx)->NEW_tail){
+			_block_descriptor_set_next((allocator->block_groups+idx)->NEW_tail,address);
+		}
+		else{
+			(allocator->block_groups+idx)->NEW_head=address;
+		}
+		(allocator->block_groups+idx)->NEW_tail=address;
+		/**************************************/
 		allocator->block_group_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -240,6 +272,7 @@ _retry_allocator:
 	}
 	_pmm_load_balancer.stats.hit_count++;
 	u8 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
+	/**************************************/
 	pmm_allocator_page_header_t* header=(allocator->block_groups+j)->head;
 	(allocator->block_groups+j)->head=header->next;
 	if (header->next){
@@ -262,6 +295,8 @@ _retry_allocator:
 	}
 	_toggle_address_bit(allocator,out);
 	_toggle_address_bit(allocator,out+_get_block_size(i));
+	/**************************************/
+	/**************************************/
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
@@ -293,6 +328,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	_toggle_address_bit(allocator,address+_get_block_size(i));
 	u64 first_address=address&(-PMM_ALLOCATOR_MAX_REGION_SIZE);
 	u64 last_address=address+PMM_ALLOCATOR_MAX_REGION_SIZE;
+	/**************************************/
 	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 		pmm_allocator_page_header_t* buddy=(void*)((address^_get_block_size(i))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		if (((u64)buddy)<first_address||((u64)buddy)>=last_address||_get_address_bit(allocator,address|_get_block_size(i))||buddy->idx!=i){
@@ -327,6 +363,8 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		(allocator->block_groups+i)->head=header;
 	}
 	(allocator->block_groups+i)->tail=header;
+	/**************************************/
+	/**************************************/
 	allocator->block_group_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();

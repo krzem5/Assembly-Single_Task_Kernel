@@ -37,6 +37,8 @@ typedef struct _PMM_ALLOCATOR_PAGE_HEADER{
 typedef struct _PMM_ALLOCATOR_BLOCK_GROUP{
 	pmm_allocator_page_header_t* head;
 	pmm_allocator_page_header_t* tail;
+	u64 NEW_head;
+	u64 NEW_tail;
 } pmm_allocator_block_group_t;
 
 
@@ -74,7 +76,7 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 typedef struct _PMM_BLOCK_DESCRIPTOR{
-	u64 data;
+	u64 data[2];
 } pmm_block_descriptor_t;
 
 
