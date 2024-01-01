@@ -1,7 +1,7 @@
 sys:
 sys2:
-ui_display:sys
-dircolor:sys
-linker@nostatic:sys
-opengl@nostatic:sys,ui_display
-runtime@nodynamic:sys
+ui_display:sys2
+dircolor:sys2
+linker@nostatic:sys,sys2
+opengl@nostatic:sys,sys2,ui_display
+runtime@nodynamic:sys,sys2

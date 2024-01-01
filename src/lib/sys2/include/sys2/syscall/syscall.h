@@ -67,7 +67,7 @@ static inline u64 _sys2_syscall6(u64 rax,u64 arg0,u64 arg1,u64 arg2,u64 arg3,u64
 
 
 
-sys2_error_t sys2_sys2_syscall_get_table_offset(const char* name);
+sys2_error_t sys2_syscall_get_table_offset(const char* name);
 
 
 
