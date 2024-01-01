@@ -1,4 +1,4 @@
-%include "sys2/types.inc"
+%include "sys/types.inc"
 extern main
 global _start:function hidden
 section .text exec nowrite

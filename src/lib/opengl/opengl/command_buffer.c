@@ -1,8 +1,8 @@
 #include <opengl/command_buffer.h>
 #include <opengl/protocol.h>
 #include <opengl/syscalls.h>
-#include <sys2/memory/memory.h>
-#include <sys2/types.h>
+#include <sys/memory/memory.h>
+#include <sys/types.h>
 
 
 
@@ -12,7 +12,7 @@ static u32 _opengl_command_buffer_size;
 
 
 void opengl_command_buffer_init(void){
-	_opengl_command_buffer=(void*)sys2_memory_map(OPENGL_COMMAND_BUFFER_SIZE,SYS2_MEMORY_FLAG_READ|SYS2_MEMORY_FLAG_WRITE,0);
+	_opengl_command_buffer=(void*)sys_memory_map(OPENGL_COMMAND_BUFFER_SIZE,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
 	_opengl_command_buffer_size=0;
 }
 

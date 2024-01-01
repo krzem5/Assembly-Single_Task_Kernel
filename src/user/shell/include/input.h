@@ -1,6 +1,6 @@
 #ifndef _INPUT_H_
 #define _INPUT_H_ 1
-#include <sys2/types.h>
+#include <sys/types.h>
 
 
 

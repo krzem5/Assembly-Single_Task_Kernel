@@ -191,9 +191,9 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 			syscalls[index]=(name,args,ret)
 	if (user_header_file_path is not None):
 		with open(user_header_file_path,"w") as wf:
-			wf.write(f"#ifndef {header_name}\n#define {header_name} 1\n#include <sys2/syscall/syscall.h>\n#include <sys2/types.h>\n\n\n\n")
+			wf.write(f"#ifndef {header_name}\n#define {header_name} 1\n#include <sys/syscall/syscall.h>\n#include <sys/types.h>\n\n\n\n")
 			for index,(name,args,ret) in syscalls.items():
-				wf.write(f"static inline {ret} _sys2_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_sys2_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
+				wf.write(f"static inline {ret} _sys_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_sys_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
 			wf.write("#endif\n")
 	with open(kernel_file_path,"w") as wf:
 		wf.write("#include <kernel/types.h>\n\n\n\n")
@@ -549,7 +549,7 @@ def _kvm_flags():
 for dir in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir)):
 		os.mkdir(dir)
-_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys2/include/sys2/syscall/kernel_syscalls.h","_SYS2_SYSCALL_KERNEL_SYSCALLS_H_")
+_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]

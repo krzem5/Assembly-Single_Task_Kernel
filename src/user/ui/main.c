@@ -1,10 +1,10 @@
 #include <GL/gl.h>
 #include <opengl/opengl.h>
-#include <sys2/error/error.h>
-#include <sys2/io/io.h>
-#include <sys2/mp/thread.h>
-#include <sys2/mp/timer.h>
-#include <sys2/types.h>
+#include <sys/error/error.h>
+#include <sys/io/io.h>
+#include <sys/mp/thread.h>
+#include <sys/mp/timer.h>
+#include <sys/types.h>
 #include <ui/display.h>
 
 
@@ -62,26 +62,26 @@ int main(int argc,const char** argv){
 	opengl_state_t state=opengl_create_state(330);
 	for (ui_display_handle_t display=ui_display_iter_start();display;display=ui_display_iter_next(display)){
 		ui_display_data_t data;
-		if (SYS2_IS_ERROR(ui_display_get_data(display,&data))){
+		if (SYS_IS_ERROR(ui_display_get_data(display,&data))){
 			continue;
 		}
-		sys2_io_print("Display #%u: %u x %u @ %u Hz\n",data.index,data.mode.width,data.mode.height,data.mode.freq);
+		sys_io_print("Display #%u: %u x %u @ %u Hz\n",data.index,data.mode.width,data.mode.height,data.mode.freq);
 		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer(display);
 		ui_display_framebuffer_t config;
 		ui_display_get_framebuffer_config(framebuffer,&config);
 		u32* framebuffer_address=(u32*)ui_display_map_framebuffer(framebuffer);
-		sys2_io_print("Framebuffer: %v, %u x %u, [%u] -> %p\n",config.size,config.width,config.height,config.format,framebuffer_address);
+		sys_io_print("Framebuffer: %v, %u x %u, [%u] -> %p\n",config.size,config.width,config.height,config.format,framebuffer_address);
 		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
 		glViewport(0,0,config.width,config.height);
-		sys2_io_print("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
-		sys2_io_print("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
-		sys2_io_print("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
-		sys2_io_print("GL_VERSION: %s\n",glGetString(GL_VERSION));
+		sys_io_print("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
+		sys_io_print("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
+		sys_io_print("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
+		sys_io_print("GL_VERSION: %s\n",glGetString(GL_VERSION));
 		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
-		sys2_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
-		sys2_event_t timer_event=sys2_timer_get_event(sys2_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
+		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
+		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
 		u32 t=0;
 		while (1){
 			u8 color[3];
@@ -91,7 +91,7 @@ int main(int argc,const char** argv){
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			t++;
-			sys2_thread_await_events(&timer_event,1);
+			sys_thread_await_events(&timer_event,1);
 		}
 	}
 	return 0;

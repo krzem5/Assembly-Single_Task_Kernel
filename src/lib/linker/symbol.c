@@ -1,7 +1,7 @@
 #include <linker/shared_object.h>
-#include <sys2/elf/elf.h>
-#include <sys2/io/io.h>
-#include <sys2/types.h>
+#include <sys/elf/elf.h>
+#include <sys/io/io.h>
+#include <sys/types.h>
 
 
 

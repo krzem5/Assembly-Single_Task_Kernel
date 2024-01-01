@@ -1,15 +1,15 @@
 #include <cpuid.h>
-#include <sys2/clock/clock.h>
-#include <sys2/cpu/cpu.h>
-#include <sys2/io/io.h>
-#include <sys2/types.h>
-#include <sys2/util/options.h>
+#include <sys/clock/clock.h>
+#include <sys/cpu/cpu.h>
+#include <sys/io/io.h>
+#include <sys/types.h>
+#include <sys/util/options.h>
 
 
 
 #define FEATURE(reg,bit,name) \
 	if (cpuid.reg&(1<<bit)){ \
-		sys2_io_print(" %s",name); \
+		sys_io_print(" %s",name); \
 	}
 
 
@@ -36,7 +36,7 @@ static inline void _execute_cpuid_count(u32 level,u32 count,cpuid_data_t* out){
 
 
 int main(int argc,const char** argv){
-	if (!sys2_options_parse(argc,argv,NULL)){
+	if (!sys_options_parse(argc,argv,NULL)){
 		return 1;
 	}
 	cpuid_data_t cpuid;
@@ -49,10 +49,10 @@ int main(int argc,const char** argv){
 	u32 max_level=cpuid.eax;
 	_execute_cpuid(0x80000000,&cpuid);
 	u32 max_extended_level=cpuid.eax-0x80000000;
-	sys2_io_print("CPU count: \x1b[1m%u\x1b[0m\nCPU frequency: \x1b[1m%lu MHz\x1b[0m\nCPU signature: \x1b[1m%s\x1b[0m\nCPU basic/extended feature level: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",sys2_cpu_get_count(),(sys2_clock_get_frequency()+500000)/1000000,signature,max_level,max_extended_level);
+	sys_io_print("CPU count: \x1b[1m%u\x1b[0m\nCPU frequency: \x1b[1m%lu MHz\x1b[0m\nCPU signature: \x1b[1m%s\x1b[0m\nCPU basic/extended feature level: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",sys_cpu_get_count(),(sys_clock_get_frequency()+500000)/1000000,signature,max_level,max_extended_level);
 	if (max_level>=1){
 		_execute_cpuid(1,&cpuid);
-		sys2_io_print("CPU model/family/stepping: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",(cpuid.eax>>8)&15,(cpuid.eax>>4)&15,cpuid.eax&15);
+		sys_io_print("CPU model/family/stepping: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m\n",(cpuid.eax>>8)&15,(cpuid.eax>>4)&15,cpuid.eax&15);
 	}
 	if (max_extended_level>=4){
 		char brand_string[49];
@@ -72,22 +72,22 @@ int main(int argc,const char** argv){
 		*((u32*)(brand_string+40))=cpuid.ecx;
 		*((u32*)(brand_string+44))=cpuid.edx;
 		brand_string[48]=0;
-		sys2_io_print("CPU model name: \x1b[1m%s\x1b[0m\n",brand_string);
+		sys_io_print("CPU model name: \x1b[1m%s\x1b[0m\n",brand_string);
 	}
 	if (max_level>=4){
 		u32 count=0;
 		_execute_cpuid_count(4,0,&cpuid);
 		while (cpuid.eax||cpuid.ecx){
-			sys2_io_print("CPU cache#%u size: \x1b[1m%v\x1b[0m\n",count,(((cpuid.eax>>22)&0x3ff)+1)*(((cpuid.eax>>12)&0x3ff)+1)*((cpuid.eax&0xfff)+1)*(cpuid.ecx+1));
+			sys_io_print("CPU cache#%u size: \x1b[1m%v\x1b[0m\n",count,(((cpuid.eax>>22)&0x3ff)+1)*(((cpuid.eax>>12)&0x3ff)+1)*((cpuid.eax&0xfff)+1)*(cpuid.ecx+1));
 			count++;
 			_execute_cpuid_count(4,count,&cpuid);
 		}
 	}
 	if (max_extended_level>=8){
 		_execute_cpuid(0x80000008,&cpuid);
-		sys2_io_print("CPU physical/virtual address size: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m bits\n",cpuid.eax&0xff,(cpuid.eax>>8)&0xff);
+		sys_io_print("CPU physical/virtual address size: \x1b[1m%u\x1b[0m/\x1b[1m%u\x1b[0m bits\n",cpuid.eax&0xff,(cpuid.eax>>8)&0xff);
 	}
-	sys2_io_print("CPU flags:\x1b[1m");
+	sys_io_print("CPU flags:\x1b[1m");
 	if (max_level>=1){
 		_execute_cpuid(1,&cpuid);
 		FEATURE(ecx,0,"sse3");
@@ -263,6 +263,6 @@ int main(int argc,const char** argv){
 		_execute_cpuid(0x80000008,&cpuid);
 		FEATURE(ebx,8,"wbnoinvd");
 	}
-	sys2_io_print("\x1b[0m\n");
+	sys_io_print("\x1b[0m\n");
 	return 0;
 }

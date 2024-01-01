@@ -1,7 +1,7 @@
 #include <linker/shared_object.h>
-#include <sys2/elf/elf.h>
-#include <sys2/io/io.h>
-#include <sys2/types.h>
+#include <sys/elf/elf.h>
+#include <sys/io/io.h>
+#include <sys/types.h>
 
 
 
@@ -26,10 +26,10 @@ static const elf_dyn_t* _find_dynamic_section_and_entry_address(const u64* data,
 		}
 	}
 	if (!phdr_entries||!phdr_entry_size||!phdr_entry_count){
-		sys2_io_print("No PHDR supplied to the dynamic linker\n");
+		sys_io_print("No PHDR supplied to the dynamic linker\n");
 	}
 	if (!(*entry_address)){
-		sys2_io_print("No entry address supplied to the dynamic linker\n");
+		sys_io_print("No entry address supplied to the dynamic linker\n");
 	}
 	for (u16 i=0;i<phdr_entry_count;i++){
 		const elf_phdr_t* program_header=phdr_entries+i*phdr_entry_size;

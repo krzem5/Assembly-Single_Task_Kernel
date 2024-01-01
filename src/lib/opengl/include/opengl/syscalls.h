@@ -1,7 +1,7 @@
 #ifndef _OPENGL_SYSCALLS_H_
 #define _OPENGL_SYSCALLS_H_ 1
 #include <opengl/opengl.h>
-#include <sys2/types.h>
+#include <sys/types.h>
 #include <ui/display.h>
 
 
