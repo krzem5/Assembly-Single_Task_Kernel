@@ -55,7 +55,7 @@ static KERNEL_INLINE void _toggle_address_bit(const pmm_allocator_t* allocator,u
 
 
 
-static KERNEL_INLINE u64 _get_block_size(u8 index){
+static KERNEL_INLINE u64 _get_block_size(u32 index){
 	return 1ull<<(PAGE_SIZE_SHIFT+index);
 }
 
@@ -73,7 +73,7 @@ static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
 
 
 
-static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u64 next,u8 idx){
+static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u64 next,u32 idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
 	descriptor->data[0]=prev|idx;
 	descriptor->data[1]=next|((address>>PAGE_SIZE_SHIFT)&1);
@@ -245,7 +245,7 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool me
 	if (!count){
 		panic("pmm_alloc: trying to allocate zero physical pages");
 	}
-	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
+	u32 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
@@ -282,7 +282,7 @@ _retry_allocator:
 		panic("pmm_alloc: out of memory");
 	}
 	_pmm_load_balancer.stats.hit_count++;
-	u8 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
+	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	u64 out=(allocator->block_groups+j)->head;
 	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
 	if (!(allocator->block_groups+j)->head){
@@ -319,7 +319,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
 	}
-	u8 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
+	u32 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
