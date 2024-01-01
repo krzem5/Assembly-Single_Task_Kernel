@@ -16,6 +16,18 @@
 
 
 
+static inline u64 sys2_memory_align_up_address(u64 base){
+	return (base+SYS2_PAGE_SIZE-1)&(-SYS2_PAGE_SIZE);
+}
+
+
+
+static inline u64 sys2_memory_align_down_address(u64 base){
+	return base&(-SYS2_PAGE_SIZE);
+}
+
+
+
 u64 sys2_memory_map(u64 length,u32 flags,sys2_fd_t fd);
 
 
