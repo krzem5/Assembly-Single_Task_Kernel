@@ -68,7 +68,7 @@ static KERNEL_INLINE pmm_allocator_t* _get_allocator_from_address(u64 address){
 
 
 static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
-	return _pmm_block_descriptors+(address>>(PAGE_SIZE_SHIFT/*+1*/));
+	return _pmm_block_descriptors+(address>>PAGE_SIZE_SHIFT);
 }
 
 
@@ -76,7 +76,7 @@ static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
 static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u64 next,u32 idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
 	descriptor->data[0]=prev|idx;
-	descriptor->data[1]=next|((address>>PAGE_SIZE_SHIFT)&1);
+	descriptor->data[1]=next;
 }
 
 
@@ -172,7 +172,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_bitmap=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=bitmap_size;
 	memset(_pmm_bitmap,0,bitmap_size);
-	u64 block_descriptor_array_size=pmm_align_up_address(((max_address+PAGE_SIZE/**2-1*/)>>(PAGE_SIZE_SHIFT/*+1*/))*sizeof(pmm_block_descriptor_t));
+	u64 block_descriptor_array_size=pmm_align_up_address((max_address>>PAGE_SIZE_SHIFT)*sizeof(pmm_block_descriptor_t));
 	INFO("Block descriptor array size: %v",block_descriptor_array_size);
 	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=block_descriptor_array_size;
