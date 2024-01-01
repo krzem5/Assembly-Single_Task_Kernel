@@ -4,6 +4,6 @@
 
 
 
-sys2_error_t sys2_system_shutdown(u32 flags){
+SYS2_PUBLIC sys2_error_t sys2_system_shutdown(u32 flags){
 	return _sys2_syscall_system_shutdown(flags);
 }

@@ -6,30 +6,30 @@
 
 
 
-sys2_timer_t sys2_timer_create(u64 interval,u64 count){
+SYS2_PUBLIC sys2_timer_t sys2_timer_create(u64 interval,u64 count){
 	return _sys2_syscall_timer_create(interval,count);
 }
 
 
 
-sys2_error_t sys2_timer_delete(sys2_timer_t timer){
+SYS2_PUBLIC sys2_error_t sys2_timer_delete(sys2_timer_t timer){
 	return _sys2_syscall_timer_delete(timer);
 }
 
 
 
-u64 sys2_timer_get_deadline(sys2_timer_t timer){
+SYS2_PUBLIC u64 sys2_timer_get_deadline(sys2_timer_t timer){
 	return _sys2_syscall_timer_get_deadline(timer);
 }
 
 
 
-sys2_event_t sys2_timer_get_event(sys2_timer_t timer){
+SYS2_PUBLIC sys2_event_t sys2_timer_get_event(sys2_timer_t timer){
 	return _sys2_syscall_timer_get_event(timer);
 }
 
 
 
-u64 sys2_timer_update(sys2_timer_t timer,u64 interval,u64 count){
+SYS2_PUBLIC u64 sys2_timer_update(sys2_timer_t timer,u64 interval,u64 count){
 	return _sys2_syscall_timer_update(timer,interval,count);
 }

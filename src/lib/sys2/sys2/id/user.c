@@ -4,18 +4,18 @@
 
 
 
-sys2_uid_t sys2_uid_get(void){
+SYS2_PUBLIC sys2_uid_t sys2_uid_get(void){
 	return _sys2_syscall_uid_get();
 }
 
 
 
-sys2_error_t sys2_uid_set(sys2_uid_t uid){
+SYS2_PUBLIC sys2_error_t sys2_uid_set(sys2_uid_t uid){
 	return _sys2_syscall_uid_set(uid);
 }
 
 
 
-sys2_error_t sys2_uid_get_name(sys2_uid_t uid,char* name,u32 size){
+SYS2_PUBLIC sys2_error_t sys2_uid_get_name(sys2_uid_t uid,char* name,u32 size){
 	return _sys2_syscall_uid_get_name(uid,name,size);
 }

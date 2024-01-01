@@ -4,18 +4,18 @@
 
 
 
-sys2_gid_t sys2_gid_get(void){
+SYS2_PUBLIC sys2_gid_t sys2_gid_get(void){
 	return _sys2_syscall_gid_get();
 }
 
 
 
-sys2_error_t sys2_gid_set(sys2_gid_t gid){
+SYS2_PUBLIC sys2_error_t sys2_gid_set(sys2_gid_t gid){
 	return _sys2_syscall_gid_set(gid);
 }
 
 
 
-sys2_error_t sys2_gid_get_name(sys2_gid_t gid,char* name,u32 size){
+SYS2_PUBLIC sys2_error_t sys2_gid_get_name(sys2_gid_t gid,char* name,u32 size){
 	return _sys2_syscall_gid_get_name(gid,name,size);
 }
