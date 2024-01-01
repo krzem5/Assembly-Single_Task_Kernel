@@ -88,7 +88,7 @@ static KERNEL_INLINE u64 _block_descriptor_get_idx(u64 address){
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_prev(u64 address){
-	return _get_block_descriptor(address)->data[1]&0xffffffffffffff00ull;
+	return _get_block_descriptor(address)->data[0]&0xffffffffffffff00ull;
 }
 
 
@@ -133,28 +133,14 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
-		/**************************************/
-		// pmm_allocator_page_header_t* header=(void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		// header->prev=(allocator->block_groups+idx)->tail;
-		// header->next=NULL;
-		// header->idx=idx;
-		// if (header->prev){
-		// 	header->prev->next=header;
-		// }
-		// else{
-		// 	(allocator->block_groups+idx)->head=header;
-		// }
-		// (allocator->block_groups+idx)->tail=header;
-		/**************************************/
-		_block_descriptor_init(address,(allocator->block_groups+idx)->NEW_tail,0,idx);
-		if ((allocator->block_groups+idx)->NEW_tail){
-			_block_descriptor_set_next((allocator->block_groups+idx)->NEW_tail,address);
+		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,0,idx);
+		if ((allocator->block_groups+idx)->tail){
+			_block_descriptor_set_next((allocator->block_groups+idx)->tail,address);
 		}
 		else{
-			(allocator->block_groups+idx)->NEW_head=address;
+			(allocator->block_groups+idx)->head=address;
 		}
-		(allocator->block_groups+idx)->NEW_tail=address;
-		/**************************************/
+		(allocator->block_groups+idx)->tail=address;
 		allocator->block_group_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
@@ -297,18 +283,18 @@ _retry_allocator:
 	}
 	_pmm_load_balancer.stats.hit_count++;
 	u8 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
-	u64 out=(allocator->block_groups+j)->NEW_head;
-	(allocator->block_groups+j)->NEW_head=_block_descriptor_get_next(out);
-	if (!(allocator->block_groups+j)->NEW_head){
-		(allocator->block_groups+j)->NEW_tail=0;
+	u64 out=(allocator->block_groups+j)->head;
+	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
+	if (!(allocator->block_groups+j)->head){
+		(allocator->block_groups+j)->tail=0;
 		allocator->block_group_bitmap&=~(1<<j);
 	}
 	while (j>i){
 		j--;
 		u64 split_block=out+_get_block_size(j);
 		_block_descriptor_init(split_block,0,0,j);
-		(allocator->block_groups+j)->NEW_head=split_block;
-		(allocator->block_groups+j)->NEW_tail=split_block;
+		(allocator->block_groups+j)->head=split_block;
+		(allocator->block_groups+j)->tail=split_block;
 		allocator->block_group_bitmap|=1<<j;
 	}
 	spinlock_release_exclusive(&(allocator->lock));
@@ -344,7 +330,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	spinlock_acquire_exclusive(&(allocator->lock));
 	u64 first_address=address&(-PMM_ALLOCATOR_MAX_REGION_SIZE);
 	u64 last_address=first_address+PMM_ALLOCATOR_MAX_REGION_SIZE;
-	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT&&0){
+	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
 		u64 buddy=address^_get_block_size(i);
 		if (buddy<first_address||buddy>=last_address||_get_address_bit(allocator,address|_get_block_size(i))||_block_descriptor_get_idx(buddy)!=i){
 			break;
@@ -356,7 +342,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 			_block_descriptor_set_next(buddy_prev,buddy_next);
 		}
 		else{
-			(allocator->block_groups+i)->NEW_head=buddy_next;
+			(allocator->block_groups+i)->head=buddy_next;
 			if (!buddy_next){
 				allocator->block_group_bitmap&=~(1<<i);
 			}
@@ -365,18 +351,18 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 			_block_descriptor_set_prev(buddy_next,buddy_prev);
 		}
 		else{
-			(allocator->block_groups+i)->NEW_tail=buddy_prev;
+			(allocator->block_groups+i)->tail=buddy_prev;
 		}
 		i++;
 	}
-	_block_descriptor_init(address,(allocator->block_groups+i)->NEW_tail,0,i);
-	if ((allocator->block_groups+i)->NEW_tail){
-		_block_descriptor_set_next((allocator->block_groups+i)->NEW_tail,address);
+	_block_descriptor_init(address,(allocator->block_groups+i)->tail,0,i);
+	if ((allocator->block_groups+i)->tail){
+		_block_descriptor_set_next((allocator->block_groups+i)->tail,address);
 	}
 	else{
-		(allocator->block_groups+i)->NEW_head=address;
+		(allocator->block_groups+i)->head=address;
 	}
-	(allocator->block_groups+i)->NEW_tail=address;
+	(allocator->block_groups+i)->tail=address;
 	allocator->block_group_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
