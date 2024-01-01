@@ -20,10 +20,10 @@ u64 NOFLOAT symbol_lookup_by_name(const char* name){
 		if (!so->dynamic_section.hash_table){
 			continue;
 		}
-		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];1;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
 			if (symbol->st_shndx==SHN_UNDEF){
-				break;
+				continue;
 			}
 			const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
 			for (u32 j=0;1;j++){

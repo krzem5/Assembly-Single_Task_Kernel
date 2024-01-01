@@ -1,14 +1,12 @@
-#include <sys/io.h>
-#include <sys/options.h>
-#include <sys/system.h>
+#include <sys2/system/system.h>
+#include <sys2/util/options.h>
 
 
 
 int main(int argc,const char** argv){
-	u32 i=sys_options_parse(argc,argv,NULL);
-	if (!i){
+	if (!sys2_options_parse(argc,argv,NULL)){
 		return 1;
 	}
-	sys_system_shutdown(0);
+	sys2_system_shutdown(0);
 	return 0;
 }
