@@ -129,7 +129,6 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			}
 			size=_get_block_size(idx);
 		}
-		WARN("%p: %x, %x | %u, %x",address,length,size,address&(_get_block_size(idx)-1),length-_get_block_size(idx));
 		_block_descriptor_set_prev_idx(address+_get_block_size(idx),idx);
 		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,idx);
 		if ((allocator->block_groups+idx)->tail){
@@ -202,14 +201,6 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 		total_memory+=end-address;
 		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
-	// u64 i=kernel_data.first_free_address;
-	// for (;i<=((kernel_data.mmap+kernel_data.mmap_size-1)->base+(kernel_data.mmap+kernel_data.mmap_size-1)->length);){
-	// 	if ((_pmm_block_descriptors+(i>>PAGE_SIZE_SHIFT))->data[0]!=0xffff){
-	// 		ERROR("[%p] %u | %u",i,_block_descriptor_get_prev_idx(i),_block_descriptor_get_idx(i));
-	// 	}
-	// 	i+=(_block_descriptor_get_idx(i)==0x1f?PAGE_SIZE:_get_block_size(_block_descriptor_get_idx(i)));
-	// }
-	// panic("AAA");
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
 	pmm_counter_descriptor_t tmp={
