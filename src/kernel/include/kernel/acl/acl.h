@@ -9,6 +9,8 @@
 
 #define ACL_PROCESS_CACHE_SIZE 16 // power of 2
 
+#define ACL_PERMISSION_MASK 0x7fffffffffffffffull
+
 
 
 struct _HANDLE;

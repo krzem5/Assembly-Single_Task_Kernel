@@ -15,7 +15,7 @@
 13,fd_seek(u64 fd,u64 offset,u32 type) -> u64
 14,fd_stat(u64 fd,void* ptr,u32 size) -> u64
 15,fd_write(u64 fd,const void* buffer,u64 size,u32 flags) -> u64
-16,memory_map(u64 length,u32 flags,u64 fd) -> void*
+16,memory_map(u64 length,u32 flags,u64 fd) -> u64
 17,memory_change_flags(void* address,u64 length,u32 flags) -> u64
 18,memory_unmap(void* address,u64 length) -> u64
 19,system_shutdown(u32 flags) -> u64

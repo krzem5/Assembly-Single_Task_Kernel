@@ -101,8 +101,8 @@ static inline u64 _sys2_syscall_fd_write(u64 fd,const void* buffer,u64 size,u32 
 
 
 
-static inline void* _sys2_syscall_memory_map(u64 length,u32 flags,u64 fd){
-	return (void*)_sys2_syscall3(0x100000010,length,flags,fd);
+static inline u64 _sys2_syscall_memory_map(u64 length,u32 flags,u64 fd){
+	return _sys2_syscall3(0x100000010,length,flags,fd);
 }
 
 

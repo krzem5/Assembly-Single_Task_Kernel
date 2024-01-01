@@ -5,7 +5,7 @@
 
 
 SYS_PUBLIC void* sys_memory_map(u64 length,u32 flags,u64 fd){
-	return _syscall_memory_map(length,flags,fd);
+	return (void*)_syscall_memory_map(length,flags,fd);
 }
 
 
