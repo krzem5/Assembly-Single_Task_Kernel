@@ -175,8 +175,9 @@ error_t syscall_timer_update(handle_id_t timer_handle,u64 interval,u64 count){
 		return ERROR_DENIED;
 	}
 	timer_update(timer,interval,count,0);
+	u64 out=timer_get_deadline(timer);
 	handle_release(handle);
-	return ERROR_OK;
+	return out;
 }
 
 
