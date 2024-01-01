@@ -6,18 +6,18 @@
 
 
 
-SYS2_PUBLIC sys2_error_t sys2_acl_get_permissions(sys2_handle_t handle,sys2_process_t process){
+SYS2_PUBLIC sys2_acl_permission_flags_t sys2_acl_get_permissions(sys2_handle_t handle,sys2_process_t process){
 	return _sys2_syscall_acl_get_permissions(handle,process);
 }
 
 
 
-SYS2_PUBLIC sys2_error_t sys2_acl_request_permissions(sys2_handle_t handle,sys2_process_t process,u64 permission_flags){
+SYS2_PUBLIC sys2_error_t sys2_acl_request_permissions(sys2_handle_t handle,sys2_process_t process,sys2_acl_permission_flags_t permission_flags){
 	return _sys2_syscall_acl_request_permissions(handle,process,permission_flags);
 }
 
 
 
-SYS2_PUBLIC sys2_error_t sys2_acl_set_permissions(sys2_handle_t handle,sys2_process_t process,u64 clear,u64 set){
+SYS2_PUBLIC sys2_error_t sys2_acl_set_permissions(sys2_handle_t handle,sys2_process_t process,sys2_acl_permission_flags_t clear,sys2_acl_permission_flags_t set){
 	return _sys2_syscall_acl_set_permissions(handle,process,clear,set);
 }

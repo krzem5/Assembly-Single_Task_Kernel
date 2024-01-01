@@ -16,7 +16,7 @@
 
 
 
-sys2_error_t sys2_memory_map(u64 length,u32 flags,sys2_fd_t fd);
+u64 sys2_memory_map(u64 length,u32 flags,sys2_fd_t fd);
 
 
 

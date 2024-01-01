@@ -67,7 +67,7 @@ typedef struct _SYS2_FD_STAT{
 
 
 
-sys2_error_t sys2_fd_open(sys2_fd_t fd,const char* path,u32 flags);
+sys2_fd_t sys2_fd_open(sys2_fd_t fd,const char* path,u32 flags);
 
 
 
@@ -75,19 +75,19 @@ sys2_error_t sys2_fd_close(sys2_fd_t fd);
 
 
 
-sys2_error_t sys2_fd_read(sys2_fd_t fd,void* buffer,u64 size,u32 flags);
+u64 sys2_fd_read(sys2_fd_t fd,void* buffer,u64 size,u32 flags);
 
 
 
-sys2_error_t sys2_fd_write(sys2_fd_t fd,const void* buffer,u64 size,u32 flags);
+u64 sys2_fd_write(sys2_fd_t fd,const void* buffer,u64 size,u32 flags);
 
 
 
-sys2_error_t sys2_fd_seek(sys2_fd_t fd,u64 offset,u32 type);
+u64 sys2_fd_seek(sys2_fd_t fd,u64 offset,u32 type);
 
 
 
-sys2_error_t sys2_fd_resize(sys2_fd_t fd,u64 size,u32 flags);
+u64 sys2_fd_resize(sys2_fd_t fd,u64 size,u32 flags);
 
 
 
@@ -95,7 +95,7 @@ sys2_error_t sys2_fd_stat(sys2_fd_t fd,sys2_fd_stat_t* out);
 
 
 
-sys2_error_t sys2_fd_dup(sys2_fd_t fd,u32 flags);
+sys2_fd_t sys2_fd_dup(sys2_fd_t fd,u32 flags);
 
 
 
@@ -103,7 +103,7 @@ sys2_error_t sys2_fd_path(sys2_fd_t fd,char* path,u32 size);
 
 
 
-sys2_error_t sys2_fd_iter_start(sys2_fd_t fd);
+sys2_fd_iterator_t sys2_fd_iter_start(sys2_fd_t fd);
 
 
 
@@ -111,7 +111,7 @@ sys2_error_t sys2_fd_iter_get(sys2_fd_iterator_t iterator,char* name,u32 size);
 
 
 
-sys2_error_t sys2_fd_iter_next(sys2_fd_iterator_t iterator);
+sys2_fd_iterator_t sys2_fd_iter_next(sys2_fd_iterator_t iterator);
 
 
 

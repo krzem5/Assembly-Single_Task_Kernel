@@ -6,7 +6,7 @@
 
 
 
-SYS2_PUBLIC sys2_error_t sys_memory_map(u64 length,u32 flags,sys2_fd_t fd){
+SYS2_PUBLIC u64 sys_memory_map(u64 length,u32 flags,sys2_fd_t fd){
 	return _sys2_syscall_memory_map(length,flags,fd);
 }
 
