@@ -4,9 +4,10 @@
 
 
 
-static u64 _sys2_clock_conversion_factor=0;
-static u64 _sys2_clock_conversion_shift=0;
 static u64 _sys2_clock_cpu_frequency=0;
+
+u64 _sys2_clock_conversion_factor=0;
+u32 _sys2_clock_conversion_shift=0;
 
 
 
@@ -36,19 +37,13 @@ SYS2_PUBLIC double sys2_clock_get_time(void){
 
 
 SYS2_PUBLIC u64 sys2_clock_get_time_ns(void){
-	return (sys2_clock_get_ticks()*_sys2_clock_conversion_factor)>>_sys2_clock_conversion_shift;
+	return sys2_clock_convert_ticks_to_time_ns(sys2_clock_get_ticks());
 }
 
 
 
 SYS2_PUBLIC double sys2_clock_convert_ticks_to_time(u64 ticks){
 	return sys2_clock_convert_ticks_to_time_ns(ticks)/1000000000.0;
-}
-
-
-
-SYS2_PUBLIC u64 sys2_clock_convert_ticks_to_time_ns(u64 ticks){
-	return (ticks*_sys2_clock_conversion_factor)>>_sys2_clock_conversion_shift;
 }
 
 
