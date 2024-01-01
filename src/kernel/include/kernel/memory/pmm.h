@@ -73,6 +73,12 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 
+typedef struct _PMM_BLOCK_DESCRIPTOR{
+	u64 data;
+} pmm_block_descriptor_t;
+
+
+
 extern handle_type_t pmm_counter_handle_type;
 extern const pmm_load_balancer_stats_t* pmm_load_balancer_stats;
 
