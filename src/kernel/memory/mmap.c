@@ -194,6 +194,7 @@ KERNEL_PUBLIC void mmap_deinit(mmap_t* mmap){
 	}
 	rb_tree_init(&(mmap->offset_tree));
 	rb_tree_init(&(mmap->length_tree));
+	spinlock_release_exclusive(&(mmap->lock));
 }
 
 
