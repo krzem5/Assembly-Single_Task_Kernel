@@ -284,6 +284,9 @@ _retry_allocator:
 	_pmm_load_balancer.stats.hit_count++;
 	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	u64 out=(allocator->block_groups+j)->head;
+	if (_block_descriptor_get_idx(out)==31){
+		ERROR("List head corrupted");
+	}
 	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
 	if (!(allocator->block_groups+j)->head){
 		(allocator->block_groups+j)->tail=0;
@@ -307,13 +310,19 @@ _retry_allocator:
 		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	WARN("+ %p",out);
 #ifndef KERNEL_DISABLE_ASSERT
-	const u8* ptr=(const u8*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	for (u64 k=0;k<_get_block_size(i);k++){
-		if (ptr[k]==PMM_DEBUG_MARKER){
+	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_Bool error=0;
+	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
+		if (ptr[k]==PMM_DEBUG_MARKER*0x0101010101010101ull){
 			continue;
 		}
-		ERROR("pmm_alloc: use after free at %p +%u: %X",out,k,ptr[k]);
+		ERROR("pmm_alloc: use after free at %p +%u /%u: %X %c",out,k<<3,_get_block_size(i),ptr[k],(ptr[k]>32&&ptr[k]<127?ptr[k]:'?'));
+		error=1;
+	}
+	if (error){
+		panic("pmm_alloc: use after free");
 	}
 #endif
 	for (u64* ptr=(u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr<(u64*)(out+_get_block_size(i)+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr++){
@@ -329,6 +338,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 #ifndef KERNEL_DISABLE_ASSERT
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,count<<PAGE_SIZE_SHIFT);
 #endif
+	WARN("- %p",address);
 	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
@@ -348,6 +358,28 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		if (_block_descriptor_get_idx(buddy)!=i){
 			break;
 		}
+#ifndef KERNEL_DISABLE_ASSERT
+		for (u64 k=0;k<_get_block_size(i);k++){
+			if (*((u8*)(buddy+k+VMM_HIGHER_HALF_ADDRESS_OFFSET))!=PMM_DEBUG_MARKER){
+				for (u64 offset=kernel_data.first_free_address;offset<kernel_data.mmap[kernel_data.mmap_size-1].base+kernel_data.mmap[kernel_data.mmap_size-1].length;){
+					if (_block_descriptor_get_idx(offset)==31){
+						offset+=PAGE_SIZE;
+						continue;
+					}
+					const u8* ptr=(const u8*)(offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					u64 size=_get_block_size(_block_descriptor_get_idx(offset));
+					for (u64 k=0;k<size;k++){
+						if (ptr[k]==PMM_DEBUG_MARKER){
+							continue;
+						}
+						ERROR("pmm_dealloc: use after free at %p +%u: %X %c",offset,k,ptr[k],(ptr[k]>32&&ptr[k]<127?ptr[k]:'?'));
+					}
+					offset+=_get_block_size(_block_descriptor_get_idx(offset));
+				}
+				panic("Corrupted buddy");
+			}
+		}
+#endif
 		address&=~_get_block_size(i);
 		u64 buddy_prev=_block_descriptor_get_prev(buddy);
 		u64 buddy_next=_block_descriptor_get_next(buddy);
