@@ -14,6 +14,11 @@
 
 
 
+#define EVENT_USER_DISPATCH_FLAG_SET_ACTIVE 1
+#define EVENT_USER_DISPATCH_FLAG_DISPATCH_ALL 2
+
+
+
 static omm_allocator_t* _event_allocator=NULL;
 static omm_allocator_t* _event_thread_container_allocator=NULL;
 static handle_type_t _event_handle_type=0;
@@ -206,4 +211,72 @@ KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active,_Bool bypass_
 	event->is_active=is_active;
 	spinlock_release_exclusive(&(event->lock));
 	scheduler_resume();
+}
+
+
+
+error_t syscall_event_create(u32 is_active){
+	event_t* event=event_create();
+	if (is_active){
+		event_set_active(event,is_active,0);
+	}
+	return event->handle.rb_node.key;
+}
+
+
+
+error_t syscall_event_delete(handle_id_t event_handle){
+	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	event_t* event=handle->object;
+	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	handle_release(handle);
+	event_delete(event);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_event_dispatch(handle_id_t event_handle,u32 dispatch_flags){
+	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	event_t* event=handle->object;
+	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	u32 flags=0;
+	if (dispatch_flags&EVENT_USER_DISPATCH_FLAG_SET_ACTIVE){
+		flags|=EVENT_DISPATCH_FLAG_SET_ACTIVE;
+	}
+	if (dispatch_flags&EVENT_USER_DISPATCH_FLAG_DISPATCH_ALL){
+		flags|=EVENT_DISPATCH_FLAG_DISPATCH_ALL;
+	}
+	event_dispatch(event,flags);
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_event_set_active(handle_id_t event_handle,u32 is_active){
+	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	event_t* event=handle->object;
+	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	event_set_active(event,is_active,0);
+	handle_release(handle);
+	return ERROR_OK;
 }

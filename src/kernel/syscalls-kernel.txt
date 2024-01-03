@@ -53,3 +53,7 @@
 52,timer_get_deadline(u64 timer) -> u64
 53,timer_update(u64 timer,u64 interval,u64 count) -> u64
 54,timer_get_event(u64 timer) -> u64
+55,event_create(u32 is_active) -> u64
+56,event_delete(u64 event) -> u64
+57,event_dispatch(u64 event,u32 dispatch_flags) -> u64
+58,event_set_active(u64 event,u32 is_active) -> u64

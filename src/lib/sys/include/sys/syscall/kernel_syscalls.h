@@ -329,4 +329,28 @@ static inline u64 _sys_syscall_timer_get_event(u64 timer){
 
 
 
+static inline u64 _sys_syscall_event_create(u32 is_active){
+	return _sys_syscall1(0x100000037,is_active);
+}
+
+
+
+static inline u64 _sys_syscall_event_delete(u64 event){
+	return _sys_syscall1(0x100000038,event);
+}
+
+
+
+static inline u64 _sys_syscall_event_dispatch(u64 event,u32 dispatch_flags){
+	return _sys_syscall2(0x100000039,event,dispatch_flags);
+}
+
+
+
+static inline u64 _sys_syscall_event_set_active(u64 event,u32 is_active){
+	return _sys_syscall2(0x10000003a,event,is_active);
+}
+
+
+
 #endif
