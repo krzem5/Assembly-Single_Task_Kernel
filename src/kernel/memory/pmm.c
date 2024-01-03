@@ -284,7 +284,7 @@ _retry_allocator:
 	_pmm_load_balancer.stats.hit_count++;
 	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	u64 out=(allocator->block_groups+j)->head;
-	if (_block_descriptor_get_idx(out)==31){
+	if (_block_descriptor_get_idx(out)!=j){
 		ERROR("List head corrupted");
 	}
 	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
@@ -310,7 +310,6 @@ _retry_allocator:
 		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
-	WARN("+ %p",out);
 #ifndef KERNEL_DISABLE_ASSERT
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
@@ -338,7 +337,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 #ifndef KERNEL_DISABLE_ASSERT
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,count<<PAGE_SIZE_SHIFT);
 #endif
-	WARN("- %p",address);
 	scheduler_pause();
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
@@ -358,28 +356,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		if (_block_descriptor_get_idx(buddy)!=i){
 			break;
 		}
-#ifndef KERNEL_DISABLE_ASSERT
-		for (u64 k=0;k<_get_block_size(i);k++){
-			if (*((u8*)(buddy+k+VMM_HIGHER_HALF_ADDRESS_OFFSET))!=PMM_DEBUG_MARKER){
-				for (u64 offset=kernel_data.first_free_address;offset<kernel_data.mmap[kernel_data.mmap_size-1].base+kernel_data.mmap[kernel_data.mmap_size-1].length;){
-					if (_block_descriptor_get_idx(offset)==31){
-						offset+=PAGE_SIZE;
-						continue;
-					}
-					const u8* ptr=(const u8*)(offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-					u64 size=_get_block_size(_block_descriptor_get_idx(offset));
-					for (u64 k=0;k<size;k++){
-						if (ptr[k]==PMM_DEBUG_MARKER){
-							continue;
-						}
-						ERROR("pmm_dealloc: use after free at %p +%u: %X %c",offset,k,ptr[k],(ptr[k]>32&&ptr[k]<127?ptr[k]:'?'));
-					}
-					offset+=_get_block_size(_block_descriptor_get_idx(offset));
-				}
-				panic("Corrupted buddy");
-			}
-		}
-#endif
 		address&=~_get_block_size(i);
 		u64 buddy_prev=_block_descriptor_get_prev(buddy);
 		u64 buddy_next=_block_descriptor_get_next(buddy);
