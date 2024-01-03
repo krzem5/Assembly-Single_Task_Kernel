@@ -15,6 +15,8 @@
 
 
 
+#define PMM_DEBUG_MARKER 0xde
+
 #define PMM_FLAG_ALLOCATOR_INITIALIZED 1
 #define PMM_FLAG_HANDLE_INITIALIZED 2
 
@@ -114,6 +116,10 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
+#ifndef KERNEL_DISABLE_ASSERT
+	INFO("Resetting memory...");
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,end-address);
+#endif
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
 		u32 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
@@ -302,6 +308,15 @@ _retry_allocator:
 		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+#ifndef KERNEL_DISABLE_ASSERT
+	const u8* ptr=(const u8*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	for (u64 k=0;k<_get_block_size(i);k++){
+		if (ptr[k]==PMM_DEBUG_MARKER){
+			continue;
+		}
+		ERROR("pmm_alloc: use after free at %p +%u: %X",out,k,ptr[k]);
+	}
+#endif
 	for (u64* ptr=(u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr<(u64*)(out+_get_block_size(i)+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr++){
 		*ptr=0;
 	}
@@ -312,7 +327,7 @@ _retry_allocator:
 
 KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 #ifndef KERNEL_DISABLE_ASSERT
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0xde,count<<PAGE_SIZE_SHIFT);
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,count<<PAGE_SIZE_SHIFT);
 #endif
 	scheduler_pause();
 	if (!count){
@@ -325,7 +340,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));
-	while (i+1<PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
+	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1){
 		if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
 			break;
 		}
