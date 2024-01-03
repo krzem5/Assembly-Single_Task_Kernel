@@ -263,17 +263,16 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool me
 		}
 	} while (!((_pmm_allocators+index)->block_group_bitmap>>i));
 	spinlock_release_exclusive(&(_pmm_load_balancer.lock));
-	if (memory_hint==PMM_MEMORY_HINT_LOW_MEMORY){
-		index&=PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1;
-	}
+	u32 wrap=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY?PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1:0xffffffff);
+	index&=wrap;
 	u32 base_index=index;
 _retry_allocator:
 	pmm_allocator_t* allocator=_pmm_allocators+index;
 	spinlock_acquire_exclusive(&(allocator->lock));
 	if (!(allocator->block_group_bitmap>>i)){
 		spinlock_release_exclusive(&(allocator->lock));
-		index++;
 		_pmm_load_balancer.stats.miss_locked_count++;
+		index=(index+1)&wrap;
 		if (index==_pmm_allocator_count){
 			index=0;
 		}
@@ -382,21 +381,3 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }
-
-
-
-#ifndef KERNEL_DISABLE_ASSERT
-// Usage: /*DEBUG*/extern void __debug_pmm_verify_all(void);__debug_pmm_verify_all();/*DEBUG*/
-KERNEL_PUBLIC void __debug_pmm_verify_all(void){
-	for (u32 i=0;i<_pmm_allocator_count;i++){
-		pmm_allocator_t* allocator=_pmm_allocators+i;
-		spinlock_acquire_exclusive(&(allocator->lock));
-		for (u32 j=0;j<PMM_ALLOCATOR_BLOCK_GROUP_COUNT;j++){
-			if (!(allocator->block_group_bitmap&(1<<j))){
-				continue;
-			}
-		}
-		spinlock_release_exclusive(&(allocator->lock));
-	}
-}
-#endif
