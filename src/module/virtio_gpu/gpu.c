@@ -256,6 +256,7 @@ virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device
 }
 
 
+
 void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_resource_unref_t* request=amm_alloc(sizeof(virtio_gpu_resource_unref_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_UNREF;
