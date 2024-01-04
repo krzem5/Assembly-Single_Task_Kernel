@@ -38,7 +38,7 @@ KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balanc
 
 
 
-_Static_assert(PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT*2+2/*twoflag*/<=PAGE_SIZE_SHIFT);
+_Static_assert(PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT*2+2/*two flags/locks*/<=PAGE_SIZE_SHIFT);
 
 
 
@@ -111,9 +111,14 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
-#ifndef KERNEL_DISABLE_ASSERT
 	INFO("Resetting memory...");
+#ifndef KERNEL_DISABLE_ASSERT
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,end-address);
+#else
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,end-address);
+	for (u64 i=address;i<end;i+=PAGE_SIZE){
+		_get_block_descriptor(i)->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
+	}
 #endif
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
@@ -391,10 +396,10 @@ _retry_allocator:
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-			WARN("@");
+			// WARN("@");
 		}
 		else{
-			WARN("~");
+			// WARN("~");
 			u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
