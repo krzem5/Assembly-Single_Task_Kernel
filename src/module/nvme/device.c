@@ -139,6 +139,7 @@ static u64 _nvme_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 
 static const drive_type_t _nvme_drive_type_config={
 	"nvme",
+	0,
 	_nvme_read_write
 };
 

@@ -234,6 +234,7 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 
 static const drive_type_t _usb_msc_drive_type_config={
 	"usb",
+	0,
 	_usb_msc_read_write
 };
 

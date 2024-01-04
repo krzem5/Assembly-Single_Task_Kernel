@@ -58,6 +58,7 @@ static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count
 
 static const drive_type_t _virtio_blk_drive_type_config={
 	"virtio",
+	0,
 	_virtio_blk_read_write
 };
 

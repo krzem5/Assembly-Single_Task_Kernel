@@ -93,6 +93,7 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 
 static const drive_type_t _ahci_drive_type_config={
 	"ahci",
+	0,
 	_ahci_read_write
 };
 

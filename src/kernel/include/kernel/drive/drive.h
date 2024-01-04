@@ -10,6 +10,8 @@
 #define DRIVE_OFFSET_FLAG_WRITE 0x8000000000000000ull
 #define DRIVE_OFFSET_MASK 0x7fffffffffffffffull
 
+#define DRIVE_TYPE_FLAG_NO_CACHE 1
+
 
 
 struct _DRIVE;
@@ -18,6 +20,7 @@ struct _DRIVE;
 
 typedef struct _DRIVE_TYPE{
 	const char* name;
+	u32 flags;
 	u64 (*io_callback)(struct _DRIVE*,u64,u64,u64);
 } drive_type_t;
 

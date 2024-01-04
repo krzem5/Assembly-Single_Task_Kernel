@@ -30,6 +30,7 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count)
 
 static const drive_type_t _initramfs_drive_type_config={
 	"initramfs",
+	DRIVE_TYPE_FLAG_NO_CACHE,
 	_initramfs_read_write
 };
 
