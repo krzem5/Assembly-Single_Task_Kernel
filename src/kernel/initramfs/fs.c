@@ -207,7 +207,6 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	((initramfs_vfs_node_t*)(out->root))->child_count=node.child_count;
 	((initramfs_vfs_node_t*)(out->root))->name_length=node.name_length;
 	((initramfs_vfs_node_t*)(out->root))->flags=node.flags;
-	WARN("AAA %u",__LINE__);
 	return out;
 }
 
