@@ -1,4 +1,3 @@
-#include <kernel/drive/cache.h>
 #include <kernel/drive/drive.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
@@ -66,38 +65,25 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 
 
 KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
-	u64 cached=0;
-	if (!(drive->type->flags&DRIVE_TYPE_FLAG_NO_CACHE)){
-		cached=drive_cache_get(drive,offset,buffer,size);
-		size-=cached;
-		buffer+=cached<<drive->block_size_shift;
-		offset+=cached;
-	}
 	if (!size){
-		return cached;
+		return 0;
 	}
 	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
 	u64 out=drive->type->io_callback(drive,offset&DRIVE_OFFSET_MASK,aligned_buffer,size);
 	memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),out<<drive->block_size_shift);
 	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
-	if (!(drive->type->flags&DRIVE_TYPE_FLAG_NO_CACHE)&&out){
-		drive_cache_set(drive,offset,buffer,out);
-	}
-	return cached+out;
+	return out;
 }
 
 
 
 KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
-	if (drive->type->flags&DRIVE_TYPE_FLAG_READ_ONLY){
+	if (!size||(drive->type->flags&DRIVE_TYPE_FLAG_READ_ONLY)){
 		return 0;
 	}
 	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
 	memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,size<<drive->block_size_shift);
 	u64 out=drive->type->io_callback(drive,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,aligned_buffer,size);
 	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
-	if (!(drive->type->flags&DRIVE_TYPE_FLAG_NO_CACHE)&&out){
-		drive_cache_set(drive,offset,buffer,out);
-	}
 	return out;
 }
