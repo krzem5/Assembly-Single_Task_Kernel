@@ -34,7 +34,7 @@ spinlock_acquire_exclusive:
 
 
 spinlock_release_exclusive:
-	btr dword [rdi], 0
+	lock btr dword [rdi], 0
 	ret
 
 

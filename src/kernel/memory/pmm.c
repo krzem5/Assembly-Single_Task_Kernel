@@ -1,5 +1,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/bitlock.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -170,6 +171,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BUCKET_COUNT_MASK;
 		(_pmm_block_descriptors+i)->next=0;
 		(_pmm_block_descriptors+i)->cookie=0;
+		bitlock_init((u32*)(&((_pmm_block_descriptors+i)->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 	}
 	spinlock_init(&(_pmm_load_balancer.lock));
 	_pmm_load_balancer.index=0;
@@ -323,18 +325,21 @@ _retry_allocator:
 		panic("pmm_alloc: use after free");
 	}
 #endif
+	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(out);
 	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
-		_get_block_descriptor(out+offset)->cookie=0;
-		if (_get_block_descriptor(out+offset)->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
-			_get_block_descriptor(out+offset)->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-			continue;
+		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		block_descriptor->cookie=0;
+		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
+			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
 		}
-		_get_block_descriptor(out+offset)->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_START_CLEAR;
-		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
-			ptr[k]=0;
+		else{
+			u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
+				ptr[k]=0;
+			}
 		}
-		_get_block_descriptor(out+offset)->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_START_CLEAR;
+		bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		block_descriptor++;
 	}
 	return out;
 }
