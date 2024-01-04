@@ -54,59 +54,60 @@ static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
 
 
 static void _block_descriptor_deinit(u64 address){
-	_get_block_descriptor(address)->data[0]|=0x1f;
+	_get_block_descriptor(address)->data|=0x1f;
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u32 idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[0]=prev|(descriptor->data[0]&0x3e0)|idx;
-	descriptor->data[1]=0;
+	descriptor->data=prev|(descriptor->data&0x3e0)|idx;
+	descriptor->next=0;
+	descriptor->cookie=0;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_prev_idx(u64 address){
-	return (_get_block_descriptor(address)->data[0]>>5)&0x1f;
+	return (_get_block_descriptor(address)->data>>5)&0x1f;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_idx(u64 address){
-	return _get_block_descriptor(address)->data[0]&0x1f;
+	return _get_block_descriptor(address)->data&0x1f;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_prev(u64 address){
-	return _get_block_descriptor(address)->data[0]&(-PAGE_SIZE);
+	return _get_block_descriptor(address)->data&(-PAGE_SIZE);
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_next(u64 address){
-	return _get_block_descriptor(address)->data[1];
+	return _get_block_descriptor(address)->next;
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_set_prev_idx(u64 address,u32 prev_idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[0]=(descriptor->data[0]&0xfffffffffffffc1full)|(prev_idx<<5);
+	descriptor->data=(descriptor->data&0xfffffffffffffc1full)|(prev_idx<<5);
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_set_prev(u64 address,u64 prev){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data[0]=(descriptor->data[0]&(PAGE_SIZE-1))|prev;
+	descriptor->data=(descriptor->data&(PAGE_SIZE-1))|prev;
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_set_next(u64 address,u64 next){
-	_get_block_descriptor(address)->data[1]=next;
+	_get_block_descriptor(address)->next=next;
 }
 
 
@@ -175,8 +176,9 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=block_descriptor_array_size;
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
-		(_pmm_block_descriptors+i)->data[0]=0xffff;
-		(_pmm_block_descriptors+i)->data[1]=0;
+		(_pmm_block_descriptors+i)->data=0xffff;
+		(_pmm_block_descriptors+i)->next=0;
+		(_pmm_block_descriptors+i)->cookie=0;
 	}
 	spinlock_init(&(_pmm_load_balancer.lock));
 	_pmm_load_balancer.index=0;

@@ -26,7 +26,9 @@
 
 
 typedef struct _PMM_BLOCK_DESCRIPTOR{
-	u64 data[2];
+	u64 data;
+	u64 next;
+	u64 cookie;
 } pmm_block_descriptor_t;
 
 
