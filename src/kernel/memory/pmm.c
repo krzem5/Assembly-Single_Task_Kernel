@@ -166,6 +166,7 @@ static void _memory_clear_thread(pmm_allocator_t* allocator){
 			for (u16 max_clear_count=(i>=(PMM_ALLOCATOR_BUCKET_COUNT>>1)?1:PMM_ALLOCATOR_BUCKET_COUNT-i);cleared_tail[i]&&max_clear_count;max_clear_count--){
 				if (_block_descriptor_get_idx(cleared_tail[i])!=i){
 					cleared_tail[i]=_get_block_descriptor(cleared_tail[i])->next;
+					max_clear_count++;
 					break;
 				}
 				void* ptr=(void*)(cleared_tail[i]+VMM_HIGHER_HALF_ADDRESS_OFFSET);
