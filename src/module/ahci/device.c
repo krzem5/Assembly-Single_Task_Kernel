@@ -53,23 +53,19 @@ static void _device_wait_command(const ahci_device_t* device,u8 cmd_slot){
 
 
 
-static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+static u64 _ahci_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	ahci_device_t* device=drive->extra_data;
 	u32 dbc=(count<<9)-1;
 	if (dbc>0x3fffff){
 		dbc=0x3fffff;
-	}
-	u64 aligned_buffer=pmm_alloc((dbc+1)>>9,_ahci_driver_pmm_counter,0);
-	if (offset&DRIVE_OFFSET_FLAG_WRITE){
-		memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,dbc+1);
 	}
 	u8 cmd_slot=_device_get_command_slot(device);
 	ahci_command_t* command=device->command_list->commands+cmd_slot;
 	command->flags=(sizeof(ahci_fis_reg_h2d_t)>>2)|FLAGS_PREFEACHABLE;
 	command->prdtl=1;
 	ahci_command_table_t* command_table=device->command_tables[cmd_slot];
-	command_table->prdt_entry->dba=aligned_buffer;
-	command_table->prdt_entry->dbau=aligned_buffer>>32;
+	command_table->prdt_entry->dba=buffer;
+	command_table->prdt_entry->dbau=buffer>>32;
 	command_table->prdt_entry->dbc=dbc;
 	ahci_fis_reg_h2d_t* fis=(ahci_fis_reg_h2d_t*)(command_table->cfis);
 	fis->fis_type=FIS_TYPE_REG_H2D;
@@ -90,10 +86,6 @@ static u64 _ahci_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 	fis->control=0;
 	_device_send_command(device,cmd_slot);
 	_device_wait_command(device,cmd_slot);
-	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
-		memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),dbc+1);
-	}
-	pmm_dealloc(aligned_buffer,(dbc+1)>>9,_ahci_driver_pmm_counter);
 	return (dbc+1)>>9;
 }
 

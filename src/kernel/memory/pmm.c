@@ -305,12 +305,6 @@ _retry_allocator:
 		allocator->bucket_bitmap|=1<<j;
 	}
 	spinlock_release_exclusive(&(allocator->lock));
-	scheduler_resume();
-	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
-		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
-		handle_finish_setup(&(counter->handle));
-	}
-	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 #ifndef KERNEL_DISABLE_ASSERT
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
@@ -341,6 +335,12 @@ _retry_allocator:
 		bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
 	}
+	scheduler_resume();
+	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
+		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
+		handle_finish_setup(&(counter->handle));
+	}
+	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	return out;
 }
 

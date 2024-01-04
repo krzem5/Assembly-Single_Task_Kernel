@@ -1,6 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
@@ -19,24 +20,18 @@
 
 
 
-static pmm_counter_descriptor_t* _virtio_blk_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virtio_blk_device_allocator=NULL;
 
 
 
-static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	virtio_blk_device_t* blk_device=drive->extra_data;
 	_Bool is_write=!!(offset&DRIVE_OFFSET_FLAG_WRITE);
 	offset&=DRIVE_OFFSET_MASK;
-	u64 physical_buffer=pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_virtio_blk_buffer_pmm_counter,0);
-	if (is_write){
-		memcpy((void*)(physical_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,count<<drive->block_size_shift);
-	}
-	virtio_blk_request_header_t __attribute__((aligned(sizeof(virtio_blk_request_header_t)))) header={ // alignment prevents splits across stack pages
-		.type=(is_write?VIRTIO_BLK_T_OUT:VIRTIO_BLK_T_IN),
-		._zero=0,
-		.sector=offset
-	};
+	virtio_blk_request_header_t* header=amm_alloc(sizeof(virtio_blk_request_header_t));
+	header->type=(is_write?VIRTIO_BLK_T_OUT:VIRTIO_BLK_T_IN);
+	header->_zero=0;
+	header->sector=offset;
 	u8 status=0;
 	virtio_buffer_t buffers[3]={
 		{
@@ -44,7 +39,7 @@ static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,void* buffer,u64 cou
 			sizeof(virtio_blk_request_header_t)
 		},
 		{
-			physical_buffer,
+			buffer,
 			count<<drive->block_size_shift
 		},
 		{
@@ -52,13 +47,10 @@ static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,void* buffer,u64 cou
 			sizeof(u8)
 		}
 	};
-	virtio_queue_transfer(blk_device->queue,buffers,1+is_write,1+(!is_write));
+	virtio_queue_transfer(blk_device->queue,buffers,1+is_write,2-is_write);
 	virtio_queue_wait(blk_device->queue);
 	virtio_queue_pop(blk_device->queue,NULL);
-	if (!is_write){
-		memcpy(buffer,(void*)(physical_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),count<<drive->block_size_shift);
-	}
-	pmm_dealloc(physical_buffer,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_virtio_blk_buffer_pmm_counter);
+	amm_dealloc(header);
 	return (status==VIRTIO_BLK_S_OK?count:0);
 }
 
@@ -111,7 +103,6 @@ static const virtio_device_driver_t _virtio_blk_device_driver={
 
 void virtio_blk_init(void){
 	LOG("Initializing VirtIO block driver...");
-	_virtio_blk_buffer_pmm_counter=pmm_alloc_counter("virtio_blk_buffer");
 	_virtio_blk_device_allocator=omm_init("virtio_blk_device",sizeof(virtio_blk_device_t),8,1,pmm_alloc_counter("omm_virtio_blk_device"));
 	spinlock_init(&(_virtio_blk_device_allocator->lock));
 	if (!virtio_register_device_driver(&_virtio_blk_device_driver)){

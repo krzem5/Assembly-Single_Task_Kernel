@@ -7,6 +7,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
@@ -77,13 +78,13 @@ static void _send_atapi_command(const ata_device_t* device,const u16* command,u1
 
 
 
-static u64 _ata_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+static u64 _ata_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	panic("_ata_read_write");
 }
 
 
 
-static u64 _atapi_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+static u64 _atapi_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	const ata_device_t* device=drive->extra_data;
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		WARN("ATA drives are read-only");
@@ -108,7 +109,7 @@ static u64 _atapi_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
 		0x00
 	};
 	_send_atapi_command(device,(const u16*)atapi_command,2048,NULL);
-	u16* out=buffer;
+	u16* out=(void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u64 i=0;i<count;i++){
 		_delay_400ns(device);
 		if (!_wait_for_device(device,STATUS_BSY,0)){

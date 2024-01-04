@@ -205,13 +205,9 @@ static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_rea
 
 
 
-static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count){
+static u64 _usb_msc_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	usb_msc_lun_context_t* context=drive->extra_data;
 	usb_msc_driver_t* driver=context->driver;
-	void* linear_buffer=(void*)(pmm_alloc(pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	if (offset&DRIVE_OFFSET_FLAG_WRITE){
-		memcpy(linear_buffer,buffer,count<<drive->block_size_shift);
-	}
 	spinlock_acquire_exclusive(&(context->lock));
 	memset(context->cbw.CBWCB._data,0,16);
 	context->cbw.dCBWSignature=USB_MSC_CBW_SIGNATURE;
@@ -226,15 +222,11 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,void* buffer,u64 count)
 	context->tag++;
 	spinlock_acquire_exclusive(&(driver->lock));
 	usb_pipe_transfer_normal(driver->device,driver->output_pipe,&(context->cbw),sizeof(usb_msc_cbw_t));
-	usb_pipe_transfer_normal(driver->device,((offset&DRIVE_OFFSET_FLAG_WRITE)?driver->output_pipe:driver->input_pipe),linear_buffer,count<<drive->block_size_shift);
+	usb_pipe_transfer_normal(driver->device,((offset&DRIVE_OFFSET_FLAG_WRITE)?driver->output_pipe:driver->input_pipe),(void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),count<<drive->block_size_shift);
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&(context->csw),sizeof(usb_msc_csw_t));
 	spinlock_release_exclusive(&(driver->lock));
-	if (!(offset&DRIVE_OFFSET_FLAG_WRITE)){
-		memcpy(buffer,linear_buffer,count<<drive->block_size_shift);
-	}
 	u64 out=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus?((count<<drive->block_size_shift)-context->csw.dCSWDataResidue)>>drive->block_size_shift:0);
 	spinlock_release_exclusive(&(context->lock));
-	pmm_dealloc(((u64)linear_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(count<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter);
 	return out;
 }
 

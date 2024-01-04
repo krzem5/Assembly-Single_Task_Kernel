@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -10,6 +11,7 @@
 
 
 
+static pmm_counter_descriptor_t* _drive_buffer_pmm_counter=NULL;
 static omm_allocator_t* _drive_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t drive_handle_type=0;
@@ -29,6 +31,7 @@ static void _drive_handle_destructor(handle_t* handle){
 
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing drive allocator...");
+	_drive_buffer_pmm_counter=pmm_alloc_counter("drive_buffer");
 	_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,pmm_alloc_counter("omm_drive"));
 	spinlock_init(&(_drive_allocator->lock));
 	drive_handle_type=handle_alloc("drive",_drive_handle_destructor);
@@ -62,11 +65,19 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 
 
 KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
-	return drive->type->io_callback(drive,offset&DRIVE_OFFSET_MASK,buffer,size);
+	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
+	u64 out=drive->type->io_callback(drive,offset&DRIVE_OFFSET_MASK,aligned_buffer,size);
+	memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),out<<drive->block_size_shift);
+	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
+	return out;
 }
 
 
 
 KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
-	return drive->type->io_callback(drive,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,(void*)buffer,size);
+	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
+	memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,size<<drive->block_size_shift);
+	u64 out=drive->type->io_callback(drive,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,aligned_buffer,size);
+	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
+	return out;
 }

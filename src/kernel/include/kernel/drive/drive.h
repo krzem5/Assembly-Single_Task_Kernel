@@ -18,7 +18,7 @@ struct _DRIVE;
 
 typedef struct _DRIVE_TYPE{
 	const char* name;
-	u64 (*io_callback)(struct _DRIVE*,u64,void*,u64);
+	u64 (*io_callback)(struct _DRIVE*,u64,u64,u64);
 } drive_type_t;
 
 
