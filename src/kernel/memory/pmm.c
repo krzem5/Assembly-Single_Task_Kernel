@@ -123,28 +123,28 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
 		u32 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
-		if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
-			idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
+		if (idx>=PMM_ALLOCATOR_BUCKET_COUNT){
+			idx=PMM_ALLOCATOR_BUCKET_COUNT-1;
 		}
 		u64 size=_get_block_size(idx);
 		u64 length=end-address;
 		if (size>length){
 			idx=63-__builtin_clzll(length)-PAGE_SIZE_SHIFT;
-			if (idx>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
-				idx=PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1;
+			if (idx>=PMM_ALLOCATOR_BUCKET_COUNT){
+				idx=PMM_ALLOCATOR_BUCKET_COUNT-1;
 			}
 			size=_get_block_size(idx);
 		}
 		_block_descriptor_set_prev_idx(address+_get_block_size(idx),idx);
-		_block_descriptor_init(address,(allocator->block_groups+idx)->tail,idx);
-		if ((allocator->block_groups+idx)->tail){
-			_block_descriptor_set_next((allocator->block_groups+idx)->tail,address);
+		_block_descriptor_init(address,(allocator->buckets+idx)->tail,idx);
+		if ((allocator->buckets+idx)->tail){
+			_block_descriptor_set_next((allocator->buckets+idx)->tail,address);
 		}
 		else{
-			(allocator->block_groups+idx)->head=address;
+			(allocator->buckets+idx)->head=address;
 		}
-		(allocator->block_groups+idx)->tail=address;
-		allocator->block_group_bitmap|=1<<idx;
+		(allocator->buckets+idx)->tail=address;
+		allocator->bucket_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
 }
@@ -247,7 +247,7 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool me
 		panic("pmm_alloc: trying to allocate zero physical pages");
 	}
 	u32 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
-	if (i>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
+	if (i>=PMM_ALLOCATOR_BUCKET_COUNT){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	scheduler_pause();
@@ -261,7 +261,7 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool me
 		if (_pmm_load_balancer.index>=_pmm_allocator_count){
 			_pmm_load_balancer.index-=_pmm_allocator_count;
 		}
-	} while (!((_pmm_allocators+index)->block_group_bitmap>>i));
+	} while (!((_pmm_allocators+index)->bucket_bitmap>>i));
 	spinlock_release_exclusive(&(_pmm_load_balancer.lock));
 	u32 wrap=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY?PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1:0xffffffff);
 	index&=wrap;
@@ -269,7 +269,7 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool me
 _retry_allocator:
 	pmm_allocator_t* allocator=_pmm_allocators+index;
 	spinlock_acquire_exclusive(&(allocator->lock));
-	if (!(allocator->block_group_bitmap>>i)){
+	if (!(allocator->bucket_bitmap>>i)){
 		spinlock_release_exclusive(&(allocator->lock));
 		_pmm_load_balancer.stats.miss_locked_count++;
 		index=(index+1)&wrap;
@@ -282,21 +282,21 @@ _retry_allocator:
 		panic("pmm_alloc: out of memory");
 	}
 	_pmm_load_balancer.stats.hit_count++;
-	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
-	u64 out=(allocator->block_groups+j)->head;
+	u32 j=__builtin_ffs(allocator->bucket_bitmap>>i)+i-1;
+	u64 out=(allocator->buckets+j)->head;
 #ifndef KERNEL_DISABLE_ASSERT
 	if (_block_descriptor_get_idx(out)!=j){
 		ERROR("List head corrupted [%u]: %p, %u",j,out,_block_descriptor_get_idx(out));
 		panic("List head corrupted");
 	}
 #endif
-	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
-	if (!(allocator->block_groups+j)->head){
-		(allocator->block_groups+j)->tail=0;
-		allocator->block_group_bitmap&=~(1<<j);
+	(allocator->buckets+j)->head=_block_descriptor_get_next(out);
+	if (!(allocator->buckets+j)->head){
+		(allocator->buckets+j)->tail=0;
+		allocator->bucket_bitmap&=~(1<<j);
 	}
 	else{
-		_block_descriptor_set_prev((allocator->block_groups+j)->head,0);
+		_block_descriptor_set_prev((allocator->buckets+j)->head,0);
 	}
 	_block_descriptor_deinit(out);
 	_block_descriptor_set_prev_idx(out+_get_block_size(i),i);
@@ -305,9 +305,9 @@ _retry_allocator:
 		u64 split_block=out+_get_block_size(j);
 		_block_descriptor_set_prev_idx(split_block+_get_block_size(j),j);
 		_block_descriptor_init(split_block,0,j);
-		(allocator->block_groups+j)->head=split_block;
-		(allocator->block_groups+j)->tail=split_block;
-		allocator->block_group_bitmap|=1<<j;
+		(allocator->buckets+j)->head=split_block;
+		(allocator->buckets+j)->tail=split_block;
+		allocator->bucket_bitmap|=1<<j;
 	}
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
@@ -347,13 +347,13 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
 	}
 	u32 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
-	if (i>=PMM_ALLOCATOR_BLOCK_GROUP_COUNT){
+	if (i>=PMM_ALLOCATOR_BUCKET_COUNT){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));
-	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1){
+	while (i<PMM_ALLOCATOR_BUCKET_COUNT-1){
 		if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
 			break;
 		}
@@ -369,29 +369,29 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 			_block_descriptor_set_next(buddy_prev,buddy_next);
 		}
 		else{
-			(allocator->block_groups+i)->head=buddy_next;
+			(allocator->buckets+i)->head=buddy_next;
 			if (!buddy_next){
-				allocator->block_group_bitmap&=~(1<<i);
+				allocator->bucket_bitmap&=~(1<<i);
 			}
 		}
 		if (buddy_next){
 			_block_descriptor_set_prev(buddy_next,buddy_prev);
 		}
 		else{
-			(allocator->block_groups+i)->tail=buddy_prev;
+			(allocator->buckets+i)->tail=buddy_prev;
 		}
 		i++;
 	}
 	_block_descriptor_set_prev_idx(address+_get_block_size(i),i);
-	_block_descriptor_init(address,(allocator->block_groups+i)->tail,i);
-	if ((allocator->block_groups+i)->tail){
-		_block_descriptor_set_next((allocator->block_groups+i)->tail,address);
+	_block_descriptor_init(address,(allocator->buckets+i)->tail,i);
+	if ((allocator->buckets+i)->tail){
+		_block_descriptor_set_next((allocator->buckets+i)->tail,address);
 	}
 	else{
-		(allocator->block_groups+i)->head=address;
+		(allocator->buckets+i)->head=address;
 	}
-	(allocator->block_groups+i)->tail=address;
-	allocator->block_group_bitmap|=1<<i;
+	(allocator->buckets+i)->tail=address;
+	allocator->bucket_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }
