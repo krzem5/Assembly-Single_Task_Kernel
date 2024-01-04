@@ -35,6 +35,10 @@ KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balanc
 
 
 
+_Static_assert(PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT*2+1/*one flag*/<=PAGE_SIZE_SHIFT);
+
+
+
 static KERNEL_INLINE u64 _get_block_size(u32 index){
 	return 1ull<<(PAGE_SIZE_SHIFT+index);
 }
@@ -54,28 +58,27 @@ static KERNEL_INLINE pmm_block_descriptor_t* _get_block_descriptor(u64 address){
 
 
 static void _block_descriptor_deinit(u64 address){
-	_get_block_descriptor(address)->data|=0x1f;
+	_get_block_descriptor(address)->data|=PMM_ALLOCATOR_BUCKET_COUNT_MASK;
 }
 
 
 
 static KERNEL_INLINE void _block_descriptor_init(u64 address,u64 prev,u32 idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data=prev|(descriptor->data&0x3e0)|idx;
+	descriptor->data=prev|(descriptor->data&(PAGE_SIZE-1)&(~PMM_ALLOCATOR_BUCKET_COUNT_MASK))|idx;
 	descriptor->next=0;
-	descriptor->cookie=0;
-}
-
-
-
-static KERNEL_INLINE u64 _block_descriptor_get_prev_idx(u64 address){
-	return (_get_block_descriptor(address)->data>>5)&0x1f;
 }
 
 
 
 static KERNEL_INLINE u64 _block_descriptor_get_idx(u64 address){
-	return _get_block_descriptor(address)->data&0x1f;
+	return _get_block_descriptor(address)->data&PMM_ALLOCATOR_BUCKET_COUNT_MASK;
+}
+
+
+
+static KERNEL_INLINE u64 _block_descriptor_get_prev_idx(u64 address){
+	return (_get_block_descriptor(address)->data>>PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT)&PMM_ALLOCATOR_BUCKET_COUNT_MASK;
 }
 
 
@@ -86,15 +89,9 @@ static KERNEL_INLINE u64 _block_descriptor_get_prev(u64 address){
 
 
 
-static KERNEL_INLINE u64 _block_descriptor_get_next(u64 address){
-	return _get_block_descriptor(address)->next;
-}
-
-
-
 static KERNEL_INLINE void _block_descriptor_set_prev_idx(u64 address,u32 prev_idx){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
-	descriptor->data=(descriptor->data&0xfffffffffffffc1full)|(prev_idx<<5);
+	descriptor->data=(descriptor->data&(-(PMM_ALLOCATOR_BUCKET_COUNT_MASK<<PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT)-1))|(prev_idx<<PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT);
 }
 
 
@@ -102,12 +99,6 @@ static KERNEL_INLINE void _block_descriptor_set_prev_idx(u64 address,u32 prev_id
 static KERNEL_INLINE void _block_descriptor_set_prev(u64 address,u64 prev){
 	pmm_block_descriptor_t* descriptor=_get_block_descriptor(address);
 	descriptor->data=(descriptor->data&(PAGE_SIZE-1))|prev;
-}
-
-
-
-static KERNEL_INLINE void _block_descriptor_set_next(u64 address,u64 next){
-	_get_block_descriptor(address)->next=next;
 }
 
 
@@ -139,7 +130,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		_block_descriptor_set_prev_idx(address+_get_block_size(idx),idx);
 		_block_descriptor_init(address,(allocator->buckets+idx)->tail,idx);
 		if ((allocator->buckets+idx)->tail){
-			_block_descriptor_set_next((allocator->buckets+idx)->tail,address);
+			_get_block_descriptor((allocator->buckets+idx)->tail)->next=address;
 		}
 		else{
 			(allocator->buckets+idx)->head=address;
@@ -176,7 +167,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kernel_data.first_free_address+=block_descriptor_array_size;
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
-		(_pmm_block_descriptors+i)->data=0xffff;
+		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BUCKET_COUNT_MASK;
 		(_pmm_block_descriptors+i)->next=0;
 		(_pmm_block_descriptors+i)->cookie=0;
 	}
@@ -292,7 +283,7 @@ _retry_allocator:
 		panic("List head corrupted");
 	}
 #endif
-	(allocator->buckets+j)->head=_block_descriptor_get_next(out);
+	(allocator->buckets+j)->head=_get_block_descriptor(out)->next;
 	if (!(allocator->buckets+j)->head){
 		(allocator->buckets+j)->tail=0;
 		allocator->bucket_bitmap&=~(1<<j);
@@ -332,8 +323,18 @@ _retry_allocator:
 		panic("pmm_alloc: use after free");
 	}
 #endif
-	for (u64* ptr=(u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr<(u64*)(out+_get_block_size(i)+VMM_HIGHER_HALF_ADDRESS_OFFSET);ptr++){
-		*ptr=0;
+	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
+		_get_block_descriptor(out+offset)->cookie=0;
+		if (_get_block_descriptor(out+offset)->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
+			_get_block_descriptor(out+offset)->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
+			continue;
+		}
+		_get_block_descriptor(out+offset)->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_START_CLEAR;
+		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
+			ptr[k]=0;
+		}
+		_get_block_descriptor(out+offset)->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_START_CLEAR;
 	}
 	return out;
 }
@@ -365,10 +366,10 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		}
 		address&=~_get_block_size(i);
 		u64 buddy_prev=_block_descriptor_get_prev(buddy);
-		u64 buddy_next=_block_descriptor_get_next(buddy);
+		u64 buddy_next=_get_block_descriptor(buddy)->next;
 		_block_descriptor_deinit(buddy);
 		if (buddy_prev){
-			_block_descriptor_set_next(buddy_prev,buddy_next);
+			_get_block_descriptor(buddy_prev)->next=buddy_next;
 		}
 		else{
 			(allocator->buckets+i)->head=buddy_next;
@@ -387,7 +388,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	_block_descriptor_set_prev_idx(address+_get_block_size(i),i);
 	_block_descriptor_init(address,(allocator->buckets+i)->tail,i);
 	if ((allocator->buckets+i)->tail){
-		_block_descriptor_set_next((allocator->buckets+i)->tail,address);
+		_get_block_descriptor((allocator->buckets+i)->tail)->next=address;
 	}
 	else{
 		(allocator->buckets+i)->head=address;
