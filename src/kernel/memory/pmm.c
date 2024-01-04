@@ -35,7 +35,7 @@ KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balanc
 
 
 
-_Static_assert(PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT*2+1/*one flag*/<=PAGE_SIZE_SHIFT);
+_Static_assert(PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT*2+2/*twoflag*/<=PAGE_SIZE_SHIFT);
 
 
 
