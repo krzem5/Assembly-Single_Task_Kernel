@@ -143,6 +143,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		else{
 			(allocator->block_groups+idx)->head=address;
 		}
+		WARN("Push0 %u: %p",idx,address);
 		(allocator->block_groups+idx)->tail=address;
 		allocator->block_group_bitmap|=1<<idx;
 		address+=size;
@@ -285,8 +286,10 @@ _retry_allocator:
 	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	u64 out=(allocator->block_groups+j)->head;
 	if (_block_descriptor_get_idx(out)!=j){
-		ERROR("List head corrupted");
+		ERROR("List head corrupted [%u]: %p, %u",j,out,_block_descriptor_get_idx(out));
+		panic("List head corrupted");
 	}
+	if (_block_descriptor_get_next(out)){WARN("Shift %u: %p, %u",j,_block_descriptor_get_next(out),_block_descriptor_get_idx(_block_descriptor_get_next(out)));}
 	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
 	if (!(allocator->block_groups+j)->head){
 		(allocator->block_groups+j)->tail=0;
@@ -299,6 +302,7 @@ _retry_allocator:
 		u64 split_block=out+_get_block_size(j);
 		_block_descriptor_set_prev_idx(split_block+_get_block_size(j),j);
 		_block_descriptor_init(split_block,0,j);
+		WARN("Push1 %u: %p",j,split_block);
 		(allocator->block_groups+j)->head=split_block;
 		(allocator->block_groups+j)->tail=split_block;
 		allocator->block_group_bitmap|=1<<j;
@@ -385,6 +389,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	else{
 		(allocator->block_groups+i)->head=address;
 	}
+	WARN("Push2 %u: %p [%u]",i,address,_block_descriptor_get_idx(address));
 	(allocator->block_groups+i)->tail=address;
 	allocator->block_group_bitmap|=1<<i;
 	spinlock_release_exclusive(&(allocator->lock));
