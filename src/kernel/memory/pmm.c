@@ -143,7 +143,6 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		else{
 			(allocator->block_groups+idx)->head=address;
 		}
-		WARN("Push0 %u: %p",idx,address);
 		(allocator->block_groups+idx)->tail=address;
 		allocator->block_group_bitmap|=1<<idx;
 		address+=size;
@@ -285,15 +284,19 @@ _retry_allocator:
 	_pmm_load_balancer.stats.hit_count++;
 	u32 j=__builtin_ffs(allocator->block_group_bitmap>>i)+i-1;
 	u64 out=(allocator->block_groups+j)->head;
+#ifndef KERNEL_DISABLE_ASSERT
 	if (_block_descriptor_get_idx(out)!=j){
 		ERROR("List head corrupted [%u]: %p, %u",j,out,_block_descriptor_get_idx(out));
 		panic("List head corrupted");
 	}
-	if (_block_descriptor_get_next(out)){WARN("Shift %u: %p, %u",j,_block_descriptor_get_next(out),_block_descriptor_get_idx(_block_descriptor_get_next(out)));}
+#endif
 	(allocator->block_groups+j)->head=_block_descriptor_get_next(out);
 	if (!(allocator->block_groups+j)->head){
 		(allocator->block_groups+j)->tail=0;
 		allocator->block_group_bitmap&=~(1<<j);
+	}
+	else{
+		_block_descriptor_set_prev((allocator->block_groups+j)->head,0);
 	}
 	_block_descriptor_deinit(out);
 	_block_descriptor_set_prev_idx(out+_get_block_size(i),i);
@@ -302,7 +305,6 @@ _retry_allocator:
 		u64 split_block=out+_get_block_size(j);
 		_block_descriptor_set_prev_idx(split_block+_get_block_size(j),j);
 		_block_descriptor_init(split_block,0,j);
-		WARN("Push1 %u: %p",j,split_block);
 		(allocator->block_groups+j)->head=split_block;
 		(allocator->block_groups+j)->tail=split_block;
 		allocator->block_group_bitmap|=1<<j;
@@ -332,7 +334,30 @@ _retry_allocator:
 		*ptr=0;
 	}
 	return out;
+}
 
+
+
+static void __CHECK(pmm_allocator_t* allocator,u32 line){
+	for (u8 i=0;i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT;i++){
+		if (!(allocator->block_group_bitmap&(1<<i))){
+			continue;
+		}
+		for (u64 address=(allocator->block_groups+i)->head;address;address=_block_descriptor_get_next(address)){
+			if (_block_descriptor_get_idx(address)!=i){
+				ERROR("%u: %p: %u | %u",line,address,_block_descriptor_get_idx(address),i);
+				panic("Broken state");
+			}
+			if (address!=(_block_descriptor_get_next(address)?_block_descriptor_get_prev(_block_descriptor_get_next(address)):(allocator->block_groups+i)->tail)){
+				ERROR("%u: %p: %p",line,address,(_block_descriptor_get_next(address)?_block_descriptor_get_prev(_block_descriptor_get_next(address)):(allocator->block_groups+i)->tail));
+				panic("Broken state");
+			}
+			if (_block_descriptor_get_next(address)&&_block_descriptor_get_prev(address)==_block_descriptor_get_next(address)){
+				ERROR("%u: %p: %p+%p",line,address,_block_descriptor_get_prev(address),_block_descriptor_get_next(address));
+				panic("Broken state");
+			}
+		}
+	}
 }
 
 
@@ -352,46 +377,51 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));
-	// while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1){
-	// 	if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
-	// 		break;
-	// 	}
-	// 	u64 buddy=address^_get_block_size(i);
-	// 	if (_block_descriptor_get_idx(buddy)!=i){
-	// 		break;
-	// 	}
-	// 	address&=~_get_block_size(i);
-	// 	u64 buddy_prev=_block_descriptor_get_prev(buddy);
-	// 	u64 buddy_next=_block_descriptor_get_next(buddy);
-	// 	_block_descriptor_deinit(buddy);
-	// 	if (buddy_prev){
-	// 		_block_descriptor_set_next(buddy_prev,buddy_next);
-	// 	}
-	// 	else{
-	// 		(allocator->block_groups+i)->head=buddy_next;
-	// 		if (!buddy_next){
-	// 			allocator->block_group_bitmap&=~(1<<i);
-	// 		}
-	// 	}
-	// 	if (buddy_next){
-	// 		_block_descriptor_set_prev(buddy_next,buddy_prev);
-	// 	}
-	// 	else{
-	// 		(allocator->block_groups+i)->tail=buddy_prev;
-	// 	}
-	// 	i++;
-	// }
+	__CHECK(allocator,__LINE__);
+	while (i<PMM_ALLOCATOR_BLOCK_GROUP_COUNT-1){
+		if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
+			break;
+		}
+		u64 buddy=address^_get_block_size(i);
+		if (_block_descriptor_get_idx(buddy)!=i){
+			break;
+		}
+		address&=~_get_block_size(i);
+		u64 buddy_prev=_block_descriptor_get_prev(buddy);
+		u64 buddy_next=_block_descriptor_get_next(buddy);
+		WARN("%u, %p | %p %p",i,buddy,buddy_prev,buddy_next);
+		_block_descriptor_deinit(buddy);
+		if (buddy_prev){
+			_block_descriptor_set_next(buddy_prev,buddy_next);
+		}
+		else{
+			(allocator->block_groups+i)->head=buddy_next;
+			if (!buddy_next){
+				allocator->block_group_bitmap&=~(1<<i);
+			}
+		}
+		if (buddy_next){
+			_block_descriptor_set_prev(buddy_next,buddy_prev);
+		}
+		else{
+			(allocator->block_groups+i)->tail=buddy_prev;
+		}
+		i++;
+	}
+	__CHECK(allocator,__LINE__);
 	_block_descriptor_set_prev_idx(address+_get_block_size(i),i);
 	_block_descriptor_init(address,(allocator->block_groups+i)->tail,i);
+	WARN("%p | %p %u | %p",(allocator->block_groups+i)->head,(allocator->block_groups+i)->tail,allocator->block_group_bitmap&(1<<i),_block_descriptor_get_prev((allocator->block_groups+i)->head));
 	if ((allocator->block_groups+i)->tail){
 		_block_descriptor_set_next((allocator->block_groups+i)->tail,address);
 	}
 	else{
 		(allocator->block_groups+i)->head=address;
 	}
-	WARN("Push2 %u: %p [%u]",i,address,_block_descriptor_get_idx(address));
 	(allocator->block_groups+i)->tail=address;
+	WARN("%p | %p",(allocator->block_groups+i)->head,(allocator->block_groups+i)->tail);
 	allocator->block_group_bitmap|=1<<i;
+	__CHECK(allocator,__LINE__);
 	spinlock_release_exclusive(&(allocator->lock));
 	scheduler_resume();
 }
