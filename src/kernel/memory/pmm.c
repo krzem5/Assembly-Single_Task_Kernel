@@ -146,6 +146,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 
+#ifdef KERNEL_DISABLE_ASSERT
 static void _memory_clear_thread(pmm_allocator_t* allocator){
 	u64 cleared_tail[PMM_ALLOCATOR_BUCKET_COUNT];
 	for (u16 i=0;i<PMM_ALLOCATOR_BUCKET_COUNT;i++){
@@ -165,9 +166,9 @@ static void _memory_clear_thread(pmm_allocator_t* allocator){
 			}
 			for (u16 max_clear_count=(i>=(PMM_ALLOCATOR_BUCKET_COUNT>>1)?1:PMM_ALLOCATOR_BUCKET_COUNT-i);cleared_tail[i]&&max_clear_count;max_clear_count--){
 				if (_block_descriptor_get_idx(cleared_tail[i])!=i){
-					cleared_tail[i]=_get_block_descriptor(cleared_tail[i])->next;
+					cleared_tail[i]=(allocator->buckets+i)->head;
 					max_clear_count++;
-					break;
+					continue;
 				}
 				void* ptr=(void*)(cleared_tail[i]+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(cleared_tail[i]);
@@ -207,6 +208,7 @@ KERNEL_INIT(){
 		thread_create_kernel_thread(NULL,name,_memory_clear_thread,0x200000,1,_pmm_allocators+i)->priority=SCHEDULER_PRIORITY_BACKGROUND;
 	}
 }
+#endif
 
 
 
@@ -389,8 +391,10 @@ _retry_allocator:
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
+			WARN("@");
 		}
 		else{
+			WARN("~");
 			u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
