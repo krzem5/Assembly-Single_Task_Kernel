@@ -147,10 +147,11 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 static void _memory_clear_thread(pmm_allocator_t* allocator){
-	u16 cleared_tail[PMM_ALLOCATOR_BUCKET_COUNT];
+	u64 cleared_tail[PMM_ALLOCATOR_BUCKET_COUNT];
 	for (u16 i=0;i<PMM_ALLOCATOR_BUCKET_COUNT;i++){
 		cleared_tail[i]=0;
 	}
+	allocator->updated_buckets=(1<<PMM_ALLOCATOR_BUCKET_COUNT)-1;
 	while (1){
 		u16 mask=allocator->updated_buckets;
 		while (mask){
