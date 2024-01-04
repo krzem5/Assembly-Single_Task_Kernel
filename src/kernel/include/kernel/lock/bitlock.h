@@ -16,6 +16,10 @@ void bitlock_acquire_exclusive(u32* field,u32 bit);
 
 
 
+_Bool bitlock_try_acquire_exclusive(u32* field,u32 bit);
+
+
+
 void bitlock_release_exclusive(u32* field,u32 bit);
 
 

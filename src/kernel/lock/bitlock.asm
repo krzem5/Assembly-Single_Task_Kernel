@@ -1,5 +1,6 @@
 global bitlock_init:function default
 global bitlock_acquire_exclusive:function default
+global bitlock_try_acquire_exclusive:function default
 global bitlock_release_exclusive:function default
 global bitlock_is_held:function default
 section .text exec nowrite
@@ -18,6 +19,13 @@ _bitlock_acquire_exclusive_wait:
 bitlock_acquire_exclusive:
 	lock bts dword [rdi], esi
 	jc _bitlock_acquire_exclusive_wait
+	ret
+
+
+
+bitlock_try_acquire_exclusive:
+	lock bts dword [rdi], esi
+	setnc al
 	ret
 
 
