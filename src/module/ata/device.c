@@ -134,12 +134,12 @@ static u64 _atapi_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 
 static const drive_type_t _ata_drive_type_config={
 	"ata",
-	0,
+	DRIVE_TYPE_FLAG_READ_ONLY,
 	_ata_read_write
 };
 static const drive_type_t _atapi_drive_type_config={
 	"atapi",
-	0,
+	DRIVE_TYPE_FLAG_READ_ONLY,
 	_atapi_read_write
 };
 
