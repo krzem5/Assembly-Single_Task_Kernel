@@ -396,10 +396,8 @@ _retry_allocator:
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-			// WARN("@");
 		}
 		else{
-			// WARN("~");
 			u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
