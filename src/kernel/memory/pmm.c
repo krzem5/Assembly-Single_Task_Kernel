@@ -173,7 +173,7 @@ static void _memory_clear_thread(void){
 			scheduler_yield();
 			continue;
 		}
-		break;
+		break; /*Memory clearer disabled*/
 		spinlock_acquire_exclusive(&_pmm_clear_chain_lock);
 		u64 block=_pmm_clear_chain_head;
 		u64 address=block&(-PAGE_SIZE);
