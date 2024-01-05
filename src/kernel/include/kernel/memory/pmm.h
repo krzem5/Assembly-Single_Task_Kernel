@@ -13,9 +13,9 @@
 #define EXTRA_LARGE_PAGE_SIZE 1073741824
 #define EXTRA_LARGE_PAGE_SIZE_SHIFT 30
 
-#define PMM_ALLOCATOR_BUCKET_COUNT 16 // power of 2
+#define PMM_ALLOCATOR_BUCKET_COUNT 16
 #define PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT (32-__builtin_clz(PMM_ALLOCATOR_BUCKET_COUNT))
-#define PMM_ALLOCATOR_BUCKET_COUNT_MASK ((PMM_ALLOCATOR_BUCKET_COUNT<<1)-1)
+#define PMM_ALLOCATOR_BUCKET_COUNT_MASK ((1<<PMM_ALLOCATOR_BUCKET_COUNT_MASK_SHIFT)-1)
 #define PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT (PMM_ALLOCATOR_BUCKET_COUNT+PAGE_SIZE_SHIFT)
 #define PMM_ALLOCATOR_MAX_REGION_SIZE (1ull<<PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT)
 
@@ -35,7 +35,6 @@
 typedef struct _PMM_BLOCK_DESCRIPTOR{
 	u64 data;
 	u64 next;
-	u64 clear_chain;
 } pmm_block_descriptor_t;
 
 
@@ -88,7 +87,6 @@ typedef struct _PMM_MEMORY_CLEARER_STATS{
 
 extern handle_type_t pmm_counter_handle_type;
 extern const pmm_load_balancer_stats_t* pmm_load_balancer_stats;
-extern const pmm_memory_clearer_stats_t* pmm_memory_clearer_stats;
 
 
 

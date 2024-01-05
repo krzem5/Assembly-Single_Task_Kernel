@@ -27,15 +27,6 @@ static void _init_memory_load_balancer_data(void){
 
 
 
-static void _init_memory_clearer_data(void){
-	vfs_node_t* root=dynamicfs_create_node(_sysfs_memory_root,"clear",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	dynamicfs_set_root_only(root);
-	dynamicfs_set_root_only(dynamicfs_create_node(root,"test",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_memory_clearer_stats->test_count))));
-	dynamicfs_set_root_only(dynamicfs_create_node(root,"miss",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(pmm_memory_clearer_stats->miss_count))));
-}
-
-
-
 static void _pmm_counter_listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
@@ -85,7 +76,6 @@ void sysfs_memory_init(void){
 	LOG("Creating memory subsystem...");
 	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"mem",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	_init_memory_load_balancer_data();
-	_init_memory_clearer_data();
 	_sysfs_memory_pmm_counter_root=dynamicfs_create_node(_sysfs_memory_root,"physical",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(_sysfs_memory_pmm_counter_root);
 	handle_register_notification_listener(pmm_counter_handle_type,&_sysfs_memory_pmm_counter_notification_listener);

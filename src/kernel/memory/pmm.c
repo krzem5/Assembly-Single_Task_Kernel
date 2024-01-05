@@ -17,6 +17,8 @@
 
 
 
+#define PMM_DEBUG_VALUE 0xde
+
 #define PMM_FLAG_ALLOCATOR_INITIALIZED 1
 #define PMM_FLAG_HANDLE_INITIALIZED 2
 
@@ -29,14 +31,9 @@ static pmm_block_descriptor_t* KERNEL_INIT_WRITE _pmm_block_descriptors;
 static pmm_load_balancer_t _pmm_load_balancer;
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _pmm_counter_omm_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
-static spinlock_t _pmm_clear_chain_lock;
-static KERNEL_ATOMIC u64 _pmm_clear_chain_head=0;
-static KERNEL_ATOMIC u64 _pmm_clear_chain_tail=0;
-static pmm_memory_clearer_stats_t _pmm_memory_clearer_stats;
 
 KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
-KERNEL_PUBLIC const pmm_memory_clearer_stats_t* KERNEL_INIT_WRITE pmm_memory_clearer_stats;
 
 
 
@@ -108,33 +105,15 @@ static KERNEL_INLINE void _block_descriptor_set_prev(u64 address,u64 prev){
 
 
 
-static KERNEL_INLINE void _clear_chain_append_block(u64 address,u16 idx){
-	if (_get_block_descriptor(address)->clear_chain){
-		return;
-	}
-	spinlock_acquire_exclusive(&_pmm_clear_chain_lock);
-	if (_pmm_clear_chain_tail){
-		_get_block_descriptor(_pmm_clear_chain_tail)->clear_chain=address|idx;
-	}
-	else{
-		_pmm_clear_chain_head=address|idx;
-	}
-	_pmm_clear_chain_tail=address;
-	spinlock_release_exclusive(&_pmm_clear_chain_lock);
-}
-
-
-
 static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	if (address>=end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
 	INFO("Resetting memory...");
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,end-address);
-	for (u64 i=address;i<end;i+=PAGE_SIZE){
-		_get_block_descriptor(i)->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-	}
+#ifndef KERNEL_DISABLE_ASSERT
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,end-address);
+#endif
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
 		u32 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
@@ -159,56 +138,9 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 			(allocator->buckets+idx)->head=address;
 		}
 		(allocator->buckets+idx)->tail=address;
-		_clear_chain_append_block(address,idx);
 		allocator->bucket_bitmap|=1<<idx;
 		address+=size;
 	} while (address<end);
-}
-
-
-
-static void _memory_clear_thread(void){
-	while (1){
-		if (!_pmm_clear_chain_head){
-			scheduler_yield();
-			continue;
-		}
-		break; /*Memory clearer disabled*/
-		spinlock_acquire_exclusive(&_pmm_clear_chain_lock);
-		u64 block=_pmm_clear_chain_head;
-		u64 address=block&(-PAGE_SIZE);
-		u64 idx=block&PMM_ALLOCATOR_BUCKET_COUNT_MASK;
-		pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(address);
-		_pmm_clear_chain_head=block_descriptor->clear_chain;
-		block_descriptor->clear_chain=0;
-		if (!_pmm_clear_chain_head){
-			_pmm_clear_chain_tail=0;
-		}
-		spinlock_release_exclusive(&_pmm_clear_chain_lock);
-		if ((block_descriptor->data&PMM_ALLOCATOR_BUCKET_COUNT_MASK)!=idx){
-			continue;
-		}
-		for (u64 i=0;i<_get_block_size(idx);i+=PAGE_SIZE){
-			if ((block_descriptor->data&PMM_ALLOCATOR_BUCKET_COUNT_MASK)!=(i?PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED:idx)||(block_descriptor->data&(PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR|PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT))||!bitlock_try_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT)){
-				block_descriptor++;
-				continue;
-			}
-			u64* ptr=(void*)(address+i+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-			for (u64 j=0;j<PAGE_SIZE/sizeof(u64);j++){
-				ptr[j]=0;
-			}
-			block_descriptor->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-			bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
-			block_descriptor++;
-		}
-	}
-}
-
-
-
-KERNEL_INIT(){
-	LOG("Creating memory clearing threads...");
-	thread_create_kernel_thread(NULL,"background-memory-clear",_memory_clear_thread,0x200000,0)->priority=SCHEDULER_PRIORITY_LOW;
 }
 
 
@@ -239,7 +171,6 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
 		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED;
 		(_pmm_block_descriptors+i)->next=0;
-		(_pmm_block_descriptors+i)->clear_chain=0;
 		bitlock_init((u32*)(&((_pmm_block_descriptors+i)->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 	}
 	spinlock_init(&(_pmm_load_balancer.lock));
@@ -248,10 +179,6 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_load_balancer.stats.miss_count=0;
 	_pmm_load_balancer.stats.miss_locked_count=0;
 	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
-	spinlock_init(&_pmm_clear_chain_lock);
-	_pmm_memory_clearer_stats.test_count=0;
-	_pmm_memory_clearer_stats.miss_count=0;
-	pmm_memory_clearer_stats=&_pmm_memory_clearer_stats;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
@@ -382,7 +309,7 @@ _retry_allocator:
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
 	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
-		if (!ptr[k]){
+		if (ptr[k]==PMM_DEBUG_VALUE*0x0101010101010101ull){
 			continue;
 		}
 		ERROR("pmm_alloc: use after free at %p +%u /%u: %p",out,k<<3,_get_block_size(i),ptr[k]);
@@ -392,25 +319,16 @@ _retry_allocator:
 		panic("pmm_alloc: use after free");
 	}
 #endif
-	u64 miss_count=0;
 	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(out);
 	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
-		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
-			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
-		}
-		else{
-			u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
-				ptr[k]=0;
-			}
-			miss_count++;
+		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
+			ptr[k]=0;
 		}
 		bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
 	}
-	_pmm_memory_clearer_stats.test_count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
-	_pmm_memory_clearer_stats.miss_count+=miss_count;
 	scheduler_resume();
 	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
@@ -424,7 +342,7 @@ _retry_allocator:
 
 KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 #ifndef KERNEL_DISABLE_ASSERT
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,count<<PAGE_SIZE_SHIFT);
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,count<<PAGE_SIZE_SHIFT);
 #endif
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
@@ -434,7 +352,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
 	scheduler_pause();
-	_clear_chain_append_block(address,i);
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	spinlock_acquire_exclusive(&(allocator->lock));

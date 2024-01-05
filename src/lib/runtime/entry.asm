@@ -25,5 +25,6 @@ _start:
 	add rcx, 8
 	call [REF(main)]
 	mov rax, 0x100000019
+	xor edi, edi
 	syscall
 	jmp $
