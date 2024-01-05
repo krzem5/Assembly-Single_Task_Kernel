@@ -171,6 +171,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
 		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED;
 		(_pmm_block_descriptors+i)->next=0;
+		(_pmm_block_descriptors+i)->cookie=0;
 		bitlock_init((u32*)(&((_pmm_block_descriptors+i)->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 	}
 	spinlock_init(&(_pmm_load_balancer.lock));
@@ -322,6 +323,11 @@ _retry_allocator:
 	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(out);
 	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE){
+			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE;
+			WARN("Flush cache @ %p [cookie: %p]",out+offset,block_descriptor->cookie);
+			block_descriptor->cookie=0;
+		}
 		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 			ptr[k]=0;
