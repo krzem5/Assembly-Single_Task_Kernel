@@ -4,6 +4,7 @@
 #include <kernel/error/error.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
+#include <kernel/handle/handle_list.h>
 #include <kernel/id/user.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -42,6 +43,7 @@ static void _process_handle_destructor(handle_t* handle){
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
+	handle_list_destroy(&(process->handle_list));
 	event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	mmap_deinit(&(process->mmap));
 	vmm_pagemap_deinit(&(process->pagemap));
@@ -68,6 +70,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->uid=0;
 	process_kernel->gid=0;
 	process_kernel->event=event_create();
+	handle_list_init(&(process_kernel->handle_list));
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL,0)){
 		panic("Unable to reserve kernel memory");
@@ -93,6 +96,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	out->uid=0;
 	out->gid=0;
 	out->event=event_create();
+	handle_list_init(&(out->handle_list));
 	handle_finish_setup(&(out->handle));
 	return out;
 }

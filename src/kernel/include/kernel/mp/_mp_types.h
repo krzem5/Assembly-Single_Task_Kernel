@@ -2,6 +2,7 @@
 #define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
+#include <kernel/handle/handle_list.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/isr/_isr_types.h>
@@ -57,6 +58,7 @@ typedef struct _PROCESS{
 	uid_t uid;
 	gid_t gid;
 	event_t* event;
+	handle_list_t handle_list;
 } process_t;
 
 

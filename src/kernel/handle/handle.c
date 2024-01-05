@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
+#include <kernel/handle/handle_list.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -123,6 +124,9 @@ KERNEL_PUBLIC void handle_destroy(handle_t* handle){
 KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	if (handle->rc){
 		return;
+	}
+	if (handle->handle_list){
+		handle_list_pop(handle);
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
 	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_DELETE);

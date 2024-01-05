@@ -1,6 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
+#include <kernel/handle/handle_list.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -217,6 +218,7 @@ KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active,_Bool bypass_
 
 error_t syscall_event_create(u32 is_active){
 	event_t* event=event_create();
+	handle_list_push(&(THREAD_DATA->process->handle_list),&(event->handle));
 	if (is_active){
 		event_set_active(event,is_active,0);
 	}

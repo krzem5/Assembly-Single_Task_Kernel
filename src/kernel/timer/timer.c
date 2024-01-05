@@ -3,6 +3,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
+#include <kernel/handle/handle_list.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -129,7 +130,9 @@ void timer_dispatch_timers(void){
 
 
 error_t syscall_timer_create(u64 interval,u64 count){
-	return timer_create(interval,count)->handle.rb_node.key;
+	timer_t* timer=timer_create(interval,count);
+	handle_list_push(&(THREAD_DATA->process->handle_list),&(timer->handle));
+	return timer->handle.rb_node.key;
 }
 
 
