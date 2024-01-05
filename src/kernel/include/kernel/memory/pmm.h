@@ -79,8 +79,16 @@ typedef struct _PMM_COUNTER_DESCRIPTOR{
 
 
 
+typedef struct _PMM_MEMORY_CLEARER_STATS{
+	KERNEL_ATOMIC u64 test_count;
+	KERNEL_ATOMIC u64 miss_count;
+} pmm_memory_clearer_stats_t;
+
+
+
 extern handle_type_t pmm_counter_handle_type;
 extern const pmm_load_balancer_stats_t* pmm_load_balancer_stats;
+extern const pmm_memory_clearer_stats_t* pmm_memory_clearer_stats;
 
 
 

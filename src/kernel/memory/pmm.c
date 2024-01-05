@@ -34,9 +34,11 @@ static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
 static spinlock_t _pmm_clear_chain_lock;
 static KERNEL_ATOMIC u64 _pmm_clear_chain_head=0;
 static KERNEL_ATOMIC u64 _pmm_clear_chain_tail=0;
+static pmm_memory_clearer_stats_t _pmm_memory_clearer_stats;
 
 KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
+KERNEL_PUBLIC const pmm_memory_clearer_stats_t* KERNEL_INIT_WRITE pmm_memory_clearer_stats;
 
 
 
@@ -256,6 +258,9 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_load_balancer.stats.miss_locked_count=0;
 	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
 	spinlock_init(&_pmm_clear_chain_lock);
+	_pmm_memory_clearer_stats.test_count=0;
+	_pmm_memory_clearer_stats.miss_count=0;
+	pmm_memory_clearer_stats=&_pmm_memory_clearer_stats;
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
@@ -396,10 +401,10 @@ _retry_allocator:
 		panic("pmm_alloc: use after free");
 	}
 #endif
+	u64 miss_count=0;
 	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(out);
 	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
 		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
-		// WARN("%c %p",((block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR)?'@':'~'),out+offset);
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
 		}
@@ -408,10 +413,13 @@ _retry_allocator:
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
 			}
+			miss_count++;
 		}
 		bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
 	}
+	_pmm_memory_clearer_stats.test_count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
+	_pmm_memory_clearer_stats.miss_count+=miss_count;
 	scheduler_resume();
 	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
