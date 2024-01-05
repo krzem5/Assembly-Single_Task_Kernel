@@ -17,8 +17,6 @@
 
 
 
-#define PMM_DEBUG_MARKER 0xde
-
 #define PMM_FLAG_ALLOCATOR_INITIALIZED 1
 #define PMM_FLAG_HANDLE_INITIALIZED 2
 
@@ -133,14 +131,10 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	}
 	INFO("Registering memory range %p - %p",address,end);
 	INFO("Resetting memory...");
-#ifndef KERNEL_DISABLE_ASSERT
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,end-address);
-#else
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,end-address);
 	for (u64 i=address;i<end;i+=PAGE_SIZE){
 		_get_block_descriptor(i)->data|=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR;
 	}
-#endif
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
 		u32 idx=__builtin_ctzll(address)-PAGE_SIZE_SHIFT;
@@ -173,13 +167,13 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 
-#ifdef KERNEL_DISABLE_ASSERT
 static void _memory_clear_thread(void){
 	while (1){
 		if (!_pmm_clear_chain_head){
 			scheduler_yield();
 			continue;
 		}
+		break;
 		spinlock_acquire_exclusive(&_pmm_clear_chain_lock);
 		u64 block=_pmm_clear_chain_head;
 		u64 address=block&(-PAGE_SIZE);
@@ -197,10 +191,8 @@ static void _memory_clear_thread(void){
 		for (u64 i=0;i<_get_block_size(idx);i+=PAGE_SIZE){
 			if ((block_descriptor->data&PMM_ALLOCATOR_BUCKET_COUNT_MASK)!=(i?PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED:idx)||(block_descriptor->data&(PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR|PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT))||!bitlock_try_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT)){
 				block_descriptor++;
-				// WARN("SKIP %p [%u %u]",address+i,(block_descriptor->data&PMM_ALLOCATOR_BUCKET_COUNT_MASK)!=(i?PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED:idx),(block_descriptor->data&(PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_CLEAR|PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT)));
 				continue;
 			}
-			// WARN("CLEAR %p",address+i);
 			u64* ptr=(void*)(address+i+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 			for (u64 j=0;j<PAGE_SIZE/sizeof(u64);j++){
 				ptr[j]=0;
@@ -218,7 +210,6 @@ KERNEL_INIT(){
 	LOG("Creating memory clearing threads...");
 	thread_create_kernel_thread(NULL,"background-memory-clear",_memory_clear_thread,0x200000,0)->priority=SCHEDULER_PRIORITY_LOW;
 }
-#endif
 
 
 
@@ -391,7 +382,7 @@ _retry_allocator:
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
 	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
-		if (ptr[k]==PMM_DEBUG_MARKER*0x0101010101010101ull){
+		if (!ptr[k]){
 			continue;
 		}
 		ERROR("pmm_alloc: use after free at %p +%u /%u: %p",out,k<<3,_get_block_size(i),ptr[k]);
@@ -433,7 +424,7 @@ _retry_allocator:
 
 KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 #ifndef KERNEL_DISABLE_ASSERT
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_MARKER,count<<PAGE_SIZE_SHIFT);
+	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),0,count<<PAGE_SIZE_SHIFT);
 #endif
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");
