@@ -7,6 +7,7 @@
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
 #include <opengl/syscall.h>
+#include <ui/common.h>
 #include <ui/framebuffer.h>
 #define KERNEL_LOG_NAME "opengl_syscall"
 
@@ -84,6 +85,10 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 			handle_release(state_handle);
 			return ERROR_INVALID_HANDLE;
 		}
+		if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer_handle->acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_MAP)){
+			handle_release(framebuffer_handle);
+			return ERROR_DENIED;
+		}
 		framebuffer=framebuffer_handle->object;
 	}
 	opengl_state_t* state=state_handle->object;
@@ -114,6 +119,10 @@ static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id
 	if (!(acl_get(state->handle.acl,THREAD_DATA->process)&OPENGL_STATE_ACL_FLAG_SEND_COMMANDS)){
 		handle_release(state_handle);
 		return ERROR_DENIED;
+	}
+	if (!state->framebuffer){
+		handle_release(state_handle);
+		return ERROR_INVALID_ARGUMENT(0);
 	}
 	state->driver_instance->driver->process_commands(state->driver_instance,state,buffer,buffer_length);
 	handle_release(state_handle);
