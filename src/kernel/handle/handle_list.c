@@ -47,7 +47,6 @@ KERNEL_PUBLIC void handle_list_destroy(handle_list_t* list){
 		}
 		_pop_handle(list,handle);
 		spinlock_release_exclusive(&(list->lock));
-		WARN("%p",handle);
 		handle_release(handle);
 	}
 }
