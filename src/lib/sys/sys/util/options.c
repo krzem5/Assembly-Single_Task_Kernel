@@ -1,3 +1,4 @@
+#include <sys/io/io.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
 
@@ -53,10 +54,10 @@ _check_next_option:
 		}
 		if (!option||option->var_type==SYS_OPTION_VAR_TYPE_LAST){
 			if (is_long_opt){
-				// printf("%s: unrecognized option '%s'\n",argv[0],opt-2);
+				sys_io_print("%s: unrecognized option '%s'\n",argv[0],opt-2);
 			}
 			else{
-				// printf("%s: invalid option -- '%c'\n",argv[0],opt[0]);
+				sys_io_print("%s: invalid option -- '%c'\n",argv[0],opt[0]);
 			}
 			return 0;
 		}
@@ -70,7 +71,7 @@ _check_next_option:
 		const char* arg=NULL;
 		if (!opt[0]){
 			if (i==first_arg_index){
-				// printf("%s: missing argument for option '%s'\n",argv[0],argv[i-1]);
+				sys_io_print("%s: missing argument for option '%s'\n",argv[0],argv[i-1]);
 				return 0;
 			}
 			arg=argv[i];
