@@ -59,7 +59,7 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	node->rc++;
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(out,_fd_handle_type,&(out->handle));
-	// handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
+	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO);
 	spinlock_init(&(out->lock));

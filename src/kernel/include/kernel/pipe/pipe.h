@@ -6,7 +6,7 @@
 
 
 
-#define PIPE_BUFFER_SIZE 0x10000
+#define PIPE_BUFFER_SIZE 0x100000
 
 
 
