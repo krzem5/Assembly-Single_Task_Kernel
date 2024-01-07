@@ -324,7 +324,7 @@ def _generate_symbol_file(kernel_symbols,file_path):
 
 def _patch_kernel(file_path,kernel_symbols):
 	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"][0]
-	with open(file_path,"r+b") as wf,open(file_path,"rb") as rf:
+	with open(file_path,"r+b") as wf:
 		wf.seek(kernel_symbols["_idt_data"][0]-address_offset)
 		for i in range(0,256):
 			address=kernel_symbols[f"_isr_entry_{i}"][0]
