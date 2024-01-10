@@ -28,7 +28,7 @@ static void* memcpy(void* dst,const void* src,u64 length){
 static s32 strcmp(const char* a,const char* b){
 	while (1){
 		if (a[0]!=b[0]){
-			return (a[0]<b[0]?-1:1);
+			return a[0]-b[0];
 		}
 		if (!a[0]){
 			return 0;
@@ -198,6 +198,7 @@ shared_object_t* shared_object_load(const char* name){
 	sys_fd_close(fd);
 	const elf_hdr_t* header=base_file_address;
 	if (header->e_ident.signature!=0x464c457f||header->e_ident.word_size!=2||header->e_ident.endianess!=1||header->e_ident.header_version!=1||header->e_ident.abi!=0||header->e_type!=ET_DYN||header->e_machine!=0x3e||header->e_version!=1){
+		sys_memory_unmap((void*)base_file_address,0);
 		return NULL;
 	}
 	u64 max_address=0;
