@@ -10,13 +10,20 @@ static u64 _opengl_syscall_offset=0xffffffffffffffffull;
 
 
 
-_Bool opengl_syscalls_init(void){
+static void SYS_CONSTRUCTOR _init(void){
 	u64 offset=sys_syscall_get_table_offset("opengl");
-	if (SYS_IS_ERROR(offset)){
-		return 0;
+	if (!SYS_IS_ERROR(offset)){
+		_opengl_syscall_offset=offset;
 	}
-	_opengl_syscall_offset=offset;
-	return 1;
+}
+
+
+
+_Bool opengl_syscalls_init(void){
+	if (_opengl_syscall_offset==0xffffffffffffffffull){
+		_init();
+	}
+	return _opengl_syscall_offset!=0xffffffffffffffffull;
 }
 
 

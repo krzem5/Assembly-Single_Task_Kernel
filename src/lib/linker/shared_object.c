@@ -236,8 +236,9 @@ shared_object_t* shared_object_load(const char* name){
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
+	sys_memory_unmap((void*)base_file_address,0);
 	if (!so){
-		goto _skip_init_array;
+		return NULL;
 	}
 	if (so->dynamic_section.init){
 		((void (*)(void))(so->dynamic_section.init))();
@@ -250,7 +251,5 @@ shared_object_t* shared_object_load(const char* name){
 			}
 		}
 	}
-_skip_init_array:
-	sys_memory_unmap((void*)base_file_address,0);
 	return so;
 }
