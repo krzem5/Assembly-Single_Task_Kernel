@@ -16,8 +16,14 @@ typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 	u64 relocation_size;
 	u64 relocation_entry_size;
 	u64 symbol_table_entry_size;
+	void* init;
+	void* fini;
 	u64 plt_relocation_entry_size;
 	const void* plt_relocations;
+	const void* init_array;
+	u64 init_array_size;
+	const void* fini_array;
+	u64 fini_array_size;
 } shared_object_dynamic_section_data_t;
 
 

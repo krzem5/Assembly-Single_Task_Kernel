@@ -80,6 +80,10 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	so->dynamic_section.symbol_table_entry_size=0;
 	so->dynamic_section.plt_relocation_entry_size=0;
 	so->dynamic_section.plt_relocations=NULL;
+	so->dynamic_section.init_array=NULL;
+	so->dynamic_section.init_array_size=0;
+	so->dynamic_section.fini_array=NULL;
+	so->dynamic_section.fini_array_size=0;
 	for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 		switch (dyn->d_tag){
 			case DT_NEEDED:
@@ -112,11 +116,29 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			case DT_SYMENT:
 				so->dynamic_section.symbol_table_entry_size=dyn->d_un.d_val;
 				break;
+			case DT_INIT:
+				so->dynamic_section.init=image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_FINI:
+				so->dynamic_section.fini=image_base+dyn->d_un.d_ptr;
+				break;
 			case DT_PLTREL:
 				so->dynamic_section.plt_relocation_entry_size=(dyn->d_un.d_val==DT_RELA?sizeof(elf_rela_t):sizeof(elf_rel_t));
 				break;
 			case DT_JMPREL:
 				so->dynamic_section.plt_relocations=so->image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_INIT_ARRAY:
+				so->dynamic_section.init_array=so->image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_FINI_ARRAY:
+				so->dynamic_section.fini_array=so->image_base+dyn->d_un.d_ptr;
+				break;
+			case DT_INIT_ARRAYSZ:
+				so->dynamic_section.init_array_size=dyn->d_un.d_val;
+				break;
+			case DT_FINI_ARRAYSZ:
+				so->dynamic_section.fini_array_size=dyn->d_un.d_val;
 				break;
 		}
 	}
@@ -215,18 +237,20 @@ shared_object_t* shared_object_load(const char* name){
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
 	if (!so){
-		goto _skip_initializer_lists;
+		goto _skip_init_array;
 	}
-	const char* string_table=base_file_address+((const elf_shdr_t*)(base_file_address+header->e_shoff+header->e_shstrndx*header->e_shentsize))->sh_offset;
-	for (u16 i=0;i<header->e_shnum;i++){
-		const elf_shdr_t* section_header=(void*)(base_file_address+header->e_shoff+i*header->e_shentsize);
-		if (!strcmp(string_table+section_header->sh_name,".init_array")){
-			for (u64 i=0;i<section_header->sh_size;i+=sizeof(void*)){
-				((void (*)(void))(image_base+(*((const u64*)(base_file_address+section_header->sh_offset+i)))))();
+	if (so->dynamic_section.init){
+		((void (*)(void))(so->dynamic_section.init))();
+	}
+	if (so->dynamic_section.init_array&&so->dynamic_section.init_array_size){
+		for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.init_array_size;i+=sizeof(void*)){
+			void* func=*((void*const*)(so->dynamic_section.init_array+i));
+			if (func&&func!=(void*)0xffffffffffffffffull){
+				((void (*)(void))func)();
 			}
 		}
 	}
-_skip_initializer_lists:
+_skip_init_array:
 	sys_memory_unmap((void*)base_file_address,0);
 	return so;
 }
