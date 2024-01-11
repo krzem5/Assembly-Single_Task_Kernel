@@ -15,6 +15,14 @@
 
 
 
+#ifdef KERNEL_DISABLE_ASSERT
+#define BYPASS_BACKTRACE_PROTECTION 0
+#else
+#define BYPASS_BACKTRACE_PROTECTION 1
+#endif
+
+
+
 static u8 _isr_next_irq_index=33;
 
 KERNEL_PUBLIC event_t* KERNEL_INIT_WRITE irq_events[223];
@@ -89,7 +97,7 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rflags = %p",isr_state->rflags);
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
-	if (isr_state->cs==8){
+	if (BYPASS_BACKTRACE_PROTECTION||isr_state->cs==8){
 		vmm_pagemap_t current_pagemap;
 		vmm_get_pagemap(&current_pagemap);
 		u64 rip=isr_state->rip;

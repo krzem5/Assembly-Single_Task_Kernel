@@ -9,6 +9,10 @@
 
 
 
+#define BIND_NOW 1
+
+
+
 static shared_object_t* _shared_object_tail=NULL;
 
 shared_object_t* shared_object_root=NULL;
@@ -133,6 +137,17 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			}
 		}
 	}
+	if (so->dynamic_section.plt_got&&so->dynamic_section.plt_relocations&&so->dynamic_section.plt_relocation_size&&so->dynamic_section.plt_relocation_entry_size){
+		for (u64 i=0;i<so->dynamic_section.plt_relocation_size/so->dynamic_section.plt_relocation_entry_size;i++){
+			if (BIND_NOW){
+				symbol_resolve_plt(so,i);
+			}
+			else{
+				const elf_rela_t* relocation=so->dynamic_section.plt_relocations+i*so->dynamic_section.plt_relocation_entry_size;
+				*(u64*)(so->image_base+relocation->r_offset)+=so->image_base;
+			}
+		}
+	}
 	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
 		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
 			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
@@ -151,6 +166,17 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 				default:
 					sys_io_print("Unknown relocation type: %u\n",(u32)(relocation->r_info));
 					return NULL;
+			}
+		}
+	}
+	if (so->dynamic_section.init){
+		((void (*)(void))(so->dynamic_section.init))();
+	}
+	if (so->dynamic_section.init_array&&so->dynamic_section.init_array_size){
+		for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.init_array_size;i+=sizeof(void*)){
+			void* func=*((void*const*)(so->dynamic_section.init_array+i));
+			if (func&&func!=(void*)0xffffffffffffffffull){
+				((void (*)(void))func)();
 			}
 		}
 	}
@@ -215,19 +241,5 @@ shared_object_t* shared_object_load(const char* name){
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
 	sys_memory_unmap((void*)base_file_address,0);
-	if (!so){
-		return NULL;
-	}
-	if (so->dynamic_section.init){
-		((void (*)(void))(so->dynamic_section.init))();
-	}
-	if (so->dynamic_section.init_array&&so->dynamic_section.init_array_size){
-		for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.init_array_size;i+=sizeof(void*)){
-			void* func=*((void*const*)(so->dynamic_section.init_array+i));
-			if (func&&func!=(void*)0xffffffffffffffffull){
-				((void (*)(void))func)();
-			}
-		}
-	}
 	return so;
 }
