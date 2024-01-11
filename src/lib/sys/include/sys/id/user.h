@@ -17,7 +17,7 @@ sys_error_t sys_uid_set(sys_uid_t uid);
 
 
 
-sys_error_t sys_uid_get_name(sys_uid_t uid,char* name,u32 size);
+sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_uid_get_name(sys_uid_t uid,char* name,u32 size);
 
 
 

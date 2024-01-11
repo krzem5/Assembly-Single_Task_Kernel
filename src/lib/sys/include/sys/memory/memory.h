@@ -32,11 +32,11 @@ u64 sys_memory_map(u64 length,u32 flags,sys_fd_t fd);
 
 
 
-sys_error_t sys_memory_change_flags(void* address,u64 length,u32 flags);
+sys_error_t __attribute__((nonnull)) sys_memory_change_flags(void* address,u64 length,u32 flags);
 
 
 
-sys_error_t sys_memory_unmap(void* address,u64 length);
+sys_error_t __attribute__((nonnull)) sys_memory_unmap(void* address,u64 length);
 
 
 

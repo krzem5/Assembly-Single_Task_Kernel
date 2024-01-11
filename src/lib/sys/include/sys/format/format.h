@@ -5,11 +5,11 @@
 
 
 
-u32 sys_format_string(char* buffer,u32 length,const char* template,...);
+u32 __attribute__((access(write_only,1,2))) sys_format_string(char* buffer,u32 length,const char* template,...);
 
 
 
-u32 sys_format_string_va(char* buffer,u32 length,const char* template,sys_var_arg_list_t* va);
+u32 __attribute__((access(write_only,1,2),nonnull)) sys_format_string_va(char* buffer,u32 length,const char* template,sys_var_arg_list_t* va);
 
 
 

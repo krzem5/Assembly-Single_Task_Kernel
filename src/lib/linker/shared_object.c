@@ -172,7 +172,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
 					break;
 				default:
-					sys_io_print("Unknown relocation type: %u\n",relocation->r_info&0xffffffff);
+					sys_io_print("Unknown relocation type: %u\n",(u32)(relocation->r_info));
 					return NULL;
 			}
 		}

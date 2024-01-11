@@ -67,7 +67,7 @@ typedef struct _SYS_FD_STAT{
 
 
 
-sys_fd_t sys_fd_open(sys_fd_t fd,const char* path,u32 flags);
+sys_fd_t __attribute__((access(read_only,2),nonnull,warn_unused_result)) sys_fd_open(sys_fd_t fd,const char* path,u32 flags);
 
 
 
@@ -75,11 +75,11 @@ sys_error_t sys_fd_close(sys_fd_t fd);
 
 
 
-u64 sys_fd_read(sys_fd_t fd,void* buffer,u64 size,u32 flags);
+u64 __attribute__((access(write_only,2,3),nonnull,warn_unused_result)) sys_fd_read(sys_fd_t fd,void* buffer,u64 size,u32 flags);
 
 
 
-u64 sys_fd_write(sys_fd_t fd,const void* buffer,u64 size,u32 flags);
+u64 __attribute__((access(read_only,2,3),nonnull,warn_unused_result)) sys_fd_write(sys_fd_t fd,const void* buffer,u64 size,u32 flags);
 
 
 
@@ -87,11 +87,11 @@ u64 sys_fd_seek(sys_fd_t fd,u64 offset,u32 type);
 
 
 
-u64 sys_fd_resize(sys_fd_t fd,u64 size,u32 flags);
+u64 __attribute__((warn_unused_result)) sys_fd_resize(sys_fd_t fd,u64 size,u32 flags);
 
 
 
-sys_error_t sys_fd_stat(sys_fd_t fd,sys_fd_stat_t* out);
+sys_error_t __attribute__((access(write_only,2),nonnull)) sys_fd_stat(sys_fd_t fd,sys_fd_stat_t* out);
 
 
 
@@ -99,7 +99,7 @@ sys_fd_t sys_fd_dup(sys_fd_t fd,u32 flags);
 
 
 
-sys_error_t sys_fd_path(sys_fd_t fd,char* path,u32 size);
+sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_fd_path(sys_fd_t fd,char* path,u32 size);
 
 
 
@@ -107,7 +107,7 @@ sys_fd_iterator_t sys_fd_iter_start(sys_fd_t fd);
 
 
 
-sys_error_t sys_fd_iter_get(sys_fd_iterator_t iterator,char* name,u32 size);
+sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_fd_iter_get(sys_fd_iterator_t iterator,char* name,u32 size);
 
 
 

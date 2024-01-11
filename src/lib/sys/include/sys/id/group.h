@@ -17,7 +17,7 @@ sys_error_t sys_gid_set(sys_gid_t gid);
 
 
 
-sys_error_t sys_gid_get_name(sys_gid_t gid,char* name,u32 size);
+sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_gid_get_name(sys_gid_t gid,char* name,u32 size);
 
 
 
