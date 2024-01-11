@@ -4,6 +4,7 @@
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
 #include <sys/memory/memory.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 
 
@@ -11,32 +12,6 @@
 static shared_object_t* _shared_object_tail=NULL;
 
 shared_object_t* shared_object_root=NULL;
-
-
-
-static void* memcpy(void* dst,const void* src,u64 length){
-	u8* dst_ptr=dst;
-	const u8* src_ptr=src;
-	for (u64 i=0;i<length;i++){
-		dst_ptr[i]=src_ptr[i];
-	}
-	return dst;
-}
-
-
-
-static s32 strcmp(const char* a,const char* b){
-	while (1){
-		if (a[0]!=b[0]){
-			return a[0]-b[0];
-		}
-		if (!a[0]){
-			return 0;
-		}
-		a++;
-		b++;
-	}
-}
 
 
 
@@ -58,16 +33,18 @@ static shared_object_t* _alloc_shared_object(u64 image_base){
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path){
+shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags){
+	u16 path_length=sys_string_length(path);
+	if (path_length>=sizeof(((shared_object_t*)NULL)->path)){
+		sys_io_print("Shared object path too long\n");
+		return NULL;
+	}
 	shared_object_t* so=_alloc_shared_object(image_base);
+	sys_memory_copy(path,so->path,path_length);
+	so->path[path_length]=0;
 	if (!dynamic_section){
 		return so;
 	}
-	u16 i=0;
-	do{
-		so->path[i]=path[i];
-		i++;
-	} while (path[i-1]);
 	so->dynamic_section.has_needed_libraries=0;
 	so->dynamic_section.plt_relocation_size=0;
 	so->dynamic_section.plt_got=NULL;
@@ -128,6 +105,9 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			case DT_JMPREL:
 				so->dynamic_section.plt_relocations=so->image_base+dyn->d_un.d_ptr;
 				break;
+			case DT_BIND_NOW:
+				flags|=SHARED_OBJECT_FLAG_RESOLVE_GOT;
+				break;
 			case DT_INIT_ARRAY:
 				so->dynamic_section.init_array=so->image_base+dyn->d_un.d_ptr;
 				break;
@@ -152,7 +132,18 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
 		for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 			if (dyn->d_tag==DT_NEEDED){
-				shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val);
+				shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val,flags);
+			}
+		}
+	}
+	if (so->dynamic_section.plt_got&&so->dynamic_section.plt_relocations&&so->dynamic_section.plt_relocation_size&&so->dynamic_section.plt_relocation_entry_size){
+		for (u64 i=0;i<so->dynamic_section.plt_relocation_size/so->dynamic_section.plt_relocation_entry_size;i++){
+			if (flags&SHARED_OBJECT_FLAG_RESOLVE_GOT){
+				symbol_resolve_plt(so,i);
+			}
+			else{
+				const elf_rela_t* relocation=so->dynamic_section.plt_relocations+i*so->dynamic_section.plt_relocation_entry_size;
+				*(u64*)(so->image_base+relocation->r_offset)+=so->image_base;
 			}
 		}
 	}
@@ -162,7 +153,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 			switch (relocation->r_info&0xffffffff){
 				case R_X86_64_COPY:
-					memcpy((void*)(so->image_base+relocation->r_offset),(void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),symbol->st_size);
+					sys_memory_copy((void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),(void*)(so->image_base+relocation->r_offset),symbol->st_size);
 					break;
 				case R_X86_64_64:
 				case R_X86_64_GLOB_DAT:
@@ -177,12 +168,23 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			}
 		}
 	}
+	if (so->dynamic_section.init){
+		((void (*)(void))(so->dynamic_section.init))();
+	}
+	if (so->dynamic_section.init_array&&so->dynamic_section.init_array_size){
+		for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.init_array_size;i+=sizeof(void*)){
+			void* func=*((void*const*)(so->dynamic_section.init_array+i));
+			if (func&&func!=(void*)0xffffffffffffffffull){
+				((void (*)(void))func)();
+			}
+		}
+	}
 	return so;
 }
 
 
 
-shared_object_t* shared_object_load(const char* name){
+shared_object_t* shared_object_load(const char* name,u32 flags){
 	char buffer[256];
 	sys_fd_t fd=search_path_find_library(name,buffer,256);
 	if (SYS_IS_ERROR(fd)){
@@ -190,7 +192,7 @@ shared_object_t* shared_object_load(const char* name){
 		return NULL;
 	}
 	for (shared_object_t* so=shared_object_root;so;so=so->next){
-		if (!strcmp(so->path,buffer)){
+		if (!sys_string_compare(so->path,buffer)){
 			return so;
 		}
 	}
@@ -233,24 +235,10 @@ shared_object_t* shared_object_load(const char* name){
 		if (program_header->p_flags&PF_X){
 			flags|=SYS_MEMORY_FLAG_EXEC;
 		}
-		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
+		sys_memory_copy(base_file_address+program_header->p_offset,image_base+program_header->p_vaddr,program_header->p_filesz);
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
-	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
+	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
 	sys_memory_unmap((void*)base_file_address,0);
-	if (!so){
-		return NULL;
-	}
-	if (so->dynamic_section.init){
-		((void (*)(void))(so->dynamic_section.init))();
-	}
-	if (so->dynamic_section.init_array&&so->dynamic_section.init_array_size){
-		for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.init_array_size;i+=sizeof(void*)){
-			void* func=*((void*const*)(so->dynamic_section.init_array+i));
-			if (func&&func!=(void*)0xffffffffffffffffull){
-				((void (*)(void))func)();
-			}
-		}
-	}
 	return so;
 }
