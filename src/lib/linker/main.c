@@ -5,18 +5,12 @@
 
 
 
-static const elf_dyn_t* _find_dynamic_section_and_entry_address(const u64* data,u64* entry_address,const char** path){
+static const elf_dyn_t* _find_dynamic_section_and_entry_address(const u64* data,u64* entry_address){
 	const void* phdr_entries=NULL;
 	u64 phdr_entry_size=0;
 	u64 phdr_entry_count=0;
 	*entry_address=0;
-	if (data[0]){
-		*path=(const char*)(data[1]);
-	}
-	else{
-		*path="";
-	}
-	for (data+=data[0]+1;data[0];data++);
+	for (data+=(data[0]+1);data[0];data++);
 	for (data++;data[0];data+=2){
 		if (data[0]==AT_PHDR){
 			phdr_entries=(void*)(data[1]);
@@ -50,8 +44,6 @@ static const elf_dyn_t* _find_dynamic_section_and_entry_address(const u64* data,
 
 u64 main(const u64* data){
 	u64 entry_address;
-	const char* path;
-	const elf_dyn_t* dynamic_section=_find_dynamic_section_and_entry_address(data,&entry_address,&path);
-	shared_object_init(0,dynamic_section,path,0);
+	shared_object_init(0,_find_dynamic_section_and_entry_address(data,&entry_address),"");
 	return entry_address;
 }

@@ -40,12 +40,4 @@ sys_error_t __attribute__((nonnull)) sys_memory_unmap(void* address,u64 length);
 
 
 
-void __attribute__((access(read_only,1,3),access(write_only,2,3))) sys_memory_copy(const void* src,void* dst,u64 length);
-
-
-
-s32 __attribute__((access(read_only,1,3),access(read_only,2,3))) sys_memory_compare(const void* a,const void* b,u64 length);
-
-
-
 #endif

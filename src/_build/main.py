@@ -408,7 +408,7 @@ def _compile_library(library,flags,dependencies):
 				continue
 			command=None
 			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
+				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fno-plt","-fpic","-m64","-Wall","-Werror","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)

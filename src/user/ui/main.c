@@ -9,6 +9,15 @@
 
 
 
+static const char*const _ui_framebuffer_format_names[UI_DISPLAY_FRAMEBUFFER_FORMAT_MAX+1]={
+	[UI_DISPLAY_FRAMEBUFFER_FORMAT_BGRX]="BGRX",
+	[UI_DISPLAY_FRAMEBUFFER_FORMAT_RGBX]="RGBX",
+	[UI_DISPLAY_FRAMEBUFFER_FORMAT_XBGR]="XBGR",
+	[UI_DISPLAY_FRAMEBUFFER_FORMAT_XRGB]="XRGB",
+};
+
+
+
 static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
 	if (!s){
 		rgb[0]=l;
@@ -70,7 +79,7 @@ int main(int argc,const char** argv){
 		ui_display_framebuffer_t config;
 		ui_display_get_framebuffer_config(framebuffer,&config);
 		u32* framebuffer_address=(u32*)ui_display_map_framebuffer(framebuffer);
-		sys_io_print("Framebuffer: %v, %u x %u, [%u] -> %p\n",config.size,config.width,config.height,config.format,framebuffer_address);
+		sys_io_print("Framebuffer: %v, %u x %u, %s -> %p\n",config.size,config.width,config.height,_ui_framebuffer_format_names[config.format],framebuffer_address);
 		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
 		glViewport(0,0,config.width,config.height);

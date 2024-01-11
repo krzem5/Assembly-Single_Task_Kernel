@@ -5,10 +5,6 @@
 
 
 
-#define SHARED_OBJECT_FLAG_RESOLVE_GOT 1
-
-
-
 typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 	_Bool has_needed_libraries;
 	u64 plt_relocation_size;
@@ -45,11 +41,11 @@ extern shared_object_t* shared_object_root;
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags);
+shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path);
 
 
 
-shared_object_t* shared_object_load(const char* name,u32 flags);
+shared_object_t* shared_object_load(const char* name);
 
 
 

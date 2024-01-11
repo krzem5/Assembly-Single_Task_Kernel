@@ -1,7 +1,6 @@
 #include <linker/shared_object.h>
 #include <sys/elf/elf.h>
 #include <sys/io/io.h>
-#include <sys/mp/thread.h>
 #include <sys/types.h>
 
 
@@ -43,17 +42,14 @@ _skip_entry:
 
 
 
-u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
+u64 NOFLOAT symbol_resolve_plt(shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
 		return 0;
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
-	const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
-	u64 resolved_symbol=symbol_lookup_by_name(symbol_name);
+	u64 resolved_symbol=symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name);
 	if (!resolved_symbol){
-		sys_io_print("Unable to resolve symbol '%s' in shared object '%s'\n",symbol_name,so->path);
-		sys_thread_stop(0);
 		return 0;
 	}
 	if (so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)){

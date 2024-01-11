@@ -9,7 +9,7 @@ u64 symbol_lookup_by_name(const char* name);
 
 
 
-u64 symbol_resolve_plt(const shared_object_t* so,u64 index);
+u64 symbol_resolve_plt(shared_object_t* so,u64 index);
 
 
 
