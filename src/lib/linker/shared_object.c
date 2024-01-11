@@ -9,10 +9,6 @@
 
 
 
-#define BIND_NOW 1
-
-
-
 static shared_object_t* _shared_object_tail=NULL;
 
 shared_object_t* shared_object_root=NULL;
@@ -37,7 +33,7 @@ static shared_object_t* _alloc_shared_object(u64 image_base){
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path){
+shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags){
 	u16 path_length=sys_string_length(path);
 	if (path_length>=sizeof(((shared_object_t*)NULL)->path)){
 		sys_io_print("Shared object path too long\n");
@@ -109,6 +105,9 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			case DT_JMPREL:
 				so->dynamic_section.plt_relocations=so->image_base+dyn->d_un.d_ptr;
 				break;
+			case DT_BIND_NOW:
+				flags|=SHARED_OBJECT_FLAG_RESOLVE_GOT;
+				break;
 			case DT_INIT_ARRAY:
 				so->dynamic_section.init_array=so->image_base+dyn->d_un.d_ptr;
 				break;
@@ -133,13 +132,13 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
 		for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 			if (dyn->d_tag==DT_NEEDED){
-				shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val);
+				shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val,flags);
 			}
 		}
 	}
 	if (so->dynamic_section.plt_got&&so->dynamic_section.plt_relocations&&so->dynamic_section.plt_relocation_size&&so->dynamic_section.plt_relocation_entry_size){
 		for (u64 i=0;i<so->dynamic_section.plt_relocation_size/so->dynamic_section.plt_relocation_entry_size;i++){
-			if (BIND_NOW){
+			if (flags&SHARED_OBJECT_FLAG_RESOLVE_GOT){
 				symbol_resolve_plt(so,i);
 			}
 			else{
@@ -185,7 +184,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 
 
 
-shared_object_t* shared_object_load(const char* name){
+shared_object_t* shared_object_load(const char* name,u32 flags){
 	char buffer[256];
 	sys_fd_t fd=search_path_find_library(name,buffer,256);
 	if (SYS_IS_ERROR(fd)){
@@ -239,7 +238,7 @@ shared_object_t* shared_object_load(const char* name){
 		sys_memory_copy(base_file_address+program_header->p_offset,image_base+program_header->p_vaddr,program_header->p_filesz);
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
-	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
+	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
 	sys_memory_unmap((void*)base_file_address,0);
 	return so;
 }

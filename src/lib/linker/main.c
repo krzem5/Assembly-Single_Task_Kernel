@@ -52,6 +52,6 @@ u64 main(const u64* data){
 	u64 entry_address;
 	const char* path;
 	const elf_dyn_t* dynamic_section=_find_dynamic_section_and_entry_address(data,&entry_address,&path);
-	shared_object_init(0,dynamic_section,path);
+	shared_object_init(0,dynamic_section,path,0);
 	return entry_address;
 }
