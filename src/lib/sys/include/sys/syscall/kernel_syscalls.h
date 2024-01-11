@@ -143,7 +143,7 @@ static inline u64 _sys_syscall_thread_get_priority(u64 thread){
 
 
 
-static inline u64 _sys_syscall_thread_set_cpu_mask(u64 thread,void* buffer,u32 size){
+static inline u64 _sys_syscall_thread_set_cpu_mask(u64 thread,const void* buffer,u32 size){
 	return _sys_syscall3(0x100000017,thread,(u64)buffer,size);
 }
 
@@ -269,7 +269,7 @@ static inline u64 _sys_syscall_socket_recv(u64 fd,void* buffer,u32 buffer_length
 
 
 
-static inline u64 _sys_syscall_socket_send(u64 fd,void* buffer,u32 buffer_length,u32 flags){
+static inline u64 _sys_syscall_socket_send(u64 fd,const void* buffer,u32 buffer_length,u32 flags){
 	return _sys_syscall4(0x10000002d,fd,(u64)buffer,buffer_length,flags);
 }
 

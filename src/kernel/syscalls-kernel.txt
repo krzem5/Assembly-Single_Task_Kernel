@@ -22,7 +22,7 @@
 20,thread_create(u64 rip,u64 rdi,u64 rsi,u64 stack_size) -> u64
 21,thread_get_cpu_mask(u64 thread,void* buffer,u32 size) -> u64
 22,thread_get_priority(u64 thread) -> u64
-23,thread_set_cpu_mask(u64 thread,void* buffer,u32 size) -> u64
+23,thread_set_cpu_mask(u64 thread,const void* buffer,u32 size) -> u64
 24,thread_set_priority(u64 thread,u32 priority) -> u64
 25,thread_stop(u64 thread) -> u64
 27,uid_get(void) -> u64
@@ -43,7 +43,7 @@
 42,acl_request_permissions(u64 handle,u64 process,u64 flags) -> u64
 43,socket_create(u8 domain,u8 type,u8 protocol) -> u64
 44,socket_recv(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
-45,socket_send(u64 fd,void* buffer,u32 buffer_length,u32 flags) -> u64
+45,socket_send(u64 fd,const void* buffer,u32 buffer_length,u32 flags) -> u64
 46,socket_shutdown(u64 fd,u32 flags) -> u64
 47,socket_bind(u64 fd,const void* address,u32 address_length) -> u64
 48,socket_connect(u64 fd,const void* address,u32 address_length) -> u64

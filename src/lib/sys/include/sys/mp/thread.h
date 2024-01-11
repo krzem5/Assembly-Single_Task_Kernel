@@ -23,15 +23,15 @@ typedef u64 sys_thread_priority_t;
 
 
 
-u64 sys_thread_await_events(const sys_event_t* events,u32 count);
+u64 __attribute__((access(read_only,1,2),nonnull)) sys_thread_await_events(const sys_event_t* events,u32 count);
 
 
 
-sys_thread_t sys_thread_create(void* func,void* arg,u64 stack_size);
+sys_error_t __attribute__((nonnull(1))) sys_thread_create(void* func,void* arg,u64 stack_size);
 
 
 
-sys_error_t thread_get_cpu_mask(sys_thread_t thread,void* cpumask,u32 cpumask_size);
+sys_error_t __attribute__((access(write_only,2,3))) thread_get_cpu_mask(sys_thread_t thread,void* cpumask,u32 cpumask_size);
 
 
 
@@ -43,7 +43,7 @@ sys_thread_t sys_thread_get_handle(void);
 
 
 
-sys_error_t sys_thread_set_cpu_mask(sys_thread_t thread,void* cpumask,u32 cpumask_size);
+sys_error_t __attribute__((access(read_only,2,3))) sys_thread_set_cpu_mask(sys_thread_t thread,const void* cpumask,u32 cpumask_size);
 
 
 

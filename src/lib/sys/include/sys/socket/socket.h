@@ -36,11 +36,11 @@ typedef u8 sys_socket_protocol_t;
 
 
 
-sys_error_t sys_socket_bind(sys_fd_t fd,const void* address,u32 address_length);
+sys_error_t __attribute__((access(read_only,2,3))) sys_socket_bind(sys_fd_t fd,const void* address,u32 address_length);
 
 
 
-sys_error_t sys_socket_connect(sys_fd_t fd,const void* address,u32 address_length);
+sys_error_t __attribute__((access(read_only,2,3))) sys_socket_connect(sys_fd_t fd,const void* address,u32 address_length);
 
 
 
@@ -52,11 +52,11 @@ sys_error_t sys_socket_create_pair(sys_socket_domain_t domain,sys_socket_type_t 
 
 
 
-u64 sys_socket_recv(sys_fd_t fd,void* buffer,u32 buffer_length,u32 flags);
+u64 __attribute__((access(write_only,2,3),nonnull,warn_unused_result)) sys_socket_recv(sys_fd_t fd,void* buffer,u32 buffer_length,u32 flags);
 
 
 
-u64 sys_socket_send(sys_fd_t fd,void* buffer,u32 buffer_length,u32 flags);
+u64 __attribute__((access(read_only,2,3),nonnull,warn_unused_result)) sys_socket_send(sys_fd_t fd,const void* buffer,u32 buffer_length,u32 flags);
 
 
 

@@ -67,7 +67,7 @@ static inline u64 _sys_syscall6(u64 rax,u64 arg0,u64 arg1,u64 arg2,u64 arg3,u64 
 
 
 
-sys_error_t sys_syscall_get_table_offset(const char* name);
+sys_error_t __attribute__((access(read_only,1),warn_unused_result)) sys_syscall_get_table_offset(const char* name);
 
 
 

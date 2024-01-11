@@ -43,7 +43,7 @@ SYS_PUBLIC sys_thread_t sys_thread_get_handle(void){
 
 
 
-SYS_PUBLIC sys_error_t sys_thread_set_cpu_mask(sys_thread_t thread,void* cpumask,u32 cpumask_size){
+SYS_PUBLIC sys_error_t sys_thread_set_cpu_mask(sys_thread_t thread,const void* cpumask,u32 cpumask_size){
 	return _sys_syscall_thread_set_cpu_mask(thread,cpumask,cpumask_size);
 }
 

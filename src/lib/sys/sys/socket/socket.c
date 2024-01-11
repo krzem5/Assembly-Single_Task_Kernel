@@ -36,7 +36,7 @@ SYS_PUBLIC u64 sys_socket_recv(sys_fd_t fd,void* buffer,u32 buffer_length,u32 fl
 
 
 
-SYS_PUBLIC u64 sys_socket_send(sys_fd_t fd,void* buffer,u32 buffer_length,u32 flags){
+SYS_PUBLIC u64 sys_socket_send(sys_fd_t fd,const void* buffer,u32 buffer_length,u32 flags){
 	return _sys_syscall_socket_send(fd,buffer,buffer_length,flags);
 }
 
