@@ -19,6 +19,14 @@ static s32 _string_compare(const char* a,const char* b,u64 length){
 
 
 
+SYS_PUBLIC u64 sys_string_length(const char* str){
+	u64 out=0;
+	for (;str[out];out++);
+	return out;
+}
+
+
+
 SYS_PUBLIC s32 sys_string_compare(const char* a,const char* b){
 	return _string_compare(a,b,0);
 }

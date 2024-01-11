@@ -34,15 +34,17 @@ static shared_object_t* _alloc_shared_object(u64 image_base){
 
 
 shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path){
+	u16 path_length=sys_string_length(path);
+	if (path_length>=sizeof(((shared_object_t*)NULL)->path)){
+		sys_io_print("Shared object path too long\n");
+		return NULL;
+	}
 	shared_object_t* so=_alloc_shared_object(image_base);
+	sys_memory_copy(path,so->path,path_length);
+	so->path[path_length]=0;
 	if (!dynamic_section){
 		return so;
 	}
-	u16 i=0;
-	do{
-		so->path[i]=path[i];
-		i++;
-	} while (path[i-1]);
 	so->dynamic_section.has_needed_libraries=0;
 	so->dynamic_section.plt_relocation_size=0;
 	so->dynamic_section.plt_got=NULL;

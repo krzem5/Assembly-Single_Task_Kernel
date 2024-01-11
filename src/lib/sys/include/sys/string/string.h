@@ -4,6 +4,10 @@
 
 
 
+u64 __attribute__((access(read_only,1),nonnull,warn_unused_result)) sys_string_length(const char* str);
+
+
+
 s32 __attribute__((access(read_only,1),access(read_only,2),nonnull,warn_unused_result)) sys_string_compare(const char* a,const char* b);
 
 
