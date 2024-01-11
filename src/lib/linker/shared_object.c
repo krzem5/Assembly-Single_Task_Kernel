@@ -4,6 +4,7 @@
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
 #include <sys/memory/memory.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 
 
@@ -11,32 +12,6 @@
 static shared_object_t* _shared_object_tail=NULL;
 
 shared_object_t* shared_object_root=NULL;
-
-
-
-static void* memcpy(void* dst,const void* src,u64 length){
-	u8* dst_ptr=dst;
-	const u8* src_ptr=src;
-	for (u64 i=0;i<length;i++){
-		dst_ptr[i]=src_ptr[i];
-	}
-	return dst;
-}
-
-
-
-static s32 strcmp(const char* a,const char* b){
-	while (1){
-		if (a[0]!=b[0]){
-			return a[0]-b[0];
-		}
-		if (!a[0]){
-			return 0;
-		}
-		a++;
-		b++;
-	}
-}
 
 
 
@@ -162,7 +137,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 			switch (relocation->r_info&0xffffffff){
 				case R_X86_64_COPY:
-					memcpy((void*)(so->image_base+relocation->r_offset),(void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),symbol->st_size);
+					sys_memory_copy((void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),(void*)(so->image_base+relocation->r_offset),symbol->st_size);
 					break;
 				case R_X86_64_64:
 				case R_X86_64_GLOB_DAT:
@@ -190,7 +165,7 @@ shared_object_t* shared_object_load(const char* name){
 		return NULL;
 	}
 	for (shared_object_t* so=shared_object_root;so;so=so->next){
-		if (!strcmp(so->path,buffer)){
+		if (!sys_string_compare(so->path,buffer)){
 			return so;
 		}
 	}
@@ -233,7 +208,7 @@ shared_object_t* shared_object_load(const char* name){
 		if (program_header->p_flags&PF_X){
 			flags|=SYS_MEMORY_FLAG_EXEC;
 		}
-		memcpy(image_base+program_header->p_vaddr,base_file_address+program_header->p_offset,program_header->p_filesz);
+		sys_memory_copy(base_file_address+program_header->p_offset,image_base+program_header->p_vaddr,program_header->p_filesz);
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer);
