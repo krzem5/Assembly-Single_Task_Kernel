@@ -3,8 +3,8 @@
 #include <opengl/opengl.h>
 #include <opengl/syscalls.h>
 #include <sys/format/format.h>
+#include <sys/heap/heap.h>
 #include <sys/io/io.h>
-#include <sys/memory/memory.h>
 #include <sys/syscall/syscall.h>
 #include <sys/types.h>
 #include <ui/display.h>
@@ -37,7 +37,7 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	if (!driver_instance||!opengl_syscall_get_driver_instance_data(driver_instance,&driver_instance_data)){
 		return 0;
 	}
-	opengl_internal_state_t* out=(void*)sys_memory_map(sys_memory_align_up_address(sizeof(opengl_internal_state_t)),SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
+	opengl_internal_state_t* out=sys_heap_alloc(NULL,sizeof(opengl_internal_state_t));
 	out->state_id=opengl_syscall_create_state(driver_instance);
 	out->driver_instance=driver_instance;
 	out->driver_opengl_version=driver_instance_data.opengl_version;

@@ -4,6 +4,8 @@
 
 
 
+#define SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED 1
+
 #define SYS_HEAP_MIN_ALIGNMENT 16
 
 #define SYS_HEAP_BUCKET_COUNT 8
@@ -19,8 +21,9 @@ typedef struct _SYS_HEAP_BLOCK_OFFSET{
 typedef struct _SYS_HEAP_BLOCK_HEADER{
 	struct _SYS_HEAP_BLOCK_HEADER* prev;
 	struct _SYS_HEAP_BLOCK_HEADER* next;
-	u64 size;
+	u64 size_and_flags;
 	sys_heap_block_offset_t offset;
+	u8 ptr[];
 } sys_heap_block_header_t;
 
 
@@ -33,6 +36,7 @@ typedef struct _SYS_HEAP_BUKET{
 
 typedef struct _SYS_HEAP{
 	sys_heap_bucket_t buckets[SYS_HEAP_BUCKET_COUNT];
+	u16 bucket_bitmap;
 } sys_heap_t;
 
 
