@@ -46,6 +46,8 @@ _skip_entry:
 u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
+		sys_io_print("Wrong plt relocation type '%u' in shared object '%s'\n",(u32)(relocation->r_info),so->path);
+		sys_thread_stop(0);
 		return 0;
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;

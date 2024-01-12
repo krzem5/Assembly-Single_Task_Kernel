@@ -143,7 +143,9 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			}
 			else{
 				const elf_rela_t* relocation=so->dynamic_section.plt_relocations+i*so->dynamic_section.plt_relocation_entry_size;
-				*(u64*)(so->image_base+relocation->r_offset)+=so->image_base;
+				if ((relocation->r_info&0xffffffff)==R_X86_64_JUMP_SLOT){
+					*(u64*)(so->image_base+relocation->r_offset)+=so->image_base;
+				}
 			}
 		}
 	}

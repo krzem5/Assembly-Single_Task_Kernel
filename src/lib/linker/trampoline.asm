@@ -19,7 +19,6 @@ symbol_resolve_plt_trampoline:
 	mov rdi, qword [rsp+0x48]
 	mov rsi, qword [rsp+0x50]
 	call [REF(symbol_resolve_plt)]
-	test rax, rax
 	mov qword [rsp+0x50], rax
 	pop r11
 	pop r10
@@ -30,9 +29,5 @@ symbol_resolve_plt_trampoline:
 	pop rdx
 	pop rcx
 	pop rax
-	add rsp, 8
-	jz ._symbol_not_found
-	ret
-._symbol_not_found:
 	add rsp, 8
 	ret
