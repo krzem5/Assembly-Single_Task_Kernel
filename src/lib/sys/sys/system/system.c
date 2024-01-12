@@ -1,5 +1,6 @@
 #include <sys/clock/clock.h>
 #include <sys/error/error.h>
+#include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/syscall/kernel_syscalls.h>
 #include <sys/time/time.h>
@@ -17,6 +18,7 @@ static void SYS_CONSTRUCTOR _execute_init(void){
 	}
 	_sys_initialized=1;
 	__sys_clock_init();
+	__sys_heap_init();
 	__sys_io_init();
 	__sys_time_init();
 }
