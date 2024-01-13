@@ -34,4 +34,13 @@ SYS_PUBLIC void sys_memory_copy(const void* src,void* dst,u64 length){
 
 
 
-SYS_PUBLIC s32 sys_memory_compare(const void* a,const void* b,u64 length);
+SYS_PUBLIC s32 sys_memory_compare(const void* a,const void* b,u64 length){
+	const u8* ptr_a=a;
+	const u8* ptr_b=b;
+	for (u64 i=0;i<length;i++){
+		if (ptr_a[i]!=ptr_b[i]){
+			return ptr_a[i]-ptr_b[i];
+		}
+	}
+	return 0;
+}

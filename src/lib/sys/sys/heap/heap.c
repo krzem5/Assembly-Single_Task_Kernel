@@ -166,5 +166,13 @@ SYS_PUBLIC void sys_heap_dealloc(sys_heap_t* heap,void* ptr){
 	if (!heap){
 		heap=&_sys_heap_default;
 	}
-	sys_io_print("sys_heap_dealloc: %p\n",ptr);sys_thread_stop(0);
+	u64 offset=((const sys_heap_block_offset_t*)(ptr-sizeof(sys_heap_block_offset_t)))->offset;
+	sys_heap_block_header_t* header=ptr-offset;
+	if (header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED){
+		sys_memory_unmap(header,header->size_and_flags&(-SYS_HEAP_MIN_ALIGNMENT));
+		return;
+	}
+	header->size_and_flags&=~SYS_HEAP_BLOCK_HEADER_FLAG_USED;
+	_insert_block(heap,header);
+	sys_io_print("sys_heap_dealloc: %p [%x]\n",ptr,header->size_and_flags);//sys_thread_stop(0);
 }

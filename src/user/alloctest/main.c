@@ -3,6 +3,7 @@
 #include <sys/fd/fd.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
+#include <sys/memory/memory.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
 
@@ -33,64 +34,37 @@ int main(int argc,const char** argv){
 	}
 	u64 start_time=sys_clock_get_time_ns();
 	single_test_data_t tests[TEST_COUNT];
+	u8 test_buffer[TEST_ALLOC_MAX_SIZE];
+	if (sys_fd_read(random_fd,test_buffer,TEST_ALLOC_MAX_SIZE,0)!=TEST_ALLOC_MAX_SIZE){
+		goto _error;
+	}
 	for (u32 i=0;i<TEST_COUNT;i++){
 		if (sys_fd_read(random_fd,&((tests+i)->size),sizeof(u64),0)!=sizeof(u64)){
 			goto _error;
 		}
 		(tests+i)->size=((tests+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		sys_io_print("[%u]: %u\n",i,(tests+i)->size);
 		(tests+i)->ptr=sys_heap_alloc(NULL,(tests+i)->size);
+		sys_memory_copy(test_buffer,(tests+i)->ptr,(tests+i)->size);
 	}
-	// /* malloc some randomly sized blocks */
-	// for (int i = 0; i < ITERATION_COUNT; ++i) {
-	// 	size_t sz = RAND_SIZE();
-	// 	sizes[i] = 0;
-	// 	ptrs[i] = malloc(sz);
-	// 	if (ptrs[i] != NULL) {
-	// 		sizes[i] = sz;
-	// 		chrs[i] = (char)RAND_RANGE(0, 256);
-	// 		for (size_t j = 0; j < sz; ++j) {
-	// 			ptrs[i][j] = chrs[i];
-	// 		}
-	// 	}
-	// }
-
-	// /* free some of the pointers */
-	// for (int i = 0; i < ITERATION_COUNT / 2; ++i) {
-	// 	int index = rand() % ITERATION_COUNT;
-	// 	free(ptrs[index]);
-	// 	ptrs[index] = NULL;
-	// 	sizes[index] = 0;
-	// 	chrs[index] = '\0';
-	// }
-
-	// /* realloc some of the pointers */
-	// for (int i = 0; i < ITERATION_COUNT / 2; ++i) {
-	// 	int index = rand() % ITERATION_COUNT;
-	// 	size_t sz = RAND_SIZE();
-	// 	void *x = realloc(ptrs[index], sz);
-
-	// 	if (sz == 0 || x != NULL) {
-	// 		ptrs[index] = x;
-	// 		sizes[index] = sz;
-	// 		chrs[index] = (char)RAND_RANGE(0, 256);
-	// 		for (size_t j = 0; j < sz; ++j) {
-	// 			ptrs[index][j] = chrs[index];
-	// 		}
-	// 	}
-	// }
-
-	// /* Make sure our data is still intact */
-	// for (int i = 0; i < ITERATION_COUNT; ++i) {
-	// 	for (int j = 0; j < sizes[i]; ++j) {
-	// 		assert(ptrs[i][j] == chrs[i]);
-	// 	}
-	// }
-
-	// /* Clean up our mess */
-	// for (int i = 0; i < ITERATION_COUNT; ++i) {
-	// 	free(ptrs[i]);
-	// }
+	for (u32 i=0;i<(TEST_COUNT>>1);i++){
+		u32 j=0;
+		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
+			goto _error;
+		}
+		j%=TEST_COUNT;
+		sys_heap_dealloc(NULL,(tests+j)->ptr);
+		(tests+j)->size=0;
+		(tests+j)->ptr=NULL;
+	}
+	for (u32 i=0;i<TEST_COUNT;i++){
+		if (!(tests+i)->ptr){
+			continue;
+		}
+		if (sys_memory_compare((tests+i)->ptr,test_buffer,(tests+i)->size)){
+			sys_io_print("alloctest: failed data integrity test in block #%u\n",i);
+		}
+		sys_heap_dealloc(NULL,(tests+i)->ptr);
+	}
 	sys_fd_close(random_fd);
 	u64 end_time=sys_clock_get_time_ns();
 	sys_io_print("alloctest: took %lu ms\n",(end_time-start_time)/1000000);
