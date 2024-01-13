@@ -141,10 +141,6 @@ _grow_heap:
 	}
 	header=heap->buckets[__builtin_ffs(heap->bucket_bitmap>>(i+1))+i].head;
 _header_found:
-	// if (!header||((u64)header+size)&15){
-	// 	sys_io_print("~ %p [%u %u]\n",header,__builtin_ffs(heap->bucket_bitmap>>(i+1))+i,heap->bucket_bitmap&(1<<(__builtin_ffs(heap->bucket_bitmap>>(i+1))+i)));
-	// 	for (;;);
-	// }
 	_remove_block(heap,header);
 	u64 total_size=_heap_block_header_get_size(header);
 	if (total_size<=size+sizeof(sys_heap_block_header_t)){
@@ -254,12 +250,12 @@ SYS_PUBLIC void sys_heap_dealloc(sys_heap_t* heap,void* ptr){
 		next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
 		next_header->offset.prev_size=_heap_block_header_get_size(header);
 	}
-	// sys_heap_block_header_t* prev_header=((void*)header)-_heap_block_header_get_prev_size(header);
-	// if (!(prev_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-	// 	_remove_block(heap,prev_header);
-	// 	prev_header->size_and_flags+=_heap_block_header_get_size(header);
+	sys_heap_block_header_t* prev_header=((void*)header)-_heap_block_header_get_prev_size(header);
+	if (!(prev_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
+		_remove_block(heap,prev_header);
+		// prev_header->size_and_flags+=_heap_block_header_get_size(header);
 	// 	next_header->offset.prev_size=_heap_block_header_get_size(prev_header);
-	// 	header=prev_header;
-	// }
+		// header=prev_header;
+	}
 	_insert_block(heap,header);
 }
