@@ -16,7 +16,8 @@
 
 
 typedef struct _SYS_HEAP_BLOCK_OFFSET{
-	u64 offset;
+	u32 prev_size;
+	u32 offset;
 } sys_heap_block_offset_t;
 
 
