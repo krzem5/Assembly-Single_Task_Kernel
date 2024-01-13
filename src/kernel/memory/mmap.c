@@ -179,19 +179,19 @@ KERNEL_PUBLIC void mmap_init(vmm_pagemap_t* pagemap,u64 low,u64 high,mmap_t* out
 KERNEL_PUBLIC void mmap_deinit(mmap_t* mmap){
 	KERNEL_ASSERT(mmap);
 	spinlock_acquire_exclusive(&(mmap->lock));
-	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;){
-		mmap_region_t* region=(void*)rb_node;
-		rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node);
-		if (region->flags){
-			_delete_pagemap_pages(mmap,region);
-		}
-		omm_dealloc(_mmap_region_allocator,region);
-	}
-	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->length_tree));rb_node;){
-		mmap_length_group_t* length_group=(void*)rb_node;
-		rb_node=rb_tree_iter_next(&(mmap->length_tree),rb_node);
-		omm_dealloc(_mmap_length_group_allocator,length_group);
-	}
+	// for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->offset_tree));rb_node;){
+	// 	mmap_region_t* region=(void*)rb_node;
+	// 	rb_node=rb_tree_iter_next(&(mmap->offset_tree),rb_node);
+	// 	if (region->flags){
+	// 		_delete_pagemap_pages(mmap,region);
+	// 	}
+	// 	omm_dealloc(_mmap_region_allocator,region);
+	// }
+	// for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->length_tree));rb_node;){
+	// 	mmap_length_group_t* length_group=(void*)rb_node;
+	// 	rb_node=rb_tree_iter_next(&(mmap->length_tree),rb_node);
+	// 	omm_dealloc(_mmap_length_group_allocator,length_group);
+	// }
 	rb_tree_init(&(mmap->offset_tree));
 	rb_tree_init(&(mmap->length_tree));
 	spinlock_release_exclusive(&(mmap->lock));

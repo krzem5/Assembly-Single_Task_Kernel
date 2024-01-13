@@ -1,3 +1,4 @@
+alloctest:runtime@static,sys
 cat:runtime@static,sys
 cpu:runtime@static,sys
 exit:runtime@static,sys

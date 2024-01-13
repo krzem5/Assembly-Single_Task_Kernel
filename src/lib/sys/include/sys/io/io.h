@@ -14,7 +14,7 @@ void __sys_io_init(void);
 
 
 
-u32 __attribute__((access(read_only,1),nonnull)) sys_io_print(const char* template,...);
+u32 __attribute__((access(read_only,1),nonnull(1))) sys_io_print(const char* template,...);
 
 
 

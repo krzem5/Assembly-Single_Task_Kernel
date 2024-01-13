@@ -10,7 +10,13 @@ static sys_heap_t _sys_heap_default;
 
 
 
-static inline void sys_heap_block_header_init(u64 size,u32 flags,sys_heap_block_header_t* header){
+static inline u32 _get_bucket_index(u64 size){
+	return 31-__builtin_clz(size)/*+(!!(size&(size-1)))*/-__builtin_ffs(SYS_HEAP_MIN_ALIGNMENT);
+}
+
+
+
+static inline void _heap_block_header_init(u64 size,u32 flags,sys_heap_block_header_t* header){
 	header->prev=NULL;
 	header->next=NULL;
 	header->size_and_flags=size|flags;
@@ -19,8 +25,43 @@ static inline void sys_heap_block_header_init(u64 size,u32 flags,sys_heap_block_
 
 
 
-static inline u32 _get_bucket_index(u64 size){
-	return 31-__builtin_clz(size)+(!!(size&(size-1)))-__builtin_ffs(SYS_HEAP_MIN_ALIGNMENT);
+static inline u64 _heap_block_header_get_size(const sys_heap_block_header_t* header){
+	return header->size_and_flags&(-SYS_HEAP_MIN_ALIGNMENT);
+}
+
+
+
+static inline void _insert_block(sys_heap_t* heap,sys_heap_block_header_t* header){
+	u32 i=_get_bucket_index(_heap_block_header_get_size(header));
+	if (i>=SYS_HEAP_BUCKET_COUNT){
+		i=SYS_HEAP_BUCKET_COUNT-1;
+	}
+	header->prev=NULL;
+	header->next=heap->buckets[i].head;
+	if (header->next){
+		header->next->prev=header;
+	}
+	else{
+		heap->bucket_bitmap|=1<<i;
+	}
+	heap->buckets[i].head=header;
+}
+
+
+
+static inline void _remove_block(sys_heap_t* heap,sys_heap_block_header_t* header,u32 i){
+	if (header->next){
+		header->next->prev=header->prev;
+	}
+	if (header->prev){
+		header->prev->next=header->next;
+	}
+	else{
+		heap->buckets[i].head=header->next;
+		if (!header->next){
+			heap->bucket_bitmap&=~(1<<i);
+		}
+	}
 }
 
 
@@ -54,19 +95,43 @@ SYS_PUBLIC void* sys_heap_alloc(sys_heap_t* heap,u64 size){
 	size=(size+sizeof(sys_heap_block_header_t)+SYS_HEAP_MIN_ALIGNMENT-1)&(-SYS_HEAP_MIN_ALIGNMENT);
 	if (size>=(SYS_HEAP_MIN_ALIGNMENT<<SYS_HEAP_BUCKET_COUNT)){
 		sys_heap_block_header_t* header=(sys_heap_block_header_t*)sys_memory_map(size,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
-		sys_heap_block_header_init(size,SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED,header);
+		_heap_block_header_init(size,SYS_HEAP_BLOCK_HEADER_FLAG_USED|SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED,header);
 		return header->ptr;
 	}
 	u32 i=_get_bucket_index(size);
 	if (!(heap->bucket_bitmap>>i)){
-		sys_heap_block_header_t* header=(sys_heap_block_header_t*)sys_memory_map(SYS_HEAP_MIN_ALIGNMENT<<SYS_HEAP_BUCKET_COUNT,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
-		sys_heap_block_header_init(SYS_HEAP_MIN_ALIGNMENT<<SYS_HEAP_BUCKET_COUNT,0,header);
-		heap->buckets[SYS_HEAP_BUCKET_COUNT-1].head=header;
-		heap->bucket_bitmap|=1<<(SYS_HEAP_BUCKET_COUNT-1);
+_grow_heap:
+		void* data=(void*)sys_memory_map(SYS_HEAP_GROW_SIZE,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
+		_heap_block_header_init(sizeof(sys_heap_block_header_t),SYS_HEAP_BLOCK_HEADER_FLAG_USED,data);
+		_heap_block_header_init(SYS_HEAP_GROW_SIZE-2*sizeof(sys_heap_block_header_t),0,data+sizeof(sys_heap_block_header_t));
+		_heap_block_header_init(sizeof(sys_heap_block_header_t),SYS_HEAP_BLOCK_HEADER_FLAG_USED,data+SYS_HEAP_GROW_SIZE-sizeof(sys_heap_block_header_t));
+		_insert_block(heap,data+sizeof(sys_heap_block_header_t));
 	}
-	u32 j=__builtin_ffs(heap->bucket_bitmap>>i)+i-1;
-	sys_io_print("sys_heap_alloc: %v [%u:%u]\n",size,i,j);sys_thread_stop(0);
-	return NULL;
+	sys_heap_block_header_t* header=NULL;
+	if (heap->bucket_bitmap&(1<<i)){
+		for (header=heap->buckets[i].head;header;header=header->next){
+			if (_heap_block_header_get_size(header)>=size){
+				goto _header_found;
+			}
+		}
+	}
+	if (!(heap->bucket_bitmap>>(i+1))){
+		goto _grow_heap;
+	}
+	i=__builtin_ffs(heap->bucket_bitmap>>(i+1))+i;
+	header=heap->buckets[i].head;
+_header_found:
+	_remove_block(heap,header,i);
+	u64 total_size=_heap_block_header_get_size(header);
+	if (total_size<=size+sizeof(sys_heap_block_header_t)){
+		size=total_size;
+	}
+	else{
+		_heap_block_header_init(total_size-size,0,((void*)header)+size);
+		_insert_block(heap,((void*)header)+size);
+	}
+	_heap_block_header_init(size,SYS_HEAP_BLOCK_HEADER_FLAG_USED,header);
+	return header->ptr;
 }
 
 
