@@ -56,6 +56,23 @@ int main(int argc,const char** argv){
 		(tests+j)->size=0;
 		(tests+j)->ptr=NULL;
 	}
+	for (u32 i=0;i<(TEST_COUNT>>1);i++){
+		u32 j=0;
+		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
+			goto _error;
+		}
+		j%=TEST_COUNT;
+		u64 new_size;
+		if (sys_fd_read(random_fd,&new_size,sizeof(u64),0)!=sizeof(u64)){
+			goto _error;
+		}
+		new_size=(new_size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		(tests+j)->ptr=sys_heap_realloc(NULL,(tests+j)->ptr,new_size);
+		if (new_size>(tests+j)->size){
+			sys_memory_copy(test_buffer+(tests+j)->size,(tests+j)->ptr+(tests+j)->size,new_size-(tests+j)->size);
+		}
+		(tests+j)->size=new_size;
+	}
 	for (u32 i=0;i<TEST_COUNT;i++){
 		if (!(tests+i)->ptr){
 			continue;
