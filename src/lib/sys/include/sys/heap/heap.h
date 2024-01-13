@@ -25,7 +25,8 @@ typedef struct _SYS_HEAP_BLOCK_OFFSET{
 typedef struct _SYS_HEAP_BLOCK_HEADER{
 	struct _SYS_HEAP_BLOCK_HEADER* prev;
 	struct _SYS_HEAP_BLOCK_HEADER* next;
-	u64 size_and_flags;
+	u32 marker;
+	u32 size_and_flags;
 	sys_heap_block_offset_t offset;
 	u8 ptr[];
 } sys_heap_block_header_t;
