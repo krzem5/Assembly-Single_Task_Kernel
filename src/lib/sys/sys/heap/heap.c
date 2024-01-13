@@ -165,47 +165,47 @@ SYS_PUBLIC void* sys_heap_realloc(sys_heap_t* heap,void* ptr,u64 size){
 	size=(size+sizeof(sys_heap_block_header_t)+SYS_HEAP_MIN_ALIGNMENT-1)&(-SYS_HEAP_MIN_ALIGNMENT);
 	u64 offset=((const sys_heap_block_offset_t*)(ptr-sizeof(sys_heap_block_offset_t)))->offset;
 	sys_heap_block_header_t* header=ptr-offset;
-	if (size>=(SYS_HEAP_MIN_ALIGNMENT<<SYS_HEAP_BUCKET_COUNT)){
-		size=sys_memory_align_up_address(size);
-		if (_heap_block_header_get_size(header)==size){
-			return ptr;
-		}
-		if (size<_heap_block_header_get_size(header)){
-			sys_io_print("sys_heap_realloc: shrink dedicated block\n");sys_thread_stop(0);
-		}
-		sys_heap_block_header_t* new_header=(sys_heap_block_header_t*)sys_memory_map(size,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
-		_heap_block_header_init(size,0,SYS_HEAP_BLOCK_HEADER_FLAG_USED|SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED,new_header);
-		sys_memory_copy(ptr,new_header->ptr,_heap_block_header_get_size(header));
-		sys_heap_dealloc(heap,ptr);
-		return new_header->ptr;
-	}
-	if (header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED){
-		size-=sizeof(sys_heap_block_header_t);
-		void* out=sys_heap_alloc(heap,size);
-		sys_memory_copy(ptr,out,size);
-		sys_memory_unmap(header,header->size_and_flags&(-SYS_HEAP_MIN_ALIGNMENT));
-		return out;
-	}
-	if (_heap_block_header_get_size(header)==size){
-		return ptr;
-	}
+	// if (size>=(SYS_HEAP_MIN_ALIGNMENT<<SYS_HEAP_BUCKET_COUNT)){
+	// 	size=sys_memory_align_up_address(size);
+	// 	if (_heap_block_header_get_size(header)==size){
+	// 		return ptr;
+	// 	}
+	// 	if (size<_heap_block_header_get_size(header)){
+	// 		sys_io_print("sys_heap_realloc: shrink dedicated block\n");sys_thread_stop(0);
+	// 	}
+	// 	sys_heap_block_header_t* new_header=(sys_heap_block_header_t*)sys_memory_map(size,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
+	// 	_heap_block_header_init(size,0,SYS_HEAP_BLOCK_HEADER_FLAG_USED|SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED,new_header);
+	// 	sys_memory_copy(ptr,new_header->ptr,_heap_block_header_get_size(header));
+	// 	sys_heap_dealloc(heap,ptr);
+	// 	return new_header->ptr;
+	// }
+	// if (header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED){
+	// 	size-=sizeof(sys_heap_block_header_t);
+	// 	void* out=sys_heap_alloc(heap,size);
+	// 	sys_memory_copy(ptr,out,size);
+	// 	sys_memory_unmap(header,header->size_and_flags&(-SYS_HEAP_MIN_ALIGNMENT));
+	// 	return out;
+	// }
+	// if (_heap_block_header_get_size(header)==size){
+	// 	return ptr;
+	// }
 	sys_heap_block_header_t* next_header=((void*)header)+_heap_block_header_get_size(header);
 	if (size<_heap_block_header_get_size(header)){
-		u64 extra_space=_heap_block_header_get_size(header)-size;
-		if (extra_space<=sizeof(sys_heap_block_header_t)){
-			return ptr;
-		}
-		next_header->offset.prev_size=extra_space;
-		header->size_and_flags=size|SYS_HEAP_BLOCK_HEADER_FLAG_USED;
-		header=((void*)header)+size;
-		_heap_block_header_init(extra_space,size,0,header);
-		if (!(next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-			_remove_block(heap,next_header);
-			header->size_and_flags+=_heap_block_header_get_size(next_header);
-			next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
-			next_header->offset.prev_size=_heap_block_header_get_size(header);
-		}
-		_insert_block(heap,header);
+		// u64 extra_space=_heap_block_header_get_size(header)-size;
+		// if (extra_space<=sizeof(sys_heap_block_header_t)){
+		// 	return ptr;
+		// }
+		// next_header->offset.prev_size=extra_space;
+		// header->size_and_flags=size|SYS_HEAP_BLOCK_HEADER_FLAG_USED;
+		// header=((void*)header)+size;
+		// _heap_block_header_init(extra_space,size,0,header);
+		// if (!(next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
+		// 	_remove_block(heap,next_header);
+		// 	header->size_and_flags+=_heap_block_header_get_size(next_header);
+		// 	next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
+		// 	next_header->offset.prev_size=_heap_block_header_get_size(header);
+		// }
+		// _insert_block(heap,header);
 		return ptr;
 	}
 	if ((next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)||_heap_block_header_get_size(header)+_heap_block_header_get_size(next_header)<size||1){
@@ -235,19 +235,19 @@ SYS_PUBLIC void sys_heap_dealloc(sys_heap_t* heap,void* ptr){
 		return;
 	}
 	header->size_and_flags&=~SYS_HEAP_BLOCK_HEADER_FLAG_USED;
-	sys_heap_block_header_t* next_header=((void*)header)+_heap_block_header_get_size(header);
-	if (!(next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-		_remove_block(heap,next_header);
-		header->size_and_flags+=_heap_block_header_get_size(next_header);
-		next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
-		next_header->offset.prev_size=_heap_block_header_get_size(header);
-	}
-	sys_heap_block_header_t* prev_header=((void*)header)-_heap_block_header_get_prev_size(header);
-	if (!(prev_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-		_remove_block(heap,prev_header);
-		prev_header->size_and_flags+=_heap_block_header_get_size(header);
-		next_header->offset.prev_size=_heap_block_header_get_size(prev_header);
-		header=prev_header;
-	}
-	_insert_block(heap,header);
+	// sys_heap_block_header_t* next_header=((void*)header)+_heap_block_header_get_size(header);
+	// if (!(next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
+	// 	_remove_block(heap,next_header);
+	// 	header->size_and_flags+=_heap_block_header_get_size(next_header);
+	// 	next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
+	// 	next_header->offset.prev_size=_heap_block_header_get_size(header);
+	// }
+	// sys_heap_block_header_t* prev_header=((void*)header)-_heap_block_header_get_prev_size(header);
+	// if (!(prev_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
+	// 	_remove_block(heap,prev_header);
+	// 	prev_header->size_and_flags+=_heap_block_header_get_size(header);
+	// 	next_header->offset.prev_size=_heap_block_header_get_size(prev_header);
+	// 	header=prev_header;
+	// }
+	// _insert_block(heap,header);
 }

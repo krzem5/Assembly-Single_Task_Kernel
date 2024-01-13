@@ -55,6 +55,12 @@ int main(int argc,const char** argv){
 		sys_heap_dealloc(NULL,(tests+j)->ptr);
 		(tests+j)->size=0;
 		(tests+j)->ptr=NULL;
+		// if (sys_fd_read(random_fd,&((tests+j)->size),sizeof(u64),0)!=sizeof(u64)){
+		// 	goto _error;
+		// }
+		// (tests+j)->size=((tests+j)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		// (tests+j)->ptr=sys_heap_alloc(NULL,(tests+j)->size);
+		// sys_memory_copy(test_buffer,(tests+j)->ptr,(tests+j)->size);
 	}
 	for (u32 i=0;i<(TEST_COUNT>>1);i++){
 		u32 j=0;
