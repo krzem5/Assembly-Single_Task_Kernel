@@ -67,7 +67,11 @@ static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
 
 
 
+#include <sys/lib/lib.h>
 int main(int argc,const char** argv){
+	for (sys_library_t lib=sys_lib_get_root();lib&&!SYS_IS_ERROR(lib);lib=sys_lib_get_next(lib)){
+		sys_io_print("=> %s @ %p\n",sys_lib_get_path(lib),sys_lib_get_image_base(lib));
+	}
 	opengl_init();
 	opengl_state_t state=opengl_create_state(330);
 	for (ui_display_handle_t display=ui_display_iter_start();display;display=ui_display_iter_next(display)){
