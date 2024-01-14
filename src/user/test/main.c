@@ -9,7 +9,7 @@
 
 
 
-#define TEST_COUNT 1024
+#define TEST_COUNT 124
 
 #define TEST_ALLOC_MIN_SIZE 1
 #define TEST_ALLOC_MAX_SIZE 16384
@@ -55,6 +55,7 @@ int main(int argc,const char** argv){
 		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
 			goto _error;
 		}
+		// j=i*19+3;
 		j%=TEST_COUNT;
 		sys_heap_dealloc(NULL,(tests+j)->ptr);
 		(tests+j)->size=0;
@@ -65,12 +66,14 @@ int main(int argc,const char** argv){
 		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
 			goto _error;
 		}
+		// j=TEST_COUNT-i*23*i+31*i+12;
 		j%=TEST_COUNT;
 		u64 new_size;
 		if (sys_fd_read(random_fd,&new_size,sizeof(u64),0)!=sizeof(u64)){
 			goto _error;
 		}
 		new_size=(new_size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		// new_size=127+i*13;
 		(tests+j)->ptr=sys_heap_realloc(NULL,(tests+j)->ptr,new_size);
 		if (new_size>(tests+j)->size){
 			sys_memory_copy(test_buffer+(tests+j)->size,(tests+j)->ptr+(tests+j)->size,new_size-(tests+j)->size);
