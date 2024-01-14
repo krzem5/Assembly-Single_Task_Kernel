@@ -19,7 +19,6 @@ static inline u32 _get_bucket_index(u64 size){
 static inline void _heap_block_header_init(u64 size,u32 prev_size,u32 flags,sys_heap_block_header_t* header){
 	header->prev=NULL;
 	header->next=NULL;
-	header->marker=0x41424344;
 	header->size_and_flags=size|flags;
 	header->offset.prev_size=prev_size;
 	header->offset.offset=sizeof(sys_heap_block_header_t);
@@ -62,24 +61,10 @@ static inline void _remove_block(sys_heap_t* heap,sys_heap_block_header_t* heade
 	if (i>=SYS_HEAP_BUCKET_COUNT){
 		i=SYS_HEAP_BUCKET_COUNT-1;
 	}
-	if (header->marker!=0x41424344){
-		sys_io_print("%p -> %x\n",header,header->marker);
-		sys_thread_stop(0);
-	}
 	if (header->next){
-		if (((u64)header->next)>>32){
-			sys_io_print("%p | %p\n",header->prev,header->next);
-			sys_thread_stop(0);
-		}
-		sys_io_print("Relink %p.n: %p | %p -> %p\n",header,header->next,header->next->prev,header->prev);
 		header->next->prev=header->prev;
 	}
 	if (header->prev){
-		if (((u64)header->prev)>>32){
-			sys_io_print("%p | %p\n",header->prev,header->next);
-			sys_thread_stop(0);
-		}
-		sys_io_print("Relink %p.p: %p | %p -> %p\n",header,header->prev,header->prev->next,header->next);
 		header->prev->next=header->next;
 	}
 	else{
@@ -87,73 +72,6 @@ static inline void _remove_block(sys_heap_t* heap,sys_heap_block_header_t* heade
 		if (!header->next){
 			heap->bucket_bitmap&=~(1<<i);
 		}
-	}
-}
-
-
-
-void __VERIFY_FROM(u32 line,sys_heap_block_header_t* header){
-	u8 error=0;
-	for (;header;header=header->next){
-		if (header->marker!=0x41424344){
-			sys_io_print("__VERIFY_FROM: error %u (from %u): %p -> broken %x\n",__LINE__,line,header,header->marker);
-			error=1;
-			break;
-		}
-		if (header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED){
-			sys_io_print("__VERIFY_FROM: error %u (from %u): %p -> used\n",__LINE__,line,header);
-			error=1;
-		}
-		if (((u64)(header->next))>>32){
-			sys_io_print("__VERIFY_FROM: error %u (from %u): %p -> %p\n",__LINE__,line,header,header->next);
-			error=1;
-			break;
-		}
-		if (header->next&&header->next->prev!=header){
-			sys_io_print("__VERIFY_FROM: error %u (from %u): %p | %p\n",__LINE__,line,header->next->prev,header);
-			error=1;
-		}
-	}
-	if (error){
-		sys_thread_stop(0);
-	}
-}
-
-
-
-void __VERIFY(u32 line,void* test){
-	u8 error=0;
-	for (u32 i=0;i<SYS_HEAP_BUCKET_COUNT;i++){
-		if (!(_sys_heap_default.bucket_bitmap&(1<<i))){
-			continue;
-		}
-		for (sys_heap_block_header_t* header=_sys_heap_default.buckets[i].head;header;header=header->next){
-			if (header->marker!=0x41424344){
-				sys_io_print("__VERIFY[%u]: error %u (from %u): %p -> broken %x\n",i,__LINE__,line,header,header->marker);
-				error=1;
-				break;
-			}
-			if (header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED){
-				sys_io_print("__VERIFY[%u]: error %u (from %u): %p -> used\n",i,__LINE__,line,header);
-				error=1;
-			}
-			if (((u64)(header->next))>>32){
-				sys_io_print("__VERIFY[%u]: error %u (from %u): %p -> %p\n",i,__LINE__,line,header,header->next);
-				error=1;
-				break;
-			}
-			if (header->next&&header->next->prev!=header){
-				sys_io_print("__VERIFY[%u]: error %u (from %u): %p | %p\n",i,__LINE__,line,header->next->prev,header);
-				error=1;
-			}
-			if (header==test){
-				sys_io_print("__VERIFY[%u]: error %u (from %u): found %p\n",i,__LINE__,line,header);
-				error=1;
-			}
-		}
-	}
-	if (error){
-		sys_thread_stop(0);
 	}
 }
 
@@ -214,20 +132,16 @@ _grow_heap:
 	}
 	header=heap->buckets[__builtin_ffs(heap->bucket_bitmap>>(i+1))+i].head;
 _header_found:
-	__VERIFY(__LINE__,NULL);
 	_remove_block(heap,header);
-	__VERIFY(__LINE__,NULL);
 	u64 total_size=_heap_block_header_get_size(header);
 	if (total_size<=size+sizeof(sys_heap_block_header_t)){
 		size=total_size;
 	}
 	else{
 		_heap_block_header_init(total_size-size,size,0,((void*)header)+size);
-		sys_io_print("[%u]: Create %p:%u [%u]\n",__LINE__,((void*)header)+size,total_size-size,_get_bucket_index(total_size-size));
 		_insert_block(heap,((void*)header)+size);
 	}
 	_heap_block_header_init(size,_heap_block_header_get_prev_size(header),SYS_HEAP_BLOCK_HEADER_FLAG_USED,header);
-	__VERIFY(__LINE__,NULL);
 	return header->ptr;
 }
 
@@ -321,52 +235,15 @@ SYS_PUBLIC void sys_heap_dealloc(sys_heap_t* heap,void* ptr){
 	}
 	header->size_and_flags&=~SYS_HEAP_BLOCK_HEADER_FLAG_USED;
 	sys_heap_block_header_t* next_header=((void*)header)+_heap_block_header_get_size(header);
-	__VERIFY(__LINE__,NULL);
 	if (!(next_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-		u32 i=_get_bucket_index(_heap_block_header_get_size(next_header));
-		if (i>=SYS_HEAP_BUCKET_COUNT){
-			i=SYS_HEAP_BUCKET_COUNT-1;
-		}
-		u8 found=0;
-		for (sys_heap_block_header_t* tmp=heap->buckets[i].head;tmp;tmp=tmp->next){
-			if (tmp==next_header){
-				found=1;
-				break;
-			}
-		}
-		if (!found){
-			sys_io_print("~~~ Not found: %p [%u]\n",next_header,i);
-			for (sys_heap_block_header_t* tmp=heap->buckets[i].head;tmp;tmp=tmp->next){
-				sys_io_print("~~~ %p\n",tmp);
-			}
-			sys_thread_stop(0);
-		}
-		__VERIFY_FROM(__LINE__,next_header);
-		__VERIFY(__LINE__,NULL);
-		sys_io_print("Remove: %p (%p %p)\n",next_header,next_header->prev,next_header->next);
 		_remove_block(heap,next_header);
-		__VERIFY(__LINE__,next_header);
 		header->size_and_flags+=_heap_block_header_get_size(next_header);
 		next_header=((void*)next_header)+_heap_block_header_get_size(next_header);
 		next_header->offset.prev_size=_heap_block_header_get_size(header);
 	}
-	__VERIFY(__LINE__,NULL);
 	sys_heap_block_header_t* prev_header=((void*)header)-_heap_block_header_get_prev_size(header);
 	if (!(prev_header->size_and_flags&SYS_HEAP_BLOCK_HEADER_FLAG_USED)){
-		__VERIFY(__LINE__,NULL);
-		if (prev_header->marker!=0x41424344){
-			sys_io_print("MARKER: %p %p %p %p\n",prev_header->data[0],prev_header->data[1],prev_header->data[2],prev_header->data[3]);
-			sys_thread_stop(0);
-		}
-		// sys_io_print("Remove: %p (%p %p)\n",next_header,next_header->prev,next_header->next);
-		// _remove_block(heap,prev_header);
-		// __VERIFY(__LINE__,prev_header);
-		// prev_header->size_and_flags+=_heap_block_header_get_size(header);
-		// next_header->offset.prev_size=_heap_block_header_get_size(prev_header);
-		// header=prev_header;
+		// merge prev_header and header
 	}
-	__VERIFY(__LINE__,NULL);
-	sys_io_print("[%u]: Create %p:%u [%u]\n",__LINE__,header,_heap_block_header_get_size(header),_get_bucket_index(_heap_block_header_get_size(header)));
 	_insert_block(heap,header);
-	__VERIFY(__LINE__,NULL);
 }

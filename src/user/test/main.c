@@ -35,12 +35,12 @@ int main(int argc,const char** argv){
 	u64 start_time=sys_clock_get_time_ns();
 	single_test_data_t tests[TEST_COUNT];
 	u8 test_buffer[TEST_ALLOC_MAX_SIZE];
-	for (u32 i=0;i<TEST_ALLOC_MAX_SIZE;i++){
-		test_buffer[i]='A';
-	}
-	// if (sys_fd_read(random_fd,test_buffer,TEST_ALLOC_MAX_SIZE,0)!=TEST_ALLOC_MAX_SIZE){
-	// 	goto _error;
+	// for (u32 i=0;i<TEST_ALLOC_MAX_SIZE;i++){
+	// 	test_buffer[i]='A';
 	// }
+	if (sys_fd_read(random_fd,test_buffer,TEST_ALLOC_MAX_SIZE,0)!=TEST_ALLOC_MAX_SIZE){
+		goto _error;
+	}
 	for (u32 i=0;i<TEST_COUNT;i++){
 		if (sys_fd_read(random_fd,&((tests+i)->size),sizeof(u64),0)!=sizeof(u64)){
 			goto _error;
@@ -84,9 +84,9 @@ int main(int argc,const char** argv){
 		if (!(tests+i)->ptr){
 			continue;
 		}
-		// if (sys_memory_compare((tests+i)->ptr,test_buffer,(tests+i)->size)){
-		// 	sys_io_print("alloctest: failed data integrity test in block #%u\n",i);
-		// }
+		if (sys_memory_compare((tests+i)->ptr,test_buffer,(tests+i)->size)){
+			sys_io_print("alloctest: failed data integrity test in block #%u\n",i);
+		}
 		sys_heap_dealloc(NULL,(tests+i)->ptr);
 	}
 	sys_fd_close(random_fd);
