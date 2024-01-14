@@ -35,9 +35,6 @@ int main(int argc,const char** argv){
 	u64 start_time=sys_clock_get_time_ns();
 	single_test_data_t tests[TEST_COUNT];
 	u8 test_buffer[TEST_ALLOC_MAX_SIZE];
-	// for (u32 i=0;i<TEST_ALLOC_MAX_SIZE;i++){
-	// 	test_buffer[i]='A';
-	// }
 	if (sys_fd_read(random_fd,test_buffer,TEST_ALLOC_MAX_SIZE,0)!=TEST_ALLOC_MAX_SIZE){
 		goto _error;
 	}
@@ -46,7 +43,6 @@ int main(int argc,const char** argv){
 			goto _error;
 		}
 		(tests+i)->size=((tests+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		// (tests+i)->size=16;
 		(tests+i)->ptr=sys_heap_alloc(NULL,(tests+i)->size);
 		sys_memory_copy(test_buffer,(tests+i)->ptr,(tests+i)->size);
 	}
@@ -55,7 +51,6 @@ int main(int argc,const char** argv){
 		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
 			goto _error;
 		}
-		// j=i*19+3;
 		j%=TEST_COUNT;
 		sys_heap_dealloc(NULL,(tests+j)->ptr);
 		(tests+j)->size=0;
@@ -66,14 +61,12 @@ int main(int argc,const char** argv){
 		if (sys_fd_read(random_fd,&j,sizeof(u32),0)!=sizeof(u32)){
 			goto _error;
 		}
-		// j=TEST_COUNT-i*23*i+31*i+12;
 		j%=TEST_COUNT;
 		u64 new_size;
 		if (sys_fd_read(random_fd,&new_size,sizeof(u64),0)!=sizeof(u64)){
 			goto _error;
 		}
 		new_size=(new_size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		// new_size=127+i*13;
 		(tests+j)->ptr=sys_heap_realloc(NULL,(tests+j)->ptr,new_size);
 		if (new_size>(tests+j)->size){
 			sys_memory_copy(test_buffer+(tests+j)->size,(tests+j)->ptr+(tests+j)->size,new_size-(tests+j)->size);

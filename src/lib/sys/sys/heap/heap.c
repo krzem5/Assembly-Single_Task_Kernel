@@ -11,7 +11,8 @@ static sys_heap_t _sys_heap_default;
 
 
 static inline u32 _get_bucket_index(u64 size){
-	return 31-__builtin_clz(size/SYS_HEAP_MIN_ALIGNMENT);
+	u32 out=31-__builtin_clz(size/SYS_HEAP_MIN_ALIGNMENT);
+	return (out>=SYS_HEAP_BUCKET_COUNT?SYS_HEAP_BUCKET_COUNT-1:out);
 }
 
 
@@ -40,9 +41,6 @@ static inline u64 _heap_block_header_get_prev_size(const sys_heap_block_header_t
 
 static inline void _insert_block(sys_heap_t* heap,sys_heap_block_header_t* header){
 	u32 i=_get_bucket_index(_heap_block_header_get_size(header));
-	if (i>=SYS_HEAP_BUCKET_COUNT){
-		i=SYS_HEAP_BUCKET_COUNT-1;
-	}
 	header->prev=NULL;
 	header->next=heap->buckets[i].head;
 	if (header->next){
@@ -58,9 +56,6 @@ static inline void _insert_block(sys_heap_t* heap,sys_heap_block_header_t* heade
 
 static inline void _remove_block(sys_heap_t* heap,sys_heap_block_header_t* header){
 	u32 i=_get_bucket_index(_heap_block_header_get_size(header));
-	if (i>=SYS_HEAP_BUCKET_COUNT){
-		i=SYS_HEAP_BUCKET_COUNT-1;
-	}
 	if (header->next){
 		header->next->prev=header->prev;
 	}
