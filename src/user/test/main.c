@@ -46,7 +46,7 @@ int main(int argc,const char** argv){
 			goto _error;
 		}
 		(tests+i)->size=((tests+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		(tests+i)->size=16;
+		// (tests+i)->size=16;
 		(tests+i)->ptr=sys_heap_alloc(NULL,(tests+i)->size);
 		sys_memory_copy(test_buffer,(tests+i)->ptr,(tests+i)->size);
 	}
