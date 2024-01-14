@@ -25,4 +25,8 @@ u64 sys_lib_get_image_base(sys_library_t library);
 
 
 
+u64 sys_lib_lookup_symbol(sys_library_t library,const char* name);
+
+
+
 #endif

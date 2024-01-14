@@ -1,4 +1,5 @@
 #include <linker/shared_object.h>
+#include <linker/symbol.h>
 #include <sys/elf/elf.h>
 #include <sys/io/io.h>
 #include <sys/mp/thread.h>
@@ -10,35 +11,57 @@
 
 
 
-u64 NOFLOAT symbol_lookup_by_name(const char* name){
-	u32 hash=0;
-	for (const char* tmp=name;tmp[0];tmp++){
-		hash=(hash<<4)+tmp[0];
-		hash^=(hash>>24)&0xf0;
+static u32 NOFLOAT _calculate_hash(const char* name){
+	u32 out=0;
+	for (;name[0];name++){
+		out=(out<<4)+name[0];
+		out^=(out>>24)&0xf0;
 	}
-	hash&=0x0fffffff;
-	for (const shared_object_t* so=shared_object_root;so;so=so->next){
-		if (!so->dynamic_section.hash_table){
+	return out&0x0fffffff;
+}
+
+
+
+static u64 NOFLOAT _lookup_symbol(const shared_object_t* so,u32 hash,const char* name){
+	if (!so->dynamic_section.hash_table){
+		return 0;
+	}
+	for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+		const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
+		if (symbol->st_shndx==SHN_UNDEF){
 			continue;
 		}
-		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
-			const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
-			if (symbol->st_shndx==SHN_UNDEF){
-				continue;
+		const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
+		for (u32 j=0;1;j++){
+			if (name[j]!=symbol_name[j]){
+				goto _skip_entry;
 			}
-			const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
-			for (u32 j=0;1;j++){
-				if (name[j]!=symbol_name[j]){
-					goto _skip_entry;
-				}
-				if (!name[j]){
-					return so->image_base+symbol->st_value;
-				}
+			if (!name[j]){
+				return so->image_base+symbol->st_value;
 			}
+		}
 _skip_entry:
+	}
+	return 0;
+}
+
+
+
+u64 NOFLOAT symbol_lookup_by_name(const char* name){
+	u32 hash=_calculate_hash(name);
+	for (const shared_object_t* so=shared_object_root;so;so=so->next){
+		u64 address=_lookup_symbol(so,hash,name);
+		if (address){
+			return address;
 		}
 	}
 	return 0;
+}
+
+
+
+u64 symbol_lookup_by_name_in_shared_object(const shared_object_t* so,const char* name){
+	return _lookup_symbol(so,_calculate_hash(name),name);
 }
 
 

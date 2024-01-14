@@ -96,7 +96,6 @@ int main(int argc,const char** argv){
 		sys_io_print("Framebuffer: %v, %u x %u, %s -> %p\n",config.size,config.width,config.height,_ui_framebuffer_format_names[config.format],framebuffer_address);
 		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
-		glViewport(0,0,config.width,config.height);
 		sys_io_print("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
 		sys_io_print("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
 		sys_io_print("GL_VENDOR: %s\n",glGetString(GL_VENDOR));
@@ -106,6 +105,7 @@ int main(int argc,const char** argv){
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
 		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;
+		glViewport(0,0,config.width,config.height);
 		while (1){
 			u8 color[3];
 			_hsl_to_rgb(t*255/120,127,255,color);

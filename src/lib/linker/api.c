@@ -26,3 +26,9 @@ SYS_PUBLIC u64 __sys_linker_get_object_base(u64 handle){
 	return ((const shared_object_t*)handle)->image_base;
 }
 
+
+
+SYS_PUBLIC u64 __sys_linker_lookup_symbol(u64 handle,const char* name){
+	return (handle?symbol_lookup_by_name_in_shared_object((const shared_object_t*)handle,name):symbol_lookup_by_name(name));
+}
+

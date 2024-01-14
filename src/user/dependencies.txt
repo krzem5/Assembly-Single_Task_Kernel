@@ -12,4 +12,4 @@ stat:runtime@static,sys,dircolor
 test:runtime@static,sys
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor
-ui:runtime@static,sys,opengl,ui_display
+ui:runtime@static,sys,opengl,uidisplay
