@@ -1,6 +1,7 @@
 #include <GL/gl.h>
 #include <opengl/opengl.h>
 #include <sys/error/error.h>
+#include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/mp/thread.h>
 #include <sys/mp/timer.h>
@@ -75,6 +76,19 @@ int main(int argc,const char** argv){
 			continue;
 		}
 		sys_io_print("Display #%u: %u x %u @ %u Hz\n",data.index,data.mode.width,data.mode.height,data.mode.freq);
+		ui_display_info_t temp_info;
+		if (SYS_IS_ERROR(ui_display_get_info(display,&temp_info,sizeof(ui_display_info_t)))){
+			continue;
+		}
+		ui_display_info_t* info=sys_heap_alloc(NULL,sizeof(ui_display_info_t)+temp_info.mode_count*sizeof(ui_display_mode_t));
+		if (SYS_IS_ERROR(ui_display_get_info(display,info,sizeof(ui_display_info_t)+temp_info.mode_count*sizeof(ui_display_mode_t)))){
+			continue;
+		}
+		sys_io_print("Modes: (%u)\n",temp_info.mode_count);
+		for (u32 i=0;i<temp_info.mode_count;i++){
+			sys_io_print("  %u x %u @ %u Hz\n",info->modes[i].width,info->modes[i].height,info->modes[i].freq);
+		}
+		sys_heap_dealloc(NULL,info);
 		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer(display);
 		ui_display_framebuffer_t config;
 		ui_display_get_framebuffer_config(framebuffer,&config);

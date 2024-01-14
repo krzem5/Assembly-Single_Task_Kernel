@@ -1,5 +1,6 @@
 #ifndef _UI_DISPLAY_H_
 #define _UI_DISPLAY_H_ 1
+#include <sys/error/error.h>
 #include <sys/types.h>
 
 
@@ -71,27 +72,27 @@ ui_display_handle_t ui_display_iter_next(ui_display_handle_t handle);
 
 
 
-u64 ui_display_get_data(ui_display_handle_t handle,ui_display_data_t* out);
+sys_error_t ui_display_get_data(ui_display_handle_t handle,ui_display_data_t* out);
 
 
 
-u64 ui_display_get_info(ui_display_handle_t handle,ui_display_info_t* buffer,u32 buffer_length);
+sys_error_t ui_display_get_info(ui_display_handle_t handle,ui_display_info_t* buffer,u32 buffer_length);
 
 
 
-u64 ui_display_get_display_framebuffer(ui_display_handle_t handle);
+sys_error_t ui_display_get_display_framebuffer(ui_display_handle_t handle);
 
 
 
-u64 ui_display_get_framebuffer_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out);
+sys_error_t ui_display_get_framebuffer_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out);
 
 
 
-u64 ui_display_map_framebuffer(ui_framebuffer_handle_t handle);
+sys_error_t ui_display_map_framebuffer(ui_framebuffer_handle_t handle);
 
 
 
-u64 ui_display_flush_display_framebuffer(ui_display_handle_t handle);
+sys_error_t ui_display_flush_display_framebuffer(ui_display_handle_t handle);
 
 
 

@@ -54,7 +54,38 @@ static error_t _syscall_get_display_data(handle_id_t display_handle_id,ui_displa
 
 
 static error_t _syscall_get_display_info(handle_id_t display_handle_id,ui_display_user_info_t* buffer,u32 buffer_length){
-	panic("_syscall_get_display_info");
+	if (buffer_length<sizeof(ui_display_user_info_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* display_handle=handle_lookup_and_acquire(display_handle_id,ui_display_handle_type);
+	if (!display_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	ui_display_t* display=display_handle->object;
+	const ui_display_info_t* display_info=display->display_info;
+	memcpy(buffer->manufacturer,display_info->manufacturer,sizeof(buffer->manufacturer));
+	buffer->manufacturer_product_code=display_info->manufacturer_product_code;
+	buffer->serial_number=display_info->serial_number;
+	buffer->video_interface=display_info->video_interface;
+	buffer->screen_width_cm=display_info->screen_width_cm;
+	buffer->screen_height_cm=display_info->screen_height_cm;
+	memcpy(buffer->name,display_info->name,sizeof(buffer->name));
+	u32 buffer_mode_count=(buffer_length-sizeof(ui_display_user_info_t))/sizeof(ui_display_user_mode_t);
+	u32 mode_count=0;
+	for (const ui_display_info_mode_t* mode=display_info->modes;mode;mode=mode->next){
+		if (mode_count<buffer_mode_count){
+			buffer->modes[mode_count].width=mode->width;
+			buffer->modes[mode_count].height=mode->height;
+			buffer->modes[mode_count].freq=mode->freq;
+		}
+		mode_count++;
+	}
+	buffer->mode_count=mode_count;
+	handle_release(display_handle);
+	return ERROR_OK;
 }
 
 
