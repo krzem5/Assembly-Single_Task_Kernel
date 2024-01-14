@@ -104,7 +104,7 @@ int main(int argc,const char** argv){
 		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
-		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,0xffffffffffffffffull));
+		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;
 		while (1){
 			u8 color[3];
