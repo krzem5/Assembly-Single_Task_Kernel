@@ -149,7 +149,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			}
 		}
 	}
-	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size){
+	if (so->dynamic_section.relocations&&so->dynamic_section.relocation_size&&so->dynamic_section.relocation_entry_size&&so->dynamic_section.symbol_table&&so->dynamic_section.symbol_table_entry_size&&so->dynamic_section.string_table){
 		for (u64 i=0;i<so->dynamic_section.relocation_size;i+=so->dynamic_section.relocation_entry_size){
 			const elf_rela_t* relocation=so->dynamic_section.relocations+i;
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
@@ -165,7 +165,6 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
 					break;
 				default:
-					sys_io_print("Unknown relocation type: %u\n",(u32)(relocation->r_info));
 					return NULL;
 			}
 		}

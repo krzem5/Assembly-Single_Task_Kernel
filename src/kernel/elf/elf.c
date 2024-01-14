@@ -195,7 +195,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		out=ERROR_NO_MEMORY;
 		goto _error;
 	}
-	u64 image_base=program_region->rb_node.key;
+	ctx->interpreter_image_base=program_region->rb_node.key;
 	for (u16 i=0;i<header.e_phnum;i++){
 		const elf_phdr_t* program_header=file_data+header.e_phoff+i*header.e_phentsize;
 		if (program_header->p_type!=PT_LOAD){
@@ -237,10 +237,10 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
 		switch (relocations->r_info&0xffffffff){
 			case R_X86_64_GLOB_DAT:
-				symbol->st_value+=image_base;
+				symbol->st_value+=ctx->interpreter_image_base;
 				break;
 			case R_X86_64_RELATIVE:
-				symbol->st_value=image_base+relocations->r_addend;
+				symbol->st_value=ctx->interpreter_image_base+relocations->r_addend;
 				break;
 			default:
 				ERROR("Unknown relocation type: %u",relocations->r_info);
@@ -256,7 +256,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	}
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	ctx->thread->reg_state.gpr_state.rip=header.e_entry+image_base;
+	ctx->thread->reg_state.gpr_state.rip=header.e_entry+ctx->interpreter_image_base;
 	return ERROR_OK;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
