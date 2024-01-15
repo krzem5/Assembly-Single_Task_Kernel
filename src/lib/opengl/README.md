@@ -1,5 +1,7 @@
 # OpenGL driver functions
 
+https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
+
 - [x] `glActiveTexture`
 - [ ] `glAttachShader`
 - [ ] `glBeginConditionalRender`
