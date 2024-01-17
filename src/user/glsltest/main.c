@@ -92,14 +92,14 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	sys_io_print("%s\n",preprocessor_state.data);
+	// sys_io_print("%s\n",preprocessor_state.data);
 	glsl_lexer_token_list_t token_list;
 	error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
 	glsl_preprocessor_state_delete(&preprocessor_state);
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_token_list(&token_list);
+	// glsl_debug_print_token_list(&token_list);
 	glsl_linker_program_t program;
 	glsl_linker_program_init(&program);
 	error=glsl_parser_parse_tokens(&token_list,&program,GLSL_SHADER_TYPE_VERTEX);
@@ -117,13 +117,13 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	sys_io_print("%s\n",preprocessor_state.data);
+	// sys_io_print("%s\n",preprocessor_state.data);
 	error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
 	glsl_preprocessor_state_delete(&preprocessor_state);
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_token_list(&token_list);
+	// glsl_debug_print_token_list(&token_list);
 	error=glsl_parser_parse_tokens(&token_list,&program,GLSL_SHADER_TYPE_FRAGMENT);
 	glsl_lexer_delete_token_list(&token_list);
 	if (error){

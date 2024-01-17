@@ -486,7 +486,7 @@ SYS_PUBLIC void glsl_debug_print_ast(const glsl_ast_t* ast){
 		sys_io_print(",\n      type: %s,\n      value: ",type_str);
 		sys_heap_dealloc(NULL,type_str);
 		if (var->value){
-			_print_ast_node(var->value,8);
+			_print_ast_node(var->value,6);
 		}
 		else{
 			sys_io_print("<null>");
