@@ -16,4 +16,8 @@ s32 __attribute__((access(read_only,1,3),access(read_only,2,3),nonnull,warn_unus
 
 
 
+char* __attribute__((access(read_only,1),nonnull,warn_unused_result)) sys_string_duplicate(const char* str);
+
+
+
 #endif

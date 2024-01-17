@@ -1,3 +1,5 @@
+#include <sys/heap/heap.h>
+#include <sys/memory/memory.h>
 #include <sys/types.h>
 
 
@@ -38,4 +40,13 @@ SYS_PUBLIC s32 sys_string_compare_up_to(const char* a,const char* b,u64 length){
 		return 0;
 	}
 	return _string_compare(a,b,0);
+}
+
+
+
+SYS_PUBLIC char* sys_string_duplicate(const char* str){
+	u64 length=sys_string_length(str);
+	char* out=sys_heap_alloc(NULL,length);
+	sys_memory_copy(str,out,length+1);
+	return out;
 }
