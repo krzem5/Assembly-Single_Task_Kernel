@@ -1,3 +1,4 @@
+#include <opengl/_internal/state.h>
 #include <opengl/command_buffer.h>
 #include <opengl/protocol.h>
 #include <opengl/syscalls.h>

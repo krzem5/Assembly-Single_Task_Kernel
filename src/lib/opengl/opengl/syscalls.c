@@ -1,3 +1,4 @@
+#include <opengl/_internal/state.h>
 #include <opengl/opengl.h>
 #include <sys/error/error.h>
 #include <sys/syscall/syscall.h>

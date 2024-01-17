@@ -10,7 +10,7 @@ typedef struct _GLSL_BACKEND_DESCRIPTOR{
 
 
 
-typedef const glsl_backend_descriptor_t* (*glsl_backend_query_func_t)(void);
+typedef const glsl_backend_descriptor_t* (*glsl_backend_descriptor_query_func_t)(void);
 
 
 

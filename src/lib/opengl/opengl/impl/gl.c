@@ -1,4 +1,5 @@
 #include <GL/gl.h>
+#include <opengl/_internal/state.h>
 #include <opengl/command_buffer.h>
 #include <opengl/config.h>
 #include <opengl/protocol.h>
