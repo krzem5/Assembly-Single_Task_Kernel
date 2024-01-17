@@ -45,7 +45,7 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	out->state_id=opengl_syscall_create_state(driver_instance);
 	out->driver_instance=driver_instance;
 	out->driver_opengl_version=driver_instance_data.opengl_version;
-	out->glsl_backend_descriptor=((glsl_backend_descriptor_query_func_t)sys_lib_lookup_symbol(sys_lib_load(driver_instance_data.library,SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS),"_glsl_backend_get_data"))();
+	out->glsl_backend_descriptor=((glsl_backend_descriptor_query_func_t)sys_lib_lookup_symbol(sys_lib_load(driver_instance_data.library,SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS),"_glsl_backend_query_descriptor"))();
 	sys_format_string(out->gl_renderer,64,"%s",driver_instance_data.renderer_name);
 	sys_format_string(out->gl_shading_language_version,16,"%u.%u.%u",glsl_get_version()/100,(glsl_get_version()/10)%10,glsl_get_version()%10);
 	sys_format_string(out->gl_vendor,32,"opengl/%s/%s",driver_instance_data.driver_name,out->glsl_backend_descriptor->name);

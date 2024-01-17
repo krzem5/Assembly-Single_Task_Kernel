@@ -9,6 +9,6 @@ static const glsl_backend_descriptor_t _tgsi_glsl_backend_descriptor={
 
 
 
-SYS_PUBLIC const glsl_backend_descriptor_t* _glsl_backend_get_data(void){
+SYS_PUBLIC const glsl_backend_descriptor_t* _glsl_backend_query_descriptor(void){
 	return &_tgsi_glsl_backend_descriptor;
 }

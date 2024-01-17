@@ -26,6 +26,7 @@
 
 
 static opengl_internal_state_t* _gl_internal_state=NULL;
+static GLuint _gl_max_vertex_attribs=16;
 
 
 
@@ -244,8 +245,10 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			sys_io_print("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_BUFFER_SIZE\x1b[0m\n");
 			return;
 		case GL_MAX_VERTEX_ATTRIBS:
-			sys_io_print("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_ATTRIBS\x1b[0m\n");
-			return;
+			type=OPENGL_PARAMETER_TYPE_INT;
+			length=1;
+			values=&_gl_max_vertex_attribs;
+			break;
 		case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
 			sys_io_print("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS\x1b[0m\n");
 			return;
@@ -2765,6 +2768,30 @@ SYS_PUBLIC void glVertexAttribI4usv(GLuint index,const GLushort* v){
 
 
 SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsizei stride,const void* pointer){
+	if (size<1||size>4){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if ((type==GL_INT_2_10_10_10_REV||type==GL_UNSIGNED_INT_2_10_10_10_REV)&&size!=4&&size==GL_BGRA){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (pointer&&/*no array buffer is bound*/1){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (index>=_gl_max_vertex_attribs){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (stride<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttribIPointer\x1b[0m\n");
 }
 
@@ -2819,6 +2846,34 @@ SYS_PUBLIC void glVertexAttribP4uiv(GLuint index,GLenum type,GLboolean normalize
 
 
 SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void* pointer){
+	if (size<1||size>4){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if ((type==GL_INT_2_10_10_10_REV||type==GL_UNSIGNED_INT_2_10_10_10_REV)&&size!=4&&size==GL_BGRA){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (size==GL_BGRA&&!normalized){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (pointer&&/*no array buffer is bound*/1){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (index>=_gl_max_vertex_attribs){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (stride<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttribPointer\x1b[0m\n");
 }
 
