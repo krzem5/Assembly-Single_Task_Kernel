@@ -2,15 +2,13 @@
 #include <glsl/_internal/lexer.h>
 #include <glsl/error.h>
 #include <glsl/preprocessor.h>
+#include <glsl/version.h>
 #include <sys/heap/heap.h>
 #include <sys/memory/memory.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
 
 
-
-#define SUPPORTED_GLSL_VERSION 330
-#define SUPPORTED_GLSL_PROFILE "core"
 
 #define STATE_BUFFER_GROWTH_SIZE 256 // power of 2
 
@@ -196,12 +194,12 @@ SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,gls
 				if (error!=GLSL_NO_ERROR){
 					return error;
 				}
-				if (version!=SUPPORTED_GLSL_VERSION){
+				if (version!=glsl_get_version()){
 					return _glsl_error_create_preprocessor_invalid_version(version);
 				}
 				for (;src[0]!='\n'&&LEXER_IS_WHITESPACE(src[0]);src++);
 				if (src[0]!='\n'){
-					if (!_begins_with_word(&src,SUPPORTED_GLSL_PROFILE)){
+					if (!_begins_with_word(&src,"core")){
 						u32 length=0;
 						for (;LEXER_IS_IDENTIFIER(src[length]);length++);
 						return _glsl_error_create_preprocessor_invalid_profile(src,length);

@@ -38,6 +38,7 @@ KERNEL_PUBLIC void handle_list_init(handle_list_t* out){
 
 
 KERNEL_PUBLIC void handle_list_destroy(handle_list_t* list){
+	return; // null pointer dereference (racing condition) is triggered during handle releases below
 	while (1){
 		spinlock_acquire_exclusive(&(list->lock));
 		handle_t* handle=list->head;

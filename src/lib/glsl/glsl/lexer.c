@@ -404,7 +404,7 @@ SYS_PUBLIC glsl_error_t glsl_lexer_extract_tokens(const char* src,glsl_lexer_tok
 					exponent=exponent*10+src[0]-48;
 					src++;
 				} while (LEXER_IS_IDENTIFIER(src[0]));
-				sys_io_print("libm.so not found\n");
+				sys_io_print("libmath.so not found\n");
 				(void)is_negative;// value*=pow(10,exponent*(is_negative?-1:1));
 			}
 			if (LEXER_IS_IDENTIFIER(src[0])){

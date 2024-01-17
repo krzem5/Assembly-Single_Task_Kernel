@@ -3,5 +3,5 @@ dircolor:sys@dynamic
 glsl:sys@dynamic
 uidisplay:sys@dynamic
 linker@nostatic:sys
-opengl@nostatic:sys@dynamic,uidisplay@dynamic
+opengl@nostatic:sys@dynamic,glsl@dynamic,uidisplay@dynamic
 runtime@nodynamic:sys
