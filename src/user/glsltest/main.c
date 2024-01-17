@@ -56,7 +56,7 @@ uniform mat3 vs_transform; \n\
  \n\
  \n\
 void main(void){ \n\
-	vec3 projection=vs_transform*vec3(in_pos,1.0); \n\
+	vec3 projection=vs_transform*vec3(in_pos,1.0).xyz; \n\
 	gl_Position=vec4(projection.xy,0.0,1.0); \n\
 	fs_color=in_color*vec3(1.0,1.0,1-2*projection.z)+vec3(0.0,0.0,projection.z); \n\
 } \n\

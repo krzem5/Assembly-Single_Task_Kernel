@@ -152,6 +152,16 @@ SYS_PUBLIC u32 sys_format_string_va(char* buffer,u32 length,const char* template
 				ptr++;
 			}
 		}
+		else if (*template=='f'){
+			double value=sys_var_arg_get(*va,double);
+			if (value<0){
+				_buffer_state_add(&out,'-');
+				value=-value;
+			}
+			_format_base10_int(value,0,&out);
+			_buffer_state_add(&out,'.');
+			_format_base10_int(((u64)(value*1000000))%1000000,6,&out);
+		}
 		else if (*template=='d'){
 			_format_int(va,flags|FLAG_SIGN,&out);
 		}

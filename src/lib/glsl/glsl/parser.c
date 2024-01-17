@@ -25,12 +25,12 @@ typedef struct _OPERATOR_STACK_ELEMENT{
 
 
 
-static _Bool _calculate_swizzle_type(glsl_ast_node_t* node,u32 size,glsl_error_t* error){
-	const char* swizzle=node->member_access.member;
+static glsl_ast_node_t* _calculate_swizzle_type(glsl_ast_node_t* node,const char* swizzle,u32 size,glsl_error_t* error){
+	const char* base_swizzle=swizzle;
 	u32 length=sys_string_length(swizzle);
 	if (length>4){
 		*error=_glsl_error_create_parser_swizzle_too_long(swizzle);
-		return 0;
+		return NULL;
 	}
 	const char* swizzle_values=NULL;
 	if (swizzle[0]=='x'||swizzle[0]=='y'||swizzle[0]=='z'||swizzle[0]=='w'){
@@ -44,44 +44,46 @@ static _Bool _calculate_swizzle_type(glsl_ast_node_t* node,u32 size,glsl_error_t
 	}
 	else{
 		*error=_glsl_error_create_parser_invalid_swizzle_character(swizzle,swizzle[0]);
-		return 0;
+		return NULL;
 	}
 	glsl_ast_swizzle_t pattern=0;
 	for (;swizzle[0];swizzle++){
 		u32 i=0;
 		for (;i<4&&swizzle_values[i]!=swizzle[0];i++);
 		if (i==4){
-			*error=_glsl_error_create_parser_invalid_swizzle_character(node->member_access.member,swizzle[0]);
-			return 0;
+			*error=_glsl_error_create_parser_invalid_swizzle_character(base_swizzle,swizzle[0]);
+			return NULL;
 		}
-		pattern|=i<<((swizzle-node->member_access.member)<<1);
+		pattern|=i<<((swizzle-base_swizzle)<<1);
 	}
-	node->type=GLSL_AST_NODE_TYPE_SWIZZLE;
-	node->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
-	node->value_type->builtin_type=glsl_builtin_type_from_base_type_and_length(glsl_builtin_type_to_vector_base_type(node->member_access.value->value_type->builtin_type),length);
-	sys_heap_dealloc(NULL,node->member_access.member);
-	node->swizzle.value=node->member_access.value;
-	node->swizzle.pattern=pattern;
-	node->swizzle.pattern_length=length;
-	return 1;
+	if (size==length&&pattern==(0b11100100&((1<<(length<<1))-1))){
+		return node;
+	}
+	glsl_ast_node_t* out=glsl_ast_node_create(GLSL_AST_NODE_TYPE_SWIZZLE);
+	out->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
+	out->value_type->builtin_type=glsl_builtin_type_from_base_type_and_length(glsl_builtin_type_to_vector_base_type(node->value_type->builtin_type),length);
+	out->swizzle.value=node;
+	out->swizzle.pattern=pattern;
+	out->swizzle.pattern_length=length;
+	return out;
 }
 
 
 
-static _Bool _calculate_member_type(glsl_ast_node_t* node,glsl_error_t* error){
-	if (node->member_access.value->value_type->type==GLSL_AST_TYPE_TYPE_FUNC){
+static glsl_ast_node_t* _calculate_member_type(glsl_ast_node_t* node,const char* member,glsl_error_t* error){
+	if (node->value_type->type==GLSL_AST_TYPE_TYPE_FUNC){
 		goto _error;
 	}
-	if (node->member_access.value->value_type->type==GLSL_AST_TYPE_TYPE_STRUCT){
+	if (node->value_type->type==GLSL_AST_TYPE_TYPE_STRUCT){
 		*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
 		return NULL;
 	}
-	u32 vector_length=glsl_builtin_type_to_vector_length(node->member_access.value->value_type->builtin_type);
+	u32 vector_length=glsl_builtin_type_to_vector_length(node->value_type->builtin_type);
 	if (vector_length){
-		return _calculate_swizzle_type(node,vector_length,error);
+		return _calculate_swizzle_type(node,member,vector_length,error);
 	}
 _error:
-	*error=_glsl_error_create_parser_member_not_found(node->member_access.value->value_type,node->member_access.member);
+	*error=_glsl_error_create_parser_member_not_found(node->value_type,member);
 	return NULL;
 }
 
@@ -317,13 +319,11 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_expected("member field");
 				goto _cleanup;
 			}
-			glsl_ast_node_t* node=glsl_ast_node_create(GLSL_AST_NODE_TYPE_MEMBER_ACCESS);
-			node->member_access.value=value_stack[value_stack_size-1];
-			node->member_access.member=sys_string_duplicate(parser->tokens[parser->index].string);
-			value_stack[value_stack_size-1]=node;
-			if (!_calculate_member_type(value_stack[value_stack_size-1],error)){
+			glsl_ast_node_t* node=_calculate_member_type(value_stack[value_stack_size-1],parser->tokens[parser->index].string,error);
+			if (!node){
 				goto _cleanup;
 			}
+			value_stack[value_stack_size-1]=node;
 			parser->index++;
 			continue;
 		}
