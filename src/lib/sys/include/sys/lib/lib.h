@@ -5,6 +5,10 @@
 
 
 
+#define SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS 1
+
+
+
 typedef u64 sys_library_t;
 
 
@@ -22,6 +26,10 @@ const char* sys_lib_get_path(sys_library_t library);
 
 
 u64 sys_lib_get_image_base(sys_library_t library);
+
+
+
+sys_library_t sys_lib_load(const char* name,u32 flags);
 
 
 

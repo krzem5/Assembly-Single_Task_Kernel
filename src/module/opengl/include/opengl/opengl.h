@@ -21,6 +21,7 @@ typedef struct _OPENGL_STATE{
 
 typedef struct _OPENGL_DRIVER{
 	const char* name;
+	const char* library;
 	u16 opengl_version;
 	_Bool (*init_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
 	void (*deinit_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);

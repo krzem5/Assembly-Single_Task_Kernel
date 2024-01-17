@@ -264,6 +264,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 
 static const opengl_driver_t _virgl_opengl_driver={
 	"virtio_gpu_virgl",
+	"libtgsicompiler.so",
 	330,
 	_init_state,
 	_deinit_state,

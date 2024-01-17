@@ -42,6 +42,7 @@ static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t i
 	buffer->opengl_version=driver_instance->driver->opengl_version;
 	strcpy(buffer->driver_name,driver_instance->driver->name,32);
 	strcpy(buffer->renderer_name,driver_instance->renderer,64);
+	strcpy(buffer->library,driver_instance->driver->library,128);
 	handle_release(driver_instance_handle);
 	return ERROR_OK;
 }

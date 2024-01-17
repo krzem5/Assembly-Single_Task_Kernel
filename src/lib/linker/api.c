@@ -32,3 +32,9 @@ SYS_PUBLIC u64 __sys_linker_lookup_symbol(u64 handle,const char* name){
 	return (handle?symbol_lookup_by_name_in_shared_object((const shared_object_t*)handle,name):symbol_lookup_by_name(name));
 }
 
+
+
+SYS_PUBLIC u64 __sys_linker_load_library(const char* name,u32 flags){
+	return (u64)shared_object_load(name,flags);
+}
+
