@@ -58,6 +58,7 @@ BUILD_DIRECTORIES=[
 	"build/objects/user",
 	"build/objects/user_debug",
 	"build/partitions",
+	"build/share",
 	"build/uefi",
 	"build/user",
 	"build/vm",
@@ -698,6 +699,8 @@ if (rebuild_data_partition):
 	data_fs.close()
 #####################################################################################################################################
 if ("--run" in sys.argv):
+	if ("--start-file-server" in sys.argv):
+		subprocess.Popen(["/usr/libexec/virtiofsd","--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--announce-submounts","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
@@ -741,8 +744,8 @@ if ("--run" in sys.argv):
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
-		"-object","memory-backend-ram,size=1G,id=mem0",
-		"-object","memory-backend-ram,size=1G,id=mem1",
+		"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required virtiofsd
+		"-object","memory-backend-memfd,size=1G,id=mem1,share=on",
 		# CPU
 		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
 		"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
@@ -765,6 +768,8 @@ if ("--run" in sys.argv):
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
 		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+		# Shared folder
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=empty-tag"] if "--start-file-server" in sys.argv else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
