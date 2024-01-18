@@ -29,6 +29,7 @@ ui_launcher:ui_common
 usb_msc:
 virtio:
 virtio_blk:virtio
+virtio_fs:virtio
 virtio_gpu:opengl,ui_display,virtio
 vm_shutdown:
 xhci:
