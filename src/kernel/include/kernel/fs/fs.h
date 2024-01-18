@@ -24,6 +24,14 @@ typedef struct _FILESYSTEM_DESCRIPTOR{
 
 
 
+typedef struct _FILESYSTEM_USER_DATA{
+	char type[64];
+	handle_id_t partition;
+	u8 uuid[16];
+} filesystem_user_data_t;
+
+
+
 extern handle_type_t fs_handle_type;
 extern handle_type_t fs_descriptor_handle_type;
 

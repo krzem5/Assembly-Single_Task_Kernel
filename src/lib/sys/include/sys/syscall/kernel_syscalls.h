@@ -353,4 +353,22 @@ static inline u64 _sys_syscall_event_set_active(u64 event,u32 is_active){
 
 
 
+static inline u64 _sys_syscall_fs_get_next(u64 fs){
+	return _sys_syscall1(0x10000003b,fs);
+}
+
+
+
+static inline u64 _sys_syscall_fs_get_data(u64 fs,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x10000003c,fs,(u64)buffer,buffer_length);
+}
+
+
+
+static inline u64 _sys_syscall_fs_mount(u64 fs,const char* path){
+	return _sys_syscall2(0x10000003d,fs,(u64)path);
+}
+
+
+
 #endif

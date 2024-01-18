@@ -1,4 +1,5 @@
 #include <kernel/drive/drive.h>
+#include <kernel/error/error.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -7,8 +8,10 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/partition/partition.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "fs"
 
 
@@ -101,4 +104,52 @@ KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 		}
 	}
 	return NULL;
+}
+
+
+
+error_t syscall_fs_get_next(handle_id_t fs_handle_id){
+	handle_descriptor_t* fs_handle_descriptor=handle_get_descriptor(fs_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(fs_handle_descriptor->tree),(fs_handle_id?fs_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_fs_get_data(u64 fs_handle_id,filesystem_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(filesystem_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* fs_handle=handle_lookup_and_acquire(fs_handle_id,fs_handle_type);
+	if (!fs_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	filesystem_t* fs=fs_handle->object;
+	strcpy(buffer->type,fs->descriptor->config->name,sizeof(buffer->type));
+	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
+	memcpy(buffer->uuid,fs->uuid,sizeof(buffer->uuid));
+	handle_release(fs_handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_fs_mount(u64 fs_handle_id,const char* path){
+	u64 path_length=syscall_get_string_length(path);
+	if (!path_length||path_length>4095){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	char buffer[4096];
+	memcpy(buffer,path,path_length);
+	buffer[path_length]=0;
+	handle_t* fs_handle=handle_lookup_and_acquire(fs_handle_id,fs_handle_type);
+	if (!fs_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	vfs_mount(fs_handle->object,buffer);
+	handle_release(fs_handle);
+	return ERROR_OK;
 }
