@@ -1,3 +1,4 @@
+#include <kernel/error/error.h>
 #include <kernel/fs/fs.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
@@ -26,17 +27,23 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 
 
 
-KERNEL_PUBLIC void vfs_mount(filesystem_t* fs,const char* path){
+KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mode){
 	if (!path){
+		if (user_mode){
+			return ERROR_DENIED;
+		}
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
 		_vfs_root_node->relatives.parent=NULL;
 		spinlock_release_exclusive(&(_vfs_root_node->lock));
-		return;
+		return ERROR_OK;
 	}
 	vfs_node_t* parent;
 	const char* child_name;
 	if (vfs_lookup_for_creation(NULL,path,0,0,0,&parent,&child_name)){
+		if (user_mode){
+			return ERROR_ALREADY_PRESENT;
+		}
 		panic("vfs_mount: node already exists");
 	}
 	spinlock_acquire_exclusive(&(fs->root->lock));
@@ -44,6 +51,7 @@ KERNEL_PUBLIC void vfs_mount(filesystem_t* fs,const char* path){
 	fs->root->name=smm_alloc(child_name,0);
 	spinlock_release_exclusive(&(fs->root->lock));
 	vfs_node_attach_external_child(parent,fs->root);
+	return ERROR_OK;
 }
 
 

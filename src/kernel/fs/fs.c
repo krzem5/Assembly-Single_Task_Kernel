@@ -149,7 +149,7 @@ error_t syscall_fs_mount(u64 fs_handle_id,const char* path){
 	if (!fs_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	vfs_mount(fs_handle->object,buffer);
+	error_t out=vfs_mount(fs_handle->object,buffer,1);
 	handle_release(fs_handle);
-	return ERROR_OK;
+	return out;
 }

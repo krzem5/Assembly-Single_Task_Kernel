@@ -1,5 +1,6 @@
 #ifndef _KERNEL_VFS_VFS_H_
 #define _KERNEL_VFS_VFS_H_ 1
+#include <kernel/error/error.h>
 #include <kernel/fs/fs.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
@@ -12,7 +13,7 @@
 
 
 
-void vfs_mount(filesystem_t* fs,const char* path);
+error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mode);
 
 
 

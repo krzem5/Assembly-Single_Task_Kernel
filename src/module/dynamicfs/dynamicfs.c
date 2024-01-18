@@ -97,7 +97,7 @@ KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_des
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);
 	out->root=vfs_node_create(out,name_string);
 	out->root->flags|=VFS_NODE_FLAG_VIRTUAL|VFS_NODE_TYPE_DIRECTORY|(0444<<VFS_NODE_PERMISSION_SHIFT);
-	vfs_mount(out,path);
+	vfs_mount(out,path,0);
 	return out;
 }
 

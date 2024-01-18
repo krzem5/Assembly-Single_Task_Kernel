@@ -1,3 +1,5 @@
+#include <fuse/fuse_registers.h>
+#include <kernel/clock/clock.h>
 #include <kernel/fs/fs.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -18,72 +20,111 @@
 
 
 static omm_allocator_t* _virtio_fs_device_allocator=NULL;
-static omm_allocator_t* _virtiofs_vfs_node_allocator=NULL;
+static omm_allocator_t* _fuse_vfs_node_allocator=NULL;
 static filesystem_descriptor_t* _virtio_filesystem_descriptor=NULL;
 
 
 
-static vfs_node_t* _virtiofs_create(void){
-	return omm_alloc(_virtiofs_vfs_node_allocator);
+static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
+	virtio_fs_device_t* fs_device=fs->extra_data;
+	fuse_getattr_in_t* fuse_getattr_in=amm_alloc(sizeof(fuse_getattr_in_t));
+	fuse_getattr_in->header.len=sizeof(fuse_getattr_in_t);
+	fuse_getattr_in->header.opcode=FUSE_OPCODE_GETATTR;
+	fuse_getattr_in->header.nodeid=node_id;
+	fuse_getattr_in->header.total_extlen=0;
+	fuse_getattr_in->getattr_flags=0;
+	fuse_getattr_out_t* fuse_getattr_out=amm_alloc(sizeof(fuse_getattr_out_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_getattr_in),
+			sizeof(fuse_getattr_in_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_getattr_out),
+			sizeof(fuse_getattr_out_t)
+		}
+	};
+	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	virtio_queue_wait(fs_device->loprioq);
+	virtio_queue_pop(fs_device->loprioq,NULL);
+	amm_dealloc(fuse_getattr_in);
+	WARN("data_valid_end=%lu",clock_get_time()+((fuse_getattr_out->attr_valid<<32)|fuse_getattr_out->attr_valid_nsec));
+	WARN("size=%v",fuse_getattr_out->attr.size);
+	WARN("atime=%lu",(fuse_getattr_out->attr.atime<<32)|fuse_getattr_out->attr.atimensec);
+	WARN("mtime=%lu",(fuse_getattr_out->attr.mtime<<32)|fuse_getattr_out->attr.mtimensec);
+	WARN("ctime=%lu",(fuse_getattr_out->attr.ctime<<32)|fuse_getattr_out->attr.ctimensec);
+	WARN("mode=%x",fuse_getattr_out->attr.mode);
+	WARN("uid=%u",fuse_getattr_out->attr.uid);
+	WARN("gid=%u",fuse_getattr_out->attr.gid);
+	// panic("A");
+	amm_dealloc(fuse_getattr_out);
+	vfs_node_t* out=vfs_node_create(fs,name);
+	return out;
 }
 
 
 
-static void _virtiofs_delete(vfs_node_t* node){
-	omm_dealloc(_virtiofs_vfs_node_allocator,node);
+static vfs_node_t* _fuse_create(void){
+	return omm_alloc(_fuse_vfs_node_allocator);
 }
 
 
 
-static vfs_node_t* _virtiofs_lookup(vfs_node_t* node,const string_t* name){
-	panic("_virtiofs_lookup");
+static void _fuse_delete(vfs_node_t* node){
+	omm_dealloc(_fuse_vfs_node_allocator,node);
 }
 
 
 
-static u64 _virtiofs_iterate(vfs_node_t* node,u64 pointer,string_t** out){
-	panic("_virtiofs_iterate");
+static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
+	panic("_fuse_lookup");
 }
 
 
 
-static u64 _virtiofs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
-	panic("_virtiofs_read");
+static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
+	panic("_fuse_iterate");
 }
 
 
 
-static u64 _virtiofs_resize(vfs_node_t* node,s64 size,u32 flags){
-	// panic("_virtiofs_resize");
+static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+	panic("_fuse_read");
+}
+
+
+
+static u64 _fuse_resize(vfs_node_t* node,s64 size,u32 flags){
+	// panic("_fuse_resize");
 	return 0;
 }
 
 
 
-static const vfs_functions_t _virtiofs_functions={
-	_virtiofs_create,
-	_virtiofs_delete,
-	_virtiofs_lookup,
-	_virtiofs_iterate,
+static const vfs_functions_t _fuse_functions={
+	_fuse_create,
+	_fuse_delete,
+	_fuse_lookup,
+	_fuse_iterate,
 	NULL,
 	NULL,
-	_virtiofs_read,
+	_fuse_read,
 	NULL,
-	_virtiofs_resize,
+	_fuse_resize,
 	NULL
 };
 
 
 
-static void _virtiofs_fs_deinit(filesystem_t* fs){
-	panic("_virtiofs_fs_deinit");
+static void _fuse_fs_deinit(filesystem_t* fs){
+	panic("_fuse_fs_deinit");
 }
 
 
 
-static const filesystem_descriptor_config_t _virtio_fs_filesystem_descriptor_config={
-	"virtiofs",
-	_virtiofs_fs_deinit,
+static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
+	"fuse",
+	_fuse_fs_deinit,
 	NULL
 };
 
@@ -136,25 +177,17 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	virtio_queue_wait(fs_device->hiprioq);
 	virtio_queue_pop(fs_device->hiprioq,NULL);
 	amm_dealloc(fuse_init_in);
-	if (fuse_init_out->header.len!=sizeof(fuse_init_out_t)){
+	if (fuse_init_out->header.len!=sizeof(fuse_init_out_t)||fuse_init_out->major!=FUSE_VERSION_MAJOR||fuse_init_out->minor!=FUSE_VERSION_MINOR){
 		WARN("Invalid FUSE initialization responce");
 		return 0;
 	}
-	// WARN("major=%u",fuse_init_out->major);
-	// WARN("minor=%u",fuse_init_out->minor);
-	// WARN("max_readahead=%u",fuse_init_out->max_readahead);
-	// WARN("flags=%u",fuse_init_out->flags);
-	// WARN("max_background=%u",fuse_init_out->max_background);
-	// WARN("congestion_threshold=%u",fuse_init_out->congestion_threshold);
-	// WARN("max_write=%u",fuse_init_out->max_write);
-	// WARN("time_gran=%u",fuse_init_out->time_gran);
-	// WARN("max_pages=%u",fuse_init_out->max_pages);
 	amm_dealloc(fuse_init_out);
 	filesystem_t* fs=fs_create(_virtio_filesystem_descriptor);
-	fs->functions=&_virtiofs_functions;
+	fs->functions=&_fuse_functions;
+	fs->extra_data=fs_device;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	fs->root=vfs_node_create(fs,root_name);
-	fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
+	fs->root=_open_node(fs,FUSE_ROOT_ID,root_name);
+	fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY|(0777<<VFS_NODE_PERMISSION_SHIFT);
 	return 1;
 }
 
@@ -174,9 +207,9 @@ void virtio_fs_init(void){
 	LOG("Initializing VirtIO FS driver...");
 	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1,pmm_alloc_counter("omm_virtio_fs_device"));
 	spinlock_init(&(_virtio_fs_device_allocator->lock));
-	_virtiofs_vfs_node_allocator=omm_init("virtiofs_vfs_node",sizeof(vfs_node_t),8,4,pmm_alloc_counter("omm_virtiofs_vfs_node"));
-	spinlock_init(&(_virtiofs_vfs_node_allocator->lock));
-	_virtio_filesystem_descriptor=fs_register_descriptor(&_virtio_fs_filesystem_descriptor_config);
+	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(vfs_node_t),8,4,pmm_alloc_counter("omm_fuse_vfs_node"));
+	spinlock_init(&(_fuse_vfs_node_allocator->lock));
+	_virtio_filesystem_descriptor=fs_register_descriptor(&_fuse_filesystem_descriptor_config);
 	if (!virtio_register_device_driver(&_virtio_fs_device_driver)){
 		ERROR("Unable to register VirtIO FS driver");
 	}

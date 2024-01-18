@@ -16,7 +16,7 @@ static _Bool _initramfs_init_partitions(drive_t* drive){
 	if (!partition->fs){
 		return 0;
 	}
-	vfs_mount(partition->fs,NULL);
+	vfs_mount(partition->fs,NULL,0);
 	return 1;
 }
 

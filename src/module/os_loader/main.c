@@ -61,7 +61,7 @@ _check_next_fs:
 	if (!boot_fs){
 		panic("Unable to find boot filesystem");
 	}
-	vfs_mount(boot_fs,NULL);
+	vfs_mount(boot_fs,NULL,0);
 	LOG("Loading modules...");
 	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
 	LOG("Loading user shell...");
