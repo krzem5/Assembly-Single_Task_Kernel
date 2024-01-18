@@ -80,12 +80,12 @@ static void _virtio_init_device(pci_device_t* device){
 			omm_dealloc(_virtio_device_allocator,virtio_device);
 			return;
 		}
-		virtio_device->legacy_io=((pci_bar.flags&PCI_BAR_FLAG_MEMORY)?vmm_identity_map(pci_bar.address,pci_bar.size):pci_bar.address);
+		virtio_device->common_field=((pci_bar.flags&PCI_BAR_FLAG_MEMORY)?vmm_identity_map(pci_bar.address,pci_bar.size):pci_bar.address);
 	}
 	else{
 		virtio_device->is_legacy=0;
-		virtio_write(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
 	}
+	virtio_write(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
 	handle_finish_setup(&(virtio_device->handle));
 }
 

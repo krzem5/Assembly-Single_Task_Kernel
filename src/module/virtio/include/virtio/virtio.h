@@ -29,16 +29,11 @@ typedef struct _VIRTIO_DEVICE{
 	u16 index;
 	_Bool is_legacy;
 	spinlock_t lock;
-	union{
-		struct{
-			virtio_field_t common_field;
-			virtio_field_t notify_field;
-			virtio_field_t isr_field;
-			virtio_field_t device_field;
-			u32 notify_off_multiplier;
-		};
-		virtio_field_t legacy_io;
-	};
+	virtio_field_t common_field;
+	virtio_field_t notify_field;
+	virtio_field_t isr_field;
+	virtio_field_t device_field;
+	u32 notify_off_multiplier;
 } virtio_device_t;
 
 
