@@ -1,9 +1,11 @@
+#include <fuse/fuse.h>
 #include <kernel/module/module.h>
 #include <virtio/fs.h>
 
 
 
 static _Bool _init(module_t* module){
+	fuse_init();
 	virtio_fs_init();
 	return 1;
 }
