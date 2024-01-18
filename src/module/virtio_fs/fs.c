@@ -19,6 +19,15 @@
 
 
 
+typedef struct _FUSE_VFS_NODE{
+	vfs_node_t header;
+	u64 data_valid_end_time;
+	u64 size;
+	u64 fuse_node_id;
+} fuse_vfs_node_t;
+
+
+
 static omm_allocator_t* _virtio_fs_device_allocator=NULL;
 static omm_allocator_t* _fuse_vfs_node_allocator=NULL;
 static filesystem_descriptor_t* _virtio_filesystem_descriptor=NULL;
@@ -48,24 +57,41 @@ static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const stri
 	virtio_queue_wait(fs_device->loprioq);
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_getattr_in);
-	WARN("data_valid_end=%lu",clock_get_time()+((fuse_getattr_out->attr_valid<<32)|fuse_getattr_out->attr_valid_nsec));
-	WARN("size=%v",fuse_getattr_out->attr.size);
-	WARN("atime=%lu",(fuse_getattr_out->attr.atime<<32)|fuse_getattr_out->attr.atimensec);
-	WARN("mtime=%lu",(fuse_getattr_out->attr.mtime<<32)|fuse_getattr_out->attr.mtimensec);
-	WARN("ctime=%lu",(fuse_getattr_out->attr.ctime<<32)|fuse_getattr_out->attr.ctimensec);
-	WARN("mode=%x",fuse_getattr_out->attr.mode);
-	WARN("uid=%u",fuse_getattr_out->attr.uid);
-	WARN("gid=%u",fuse_getattr_out->attr.gid);
-	// panic("A");
+	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,name);
+	out->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
+	out->header.time_access=fuse_getattr_out->attr.atime*1000000000ull+fuse_getattr_out->attr.atimensec;
+	out->header.time_modify=fuse_getattr_out->attr.mtime*1000000000ull+fuse_getattr_out->attr.mtimensec;
+	out->header.time_change=fuse_getattr_out->attr.ctime*1000000000ull+fuse_getattr_out->attr.ctimensec;
+	out->header.time_birth=0;
+	out->header.gid=fuse_getattr_out->attr.gid;
+	out->header.uid=fuse_getattr_out->attr.uid;
+	out->data_valid_end_time=clock_get_time()+fuse_getattr_out->attr_valid*1000000000ull+fuse_getattr_out->attr_valid_nsec;
+	out->size=fuse_getattr_out->attr.size;
+	out->fuse_node_id=node_id;
+	switch (fuse_getattr_out->attr.mode&0170000){
+		case 0040000:
+			out->header.flags|=VFS_NODE_TYPE_DIRECTORY;
+			break;
+		default:
+		case 0100000:
+			out->header.flags|=VFS_NODE_TYPE_FILE;
+			break;
+		case 0120000:
+			out->header.flags|=VFS_NODE_TYPE_LINK;
+			break;
+	}
 	amm_dealloc(fuse_getattr_out);
-	vfs_node_t* out=vfs_node_create(fs,name);
-	return out;
+	return (vfs_node_t*)out;
 }
 
 
 
 static vfs_node_t* _fuse_create(void){
-	return omm_alloc(_fuse_vfs_node_allocator);
+	fuse_vfs_node_t* out=omm_alloc(_fuse_vfs_node_allocator);
+	out->data_valid_end_time=0;
+	out->size=0;
+	out->fuse_node_id=0;
+	return (vfs_node_t*)out;
 }
 
 
@@ -95,8 +121,10 @@ static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 
 
 static u64 _fuse_resize(vfs_node_t* node,s64 size,u32 flags){
-	// panic("_fuse_resize");
-	return 0;
+	if (!(flags&VFS_NODE_FLAG_RESIZE_RELATIVE)||size){
+		return -1;
+	}
+	return ((fuse_vfs_node_t*)node)->size;
 }
 
 
@@ -187,7 +215,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	fs->extra_data=fs_device;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	fs->root=_open_node(fs,FUSE_ROOT_ID,root_name);
-	fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY|(0777<<VFS_NODE_PERMISSION_SHIFT);
+	fs->root->flags|=VFS_NODE_FLAG_PERMANENT;
 	return 1;
 }
 
@@ -207,7 +235,7 @@ void virtio_fs_init(void){
 	LOG("Initializing VirtIO FS driver...");
 	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1,pmm_alloc_counter("omm_virtio_fs_device"));
 	spinlock_init(&(_virtio_fs_device_allocator->lock));
-	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(vfs_node_t),8,4,pmm_alloc_counter("omm_fuse_vfs_node"));
+	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(fuse_vfs_node_t),8,4,pmm_alloc_counter("omm_fuse_vfs_node"));
 	spinlock_init(&(_fuse_vfs_node_allocator->lock));
 	_virtio_filesystem_descriptor=fs_register_descriptor(&_fuse_filesystem_descriptor_config);
 	if (!virtio_register_device_driver(&_virtio_fs_device_driver)){

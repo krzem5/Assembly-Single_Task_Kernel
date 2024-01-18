@@ -44,7 +44,7 @@ int main(int argc,const char** argv){
 		sys_uid_get_name(stat.uid,uid_name_buffer,256);
 		char gid_name_buffer[256]="???";
 		sys_gid_get_name(stat.gid,gid_name_buffer,256);
-		sys_io_print("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v\x1b[0m (\x1b[1m%lu B\x1b[0m)\nUid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\x1b[0m\nGid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\nAccess: \x1b[1m%t\x1b[0m\nModify: \x1b[1m%t\x1b[0m\nChange: \x1b[1m%t\x1b[0m\nBirth: \x1b[1m%t\x1b[0m\n",
+		sys_io_print("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v\x1b[0m (\x1b[1m%lu B\x1b[0m)\nUid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\x1b[0m\nGid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\nAccess: \x1b[1m%t\x1b[0m\nModify: \x1b[1m%t\x1b[0m\nChange: \x1b[1m%t\x1b[0m\nBirth: \x1b[1m",
 			_stat_type_names[stat.type],
 			((stat.flags&SYS_FD_STAT_FLAG_VIRTUAL)?" virtual":""),
 			((stat.permissions&SYS_FD_PERMISSION_ROOT_READ)?'r':'-'),
@@ -64,9 +64,14 @@ int main(int argc,const char** argv){
 			stat.gid,
 			stat.time_access,
 			stat.time_modify,
-			stat.time_change,
-			stat.time_birth
+			stat.time_change
 		);
+		if (stat.time_birth){
+			sys_io_print("%t\x1b[0m\n",stat.time_birth);
+		}
+		else{
+			sys_io_print("?\x1b[0m\n");
+		}
 		sys_fd_close(fd);
 	}
 	return 0;

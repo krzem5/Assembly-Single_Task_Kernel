@@ -13,7 +13,7 @@ int main(int argc,const char** argv){
 			continue;
 		}
 		sys_io_print("%g: %s\n",data.uuid,data.type);
-		if (!sys_string_compare(data.type,"virtiofs")){
+		if (!sys_string_compare(data.type,"fuse")){
 			sys_fs_mount(fs,"/share");
 		}
 	}
