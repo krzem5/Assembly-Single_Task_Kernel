@@ -96,6 +96,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 static const virtio_device_driver_t _virtio_blk_device_driver={
 	"Block Device",
 	0x0002,
+	0,
 	(1<<VIRTIO_BLK_F_SIZE_MAX)|(1<<VIRTIO_BLK_F_SEG_MAX)|(1<<VIRTIO_BLK_F_BLK_SIZE)|(1ull<<VIRTIO_F_VERSION_1),
 	_virtio_driver_init
 };

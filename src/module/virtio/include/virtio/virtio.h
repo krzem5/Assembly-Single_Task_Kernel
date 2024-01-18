@@ -27,12 +27,18 @@ typedef struct _VIRTIO_DEVICE{
 	handle_t handle;
 	virtio_device_type_t type;
 	u16 index;
+	_Bool is_legacy;
 	spinlock_t lock;
-	virtio_field_t common_field;
-	virtio_field_t notify_field;
-	virtio_field_t isr_field;
-	virtio_field_t device_field;
-	u32 notify_off_multiplier;
+	union{
+		struct{
+			virtio_field_t common_field;
+			virtio_field_t notify_field;
+			virtio_field_t isr_field;
+			virtio_field_t device_field;
+			u32 notify_off_multiplier;
+		};
+		virtio_field_t legacy_io;
+	};
 } virtio_device_t;
 
 
@@ -54,6 +60,7 @@ typedef struct _VIRTIO_QUEUE{
 typedef struct _VIRTIO_DEVICE_DRIVER{
 	const char* name;
 	virtio_device_type_t type;
+	_Bool is_legacy;
 	u64 features;
 	_Bool (*init)(virtio_device_t*,u64);
 } virtio_device_driver_t;

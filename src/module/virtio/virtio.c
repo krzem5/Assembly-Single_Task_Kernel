@@ -68,17 +68,24 @@ static void _virtio_init_device(pci_device_t* device){
 		}
 		INFO("VirtIO PCI structure: type=%u, address=%p, length=%u",type,field,pci_device_read_data(device,offset+12));
 	}
-	if (found_structures!=(((1<<(VIRTIO_PCI_CAP_MAX-VIRTIO_PCI_CAP_MIN+1))-1)<<VIRTIO_PCI_CAP_MIN)){
-		ERROR("Legacy VirtIO device found; unimplemented");
-		omm_dealloc(_virtio_device_allocator,virtio_device);
-		return;
-	}
 	handle_new(virtio_device,_virtio_device_handle_type,&(virtio_device->handle));
 	virtio_device->type=device->device_id-(device->device_id>=0x1040?0x1040:0x1000);
 	virtio_device->index=_virtio_device_next_index;
 	_virtio_device_next_index++;
 	spinlock_init(&(virtio_device->lock));
-	virtio_write(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
+	if (found_structures!=(((1<<(VIRTIO_PCI_CAP_MAX-VIRTIO_PCI_CAP_MIN+1))-1)<<VIRTIO_PCI_CAP_MIN)){
+		virtio_device->is_legacy=1;
+		pci_bar_t pci_bar;
+		if (!pci_device_get_bar(device,0,&pci_bar)){
+			omm_dealloc(_virtio_device_allocator,virtio_device);
+			return;
+		}
+		virtio_device->legacy_io=((pci_bar.flags&PCI_BAR_FLAG_MEMORY)?vmm_identity_map(pci_bar.address,pci_bar.size):pci_bar.address);
+	}
+	else{
+		virtio_device->is_legacy=0;
+		virtio_write(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
+	}
 	handle_finish_setup(&(virtio_device->handle));
 }
 
@@ -100,7 +107,7 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 	spinlock_release_exclusive(&_virtio_device_driver_tree_lock);
 	HANDLE_FOREACH(_virtio_device_handle_type){
 		virtio_device_t* device=handle->object;
-		if (device->type!=driver->type){
+		if (device->type!=driver->type||device->is_legacy!=driver->is_legacy){
 			continue;
 		}
 		virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE);

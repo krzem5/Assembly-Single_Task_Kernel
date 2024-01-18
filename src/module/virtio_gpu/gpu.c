@@ -174,6 +174,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 static const virtio_device_driver_t _virtio_gpu_device_driver={
 	"GPU Device",
 	0x0010,
+	0,
 	(1<<VIRTIO_GPU_F_VIRGL)|(1<<VIRTIO_GPU_F_EDID),
 	_virtio_driver_init
 };
