@@ -13,7 +13,8 @@ import time
 
 
 BYPASS_KVM_LOCK=True
-NO_DISPLAY=False
+NO_DISPLAY=True
+NO_FILE_SERVER=False
 COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_NONE
 
 
@@ -699,8 +700,8 @@ if (rebuild_data_partition):
 	data_fs.close()
 #####################################################################################################################################
 if ("--run" in sys.argv):
-	if ("--start-file-server" in sys.argv):
-		subprocess.Popen(["/usr/libexec/virtiofsd","--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--announce-submounts","--inode-file-handles=mandatory"])
+	if (not NO_FILE_SERVER):
+		subprocess.Popen(["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}","--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--announce-submounts","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
@@ -769,7 +770,7 @@ if ("--run" in sys.argv):
 		# Graphics
 		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
 		# Shared folder
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=empty-tag"] if "--start-file-server" in sys.argv else []),
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),

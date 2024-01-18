@@ -77,6 +77,8 @@ static void _virtio_init_device(pci_device_t* device){
 		virtio_device->is_legacy=1;
 		pci_bar_t pci_bar;
 		if (!pci_device_get_bar(device,0,&pci_bar)){
+			handle_finish_setup(&(virtio_device->handle));
+			handle_destroy(&(virtio_device->handle));
 			omm_dealloc(_virtio_device_allocator,virtio_device);
 			return;
 		}

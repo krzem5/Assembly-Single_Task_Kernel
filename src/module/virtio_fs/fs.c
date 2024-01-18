@@ -38,27 +38,46 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	config.tag[35]=0;
 	INFO("Creating File System device...");
 	INFO("Filesystem name: %s",config.tag);
-	// panic("A");
-// 	virtio_fs_control_header_t* request=amm_alloc(sizeof(virtio_fs_control_header_t));
-// 	request->type=VIRTIO_GPU_CMD_GET_DISPLAY_INFO;
-// 	request->flags=VIRTIO_GPU_FLAG_FENCE;
-// 	request->fence_id=0;
-// 	virtio_fs_resp_display_info_t* response=amm_alloc(sizeof(virtio_fs_resp_display_info_t));
-// 	virtio_buffer_t buffers[2]={
-// 		{
-// 			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)request),
-// 			sizeof(virtio_fs_control_header_t)
-// 		},
-// 		{
-// 			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)response),
-// 			sizeof(virtio_fs_resp_display_info_t)
-// 		}
-// 	};
-// 	virtio_queue_transfer(fs_device->controlq,buffers,1,1);
-// 	virtio_queue_wait(fs_device->controlq);
-// 	virtio_queue_pop(fs_device->controlq,NULL);
-// 	amm_dealloc(request);
-// 	amm_dealloc(responce);
+	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+	fuse_init_in_t* fuse_init_in=amm_alloc(sizeof(fuse_init_in_t));
+	fuse_init_in->header.len=sizeof(fuse_init_in_t);
+	fuse_init_in->header.opcode=FUSE_INIT;
+	fuse_init_in->header.total_extlen=0;
+	fuse_init_in->major=FUSE_VERSION_MAJOR;
+	fuse_init_in->minor=FUSE_VERSION_MINOR;
+	fuse_init_in->max_readahead=0;
+	fuse_init_in->flags=0;
+	fuse_init_in->flags2=0;
+	fuse_init_out_t* fuse_init_out=amm_alloc(sizeof(fuse_init_out_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_init_in),
+			sizeof(fuse_init_in_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_init_out),
+			sizeof(fuse_init_out_t)
+		}
+	};
+	virtio_queue_transfer(hiprioq,buffers,1,1);
+	virtio_queue_wait(hiprioq);
+	virtio_queue_pop(hiprioq,NULL);
+	amm_dealloc(fuse_init_in);
+	if (fuse_init_out->header.len!=sizeof(fuse_init_out_t)){
+		WARN("Invalid FUSE initialization responce");
+		return 0;
+	}
+	WARN("major=%u",fuse_init_out->major);
+	WARN("minor=%u",fuse_init_out->minor);
+	WARN("max_readahead=%u",fuse_init_out->max_readahead);
+	WARN("flags=%u",fuse_init_out->flags);
+	WARN("max_background=%u",fuse_init_out->max_background);
+	WARN("congestion_threshold=%u",fuse_init_out->congestion_threshold);
+	WARN("max_write=%u",fuse_init_out->max_write);
+	WARN("time_gran=%u",fuse_init_out->time_gran);
+	WARN("max_pages=%u",fuse_init_out->max_pages);
+	amm_dealloc(fuse_init_out);
+	// panic("AAA");
 	return 1;
 }
 
@@ -67,7 +86,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 static const virtio_device_driver_t _virtio_fs_device_driver={
 	"File System Device",
 	0x001a,
-	1,
+	0,
 	0,
 	_virtio_driver_init
 };
