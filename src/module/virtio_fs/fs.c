@@ -158,6 +158,18 @@ static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
 
 
 
+filesystem_t* fuse_create_filesystem(virtio_fs_device_t* fs_device){
+	filesystem_t* out=fs_create(_virtio_filesystem_descriptor);
+	out->functions=&_fuse_functions;
+	out->extra_data=fs_device;
+	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
+	out->root=_open_node(out,FUSE_ROOT_ID,root_name);
+	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
+	return out;
+}
+
+
+
 static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	virtio_fs_config_t config;
 	for (u32 i=0;i<sizeof(config.raw_data)/sizeof(u32);i++){
@@ -210,12 +222,7 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 		return 0;
 	}
 	amm_dealloc(fuse_init_out);
-	filesystem_t* fs=fs_create(_virtio_filesystem_descriptor);
-	fs->functions=&_fuse_functions;
-	fs->extra_data=fs_device;
-	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	fs->root=_open_node(fs,FUSE_ROOT_ID,root_name);
-	fs->root->flags|=VFS_NODE_FLAG_PERMANENT;
+	fuse_create_filesystem(fs_device);
 	return 1;
 }
 
