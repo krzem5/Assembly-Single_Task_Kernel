@@ -1,8 +1,6 @@
 #ifndef _VIRTIO_FS_H_
 #define _VIRTIO_FS_H_ 1
-#include <kernel/resource/resource.h>
 #include <kernel/types.h>
-#include <virtio/fs_registers.h>
 #include <virtio/virtio.h>
 
 
