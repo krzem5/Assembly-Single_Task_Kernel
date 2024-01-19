@@ -718,6 +718,7 @@ if ("--run" in sys.argv):
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:virtio*,trace:virtio_gpu*",
+		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","int,cpu_reset",
@@ -737,7 +738,7 @@ if ("--run" in sys.argv):
 		"-device","nvme,serial=00112233,drive=ssd",
 		# USB
 		"-device","nec-usb-xhci,id=xhci",
-		"-device","usb-storage,bus=xhci.0,drive=bootusb",
+		"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
 		# Network
 		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
 		"-device","e1000,netdev=network", ### 'Real' network card

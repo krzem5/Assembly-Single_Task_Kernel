@@ -74,7 +74,7 @@ typedef u64 fuse_file_handle_t;
 
 
 
-typedef struct KERNEL_PACKED _FUSE_IN_HEADER{
+typedef struct _FUSE_IN_HEADER{
 	u32 len;
 	u32 opcode;
 	u64 unique;
@@ -88,7 +88,7 @@ typedef struct KERNEL_PACKED _FUSE_IN_HEADER{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_OUT_HEADER{
+typedef struct _FUSE_OUT_HEADER{
 	u32 len;
 	s32 error;
 	u64 unique;
@@ -96,7 +96,7 @@ typedef struct KERNEL_PACKED _FUSE_OUT_HEADER{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_INIT_IN{
+typedef struct _FUSE_INIT_IN{
 	fuse_in_header_t header;
 	u32 major;
 	u32 minor;
@@ -108,7 +108,7 @@ typedef struct KERNEL_PACKED _FUSE_INIT_IN{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_INIT_OUT{
+typedef struct _FUSE_INIT_OUT{
 	fuse_out_header_t header;
 	u32 major;
 	u32 minor;
@@ -126,7 +126,7 @@ typedef struct KERNEL_PACKED _FUSE_INIT_OUT{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_GETATTR_IN{
+typedef struct _FUSE_GETATTR_IN{
 	fuse_in_header_t header;
 	u32 getattr_flags;
 	u32 dummy;
@@ -135,12 +135,12 @@ typedef struct KERNEL_PACKED _FUSE_GETATTR_IN{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_GETATTR_OUT{
+typedef struct _FUSE_GETATTR_OUT{
 	fuse_out_header_t header;
 	u64 attr_valid;
 	u32 attr_valid_nsec;
 	u32 dummy;
-	struct KERNEL_PACKED{
+	struct{
 		u64 ino;
 		u64 size;
 		u64 blocks;
@@ -162,7 +162,7 @@ typedef struct KERNEL_PACKED _FUSE_GETATTR_OUT{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_OPEN_IN{
+typedef struct _FUSE_OPEN_IN{
 	fuse_in_header_t header;
 	u32 flags;
 	u32 open_flags;
@@ -170,7 +170,7 @@ typedef struct KERNEL_PACKED _FUSE_OPEN_IN{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_OPEN_OUT{
+typedef struct _FUSE_OPEN_OUT{
 	fuse_out_header_t header;
 	fuse_file_handle_t fh;
 	u32 open_flags;
@@ -179,7 +179,7 @@ typedef struct KERNEL_PACKED _FUSE_OPEN_OUT{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_READ_IN{
+typedef struct _FUSE_READ_IN{
 	fuse_in_header_t header;
 	fuse_file_handle_t fh;
 	u64 offset;
@@ -192,14 +192,14 @@ typedef struct KERNEL_PACKED _FUSE_READ_IN{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_READ_OUT{
+typedef struct _FUSE_READ_OUT{
 	fuse_out_header_t header;
 	u8 data[];
 } fuse_read_out_t;
 
 
 
-typedef struct KERNEL_PACKED _FUSE_DIRENT{
+typedef struct _FUSE_DIRENT{
 	u64 ino;
 	u64 off;
 	u32 namelen;
@@ -209,7 +209,7 @@ typedef struct KERNEL_PACKED _FUSE_DIRENT{
 
 
 
-typedef struct KERNEL_PACKED _FUSE_LOOKUP_OUT{
+typedef struct _FUSE_LOOKUP_OUT{
 	fuse_out_header_t header;
 	u64 nodeid;
 	u64 generation;
@@ -217,7 +217,7 @@ typedef struct KERNEL_PACKED _FUSE_LOOKUP_OUT{
 	u64 attr_valid;
 	u32 entry_valid_nsec;
 	u32 attr_valid_nsec;
-	struct KERNEL_PACKED{
+	struct{
 		u64 ino;
 		u64 size;
 		u64 blocks;

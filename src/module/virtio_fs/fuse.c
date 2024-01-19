@@ -88,7 +88,6 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 		amm_dealloc(fuse_lookup_out);
 		return NULL;
 	}
-	WARN("%s -> %u",name->data,fuse_lookup_out->nodeid);
 	// reuse fuse_lookup_out->attr
 	// cache name based on fuse_lookup_out->entry_valid
 	vfs_node_t* out=_open_node(node->fs,fuse_lookup_out->nodeid,name);
@@ -97,22 +96,26 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 }
 
 
-
 static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
 	fuse_read_out_t* buffer=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
+_retry_read:
 	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,buffer,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
-	WARN("%p: %d %u -> %s",pointer,buffer->header.error,buffer->header.len,buffer->data+sizeof(fuse_dirent_t));
 	if (buffer->header.error){
 		amm_dealloc(buffer);
 		return 0;
 	}
+	fuse_dirent_t* dirent=(fuse_dirent_t*)(buffer->data);
+	pointer=(dirent->namelen?dirent->off:0);
 	if (buffer->header.len){
-		fuse_dirent_t* dirent=(fuse_dirent_t*)(buffer->data);
+		if (dirent->namelen==1&&dirent->name[0]=='.'){
+			goto _retry_read;
+		}
+		if (dirent->namelen==2&&dirent->name[0]=='.'&&dirent->name[1]=='.'){
+			goto _retry_read;
+		}
 		*out=smm_alloc(dirent->name,dirent->namelen);
 	}
-	ERROR("%p -> %p",pointer,(buffer->header.len?pointer+buffer->header.len:0));
-	pointer=(buffer->header.len?pointer+buffer->header.len:0);
 	amm_dealloc(buffer);
 	return pointer;
 }

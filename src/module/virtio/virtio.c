@@ -294,12 +294,13 @@ KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 
 
 KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
-	queue->last_used_index++;
 	u16 i=queue->last_used_index%queue->size;
+	queue->last_used_index++;
 	if (length){
 		*length=(queue->used->ring+i)->length;
 	}
 	u32 out=(queue->used->ring+i)->index;
+	(void)((queue->used->ring+i)->length);
 	virtio_read(queue->device->isr_field,1);
 	return out;
 }
