@@ -21,6 +21,7 @@ typedef struct _FUSE_VFS_NODE{
 	fuse_node_id_t node_id;
 	fuse_file_handle_t file_handle;
 	u64 data_valid_end_time;
+	u64 name_valid_end_time;
 	u64 size;
 } fuse_vfs_node_t;
 
@@ -31,35 +32,75 @@ static filesystem_descriptor_t* _fuse_filesystem_descriptor=NULL;
 
 
 
-static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
-	virtio_fs_device_t* fs_device=fs->extra_data;
-	u64 file_handle=virtio_fs_fuse_open(fs_device,node_id);
-	fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fs_device,node_id,file_handle);
-	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,name);
-	out->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
-	out->header.time_access=fuse_getattr_out->attr.atime*1000000000ull+fuse_getattr_out->attr.atimensec;
-	out->header.time_modify=fuse_getattr_out->attr.mtime*1000000000ull+fuse_getattr_out->attr.mtimensec;
-	out->header.time_change=fuse_getattr_out->attr.ctime*1000000000ull+fuse_getattr_out->attr.ctimensec;
-	out->header.time_birth=0;
-	out->header.gid=fuse_getattr_out->attr.gid;
-	out->header.uid=fuse_getattr_out->attr.uid;
-	out->node_id=node_id;
-	out->file_handle=file_handle;
-	out->data_valid_end_time=clock_get_time()+fuse_getattr_out->attr_valid*1000000000ull+fuse_getattr_out->attr_valid_nsec;
-	out->size=fuse_getattr_out->attr.size;
+static void _update_attr(fuse_vfs_node_t* fuse_node){
+	fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fuse_node->header.fs->extra_data,fuse_node->node_id,fuse_node->file_handle);
+	fuse_node->header.flags&=~(VFS_NODE_TYPE_MASK|VFS_NODE_PERMISSION_MASK);
+	fuse_node->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
+	fuse_node->header.time_access=fuse_getattr_out->attr.atime*1000000000ull+fuse_getattr_out->attr.atimensec;
+	fuse_node->header.time_modify=fuse_getattr_out->attr.mtime*1000000000ull+fuse_getattr_out->attr.mtimensec;
+	fuse_node->header.time_change=fuse_getattr_out->attr.ctime*1000000000ull+fuse_getattr_out->attr.ctimensec;
+	fuse_node->header.time_birth=0;
+	fuse_node->header.gid=fuse_getattr_out->attr.gid;
+	fuse_node->header.uid=fuse_getattr_out->attr.uid;
+	fuse_node->data_valid_end_time=clock_get_time()+fuse_getattr_out->attr_valid*1000000000ull+fuse_getattr_out->attr_valid_nsec;
+	fuse_node->size=fuse_getattr_out->attr.size;
 	switch (fuse_getattr_out->attr.mode&0170000){
 		case 0040000:
-			out->header.flags|=VFS_NODE_TYPE_DIRECTORY;
+			fuse_node->header.flags|=VFS_NODE_TYPE_DIRECTORY;
 			break;
 		default:
 		case 0100000:
-			out->header.flags|=VFS_NODE_TYPE_FILE;
+			fuse_node->header.flags|=VFS_NODE_TYPE_FILE;
 			break;
 		case 0120000:
-			out->header.flags|=VFS_NODE_TYPE_LINK;
+			fuse_node->header.flags|=VFS_NODE_TYPE_LINK;
 			break;
 	}
 	amm_dealloc(fuse_getattr_out);
+}
+
+
+
+static void _check_for_updates(fuse_vfs_node_t* fuse_node){
+	if (clock_get_time()>=fuse_node->data_valid_end_time){
+		fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fuse_node->header.fs->extra_data,fuse_node->node_id,fuse_node->file_handle);
+		fuse_node->header.flags&=~(VFS_NODE_TYPE_MASK|VFS_NODE_PERMISSION_MASK);
+		fuse_node->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
+		fuse_node->header.time_access=fuse_getattr_out->attr.atime*1000000000ull+fuse_getattr_out->attr.atimensec;
+		fuse_node->header.time_modify=fuse_getattr_out->attr.mtime*1000000000ull+fuse_getattr_out->attr.mtimensec;
+		fuse_node->header.time_change=fuse_getattr_out->attr.ctime*1000000000ull+fuse_getattr_out->attr.ctimensec;
+		fuse_node->header.time_birth=0;
+		fuse_node->header.gid=fuse_getattr_out->attr.gid;
+		fuse_node->header.uid=fuse_getattr_out->attr.uid;
+		fuse_node->data_valid_end_time=clock_get_time()+fuse_getattr_out->attr_valid*1000000000ull+fuse_getattr_out->attr_valid_nsec;
+		fuse_node->size=fuse_getattr_out->attr.size;
+		switch (fuse_getattr_out->attr.mode&0170000){
+			case 0040000:
+				fuse_node->header.flags|=VFS_NODE_TYPE_DIRECTORY;
+				break;
+			default:
+			case 0100000:
+				fuse_node->header.flags|=VFS_NODE_TYPE_FILE;
+				break;
+			case 0120000:
+				fuse_node->header.flags|=VFS_NODE_TYPE_LINK;
+				break;
+		}
+		amm_dealloc(fuse_getattr_out);
+	}
+	if (clock_get_time()>=fuse_node->name_valid_end_time){
+		// WARN("Invalidate node name");
+	}
+}
+
+
+
+static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
+	virtio_fs_device_t* fs_device=fs->extra_data;
+	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,name);
+	out->node_id=node_id;
+	out->file_handle=virtio_fs_fuse_open(fs_device,node_id);
+	_update_attr(out);
 	return (vfs_node_t*)out;
 }
 
@@ -67,9 +108,11 @@ static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const stri
 
 static vfs_node_t* _fuse_create(void){
 	fuse_vfs_node_t* out=omm_alloc(_fuse_vfs_node_allocator);
-	out->data_valid_end_time=0;
-	out->size=0;
+	out->node_id=0;
 	out->file_handle=0;
+	out->data_valid_end_time=0;
+	out->name_valid_end_time=0;
+	out->size=0;
 	return (vfs_node_t*)out;
 }
 
@@ -83,12 +126,15 @@ static void _fuse_delete(vfs_node_t* node){
 
 static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
+	if (!fuse_node->node_id){
+		return NULL;
+	}
+	_check_for_updates(fuse_node);
 	fuse_lookup_out_t* fuse_lookup_out=virtio_fs_fuse_lookup(node->fs->extra_data,fuse_node->node_id,name->data,name->length+1);
 	if (fuse_lookup_out->header.error){
 		amm_dealloc(fuse_lookup_out);
 		return NULL;
 	}
-	// reuse fuse_lookup_out->attr
 	// cache name based on fuse_lookup_out->entry_valid
 	vfs_node_t* out=_open_node(node->fs,fuse_lookup_out->nodeid,name);
 	amm_dealloc(fuse_lookup_out);
@@ -96,34 +142,58 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 }
 
 
+
 static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
-	fuse_read_out_t* buffer=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
-_retry_read:
-	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,buffer,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
-	if (buffer->header.error){
-		amm_dealloc(buffer);
+	if (!fuse_node->node_id){
 		return 0;
 	}
-	fuse_dirent_t* dirent=(fuse_dirent_t*)(buffer->data);
+	_check_for_updates(fuse_node);
+	fuse_read_out_t* fuse_read_out=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
+_retry_read:
+	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,fuse_read_out,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
+	if (fuse_read_out->header.error){
+		amm_dealloc(fuse_read_out);
+		return 0;
+	}
+	fuse_dirent_t* dirent=(fuse_dirent_t*)(fuse_read_out->data);
 	pointer=(dirent->namelen?dirent->off:0);
-	if (buffer->header.len){
-		if (dirent->namelen==1&&dirent->name[0]=='.'){
-			goto _retry_read;
-		}
-		if (dirent->namelen==2&&dirent->name[0]=='.'&&dirent->name[1]=='.'){
+	if (fuse_read_out->header.len){
+		if ((dirent->namelen==1&&dirent->name[0]=='.')||(dirent->namelen==2&&dirent->name[0]=='.'&&dirent->name[1]=='.')){
 			goto _retry_read;
 		}
 		*out=smm_alloc(dirent->name,dirent->namelen);
 	}
-	amm_dealloc(buffer);
+	amm_dealloc(fuse_read_out);
 	return pointer;
 }
 
 
 
 static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
-	panic("_fuse_read");
+	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
+	if (!fuse_node->node_id){
+		return 0;
+	}
+	_check_for_updates(fuse_node);
+	if (offset>=fuse_node->size){
+		return 0;
+	}
+	if (size+offset>fuse_node->size){
+		size=fuse_node->size-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	fuse_read_out_t* fuse_read_out=amm_alloc(sizeof(fuse_read_out_t)+size);
+	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,offset,fuse_read_out,sizeof(fuse_read_out_t)+size,0);
+	fuse_read_out->header.len-=sizeof(fuse_read_out_t);
+	if (fuse_read_out->header.len<size){
+		size=fuse_read_out->header.len;
+	}
+	memcpy(buffer,fuse_read_out->data,size);
+	amm_dealloc(fuse_read_out);
+	return size;
 }
 
 
