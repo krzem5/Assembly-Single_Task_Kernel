@@ -104,13 +104,14 @@ void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 
 
 
-fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
+fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle){
 	fuse_getattr_in_t* fuse_getattr_in=amm_alloc(sizeof(fuse_getattr_in_t));
 	fuse_getattr_in->header.len=sizeof(fuse_getattr_in_t);
 	fuse_getattr_in->header.opcode=FUSE_OPCODE_GETATTR;
 	fuse_getattr_in->header.nodeid=fuse_node_id;
 	fuse_getattr_in->header.total_extlen=0;
-	fuse_getattr_in->getattr_flags=0;
+	fuse_getattr_in->getattr_flags=FUSE_GETATTR_FH;
+	fuse_getattr_in->fh=fuse_file_handle;
 	fuse_getattr_out_t* fuse_getattr_out=amm_alloc(sizeof(fuse_getattr_out_t));
 	virtio_buffer_t buffers[2]={
 		{
@@ -127,4 +128,63 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_getattr_in);
 	return fuse_getattr_out;
+}
+
+
+
+fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
+	fuse_open_in_t* fuse_open_in=amm_alloc(sizeof(fuse_open_in_t));
+	fuse_open_in->header.len=sizeof(fuse_open_in_t);
+	fuse_open_in->header.opcode=FUSE_OPCODE_OPEN;
+	fuse_open_in->header.nodeid=fuse_node_id;
+	fuse_open_in->header.total_extlen=0;
+	fuse_open_in->flags=0;
+	fuse_open_in->open_flags=FUSE_OPEN_KILL_SUIDGID;
+	fuse_open_out_t* fuse_open_out=amm_alloc(sizeof(fuse_open_out_t));
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_open_in),
+			sizeof(fuse_open_in_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_open_out),
+			sizeof(fuse_open_out_t)
+		}
+	};
+	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	virtio_queue_wait(fs_device->loprioq);
+	virtio_queue_pop(fs_device->loprioq,NULL);
+	amm_dealloc(fuse_open_in);
+	fuse_file_handle_t out=fuse_open_out->fh;
+	amm_dealloc(fuse_open_out);
+	return out;
+}
+
+
+
+void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,_Bool is_dir){
+	fuse_read_in_t* fuse_read_in=amm_alloc(sizeof(fuse_read_in_t));
+	fuse_read_in->header.len=sizeof(fuse_read_in_t);
+	fuse_read_in->header.opcode=(is_dir?FUSE_OPCODE_READDIR:FUSE_OPCODE_READ);
+	fuse_read_in->header.nodeid=fuse_node_id;
+	fuse_read_in->header.total_extlen=0;
+	fuse_read_in->fh=fuse_file_handle;
+	fuse_read_in->offset=offset;
+	fuse_read_in->size=buffer_size;
+	fuse_read_in->read_flags=0;
+	fuse_read_in->flags=0;
+	virtio_buffer_t buffers[2]={
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)fuse_read_in),
+			sizeof(fuse_read_in_t)
+		},
+		{
+			vmm_virtual_to_physical(&vmm_kernel_pagemap,(u64)buffer),
+			buffer_size
+		}
+	};
+	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	virtio_queue_wait(fs_device->loprioq);
+	virtio_queue_pop(fs_device->loprioq,NULL);
+	amm_dealloc(fuse_read_in);
 }

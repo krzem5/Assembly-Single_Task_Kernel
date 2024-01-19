@@ -18,9 +18,10 @@
 
 typedef struct _FUSE_VFS_NODE{
 	vfs_node_t header;
+	fuse_node_id_t node_id;
+	fuse_file_handle_t file_handle;
 	u64 data_valid_end_time;
 	u64 size;
-	u64 fuse_node_id;
 } fuse_vfs_node_t;
 
 
@@ -32,7 +33,8 @@ static filesystem_descriptor_t* _fuse_filesystem_descriptor=NULL;
 
 static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
 	virtio_fs_device_t* fs_device=fs->extra_data;
-	fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fs_device,node_id);
+	u64 file_handle=virtio_fs_fuse_open(fs_device,node_id);
+	fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fs_device,node_id,file_handle);
 	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,name);
 	out->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
 	out->header.time_access=fuse_getattr_out->attr.atime*1000000000ull+fuse_getattr_out->attr.atimensec;
@@ -41,9 +43,10 @@ static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const stri
 	out->header.time_birth=0;
 	out->header.gid=fuse_getattr_out->attr.gid;
 	out->header.uid=fuse_getattr_out->attr.uid;
+	out->node_id=node_id;
+	out->file_handle=file_handle;
 	out->data_valid_end_time=clock_get_time()+fuse_getattr_out->attr_valid*1000000000ull+fuse_getattr_out->attr_valid_nsec;
 	out->size=fuse_getattr_out->attr.size;
-	out->fuse_node_id=node_id;
 	switch (fuse_getattr_out->attr.mode&0170000){
 		case 0040000:
 			out->header.flags|=VFS_NODE_TYPE_DIRECTORY;
@@ -66,7 +69,7 @@ static vfs_node_t* _fuse_create(void){
 	fuse_vfs_node_t* out=omm_alloc(_fuse_vfs_node_allocator);
 	out->data_valid_end_time=0;
 	out->size=0;
-	out->fuse_node_id=0;
+	out->file_handle=0;
 	return (vfs_node_t*)out;
 }
 
@@ -85,7 +88,20 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 
 
 static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
-	panic("_fuse_iterate");
+	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
+	fuse_read_out_t* buffer=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
+	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,buffer,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
+	if (buffer->header.error){
+		amm_dealloc(buffer);
+		return 0;
+	}
+	if (buffer->header.len){
+		fuse_dirent_t* dirent=(fuse_dirent_t*)(buffer->data);
+		*out=smm_alloc(dirent->name,dirent->namelen);
+	}
+	pointer=(buffer->header.len?pointer+buffer->header.len:0);
+	amm_dealloc(buffer);
+	return pointer;
 }
 
 

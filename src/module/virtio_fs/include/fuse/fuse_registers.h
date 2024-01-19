@@ -60,11 +60,17 @@
 
 #define FUSE_ROOT_ID 1
 
+#define FUSE_GETATTR_FH 0x00000001
+
 #define FUSE_OPEN_KILL_SUIDGID	0x00000001
 
 
 
 typedef u64 fuse_node_id_t;
+
+
+
+typedef u64 fuse_file_handle_t;
 
 
 
@@ -157,6 +163,7 @@ typedef struct KERNEL_PACKED _FUSE_GETATTR_OUT{
 
 
 typedef struct KERNEL_PACKED _FUSE_OPEN_IN{
+	fuse_in_header_t header;
 	u32 flags;
 	u32 open_flags;
 } fuse_open_in_t;
@@ -164,10 +171,41 @@ typedef struct KERNEL_PACKED _FUSE_OPEN_IN{
 
 
 typedef struct KERNEL_PACKED _FUSE_OPEN_OUT{
-	u64 fh;
+	fuse_out_header_t header;
+	fuse_file_handle_t fh;
 	u32 open_flags;
 	u32 padding;
 } fuse_open_out_t;
+
+
+
+typedef struct KERNEL_PACKED _FUSE_READ_IN{
+	fuse_in_header_t header;
+	fuse_file_handle_t fh;
+	u64 offset;
+	u32 size;
+	u32 read_flags;
+	u64 lock_owner;
+	u32 flags;
+	u32 padding;
+} fuse_read_in_t;
+
+
+
+typedef struct KERNEL_PACKED _FUSE_READ_OUT{
+	fuse_out_header_t header;
+	u8 data[];
+} fuse_read_out_t;
+
+
+
+typedef struct KERNEL_PACKED _FUSE_DIRENT{
+	u64 ino;
+	u64 off;
+	u32 namelen;
+	u32 type;
+	char name[];
+} fuse_dirent_t;
 
 
 
