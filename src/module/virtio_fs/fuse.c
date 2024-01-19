@@ -82,7 +82,18 @@ static void _fuse_delete(vfs_node_t* node){
 
 
 static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
-	panic("_fuse_lookup");
+	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
+	fuse_lookup_out_t* fuse_lookup_out=virtio_fs_fuse_lookup(node->fs->extra_data,fuse_node->node_id,name->data,name->length+1);
+	if (fuse_lookup_out->header.error){
+		amm_dealloc(fuse_lookup_out);
+		return NULL;
+	}
+	WARN("%s -> %u",name->data,fuse_lookup_out->nodeid);
+	// reuse fuse_lookup_out->attr
+	// cache name based on fuse_lookup_out->entry_valid
+	vfs_node_t* out=_open_node(node->fs,fuse_lookup_out->nodeid,name);
+	amm_dealloc(fuse_lookup_out);
+	return out;
 }
 
 
@@ -91,6 +102,7 @@ static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
 	fuse_read_out_t* buffer=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
 	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,buffer,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
+	WARN("%p: %d %u -> %s",pointer,buffer->header.error,buffer->header.len,buffer->data+sizeof(fuse_dirent_t));
 	if (buffer->header.error){
 		amm_dealloc(buffer);
 		return 0;
@@ -99,6 +111,7 @@ static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 		fuse_dirent_t* dirent=(fuse_dirent_t*)(buffer->data);
 		*out=smm_alloc(dirent->name,dirent->namelen);
 	}
+	ERROR("%p -> %p",pointer,(buffer->header.len?pointer+buffer->header.len:0));
 	pointer=(buffer->header.len?pointer+buffer->header.len:0);
 	amm_dealloc(buffer);
 	return pointer;

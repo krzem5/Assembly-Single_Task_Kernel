@@ -34,4 +34,8 @@ void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_
 
 
 
+fuse_lookup_out_t* virtio_fs_fuse_lookup(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,const char* name,u32 name_length);
+
+
+
 #endif

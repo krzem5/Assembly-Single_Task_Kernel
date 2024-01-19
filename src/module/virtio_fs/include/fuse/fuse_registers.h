@@ -209,4 +209,34 @@ typedef struct KERNEL_PACKED _FUSE_DIRENT{
 
 
 
+typedef struct KERNEL_PACKED _FUSE_LOOKUP_OUT{
+	fuse_out_header_t header;
+	u64 nodeid;
+	u64 generation;
+	u64 entry_valid;
+	u64 attr_valid;
+	u32 entry_valid_nsec;
+	u32 attr_valid_nsec;
+	struct KERNEL_PACKED{
+		u64 ino;
+		u64 size;
+		u64 blocks;
+		u64 atime;
+		u64 mtime;
+		u64 ctime;
+		u32 atimensec;
+		u32 mtimensec;
+		u32 ctimensec;
+		u32 mode;
+		u32 nlink;
+		u32 uid;
+		u32 gid;
+		u32 rdev;
+		u32 blksize;
+		u32 flags;
+	} attr;
+} fuse_lookup_out_t;
+
+
+
 #endif
