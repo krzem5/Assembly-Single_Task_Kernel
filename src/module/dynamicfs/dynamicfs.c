@@ -96,7 +96,7 @@ KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_des
 	out->functions=&_dynamicfs_functions;
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);
 	out->root=vfs_node_create(out,name_string);
-	out->root->flags|=VFS_NODE_FLAG_VIRTUAL|VFS_NODE_TYPE_DIRECTORY|(0444<<VFS_NODE_PERMISSION_SHIFT);
+	out->root->flags|=VFS_NODE_FLAG_VIRTUAL|VFS_NODE_TYPE_DIRECTORY|(0555<<VFS_NODE_PERMISSION_SHIFT);
 	vfs_mount(out,path,0);
 	return out;
 }
@@ -106,7 +106,7 @@ KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_des
 KERNEL_PUBLIC vfs_node_t* dynamicfs_create_node(vfs_node_t* parent,const char* name,u32 type,string_t* data,dynamicfs_read_callback_t read_callback,void* read_callback_ctx){
 	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
 	dynamicfs_vfs_node_t* out=(dynamicfs_vfs_node_t*)vfs_node_create(parent->fs,name_string);
-	out->node.flags|=VFS_NODE_FLAG_VIRTUAL|type|(0444<<VFS_NODE_PERMISSION_SHIFT);
+	out->node.flags|=VFS_NODE_FLAG_VIRTUAL|type|((type==VFS_NODE_TYPE_DIRECTORY||type==VFS_NODE_TYPE_LINK?0555:0444)<<VFS_NODE_PERMISSION_SHIFT);
 	out->data=data;
 	out->read_callback=read_callback;
 	out->read_callback_ctx=read_callback_ctx;

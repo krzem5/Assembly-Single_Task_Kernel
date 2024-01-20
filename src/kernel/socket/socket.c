@@ -96,7 +96,7 @@ static vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type
 	if (!_socket_root){
 		SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
 		_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
-		_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
+		_socket_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0000<<VFS_NODE_PERMISSION_SHIFT);
 	}
 	SMM_TEMPORARY_STRING name=_get_unique_id();
 	vfs_node_t* out=vfs_node_create_virtual(_socket_root,&_socket_vfs_functions,name);

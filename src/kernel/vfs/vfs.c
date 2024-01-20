@@ -22,7 +22,7 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 	if (!(flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)){
 		return 1;
 	}
-	return !!(vfs_permissions_get(node,uid,gid)&VFS_PERMISSION_READ);
+	return !!(vfs_permissions_get(node,uid,gid)&VFS_PERMISSION_EXEC);
 }
 
 
@@ -100,9 +100,8 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 			continue;
 		}
 		if (i==2&&path[0]=='.'&&path[1]=='.'){
-			root=root->relatives.parent;
-			if (!root){
-				root=_vfs_root_node;
+			if (root!=_vfs_root_node&&root->relatives.parent){
+				root=root->relatives.parent;
 			}
 			path+=2;
 			continue;

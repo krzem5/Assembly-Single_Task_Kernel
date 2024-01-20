@@ -537,7 +537,7 @@ def format_partition(backend):
 	_init_bitmap(backend,first_bitmap_block*KFS2_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
 	if (_alloc_inode(backend,root_block)):
 		raise RuntimeError
-	_init_node_as_directory(backend,root_block,0,0o644).save()
+	_init_node_as_directory(backend,root_block,0,0o755).save()
 
 
 

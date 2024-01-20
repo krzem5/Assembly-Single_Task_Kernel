@@ -672,10 +672,10 @@ if (rebuild_data_partition):
 	_compress("build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 	kfs2.format_partition(data_fs)
-	kfs2.get_inode(data_fs,"/boot",0o400,True)
-	kfs2.get_inode(data_fs,"/boot/module",0o600,True)
-	kfs2.get_inode(data_fs,"/lib",0o644,True)
-	kfs2.get_inode(data_fs,"/bin",0o644,True)
+	kfs2.get_inode(data_fs,"/boot",0o500,True)
+	kfs2.get_inode(data_fs,"/boot/module",0o700,True)
+	kfs2.get_inode(data_fs,"/lib",0o755,True)
+	kfs2.get_inode(data_fs,"/bin",0o755,True)
 	with open("build/kernel.bin.compressed","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
@@ -691,7 +691,7 @@ if (rebuild_data_partition):
 				rf.seek(0)
 				wf.write(rf.read())
 				os.chmod(f"build/share/lib/{library}",0o775)
-	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o644)
+	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
 	for program in os.listdir("build/user"):
@@ -792,6 +792,8 @@ if ("--run" in sys.argv):
 	]+_kvm_flags())
 	if (os.path.exists("build/virtiofsd.sock")):
 		os.remove("build/virtiofsd.sock")
+	if (os.path.exists("build/virtiofsd.sock.pid")):
+		os.remove("build/virtiofsd.sock.pid")
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")

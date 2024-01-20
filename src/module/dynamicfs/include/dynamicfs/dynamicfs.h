@@ -12,7 +12,7 @@ typedef	u64 (*dynamicfs_read_callback_t)(void*,u64,void*,u64);
 
 
 static inline void dynamicfs_set_root_only(vfs_node_t* node){
-	node->flags=(node->flags&(~VFS_NODE_PERMISSION_MASK))|(0400<<VFS_NODE_PERMISSION_SHIFT);
+	node->flags=(node->flags&(~VFS_NODE_PERMISSION_MASK))|(((node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK?0500:0400)<<VFS_NODE_PERMISSION_SHIFT);
 }
 
 

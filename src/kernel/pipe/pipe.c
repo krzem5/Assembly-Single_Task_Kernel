@@ -167,7 +167,7 @@ KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 		if (!_pipe_root){
 			SMM_TEMPORARY_STRING dir_name=smm_alloc("pipes",0);
 			_pipe_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
-			_pipe_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0400<<VFS_NODE_PERMISSION_SHIFT);
+			_pipe_root->flags|=VFS_NODE_TYPE_DIRECTORY|(0000<<VFS_NODE_PERMISSION_SHIFT);
 		}
 		char buffer[64];
 		SMM_TEMPORARY_STRING file_name=smm_alloc(buffer,format_string(buffer,64,"%lu:%s",__atomic_fetch_add(&_pipe_next_id,1,__ATOMIC_SEQ_CST),(name?name->data:"")));
