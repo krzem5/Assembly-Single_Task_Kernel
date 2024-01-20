@@ -648,6 +648,21 @@ with open("src/user/dependencies.txt","r") as rf:
 		name,dependencies=line.split(":")
 		_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
 #####################################################################################################################################
+if ("--share" in sys.argv):
+	for library in os.listdir("build/lib"):
+		if (not library.endswith(".so")):
+			continue
+		with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
+			wf.write(rf.read())
+		os.chmod(f"build/share/lib/{library}",0o775)
+	if (os.path.islink("build/share/lib/ld.so")):
+		os.unlink("build/share/lib/ld.so")
+	os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
+	for program in os.listdir("build/user"):
+		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
+			wf.write(rf.read())
+		os.chmod(f"build/share/bin/{program}",0o775)
+	sys.exit(0)
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
 	rebuild_data_partition=True
@@ -685,24 +700,16 @@ if (rebuild_data_partition):
 		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	for library in os.listdir("build/lib"):
-		if (library.endswith(".so")):
-			with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
-				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
-				rf.seek(0)
-				wf.write(rf.read())
-				os.chmod(f"build/share/lib/{library}",0o775)
+		if (not library.endswith(".so")):
+			continue
+		with open(f"build/lib/{library}","rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
 	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
-	if (os.path.islink("build/share/lib/ld.so")):
-		os.unlink("build/share/lib/ld.so")
-	os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
 	for program in os.listdir("build/user"):
-		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
+		with open(f"build/user/{program}","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
-			rf.seek(0)
-			wf.write(rf.read())
-			os.chmod(f"build/share/bin/{program}",0o775)
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
 	for module in os.listdir("build/module"):
