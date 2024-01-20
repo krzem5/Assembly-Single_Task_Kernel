@@ -24,8 +24,9 @@ static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t
 	glsl_ast_node_t* out=glsl_ast_node_create(node_type);
 	out->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 	out->value_type->builtin_type=value_type;
-	out->binary[0]=left;
-	out->binary[1]=right;
+	out->args_inline[0]=left;
+	out->args_inline[1]=right;
+	out->arg_count=2;
 	return out;
 }
 
@@ -48,20 +49,6 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 			return 1;
 		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			return 0;
-		case GLSL_AST_NODE_TYPE_BIT_INVERSE:
-		case GLSL_AST_NODE_TYPE_NEGATE:
-		case GLSL_AST_NODE_TYPE_NOT:
-			return _mark_read_usage_recursive(node->unary,error);
-		case GLSL_AST_NODE_TYPE_CALL:
-		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
-			for (u32 i=0;i<node->arg_count;i++){
-				if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
-					return 0;
-				}
-			}
-			return 1;
-		case GLSL_AST_NODE_TYPE_COMMA:
-			return 0;
 		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			return _mark_read_usage_recursive(node->member_access.value,error);
 		case GLSL_AST_NODE_TYPE_VAR:
@@ -82,7 +69,12 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 		case GLSL_AST_NODE_TYPE_SWIZZLE:
 			return _mark_read_usage_recursive(node->swizzle.value,error);
 	}
-	return _mark_read_usage_recursive(node->binary[0],error)&&_mark_read_usage_recursive(node->binary[1],error);
+	for (u32 i=0;i<node->arg_count;i++){
+		if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
+			return 0;
+		}
+	}
+	return 1;
 }
 
 

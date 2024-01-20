@@ -134,11 +134,11 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 	sys_io_print("type: %s,\n",type_str);
 	_print_indentation(indentation+2);
 	sys_io_print("left: ");
-	_print_ast_node(node->binary[0],indentation+2);
+	_print_ast_node(glsl_ast_get_arg(node,0),indentation+2);
 	sys_io_print(",\n");
 	_print_indentation(indentation+2);
 	sys_io_print("right: ");
-	_print_ast_node(node->binary[1],indentation+2);
+	_print_ast_node(glsl_ast_get_arg(node,1),indentation+2);
 	sys_io_print("\n");
 	_print_indentation(indentation);
 	sys_io_print("}");
@@ -151,7 +151,7 @@ _unary_op:
 	sys_io_print("type: %s,\n",type_str);
 	_print_indentation(indentation+2);
 	sys_io_print("value: ");
-	_print_ast_node(node->binary[1],indentation+2);
+	_print_ast_node(glsl_ast_get_arg(node,0),indentation+2);
 	sys_io_print("\n");
 	_print_indentation(indentation);
 	sys_io_print("}");

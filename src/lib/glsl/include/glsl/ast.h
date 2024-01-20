@@ -157,8 +157,6 @@ typedef struct _GLSL_AST_NODE{
 			u32 var_vector_uint[4];
 			float var_matrix[16];
 		};
-		struct _GLSL_AST_NODE* unary;
-		struct _GLSL_AST_NODE* binary[2];
 		struct{
 			union{
 				struct _GLSL_AST_NODE* args_inline[GLSL_AST_NODE_INLINE_ARG_COUNT];

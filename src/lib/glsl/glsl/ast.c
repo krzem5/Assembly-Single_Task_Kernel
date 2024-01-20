@@ -297,16 +297,9 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 		case GLSL_AST_NODE_TYPE_SUBTRACT_ASSIGN:
 		case GLSL_AST_NODE_TYPE_XOR:
 		case GLSL_AST_NODE_TYPE_XOR_ASSIGN:
-			glsl_ast_node_delete(node->binary[0]);
-			glsl_ast_node_delete(node->binary[1]);
-			break;
-		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
-			break;
 		case GLSL_AST_NODE_TYPE_BIT_INVERSE:
 		case GLSL_AST_NODE_TYPE_NEGATE:
 		case GLSL_AST_NODE_TYPE_NOT:
-			glsl_ast_node_delete(node->unary);
-			break;
 		case GLSL_AST_NODE_TYPE_CALL:
 		case GLSL_AST_NODE_TYPE_COMMA:
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
@@ -317,6 +310,8 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 			if (node->arg_count>GLSL_AST_NODE_INLINE_ARG_COUNT){
 				sys_heap_dealloc(NULL,node->args);
 			}
+			break;
+		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			break;
 		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			glsl_ast_node_delete(node->member_access.value);
