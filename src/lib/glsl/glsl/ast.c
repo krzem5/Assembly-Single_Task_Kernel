@@ -308,12 +308,13 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 			glsl_ast_node_delete(node->unary);
 			break;
 		case GLSL_AST_NODE_TYPE_CALL:
-			break;
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
-			for (u32 i=0;i<node->constructor.arg_count;i++){
-				glsl_ast_node_delete(node->constructor.args[i]);
+			for (u32 i=0;i<node->arg_count;i++){
+				glsl_ast_node_delete(glsl_ast_get_arg(node,i));
 			}
-			sys_heap_dealloc(NULL,node->constructor.args);
+			if (node->arg_count>GLSL_AST_NODE_INLINE_ARG_COUNT){
+				sys_heap_dealloc(NULL,node->args);
+			}
 			break;
 		case GLSL_AST_NODE_TYPE_COMMA:
 			break;

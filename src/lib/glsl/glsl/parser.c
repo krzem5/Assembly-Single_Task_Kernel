@@ -90,10 +90,10 @@ _error:
 
 
 static glsl_error_t _check_constructor_type(glsl_ast_node_t* node){
-	if (!node->constructor.arg_count||node->value_type->type==GLSL_AST_TYPE_TYPE_FUNC){
+	if (!node->arg_count||node->value_type->type==GLSL_AST_TYPE_TYPE_FUNC){
 		return _glsl_error_create_parser_function_constructor();
 	}
-	if (node->constructor.arg_count==1&&glsl_ast_type_is_equal(node->value_type,node->constructor.args[0]->value_type)){
+	if (node->arg_count==1&&glsl_ast_type_is_equal(node->value_type,glsl_ast_get_arg(node,0)->value_type)){
 		return GLSL_NO_ERROR;
 	}
 	if (node->value_type->type==GLSL_AST_TYPE_TYPE_STRUCT){
@@ -103,14 +103,14 @@ static glsl_error_t _check_constructor_type(glsl_ast_node_t* node){
 		return _glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
 	}
 	u32 remaining_length=glsl_builtin_type_to_size(node->value_type->builtin_type);
-	for (u32 i=0;i<node->constructor.arg_count;i++){
+	for (u32 i=0;i<node->arg_count;i++){
 		if (!remaining_length){
 			return _glsl_error_create_parser_constructor_too_long();
 		}
-		if (node->constructor.args[i]->value_type->type!=GLSL_AST_TYPE_TYPE_BUILTIN){
+		if (glsl_ast_get_arg(node,i)->value_type->type!=GLSL_AST_TYPE_TYPE_BUILTIN){
 			return _glsl_error_create_parser_invalid_constructor(node);
 		}
-		u32 length=glsl_builtin_type_to_size(node->constructor.args[i]->value_type->builtin_type);
+		u32 length=glsl_builtin_type_to_size(glsl_ast_get_arg(node,i)->value_type->builtin_type);
 		remaining_length=(length>remaining_length?0:remaining_length-length);
 	}
 	return GLSL_NO_ERROR;
@@ -219,16 +219,19 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 			value_stack[value_stack_size]=node;
 			value_stack_size++;
 			node->value_type=constructor_type;
-			node->constructor.args=NULL;
-			node->constructor.arg_count=0;
+			node->arg_count=0;
 			do{
 				glsl_ast_node_t* arg=_parse_expression(parser,GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN,1,error);
 				if (!arg){
 					goto _cleanup;
 				}
-				node->constructor.arg_count++;
-				node->constructor.args=sys_heap_realloc(NULL,node->constructor.args,node->constructor.arg_count*sizeof(glsl_ast_node_t*));
-				node->constructor.args[node->constructor.arg_count-1]=arg;
+				node->arg_count++;
+				if (node->arg_count==GLSL_AST_NODE_INLINE_ARG_COUNT+1){
+					glsl_ast_node_t** args=sys_heap_alloc(NULL,node->arg_count*sizeof(glsl_ast_node_t*));
+					sys_memory_copy(node->args_inline,args,GLSL_AST_NODE_INLINE_ARG_COUNT*sizeof(glsl_ast_node_t*));
+					node->args=args;
+				}
+				(node->arg_count>GLSL_AST_NODE_INLINE_ARG_COUNT?node->args:node->args_inline)[node->arg_count-1]=arg;
 			} while (parser->tokens[parser->index-1].type!=GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN);
 			*error=_check_constructor_type(node);
 			if (*error!=GLSL_NO_ERROR){

@@ -53,10 +53,9 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 		case GLSL_AST_NODE_TYPE_NOT:
 			return _mark_read_usage_recursive(node->unary,error);
 		case GLSL_AST_NODE_TYPE_CALL:
-			return 0;
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
-			for (u32 i=0;i<node->constructor.arg_count;i++){
-				if (!_mark_read_usage_recursive(node->constructor.args[i],error)){
+			for (u32 i=0;i<node->arg_count;i++){
+				if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
 					return 0;
 				}
 			}

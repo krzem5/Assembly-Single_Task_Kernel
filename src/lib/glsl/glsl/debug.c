@@ -61,15 +61,15 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("type: %s,\n",type_str);
 			_print_indentation(indentation+2);
 			sys_io_print("args: [");
-			for (u32 i=0;i<node->constructor.arg_count;i++){
+			for (u32 i=0;i<node->arg_count;i++){
 				sys_io_print("\n");
 				_print_indentation(indentation+4);
-				_print_ast_node(node->constructor.args[i],indentation+4);
-				if (i<node->constructor.arg_count-1){
+				_print_ast_node(glsl_ast_get_arg(node,i),indentation+4);
+				if (i<node->arg_count-1){
 					sys_io_print(",");
 				}
 			}
-			if (node->constructor.arg_count){
+			if (node->arg_count){
 				sys_io_print("\n");
 				_print_indentation(indentation+2);
 			}

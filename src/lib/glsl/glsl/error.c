@@ -169,13 +169,13 @@ glsl_error_t _glsl_error_create_parser_constructor_too_long(void){
 glsl_error_t _glsl_error_create_parser_invalid_constructor(const glsl_ast_node_t* node){
 	char buffer[ERROR_BUFFER_SIZE];
 	char* type_str=glsl_ast_type_to_string(node->value_type);
-	u32 length=sys_format_string(buffer,ERROR_BUFFER_SIZE,"Type '%s' cannot be constructed from type%s: ",type_str,(node->constructor.arg_count==1?"":"s"));
+	u32 length=sys_format_string(buffer,ERROR_BUFFER_SIZE,"Type '%s' cannot be constructed from type%s: ",type_str,(node->arg_count==1?"":"s"));
 	sys_heap_dealloc(NULL,type_str);
-	for (u32 i=0;i<node->constructor.arg_count;i++){
-		type_str=glsl_ast_type_to_string(node->constructor.args[i]->value_type);
+	for (u32 i=0;i<node->arg_count;i++){
+		type_str=glsl_ast_type_to_string(glsl_ast_get_arg(node,i)->value_type);
 		length+=sys_format_string(buffer,ERROR_BUFFER_SIZE-length,"%s",type_str);
 		sys_heap_dealloc(NULL,type_str);
-		if (i<node->constructor.arg_count-1){
+		if (i<node->arg_count-1){
 			length+=sys_format_string(buffer,ERROR_BUFFER_SIZE-length,", ");
 		}
 	}

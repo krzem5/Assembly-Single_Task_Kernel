@@ -5,6 +5,8 @@
 
 
 
+#define GLSL_AST_NODE_INLINE_ARG_COUNT 7
+
 #define GLSL_AST_NODE_TYPE_NONE 0
 #define GLSL_AST_NODE_TYPE_ADD 1
 #define GLSL_AST_NODE_TYPE_ADD_ASSIGN 2
@@ -101,7 +103,11 @@ typedef u32 glsl_ast_node_type_t;
 
 
 
-typedef u32 glsl_ast_operator_t;
+typedef u32 glsl_ast_node_var_type_t;
+
+
+
+typedef u32 glsl_ast_node_operator_type_t;
 
 
 
@@ -133,28 +139,38 @@ typedef struct _GLSL_AST_TYPE_FIELD{
 
 typedef struct _GLSL_AST_NODE{
 	glsl_ast_node_type_t type;
-	glsl_ast_operator_t operator;
+	union{
+		glsl_ast_scope_t block_scope;
+		glsl_ast_node_var_type_t var_type;
+		glsl_ast_node_operator_type_t operator_type;
+	};
 	glsl_ast_type_t* value_type;
 	union{
-		struct _GLSL_AST_VAR* var;
-		_Bool var_bool;
-		double var_float;
-		s64 var_int;
+		union{
+			struct _GLSL_AST_VAR* var;
+			_Bool var_bool;
+			float var_float;
+			s32 var_int;
+			float var_vector[4];
+			_Bool var_vector_bool[4];
+			s32 var_vector_int[4];
+			u32 var_vector_uint[4];
+			float var_matrix[16];
+		};
 		struct _GLSL_AST_NODE* unary;
 		struct _GLSL_AST_NODE* binary[2];
+		struct{
+			union{
+				struct _GLSL_AST_NODE* args_inline[GLSL_AST_NODE_INLINE_ARG_COUNT];
+				struct _GLSL_AST_NODE** args;
+			};
+			u32 arg_count;
+		};
 		struct{
 			glsl_ast_scope_t scope;
 			struct _GLSL_AST_NODE** data;
 			u32 length;
 		} block;
-		struct{
-			struct _GLSL_AST_NODE** args;
-			u32 arg_count;
-		} call;
-		struct{
-			struct _GLSL_AST_NODE** args;
-			u32 arg_count;
-		} constructor;
 		struct{
 			struct _GLSL_AST_NODE* value;
 			char* member;
@@ -173,6 +189,7 @@ typedef struct _GLSL_AST_NAMED_TYPE{
 	char* name;
 	glsl_ast_type_t* type;
 } glsl_ast_named_type_t;
+
 
 
 typedef struct _GLSL_AST_VAR_STORAGE{
@@ -213,6 +230,12 @@ typedef struct _GLSL_AST{
 	glsl_ast_named_type_t** named_types;
 	glsl_ast_var_t** vars;
 } glsl_ast_t;
+
+
+
+static inline glsl_ast_node_t* glsl_ast_get_arg(const glsl_ast_node_t* node,u32 idx){
+	return (node->arg_count>=GLSL_AST_NODE_INLINE_ARG_COUNT?node->args:node->args_inline)[idx];
+}
 
 
 
