@@ -1,3 +1,4 @@
+#include <linker/alloc.h>
 #include <linker/search_path.h>
 #include <linker/shared_object.h>
 #include <linker/symbol.h>
@@ -15,31 +16,22 @@ shared_object_t* shared_object_root=NULL;
 
 
 
-static shared_object_t* _alloc_shared_object(u64 image_base){
-	static shared_object_t buffer[16];
-	static u8 index=0;
-	shared_object_t* out=buffer+(index++);
-	out->next=NULL;
-	out->image_base=image_base;
-	if (_shared_object_tail){
-		_shared_object_tail->next=out;
-	}
-	else{
-		shared_object_root=out;
-	}
-	_shared_object_tail=out;
-	return out;
-}
-
-
-
 shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags){
 	u16 path_length=sys_string_length(path);
 	if (path_length>=sizeof(((shared_object_t*)NULL)->path)){
 		sys_io_print("Shared object path too long\n");
 		return NULL;
 	}
-	shared_object_t* so=_alloc_shared_object(image_base);
+	shared_object_t* so=alloc(sizeof(shared_object_t));
+	so->next=NULL;
+	if (_shared_object_tail){
+		_shared_object_tail->next=so;
+	}
+	else{
+		shared_object_root=so;
+	}
+	_shared_object_tail=so;
+	so->image_base=image_base;
 	sys_memory_copy(path,so->path,path_length);
 	so->path[path_length]=0;
 	if (!dynamic_section){

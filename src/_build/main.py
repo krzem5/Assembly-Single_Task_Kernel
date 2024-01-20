@@ -60,6 +60,8 @@ BUILD_DIRECTORIES=[
 	"build/objects/user_debug",
 	"build/partitions",
 	"build/share",
+	"build/share/bin",
+	"build/share/lib",
 	"build/uefi",
 	"build/user",
 	"build/vm",
@@ -684,14 +686,20 @@ if (rebuild_data_partition):
 		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
 	for library in os.listdir("build/lib"):
 		if (library.endswith(".so")):
-			with open(f"build/lib/{library}","rb") as rf:
+			with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
 				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
+				rf.seek(0)
+				wf.write(rf.read())
+				os.chmod(f"build/share/lib/{library}",0o775)
 	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o644)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
 	for program in os.listdir("build/user"):
-		with open(f"build/user/{program}","rb") as rf:
+		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
+			rf.seek(0)
+			wf.write(rf.read())
+			os.chmod(f"build/share/bin/{program}",0o775)
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
 	for module in os.listdir("build/module"):
