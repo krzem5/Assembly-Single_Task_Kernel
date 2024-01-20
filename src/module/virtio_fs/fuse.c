@@ -136,7 +136,6 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 		amm_dealloc(fuse_lookup_out);
 		return NULL;
 	}
-	// cache name based on fuse_lookup_out->entry_valid
 	vfs_node_t* out=_open_node(node->fs,fuse_lookup_out->nodeid,name);
 	amm_dealloc(fuse_lookup_out);
 	return out;
