@@ -103,10 +103,6 @@ typedef u32 glsl_ast_node_type_t;
 
 
 
-typedef u32 glsl_ast_node_var_type_t;
-
-
-
 typedef u32 glsl_ast_node_operator_type_t;
 
 
@@ -141,7 +137,6 @@ typedef struct _GLSL_AST_NODE{
 	glsl_ast_node_type_t type;
 	union{
 		glsl_ast_scope_t block_scope;
-		glsl_ast_node_var_type_t var_type;
 		glsl_ast_node_operator_type_t operator_type;
 	};
 	glsl_ast_type_t* value_type;
