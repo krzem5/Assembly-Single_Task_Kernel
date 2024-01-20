@@ -175,9 +175,6 @@ static void _print_ast_storage(const glsl_ast_var_storage_t* storage){
 		case GLSL_AST_VAR_STORAGE_TYPE_IN:
 			sys_io_print("in");
 			break;
-		case GLSL_AST_VAR_STORAGE_TYPE_INOUT:
-			sys_io_print("inout");
-			break;
 		case GLSL_AST_VAR_STORAGE_TYPE_OUT:
 			sys_io_print("out");
 			break;

@@ -533,9 +533,6 @@ _parse_next_layout_qualifier:
 			case GLSL_LEXER_TOKEN_TYPE_IN:
 				out->type=GLSL_AST_VAR_STORAGE_TYPE_IN;
 				break;
-			case GLSL_LEXER_TOKEN_TYPE_INOUT:
-				out->type=GLSL_AST_VAR_STORAGE_TYPE_INOUT;
-				break;
 			case GLSL_LEXER_TOKEN_TYPE_OUT:
 				out->type=GLSL_AST_VAR_STORAGE_TYPE_OUT;
 				break;

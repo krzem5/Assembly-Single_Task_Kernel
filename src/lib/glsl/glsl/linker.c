@@ -21,7 +21,7 @@ static void _remove_unused_vars(glsl_ast_t* ast){
 	for (u32 i=0;i<ast->var_count;i++){
 _retry:
 		glsl_ast_var_t* var=ast->vars[i];
-		if ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags)||(var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_BLOCK)||(var->flags&GLSL_AST_VAR_FLAG_BUILTIN)||!sys_string_compare(var->name,"main")){
+		if ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags)||!sys_string_compare(var->name,"main")){
 			continue;
 		}
 		sys_heap_dealloc(NULL,var->name);
@@ -31,6 +31,9 @@ _retry:
 		}
 		sys_heap_dealloc(NULL,var);
 		ast->var_count--;
+		if (i==ast->var_count){
+			break;
+		}
 		ast->vars[i]=ast->vars[ast->var_count];
 		goto _retry; // cannot continue due to possible underflow during loop condition
 	}
