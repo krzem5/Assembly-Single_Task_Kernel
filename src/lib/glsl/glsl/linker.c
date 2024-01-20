@@ -42,7 +42,7 @@ _retry:
 
 
 
-static glsl_error_t _allocate_slots(glsl_ast_t* ast,_Bool alloc_input,u32 max_slots){
+static glsl_error_t _allocate_slots(glsl_ast_t* ast,u8 type,u32 max_slots){
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(max_slots,&allocator);
@@ -50,7 +50,7 @@ static glsl_error_t _allocate_slots(glsl_ast_t* ast,_Bool alloc_input,u32 max_sl
 _second_pass:
 	for (u32 i=0;i<ast->var_count;i++){
 		glsl_ast_var_t* var=ast->vars[i];
-		if (var->storage.type==(alloc_input?GLSL_AST_VAR_STORAGE_TYPE_IN:GLSL_AST_VAR_STORAGE_TYPE_OUT)&&!(var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&(var->storage.flags&mask)==mask){
+		if (var->storage.type==type&&!(var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&(var->storage.flags&mask)==mask){
 			var->flags|=GLSL_AST_VAR_FLAG_LINKED;
 			var->link_slot=(mask?var->storage.layout_location:0xffffffff);
 			if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type))){
@@ -226,6 +226,7 @@ SYS_PUBLIC void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* 
 
 
 SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,const glsl_backend_descriptor_t* backend,glsl_linker_linked_program_t* out){
+	glsl_error_t error=GLSL_NO_ERROR;
 	out->shader_bitmap=0;
 	out->uniform_count=0;
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
@@ -234,8 +235,13 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	}
 	out->uniforms=NULL;
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
-		if (program->shader_bitmap&(1<<i)){
-			_remove_unused_vars(program->shaders+i);
+		if (!(program->shader_bitmap&(1<<i))){
+			continue;
+		}
+		_remove_unused_vars(program->shaders+i);
+		error=_allocate_slots(program->shaders+i,GLSL_AST_VAR_STORAGE_TYPE_DEFAULT,1024);
+		if (error!=GLSL_NO_ERROR){
+			return error;
 		}
 	}
 	if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_VERTEX))){
@@ -244,7 +250,7 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_FRAGMENT))){
 		return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_FRAGMENT);
 	}
-	glsl_error_t error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_VERTEX,1,gl_MaxVertexAttribs);
+	error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_VERTEX,GLSL_AST_VAR_STORAGE_TYPE_IN,gl_MaxVertexAttribs);
 	if (error!=GLSL_NO_ERROR){
 		return error;
 	}
@@ -252,7 +258,7 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (error!=GLSL_NO_ERROR){
 		return error;
 	}
-	error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_FRAGMENT,0,1);
+	error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_FRAGMENT,GLSL_AST_VAR_STORAGE_TYPE_OUT,1);
 	if (error!=GLSL_NO_ERROR){
 		return error;
 	}

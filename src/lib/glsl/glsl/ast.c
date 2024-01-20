@@ -56,7 +56,7 @@ static const char*const _glsl_ast_node_type_to_string[GLSL_AST_NODE_MAX_TYPE+1]=
 	[GLSL_AST_NODE_TYPE_XOR]="^",
 	[GLSL_AST_NODE_TYPE_XOR_ASSIGN]="^=",
 	[GLSL_AST_NODE_TYPE_BLOCK]="<block>",
-	[GLSL_AST_NODE_TYPE_SWIZZLE]="<swizzle>"
+	[GLSL_AST_NODE_TYPE_SWIZZLE]="<swizzle>",
 };
 
 

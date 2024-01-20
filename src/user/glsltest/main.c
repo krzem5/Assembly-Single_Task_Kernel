@@ -118,7 +118,8 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	return 0;
 	glsl_preprocessor_state_init(&preprocessor_state);
 	error=glsl_preprocessor_add_file(fragment_shader_setup,0xffffffff,&preprocessor_state);
 	if (error){

@@ -101,6 +101,10 @@ typedef u32 glsl_ast_node_type_t;
 
 
 
+typedef u32 glsl_ast_operator_t;
+
+
+
 typedef struct _GLSL_AST_TYPE{
 	glsl_ast_type_type_t type;
 	u32 array_length;
@@ -129,6 +133,7 @@ typedef struct _GLSL_AST_TYPE_FIELD{
 
 typedef struct _GLSL_AST_NODE{
 	glsl_ast_node_type_t type;
+	glsl_ast_operator_t operator;
 	glsl_ast_type_t* value_type;
 	union{
 		struct _GLSL_AST_VAR* var;
