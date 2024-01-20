@@ -5,6 +5,8 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/thread.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -36,6 +38,8 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
 		_vfs_root_node->relatives.parent=NULL;
 		spinlock_release_exclusive(&(_vfs_root_node->lock));
+		process_kernel->vfs_root=_vfs_root_node;
+		process_kernel->vfs_cwd=_vfs_root_node;
 		return ERROR_OK;
 	}
 	vfs_node_t* parent;
@@ -63,8 +67,12 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags
 
 
 KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
-	if (!root||path[0]=='/'){
-		root=_vfs_root_node;
+	vfs_node_t* base_root_node=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:_vfs_root_node);
+	if (path[0]=='/'){
+		root=base_root_node;
+	}
+	else if (!root){
+		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:_vfs_root_node);
 	}
 	if (parent){
 		*parent=NULL;
@@ -100,7 +108,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 			continue;
 		}
 		if (i==2&&path[0]=='.'&&path[1]=='.'){
-			if (root!=_vfs_root_node&&root->relatives.parent){
+			if (root!=base_root_node&&root->relatives.parent){
 				root=root->relatives.parent;
 			}
 			path+=2;
@@ -161,4 +169,10 @@ KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 	}
 	buffer[buffer_length-i]=0;
 	return buffer_length-i;
+}
+
+
+
+KERNEL_PUBLIC vfs_node_t* vfs_get_root_node(void){
+	return _vfs_root_node;
 }

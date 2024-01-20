@@ -1,4 +1,5 @@
 #include <sys/fd/fd.h>
+#include <sys/mp/process.h>
 #include <sys/types.h>
 
 
@@ -20,7 +21,7 @@ void cwd_init(void){
 
 _Bool cwd_change(const char* path){
 	sys_fd_t new_cwd_fd=sys_fd_open(cwd_fd,path,0);
-	if (SYS_IS_ERROR(new_cwd_fd)){
+	if (SYS_IS_ERROR(new_cwd_fd)||SYS_IS_ERROR(sys_process_set_cwd(0,new_cwd_fd))){
 		return 0;
 	}
 	sys_fd_close(cwd_fd);

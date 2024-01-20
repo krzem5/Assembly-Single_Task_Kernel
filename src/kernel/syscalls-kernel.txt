@@ -60,3 +60,4 @@
 59,fs_get_next(u64 fs) -> u64
 60,fs_get_data(u64 fs,void* buffer,u32 buffer_length) -> u64
 61,fs_mount(u64 fs,const char* path) -> u64
+62,process_set_cwd(u64 process,u64 fd) -> u64

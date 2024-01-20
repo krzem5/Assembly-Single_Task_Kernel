@@ -29,4 +29,8 @@ u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length);
 
 
 
+vfs_node_t* vfs_get_root_node(void);
+
+
+
 #endif

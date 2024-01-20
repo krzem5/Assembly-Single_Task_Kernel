@@ -13,6 +13,7 @@
 #include <kernel/scheduler/_scheduler_types.h>
 #include <kernel/scheduler/cpu_mask.h>
 #include <kernel/types.h>
+#include <kernel/vfs/node.h>
 
 
 
@@ -59,6 +60,8 @@ typedef struct _PROCESS{
 	gid_t gid;
 	event_t* event;
 	handle_list_t handle_list;
+	vfs_node_t* vfs_root;
+	vfs_node_t* vfs_cwd;
 } process_t;
 
 

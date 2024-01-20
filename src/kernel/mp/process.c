@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
+#include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
@@ -19,6 +20,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "process"
 
 
@@ -71,6 +73,8 @@ KERNEL_EARLY_INIT(){
 	process_kernel->gid=0;
 	process_kernel->event=event_create();
 	handle_list_init(&(process_kernel->handle_list));
+	process_kernel->vfs_root=vfs_get_root_node();
+	process_kernel->vfs_cwd=process_kernel->vfs_root;
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL,0)){
 		panic("Unable to reserve kernel memory");
@@ -97,6 +101,8 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	out->gid=0;
 	out->event=event_create();
 	handle_list_init(&(out->handle_list));
+	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
+	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
 	handle_finish_setup(&(out->handle));
 	return out;
 }
@@ -134,6 +140,9 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 
 
 error_t syscall_process_get_event(handle_id_t process_handle){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
 	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
@@ -142,4 +151,25 @@ error_t syscall_process_get_event(handle_id_t process_handle){
 	u64 out=process->event->handle.rb_node.key;
 	handle_release(handle);
 	return out;
+}
+
+
+
+error_t syscall_process_set_cwd(handle_id_t process_handle,handle_id_t fd){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=handle->object;
+	vfs_node_t* new_cwd=fd_get_node(fd);
+	if (!new_cwd){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	process->vfs_cwd=new_cwd;
+	handle_release(handle);
+	return ERROR_OK;
 }

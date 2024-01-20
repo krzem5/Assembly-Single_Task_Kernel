@@ -371,4 +371,10 @@ static inline u64 _sys_syscall_fs_mount(u64 fs,const char* path){
 
 
 
+static inline u64 _sys_syscall_process_set_cwd(u64 process,u64 fd){
+	return _sys_syscall2(0x10000003e,process,fd);
+}
+
+
+
 #endif
