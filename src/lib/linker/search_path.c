@@ -5,6 +5,7 @@
 
 
 static const char* _library_search_directories[]={
+	"/share/lib", // for shared folder libraries
 	"/lib",
 	".",
 	NULL
