@@ -7,6 +7,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
@@ -120,6 +121,9 @@ void _isr_handler(isr_state_t* isr_state){
 			rip=*((u64*)(rbp+8));
 			rbp=*((u64*)rbp);
 		}
+	}
+	if (isr_state->cs==0x23){
+		thread_terminate();
 	}
 	for (;;);
 }

@@ -131,7 +131,7 @@ int main(void){
 	}
 	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_FRAGMENT);
 	glsl_linker_linked_program_t linked_program;
-	error=glsl_linker_program_link(&program,&linked_program);
+	error=glsl_linker_program_link(&program,NULL,&linked_program);
 	glsl_linker_program_delete(&program);
 	if (error){
 		goto _error;

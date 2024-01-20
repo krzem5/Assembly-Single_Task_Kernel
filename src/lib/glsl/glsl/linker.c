@@ -4,6 +4,7 @@
 #include <glsl/error.h>
 #include <glsl/linker.h>
 #include <sys/heap/heap.h>
+#include <sys/io/io.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
 
@@ -212,7 +213,7 @@ SYS_PUBLIC void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* 
 
 
 
-SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,glsl_linker_linked_program_t* out){
+SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,const glsl_backend_descriptor_t* backend,glsl_linker_linked_program_t* out){
 	out->uniforms=NULL;
 	out->uniform_count=0;
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
@@ -246,6 +247,10 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 		glsl_ast_type_delete((out->uniforms+i)->_type);
 		(out->uniforms+i)->_type=NULL;
 	}
+	if (!backend){
+		return GLSL_NO_ERROR;
+	}
+	sys_io_print("Link using %s",backend->name);
 	return GLSL_NO_ERROR;
 _cleanup:
 	glsl_linker_linked_program_delete(out);

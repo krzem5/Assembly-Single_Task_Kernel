@@ -1,6 +1,7 @@
 #ifndef _GLSL_LINKER_H_
 #define _GLSL_LINKER_H_ 1
 #include <glsl/ast.h>
+#include <glsl/backend.h>
 #include <glsl/error.h>
 #include <sys/types.h>
 
@@ -52,7 +53,7 @@ void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* linked_prog
 
 
 
-glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,glsl_linker_linked_program_t* out);
+glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,const glsl_backend_descriptor_t* backend,glsl_linker_linked_program_t* out);
 
 
 
