@@ -280,3 +280,28 @@ KERNEL_PUBLIC void vfs_node_dettach_external_child(vfs_node_t* node){
 	}
 	spinlock_release_exclusive(&(node->lock));
 }
+
+
+
+KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
+	spinlock_acquire_exclusive(&(node->lock));
+	if (node->relatives.parent){
+		if (node->relatives.prev_sibling){
+			spinlock_acquire_exclusive(&(node->relatives.prev_sibling->lock));
+			node->relatives.prev_sibling->relatives.next_sibling=node->relatives.next_sibling;
+			spinlock_release_exclusive(&(node->relatives.prev_sibling->lock));
+		}
+		else{
+			spinlock_acquire_exclusive(&(node->relatives.parent->lock));
+			node->relatives.parent->relatives.child=node->relatives.next_sibling;
+			spinlock_release_exclusive(&(node->relatives.parent->lock));
+		}
+		if (node->relatives.next_sibling){
+			spinlock_acquire_exclusive(&(node->relatives.next_sibling->lock));
+			node->relatives.next_sibling->relatives.prev_sibling=node->relatives.prev_sibling;
+			spinlock_release_exclusive(&(node->relatives.next_sibling->lock));
+		}
+		node->relatives.parent=NULL;
+	}
+	spinlock_release_exclusive(&(node->lock));
+}

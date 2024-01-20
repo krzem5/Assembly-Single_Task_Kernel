@@ -90,6 +90,7 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 	}
 	if (clock_get_time()>=fuse_node->name_valid_end_time){
 		// WARN("Invalidate node name");
+		vfs_node_dettach_child(&(fuse_node->header));
 	}
 }
 
@@ -152,11 +153,11 @@ static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	fuse_read_out_t* fuse_read_out=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
 _retry_read:
 	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,fuse_read_out,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
-	if (fuse_read_out->header.error){
+	fuse_dirent_t* dirent=(fuse_dirent_t*)(fuse_read_out->data);
+	if (fuse_read_out->header.error||fuse_read_out->header.len<=sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)){
 		amm_dealloc(fuse_read_out);
 		return 0;
 	}
-	fuse_dirent_t* dirent=(fuse_dirent_t*)(fuse_read_out->data);
 	pointer=(dirent->namelen?dirent->off:0);
 	if (fuse_read_out->header.len){
 		if ((dirent->namelen==1&&dirent->name[0]=='.')||(dirent->namelen==2&&dirent->name[0]=='.'&&dirent->name[1]=='.')){

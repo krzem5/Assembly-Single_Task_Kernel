@@ -74,6 +74,37 @@ typedef u64 fuse_file_handle_t;
 
 
 
+typedef struct _FUSE_ATTR{
+	u64 ino;
+	u64 size;
+	u64 blocks;
+	u64 atime;
+	u64 mtime;
+	u64 ctime;
+	u32 atimensec;
+	u32 mtimensec;
+	u32 ctimensec;
+	u32 mode;
+	u32 nlink;
+	u32 uid;
+	u32 gid;
+	u32 rdev;
+	u32 blksize;
+	u32 flags;
+} fuse_attr_t;
+
+
+
+typedef struct _FUSE_DIRENT{
+	u64 ino;
+	u64 off;
+	u32 namelen;
+	u32 type;
+	char name[];
+} fuse_dirent_t;
+
+
+
 typedef struct _FUSE_IN_HEADER{
 	u32 len;
 	u32 opcode;
@@ -140,24 +171,7 @@ typedef struct _FUSE_GETATTR_OUT{
 	u64 attr_valid;
 	u32 attr_valid_nsec;
 	u32 dummy;
-	struct{
-		u64 ino;
-		u64 size;
-		u64 blocks;
-		u64 atime;
-		u64 mtime;
-		u64 ctime;
-		u32 atimensec;
-		u32 mtimensec;
-		u32 ctimensec;
-		u32 mode;
-		u32 nlink;
-		u32 uid;
-		u32 gid;
-		u32 rdev;
-		u32 blksize;
-		u32 flags;
-	} attr;
+	fuse_attr_t attr;
 } fuse_getattr_out_t;
 
 
@@ -199,16 +213,6 @@ typedef struct _FUSE_READ_OUT{
 
 
 
-typedef struct _FUSE_DIRENT{
-	u64 ino;
-	u64 off;
-	u32 namelen;
-	u32 type;
-	char name[];
-} fuse_dirent_t;
-
-
-
 typedef struct _FUSE_LOOKUP_OUT{
 	fuse_out_header_t header;
 	u64 nodeid;
@@ -217,24 +221,7 @@ typedef struct _FUSE_LOOKUP_OUT{
 	u64 attr_valid;
 	u32 entry_valid_nsec;
 	u32 attr_valid_nsec;
-	struct{
-		u64 ino;
-		u64 size;
-		u64 blocks;
-		u64 atime;
-		u64 mtime;
-		u64 ctime;
-		u32 atimensec;
-		u32 mtimensec;
-		u32 ctimensec;
-		u32 mode;
-		u32 nlink;
-		u32 uid;
-		u32 gid;
-		u32 rdev;
-		u32 blksize;
-		u32 flags;
-	} attr;
+	fuse_attr_t attr;
 } fuse_lookup_out_t;
 
 

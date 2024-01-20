@@ -125,4 +125,8 @@ void vfs_node_dettach_external_child(vfs_node_t* node);
 
 
 
+void vfs_node_dettach_child(vfs_node_t* node);
+
+
+
 #endif

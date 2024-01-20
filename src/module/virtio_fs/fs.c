@@ -119,7 +119,7 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 	fuse_getattr_in->header.gid=0;
 	fuse_getattr_in->header.pid=0;
 	fuse_getattr_in->header.total_extlen=0;
-	fuse_getattr_in->getattr_flags=0;//FUSE_GETATTR_FH;
+	fuse_getattr_in->getattr_flags=FUSE_GETATTR_FH;
 	fuse_getattr_in->fh=fuse_file_handle;
 	fuse_getattr_out_t* fuse_getattr_out=amm_alloc(sizeof(fuse_getattr_out_t));
 	virtio_buffer_t buffers[2]={
@@ -187,7 +187,7 @@ void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_
 	fuse_read_in->header.total_extlen=0;
 	fuse_read_in->fh=fuse_file_handle;
 	fuse_read_in->offset=offset;
-	fuse_read_in->size=buffer_size;
+	fuse_read_in->size=buffer_size-sizeof(fuse_read_out_t);
 	fuse_read_in->read_flags=0;
 	fuse_read_in->flags=0;
 	virtio_buffer_t buffers[2]={
