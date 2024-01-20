@@ -308,7 +308,9 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 			glsl_ast_node_delete(node->unary);
 			break;
 		case GLSL_AST_NODE_TYPE_CALL:
+		case GLSL_AST_NODE_TYPE_COMMA:
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
+		case GLSL_AST_NODE_TYPE_BLOCK:
 			for (u32 i=0;i<node->arg_count;i++){
 				glsl_ast_node_delete(glsl_ast_get_arg(node,i));
 			}
@@ -316,17 +318,9 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 				sys_heap_dealloc(NULL,node->args);
 			}
 			break;
-		case GLSL_AST_NODE_TYPE_COMMA:
-			break;
 		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			glsl_ast_node_delete(node->member_access.value);
 			sys_heap_dealloc(NULL,node->member_access.member);
-			break;
-		case GLSL_AST_NODE_TYPE_BLOCK:
-			for (u32 i=0;i<node->block.length;i++){
-				glsl_ast_node_delete(node->block.data[i]);
-			}
-			sys_heap_dealloc(NULL,node->block.data);
 			break;
 		case GLSL_AST_NODE_TYPE_SWIZZLE:
 			glsl_ast_node_delete(node->swizzle.value);

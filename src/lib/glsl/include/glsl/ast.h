@@ -167,11 +167,6 @@ typedef struct _GLSL_AST_NODE{
 			u32 arg_count;
 		};
 		struct{
-			glsl_ast_scope_t scope;
-			struct _GLSL_AST_NODE** data;
-			u32 length;
-		} block;
-		struct{
 			struct _GLSL_AST_NODE* value;
 			char* member;
 		} member_access;
