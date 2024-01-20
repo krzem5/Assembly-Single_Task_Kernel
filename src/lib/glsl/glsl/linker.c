@@ -1,6 +1,7 @@
 #include <glsl/_internal/error.h>
 #include <glsl/_internal/interface_allocator.h>
 #include <glsl/ast.h>
+#include <glsl/backend.h>
 #include <glsl/error.h>
 #include <glsl/linker.h>
 #include <sys/heap/heap.h>
@@ -200,6 +201,13 @@ SYS_PUBLIC void glsl_linker_program_delete(glsl_linker_program_t* program){
 
 
 SYS_PUBLIC void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* linked_program){
+	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
+		if (linked_program->shader_bitmap&(1<<i)){
+			sys_heap_dealloc(NULL,(linked_program->shaders+i)->data);
+			(linked_program->shaders+i)->data=NULL;
+			(linked_program->shaders+i)->length=0;
+		}
+	}
 	for (u32 i=0;i<linked_program->uniform_count;i++){
 		sys_heap_dealloc(NULL,(linked_program->uniforms+i)->name);
 		if ((linked_program->uniforms+i)->_type){
@@ -207,15 +215,21 @@ SYS_PUBLIC void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* 
 		}
 	}
 	sys_heap_dealloc(NULL,linked_program->uniforms);
-	linked_program->uniforms=NULL;
+	linked_program->shader_bitmap=0;
 	linked_program->uniform_count=0;
+	linked_program->uniforms=NULL;
 }
 
 
 
 SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,const glsl_backend_descriptor_t* backend,glsl_linker_linked_program_t* out){
-	out->uniforms=NULL;
+	out->shader_bitmap=0;
 	out->uniform_count=0;
+	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
+		(out->shaders+i)->data=NULL;
+		(out->shaders+i)->length=0;
+	}
+	out->uniforms=NULL;
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
 		if (program->shader_bitmap&(1<<i)){
 			_remove_unused_vars(program->shaders+i);
@@ -250,7 +264,15 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (!backend){
 		return GLSL_NO_ERROR;
 	}
-	sys_io_print("Link using %s",backend->name);
+	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
+		if (!(program->shader_bitmap&(1<<i))){
+			continue;
+		}
+		error=backend->shader_link_callback(program->shaders+i,i,out->shaders+i);
+		if (error!=GLSL_NO_ERROR){
+			goto _cleanup;
+		}
+	}
 	return GLSL_NO_ERROR;
 _cleanup:
 	glsl_linker_linked_program_delete(out);

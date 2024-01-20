@@ -1,10 +1,16 @@
 #include <glsl/ast.h>
+#include <glsl/backend.h>
 #include <glsl/debug.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
 #include <glsl/parser.h>
 #include <glsl/preprocessor.h>
 #include <sys/io/io.h>
+#include <sys/lib/lib.h>
+
+
+
+#define BACKEND_LIB_NAME "libtgsicompiler.so"
 
 
 
@@ -82,6 +88,11 @@ void main(void){ \n\
 
 
 int main(void){
+	sys_library_t backend_lib=sys_lib_load(BACKEND_LIB_NAME,SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS);
+	if (SYS_IS_ERROR(backend_lib)){
+		sys_io_print("Unable to open backend library '%s'\n",BACKEND_LIB_NAME);
+		return 1;
+	}
 	glsl_preprocessor_state_t preprocessor_state;
 	glsl_preprocessor_state_init(&preprocessor_state);
 	glsl_error_t error=glsl_preprocessor_add_file(vertex_shader_setup,0xffffffff,&preprocessor_state);
@@ -107,7 +118,7 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
 	glsl_preprocessor_state_init(&preprocessor_state);
 	error=glsl_preprocessor_add_file(fragment_shader_setup,0xffffffff,&preprocessor_state);
 	if (error){
@@ -129,9 +140,9 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_FRAGMENT);
+	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_FRAGMENT);
 	glsl_linker_linked_program_t linked_program;
-	error=glsl_linker_program_link(&program,NULL,&linked_program);
+	error=glsl_linker_program_link(&program,((glsl_backend_descriptor_query_func_t)sys_lib_lookup_symbol(backend_lib,"_glsl_backend_query_descriptor"))(),&linked_program);
 	glsl_linker_program_delete(&program);
 	if (error){
 		goto _error;
