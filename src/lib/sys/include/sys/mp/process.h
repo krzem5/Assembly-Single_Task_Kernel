@@ -30,4 +30,12 @@ sys_error_t sys_process_set_cwd(sys_process_t process,sys_fd_t fd);
 
 
 
+sys_process_t sys_process_get_parent(sys_process_t process);
+
+
+
+sys_error_t sys_process_set_root(sys_process_t process,sys_fd_t fd);
+
+
+
 #endif

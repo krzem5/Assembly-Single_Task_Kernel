@@ -377,4 +377,16 @@ static inline u64 _sys_syscall_process_set_cwd(u64 process,u64 fd){
 
 
 
+static inline u64 _sys_syscall_process_get_parent(u64 process){
+	return _sys_syscall1(0x10000003f,process);
+}
+
+
+
+static inline u64 _sys_syscall_process_set_root(u64 process,u64 fd){
+	return _sys_syscall2(0x100000040,process,fd);
+}
+
+
+
 #endif

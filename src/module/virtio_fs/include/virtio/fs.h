@@ -30,7 +30,7 @@ fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_i
 
 
 
-void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,_Bool is_dir);
+void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,u32 type);
 
 
 

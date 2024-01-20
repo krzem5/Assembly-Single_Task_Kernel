@@ -29,3 +29,12 @@ _Bool cwd_change(const char* path){
 	cwd_length=sys_fd_path(cwd_fd,cwd,4096);
 	return 1;
 }
+
+
+
+_Bool cwd_change_root(const char* path){
+	if (!cwd_change(path)){
+		return 0;
+	}
+	return !SYS_IS_ERROR(sys_process_set_root(0,cwd_fd));
+}

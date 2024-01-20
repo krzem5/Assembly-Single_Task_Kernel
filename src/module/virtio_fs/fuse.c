@@ -88,7 +88,7 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 		}
 		amm_dealloc(fuse_getattr_out);
 	}
-	if (clock_get_time()>=fuse_node->name_valid_end_time){
+	if (clock_get_time()>=fuse_node->name_valid_end_time&&!(fuse_node->header.flags&VFS_NODE_FLAG_PERMANENT)){
 		// WARN("Invalidate node name");
 		vfs_node_dettach_child(&(fuse_node->header));
 	}
@@ -151,7 +151,7 @@ static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	_check_for_updates(fuse_node);
 	fuse_read_out_t* fuse_read_out=amm_alloc(sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256);
 _retry_read:
-	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,fuse_read_out,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,1);
+	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,pointer,fuse_read_out,sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)+256,FUSE_OPCODE_READDIR);
 	fuse_dirent_t* dirent=(fuse_dirent_t*)(fuse_read_out->data);
 	if (fuse_read_out->header.error||fuse_read_out->header.len<=sizeof(fuse_read_out_t)+sizeof(fuse_dirent_t)){
 		amm_dealloc(fuse_read_out);
@@ -186,7 +186,7 @@ static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 		return 0;
 	}
 	fuse_read_out_t* fuse_read_out=amm_alloc(sizeof(fuse_read_out_t)+size);
-	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,offset,fuse_read_out,sizeof(fuse_read_out_t)+size,0);
+	virtio_fs_fuse_read(node->fs->extra_data,fuse_node->node_id,fuse_node->file_handle,offset,fuse_read_out,sizeof(fuse_read_out_t)+size,((node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK?FUSE_OPCODE_READLINK:FUSE_OPCODE_READ));
 	fuse_read_out->header.len-=sizeof(fuse_read_out_t);
 	if (fuse_read_out->header.len<size){
 		size=fuse_read_out->header.len;

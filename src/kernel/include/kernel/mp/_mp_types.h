@@ -62,6 +62,7 @@ typedef struct _PROCESS{
 	handle_list_t handle_list;
 	vfs_node_t* vfs_root;
 	vfs_node_t* vfs_cwd;
+	struct _PROCESS* parent;
 } process_t;
 
 

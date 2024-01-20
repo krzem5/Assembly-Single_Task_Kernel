@@ -175,10 +175,10 @@ fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_i
 
 
 
-void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,_Bool is_dir){
+void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,u32 type){
 	fuse_read_in_t* fuse_read_in=amm_alloc(sizeof(fuse_read_in_t));
 	fuse_read_in->header.len=sizeof(fuse_read_in_t);
-	fuse_read_in->header.opcode=(is_dir?FUSE_OPCODE_READDIR:FUSE_OPCODE_READ);
+	fuse_read_in->header.opcode=type;
 	fuse_read_in->header.unique=0;
 	fuse_read_in->header.nodeid=fuse_node_id;
 	fuse_read_in->header.uid=0;

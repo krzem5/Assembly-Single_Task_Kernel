@@ -1,6 +1,5 @@
 cat:runtime@static,sys
 cpu:runtime@static,sys
-exit:runtime@static,sys
 fs:runtime@static,sys
 glsltest:runtime@static,sys,glsl
 hexdump:runtime@static,sys

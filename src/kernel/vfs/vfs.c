@@ -150,8 +150,9 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 
 
 KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
+	vfs_node_t* base_root_node=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:_vfs_root_node);
 	u32 i=buffer_length;
-	for (;node;node=node->relatives.parent){
+	for (;node&&node!=base_root_node;node=node->relatives.parent){
 		if (i<node->name->length+1){
 			return 0;
 		}
@@ -159,11 +160,13 @@ KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 		buffer[i]='/';
 		memcpy(buffer+i+1,node->name->data,node->name->length);
 	}
-	if (buffer_length-i==1){
+	if (!i){
+		return 0;
+	}
+	if (i==buffer_length){
 		i--;
 		buffer[i]='/';
 	}
-	i++;
 	for (u32 j=0;j<buffer_length-i;j++){
 		buffer[j]=buffer[i+j];
 	}

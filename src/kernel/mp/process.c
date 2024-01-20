@@ -75,6 +75,7 @@ KERNEL_EARLY_INIT(){
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=process_kernel->vfs_root;
+	process_kernel->parent=process_kernel;
 	mmap_init(&vmm_kernel_pagemap,kernel_get_offset(),-PAGE_SIZE,&process_kernel_image_mmap);
 	if (!mmap_alloc(&process_kernel_image_mmap,kernel_get_offset(),kernel_data.first_free_address,NULL,0,NULL,0)){
 		panic("Unable to reserve kernel memory");
@@ -103,6 +104,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	handle_list_init(&(out->handle_list));
 	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
 	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
+	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	handle_finish_setup(&(out->handle));
 	return out;
 }
@@ -170,6 +172,43 @@ error_t syscall_process_set_cwd(handle_id_t process_handle,handle_id_t fd){
 		return ERROR_INVALID_HANDLE;
 	}
 	process->vfs_cwd=new_cwd;
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_process_get_parent(handle_id_t process_handle){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=handle->object;
+	u64 out=(process->parent?process->parent->handle.rb_node.key:0);
+	handle_release(handle);
+	return out;
+}
+
+
+
+error_t syscall_process_set_root(handle_id_t process_handle,handle_id_t fd){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=handle->object;
+	vfs_node_t* new_root=fd_get_node(fd);
+	if (!new_root){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	process->vfs_root=new_root;
 	handle_release(handle);
 	return ERROR_OK;
 }

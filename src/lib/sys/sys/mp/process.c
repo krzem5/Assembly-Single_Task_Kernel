@@ -26,3 +26,15 @@ SYS_PUBLIC sys_process_t sys_process_start(const char* path,u32 argc,const char*
 SYS_PUBLIC sys_error_t sys_process_set_cwd(sys_process_t process,sys_fd_t fd){
 	return _sys_syscall_process_set_cwd(process,fd);
 }
+
+
+
+SYS_PUBLIC sys_process_t sys_process_get_parent(sys_process_t process){
+	return _sys_syscall_process_get_parent(process);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_process_set_root(sys_process_t process,sys_fd_t fd){
+	return _sys_syscall_process_set_root(process,fd);
+}

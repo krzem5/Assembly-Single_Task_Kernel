@@ -694,6 +694,9 @@ if (rebuild_data_partition):
 	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
 	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
 	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
+	if (os.path.islink("build/share/lib/ld.so")):
+		os.unlink("build/share/lib/ld.so")
+	os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
 	for program in os.listdir("build/user"):
 		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())

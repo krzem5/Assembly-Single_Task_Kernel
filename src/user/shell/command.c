@@ -7,7 +7,9 @@
 #include <sys/mp/event.h>
 #include <sys/mp/process.h>
 #include <sys/mp/thread.h>
+#include <sys/system/system.h>
 #include <sys/types.h>
+#include <sys/util/options.h>
 
 
 
@@ -50,6 +52,30 @@ void command_execute(const char* command){
 		}
 		if (!cwd_change(argv[1])){
 			sys_io_print("cd: unable to change current working directory to '%s'\n",argv[1]);
+		}
+		return;
+	}
+	if (string_equal(buffer,"exit")){
+		if (!sys_options_parse(argc,argv,NULL)){
+			return;
+		}
+		if (sys_process_get_parent(0)>>16){
+			sys_thread_stop(0);
+		}
+		sys_system_shutdown(0);
+		return;
+	}
+	if (string_equal(buffer,"chroot")){
+		if (argc<2){
+			sys_io_print("chroot: no input file supplied\n");
+			return;
+		}
+		if (argc>2){
+			sys_io_print("chroot: unrecognized option '%s'\n",argv[2]);
+			return;
+		}
+		if (!cwd_change_root(argv[1])){
+			sys_io_print("chroot: unable to change current root to '%s'\n",argv[1]);
 		}
 		return;
 	}
