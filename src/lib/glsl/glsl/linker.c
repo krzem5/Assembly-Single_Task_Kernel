@@ -13,32 +13,7 @@
 
 #define gl_MaxVertexAttribs 16
 #define gl_MaxVertexUniformComponents 1024
-// #define gl_MaxFragmentInputComponents 128
-
-
-
-// static void _remove_unused_vars(glsl_ast_t* ast){
-// 	for (u32 i=0;i<ast->var_count;i++){
-// _retry:
-// 		glsl_ast_var_t* var=ast->vars[i];
-// 		if ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags)||!sys_string_compare(var->name,"main")){
-// 			continue;
-// 		}
-// 		sys_heap_dealloc(NULL,var->name);
-// 		glsl_ast_type_delete(var->type);
-// 		if (var->value){
-// 			glsl_ast_node_delete(var->value);
-// 		}
-// 		sys_heap_dealloc(NULL,var);
-// 		ast->var_count--;
-// 		if (i==ast->var_count){
-// 			break;
-// 		}
-// 		ast->vars[i]=ast->vars[ast->var_count];
-// 		goto _retry; // cannot continue due to possible underflow during loop condition
-// 	}
-// 	ast->vars=sys_heap_realloc(NULL,ast->vars,ast->var_count*sizeof(glsl_ast_var_t*));
-// }
+#define gl_MaxFragmentInputComponents 128
 
 
 
@@ -252,16 +227,6 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 		(out->shaders+i)->length=0;
 	}
 	out->uniforms=NULL;
-	// for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
-	// 	if (!(program->shader_bitmap&(1<<i))){
-	// 		continue;
-	// 	}
-	// 	_remove_unused_vars(program->shaders+i);
-	// 	error=_allocate_slots(program->shaders+i,GLSL_AST_VAR_STORAGE_TYPE_DEFAULT,1024);
-	// 	if (error!=GLSL_NO_ERROR){
-	// 		return error;
-	// 	}
-	// }
 	// if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_VERTEX))){
 	// 	return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_VERTEX);
 	// }
