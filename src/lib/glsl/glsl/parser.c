@@ -636,6 +636,7 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 				if (error){
 					goto _cleanup;
 				}
+				storage.type=block->storage.type;
 				storage.flags|=GLSL_AST_VAR_STORAGE_FLAG_BLOCK;
 				storage.block=block;
 				if (parser.index==parser.length){

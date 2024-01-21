@@ -140,7 +140,7 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 	out->pattern_length=0;
 	out->pattern=0;
 	if (!node){
-		u32 slot;
+		u32 slot=0xffffffff;
 		_glsl_interface_allocator_reserve(&(state->temporary_variable_allocator),&slot,glsl_builtin_type_to_slot_count(builtin_type));
 		out->base=slot;
 		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
@@ -191,7 +191,28 @@ static void _generate_instruction_arg(const register_state_t* reg,glsl_instructi
 
 
 static void _generate_move(compiler_state_t* state,const register_state_t* src,const register_state_t* dst){
-	sys_io_print("_generate_move\n");
+	u8 src_size=glsl_builtin_type_to_size(src->builtin_type);
+	u8 dst_size=glsl_builtin_type_to_size(dst->builtin_type);
+	register_state_t tmp_src=*src;
+	register_state_t tmp_dst=*dst;
+	while (tmp_src.offset<src_size&&tmp_dst.offset<dst_size){
+		u8 count=src_size-tmp_src.offset;
+		if (dst_size-tmp_dst.offset<count){
+			count=dst_size-tmp_dst.offset;
+		}
+		if (4-(tmp_src.offset&3)<count){
+			count=4-(tmp_src.offset&3);
+		}
+		if (4-(tmp_dst.offset&3)<count){
+			count=4-(tmp_dst.offset&3);
+		}
+		glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MOV,2);
+		sys_io_print("~ %u [%u/%u %u/%u]\n",count,tmp_src.offset,src_size,tmp_dst.offset,dst_size);
+		_generate_instruction_arg(&tmp_dst,instruction->args,count-1);
+		_generate_instruction_arg(&tmp_src,instruction->args+1,count-1);
+		tmp_src.offset+=count;
+		tmp_dst.offset+=count;
+	}
 }
 
 
