@@ -461,7 +461,7 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	compiler_state_t state={
 		out
 	};
-	_glsl_interface_allocator_init(1024,&(state.const_variable_allocator));
+	_glsl_interface_allocator_init(4096,&(state.const_variable_allocator));
 	_glsl_interface_allocator_init(1024,&(state.local_variable_allocator));
 	const glsl_ast_var_t* main_function=_allocate_vars(ast,&state);
 	glsl_error_t error=GLSL_NO_ERROR;
