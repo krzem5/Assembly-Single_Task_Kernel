@@ -126,7 +126,7 @@ static glsl_ast_type_t* _parse_type(glsl_parser_state_t* parser,_Bool allow_arra
 		return out;
 	}
 	if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_IDENTIFIER){
-		// check if type is a struct
+		// check if type is a struct (aka named type)
 	}
 	if (parser->tokens[parser->index].type!=GLSL_LEXER_TOKEN_TYPE_STRUCT){
 		return NULL;

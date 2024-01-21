@@ -1,5 +1,6 @@
 #include <glsl/ast.h>
 #include <glsl/backend.h>
+#include <glsl/compiler.h>
 #include <glsl/debug.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
@@ -146,7 +147,13 @@ int main(void){
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	glsl_compilation_output_t compilation_output;
+	error=glsl_compiler_compile(program.shaders,&compilation_output);
+	if (error){
+		goto _error;
+	}
+	glsl_compiler_compilation_output_delete(&compilation_output);
 	return 0;
 	glsl_preprocessor_state_init(&preprocessor_state);
 	error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
