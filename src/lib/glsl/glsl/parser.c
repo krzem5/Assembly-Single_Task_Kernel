@@ -745,8 +745,23 @@ _skip_block_instance_name:
 			continue;
 		}
 		if (parser.tokens[parser.index].type==GLSL_LEXER_TOKEN_TYPE_EQUAL){
-			error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
-			goto _cleanup;
+			if (glsl_ast_lookup_var(ast,identifier,0,NULL)){
+				error=_glsl_error_create_parser_already_defined(identifier);
+				goto _cleanup;
+			}
+			parser.index++;
+			glsl_ast_var_t* var=glsl_ast_create_var(ast,identifier,0,type,&storage);
+			glsl_ast_node_t* expression=_parse_expression(&parser,GLSL_LEXER_TOKEN_TYPE_SEMICOLON,0,&error);
+			if (!expression){
+				goto _cleanup;
+			}
+			if (expression->type!=GLSL_AST_NODE_TYPE_VAR_CONST){
+				glsl_ast_node_delete(expression);
+				error=_glsl_error_create_parser_non_constant_initializer();
+				goto _cleanup;
+			}
+			var->value=expression;
+			continue;
 		}
 		if (parser.tokens[parser.index].type!=GLSL_LEXER_TOKEN_TYPE_LEFT_PAREN){
 			error=_glsl_error_create_parser_expected("argument list");

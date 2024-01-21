@@ -14,6 +14,30 @@
 
 
 
+static const char global_setup[]=" \
+const int gl_MaxVertexAttribs=16; \n\
+const int gl_MaxVertexUniformComponents=1024; \n\
+const int gl_MaxVaryingFloats=60; \n\
+const int gl_MaxVaryingComponents=60; \n\
+const int gl_MaxVertexOutputComponents=64; \n\
+const int gl_MaxGeometryInputComponents=64; \n\
+const int gl_MaxGeometryOutputComponents=128; \n\
+const int gl_MaxFragmentInputComponents=128; \n\
+const int gl_MaxVertexTextureImageUnits=16; \n\
+const int gl_MaxCombinedTextureImageUnits=48; \n\
+const int gl_MaxTextureImageUnits=16; \n\
+const int gl_MaxFragmentUniformComponents=1024; \n\
+const int gl_MaxDrawBuffers=8; \n\
+const int gl_MaxClipDistances=8; \n\
+const int gl_MaxGeometryTextureImageUnits=16; \n\
+const int gl_MaxGeometryOutputVertices=256; \n\
+const int gl_MaxGeometryTotalOutputComponents=1024; \n\
+const int gl_MaxGeometryUniformComponents=1024; \n\
+const int gl_MaxGeometryVaryingComponents=64; \n\
+";
+
+
+
 static const char vertex_shader_setup[]=" \
 #version 330 core \n\
 #define __VERSION__ 330 \n\
@@ -95,7 +119,11 @@ int main(void){
 	}
 	glsl_preprocessor_state_t preprocessor_state;
 	glsl_preprocessor_state_init(&preprocessor_state);
-	glsl_error_t error=glsl_preprocessor_add_file(vertex_shader_setup,0xffffffff,&preprocessor_state);
+	glsl_error_t error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
+	if (error){
+		goto _error;
+	}
+	error=glsl_preprocessor_add_file(vertex_shader_setup,0xffffffff,&preprocessor_state);
 	if (error){
 		goto _error;
 	}
@@ -121,6 +149,10 @@ int main(void){
 	glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
 	return 0;
 	glsl_preprocessor_state_init(&preprocessor_state);
+	error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
+	if (error){
+		goto _error;
+	}
 	error=glsl_preprocessor_add_file(fragment_shader_setup,0xffffffff,&preprocessor_state);
 	if (error){
 		goto _error;

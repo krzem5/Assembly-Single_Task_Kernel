@@ -123,6 +123,10 @@ glsl_error_t _glsl_error_create_parser_uninitialized_var(const char* name);
 
 
 
+glsl_error_t _glsl_error_create_parser_non_constant_initializer(void);
+
+
+
 glsl_error_t _glsl_error_create_linker_missing_shader(glsl_shader_type_t shader_type);
 
 
