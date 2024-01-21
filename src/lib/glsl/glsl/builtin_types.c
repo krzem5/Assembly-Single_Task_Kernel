@@ -170,6 +170,10 @@ static const u32 _glsl_builtin_type_to_slot_count[GLSL_BUILTIN_MAX_TYPE+1]={
 
 
 static const u32 _glsl_builtin_type_to_vector_length[GLSL_BUILTIN_MAX_TYPE+1]={
+	[GLSL_BUILTIN_TYPE_FLOAT]=1,
+	[GLSL_BUILTIN_TYPE_INT]=1,
+	[GLSL_BUILTIN_TYPE_UINT]=1,
+	[GLSL_BUILTIN_TYPE_BOOL]=1,
 	[GLSL_BUILTIN_TYPE_VEC2]=2,
 	[GLSL_BUILTIN_TYPE_IVEC2]=2,
 	[GLSL_BUILTIN_TYPE_UVEC2]=2,

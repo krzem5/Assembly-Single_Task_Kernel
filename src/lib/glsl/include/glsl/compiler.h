@@ -6,10 +6,9 @@
 
 
 
-#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_LOCAL 0
-#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT 1
-#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT 2
-#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM 3
+#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT 0
+#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT 1
+#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM 2
 
 #define GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM
 
@@ -42,6 +41,9 @@
 #define GLSL_INSTRUCTION_TYPE_EMV 26	// emit vertex (geometry shader only)
 #define GLSL_INSTRUCTION_TYPE_EMP 27	// emit primitive (geometry shader only)
 
+#define GLSL_INSTRUCTION_ARG_FLAG_CONST 0x40
+#define GLSL_INSTRUCTION_ARG_FLAG_LOCAL 0x80
+
 
 
 typedef u32 glsl_compilation_output_var_type_t;
@@ -54,7 +56,7 @@ typedef u32 glsl_instruction_type_t;
 
 typedef struct _GLSL_INSTURCTION_ARG{
 	u16 index;
-	u8 pattern_length;
+	u8 pattern_length_and_flags;
 	u8 pattern;
 } glsl_instruction_arg_t;
 
@@ -79,10 +81,13 @@ typedef struct _GLSL_COMPILATION_OUTPUT_VAR{
 typedef struct _GLSL_COMPILATION_OUTPUT{
 	u16 var_count;
 	u16 instruction_count;
+	u16 const_count;
 	u16 _var_capacity;
 	u16 _instruction_capacity;
-	glsl_compilation_output_var_t** vars;
+	u16 _const_capacity;
+	glsl_compilation_output_var_t* vars;
 	glsl_instruction_t** instructions;
+	float* consts;
 	u32 slot_counts[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1];
 } glsl_compilation_output_t;
 
