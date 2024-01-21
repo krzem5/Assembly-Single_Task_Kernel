@@ -48,3 +48,11 @@ _Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u3
 	}
 	return 0;
 }
+
+
+
+void _glsl_interface_allocator_release(glsl_interface_allocator_t* allocator,u32 offset,u32 size){
+	for (size+=offset;offset<size;offset++){
+		allocator->bitmap[offset>>5]&=~(1<<(offset&31));
+	}
+}

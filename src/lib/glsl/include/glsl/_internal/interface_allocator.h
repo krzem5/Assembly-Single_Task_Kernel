@@ -23,4 +23,8 @@ _Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u3
 
 
 
+void _glsl_interface_allocator_release(glsl_interface_allocator_t* allocator,u32 offset,u32 size);
+
+
+
 #endif

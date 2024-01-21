@@ -172,6 +172,14 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 
 
 
+static void _release_local_regs(compiler_state_t* state,const register_state_t* reg){
+	if (reg->flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
+		_glsl_interface_allocator_release(&(state->local_variable_allocator),reg->base,glsl_builtin_type_to_slot_count(reg->builtin_type));
+	}
+}
+
+
+
 static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg,u8 max_size){
 	arg->index=reg->base;
 	if (reg->pattern_length){
@@ -391,6 +399,7 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 				_generate_dot_product_3d(state,regs,regs+1,&tmp);
 				_generate_move(state,&tmp,output_register);
 				output_register->offset-=2;
+				_release_local_regs(state,&tmp);
 				break;
 			}
 		case GLSL_AST_NODE_OPERATOR_TYPE_SUBTRACT_FLOAT_FLOAT:
@@ -402,6 +411,9 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 		default:
 			sys_io_print("<%s>\n",glsl_operator_type_to_string(node->operator_type));
 			break;
+	}
+	for (u32 i=0;i<node->args.count;i++){
+		_release_local_regs(state,regs+i);
 	}
 	return GLSL_NO_ERROR;
 }
