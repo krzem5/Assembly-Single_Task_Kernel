@@ -471,9 +471,6 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	out->vars=NULL;
 	out->instructions=NULL;
 	out->consts=NULL;
-	for (glsl_compilation_output_var_type_t i=0;i<=GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE;i++){
-		out->slot_counts[i]=0;
-	}
 	compiler_state_t state={
 		out
 	};
@@ -495,12 +492,31 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 _cleanup:
 	_glsl_interface_allocator_deinit(&(state.const_variable_allocator));
 	_glsl_interface_allocator_deinit(&(state.local_variable_allocator));
-	glsl_compiler_compilation_output_delete(out);
+	if (error!=GLSL_NO_ERROR){
+		glsl_compiler_compilation_output_delete(out);
+	}
 	return error;
 }
 
 
 
 SYS_PUBLIC void glsl_compiler_compilation_output_delete(glsl_compilation_output_t* output){
-	return;
+	for (u32 i=0;i<output->var_count;i++){
+		sys_heap_dealloc(NULL,(output->vars+i)->name);
+	}
+	sys_heap_dealloc(NULL,output->vars);
+	for (u32 i=0;i<output->instruction_count;i++){
+		sys_heap_dealloc(NULL,output->instructions[i]);
+	}
+	sys_heap_dealloc(NULL,output->instructions);
+	sys_heap_dealloc(NULL,output->consts);
+	output->var_count=0;
+	output->instruction_count=0;
+	output->const_count=0;
+	output->local_count=0;
+	output->_var_capacity=0;
+	output->_instruction_capacity=0;
+	output->vars=NULL;
+	output->instructions=NULL;
+	output->consts=NULL;
 }

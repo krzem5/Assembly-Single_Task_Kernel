@@ -90,7 +90,6 @@ typedef struct _GLSL_COMPILATION_OUTPUT{
 	glsl_compilation_output_var_t* vars;
 	glsl_instruction_t** instructions;
 	float* consts;
-	u32 slot_counts[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1];
 } glsl_compilation_output_t;
 
 
