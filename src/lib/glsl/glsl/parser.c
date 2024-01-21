@@ -266,9 +266,15 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_undefined(identifier);
 				goto _cleanup;
 			}
-			value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR);
+			if (var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_CONST){
+				value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR);
+				*(value_stack[value_stack_size])=*(var->value);
+			}
+			else{
+				value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR);
+				value_stack[value_stack_size]->var=var;
+			}
 			value_stack[value_stack_size]->value_type=glsl_ast_type_duplicate(var->type);
-			value_stack[value_stack_size]->var=var;
 			value_stack_size++;
 			last_token_was_value=1;
 			continue;

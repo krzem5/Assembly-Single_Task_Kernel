@@ -2,6 +2,7 @@
 #include <glsl/builtin_types.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
+#include <glsl/operators.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/types.h>
@@ -74,7 +75,7 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("}");
 			break;
 		case GLSL_AST_NODE_TYPE_INLINE_BLOCK:
-			sys_io_print("GLSL_AST_NODE_TYPE_COMMA");
+			sys_io_print("<GLSL_AST_NODE_TYPE_INLINE_BLOCK>");
 			break;
 		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			sys_io_print("{\n");
@@ -94,7 +95,7 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 		case GLSL_AST_NODE_TYPE_OPERATOR:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
-			sys_io_print("op: %u,\n",node->operator_type);
+			sys_io_print("op: %s,\n",glsl_operator_type_to_string(node->operator_type));
 			_print_indentation(indentation+2);
 			sys_io_print("type: %s,\n",type_str);
 			_print_indentation(indentation+2);
@@ -141,16 +142,13 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			switch (node->value_type->builtin_type){
 				default:
 				case GLSL_BUILTIN_TYPE_INT:
-					sys_io_print("<GLSL_BUILTIN_TYPE_INT>");
-					break;
-				case GLSL_BUILTIN_TYPE_VOID:
-					sys_io_print("<GLSL_BUILTIN_TYPE_VOID>");
+					sys_io_print("%d",node->var_int);
 					break;
 				case GLSL_BUILTIN_TYPE_BOOL:
-					sys_io_print("<GLSL_BUILTIN_TYPE_BOOL>");
+					sys_io_print("%s",(node->var_bool?"true":"false"));
 					break;
 				case GLSL_BUILTIN_TYPE_FLOAT:
-					sys_io_print("<GLSL_BUILTIN_TYPE_FLOAT>");
+					sys_io_print("%f",node->var_float);
 					break;
 				case GLSL_BUILTIN_TYPE_MAT22:
 					sys_io_print("<GLSL_BUILTIN_TYPE_MAT22>");

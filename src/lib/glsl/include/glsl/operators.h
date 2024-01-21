@@ -1,5 +1,6 @@
 #ifndef _GLSL_OPERATORS_H_
 #define _GLSL_OPERATORS_H_ 1
+#include <glsl/ast.h>
 
 
 
@@ -409,6 +410,12 @@
 #define GLSL_AST_NODE_OPERATOR_TYPE_XOR_UINT_UVEC2 403
 #define GLSL_AST_NODE_OPERATOR_TYPE_XOR_UINT_UVEC3 404
 #define GLSL_AST_NODE_OPERATOR_TYPE_XOR_UINT_UVEC4 405
+
+#define GLSL_AST_NODE_OPERATOR_MAX_TYPE GLSL_AST_NODE_OPERATOR_TYPE_XOR_UINT_UVEC4
+
+
+
+const char* glsl_operator_type_to_string(glsl_ast_node_operator_type_t type);
 
 
 
