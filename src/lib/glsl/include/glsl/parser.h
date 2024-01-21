@@ -17,7 +17,7 @@ typedef struct _GLSL_PARSER_STATE{
 
 
 
-glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* token_list,glsl_linker_program_t* program,glsl_shader_type_t shader_type);
+glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* token_list,glsl_shader_type_t shader_type,glsl_ast_t* out);
 
 
 

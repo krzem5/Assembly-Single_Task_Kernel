@@ -1,6 +1,6 @@
 #ifndef _GLSL_LINKER_H_
 #define _GLSL_LINKER_H_ 1
-#include <glsl/ast.h>
+#include <glsl/compiler.h>
 #include <glsl/error.h>
 #include <glsl/shader.h>
 #include <sys/types.h>
@@ -22,14 +22,13 @@ typedef struct _GLSL_LINKER_LINKED_PROGRAM_UNIFORM{
 	char* name;
 	u32 slot;
 	u32 size;
-	glsl_ast_type_t* _type;
 } glsl_linker_linked_program_uniform_t;
 
 
 
 typedef struct _GLSL_LINKER_PROGRAM{
 	u32 shader_bitmap;
-	glsl_ast_t shaders[GLSL_SHADER_MAX_TYPE+1];
+	glsl_compilation_output_t shaders[GLSL_SHADER_MAX_TYPE+1];
 } glsl_linker_program_t;
 
 
@@ -52,6 +51,10 @@ void glsl_linker_program_delete(glsl_linker_program_t* program);
 
 
 void glsl_linker_linked_program_delete(glsl_linker_linked_program_t* linked_program);
+
+
+
+glsl_error_t glsl_linker_attach_program(glsl_linker_program_t* program,glsl_compilation_output_t* output);
 
 
 

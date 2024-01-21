@@ -557,24 +557,20 @@ _parse_next_layout_qualifier:
 
 
 
-SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* token_list,glsl_linker_program_t* program,glsl_shader_type_t shader_type){
-	if (program->shader_bitmap&(1<<shader_type)){
-		return _glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
-	}
+SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* token_list,glsl_shader_type_t shader_type,glsl_ast_t* out){
 	glsl_error_t error=GLSL_NO_ERROR;
-	glsl_ast_t* ast=program->shaders+shader_type;
-	ast->shader_type=shader_type;
-	ast->block_count=0;
-	ast->named_type_count=0;
-	ast->var_count=0;
-	ast->blocks=NULL;
-	ast->named_types=NULL;
-	ast->vars=NULL;
+	out->shader_type=shader_type;
+	out->block_count=0;
+	out->named_type_count=0;
+	out->var_count=0;
+	out->blocks=NULL;
+	out->named_types=NULL;
+	out->vars=NULL;
 	glsl_parser_state_t parser={
 		token_list->data,
 		0,
 		token_list->length,
-		ast
+		out
 	};
 	while (parser.index<parser.length){
 		if (parser.tokens[parser.index].type==GLSL_LEXER_TOKEN_TYPE_PRECISION){
@@ -621,9 +617,9 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 			glsl_ast_block_t* block=sys_heap_alloc(NULL,sizeof(glsl_ast_block_t));
 			block->name=sys_string_duplicate(block_name);
 			block->storage=storage;
-			ast->block_count++;
-			ast->blocks=sys_heap_realloc(NULL,ast->blocks,ast->block_count*sizeof(glsl_ast_block_t*));
-			ast->blocks[ast->block_count-1]=block;
+			out->block_count++;
+			out->blocks=sys_heap_realloc(NULL,out->blocks,out->block_count*sizeof(glsl_ast_block_t*));
+			out->blocks[out->block_count-1]=block;
 			while (1){
 				if (parser.index==parser.length){
 					error=_glsl_error_create_parser_expected("block member type");
@@ -656,7 +652,7 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 					goto _cleanup;
 				}
 				const char* identifier=parser.tokens[parser.index].string;
-				if (glsl_ast_lookup_var(ast,identifier,0,NULL)){
+				if (glsl_ast_lookup_var(out,identifier,0,NULL)){
 					error=_glsl_error_create_parser_already_defined(identifier);
 					goto _cleanup;
 				}
@@ -689,7 +685,7 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 					goto _cleanup;
 				}
 				parser.index++;
-				glsl_ast_create_var(ast,identifier,0,type,&storage);
+				glsl_ast_create_var(out,identifier,0,type,&storage);
 			}
 			parser.index++;
 			if (parser.index==parser.length){
@@ -735,21 +731,21 @@ _skip_block_instance_name:
 			}
 		}
 		if (parser.tokens[parser.index].type==GLSL_LEXER_TOKEN_TYPE_SEMICOLON){
-			if (glsl_ast_lookup_var(ast,identifier,0,NULL)){
+			if (glsl_ast_lookup_var(out,identifier,0,NULL)){
 				error=_glsl_error_create_parser_already_defined(identifier);
 				goto _cleanup;
 			}
 			parser.index++;
-			glsl_ast_create_var(ast,identifier,0,type,&storage);
+			glsl_ast_create_var(out,identifier,0,type,&storage);
 			continue;
 		}
 		if (parser.tokens[parser.index].type==GLSL_LEXER_TOKEN_TYPE_EQUAL){
-			if (glsl_ast_lookup_var(ast,identifier,0,NULL)){
+			if (glsl_ast_lookup_var(out,identifier,0,NULL)){
 				error=_glsl_error_create_parser_already_defined(identifier);
 				goto _cleanup;
 			}
 			parser.index++;
-			glsl_ast_var_t* var=glsl_ast_create_var(ast,identifier,0,type,&storage);
+			glsl_ast_var_t* var=glsl_ast_create_var(out,identifier,0,type,&storage);
 			glsl_ast_node_t* expression=_parse_expression(&parser,GLSL_LEXER_TOKEN_TYPE_SEMICOLON,0,&error);
 			if (!expression){
 				goto _cleanup;
@@ -802,14 +798,14 @@ _skip_argument_list:
 			glsl_ast_type_delete(func_type);
 			goto _cleanup;
 		}
-		glsl_ast_var_t* var=glsl_ast_lookup_var(ast,identifier,0,func_type);
+		glsl_ast_var_t* var=glsl_ast_lookup_var(out,identifier,0,func_type);
 		if (var&&var->value){
 			error=_glsl_error_create_parser_already_defined(identifier);
 			glsl_ast_type_delete(func_type);
 			goto _cleanup;
 		}
 		if (!var){
-			var=glsl_ast_create_var(ast,identifier,0,func_type,NULL);
+			var=glsl_ast_create_var(out,identifier,0,func_type,NULL);
 		}
 		if (parser.tokens[parser.index].type==GLSL_LEXER_TOKEN_TYPE_SEMICOLON){
 			parser.index++;
@@ -825,9 +821,8 @@ _skip_argument_list:
 			goto _cleanup;
 		}
 	}
-	program->shader_bitmap|=1<<shader_type;
 	return GLSL_NO_ERROR;
 _cleanup:
-	glsl_ast_delete(ast);
+	glsl_ast_delete(out);
 	return error;
 }

@@ -140,22 +140,25 @@ int main(void){
 		goto _error;
 	}
 	// glsl_debug_print_token_list(&token_list);
-	glsl_linker_program_t program;
-	glsl_linker_program_init(&program);
-	error=glsl_parser_parse_tokens(&token_list,&program,GLSL_SHADER_TYPE_VERTEX);
+	glsl_ast_t ast;
+	error=glsl_parser_parse_tokens(&token_list,GLSL_SHADER_TYPE_VERTEX,&ast);
 	glsl_lexer_delete_token_list(&token_list);
 	if (error){
 		goto _error;
 	}
-	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_VERTEX);
+	// glsl_debug_print_ast(&ast);
 	glsl_compilation_output_t compilation_output;
-	error=glsl_compiler_compile(program.shaders,&compilation_output);
+	error=glsl_compiler_compile(&ast,&compilation_output);
 	if (error){
 		goto _error;
 	}
-	glsl_debug_print_compilation_output(&compilation_output);
-	glsl_compiler_compilation_output_delete(&compilation_output);
-	return 0;
+	// glsl_debug_print_compilation_output(&compilation_output);
+	glsl_linker_program_t program;
+	glsl_linker_program_init(&program);
+	error=glsl_linker_attach_program(&program,&compilation_output);
+	if (error){
+		goto _error;
+	}
 	glsl_preprocessor_state_init(&preprocessor_state);
 	error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
 	if (error){
@@ -176,12 +179,21 @@ int main(void){
 		goto _error;
 	}
 	// glsl_debug_print_token_list(&token_list);
-	error=glsl_parser_parse_tokens(&token_list,&program,GLSL_SHADER_TYPE_FRAGMENT);
+	error=glsl_parser_parse_tokens(&token_list,GLSL_SHADER_TYPE_FRAGMENT,&ast);
 	glsl_lexer_delete_token_list(&token_list);
 	if (error){
 		goto _error;
 	}
-	// glsl_debug_print_ast(program.shaders+GLSL_SHADER_TYPE_FRAGMENT);
+	// glsl_debug_print_ast(&ast);
+	error=glsl_compiler_compile(&ast,&compilation_output);
+	if (error){
+		goto _error;
+	}
+	// glsl_debug_print_compilation_output(&compilation_output);
+	error=glsl_linker_attach_program(&program,&compilation_output);
+	if (error){
+		goto _error;
+	}
 	glsl_linker_linked_program_t linked_program;
 	error=glsl_linker_program_link(&program,((glsl_backend_descriptor_query_func_t)sys_lib_lookup_symbol(backend_lib,"_glsl_backend_query_descriptor"))(),&linked_program);
 	glsl_linker_program_delete(&program);
