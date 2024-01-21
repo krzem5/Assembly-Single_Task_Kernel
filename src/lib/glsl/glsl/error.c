@@ -256,6 +256,13 @@ glsl_error_t _glsl_error_create_parser_non_constant_initializer(void){
 
 
 
+glsl_error_t _glsl_error_create_parser_too_many_arguments(void){
+	char buffer[ERROR_BUFFER_SIZE];
+	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Too many arguments"));
+}
+
+
+
 glsl_error_t _glsl_error_create_linker_missing_shader(glsl_shader_type_t shader_type){
 	char buffer[ERROR_BUFFER_SIZE];
 	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"%s shader missing",(shader_type==GLSL_SHADER_TYPE_VERTEX?"Vertex":"Fragment")));

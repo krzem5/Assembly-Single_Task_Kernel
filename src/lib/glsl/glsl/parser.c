@@ -222,7 +222,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 			node->args.count=0;
 			do{
 				if (node->args.count==GLSL_AST_NODE_MAX_ARG_COUNT){
-					*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
+					*error=_glsl_error_create_parser_too_many_arguments();
 					goto _cleanup;
 				}
 				glsl_ast_node_t* arg=_parse_expression(parser,GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN,1,error);
