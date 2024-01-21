@@ -82,6 +82,7 @@ typedef struct _GLSL_COMPILATION_OUTPUT{
 	u16 var_count;
 	u16 instruction_count;
 	u16 const_count;
+	u16 local_count;
 	u16 _var_capacity;
 	u16 _instruction_capacity;
 	glsl_compilation_output_var_t* vars;

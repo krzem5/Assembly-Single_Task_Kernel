@@ -138,6 +138,10 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 		_glsl_interface_allocator_reserve(&(state->local_variable_allocator),&slot,glsl_builtin_type_to_slot_count(builtin_type),1);
 		out->base=slot;
 		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
+		u32 end=slot+glsl_builtin_type_to_slot_count(builtin_type);
+		if (end>state->output->local_count){
+			state->output->local_count=end;
+		}
 		return;
 	}
 	if (node->type==GLSL_AST_NODE_TYPE_VAR_CONST){
@@ -445,6 +449,7 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	out->var_count=0;
 	out->instruction_count=0;
 	out->const_count=0;
+	out->local_count=0;
 	out->_var_capacity=0;
 	out->_instruction_capacity=0;
 	out->vars=NULL;
@@ -471,6 +476,7 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
 	}
+	sys_io_print("Local count: %u\n",out->local_count);
 	for (u32 i=0;i<out->const_count;i+=4){
 		sys_io_print("[%u]: %f %f %f %f\n",i>>2,out->consts[i],out->consts[i+1],out->consts[i+2],out->consts[i+3]);
 	}
