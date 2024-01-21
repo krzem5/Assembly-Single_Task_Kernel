@@ -17,7 +17,7 @@ static void _print_indentation(u32 indentation){
 
 
 static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
-	if (node->type==GLSL_AST_NODE_TYPE_BLOCK){
+	if (node->type==new_GLSL_AST_NODE_TYPE_BLOCK){
 		if (node->block_scope){
 			sys_io_print("(%u)",node->block_scope);
 		}
@@ -40,20 +40,16 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 	}
 	char* type_str=glsl_ast_type_to_string(node->value_type);
 	switch (node->type){
-		case GLSL_AST_NODE_TYPE_NONE:
+		case new_GLSL_AST_NODE_TYPE_NONE:
 			sys_io_print("<invalid ast node>");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
+			break;
+		case new_GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			sys_io_print("GLSL_AST_NODE_TYPE_ARRAY_ACCESS");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_BIT_INVERSE:
-		case GLSL_AST_NODE_TYPE_NEGATE:
-		case GLSL_AST_NODE_TYPE_NOT:
-			goto _unary_op;
-		case GLSL_AST_NODE_TYPE_CALL:
+			break;
+		case new_GLSL_AST_NODE_TYPE_CALL:
 			sys_io_print("GLSL_AST_NODE_TYPE_CALL");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
+			break;
+		case new_GLSL_AST_NODE_TYPE_CONSTRUCTOR:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: constructor,\n");
@@ -76,11 +72,11 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("]\n");
 			_print_indentation(indentation);
 			sys_io_print("}");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_COMMA:
+			break;
+		case new_GLSL_AST_NODE_TYPE_INLINE_BLOCK:
 			sys_io_print("GLSL_AST_NODE_TYPE_COMMA");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
+			break;
+		case new_GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: member_access,\n");
@@ -94,20 +90,32 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("\n");
 			_print_indentation(indentation);
 			sys_io_print("}");
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_VAR:
-			sys_io_print("%s",node->var->name);
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_VAR_BOOL:
-			sys_io_print("%s",(node->var_bool?"true":"false"));
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_VAR_FLOAT:
-			sys_io_print("%f",node->var_float);
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_VAR_INT:
-			sys_io_print("%ld",node->var_int);
-			goto _cleanup;
-		case GLSL_AST_NODE_TYPE_SWIZZLE:
+			break;
+		case new_GLSL_AST_NODE_TYPE_OPERATOR:
+			sys_io_print("{\n");
+			_print_indentation(indentation+2);
+			sys_io_print("op: %u,\n",node->operator_type);
+			_print_indentation(indentation+2);
+			sys_io_print("type: %s,\n",type_str);
+			_print_indentation(indentation+2);
+			sys_io_print("args: [");
+			for (u32 i=0;i<node->arg_count;i++){
+				sys_io_print("\n");
+				_print_indentation(indentation+4);
+				_print_ast_node(glsl_ast_get_arg(node,i),indentation+4);
+				if (i<node->arg_count-1){
+					sys_io_print(",");
+				}
+			}
+			if (node->arg_count){
+				sys_io_print("\n");
+				_print_indentation(indentation+2);
+			}
+			sys_io_print("]\n");
+			_print_indentation(indentation);
+			sys_io_print("}");
+			break;
+		case new_GLSL_AST_NODE_TYPE_SWIZZLE:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: swizzle,\n");
@@ -125,37 +133,94 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("\n");
 			_print_indentation(indentation);
 			sys_io_print("}");
-			goto _cleanup;
+			break;
+		case new_GLSL_AST_NODE_TYPE_VAR:
+			sys_io_print("%s",node->var->name);
+			break;
+		case new_GLSL_AST_NODE_TYPE_VAR_CONST:
+			switch (node->value_type->builtin_type){
+				default:
+				case GLSL_BUILTIN_TYPE_INT:
+					sys_io_print("<GLSL_BUILTIN_TYPE_INT>");
+					break;
+				case GLSL_BUILTIN_TYPE_VOID:
+					sys_io_print("<GLSL_BUILTIN_TYPE_VOID>");
+					break;
+				case GLSL_BUILTIN_TYPE_BOOL:
+					sys_io_print("<GLSL_BUILTIN_TYPE_BOOL>");
+					break;
+				case GLSL_BUILTIN_TYPE_FLOAT:
+					sys_io_print("<GLSL_BUILTIN_TYPE_FLOAT>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT22:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT22>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT33:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT33>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT44:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT44>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT23:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT23>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT24:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT24>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT32:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT32>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT34:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT34>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT42:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT42>");
+					break;
+				case GLSL_BUILTIN_TYPE_MAT43:
+					sys_io_print("<GLSL_BUILTIN_TYPE_MAT43>");
+					break;
+				case GLSL_BUILTIN_TYPE_VEC2:
+					sys_io_print("<GLSL_BUILTIN_TYPE_VEC2>");
+					break;
+				case GLSL_BUILTIN_TYPE_VEC3:
+					sys_io_print("<GLSL_BUILTIN_TYPE_VEC3>");
+					break;
+				case GLSL_BUILTIN_TYPE_VEC4:
+					sys_io_print("<GLSL_BUILTIN_TYPE_VEC4>");
+					break;
+				case GLSL_BUILTIN_TYPE_IVEC2:
+					sys_io_print("<GLSL_BUILTIN_TYPE_IVEC2>");
+					break;
+				case GLSL_BUILTIN_TYPE_IVEC3:
+					sys_io_print("<GLSL_BUILTIN_TYPE_IVEC3>");
+					break;
+				case GLSL_BUILTIN_TYPE_IVEC4:
+					sys_io_print("<GLSL_BUILTIN_TYPE_IVEC4>");
+					break;
+				case GLSL_BUILTIN_TYPE_BVEC2:
+					sys_io_print("<GLSL_BUILTIN_TYPE_BVEC2>");
+					break;
+				case GLSL_BUILTIN_TYPE_BVEC3:
+					sys_io_print("<GLSL_BUILTIN_TYPE_BVEC3>");
+					break;
+				case GLSL_BUILTIN_TYPE_BVEC4:
+					sys_io_print("<GLSL_BUILTIN_TYPE_BVEC4>");
+					break;
+				case GLSL_BUILTIN_TYPE_UINT:
+					sys_io_print("<GLSL_BUILTIN_TYPE_UINT>");
+					break;
+				case GLSL_BUILTIN_TYPE_UVEC2:
+					sys_io_print("<GLSL_BUILTIN_TYPE_UVEC2>");
+					break;
+				case GLSL_BUILTIN_TYPE_UVEC3:
+					sys_io_print("<GLSL_BUILTIN_TYPE_UVEC3>");
+					break;
+				case GLSL_BUILTIN_TYPE_UVEC4:
+					sys_io_print("<GLSL_BUILTIN_TYPE_UVEC4>");
+					break;
+			}
+			break;
 	}
-	sys_io_print("{\n");
-	_print_indentation(indentation+2);
-	sys_io_print("op: %s,\n",glsl_ast_node_type_to_string(node->type));
-	_print_indentation(indentation+2);
-	sys_io_print("type: %s,\n",type_str);
-	_print_indentation(indentation+2);
-	sys_io_print("left: ");
-	_print_ast_node(glsl_ast_get_arg(node,0),indentation+2);
-	sys_io_print(",\n");
-	_print_indentation(indentation+2);
-	sys_io_print("right: ");
-	_print_ast_node(glsl_ast_get_arg(node,1),indentation+2);
-	sys_io_print("\n");
-	_print_indentation(indentation);
-	sys_io_print("}");
-	goto _cleanup;
-_unary_op:
-	sys_io_print("{\n");
-	_print_indentation(indentation+2);
-	sys_io_print("op: %s,\n",glsl_ast_node_type_to_string(node->type));
-	_print_indentation(indentation+2);
-	sys_io_print("type: %s,\n",type_str);
-	_print_indentation(indentation+2);
-	sys_io_print("value: ");
-	_print_ast_node(glsl_ast_get_arg(node,0),indentation+2);
-	sys_io_print("\n");
-	_print_indentation(indentation);
-	sys_io_print("}");
-_cleanup:
 	sys_heap_dealloc(NULL,type_str);
 }
 

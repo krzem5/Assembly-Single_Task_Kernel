@@ -59,7 +59,7 @@ static glsl_ast_node_t* _calculate_swizzle_type(glsl_ast_node_t* node,const char
 	if (size==length&&pattern==(0b11100100&((1<<(length<<1))-1))){
 		return node;
 	}
-	glsl_ast_node_t* out=glsl_ast_node_create(GLSL_AST_NODE_TYPE_SWIZZLE);
+	glsl_ast_node_t* out=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_SWIZZLE);
 	out->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 	out->value_type->builtin_type=glsl_builtin_type_from_base_type_and_length(glsl_builtin_type_to_vector_base_type(node->value_type->builtin_type),length);
 	out->swizzle.value=node;
@@ -227,7 +227,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_expression_stack_overflow();
 				goto _cleanup;
 			}
-			glsl_ast_node_t* node=glsl_ast_node_create(GLSL_AST_NODE_TYPE_CONSTRUCTOR);
+			glsl_ast_node_t* node=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_CONSTRUCTOR);
 			value_stack[value_stack_size]=node;
 			value_stack_size++;
 			node->value_type=constructor_type;
@@ -266,7 +266,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_undefined(identifier);
 				goto _cleanup;
 			}
-			value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR);
+			value_stack[value_stack_size]=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_VAR);
 			value_stack[value_stack_size]->value_type=glsl_ast_type_duplicate(var->type);
 			value_stack[value_stack_size]->var=var;
 			value_stack_size++;
@@ -280,7 +280,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_expression_stack_overflow();
 				goto _cleanup;
 			}
-			value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR_BOOL);
+			value_stack[value_stack_size]=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_VAR_CONST);
 			value_stack[value_stack_size]->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 			value_stack[value_stack_size]->value_type->builtin_type=GLSL_BUILTIN_TYPE_BOOL;
 			value_stack[value_stack_size]->var_bool=value;
@@ -295,7 +295,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_expression_stack_overflow();
 				goto _cleanup;
 			}
-			value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR_INT);
+			value_stack[value_stack_size]=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_VAR_CONST);
 			value_stack[value_stack_size]->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 			value_stack[value_stack_size]->value_type->builtin_type=GLSL_BUILTIN_TYPE_INT;
 			value_stack[value_stack_size]->var_int=value;
@@ -310,7 +310,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				*error=_glsl_error_create_parser_expression_stack_overflow();
 				goto _cleanup;
 			}
-			value_stack[value_stack_size]=glsl_ast_node_create(GLSL_AST_NODE_TYPE_VAR_FLOAT);
+			value_stack[value_stack_size]=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_VAR_CONST);
 			value_stack[value_stack_size]->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 			value_stack[value_stack_size]->value_type->builtin_type=GLSL_BUILTIN_TYPE_FLOAT;
 			value_stack[value_stack_size]->var_float=value;
@@ -384,7 +384,7 @@ _cleanup:
 
 
 static glsl_ast_node_t* _parse_statements(glsl_parser_state_t* parser,u32 end_glsl_lexer_token_type,glsl_ast_scope_t scope,glsl_error_t* error){
-	glsl_ast_node_t* out=glsl_ast_node_create(GLSL_AST_NODE_TYPE_BLOCK);
+	glsl_ast_node_t* out=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_BLOCK);
 	out->block_scope=scope;
 	out->arg_count=0;
 	while (1){

@@ -12,55 +12,6 @@
 
 
 
-static const char*const _glsl_ast_node_type_to_string[GLSL_AST_NODE_MAX_TYPE+1]={
-	[GLSL_AST_NODE_TYPE_NONE]="<none>",
-	[GLSL_AST_NODE_TYPE_ADD]="+",
-	[GLSL_AST_NODE_TYPE_ADD_ASSIGN]="+=",
-	[GLSL_AST_NODE_TYPE_AND]="&",
-	[GLSL_AST_NODE_TYPE_AND_ASSIGN]="&=",
-	[GLSL_AST_NODE_TYPE_ARRAY_ACCESS]="<array_access>",
-	[GLSL_AST_NODE_TYPE_ASSIGN]="=",
-	[GLSL_AST_NODE_TYPE_BIT_INVERSE]="~",
-	[GLSL_AST_NODE_TYPE_CALL]="<call>",
-	[GLSL_AST_NODE_TYPE_CONSTRUCTOR]="<constructor>",
-	[GLSL_AST_NODE_TYPE_COMMA]=",",
-	[GLSL_AST_NODE_TYPE_DIVIDE]="/",
-	[GLSL_AST_NODE_TYPE_DIVIDE_ASSIGN]="/=",
-	[GLSL_AST_NODE_TYPE_EQUALS]="==",
-	[GLSL_AST_NODE_TYPE_GREATER_THAN]=">",
-	[GLSL_AST_NODE_TYPE_LEFT_SHIFT]="<<",
-	[GLSL_AST_NODE_TYPE_LEFT_SHIFT_ASSIGN]="<<=",
-	[GLSL_AST_NODE_TYPE_LESS_THAN]="<",
-	[GLSL_AST_NODE_TYPE_LOGICAL_AND]="&&",
-	[GLSL_AST_NODE_TYPE_LOGICAL_OR]="||",
-	[GLSL_AST_NODE_TYPE_MEMBER_ACCESS]=".",
-	[GLSL_AST_NODE_TYPE_MODULO]="%",
-	[GLSL_AST_NODE_TYPE_MODULO_ASSIGN]="%=",
-	[GLSL_AST_NODE_TYPE_MULTIPLY]="*",
-	[GLSL_AST_NODE_TYPE_MULTIPLY_ASSIGN]="*=",
-	[GLSL_AST_NODE_TYPE_NEGATE]="-",
-	[GLSL_AST_NODE_TYPE_NOT]="!",
-	[GLSL_AST_NODE_TYPE_NOT_EQUALS]="!=",
-	[GLSL_AST_NODE_TYPE_NOT_GREATER_THAN]="<=",
-	[GLSL_AST_NODE_TYPE_NOT_LESS_THAN]=">=",
-	[GLSL_AST_NODE_TYPE_OR]="|",
-	[GLSL_AST_NODE_TYPE_OR_ASSIGN]="|=",
-	[GLSL_AST_NODE_TYPE_RIGHT_SHIFT]=">>",
-	[GLSL_AST_NODE_TYPE_RIGHT_SHIFT_ASSIGN]=">>=",
-	[GLSL_AST_NODE_TYPE_SUBTRACT]="-",
-	[GLSL_AST_NODE_TYPE_SUBTRACT_ASSIGN]="-=",
-	[GLSL_AST_NODE_TYPE_VAR]="<var>",
-	[GLSL_AST_NODE_TYPE_VAR_BOOL]="<var_bool>",
-	[GLSL_AST_NODE_TYPE_VAR_FLOAT]="<var_float>",
-	[GLSL_AST_NODE_TYPE_VAR_INT]="<var_int>",
-	[GLSL_AST_NODE_TYPE_XOR]="^",
-	[GLSL_AST_NODE_TYPE_XOR_ASSIGN]="^=",
-	[GLSL_AST_NODE_TYPE_BLOCK]="<block>",
-	[GLSL_AST_NODE_TYPE_SWIZZLE]="<swizzle>",
-};
-
-
-
 static u32 _type_to_string(const glsl_ast_type_t* type,char* buffer,u32 length){
 	if (type->type==GLSL_AST_TYPE_TYPE_BUILTIN){
 		length+=sys_format_string(buffer+length,TYPE_STRING_BUFFER_SIZE-length,"%s",glsl_builtin_type_to_string(type->builtin_type));
@@ -266,44 +217,13 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 		glsl_ast_type_delete(node->value_type);
 	}
 	switch (node->type){
-		case GLSL_AST_NODE_TYPE_NONE:
+		case new_GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			break;
-		case GLSL_AST_NODE_TYPE_ADD:
-		case GLSL_AST_NODE_TYPE_ADD_ASSIGN:
-		case GLSL_AST_NODE_TYPE_AND:
-		case GLSL_AST_NODE_TYPE_AND_ASSIGN:
-		case GLSL_AST_NODE_TYPE_ASSIGN:
-		case GLSL_AST_NODE_TYPE_DIVIDE:
-		case GLSL_AST_NODE_TYPE_DIVIDE_ASSIGN:
-		case GLSL_AST_NODE_TYPE_EQUALS:
-		case GLSL_AST_NODE_TYPE_GREATER_THAN:
-		case GLSL_AST_NODE_TYPE_LEFT_SHIFT:
-		case GLSL_AST_NODE_TYPE_LEFT_SHIFT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_LESS_THAN:
-		case GLSL_AST_NODE_TYPE_LOGICAL_AND:
-		case GLSL_AST_NODE_TYPE_LOGICAL_OR:
-		case GLSL_AST_NODE_TYPE_MODULO:
-		case GLSL_AST_NODE_TYPE_MODULO_ASSIGN:
-		case GLSL_AST_NODE_TYPE_MULTIPLY:
-		case GLSL_AST_NODE_TYPE_MULTIPLY_ASSIGN:
-		case GLSL_AST_NODE_TYPE_NOT_EQUALS:
-		case GLSL_AST_NODE_TYPE_NOT_GREATER_THAN:
-		case GLSL_AST_NODE_TYPE_NOT_LESS_THAN:
-		case GLSL_AST_NODE_TYPE_OR:
-		case GLSL_AST_NODE_TYPE_OR_ASSIGN:
-		case GLSL_AST_NODE_TYPE_RIGHT_SHIFT:
-		case GLSL_AST_NODE_TYPE_RIGHT_SHIFT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_SUBTRACT:
-		case GLSL_AST_NODE_TYPE_SUBTRACT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_XOR:
-		case GLSL_AST_NODE_TYPE_XOR_ASSIGN:
-		case GLSL_AST_NODE_TYPE_BIT_INVERSE:
-		case GLSL_AST_NODE_TYPE_NEGATE:
-		case GLSL_AST_NODE_TYPE_NOT:
-		case GLSL_AST_NODE_TYPE_CALL:
-		case GLSL_AST_NODE_TYPE_COMMA:
-		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
-		case GLSL_AST_NODE_TYPE_BLOCK:
+		case new_GLSL_AST_NODE_TYPE_BLOCK:
+		case new_GLSL_AST_NODE_TYPE_CALL:
+		case new_GLSL_AST_NODE_TYPE_CONSTRUCTOR:
+		case new_GLSL_AST_NODE_TYPE_INLINE_BLOCK:
+		case new_GLSL_AST_NODE_TYPE_OPERATOR:
 			for (u32 i=0;i<node->arg_count;i++){
 				glsl_ast_node_delete(glsl_ast_get_arg(node,i));
 			}
@@ -311,21 +231,13 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 				sys_heap_dealloc(NULL,node->args);
 			}
 			break;
-		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
-			break;
-		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
+		case new_GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			glsl_ast_node_delete(node->member_access.value);
 			sys_heap_dealloc(NULL,node->member_access.member);
 			break;
-		case GLSL_AST_NODE_TYPE_SWIZZLE:
+		case new_GLSL_AST_NODE_TYPE_SWIZZLE:
 			glsl_ast_node_delete(node->swizzle.value);
 			break;
 	}
 	sys_heap_dealloc(NULL,node);
-}
-
-
-
-SYS_PUBLIC const char* glsl_ast_node_type_to_string(glsl_ast_node_type_t type){
-	return _glsl_ast_node_type_to_string[type];
 }

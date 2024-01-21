@@ -7,21 +7,22 @@
 
 
 
-#define BUILD_NODE(node) GLSL_AST_NODE_TYPE_##node
+#define BUILD_OPERATOR(node) GLSL_AST_NODE_OPERATOR_TYPE_##node
 #define BUILD_TYPE(type) GLSL_BUILTIN_TYPE_##type
 
 #define MATCH(left_type,right_type) (glsl_builtin_type_is_compatible(left->value_type->builtin_type,BUILD_TYPE(left_type))&&glsl_builtin_type_is_compatible(right->value_type->builtin_type,BUILD_TYPE(right_type)))
 #define MATCH_EXACT(left_type,right_type) (left->value_type->builtin_type==BUILD_TYPE(left_type)&&right->value_type->builtin_type==BUILD_TYPE(right_type))
 
-#define MATCH_AND_RETURN(node_type,left_type,right_type,value_type) \
+#define MATCH_AND_RETURN(operator_type,left_type,right_type,value_type) \
 	if (MATCH(left_type,right_type)){ \
-		return _build_return_type(left,right,BUILD_NODE(node_type),BUILD_TYPE(value_type)); \
+		return _build_return_type(left,right,BUILD_OPERATOR(operator_type),BUILD_TYPE(value_type)); \
 	}
 
 
 
-static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t* right,glsl_ast_node_type_t node_type,glsl_builtin_type_t value_type){
-	glsl_ast_node_t* out=glsl_ast_node_create(node_type);
+static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t* right,glsl_ast_node_operator_type_t operator_type,glsl_builtin_type_t value_type){
+	glsl_ast_node_t* out=glsl_ast_node_create(new_GLSL_AST_NODE_TYPE_OPERATOR);
+	out->operator_type=operator_type;
 	out->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 	out->value_type->builtin_type=value_type;
 	out->args_inline[0]=left;
@@ -34,24 +35,30 @@ static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t
 
 static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* error){
 	switch (node->type){
-		case GLSL_AST_NODE_TYPE_NONE:
-		case GLSL_AST_NODE_TYPE_ADD_ASSIGN:
-		case GLSL_AST_NODE_TYPE_AND_ASSIGN:
-		case GLSL_AST_NODE_TYPE_ASSIGN:
-		case GLSL_AST_NODE_TYPE_DIVIDE_ASSIGN:
-		case GLSL_AST_NODE_TYPE_LEFT_SHIFT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_MODULO_ASSIGN:
-		case GLSL_AST_NODE_TYPE_MULTIPLY_ASSIGN:
-		case GLSL_AST_NODE_TYPE_OR_ASSIGN:
-		case GLSL_AST_NODE_TYPE_RIGHT_SHIFT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_SUBTRACT_ASSIGN:
-		case GLSL_AST_NODE_TYPE_XOR_ASSIGN:
+		case new_GLSL_AST_NODE_TYPE_NONE:
+		case new_GLSL_AST_NODE_TYPE_VAR_CONST:
 			return 1;
-		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
+		case new_GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			return 0;
-		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
+		case new_GLSL_AST_NODE_TYPE_OPERATOR:
+			if (node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_ADD_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_AND_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_DIVIDE_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_LEFT_SHIFT_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_MODULO_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_MULTIPLY_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_OR_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_RIGHT_SHIFT_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_SUBTRACT_ASSIGN||node->operator_type==GLSL_AST_NODE_OPERATOR_TYPE_XOR_ASSIGN){
+				return 1;
+			}
+		case new_GLSL_AST_NODE_TYPE_BLOCK:
+		case new_GLSL_AST_NODE_TYPE_CALL:
+		case new_GLSL_AST_NODE_TYPE_CONSTRUCTOR:
+		case new_GLSL_AST_NODE_TYPE_INLINE_BLOCK:
+			for (u32 i=0;i<node->arg_count;i++){
+				if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
+					return 0;
+				}
+			}
+			return 1;
+		case new_GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			return _mark_read_usage_recursive(node->member_access.value,error);
-		case GLSL_AST_NODE_TYPE_VAR:
+		case new_GLSL_AST_NODE_TYPE_SWIZZLE:
+			return _mark_read_usage_recursive(node->swizzle.value,error);
+		case new_GLSL_AST_NODE_TYPE_VAR:
 			if (!(node->var->possible_usage_flags&GLSL_AST_VAR_USAGE_FLAG_READ)){
 				*error=_glsl_error_create_parser_disallowed_operation(&(node->var->storage),GLSL_AST_VAR_USAGE_FLAG_READ);
 				return 0;
@@ -62,25 +69,14 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 			}
 			node->var->usage_flags|=GLSL_AST_VAR_USAGE_FLAG_READ;
 			return 1;
-		case GLSL_AST_NODE_TYPE_VAR_BOOL:
-		case GLSL_AST_NODE_TYPE_VAR_FLOAT:
-		case GLSL_AST_NODE_TYPE_VAR_INT:
-			return 1;
-		case GLSL_AST_NODE_TYPE_SWIZZLE:
-			return _mark_read_usage_recursive(node->swizzle.value,error);
 	}
-	for (u32 i=0;i<node->arg_count;i++){
-		if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
-			return 0;
-		}
-	}
-	return 1;
+	return 0;
 }
 
 
 
 static _Bool _check_lvalue_recursive(glsl_ast_node_t* value,glsl_error_t* error){
-	if (value->type==GLSL_AST_NODE_TYPE_VAR){
+	if (value->type==new_GLSL_AST_NODE_TYPE_VAR){
 		if (!(value->var->possible_usage_flags&GLSL_AST_VAR_USAGE_FLAG_WRITE)){
 			*error=_glsl_error_create_parser_disallowed_operation(&(value->var->storage),GLSL_AST_VAR_USAGE_FLAG_WRITE);
 			return 0;
@@ -89,7 +85,7 @@ static _Bool _check_lvalue_recursive(glsl_ast_node_t* value,glsl_error_t* error)
 		value->var->flags|=GLSL_AST_VAR_FLAG_INITIALIZED;
 		return 1;
 	}
-	if (value->type==GLSL_AST_NODE_TYPE_SWIZZLE){
+	if (value->type==new_GLSL_AST_NODE_TYPE_SWIZZLE){
 		u32 component_bitmap=0;
 		for (u32 i=0;i<value->swizzle.pattern_length;i++){
 			u32 component=(value->swizzle.pattern>>(i<<1))&3;
