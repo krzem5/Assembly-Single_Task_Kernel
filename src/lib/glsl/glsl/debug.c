@@ -22,15 +22,15 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 		if (node->block_scope){
 			sys_io_print("(%u)",node->block_scope);
 		}
-		if (!node->arg_count){
+		if (!node->block.length){
 			sys_io_print("[]");
 			return;
 		}
 		sys_io_print("[\n");
-		for (u32 i=0;i<node->arg_count;i++){
+		for (u32 i=0;i<node->block.length;i++){
 			_print_indentation(indentation+2);
-			_print_ast_node(glsl_ast_get_arg(node,i),indentation+2);
-			if (i<node->arg_count-1){
+			_print_ast_node(node->block.data[i],indentation+2);
+			if (i<node->block.length-1){
 				sys_io_print(",");
 			}
 			sys_io_print("\n");
@@ -58,15 +58,15 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("type: %s,\n",type_str);
 			_print_indentation(indentation+2);
 			sys_io_print("args: [");
-			for (u32 i=0;i<node->arg_count;i++){
+			for (u32 i=0;i<node->args.count;i++){
 				sys_io_print("\n");
 				_print_indentation(indentation+4);
-				_print_ast_node(glsl_ast_get_arg(node,i),indentation+4);
-				if (i<node->arg_count-1){
+				_print_ast_node(node->args.data[i],indentation+4);
+				if (i<node->args.count-1){
 					sys_io_print(",");
 				}
 			}
-			if (node->arg_count){
+			if (node->args.count){
 				sys_io_print("\n");
 				_print_indentation(indentation+2);
 			}
@@ -100,15 +100,15 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("type: %s,\n",type_str);
 			_print_indentation(indentation+2);
 			sys_io_print("args: [");
-			for (u32 i=0;i<node->arg_count;i++){
+			for (u32 i=0;i<node->args.count;i++){
 				sys_io_print("\n");
 				_print_indentation(indentation+4);
-				_print_ast_node(glsl_ast_get_arg(node,i),indentation+4);
-				if (i<node->arg_count-1){
+				_print_ast_node(node->args.data[i],indentation+4);
+				if (i<node->args.count-1){
 					sys_io_print(",");
 				}
 			}
-			if (node->arg_count){
+			if (node->args.count){
 				sys_io_print("\n");
 				_print_indentation(indentation+2);
 			}

@@ -220,15 +220,17 @@ SYS_PUBLIC void glsl_ast_node_delete(glsl_ast_node_t* node){
 		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			break;
 		case GLSL_AST_NODE_TYPE_BLOCK:
+			for (u32 i=0;i<node->block.length;i++){
+				glsl_ast_node_delete(node->block.data[i]);
+			}
+			sys_heap_dealloc(NULL,node->block.data);
+			break;
 		case GLSL_AST_NODE_TYPE_CALL:
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
 		case GLSL_AST_NODE_TYPE_INLINE_BLOCK:
 		case GLSL_AST_NODE_TYPE_OPERATOR:
-			for (u32 i=0;i<node->arg_count;i++){
-				glsl_ast_node_delete(glsl_ast_get_arg(node,i));
-			}
-			if (node->arg_count>GLSL_AST_NODE_INLINE_ARG_COUNT){
-				sys_heap_dealloc(NULL,node->args);
+			for (u32 i=0;i<node->args.count;i++){
+				glsl_ast_node_delete(node->args.data[i]);
 			}
 			break;
 		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:

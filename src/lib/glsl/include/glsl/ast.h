@@ -5,7 +5,7 @@
 
 
 
-#define GLSL_AST_NODE_INLINE_ARG_COUNT 7
+#define GLSL_AST_NODE_MAX_ARG_COUNT 7
 
 #define GLSL_AST_NODE_TYPE_NONE 0
 #define GLSL_AST_NODE_TYPE_ARRAY_ACCESS 1
@@ -108,6 +108,23 @@ typedef struct _GLSL_AST_NODE{
 	};
 	glsl_ast_type_t* value_type;
 	union{
+		struct{
+			struct _GLSL_AST_NODE* data[GLSL_AST_NODE_MAX_ARG_COUNT];
+			u32 count;
+		} args;
+		struct{
+			struct _GLSL_AST_NODE** data;
+			u32 length;
+		} block;
+		struct{
+			struct _GLSL_AST_NODE* value;
+			char* member;
+		} member_access;
+		struct{
+			struct _GLSL_AST_NODE* value;
+			glsl_ast_swizzle_t pattern;
+			u8 pattern_length;
+		} swizzle;
 		union{
 			struct _GLSL_AST_VAR* var;
 			_Bool var_bool;
@@ -119,22 +136,6 @@ typedef struct _GLSL_AST_NODE{
 			u32 var_vector_uint[4];
 			float var_matrix[16];
 		};
-		struct{
-			union{
-				struct _GLSL_AST_NODE* args_inline[GLSL_AST_NODE_INLINE_ARG_COUNT];
-				struct _GLSL_AST_NODE** args;
-			};
-			u32 arg_count;
-		};
-		struct{
-			struct _GLSL_AST_NODE* value;
-			char* member;
-		} member_access;
-		struct{
-			struct _GLSL_AST_NODE* value;
-			glsl_ast_swizzle_t pattern;
-			u8 pattern_length;
-		} swizzle;
 	};
 } glsl_ast_node_t;
 
@@ -185,12 +186,6 @@ typedef struct _GLSL_AST{
 	glsl_ast_named_type_t** named_types;
 	glsl_ast_var_t** vars;
 } glsl_ast_t;
-
-
-
-static inline glsl_ast_node_t* glsl_ast_get_arg(const glsl_ast_node_t* node,u32 idx){
-	return (node->arg_count>=GLSL_AST_NODE_INLINE_ARG_COUNT?node->args:node->args_inline)[idx];
-}
 
 
 

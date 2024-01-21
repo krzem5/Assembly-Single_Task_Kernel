@@ -33,9 +33,9 @@ static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t
 	out->operator_type=operator_type;
 	out->value_type=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 	out->value_type->builtin_type=value_type;
-	out->args_inline[0]=left;
-	out->args_inline[1]=right;
-	out->arg_count=2;
+	out->args.data[0]=left;
+	out->args.data[1]=right;
+	out->args.count=2;
 	return out;
 }
 
@@ -48,16 +48,22 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 			return 1;
 		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			return 0;
+		case GLSL_AST_NODE_TYPE_BLOCK:
+			for (u32 i=0;i<node->block.length;i++){
+				if (!_mark_read_usage_recursive(node->block.data[i],error)){
+					return 0;
+				}
+			}
+			return 1;
 		case GLSL_AST_NODE_TYPE_OPERATOR:
 			if (node->operator_type>=GLSL_AST_NODE_OPERATOR_TYPE_ASSIGN_BOOL_BOOL&&node->operator_type<=GLSL_AST_NODE_OPERATOR_TYPE_ASSIGN_MAT44_MAT44){
 				return 1;
 			}
-		case GLSL_AST_NODE_TYPE_BLOCK:
 		case GLSL_AST_NODE_TYPE_CALL:
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
 		case GLSL_AST_NODE_TYPE_INLINE_BLOCK:
-			for (u32 i=0;i<node->arg_count;i++){
-				if (!_mark_read_usage_recursive(glsl_ast_get_arg(node,i),error)){
+			for (u32 i=0;i<node->args.count;i++){
+				if (!_mark_read_usage_recursive(node->args.data[i],error)){
 					return 0;
 				}
 			}
