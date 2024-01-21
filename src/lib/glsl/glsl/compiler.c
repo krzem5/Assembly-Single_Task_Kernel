@@ -27,10 +27,46 @@ typedef struct _COMPILER_STATE{
 
 typedef struct _REGISTER_STATE{
 	_Bool is_initialized;
-	u8 offset;
 	glsl_builtin_type_t builtin_type;
-	glsl_instruction_arg_t arg;
+	u16 base;
+	u16 offset;
+	u8 flags;
+	u8 pattern_length;
+	u8 pattern;
 } register_state_t;
+
+
+
+static const char* _glsl_instruction_type_to_string[]={
+	[GLSL_INSTRUCTION_TYPE_NOP]="nop",
+	[GLSL_INSTRUCTION_TYPE_MOV]="mov",
+	[GLSL_INSTRUCTION_TYPE_ADD]="add",
+	[GLSL_INSTRUCTION_TYPE_SUB]="sub",
+	[GLSL_INSTRUCTION_TYPE_MUL]="mul",
+	[GLSL_INSTRUCTION_TYPE_DIV]="div",
+	[GLSL_INSTRUCTION_TYPE_MOD]="mod",
+	[GLSL_INSTRUCTION_TYPE_AND]="and",
+	[GLSL_INSTRUCTION_TYPE_IOR]="ior",
+	[GLSL_INSTRUCTION_TYPE_XOR]="xor",
+	[GLSL_INSTRUCTION_TYPE_DP2]="dp2",
+	[GLSL_INSTRUCTION_TYPE_DP3]="dp3",
+	[GLSL_INSTRUCTION_TYPE_DP4]="dp4",
+	[GLSL_INSTRUCTION_TYPE_EXP]="exp",
+	[GLSL_INSTRUCTION_TYPE_LOG]="log",
+	[GLSL_INSTRUCTION_TYPE_POW]="pow",
+	[GLSL_INSTRUCTION_TYPE_SRT]="srt",
+	[GLSL_INSTRUCTION_TYPE_RCP]="rcp",
+	[GLSL_INSTRUCTION_TYPE_MAD]="mad",
+	[GLSL_INSTRUCTION_TYPE_FLR]="flr",
+	[GLSL_INSTRUCTION_TYPE_CEL]="cel",
+	[GLSL_INSTRUCTION_TYPE_RND]="rnd",
+	[GLSL_INSTRUCTION_TYPE_FRC]="frc",
+	[GLSL_INSTRUCTION_TYPE_SIN]="sin",
+	[GLSL_INSTRUCTION_TYPE_COS]="cos",
+	[GLSL_INSTRUCTION_TYPE_IGN]="ign",
+	[GLSL_INSTRUCTION_TYPE_EMV]="emv",
+	[GLSL_INSTRUCTION_TYPE_EMP]="emp",
+};
 
 
 
@@ -90,57 +126,62 @@ static u16 _push_consts(glsl_compilation_output_t* output,const float* values,u8
 
 
 static _Bool _is_var_used(const glsl_ast_var_t* var){
-	return ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags))&&var->type->type!=GLSL_AST_TYPE_TYPE_FUNC;
+	return ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))
+		||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags))&&var->type->type!=GLSL_AST_TYPE_TYPE_FUNC;
 }
-
-
-
-// static _Bool _is_arg(const glsl_ast_node_t* node){
-// 	return node->type==GLSL_AST_NODE_TYPE_VAR||node->type==GLSL_AST_NODE_TYPE_VAR_CONST||(node->type==GLSL_AST_NODE_TYPE_SWIZZLE&&(node->swizzle.value->type==GLSL_AST_NODE_TYPE_VAR||node->swizzle.value->type==GLSL_AST_NODE_TYPE_VAR_CONST));
-// }
 
 
 
 static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node_t* node,glsl_builtin_type_t builtin_type,register_state_t* out){
 	out->is_initialized=1;
-	out->offset=0;
 	out->builtin_type=builtin_type;
+	out->offset=0;
+	out->flags=0;
+	out->pattern_length=0;
+	out->pattern=0;
 	if (!node){
 		u32 slot;
 		_glsl_interface_allocator_reserve(&(state->temporary_variable_allocator),&slot,glsl_builtin_type_to_slot_count(builtin_type));
-		out->arg.index=slot;
-		out->arg.pattern_length_and_flags=glsl_builtin_type_to_vector_length(builtin_type);
-		out->arg.pattern=0b11100100&(1<<(out->arg.pattern_length_and_flags<<1));
-		out->arg.pattern_length_and_flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
+		out->base=slot;
+		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
 		return;
 	}
 	if (node->type==GLSL_AST_NODE_TYPE_VAR_CONST){
-		out->arg.index=_push_consts(state->output,node->var_matrix,glsl_builtin_type_to_size(builtin_type));
-		out->arg.pattern_length_and_flags=glsl_builtin_type_to_vector_length(builtin_type);
-		out->arg.pattern=0b11100100&(1<<(out->arg.pattern_length_and_flags<<1));
-		out->arg.pattern_length_and_flags|=GLSL_INSTRUCTION_ARG_FLAG_CONST;
+		out->base=_push_consts(state->output,node->var_matrix,glsl_builtin_type_to_size(builtin_type));
+		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_CONST;
 		return;
 	}
-	if (node->type!=GLSL_AST_NODE_TYPE_SWIZZLE){
-		out->arg.pattern_length_and_flags=glsl_builtin_type_to_vector_length(node->value_type->builtin_type);
-		out->arg.pattern=0b11100100&(1<<(out->arg.pattern_length_and_flags<<1));
-	}
-	else{
-		out->arg.pattern_length_and_flags=node->swizzle.pattern_length;
-		out->arg.pattern=node->swizzle.pattern;
+	if (node->type==GLSL_AST_NODE_TYPE_SWIZZLE){
+		out->pattern_length=node->swizzle.pattern_length;
+		out->pattern=node->swizzle.pattern;
 		node=node->swizzle.value;
 	}
 	if (node->type==GLSL_AST_NODE_TYPE_VAR){
 		if (node->var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT){
-			out->arg.index=node->var->_compiler_data;
-			out->arg.pattern_length_and_flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
+			out->base=node->var->_compiler_data;
+			out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
 		}
 		else{
-			out->arg.index=node->var->_compiler_data;
+			out->base=node->var->_compiler_data;
 		}
 		return;
 	}
 	sys_io_print("_calculate_output_target: GLSL_AST_NODE_TYPE_VAR_CONST swizzle\n");
+}
+
+
+
+static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg){
+	arg->index=reg->base;
+	if (reg->pattern_length){
+		arg->pattern_length_and_flags=reg->pattern_length-1;
+		arg->pattern=reg->pattern;
+	}
+	else{
+		arg->pattern_length_and_flags=glsl_builtin_type_to_vector_length(reg->builtin_type)-1;
+		arg->pattern=0b11100100&((1<<((arg->pattern_length_and_flags+1)<<1))-1);
+	}
+	arg->pattern_length_and_flags|=(reg->offset&0xfc)|(reg->flags&(GLSL_INSTRUCTION_ARG_FLAG_CONST|GLSL_INSTRUCTION_ARG_FLAG_LOCAL));
 }
 
 
@@ -153,36 +194,36 @@ static void _generate_move(compiler_state_t* state,const register_state_t* src,c
 
 static void _generate_add(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_ADD,3);
-	instruction->args[0]=out->arg;
-	instruction->args[1]=a->arg;
-	instruction->args[2]=b->arg;
+	_generate_instruction_arg(out,instruction->args);
+	_generate_instruction_arg(a,instruction->args+1);
+	_generate_instruction_arg(b,instruction->args+2);
 }
 
 
 
 static void _generate_multiply(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MUL,3);
-	instruction->args[0]=out->arg;
-	instruction->args[1]=a->arg;
-	instruction->args[2]=b->arg;
+	_generate_instruction_arg(out,instruction->args);
+	_generate_instruction_arg(a,instruction->args+1);
+	_generate_instruction_arg(b,instruction->args+2);
 }
 
 
 
 static void _generate_subtract(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_SUB,3);
-	instruction->args[0]=out->arg;
-	instruction->args[1]=a->arg;
-	instruction->args[2]=b->arg;
+	_generate_instruction_arg(out,instruction->args);
+	_generate_instruction_arg(a,instruction->args+1);
+	_generate_instruction_arg(b,instruction->args+2);
 }
 
 
 
 static void _generate_dot_product_3d(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_DP3,3);
-	instruction->args[0]=out->arg;
-	instruction->args[1]=a->arg;
-	instruction->args[2]=b->arg;
+	_generate_instruction_arg(out,instruction->args);
+	_generate_instruction_arg(a,instruction->args+1);
+	_generate_instruction_arg(b,instruction->args+2);
 }
 
 
@@ -300,22 +341,16 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 		case GLSL_AST_NODE_OPERATOR_TYPE_MULTIPLY_MAT33_VEC3:
 			{
 				register_state_t tmp;
-				_calculate_output_target(state,NULL,GLSL_BUILTIN_TYPE_VEC3,&tmp);
+				_calculate_output_target(state,NULL,GLSL_BUILTIN_TYPE_FLOAT,&tmp);
 				_generate_dot_product_3d(state,regs,regs+1,&tmp);
-				tmp.arg.pattern_length_and_flags=1|GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
-				tmp.arg.pattern=0b00;
 				_generate_move(state,&tmp,output_register);
 				regs->offset+=4;
 				output_register->offset++;
 				_generate_dot_product_3d(state,regs,regs+1,&tmp);
-				tmp.arg.pattern_length_and_flags=1|GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
-				tmp.arg.pattern=0b00;
 				_generate_move(state,&tmp,output_register);
 				regs->offset+=4;
 				output_register->offset++;
 				_generate_dot_product_3d(state,regs,regs+1,&tmp);
-				tmp.arg.pattern_length_and_flags=1|GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
-				tmp.arg.pattern=0b00;
 				_generate_move(state,&tmp,output_register);
 				output_register->offset-=2;
 				break;
@@ -385,6 +420,36 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	error=_visit_node(main_function->value,&state,&tmp);
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
+	}
+	for (u32 i=0;i<out->const_count;i++){
+		sys_io_print("[%u]: %f\n",i,out->consts[i]);
+	}
+	for (u32 i=0;i<out->instruction_count;i++){
+		const glsl_instruction_t* instruction=out->instructions[i];
+		sys_io_print("%s",_glsl_instruction_type_to_string[instruction->type]);
+		for (u32 j=0;j<instruction->arg_count;j++){
+			const glsl_instruction_arg_t* arg=instruction->args+j;
+			if (!j){
+				sys_io_print(" ");
+			}
+			else{
+				sys_io_print(", ");
+			}
+			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
+				sys_io_print("const[%u]",arg->index);
+			}
+			else if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
+				sys_io_print("local[%u]",arg->index);
+			}
+			else{
+				sys_io_print("%s[%u]",(out->vars+arg->index)->name,((arg->pattern_length_and_flags>>2)&0xf));
+			}
+			sys_io_print(".");
+			for (u32 k=0;k<=(arg->pattern_length_and_flags&3);k++){
+				sys_io_print("%c","xyzw"[(arg->pattern>>(k<<1))&3]);
+			}
+		}
+		sys_io_print("\n");
 	}
 	return GLSL_NO_ERROR;
 _cleanup:
