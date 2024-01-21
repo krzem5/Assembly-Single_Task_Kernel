@@ -1,11 +1,51 @@
 #include <glsl/ast.h>
 #include <glsl/builtin_types.h>
+#include <glsl/compiler.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
 #include <glsl/operators.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/types.h>
+
+
+
+static const char* _glsl_instruction_type_to_string[]={
+	[GLSL_INSTRUCTION_TYPE_NOP]="nop",
+	[GLSL_INSTRUCTION_TYPE_MOV]="mov",
+	[GLSL_INSTRUCTION_TYPE_ADD]="add",
+	[GLSL_INSTRUCTION_TYPE_SUB]="sub",
+	[GLSL_INSTRUCTION_TYPE_MUL]="mul",
+	[GLSL_INSTRUCTION_TYPE_DIV]="div",
+	[GLSL_INSTRUCTION_TYPE_MOD]="mod",
+	[GLSL_INSTRUCTION_TYPE_AND]="and",
+	[GLSL_INSTRUCTION_TYPE_IOR]="ior",
+	[GLSL_INSTRUCTION_TYPE_XOR]="xor",
+	[GLSL_INSTRUCTION_TYPE_DP2]="dp2",
+	[GLSL_INSTRUCTION_TYPE_DP3]="dp3",
+	[GLSL_INSTRUCTION_TYPE_DP4]="dp4",
+	[GLSL_INSTRUCTION_TYPE_EXP]="exp",
+	[GLSL_INSTRUCTION_TYPE_LOG]="log",
+	[GLSL_INSTRUCTION_TYPE_POW]="pow",
+	[GLSL_INSTRUCTION_TYPE_SRT]="srt",
+	[GLSL_INSTRUCTION_TYPE_RCP]="rcp",
+	[GLSL_INSTRUCTION_TYPE_MAD]="mad",
+	[GLSL_INSTRUCTION_TYPE_FLR]="flr",
+	[GLSL_INSTRUCTION_TYPE_CEL]="cel",
+	[GLSL_INSTRUCTION_TYPE_RND]="rnd",
+	[GLSL_INSTRUCTION_TYPE_FRC]="frc",
+	[GLSL_INSTRUCTION_TYPE_SIN]="sin",
+	[GLSL_INSTRUCTION_TYPE_COS]="cos",
+	[GLSL_INSTRUCTION_TYPE_IGN]="ign",
+	[GLSL_INSTRUCTION_TYPE_EMV]="emv",
+	[GLSL_INSTRUCTION_TYPE_EMP]="emp",
+};
+
+static const char* _glsl_compilation_output_var_type_to_string[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1]={
+	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT]="input",
+	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT]="output",
+	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM]="uniform",
+};
 
 
 
@@ -558,6 +598,58 @@ SYS_PUBLIC void glsl_debug_print_ast(const glsl_ast_t* ast){
 	}
 	sys_io_print("]\n}\n");
 }
+
+
+
+SYS_PUBLIC void glsl_debug_print_compilation_output(const glsl_compilation_output_t* output){
+	sys_io_print("{\n  locals: %u\n  constants: [",output->local_count);
+	for (u32 i=0;i<output->const_count;i+=4){
+		sys_io_print("\n    %f, %f, %f, %f%s",output->consts[i],output->consts[i+1],output->consts[i+2],output->consts[i+3],(i==output->const_count-1?"":","));
+	}
+	if (output->const_count){
+		sys_io_print("\n  ");
+	}
+	sys_io_print("],\n  vars: [");
+	for (u32 i=0;i<output->var_count;i+=4){
+		const glsl_compilation_output_var_t* var=output->vars+i;
+		sys_io_print("\n    {\n      name: '%s',\n      type: %s,\n      slot: %d\n    }%s",var->name,_glsl_compilation_output_var_type_to_string[var->type],var->slot,(i==output->var_count-1?"":","));
+	}
+	if (output->var_count){
+		sys_io_print("\n  ");
+	}
+	sys_io_print("],\n  instructions: [");
+	for (u32 i=0;i<output->instruction_count;i++){
+		const glsl_instruction_t* instruction=output->instructions[i];
+		sys_io_print("\n    %s",_glsl_instruction_type_to_string[instruction->type]);
+		for (u32 j=0;j<instruction->arg_count;j++){
+			const glsl_instruction_arg_t* arg=instruction->args+j;
+			if (!j){
+				sys_io_print(" ");
+			}
+			else{
+				sys_io_print(", ");
+			}
+			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
+				sys_io_print("const[%u]",arg->index);
+			}
+			else if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
+				sys_io_print("local[%u]",arg->index);
+			}
+			else{
+				sys_io_print("%s[%u]",(output->vars+arg->index)->name,((arg->pattern_length_and_flags>>2)&0xf));
+			}
+			sys_io_print(".");
+			for (u32 k=0;k<=(arg->pattern_length_and_flags&3);k++){
+				sys_io_print("%c","xyzw"[(arg->pattern>>(k<<1))&3]);
+			}
+		}
+	}
+	if (output->instruction_count){
+		sys_io_print("\n  ");
+	}
+	sys_io_print("]\n}\n");
+}
+
 
 
 

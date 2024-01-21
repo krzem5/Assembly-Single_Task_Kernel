@@ -3,13 +3,12 @@
 #include <glsl/ast.h>
 #include <glsl/error.h>
 #include <glsl/lexer.h>
-#include <glsl/linker.h>
+#include <glsl/shader.h>
 #include <sys/types.h>
 
 
 
 typedef struct _GLSL_PARSER_STATE{
-	u32 shader_type;
 	const glsl_lexer_token_t* tokens;
 	u32 index;
 	u32 length;

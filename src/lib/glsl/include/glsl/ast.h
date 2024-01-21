@@ -1,6 +1,7 @@
 #ifndef _GLSL_AST_H_
 #define _GLSL_AST_H_ 1
 #include <glsl/builtin_types.h>
+#include <glsl/shader.h>
 #include <sys/types.h>
 
 
@@ -182,6 +183,7 @@ typedef struct _GLSL_AST_VAR{
 
 
 typedef struct _GLSL_AST{
+	glsl_shader_type_t shader_type;
 	u32 block_count;
 	u32 named_type_count;
 	u32 var_count;

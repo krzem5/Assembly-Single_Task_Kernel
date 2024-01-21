@@ -153,6 +153,7 @@ int main(void){
 	if (error){
 		goto _error;
 	}
+	glsl_debug_print_compilation_output(&compilation_output);
 	glsl_compiler_compilation_output_delete(&compilation_output);
 	return 0;
 	glsl_preprocessor_state_init(&preprocessor_state);

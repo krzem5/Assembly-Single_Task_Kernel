@@ -38,39 +38,6 @@ typedef struct _REGISTER_STATE{
 
 
 
-static const char* _glsl_instruction_type_to_string[]={
-	[GLSL_INSTRUCTION_TYPE_NOP]="nop",
-	[GLSL_INSTRUCTION_TYPE_MOV]="mov",
-	[GLSL_INSTRUCTION_TYPE_ADD]="add",
-	[GLSL_INSTRUCTION_TYPE_SUB]="sub",
-	[GLSL_INSTRUCTION_TYPE_MUL]="mul",
-	[GLSL_INSTRUCTION_TYPE_DIV]="div",
-	[GLSL_INSTRUCTION_TYPE_MOD]="mod",
-	[GLSL_INSTRUCTION_TYPE_AND]="and",
-	[GLSL_INSTRUCTION_TYPE_IOR]="ior",
-	[GLSL_INSTRUCTION_TYPE_XOR]="xor",
-	[GLSL_INSTRUCTION_TYPE_DP2]="dp2",
-	[GLSL_INSTRUCTION_TYPE_DP3]="dp3",
-	[GLSL_INSTRUCTION_TYPE_DP4]="dp4",
-	[GLSL_INSTRUCTION_TYPE_EXP]="exp",
-	[GLSL_INSTRUCTION_TYPE_LOG]="log",
-	[GLSL_INSTRUCTION_TYPE_POW]="pow",
-	[GLSL_INSTRUCTION_TYPE_SRT]="srt",
-	[GLSL_INSTRUCTION_TYPE_RCP]="rcp",
-	[GLSL_INSTRUCTION_TYPE_MAD]="mad",
-	[GLSL_INSTRUCTION_TYPE_FLR]="flr",
-	[GLSL_INSTRUCTION_TYPE_CEL]="cel",
-	[GLSL_INSTRUCTION_TYPE_RND]="rnd",
-	[GLSL_INSTRUCTION_TYPE_FRC]="frc",
-	[GLSL_INSTRUCTION_TYPE_SIN]="sin",
-	[GLSL_INSTRUCTION_TYPE_COS]="cos",
-	[GLSL_INSTRUCTION_TYPE_IGN]="ign",
-	[GLSL_INSTRUCTION_TYPE_EMV]="emv",
-	[GLSL_INSTRUCTION_TYPE_EMP]="emp",
-};
-
-
-
 static const glsl_compilation_output_var_type_t _glsl_ast_storage_type_to_output_var_type[GLSL_AST_VAR_STORAGE_MAX_TYPE+1]={
 	[GLSL_AST_VAR_STORAGE_TYPE_IN]=GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT,
 	[GLSL_AST_VAR_STORAGE_TYPE_OUT]=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT,
@@ -79,7 +46,7 @@ static const glsl_compilation_output_var_type_t _glsl_ast_storage_type_to_output
 
 
 
-static u16 _push_var(glsl_compilation_output_t* output,const char* name,glsl_compilation_output_var_type_t type,u32 slot){
+static u16 _push_var(glsl_compilation_output_t* output,const char* name,u32 slot,glsl_compilation_output_var_type_t type){
 	if (output->var_count==output->_var_capacity){
 		output->_var_capacity+=VAR_LIST_GROWTH_SIZE;
 		output->vars=sys_heap_realloc(NULL,output->vars,output->_var_capacity*sizeof(glsl_compilation_output_var_t));
@@ -494,6 +461,7 @@ static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state
 
 
 SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compilation_output_t* out){
+	out->shader_type=ast->shader_type;
 	out->var_count=0;
 	out->instruction_count=0;
 	out->const_count=0;
@@ -523,37 +491,6 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	error=_visit_node(main_function->value,&state,&tmp);
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
-	}
-	sys_io_print("Local count: %u\n",out->local_count);
-	for (u32 i=0;i<out->const_count;i+=4){
-		sys_io_print("[%u]: %f %f %f %f\n",i>>2,out->consts[i],out->consts[i+1],out->consts[i+2],out->consts[i+3]);
-	}
-	for (u32 i=0;i<out->instruction_count;i++){
-		const glsl_instruction_t* instruction=out->instructions[i];
-		sys_io_print("%s",_glsl_instruction_type_to_string[instruction->type]);
-		for (u32 j=0;j<instruction->arg_count;j++){
-			const glsl_instruction_arg_t* arg=instruction->args+j;
-			if (!j){
-				sys_io_print(" ");
-			}
-			else{
-				sys_io_print(", ");
-			}
-			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
-				sys_io_print("const[%u]",arg->index);
-			}
-			else if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
-				sys_io_print("local[%u]",arg->index);
-			}
-			else{
-				sys_io_print("%s[%u]",(out->vars+arg->index)->name,((arg->pattern_length_and_flags>>2)&0xf));
-			}
-			sys_io_print(".");
-			for (u32 k=0;k<=(arg->pattern_length_and_flags&3);k++){
-				sys_io_print("%c","xyzw"[(arg->pattern>>(k<<1))&3]);
-			}
-		}
-		sys_io_print("\n");
 	}
 _cleanup:
 	_glsl_interface_allocator_deinit(&(state.const_variable_allocator));

@@ -563,6 +563,7 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 	}
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_ast_t* ast=program->shaders+shader_type;
+	ast->shader_type=shader_type;
 	ast->block_count=0;
 	ast->named_type_count=0;
 	ast->var_count=0;
@@ -570,7 +571,6 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 	ast->named_types=NULL;
 	ast->vars=NULL;
 	glsl_parser_state_t parser={
-		shader_type,
 		token_list->data,
 		0,
 		token_list->length,

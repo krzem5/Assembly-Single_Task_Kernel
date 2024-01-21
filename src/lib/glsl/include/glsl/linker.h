@@ -2,22 +2,12 @@
 #define _GLSL_LINKER_H_ 1
 #include <glsl/ast.h>
 #include <glsl/error.h>
+#include <glsl/shader.h>
 #include <sys/types.h>
 
 
 
-#define GLSL_SHADER_TYPE_VERTEX 0
-#define GLSL_SHADER_TYPE_FRAGMENT 1
-
-#define GLSL_SHADER_MAX_TYPE GLSL_SHADER_TYPE_FRAGMENT
-
-
-
 struct _GLSL_BACKEND_DESCRIPTOR;
-
-
-
-typedef u32 glsl_shader_type_t;
 
 
 

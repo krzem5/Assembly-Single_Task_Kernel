@@ -2,6 +2,7 @@
 #define _GLSL_COMPILER_H_ 1
 #include <glsl/ast.h>
 #include <glsl/error.h>
+#include <glsl/shader.h>
 #include <sys/types.h>
 
 
@@ -79,6 +80,7 @@ typedef struct _GLSL_COMPILATION_OUTPUT_VAR{
 
 
 typedef struct _GLSL_COMPILATION_OUTPUT{
+	glsl_shader_type_t shader_type;
 	u16 var_count;
 	u16 instruction_count;
 	u16 const_count;
