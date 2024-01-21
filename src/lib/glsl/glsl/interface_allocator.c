@@ -22,7 +22,7 @@ void _glsl_interface_allocator_deinit(glsl_interface_allocator_t* allocator){
 
 
 
-_Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size){
+_Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size,u32 align){
 	if (*offset!=0xffffffff){
 		u32 i=*offset;
 		if (i>=allocator->size||i+size>=allocator->size){
@@ -37,7 +37,7 @@ _Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u3
 		return 1;
 	}
 	u64 base_mask=(1<<size)-1;
-	for (u32 i=0;i<=allocator->size-size;i++){
+	for (u32 i=0;i<=allocator->size-size;i+=align){
 		u64 shifted_mask=base_mask<<(i&31);
 		if (!(allocator->bitmap[i>>5]&shifted_mask)&&!(allocator->bitmap[(i>>5)+1]&(shifted_mask>>32))){
 			*offset=i;

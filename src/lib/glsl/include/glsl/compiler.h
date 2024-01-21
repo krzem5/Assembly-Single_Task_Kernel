@@ -84,7 +84,6 @@ typedef struct _GLSL_COMPILATION_OUTPUT{
 	u16 const_count;
 	u16 _var_capacity;
 	u16 _instruction_capacity;
-	u16 _const_capacity;
 	glsl_compilation_output_var_t* vars;
 	glsl_instruction_t** instructions;
 	float* consts;

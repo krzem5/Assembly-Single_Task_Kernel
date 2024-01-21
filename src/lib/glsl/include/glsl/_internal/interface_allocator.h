@@ -19,7 +19,7 @@ void _glsl_interface_allocator_deinit(glsl_interface_allocator_t* allocator);
 
 
 
-_Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size);
+_Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size,u32 align);
 
 
 

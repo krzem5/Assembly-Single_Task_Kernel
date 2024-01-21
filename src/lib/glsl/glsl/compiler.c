@@ -14,13 +14,14 @@
 
 #define VAR_LIST_GROWTH_SIZE 8
 #define INSTRUCTION_LIST_GROWTH_SIZE 16
-#define CONST_LIST_GROWTH_SIZE 16
+#define CONST_LIST_GROWTH_SIZE 4
 
 
 
 typedef struct _COMPILER_STATE{
 	glsl_compilation_output_t* output;
-	glsl_interface_allocator_t temporary_variable_allocator;
+	glsl_interface_allocator_t const_variable_allocator;
+	glsl_interface_allocator_t local_variable_allocator;
 } compiler_state_t;
 
 
@@ -108,19 +109,12 @@ static glsl_instruction_t* _push_instruction(glsl_compilation_output_t* output,g
 
 
 
-static u16 _push_consts(glsl_compilation_output_t* output,const float* values,u8 count){
-	if (output->const_count+count>=output->_const_capacity){
-		output->_const_capacity+=CONST_LIST_GROWTH_SIZE;
-		output->consts=sys_heap_realloc(NULL,output->consts,output->_const_capacity*sizeof(float));
+static void _push_consts(glsl_compilation_output_t* output,u32 offset,const float* values,u8 count){
+	if (offset+count>=output->const_count){
+		output->const_count=(offset+count+CONST_LIST_GROWTH_SIZE-1)&(-CONST_LIST_GROWTH_SIZE);
+		output->consts=sys_heap_realloc(NULL,output->consts,output->const_count*sizeof(float));
 	}
-	u16 out=output->const_count;
-	sys_memory_copy(values,output->consts+output->const_count,count*sizeof(float));
-	while (count&3){
-		output->consts[output->const_count+count]=0;
-		count++;
-	}
-	output->const_count+=count;
-	return out;
+	sys_memory_copy(values,output->consts+offset,count*sizeof(float));
 }
 
 
@@ -141,13 +135,20 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 	out->pattern=0;
 	if (!node){
 		u32 slot=0xffffffff;
-		_glsl_interface_allocator_reserve(&(state->temporary_variable_allocator),&slot,glsl_builtin_type_to_slot_count(builtin_type));
+		_glsl_interface_allocator_reserve(&(state->local_variable_allocator),&slot,glsl_builtin_type_to_slot_count(builtin_type),1);
 		out->base=slot;
 		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
 		return;
 	}
 	if (node->type==GLSL_AST_NODE_TYPE_VAR_CONST){
-		out->base=_push_consts(state->output,node->var_matrix,glsl_builtin_type_to_size(builtin_type));
+		u32 slot=0xffffffff;
+		_glsl_interface_allocator_reserve(&(state->const_variable_allocator),&slot,glsl_builtin_type_to_size(builtin_type),glsl_builtin_type_to_vector_length(builtin_type));
+		out->base=slot>>2;
+		if (glsl_builtin_type_to_size(builtin_type)==1){
+			out->pattern_length=1;
+			out->pattern=slot&3;
+		}
+		_push_consts(state->output,slot,node->var_matrix,glsl_builtin_type_to_size(builtin_type));
 		out->flags|=GLSL_INSTRUCTION_ARG_FLAG_CONST;
 		return;
 	}
@@ -207,7 +208,6 @@ static void _generate_move(compiler_state_t* state,const register_state_t* src,c
 			count=4-(tmp_dst.offset&3);
 		}
 		glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MOV,2);
-		sys_io_print("~ %u [%u/%u %u/%u]\n",count,tmp_src.offset,src_size,tmp_dst.offset,dst_size);
 		_generate_instruction_arg(&tmp_dst,instruction->args,count-1);
 		_generate_instruction_arg(&tmp_src,instruction->args+1,count-1);
 		tmp_src.offset+=count;
@@ -420,7 +420,7 @@ static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state
 		}
 		else if (var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&_is_var_used(var)){
 			u32 slot;
-			_glsl_interface_allocator_reserve(&(state->temporary_variable_allocator),&slot,glsl_ast_type_get_slot_count(var->type));
+			_glsl_interface_allocator_reserve(&(state->local_variable_allocator),&slot,glsl_ast_type_get_slot_count(var->type),1);
 			var->_compiler_data=slot;
 		}
 	}
@@ -435,7 +435,6 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	out->const_count=0;
 	out->_var_capacity=0;
 	out->_instruction_capacity=0;
-	out->_const_capacity=0;
 	out->vars=NULL;
 	out->instructions=NULL;
 	out->consts=NULL;
@@ -445,7 +444,8 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	compiler_state_t state={
 		out
 	};
-	_glsl_interface_allocator_init(1024,&(state.temporary_variable_allocator));
+	_glsl_interface_allocator_init(1024,&(state.const_variable_allocator));
+	_glsl_interface_allocator_init(1024,&(state.local_variable_allocator));
 	const glsl_ast_var_t* main_function=_allocate_vars(ast,&state);
 	glsl_error_t error=GLSL_NO_ERROR;
 	if (!main_function||!main_function->value){
@@ -459,8 +459,8 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
 	}
-	for (u32 i=0;i<out->const_count;i++){
-		sys_io_print("[%u]: %f\n",i,out->consts[i]);
+	for (u32 i=0;i<out->const_count;i+=4){
+		sys_io_print("[%u]: %f %f %f %f\n",i>>2,out->consts[i],out->consts[i+1],out->consts[i+2],out->consts[i+3]);
 	}
 	for (u32 i=0;i<out->instruction_count;i++){
 		const glsl_instruction_t* instruction=out->instructions[i];
@@ -489,9 +489,9 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 		}
 		sys_io_print("\n");
 	}
-	return GLSL_NO_ERROR;
 _cleanup:
-	_glsl_interface_allocator_deinit(&(state.temporary_variable_allocator));
+	_glsl_interface_allocator_deinit(&(state.const_variable_allocator));
+	_glsl_interface_allocator_deinit(&(state.local_variable_allocator));
 	glsl_compiler_compilation_output_delete(out);
 	return error;
 }

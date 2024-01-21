@@ -53,7 +53,7 @@ _second_pass:
 		if (var->storage.type==type&&!(var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&(var->storage.flags&mask)==mask){
 			var->flags|=GLSL_AST_VAR_FLAG_LINKED;
 			var->link_slot=(mask?var->storage.layout_location:0xffffffff);
-			if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type))){
+			if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type),1)){
 				error=_glsl_error_create_linker_unallocatable_layout(var->name);
 				goto _error;
 			}
@@ -102,7 +102,7 @@ _second_pass:
 					}
 				}
 				var->link_slot=(mask?var->storage.layout_location:0xffffffff);
-				if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type))){
+				if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type),1)){
 					error=_glsl_error_create_linker_unallocatable_layout(var->name);
 					goto _error;
 				}
@@ -153,7 +153,7 @@ _second_pass:
 				}
 				output_var->flags|=GLSL_AST_VAR_FLAG_LINKED;
 				output_var->link_slot=(mask?output_var->storage.layout_location:0xffffffff);
-				if (!_glsl_interface_allocator_reserve(&allocator,&(output_var->link_slot),glsl_ast_type_get_slot_count(output_var->type))){
+				if (!_glsl_interface_allocator_reserve(&allocator,&(output_var->link_slot),glsl_ast_type_get_slot_count(output_var->type),1)){
 					error=_glsl_error_create_linker_unallocatable_layout(output_var->name);
 					goto _error;
 				}
