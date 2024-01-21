@@ -17,7 +17,7 @@ static void _print_indentation(u32 indentation){
 
 
 static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
-	if (node->type==new_GLSL_AST_NODE_TYPE_BLOCK){
+	if (node->type==GLSL_AST_NODE_TYPE_BLOCK){
 		if (node->block_scope){
 			sys_io_print("(%u)",node->block_scope);
 		}
@@ -40,16 +40,16 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 	}
 	char* type_str=glsl_ast_type_to_string(node->value_type);
 	switch (node->type){
-		case new_GLSL_AST_NODE_TYPE_NONE:
+		case GLSL_AST_NODE_TYPE_NONE:
 			sys_io_print("<invalid ast node>");
 			break;
-		case new_GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
+		case GLSL_AST_NODE_TYPE_ARRAY_ACCESS:
 			sys_io_print("GLSL_AST_NODE_TYPE_ARRAY_ACCESS");
 			break;
-		case new_GLSL_AST_NODE_TYPE_CALL:
+		case GLSL_AST_NODE_TYPE_CALL:
 			sys_io_print("GLSL_AST_NODE_TYPE_CALL");
 			break;
-		case new_GLSL_AST_NODE_TYPE_CONSTRUCTOR:
+		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: constructor,\n");
@@ -73,10 +73,10 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			_print_indentation(indentation);
 			sys_io_print("}");
 			break;
-		case new_GLSL_AST_NODE_TYPE_INLINE_BLOCK:
+		case GLSL_AST_NODE_TYPE_INLINE_BLOCK:
 			sys_io_print("GLSL_AST_NODE_TYPE_COMMA");
 			break;
-		case new_GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
+		case GLSL_AST_NODE_TYPE_MEMBER_ACCESS:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: member_access,\n");
@@ -91,7 +91,7 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			_print_indentation(indentation);
 			sys_io_print("}");
 			break;
-		case new_GLSL_AST_NODE_TYPE_OPERATOR:
+		case GLSL_AST_NODE_TYPE_OPERATOR:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: %u,\n",node->operator_type);
@@ -115,7 +115,7 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			_print_indentation(indentation);
 			sys_io_print("}");
 			break;
-		case new_GLSL_AST_NODE_TYPE_SWIZZLE:
+		case GLSL_AST_NODE_TYPE_SWIZZLE:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
 			sys_io_print("op: swizzle,\n");
@@ -134,10 +134,10 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			_print_indentation(indentation);
 			sys_io_print("}");
 			break;
-		case new_GLSL_AST_NODE_TYPE_VAR:
+		case GLSL_AST_NODE_TYPE_VAR:
 			sys_io_print("%s",node->var->name);
 			break;
-		case new_GLSL_AST_NODE_TYPE_VAR_CONST:
+		case GLSL_AST_NODE_TYPE_VAR_CONST:
 			switch (node->value_type->builtin_type){
 				default:
 				case GLSL_BUILTIN_TYPE_INT:
