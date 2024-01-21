@@ -171,7 +171,7 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 
 
 
-static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg){
+static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg,u8 max_size){
 	arg->index=reg->base;
 	if (reg->pattern_length){
 		arg->pattern_length_and_flags=reg->pattern_length-1;
@@ -181,6 +181,10 @@ static void _generate_instruction_arg(const register_state_t* reg,glsl_instructi
 		arg->pattern_length_and_flags=glsl_builtin_type_to_vector_length(reg->builtin_type)-1;
 		arg->pattern=0b11100100&((1<<((arg->pattern_length_and_flags+1)<<1))-1);
 	}
+	if (arg->pattern_length_and_flags>max_size){
+		arg->pattern_length_and_flags=max_size;
+	}
+	arg->pattern+=0b01010101*(reg->offset&3);
 	arg->pattern_length_and_flags|=(reg->offset&0xfc)|(reg->flags&(GLSL_INSTRUCTION_ARG_FLAG_CONST|GLSL_INSTRUCTION_ARG_FLAG_LOCAL));
 }
 
@@ -192,38 +196,51 @@ static void _generate_move(compiler_state_t* state,const register_state_t* src,c
 
 
 
+static u8 _calculate_max_output_size(const glsl_instruction_t* instruction){
+	u8 out=0xff;
+	for (u32 i=1;i<instruction->arg_count;i++){
+		u8 size=(instruction->args+i)->pattern_length_and_flags&3;
+		if (size<out){
+			out=size;
+		}
+	}
+	return out;
+}
+
+
+
 static void _generate_add(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_ADD,3);
-	_generate_instruction_arg(out,instruction->args);
-	_generate_instruction_arg(a,instruction->args+1);
-	_generate_instruction_arg(b,instruction->args+2);
+	_generate_instruction_arg(a,instruction->args+1,4);
+	_generate_instruction_arg(b,instruction->args+2,4);
+	_generate_instruction_arg(out,instruction->args,_calculate_max_output_size(instruction));
 }
 
 
 
 static void _generate_multiply(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MUL,3);
-	_generate_instruction_arg(out,instruction->args);
-	_generate_instruction_arg(a,instruction->args+1);
-	_generate_instruction_arg(b,instruction->args+2);
+	_generate_instruction_arg(a,instruction->args+1,4);
+	_generate_instruction_arg(b,instruction->args+2,4);
+	_generate_instruction_arg(out,instruction->args,_calculate_max_output_size(instruction));
 }
 
 
 
 static void _generate_subtract(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_SUB,3);
-	_generate_instruction_arg(out,instruction->args);
-	_generate_instruction_arg(a,instruction->args+1);
-	_generate_instruction_arg(b,instruction->args+2);
+	_generate_instruction_arg(a,instruction->args+1,4);
+	_generate_instruction_arg(b,instruction->args+2,4);
+	_generate_instruction_arg(out,instruction->args,_calculate_max_output_size(instruction));
 }
 
 
 
 static void _generate_dot_product_3d(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_DP3,3);
-	_generate_instruction_arg(out,instruction->args);
-	_generate_instruction_arg(a,instruction->args+1);
-	_generate_instruction_arg(b,instruction->args+2);
+	_generate_instruction_arg(a,instruction->args+1,4);
+	_generate_instruction_arg(b,instruction->args+2,4);
+	_generate_instruction_arg(out,instruction->args,_calculate_max_output_size(instruction));
 }
 
 
