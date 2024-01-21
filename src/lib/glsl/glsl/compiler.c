@@ -111,8 +111,12 @@ static glsl_instruction_t* _push_instruction(glsl_compilation_output_t* output,g
 
 static void _push_consts(glsl_compilation_output_t* output,u32 offset,const float* values,u8 count){
 	if (offset+count>=output->const_count){
-		output->const_count=(offset+count+CONST_LIST_GROWTH_SIZE-1)&(-CONST_LIST_GROWTH_SIZE);
-		output->consts=sys_heap_realloc(NULL,output->consts,output->const_count*sizeof(float));
+		u32 const_count=(offset+count+CONST_LIST_GROWTH_SIZE-1)&(-CONST_LIST_GROWTH_SIZE);
+		output->consts=sys_heap_realloc(NULL,output->consts,const_count*sizeof(float));
+		do{
+			output->consts[output->const_count]=0;
+			output->const_count++;
+		} while (output->const_count<const_count);
 	}
 	sys_memory_copy(values,output->consts+offset,count*sizeof(float));
 }
@@ -192,7 +196,7 @@ static void _generate_instruction_arg(const register_state_t* reg,glsl_instructi
 	}
 	else{
 		arg->pattern_length_and_flags=glsl_builtin_type_to_vector_length(reg->builtin_type)-1;
-		arg->pattern=0b11100100&((1<<((arg->pattern_length_and_flags+1)<<1))-1);
+		arg->pattern=0b11100100;
 	}
 	if (arg->pattern_length_and_flags>max_size){
 		arg->pattern_length_and_flags=max_size;
@@ -310,12 +314,56 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 					return GLSL_NO_ERROR;
 				}
 				register_state_t tmp=*output_register;
+				u16 mask=0;
+				float const_values[16];
 				for (u32 i=0;i<node->args.count;i++){
+					u32 size=glsl_builtin_type_to_size(node->args.data[i]->value_type->builtin_type);
+					if (node->args.data[i]->type!=GLSL_AST_NODE_TYPE_VAR_CONST){
+						goto _continue_not_const;
+					}
+					sys_memory_copy(node->args.data[i]->var_matrix,const_values+tmp.offset,size*sizeof(float));
+					mask|=((1<<size)-1)<<tmp.offset;
+_continue_not_const:
+					tmp.offset+=size;
+				}
+				u32 row_bit_count=glsl_builtin_type_to_size(node->value_type->builtin_type)/glsl_builtin_type_to_vector_count(node->value_type->builtin_type);
+				for (u32 i=0;i<glsl_builtin_type_to_vector_count(node->value_type->builtin_type);i++){
+					u8 row=(mask>>(i*row_bit_count))&0xf;
+					if (!row){
+						continue;
+					}
+					float const_vector[4];
+					u8 pattern_length=0;
+					u8 pattern=0;
+					do{
+						u8 j=__builtin_ffs(row)-1;
+						row&=row-1;
+						const_vector[pattern_length]=const_values[i*row_bit_count+j];
+						pattern|=j<<(pattern_length<<1);
+						pattern_length++;
+					} while (row);
+					u32 slot=0xffffffff;
+					_glsl_interface_allocator_reserve(&(state->const_variable_allocator),&slot,pattern_length,(pattern_length==1?1:(pattern_length==2?2:4)));
+					_push_consts(state->output,slot,const_vector,pattern_length);
+					glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MOV,2);
+					instruction->args->index=output_register->base;
+					instruction->args->pattern_length_and_flags=(pattern_length-1)|(i<<2)|output_register->flags;
+					instruction->args->pattern=pattern;
+					(instruction->args+1)->index=slot>>2;
+					(instruction->args+1)->pattern_length_and_flags=(pattern_length-1)|GLSL_INSTRUCTION_ARG_FLAG_CONST;
+					(instruction->args+1)->pattern=0b11100100+0b01010101*(slot&3);
+				}
+				tmp.offset=0;
+				for (u32 i=0;i<node->args.count;i++){
+					if (node->args.data[i]->type==GLSL_AST_NODE_TYPE_VAR_CONST){
+						goto _continue_const;
+					}
 					glsl_error_t error=_visit_node(node->args.data[i],state,&tmp);
-					tmp.offset+=glsl_builtin_type_to_size(node->args.data[i]->value_type->builtin_type);
 					if (error!=GLSL_NO_ERROR){
 						return error;
 					}
+_continue_const:
+					tmp.offset+=glsl_builtin_type_to_size(node->args.data[i]->value_type->builtin_type);
 				}
 				return GLSL_NO_ERROR;
 			}

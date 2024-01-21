@@ -199,6 +199,36 @@ static const u32 _glsl_builtin_type_to_vector_length[GLSL_BUILTIN_MAX_TYPE+1]={
 
 
 
+static const u32 _glsl_builtin_type_to_vector_count[GLSL_BUILTIN_MAX_TYPE+1]={
+	[GLSL_BUILTIN_TYPE_FLOAT]=1,
+	[GLSL_BUILTIN_TYPE_INT]=1,
+	[GLSL_BUILTIN_TYPE_UINT]=1,
+	[GLSL_BUILTIN_TYPE_BOOL]=1,
+	[GLSL_BUILTIN_TYPE_VEC2]=1,
+	[GLSL_BUILTIN_TYPE_IVEC2]=1,
+	[GLSL_BUILTIN_TYPE_UVEC2]=1,
+	[GLSL_BUILTIN_TYPE_BVEC2]=1,
+	[GLSL_BUILTIN_TYPE_VEC3]=1,
+	[GLSL_BUILTIN_TYPE_IVEC3]=1,
+	[GLSL_BUILTIN_TYPE_UVEC3]=1,
+	[GLSL_BUILTIN_TYPE_BVEC3]=1,
+	[GLSL_BUILTIN_TYPE_VEC4]=1,
+	[GLSL_BUILTIN_TYPE_IVEC4]=1,
+	[GLSL_BUILTIN_TYPE_UVEC4]=1,
+	[GLSL_BUILTIN_TYPE_BVEC4]=1,
+	[GLSL_BUILTIN_TYPE_MAT22]=2,
+	[GLSL_BUILTIN_TYPE_MAT33]=3,
+	[GLSL_BUILTIN_TYPE_MAT44]=4,
+	[GLSL_BUILTIN_TYPE_MAT23]=3,
+	[GLSL_BUILTIN_TYPE_MAT24]=4,
+	[GLSL_BUILTIN_TYPE_MAT32]=2,
+	[GLSL_BUILTIN_TYPE_MAT34]=4,
+	[GLSL_BUILTIN_TYPE_MAT42]=2,
+	[GLSL_BUILTIN_TYPE_MAT43]=3,
+};
+
+
+
 static const glsl_builtin_type_t _glsl_builtin_type_vector_to_base_type[]={
 	[GLSL_BUILTIN_TYPE_VEC2]=GLSL_BUILTIN_TYPE_FLOAT,
 	[GLSL_BUILTIN_TYPE_VEC3]=GLSL_BUILTIN_TYPE_FLOAT,
@@ -278,6 +308,12 @@ SYS_PUBLIC u32 glsl_builtin_type_to_slot_count(glsl_builtin_type_t builtin_type)
 
 SYS_PUBLIC u32 glsl_builtin_type_to_vector_length(glsl_builtin_type_t builtin_type){
 	return _glsl_builtin_type_to_vector_length[builtin_type];
+}
+
+
+
+SYS_PUBLIC u32 glsl_builtin_type_to_vector_count(glsl_builtin_type_t builtin_type){
+	return _glsl_builtin_type_to_vector_count[builtin_type];
 }
 
 

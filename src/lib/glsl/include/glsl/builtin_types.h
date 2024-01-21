@@ -96,6 +96,10 @@ u32 glsl_builtin_type_to_vector_length(glsl_builtin_type_t builtin_type);
 
 
 
+u32 glsl_builtin_type_to_vector_count(glsl_builtin_type_t builtin_type);
+
+
+
 u32 glsl_builtin_type_to_vector_base_type(glsl_builtin_type_t builtin_type);
 
 
