@@ -445,7 +445,11 @@ static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state
 	for (u32 i=0;i<ast->var_count;i++){
 		glsl_ast_var_t* var=ast->vars[i];
 		if (var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_CONST&&_is_var_used(var)){
-			var->_compiler_data=_push_var(state->output,var->name,((var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)?var->storage.layout_location:0xffffffff),_glsl_ast_storage_type_to_output_var_type[var->storage.type],glsl_ast_type_get_slot_count(var->type));
+			glsl_compilation_output_var_type_t type=_glsl_ast_storage_type_to_output_var_type[var->storage.type];
+			if (var->flags&GLSL_AST_VAR_FLAG_BUILTIN){
+				type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION;
+			}
+			var->_compiler_data=_push_var(state->output,var->name,((var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)?var->storage.layout_location:0xffffffff),type,glsl_ast_type_get_slot_count(var->type));
 		}
 		else if (var->type->type==GLSL_AST_TYPE_TYPE_FUNC&&!sys_string_compare(var->name,"main")){
 			ret=var;

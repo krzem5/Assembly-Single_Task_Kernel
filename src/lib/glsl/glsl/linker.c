@@ -30,7 +30,6 @@ _second_pass:
 				error=_glsl_error_create_linker_unallocatable_layout(var->name);
 				goto _error;
 			}
-			sys_io_print("%s: %u [%u]\n",var->name,var->slot,var->slot_count);
 		}
 	}
 	if (has_slot){
@@ -46,60 +45,58 @@ _error:
 
 
 
-// static glsl_error_t _check_compatibility(glsl_ast_t* output,glsl_ast_t* input,u32 max_slots){
-// 	glsl_error_t error=GLSL_NO_ERROR;
-// 	glsl_interface_allocator_t allocator;
-// 	_glsl_interface_allocator_init(max_slots,&allocator);
-// 	u8 mask=GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION;
-// _second_pass:
-// 	for (u32 i=0;i<output->var_count;i++){
-// 		glsl_ast_var_t* output_var=output->vars[i];
-// 		if (output_var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_OUT||(output_var->storage.flags&mask)!=mask){
-// 			continue;
-// 		}
-// 		for (u32 j=0;j<input->var_count;j++){
-// 			glsl_ast_var_t* input_var=input->vars[j];
-// 			if (input_var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_IN&&!(input_var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&!sys_string_compare(input_var->name,output_var->name)){
-// 				if (!glsl_ast_type_is_equal(input_var->type,output_var->type)){
-// 					error=_glsl_error_create_linker_wrong_type(output_var->name,output_var->type,input_var->type);
-// 					goto _error;
-// 				}
-// 				if (((input_var->storage.flags^output_var->storage.flags)&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||(mask&&input_var->storage.layout_location!=output_var->storage.layout_location)){
-// 					error=_glsl_error_create_linker_inconsistent_layout(output_var->name);
-// 					goto _error;
-// 				}
-// 				output_var->flags|=GLSL_AST_VAR_FLAG_LINKED;
-// 				output_var->link_slot=(mask?output_var->storage.layout_location:0xffffffff);
-// 				if (!_glsl_interface_allocator_reserve(&allocator,&(output_var->link_slot),glsl_ast_type_get_slot_count(output_var->type),1)){
-// 					error=_glsl_error_create_linker_unallocatable_layout(output_var->name);
-// 					goto _error;
-// 				}
-// 				input_var->flags|=GLSL_AST_VAR_FLAG_LINKED;
-// 				input_var->link_slot=output_var->link_slot;
-// 				goto _link_next_var;
-// 			}
-// 		}
-// 		error=_glsl_error_create_linker_unlinked_var(output_var->name,1);
-// 		goto _error;
-// _link_next_var:
-// 	}
-// 	if (mask){
-// 		mask=0;
-// 		goto _second_pass;
-// 	}
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	for (u32 i=0;i<input->var_count;i++){
-// 		glsl_ast_var_t* input_var=input->vars[i];
-// 		if (input_var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_IN||(input_var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))){
-// 			continue;
-// 		}
-// 		return _glsl_error_create_linker_unlinked_var(input_var->name,0);
-// 	}
-// 	return GLSL_NO_ERROR;
-// _error:
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	return error;
-// }
+static glsl_error_t _check_compatibility(glsl_compilation_output_t* output,glsl_compilation_output_t* input,u32 max_slots){
+	glsl_error_t error=GLSL_NO_ERROR;
+	glsl_interface_allocator_t allocator;
+	_glsl_interface_allocator_init(max_slots,&allocator);
+	_Bool has_slot=1;
+_second_pass:
+	for (u32 i=0;i<output->var_count;i++){
+		glsl_compilation_output_var_t* output_var=output->vars+i;
+		if (output_var->type!=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT||(output_var->slot!=0xffffffff)!=has_slot){
+			continue;
+		}
+		for (u32 j=0;j<input->var_count;j++){
+			glsl_compilation_output_var_t* input_var=input->vars+j;
+			if (input_var->type!=GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT||(input_var->slot!=0xffffffff)!=has_slot||sys_string_compare(input_var->name,output_var->name)){
+				continue;
+			}
+			if (input_var->slot_count!=output_var->slot_count){
+				error=_glsl_error_create_linker_wrong_type(output_var->name,output_var->slot_count,input_var->slot_count);
+				goto _error;
+			}
+			if (output_var->slot!=input_var->slot){
+				error=_glsl_error_create_linker_inconsistent_layout(output_var->name);
+				goto _error;
+			}
+			if (!_glsl_interface_allocator_reserve(&allocator,&(output_var->slot),output_var->slot_count,1)){
+				error=_glsl_error_create_linker_unallocatable_layout(output_var->name);
+				goto _error;
+			}
+			input_var->slot=output_var->slot;
+			goto _link_next_var;
+		}
+		error=_glsl_error_create_linker_unlinked_var(output_var->name,1);
+		goto _error;
+_link_next_var:
+	}
+	if (has_slot){
+		has_slot=0;
+		goto _second_pass;
+	}
+	_glsl_interface_allocator_deinit(&allocator);
+	for (u32 j=0;j<input->var_count;j++){
+		glsl_compilation_output_var_t* input_var=input->vars+j;
+		if (input_var->type!=GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT||input_var->slot!=0xffffffff){
+			continue;
+		}
+		return _glsl_error_create_linker_unlinked_var(input_var->name,0);
+	}
+	return GLSL_NO_ERROR;
+_error:
+	_glsl_interface_allocator_deinit(&allocator);
+	return error;
+}
 
 
 
@@ -237,10 +234,10 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (error!=GLSL_NO_ERROR){
 		return error;
 	}
-	// error=_check_compatibility(program->shaders+GLSL_SHADER_TYPE_VERTEX,program->shaders+GLSL_SHADER_TYPE_FRAGMENT,gl_MaxFragmentInputComponents);
-	// if (error!=GLSL_NO_ERROR){
-	// 	return error;
-	// }
+	error=_check_compatibility(program->shaders+GLSL_SHADER_TYPE_VERTEX,program->shaders+GLSL_SHADER_TYPE_FRAGMENT,gl_MaxFragmentInputComponents);
+	if (error!=GLSL_NO_ERROR){
+		return error;
+	}
 	error=_allocate_uniform_slots(program,out);
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
