@@ -3,7 +3,7 @@
 https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 
 - [x] `glActiveTexture`
-- [ ] `glAttachShader`
+- [x] `glAttachShader`
 - [ ] `glBeginConditionalRender`
 - [ ] `glBeginQuery`
 - [ ] `glBeginTransformFeedback`
@@ -39,7 +39,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glClientWaitSync`
 - [ ] `glColorMask`
 - [ ] `glColorMaski`
-- [ ] `glCompileShader`
+- [x] `glCompileShader`
 - [ ] `glCompressedTexImage1D`
 - [ ] `glCompressedTexImage2D`
 - [ ] `glCompressedTexImage3D`
@@ -52,8 +52,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glCopyTexSubImage1D`
 - [ ] `glCopyTexSubImage2D`
 - [ ] `glCopyTexSubImage3D`
-- [ ] `glCreateProgram`
-- [ ] `glCreateShader`
+- [x] `glCreateProgram`
+- [x] `glCreateShader`
 - [ ] `glCullFace`
 - [ ] `glDeleteBuffers`
 - [ ] `glDeleteFramebuffers`
@@ -134,8 +134,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [x] `glGetIntegerv`
 - [ ] `glGetMultisamplefv`
 - [ ] `glGetPointerv`
-- [ ] `glGetProgramInfoLog`
-- [ ] `glGetProgramiv`
+- [x] `glGetProgramInfoLog`
+- [x] `glGetProgramiv`
 - [ ] `glGetQueryiv`
 - [ ] `glGetQueryObjecti64v`
 - [ ] `glGetQueryObjectiv`
@@ -146,8 +146,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glGetSamplerParameterIiv`
 - [ ] `glGetSamplerParameterIuiv`
 - [ ] `glGetSamplerParameteriv`
-- [ ] `glGetShaderInfoLog`
-- [ ] `glGetShaderiv`
+- [x] `glGetShaderInfoLog`
+- [x] `glGetShaderiv`
 - [ ] `glGetShaderSource`
 - [x] `glGetString`
 - [x] `glGetStringi`
@@ -186,7 +186,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glIsTexture`
 - [ ] `glIsVertexArray`
 - [ ] `glLineWidth`
-- [ ] `glLinkProgram`
+- [x] `glLinkProgram`
 - [ ] `glLogicOp`
 - [ ] `glMapBuffer`
 - [ ] `glMapBufferRange`
@@ -218,7 +218,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glSamplerParameterIuiv`
 - [ ] `glSamplerParameteriv`
 - [ ] `glScissor`
-- [ ] `glShaderSource`
+- [x] `glShaderSource`
 - [ ] `glStencilFunc`
 - [ ] `glStencilFuncSeparate`
 - [ ] `glStencilMask`
