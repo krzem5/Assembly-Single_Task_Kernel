@@ -17,6 +17,22 @@ static const char*const _ui_framebuffer_format_names[UI_DISPLAY_FRAMEBUFFER_FORM
 	[UI_DISPLAY_FRAMEBUFFER_FORMAT_XRGB]="XRGB",
 };
 
+static const char* _vertex_shader=" \
+#version 330 core \n\
+ \n\
+ \n\
+ \n\
+layout (location=0) in vec2 in_pos; \n\
+out vec4 fs_color; \n\
+ \n\
+ \n\
+ \n\
+void main(void){ \n\
+	gl_Position=vec4(in_pos,0.0,1.0); \n\
+	fs_color=vec4(1.0,0.0,0.0,0.0); \n\
+} \n\
+";
+
 
 
 static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
@@ -69,7 +85,6 @@ static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
 
 int main(int argc,const char** argv){
 	opengl_init();
-	opengl_state_t state=opengl_create_state(330);
 	for (ui_display_handle_t display=ui_display_iter_start();display;display=ui_display_iter_next(display)){
 		ui_display_data_t data;
 		if (SYS_IS_ERROR(ui_display_get_data(display,&data))){
@@ -94,6 +109,7 @@ int main(int argc,const char** argv){
 		ui_display_get_framebuffer_config(framebuffer,&config);
 		u32* framebuffer_address=(u32*)ui_display_map_framebuffer(framebuffer);
 		sys_io_print("Framebuffer: %v, %u x %u, %s -> %p\n",config.size,config.width,config.height,_ui_framebuffer_format_names[config.format],framebuffer_address);
+		opengl_state_t state=opengl_create_state(330);
 		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
 		sys_io_print("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
@@ -103,6 +119,20 @@ int main(int argc,const char** argv){
 		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
+		GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vertex_shader,1,&_vertex_shader,NULL);
+		glCompileShader(vertex_shader);
+		GLint compilation_status=GL_FALSE;
+		glGetShaderiv(vertex_shader,GL_COMPILE_STATUS,&compilation_status);
+		if (compilation_status!=GL_TRUE){
+			GLsizei length;
+			glGetShaderiv(vertex_shader,GL_INFO_LOG_LENGTH,&length);
+			char* buffer=sys_heap_alloc(NULL,length);
+			glGetShaderInfoLog(vertex_shader,length,&length,buffer);
+			sys_io_print("%s\n",buffer);
+			sys_heap_dealloc(NULL,buffer);
+			return 1;
+		}
 		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;
 		glViewport(0,0,config.width,config.height);

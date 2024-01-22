@@ -649,7 +649,7 @@ void glGetUniformfv(GLuint program,GLint location,GLfloat* params);
 
 
 
-void glGetUniformIndices(GLuint program,GLsizei uniformCount,const GLchar* const*uniformNames,GLuint* uniformIndices);
+void glGetUniformIndices(GLuint program,GLsizei uniformCount,const GLchar*const* uniformNames,GLuint* uniformIndices);
 
 
 
@@ -873,7 +873,7 @@ void glScissor(GLint x,GLint y,GLsizei width,GLsizei height);
 
 
 
-void glShaderSource(GLuint shader,GLsizei count,const GLchar* const*string,const GLint* length);
+void glShaderSource(GLuint shader,GLsizei count,const GLchar*const* string,const GLint* length);
 
 
 
@@ -961,7 +961,7 @@ void glTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLint yoffset,GLint
 
 
 
-void glTransformFeedbackVaryings(GLuint program,GLsizei count,const GLchar* const*varyings,GLenum bufferMode);
+void glTransformFeedbackVaryings(GLuint program,GLsizei count,const GLchar*const* varyings,GLenum bufferMode);
 
 
 

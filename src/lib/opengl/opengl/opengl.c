@@ -60,6 +60,11 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	for (u8 i=0;i<4;i++){
 		out->gl_viewport[i]=0;
 	}
+	out->handles=sys_heap_alloc(NULL,sizeof(opengl_handle_header_t*));
+	out->handle_count=1;
+	out->handles[0]=sys_heap_alloc(NULL,sizeof(opengl_handle_header_t));
+	out->handles[0]->type=OPENGL_HANDLE_TYPE_NONE;
+	out->handles[0]->index=0;
 	return out;
 }
 

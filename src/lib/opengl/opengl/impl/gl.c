@@ -3,7 +3,10 @@
 #include <opengl/command_buffer.h>
 #include <opengl/config.h>
 #include <opengl/protocol.h>
+#include <sys/heap/heap.h>
 #include <sys/io/io.h>
+#include <sys/memory/memory.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 
 
@@ -26,7 +29,52 @@
 
 
 static opengl_internal_state_t* _gl_internal_state=NULL;
-static GLuint _gl_max_vertex_attribs=16;
+
+static const GLuint _gl_max_vertex_attribs=16;
+
+
+
+static void* _alloc_handle(opengl_handle_type_t type,u32 size){
+	u32 index=0;
+	for (;index<_gl_internal_state->handle_count&&_gl_internal_state->handles[index];index++);
+	if (index==_gl_internal_state->handle_count){
+		_gl_internal_state->handle_count++;
+		_gl_internal_state->handles=sys_heap_realloc(NULL,_gl_internal_state->handles,_gl_internal_state->handle_count*sizeof(opengl_handle_header_t*));
+	}
+	opengl_handle_header_t* out=sys_heap_alloc(NULL,size);
+	out->type=type;
+	out->index=index;
+	_gl_internal_state->handles[index]=out;
+	return out;
+}
+
+
+
+static void* _get_handle(GLuint handle,opengl_handle_type_t type){
+	if (handle>=_gl_internal_state->handle_count||!_gl_internal_state->handles[handle]){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return NULL;
+	}
+	if (_gl_internal_state->handles[handle]->type!=type){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return NULL;
+	}
+	return _gl_internal_state->handles[handle];
+}
+
+
+
+static void _shader_state_remove_sources(opengl_shader_state_t* state){
+	if (!state->source_count){
+		return;
+	}
+	for (u32 i=0;i<state->source_count;i++){
+		sys_heap_dealloc(NULL,(state->sources+i)->data);
+	}
+	sys_heap_dealloc(NULL,state->sources);
+	state->source_count=0;
+	state->sources=NULL;
+}
 
 
 
@@ -950,6 +998,10 @@ SYS_PUBLIC void glColorMaski(GLuint index,GLboolean r,GLboolean g,GLboolean b,GL
 
 
 SYS_PUBLIC void glCompileShader(GLuint shader){
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	if (!state){
+		return;
+	}
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glCompileShader\x1b[0m\n");
 }
 
@@ -1028,15 +1080,22 @@ SYS_PUBLIC void glCopyTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLin
 
 
 SYS_PUBLIC GLuint glCreateProgram(void){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glCreateProgram\x1b[0m\n");
-	return 0;
+	opengl_program_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_PROGRAM,sizeof(opengl_program_state_t));
+	return state->header.index;
 }
 
 
 
 SYS_PUBLIC GLuint glCreateShader(GLenum type){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glCreateShader\x1b[0m\n");
-	return 0;
+	if (type!=GL_VERTEX_SHADER&&type!=GL_FRAGMENT_SHADER){
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
+		return 0;
+	}
+	opengl_shader_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_SHADER,sizeof(opengl_shader_state_t));
+	state->type=type;
+	state->source_count=0;
+	state->sources=NULL;
+	return state->header.index;
 }
 
 
@@ -1713,7 +1772,7 @@ SYS_PUBLIC void glGetUniformfv(GLuint program,GLint location,GLfloat* params){
 
 
 
-SYS_PUBLIC void glGetUniformIndices(GLuint program,GLsizei uniformCount,const GLchar* const*uniformNames,GLuint* uniformIndices){
+SYS_PUBLIC void glGetUniformIndices(GLuint program,GLsizei uniformCount,const GLchar*const* uniformNames,GLuint* uniformIndices){
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetUniformIndices\x1b[0m\n");
 }
 
@@ -2064,8 +2123,28 @@ SYS_PUBLIC void glScissor(GLint x,GLint y,GLsizei width,GLsizei height){
 
 
 
-SYS_PUBLIC void glShaderSource(GLuint shader,GLsizei count,const GLchar* const*string,const GLint* length){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glShaderSource\x1b[0m\n");
+SYS_PUBLIC void glShaderSource(GLuint shader,GLsizei count,const GLchar*const* string,const GLint* length){
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	if (!state){
+		return;
+	}
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	_shader_state_remove_sources(state);
+	if (!count){
+		return;
+	}
+	state->source_count=count;
+	state->sources=sys_heap_alloc(NULL,count*sizeof(opengl_shader_source_t));
+	for (GLsizei i=0;i<count;i++){
+		opengl_shader_source_t* src=state->sources+i;
+		src->length=(!length||length[i]<0?sys_string_length(string[i]):length[i]);
+		src->data=sys_heap_alloc(NULL,src->length+1);
+		sys_memory_copy(string[i],src->data,src->length);
+		src->data[src->length]=0;
+	}
 }
 
 
@@ -2196,7 +2275,7 @@ SYS_PUBLIC void glTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLint yo
 
 
 
-SYS_PUBLIC void glTransformFeedbackVaryings(GLuint program,GLsizei count,const GLchar* const*varyings,GLenum bufferMode){
+SYS_PUBLIC void glTransformFeedbackVaryings(GLuint program,GLsizei count,const GLchar*const* varyings,GLenum bufferMode){
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTransformFeedbackVaryings\x1b[0m\n");
 }
 
