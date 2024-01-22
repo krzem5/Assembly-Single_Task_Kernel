@@ -2,7 +2,8 @@
 #define _OPENGL__INTERNAL_STATE_H_ 1
 #include <GL/gl.h>
 #include <glsl/backend.h>
-#include <glsl/preprocessor.h>
+#include <glsl/compiler.h>
+#include <glsl/linker.h>
 #include <sys/types.h>
 
 
@@ -43,18 +44,26 @@ typedef struct _OPENGL_HANDLE_HEADER{
 
 
 
+typedef struct _OPENGL_PROGRAM_STATE{
+	opengl_handle_header_t header;
+	glsl_linker_program_t linker_program;
+	_Bool was_linkage_attempted;
+	glsl_linker_linked_program_t linked_program;
+	glsl_error_t error;
+} opengl_program_state_t;
+
+
+
 typedef struct _OPENGL_SHADER_STATE{
 	opengl_handle_header_t header;
 	GLenum type;
 	GLuint source_count;
 	opengl_shader_source_t* sources;
+	_Bool was_compilation_attempted;
+	glsl_compilation_output_t compilation_output;
+	glsl_error_t error;
+	opengl_program_state_t* program;
 } opengl_shader_state_t;
-
-
-
-typedef struct _OPENGL_PROGRAM_STATE{
-	opengl_handle_header_t header;
-} opengl_program_state_t;
 
 
 

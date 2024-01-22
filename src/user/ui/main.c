@@ -33,6 +33,21 @@ void main(void){ \n\
 } \n\
 ";
 
+static const char* _fragment_shader=" \
+#version 330 core \n\
+ \n\
+ \n\
+ \n\
+in vec4 fs_color; \n\
+out vec4 out_color; \n\
+ \n\
+ \n\
+ \n\
+void main(void){ \n\
+	out_color=fs_color; \n\
+} \n\
+";
+
 
 
 static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
@@ -119,19 +134,49 @@ int main(int argc,const char** argv){
 		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
-		GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vertex_shader,1,&_vertex_shader,NULL);
-		glCompileShader(vertex_shader);
-		GLint compilation_status=GL_FALSE;
-		glGetShaderiv(vertex_shader,GL_COMPILE_STATUS,&compilation_status);
-		if (compilation_status!=GL_TRUE){
-			GLsizei length;
-			glGetShaderiv(vertex_shader,GL_INFO_LOG_LENGTH,&length);
-			char* buffer=sys_heap_alloc(NULL,length);
-			glGetShaderInfoLog(vertex_shader,length,&length,buffer);
-			sys_io_print("%s\n",buffer);
-			sys_heap_dealloc(NULL,buffer);
-			return 1;
+		{
+			GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertex_shader,1,&_vertex_shader,NULL);
+			glCompileShader(vertex_shader);
+			GLint compilation_status;
+			glGetShaderiv(vertex_shader,GL_COMPILE_STATUS,&compilation_status);
+			if (compilation_status!=GL_TRUE){
+				GLsizei length;
+				glGetShaderiv(vertex_shader,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetShaderInfoLog(vertex_shader,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
+			GLuint fragment_shader=glCreateShader(GL_FRAGMENT_SHADER);
+			glShaderSource(fragment_shader,1,&_fragment_shader,NULL);
+			glCompileShader(fragment_shader);
+			glGetShaderiv(fragment_shader,GL_COMPILE_STATUS,&compilation_status);
+			if (compilation_status!=GL_TRUE){
+				GLsizei length;
+				glGetShaderiv(fragment_shader,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetShaderInfoLog(fragment_shader,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
+			GLuint program=glCreateProgram();
+			glAttachShader(program,vertex_shader);
+			glAttachShader(program,fragment_shader);
+			glLinkProgram(program);
+			GLint link_status;
+			glGetProgramiv(program,GL_LINK_STATUS,&link_status);
+			if (link_status!=GL_TRUE){
+				GLsizei length;
+				glGetProgramiv(program,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetProgramInfoLog(program,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
 		}
 		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;

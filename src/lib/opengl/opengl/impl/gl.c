@@ -1,4 +1,12 @@
 #include <GL/gl.h>
+#include <glsl/ast.h>
+#include <glsl/compiler.h>
+#include <glsl/debug.h>
+#include <glsl/error.h>
+#include <glsl/lexer.h>
+#include <glsl/linker.h>
+#include <glsl/parser.h>
+#include <glsl/preprocessor.h>
 #include <opengl/_internal/state.h>
 #include <opengl/command_buffer.h>
 #include <opengl/config.h>
@@ -25,6 +33,61 @@
 #define OPENGL_PARAMETER_RETURN_TYPE_INT64 2
 #define OPENGL_PARAMETER_RETURN_TYPE_FLOAT 3
 #define OPENGL_PARAMETER_RETURN_TYPE_DOUBLE 4
+
+
+
+static const char _gl_glsl_global_setup[]="\
+const int gl_MaxVertexAttribs=16; \n\
+const int gl_MaxVertexUniformComponents=1024; \n\
+const int gl_MaxVaryingFloats=60; \n\
+const int gl_MaxVaryingComponents=60; \n\
+const int gl_MaxVertexOutputComponents=64; \n\
+const int gl_MaxGeometryInputComponents=64; \n\
+const int gl_MaxGeometryOutputComponents=128; \n\
+const int gl_MaxFragmentInputComponents=128; \n\
+const int gl_MaxVertexTextureImageUnits=16; \n\
+const int gl_MaxCombinedTextureImageUnits=48; \n\
+const int gl_MaxTextureImageUnits=16; \n\
+const int gl_MaxFragmentUniformComponents=1024; \n\
+const int gl_MaxDrawBuffers=8; \n\
+const int gl_MaxClipDistances=8; \n\
+const int gl_MaxGeometryTextureImageUnits=16; \n\
+const int gl_MaxGeometryOutputVertices=256; \n\
+const int gl_MaxGeometryTotalOutputComponents=1024; \n\
+const int gl_MaxGeometryUniformComponents=1024; \n\
+const int gl_MaxGeometryVaryingComponents=64; \n\
+";
+
+static const char _gl_glsl_vertex_shader_setup[]="\
+#version 330 core \n\
+#define __VERSION__ 330 \n\
+#define GL_core_profile 1 \n\
+ \n\
+ \n\
+ \n\
+in int gl_VertexID; \n\
+in int gl_InstanceID; \n\
+out gl_PerVertex{ \n\
+	vec4 gl_Position; \n\
+	float gl_PointSize; \n\
+	float gl_ClipDistance[]; \n\
+}; \n\
+";
+
+static const char _gl_glsl_fragment_shader_setup[]="\
+#version 330 core \n\
+#define __VERSION__ 330 \n\
+#define GL_core_profile 1 \n\
+ \n\
+ \n\
+ \n\
+in vec4 gl_FragCoord; \n\
+in bool gl_FrontFacing; \n\
+in float gl_ClipDistance[]; \n\
+out float gl_FragDepth; \n\
+in vec2 gl_PointCoord; \n\
+in int gl_PrimitiveID; \n\
+";
 
 
 
@@ -749,7 +812,25 @@ SYS_PUBLIC void glActiveTexture(GLenum texture){
 
 
 SYS_PUBLIC void glAttachShader(GLuint program,GLuint shader){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glAttachShader\x1b[0m\n");
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	if (!state){
+		return;
+	}
+	opengl_shader_state_t* shader_state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	if (!state){
+		return;
+	}
+	if (shader_state->program){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	glsl_error_t error=glsl_linker_attach_program(&(state->linker_program),&(shader_state->compilation_output));
+	if (error!=GLSL_NO_ERROR){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mglAttachShader: %s\x1b[0m\n",error);
+		glsl_error_delete(error);
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
 }
 
 
@@ -1002,7 +1083,40 @@ SYS_PUBLIC void glCompileShader(GLuint shader){
 	if (!state){
 		return;
 	}
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glCompileShader\x1b[0m\n");
+	state->was_compilation_attempted=1;
+	if (state->error){
+		glsl_error_delete(state->error);
+		state->error=GLSL_NO_ERROR;
+	}
+	glsl_preprocessor_state_t preprocessor_state;
+	glsl_preprocessor_state_init(&preprocessor_state);
+	state->error=glsl_preprocessor_add_file(_gl_glsl_global_setup,0xffffffff,&preprocessor_state);
+	if (state->error!=GLSL_NO_ERROR){
+		return;
+	}
+	state->error=glsl_preprocessor_add_file((state->type==GL_VERTEX_SHADER?_gl_glsl_vertex_shader_setup:_gl_glsl_fragment_shader_setup),0xffffffff,&preprocessor_state);
+	if (state->error!=GLSL_NO_ERROR){
+		return;
+	}
+	for (GLuint i=0;i<state->source_count;i++){
+		state->error=glsl_preprocessor_add_file((state->sources+i)->data,i,&preprocessor_state);
+		if (state->error!=GLSL_NO_ERROR){
+			return;
+		}
+	}
+	glsl_lexer_token_list_t token_list;
+	state->error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
+	glsl_preprocessor_state_delete(&preprocessor_state);
+	if (state->error!=GLSL_NO_ERROR){
+		return;
+	}
+	glsl_ast_t ast;
+	state->error=glsl_parser_parse_tokens(&token_list,(state->type==GL_VERTEX_SHADER?GLSL_SHADER_TYPE_VERTEX:GLSL_SHADER_TYPE_FRAGMENT),&ast);
+	glsl_lexer_delete_token_list(&token_list);
+	if (state->error!=GLSL_NO_ERROR){
+		return;
+	}
+	state->error=glsl_compiler_compile(&ast,&(state->compilation_output));
 }
 
 
@@ -1081,6 +1195,9 @@ SYS_PUBLIC void glCopyTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLin
 
 SYS_PUBLIC GLuint glCreateProgram(void){
 	opengl_program_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_PROGRAM,sizeof(opengl_program_state_t));
+	glsl_linker_program_init(&(state->linker_program));
+	state->was_linkage_attempted=0;
+	state->error=GLSL_NO_ERROR;
 	return state->header.index;
 }
 
@@ -1095,6 +1212,9 @@ SYS_PUBLIC GLuint glCreateShader(GLenum type){
 	state->type=type;
 	state->source_count=0;
 	state->sources=NULL;
+	state->was_compilation_attempted=0;
+	state->error=GLSL_NO_ERROR;
+	state->program=NULL;
 	return state->header.index;
 }
 
@@ -1659,13 +1779,59 @@ SYS_PUBLIC void glGetSamplerParameteriv(GLuint sampler,GLenum pname,GLint* param
 
 
 SYS_PUBLIC void glGetShaderInfoLog(GLuint shader,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetShaderInfoLog\x1b[0m\n");
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	if (!state){
+		return;
+	}
+	if (bufSize<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (!bufSize){
+		*length=0;
+		return;
+	}
+	u32 size=(state->was_compilation_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
+	if (size>bufSize-1){
+		size=bufSize-1;
+	}
+	sys_memory_copy(state->error,infoLog,size);
+	infoLog[size]=0;
+	*length=size;
 }
 
 
 
 SYS_PUBLIC void glGetShaderiv(GLuint shader,GLenum pname,GLint* params){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetShaderiv\x1b[0m\n");
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	if (!state){
+		return;
+	}
+	if (pname==GL_SHADER_TYPE){
+		*params=state->type;
+		return;
+	}
+	if (pname==GL_DELETE_STATUS){
+		*params=GL_FALSE;
+		return;
+	}
+	if (pname==GL_COMPILE_STATUS){
+		*params=(state->was_compilation_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
+		return;
+	}
+	if (pname==GL_INFO_LOG_LENGTH){
+		*params=(state->was_compilation_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
+		return;
+	}
+	if (pname==GL_SHADER_SOURCE_LENGTH){
+		GLint out=!!state->source_count;
+		for (GLuint i=0;i<state->source_count;i++){
+			out+=(state->sources+i)->length;
+		}
+		*params=out;
+		return;
+	}
+	_gl_internal_state->gl_error=GL_INVALID_ENUM;
 }
 
 
@@ -1930,7 +2096,17 @@ SYS_PUBLIC void glLineWidth(GLfloat width){
 
 
 SYS_PUBLIC void glLinkProgram(GLuint program){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glLinkProgram\x1b[0m\n");
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	if (!state){
+		return;
+	}
+	state->was_linkage_attempted=1;
+	if (state->error){
+		glsl_error_delete(state->error);
+		state->error=GLSL_NO_ERROR;
+	}
+	state->error=glsl_linker_program_link(&(state->linker_program),_gl_internal_state->glsl_backend_descriptor,&(state->linked_program));
+	glsl_debug_print_linked_program(&(state->linked_program));
 }
 
 

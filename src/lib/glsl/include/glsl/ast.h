@@ -173,7 +173,6 @@ typedef struct _GLSL_AST_VAR{
 	glsl_ast_var_usage_flags_t usage_flags;
 	glsl_ast_var_usage_flags_t possible_usage_flags;
 	glsl_ast_var_flags_t flags;
-	u32 link_slot; // to delete
 	u64 _compiler_data;
 	glsl_ast_scope_t scope;
 	glsl_ast_var_storage_t storage;
