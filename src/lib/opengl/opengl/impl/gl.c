@@ -1,7 +1,6 @@
 #include <GL/gl.h>
 #include <glsl/ast.h>
 #include <glsl/compiler.h>
-#include <glsl/debug.h>
 #include <glsl/error.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
@@ -1707,13 +1706,96 @@ SYS_PUBLIC void glGetPointerv(GLenum pname,void* *params){
 
 
 SYS_PUBLIC void glGetProgramInfoLog(GLuint program,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramInfoLog\x1b[0m\n");
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	if (!state){
+		return;
+	}
+	if (bufSize<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (!bufSize){
+		*length=0;
+		return;
+	}
+	u32 size=(state->was_linkage_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
+	if (size>bufSize-1){
+		size=bufSize-1;
+	}
+	sys_memory_copy(state->error,infoLog,size);
+	infoLog[size]=0;
+	*length=size;
 }
 
 
 
 SYS_PUBLIC void glGetProgramiv(GLuint program,GLenum pname,GLint* params){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv\x1b[0m\n");
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	if (!state){
+		return;
+	}
+	switch (pname){
+		case GL_DELETE_STATUS:
+			*params=GL_FALSE;
+			break;
+		case GL_LINK_STATUS:
+			*params=(state->was_linkage_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
+			break;
+		case GL_VALIDATE_STATUS:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_VALIDATE_STATUS\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_INFO_LOG_LENGTH:
+			*params=(state->was_linkage_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
+			break;
+		case GL_ATTACHED_SHADERS:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_ATTACHED_SHADERS\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_ACTIVE_ATTRIBUTES:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_ACTIVE_ATTRIBUTES\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_ACTIVE_ATTRIBUTE_MAX_LENGTH:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_ACTIVE_ATTRIBUTE_MAX_LENGTH\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_ACTIVE_UNIFORMS:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_ACTIVE_UNIFORMS\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_ACTIVE_UNIFORM_MAX_LENGTH:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_ACTIVE_UNIFORM_MAX_LENGTH\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_TRANSFORM_FEEDBACK_BUFFER_MODE:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_TRANSFORM_FEEDBACK_BUFFER_MODE\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_TRANSFORM_FEEDBACK_VARYINGS:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_TRANSFORM_FEEDBACK_VARYINGS\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_GEOMETRY_VERTICES_OUT:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_GEOMETRY_VERTICES_OUT\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_GEOMETRY_INPUT_TYPE:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_GEOMETRY_INPUT_TYPE\x1b[0m\n");
+			*params=0;
+			break;
+		case GL_GEOMETRY_OUTPUT_TYPE:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_GEOMETRY_OUTPUT_TYPE\x1b[0m\n");
+			*params=0;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			break;
+	}
 }
 
 
@@ -1807,31 +1889,30 @@ SYS_PUBLIC void glGetShaderiv(GLuint shader,GLenum pname,GLint* params){
 	if (!state){
 		return;
 	}
-	if (pname==GL_SHADER_TYPE){
-		*params=state->type;
-		return;
+	switch (pname){
+		case GL_SHADER_TYPE:
+			*params=state->type;
+			break;
+		case GL_DELETE_STATUS:
+			*params=GL_FALSE;
+			break;
+		case GL_COMPILE_STATUS:
+			*params=(state->was_compilation_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
+			break;
+		case GL_INFO_LOG_LENGTH:
+			*params=(state->was_compilation_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
+			break;
+		case GL_SHADER_SOURCE_LENGTH:
+			GLint out=!!state->source_count;
+			for (GLuint i=0;i<state->source_count;i++){
+				out+=(state->sources+i)->length;
+			}
+			*params=out;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			break;
 	}
-	if (pname==GL_DELETE_STATUS){
-		*params=GL_FALSE;
-		return;
-	}
-	if (pname==GL_COMPILE_STATUS){
-		*params=(state->was_compilation_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
-		return;
-	}
-	if (pname==GL_INFO_LOG_LENGTH){
-		*params=(state->was_compilation_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
-		return;
-	}
-	if (pname==GL_SHADER_SOURCE_LENGTH){
-		GLint out=!!state->source_count;
-		for (GLuint i=0;i<state->source_count;i++){
-			out+=(state->sources+i)->length;
-		}
-		*params=out;
-		return;
-	}
-	_gl_internal_state->gl_error=GL_INVALID_ENUM;
 }
 
 
@@ -2106,7 +2187,6 @@ SYS_PUBLIC void glLinkProgram(GLuint program){
 		state->error=GLSL_NO_ERROR;
 	}
 	state->error=glsl_linker_program_link(&(state->linker_program),_gl_internal_state->glsl_backend_descriptor,&(state->linked_program));
-	glsl_debug_print_linked_program(&(state->linked_program));
 }
 
 
