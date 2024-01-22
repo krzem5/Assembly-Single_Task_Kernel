@@ -227,7 +227,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->stencil
 			};
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,9,0);
-			resource_t vertex_buffer=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0x00ff00ff,VIRGL_TARGET_BUFFER,0x40/*VIRGL_FORMAT_R32_FLOAT*/,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,6*sizeof(float),1,1,1,0,0);
+			resource_t vertex_buffer=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0x00ff00ff,VIRGL_TARGET_BUFFER,VIRGL_FORMAT_R8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,6*sizeof(float),1,1,1,0,0);
 			u64 vertex_buffer_address=pmm_alloc(1,pmm_alloc_counter("tmp"),0);
 			const float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
 			memcpy((void*)(vertex_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,6*sizeof(float));
@@ -266,7 +266,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				0,
 				0,
 				0,
-				3-1,
+				/*count-1*/3-1,
 				0,
 			};
 			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
@@ -299,6 +299,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->vertex_shader_size,
 				0
 			};
+			// Verify user pointers!
 			_command_buffer_extend(instance->ctx,virgl_create_vertex_shader_command,6,0);
 			_command_buffer_extend(instance->ctx,(const u32*)(command->vertex_shader_data),command->vertex_shader_size>>2,0);
 			u32 virgl_create_fragment_shader_command[6]={
@@ -309,6 +310,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->fragment_shader_size,
 				0
 			};
+			// Verify user pointers!
 			_command_buffer_extend(instance->ctx,virgl_create_fragment_shader_command,6,0);
 			_command_buffer_extend(instance->ctx,(const u32*)(command->fragment_shader_data),command->fragment_shader_size>>2,0);
 			handle_finish_setup(&(shader->handle));
