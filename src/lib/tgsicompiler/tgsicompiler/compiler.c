@@ -138,7 +138,7 @@ glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,tgsi_co
 		_output_string_template(out,"DCL TEMP[0..%u]\n",output->local_count-1);
 	}
 	for (u32 i=0;i<output->const_count;i+=4){
-		_output_string_template(out,"IMM[%u] FLT32 {0x%w, 0x%w, 0x%w, 0x%w}\n",i>>2,output->consts_as_ints[i],output->consts_as_ints[i+1],output->consts_as_ints[i+2],output->consts[i+3]);
+		_output_string_template(out,"IMM[%u] FLT32 {0x%w, 0x%w, 0x%w, 0x%w}\n",i>>2,output->consts_as_ints[i],output->consts_as_ints[i+1],output->consts_as_ints[i+2],output->consts_as_ints[i+3]);
 	}
 	u32 offset=0;
 	for (u32 i=0;i<output->instruction_count;i++){

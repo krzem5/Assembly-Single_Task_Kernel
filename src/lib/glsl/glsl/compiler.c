@@ -281,15 +281,31 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 					sys_io_print("GLSL_AST_NODE_TYPE_CONSTRUCTOR: nested constructor // copy not implemented\n");
 					return GLSL_NO_ERROR;
 				}
+				_Bool base_type_is_float=glsl_builtin_type_to_vector_base_type(node->value_type->builtin_type)==GLSL_BUILTIN_TYPE_FLOAT;
 				register_state_t tmp=*output_register;
 				u16 mask=0;
 				float const_values[16];
+				u32* const_values_as_int=(u32*)const_values;
 				for (u32 i=0;i<node->args.count;i++){
 					u32 size=glsl_builtin_type_to_size(node->args.data[i]->value_type->builtin_type);
 					if (node->args.data[i]->type!=GLSL_AST_NODE_TYPE_VAR_CONST){
 						goto _continue_not_const;
 					}
-					sys_memory_copy(node->args.data[i]->var_matrix,const_values+tmp.offset,size*sizeof(float));
+					if ((glsl_builtin_type_to_vector_base_type(node->args.data[i]->value_type->builtin_type)==GLSL_BUILTIN_TYPE_FLOAT)!=base_type_is_float){
+						if (base_type_is_float){
+							for (u16 i=0;i<size;i++){
+								const_values[tmp.offset+i]=node->args.data[i]->var_int_matrix[i];
+							}
+						}
+						else{
+							for (u16 i=0;i<size;i++){
+								const_values_as_int[tmp.offset+i]=node->args.data[i]->var_matrix[i];
+							}
+						}
+					}
+					else{
+						sys_memory_copy(node->args.data[i]->var_matrix,const_values+tmp.offset,size*sizeof(float));
+					}
 					mask|=((1<<size)-1)<<tmp.offset;
 _continue_not_const:
 					tmp.offset+=size;

@@ -76,10 +76,6 @@ typedef u32 glsl_builtin_type_t;
 
 
 
-_Bool glsl_builtin_type_is_compatible(glsl_builtin_type_t src,glsl_builtin_type_t dst);
-
-
-
 const char* glsl_builtin_type_to_string(glsl_builtin_type_t builtin_type);
 
 

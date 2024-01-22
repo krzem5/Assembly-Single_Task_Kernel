@@ -11,7 +11,7 @@
 #define BUILD_OPERATOR(node,left_type,right_type) GLSL_AST_NODE_OPERATOR_TYPE_##node##_##left_type##_##right_type
 #define BUILD_TYPE(type) GLSL_BUILTIN_TYPE_##type
 
-#define MATCH(left_type,right_type) (glsl_builtin_type_is_compatible(left->value_type->builtin_type,BUILD_TYPE(left_type))&&glsl_builtin_type_is_compatible(right->value_type->builtin_type,BUILD_TYPE(right_type)))
+#define MATCH(left_type,right_type) (left->value_type->builtin_type==BUILD_TYPE(left_type)&&right->value_type->builtin_type==BUILD_TYPE(right_type))
 #define MATCH_EXACT(left_type,right_type) (left->value_type->builtin_type==BUILD_TYPE(left_type)&&right->value_type->builtin_type==BUILD_TYPE(right_type))
 
 #define MATCH_AND_RETURN(operator_type,left_type,right_type,value_type) \

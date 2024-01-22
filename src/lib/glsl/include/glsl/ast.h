@@ -138,6 +138,7 @@ typedef struct _GLSL_AST_NODE{
 			s32 var_vector_int[4];
 			u32 var_vector_uint[4];
 			float var_matrix[16];
+			u32 var_int_matrix[16];
 		};
 	};
 } glsl_ast_node_t;
