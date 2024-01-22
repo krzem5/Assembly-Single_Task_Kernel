@@ -38,7 +38,7 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 	}
 	memcpy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
 	ctx->command_buffer.size+=command_size;
-	if (flush){
+	if (flush&&ctx->command_buffer.size){
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
 	}
@@ -118,7 +118,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		// Rasterizer
 		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_RASTERIZER,
 		rasterizer_id,
-		0x60008182,
+		0x60008080,
 		0x3f800000,
 		0,
 		0xffff,
@@ -227,6 +227,49 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->stencil
 			};
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,9,0);
+			resource_t vertex_buffer=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0x00ff00ff,VIRGL_TARGET_BUFFER,0x40/*VIRGL_FORMAT_R32_FLOAT*/,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,6*sizeof(float),1,1,1,0,0);
+			u64 vertex_buffer_address=pmm_alloc(1,pmm_alloc_counter("tmp"),0);
+			const float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
+			memcpy((void*)(vertex_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,6*sizeof(float));
+			virtio_gpu_command_resource_attach_backing(ctx->gpu_device,vertex_buffer,vertex_buffer_address,6*sizeof(float));
+			virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,vertex_buffer);
+			virtio_gpu_box_t box={
+				0,
+				0,
+				0,
+				6*sizeof(float),
+				1,
+				1
+			};
+			virtio_gpu_command_transfer_to_host_3d(ctx->gpu_device,vertex_buffer,&box,0,0,0);
+			u32 TMP_COMMAND[]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_VERTEX_ELEMENTS(1),
+				0xff0000ff,
+				0,
+				0,
+				0,
+				VIRGL_FORMAT_R32G32_FLOAT,
+				VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS,
+				0xff0000ff,
+				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
+				2*sizeof(float),
+				0,
+				vertex_buffer,
+				VIRGL_PROTOCOL_COMMAND_DRAW_VBO,
+				/*start*/0,
+				/*count*/3,
+				/*mode*/VIRGL_PRIMITIVE_TRIANGLES,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				3-1,
+				0,
+			};
+			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_VIEWPORT){
 			opengl_protocol_set_viewport_t* command=(void*)header;
@@ -279,15 +322,22 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				goto _skip_use_shader;
 			}
 			const virgl_opengl_shader_t* shader=handle->object;
-			u32 virgl_bind_shader_command[6]={
+			u32 virgl_bind_shader_command[13]={
 				VIRGL_PROTOCOL_COMMAND_BIND_SHADER,
 				shader->vertex_shader,
 				VIRGL_SHADER_VERTEX,
 				VIRGL_PROTOCOL_COMMAND_BIND_SHADER,
 				shader->fragment_shader,
-				VIRGL_SHADER_FRAGMENT
+				VIRGL_SHADER_FRAGMENT,
+				VIRGL_PROTOCOL_COMMAND_LINK_SHADER,
+				shader->vertex_shader,
+				shader->fragment_shader,
+				0,
+				0,
+				0,
+				0
 			};
-			_command_buffer_extend(instance->ctx,virgl_bind_shader_command,6,0);
+			_command_buffer_extend(instance->ctx,virgl_bind_shader_command,13,0);
 			handle_release(handle);
 _skip_use_shader:
 		}

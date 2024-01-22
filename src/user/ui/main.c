@@ -23,13 +23,11 @@ static const char* _vertex_shader=" \
  \n\
  \n\
 layout (location=0) in vec2 in_pos; \n\
-out vec4 fs_color; \n\
  \n\
  \n\
  \n\
 void main(void){ \n\
 	gl_Position=vec4(in_pos,0.0,1.0); \n\
-	fs_color=vec4(1.0,0.0,0.0,0.0); \n\
 } \n\
 ";
 
@@ -38,13 +36,12 @@ static const char* _fragment_shader=" \
  \n\
  \n\
  \n\
-in vec4 fs_color; \n\
 out vec4 out_color; \n\
  \n\
  \n\
  \n\
 void main(void){ \n\
-	out_color=fs_color; \n\
+	out_color=vec4(1.0,1.0,1.0,1.0); \n\
 } \n\
 ";
 

@@ -79,7 +79,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			_output_string(out,"VERT\n",0);
 			break;
 		case GLSL_SHADER_TYPE_FRAGMENT:
-			_output_string(out,"FRAG\n",0);
+			_output_string(out,"FRAG\nPROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n",0);
 			break;
 	}
 	u32 max_input_slot=0;

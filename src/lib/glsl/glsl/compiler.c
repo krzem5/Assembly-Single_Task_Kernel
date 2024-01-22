@@ -286,6 +286,9 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 				u16 mask=0;
 				float const_values[16];
 				u32* const_values_as_int=(u32*)const_values;
+				for (u16 i=0;i<16;i++){
+					const_values[i]=0;
+				}
 				for (u32 i=0;i<node->args.count;i++){
 					u32 size=glsl_builtin_type_to_size(node->args.data[i]->value_type->builtin_type);
 					if (node->args.data[i]->type!=GLSL_AST_NODE_TYPE_VAR_CONST){
@@ -316,26 +319,46 @@ _continue_not_const:
 					if (!row){
 						continue;
 					}
-					float const_vector[4];
+					// float const_vector[4];
+					// u8 pattern_length=0;
+					// u8 pattern=0;
+					// do{
+					// 	u8 j=__builtin_ffs(row)-1;
+					// 	row&=row-1;
+					// 	// const_vector[pattern_length]=const_values[i*row_bit_count+j];
+					// 	pattern|=j<<(pattern_length<<1);
+					// 	pattern_length++;
+					// } while (row);
+					// u32 slot=0xffffffff;
+					// _glsl_interface_allocator_reserve(&(state->const_variable_allocator),&slot,pattern_length,(pattern_length==1?1:(pattern_length==2?2:4)));
+					// _push_consts(state->output,slot,const_vector,pattern_length);
+					// glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MOV,2);
+					// instruction->args->index=output_register->base;
+					// instruction->args->pattern_length_and_flags=(pattern_length-1)|(i<<2)|output_register->flags;
+					// instruction->args->pattern=pattern;
+					// (instruction->args+1)->index=slot>>2;
+					// (instruction->args+1)->pattern_length_and_flags=(pattern_length-1)|GLSL_INSTRUCTION_ARG_FLAG_CONST;
+					// (instruction->args+1)->pattern=0b11100100+0b01010101*(slot&3);
 					u8 pattern_length=0;
 					u8 pattern=0;
+					u8 pattern_full_width=0;
 					do{
 						u8 j=__builtin_ffs(row)-1;
 						row&=row-1;
-						const_vector[pattern_length]=const_values[i*row_bit_count+j];
 						pattern|=j<<(pattern_length<<1);
+						pattern_full_width|=j<<(j<<1);
 						pattern_length++;
 					} while (row);
 					u32 slot=0xffffffff;
-					_glsl_interface_allocator_reserve(&(state->const_variable_allocator),&slot,pattern_length,(pattern_length==1?1:(pattern_length==2?2:4)));
-					_push_consts(state->output,slot,const_vector,pattern_length);
+					_glsl_interface_allocator_reserve(&(state->const_variable_allocator),&slot,4,4);
+					_push_consts(state->output,slot,const_values+i*row_bit_count,4);
 					glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MOV,2);
 					instruction->args->index=output_register->base;
 					instruction->args->pattern_length_and_flags=(pattern_length-1)|(i<<2)|output_register->flags;
 					instruction->args->pattern=pattern;
 					(instruction->args+1)->index=slot>>2;
-					(instruction->args+1)->pattern_length_and_flags=(pattern_length-1)|GLSL_INSTRUCTION_ARG_FLAG_CONST;
-					(instruction->args+1)->pattern=0b11100100+0b01010101*(slot&3);
+					(instruction->args+1)->pattern_length_and_flags=3|GLSL_INSTRUCTION_ARG_FLAG_CONST;
+					(instruction->args+1)->pattern=pattern_full_width;
 				}
 				tmp.offset=0;
 				for (u32 i=0;i<node->args.count;i++){
