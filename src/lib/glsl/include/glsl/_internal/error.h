@@ -139,7 +139,7 @@ glsl_error_t _glsl_error_create_linker_unlinked_var(const char* name,_Bool is_ou
 
 
 
-glsl_error_t _glsl_error_create_linker_wrong_type(const char* name,const glsl_ast_type_t* output_type,const glsl_ast_type_t* input_type);
+glsl_error_t _glsl_error_create_linker_wrong_type(const char* name,u32 output_slot_count,u32 input_slot_count);
 
 
 

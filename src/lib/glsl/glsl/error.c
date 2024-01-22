@@ -277,14 +277,9 @@ glsl_error_t _glsl_error_create_linker_unlinked_var(const char* name,_Bool is_ou
 
 
 
-glsl_error_t _glsl_error_create_linker_wrong_type(const char* name,const glsl_ast_type_t* output_type,const glsl_ast_type_t* input_type){
+glsl_error_t _glsl_error_create_linker_wrong_type(const char* name,u32 output_slot_count,u32 input_slot_count){
 	char buffer[ERROR_BUFFER_SIZE];
-	char* output_type_str=glsl_ast_type_to_string(output_type);
-	char* input_type_str=glsl_ast_type_to_string(input_type);
-	glsl_error_t out=_create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Types of variable '%s' do not match: %s and %s",name,output_type_str,input_type_str));
-	sys_heap_dealloc(NULL,output_type_str);
-	sys_heap_dealloc(NULL,input_type_str);
-	return out;
+	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Types of variable '%s' do not match: %u and %u slots",name,output_slot_count,input_slot_count));
 }
 
 

@@ -1,7 +1,7 @@
 #include <glsl/_internal/error.h>
 #include <glsl/_internal/interface_allocator.h>
-#include <glsl/ast.h>
 #include <glsl/backend.h>
+#include <glsl/compiler.h>
 #include <glsl/error.h>
 #include <glsl/linker.h>
 #include <sys/heap/heap.h>
@@ -17,90 +17,32 @@
 
 
 
-// static glsl_error_t _allocate_slots(glsl_ast_t* ast,u8 type,u32 max_slots){
-// 	glsl_error_t error=GLSL_NO_ERROR;
-// 	glsl_interface_allocator_t allocator;
-// 	_glsl_interface_allocator_init(max_slots,&allocator);
-// 	u8 mask=GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION;
-// _second_pass:
-// 	for (u32 i=0;i<ast->var_count;i++){
-// 		glsl_ast_var_t* var=ast->vars[i];
-// 		if (var->storage.type==type&&!(var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&(var->storage.flags&mask)==mask){
-// 			var->flags|=GLSL_AST_VAR_FLAG_LINKED;
-// 			var->link_slot=(mask?var->storage.layout_location:0xffffffff);
-// 			if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type),1)){
-// 				error=_glsl_error_create_linker_unallocatable_layout(var->name);
-// 				goto _error;
-// 			}
-// 		}
-// 	}
-// 	if (mask){
-// 		mask=0;
-// 		goto _second_pass;
-// 	}
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	return GLSL_NO_ERROR;
-// _error:
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	return error;
-// }
-
-
-
-// static glsl_error_t _allocate_uniform_slots(glsl_linker_program_t* program,glsl_linker_linked_program_t* linked_program){
-// 	glsl_error_t error=GLSL_NO_ERROR;
-// 	glsl_interface_allocator_t allocator;
-// 	_glsl_interface_allocator_init(gl_MaxVertexUniformComponents,&allocator);
-// 	u8 mask=GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION;
-// _second_pass:
-// 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
-// 		if (!(program->shader_bitmap&(1<<i))){
-// 			continue;
-// 		}
-// 		for (u32 j=0;j<(program->shaders+i)->var_count;j++){
-// 			glsl_ast_var_t* var=(program->shaders+i)->vars[j];
-// 			if (var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_UNIFORM&&!(var->flags&(GLSL_AST_VAR_FLAG_LINKED|GLSL_AST_VAR_FLAG_BUILTIN))&&(var->storage.flags&mask)==mask){
-// 				var->flags|=GLSL_AST_VAR_FLAG_LINKED;
-// 				for (u32 k=0;k<linked_program->uniform_count;k++){
-// 					const glsl_linker_linked_program_uniform_t* uniform=linked_program->uniforms+k;
-// 					if (!sys_string_compare(uniform->name,var->name)){
-// 						if ((var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)&&var->storage.layout_location!=uniform->slot){
-// 							error=_glsl_error_create_linker_inconsistent_layout(var->name);
-// 							goto _error;
-// 						}
-// 						if (!glsl_ast_type_is_equal(var->type,uniform->_type)){
-// 							error=_glsl_error_create_linker_wrong_type(var->name,var->type,uniform->_type);
-// 							goto _error;
-// 						}
-// 						var->link_slot=uniform->slot;
-// 						goto _skip_slot_allocation;
-// 					}
-// 				}
-// 				var->link_slot=(mask?var->storage.layout_location:0xffffffff);
-// 				if (!_glsl_interface_allocator_reserve(&allocator,&(var->link_slot),glsl_ast_type_get_slot_count(var->type),1)){
-// 					error=_glsl_error_create_linker_unallocatable_layout(var->name);
-// 					goto _error;
-// 				}
-// 				linked_program->uniform_count++;
-// 				linked_program->uniforms=sys_heap_realloc(NULL,linked_program->uniforms,linked_program->uniform_count*sizeof(glsl_linker_linked_program_uniform_t));
-// 				(linked_program->uniforms+linked_program->uniform_count-1)->name=sys_string_duplicate(var->name);
-// 				(linked_program->uniforms+linked_program->uniform_count-1)->slot=var->link_slot;
-// 				(linked_program->uniforms+linked_program->uniform_count-1)->size=glsl_ast_type_get_slot_count(var->type);
-// 				(linked_program->uniforms+linked_program->uniform_count-1)->_type=glsl_ast_type_duplicate(var->type);
-// _skip_slot_allocation:
-// 			}
-// 		}
-// 	}
-// 	if (mask){
-// 		mask=0;
-// 		goto _second_pass;
-// 	}
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	return GLSL_NO_ERROR;
-// _error:
-// 	_glsl_interface_allocator_deinit(&allocator);
-// 	return error;
-// }
+static glsl_error_t _allocate_slots(glsl_compilation_output_t* output,glsl_compilation_output_var_type_t type,u32 max_slots){
+	glsl_error_t error=GLSL_NO_ERROR;
+	glsl_interface_allocator_t allocator;
+	_glsl_interface_allocator_init(max_slots,&allocator);
+	_Bool has_slot=1;
+_second_pass:
+	for (u32 i=0;i<output->var_count;i++){
+		glsl_compilation_output_var_t* var=output->vars+i;
+		if (var->type==type&&(var->slot!=0xffffffff)==has_slot){
+			if (!_glsl_interface_allocator_reserve(&allocator,&(var->slot),var->slot_count,1)){
+				error=_glsl_error_create_linker_unallocatable_layout(var->name);
+				goto _error;
+			}
+			sys_io_print("%s: %u [%u]\n",var->name,var->slot,var->slot_count);
+		}
+	}
+	if (has_slot){
+		has_slot=0;
+		goto _second_pass;
+	}
+	_glsl_interface_allocator_deinit(&allocator);
+	return GLSL_NO_ERROR;
+_error:
+	_glsl_interface_allocator_deinit(&allocator);
+	return error;
+}
 
 
 
@@ -158,6 +100,60 @@
 // 	_glsl_interface_allocator_deinit(&allocator);
 // 	return error;
 // }
+
+
+
+static glsl_error_t _allocate_uniform_slots(glsl_linker_program_t* program,glsl_linker_linked_program_t* linked_program){
+	glsl_error_t error=GLSL_NO_ERROR;
+	glsl_interface_allocator_t allocator;
+	_glsl_interface_allocator_init(gl_MaxVertexUniformComponents,&allocator);
+	_Bool has_slot=1;
+_second_pass:
+	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
+		if (!(program->shader_bitmap&(1<<i))){
+			continue;
+		}
+		for (u32 j=0;j<(program->shaders+i)->var_count;j++){
+			glsl_compilation_output_var_t* var=(program->shaders+i)->vars+j;
+			if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM&&(var->slot!=0xffffffff)==has_slot){
+				for (u32 k=0;k<linked_program->uniform_count;k++){
+					const glsl_linker_linked_program_uniform_t* uniform=linked_program->uniforms+k;
+					if (!sys_string_compare(uniform->name,var->name)){
+						if (var->slot!=0xffffffff&&var->slot!=uniform->slot){
+							error=_glsl_error_create_linker_inconsistent_layout(var->name);
+							goto _error;
+						}
+						if (var->slot_count!=uniform->slot_count){
+							error=_glsl_error_create_linker_wrong_type(var->name,var->slot_count,uniform->slot_count);
+							goto _error;
+						}
+						var->slot=uniform->slot;
+						goto _skip_slot_allocation;
+					}
+				}
+				if (!_glsl_interface_allocator_reserve(&allocator,&(var->slot),var->slot_count,1)){
+					error=_glsl_error_create_linker_unallocatable_layout(var->name);
+					goto _error;
+				}
+				linked_program->uniform_count++;
+				linked_program->uniforms=sys_heap_realloc(NULL,linked_program->uniforms,linked_program->uniform_count*sizeof(glsl_linker_linked_program_uniform_t));
+				(linked_program->uniforms+linked_program->uniform_count-1)->name=sys_string_duplicate(var->name);
+				(linked_program->uniforms+linked_program->uniform_count-1)->slot=var->slot;
+				(linked_program->uniforms+linked_program->uniform_count-1)->slot_count=var->slot_count;
+_skip_slot_allocation:
+			}
+		}
+	}
+	if (has_slot){
+		has_slot=0;
+		goto _second_pass;
+	}
+	_glsl_interface_allocator_deinit(&allocator);
+	return GLSL_NO_ERROR;
+_error:
+	_glsl_interface_allocator_deinit(&allocator);
+	return error;
+}
 
 
 
@@ -233,29 +229,25 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_FRAGMENT))){
 		return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_FRAGMENT);
 	}
-	// error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_VERTEX,GLSL_AST_VAR_STORAGE_TYPE_IN,gl_MaxVertexAttribs);
-	// if (error!=GLSL_NO_ERROR){
-	// 	return error;
-	// }
+	error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_VERTEX,GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT,gl_MaxVertexAttribs);
+	if (error!=GLSL_NO_ERROR){
+		return error;
+	}
+	error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_FRAGMENT,GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT,1);
+	if (error!=GLSL_NO_ERROR){
+		return error;
+	}
 	// error=_check_compatibility(program->shaders+GLSL_SHADER_TYPE_VERTEX,program->shaders+GLSL_SHADER_TYPE_FRAGMENT,gl_MaxFragmentInputComponents);
 	// if (error!=GLSL_NO_ERROR){
 	// 	return error;
 	// }
-	// error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_FRAGMENT,GLSL_AST_VAR_STORAGE_TYPE_OUT,1);
-	// if (error!=GLSL_NO_ERROR){
-	// 	return error;
-	// }
-	// error=_allocate_uniform_slots(program,out);
-	// if (error!=GLSL_NO_ERROR){
-	// 	goto _cleanup;
-	// }
-	// for (u32 i=0;i<out->uniform_count;i++){
-	// 	glsl_ast_type_delete((out->uniforms+i)->_type);
-	// 	(out->uniforms+i)->_type=NULL;
-	// }
-	// if (!backend){
-	// 	return GLSL_NO_ERROR;
-	// }
+	error=_allocate_uniform_slots(program,out);
+	if (error!=GLSL_NO_ERROR){
+		goto _cleanup;
+	}
+	if (!backend){
+		return GLSL_NO_ERROR;
+	}
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
 		if (!(program->shader_bitmap&(1<<i))){
 			continue;

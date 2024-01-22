@@ -47,7 +47,7 @@
 
 
 
-typedef u32 glsl_compilation_output_var_type_t;
+typedef u16 glsl_compilation_output_var_type_t;
 
 
 
@@ -73,6 +73,7 @@ typedef struct _GLSL_INSTURCTION{
 
 typedef struct _GLSL_COMPILATION_OUTPUT_VAR{
 	glsl_compilation_output_var_type_t type;
+	u16 slot_count;
 	u32 slot;
 	char* name;
 } glsl_compilation_output_var_t;

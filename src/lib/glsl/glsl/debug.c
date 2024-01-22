@@ -652,12 +652,11 @@ SYS_PUBLIC void glsl_debug_print_compilation_output(const glsl_compilation_outpu
 
 
 
-
 SYS_PUBLIC void glsl_debug_print_linked_program(const glsl_linker_linked_program_t* linked_program){
 	sys_io_print("{\n  uniforms: [");
 	for (u32 i=0;i<linked_program->uniform_count;i++){
 		const glsl_linker_linked_program_uniform_t* uniform=linked_program->uniforms+i;
-		sys_io_print("\n    {\n      name: '%s',\n      slot: %u,\n      size: %u\n    }%s",uniform->name,uniform->slot,uniform->size,(i==linked_program->uniform_count-1?"":","));
+		sys_io_print("\n    {\n      name: '%s',\n      slot: %u,\n      slot_count: %u\n    }%s",uniform->name,uniform->slot,uniform->slot_count,(i==linked_program->uniform_count-1?"":","));
 	}
 	if (linked_program->uniform_count){
 		sys_io_print("\n  ");
