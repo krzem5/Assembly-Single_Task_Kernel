@@ -4,5 +4,5 @@ glsl:sys@dynamic
 uidisplay:sys@dynamic
 linker@nostatic:sys
 opengl@nostatic:sys@dynamic,glsl@dynamic,uidisplay@dynamic
-tgsicompiler@nostatic:sys@dynamic,glsl@dynamic
+tgsiascii@nostatic:sys@dynamic,glsl@dynamic
 runtime@nodynamic:sys

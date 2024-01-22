@@ -23,7 +23,7 @@ static u32 NOFLOAT _calculate_hash(const char* name){
 
 
 static u64 NOFLOAT _lookup_symbol(const shared_object_t* so,u32 hash,const char* name){
-	if (!so->dynamic_section.hash_table){
+	if (!so->dynamic_section.hash_table||!so->dynamic_section.hash_table->nbucket){
 		return 0;
 	}
 	for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){

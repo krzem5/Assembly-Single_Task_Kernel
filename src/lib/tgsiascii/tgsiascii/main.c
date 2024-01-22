@@ -1,3 +1,4 @@
+#include <glsl/backend.h>
 #include <glsl/compiler.h>
 #include <glsl/error.h>
 #include <glsl/linker.h>
@@ -8,7 +9,6 @@
 #include <sys/string/string.h>
 #include <sys/types.h>
 #include <sys/util/var_arg.h>
-#include <tgsicompiler/compiler.h>
 
 
 
@@ -48,22 +48,20 @@ static const char* _glsl_instruction_type_to_tgsi_instruction[]={
 
 
 
-static void _output_string(tgsi_compilation_output_t* out,const char* str,u32 length){
+static void _output_string(glsl_linker_linked_program_shader_t* out,const char* str,u32 length){
 	if (!length){
 		length=sys_string_length(str);
 	}
-	if (out->_capacity-out->length<length){
-		out->_capacity=(out->length+length+COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE)&(-COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE);
-		out->data=sys_heap_realloc(NULL,out->data,out->_capacity);
+	if (((-out->length)&(COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE-1))<length){
+		out->data=sys_heap_realloc(NULL,out->data,(out->length+length+COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE-1)&(-COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE));
 	}
 	sys_memory_copy(str,out->data+out->length,length);
 	out->length+=length;
-	out->data[out->length]=0;
 }
 
 
 
-static void _output_string_template(tgsi_compilation_output_t* out,const char* template,...){
+static void _output_string_template(glsl_linker_linked_program_shader_t* out,const char* template,...){
 	char buffer[256];
 	sys_var_arg_list_t va;
 	sys_var_arg_init(va,template);
@@ -73,10 +71,9 @@ static void _output_string_template(tgsi_compilation_output_t* out,const char* t
 
 
 
-glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,tgsi_compilation_output_t* out){
+static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* output,glsl_linker_linked_program_shader_t* out){
 	out->data=NULL;
 	out->length=0;
-	out->_capacity=0;
 	switch (output->shader_type){
 		case GLSL_SHADER_TYPE_VERTEX:
 			_output_string(out,"VERT\n",0);
@@ -182,11 +179,22 @@ glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,tgsi_co
 		_output_string(out,"\n",0);
 	}
 	_output_string_template(out,"%u:\tEND\n",output->instruction_count-offset);
-	sys_io_print("===SHADER===\n%s==/SHADER===\n",out->data);
 	for (;out->length&3;out->length++){
-		out->data[out->length]=0;
+		*((char*)(out->data+out->length))=0;
 	}
 	out->data=sys_heap_realloc(NULL,out->data,out->length);
-	out->_capacity=out->length;
 	return GLSL_NO_ERROR;
+}
+
+
+
+static const glsl_backend_descriptor_t _tgsi_glsl_backend_descriptor={
+	"tgsi",
+	_glsl_shader_link_callback
+};
+
+
+
+SYS_PUBLIC const glsl_backend_descriptor_t* _glsl_backend_query_descriptor(void){
+	return &_tgsi_glsl_backend_descriptor;
 }

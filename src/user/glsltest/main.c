@@ -11,7 +11,7 @@
 
 
 
-#define BACKEND_LIB_NAME "libtgsicompiler.so"
+#define BACKEND_LIB_NAME "libtgsiascii.so"
 
 
 
