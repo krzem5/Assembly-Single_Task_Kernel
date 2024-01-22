@@ -249,7 +249,7 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 		if (!(program->shader_bitmap&(1<<i))){
 			continue;
 		}
-		error=backend->shader_link_callback(program->shaders+i,i,out->shaders+i);
+		error=backend->shader_link_callback(program->shaders+i,out->shaders+i);
 		if (error!=GLSL_NO_ERROR){
 			goto _cleanup;
 		}

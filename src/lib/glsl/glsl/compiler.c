@@ -440,14 +440,21 @@ _continue_const:
 
 
 
-static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state_t* state){
+static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state_t* state,glsl_error_t* error){
 	const glsl_ast_var_t* ret=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		glsl_ast_var_t* var=ast->vars[i];
 		if (var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_CONST&&_is_var_used(var)){
 			glsl_compilation_output_var_type_t type=_glsl_ast_storage_type_to_output_var_type[var->storage.type];
 			if (var->flags&GLSL_AST_VAR_FLAG_BUILTIN){
-				type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION;
+				if (!sys_string_compare(var->name,"gl_Position")){
+					type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION;
+				}
+				else{
+					sys_io_print("ERROR: Unknown builtin variale '%s'\n",var->name);
+					*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
+					return NULL;
+				}
 			}
 			var->_compiler_data=_push_var(state->output,var->name,((var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)?var->storage.layout_location:0xffffffff),type,glsl_ast_type_get_slot_count(var->type));
 		}
@@ -481,10 +488,13 @@ SYS_PUBLIC glsl_error_t glsl_compiler_compile(const glsl_ast_t* ast,glsl_compila
 	};
 	_glsl_interface_allocator_init(4096,&(state.const_variable_allocator));
 	_glsl_interface_allocator_init(1024,&(state.local_variable_allocator));
-	const glsl_ast_var_t* main_function=_allocate_vars(ast,&state);
 	glsl_error_t error=GLSL_NO_ERROR;
+	const glsl_ast_var_t* main_function=_allocate_vars(ast,&state,&error);
 	if (!main_function||!main_function->value){
-		sys_io_print("Main function not found (error)\n");
+		if (error==GLSL_NO_ERROR){
+			sys_io_print("Main function not found (error)\n");
+			error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
+		}
 		goto _cleanup;
 	}
 	register_state_t tmp={

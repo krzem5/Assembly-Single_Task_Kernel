@@ -15,7 +15,7 @@ typedef struct _TGSI_COMPILATION_OUTPUT{
 
 
 
-glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,glsl_shader_type_t shader_type,tgsi_compilation_output_t* out);
+glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,tgsi_compilation_output_t* out);
 
 
 

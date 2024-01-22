@@ -231,6 +231,13 @@ SYS_PUBLIC u32 sys_format_string_va(char* buffer,u32 length,const char* template
 				_buffer_state_add(&out,_format_base16_char(address>>shift));
 			}
 		}
+		else if (*template=='w'){
+			u32 value=sys_var_arg_get(*va,u32);
+			for (u32 shift=32;shift;){
+				shift-=4;
+				_buffer_state_add(&out,_format_base16_char(value>>shift));
+			}
+		}
 		else if (*template=='g'){
 			const u8* guid=sys_var_arg_get(*va,const u8*);
 			for (u8 i=0;i<32;i++){

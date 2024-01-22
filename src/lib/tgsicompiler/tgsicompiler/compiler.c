@@ -1,4 +1,4 @@
-#include <glsl/ast.h>
+#include <glsl/compiler.h>
 #include <glsl/error.h>
 #include <glsl/linker.h>
 #include <sys/format/format.h>
@@ -13,6 +13,38 @@
 
 
 #define COMPILATION_OUTPUT_BUFFER_GROWTH_SIZE 256 // power of 2
+
+
+
+static const char* _glsl_instruction_type_to_tgsi_instruction[]={
+	[GLSL_INSTRUCTION_TYPE_MOV]="MOV",
+	[GLSL_INSTRUCTION_TYPE_ADD]="ADD",
+	[GLSL_INSTRUCTION_TYPE_SUB]="SUB",
+	[GLSL_INSTRUCTION_TYPE_MUL]="MUL",
+	[GLSL_INSTRUCTION_TYPE_DIV]="DIV",
+	[GLSL_INSTRUCTION_TYPE_MOD]="MOD",
+	[GLSL_INSTRUCTION_TYPE_AND]="AND",
+	[GLSL_INSTRUCTION_TYPE_IOR]="OR",
+	[GLSL_INSTRUCTION_TYPE_XOR]="XOR",
+	[GLSL_INSTRUCTION_TYPE_DP2]="DP2",
+	[GLSL_INSTRUCTION_TYPE_DP3]="DP3",
+	[GLSL_INSTRUCTION_TYPE_DP4]="DP4",
+	[GLSL_INSTRUCTION_TYPE_EXP]="EX2",
+	[GLSL_INSTRUCTION_TYPE_LOG]="LG2",
+	[GLSL_INSTRUCTION_TYPE_POW]="POW",
+	[GLSL_INSTRUCTION_TYPE_SRT]="SQRT",
+	[GLSL_INSTRUCTION_TYPE_RCP]="RCP",
+	[GLSL_INSTRUCTION_TYPE_MAD]="MAD",
+	[GLSL_INSTRUCTION_TYPE_FLR]="FLR",
+	[GLSL_INSTRUCTION_TYPE_CEL]="CEIL",
+	[GLSL_INSTRUCTION_TYPE_RND]="ROUND",
+	[GLSL_INSTRUCTION_TYPE_FRC]="FRC",
+	[GLSL_INSTRUCTION_TYPE_SIN]="SIN",
+	[GLSL_INSTRUCTION_TYPE_COS]="COS",
+	[GLSL_INSTRUCTION_TYPE_IGN]="KILL",
+	[GLSL_INSTRUCTION_TYPE_EMV]="EMIT",
+	[GLSL_INSTRUCTION_TYPE_EMP]="ENDPRIM",
+};
 
 
 
@@ -41,11 +73,11 @@ static void _output_string_template(tgsi_compilation_output_t* out,const char* t
 
 
 
-glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,glsl_shader_type_t shader_type,tgsi_compilation_output_t* out){
+glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,tgsi_compilation_output_t* out){
 	out->data=NULL;
 	out->length=0;
 	out->_capacity=0;
-	switch (shader_type){
+	switch (output->shader_type){
 		case GLSL_SHADER_TYPE_VERTEX:
 			_output_string(out,"VERT\n",0);
 			break;
@@ -53,39 +85,107 @@ glsl_error_t tgsi_compile_shader(const glsl_compilation_output_t* output,glsl_sh
 			_output_string(out,"FRAG\n",0);
 			break;
 	}
-	(void)_output_string_template;
-	// for (u32 i=0;i<ast->var_count;i++){
-	// 	const glsl_ast_var_t* var=ast->vars[i];
-	// 	if (var->type->type==GLSL_AST_TYPE_TYPE_FUNC){
-	// 		continue;
-	// 	}
-	// 	_output_string(out,"DCL ",0);
-	// 	switch (var->storage.type){
-	// 		case GLSL_AST_VAR_STORAGE_TYPE_DEFAULT:
-	// 			_output_string(out,"TEMP",0);
-	// 			break;
-	// 		case GLSL_AST_VAR_STORAGE_TYPE_CONST:
-	// 			_output_string(out,"IMM",0);
-	// 			break;
-	// 		case GLSL_AST_VAR_STORAGE_TYPE_IN:
-	// 			_output_string(out,"IN",0);
-	// 			break;
-	// 		case GLSL_AST_VAR_STORAGE_TYPE_OUT:
-	// 			_output_string(out,"OUT",0);
-	// 			break;
-	// 		case GLSL_AST_VAR_STORAGE_TYPE_UNIFORM:
-	// 			_output_string(out,"CONST",0);
-	// 			break;
-	// 	}
-	// 	u32 slot_count=glsl_ast_type_get_slot_count(var->type);
-	// 	if (slot_count==1){
-	// 		_output_string_template(out,"[%u]\n",var->link_slot);
-	// 	}
-	// 	else{
-	// 		_output_string_template(out,"[%u..%u]\n",var->link_slot,var->link_slot+slot_count-1);
-	// 	}
-	// }
-	sys_io_print("===SHADER===\n%s===SHADER===\n",out->data);
+	u32 max_input_slot=0;
+	u32 max_output_slot=0;
+	for (u32 i=0;i<output->var_count;i++){
+		const glsl_compilation_output_var_t* var=output->vars+i;
+		u32 slot_end=var->slot+var->slot_count;
+		if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT){
+			max_input_slot=(slot_end>max_input_slot?slot_end:max_input_slot);
+		}
+		else if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT){
+			max_output_slot=(slot_end>max_output_slot?slot_end:max_output_slot);
+		}
+	}
+	for (u32 i=0;i<output->var_count;i++){
+		glsl_compilation_output_var_t* var=output->vars+i;
+		const char* storage=NULL;
+		const char* suffix="";
+		switch (var->type){
+			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
+				storage="IN";
+				break;
+			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT:
+				storage="OUT";
+				break;
+			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM:
+				storage="CONST";
+				break;
+			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION:
+				if (output->shader_type==GLSL_SHADER_TYPE_VERTEX){
+					storage="OUT";
+					var->type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT;
+					var->slot=max_output_slot;
+					max_output_slot+=var->slot_count;
+				}
+				else{
+					storage="IN";
+					var->type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT;
+					var->slot=max_input_slot;
+					max_input_slot+=var->slot_count;
+				}
+				suffix=", POSITION";
+				break;
+		}
+		if (var->slot_count==1){
+			_output_string_template(out,"DCL %s[%u]%s\n",storage,var->slot,suffix);
+		}
+		else{
+			_output_string_template(out,"DCL %s[%u..%u]%s\n",storage,var->slot,var->slot+var->slot_count-1,suffix);
+		}
+	}
+	if (output->local_count){
+		_output_string_template(out,"DCL TEMP[0..%u]\n",output->local_count-1);
+	}
+	for (u32 i=0;i<output->const_count;i+=4){
+		_output_string_template(out,"IMM[%u] FLT32 {0x%w, 0x%w, 0x%w, 0x%w}\n",i>>2,output->consts_as_ints[i],output->consts_as_ints[i+1],output->consts_as_ints[i+2],output->consts[i+3]);
+	}
+	u32 offset=0;
+	for (u32 i=0;i<output->instruction_count;i++){
+		const glsl_instruction_t* instruction=output->instructions[i];
+		if (instruction->type==GLSL_INSTRUCTION_TYPE_NOP){
+			offset++;
+			continue;
+		}
+		_output_string_template(out,"%u:\t%s",i-offset,_glsl_instruction_type_to_tgsi_instruction[instruction->type]);
+		for (u32 j=0;j<instruction->arg_count;j++){
+			const glsl_instruction_arg_t* arg=instruction->args+j;
+			const char* storage=NULL;
+			u32 slot=arg->index;
+			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
+				storage="IMM";
+			}
+			else if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
+				storage="TEMP";
+			}
+			else{
+				switch ((output->vars+arg->index)->type){
+					case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
+						storage="IN";
+						break;
+					case GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT:
+						storage="OUT";
+						break;
+					case GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM:
+						storage="CONST";
+						break;
+				}
+				slot=(output->vars+arg->index)->slot+((arg->pattern_length_and_flags>>2)&0xf);
+			}
+			char swizzle[5];
+			for (u32 k=0;k<=(arg->pattern_length_and_flags&3);k++){
+				swizzle[k]="xyzw"[(arg->pattern>>(k<<1))&3];
+			}
+			swizzle[(arg->pattern_length_and_flags&3)+1]=0;
+			_output_string_template(out,"%s\t%s[%u].%s",(j?",":""),storage,slot,swizzle);
+		}
+		_output_string(out,"\n",0);
+	}
+	_output_string_template(out,"%u:\tEND\n",output->instruction_count-offset);
+	sys_io_print("===SHADER===\n%s==/SHADER===\n",out->data);
+	for (;out->length&3;out->length++){
+		out->data[out->length]=0;
+	}
 	out->data=sys_heap_realloc(NULL,out->data,out->length);
 	out->_capacity=out->length;
 	return GLSL_NO_ERROR;

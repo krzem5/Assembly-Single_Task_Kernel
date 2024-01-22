@@ -1,5 +1,5 @@
-#include <glsl/ast.h>
 #include <glsl/backend.h>
+#include <glsl/compiler.h>
 #include <glsl/error.h>
 #include <glsl/linker.h>
 #include <sys/types.h>
@@ -7,9 +7,9 @@
 
 
 
-static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* shader_output,glsl_shader_type_t shader_type,glsl_linker_linked_program_shader_t* out){
+static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* shader_output,glsl_linker_linked_program_shader_t* out){
 	tgsi_compilation_output_t compilation_output;
-	glsl_error_t error=tgsi_compile_shader(shader_output,shader_type,&compilation_output);
+	glsl_error_t error=tgsi_compile_shader(shader_output,&compilation_output);
 	out->data=compilation_output.data;
 	out->length=compilation_output.length;
 	return error;

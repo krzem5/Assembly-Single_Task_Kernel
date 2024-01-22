@@ -9,7 +9,7 @@
 
 typedef struct _GLSL_BACKEND_DESCRIPTOR{
 	const char* name;
-	glsl_error_t (*shader_link_callback)(const glsl_compilation_output_t*,glsl_shader_type_t,glsl_linker_linked_program_shader_t*);
+	glsl_error_t (*shader_link_callback)(const glsl_compilation_output_t*,glsl_linker_linked_program_shader_t*);
 } glsl_backend_descriptor_t;
 
 
