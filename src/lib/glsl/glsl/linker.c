@@ -227,12 +227,12 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 		(out->shaders+i)->length=0;
 	}
 	out->uniforms=NULL;
-	// if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_VERTEX))){
-	// 	return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_VERTEX);
-	// }
-	// if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_FRAGMENT))){
-	// 	return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_FRAGMENT);
-	// }
+	if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_VERTEX))){
+		return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_VERTEX);
+	}
+	if (!(program->shader_bitmap&(1<<GLSL_SHADER_TYPE_FRAGMENT))){
+		return _glsl_error_create_linker_missing_shader(GLSL_SHADER_TYPE_FRAGMENT);
+	}
 	// error=_allocate_slots(program->shaders+GLSL_SHADER_TYPE_VERTEX,GLSL_AST_VAR_STORAGE_TYPE_IN,gl_MaxVertexAttribs);
 	// if (error!=GLSL_NO_ERROR){
 	// 	return error;
