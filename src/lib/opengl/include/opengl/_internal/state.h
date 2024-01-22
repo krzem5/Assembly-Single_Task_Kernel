@@ -50,6 +50,7 @@ typedef struct _OPENGL_PROGRAM_STATE{
 	_Bool was_linkage_attempted;
 	glsl_linker_linked_program_t linked_program;
 	glsl_error_t error;
+	u64 driver_handle;
 } opengl_program_state_t;
 
 
@@ -90,6 +91,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLfloat gl_clear_color_value[4];
 	GLdouble gl_clear_depth_value;
 	GLint gl_clear_stencil_value;
+	GLuint gl_used_program;
 	GLint gl_viewport[4];
 	opengl_handle_header_t** handles;
 	GLuint handle_count;

@@ -177,6 +177,7 @@ int main(int argc,const char** argv){
 				sys_heap_dealloc(NULL,buffer);
 				return 1;
 			}
+			glUseProgram(program);
 		}
 		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;
@@ -190,6 +191,7 @@ int main(int argc,const char** argv){
 			ui_display_flush_display_framebuffer(display);
 			t++;
 			sys_thread_await_events(&timer_event,1);
+			break; /***********************************************/
 		}
 	}
 	return 0;

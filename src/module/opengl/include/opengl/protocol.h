@@ -8,10 +8,14 @@
 #define OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE 0x02
 #define OPENGL_PROTOCOL_TYPE_CLEAR 0x03
 #define OPENGL_PROTOCOL_TYPE_SET_VIEWPORT 0x04
+#define OPENGL_PROTOCOL_TYPE_CREATE_SHADER 0x05
+#define OPENGL_PROTOCOL_TYPE_USE_SHADER 0x06
 
 #define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
 #define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
 #define OPENGL_PROTOCOL_CLEAR_FLAG_STENCIL 0x00000004
+
+#define OPENGL_PROTOCOL_SHADER_FORMAT_TGSI 0x0001
 
 
 
@@ -76,6 +80,25 @@ typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
 	opengl_protocol_float_t sx;
 	opengl_protocol_float_t sy;
 } opengl_protocol_set_viewport_t;
+
+
+
+typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_CREATE_SHADER{
+	opengl_protocol_header_t header;
+	u64 driver_handle;
+	u32 format;
+	u32 vertex_shader_size;
+	u32 fragment_shader_size;
+	const u8* vertex_shader_data;
+	const u8* fragment_shader_data;
+} opengl_protocol_create_shader_t;
+
+
+
+typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_USE_SHADER{
+	opengl_protocol_header_t header;
+	u64 driver_handle;
+} opengl_protocol_use_shader_t;
 
 
 

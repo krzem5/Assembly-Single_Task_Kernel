@@ -101,9 +101,18 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 		switch (var->type){
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
 				storage="IN";
+				if (output->shader_type==GLSL_SHADER_TYPE_FRAGMENT){
+					suffix=", GENERIC";
+				}
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT:
 				storage="OUT";
+				if (output->shader_type==GLSL_SHADER_TYPE_FRAGMENT){
+					suffix=", COLOR";
+				}
+				else{
+					suffix=", GENERIC";
+				}
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM:
 				storage="CONST";
@@ -132,7 +141,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 		}
 	}
 	if (output->local_count){
-		_output_string_template(out,"DCL TEMP[0..%u]\n",output->local_count-1);
+		_output_string_template(out,"DCL TEMP[0..%u], LOCAL\n",output->local_count-1);
 	}
 	for (u32 i=0;i<output->const_count;i+=4){
 		_output_string_template(out,"IMM[%u] FLT32 {0x%w, 0x%w, 0x%w, 0x%w}\n",i>>2,output->consts_as_ints[i],output->consts_as_ints[i+1],output->consts_as_ints[i+2],output->consts_as_ints[i+3]);
@@ -170,15 +179,17 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 				slot=(output->vars+arg->index)->slot+((arg->pattern_length_and_flags>>2)&0xf);
 			}
 			char swizzle[5];
-			for (u32 k=0;k<=(arg->pattern_length_and_flags&3);k++){
-				swizzle[k]="xyzw"[(arg->pattern>>(k<<1))&3];
+			u8 pattern_length=(j?4:(arg->pattern_length_and_flags&3)+1);
+			u8 pattern=arg->pattern&((1<<(((arg->pattern_length_and_flags&3)+1)<<1))-1);
+			for (u32 k=0;k<pattern_length;k++){
+				swizzle[k]="xyzw"[(pattern>>(k<<1))&3];
 			}
-			swizzle[(arg->pattern_length_and_flags&3)+1]=0;
+			swizzle[pattern_length]=0;
 			_output_string_template(out,"%s\t%s[%u].%s",(j?",":""),storage,slot,swizzle);
 		}
 		_output_string(out,"\n",0);
 	}
-	_output_string_template(out,"%u:\tEND\n",output->instruction_count-offset);
+	_output_string_template(out,"%u:\tEND\n%c",output->instruction_count-offset,0);
 	for (;out->length&3;out->length++){
 		*((char*)(out->data+out->length))=0;
 	}

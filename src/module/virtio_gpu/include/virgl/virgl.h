@@ -1,5 +1,6 @@
 #ifndef _VIRGL_VIRGL_H_
 #define _VIRGL_VIRGL_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/resource/resource.h>
 #include <kernel/types.h>
@@ -38,6 +39,14 @@ typedef struct _VIRGL_OPENGL_STATE_CONTEXT{
 	resource_manager_t* resource_manager;
 	virtio_gpu_resource_id_t framebuffer_resource_id;
 } virgl_opengl_state_context_t;
+
+
+
+typedef struct _VIRGL_OPENGL_SHADER{
+	handle_t handle;
+	resource_t vertex_shader;
+	resource_t fragment_shader;
+} virgl_opengl_shader_t;
 
 
 

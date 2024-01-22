@@ -49,11 +49,12 @@ const opengl_protocol_header_t* opengl_command_buffer_push(const opengl_protocol
 
 
 
-void opengl_command_buffer_push_single(const opengl_protocol_header_t* header){
+const opengl_protocol_header_t* opengl_command_buffer_push_single(const opengl_protocol_header_t* header){
 	opengl_command_buffer_set_lock(1);
 	opengl_command_buffer_ensure_space(header->length);
-	opengl_command_buffer_push(header);
+	const opengl_protocol_header_t* out=opengl_command_buffer_push(header);
 	opengl_command_buffer_set_lock(0);
+	return out;
 }
 
 

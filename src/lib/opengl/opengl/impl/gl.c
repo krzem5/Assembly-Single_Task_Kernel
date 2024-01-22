@@ -1197,6 +1197,7 @@ SYS_PUBLIC GLuint glCreateProgram(void){
 	glsl_linker_program_init(&(state->linker_program));
 	state->was_linkage_attempted=0;
 	state->error=GLSL_NO_ERROR;
+	state->driver_handle=0;
 	return state->header.index;
 }
 
@@ -2749,7 +2750,35 @@ SYS_PUBLIC GLboolean glUnmapBuffer(GLenum target){
 
 
 SYS_PUBLIC void glUseProgram(GLuint program){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUseProgram\x1b[0m\n");
+	if (!program){
+		_gl_internal_state->gl_used_program=0;
+		return;
+	}
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	if (!state){
+		return;
+	}
+	if (!state->driver_handle){
+		opengl_protocol_create_shader_t command={
+			.header.type=OPENGL_PROTOCOL_TYPE_CREATE_SHADER,
+			.header.length=sizeof(opengl_protocol_create_shader_t),
+			.format=OPENGL_PROTOCOL_SHADER_FORMAT_TGSI,
+			.vertex_shader_size=(state->linked_program.shaders+GLSL_SHADER_TYPE_VERTEX)->length,
+			.fragment_shader_size=(state->linked_program.shaders+GLSL_SHADER_TYPE_FRAGMENT)->length,
+			.vertex_shader_data=(state->linked_program.shaders+GLSL_SHADER_TYPE_VERTEX)->data,
+			.fragment_shader_data=(state->linked_program.shaders+GLSL_SHADER_TYPE_FRAGMENT)->data
+		};
+		const opengl_protocol_create_shader_t* output=(const opengl_protocol_create_shader_t*)opengl_command_buffer_push_single(&(command.header));
+		opengl_command_buffer_flush();
+		state->driver_handle=output->driver_handle;
+	}
+	_gl_internal_state->gl_used_program=state->header.index;
+	opengl_protocol_use_shader_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_USE_SHADER,
+		.header.length=sizeof(opengl_protocol_use_shader_t),
+		.driver_handle=state->driver_handle
+	};
+	opengl_command_buffer_push_single(&(command.header));
 }
 
 

@@ -25,6 +25,8 @@
 static pmm_counter_descriptor_t* _virgl_opengl_context_commabd_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
+static handle_type_t _virgl_opengl_shader_handle_type=0;
 
 
 
@@ -240,6 +242,55 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			};
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,8,0);
 		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_CREATE_SHADER){
+			opengl_protocol_create_shader_t* command=(void*)header;
+			virgl_opengl_shader_t* shader=omm_alloc(_virgl_opengl_shader_allocator);
+			handle_new(shader,_virgl_opengl_shader_handle_type,&(shader->handle));
+			shader->vertex_shader=resource_alloc(state_ctx->resource_manager);
+			shader->fragment_shader=resource_alloc(state_ctx->resource_manager);
+			u32 virgl_create_vertex_shader_command[6]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SHADER(command->vertex_shader_size>>2),
+				shader->vertex_shader,
+				VIRGL_SHADER_VERTEX,
+				command->vertex_shader_size,
+				command->vertex_shader_size,
+				0
+			};
+			_command_buffer_extend(instance->ctx,virgl_create_vertex_shader_command,6,0);
+			_command_buffer_extend(instance->ctx,(const u32*)(command->vertex_shader_data),command->vertex_shader_size>>2,0);
+			u32 virgl_create_fragment_shader_command[6]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SHADER(command->fragment_shader_size>>2),
+				shader->fragment_shader,
+				VIRGL_SHADER_FRAGMENT,
+				command->fragment_shader_size,
+				command->fragment_shader_size,
+				0
+			};
+			_command_buffer_extend(instance->ctx,virgl_create_fragment_shader_command,6,0);
+			_command_buffer_extend(instance->ctx,(const u32*)(command->fragment_shader_data),command->fragment_shader_size>>2,0);
+			handle_finish_setup(&(shader->handle));
+			command->driver_handle=shader->handle.rb_node.key;
+		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_USE_SHADER){
+			opengl_protocol_use_shader_t* command=(void*)header;
+			handle_t* handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_shader_handle_type);
+			if (!handle){
+				ERROR("OPENGL_PROTOCOL_TYPE_USE_SHADER: invalid handle: %p");
+				goto _skip_use_shader;
+			}
+			const virgl_opengl_shader_t* shader=handle->object;
+			u32 virgl_bind_shader_command[6]={
+				VIRGL_PROTOCOL_COMMAND_BIND_SHADER,
+				shader->vertex_shader,
+				VIRGL_SHADER_VERTEX,
+				VIRGL_PROTOCOL_COMMAND_BIND_SHADER,
+				shader->fragment_shader,
+				VIRGL_SHADER_FRAGMENT
+			};
+			_command_buffer_extend(instance->ctx,virgl_bind_shader_command,6,0);
+			handle_release(handle);
+_skip_use_shader:
+		}
 		else{
 			ERROR("_process_commands: unknown command '%X'",header->type);
 		}
@@ -280,6 +331,9 @@ void virgl_init(void){
 	spinlock_init(&(_virgl_opengl_context_allocator->lock));
 	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_state_context"));
 	spinlock_init(&(_virgl_opengl_state_context_allocator->lock));
+	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4,pmm_alloc_counter("omm_virgl_opengl_shader"));
+	spinlock_init(&(_virgl_opengl_shader_allocator->lock));
+	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 }
 
 

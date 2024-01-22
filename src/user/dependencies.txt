@@ -1,3 +1,4 @@
+alloctest:runtime@static,sys
 cat:runtime@static,sys
 cpu:runtime@static,sys
 fs:runtime@static,sys
@@ -10,7 +11,6 @@ reboot:runtime@static,sys
 shell:runtime@static,sys
 shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
-test:runtime@static,sys
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor
 ui:runtime@static,sys,opengl,uidisplay
