@@ -253,6 +253,7 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 		if (error!=GLSL_NO_ERROR){
 			goto _cleanup;
 		}
+		out->shader_bitmap|=1<<i;
 	}
 	return GLSL_NO_ERROR;
 _cleanup:

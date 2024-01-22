@@ -4,13 +4,18 @@
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
 #include <glsl/operators.h>
+#include <glsl/shader.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/types.h>
 
 
 
-static const char* _glsl_instruction_type_to_string[]={
+#define LINKED_SHADER_BYTES_PER_LINE 16
+
+
+
+static const char*const _glsl_instruction_type_to_string[]={
 	[GLSL_INSTRUCTION_TYPE_NOP]="NOP",
 	[GLSL_INSTRUCTION_TYPE_MOV]="MOV",
 	[GLSL_INSTRUCTION_TYPE_ADD]="ADD",
@@ -41,10 +46,15 @@ static const char* _glsl_instruction_type_to_string[]={
 	[GLSL_INSTRUCTION_TYPE_EMP]="EMP",
 };
 
-static const char* _glsl_compilation_output_var_type_to_string[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1]={
+static const char*const _glsl_compilation_output_var_type_to_string[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1]={
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT]="input",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT]="output",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM]="uniform",
+};
+
+static const char*const _glsl_shader_type_to_string[GLSL_SHADER_MAX_TYPE+1]={
+	[GLSL_SHADER_TYPE_VERTEX]="vertex",
+	[GLSL_SHADER_TYPE_FRAGMENT]="fragment",
 };
 
 
@@ -661,5 +671,26 @@ SYS_PUBLIC void glsl_debug_print_linked_program(const glsl_linker_linked_program
 	if (linked_program->uniform_count){
 		sys_io_print("\n  ");
 	}
-	sys_io_print("]\n}\n");
+	sys_io_print("],\n  shaders: {");
+	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
+		if (!(linked_program->shader_bitmap&(1<<i))){
+			continue;
+		}
+		const glsl_linker_linked_program_shader_t* shader=linked_program->shaders+i;
+		sys_io_print("\n    %s: [",_glsl_shader_type_to_string[i]);
+		for (u32 j=0;j<shader->length;j++){
+			if (!(j%LINKED_SHADER_BYTES_PER_LINE)){
+				sys_io_print("\n      ");
+			}
+			else{
+				sys_io_print(" ");
+			}
+			sys_io_print("%X",*((const char*)(shader->data+j)));
+		}
+		if (shader->length){
+			sys_io_print("\n    ");
+		}
+		sys_io_print("]%s",((linked_program->shader_bitmap>>(i+1))?",":""));
+	}
+	sys_io_print("\n  }\n}\n");
 }
