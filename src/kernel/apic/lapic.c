@@ -95,6 +95,7 @@ void KERNEL_NOCOVERAGE lapic_timer_start(u32 time_us){
 
 
 u32 KERNEL_NOCOVERAGE lapic_timer_stop(void){
+	asm volatile("cli":::"memory");
 	u32 out=_lapic_registers[REGISTER_TMRCURRCNT];
 	_lapic_registers[REGISTER_TMRINITCNT]=0;
 	_lapic_registers[REGISTER_LVT_TMR]=LAPIC_DISABLE_TIMER;

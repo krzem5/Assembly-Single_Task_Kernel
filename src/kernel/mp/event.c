@@ -164,7 +164,10 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		if (!_await_event(thread,events[i],i)){
 			continue;
 		}
+		spinlock_acquire_exclusive(&(thread->lock));
+		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
+		spinlock_release_exclusive(&(thread->lock));
 		scheduler_resume();
 		return i;
 	}
@@ -192,7 +195,10 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		_Bool is_active=_await_event(thread,handle_event->object,i);
 		handle_release(handle_event);
 		if (is_active){
+			spinlock_acquire_exclusive(&(thread->lock));
+			thread->state=THREAD_STATE_TYPE_RUNNING;
 			thread->event_wakeup_index=i;
+			spinlock_release_exclusive(&(thread->lock));
 			scheduler_resume();
 			return i;
 		}

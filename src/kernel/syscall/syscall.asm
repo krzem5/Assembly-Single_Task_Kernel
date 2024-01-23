@@ -88,7 +88,9 @@ _syscall_handler:
 	mov rax, qword [r11+rax*8]
 	test rax, rax
 	jz ._syscall_return
+	sti
 	call rax
+	cli
 	mov r15, rax
 ._syscall_return:
 	xor edi, edi ; SCHEDULER_TIMER_USER

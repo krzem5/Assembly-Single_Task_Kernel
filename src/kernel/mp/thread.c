@@ -81,8 +81,8 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	acl_set(out->handle.acl,process,0,THREAD_STATE_TYPE_TERMINATED);
 	spinlock_init(&(out->lock));
 	out->process=process;
-	char buffer[32];
-	out->name=smm_alloc(buffer,format_string(buffer,32,"thread-%u",HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
+	char buffer[128];
+	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
 	if (user_stack_size){
 		out->user_stack_region=mmap_alloc(&(process->mmap),0,user_stack_size,_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
 		if (!out->user_stack_region){

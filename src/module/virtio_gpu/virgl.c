@@ -533,6 +533,7 @@ _skip_buffer_resize:
 				};
 				virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,buffer->resource_handle,&box,0,0,0);
 			}
+			// Verify user pointers!
 			memcpy((void*)(buffer->address+command->offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),command->data,size);
 			virtio_gpu_box_t box={
 				command->offset,

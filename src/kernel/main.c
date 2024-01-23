@@ -39,10 +39,10 @@ void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_
 	amm_init();
 	acl_init();
 	kernel_early_execute_initializers();
+	scheduler_enable();
 	cpu_start_all_cores();
 	__lock_profiling_enable_dependency_graph();
 	thread_create_kernel_thread(NULL,"main",_main_thread,0x200000,0);
-	scheduler_enable();
 	scheduler_yield();
 	scheduler_task_wait_loop();
 }

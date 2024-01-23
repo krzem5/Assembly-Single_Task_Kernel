@@ -138,14 +138,15 @@ void scheduler_isr_handler(isr_state_t* state){
 	else{
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
-	lapic_timer_start(THREAD_TIMESLICE_US);
 	if (!current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
+		lapic_timer_start(THREAD_TIMESLICE_US);
 		scheduler_task_wait_loop();
 	}
 	msr_set_gs_base((u64)current_thread,0);
 	scheduler->current_thread=current_thread;
 	scheduler_set_timer((state->cs==0x08?SCHEDULER_TIMER_KERNEL:SCHEDULER_TIMER_USER));
+	lapic_timer_start(THREAD_TIMESLICE_US);
 }
 
 

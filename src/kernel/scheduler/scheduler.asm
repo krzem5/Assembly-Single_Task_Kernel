@@ -1,5 +1,5 @@
 global scheduler_yield:function default
-global scheduler_task_wait_loop:function
+global scheduler_task_wait_loop:function default
 section .text exec nowrite
 
 
@@ -7,9 +7,9 @@ section .text exec nowrite
 [bits 64]
 scheduler_yield:
 	pushfq
-	pop rax
 	sti
 	int 32
+	pop rax
 	test rax, 512
 	jnz ._interrupts_enabled
 	cli
