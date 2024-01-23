@@ -1110,14 +1110,41 @@ SYS_PUBLIC void glBlitFramebuffer(GLint srcX0,GLint srcY0,GLint srcX1,GLint srcY
 
 
 
+static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,const void* data,GLuint new_type){
+	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_buffer_data\x1b[0m\n");
+}
+
+
+
 SYS_PUBLIC void glBufferData(GLenum target,GLsizeiptr size,const void* data,GLenum usage){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBufferData\x1b[0m\n");
+	GLuint new_type;
+	switch (usage){
+		case GL_STREAM_DRAW:
+		case GL_STREAM_READ:
+		case GL_STREAM_COPY:
+			new_type=OPENGL_BUFFER_TYPE_STREAM;
+			break;
+		case GL_STATIC_DRAW:
+		case GL_STATIC_READ:
+		case GL_STATIC_COPY:
+			new_type=OPENGL_BUFFER_TYPE_STATIC;
+			break;
+		case GL_DYNAMIC_DRAW:
+		case GL_DYNAMIC_READ:
+		case GL_DYNAMIC_COPY:
+			new_type=OPENGL_BUFFER_TYPE_DYNAMIC;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	_update_buffer_data(target,0,size,data,new_type);
 }
 
 
 
 SYS_PUBLIC void glBufferSubData(GLenum target,GLintptr offset,GLsizeiptr size,const void* data){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBufferSubData\x1b[0m\n");
+	_update_buffer_data(target,offset,size,data,OPENGL_BUFFER_TYPE_NONE);
 }
 
 
@@ -1670,6 +1697,8 @@ SYS_PUBLIC void glGenBuffers(GLsizei n,GLuint* buffers){
 	}
 	for (GLsizei i=0;i<n;i++){
 		opengl_buffer_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_BUFFER,sizeof(opengl_buffer_state_t));
+		state->type=OPENGL_BUFFER_TYPE_NONE;
+		state->size=0;
 		buffers[i]=state->header.index;
 	}
 }

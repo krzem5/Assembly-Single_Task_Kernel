@@ -24,8 +24,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glBlendFunc`
 - [ ] `glBlendFuncSeparate`
 - [ ] `glBlitFramebuffer`
-- [ ] `glBufferData`
-- [ ] `glBufferSubData`
+- [x] `glBufferData`
+- [x] `glBufferSubData`
 - [ ] `glCheckFramebufferStatus`
 - [ ] `glClampColor`
 - [x] `glClear`
