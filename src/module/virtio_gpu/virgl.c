@@ -254,20 +254,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
 				2*sizeof(float),
 				0,
-				vertex_buffer,
-				VIRGL_PROTOCOL_COMMAND_DRAW_VBO,
-				/*start*/0,
-				/*count*/3,
-				/*mode*/VIRGL_PRIMITIVE_TRIANGLES,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				/*count-1*/3-1,
-				0,
+				vertex_buffer
 			};
 			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
 		}
@@ -342,6 +329,65 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			_command_buffer_extend(instance->ctx,virgl_bind_shader_command,13,0);
 			handle_release(handle);
 _skip_use_shader:
+		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_DRAW){
+			opengl_protocol_draw_t* command=(void*)header;
+			u32 mode=0;
+			switch (command->mode){
+				case OPENGL_PROTOCOL_DRAW_MODE_POINTS:
+					mode=VIRGL_PRIMITIVE_POINTS;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_LINES:
+					mode=VIRGL_PRIMITIVE_LINES;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_LINE_LOOP:
+					mode=VIRGL_PRIMITIVE_LINE_LOOP;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_LINE_STRIP:
+					mode=VIRGL_PRIMITIVE_LINE_STRIP;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_TRIANGLES:
+					mode=VIRGL_PRIMITIVE_TRIANGLES;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_STRIP:
+					mode=VIRGL_PRIMITIVE_TRIANGLE_STRIP;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_FAN:
+					mode=VIRGL_PRIMITIVE_TRIANGLE_FAN;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_LINES_ADJACENCY:
+					mode=VIRGL_PRIMITIVE_LINES_ADJACENCY;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_LINE_STRIP_ADJACENCY:
+					mode=VIRGL_PRIMITIVE_LINE_STRIP_ADJACENCY;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_TRIANGLES_ADJACENCY:
+					mode=VIRGL_PRIMITIVE_TRIANGLES_ADJACENCY;
+					break;
+				case OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_STRIP_ADJACENCY:
+					mode=VIRGL_PRIMITIVE_TRIANGLE_STRIP_ADJACENCY;
+					break;
+				default:
+					ERROR("_process_commands: unknown draw mode '%u'",command->mode);
+					goto _skip_draw_command;
+			}
+			u32 virgl_draw_vbo_command[13]={
+				VIRGL_PROTOCOL_COMMAND_DRAW_VBO,
+				command->first,
+				command->count,
+				mode,
+				0,
+				command->instance_count,
+				0,
+				0,
+				0,
+				0,
+				command->first,
+				command->count-command->first,
+				0,
+			};
+			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,0);
+_skip_draw_command:
 		}
 		else{
 			ERROR("_process_commands: unknown command '%X'",header->type);

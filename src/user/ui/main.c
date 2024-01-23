@@ -187,6 +187,7 @@ int main(int argc,const char** argv){
 			_hsl_to_rgb(t*255/120,127,255,color);
 			glClearColor(color[0]/255.0f,color[1]/255.0f,color[2]/255.0f,1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glDrawArrays(GL_TRIANGLES,0,3);
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			t++;

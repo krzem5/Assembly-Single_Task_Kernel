@@ -794,6 +794,61 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 
 
 
+static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei instance_count){
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	opengl_protocol_draw_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_DRAW,
+		.header.length=sizeof(opengl_protocol_draw_t),
+		.first=first,
+		.count=count,
+		.instance_count=instance_count,
+	};
+	switch (mode){
+		case GL_POINTS:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_POINTS;
+			break;
+		case GL_LINES:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_LINES;
+			break;
+		case GL_LINE_LOOP:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_LINE_LOOP;
+			break;
+		case GL_LINE_STRIP:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_LINE_STRIP;
+			break;
+		case GL_TRIANGLES:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_TRIANGLES;
+			break;
+		case GL_TRIANGLE_STRIP:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_STRIP;
+			break;
+		case GL_TRIANGLE_FAN:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_FAN;
+			break;
+		case GL_LINES_ADJACENCY:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_LINES_ADJACENCY;
+			break;
+		case GL_LINE_STRIP_ADJACENCY:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_LINE_STRIP_ADJACENCY;
+			break;
+		case GL_TRIANGLES_ADJACENCY:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_TRIANGLES_ADJACENCY;
+			break;
+		case GL_TRIANGLE_STRIP_ADJACENCY:
+			command.mode=OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_STRIP_ADJACENCY;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	opengl_command_buffer_push_single(&(command.header));
+}
+
+
+
 void _gl_set_internal_state(void* internal_state){
 	_gl_internal_state=internal_state;
 }
@@ -1329,13 +1384,13 @@ SYS_PUBLIC void glDisableVertexAttribArray(GLuint index){
 
 
 SYS_PUBLIC void glDrawArrays(GLenum mode,GLint first,GLsizei count){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawArrays\x1b[0m\n");
+	_generate_draw_command(mode,first,count,0);
 }
 
 
 
 SYS_PUBLIC void glDrawArraysInstanced(GLenum mode,GLint first,GLsizei count,GLsizei instancecount){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawArraysInstanced\x1b[0m\n");
+	_generate_draw_command(mode,first,count,instancecount);
 }
 
 
