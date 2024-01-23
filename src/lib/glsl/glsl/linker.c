@@ -53,7 +53,17 @@ static glsl_error_t _check_compatibility(glsl_compilation_output_t* output,glsl_
 _second_pass:
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* output_var=output->vars+i;
-		if (output_var->type!=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT||(output_var->slot!=0xffffffff)!=has_slot){
+		if ((output_var->slot!=0xffffffff)!=has_slot){
+			continue;
+		}
+		if (output_var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION){
+			if (!_glsl_interface_allocator_reserve(&allocator,&(output_var->slot),output_var->slot_count,1)){
+				error=_glsl_error_create_linker_unallocatable_layout(output_var->name);
+				goto _error;
+			}
+			continue;
+		}
+		if (output_var->type!=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT){
 			continue;
 		}
 		for (u32 j=0;j<input->var_count;j++){

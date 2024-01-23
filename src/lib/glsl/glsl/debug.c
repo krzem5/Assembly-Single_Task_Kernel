@@ -50,6 +50,7 @@ static const char*const _glsl_compilation_output_var_type_to_string[GLSL_COMPILA
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT]="input",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT]="output",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM]="uniform",
+	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION]="<position>",
 };
 
 static const char*const _glsl_shader_type_to_string[GLSL_SHADER_MAX_TYPE+1]={
@@ -620,7 +621,7 @@ SYS_PUBLIC void glsl_debug_print_compilation_output(const glsl_compilation_outpu
 		sys_io_print("\n  ");
 	}
 	sys_io_print("],\n  vars: [");
-	for (u32 i=0;i<output->var_count;i+=4){
+	for (u32 i=0;i<output->var_count;i++){
 		const glsl_compilation_output_var_t* var=output->vars+i;
 		sys_io_print("\n    {\n      name: '%s',\n      type: %s,\n      slot: %d\n    }%s",var->name,_glsl_compilation_output_var_type_to_string[var->type],var->slot,(i==output->var_count-1?"":","));
 	}

@@ -82,18 +82,6 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			_output_string(out,"FRAG\nPROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n",0);
 			break;
 	}
-	u32 max_input_slot=0;
-	u32 max_output_slot=0;
-	for (u32 i=0;i<output->var_count;i++){
-		const glsl_compilation_output_var_t* var=output->vars+i;
-		u32 slot_end=var->slot+var->slot_count;
-		if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT){
-			max_input_slot=(slot_end>max_input_slot?slot_end:max_input_slot);
-		}
-		else if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT){
-			max_output_slot=(slot_end>max_output_slot?slot_end:max_output_slot);
-		}
-	}
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* var=output->vars+i;
 		const char* storage=NULL;
@@ -121,14 +109,10 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 				if (output->shader_type==GLSL_SHADER_TYPE_VERTEX){
 					storage="OUT";
 					var->type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT;
-					var->slot=max_output_slot;
-					max_output_slot+=var->slot_count;
 				}
 				else{
 					storage="IN";
 					var->type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT;
-					var->slot=max_input_slot;
-					max_input_slot+=var->slot_count;
 				}
 				suffix=", POSITION";
 				break;

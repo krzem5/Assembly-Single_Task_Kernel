@@ -67,7 +67,7 @@ static const char _gl_glsl_vertex_shader_setup[]="\
 in int gl_VertexID; \n\
 in int gl_InstanceID; \n\
 out gl_PerVertex{ \n\
-	vec4 gl_Position; \n\
+	layout(location=0) vec4 gl_Position; \n\
 	float gl_PointSize; \n\
 	float gl_ClipDistance[]; \n\
 }; \n\
