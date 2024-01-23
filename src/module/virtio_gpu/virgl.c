@@ -22,11 +22,20 @@
 
 
 
+static const virgl_opengl_vertex_array_element_type_t _virgl_vertex_array_element_types[]={
+	{VIRGL_FORMAT_R32G32_FLOAT,2,OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_FLOAT,0},
+	{0,0,0,0}
+};
+
+
+
 static pmm_counter_descriptor_t* _virgl_opengl_context_commabd_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_vertex_array_allocator=NULL;
 static handle_type_t _virgl_opengl_shader_handle_type=0;
+static handle_type_t _virgl_opengl_vertex_array_handle_type=0;
 
 
 
@@ -197,12 +206,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			ERROR("_process_commands: invalid command size");
 			return;
 		}
-		else if (header->type==OPENGL_PROTOCOL_TYPE_CREATE_RESOURCE){
-			panic("OPENGL_PROTOCOL_TYPE_CREATE_RESOURCE");
-		}
-		else if (header->type==OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE){
-			panic("OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE");
-		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_CLEAR){
 			opengl_protocol_clear_t* command=(void*)header;
 			u32 flags=0;
@@ -243,14 +246,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			};
 			virtio_gpu_command_transfer_to_host_3d(ctx->gpu_device,vertex_buffer,&box,0,0,0);
 			u32 TMP_COMMAND[]={
-				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_VERTEX_ELEMENTS(1),
-				0xff0000ff,
-				0,
-				0,
-				0,
-				VIRGL_FORMAT_R32G32_FLOAT,
-				VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS,
-				0xff0000ff,
 				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
 				2*sizeof(float),
 				0,
@@ -307,7 +302,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			opengl_protocol_use_shader_t* command=(void*)header;
 			handle_t* handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_shader_handle_type);
 			if (!handle){
-				ERROR("OPENGL_PROTOCOL_TYPE_USE_SHADER: invalid handle: %p");
+				ERROR("_process_commands: invalid shader handle: %p");
 				goto _skip_use_shader;
 			}
 			const virgl_opengl_shader_t* shader=handle->object;
@@ -368,7 +363,7 @@ _skip_use_shader:
 					mode=VIRGL_PRIMITIVE_TRIANGLE_STRIP_ADJACENCY;
 					break;
 				default:
-					ERROR("_process_commands: unknown draw mode '%u'",command->mode);
+					ERROR("_process_commands: unknown draw mode: %u",command->mode);
 					goto _skip_draw_command;
 			}
 			u32 virgl_draw_vbo_command[13]={
@@ -389,8 +384,74 @@ _skip_use_shader:
 			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,0);
 _skip_draw_command:
 		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY){
+			opengl_protocol_update_vertex_array_t* command=(void*)header;
+			if (command->count==0xffffffff){
+				handle_t* vertex_array_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_vertex_array_handle_type);
+				if (!vertex_array_handle){
+					ERROR("_process_commands: invalid vertex array handle: %p",command->driver_handle);
+					goto _skip_update_vertex_array_command;
+				}
+				virgl_opengl_vertex_array_t* vertex_array=vertex_array_handle->object;
+				u32 virgl_bind_vertex_elements_command[2]={
+					VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS,
+					vertex_array->resource_handle
+				};
+				_command_buffer_extend(instance->ctx,virgl_bind_vertex_elements_command,2,0);
+				handle_release(vertex_array_handle);
+			}
+			else{
+				handle_t* vertex_array_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_vertex_array_handle_type);
+				virgl_opengl_vertex_array_t* vertex_array=NULL;
+				if (!vertex_array){
+					if (command->driver_handle){
+						ERROR("_process_commands: invalid vertex array handle: %p",command->driver_handle);
+						goto _skip_update_vertex_array_command;
+					}
+					vertex_array=omm_alloc(_virgl_opengl_vertex_array_allocator);
+					handle_new(vertex_array,_virgl_opengl_vertex_array_handle_type,&(vertex_array->handle));
+					vertex_array->resource_handle=resource_alloc(state_ctx->resource_manager);
+					handle_finish_setup(&(vertex_array->handle));
+					handle_acquire(&(vertex_array->handle));
+					vertex_array_handle=&(vertex_array->handle);
+				}
+				else{
+					vertex_array=vertex_array_handle->object;
+					u32 virgl_destroy_vertex_elements_command[2]={
+						VIRGL_PROTOCOL_COMMAND_DESTROY_OBJECT_VERTEX_ELEMENTS,
+						vertex_array->resource_handle
+					};
+					_command_buffer_extend(instance->ctx,virgl_destroy_vertex_elements_command,2,0);
+				}
+				u32 virgl_create_and_bind_vertex_elements_command[68]={
+					VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_VERTEX_ELEMENTS(command->count),
+					vertex_array->resource_handle,
+				};
+				for (u32 i=0;i<command->count;i++){
+					virgl_create_and_bind_vertex_elements_command[(i<<2)+2]=(command->elements+i)->offset;
+					virgl_create_and_bind_vertex_elements_command[(i<<2)+3]=0; // divisor
+					virgl_create_and_bind_vertex_elements_command[(i<<2)+4]=(command->elements+i)->index;
+					virgl_create_and_bind_vertex_elements_command[(i<<2)+5]=0;
+					for (const virgl_opengl_vertex_array_element_type_t* entry=_virgl_vertex_array_element_types;entry->virgl_type;entry++){
+						if (entry->size==(command->elements+i)->size&&entry->type==(command->elements+i)->type&&entry->require_normalization==(command->elements+i)->require_normalization){
+							virgl_create_and_bind_vertex_elements_command[(i<<2)+5]=entry->virgl_type;
+							break;
+						}
+					}
+					if (!virgl_create_and_bind_vertex_elements_command[(i<<2)+5]){
+						ERROR("_process_commands: unknown vertex array element type: (%u,%u,%u)",(command->elements+i)->size,(command->elements+i)->type,(command->elements+i)->require_normalization);
+						goto _skip_update_vertex_array_command;
+					}
+				}
+				virgl_create_and_bind_vertex_elements_command[(command->count<<2)+2]=VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS;
+				virgl_create_and_bind_vertex_elements_command[(command->count<<2)+3]=vertex_array->resource_handle;
+				_command_buffer_extend(instance->ctx,virgl_create_and_bind_vertex_elements_command,4+(command->count<<2),0);
+				handle_release(vertex_array_handle);
+			}
+_skip_update_vertex_array_command:
+		}
 		else{
-			ERROR("_process_commands: unknown command '%X'",header->type);
+			ERROR("_process_commands: unknown command: 0x%X",header->type);
 		}
 		offset+=header->length;
 	}
@@ -431,7 +492,10 @@ void virgl_init(void){
 	spinlock_init(&(_virgl_opengl_state_context_allocator->lock));
 	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4,pmm_alloc_counter("omm_virgl_opengl_shader"));
 	spinlock_init(&(_virgl_opengl_shader_allocator->lock));
+	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4,pmm_alloc_counter("omm_virgl_opengl_vertex_array"));
+	spinlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
+	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
 }
 
 

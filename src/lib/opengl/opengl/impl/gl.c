@@ -92,8 +92,6 @@ in int gl_PrimitiveID; \n\
 
 static opengl_internal_state_t* _gl_internal_state=NULL;
 
-static const GLuint _gl_max_vertex_attribs=16;
-
 
 
 static void* _alloc_handle(opengl_handle_type_t type,u32 size){
@@ -112,9 +110,9 @@ static void* _alloc_handle(opengl_handle_type_t type,u32 size){
 
 
 
-static void* _get_handle(GLuint handle,opengl_handle_type_t type){
+static void* _get_handle(GLuint handle,opengl_handle_type_t type,_Bool always_invalid_operation){
 	if (handle>=_gl_internal_state->handle_count||!_gl_internal_state->handles[handle]){
-		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		_gl_internal_state->gl_error=(always_invalid_operation?GL_INVALID_OPERATION:GL_INVALID_VALUE);
 		return NULL;
 	}
 	if (_gl_internal_state->handles[handle]->type!=type){
@@ -355,9 +353,10 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 			sys_io_print("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_TEXTURE_BUFFER_SIZE\x1b[0m\n");
 			return;
 		case GL_MAX_VERTEX_ATTRIBS:
+			local_value=OPENGL_MAX_VERTEX_ATTRIBUTES;
 			type=OPENGL_PARAMETER_TYPE_INT;
 			length=1;
-			values=&_gl_max_vertex_attribs;
+			values=&local_value;
 			break;
 		case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
 			sys_io_print("\x1b[38;2;231;72;86mUnimplemented: _gl_get_parameter.GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS\x1b[0m\n");
@@ -794,7 +793,95 @@ static void _gl_get_parameter(GLenum param,u64 index,void* out,u32 out_type){
 
 
 
+static void _sync_state(void){
+	GLenum error=_gl_internal_state->gl_error;
+	if (!_gl_internal_state->gl_used_vertex_array){
+		goto _skip_vertex_array_sync;
+	}
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		goto _skip_vertex_array_sync;
+	}
+	if (!state->needs_update){
+		if (_gl_internal_state->gl_bound_vertex_array==state->header.index||!state->driver_handle){
+			goto _skip_vertex_array_sync;
+		}
+		opengl_protocol_update_vertex_array_t command={
+			.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY,
+			.header.length=sizeof(opengl_protocol_update_vertex_array_t)-32*sizeof(opengl_protocol_vertex_array_element_t),
+			.count=0xffffffff,
+			.driver_handle=state->driver_handle
+		};
+		opengl_command_buffer_push_single(&(command.header));
+		_gl_internal_state->gl_bound_vertex_array=state->header.index;
+		goto _skip_vertex_array_sync;
+	}
+	opengl_protocol_update_vertex_array_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY,
+		.count=0,
+		.driver_handle=state->driver_handle
+	};
+	for (u32 mask=state->enabled_entry_mask;mask;mask&=mask-1){
+		const opengl_vertex_array_state_entry_t* src_entry=state->entries+__builtin_ffs(mask)-1;
+		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+command.count;
+		dst_entry->index=src_entry-state->entries;
+		dst_entry->size=(src_entry->size==GL_BGRA?OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA:src_entry->size);
+		switch (src_entry->type){
+			case GL_BYTE:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_BYTE;
+				break;
+			case GL_UNSIGNED_BYTE:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_BYTE;
+				break;
+			case GL_SHORT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_SHORT;
+				break;
+			case GL_UNSIGNED_SHORT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_SHORT;
+				break;
+			case GL_INT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT;
+				break;
+			case GL_UNSIGNED_INT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT;
+				break;
+			case GL_HALF_FLOAT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_HALF_FLOAT;
+				break;
+			case GL_FLOAT:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_FLOAT;
+				break;
+			case GL_DOUBLE:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_DOUBLE;
+				break;
+			case GL_INT_2_10_10_10_REV:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT_2_10_10_10_REV;
+				break;
+			case GL_UNSIGNED_INT_2_10_10_10_REV:
+				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT_2_10_10_10_REV;
+				break;
+		}
+		dst_entry->require_normalization=src_entry->normalized;
+		dst_entry->stride=src_entry->stride;
+		dst_entry->divisor=0;
+		dst_entry->offset=src_entry->offset;
+		dst_entry->require_normalization=src_entry->normalized;
+		command.count++;
+	}
+	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-command.count)*sizeof(opengl_protocol_vertex_array_element_t);
+	const opengl_protocol_update_vertex_array_t* output=(const opengl_protocol_update_vertex_array_t*)opengl_command_buffer_push_single(&(command.header));
+	if (!state->driver_handle){
+		opengl_command_buffer_flush();
+		state->driver_handle=output->driver_handle;
+	}
+_skip_vertex_array_sync:
+	_gl_internal_state->gl_error=error;
+}
+
+
+
 static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei instance_count){
+	_sync_state();
 	if (count<0){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
@@ -866,11 +953,11 @@ SYS_PUBLIC void glActiveTexture(GLenum texture){
 
 
 SYS_PUBLIC void glAttachShader(GLuint program,GLuint shader){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
 	if (!state){
 		return;
 	}
-	opengl_shader_state_t* shader_state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	opengl_shader_state_t* shader_state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
 	if (!state){
 		return;
 	}
@@ -914,7 +1001,18 @@ SYS_PUBLIC void glBindAttribLocation(GLuint program,GLuint index,const GLchar* n
 
 
 SYS_PUBLIC void glBindBuffer(GLenum target,GLuint buffer){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindBuffer\x1b[0m\n");
+	if (buffer&&!_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1)){
+		return;
+	}
+	switch (target){
+		case GL_ARRAY_BUFFER:
+			_gl_internal_state->gl_used_array_buffer=buffer;
+			break;
+		default:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindBuffer\x1b[0m\n");
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			break;
+	}
 }
 
 
@@ -968,7 +1066,10 @@ SYS_PUBLIC void glBindTexture(GLenum target,GLuint texture){
 
 
 SYS_PUBLIC void glBindVertexArray(GLuint array){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindVertexArray\x1b[0m\n");
+	if (array&&!_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1)){
+		return;
+	}
+	_gl_internal_state->gl_used_vertex_array=array;
 }
 
 
@@ -1133,11 +1234,11 @@ SYS_PUBLIC void glColorMaski(GLuint index,GLboolean r,GLboolean g,GLboolean b,GL
 
 
 SYS_PUBLIC void glCompileShader(GLuint shader){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
 	if (!state){
 		return;
 	}
-	state->was_compilation_attempted=1;
+	state->was_compilation_attempted=GL_TRUE;
 	if (state->error){
 		glsl_error_delete(state->error);
 		state->error=GLSL_NO_ERROR;
@@ -1250,7 +1351,7 @@ SYS_PUBLIC void glCopyTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLin
 SYS_PUBLIC GLuint glCreateProgram(void){
 	opengl_program_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_PROGRAM,sizeof(opengl_program_state_t));
 	glsl_linker_program_init(&(state->linker_program));
-	state->was_linkage_attempted=0;
+	state->was_linkage_attempted=GL_FALSE;
 	state->error=GLSL_NO_ERROR;
 	state->driver_handle=0;
 	return state->header.index;
@@ -1267,7 +1368,7 @@ SYS_PUBLIC GLuint glCreateShader(GLenum type){
 	state->type=type;
 	state->source_count=0;
 	state->sources=NULL;
-	state->was_compilation_attempted=0;
+	state->was_compilation_attempted=GL_FALSE;
 	state->error=GLSL_NO_ERROR;
 	state->program=NULL;
 	return state->header.index;
@@ -1378,7 +1479,15 @@ SYS_PUBLIC void glDisablei(GLenum target,GLuint index){
 
 
 SYS_PUBLIC void glDisableVertexAttribArray(GLuint index){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDisableVertexAttribArray\x1b[0m\n");
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	state->enabled_entry_mask&=~(1<<index);
 }
 
 
@@ -1456,7 +1565,15 @@ SYS_PUBLIC void glEnablei(GLenum target,GLuint index){
 
 
 SYS_PUBLIC void glEnableVertexAttribArray(GLuint index){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glEnableVertexAttribArray\x1b[0m\n");
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	state->enabled_entry_mask|=1<<index;
 }
 
 
@@ -1547,7 +1664,14 @@ SYS_PUBLIC void glFrontFace(GLenum mode){
 
 
 SYS_PUBLIC void glGenBuffers(GLsizei n,GLuint* buffers){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGenBuffers\x1b[0m\n");
+	if (n<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	for (GLsizei i=0;i<n;i++){
+		opengl_buffer_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_BUFFER,sizeof(opengl_buffer_state_t));
+		buffers[i]=state->header.index;
+	}
 }
 
 
@@ -1589,7 +1713,24 @@ SYS_PUBLIC void glGenTextures(GLsizei n,GLuint* textures){
 
 
 SYS_PUBLIC void glGenVertexArrays(GLsizei n,GLuint* arrays){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGenVertexArrays\x1b[0m\n");
+	if (n<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	for (GLsizei i=0;i<n;i++){
+		opengl_vertex_array_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_VERTEX_ARRAY,sizeof(opengl_vertex_array_state_t));
+		state->enabled_entry_mask=0;
+		for (GLuint j=0;j<OPENGL_MAX_VERTEX_ATTRIBUTES;j++){
+			(state->entries+j)->size=4;
+			(state->entries+j)->type=GL_FLOAT;
+			(state->entries+j)->normalized=GL_FALSE;
+			(state->entries+j)->stride=0;
+			(state->entries+j)->offset=0;
+		}
+		state->driver_handle=0;
+		state->needs_update=GL_FALSE;
+		arrays[i]=state->header.index;
+	}
 }
 
 
@@ -1762,7 +1903,7 @@ SYS_PUBLIC void glGetPointerv(GLenum pname,void* *params){
 
 
 SYS_PUBLIC void glGetProgramInfoLog(GLuint program,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
 	if (!state){
 		return;
 	}
@@ -1786,7 +1927,7 @@ SYS_PUBLIC void glGetProgramInfoLog(GLuint program,GLsizei bufSize,GLsizei* leng
 
 
 SYS_PUBLIC void glGetProgramiv(GLuint program,GLenum pname,GLint* params){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
 	if (!state){
 		return;
 	}
@@ -1917,7 +2058,7 @@ SYS_PUBLIC void glGetSamplerParameteriv(GLuint sampler,GLenum pname,GLint* param
 
 
 SYS_PUBLIC void glGetShaderInfoLog(GLuint shader,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
 	if (!state){
 		return;
 	}
@@ -1941,7 +2082,7 @@ SYS_PUBLIC void glGetShaderInfoLog(GLuint shader,GLsizei bufSize,GLsizei* length
 
 
 SYS_PUBLIC void glGetShaderiv(GLuint shader,GLenum pname,GLint* params){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
 	if (!state){
 		return;
 	}
@@ -2233,11 +2374,11 @@ SYS_PUBLIC void glLineWidth(GLfloat width){
 
 
 SYS_PUBLIC void glLinkProgram(GLuint program){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
 	if (!state){
 		return;
 	}
-	state->was_linkage_attempted=1;
+	state->was_linkage_attempted=GL_TRUE;
 	if (state->error){
 		glsl_error_delete(state->error);
 		state->error=GLSL_NO_ERROR;
@@ -2436,7 +2577,7 @@ SYS_PUBLIC void glScissor(GLint x,GLint y,GLsizei width,GLsizei height){
 
 
 SYS_PUBLIC void glShaderSource(GLuint shader,GLsizei count,const GLchar*const* string,const GLint* length){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
 	if (!state){
 		return;
 	}
@@ -2809,7 +2950,7 @@ SYS_PUBLIC void glUseProgram(GLuint program){
 		_gl_internal_state->gl_used_program=0;
 		return;
 	}
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
 	if (!state){
 		return;
 	}
@@ -3191,19 +3332,15 @@ SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsiz
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+	if (type!=GL_BYTE&&type!=GL_UNSIGNED_BYTE&&type!=GL_SHORT&&type!=GL_UNSIGNED_SHORT&&type!=GL_INT&&type!=GL_UNSIGNED_INT){
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
+		return;
+	}
+	if (pointer&&!_gl_internal_state->gl_used_array_buffer){
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if ((type==GL_INT_2_10_10_10_REV||type==GL_UNSIGNED_INT_2_10_10_10_REV)&&size!=4&&size==GL_BGRA){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (pointer&&/*no array buffer is bound*/1){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (index>=_gl_max_vertex_attribs){
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
@@ -3211,7 +3348,16 @@ SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsiz
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttribIPointer\x1b[0m\n");
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	(state->entries+index)->size=size;
+	(state->entries+index)->type=type;
+	(state->entries+index)->normalized=GL_FALSE;
+	(state->entries+index)->stride=stride;
+	(state->entries+index)->offset=(GLuint64)pointer;
+	state->needs_update=GL_TRUE;
 }
 
 
@@ -3265,8 +3411,12 @@ SYS_PUBLIC void glVertexAttribP4uiv(GLuint index,GLenum type,GLboolean normalize
 
 
 SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void* pointer){
-	if (size<1||size>4){
+	if (size!=GL_BGRA&&(size<1||size>4)){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (type!=GL_BYTE&&type!=GL_UNSIGNED_BYTE&&type!=GL_SHORT&&type!=GL_UNSIGNED_SHORT&&type!=GL_INT&&type!=GL_UNSIGNED_INT&&type!=GL_HALF_FLOAT&&type!=GL_FLOAT&&type!=GL_DOUBLE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
 		return;
 	}
 	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
@@ -3281,11 +3431,11 @@ SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLbool
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (pointer&&/*no array buffer is bound*/1){
+	if (pointer&&!_gl_internal_state->gl_used_array_buffer){
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (index>=_gl_max_vertex_attribs){
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
@@ -3293,7 +3443,16 @@ SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLbool
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttribPointer\x1b[0m\n");
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	(state->entries+index)->size=size;
+	(state->entries+index)->type=type;
+	(state->entries+index)->normalized=normalized;
+	(state->entries+index)->stride=stride;
+	(state->entries+index)->offset=(GLuint64)pointer;
+	state->needs_update=GL_TRUE;
 }
 
 

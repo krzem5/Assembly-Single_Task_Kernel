@@ -4,13 +4,12 @@
 
 
 
-#define OPENGL_PROTOCOL_TYPE_CREATE_RESOURCE 0x01
-#define OPENGL_PROTOCOL_TYPE_DELETE_RESOURCE 0x02
-#define OPENGL_PROTOCOL_TYPE_CLEAR 0x03
-#define OPENGL_PROTOCOL_TYPE_SET_VIEWPORT 0x04
-#define OPENGL_PROTOCOL_TYPE_CREATE_SHADER 0x05
-#define OPENGL_PROTOCOL_TYPE_USE_SHADER 0x06
-#define OPENGL_PROTOCOL_TYPE_DRAW 0x07
+#define OPENGL_PROTOCOL_TYPE_CLEAR 0x01
+#define OPENGL_PROTOCOL_TYPE_SET_VIEWPORT 0x02
+#define OPENGL_PROTOCOL_TYPE_CREATE_SHADER 0x03
+#define OPENGL_PROTOCOL_TYPE_USE_SHADER 0x04
+#define OPENGL_PROTOCOL_TYPE_DRAW 0x05
+#define OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY 0x06
 
 #define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
 #define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
@@ -30,6 +29,20 @@
 #define OPENGL_PROTOCOL_DRAW_MODE_TRIANGLES_ADJACENCY 9
 #define OPENGL_PROTOCOL_DRAW_MODE_TRIANGLE_STRIP_ADJACENCY 10
 
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA 0xff
+
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_BYTE 0
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_BYTE 1
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_SHORT 2
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_SHORT 3
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT 4
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT 5
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_HALF_FLOAT 6
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_FLOAT 7
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_DOUBLE 8
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT_2_10_10_10_REV 9
+#define OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT_2_10_10_10_REV 10
+
 
 
 typedef union KERNEL_PACKED _OPENGL_PROTOCOL_FLOAT{
@@ -46,33 +59,25 @@ typedef union KERNEL_PACKED _OPENGL_PROTOCOL_DOUBLE{
 
 
 
+typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT{
+	u8 index;
+	u8 size;
+	u8 type;
+	u8 stride;
+	u8 divisor;
+	u8 offset;
+	_Bool require_normalization;
+	u8 _padding;
+} opengl_protocol_vertex_array_element_t;
+
+
+
 typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_HEADER{
 	u32 _data[0];
 	u8 type;
-	u8 length;
-	u16 ret_code;
+	u8 ret_code;
+	u16 length;
 } opengl_protocol_header_t;
-
-
-
-typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_CREATE_RESOURCE{
-	opengl_protocol_header_t header;
-	u32 sys_handle;
-	u8 type;
-	u8 usage;
-	u16 format;
-	u16 bind;
-	u32 width;
-	u32 height;
-	u32 depth;
-} opengl_protocol_create_resource_t;
-
-
-
-typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_DELETE_RESOURCE{
-	opengl_protocol_header_t header;
-	u32 sys_handle;
-} opengl_protocol_delete_resource_t;
 
 
 
@@ -98,6 +103,7 @@ typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_SET_VIEWPORT{
 
 typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_CREATE_SHADER{
 	opengl_protocol_header_t header;
+	u32 _padding;
 	u64 driver_handle;
 	u32 format;
 	u32 vertex_shader_size;
@@ -122,6 +128,15 @@ typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_DRAW{
 	u32 count;
 	u32 instance_count;
 } opengl_protocol_draw_t;
+
+
+
+typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_UPDATE_VERTEX_ARRAY{
+	opengl_protocol_header_t header;
+	u32 count;
+	u64 driver_handle;
+	opengl_protocol_vertex_array_element_t elements[32];
+} opengl_protocol_update_vertex_array_t;
 
 
 

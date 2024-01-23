@@ -182,6 +182,16 @@ int main(int argc,const char** argv){
 		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
 		u32 t=0;
 		glViewport(0,0,config.width,config.height);
+		GLuint vao;
+		GLuint vbo;
+		glGenVertexArrays(1,&vao);
+		glGenBuffers(1,&vbo);
+		glBindVertexArray(vao);
+		glBindBuffer(GL_ARRAY_BUFFER,vbo);
+		const float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
+		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_STATIC_DRAW);
+		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),NULL);
+		glEnableVertexAttribArray(0);
 		while (1){
 			u8 color[3];
 			_hsl_to_rgb(t*255/120,127,255,color);

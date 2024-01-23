@@ -72,8 +72,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glDisable`
 - [ ] `glDisablei`
 - [ ] `glDisableVertexAttribArray`
-- [ ] `glDrawArrays`
-- [ ] `glDrawArraysInstanced`
+- [x] `glDrawArrays`
+- [x] `glDrawArraysInstanced`
 - [ ] `glDrawBuffer`
 - [ ] `glDrawBuffers`
 - [ ] `glDrawElements`

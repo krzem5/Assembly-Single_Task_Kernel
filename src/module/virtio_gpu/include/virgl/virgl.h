@@ -50,6 +50,22 @@ typedef struct _VIRGL_OPENGL_SHADER{
 
 
 
+typedef struct _VIRGL_OPENGL_VERTEX_ARRAY{
+	handle_t handle;
+	resource_t resource_handle;
+} virgl_opengl_vertex_array_t;
+
+
+
+typedef struct _VIRGL_OPENGL_VERTEX_ARRAY_ELEMENT_TYPE{
+	u32 virgl_type;
+	u8 size;
+	u8 type;
+	_Bool require_normalization;
+} virgl_opengl_vertex_array_element_type_t;
+
+
+
 void virgl_init(void);
 
 
