@@ -76,6 +76,7 @@ typedef struct _OPENGL_VERTEX_ARRAY_STATE_ENTRY{
 	GLenum size;
 	GLenum type;
 	GLboolean normalized;
+	GLuint divisor;
 	GLsizei stride;
 	GLuint64 offset;
 } opengl_vertex_array_state_entry_t;

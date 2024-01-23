@@ -474,7 +474,7 @@ _skip_draw_command:
 				};
 				for (u32 i=0;i<command->count;i++){
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+2]=(command->elements+i)->offset;
-					virgl_create_and_bind_vertex_elements_command[(i<<2)+3]=0; // divisor
+					virgl_create_and_bind_vertex_elements_command[(i<<2)+3]=(command->elements+i)->divisor;
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+4]=(command->elements+i)->index;
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+5]=0;
 					for (const virgl_opengl_vertex_array_element_type_t* entry=_virgl_vertex_array_element_types;entry->virgl_type!=VIRGL_FORMAT_NONE;entry++){

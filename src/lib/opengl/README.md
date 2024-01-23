@@ -8,7 +8,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glBeginQuery`
 - [ ] `glBeginTransformFeedback`
 - [ ] `glBindAttribLocation`
-- [ ] `glBindBuffer`
+- [x] `glBindBuffer`
 - [ ] `glBindBufferBase`
 - [ ] `glBindBufferRange`
 - [ ] `glBindFragDataLocation`
@@ -17,7 +17,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glBindRenderbuffer`
 - [ ] `glBindSampler`
 - [ ] `glBindTexture`
-- [ ] `glBindVertexArray`
+- [x] `glBindVertexArray`
 - [ ] `glBlendColor`
 - [ ] `glBlendEquation`
 - [ ] `glBlendEquationSeparate`
@@ -99,14 +99,14 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glFramebufferTexture3D`
 - [ ] `glFramebufferTextureLayer`
 - [ ] `glFrontFace`
-- [ ] `glGenBuffers`
+- [x] `glGenBuffers`
 - [ ] `glGenerateMipmap`
 - [ ] `glGenFramebuffers`
 - [ ] `glGenQueries`
 - [ ] `glGenRenderbuffers`
 - [ ] `glGenSamplers`
 - [ ] `glGenTextures`
-- [ ] `glGenVertexArrays`
+- [x] `glGenVertexArrays`
 - [ ] `glGetActiveAttrib`
 - [ ] `glGetActiveUniform`
 - [ ] `glGetActiveUniformBlockiv`
@@ -276,7 +276,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glUniformMatrix4x2fv`
 - [ ] `glUniformMatrix4x3fv`
 - [ ] `glUnmapBuffer`
-- [ ] `glUseProgram`
+- [x] `glUseProgram`
 - [ ] `glValidateProgram`
 - [ ] `glVertexAttrib1d`
 - [ ] `glVertexAttrib1dv`
@@ -314,7 +314,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glVertexAttrib4ubv`
 - [ ] `glVertexAttrib4uiv`
 - [ ] `glVertexAttrib4usv`
-- [ ] `glVertexAttribDivisor`
+- [x] `glVertexAttribDivisor`
 - [ ] `glVertexAttribI1i`
 - [ ] `glVertexAttribI1iv`
 - [ ] `glVertexAttribI1ui`
@@ -335,7 +335,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glVertexAttribI4ui`
 - [ ] `glVertexAttribI4uiv`
 - [ ] `glVertexAttribI4usv`
-- [ ] `glVertexAttribIPointer`
+- [x] `glVertexAttribIPointer`
 - [ ] `glVertexAttribP1ui`
 - [ ] `glVertexAttribP1uiv`
 - [ ] `glVertexAttribP2ui`
@@ -344,6 +344,6 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glVertexAttribP3uiv`
 - [ ] `glVertexAttribP4ui`
 - [ ] `glVertexAttribP4uiv`
-- [ ] `glVertexAttribPointer`
+- [x] `glVertexAttribPointer`
 - [x] `glViewport`
 - [ ] `glWaitSync`

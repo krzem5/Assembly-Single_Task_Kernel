@@ -863,7 +863,7 @@ static void _sync_state(void){
 		}
 		dst_entry->require_normalization=src_entry->normalized;
 		dst_entry->stride=src_entry->stride;
-		dst_entry->divisor=0;
+		dst_entry->divisor=src_entry->divisor;
 		dst_entry->offset=src_entry->offset;
 		dst_entry->require_normalization=src_entry->normalized;
 		command.count++;
@@ -1724,6 +1724,7 @@ SYS_PUBLIC void glGenVertexArrays(GLsizei n,GLuint* arrays){
 			(state->entries+j)->size=4;
 			(state->entries+j)->type=GL_FLOAT;
 			(state->entries+j)->normalized=GL_FALSE;
+			(state->entries+j)->divisor=0;
 			(state->entries+j)->stride=0;
 			(state->entries+j)->offset=0;
 		}
@@ -3202,7 +3203,16 @@ SYS_PUBLIC void glVertexAttrib4usv(GLuint index,const GLushort* v){
 
 
 SYS_PUBLIC void glVertexAttribDivisor(GLuint index,GLuint divisor){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttribDivisor\x1b[0m\n");
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	(state->entries+index)->divisor=divisor;
+	state->needs_update=GL_TRUE;
 }
 
 
