@@ -1,5 +1,6 @@
 #include <GL/gl.h>
 #include <opengl/opengl.h>
+#include <sys/clock/clock.h>
 #include <sys/error/error.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
@@ -29,7 +30,7 @@ out vec4 fs_color; \n\
  \n\
 void main(void){ \n\
 	gl_Position=vec4(in_pos,0.0,1.0); \n\
-	fs_color=vec4(0.0,1.0,1.0,1.0); \n\
+	fs_color=vec4(0.95,0.95,0.95,1.0); \n\
 } \n\
 ";
 
@@ -179,8 +180,9 @@ int main(int argc,const char** argv){
 			}
 			glUseProgram(program);
 		}
-		sys_event_t timer_event=sys_timer_get_event(sys_timer_create(1000000000ull/data.mode.freq,SYS_TIMER_COUNT_INFINITE));
-		u32 t=0;
+		u64 timer_interval=1000000000ull/data.mode.freq;
+		sys_timer_t timer=sys_timer_create(0,0);
+		sys_event_t timer_event=sys_timer_get_event(timer);
 		glViewport(0,0,config.width,config.height);
 		GLuint vao;
 		GLuint vbo;
@@ -188,21 +190,30 @@ int main(int argc,const char** argv){
 		glGenBuffers(1,&vbo);
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER,vbo);
-		const float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
-		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_STATIC_DRAW);
+		float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
+		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),NULL);
 		glEnableVertexAttribArray(0);
-		while (1){
+		float start=sys_clock_get_time();
+		sys_io_print("==> %u | %lu\n",data.mode.freq,1000000000ull/data.mode.freq);
+		for (u64 frame=0;;frame++){
+			sys_timer_update(timer,timer_interval,1);
+			sys_io_print("[%u]\n",frame);
+			if (!(frame%data.mode.freq)){
+				float end=sys_clock_get_time();
+				sys_io_print("==> %f\n",end-start);
+				start=end;
+			}
 			u8 color[3];
-			_hsl_to_rgb(t*255/120,127,255,color);
+			_hsl_to_rgb(frame*255/120,127,255,color);
 			glClearColor(color[0]/255.0f,color[1]/255.0f,color[2]/255.0f,1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			buffer[0]=(frame%120)/60.0f-1.0f;
+			glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float),buffer);
 			glDrawArrays(GL_TRIANGLES,0,3);
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
-			t++;
 			sys_thread_await_events(&timer_event,1);
-			break; /***********************************************/
 		}
 	}
 	return 0;

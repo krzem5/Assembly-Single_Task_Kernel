@@ -83,6 +83,7 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypa
 	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(timer->lock));
+	event_set_active(timer->event,0,0);
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	}
@@ -115,6 +116,7 @@ void timer_dispatch_timers(void){
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	if (timer->count<=1){
+		event_set_active(timer->event,1,0);
 		timer->rb_node.key=0;
 		timer->count=0;
 	}

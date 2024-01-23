@@ -382,7 +382,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	}
 	_adjust_memory_flags(&ctx);
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	LOG("Module '%s' loaded successfully",name);
+	LOG("Module '%s' loaded successfully at %p",name,module->ex_region.base);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
 	*(module->descriptor->module_self_ptr)=module;

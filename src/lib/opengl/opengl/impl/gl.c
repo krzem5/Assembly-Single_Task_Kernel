@@ -888,6 +888,7 @@ static void _sync_state(void){
 		opengl_command_buffer_flush();
 		state->driver_handle=output->driver_handle;
 	}
+	state->needs_update=0;
 _skip_vertex_array_sync:
 	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==0/*_gl_internal_state->gl_used_index_buffer*/){
 		goto _skip_buffers_sync;
@@ -1001,7 +1002,7 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (new_storage_type==OPENGL_BUFFER_STORAGE_TYPE_NONE){
+	if (new_storage_type!=OPENGL_BUFFER_STORAGE_TYPE_NONE){
 		state->type=new_storage_type;
 	}
 	u32 type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_NO_CHANGE;
