@@ -66,13 +66,16 @@ static const virgl_opengl_vertex_array_element_type_t _virgl_vertex_array_elemen
 
 
 
-static pmm_counter_descriptor_t* _virgl_opengl_context_commabd_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _virgl_opengl_context_command_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _virgl_opengl_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_vertex_array_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_buffer_allocator=NULL;
 static handle_type_t _virgl_opengl_shader_handle_type=0;
 static handle_type_t _virgl_opengl_vertex_array_handle_type=0;
+static handle_type_t _virgl_opengl_buffer_handle_type=0;
 
 
 
@@ -267,28 +270,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->stencil
 			};
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,9,0);
-			resource_t vertex_buffer=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0x00ff00ff,VIRGL_TARGET_BUFFER,VIRGL_FORMAT_R8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,6*sizeof(float),1,1,1,0,0);
-			u64 vertex_buffer_address=pmm_alloc(1,pmm_alloc_counter("tmp"),0);
-			const float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
-			memcpy((void*)(vertex_buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,6*sizeof(float));
-			virtio_gpu_command_resource_attach_backing(ctx->gpu_device,vertex_buffer,vertex_buffer_address,6*sizeof(float));
-			virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,vertex_buffer);
-			virtio_gpu_box_t box={
-				0,
-				0,
-				0,
-				6*sizeof(float),
-				1,
-				1
-			};
-			virtio_gpu_command_transfer_to_host_3d(ctx->gpu_device,vertex_buffer,&box,0,0,0);
-			u32 TMP_COMMAND[]={
-				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
-				2*sizeof(float),
-				0,
-				vertex_buffer
-			};
-			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_VIEWPORT){
 			opengl_protocol_set_viewport_t* command=(void*)header;
@@ -451,6 +432,7 @@ _skip_draw_command:
 					handle_finish_setup(&(vertex_array->handle));
 					handle_acquire(&(vertex_array->handle));
 					vertex_array_handle=&(vertex_array->handle);
+					command->driver_handle=vertex_array->handle.rb_node.key;
 				}
 				else{
 					vertex_array=vertex_array_handle->object;
@@ -489,7 +471,93 @@ _skip_update_vertex_array_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER){
 			opengl_protocol_update_buffer_t* command=(void*)header;
-			ERROR("_process_commands: unknown command: %p",command->driver_handle);
+			if (!command->driver_handle){
+				virgl_opengl_buffer_t* buffer=omm_alloc(_virgl_opengl_buffer_allocator);
+				handle_new(buffer,_virgl_opengl_buffer_handle_type,&(buffer->handle));
+				buffer->resource_handle=resource_alloc(state_ctx->resource_manager);
+				buffer->address=0;
+				buffer->size=0;
+				handle_finish_setup(&(buffer->handle));
+				command->driver_handle=buffer->handle.rb_node.key;
+			}
+			handle_t* buffer_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_buffer_handle_type);
+			if (!buffer_handle){
+				ERROR("_process_commands: invalid buffer handle: %p",command->driver_handle);
+				goto _skip_update_buffer_command;
+			}
+			virgl_opengl_buffer_t* buffer=buffer_handle->object;
+			u32 size=command->size;
+			if (command->storage_type!=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_NO_CHANGE){
+				buffer->storage_type=command->storage_type;
+				if (buffer->size==size){
+					goto _skip_buffer_resize;
+				}
+				if (!size){
+					ERROR("_process_commands: unimplemented: delete buffer");
+					goto _update_buffer_cleanup;
+				}
+				if (buffer->size){
+					if (buffer->address){
+						virtio_gpu_command_resource_detach_backing(ctx->gpu_device,buffer->resource_handle);
+						buffer->address=0;
+					}
+					virtio_gpu_command_ctx_detach_resource(ctx->gpu_device,CONTEXT_ID,buffer->resource_handle);
+					virtio_gpu_command_resource_unref(ctx->gpu_device,buffer->resource_handle);
+				}
+				if (size){
+					buffer->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,buffer->resource_handle,VIRGL_TARGET_BUFFER,VIRGL_FORMAT_R8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,size,1,1,1,0,0);
+					virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,buffer->resource_handle);
+				}
+				buffer->size=size;
+			}
+			if (command->offset>=buffer->size){
+				size=0;
+			}
+			else if (command->offset+size>buffer->size){
+				size=buffer->size-command->offset;
+			}
+_skip_buffer_resize:
+			if (!size||!command->data){
+				goto _update_buffer_cleanup;
+			}
+			if (!buffer->address){
+				buffer->address=pmm_alloc(pmm_align_up_address(size)>>PAGE_SIZE_SHIFT,_virgl_opengl_buffer_pmm_counter,0);
+				virtio_gpu_command_resource_attach_backing(ctx->gpu_device,buffer->resource_handle,buffer->address,buffer->size);
+				virtio_gpu_box_t box={
+					0,
+					0,
+					0,
+					buffer->size,
+					1,
+					1
+				};
+				virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,buffer->resource_handle,&box,0,0,0);
+			}
+			memcpy((void*)(buffer->address+command->offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),command->data,size);
+			virtio_gpu_box_t box={
+				command->offset,
+				0,
+				0,
+				size,
+				1,
+				1
+			};
+			virtio_gpu_command_transfer_to_host_3d(ctx->gpu_device,buffer->resource_handle,&box,0,0,0);
+			if (buffer->storage_type==OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_STATIC){
+				virtio_gpu_command_resource_detach_backing(ctx->gpu_device,buffer->resource_handle);
+				pmm_dealloc(buffer->address,pmm_align_up_address(buffer->size)>>PAGE_SIZE_SHIFT,_virgl_opengl_buffer_pmm_counter);
+				buffer->address=0;
+			}
+_update_buffer_cleanup:
+			u32 TMP_COMMAND[]={
+				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
+				2*sizeof(float),
+				0,
+				buffer->resource_handle
+			};
+			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
+			handle_release(buffer_handle);
+_skip_update_buffer_command:
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);
@@ -526,7 +594,8 @@ static const opengl_driver_t _virgl_opengl_driver={
 
 
 void virgl_init(void){
-	_virgl_opengl_context_commabd_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
+	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
+	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_buffer");
 	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_context"));
 	spinlock_init(&(_virgl_opengl_context_allocator->lock));
 	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_state_context"));
@@ -535,8 +604,11 @@ void virgl_init(void){
 	spinlock_init(&(_virgl_opengl_shader_allocator->lock));
 	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4,pmm_alloc_counter("omm_virgl_opengl_vertex_array"));
 	spinlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
+	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4,pmm_alloc_counter("omm_virgl_opengl_buffer"));
+	spinlock_init(&(_virgl_opengl_buffer_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
+	_virgl_opengl_buffer_handle_type=handle_alloc("virgl_opengl_buffer",NULL);
 }
 
 
@@ -558,7 +630,7 @@ void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_
 	ctx->caps=*caps;
 	spinlock_init(&(ctx->command_buffer.lock));
 	INFO("Allocating command buffer..");
-	ctx->command_buffer.buffer_address=pmm_alloc(pmm_align_up_address(VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE*sizeof(u32))>>PAGE_SIZE_SHIFT,_virgl_opengl_context_commabd_buffer_pmm_counter,0);
+	ctx->command_buffer.buffer_address=pmm_alloc(pmm_align_up_address(VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE*sizeof(u32))>>PAGE_SIZE_SHIFT,_virgl_opengl_context_command_buffer_pmm_counter,0);
 	ctx->command_buffer.buffer=(void*)(ctx->command_buffer.buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	ctx->command_buffer.size=0;
 	opengl_create_driver_instance(&_virgl_opengl_driver,caps->renderer,ctx);

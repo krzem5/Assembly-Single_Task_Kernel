@@ -66,6 +66,16 @@ typedef struct _VIRGL_OPENGL_VERTEX_ARRAY_ELEMENT_TYPE{
 
 
 
+typedef struct _VIRGL_OPENGL_BUFFER{
+	handle_t handle;
+	resource_t resource_handle;
+	u32 storage_type;
+	u64 address;
+	u64 size;
+} virgl_opengl_buffer_t;
+
+
+
 void virgl_init(void);
 
 
