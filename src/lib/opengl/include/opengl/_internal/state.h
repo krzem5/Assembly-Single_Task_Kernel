@@ -94,6 +94,7 @@ typedef struct _OPENGL_VERTEX_ARRAY_STATE{
 	opengl_vertex_array_state_entry_t entries[OPENGL_MAX_VERTEX_ATTRIBUTES];
 	u64 driver_handle;
 	GLboolean needs_update;
+	GLuint stride;
 } opengl_vertex_array_state_t;
 
 
@@ -128,6 +129,8 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	char gl_version[16];
 	GLenum gl_error;
 	GLuint gl_active_texture;
+	GLuint gl_bound_array_buffer;
+	GLuint gl_bound_index_buffer;
 	GLuint gl_bound_vertex_array;
 	GLfloat gl_clear_color_value[4];
 	GLdouble gl_clear_depth_value;

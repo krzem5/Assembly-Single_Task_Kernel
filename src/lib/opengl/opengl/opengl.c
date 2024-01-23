@@ -52,6 +52,8 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	sys_format_string(out->gl_version,16,"%u.%u.%u",out->driver_opengl_version/100,(out->driver_opengl_version/10)%10,out->driver_opengl_version%10);
 	out->gl_error=GL_NO_ERROR;
 	out->gl_active_texture=0;
+	out->gl_bound_array_buffer=0;
+	out->gl_bound_index_buffer=0;
 	out->gl_bound_vertex_array=0;
 	for (u8 i=0;i<4;i++){
 		out->gl_clear_color_value[i]=0.0f;

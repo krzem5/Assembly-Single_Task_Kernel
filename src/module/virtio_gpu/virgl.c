@@ -549,15 +549,31 @@ _skip_buffer_resize:
 				buffer->address=0;
 			}
 _update_buffer_cleanup:
-			u32 TMP_COMMAND[]={
-				VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
-				2*sizeof(float),
-				0,
-				buffer->resource_handle
-			};
-			_command_buffer_extend(instance->ctx,TMP_COMMAND,sizeof(TMP_COMMAND)>>2,0);
 			handle_release(buffer_handle);
 _skip_update_buffer_command:
+		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_BUFFERS){
+			opengl_protocol_set_buffers_t* command=(void*)header;
+			if (command->vertex_buffer_driver_handle){
+				handle_t* handle=handle_lookup_and_acquire(command->vertex_buffer_driver_handle,_virgl_opengl_buffer_handle_type);
+				if (!handle){
+					ERROR("_process_commands: invalid shader handle: %p");
+					goto _skip_set_vertex_buffer;
+				}
+				virgl_opengl_buffer_t* buffer=handle->object;
+				u32 virgl_set_vertex_buffers_command[4]={
+					VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
+					command->vertex_buffer_stride,
+					command->vertex_buffer_offset,
+					buffer->resource_handle
+				};
+				_command_buffer_extend(instance->ctx,virgl_set_vertex_buffers_command,4,0);
+				handle_release(handle);;
+			}
+_skip_set_vertex_buffer:
+			if (command->index_buffer_driver_handle){
+				ERROR("_process_commands: unknown command: index buffer");
+			}
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);

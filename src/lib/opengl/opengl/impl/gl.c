@@ -821,11 +821,13 @@ static void _sync_state(void){
 		.count=0,
 		.driver_handle=state->driver_handle
 	};
+	state->stride=0;
 	for (u32 mask=state->enabled_entry_mask;mask;mask&=mask-1){
 		const opengl_vertex_array_state_entry_t* src_entry=state->entries+__builtin_ffs(mask)-1;
 		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+command.count;
 		dst_entry->index=src_entry-state->entries;
 		dst_entry->size=(src_entry->size==GL_BGRA?OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA:src_entry->size);
+		u32 width=dst_entry->size;
 		switch (src_entry->type){
 			case GL_BYTE:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_BYTE;
@@ -835,30 +837,39 @@ static void _sync_state(void){
 				break;
 			case GL_SHORT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_SHORT;
+				width<<=1;
 				break;
 			case GL_UNSIGNED_SHORT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_SHORT;
+				width<<=1;
 				break;
 			case GL_INT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT;
+				width<<=2;
 				break;
 			case GL_UNSIGNED_INT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT;
+				width<<=2;
 				break;
 			case GL_HALF_FLOAT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_HALF_FLOAT;
+				width<<=1;
 				break;
 			case GL_FLOAT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_FLOAT;
+				width<<=2;
 				break;
 			case GL_DOUBLE:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_DOUBLE;
+				width<<=3;
 				break;
 			case GL_INT_2_10_10_10_REV:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT_2_10_10_10_REV;
+				width=4;
 				break;
 			case GL_UNSIGNED_INT_2_10_10_10_REV:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT_2_10_10_10_REV;
+				width=4;
 				break;
 		}
 		dst_entry->require_normalization=src_entry->normalized;
@@ -867,6 +878,9 @@ static void _sync_state(void){
 		dst_entry->offset=src_entry->offset;
 		dst_entry->require_normalization=src_entry->normalized;
 		command.count++;
+		if (src_entry->offset+width>state->stride){
+			state->stride=src_entry->offset+width;
+		}
 	}
 	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-command.count)*sizeof(opengl_protocol_vertex_array_element_t);
 	const opengl_protocol_update_vertex_array_t* output=(const opengl_protocol_update_vertex_array_t*)opengl_command_buffer_push_single(&(command.header));
@@ -875,6 +889,30 @@ static void _sync_state(void){
 		state->driver_handle=output->driver_handle;
 	}
 _skip_vertex_array_sync:
+	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==0/*_gl_internal_state->gl_used_index_buffer*/){
+		goto _skip_buffers_sync;
+	}
+	opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+	opengl_buffer_state_t* index_buffer_state=_get_handle(0/*_gl_internal_state->gl_used_index_buffer*/,OPENGL_HANDLE_TYPE_BUFFER,1);
+	u32 stride=0;
+	if (array_buffer_state){
+		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+		if (!state){
+			goto _skip_buffers_sync;
+		}
+		stride=state->stride;
+	}
+	opengl_protocol_set_buffers_t set_buffers_command={
+		.header.type=OPENGL_PROTOCOL_TYPE_SET_BUFFERS,
+		.header.length=sizeof(opengl_protocol_set_buffers_t),
+		.vertex_buffer_driver_handle=(array_buffer_state?array_buffer_state->driver_handle:0),
+		.vertex_buffer_stride=stride,
+		.vertex_buffer_offset=0,
+		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
+	};
+	opengl_command_buffer_push_single(&(set_buffers_command.header));
+	_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
+_skip_buffers_sync:
 	_gl_internal_state->gl_error=error;
 }
 

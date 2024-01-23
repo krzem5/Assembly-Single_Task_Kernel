@@ -11,6 +11,7 @@
 #define OPENGL_PROTOCOL_TYPE_DRAW 0x05
 #define OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY 0x06
 #define OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER 0x07
+#define OPENGL_PROTOCOL_TYPE_SET_BUFFERS 0x08
 
 #define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
 #define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
@@ -140,6 +141,16 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_UPDATE_BUFFER{
 	u32 size;
 	const void* data;
 } opengl_protocol_update_buffer_t;
+
+
+
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_BUFFERS{
+	opengl_protocol_header_t header;
+	u64 vertex_buffer_driver_handle;
+	u32 vertex_buffer_offset;
+	u32 vertex_buffer_stride;
+	u64 index_buffer_driver_handle;
+} opengl_protocol_set_buffers_t;
 
 
 
