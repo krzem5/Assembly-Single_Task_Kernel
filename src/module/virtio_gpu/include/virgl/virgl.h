@@ -37,7 +37,6 @@ typedef struct _VIRGL_OPENGL_CONTEXT{
 
 typedef struct _VIRGL_OPENGL_STATE_CONTEXT{
 	resource_manager_t* resource_manager;
-	virtio_gpu_resource_id_t framebuffer_resource_id;
 } virgl_opengl_state_context_t;
 
 

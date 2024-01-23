@@ -123,7 +123,6 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	if (!state_ctx){
 		state_ctx=omm_alloc(_virgl_opengl_state_context_allocator);
 		state_ctx->resource_manager=resource_manager_create(1,0xffffffff);
-		state_ctx->framebuffer_resource_id=0;
 		state->ctx=state_ctx;
 	}
 	virgl_resource_t framebuffer_renderbuffer_surface_id=resource_alloc(state_ctx->resource_manager);
@@ -131,8 +130,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	virgl_resource_t dsa_id=resource_alloc(state_ctx->resource_manager);
 	virgl_resource_t rasterizer_id=resource_alloc(state_ctx->resource_manager);
 	virgl_resource_t blend_id=resource_alloc(state_ctx->resource_manager);
-	state_ctx->framebuffer_resource_id=state->framebuffer2->gpu_handle;
-	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,state_ctx->framebuffer_resource_id);
+	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,state->framebuffer2->gpu_handle);
 	virtio_gpu_resource_id_t framebuffer_depth_and_stencil_buffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
 	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_depth_and_stencil_buffer_resource_id);
 	u32 setup_commands[]={
@@ -144,7 +142,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 		// Surfaces
 		VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SURFACE,
 		framebuffer_renderbuffer_surface_id,
-		state_ctx->framebuffer_resource_id,
+		state->framebuffer2->gpu_handle,
 		VIRGL_FORMAT_B8G8R8A8_UNORM,
 		0,
 		0,
