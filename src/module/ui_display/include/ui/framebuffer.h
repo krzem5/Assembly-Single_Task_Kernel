@@ -18,8 +18,13 @@
 
 
 
+struct _UI_DISPLAY;
+
+
+
 typedef struct _UI_FRAMEBUFFER{
 	handle_t handle;
+	struct _UI_DISPLAY* display;
 	u32* data;
 	u64 address;
 	u64 size;
@@ -38,7 +43,7 @@ void ui_framebuffer_init(void);
 
 
 
-ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 format);
+ui_framebuffer_t* ui_framebuffer_create(struct _UI_DISPLAY* display,u32 width,u32 height,u32 format);
 
 
 

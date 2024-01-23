@@ -40,7 +40,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 		return 1;
 	}
 	INFO("Allocating new %u x %u framebuffer...",display->mode->width,display->mode->height);
-	display->framebuffer=ui_framebuffer_create(display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
+	display->framebuffer=ui_framebuffer_create(display,display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
 	if (!display->framebuffer){
 		return 0;
 	}

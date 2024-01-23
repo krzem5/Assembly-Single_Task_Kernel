@@ -8,6 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <ui/display.h>
 #include <ui/framebuffer.h>
 #define KERNEL_LOG_NAME "ui_framebuffer"
 
@@ -30,7 +31,7 @@ void ui_framebuffer_init(void){
 
 
 
-KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 format){
+KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(ui_display_t* display,u32 width,u32 height,u32 format){
 	if (format<UI_FRAMEBUFFER_FORMAT_MIN||format>UI_FRAMEBUFFER_FORMAT_MAX){
 		ERROR("Invalid framebuffer format");
 		return NULL;
@@ -45,6 +46,7 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(u32 width,u32 height,u32 f
 	handle_new(out,ui_framebuffer_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,UI_FRAMEBUFFER_ACL_FLAG_MAP);
+	out->display=display;
 	out->data=(void*)(raw_data+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->address=raw_data;
 	out->size=size;

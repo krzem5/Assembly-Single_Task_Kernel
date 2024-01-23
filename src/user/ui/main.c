@@ -195,10 +195,8 @@ int main(int argc,const char** argv){
 		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),NULL);
 		glEnableVertexAttribArray(0);
 		float start=sys_clock_get_time();
-		sys_io_print("==> %u | %lu\n",data.mode.freq,1000000000ull/data.mode.freq);
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);
-			sys_io_print("[%u]\n",frame);
 			if (!(frame%data.mode.freq)){
 				float end=sys_clock_get_time();
 				sys_io_print("==> %f\n",end-start);
