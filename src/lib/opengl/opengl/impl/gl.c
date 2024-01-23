@@ -2404,8 +2404,10 @@ SYS_PUBLIC void glHint(GLenum target,GLenum mode){
 
 
 SYS_PUBLIC GLboolean glIsBuffer(GLuint buffer){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glIsBuffer\x1b[0m\n");
-	return 0;
+	GLenum error=_gl_internal_state->gl_error;
+	void* ptr=_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+	_gl_internal_state->gl_error=error;
+	return !!ptr;
 }
 
 
@@ -2432,8 +2434,10 @@ SYS_PUBLIC GLboolean glIsFramebuffer(GLuint framebuffer){
 
 
 SYS_PUBLIC GLboolean glIsProgram(GLuint program){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glIsProgram\x1b[0m\n");
-	return 0;
+	GLenum error=_gl_internal_state->gl_error;
+	void* ptr=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+	_gl_internal_state->gl_error=error;
+	return !!ptr;
 }
 
 
@@ -2460,8 +2464,10 @@ SYS_PUBLIC GLboolean glIsSampler(GLuint sampler){
 
 
 SYS_PUBLIC GLboolean glIsShader(GLuint shader){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glIsShader\x1b[0m\n");
-	return 0;
+	GLenum error=_gl_internal_state->gl_error;
+	void* ptr=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,1);
+	_gl_internal_state->gl_error=error;
+	return !!ptr;
 }
 
 
@@ -2481,8 +2487,10 @@ SYS_PUBLIC GLboolean glIsTexture(GLuint texture){
 
 
 SYS_PUBLIC GLboolean glIsVertexArray(GLuint array){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glIsVertexArray\x1b[0m\n");
-	return 0;
+	GLenum error=_gl_internal_state->gl_error;
+	void* ptr=_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	_gl_internal_state->gl_error=error;
+	return !!ptr;
 }
 
 
