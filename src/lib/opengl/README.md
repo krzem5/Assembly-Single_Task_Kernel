@@ -90,7 +90,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glEndTransformFeedback`
 - [ ] `glFenceSync`
 - [ ] `glFinish`
-- [ ] `glFlush`
+- [x] `glFlush`
 - [ ] `glFlushMappedBufferRange`
 - [ ] `glFramebufferRenderbuffer`
 - [ ] `glFramebufferTexture`
@@ -173,18 +173,18 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glGetVertexAttribiv`
 - [ ] `glGetVertexAttribPointerv`
 - [ ] `glHint`
-- [ ] `glIsBuffer`
+- [x] `glIsBuffer`
 - [ ] `glIsEnabled`
 - [ ] `glIsEnabledi`
 - [ ] `glIsFramebuffer`
-- [ ] `glIsProgram`
+- [x] `glIsProgram`
 - [ ] `glIsQuery`
 - [ ] `glIsRenderbuffer`
 - [ ] `glIsSampler`
-- [ ] `glIsShader`
+- [x] `glIsShader`
 - [ ] `glIsSync`
 - [ ] `glIsTexture`
-- [ ] `glIsVertexArray`
+- [x] `glIsVertexArray`
 - [ ] `glLineWidth`
 - [x] `glLinkProgram`
 - [ ] `glLogicOp`
