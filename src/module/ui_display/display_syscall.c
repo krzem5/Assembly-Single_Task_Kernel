@@ -103,6 +103,19 @@ static error_t _syscall_get_display_framebuffer(handle_id_t display_handle_id){
 
 
 
+static error_t _syscall_get_display_framebuffer2(handle_id_t display_handle_id){
+	handle_t* display_handle=handle_lookup_and_acquire(display_handle_id,ui_display_handle_type);
+	if (!display_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	ui_display_t* display=display_handle->object;
+	u64 out=(display->framebuffer2?display->framebuffer2->handle.rb_node.key:0);
+	handle_release(display_handle);
+	return out;
+}
+
+
+
 static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id,ui_display_user_framebuffer_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_framebuffer_t)){
 		return ERROR_INVALID_ARGUMENT(2);
@@ -115,7 +128,6 @@ static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id
 		return ERROR_INVALID_HANDLE;
 	}
 	ui_framebuffer_t* framebuffer=framebuffer_handle->object;
-	buffer->size=framebuffer->size;
 	buffer->width=framebuffer->width;
 	buffer->height=framebuffer->height;
 	buffer->format=framebuffer->format;
@@ -125,19 +137,23 @@ static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id
 
 
 
-static error_t _syscall_map_framebuffer(handle_id_t framebuffer_handle_id){
-	handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer_handle_type);
+static error_t _syscall_get_framebuffer2_config(handle_id_t framebuffer_handle_id,ui_display_user_framebuffer_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(ui_display_user_framebuffer_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer2_handle_type);
 	if (!framebuffer_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_framebuffer_t* framebuffer=framebuffer_handle->object;
-	if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer->handle.acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_MAP)){
-		handle_release(framebuffer_handle);
-		return ERROR_DENIED;
-	}
-	mmap_region_t* region=mmap_alloc(&(THREAD_DATA->process->mmap),0,framebuffer->size,NULL,MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_NOEXECUTE,NULL,framebuffer->address);
+	ui_framebuffer2_t* framebuffer=framebuffer_handle->object;
+	buffer->width=framebuffer->width;
+	buffer->height=framebuffer->height;
+	buffer->format=framebuffer->format;
 	handle_release(framebuffer_handle);
-	return (region?region->rb_node.key:ERROR_NO_MEMORY);
+	return ERROR_OK;
 }
 
 
@@ -166,8 +182,9 @@ static syscall_callback_t const _ui_display_syscall_functions[]={
 	[3]=(syscall_callback_t)_syscall_get_display_info,
 	[4]=(syscall_callback_t)_syscall_get_display_framebuffer,
 	[5]=(syscall_callback_t)_syscall_get_framebuffer_config,
-	[6]=(syscall_callback_t)_syscall_map_framebuffer,
 	[7]=(syscall_callback_t)_syscall_flush_display_framebuffer,
+	[8]=(syscall_callback_t)_syscall_get_display_framebuffer2,
+	[9]=(syscall_callback_t)_syscall_get_framebuffer2_config,
 };
 
 

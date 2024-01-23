@@ -89,11 +89,11 @@ SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
 
 
 
-SYS_PUBLIC _Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
+SYS_PUBLIC _Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer,ui_framebuffer_handle_t framebuffer2){
 	if (!_opengl_initialized){
 		return 0;
 	}
 	opengl_command_buffer_flush();
 	opengl_internal_state_t* internal_state=state;
-	return opengl_syscall_set_state_framebuffer(internal_state->state_id,framebuffer);
+	return opengl_syscall_set_state_framebuffer(internal_state->state_id,framebuffer,framebuffer2);
 }

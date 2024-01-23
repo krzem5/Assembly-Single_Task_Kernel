@@ -45,14 +45,20 @@ SYS_PUBLIC u64 ui_display_get_display_framebuffer(ui_display_handle_t handle){
 
 
 
+SYS_PUBLIC u64 ui_display_get_display_framebuffer2(ui_display_handle_t handle){
+	return _sys_syscall1(_ui_display_syscall_offset|0x00000008,handle);
+}
+
+
+
 SYS_PUBLIC u64 ui_display_get_framebuffer_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out){
 	return _sys_syscall3(_ui_display_syscall_offset|0x00000005,handle,(u64)out,sizeof(ui_display_framebuffer_t));
 }
 
 
 
-SYS_PUBLIC u64 ui_display_map_framebuffer(ui_framebuffer_handle_t handle){
-	return _sys_syscall1(_ui_display_syscall_offset|0x00000006,handle);
+SYS_PUBLIC u64 ui_display_get_framebuffer2_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out){
+	return _sys_syscall3(_ui_display_syscall_offset|0x00000009,handle,(u64)out,sizeof(ui_display_framebuffer_t));
 }
 
 

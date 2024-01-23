@@ -56,7 +56,6 @@ typedef struct _UI_DISPLAY_INFO{
 
 
 typedef struct _UI_DISPLAY_FRAMEBUFFER{
-	u64 size;
 	u32 width;
 	u32 height;
 	u32 format;
@@ -84,11 +83,15 @@ sys_error_t ui_display_get_display_framebuffer(ui_display_handle_t handle);
 
 
 
+sys_error_t ui_display_get_display_framebuffer2(ui_display_handle_t handle);
+
+
+
 sys_error_t ui_display_get_framebuffer_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out);
 
 
 
-sys_error_t ui_display_map_framebuffer(ui_framebuffer_handle_t handle);
+sys_error_t ui_display_get_framebuffer2_config(ui_framebuffer_handle_t handle,ui_display_framebuffer_t* out);
 
 
 

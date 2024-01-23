@@ -15,6 +15,7 @@ typedef struct _OPENGL_STATE{
 	struct _OPENGL_DRIVER_INSTANCE* driver_instance;
 	void* ctx;
 	ui_framebuffer_t* framebuffer;
+	ui_framebuffer2_t* framebuffer2;
 } opengl_state_t;
 
 

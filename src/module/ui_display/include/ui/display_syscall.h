@@ -34,7 +34,6 @@ typedef struct _UI_DISPLAY_USER_INFO{
 
 
 typedef struct _UI_DISPLAY_USER_FRAMEBUFFER{
-	u64 size;
 	u32 width;
 	u32 height;
 	u32 format;
