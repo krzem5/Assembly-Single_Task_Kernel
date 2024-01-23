@@ -16,10 +16,10 @@
 
 #define OPENGL_MAX_VERTEX_ATTRIBUTES 16
 
-#define OPENGL_BUFFER_TYPE_NONE 0
-#define OPENGL_BUFFER_TYPE_STREAM 1
-#define OPENGL_BUFFER_TYPE_STATIC 2
-#define OPENGL_BUFFER_TYPE_DYNAMIC 3
+#define OPENGL_BUFFER_STORAGE_TYPE_NONE 0
+#define OPENGL_BUFFER_STORAGE_TYPE_STREAM 1
+#define OPENGL_BUFFER_STORAGE_TYPE_STATIC 2
+#define OPENGL_BUFFER_STORAGE_TYPE_DYNAMIC 3
 
 
 
@@ -100,7 +100,9 @@ typedef struct _OPENGL_VERTEX_ARRAY_STATE{
 
 typedef struct _OPENGL_BUFFER_STATE{
 	opengl_handle_header_t header;
+	u64 driver_handle;
 	GLuint type;
+	_Bool is_mapped;
 	GLuint64 size;
 } opengl_buffer_state_t;
 
