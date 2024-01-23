@@ -14,7 +14,6 @@ typedef struct _UI_DISPLAY{
 	u32 index;
 	ui_display_info_t* display_info;
 	const ui_display_info_mode_t* mode;
-	ui_framebuffer_t* framebuffer;
 	ui_framebuffer2_t* framebuffer2;
 } ui_display_t;
 

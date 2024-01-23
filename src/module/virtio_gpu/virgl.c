@@ -131,7 +131,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 	virgl_resource_t rasterizer_id=resource_alloc(state_ctx->resource_manager);
 	virgl_resource_t blend_id=resource_alloc(state_ctx->resource_manager);
 	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,state->framebuffer2->gpu_handle);
-	virtio_gpu_resource_id_t framebuffer_depth_and_stencil_buffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer->width,state->framebuffer->height,1,1,0,0);
+	virtio_gpu_resource_id_t framebuffer_depth_and_stencil_buffer_resource_id=virtio_gpu_command_resource_create_3d(ctx->gpu_device,0,VIRGL_TARGET_TEXTURE_2D,VIRGL_FORMAT_S8_UINT_Z24_UNORM,VIRGL_PROTOCOL_BIND_FLAG_DEPTH_STENCIL,state->framebuffer2->width,state->framebuffer2->height,1,1,0,0);
 	virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,framebuffer_depth_and_stencil_buffer_resource_id);
 	u32 setup_commands[]={
 		// Sub ctx

@@ -39,7 +39,6 @@ KERNEL_PUBLIC ui_display_t* ui_display_create(const ui_display_driver_t* driver,
 	out->index=index;
 	out->display_info=info;
 	out->mode=NULL;
-	out->framebuffer=NULL;
 	out->framebuffer2=NULL;
 	handle_finish_setup(&(out->handle));
 	return out;

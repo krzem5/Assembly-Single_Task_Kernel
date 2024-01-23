@@ -120,9 +120,9 @@ int main(int argc,const char** argv){
 			sys_io_print("  %u x %u @ %u Hz\n",info->modes[i].width,info->modes[i].height,info->modes[i].freq);
 		}
 		sys_heap_dealloc(NULL,info);
-		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer2(display);
+		ui_framebuffer_handle_t framebuffer=ui_display_get_display_framebuffer(display);
 		ui_display_framebuffer_t config;
-		ui_display_get_framebuffer2_config(framebuffer,&config);
+		ui_display_get_framebuffer_config(framebuffer,&config);
 		sys_io_print("Framebuffer: %u x %u, %s\n",config.width,config.height,_ui_framebuffer_format_names[config.format]);
 		opengl_state_t state=opengl_create_state(330);
 		opengl_set_state_framebuffer(state,ui_display_get_display_framebuffer(display),framebuffer);

@@ -54,7 +54,7 @@ opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
 	acl_set(out->handle.acl,THREAD_DATA->process,0,OPENGL_STATE_ACL_FLAG_SEND_COMMANDS);
 	out->driver_instance=driver_instance;
 	out->ctx=NULL;
-	out->framebuffer=NULL;
+	out->framebuffer2=NULL;
 	_Bool ret=driver_instance->driver->init_state(driver_instance,out);
 	handle_finish_setup(&(out->handle));
 	if (ret){

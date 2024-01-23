@@ -79,20 +79,7 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 	if (!state_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_framebuffer_t* framebuffer=NULL;
 	ui_framebuffer2_t* framebuffer2=NULL;
-	if (framebuffer_handle_id){
-		handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer_handle_type);
-		if (!framebuffer_handle){
-			handle_release(state_handle);
-			return ERROR_INVALID_HANDLE;
-		}
-		if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer_handle->acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_MAP)){
-			handle_release(framebuffer_handle);
-			return ERROR_DENIED;
-		}
-		framebuffer=framebuffer_handle->object;
-	}
 	if (framebuffer2_handle_id){
 		handle_t* framebuffer2_handle=handle_lookup_and_acquire(framebuffer2_handle_id,ui_framebuffer2_handle_type);
 		if (!framebuffer2_handle){
@@ -106,14 +93,9 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 		framebuffer2=framebuffer2_handle->object;
 	}
 	opengl_state_t* state=state_handle->object;
-	ui_framebuffer_t* old_framebuffer=state->framebuffer;
 	ui_framebuffer2_t* old_framebuffer2=state->framebuffer2;
-	state->framebuffer=framebuffer;
 	state->framebuffer2=framebuffer2;
 	state->driver_instance->driver->update_render_target(state->driver_instance,state);
-	if (old_framebuffer){
-		handle_release(&(old_framebuffer->handle));
-	}
 	if (old_framebuffer2){
 		handle_release(&(old_framebuffer2->handle));
 	}
@@ -139,7 +121,7 @@ static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id
 		handle_release(state_handle);
 		return ERROR_DENIED;
 	}
-	if (!state->framebuffer){
+	if (!state->framebuffer2){
 		handle_release(state_handle);
 		return ERROR_INVALID_ARGUMENT(0);
 	}
