@@ -21,7 +21,7 @@ _Bool opengl_set_state(opengl_state_t state);
 
 
 
-_Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer,ui_framebuffer_handle_t framebuffer2);
+_Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
 
 
 

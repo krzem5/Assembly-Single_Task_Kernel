@@ -74,30 +74,30 @@ static error_t _syscall_delete_state(opengl_user_state_t state){
 
 
 
-static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_id,handle_id_t framebuffer_handle_id,handle_id_t framebuffer2_handle_id){
+static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_id,handle_id_t framebuffer_handle_id){
 	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);
 	if (!state_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_framebuffer2_t* framebuffer2=NULL;
-	if (framebuffer2_handle_id){
-		handle_t* framebuffer2_handle=handle_lookup_and_acquire(framebuffer2_handle_id,ui_framebuffer2_handle_type);
-		if (!framebuffer2_handle){
+	ui_framebuffer_t* framebuffer=NULL;
+	if (framebuffer_handle_id){
+		handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer_handle_type);
+		if (!framebuffer_handle){
 			handle_release(state_handle);
 			return ERROR_INVALID_HANDLE;
 		}
-		if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer2_handle->acl,THREAD_DATA->process)&UI_FRAMEBUFFER2_ACL_FLAG_USE)){
-			handle_release(framebuffer2_handle);
+		if (ui_common_get_process()!=THREAD_DATA->process->handle.rb_node.key&&!(acl_get(framebuffer_handle->acl,THREAD_DATA->process)&UI_FRAMEBUFFER_ACL_FLAG_USE)){
+			handle_release(framebuffer_handle);
 			return ERROR_DENIED;
 		}
-		framebuffer2=framebuffer2_handle->object;
+		framebuffer=framebuffer_handle->object;
 	}
 	opengl_state_t* state=state_handle->object;
-	ui_framebuffer2_t* old_framebuffer2=state->framebuffer2;
-	state->framebuffer2=framebuffer2;
+	ui_framebuffer_t* old_framebuffer=state->framebuffer;
+	state->framebuffer=framebuffer;
 	state->driver_instance->driver->update_render_target(state->driver_instance,state);
-	if (old_framebuffer2){
-		handle_release(&(old_framebuffer2->handle));
+	if (old_framebuffer){
+		handle_release(&(old_framebuffer->handle));
 	}
 	handle_release(state_handle);
 	return ERROR_OK;
@@ -121,7 +121,7 @@ static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id
 		handle_release(state_handle);
 		return ERROR_DENIED;
 	}
-	if (!state->framebuffer2){
+	if (!state->framebuffer){
 		handle_release(state_handle);
 		return ERROR_INVALID_ARGUMENT(0);
 	}

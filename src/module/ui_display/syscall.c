@@ -96,7 +96,7 @@ static error_t _syscall_get_display_framebuffer(handle_id_t display_handle_id){
 		return ERROR_INVALID_HANDLE;
 	}
 	ui_display_t* display=display_handle->object;
-	u64 out=(display->framebuffer2?display->framebuffer2->handle.rb_node.key:0);
+	u64 out=(display->framebuffer?display->framebuffer->handle.rb_node.key:0);
 	handle_release(display_handle);
 	return out;
 }
@@ -110,11 +110,11 @@ static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id
 	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer2_handle_type);
+	handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer_handle_type);
 	if (!framebuffer_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_framebuffer2_t* framebuffer=framebuffer_handle->object;
+	ui_framebuffer_t* framebuffer=framebuffer_handle->object;
 	buffer->width=framebuffer->width;
 	buffer->height=framebuffer->height;
 	buffer->format=framebuffer->format;
@@ -133,7 +133,7 @@ static error_t _syscall_flush_display_framebuffer(handle_id_t display_handle_id)
 		return ERROR_INVALID_HANDLE;
 	}
 	ui_display_t* display=display_handle->object;
-	if (display->framebuffer2){
+	if (display->framebuffer){
 		display->driver->flush_framebuffer(display);
 	}
 	handle_release(display_handle);

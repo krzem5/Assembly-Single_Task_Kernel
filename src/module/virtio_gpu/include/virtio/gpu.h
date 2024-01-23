@@ -15,7 +15,6 @@ typedef struct _VIRTIO_GPU_DEVICE{
 	u32 scanout_count;
 	ui_display_t** displays;
 	resource_manager_t* resource_manager;
-	virtio_gpu_resource_id_t* framebuffer_resources;
 } virtio_gpu_device_t;
 
 

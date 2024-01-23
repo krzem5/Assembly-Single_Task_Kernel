@@ -54,8 +54,8 @@ _Bool opengl_syscall_delete_state(opengl_state_id_t state){
 
 
 
-_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer,ui_framebuffer_handle_t framebuffer2){
-	return _sys_syscall3(_opengl_syscall_offset|0x00000005,state,framebuffer,framebuffer2)==SYS_ERROR_OK;
+_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer){
+	return _sys_syscall2(_opengl_syscall_offset|0x00000005,state,framebuffer)==SYS_ERROR_OK;
 }
 
 

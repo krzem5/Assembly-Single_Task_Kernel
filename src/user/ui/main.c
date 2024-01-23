@@ -125,7 +125,7 @@ int main(int argc,const char** argv){
 		ui_display_get_framebuffer_config(framebuffer,&config);
 		sys_io_print("Framebuffer: %u x %u, %s\n",config.width,config.height,_ui_framebuffer_format_names[config.format]);
 		opengl_state_t state=opengl_create_state(330);
-		opengl_set_state_framebuffer(state,ui_display_get_display_framebuffer(display),framebuffer);
+		opengl_set_state_framebuffer(state,framebuffer);
 		opengl_set_state(state);
 		sys_io_print("GL_RENDERER: %s\n",glGetString(GL_RENDERER));
 		sys_io_print("GL_SHADING_LANGUAGE_VERSION: %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));

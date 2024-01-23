@@ -26,7 +26,7 @@ static omm_allocator_t* _virtio_gpu_device_allocator=NULL;
 
 
 
-static _Bool _display_create_framebuffer(ui_framebuffer2_t* fb){
+static _Bool _display_create_framebuffer(ui_framebuffer_t* fb){
 	if (fb->format!=UI_FRAMEBUFFER_FORMAT_BGRX){
 		ERROR("virtio_gpu driver requires UI_FRAMEBUFFER_FORMAT_BGRX framebuffers");
 		return 0;
@@ -37,7 +37,7 @@ static _Bool _display_create_framebuffer(ui_framebuffer2_t* fb){
 
 
 
-static void _display_delete_framebuffer(ui_framebuffer2_t* fb){
+static void _display_delete_framebuffer(ui_framebuffer_t* fb){
 	ERROR("_display_delete_framebuffer");
 }
 
@@ -46,32 +46,21 @@ static void _display_delete_framebuffer(ui_framebuffer2_t* fb){
 static _Bool _display_resize_framebuffer(ui_display_t* display){
 	LOG("Resizing display #%u framebuffer...",display->index);
 	virtio_gpu_device_t* gpu_device=display->ctx;
-	if (display->framebuffer2){
+	if (display->framebuffer){
 		INFO("Deleting old framebuffer...");
 		virtio_gpu_command_set_scanout(gpu_device,display,VIRTIO_GPU_NO_RESOURCE);
-		// virtio_gpu_command_resource_detach_backing(gpu_device,gpu_device->framebuffer_resources[display->index]);;
-		// virtio_gpu_command_resource_unref(gpu_device,gpu_device->framebuffer_resources[display->index]);
-		// ui_framebuffer_delete(display->framebuffer);
-		ui_framebuffer2_delete(display->framebuffer2);
-		// display->framebuffer=NULL;
-		display->framebuffer2=NULL;
+		ui_framebuffer_delete(display->framebuffer);
+		display->framebuffer=NULL;
 	}
 	if (!display->mode){
 		return 1;
 	}
 	INFO("Allocating new %u x %u framebuffer...",display->mode->width,display->mode->height);
-	// display->framebuffer=ui_framebuffer_create(display,display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
-	// if (!display->framebuffer){
-	// 	return 0;
-	// }
-	display->framebuffer2=ui_framebuffer2_create(display,display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
-	if (!display->framebuffer2){
+	display->framebuffer=ui_framebuffer_create(display,display->mode->width,display->mode->height,UI_FRAMEBUFFER_FORMAT_BGRX);
+	if (!display->framebuffer){
 		return 0;
 	}
-	// gpu_device->framebuffer_resources[display->index]=virtio_gpu_command_resource_create_2d(gpu_device,VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM,display->framebuffer->width,display->framebuffer->height,gpu_device->framebuffer_resources[display->index]);
-	// virtio_gpu_command_resource_attach_backing(gpu_device,gpu_device->framebuffer_resources[display->index],display->framebuffer->address,display->framebuffer->size);
-	// virtio_gpu_command_set_scanout(gpu_device,display,gpu_device->framebuffer_resources[display->index]);
-	virtio_gpu_command_set_scanout(gpu_device,display,display->framebuffer2->gpu_handle);
+	virtio_gpu_command_set_scanout(gpu_device,display,display->framebuffer->gpu_handle);
 	return 1;
 }
 
@@ -79,9 +68,7 @@ static _Bool _display_resize_framebuffer(ui_display_t* display){
 
 static void _display_flush_framebuffer(ui_display_t* display){
 	virtio_gpu_device_t* gpu_device=display->ctx;
-	// virtio_gpu_command_transfer_to_host_2d(gpu_device,gpu_device->framebuffer_resources[display->index],display->framebuffer->width,display->framebuffer->height);
-	// virtio_gpu_command_resource_flush(gpu_device,gpu_device->framebuffer_resources[display->index],display->framebuffer->width,display->framebuffer->height);
-	virtio_gpu_command_resource_flush(gpu_device,display->framebuffer2->gpu_handle,display->framebuffer2->width,display->framebuffer2->height);
+	virtio_gpu_command_resource_flush(gpu_device,display->framebuffer->gpu_handle,display->framebuffer->width,display->framebuffer->height);
 }
 
 
@@ -185,10 +172,8 @@ static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	gpu_device->scanout_count=virtio_read(device->device_field+VIRTIO_GPU_REG_NUM_SCANOUTS,4);
 	gpu_device->displays=amm_alloc(gpu_device->scanout_count*sizeof(ui_display_t*));
 	gpu_device->resource_manager=resource_manager_create(1,0xffffffff);
-	// gpu_device->framebuffer_resources=amm_alloc(gpu_device->scanout_count*sizeof(virtio_gpu_resource_id_t));
 	for (u32 i=0;i<gpu_device->scanout_count;i++){
 		gpu_device->displays[i]=NULL;
-		// gpu_device->framebuffer_resources[i]=VIRTIO_GPU_NO_RESOURCE;
 	}
 	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
 	_load_capsets(gpu_device);
@@ -322,8 +307,8 @@ void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t
 	request->header.fence_id=0;
 	request->rect.x=0;
 	request->rect.y=0;
-	request->rect.width=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer2->width:0);
-	request->rect.height=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer2->height:0);
+	request->rect.width=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer->width:0);
+	request->rect.height=(resource_id!=VIRTIO_GPU_NO_RESOURCE?display->framebuffer->height:0);
 	request->scanout_id=display->index;
 	request->resource_id=resource_id;
 	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));

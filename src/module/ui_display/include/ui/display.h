@@ -14,15 +14,15 @@ typedef struct _UI_DISPLAY{
 	u32 index;
 	ui_display_info_t* display_info;
 	const ui_display_info_mode_t* mode;
-	ui_framebuffer2_t* framebuffer2;
+	ui_framebuffer_t* framebuffer;
 } ui_display_t;
 
 
 
 typedef struct _UI_DISPLAY_DRIVER{
 	const char* name;
-	_Bool (*create_framebuffer)(ui_framebuffer2_t*);
-	void (*delete_framebuffer)(ui_framebuffer2_t*);
+	_Bool (*create_framebuffer)(ui_framebuffer_t*);
+	void (*delete_framebuffer)(ui_framebuffer_t*);
 	_Bool (*resize_framebuffer)(ui_display_t*);
 	void (*flush_framebuffer)(ui_display_t*);
 } ui_display_driver_t;
