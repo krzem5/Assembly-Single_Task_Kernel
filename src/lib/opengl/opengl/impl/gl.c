@@ -890,39 +890,54 @@ static void _sync_state(void){
 	}
 	state->needs_update=0;
 _skip_vertex_array_sync:
-	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_offset==_gl_internal_state->gl_used_index_offset&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width&&!_gl_internal_state->gl_constant_buffer_needs_update){
-		goto _skip_buffers_sync;
-	}
-	opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
-	opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
-	u32 stride=0;
-	if (array_buffer_state){
-		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
-		if (!state){
-			goto _skip_buffers_sync;
-		}
-		stride=state->stride;
-	}
-	opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
 	opengl_protocol_set_buffers_t set_buffers_command={
 		.header.type=OPENGL_PROTOCOL_TYPE_SET_BUFFERS,
 		.header.length=sizeof(opengl_protocol_set_buffers_t),
-		.vertex_buffer_driver_handle=(array_buffer_state?array_buffer_state->driver_handle:0),
-		.vertex_buffer_stride=stride,
+		.vertex_buffer_driver_handle=0,
+		.vertex_buffer_stride=0,
 		.vertex_buffer_offset=0,
-		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
-		.index_buffer_index_width=_gl_internal_state->gl_used_index_width,
-		.index_buffer_offset=_gl_internal_state->gl_used_index_offset,
-		.uniform_buffer_data=(program_state?program_state->uniform_data:NULL),
-		.uniform_buffer_size=(program_state?program_state->uniform_data_size:0),
+		.index_buffer_driver_handle=0,
+		.index_buffer_index_width=0,
+		.index_buffer_offset=0,
+		.uniform_buffer_data=NULL,
+		.uniform_buffer_size=0
 	};
-	opengl_command_buffer_push_single(&(set_buffers_command.header));
-	_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
-	_gl_internal_state->gl_bound_index_buffer=_gl_internal_state->gl_used_index_buffer;
-	_gl_internal_state->gl_bound_index_offset=_gl_internal_state->gl_used_index_offset;
-	_gl_internal_state->gl_bound_index_width=_gl_internal_state->gl_used_index_width;
-	_gl_internal_state->gl_constant_buffer_needs_update=0;
-_skip_buffers_sync:
+	_Bool update_buffers=0;
+	if (_gl_internal_state->gl_bound_array_buffer!=_gl_internal_state->gl_used_array_buffer){
+		opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+		if (array_buffer_state){
+			opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+			if (!state){
+				goto _skip_array_buffers_sync;
+			}
+			set_buffers_command.vertex_buffer_stride=state->stride;
+		}
+		set_buffers_command.vertex_buffer_driver_handle=(array_buffer_state?array_buffer_state->driver_handle:0);
+		set_buffers_command.vertex_buffer_offset=0;
+		_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
+		update_buffers=1;
+_skip_array_buffers_sync:
+	}
+	if (_gl_internal_state->gl_bound_index_buffer!=_gl_internal_state->gl_used_index_buffer||_gl_internal_state->gl_bound_index_offset!=_gl_internal_state->gl_used_index_offset||_gl_internal_state->gl_bound_index_width!=_gl_internal_state->gl_used_index_width){
+		opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+		set_buffers_command.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0);
+		set_buffers_command.index_buffer_index_width=_gl_internal_state->gl_used_index_width;
+		set_buffers_command.index_buffer_offset=_gl_internal_state->gl_used_index_offset;
+		_gl_internal_state->gl_bound_index_buffer=_gl_internal_state->gl_used_index_buffer;
+		_gl_internal_state->gl_bound_index_offset=_gl_internal_state->gl_used_index_offset;
+		_gl_internal_state->gl_bound_index_width=_gl_internal_state->gl_used_index_width;
+		update_buffers=1;
+	}
+	if (_gl_internal_state->gl_constant_buffer_needs_update){
+		opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+		set_buffers_command.uniform_buffer_data=(program_state?program_state->uniform_data:NULL);
+		set_buffers_command.uniform_buffer_size=(program_state?program_state->uniform_data_size:0);
+		_gl_internal_state->gl_constant_buffer_needs_update=0;
+		update_buffers=1;
+	}
+	if (update_buffers){
+		opengl_command_buffer_push_single(&(set_buffers_command.header));
+	}
 	_gl_internal_state->gl_error=error;
 }
 
