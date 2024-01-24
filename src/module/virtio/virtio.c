@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -38,28 +39,6 @@ static void _virtio_init_device(pci_device_t* device){
 	pci_device_enable_memory_access(device);
 	virtio_device_t* virtio_device=omm_alloc(_virtio_device_allocator);
 	u32 found_structures=0;
-	u8 msix_offset=pci_device_get_cap(device,PCI_CAP_ID_MSIX,0);
-	if (msix_offset){
-		u32 table_offset_and_bar=pci_device_read_data(device,msix_offset+4);
-		pci_bar_t pci_bar;
-		if (pci_device_get_bar(device,table_offset_and_bar&7,&pci_bar)){
-			u32 message_control=pci_device_read_data(device,msix_offset);
-			pci_device_write_data(device,msix_offset,message_control|0x80000000);
-			typedef struct _MSIX_TABLE_ENTRY{
-				u64 msg_address;
-				u32 msg_data;
-				u32 control;
-			} msix_table_entry_t;
-			u16 table_size=((message_control>>16)&0x7ff)+1;
-			msix_table_entry_t* table=(void*)(vmm_identity_map(pci_bar.address,pci_bar.size)+(table_offset_and_bar&0xfffffff8));
-			virtio_device->irq=isr_allocate();
-			virtio_device->queue_msix_vector=0;
-			(table+virtio_device->queue_msix_vector)->msg_address=0xfee00000;
-			(table+virtio_device->queue_msix_vector)->msg_data=virtio_device->irq|(1<<14);
-			(table+virtio_device->queue_msix_vector)->control&=~1;
-			(void)table_size;
-		}
-	}
 	for (u8 offset=pci_device_get_cap(device,PCI_CAP_ID_VENDOR,0);offset;offset=pci_device_get_cap(device,PCI_CAP_ID_VENDOR,offset)){
 		u8 type=pci_device_read_data(device,offset)>>24;
 		u8 bar=pci_device_read_data(device,offset+4)&0xff;
@@ -109,6 +88,14 @@ static void _virtio_init_device(pci_device_t* device){
 		virtio_device->is_legacy=0;
 	}
 	virtio_write(virtio_device->common_field+VIRTIO_REG_DEVICE_STATUS,1,0x00);
+	msix_table_t msix_table;
+	if (pci_msix_load(device,&msix_table)){
+		virtio_device->irq=isr_allocate();
+		virtio_device->queue_msix_vector=0;
+		if (!pci_msix_redirect_entry(&msix_table,virtio_device->queue_msix_vector,virtio_device->irq)){
+			panic("Unable to initialize VirtIO device MSI-x vector");
+		}
+	}
 	handle_finish_setup(&(virtio_device->handle));
 }
 
