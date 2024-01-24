@@ -8,6 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
+#include <kernel/scheduler/load_balancer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -109,7 +110,7 @@ static void _virtio_init_device(pci_device_t* device){
 		if (!pci_msix_redirect_entry(&msix_table,virtio_device->queue_msix_vector,virtio_device->irq)){
 			panic("Unable to initialize VirtIO device MSI-x vector");
 		}
-		thread_create_kernel_thread(NULL,"virtio-persistent-irq-thread",_virtio_persistent_irq_thread,0x200000,1,virtio_device);
+		thread_create_kernel_thread(NULL,"virtio-persistent-irq-thread",_virtio_persistent_irq_thread,0x200000,1,virtio_device)->priority=SCHEDULER_PRIORITY_REALTIME;
 	}
 	handle_finish_setup(&(virtio_device->handle));
 }

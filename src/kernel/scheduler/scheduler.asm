@@ -21,4 +21,5 @@ scheduler_yield:
 scheduler_task_wait_loop:
 	sti
 	hlt
+	int 32
 	jmp scheduler_task_wait_loop
