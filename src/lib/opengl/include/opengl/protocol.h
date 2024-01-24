@@ -12,6 +12,7 @@
 #define OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY 0x06
 #define OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER 0x07
 #define OPENGL_PROTOCOL_TYPE_SET_BUFFERS 0x08
+#define OPENGL_PROTOCOL_TYPE_FLUSH 0x09
 
 #define OPENGL_PROTOCOL_CLEAR_FLAG_COLOR 0x00000001
 #define OPENGL_PROTOCOL_CLEAR_FLAG_DEPTH 0x00000002
@@ -120,6 +121,7 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_DRAW{
 	u32 first;
 	u32 count;
 	u32 instance_count;
+	u32 indexed;
 } opengl_protocol_draw_t;
 
 
@@ -150,6 +152,8 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_BUFFERS{
 	u32 vertex_buffer_offset;
 	u32 vertex_buffer_stride;
 	u64 index_buffer_driver_handle;
+	u32 index_buffer_index_width;
+	u32 index_buffer_offset;
 } opengl_protocol_set_buffers_t;
 
 

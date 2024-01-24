@@ -386,7 +386,7 @@ _skip_use_shader:
 				command->first,
 				command->count,
 				mode,
-				0,
+				!!command->indexed,
 				command->instance_count,
 				0,
 				0,
@@ -517,6 +517,9 @@ _skip_buffer_resize:
 			if (!size||!command->data){
 				goto _update_buffer_cleanup;
 			}
+			// Verify user pointers!
+			// Use inline write when size is small (=> avoids sync)
+			_command_buffer_extend(instance->ctx,NULL,0,1); // flush previous draw commands
 			if (!buffer->address){
 				buffer->address=pmm_alloc(pmm_align_up_address(size)>>PAGE_SIZE_SHIFT,_virgl_opengl_buffer_pmm_counter,0);
 				virtio_gpu_command_resource_attach_backing(ctx->gpu_device,buffer->resource_handle,buffer->address,buffer->size);
@@ -530,7 +533,6 @@ _skip_buffer_resize:
 				};
 				virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,buffer->resource_handle,&box,0,0,0);
 			}
-			// Verify user pointers!
 			memcpy((void*)(buffer->address+command->offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),command->data,size);
 			virtio_gpu_box_t box={
 				command->offset,
@@ -555,7 +557,7 @@ _skip_update_buffer_command:
 			if (command->vertex_buffer_driver_handle){
 				handle_t* handle=handle_lookup_and_acquire(command->vertex_buffer_driver_handle,_virgl_opengl_buffer_handle_type);
 				if (!handle){
-					ERROR("_process_commands: invalid shader handle: %p");
+					ERROR("_process_commands: invalid vertex buffer handle: %p");
 					goto _skip_set_vertex_buffer;
 				}
 				virgl_opengl_buffer_t* buffer=handle->object;
@@ -570,15 +572,31 @@ _skip_update_buffer_command:
 			}
 _skip_set_vertex_buffer:
 			if (command->index_buffer_driver_handle){
-				ERROR("_process_commands: unknown command: index buffer");
+				handle_t* handle=handle_lookup_and_acquire(command->index_buffer_driver_handle,_virgl_opengl_buffer_handle_type);
+				if (!handle){
+					ERROR("_process_commands: invalid index buffer handle: %p");
+					goto _skip_set_index_buffer;
+				}
+				virgl_opengl_buffer_t* buffer=handle->object;
+				u32 virgl_set_index_buffer_command[4]={
+					VIRGL_PROTOCOL_COMMAND_SET_INDEX_BUFFER,
+					buffer->resource_handle,
+					command->index_buffer_index_width,
+					command->index_buffer_offset,
+				};
+				_command_buffer_extend(instance->ctx,virgl_set_index_buffer_command,4,0);
+				handle_release(handle);
 			}
+_skip_set_index_buffer:
+		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_FLUSH){
+			_command_buffer_extend(instance->ctx,NULL,0,1);
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);
 		}
 		offset+=header->length;
 	}
-	_command_buffer_extend(instance->ctx,NULL,0,1);
 }
 
 

@@ -890,11 +890,11 @@ static void _sync_state(void){
 	}
 	state->needs_update=0;
 _skip_vertex_array_sync:
-	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==0/*_gl_internal_state->gl_used_index_buffer*/){
+	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width){
 		goto _skip_buffers_sync;
 	}
 	opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
-	opengl_buffer_state_t* index_buffer_state=_get_handle(0/*_gl_internal_state->gl_used_index_buffer*/,OPENGL_HANDLE_TYPE_BUFFER,1);
+	opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
 	u32 stride=0;
 	if (array_buffer_state){
 		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
@@ -910,16 +910,20 @@ _skip_vertex_array_sync:
 		.vertex_buffer_stride=stride,
 		.vertex_buffer_offset=0,
 		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
+		.index_buffer_index_width=_gl_internal_state->gl_used_index_width,
+		.index_buffer_offset=0
 	};
 	opengl_command_buffer_push_single(&(set_buffers_command.header));
 	_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
+	_gl_internal_state->gl_bound_index_buffer=_gl_internal_state->gl_used_index_buffer;
+	_gl_internal_state->gl_bound_index_width=_gl_internal_state->gl_used_index_width;
 _skip_buffers_sync:
 	_gl_internal_state->gl_error=error;
 }
 
 
 
-static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei instance_count){
+static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei instance_count,_Bool indexed){
 	_sync_state();
 	if (count<0){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
@@ -931,6 +935,7 @@ static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei
 		.first=first,
 		.count=count,
 		.instance_count=instance_count,
+		.indexed=indexed
 	};
 	switch (mode){
 		case GL_POINTS:
@@ -984,6 +989,9 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 	switch (target){
 		case GL_ARRAY_BUFFER:
 			id=_gl_internal_state->gl_used_array_buffer;
+			break;
+		case GL_ELEMENT_ARRAY_BUFFER:
+			id=_gl_internal_state->gl_used_index_buffer;
 			break;
 		default:
 			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_buffer_data\x1b[0m\n");
@@ -1102,6 +1110,9 @@ SYS_PUBLIC void glBindBuffer(GLenum target,GLuint buffer){
 	switch (target){
 		case GL_ARRAY_BUFFER:
 			_gl_internal_state->gl_used_array_buffer=buffer;
+			break;
+		case GL_ELEMENT_ARRAY_BUFFER:
+			_gl_internal_state->gl_used_index_buffer=buffer;
 			break;
 		default:
 			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindBuffer\x1b[0m\n");
@@ -1609,13 +1620,13 @@ SYS_PUBLIC void glDisableVertexAttribArray(GLuint index){
 
 
 SYS_PUBLIC void glDrawArrays(GLenum mode,GLint first,GLsizei count){
-	_generate_draw_command(mode,first,count,0);
+	_generate_draw_command(mode,first,count,0,0);
 }
 
 
 
 SYS_PUBLIC void glDrawArraysInstanced(GLenum mode,GLint first,GLsizei count,GLsizei instancecount){
-	_generate_draw_command(mode,first,count,instancecount);
+	_generate_draw_command(mode,first,count,instancecount,0);
 }
 
 
@@ -1633,7 +1644,24 @@ SYS_PUBLIC void glDrawBuffers(GLsizei n,const GLenum* bufs){
 
 
 SYS_PUBLIC void glDrawElements(GLenum mode,GLsizei count,GLenum type,const void* indices){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElements\x1b[0m\n");
+	switch (type){
+		case GL_UNSIGNED_BYTE:
+			_gl_internal_state->gl_used_index_width=1;
+			break;
+		case GL_UNSIGNED_SHORT:
+			_gl_internal_state->gl_used_index_width=2;
+			break;
+		case GL_UNSIGNED_INT:
+			_gl_internal_state->gl_used_index_width=4;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElements: index buffer offset\x1b[0m\n");
+	}
+	_generate_draw_command(mode,0,count,0,1);
 }
 
 
@@ -1726,6 +1754,11 @@ SYS_PUBLIC void glFinish(void){
 
 
 SYS_PUBLIC void glFlush(void){
+	opengl_protocol_header_t command={
+		.type=OPENGL_PROTOCOL_TYPE_FLUSH,
+		.length=sizeof(opengl_protocol_header_t)
+	};
+	opengl_command_buffer_push_single(&command);
 	opengl_command_buffer_flush();
 }
 
