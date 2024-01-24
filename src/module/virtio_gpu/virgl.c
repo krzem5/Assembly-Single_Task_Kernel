@@ -525,7 +525,7 @@ _skip_buffer_resize:
 					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
 					buffer->resource_handle,
 					0,
-					VIRGL_TARGET_BUFFER,
+					0,
 					0,
 					0,
 					command->offset,

@@ -211,7 +211,6 @@ int main(int argc,const char** argv){
 			buffer[0]=(frame%120)/60.0f-1.0f;
 			glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float),buffer);
 			glDrawArrays(GL_TRIANGLES,0,3);
-			glFlush();
 			buffer[0]=1.0f-(frame%120)/60.0f;
 			glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float),buffer);
 			glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,NULL);
