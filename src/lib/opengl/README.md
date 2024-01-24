@@ -315,35 +315,35 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [x] `glVertexAttrib4uiv`
 - [x] `glVertexAttrib4usv`
 - [x] `glVertexAttribDivisor`
-- [ ] `glVertexAttribI1i`
-- [ ] `glVertexAttribI1iv`
-- [ ] `glVertexAttribI1ui`
-- [ ] `glVertexAttribI1uiv`
-- [ ] `glVertexAttribI2i`
-- [ ] `glVertexAttribI2iv`
-- [ ] `glVertexAttribI2ui`
-- [ ] `glVertexAttribI2uiv`
-- [ ] `glVertexAttribI3i`
-- [ ] `glVertexAttribI3iv`
-- [ ] `glVertexAttribI3ui`
-- [ ] `glVertexAttribI3uiv`
-- [ ] `glVertexAttribI4bv`
-- [ ] `glVertexAttribI4i`
-- [ ] `glVertexAttribI4iv`
-- [ ] `glVertexAttribI4sv`
-- [ ] `glVertexAttribI4ubv`
-- [ ] `glVertexAttribI4ui`
-- [ ] `glVertexAttribI4uiv`
-- [ ] `glVertexAttribI4usv`
+- [x] `glVertexAttribI1i`
+- [x] `glVertexAttribI1iv`
+- [x] `glVertexAttribI1ui`
+- [x] `glVertexAttribI1uiv`
+- [x] `glVertexAttribI2i`
+- [x] `glVertexAttribI2iv`
+- [x] `glVertexAttribI2ui`
+- [x] `glVertexAttribI2uiv`
+- [x] `glVertexAttribI3i`
+- [x] `glVertexAttribI3iv`
+- [x] `glVertexAttribI3ui`
+- [x] `glVertexAttribI3uiv`
+- [x] `glVertexAttribI4bv`
+- [x] `glVertexAttribI4i`
+- [x] `glVertexAttribI4iv`
+- [x] `glVertexAttribI4sv`
+- [x] `glVertexAttribI4ubv`
+- [x] `glVertexAttribI4ui`
+- [x] `glVertexAttribI4uiv`
+- [x] `glVertexAttribI4usv`
 - [x] `glVertexAttribIPointer`
-- [ ] `glVertexAttribP1ui`
-- [ ] `glVertexAttribP1uiv`
-- [ ] `glVertexAttribP2ui`
-- [ ] `glVertexAttribP2uiv`
-- [ ] `glVertexAttribP3ui`
-- [ ] `glVertexAttribP3uiv`
-- [ ] `glVertexAttribP4ui`
-- [ ] `glVertexAttribP4uiv`
+- [x] `glVertexAttribP1ui`
+- [x] `glVertexAttribP1uiv`
+- [x] `glVertexAttribP2ui`
+- [x] `glVertexAttribP2uiv`
+- [x] `glVertexAttribP3ui`
+- [x] `glVertexAttribP3uiv`
+- [x] `glVertexAttribP4ui`
+- [x] `glVertexAttribP4uiv`
 - [x] `glVertexAttribPointer`
 - [x] `glViewport`
 - [ ] `glWaitSync`
