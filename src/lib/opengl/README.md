@@ -80,8 +80,8 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [x] `glDrawElementsBaseVertex`
 - [x] `glDrawElementsInstanced`
 - [x] `glDrawElementsInstancedBaseVertex`
-- [ ] `glDrawRangeElements`
-- [ ] `glDrawRangeElementsBaseVertex`
+- [x] `glDrawRangeElements`
+- [x] `glDrawRangeElementsBaseVertex`
 - [ ] `glEnable`
 - [ ] `glEnablei`
 - [x] `glEnableVertexAttribArray`
@@ -202,7 +202,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glPointSize`
 - [ ] `glPolygonMode`
 - [ ] `glPolygonOffset`
-- [ ] `glPrimitiveRestartIndex`
+- [x] `glPrimitiveRestartIndex`
 - [ ] `glProvokingVertex`
 - [ ] `glQueryCounter`
 - [ ] `glReadBuffer`
