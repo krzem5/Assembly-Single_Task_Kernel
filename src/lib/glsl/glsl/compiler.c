@@ -501,7 +501,7 @@ static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state
 			ret=var;
 		}
 		else if (var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&_is_var_used(var)){
-			u32 slot;
+			u32 slot=0xffffffff;
 			_glsl_interface_allocator_reserve(&(state->local_variable_allocator),&slot,glsl_ast_type_get_slot_count(var->type),1);
 			var->_compiler_data=slot;
 		}

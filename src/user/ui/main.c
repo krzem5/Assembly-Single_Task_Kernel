@@ -25,12 +25,14 @@ static const char* _vertex_shader=" \
  \n\
 layout (location=0) in vec2 in_pos; \n\
 uniform vec4 vs_color; \n\
+uniform mat3x3 vs_transform; \n\
 out vec4 fs_color; \n\
  \n\
  \n\
  \n\
 void main(void){ \n\
-	gl_Position=vec4(in_pos,0.0,1.0); \n\
+	vec3 local=vs_transform*vec3(in_pos,1.0); \n\
+	gl_Position=vec4(local.xy,0.0,1.0); \n\
 	fs_color=vs_color; \n\
 } \n\
 ";
@@ -182,6 +184,9 @@ int main(int argc,const char** argv){
 			glUseProgram(program);
 			uniform_vs_color=glGetUniformLocation(program,"vs_color");
 			sys_io_print("uniform.vs_color=%u\n",uniform_vs_color);
+			GLint uniform_vs_transform=glGetUniformLocation(program,"vs_transform");
+			float matrix[9]={1.0f,0.0f,0.0f,0.0f,-1.0f,0.0f,0.0f,0.0f,1.0f};
+			glUniformMatrix3fv(uniform_vs_transform,1,GL_FALSE,matrix);
 		}
 		u64 timer_interval=1000000000ull/data.mode.freq;
 		sys_timer_t timer=sys_timer_create(0,0);

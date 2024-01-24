@@ -266,15 +266,15 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [x] `glUniform4ui`
 - [x] `glUniform4uiv`
 - [ ] `glUniformBlockBinding`
-- [ ] `glUniformMatrix2fv`
-- [ ] `glUniformMatrix2x3fv`
-- [ ] `glUniformMatrix2x4fv`
-- [ ] `glUniformMatrix3fv`
-- [ ] `glUniformMatrix3x2fv`
-- [ ] `glUniformMatrix3x4fv`
-- [ ] `glUniformMatrix4fv`
-- [ ] `glUniformMatrix4x2fv`
-- [ ] `glUniformMatrix4x3fv`
+- [x] `glUniformMatrix2fv`
+- [x] `glUniformMatrix2x3fv`
+- [x] `glUniformMatrix2x4fv`
+- [x] `glUniformMatrix3fv`
+- [x] `glUniformMatrix3x2fv`
+- [x] `glUniformMatrix3x4fv`
+- [x] `glUniformMatrix4fv`
+- [x] `glUniformMatrix4x2fv`
+- [x] `glUniformMatrix4x3fv`
 - [ ] `glUnmapBuffer`
 - [x] `glUseProgram`
 - [ ] `glValidateProgram`

@@ -3206,55 +3206,226 @@ SYS_PUBLIC void glUniformBlockBinding(GLuint program,GLuint uniformBlockIndex,GL
 
 
 SYS_PUBLIC void glUniformMatrix2fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix2fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*2;i++){
+			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[4]={
+			value[0],value[2],
+			value[1],value[3]
+		};
+		_update_uniform(location+i*2,buffer,2*sizeof(GLfloat));
+		_update_uniform(location+i*2+1,buffer+2,2*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix2x3fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix2x3fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*3;i++){
+			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[6]={
+			value[0],value[2],value[4],
+			value[1],value[3],value[5]
+		};
+		_update_uniform(location+i*2,buffer,3*sizeof(GLfloat));
+		_update_uniform(location+i*2+1,buffer+3,3*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix2x4fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix2x4fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*4;i++){
+			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[8]={
+			value[0],value[2],value[4],value[6],
+			value[1],value[3],value[5],value[7]
+		};
+		_update_uniform(location+i*2,buffer,4*sizeof(GLfloat));
+		_update_uniform(location+i*2+1,buffer+4,4*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix3fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix3fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*3;i++){
+			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[9]={
+			value[0],value[3],value[6],
+			value[1],value[4],value[7],
+			value[2],value[5],value[8]
+		};
+		_update_uniform(location+i*3,buffer,3*sizeof(GLfloat));
+		_update_uniform(location+i*3+1,buffer+3,3*sizeof(GLfloat));
+		_update_uniform(location+i*3+2,buffer+6,3*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix3x2fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix3x2fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*2;i++){
+			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[6]={
+			value[0],value[3],
+			value[1],value[4],
+			value[2],value[5]
+		};
+		_update_uniform(location+i*3,buffer,2*sizeof(GLfloat));
+		_update_uniform(location+i*3+1,buffer+2,2*sizeof(GLfloat));
+		_update_uniform(location+i*3+2,buffer+4,2*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix3x4fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix3x4fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*4;i++){
+			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[12]={
+			value[0],value[3],value[6],value[9],
+			value[1],value[4],value[7],value[10],
+			value[2],value[5],value[8],value[11]
+		};
+		_update_uniform(location+i*3,buffer,4*sizeof(GLfloat));
+		_update_uniform(location+i*3+1,buffer+4,4*sizeof(GLfloat));
+		_update_uniform(location+i*3+2,buffer+8,4*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix4fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix4fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*4;i++){
+			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[16]={
+			value[0],value[4],value[8],value[12],
+			value[1],value[5],value[9],value[13],
+			value[2],value[6],value[10],value[14],
+			value[3],value[7],value[11],value[15]
+		};
+		_update_uniform(location+i*4,buffer,4*sizeof(GLfloat));
+		_update_uniform(location+i*4+1,buffer+4,4*sizeof(GLfloat));
+		_update_uniform(location+i*4+2,buffer+8,4*sizeof(GLfloat));
+		_update_uniform(location+i*4+3,buffer+12,4*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix4x2fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix4x2fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*2;i++){
+			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[8]={
+			value[0],value[4],
+			value[1],value[5],
+			value[2],value[6],
+			value[3],value[7]
+		};
+		_update_uniform(location+i*4,buffer,2*sizeof(GLfloat));
+		_update_uniform(location+i*4+1,buffer+2,2*sizeof(GLfloat));
+		_update_uniform(location+i*4+2,buffer+4,2*sizeof(GLfloat));
+		_update_uniform(location+i*4+3,buffer+6,2*sizeof(GLfloat));
+	}
 }
 
 
 
 SYS_PUBLIC void glUniformMatrix4x3fv(GLint location,GLsizei count,GLboolean transpose,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniformMatrix4x3fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (transpose==GL_FALSE){
+		for (GLsizei i=0;i<count*3;i++){
+			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
+		}
+		return;
+	}
+	for (GLsizei i=0;i<count;i++){
+		GLfloat buffer[12]={
+			value[0],value[4],value[8],
+			value[1],value[5],value[9],
+			value[2],value[6],value[10],
+			value[3],value[7],value[11]
+		};
+		_update_uniform(location+i*4,buffer,3*sizeof(GLfloat));
+		_update_uniform(location+i*4+1,buffer+3,3*sizeof(GLfloat));
+		_update_uniform(location+i*4+2,buffer+6,3*sizeof(GLfloat));
+		_update_uniform(location+i*4+3,buffer+9,3*sizeof(GLfloat));
+	}
 }
 
 
