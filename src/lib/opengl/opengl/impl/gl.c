@@ -3664,55 +3664,57 @@ SYS_PUBLIC void glVertexAttrib4Nsv(GLuint index,const GLshort* v){
 
 
 SYS_PUBLIC void glVertexAttrib4Nub(GLuint index,GLubyte x,GLubyte y,GLubyte z,GLubyte w){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nub\x1b[0m\n");
+	GLubyte buffer[4]={x,y,z,w};
+	_set_vertex_attrib(index,4,GL_UNSIGNED_BYTE,1,buffer,4*sizeof(GLubyte));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Nubv(GLuint index,const GLubyte* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nubv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_BYTE,1,v,4*sizeof(GLubyte));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Nuiv(GLuint index,const GLuint* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nuiv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_INT,1,v,4*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Nusv(GLuint index,const GLushort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nusv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_SHORT,1,v,4*sizeof(GLushort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4s(GLuint index,GLshort x,GLshort y,GLshort z,GLshort w){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4s\x1b[0m\n");
+	GLshort buffer[4]={x,y,z,w};
+	_set_vertex_attrib(index,4,GL_SHORT,0,buffer,4*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4sv(GLuint index,const GLshort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4sv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_SHORT,0,v,4*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4ubv(GLuint index,const GLubyte* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4ubv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_BYTE,0,v,4*sizeof(GLubyte));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4uiv(GLuint index,const GLuint* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4uiv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_INT,0,v,4*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4usv(GLuint index,const GLushort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4usv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_UNSIGNED_SHORT,0,v,4*sizeof(GLushort));
 }
 
 

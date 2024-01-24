@@ -305,15 +305,15 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [x] `glVertexAttrib4Nbv`
 - [x] `glVertexAttrib4Niv`
 - [x] `glVertexAttrib4Nsv`
-- [ ] `glVertexAttrib4Nub`
-- [ ] `glVertexAttrib4Nubv`
-- [ ] `glVertexAttrib4Nuiv`
-- [ ] `glVertexAttrib4Nusv`
-- [ ] `glVertexAttrib4s`
-- [ ] `glVertexAttrib4sv`
-- [ ] `glVertexAttrib4ubv`
-- [ ] `glVertexAttrib4uiv`
-- [ ] `glVertexAttrib4usv`
+- [x] `glVertexAttrib4Nub`
+- [x] `glVertexAttrib4Nubv`
+- [x] `glVertexAttrib4Nuiv`
+- [x] `glVertexAttrib4Nusv`
+- [x] `glVertexAttrib4s`
+- [x] `glVertexAttrib4sv`
+- [x] `glVertexAttrib4ubv`
+- [x] `glVertexAttrib4uiv`
+- [x] `glVertexAttrib4usv`
 - [x] `glVertexAttribDivisor`
 - [ ] `glVertexAttribI1i`
 - [ ] `glVertexAttribI1iv`
