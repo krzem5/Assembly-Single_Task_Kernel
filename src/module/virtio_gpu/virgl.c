@@ -398,7 +398,7 @@ _skip_use_shader:
 				command->count-command->first,
 				0,
 			};
-			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,1);
+			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,0);
 _skip_draw_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY){
@@ -536,7 +536,7 @@ _skip_buffer_resize:
 					1,
 				};
 				memcpy(virgl_resource_inline_write_command+12,command->data,size);
-				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+((size+sizeof(u32)-1)/sizeof(u32)),0);
+				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+(size+sizeof(u32)-1)/sizeof(u32),0);
 				goto _update_buffer_cleanup;
 			}
 			if (!buffer->address){

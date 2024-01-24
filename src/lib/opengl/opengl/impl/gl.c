@@ -976,6 +976,11 @@ static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei
 			return;
 	}
 	opengl_command_buffer_push_single(&(command.header));
+	opengl_protocol_header_t flush_command={
+		.type=OPENGL_PROTOCOL_TYPE_FLUSH,
+		.length=sizeof(opengl_protocol_header_t)
+	};
+	opengl_command_buffer_push_single(&flush_command);
 }
 
 
