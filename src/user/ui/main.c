@@ -31,7 +31,7 @@ out vec4 fs_color; \n\
  \n\
 void main(void){ \n\
 	gl_Position=vec4(in_pos,0.0,1.0); \n\
-	fs_color=vec4(0.95,0.0,0.95,1.0)+vs_color; \n\
+	fs_color=vec4(0.5,0.0,0.5,1.0)+vs_color; \n\
 } \n\
 ";
 

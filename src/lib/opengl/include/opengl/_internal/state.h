@@ -60,10 +60,7 @@ typedef struct _OPENGL_PROGRAM_STATE{
 	glsl_linker_linked_program_t linked_program;
 	glsl_error_t error;
 	u64 driver_handle;
-	union{
-		float* uniform_data_float;
-		u32* uniform_data_uint;
-	};
+	void* uniform_data;
 	u32 uniform_data_size;
 } opengl_program_state_t;
 

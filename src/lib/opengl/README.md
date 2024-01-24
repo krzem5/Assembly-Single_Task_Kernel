@@ -241,30 +241,30 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glTexSubImage2D`
 - [ ] `glTexSubImage3D`
 - [ ] `glTransformFeedbackVaryings`
-- [ ] `glUniform1f`
-- [ ] `glUniform1fv`
-- [ ] `glUniform1i`
-- [ ] `glUniform1iv`
-- [ ] `glUniform1ui`
-- [ ] `glUniform1uiv`
-- [ ] `glUniform2f`
-- [ ] `glUniform2fv`
-- [ ] `glUniform2i`
-- [ ] `glUniform2iv`
-- [ ] `glUniform2ui`
-- [ ] `glUniform2uiv`
-- [ ] `glUniform3f`
-- [ ] `glUniform3fv`
-- [ ] `glUniform3i`
-- [ ] `glUniform3iv`
-- [ ] `glUniform3ui`
-- [ ] `glUniform3uiv`
-- [ ] `glUniform4f`
-- [ ] `glUniform4fv`
-- [ ] `glUniform4i`
-- [ ] `glUniform4iv`
-- [ ] `glUniform4ui`
-- [ ] `glUniform4uiv`
+- [x] `glUniform1f`
+- [x] `glUniform1fv`
+- [x] `glUniform1i`
+- [x] `glUniform1iv`
+- [x] `glUniform1ui`
+- [x] `glUniform1uiv`
+- [x] `glUniform2f`
+- [x] `glUniform2fv`
+- [x] `glUniform2i`
+- [x] `glUniform2iv`
+- [x] `glUniform2ui`
+- [x] `glUniform2uiv`
+- [x] `glUniform3f`
+- [x] `glUniform3fv`
+- [x] `glUniform3i`
+- [x] `glUniform3iv`
+- [x] `glUniform3ui`
+- [x] `glUniform3uiv`
+- [x] `glUniform4f`
+- [x] `glUniform4fv`
+- [x] `glUniform4i`
+- [x] `glUniform4iv`
+- [x] `glUniform4ui`
+- [x] `glUniform4uiv`
 - [ ] `glUniformBlockBinding`
 - [ ] `glUniformMatrix2fv`
 - [ ] `glUniformMatrix2x3fv`

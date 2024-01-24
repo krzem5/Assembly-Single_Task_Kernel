@@ -913,7 +913,7 @@ _skip_vertex_array_sync:
 		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
 		.index_buffer_index_width=_gl_internal_state->gl_used_index_width,
 		.index_buffer_offset=_gl_internal_state->gl_used_index_offset,
-		.uniform_buffer_data=(program_state?program_state->uniform_data_float:NULL),
+		.uniform_buffer_data=(program_state?program_state->uniform_data:NULL),
 		.uniform_buffer_size=(program_state?program_state->uniform_data_size:0),
 	};
 	opengl_command_buffer_push_single(&(set_buffers_command.header));
@@ -1069,6 +1069,28 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 	const opengl_protocol_update_buffer_t* output=(const opengl_protocol_update_buffer_t*)opengl_command_buffer_push_single(&(command.header));
 	opengl_command_buffer_flush();
 	state->driver_handle=output->driver_handle;
+}
+
+
+
+static void _update_uniform(GLint location,const void* buffer,GLuint size){
+	opengl_program_state_t* state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+	if (!state){
+		return;
+	}
+	if (location<-1){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (location==-1){
+		return;
+	}
+	location*=4*sizeof(float);
+	if (location+size>state->uniform_data_size){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	sys_memory_copy(buffer,state->uniform_data+location,size);
 }
 
 
@@ -1515,7 +1537,7 @@ SYS_PUBLIC GLuint glCreateProgram(void){
 	state->was_linkage_attempted=GL_FALSE;
 	state->error=GLSL_NO_ERROR;
 	state->driver_handle=0;
-	state->uniform_data_float=NULL;
+	state->uniform_data=NULL;
 	state->uniform_data_size=0;
 	return state->header.index;
 }
@@ -2609,7 +2631,7 @@ SYS_PUBLIC void glLinkProgram(GLuint program){
 		return;
 	}
 	state->uniform_data_size=state->linked_program.uniform_slot_count*4*sizeof(float);
-	state->uniform_data_float=sys_heap_alloc(NULL,state->uniform_data_size);
+	state->uniform_data=sys_heap_alloc(NULL,state->uniform_data_size);
 }
 
 
@@ -2961,145 +2983,202 @@ SYS_PUBLIC void glTransformFeedbackVaryings(GLuint program,GLsizei count,const G
 
 
 SYS_PUBLIC void glUniform1f(GLint location,GLfloat v0){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1f\x1b[0m\n");
+	_update_uniform(location,&v0,sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform1fv(GLint location,GLsizei count,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform1i(GLint location,GLint v0){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1i\x1b[0m\n");
+	_update_uniform(location,&v0,sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform1iv(GLint location,GLsizei count,const GLint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1iv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform1ui(GLint location,GLuint v0){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1ui\x1b[0m\n");
+	_update_uniform(location,&v0,sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform1uiv(GLint location,GLsizei count,const GLuint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform1uiv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform2f(GLint location,GLfloat v0,GLfloat v1){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2f\x1b[0m\n");
+	GLfloat buffer[2]={v0,v1};
+	_update_uniform(location,buffer,2*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform2fv(GLint location,GLsizei count,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*2*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform2i(GLint location,GLint v0,GLint v1){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2i\x1b[0m\n");
+	GLint buffer[2]={v0,v1};
+	_update_uniform(location,buffer,2*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform2iv(GLint location,GLsizei count,const GLint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2iv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*2*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform2ui(GLint location,GLuint v0,GLuint v1){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2ui\x1b[0m\n");
+	GLuint buffer[2]={v0,v1};
+	_update_uniform(location,buffer,2*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform2uiv(GLint location,GLsizei count,const GLuint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform2uiv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*2*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform3f(GLint location,GLfloat v0,GLfloat v1,GLfloat v2){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3f\x1b[0m\n");
+	GLfloat buffer[3]={v0,v1,v2};
+	_update_uniform(location,buffer,3*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform3fv(GLint location,GLsizei count,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*3*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform3i(GLint location,GLint v0,GLint v1,GLint v2){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3i\x1b[0m\n");
+	GLint buffer[3]={v0,v1,v2};
+	_update_uniform(location,buffer,3*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform3iv(GLint location,GLsizei count,const GLint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3iv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*3*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform3ui(GLint location,GLuint v0,GLuint v1,GLuint v2){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3ui\x1b[0m\n");
+	GLuint buffer[3]={v0,v1,v2};
+	_update_uniform(location,buffer,3*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform3uiv(GLint location,GLsizei count,const GLuint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform3uiv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*3*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform4f(GLint location,GLfloat v0,GLfloat v1,GLfloat v2,GLfloat v3){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4f\x1b[0m\n");
+	GLfloat buffer[4]={v0,v1,v2,v3};
+	_update_uniform(location,buffer,4*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform4fv(GLint location,GLsizei count,const GLfloat* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4fv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*4*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glUniform4i(GLint location,GLint v0,GLint v1,GLint v2,GLint v3){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4i\x1b[0m\n");
+	GLint buffer[4]={v0,v1,v2,v3};
+	_update_uniform(location,buffer,4*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform4iv(GLint location,GLsizei count,const GLint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4iv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*4*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glUniform4ui(GLint location,GLuint v0,GLuint v1,GLuint v2,GLuint v3){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4ui\x1b[0m\n");
+	GLuint buffer[4]={v0,v1,v2,v3};
+	_update_uniform(location,buffer,4*sizeof(GLuint));
 }
 
 
 
 SYS_PUBLIC void glUniform4uiv(GLint location,GLsizei count,const GLuint* value){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glUniform4uiv\x1b[0m\n");
+	if (count<0){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	_update_uniform(location,value,count*4*sizeof(GLuint));
 }
 
 

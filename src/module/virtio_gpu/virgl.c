@@ -524,7 +524,6 @@ _skip_buffer_resize:
 			}
 			// Verify user pointers!
 			if (size<MAX_INLINE_WRITE_SIZE){
-				WARN("Write: %u",size);
 				u32 virgl_resource_inline_write_command[12+MAX_INLINE_WRITE_SIZE/sizeof(u32)]={
 					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
 					buffer->resource_handle,
