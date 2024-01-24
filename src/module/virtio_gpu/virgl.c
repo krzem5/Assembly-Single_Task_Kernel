@@ -536,7 +536,7 @@ _skip_buffer_resize:
 					1,
 				};
 				memcpy(virgl_resource_inline_write_command+12,command->data,size);
-				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+((size+3)>>2),0);
+				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+((size+sizeof(u32)-1)/sizeof(u32)),0);
 				goto _update_buffer_cleanup;
 			}
 			if (!buffer->address){
