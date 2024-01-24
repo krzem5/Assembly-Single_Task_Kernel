@@ -1091,6 +1091,7 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 		return;
 	}
 	sys_memory_copy(buffer,state->uniform_data+location,size);
+	_gl_internal_state->gl_constant_buffer_needs_update=1;
 }
 
 

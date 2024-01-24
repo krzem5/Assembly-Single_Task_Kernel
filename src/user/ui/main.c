@@ -31,7 +31,7 @@ out vec4 fs_color; \n\
  \n\
 void main(void){ \n\
 	gl_Position=vec4(in_pos,0.0,1.0); \n\
-	fs_color=vec4(0.5,0.0,0.5,1.0)+vs_color; \n\
+	fs_color=vs_color; \n\
 } \n\
 ";
 
@@ -135,6 +135,7 @@ int main(int argc,const char** argv){
 		GLint extension_count;
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
+		GLint uniform_vs_color;
 		{
 			GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
 			glShaderSource(vertex_shader,1,&_vertex_shader,NULL);
@@ -179,8 +180,8 @@ int main(int argc,const char** argv){
 				return 1;
 			}
 			glUseProgram(program);
-			glUniform4f(glGetUniformLocation(program,"vs_color"),0.0f,1.0f,0.0f,0.0f);
-			sys_io_print("uniform.vs_color=%u\n",glGetUniformLocation(program,"vs_color"));
+			uniform_vs_color=glGetUniformLocation(program,"vs_color");
+			sys_io_print("uniform.vs_color=%u\n",uniform_vs_color);
 		}
 		u64 timer_interval=1000000000ull/data.mode.freq;
 		sys_timer_t timer=sys_timer_create(0,0);
@@ -210,6 +211,8 @@ int main(int argc,const char** argv){
 			u8 color[3];
 			_hsl_to_rgb(frame*255/120,127,255,color);
 			glClearColor(color[0]/255.0f,color[1]/255.0f,color[2]/255.0f,1.0f);
+			_hsl_to_rgb((frame+60)*255/120,127,255,color);
+			glUniform4f(uniform_vs_color,color[0]/255.0f,color[1]/255.0f,color[2]/255.0f,1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 			buffer[0]=(frame%120)/60.0f-1.0f;
 			glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float),buffer);
@@ -220,7 +223,6 @@ int main(int argc,const char** argv){
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			sys_thread_await_events(&timer_event,1);
-			break;
 		}
 	}
 	return 0;
