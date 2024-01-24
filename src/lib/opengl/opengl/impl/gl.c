@@ -1118,6 +1118,13 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 
 
 
+static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){
+	glVertexAttribPointer(index,size,type,normalized,0,(void*)(u64)(index*32));
+	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _set_vertex_attrib\x1b[0m\n");
+}
+
+
+
 void _gl_set_internal_state(void* internal_state){
 	_gl_internal_state=internal_state;
 }
@@ -3487,163 +3494,171 @@ SYS_PUBLIC void glValidateProgram(GLuint program){
 
 
 SYS_PUBLIC void glVertexAttrib1d(GLuint index,GLdouble x){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1d\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_DOUBLE,0,&x,sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib1dv(GLuint index,const GLdouble* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1dv\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_DOUBLE,0,v,sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib1f(GLuint index,GLfloat x){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1f\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_FLOAT,0,&x,sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib1fv(GLuint index,const GLfloat* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1fv\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_FLOAT,0,v,sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib1s(GLuint index,GLshort x){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1s\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_SHORT,0,&x,sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib1sv(GLuint index,const GLshort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib1sv\x1b[0m\n");
+	_set_vertex_attrib(index,1,GL_SHORT,0,v,sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2d(GLuint index,GLdouble x,GLdouble y){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2d\x1b[0m\n");
+	GLdouble buffer[2]={x,y};
+	_set_vertex_attrib(index,2,GL_DOUBLE,0,buffer,2*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2dv(GLuint index,const GLdouble* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2dv\x1b[0m\n");
+	_set_vertex_attrib(index,2,GL_DOUBLE,0,v,2*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2f(GLuint index,GLfloat x,GLfloat y){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2f\x1b[0m\n");
+	GLfloat buffer[2]={x,y};
+	_set_vertex_attrib(index,2,GL_FLOAT,0,buffer,2*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2fv(GLuint index,const GLfloat* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2fv\x1b[0m\n");
+	_set_vertex_attrib(index,2,GL_FLOAT,0,v,2*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2s(GLuint index,GLshort x,GLshort y){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2s\x1b[0m\n");
+	GLshort buffer[2]={x,y};
+	_set_vertex_attrib(index,2,GL_SHORT,0,buffer,2*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib2sv(GLuint index,const GLshort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib2sv\x1b[0m\n");
+	_set_vertex_attrib(index,2,GL_SHORT,0,v,2*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3d(GLuint index,GLdouble x,GLdouble y,GLdouble z){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3d\x1b[0m\n");
+	GLdouble buffer[3]={x,y,z};
+	_set_vertex_attrib(index,3,GL_DOUBLE,0,buffer,3*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3dv(GLuint index,const GLdouble* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3dv\x1b[0m\n");
+	_set_vertex_attrib(index,3,GL_DOUBLE,0,v,3*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3f(GLuint index,GLfloat x,GLfloat y,GLfloat z){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3f\x1b[0m\n");
+	GLfloat buffer[3]={x,y,z};
+	_set_vertex_attrib(index,3,GL_FLOAT,0,buffer,3*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3fv(GLuint index,const GLfloat* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3fv\x1b[0m\n");
+	_set_vertex_attrib(index,3,GL_FLOAT,0,v,3*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3s(GLuint index,GLshort x,GLshort y,GLshort z){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3s\x1b[0m\n");
+	GLshort buffer[3]={x,y,z};
+	_set_vertex_attrib(index,3,GL_SHORT,0,buffer,3*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib3sv(GLuint index,const GLshort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib3sv\x1b[0m\n");
+	_set_vertex_attrib(index,3,GL_SHORT,0,v,3*sizeof(GLshort));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4bv(GLuint index,const GLbyte* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4bv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_SHORT,0,v,4*sizeof(GLbyte));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4d(GLuint index,GLdouble x,GLdouble y,GLdouble z,GLdouble w){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4d\x1b[0m\n");
+	GLdouble buffer[4]={x,y,z,w};
+	_set_vertex_attrib(index,4,GL_DOUBLE,0,buffer,4*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4dv(GLuint index,const GLdouble* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4dv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_DOUBLE,0,v,4*sizeof(GLdouble));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4f(GLuint index,GLfloat x,GLfloat y,GLfloat z,GLfloat w){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4f\x1b[0m\n");
+	GLfloat buffer[4]={x,y,z,w};
+	_set_vertex_attrib(index,4,GL_FLOAT,0,buffer,4*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4fv(GLuint index,const GLfloat* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4fv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_FLOAT,0,v,4*sizeof(GLfloat));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4iv(GLuint index,const GLint* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4iv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_INT,0,v,4*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Nbv(GLuint index,const GLbyte* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nbv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_BYTE,1,v,4*sizeof(GLbyte));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Niv(GLuint index,const GLint* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Niv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_INT,1,v,4*sizeof(GLint));
 }
 
 
 
 SYS_PUBLIC void glVertexAttrib4Nsv(GLuint index,const GLshort* v){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glVertexAttrib4Nsv\x1b[0m\n");
+	_set_vertex_attrib(index,4,GL_SHORT,1,v,4*sizeof(GLshort));
 }
 
 

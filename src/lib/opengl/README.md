@@ -278,33 +278,33 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glUnmapBuffer`
 - [x] `glUseProgram`
 - [ ] `glValidateProgram`
-- [ ] `glVertexAttrib1d`
-- [ ] `glVertexAttrib1dv`
-- [ ] `glVertexAttrib1f`
-- [ ] `glVertexAttrib1fv`
-- [ ] `glVertexAttrib1s`
-- [ ] `glVertexAttrib1sv`
-- [ ] `glVertexAttrib2d`
-- [ ] `glVertexAttrib2dv`
-- [ ] `glVertexAttrib2f`
-- [ ] `glVertexAttrib2fv`
-- [ ] `glVertexAttrib2s`
-- [ ] `glVertexAttrib2sv`
-- [ ] `glVertexAttrib3d`
-- [ ] `glVertexAttrib3dv`
-- [ ] `glVertexAttrib3f`
-- [ ] `glVertexAttrib3fv`
-- [ ] `glVertexAttrib3s`
-- [ ] `glVertexAttrib3sv`
-- [ ] `glVertexAttrib4bv`
-- [ ] `glVertexAttrib4d`
-- [ ] `glVertexAttrib4dv`
-- [ ] `glVertexAttrib4f`
-- [ ] `glVertexAttrib4fv`
-- [ ] `glVertexAttrib4iv`
-- [ ] `glVertexAttrib4Nbv`
-- [ ] `glVertexAttrib4Niv`
-- [ ] `glVertexAttrib4Nsv`
+- [x] `glVertexAttrib1d`
+- [x] `glVertexAttrib1dv`
+- [x] `glVertexAttrib1f`
+- [x] `glVertexAttrib1fv`
+- [x] `glVertexAttrib1s`
+- [x] `glVertexAttrib1sv`
+- [x] `glVertexAttrib2d`
+- [x] `glVertexAttrib2dv`
+- [x] `glVertexAttrib2f`
+- [x] `glVertexAttrib2fv`
+- [x] `glVertexAttrib2s`
+- [x] `glVertexAttrib2sv`
+- [x] `glVertexAttrib3d`
+- [x] `glVertexAttrib3dv`
+- [x] `glVertexAttrib3f`
+- [x] `glVertexAttrib3fv`
+- [x] `glVertexAttrib3s`
+- [x] `glVertexAttrib3sv`
+- [x] `glVertexAttrib4bv`
+- [x] `glVertexAttrib4d`
+- [x] `glVertexAttrib4dv`
+- [x] `glVertexAttrib4f`
+- [x] `glVertexAttrib4fv`
+- [x] `glVertexAttrib4iv`
+- [x] `glVertexAttrib4Nbv`
+- [x] `glVertexAttrib4Niv`
+- [x] `glVertexAttrib4Nsv`
 - [ ] `glVertexAttrib4Nub`
 - [ ] `glVertexAttrib4Nubv`
 - [ ] `glVertexAttrib4Nuiv`
