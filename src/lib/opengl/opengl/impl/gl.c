@@ -890,7 +890,7 @@ static void _sync_state(void){
 	}
 	state->needs_update=0;
 _skip_vertex_array_sync:
-	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width){
+	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_offset==_gl_internal_state->gl_used_index_offset&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width){
 		goto _skip_buffers_sync;
 	}
 	opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
@@ -911,11 +911,12 @@ _skip_vertex_array_sync:
 		.vertex_buffer_offset=0,
 		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
 		.index_buffer_index_width=_gl_internal_state->gl_used_index_width,
-		.index_buffer_offset=0
+		.index_buffer_offset=_gl_internal_state->gl_used_index_offset
 	};
 	opengl_command_buffer_push_single(&(set_buffers_command.header));
 	_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
 	_gl_internal_state->gl_bound_index_buffer=_gl_internal_state->gl_used_index_buffer;
+	_gl_internal_state->gl_bound_index_offset=_gl_internal_state->gl_used_index_offset;
 	_gl_internal_state->gl_bound_index_width=_gl_internal_state->gl_used_index_width;
 _skip_buffers_sync:
 	_gl_internal_state->gl_error=error;
@@ -1676,10 +1677,7 @@ SYS_PUBLIC void glDrawElements(GLenum mode,GLsizei count,GLenum type,const void*
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElements: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,0,0,0,count-1);
 }
 
@@ -1689,10 +1687,7 @@ SYS_PUBLIC void glDrawElementsBaseVertex(GLenum mode,GLsizei count,GLenum type,c
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsBaseVertex: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,0,basevertex,0,count-1);
 }
 
@@ -1702,10 +1697,7 @@ SYS_PUBLIC void glDrawElementsInstanced(GLenum mode,GLsizei count,GLenum type,co
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstanced: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,instancecount,0,0,count-1);
 }
 
@@ -1715,10 +1707,7 @@ SYS_PUBLIC void glDrawElementsInstancedBaseVertex(GLenum mode,GLsizei count,GLen
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstancedBaseVertex: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,instancecount,basevertex,0,count-1);
 }
 
@@ -1728,10 +1717,7 @@ SYS_PUBLIC void glDrawRangeElements(GLenum mode,GLuint start,GLuint end,GLsizei 
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElements: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,0,0,start,end);
 }
 
@@ -1741,10 +1727,7 @@ SYS_PUBLIC void glDrawRangeElementsBaseVertex(GLenum mode,GLuint start,GLuint en
 	if (_process_draw_index_size(type)){
 		return;
 	}
-	if (indices){
-		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElements: index buffer offset\x1b[0m\n");
-		return;
-	}
+	_gl_internal_state->gl_used_index_offset=(GLuint64)indices;
 	_process_draw_command(mode,0,count,1,basevertex,0,start,end);
 }
 

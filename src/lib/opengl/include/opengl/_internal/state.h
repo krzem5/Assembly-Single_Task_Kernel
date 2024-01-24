@@ -131,6 +131,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLuint gl_active_texture;
 	GLuint gl_bound_array_buffer;
 	GLuint gl_bound_index_buffer;
+	GLuint64 gl_bound_index_offset;
 	GLuint gl_bound_index_width;
 	GLuint gl_bound_vertex_array;
 	GLfloat gl_clear_color_value[4];
@@ -139,6 +140,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLuint gl_primitive_restart_index;
 	GLuint gl_used_array_buffer;
 	GLuint gl_used_index_buffer;
+	GLuint64 gl_used_index_offset;
 	GLuint gl_used_index_width;
 	GLuint gl_used_program;
 	GLuint gl_used_vertex_array;
