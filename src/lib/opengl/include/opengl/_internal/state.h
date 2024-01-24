@@ -94,7 +94,7 @@ typedef struct _OPENGL_VERTEX_ARRAY_STATE_ENTRY{
 typedef struct _OPENGL_VERTEX_ARRAY_STATE{
 	opengl_handle_header_t header;
 	u16 enabled_entry_mask; // same number of bits as OPENGL_MAX_VERTEX_ATTRIBUTES
-	opengl_vertex_array_state_entry_t entries[OPENGL_MAX_VERTEX_ATTRIBUTES];
+	opengl_vertex_array_state_entry_t entries[OPENGL_MAX_VERTEX_ATTRIBUTES*2];
 	u64 driver_handle;
 	GLuint stride;
 	GLboolean needs_update;

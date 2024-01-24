@@ -452,6 +452,9 @@ _skip_draw_command:
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+3]=(command->elements+i)->divisor;
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+4]=(command->elements+i)->index;
 					virgl_create_and_bind_vertex_elements_command[(i<<2)+5]=0;
+					if (!(command->elements+i)->size){
+						goto _skip_type_resolution;
+					}
 					for (const virgl_opengl_vertex_array_element_type_t* entry=_virgl_vertex_array_element_types;entry->virgl_type!=VIRGL_FORMAT_NONE;entry++){
 						if (entry->size==(command->elements+i)->size&&entry->type==(command->elements+i)->type&&entry->require_normalization==(command->elements+i)->require_normalization){
 							virgl_create_and_bind_vertex_elements_command[(i<<2)+5]=entry->virgl_type;
@@ -462,6 +465,7 @@ _skip_draw_command:
 						ERROR("_process_commands: unknown vertex array element type: (%u,%u,%u)",(command->elements+i)->size,(command->elements+i)->type,(command->elements+i)->require_normalization);
 						goto _skip_update_vertex_array_command;
 					}
+_skip_type_resolution:
 				}
 				virgl_create_and_bind_vertex_elements_command[(command->count<<2)+2]=VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS;
 				virgl_create_and_bind_vertex_elements_command[(command->count<<2)+3]=vertex_array->resource_handle;

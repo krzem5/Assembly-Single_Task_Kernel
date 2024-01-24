@@ -818,14 +818,14 @@ static void _sync_state(void){
 	}
 	opengl_protocol_update_vertex_array_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY,
-		.count=0,
+		.count=OPENGL_MAX_VERTEX_ATTRIBUTES,
 		.driver_handle=state->driver_handle
 	};
 	state->stride=0;
 	for (u32 i=0;i<OPENGL_MAX_VERTEX_ATTRIBUTES;i++){
-		const opengl_vertex_array_state_entry_t* src_entry=state->entries+i;
-		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+command.count;
-		dst_entry->index=src_entry-state->entries;
+		const opengl_vertex_array_state_entry_t* src_entry=state->entries+i+((state->enabled_entry_mask&(1<<i))?OPENGL_MAX_VERTEX_ATTRIBUTES:0);
+		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+i;
+		dst_entry->index=i;
 		dst_entry->size=(src_entry->size==GL_BGRA?OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA:src_entry->size);
 		u32 width=dst_entry->size;
 		switch (src_entry->type){
@@ -875,19 +875,38 @@ static void _sync_state(void){
 		if (state->enabled_entry_mask&(1<<i)){
 			dst_entry->stride=src_entry->stride;
 			dst_entry->divisor=src_entry->divisor;
-			if (src_entry->offset+width>state->stride){
-				state->stride=src_entry->offset+width;
-			}
 		}
 		else{
 			dst_entry->stride=0;
 			dst_entry->divisor=0;
+			width=(state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->size;
+			switch (src_entry->type){
+				case GL_SHORT:
+				case GL_UNSIGNED_SHORT:
+				case GL_HALF_FLOAT:
+					width<<=1;
+					break;
+				case GL_INT:
+				case GL_UNSIGNED_INT:
+				case GL_FLOAT:
+					width<<=2;
+					break;
+				case GL_DOUBLE:
+					width<<=3;
+					break;
+				case GL_INT_2_10_10_10_REV:
+				case GL_UNSIGNED_INT_2_10_10_10_REV:
+					width=4;
+					break;
+			}
 		}
 		dst_entry->offset=src_entry->offset;
 		dst_entry->require_normalization=src_entry->normalized;
-		command.count++;
+		if ((state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset+width>state->stride){
+			state->stride=(state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset+width;
+		}
 	}
-	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-command.count)*sizeof(opengl_protocol_vertex_array_element_t);
+	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-OPENGL_MAX_VERTEX_ATTRIBUTES)*sizeof(opengl_protocol_vertex_array_element_t);
 	const opengl_protocol_update_vertex_array_t* output=(const opengl_protocol_update_vertex_array_t*)opengl_command_buffer_push_single(&(command.header));
 	if (!state->driver_handle){
 		opengl_command_buffer_flush();
@@ -1119,6 +1138,53 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 
 
 
+static void _set_vertex_attrib_pointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void* pointer,GLboolean is_array){
+	if (size!=GL_BGRA&&(size<1||size>4)){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (type!=GL_BYTE&&type!=GL_UNSIGNED_BYTE&&type!=GL_SHORT&&type!=GL_UNSIGNED_SHORT&&type!=GL_INT&&type!=GL_UNSIGNED_INT&&type!=GL_HALF_FLOAT&&type!=GL_FLOAT&&type!=GL_DOUBLE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+		_gl_internal_state->gl_error=GL_INVALID_ENUM;
+		return;
+	}
+	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if ((type==GL_INT_2_10_10_10_REV||type==GL_UNSIGNED_INT_2_10_10_10_REV)&&size!=4&&size==GL_BGRA){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (size==GL_BGRA&&!normalized){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (pointer&&!_gl_internal_state->gl_used_array_buffer){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	if (stride<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->size=size;
+	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->type=type;
+	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->normalized=normalized;
+	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->stride=stride;
+	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->offset=(GLuint64)pointer;
+	state->needs_update=GL_TRUE;
+}
+
+
+
 static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
 	if (!state){
 		return;
@@ -1148,7 +1214,7 @@ static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean nor
 	};
 	opengl_command_buffer_push_single(&(command.header));
 	opengl_command_buffer_flush();
-	glVertexAttribPointer(index,size,type,normalized,0,(void*)(u64)(index*OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE));
+	_set_vertex_attrib_pointer(index,size,type,normalized,0,(void*)(u64)(index*OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE),0);
 }
 
 
@@ -1996,8 +2062,8 @@ SYS_PUBLIC void glGenVertexArrays(GLsizei n,GLuint* arrays){
 	for (GLsizei i=0;i<n;i++){
 		opengl_vertex_array_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_VERTEX_ARRAY,sizeof(opengl_vertex_array_state_t));
 		state->enabled_entry_mask=0;
-		for (GLuint j=0;j<OPENGL_MAX_VERTEX_ATTRIBUTES;j++){
-			(state->entries+j)->size=4;
+		for (GLuint j=0;j<OPENGL_MAX_VERTEX_ATTRIBUTES*2;j++){
+			(state->entries+j)->size=0; // not 4 (as per standard) to prevent incorrect vertex buffer stride calculations
 			(state->entries+j)->type=GL_FLOAT;
 			(state->entries+j)->normalized=GL_FALSE;
 			(state->entries+j)->divisor=0;
@@ -3758,7 +3824,7 @@ SYS_PUBLIC void glVertexAttribDivisor(GLuint index,GLuint divisor){
 	if (!state){
 		return;
 	}
-	(state->entries+index)->divisor=divisor;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->divisor=divisor;
 	state->needs_update=GL_TRUE;
 }
 
@@ -3919,11 +3985,11 @@ SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsiz
 	if (!state){
 		return;
 	}
-	(state->entries+index)->size=size;
-	(state->entries+index)->type=type;
-	(state->entries+index)->normalized=GL_FALSE;
-	(state->entries+index)->stride=stride;
-	(state->entries+index)->offset=(GLuint64)pointer;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->size=size;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->type=type;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->normalized=GL_FALSE;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->stride=stride;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset=(GLuint64)pointer;
 	state->needs_update=GL_TRUE;
 }
 
@@ -3978,48 +4044,7 @@ SYS_PUBLIC void glVertexAttribP4uiv(GLuint index,GLenum type,GLboolean normalize
 
 
 SYS_PUBLIC void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void* pointer){
-	if (size!=GL_BGRA&&(size<1||size>4)){
-		_gl_internal_state->gl_error=GL_INVALID_VALUE;
-		return;
-	}
-	if (type!=GL_BYTE&&type!=GL_UNSIGNED_BYTE&&type!=GL_SHORT&&type!=GL_UNSIGNED_SHORT&&type!=GL_INT&&type!=GL_UNSIGNED_INT&&type!=GL_HALF_FLOAT&&type!=GL_FLOAT&&type!=GL_DOUBLE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
-		_gl_internal_state->gl_error=GL_INVALID_ENUM;
-		return;
-	}
-	if (size==GL_BGRA&&type!=GL_UNSIGNED_BYTE&&type!=GL_INT_2_10_10_10_REV&&type!=GL_UNSIGNED_INT_2_10_10_10_REV){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if ((type==GL_INT_2_10_10_10_REV||type==GL_UNSIGNED_INT_2_10_10_10_REV)&&size!=4&&size==GL_BGRA){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (size==GL_BGRA&&!normalized){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (pointer&&!_gl_internal_state->gl_used_array_buffer){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (index>=OPENGL_MAX_VERTEX_ATTRIBUTES){
-		_gl_internal_state->gl_error=GL_INVALID_VALUE;
-		return;
-	}
-	if (stride<0){
-		_gl_internal_state->gl_error=GL_INVALID_VALUE;
-		return;
-	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
-	if (!state){
-		return;
-	}
-	(state->entries+index)->size=size;
-	(state->entries+index)->type=type;
-	(state->entries+index)->normalized=normalized;
-	(state->entries+index)->stride=stride;
-	(state->entries+index)->offset=(GLuint64)pointer;
-	state->needs_update=GL_TRUE;
+	_set_vertex_attrib_pointer(index,size,type,normalized,stride,pointer,1);
 }
 
 
