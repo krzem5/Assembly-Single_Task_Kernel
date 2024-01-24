@@ -118,10 +118,15 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_USE_SHADER{
 typedef struct SYS_PACKED _OPENGL_PROTOCOL_DRAW{
 	opengl_protocol_header_t header;
 	u32 mode;
-	u32 first;
+	u32 start;
 	u32 count;
-	u32 instance_count;
 	u32 indexed;
+	u32 instance_count;
+	u32 index_bias;
+	u32 start_instance;
+	u32 pritmitive_restart_index;
+	u32 min_index;
+	u32 max_index;
 } opengl_protocol_draw_t;
 
 

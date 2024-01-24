@@ -385,7 +385,7 @@ _skip_use_shader:
 			}
 			u32 virgl_draw_vbo_command[13]={
 				VIRGL_PROTOCOL_COMMAND_DRAW_VBO,
-				command->first,
+				command->start,
 				command->count,
 				mode,
 				!!command->indexed,
@@ -394,8 +394,8 @@ _skip_use_shader:
 				0,
 				0,
 				0,
-				command->first,
-				command->count-command->first,
+				command->start,
+				command->count-command->start,
 				0,
 			};
 			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,0);

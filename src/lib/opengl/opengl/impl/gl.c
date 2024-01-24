@@ -923,19 +923,43 @@ _skip_buffers_sync:
 
 
 
-static void _generate_draw_command(GLenum mode,GLint first,GLsizei count,GLsizei instance_count,_Bool indexed){
+static _Bool _process_draw_index_size(GLenum type){
+	switch (type){
+		case GL_UNSIGNED_BYTE:
+			_gl_internal_state->gl_used_index_width=1;
+			return 0;
+		case GL_UNSIGNED_SHORT:
+			_gl_internal_state->gl_used_index_width=2;
+			return 0;
+		case GL_UNSIGNED_INT:
+			_gl_internal_state->gl_used_index_width=4;
+			return 0;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return 1;
+	}
+}
+
+
+
+static void _process_draw_command(GLenum mode,GLint start,GLsizei count,_Bool indexed,GLsizei instance_count,GLint index_bias,GLuint min_index,GLuint max_index){
 	_sync_state();
-	if (count<0){
+	if (count<0||index_bias<0||max_index<min_index){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
 	opengl_protocol_draw_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_DRAW,
 		.header.length=sizeof(opengl_protocol_draw_t),
-		.first=first,
+		.start=start,
 		.count=count,
+		.indexed=indexed,
 		.instance_count=instance_count,
-		.indexed=indexed
+		.index_bias=index_bias,
+		.start_instance=0,
+		.pritmitive_restart_index=_gl_internal_state->gl_primitive_restart_index,
+		.min_index=min_index,
+		.max_index=max_index
 	};
 	switch (mode){
 		case GL_POINTS:
@@ -1625,13 +1649,13 @@ SYS_PUBLIC void glDisableVertexAttribArray(GLuint index){
 
 
 SYS_PUBLIC void glDrawArrays(GLenum mode,GLint first,GLsizei count){
-	_generate_draw_command(mode,first,count,0,0);
+	_process_draw_command(mode,first,count,0,0,0,first,count-first-1);
 }
 
 
 
 SYS_PUBLIC void glDrawArraysInstanced(GLenum mode,GLint first,GLsizei count,GLsizei instancecount){
-	_generate_draw_command(mode,first,count,instancecount,0);
+	_process_draw_command(mode,first,count,0,instancecount,0,first,count-first-1);
 }
 
 
@@ -1649,54 +1673,79 @@ SYS_PUBLIC void glDrawBuffers(GLsizei n,const GLenum* bufs){
 
 
 SYS_PUBLIC void glDrawElements(GLenum mode,GLsizei count,GLenum type,const void* indices){
-	switch (type){
-		case GL_UNSIGNED_BYTE:
-			_gl_internal_state->gl_used_index_width=1;
-			break;
-		case GL_UNSIGNED_SHORT:
-			_gl_internal_state->gl_used_index_width=2;
-			break;
-		case GL_UNSIGNED_INT:
-			_gl_internal_state->gl_used_index_width=4;
-			break;
-		default:
-			_gl_internal_state->gl_error=GL_INVALID_ENUM;
-			return;
+	if (_process_draw_index_size(type)){
+		return;
 	}
 	if (indices){
 		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElements: index buffer offset\x1b[0m\n");
+		return;
 	}
-	_generate_draw_command(mode,0,count,0,1);
+	_process_draw_command(mode,0,count,1,0,0,0,count-1);
 }
 
 
 
 SYS_PUBLIC void glDrawElementsBaseVertex(GLenum mode,GLsizei count,GLenum type,const void* indices,GLint basevertex){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsBaseVertex\x1b[0m\n");
+	if (_process_draw_index_size(type)){
+		return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsBaseVertex: index buffer offset\x1b[0m\n");
+		return;
+	}
+	_process_draw_command(mode,0,count,1,0,basevertex,0,count-1);
 }
 
 
 
 SYS_PUBLIC void glDrawElementsInstanced(GLenum mode,GLsizei count,GLenum type,const void* indices,GLsizei instancecount){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstanced\x1b[0m\n");
+	if (_process_draw_index_size(type)){
+		return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstanced: index buffer offset\x1b[0m\n");
+		return;
+	}
+	_process_draw_command(mode,0,count,1,instancecount,0,0,count-1);
 }
 
 
 
 SYS_PUBLIC void glDrawElementsInstancedBaseVertex(GLenum mode,GLsizei count,GLenum type,const void* indices,GLsizei instancecount,GLint basevertex){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstancedBaseVertex\x1b[0m\n");
+	if (_process_draw_index_size(type)){
+		return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawElementsInstancedBaseVertex: index buffer offset\x1b[0m\n");
+		return;
+	}
+	_process_draw_command(mode,0,count,1,instancecount,basevertex,0,count-1);
 }
 
 
 
 SYS_PUBLIC void glDrawRangeElements(GLenum mode,GLuint start,GLuint end,GLsizei count,GLenum type,const void* indices){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElements\x1b[0m\n");
+	if (_process_draw_index_size(type)){
+		return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElements: index buffer offset\x1b[0m\n");
+		return;
+	}
+	_process_draw_command(mode,0,count,1,0,0,start,end);
 }
 
 
 
 SYS_PUBLIC void glDrawRangeElementsBaseVertex(GLenum mode,GLuint start,GLuint end,GLsizei count,GLenum type,const void* indices,GLint basevertex){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElementsBaseVertex\x1b[0m\n");
+	if (_process_draw_index_size(type)){
+		return;
+	}
+	if (indices){
+		sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glDrawRangeElements: index buffer offset\x1b[0m\n");
+		return;
+	}
+	_process_draw_command(mode,0,count,1,basevertex,0,start,end);
 }
 
 
@@ -2648,7 +2697,7 @@ SYS_PUBLIC void glPolygonOffset(GLfloat factor,GLfloat units){
 
 
 SYS_PUBLIC void glPrimitiveRestartIndex(GLuint index){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glPrimitiveRestartIndex\x1b[0m\n");
+	_gl_internal_state->gl_primitive_restart_index=index;
 }
 
 

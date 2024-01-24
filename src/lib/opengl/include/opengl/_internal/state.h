@@ -136,6 +136,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLfloat gl_clear_color_value[4];
 	GLdouble gl_clear_depth_value;
 	GLint gl_clear_stencil_value;
+	GLuint gl_primitive_restart_index;
 	GLuint gl_used_array_buffer;
 	GLuint gl_used_index_buffer;
 	GLuint gl_used_index_width;

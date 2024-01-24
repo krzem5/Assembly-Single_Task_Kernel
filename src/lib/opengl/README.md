@@ -71,20 +71,20 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glDetachShader`
 - [ ] `glDisable`
 - [ ] `glDisablei`
-- [ ] `glDisableVertexAttribArray`
+- [x] `glDisableVertexAttribArray`
 - [x] `glDrawArrays`
 - [x] `glDrawArraysInstanced`
 - [ ] `glDrawBuffer`
 - [ ] `glDrawBuffers`
-- [ ] `glDrawElements`
-- [ ] `glDrawElementsBaseVertex`
-- [ ] `glDrawElementsInstanced`
-- [ ] `glDrawElementsInstancedBaseVertex`
+- [x] `glDrawElements`
+- [x] `glDrawElementsBaseVertex`
+- [x] `glDrawElementsInstanced`
+- [x] `glDrawElementsInstancedBaseVertex`
 - [ ] `glDrawRangeElements`
 - [ ] `glDrawRangeElementsBaseVertex`
 - [ ] `glEnable`
 - [ ] `glEnablei`
-- [ ] `glEnableVertexAttribArray`
+- [x] `glEnableVertexAttribArray`
 - [ ] `glEndConditionalRender`
 - [ ] `glEndQuery`
 - [ ] `glEndTransformFeedback`
