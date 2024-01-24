@@ -523,7 +523,7 @@ _skip_buffer_resize:
 				goto _update_buffer_cleanup;
 			}
 			// Verify user pointers!
-			if (size<MAX_INLINE_WRITE_SIZE){
+			if (size<=MAX_INLINE_WRITE_SIZE){
 				u32 virgl_resource_inline_write_command[12+MAX_INLINE_WRITE_SIZE/sizeof(u32)]={
 					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
 					buffer->resource_handle,
@@ -576,27 +576,30 @@ _skip_update_buffer_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_BUFFERS){
 			opengl_protocol_set_buffers_t* command=(void*)header;
-			if (command->vertex_buffer_driver_handle){
-				handle_t* handle=handle_lookup_and_acquire(command->vertex_buffer_driver_handle,_virgl_opengl_buffer_handle_type);
-				if (!handle){
-					ERROR("_process_commands: invalid vertex buffer handle: %p");
-					goto _skip_set_vertex_buffer;
-				}
-				virgl_opengl_buffer_t* buffer=handle->object;
-				u32 virgl_set_vertex_buffers_command[4]={
-					VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(1),
-					command->vertex_buffer_stride,
-					command->vertex_buffer_offset,
-					buffer->resource_handle
+			if (command->vertex_buffer_count){
+				u32 virgl_set_vertex_buffers_command[97]={
+					VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(command->vertex_buffer_count),
 				};
-				_command_buffer_extend(instance->ctx,virgl_set_vertex_buffers_command,4,0);
-				handle_release(handle);
+				for (u32 i=0;i<command->vertex_buffer_count;i++){
+					handle_t* handle=handle_lookup_and_acquire((command->vertex_buffers+i)->driver_handle,_virgl_opengl_buffer_handle_type);
+					if ((command->vertex_buffers+i)->driver_handle&&!handle){
+						ERROR("_process_commands: invalid vertex buffer handle: %p",(command->vertex_buffers+i)->driver_handle);
+						goto _skip_set_vertex_buffer;
+					}
+					virgl_set_vertex_buffers_command[i*3+1]=(command->vertex_buffers+i)->stride;
+					virgl_set_vertex_buffers_command[i*3+2]=(command->vertex_buffers+i)->offset;
+					virgl_set_vertex_buffers_command[i*3+3]=(handle?((virgl_opengl_buffer_t*)(handle->object))->resource_handle:0);
+					if (handle){
+						handle_release(handle);
+					}
+				}
+				_command_buffer_extend(instance->ctx,virgl_set_vertex_buffers_command,1+command->vertex_buffer_count*3,0);
 			}
 _skip_set_vertex_buffer:
 			if (command->index_buffer_driver_handle){
 				handle_t* handle=handle_lookup_and_acquire(command->index_buffer_driver_handle,_virgl_opengl_buffer_handle_type);
 				if (!handle){
-					ERROR("_process_commands: invalid index buffer handle: %p");
+					ERROR("_process_commands: invalid index buffer handle: %p",command->index_buffer_driver_handle);
 					goto _skip_set_index_buffer;
 				}
 				virgl_opengl_buffer_t* buffer=handle->object;

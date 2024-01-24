@@ -223,6 +223,15 @@ static void _generate_add(compiler_state_t* state,const register_state_t* a,cons
 
 
 
+static void _generate_divide(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
+	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_DIV,3);
+	_generate_instruction_arg(a,instruction->args+1,4);
+	_generate_instruction_arg(b,instruction->args+2,4);
+	_generate_instruction_arg(out,instruction->args,_calculate_max_output_size(instruction));
+}
+
+
+
 static void _generate_multiply(compiler_state_t* state,const register_state_t* a,const register_state_t* b,const register_state_t* out){
 	glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_MUL,3);
 	_generate_instruction_arg(a,instruction->args+1,4);
@@ -437,6 +446,13 @@ _continue_const:
 		case GLSL_AST_NODE_OPERATOR_TYPE_ADD_VEC4_VEC4:
 			_generate_add(state,regs,regs+1,output_register);
 			break;
+		case GLSL_AST_NODE_OPERATOR_TYPE_DIVIDE_VEC4_FLOAT:
+			{
+				(regs+1)->pattern_length=4;
+				(regs+1)->pattern=((regs+1)->pattern&3)*0b01010101;
+				_generate_divide(state,regs,regs+1,output_register);
+				break;
+			}
 		case GLSL_AST_NODE_OPERATOR_TYPE_MULTIPLY_FLOAT_FLOAT:
 		case GLSL_AST_NODE_OPERATOR_TYPE_MULTIPLY_VEC2_VEC2:
 		case GLSL_AST_NODE_OPERATOR_TYPE_MULTIPLY_VEC3_VEC3:

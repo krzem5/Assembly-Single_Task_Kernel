@@ -24,6 +24,7 @@ static const char* _vertex_shader=" \
  \n\
  \n\
 layout (location=0) in vec2 in_pos; \n\
+layout (location=1) in vec3 in_color; \n\
 uniform vec4 vs_color; \n\
 uniform mat3x3 vs_transform; \n\
 out vec4 fs_color; \n\
@@ -33,7 +34,7 @@ out vec4 fs_color; \n\
 void main(void){ \n\
 	vec3 local=vs_transform*vec3(in_pos,1.0); \n\
 	gl_Position=vec4(local.xy,0.0,1.0); \n\
-	fs_color=vs_color; \n\
+	fs_color=vs_color/2.0+vec4(in_color,1.0); \n\
 } \n\
 ";
 
@@ -199,12 +200,18 @@ int main(int argc,const char** argv){
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbo[1]);
-		float buffer[6]={0.0f,1.0f,-1.0f,-1.0f,1.0f,-1.0f};
+		float buffer[15]={
+			0.0f,1.0f,1.0f,0.0f,0.0f,
+			-1.0f,-1.0f,0.0f,1.0f,0.0f,
+			1.0f,-1.0f,0.0f,0.0f,1.0f
+		};
 		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_DYNAMIC_DRAW);
 		u32 indices[3]={0,1,2};
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices,GL_STATIC_DRAW);
-		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),NULL);
+		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,5*sizeof(float),NULL);
+		glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,5*sizeof(float),(void*)(2*sizeof(float)));
 		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
 		float start=sys_clock_get_time();
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);

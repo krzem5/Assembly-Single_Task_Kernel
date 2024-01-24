@@ -90,7 +90,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
 				storage="IN";
 				if (output->shader_type==GLSL_SHADER_TYPE_FRAGMENT){
-					suffix=", GENERIC";
+					suffix=", GENERIC, PERSPECTIVE";
 				}
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT:

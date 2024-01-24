@@ -66,6 +66,14 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT{
 
 
 
+typedef struct SYS_PACKED _OPENGL_PROTOCOL_VERTEX_BUFFER_CONFIG{
+	u64 driver_handle;
+	u32 offset;
+	u32 stride;
+} opengl_protocol_vertex_buffer_config_t;
+
+
+
 typedef struct SYS_PACKED _OPENGL_PROTOCOL_HEADER{
 	u32 _data[0];
 	u8 type;
@@ -153,14 +161,13 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_UPDATE_BUFFER{
 
 typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_BUFFERS{
 	opengl_protocol_header_t header;
-	u64 vertex_buffer_driver_handle;
-	u32 vertex_buffer_offset;
-	u32 vertex_buffer_stride;
 	u64 index_buffer_driver_handle;
 	u32 index_buffer_index_width;
 	u32 index_buffer_offset;
 	const void* uniform_buffer_data;
 	u32 uniform_buffer_size;
+	u32 vertex_buffer_count;
+	opengl_protocol_vertex_buffer_config_t vertex_buffers[32];
 } opengl_protocol_set_buffers_t;
 
 

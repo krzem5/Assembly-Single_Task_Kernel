@@ -892,32 +892,15 @@ static void _sync_state(void){
 _skip_vertex_array_sync:
 	opengl_protocol_set_buffers_t set_buffers_command={
 		.header.type=OPENGL_PROTOCOL_TYPE_SET_BUFFERS,
-		.header.length=sizeof(opengl_protocol_set_buffers_t),
-		.vertex_buffer_driver_handle=0,
-		.vertex_buffer_stride=0,
-		.vertex_buffer_offset=0,
 		.index_buffer_driver_handle=0,
 		.index_buffer_index_width=0,
 		.index_buffer_offset=0,
 		.uniform_buffer_data=NULL,
-		.uniform_buffer_size=0
+		.uniform_buffer_size=0,
+		.vertex_buffer_count=0,
+		.vertex_buffers[0]={0,0,0}
 	};
 	_Bool update_buffers=0;
-	if (_gl_internal_state->gl_bound_array_buffer!=_gl_internal_state->gl_used_array_buffer){
-		opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
-		if (array_buffer_state){
-			opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
-			if (!state){
-				goto _skip_array_buffers_sync;
-			}
-			set_buffers_command.vertex_buffer_stride=state->stride;
-		}
-		set_buffers_command.vertex_buffer_driver_handle=(array_buffer_state?array_buffer_state->driver_handle:0);
-		set_buffers_command.vertex_buffer_offset=0;
-		_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
-		update_buffers=1;
-_skip_array_buffers_sync:
-	}
 	if (_gl_internal_state->gl_bound_index_buffer!=_gl_internal_state->gl_used_index_buffer||_gl_internal_state->gl_bound_index_offset!=_gl_internal_state->gl_used_index_offset||_gl_internal_state->gl_bound_index_width!=_gl_internal_state->gl_used_index_width){
 		opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
 		set_buffers_command.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0);
@@ -935,7 +918,31 @@ _skip_array_buffers_sync:
 		_gl_internal_state->gl_constant_buffer_needs_update=0;
 		update_buffers=1;
 	}
+	if (_gl_internal_state->gl_bound_array_buffer!=_gl_internal_state->gl_used_array_buffer){
+		opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+		if (!state){
+			goto _skip_array_buffers_sync;
+		}
+		set_buffers_command.vertex_buffer_count=OPENGL_MAX_VERTEX_ATTRIBUTES;
+		for (u32 i=0;i<OPENGL_MAX_VERTEX_ATTRIBUTES;i++){
+			if (state->enabled_entry_mask&(1<<i)){
+				(set_buffers_command.vertex_buffers+i)->driver_handle=(array_buffer_state?array_buffer_state->driver_handle:0);
+				(set_buffers_command.vertex_buffers+i)->stride=state->stride;
+				(set_buffers_command.vertex_buffers+i)->offset=0;
+			}
+			else{
+				(set_buffers_command.vertex_buffers+i)->driver_handle=0;
+				(set_buffers_command.vertex_buffers+i)->stride=0;
+				(set_buffers_command.vertex_buffers+i)->offset=0;
+			}
+		}
+		_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
+		update_buffers=1;
+_skip_array_buffers_sync:
+	}
 	if (update_buffers){
+		set_buffers_command.header.length=sizeof(opengl_protocol_set_buffers_t)-(32-set_buffers_command.vertex_buffer_count)*sizeof(opengl_protocol_vertex_buffer_config_t);
 		opengl_command_buffer_push_single(&(set_buffers_command.header));
 	}
 	_gl_internal_state->gl_error=error;
