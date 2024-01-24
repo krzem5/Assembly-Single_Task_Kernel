@@ -36,6 +36,7 @@ typedef struct _GLSL_LINKER_PROGRAM{
 typedef struct _GLSL_LINKER_LINKED_PROGRAM{
 	u32 shader_bitmap;
 	u32 uniform_count;
+	u32 uniform_slot_count;
 	glsl_linker_linked_program_shader_t shaders[GLSL_SHADER_MAX_TYPE+1];
 	glsl_linker_linked_program_uniform_t* uniforms;
 } glsl_linker_linked_program_t;

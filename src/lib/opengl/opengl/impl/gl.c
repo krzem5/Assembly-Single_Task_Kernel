@@ -890,7 +890,7 @@ static void _sync_state(void){
 	}
 	state->needs_update=0;
 _skip_vertex_array_sync:
-	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_offset==_gl_internal_state->gl_used_index_offset&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width){
+	if (_gl_internal_state->gl_bound_array_buffer==_gl_internal_state->gl_used_array_buffer&&_gl_internal_state->gl_bound_index_buffer==_gl_internal_state->gl_used_index_buffer&&_gl_internal_state->gl_bound_index_offset==_gl_internal_state->gl_used_index_offset&&_gl_internal_state->gl_bound_index_width==_gl_internal_state->gl_used_index_width&&!_gl_internal_state->gl_constant_buffer_needs_update){
 		goto _skip_buffers_sync;
 	}
 	opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
@@ -903,6 +903,7 @@ _skip_vertex_array_sync:
 		}
 		stride=state->stride;
 	}
+	opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
 	opengl_protocol_set_buffers_t set_buffers_command={
 		.header.type=OPENGL_PROTOCOL_TYPE_SET_BUFFERS,
 		.header.length=sizeof(opengl_protocol_set_buffers_t),
@@ -911,13 +912,16 @@ _skip_vertex_array_sync:
 		.vertex_buffer_offset=0,
 		.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0),
 		.index_buffer_index_width=_gl_internal_state->gl_used_index_width,
-		.index_buffer_offset=_gl_internal_state->gl_used_index_offset
+		.index_buffer_offset=_gl_internal_state->gl_used_index_offset,
+		.uniform_buffer_data=(program_state?program_state->uniform_data_float:NULL),
+		.uniform_buffer_size=(program_state?program_state->uniform_data_size:0),
 	};
 	opengl_command_buffer_push_single(&(set_buffers_command.header));
 	_gl_internal_state->gl_bound_array_buffer=_gl_internal_state->gl_used_array_buffer;
 	_gl_internal_state->gl_bound_index_buffer=_gl_internal_state->gl_used_index_buffer;
 	_gl_internal_state->gl_bound_index_offset=_gl_internal_state->gl_used_index_offset;
 	_gl_internal_state->gl_bound_index_width=_gl_internal_state->gl_used_index_width;
+	_gl_internal_state->gl_constant_buffer_needs_update=0;
 _skip_buffers_sync:
 	_gl_internal_state->gl_error=error;
 }
@@ -1511,6 +1515,8 @@ SYS_PUBLIC GLuint glCreateProgram(void){
 	state->was_linkage_attempted=GL_FALSE;
 	state->error=GLSL_NO_ERROR;
 	state->driver_handle=0;
+	state->uniform_data_float=NULL;
+	state->uniform_data_size=0;
 	return state->header.index;
 }
 
@@ -2420,8 +2426,24 @@ SYS_PUBLIC void glGetUniformiv(GLuint program,GLint location,GLint* params){
 
 
 SYS_PUBLIC GLint glGetUniformLocation(GLuint program,const GLchar* name){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetUniformLocation\x1b[0m\n");
-	return 0;
+	if (!program){
+		_gl_internal_state->gl_used_program=0;
+		return 0;
+	}
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	if (!state){
+		return 0;
+	}
+	if (!state->was_linkage_attempted||state->error){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return 0;
+	}
+	for (u32 i=0;i<state->linked_program.uniform_count;i++){
+		if (!sys_string_compare((state->linked_program.uniforms+i)->name,name)){
+			return (state->linked_program.uniforms+i)->slot;
+		}
+	}
+	return -1;
 }
 
 
@@ -2583,6 +2605,11 @@ SYS_PUBLIC void glLinkProgram(GLuint program){
 		state->error=GLSL_NO_ERROR;
 	}
 	state->error=glsl_linker_program_link(&(state->linker_program),_gl_internal_state->glsl_backend_descriptor,&(state->linked_program));
+	if (state->error){
+		return;
+	}
+	state->uniform_data_size=state->linked_program.uniform_slot_count*4*sizeof(float);
+	state->uniform_data_float=sys_heap_alloc(NULL,state->uniform_data_size);
 }
 
 
@@ -3147,6 +3174,7 @@ SYS_PUBLIC GLboolean glUnmapBuffer(GLenum target){
 SYS_PUBLIC void glUseProgram(GLuint program){
 	if (!program){
 		_gl_internal_state->gl_used_program=0;
+		_gl_internal_state->gl_constant_buffer_needs_update=1;
 		return;
 	}
 	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
@@ -3164,7 +3192,7 @@ SYS_PUBLIC void glUseProgram(GLuint program){
 			.fragment_shader_data=(state->linked_program.shaders+GLSL_SHADER_TYPE_FRAGMENT)->data
 		};
 		const opengl_protocol_create_shader_t* output=(const opengl_protocol_create_shader_t*)opengl_command_buffer_push_single(&(command.header));
-		opengl_command_buffer_flush();
+		glFlush();
 		state->driver_handle=output->driver_handle;
 	}
 	_gl_internal_state->gl_used_program=state->header.index;
@@ -3174,6 +3202,7 @@ SYS_PUBLIC void glUseProgram(GLuint program){
 		.driver_handle=state->driver_handle
 	};
 	opengl_command_buffer_push_single(&(command.header));
+	_gl_internal_state->gl_constant_buffer_needs_update=1;
 }
 
 

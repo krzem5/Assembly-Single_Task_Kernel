@@ -115,6 +115,7 @@ static glsl_error_t _allocate_uniform_slots(glsl_linker_program_t* program,glsl_
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(gl_MaxVertexUniformComponents,&allocator);
 	_Bool has_slot=1;
+	linked_program->uniform_slot_count=0;
 _second_pass:
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){
 		if (!(program->shader_bitmap&(1<<i))){
@@ -147,6 +148,9 @@ _second_pass:
 				(linked_program->uniforms+linked_program->uniform_count-1)->name=sys_string_duplicate(var->name);
 				(linked_program->uniforms+linked_program->uniform_count-1)->slot=var->slot;
 				(linked_program->uniforms+linked_program->uniform_count-1)->slot_count=var->slot_count;
+				if (var->slot+var->slot_count>linked_program->uniform_slot_count){
+					linked_program->uniform_slot_count=var->slot+var->slot_count;
+				}
 _skip_slot_allocation:
 			}
 		}

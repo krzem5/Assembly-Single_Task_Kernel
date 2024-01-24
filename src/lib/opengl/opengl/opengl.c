@@ -62,6 +62,7 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	}
 	out->gl_clear_depth_value=0.0f;
 	out->gl_clear_stencil_value=0;
+	out->gl_constant_buffer_needs_update=0;
 	out->gl_primitive_restart_index=0;
 	out->gl_used_array_buffer=0;
 	out->gl_used_index_buffer=0;

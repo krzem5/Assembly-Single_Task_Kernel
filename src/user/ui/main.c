@@ -24,13 +24,14 @@ static const char* _vertex_shader=" \
  \n\
  \n\
 layout (location=0) in vec2 in_pos; \n\
+uniform vec4 vs_color; \n\
 out vec4 fs_color; \n\
  \n\
  \n\
  \n\
 void main(void){ \n\
 	gl_Position=vec4(in_pos,0.0,1.0); \n\
-	fs_color=vec4(0.95,0.95,0.95,1.0); \n\
+	fs_color=vec4(0.95,0.0,0.95,1.0)+vs_color; \n\
 } \n\
 ";
 
@@ -178,6 +179,8 @@ int main(int argc,const char** argv){
 				return 1;
 			}
 			glUseProgram(program);
+			glUniform4f(glGetUniformLocation(program,"vs_color"),0.0f,1.0f,0.0f,0.0f);
+			sys_io_print("uniform.vs_color=%u\n",glGetUniformLocation(program,"vs_color"));
 		}
 		u64 timer_interval=1000000000ull/data.mode.freq;
 		sys_timer_t timer=sys_timer_create(0,0);
@@ -217,6 +220,7 @@ int main(int argc,const char** argv){
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
 			sys_thread_await_events(&timer_event,1);
+			break;
 		}
 	}
 	return 0;

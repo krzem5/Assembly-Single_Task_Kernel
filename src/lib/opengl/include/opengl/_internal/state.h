@@ -60,6 +60,11 @@ typedef struct _OPENGL_PROGRAM_STATE{
 	glsl_linker_linked_program_t linked_program;
 	glsl_error_t error;
 	u64 driver_handle;
+	union{
+		float* uniform_data_float;
+		u32* uniform_data_uint;
+	};
+	u32 uniform_data_size;
 } opengl_program_state_t;
 
 
@@ -137,6 +142,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLfloat gl_clear_color_value[4];
 	GLdouble gl_clear_depth_value;
 	GLint gl_clear_stencil_value;
+	_Bool gl_constant_buffer_needs_update;
 	GLuint gl_primitive_restart_index;
 	GLuint gl_used_array_buffer;
 	GLuint gl_used_index_buffer;

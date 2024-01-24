@@ -173,6 +173,8 @@ typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_SET_BUFFERS{
 	u64 index_buffer_driver_handle;
 	u32 index_buffer_index_width;
 	u32 index_buffer_offset;
+	const void* uniform_buffer_data;
+	u32 uniform_buffer_size;
 } opengl_protocol_set_buffers_t;
 
 

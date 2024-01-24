@@ -87,8 +87,10 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
 	}
-	memcpy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
-	ctx->command_buffer.size+=command_size;
+	if (command){
+		memcpy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
+		ctx->command_buffer.size+=command_size;
+	}
 	if (flush&&ctx->command_buffer.size){
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
@@ -474,6 +476,7 @@ _skip_update_vertex_array_command:
 				virgl_opengl_buffer_t* buffer=omm_alloc(_virgl_opengl_buffer_allocator);
 				handle_new(buffer,_virgl_opengl_buffer_handle_type,&(buffer->handle));
 				buffer->resource_handle=resource_alloc(state_ctx->resource_manager);
+				buffer->storage_type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_DYNAMIC;
 				buffer->address=0;
 				buffer->size=0;
 				handle_finish_setup(&(buffer->handle));
@@ -504,7 +507,7 @@ _skip_update_vertex_array_command:
 					virtio_gpu_command_resource_unref(ctx->gpu_device,buffer->resource_handle);
 				}
 				if (size){
-					buffer->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,buffer->resource_handle,VIRGL_TARGET_BUFFER,VIRGL_FORMAT_R8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER,size,1,1,1,0,0);
+					buffer->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,buffer->resource_handle,VIRGL_TARGET_BUFFER,VIRGL_FORMAT_R8_UNORM,VIRGL_PROTOCOL_BIND_FLAG_VERTEX_BUFFER/*|VIRGL_PROTOCOL_BIND_FLAG_INDEX_BUFFER*/,size,1,1,1,0,0);
 					virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,buffer->resource_handle);
 				}
 				buffer->size=size;
@@ -521,6 +524,7 @@ _skip_buffer_resize:
 			}
 			// Verify user pointers!
 			if (size<MAX_INLINE_WRITE_SIZE){
+				WARN("Write: %u",size);
 				u32 virgl_resource_inline_write_command[12+MAX_INLINE_WRITE_SIZE/sizeof(u32)]={
 					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
 					buffer->resource_handle,
@@ -587,7 +591,7 @@ _skip_update_buffer_command:
 					buffer->resource_handle
 				};
 				_command_buffer_extend(instance->ctx,virgl_set_vertex_buffers_command,4,0);
-				handle_release(handle);;
+				handle_release(handle);
 			}
 _skip_set_vertex_buffer:
 			if (command->index_buffer_driver_handle){
@@ -607,6 +611,20 @@ _skip_set_vertex_buffer:
 				handle_release(handle);
 			}
 _skip_set_index_buffer:
+			if (command->uniform_buffer_data){
+				u32 virgl_set_constant_buffer_command_header[3]={
+					VIRGL_PROTOCOL_COMMAND_SET_CONSTANT_BUFFER(command->uniform_buffer_size),
+					VIRGL_SHADER_VERTEX,
+					0
+				};
+				_command_buffer_extend(instance->ctx,NULL,3+(command->uniform_buffer_size+sizeof(u32)-1)/sizeof(u32),0);
+				_command_buffer_extend(instance->ctx,virgl_set_constant_buffer_command_header,3,0);
+				_command_buffer_extend(instance->ctx,command->uniform_buffer_data,(command->uniform_buffer_size+sizeof(u32)-1)/sizeof(u32),0);
+				virgl_set_constant_buffer_command_header[1]=VIRGL_SHADER_FRAGMENT;
+				_command_buffer_extend(instance->ctx,NULL,3+(command->uniform_buffer_size+sizeof(u32)-1)/sizeof(u32),0);
+				_command_buffer_extend(instance->ctx,virgl_set_constant_buffer_command_header,3,0);
+				_command_buffer_extend(instance->ctx,command->uniform_buffer_data,(command->uniform_buffer_size+sizeof(u32)-1)/sizeof(u32),0);
+			}
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_FLUSH){
 			_command_buffer_extend(instance->ctx,NULL,0,1);
