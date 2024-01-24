@@ -28,6 +28,9 @@ typedef struct _VIRTIO_DEVICE{
 	virtio_device_type_t type;
 	u16 index;
 	_Bool is_legacy;
+	_Bool events_negotiated;
+	u8 irq;
+	u16 queue_msix_vector;
 	spinlock_t lock;
 	virtio_field_t common_field;
 	virtio_field_t notify_field;
@@ -47,7 +50,9 @@ typedef struct _VIRTIO_QUEUE{
 	u16 last_used_index;
 	virtio_queue_descriptor_t* descriptors;
 	virtio_queue_available_t* available;
+	virtio_queue_event_t* available_used_event;
 	virtio_queue_used_t* used;
+	virtio_queue_event_t* used_available_event;
 } virtio_queue_t;
 
 

@@ -159,9 +159,8 @@ static void _i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_TDH]=0;
 	i82540_device->mmio[REG_TDT]=1;
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
-	i82540_device->pci_irq=device->interrupt_line;
 	i82540_device->irq=isr_allocate();
-	ioapic_redirect_irq(i82540_device->pci_irq,i82540_device->irq);
+	ioapic_redirect_irq(device->interrupt_line,i82540_device->irq);
 	i82540_device->mmio[REG_ITR]=0x0000;
 	i82540_device->mmio[REG_IMS]=0x0084;
 	(void)i82540_device->mmio[REG_ICR];

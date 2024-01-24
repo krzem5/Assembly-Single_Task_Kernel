@@ -44,8 +44,8 @@
 #define VIRTIO_DEVICE_STATUS_FLAG_FAILED 0x80
 
 // Features
-#define VIRTIO_F_RING_INDIRECT_DESC 28
-#define VIRTIO_F_RING_EVENT_IDX 29
+#define VIRTIO_F_INDIRECT_DESC 28
+#define VIRTIO_F_EVENT_IDX 29
 #define VIRTIO_F_VERSION_1 32
 
 // Descriptor flags
@@ -86,6 +86,12 @@ typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_USED{
 	u16 index;
 	virtio_queue_used_entry_t ring[];
 } virtio_queue_used_t;
+
+
+
+typedef volatile struct KERNEL_PACKED _VIRTIO_QUEUE_EVENT{
+	u16 index;
+} virtio_queue_event_t;
 
 
 

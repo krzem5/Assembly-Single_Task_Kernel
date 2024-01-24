@@ -14,7 +14,6 @@ typedef struct _I82540_DEVICE{
 	volatile u32* mmio;
 	u64 rx_desc_base;
 	u64 tx_desc_base;
-	u8 pci_irq;
 	u8 irq;
 } i82540_device_t;
 

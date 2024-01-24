@@ -1,5 +1,5 @@
-#include <kernel/apic/ioapic.h>
 #include <kernel/handle/handle.h>
+#include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -25,7 +25,6 @@ static rb_tree_t _virtio_device_driver_tree;
 static spinlock_t _virtio_device_driver_tree_lock;
 static omm_allocator_t* _virtio_queue_allocator=NULL;
 static pmm_counter_descriptor_t* _virtio_queue_pmm_counter=NULL;
-
 static handle_type_t _virtio_device_handle_type=0;
 
 
@@ -39,6 +38,28 @@ static void _virtio_init_device(pci_device_t* device){
 	pci_device_enable_memory_access(device);
 	virtio_device_t* virtio_device=omm_alloc(_virtio_device_allocator);
 	u32 found_structures=0;
+	u8 msix_offset=pci_device_get_cap(device,PCI_CAP_ID_MSIX,0);
+	if (msix_offset){
+		u32 table_offset_and_bar=pci_device_read_data(device,msix_offset+4);
+		pci_bar_t pci_bar;
+		if (pci_device_get_bar(device,table_offset_and_bar&7,&pci_bar)){
+			u32 message_control=pci_device_read_data(device,msix_offset);
+			pci_device_write_data(device,msix_offset,message_control|0x80000000);
+			typedef struct _MSIX_TABLE_ENTRY{
+				u64 msg_address;
+				u32 msg_data;
+				u32 control;
+			} msix_table_entry_t;
+			u16 table_size=((message_control>>16)&0x7ff)+1;
+			msix_table_entry_t* table=(void*)(vmm_identity_map(pci_bar.address,pci_bar.size)+(table_offset_and_bar&0xfffffff8));
+			virtio_device->irq=isr_allocate();
+			virtio_device->queue_msix_vector=0;
+			(table+virtio_device->queue_msix_vector)->msg_address=0xfee00000;
+			(table+virtio_device->queue_msix_vector)->msg_data=virtio_device->irq|(1<<14);
+			(table+virtio_device->queue_msix_vector)->control&=~1;
+			(void)table_size;
+		}
+	}
 	for (u8 offset=pci_device_get_cap(device,PCI_CAP_ID_VENDOR,0);offset;offset=pci_device_get_cap(device,PCI_CAP_ID_VENDOR,offset)){
 		u8 type=pci_device_read_data(device,offset)>>24;
 		u8 bar=pci_device_read_data(device,offset+4)&0xff;
@@ -119,12 +140,13 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 		virtio_write(device->common_field+VIRTIO_REG_DEVICE_FEATURE_SELECT,4,1);
 		features|=virtio_read(device->common_field+VIRTIO_REG_DEVICE_FEATURE,4)<<32;
 		INFO("Device features: %p",features);
-		INFO("Driver features: %p",driver->features);
-		features&=driver->features;
+		INFO("Driver features: %p",driver->features|(1<<VIRTIO_F_EVENT_IDX));
+		features&=driver->features|(1<<VIRTIO_F_EVENT_IDX);
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE_SELECT,4,0);
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE,4,features);
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE_SELECT,4,1);
 		virtio_write(device->common_field+VIRTIO_REG_DRIVER_FEATURE,4,features>>32);
+		virtio_write(device->common_field+VIRTIO_REG_MSIX_CONFIG,2,0xffff);
 		virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
 		if (!(virtio_read(device->common_field+VIRTIO_REG_DEVICE_STATUS,1)&VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK)){
 			ERROR("Failed to negotiate VirtIO device features");
@@ -132,7 +154,8 @@ KERNEL_PUBLIC _Bool virtio_register_device_driver(const virtio_device_driver_t* 
 			continue;
 		}
 		LOG("Negotiated device features: %p",features);
-		if (!driver->init(device,features)){
+		device->events_negotiated=!!(features&(1<<VIRTIO_F_EVENT_IDX));
+		if (!driver->init(device,features&(~(1<<VIRTIO_F_EVENT_IDX)))){
 			virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_FAILED);
 		}
 	}
@@ -237,9 +260,11 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 		ERROR("virtio_init_queue: queue already initialized");
 		return NULL;
 	}
-	u64 queue_descriptors=pmm_alloc((pmm_align_up_address(size*sizeof(virtio_queue_descriptor_t)+sizeof(virtio_queue_available_t)+size*sizeof(u16))+pmm_align_up_address(sizeof(virtio_queue_used_t)+size*sizeof(virtio_queue_used_entry_t)))>>PAGE_SIZE_SHIFT,_virtio_queue_pmm_counter,0);
+	u64 queue_descriptors=pmm_alloc((pmm_align_up_address(size*sizeof(virtio_queue_descriptor_t)+sizeof(virtio_queue_available_t)+size*sizeof(u16)+sizeof(virtio_queue_event_t))+pmm_align_up_address(sizeof(virtio_queue_used_t)+size*sizeof(virtio_queue_used_entry_t)+sizeof(virtio_queue_event_t)))>>PAGE_SIZE_SHIFT,_virtio_queue_pmm_counter,0);
 	u64 queue_available=queue_descriptors+size*sizeof(virtio_queue_descriptor_t);
-	u64 queue_used=queue_available+sizeof(virtio_queue_available_t)+size*sizeof(u16);
+	u64 queue_available_used_event=queue_available+sizeof(virtio_queue_available_t)+size*sizeof(u16);
+	u64 queue_used=queue_descriptors+pmm_align_up_address(size*sizeof(virtio_queue_descriptor_t)+sizeof(virtio_queue_available_t)+size*sizeof(u16)+sizeof(virtio_queue_event_t));
+	u64 queue_used_available_event=queue_used+sizeof(virtio_queue_used_t)+size*sizeof(virtio_queue_used_entry_t);
 	virtio_queue_t* out=omm_alloc(_virtio_queue_allocator);
 	out->device=device;
 	out->index=index;
@@ -249,11 +274,16 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 	out->last_used_index=0;
 	out->descriptors=(void*)(queue_descriptors+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->available=(void*)(queue_available+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->available_used_event=(void*)(queue_available_used_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used=(void*)(queue_used+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->used_available_event=(void*)(queue_used_available_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u16 i=0;i<size-1;i++){ // last entry is zero-initialized by pmm_alloc
 		(out->descriptors+i)->next=i+1;
 	}
-	out->available->flags=VIRTQ_AVAIL_F_NO_INTERRUPT;
+	if (!device->events_negotiated){
+		out->available->flags=VIRTQ_AVAIL_F_NO_INTERRUPT;
+	}
+	virtio_write(device->common_field+VIRTIO_REG_QUEUE_MSIX_VECTOR,2,device->queue_msix_vector);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DESC_LO,4,queue_descriptors);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DESC_HI,4,queue_descriptors>>32);
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_DRIVER_LO,4,queue_available);
@@ -282,13 +312,16 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 	queue->available->ring[available_index%queue->size]=queue->first_free_index;
 	queue->available->index++;
 	queue->first_free_index=i;
+	queue->available_used_event->index=queue->last_used_index;
 	virtio_write(queue->device->notify_field+queue->notify_offset*queue->device->notify_off_multiplier,2,queue->index);
 }
 
 
 
 KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
-	SPINLOOP(queue->last_used_index==queue->used->index);
+	while (queue->last_used_index==queue->used->index){
+		event_await(IRQ_EVENT(queue->device->irq));
+	}
 }
 
 
@@ -301,7 +334,6 @@ KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
 	}
 	u32 out=(queue->used->ring+i)->index;
 	(void)((queue->used->ring+i)->length);
-	virtio_read(queue->device->isr_field,1);
 	return out;
 }
 
