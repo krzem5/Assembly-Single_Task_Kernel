@@ -17,6 +17,8 @@
 
 
 
+#define MAX_INLINE_WRITE_SIZE 256 // must be a multiple of 4
+
 #define DEBUG_NAME "virgl_virtio_gpu_opengl_context"
 #define CONTEXT_ID 0x00000001
 
@@ -396,7 +398,7 @@ _skip_use_shader:
 				command->count-command->first,
 				0,
 			};
-			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,0);
+			_command_buffer_extend(instance->ctx,virgl_draw_vbo_command,13,1);
 _skip_draw_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY){
@@ -518,8 +520,25 @@ _skip_buffer_resize:
 				goto _update_buffer_cleanup;
 			}
 			// Verify user pointers!
-			// Use inline write when size is small (=> avoids sync)
-			_command_buffer_extend(instance->ctx,NULL,0,1); // flush previous draw commands
+			if (size<MAX_INLINE_WRITE_SIZE){
+				u32 virgl_resource_inline_write_command[12+MAX_INLINE_WRITE_SIZE/sizeof(u32)]={
+					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
+					buffer->resource_handle,
+					0,
+					VIRGL_TARGET_BUFFER,
+					0,
+					0,
+					command->offset,
+					0,
+					0,
+					size,
+					1,
+					1,
+				};
+				memcpy(virgl_resource_inline_write_command+12,command->data,size);
+				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+((size+3)>>2),0);
+				goto _update_buffer_cleanup;
+			}
 			if (!buffer->address){
 				buffer->address=pmm_alloc(pmm_align_up_address(size)>>PAGE_SIZE_SHIFT,_virgl_opengl_buffer_pmm_counter,0);
 				virtio_gpu_command_resource_attach_backing(ctx->gpu_device,buffer->resource_handle,buffer->address,buffer->size);
