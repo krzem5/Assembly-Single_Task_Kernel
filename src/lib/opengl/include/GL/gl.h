@@ -477,7 +477,7 @@ void glGetBufferParameteriv(GLenum target,GLenum pname,GLint* params);
 
 
 
-void glGetBufferPointerv(GLenum target,GLenum pname,void* *params);
+void glGetBufferPointerv(GLenum target,GLenum pname,void** params);
 
 
 
@@ -533,7 +533,7 @@ void glGetMultisamplefv(GLenum pname,GLuint index,GLfloat* val);
 
 
 
-void glGetPointerv(GLenum pname,void* *params);
+void glGetPointerv(GLenum pname,void** params);
 
 
 
@@ -685,7 +685,7 @@ void glGetVertexAttribiv(GLuint index,GLenum pname,GLint* params);
 
 
 
-void glGetVertexAttribPointerv(GLuint index,GLenum pname,void* *pointer);
+void glGetVertexAttribPointerv(GLuint index,GLenum pname,void** pointer);
 
 
 

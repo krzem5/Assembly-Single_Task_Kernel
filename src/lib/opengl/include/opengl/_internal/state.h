@@ -15,6 +15,7 @@
 #define OPENGL_HANDLE_TYPE_BUFFER 4
 
 #define OPENGL_MAX_VERTEX_ATTRIBUTES 16
+#define OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE (4*sizeof(double))
 
 #define OPENGL_BUFFER_STORAGE_TYPE_NONE 0
 #define OPENGL_BUFFER_STORAGE_TYPE_STREAM 1
@@ -95,8 +96,9 @@ typedef struct _OPENGL_VERTEX_ARRAY_STATE{
 	u16 enabled_entry_mask; // same number of bits as OPENGL_MAX_VERTEX_ATTRIBUTES
 	opengl_vertex_array_state_entry_t entries[OPENGL_MAX_VERTEX_ATTRIBUTES];
 	u64 driver_handle;
-	GLboolean needs_update;
 	GLuint stride;
+	GLboolean needs_update;
+	u64 const_vertex_buffer_driver_handle;
 } opengl_vertex_array_state_t;
 
 

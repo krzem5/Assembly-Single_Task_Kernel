@@ -822,8 +822,8 @@ static void _sync_state(void){
 		.driver_handle=state->driver_handle
 	};
 	state->stride=0;
-	for (u32 mask=state->enabled_entry_mask;mask;mask&=mask-1){
-		const opengl_vertex_array_state_entry_t* src_entry=state->entries+__builtin_ffs(mask)-1;
+	for (u32 i=0;i<OPENGL_MAX_VERTEX_ATTRIBUTES;i++){
+		const opengl_vertex_array_state_entry_t* src_entry=state->entries+i;
 		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+command.count;
 		dst_entry->index=src_entry-state->entries;
 		dst_entry->size=(src_entry->size==GL_BGRA?OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA:src_entry->size);
@@ -872,15 +872,20 @@ static void _sync_state(void){
 				width=4;
 				break;
 		}
-		dst_entry->require_normalization=src_entry->normalized;
-		dst_entry->stride=src_entry->stride;
-		dst_entry->divisor=src_entry->divisor;
+		if (state->enabled_entry_mask&(1<<i)){
+			dst_entry->stride=src_entry->stride;
+			dst_entry->divisor=src_entry->divisor;
+			if (src_entry->offset+width>state->stride){
+				state->stride=src_entry->offset+width;
+			}
+		}
+		else{
+			dst_entry->stride=0;
+			dst_entry->divisor=0;
+		}
 		dst_entry->offset=src_entry->offset;
 		dst_entry->require_normalization=src_entry->normalized;
 		command.count++;
-		if (src_entry->offset+width>state->stride){
-			state->stride=src_entry->offset+width;
-		}
 	}
 	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-command.count)*sizeof(opengl_protocol_vertex_array_element_t);
 	const opengl_protocol_update_vertex_array_t* output=(const opengl_protocol_update_vertex_array_t*)opengl_command_buffer_push_single(&(command.header));
@@ -932,7 +937,7 @@ _skip_vertex_array_sync:
 				(set_buffers_command.vertex_buffers+i)->offset=0;
 			}
 			else{
-				(set_buffers_command.vertex_buffers+i)->driver_handle=0;
+				(set_buffers_command.vertex_buffers+i)->driver_handle=state->const_vertex_buffer_driver_handle;
 				(set_buffers_command.vertex_buffers+i)->stride=0;
 				(set_buffers_command.vertex_buffers+i)->offset=0;
 			}
@@ -1027,11 +1032,7 @@ static void _process_draw_command(GLenum mode,GLint start,GLsizei count,_Bool in
 			return;
 	}
 	opengl_command_buffer_push_single(&(command.header));
-	opengl_protocol_header_t flush_command={
-		.type=OPENGL_PROTOCOL_TYPE_FLUSH,
-		.length=sizeof(opengl_protocol_header_t)
-	};
-	opengl_command_buffer_push_single(&flush_command);
+	glFlush();
 }
 
 
@@ -1089,7 +1090,7 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 		.data=data
 	};
 	const opengl_protocol_update_buffer_t* output=(const opengl_protocol_update_buffer_t*)opengl_command_buffer_push_single(&(command.header));
-	opengl_command_buffer_flush();
+	glFlush();
 	state->driver_handle=output->driver_handle;
 }
 
@@ -1118,9 +1119,36 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 
 
 
-static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){
-	glVertexAttribPointer(index,size,type,normalized,0,(void*)(u64)(index*32));
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _set_vertex_attrib\x1b[0m\n");
+static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	if (!state){
+		return;
+	}
+	if (!state->const_vertex_buffer_driver_handle){
+		opengl_protocol_update_buffer_t command={
+			.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER,
+			.header.length=sizeof(opengl_protocol_update_buffer_t),
+			.storage_type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_STATIC,
+			.driver_handle=0,
+			.offset=0,
+			.size=OPENGL_MAX_VERTEX_ATTRIBUTES*OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE,
+			.data=NULL
+		};
+		const opengl_protocol_update_buffer_t* output=(const opengl_protocol_update_buffer_t*)opengl_command_buffer_push_single(&(command.header));
+		glFlush();
+		state->const_vertex_buffer_driver_handle=output->driver_handle;
+	}
+	opengl_protocol_update_buffer_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER,
+		.header.length=sizeof(opengl_protocol_update_buffer_t),
+		.storage_type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_NO_CHANGE,
+		.driver_handle=state->const_vertex_buffer_driver_handle,
+		.offset=index*OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE,
+		.size=data_size,
+		.data=data
+	};
+	opengl_command_buffer_push_single(&(command.header));
+	opengl_command_buffer_flush();
+	glVertexAttribPointer(index,size,type,normalized,0,(void*)(u64)(index*OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE));
 }
 
 
@@ -1977,7 +2005,9 @@ SYS_PUBLIC void glGenVertexArrays(GLsizei n,GLuint* arrays){
 			(state->entries+j)->offset=0;
 		}
 		state->driver_handle=0;
+		state->stride=0;
 		state->needs_update=GL_FALSE;
+		state->const_vertex_buffer_driver_handle=0;
 		arrays[i]=state->header.index;
 	}
 }
@@ -2057,7 +2087,7 @@ SYS_PUBLIC void glGetBufferParameteriv(GLenum target,GLenum pname,GLint* params)
 
 
 
-SYS_PUBLIC void glGetBufferPointerv(GLenum target,GLenum pname,void* *params){
+SYS_PUBLIC void glGetBufferPointerv(GLenum target,GLenum pname,void** params){
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetBufferPointerv\x1b[0m\n");
 }
 
@@ -2145,7 +2175,7 @@ SYS_PUBLIC void glGetMultisamplefv(GLenum pname,GLuint index,GLfloat* val){
 
 
 
-SYS_PUBLIC void glGetPointerv(GLenum pname,void* *params){
+SYS_PUBLIC void glGetPointerv(GLenum pname,void** params){
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetPointerv\x1b[0m\n");
 }
 
@@ -2536,7 +2566,7 @@ SYS_PUBLIC void glGetVertexAttribiv(GLuint index,GLenum pname,GLint* params){
 
 
 
-SYS_PUBLIC void glGetVertexAttribPointerv(GLuint index,GLenum pname,void* *pointer){
+SYS_PUBLIC void glGetVertexAttribPointerv(GLuint index,GLenum pname,void** pointer){
 	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetVertexAttribPointerv\x1b[0m\n");
 }
 

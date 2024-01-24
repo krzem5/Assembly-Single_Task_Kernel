@@ -211,7 +211,8 @@ int main(int argc,const char** argv){
 		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,5*sizeof(float),NULL);
 		glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,5*sizeof(float),(void*)(2*sizeof(float)));
 		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
+		// glEnableVertexAttribArray(1);
+		glVertexAttrib4f(1,1.0f,0.0f,0.2f,1.0f);
 		float start=sys_clock_get_time();
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);
