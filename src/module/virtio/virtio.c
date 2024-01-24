@@ -4,6 +4,8 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
 #include <kernel/tree/rb_tree.h>
@@ -27,6 +29,17 @@ static spinlock_t _virtio_device_driver_tree_lock;
 static omm_allocator_t* _virtio_queue_allocator=NULL;
 static pmm_counter_descriptor_t* _virtio_queue_pmm_counter=NULL;
 static handle_type_t _virtio_device_handle_type=0;
+
+
+
+static void _virtio_persistent_irq_thread(virtio_device_t* device){
+	while (1){
+		event_await(IRQ_EVENT(device->irq));
+		for (virtio_queue_t* queue=device->queues;queue;queue=queue->next){
+			event_dispatch(queue->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		}
+	}
+}
 
 
 
@@ -71,6 +84,7 @@ static void _virtio_init_device(pci_device_t* device){
 	handle_new(virtio_device,_virtio_device_handle_type,&(virtio_device->handle));
 	virtio_device->type=device->device_id-(device->device_id>=0x1040?0x1040:0x1000);
 	virtio_device->index=_virtio_device_next_index;
+	virtio_device->queues=NULL;
 	_virtio_device_next_index++;
 	spinlock_init(&(virtio_device->lock));
 	if (found_structures!=(((1<<(VIRTIO_PCI_CAP_MAX-VIRTIO_PCI_CAP_MIN+1))-1)<<VIRTIO_PCI_CAP_MIN)){
@@ -95,6 +109,7 @@ static void _virtio_init_device(pci_device_t* device){
 		if (!pci_msix_redirect_entry(&msix_table,virtio_device->queue_msix_vector,virtio_device->irq)){
 			panic("Unable to initialize VirtIO device MSI-x vector");
 		}
+		thread_create_kernel_thread(NULL,"virtio-persistent-irq-thread",_virtio_persistent_irq_thread,0x200000,1,virtio_device);
 	}
 	handle_finish_setup(&(virtio_device->handle));
 }
@@ -228,7 +243,7 @@ KERNEL_PUBLIC void virtio_write(virtio_field_t field,u8 size,u32 value){
 
 
 
-KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u16 index){
+KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(virtio_device_t* device,u16 index){
 	virtio_write(device->common_field+VIRTIO_REG_QUEUE_SELECT,2,index);
 	u16 size=virtio_read(device->common_field+VIRTIO_REG_QUEUE_SIZE,2);
 	if (size>MAX_QUEUE_SIZE){
@@ -253,6 +268,8 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 	u64 queue_used=queue_descriptors+pmm_align_up_address(size*sizeof(virtio_queue_descriptor_t)+sizeof(virtio_queue_available_t)+size*sizeof(u16)+sizeof(virtio_queue_event_t));
 	u64 queue_used_available_event=queue_used+sizeof(virtio_queue_used_t)+size*sizeof(virtio_queue_used_entry_t);
 	virtio_queue_t* out=omm_alloc(_virtio_queue_allocator);
+	out->next=device->queues;
+	device->queues=out;
 	out->device=device;
 	out->index=index;
 	out->size=size;
@@ -264,6 +281,7 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u1
 	out->available_used_event=(void*)(queue_available_used_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used=(void*)(queue_used+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used_available_event=(void*)(queue_used_available_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	out->event=event_create();
 	for (u16 i=0;i<size-1;i++){ // last entry is zero-initialized by pmm_alloc
 		(out->descriptors+i)->next=i+1;
 	}
@@ -307,7 +325,8 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 
 KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 	while (queue->last_used_index==queue->used->index){
-		event_await(IRQ_EVENT(queue->device->irq));
+		event_await(queue->event);
+		event_set_active(queue->event,0,1);
 	}
 }
 

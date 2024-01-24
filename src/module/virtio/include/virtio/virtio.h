@@ -2,6 +2,7 @@
 #define _VIRTIO_VIRTIO_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
+#include <kernel/mp/event.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <virtio/registers.h>
@@ -37,11 +38,13 @@ typedef struct _VIRTIO_DEVICE{
 	virtio_field_t isr_field;
 	virtio_field_t device_field;
 	u32 notify_off_multiplier;
+	struct _VIRTIO_QUEUE* queues;
 } virtio_device_t;
 
 
 
 typedef struct _VIRTIO_QUEUE{
+	struct _VIRTIO_QUEUE* next;
 	const virtio_device_t* device;
 	u16 index;
 	u16 size;
@@ -53,6 +56,7 @@ typedef struct _VIRTIO_QUEUE{
 	virtio_queue_event_t* available_used_event;
 	virtio_queue_used_t* used;
 	virtio_queue_event_t* used_available_event;
+	event_t* event;
 } virtio_queue_t;
 
 
@@ -90,7 +94,7 @@ void virtio_write(virtio_field_t field,u8 size,u32 value);
 
 
 
-virtio_queue_t* virtio_init_queue(const virtio_device_t* device,u16 index);
+virtio_queue_t* virtio_init_queue(virtio_device_t* device,u16 index);
 
 
 
