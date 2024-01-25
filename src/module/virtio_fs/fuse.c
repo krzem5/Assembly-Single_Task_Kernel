@@ -16,6 +16,10 @@
 
 
 
+#define FUSE_NODE_NAME_VALID_NS 1000000000
+
+
+
 typedef struct _FUSE_VFS_NODE{
 	vfs_node_t header;
 	fuse_node_id_t node_id;
@@ -88,9 +92,18 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 		}
 		amm_dealloc(fuse_getattr_out);
 	}
-	if (clock_get_time()>=fuse_node->name_valid_end_time&&!(fuse_node->header.flags&VFS_NODE_FLAG_PERMANENT)){
-		// WARN("Invalidate node name");
-		vfs_node_dettach_child(&(fuse_node->header));
+	if (clock_get_time()>=fuse_node->name_valid_end_time&&!(fuse_node->header.flags&VFS_NODE_FLAG_PERMANENT)&&fuse_node->header.relatives.parent){
+		fuse_vfs_node_t* parent_fuse_node=(fuse_vfs_node_t*)(fuse_node->header.relatives.parent);
+		fuse_lookup_out_t* fuse_lookup_out=virtio_fs_fuse_lookup(fuse_node->header.fs->extra_data,parent_fuse_node->node_id,fuse_node->header.name->data,fuse_node->header.name->length+1);
+		if (fuse_lookup_out->header.error){
+			vfs_node_dettach_child(&(fuse_node->header));
+			fuse_node->name_valid_end_time=0xffffffffffffffffull;
+		}
+		else{
+			fuse_node->name_valid_end_time=clock_get_time()+fuse_lookup_out->entry_valid*1000000000ull+fuse_lookup_out->entry_valid_nsec;
+		}
+		WARN("Invalidate node name => %p",fuse_node->name_valid_end_time);
+		amm_dealloc(fuse_lookup_out);
 	}
 }
 
@@ -137,6 +150,7 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 		return NULL;
 	}
 	vfs_node_t* out=_open_node(node->fs,fuse_lookup_out->nodeid,name);
+	((fuse_vfs_node_t*)out)->name_valid_end_time=clock_get_time()+fuse_lookup_out->entry_valid*1000000000ull+fuse_lookup_out->entry_valid_nsec;
 	amm_dealloc(fuse_lookup_out);
 	return out;
 }
