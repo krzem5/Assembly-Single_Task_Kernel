@@ -102,7 +102,6 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 		else{
 			fuse_node->name_valid_end_time=clock_get_time()+fuse_lookup_out->entry_valid*1000000000ull+fuse_lookup_out->entry_valid_nsec;
 		}
-		WARN("Invalidate node name => %p",fuse_node->name_valid_end_time);
 		amm_dealloc(fuse_lookup_out);
 	}
 }
