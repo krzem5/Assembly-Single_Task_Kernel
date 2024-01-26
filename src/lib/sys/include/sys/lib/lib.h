@@ -37,4 +37,12 @@ u64 sys_lib_lookup_symbol(sys_library_t library,const char* name);
 
 
 
+const char* sys_lib_get_search_path(void);
+
+
+
+void sys_lib_set_search_path(const char* path);
+
+
+
 #endif

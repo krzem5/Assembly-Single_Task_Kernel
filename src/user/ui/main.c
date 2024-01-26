@@ -145,7 +145,7 @@ int main(int argc,const char** argv){
 			glCompileShader(vertex_shader);
 			GLint compilation_status;
 			glGetShaderiv(vertex_shader,GL_COMPILE_STATUS,&compilation_status);
-			if (compilation_status!=GL_TRUE){
+			if (!compilation_status){
 				GLsizei length;
 				glGetShaderiv(vertex_shader,GL_INFO_LOG_LENGTH,&length);
 				char* buffer=sys_heap_alloc(NULL,length);
@@ -158,7 +158,7 @@ int main(int argc,const char** argv){
 			glShaderSource(fragment_shader,1,&_fragment_shader,NULL);
 			glCompileShader(fragment_shader);
 			glGetShaderiv(fragment_shader,GL_COMPILE_STATUS,&compilation_status);
-			if (compilation_status!=GL_TRUE){
+			if (!compilation_status){
 				GLsizei length;
 				glGetShaderiv(fragment_shader,GL_INFO_LOG_LENGTH,&length);
 				char* buffer=sys_heap_alloc(NULL,length);
@@ -173,7 +173,7 @@ int main(int argc,const char** argv){
 			glLinkProgram(program);
 			GLint link_status;
 			glGetProgramiv(program,GL_LINK_STATUS,&link_status);
-			if (link_status!=GL_TRUE){
+			if (!link_status){
 				GLsizei length;
 				glGetProgramiv(program,GL_INFO_LOG_LENGTH,&length);
 				char* buffer=sys_heap_alloc(NULL,length);

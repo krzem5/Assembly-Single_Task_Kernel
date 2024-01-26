@@ -1,10 +1,10 @@
 #include <kernel/module/module.h>
-#include <lockfs/fs.h>
+#include <lockinfo/syscall.h>
 
 
 
 static _Bool _init(module_t* module){
-	return lockfs_create_fs();
+	return lockinfo_syscall_init();
 }
 
 

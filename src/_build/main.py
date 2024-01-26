@@ -13,7 +13,7 @@ import time
 
 
 BYPASS_KVM_LOCK=True
-NO_DISPLAY=False
+NO_DISPLAY=True
 NO_FILE_SERVER=False
 COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_NONE
 
@@ -172,6 +172,7 @@ MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 MODULE_ORDER_FILE_PATH="src/module/module_order.config"
+FS_LIST_FILE_PATH="src/module/fs_list.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 INITRAMFS_SIZE=512
@@ -395,10 +396,26 @@ def _compile_module(module,dependencies):
 
 
 def _compile_library(library,flags,dependencies):
+	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
+		for file_name in files:
+			if (not os.path.exists(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")):
+				os.mkdir(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")
+				os.mkdir(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include")
+			name=os.path.join(root,file_name).replace("/","_").replace(".","_")
+			with open(os.path.join(root,file_name),"rb") as rf,open(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include/{name}.h","w") as wf:
+				wf.write(f"#include <sys/types.h>\n\n\n\nstatic const u8 {name}[]={{")
+				size=0
+				while (True):
+					line=rf.read(16)
+					if (not line):
+						break
+					size+=len(line)
+					wf.write("\n\t"+"".join([f"0x{e:02x}," for e in line]))
+				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
 	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library,*[LIBRARY_FILE_DIRECTORY+"/"+dep.split('@')[0] for dep in dependencies])
 	object_files=[]
-	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
+	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
 	error=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
@@ -648,20 +665,20 @@ with open("src/user/dependencies.txt","r") as rf:
 		name,dependencies=line.split(":")
 		_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
 #####################################################################################################################################
+for library in os.listdir("build/lib"):
+	if (not library.endswith(".so")):
+		continue
+	with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
+		wf.write(rf.read())
+	os.chmod(f"build/share/lib/{library}",0o775)
+if (os.path.islink("build/share/lib/ld.so")):
+	os.unlink("build/share/lib/ld.so")
+os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
+for program in os.listdir("build/user"):
+	with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
+		wf.write(rf.read())
+	os.chmod(f"build/share/bin/{program}",0o775)
 if ("--share" in sys.argv):
-	for library in os.listdir("build/lib"):
-		if (not library.endswith(".so")):
-			continue
-		with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
-			wf.write(rf.read())
-		os.chmod(f"build/share/lib/{library}",0o775)
-	if (os.path.islink("build/share/lib/ld.so")):
-		os.unlink("build/share/lib/ld.so")
-	os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
-	for program in os.listdir("build/user"):
-		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
-			wf.write(rf.read())
-		os.chmod(f"build/share/bin/{program}",0o775)
 	sys.exit(0)
 if (not os.path.exists("build/install_disk.img")):
 	rebuild_uefi_partition=True
@@ -683,6 +700,7 @@ if (rebuild_data_partition):
 	for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
 		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 	_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
+	_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
 	initramfs.create("build/initramfs","build/partitions/initramfs.img")
 	_compress("build/partitions/initramfs.img")
 	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
@@ -712,6 +730,8 @@ if (rebuild_data_partition):
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
 	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
+	with open(FS_LIST_FILE_PATH,"rb") as rf:
+		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/fs_list.config",0o600),rf.read())
 	for module in os.listdir("build/module"):
 		with open(f"build/module/{module}","rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o400),rf.read())

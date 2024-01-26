@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
@@ -288,6 +289,10 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_CREATE_SHADER){
 			opengl_protocol_create_shader_t* command=(void*)header;
+			if (syscall_get_user_pointer_max_length(command->vertex_shader_data)<command->vertex_shader_size||syscall_get_user_pointer_max_length(command->fragment_shader_data)<command->fragment_shader_size){
+				ERROR("_process_commands: invalid user pointers");
+				goto _skip_create_shader_command;
+			}
 			virgl_opengl_shader_t* shader=omm_alloc(_virgl_opengl_shader_allocator);
 			handle_new(shader,_virgl_opengl_shader_handle_type,&(shader->handle));
 			shader->vertex_shader=resource_alloc(state_ctx->resource_manager);
@@ -300,7 +305,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->vertex_shader_size,
 				0
 			};
-			// Verify user pointers!
 			_command_buffer_extend(instance->ctx,virgl_create_vertex_shader_command,6,0);
 			_command_buffer_extend(instance->ctx,(const u32*)(command->vertex_shader_data),command->vertex_shader_size>>2,0);
 			u32 virgl_create_fragment_shader_command[6]={
@@ -311,11 +315,11 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				command->fragment_shader_size,
 				0
 			};
-			// Verify user pointers!
 			_command_buffer_extend(instance->ctx,virgl_create_fragment_shader_command,6,0);
 			_command_buffer_extend(instance->ctx,(const u32*)(command->fragment_shader_data),command->fragment_shader_size>>2,0);
 			handle_finish_setup(&(shader->handle));
 			command->driver_handle=shader->handle.rb_node.key;
+_skip_create_shader_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_USE_SHADER){
 			opengl_protocol_use_shader_t* command=(void*)header;
@@ -476,6 +480,10 @@ _skip_update_vertex_array_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER){
 			opengl_protocol_update_buffer_t* command=(void*)header;
+			if (command->data&&syscall_get_user_pointer_max_length(command->data)<command->size){
+				ERROR("_process_commands: invalid user pointer");
+				goto _skip_update_buffer_command;
+			}
 			if (!command->driver_handle){
 				virgl_opengl_buffer_t* buffer=omm_alloc(_virgl_opengl_buffer_allocator);
 				handle_new(buffer,_virgl_opengl_buffer_handle_type,&(buffer->handle));

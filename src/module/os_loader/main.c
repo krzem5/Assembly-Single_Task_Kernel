@@ -1,12 +1,8 @@
 #include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
-#include <kernel/fs/fs.h>
-#include <kernel/handle/handle.h>
-#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
-#include <kernel/pipe/pipe.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
@@ -18,8 +14,8 @@
 
 
 
-static void _load_modules_from_order_file(const char* order_file_path,_Bool early){
-	vfs_node_t* file=vfs_lookup(NULL,order_file_path,0,0,0);
+static void _load_modules_from_order_file(_Bool early){
+	vfs_node_t* file=vfs_lookup(NULL,MODULE_ORDER_FILE,0,0,0);
 	if (!file){
 		panic("Unable to locate module order file");
 	}
@@ -42,28 +38,9 @@ static void _load_modules_from_order_file(const char* order_file_path,_Bool earl
 
 static _Bool _init(module_t* module){
 	LOG("Loading early modules...");
-	_load_modules_from_order_file(MODULE_ORDER_FILE,1);
-	LOG("Searching for boot filesystem...");
-	filesystem_t* boot_fs=NULL;
-	HANDLE_FOREACH(fs_handle_type){
-		handle_acquire(handle);
-		filesystem_t* fs=handle->object;
-		for (u8 i=0;i<16;i++){
-			if (fs->uuid[i]!=kernel_data.boot_fs_uuid[i]){
-				goto _check_next_fs;
-			}
-		}
-		boot_fs=fs;
-		break;
-_check_next_fs:
-		handle_release(handle);
-	}
-	if (!boot_fs){
-		panic("Unable to find boot filesystem");
-	}
-	vfs_mount(boot_fs,NULL,0);
+	_load_modules_from_order_file(1);
 	LOG("Loading modules...");
-	_load_modules_from_order_file(MODULE_ORDER_FILE,0);
+	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
 	if (IS_ERROR(elf_load("/bin/shell",0,NULL,NULL,0))){
 		panic("Unable to load user shell");

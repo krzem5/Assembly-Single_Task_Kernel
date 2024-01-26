@@ -1,3 +1,4 @@
+#include <linker/search_path.h>
 #include <linker/shared_object.h>
 #include <linker/symbol.h>
 #include <sys/types.h>
@@ -38,3 +39,8 @@ SYS_PUBLIC u64 __sys_linker_load_library(const char* name,u32 flags){
 	return (u64)shared_object_load(name,flags);
 }
 
+
+
+SYS_PUBLIC const char* __sys_linker_update_library_path(const char* new){
+	return search_path_update_search_directories(new);
+}

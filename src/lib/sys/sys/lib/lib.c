@@ -10,6 +10,7 @@ extern const char* __sys_linker_get_object_path(u64 handle) __attribute__((weak)
 extern u64 __sys_linker_get_object_base(u64 handle) __attribute__((weak));
 extern u64 __sys_linker_lookup_symbol(u64 handle,const char* name) __attribute__((weak));
 extern u64 __sys_linker_load_library(const char* name,u32 flags) __attribute__((weak));
+extern const char* __sys_linker_update_library_path(const char* new) __attribute__((weak));
 
 
 
@@ -47,3 +48,14 @@ SYS_PUBLIC u64 sys_lib_lookup_symbol(sys_library_t library,const char* name){
 	return __sys_linker_lookup_symbol(library,name);
 }
 
+
+
+SYS_PUBLIC const char* sys_lib_get_search_path(void){
+	return __sys_linker_update_library_path(NULL);
+}
+
+
+
+SYS_PUBLIC void sys_lib_set_search_path(const char* path){
+	__sys_linker_update_library_path(path);
+}

@@ -1,7 +1,5 @@
 1,clock_get_converion(u64* buffer) -> u64
 2,cpu_get_count(void) -> u64
-26,time_get_boot_offset(void) -> u64
-
 3,fd_close(u64 fd) -> u64
 4,fd_dup(u64 fd,u32 flags) -> u64
 5,fd_iter_get(u64 iterator,char* buffer,u32 size) -> u64
@@ -25,6 +23,7 @@
 23,thread_set_cpu_mask(u64 thread,const void* buffer,u32 size) -> u64
 24,thread_set_priority(u64 thread,u32 priority) -> u64
 25,thread_stop(u64 thread) -> u64
+26,time_get_boot_offset(void) -> u64
 27,uid_get(void) -> u64
 28,gid_get(void) -> u64
 29,uid_set(u32 uid) -> u64

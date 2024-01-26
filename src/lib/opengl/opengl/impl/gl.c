@@ -10,6 +10,9 @@
 #include <opengl/command_buffer.h>
 #include <opengl/config.h>
 #include <opengl/protocol.h>
+#include <src_lib_opengl_rsrc_glsl_frag_setup_glsl.h>
+#include <src_lib_opengl_rsrc_glsl_global_setup_glsl.h>
+#include <src_lib_opengl_rsrc_glsl_vert_setup_glsl.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/memory/memory.h>
@@ -32,61 +35,6 @@
 #define OPENGL_PARAMETER_RETURN_TYPE_INT64 2
 #define OPENGL_PARAMETER_RETURN_TYPE_FLOAT 3
 #define OPENGL_PARAMETER_RETURN_TYPE_DOUBLE 4
-
-
-
-static const char _gl_glsl_global_setup[]="\
-const int gl_MaxVertexAttribs=16; \n\
-const int gl_MaxVertexUniformComponents=1024; \n\
-const int gl_MaxVaryingFloats=60; \n\
-const int gl_MaxVaryingComponents=60; \n\
-const int gl_MaxVertexOutputComponents=64; \n\
-const int gl_MaxGeometryInputComponents=64; \n\
-const int gl_MaxGeometryOutputComponents=128; \n\
-const int gl_MaxFragmentInputComponents=128; \n\
-const int gl_MaxVertexTextureImageUnits=16; \n\
-const int gl_MaxCombinedTextureImageUnits=48; \n\
-const int gl_MaxTextureImageUnits=16; \n\
-const int gl_MaxFragmentUniformComponents=1024; \n\
-const int gl_MaxDrawBuffers=8; \n\
-const int gl_MaxClipDistances=8; \n\
-const int gl_MaxGeometryTextureImageUnits=16; \n\
-const int gl_MaxGeometryOutputVertices=256; \n\
-const int gl_MaxGeometryTotalOutputComponents=1024; \n\
-const int gl_MaxGeometryUniformComponents=1024; \n\
-const int gl_MaxGeometryVaryingComponents=64; \n\
-";
-
-static const char _gl_glsl_vertex_shader_setup[]="\
-#version 330 core \n\
-#define __VERSION__ 330 \n\
-#define GL_core_profile 1 \n\
- \n\
- \n\
- \n\
-in int gl_VertexID; \n\
-in int gl_InstanceID; \n\
-out gl_PerVertex{ \n\
-	layout(location=0) vec4 gl_Position; \n\
-	float gl_PointSize; \n\
-	float gl_ClipDistance[]; \n\
-}; \n\
-";
-
-static const char _gl_glsl_fragment_shader_setup[]="\
-#version 330 core \n\
-#define __VERSION__ 330 \n\
-#define GL_core_profile 1 \n\
- \n\
- \n\
- \n\
-in vec4 gl_FragCoord; \n\
-in bool gl_FrontFacing; \n\
-in float gl_ClipDistance[]; \n\
-out float gl_FragDepth; \n\
-in vec2 gl_PointCoord; \n\
-in int gl_PrimitiveID; \n\
-";
 
 
 
@@ -827,7 +775,6 @@ static void _sync_state(void){
 		opengl_protocol_vertex_array_element_t* dst_entry=command.elements+i;
 		dst_entry->index=i;
 		dst_entry->size=(src_entry->size==GL_BGRA?OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_SIZE_BGRA:src_entry->size);
-		u32 width=dst_entry->size;
 		switch (src_entry->type){
 			case GL_BYTE:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_BYTE;
@@ -837,39 +784,30 @@ static void _sync_state(void){
 				break;
 			case GL_SHORT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_SHORT;
-				width<<=1;
 				break;
 			case GL_UNSIGNED_SHORT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_SHORT;
-				width<<=1;
 				break;
 			case GL_INT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT;
-				width<<=2;
 				break;
 			case GL_UNSIGNED_INT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT;
-				width<<=2;
 				break;
 			case GL_HALF_FLOAT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_HALF_FLOAT;
-				width<<=1;
 				break;
 			case GL_FLOAT:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_FLOAT;
-				width<<=2;
 				break;
 			case GL_DOUBLE:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_DOUBLE;
-				width<<=3;
 				break;
 			case GL_INT_2_10_10_10_REV:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_INT_2_10_10_10_REV;
-				width=4;
 				break;
 			case GL_UNSIGNED_INT_2_10_10_10_REV:
 				dst_entry->type=OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT_TYPE_UNSIGNED_INT_2_10_10_10_REV;
-				width=4;
 				break;
 		}
 		if (state->enabled_entry_mask&(1<<i)){
@@ -879,31 +817,32 @@ static void _sync_state(void){
 		else{
 			dst_entry->stride=0;
 			dst_entry->divisor=0;
-			width=(state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->size;
-			switch (src_entry->type){
-				case GL_SHORT:
-				case GL_UNSIGNED_SHORT:
-				case GL_HALF_FLOAT:
-					width<<=1;
-					break;
-				case GL_INT:
-				case GL_UNSIGNED_INT:
-				case GL_FLOAT:
-					width<<=2;
-					break;
-				case GL_DOUBLE:
-					width<<=3;
-					break;
-				case GL_INT_2_10_10_10_REV:
-				case GL_UNSIGNED_INT_2_10_10_10_REV:
-					width=4;
-					break;
-			}
 		}
 		dst_entry->offset=src_entry->offset;
 		dst_entry->require_normalization=src_entry->normalized;
-		if ((state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset+width>state->stride){
-			state->stride=(state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset+width;
+		src_entry=state->entries+i+OPENGL_MAX_VERTEX_ATTRIBUTES;
+		u32 width=src_entry->size;
+		switch (src_entry->type){
+			case GL_SHORT:
+			case GL_UNSIGNED_SHORT:
+			case GL_HALF_FLOAT:
+				width<<=1;
+				break;
+			case GL_INT:
+			case GL_UNSIGNED_INT:
+			case GL_FLOAT:
+				width<<=2;
+				break;
+			case GL_DOUBLE:
+				width<<=3;
+				break;
+			case GL_INT_2_10_10_10_REV:
+			case GL_UNSIGNED_INT_2_10_10_10_REV:
+				width=4;
+				break;
+		}
+		if (src_entry->offset+width>state->stride){
+			state->stride=src_entry->offset+width;
 		}
 	}
 	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-OPENGL_MAX_VERTEX_ATTRIBUTES)*sizeof(opengl_protocol_vertex_array_element_t);
@@ -1180,7 +1119,7 @@ static void _set_vertex_attrib_pointer(GLuint index,GLint size,GLenum type,GLboo
 	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->normalized=normalized;
 	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->stride=stride;
 	(state->entries+index+is_array*OPENGL_MAX_VERTEX_ATTRIBUTES)->offset=(GLuint64)pointer;
-	state->needs_update=GL_TRUE;
+	state->needs_update=1;
 }
 
 
@@ -1545,18 +1484,18 @@ SYS_PUBLIC void glCompileShader(GLuint shader){
 	if (!state){
 		return;
 	}
-	state->was_compilation_attempted=GL_TRUE;
+	state->was_compilation_attempted=1;
 	if (state->error){
 		glsl_error_delete(state->error);
 		state->error=GLSL_NO_ERROR;
 	}
 	glsl_preprocessor_state_t preprocessor_state;
 	glsl_preprocessor_state_init(&preprocessor_state);
-	state->error=glsl_preprocessor_add_file(_gl_glsl_global_setup,0xffffffff,&preprocessor_state);
+	state->error=glsl_preprocessor_add_file((const char*)src_lib_opengl_rsrc_glsl_global_setup_glsl,0xffffffff,&preprocessor_state);
 	if (state->error!=GLSL_NO_ERROR){
 		return;
 	}
-	state->error=glsl_preprocessor_add_file((state->type==GL_VERTEX_SHADER?_gl_glsl_vertex_shader_setup:_gl_glsl_fragment_shader_setup),0xffffffff,&preprocessor_state);
+	state->error=glsl_preprocessor_add_file((const char*)(state->type==GL_VERTEX_SHADER?src_lib_opengl_rsrc_glsl_vert_setup_glsl:src_lib_opengl_rsrc_glsl_frag_setup_glsl),0xffffffff,&preprocessor_state);
 	if (state->error!=GLSL_NO_ERROR){
 		return;
 	}
@@ -1658,7 +1597,7 @@ SYS_PUBLIC void glCopyTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLin
 SYS_PUBLIC GLuint glCreateProgram(void){
 	opengl_program_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_PROGRAM,sizeof(opengl_program_state_t));
 	glsl_linker_program_init(&(state->linker_program));
-	state->was_linkage_attempted=GL_FALSE;
+	state->was_linkage_attempted=0;
 	state->error=GLSL_NO_ERROR;
 	state->driver_handle=0;
 	state->uniform_data=NULL;
@@ -1677,7 +1616,7 @@ SYS_PUBLIC GLuint glCreateShader(GLenum type){
 	state->type=type;
 	state->source_count=0;
 	state->sources=NULL;
-	state->was_compilation_attempted=GL_FALSE;
+	state->was_compilation_attempted=0;
 	state->error=GLSL_NO_ERROR;
 	state->program=NULL;
 	return state->header.index;
@@ -2065,14 +2004,14 @@ SYS_PUBLIC void glGenVertexArrays(GLsizei n,GLuint* arrays){
 		for (GLuint j=0;j<OPENGL_MAX_VERTEX_ATTRIBUTES*2;j++){
 			(state->entries+j)->size=0; // not 4 (as per standard) to prevent incorrect vertex buffer stride calculations
 			(state->entries+j)->type=GL_FLOAT;
-			(state->entries+j)->normalized=GL_FALSE;
+			(state->entries+j)->normalized=0;
 			(state->entries+j)->divisor=0;
 			(state->entries+j)->stride=0;
 			(state->entries+j)->offset=0;
 		}
 		state->driver_handle=0;
 		state->stride=0;
-		state->needs_update=GL_FALSE;
+		state->needs_update=0;
 		state->const_vertex_buffer_driver_handle=0;
 		arrays[i]=state->header.index;
 	}
@@ -2278,10 +2217,10 @@ SYS_PUBLIC void glGetProgramiv(GLuint program,GLenum pname,GLint* params){
 	}
 	switch (pname){
 		case GL_DELETE_STATUS:
-			*params=GL_FALSE;
+			*params=0;
 			break;
 		case GL_LINK_STATUS:
-			*params=(state->was_linkage_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
+			*params=(state->was_linkage_attempted&&state->error==GLSL_NO_ERROR);
 			break;
 		case GL_VALIDATE_STATUS:
 			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGetProgramiv: GL_VALIDATE_STATUS\x1b[0m\n");
@@ -2436,10 +2375,10 @@ SYS_PUBLIC void glGetShaderiv(GLuint shader,GLenum pname,GLint* params){
 			*params=state->type;
 			break;
 		case GL_DELETE_STATUS:
-			*params=GL_FALSE;
+			*params=0;
 			break;
 		case GL_COMPILE_STATUS:
-			*params=(state->was_compilation_attempted&&state->error==GLSL_NO_ERROR?GL_TRUE:GL_FALSE);
+			*params=(state->was_compilation_attempted&&state->error==GLSL_NO_ERROR);
 			break;
 		case GL_INFO_LOG_LENGTH:
 			*params=(state->was_compilation_attempted&&state->error!=GLSL_NO_ERROR?sys_string_length(state->error):0);
@@ -2747,7 +2686,7 @@ SYS_PUBLIC void glLinkProgram(GLuint program){
 	if (!state){
 		return;
 	}
-	state->was_linkage_attempted=GL_TRUE;
+	state->was_linkage_attempted=1;
 	if (state->error){
 		glsl_error_delete(state->error);
 		state->error=GLSL_NO_ERROR;
@@ -3320,7 +3259,7 @@ SYS_PUBLIC void glUniformMatrix2fv(GLint location,GLsizei count,GLboolean transp
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*2;i++){
 			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
 		}
@@ -3343,7 +3282,7 @@ SYS_PUBLIC void glUniformMatrix2x3fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*3;i++){
 			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
 		}
@@ -3366,7 +3305,7 @@ SYS_PUBLIC void glUniformMatrix2x4fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*4;i++){
 			_update_uniform(location+i,value+i*2,2*sizeof(GLfloat));
 		}
@@ -3389,7 +3328,7 @@ SYS_PUBLIC void glUniformMatrix3fv(GLint location,GLsizei count,GLboolean transp
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*3;i++){
 			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
 		}
@@ -3414,7 +3353,7 @@ SYS_PUBLIC void glUniformMatrix3x2fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*2;i++){
 			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
 		}
@@ -3439,7 +3378,7 @@ SYS_PUBLIC void glUniformMatrix3x4fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*4;i++){
 			_update_uniform(location+i,value+i*3,3*sizeof(GLfloat));
 		}
@@ -3464,7 +3403,7 @@ SYS_PUBLIC void glUniformMatrix4fv(GLint location,GLsizei count,GLboolean transp
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*4;i++){
 			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
 		}
@@ -3491,7 +3430,7 @@ SYS_PUBLIC void glUniformMatrix4x2fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*2;i++){
 			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
 		}
@@ -3518,7 +3457,7 @@ SYS_PUBLIC void glUniformMatrix4x3fv(GLint location,GLsizei count,GLboolean tran
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
 		return;
 	}
-	if (transpose==GL_FALSE){
+	if (!transpose){
 		for (GLsizei i=0;i<count*3;i++){
 			_update_uniform(location+i,value+i*4,4*sizeof(GLfloat));
 		}
@@ -3825,7 +3764,7 @@ SYS_PUBLIC void glVertexAttribDivisor(GLuint index,GLuint divisor){
 		return;
 	}
 	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->divisor=divisor;
-	state->needs_update=GL_TRUE;
+	state->needs_update=1;
 }
 
 
@@ -3987,10 +3926,10 @@ SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsiz
 	}
 	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->size=size;
 	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->type=type;
-	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->normalized=GL_FALSE;
+	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->normalized=0;
 	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->stride=stride;
 	(state->entries+index+OPENGL_MAX_VERTEX_ATTRIBUTES)->offset=(GLuint64)pointer;
-	state->needs_update=GL_TRUE;
+	state->needs_update=1;
 }
 
 

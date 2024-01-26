@@ -6,11 +6,12 @@ ata:
 coverage:
 devfs:dynamicfs
 dynamicfs:
+fs_loader:
 gpt:
 i82540:
 iso9660:
 kfs2:
-lockfs:dynamicfs
+lockinfo:
 net_arp:net_info,net_ip
 net_dhcp:net_info,net_ip,net_udp
 net_dns:net_info,net_ip,net_udp
