@@ -17,12 +17,6 @@ static inline u64 _sys_syscall_cpu_get_count(void){
 
 
 
-static inline u64 _sys_syscall_time_get_boot_offset(void){
-	return _sys_syscall0(0x10000001a);
-}
-
-
-
 static inline u64 _sys_syscall_fd_close(u64 fd){
 	return _sys_syscall1(0x100000003,fd);
 }
@@ -157,6 +151,12 @@ static inline u64 _sys_syscall_thread_set_priority(u64 thread,u32 priority){
 
 static inline u64 _sys_syscall_thread_stop(u64 thread){
 	return _sys_syscall1(0x100000019,thread);
+}
+
+
+
+static inline u64 _sys_syscall_time_get_boot_offset(void){
+	return _sys_syscall0(0x10000001a);
 }
 
 

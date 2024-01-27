@@ -766,6 +766,7 @@ static void _sync_state(void){
 	}
 	opengl_protocol_update_vertex_array_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY,
+		.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-OPENGL_MAX_VERTEX_ATTRIBUTES)*sizeof(opengl_protocol_vertex_array_element_t),
 		.count=OPENGL_MAX_VERTEX_ATTRIBUTES,
 		.driver_handle=state->driver_handle
 	};
@@ -845,7 +846,6 @@ static void _sync_state(void){
 			state->stride=src_entry->offset+width;
 		}
 	}
-	command.header.length=sizeof(opengl_protocol_update_vertex_array_t)-(32-OPENGL_MAX_VERTEX_ATTRIBUTES)*sizeof(opengl_protocol_vertex_array_element_t);
 	const opengl_protocol_update_vertex_array_t* output=(const opengl_protocol_update_vertex_array_t*)opengl_command_buffer_push_single(&(command.header));
 	if (!state->driver_handle){
 		opengl_command_buffer_flush();
@@ -860,8 +860,7 @@ _skip_vertex_array_sync:
 		.index_buffer_offset=0,
 		.uniform_buffer_data=NULL,
 		.uniform_buffer_size=0,
-		.vertex_buffer_count=0,
-		.vertex_buffers[0]={0,0,0}
+		.vertex_buffer_count=0
 	};
 	_Bool update_buffers=0;
 	if (_gl_internal_state->gl_bound_index_buffer!=_gl_internal_state->gl_used_index_buffer||_gl_internal_state->gl_bound_index_offset!=_gl_internal_state->gl_used_index_offset||_gl_internal_state->gl_bound_index_width!=_gl_internal_state->gl_used_index_width){
