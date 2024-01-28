@@ -27,7 +27,7 @@
 #define KERNEL_ASSERT(expression) \
 	do{ \
 		if (!(expression)){ \
-			ERROR("[line %u] "#expression": Assertion Failed",__LINE__); \
+			ERROR("[line %u] "#expression": Assertion failed",__LINE__); \
 		} \
 	} while (0)
 #define KERNEL_ASSERT_BLOCK(block) do{block} while(0)

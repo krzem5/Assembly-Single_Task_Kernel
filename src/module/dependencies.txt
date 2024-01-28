@@ -27,6 +27,7 @@ sysfs:dynamicfs
 ui_common:
 ui_display:ui_common
 ui_launcher:ui_common
+ui_permissions:ui_common
 usb_msc:
 virtio:
 virtio_blk:virtio

@@ -6,6 +6,7 @@ glsltest:runtime@static,sys,glsl
 hexdump:runtime@static,sys
 lockinfo:runtime@static,sys
 ls:runtime@static,sys,dircolor
+preqtest:runtime@static,sys
 random:runtime@static,sys
 reboot:runtime@static,sys
 shell:runtime@static,sys
