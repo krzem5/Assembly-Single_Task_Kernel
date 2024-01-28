@@ -1,4 +1,5 @@
 #include <kernel/error/error.h>
+#include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/lock/spinlock.h>
@@ -27,6 +28,7 @@ typedef struct _UID_DATA{
 	rb_tree_node_t rb_node;
 	string_t* name;
 	rb_tree_t group_tree;
+	id_flags_t flags;
 } uid_data_t;
 
 
@@ -63,6 +65,7 @@ KERNEL_PUBLIC error_t uid_create(uid_t uid,const char* name){
 	uid_data_t* uid_data=omm_alloc(_uid_data_allocator);
 	uid_data->rb_node.key=uid;
 	uid_data->name=smm_alloc(name,0);
+	uid_data->flags=0;
 	rb_tree_init(&(uid_data->group_tree));
 	rb_tree_insert_node(&_uid_tree,&(uid_data->rb_node));
 	spinlock_release_exclusive(&_uid_global_lock);
@@ -110,6 +113,20 @@ KERNEL_PUBLIC error_t uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
 	strcpy(buffer,uid_data->name->data,buffer_length);
 	spinlock_release_shared(&_uid_global_lock);
 	return ERROR_OK;
+}
+
+
+
+KERNEL_PUBLIC id_flags_t uid_get_flags(uid_t uid){
+	spinlock_acquire_shared(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	if (!uid_data){
+		spinlock_release_shared(&_uid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	id_flags_t out=uid_data->flags;
+	spinlock_release_shared(&_uid_global_lock);
+	return out;
 }
 
 

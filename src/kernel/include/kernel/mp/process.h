@@ -29,4 +29,8 @@ _Bool process_is_root(void);
 
 
 
+id_flags_t process_get_id_flags(void);
+
+
+
 #endif

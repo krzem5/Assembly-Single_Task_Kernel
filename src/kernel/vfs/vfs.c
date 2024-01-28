@@ -1,5 +1,6 @@
 #include <kernel/error/error.h>
 #include <kernel/fs/fs.h>
+#include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/lock/spinlock.h>
@@ -73,6 +74,9 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags
 
 KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
 	vfs_node_t* base_root_node=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:_vfs_root_node);
+	if ((flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)&&((uid_get_flags(uid)|gid_get_flags(gid))&ID_FLAG_BYPASS_VFS_PERMISSIONS)){
+		flags&=~VFS_LOOKUP_FLAG_CHECK_PERMISSIONS;
+	}
 	if (path[0]=='/'){
 		root=base_root_node;
 	}

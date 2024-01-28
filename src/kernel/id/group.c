@@ -1,4 +1,5 @@
 #include <kernel/error/error.h>
+#include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
@@ -18,6 +19,7 @@
 typedef struct _GID_DATA{
 	rb_tree_node_t rb_node;
 	string_t* name;
+	id_flags_t flags;
 } gid_data_t;
 
 
@@ -51,6 +53,7 @@ KERNEL_PUBLIC error_t gid_create(gid_t gid,const char* name){
 	gid_data_t* gid_data=omm_alloc(_gid_data_allocator);
 	gid_data->rb_node.key=gid;
 	gid_data->name=smm_alloc(name,0);
+	gid_data->flags=0;
 	rb_tree_insert_node(&_gid_tree,&(gid_data->rb_node));
 	spinlock_release_exclusive(&_gid_global_lock);
 	return ERROR_OK;
@@ -71,6 +74,20 @@ KERNEL_PUBLIC error_t gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 	strcpy(buffer,gid_data->name->data,buffer_length);
 	spinlock_release_shared(&_gid_global_lock);
 	return ERROR_OK;
+}
+
+
+
+KERNEL_PUBLIC id_flags_t gid_get_flags(gid_t gid){
+	spinlock_acquire_shared(&_gid_global_lock);
+	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
+	if (!gid_data){
+		spinlock_release_shared(&_gid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	id_flags_t out=gid_data->flags;
+	spinlock_release_shared(&_gid_global_lock);
+	return out;
 }
 
 

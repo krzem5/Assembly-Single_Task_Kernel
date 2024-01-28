@@ -1,6 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
+#include <kernel/id/flags.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -158,7 +159,7 @@ error_t syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_ha
 			return ERROR_INVALID_HANDLE;
 		}
 	}
-	if (!process_is_root()){
+	if (!(process_get_id_flags()&ID_FLAG_ROOT_ACL)){
 		set&=acl_get(handle->acl,THREAD_DATA->process);
 	}
 	acl_set(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process),clear,set);

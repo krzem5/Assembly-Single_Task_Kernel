@@ -6,6 +6,7 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
+#include <kernel/id/flags.h>
 #include <kernel/id/user.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -113,6 +114,12 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 
 KERNEL_PUBLIC _Bool process_is_root(void){
 	return !THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0)==1;
+}
+
+
+
+KERNEL_PUBLIC id_flags_t process_get_id_flags(void){
+	return uid_get_flags(THREAD_DATA->process->uid)|gid_get_flags(THREAD_DATA->process->gid);
 }
 
 
