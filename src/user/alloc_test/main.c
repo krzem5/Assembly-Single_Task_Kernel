@@ -29,7 +29,7 @@ int main(int argc,const char** argv){
 	}
 	sys_fd_t random_fd=sys_fd_open(0,"/dev/random",SYS_FD_FLAG_READ);
 	if (SYS_IS_ERROR(random_fd)){
-		sys_io_print("alloctest: unable to open random file: error %ld\n",random_fd);
+		sys_io_print("alloc_test: unable to open random file: error %ld\n",random_fd);
 		return 1;
 	}
 	u64 start_time=sys_clock_get_time_ns();
@@ -78,16 +78,16 @@ int main(int argc,const char** argv){
 			continue;
 		}
 		if (sys_memory_compare((tests+i)->ptr,test_buffer,(tests+i)->size)){
-			sys_io_print("alloctest: failed data integrity test in block #%u\n",i);
+			sys_io_print("alloc_test: failed data integrity test in block #%u\n",i);
 		}
 		sys_heap_dealloc(NULL,(tests+i)->ptr);
 	}
 	sys_fd_close(random_fd);
 	u64 end_time=sys_clock_get_time_ns();
-	sys_io_print("alloctest: took %lu ms\n",(end_time-start_time)/1000000);
+	sys_io_print("alloc_test: took %lu ms\n",(end_time-start_time)/1000000);
 	return 0;
 _error:
 	sys_fd_close(random_fd);
-	sys_io_print("alloctest: unable to read from random file\n");
+	sys_io_print("alloc_test: unable to read from random file\n");
 	return 1;
 }
