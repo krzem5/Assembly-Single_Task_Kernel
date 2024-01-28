@@ -23,6 +23,10 @@ typedef u64 sys_thread_priority_t;
 
 
 
+u64 sys_thread_await_event(sys_event_t event);
+
+
+
 u64 __attribute__((access(read_only,1,2),nonnull)) sys_thread_await_events(const sys_event_t* events,u32 count);
 
 

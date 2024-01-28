@@ -98,8 +98,7 @@ void command_execute(const char* command){
 		if (!process){
 			break;
 		}
-		sys_event_t event=sys_process_get_termination_event(process);
-		sys_thread_await_events(&event,1);
+		sys_thread_await_event(sys_process_get_termination_event(process));
 		return;
 	}
 	sys_io_print("%s: command not found\n",buffer);

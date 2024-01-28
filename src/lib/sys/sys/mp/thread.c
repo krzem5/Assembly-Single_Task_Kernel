@@ -13,6 +13,12 @@ static void _thread_bootstrap(void (*func)(void*),void* arg){
 
 
 
+SYS_PUBLIC u64 sys_thread_await_event(sys_event_t event){
+	return sys_thread_await_events(&event,1);
+}
+
+
+
 SYS_PUBLIC u64 sys_thread_await_events(const sys_event_t* events,u32 count){
 	return _sys_syscall_thread_await_events(events,count);
 }

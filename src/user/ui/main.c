@@ -235,7 +235,7 @@ int main(int argc,const char** argv){
 			glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,NULL);
 			glFlush();
 			ui_display_flush_display_framebuffer(display);
-			sys_thread_await_events(&timer_event,1);
+			sys_thread_await_event(timer_event);
 		}
 	}
 	return 0;
