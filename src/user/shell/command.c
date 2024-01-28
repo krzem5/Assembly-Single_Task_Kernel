@@ -2,6 +2,7 @@
 #include <cwd.h>
 #include <input.h>
 #include <string.h>
+#include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
 #include <sys/mp/event.h>
@@ -86,7 +87,8 @@ void command_execute(const char* command){
 		}
 		s64 fd=sys_fd_open(parent_fd,argv[0],0);
 		sys_fd_close(parent_fd);
-		if (fd<=0){
+		sys_fd_stat_t stat;
+		if (SYS_IS_ERROR(fd)||SYS_IS_ERROR(sys_fd_stat(fd,&stat))||stat.type!=SYS_FD_STAT_TYPE_FILE){
 			continue;
 		}
 		char path[4096];
@@ -94,7 +96,7 @@ void command_execute(const char* command){
 		sys_fd_close(fd);
 		sys_process_t process=sys_process_start(path,argc,argv,NULL,0);
 		if (!process){
-			return;
+			break;
 		}
 		sys_event_t event=sys_process_get_termination_event(process);
 		sys_thread_await_events(&event,1);
