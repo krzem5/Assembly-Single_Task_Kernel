@@ -192,6 +192,7 @@ error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t proces
 		}
 	}
 	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
+	LOG("'%s' requested permissions '%x' for handle '%s'",process->name->data,flags,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name);
 	acl_request_callback_t callback=acl_request_callback;
 	u64 out=(callback?callback(handle,process,flags):ERROR_DENIED);
 	if (out==ERROR_OK){

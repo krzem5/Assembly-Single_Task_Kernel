@@ -103,7 +103,34 @@ static void _hsl_to_rgb(u8 h,u8 s,u8 l,u8* rgb){
 
 
 
+#include <sys/syscall/syscall.h>
+
+
+
+typedef struct _UI_PERMISSION_USER_REQUEST{
+	u64 id;
+	char process[256];
+	char handle[64];
+	u64 flags;
+} ui_permission_user_request_t;
+
+
+
+static void _ui_permission_thread(void* arg){
+	u64 offset=sys_syscall_get_table_offset("ui_permission_request");
+	sys_io_print("UI PERMISSION THREAD %p\n",offset);
+	while (1){
+		ui_permission_user_request_t request;
+		_sys_syscall2(offset|0x00000001,(u64)(&request),sizeof(ui_permission_user_request_t));
+		sys_io_print("%s:%s:%u\n",request.process,request.handle,request.flags);
+		_sys_syscall2(offset|0x00000002,request.id,1);
+	}
+}
+
+
+
 int main(int argc,const char** argv){
+	sys_thread_create(_ui_permission_thread,NULL,0);
 	opengl_init();
 	for (ui_display_handle_t display=ui_display_iter_start();display;display=ui_display_iter_next(display)){
 		ui_display_data_t data;
