@@ -11,7 +11,7 @@
 
 static error_t _acl_permission_request_callback(handle_t* handle,process_t* process,u64 flags){
 	WARN("Request: %s: %s, %x",process->name->data,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name,flags);
-	return 0;
+	return ERROR_DENIED;
 }
 
 
