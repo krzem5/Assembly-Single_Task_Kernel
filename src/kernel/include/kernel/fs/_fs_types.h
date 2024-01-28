@@ -15,6 +15,7 @@ typedef struct _FILESYSTEM{
 	void* extra_data;
 	vfs_node_t* root;
 	u8 uuid[16];
+	_Bool is_mounted;
 } filesystem_t;
 
 

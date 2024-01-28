@@ -12,7 +12,7 @@ int main(int argc,const char** argv){
 		if (SYS_IS_ERROR(sys_fs_get_data(fs,&data))){
 			continue;
 		}
-		sys_io_print("%g: %s\n",data.uuid,data.type);
+		sys_io_print("%g: %s\t%s\n",data.uuid,data.type,(data.mount_path[0]?data.mount_path:"<not mounted>"));
 	}
 	return 0;
 }

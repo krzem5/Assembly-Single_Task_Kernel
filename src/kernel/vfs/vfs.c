@@ -34,12 +34,16 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 		if (user_mode){
 			return ERROR_DENIED;
 		}
+		if (_vfs_root_node){
+			_vfs_root_node->fs->is_mounted=0;
+		}
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
 		_vfs_root_node->relatives.parent=NULL;
 		spinlock_release_exclusive(&(_vfs_root_node->lock));
 		process_kernel->vfs_root=_vfs_root_node;
 		process_kernel->vfs_cwd=_vfs_root_node;
+		fs->is_mounted=1;
 		return ERROR_OK;
 	}
 	vfs_node_t* parent;
@@ -55,6 +59,7 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 	fs->root->name=smm_alloc(child_name,0);
 	spinlock_release_exclusive(&(fs->root->lock));
 	vfs_node_attach_external_child(parent,fs->root);
+	fs->is_mounted=1;
 	return ERROR_OK;
 }
 
