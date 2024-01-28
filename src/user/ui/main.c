@@ -118,11 +118,15 @@ typedef struct _UI_PERMISSION_USER_REQUEST{
 
 static void _ui_permission_thread(void* arg){
 	u64 offset=sys_syscall_get_table_offset("ui_permission_request");
-	sys_io_print("UI PERMISSION THREAD %p\n",offset);
+	if (SYS_IS_ERROR(offset)){
+		return;
+	}
 	while (1){
 		ui_permission_user_request_t request;
-		_sys_syscall2(offset|0x00000001,(u64)(&request),sizeof(ui_permission_user_request_t));
-		sys_io_print("%s:%s:%u\n",request.process,request.handle,request.flags);
+		if (SYS_IS_ERROR(_sys_syscall2(offset|0x00000001,(u64)(&request),sizeof(ui_permission_user_request_t)))){
+			continue;
+		}
+		sys_io_print("Permission request #%u: %s/%s:%x\n",request.id,request.process,request.handle,request.flags);
 		_sys_syscall2(offset|0x00000002,request.id,1);
 	}
 }
