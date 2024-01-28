@@ -1,5 +1,6 @@
 import os
 import struct
+import uuid
 
 
 
@@ -63,6 +64,6 @@ def create(base_directory,file_path):
 	root=Node("",FLAG_DIRECTORY,None)
 	_generate_tree(base_directory,root)
 	with open(file_path,"wb") as wf:
-		wf.write(struct.pack("<Q",HEADER_SIGNATURE))
+		wf.write(struct.pack("<Q16B",HEADER_SIGNATURE,*uuid.uuid4().bytes))
 		_write_node(root,wf)
 		wf.write(b"\x00"*((-root.size)&4095))

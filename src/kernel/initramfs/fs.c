@@ -20,6 +20,7 @@
 
 typedef struct KERNEL_PACKED _INITRAMFS_HEADER{
 	u64 signature;
+	u8 uuid[16];
 } initramfs_header_t;
 
 
@@ -198,6 +199,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	filesystem_t* out=fs_create(_initramfs_filesystem_descriptor);
 	out->functions=&_initramfs_functions;
 	out->partition=partition;
+	memcpy(out->uuid,header.uuid,16);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=vfs_node_create(out,root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
