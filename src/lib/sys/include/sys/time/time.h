@@ -18,10 +18,6 @@ typedef struct _SYS_TIME{
 
 
 
-void __sys_time_init(void);
-
-
-
 u64 sys_time_get_boot_offset(void);
 
 

@@ -20,7 +20,6 @@ static void SYS_CONSTRUCTOR _execute_init(void){
 	__sys_clock_init();
 	__sys_heap_init();
 	__sys_io_init();
-	__sys_time_init();
 }
 
 

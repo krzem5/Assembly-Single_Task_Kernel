@@ -4,18 +4,8 @@
 
 
 
-static u64 _sys_time_boot_offset=0;
-
-
-
-void __sys_time_init(void){
-	_sys_time_boot_offset=_sys_syscall_time_get_boot_offset();
-}
-
-
-
 SYS_PUBLIC u64 sys_time_get_boot_offset(void){
-	return _sys_time_boot_offset;
+	return _sys_syscall_time_get_boot_offset();
 }
 
 
