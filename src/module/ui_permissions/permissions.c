@@ -66,6 +66,7 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 	spinlock_release_exclusive(&_ui_permission_request_list_lock);
 	event_dispatch(_ui_permission_request_list_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	event_await(request.event);
+	event_delete(request.event);
 	LOG("Request %s/%s:%u was %s",request.process,request.handle,request.flags,(request.accepted?"accepted":"denied"));
 	return (request.accepted?ERROR_OK:ERROR_DENIED);
 }
