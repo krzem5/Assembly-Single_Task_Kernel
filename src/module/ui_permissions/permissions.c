@@ -3,6 +3,8 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -35,6 +37,7 @@ typedef struct _UI_PERMISSION_USER_REQUEST{
 
 
 
+static omm_allocator_t* _ui_permission_request_allocator=NULL;
 static ui_permission_request_t* _ui_permission_request_list_head=NULL;
 static ui_permission_request_t* _ui_permission_request_list_tail=NULL;
 static u64 _ui_permission_request_list_id=0;
@@ -45,30 +48,31 @@ static event_t* _ui_permission_request_list_event;
 
 static error_t _acl_permission_request_callback(handle_t* handle,process_t* process,u64 flags){
 	INFO("Forwarding permission request to the UI...");
-	ui_permission_request_t request={
-		NULL
-	};
-	strcpy(request.process,process->name->data,sizeof(request.process));
-	strcpy(request.handle,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name,sizeof(request.handle));
-	request.flags=flags;
-	request.event=event_create();
-	request.accepted=0;
+	ui_permission_request_t* request=omm_alloc(_ui_permission_request_allocator);
+	request->next=NULL;
+	strcpy(request->process,process->name->data,sizeof(request->process));
+	strcpy(request->handle,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name,sizeof(request->handle));
+	request->flags=flags;
+	request->event=event_create();
+	request->accepted=0;
 	spinlock_acquire_exclusive(&_ui_permission_request_list_lock);
-	request.id=_ui_permission_request_list_id;
+	request->id=_ui_permission_request_list_id;
 	_ui_permission_request_list_id++;
 	if (_ui_permission_request_list_tail){
-		_ui_permission_request_list_tail->next=&request;
+		_ui_permission_request_list_tail->next=request;
 	}
 	else{
-		_ui_permission_request_list_head=&request;
+		_ui_permission_request_list_head=request;
 	}
-	_ui_permission_request_list_tail=&request;
+	_ui_permission_request_list_tail=request;
 	spinlock_release_exclusive(&_ui_permission_request_list_lock);
 	event_dispatch(_ui_permission_request_list_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	event_await(request.event);
-	event_delete(request.event);
-	LOG("Request %s/%s:%u was %s",request.process,request.handle,request.flags,(request.accepted?"accepted":"denied"));
-	return (request.accepted?ERROR_OK:ERROR_DENIED);
+	event_await(request->event);
+	event_delete(request->event);
+	LOG("Request %s/%s:%u was %s",request->process,request->handle,request->flags,(request->accepted?"accepted":"denied"));
+	error_t out=(request->accepted?ERROR_OK:ERROR_DENIED);
+	omm_dealloc(_ui_permission_request_allocator,request);
+	return out;
 }
 
 
@@ -125,6 +129,8 @@ static syscall_callback_t const _ui_permission_request_syscall_functions[]={
 
 void ui_permission_backend_init(void){
 	LOG("Initializing UI permission backend...");
+	_ui_permission_request_allocator=omm_init("ui_permission_request",sizeof(ui_permission_request_t),8,1,pmm_alloc_counter("omm_ui_permission_request"));
+	spinlock_init(&(_ui_permission_request_allocator->lock));
 	spinlock_init(&_ui_permission_request_list_lock);
 	_ui_permission_request_list_event=event_create();
 	acl_request_callback=_acl_permission_request_callback;
