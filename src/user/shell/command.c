@@ -8,6 +8,7 @@
 #include <sys/mp/event.h>
 #include <sys/mp/process.h>
 #include <sys/mp/thread.h>
+#include <sys/string/string.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
@@ -42,7 +43,7 @@ void command_execute(const char* command){
 		buffer_ptr++;
 	}
 	*buffer_ptr=0;
-	if (string_equal(buffer,"cd")){
+	if (!sys_string_compare(buffer,"cd")){
 		if (argc<2){
 			sys_io_print("cd: no input file supplied\n");
 			return;
@@ -56,7 +57,7 @@ void command_execute(const char* command){
 		}
 		return;
 	}
-	if (string_equal(buffer,"exit")){
+	if (!sys_string_compare(buffer,"exit")){
 		if (!sys_options_parse(argc,argv,NULL)){
 			return;
 		}
@@ -66,7 +67,7 @@ void command_execute(const char* command){
 		sys_system_shutdown(0);
 		return;
 	}
-	if (string_equal(buffer,"chroot")){
+	if (!sys_string_compare(buffer,"chroot")){
 		if (argc<2){
 			sys_io_print("chroot: no input file supplied\n");
 			return;
