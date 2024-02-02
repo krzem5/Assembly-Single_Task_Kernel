@@ -12,6 +12,7 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
@@ -134,16 +135,26 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 	if (!syscall_get_string_length(path)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	if (argc*sizeof(u64)>syscall_get_user_pointer_max_length(argv)){
+	if (argc*sizeof(const char*)>syscall_get_user_pointer_max_length(argv)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
+	char** kernel_argv=amm_alloc(argc*sizeof(char*));
 	for (u64 i=0;i<argc;i++){
-		if (!syscall_get_string_length(argv[i])){
+		u64 length=syscall_get_string_length(argv[i]);
+		if (!length){
 			return ERROR_INVALID_ARGUMENT(1);
 		}
+		kernel_argv[i]=amm_alloc(length+1);
+		memcpy(kernel_argv[i],argv[i],length);
+		kernel_argv[i][length]=0;
 	}
 	// copy all vars to a temp buffer + check environ for overflow
-	return elf_load(path,argc,argv,environ,flags);
+	error_t out=elf_load(path,argc,(const char*const*)kernel_argv,environ,flags);
+	for (u64 i=0;i<argc;i++){
+		amm_dealloc(kernel_argv[i]);
+	}
+	amm_dealloc(kernel_argv);
+	return out;
 }
 
 
