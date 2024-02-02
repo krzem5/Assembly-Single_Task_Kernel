@@ -142,6 +142,11 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 	for (u64 i=0;i<argc;i++){
 		u64 length=syscall_get_string_length(argv[i]);
 		if (!length){
+			while (i){
+				i--;
+				amm_dealloc(kernel_argv[i]);
+			}
+			amm_dealloc(kernel_argv);
 			return ERROR_INVALID_ARGUMENT(1);
 		}
 		kernel_argv[i]=amm_alloc(length+1);
