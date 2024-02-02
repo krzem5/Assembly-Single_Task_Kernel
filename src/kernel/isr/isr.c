@@ -27,6 +27,8 @@
 static u8 _isr_next_irq_index=33;
 
 KERNEL_PUBLIC event_t* KERNEL_INIT_WRITE irq_events[223];
+KERNEL_PUBLIC KERNEL_ATOMIC irq_handler_t irq_handlers[223];
+KERNEL_PUBLIC void* KERNEL_ATOMIC irq_handler_contexts[223];
 
 
 
@@ -34,6 +36,8 @@ KERNEL_EARLY_INIT(){
 	LOG("Initializing IRQ events...");
 	for (u8 i=0;i<223;i++){
 		irq_events[i]=event_create();
+		irq_handlers[i]=NULL;
+		irq_handler_contexts[i]=NULL;
 	}
 }
 
@@ -60,7 +64,13 @@ void _isr_handler(isr_state_t* isr_state){
 	}
 	if (isr_state->isr>32){
 		lapic_eoi();
-		event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		irq_handler_t handler=IRQ_HANDLER(isr_state->isr);
+		if (handler){
+			handler(IRQ_HANDLER_CTX(isr_state->isr));
+		}
+		else{
+			event_dispatch(IRQ_EVENT(isr_state->isr),EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		}
 		return;
 	}
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){

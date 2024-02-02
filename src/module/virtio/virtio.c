@@ -5,7 +5,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
-#include <kernel/mp/thread.h>
 #include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -33,12 +32,10 @@ static handle_type_t _virtio_device_handle_type=0;
 
 
 
-static void _virtio_persistent_irq_thread(virtio_device_t* device){
-	while (1){
-		event_await(IRQ_EVENT(device->irq));
-		for (virtio_queue_t* queue=device->queues;queue;queue=queue->next){
-			event_dispatch(queue->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-		}
+static void _virtio_irq_handler(void* ctx){
+	virtio_device_t* device=ctx;
+	for (virtio_queue_t* queue=device->queues;queue;queue=queue->next){
+		event_dispatch(queue->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 }
 
@@ -110,7 +107,8 @@ static void _virtio_init_device(pci_device_t* device){
 		if (!pci_msix_redirect_entry(&msix_table,virtio_device->queue_msix_vector,virtio_device->irq)){
 			panic("Unable to initialize VirtIO device MSI-x vector");
 		}
-		thread_create_kernel_thread(NULL,"virtio-persistent-irq-thread",_virtio_persistent_irq_thread,0x200000,1,virtio_device)->priority=SCHEDULER_PRIORITY_REALTIME;
+		IRQ_HANDLER_CTX(virtio_device->irq)=virtio_device;
+		IRQ_HANDLER(virtio_device->irq)=_virtio_irq_handler;
 	}
 	handle_finish_setup(&(virtio_device->handle));
 }

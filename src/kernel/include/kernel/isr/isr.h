@@ -7,10 +7,18 @@
 
 
 #define IRQ_EVENT(irq) (irq_events[(irq)-33])
+#define IRQ_HANDLER(irq) (irq_handlers[(irq)-33])
+#define IRQ_HANDLER_CTX(irq) (irq_handler_contexts[(irq)-33])
+
+
+
+typedef void (*irq_handler_t)(void*);
 
 
 
 extern event_t* irq_events[223];
+extern KERNEL_ATOMIC irq_handler_t irq_handlers[223];
+extern void* KERNEL_ATOMIC irq_handler_contexts[223];
 
 
 
