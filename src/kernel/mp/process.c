@@ -139,26 +139,50 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	char** kernel_argv=amm_alloc(argc*sizeof(char*));
+	char** kernel_environ=NULL;
+	u64 kernel_environ_length=0;
+	error_t out=ERROR_OK;
 	for (u64 i=0;i<argc;i++){
 		u64 length=syscall_get_string_length(argv[i]);
 		if (!length){
-			while (i){
-				i--;
-				amm_dealloc(kernel_argv[i]);
-			}
-			amm_dealloc(kernel_argv);
-			return ERROR_INVALID_ARGUMENT(1);
+			argc=i;
+			out=ERROR_INVALID_ARGUMENT(2);
+			goto _cleanup;
 		}
 		kernel_argv[i]=amm_alloc(length+1);
 		memcpy(kernel_argv[i],argv[i],length);
 		kernel_argv[i][length]=0;
 	}
-	// copy all vars to a temp buffer + check environ for overflow
-	error_t out=elf_load(path,argc,(const char*const*)kernel_argv,environ,flags);
+	if (environ){
+		u64 max_length=syscall_get_user_pointer_max_length(environ)/sizeof(const char*);
+		for (;environ[kernel_environ_length]&&kernel_environ_length<max_length;kernel_environ_length++){
+			u64 length=syscall_get_string_length(environ[kernel_environ_length]);
+			if (!length){
+				out=ERROR_INVALID_ARGUMENT(3);
+				goto _cleanup;
+			}
+			kernel_environ=amm_realloc(kernel_environ,(kernel_environ_length+1)*sizeof(char*));
+			kernel_environ[kernel_environ_length]=amm_alloc(length+1);
+			memcpy(kernel_environ[kernel_environ_length],environ[kernel_environ_length],length);
+			kernel_environ[kernel_environ_length][length]=0;
+		}
+		if (kernel_environ_length==max_length){
+			out=ERROR_INVALID_ARGUMENT(3);
+			goto _cleanup;
+		}
+		kernel_environ=amm_realloc(kernel_environ,(kernel_environ_length+1)*sizeof(char*));
+		kernel_environ[kernel_environ_length]=NULL;
+	}
+	out=elf_load(path,argc,(const char*const*)kernel_argv,(const char*const*)kernel_environ,flags);
+_cleanup:
 	for (u64 i=0;i<argc;i++){
 		amm_dealloc(kernel_argv[i]);
 	}
 	amm_dealloc(kernel_argv);
+	for (u64 i=0;i<kernel_environ_length;i++){
+		amm_dealloc(kernel_environ[i]);
+	}
+	amm_dealloc(kernel_environ);
 	return out;
 }
 

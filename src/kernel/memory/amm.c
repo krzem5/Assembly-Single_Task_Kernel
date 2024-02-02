@@ -103,5 +103,14 @@ KERNEL_PUBLIC void* amm_realloc(void* ptr,u32 length){
 		amm_dealloc(ptr);
 		return NULL;
 	}
-	panic("amm_realloc");
+	amm_header_t* header=(amm_header_t*)(((u64)ptr)-__builtin_offsetof(amm_header_t,data));
+	u64 index=_size_to_index(((u64)length)+sizeof(amm_header_t));
+	if (index==header->index){
+		return ptr;
+	}
+	u64 current_length=_index_to_size(header->index);
+	void* out=amm_alloc(length);
+	memcpy(out,ptr,(length<current_length?length:current_length));
+	amm_dealloc(ptr);
+	return out;
 }

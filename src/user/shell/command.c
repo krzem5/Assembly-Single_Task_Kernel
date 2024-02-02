@@ -95,7 +95,13 @@ void command_execute(const char* command){
 		char path[4096];
 		sys_fd_path(fd,path,4096);
 		sys_fd_close(fd);
-		sys_process_t process=sys_process_start(path,argc,argv,NULL,0);
+		const char*const env[]={
+			"Abc",
+			"Def",
+			"GhiJkl",
+			NULL
+		};
+		sys_process_t process=sys_process_start(path,argc,argv,env,0);
 		if (!process){
 			break;
 		}
