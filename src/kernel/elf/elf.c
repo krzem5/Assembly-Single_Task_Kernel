@@ -36,6 +36,7 @@ typedef struct _ELF_LOADER_CONTEXT{
 	const char* path;
 	u32 argc;
 	const char*const* argv;
+	u32 environ_length;
 	const char*const* environ;
 	process_t* process;
 	thread_t* thread;
@@ -273,7 +274,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		size+=sizeof(u64);
 		string_table_size+=smm_length(ctx->argv[i])+1;
 	}
-	for (u64 i=0;ctx->environ&&ctx->environ[i];i++){
+	for (u64 i=0;i<ctx->environ_length;i++){
 		size+=sizeof(u64);
 		string_table_size+=smm_length(ctx->environ[i])+1;
 	}
@@ -296,7 +297,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		PUSH_DATA_VALUE(string_table_ptr-buffer+region->rb_node.key);
 		PUSH_STRING(ctx->argv[i]);
 	}
-	for (u64 i=0;ctx->environ&&ctx->environ[i];i++){
+	for (u64 i=0;i<ctx->environ_length;i++){
 		PUSH_DATA_VALUE(string_table_ptr-buffer+region->rb_node.key);
 		PUSH_STRING(ctx->environ[i]);
 	}
@@ -335,7 +336,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
+KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,u32 environ_length,const char*const* environ,u32 flags){
 	if (!path){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
@@ -355,6 +356,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		path,
 		argc,
 		argv,
+		environ_length,
 		environ,
 		process,
 		NULL,

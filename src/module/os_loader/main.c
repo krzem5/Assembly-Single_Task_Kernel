@@ -42,7 +42,7 @@ static _Bool _init(module_t* module){
 	LOG("Loading modules...");
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
-	if (IS_ERROR(elf_load("/bin/shell",0,NULL,NULL,0))){
+	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,0))){
 		panic("Unable to load user shell");
 	}
 	return 0;

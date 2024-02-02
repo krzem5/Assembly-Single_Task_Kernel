@@ -170,10 +170,8 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 			out=ERROR_INVALID_ARGUMENT(3);
 			goto _cleanup;
 		}
-		kernel_environ=amm_realloc(kernel_environ,(kernel_environ_length+1)*sizeof(char*));
-		kernel_environ[kernel_environ_length]=NULL;
 	}
-	out=elf_load(path,argc,(const char*const*)kernel_argv,(const char*const*)kernel_environ,flags);
+	out=elf_load(path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,flags);
 _cleanup:
 	for (u64 i=0;i<argc;i++){
 		amm_dealloc(kernel_argv[i]);

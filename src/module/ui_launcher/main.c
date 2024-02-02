@@ -18,7 +18,7 @@ static _Bool _init(module_t* module){
 		WARN("UI executable not found");
 		return 0;
 	}
-	error_t process=elf_load(UI_EXECUTABLE_FILE_PATH,0,NULL,NULL,0);
+	error_t process=elf_load(UI_EXECUTABLE_FILE_PATH,0,NULL,0,NULL,0);
 	if (IS_ERROR(process)){
 		panic("Unable to load UI");
 	}
