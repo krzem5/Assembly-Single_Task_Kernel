@@ -17,6 +17,7 @@
 
 
 static u8 KERNEL_INIT_WRITE _serial_irq=0;
+static event_t* KERNEL_INIT_WRITE _serial_irq_event=NULL;
 
 KERNEL_PUBLIC serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT]; // not defined as KERNEL_INIT_WRITE due to inline spinlocks
 KERNEL_PUBLIC serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
@@ -47,12 +48,21 @@ static void KERNEL_EARLY_EXEC _init_port(u16 io_port,serial_port_t* out){
 
 
 
+static void _serial_irq_handler(void* ctx){
+	event_dispatch(_serial_irq_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+}
+
+
+
 KERNEL_INIT(){
 	LOG("Enabling serial IRQs...");
 	_serial_irq=isr_allocate();
 	INFO("Serial IRQ: %u",_serial_irq);
+	_serial_irq_event=event_create();
 	ioapic_redirect_irq(COM1_3_IRQ,_serial_irq);
 	ioapic_redirect_irq(COM2_4_IRQ,_serial_irq);
+	IRQ_HANDLER_CTX(_serial_irq)=NULL;
+	IRQ_HANDLER(_serial_irq)=_serial_irq_handler;
 	for (u8 i=0;i<SERIAL_PORT_COUNT;i++){
 		serial_port_t* port=serial_ports+i;
 		if (!port->io_port){
@@ -93,7 +103,8 @@ KERNEL_PUBLIC u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
 	for (u32 i=0;i<length;i++){
 		while (!(io_port_in8(port->io_port+5)&0x01)){
 			spinlock_release_exclusive(&(port->read_lock));
-			event_await(IRQ_EVENT(_serial_irq));
+			event_await(_serial_irq_event);
+			event_set_active(_serial_irq_event,0,0);
 			spinlock_acquire_exclusive(&(port->read_lock));
 		}
 		*((u8*)buffer)=io_port_in8(port->io_port);

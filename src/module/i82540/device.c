@@ -30,6 +30,13 @@ static omm_allocator_t* _i82540_device_allocator=NULL;
 
 
 
+static void _irq_handler(void* ctx){
+	i82540_device_t* device=ctx;
+	event_dispatch(device->irq_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+}
+
+
+
 static void _rx_thread(i82540_device_t* device){
 	while (1){
 		scheduler_pause();
@@ -42,9 +49,10 @@ static void _rx_thread(i82540_device_t* device){
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 		while (!(desc->status&RDESC_DD)){
 			spinlock_release_exclusive(&(device->lock));
-			event_await(IRQ_EVENT(device->irq));
+			event_await(device->irq_event);
 			scheduler_pause();
 			spinlock_acquire_exclusive(&(device->lock));
+			event_set_active(device->irq_event,0,0);
 			u32 icr=device->mmio[REG_ICR];
 			if (icr&0x0004){
 				device->mmio[REG_CTRL]|=CTRL_SLU;
@@ -161,6 +169,9 @@ static void _i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
 	i82540_device->irq=isr_allocate();
 	ioapic_redirect_irq(device->interrupt_line,i82540_device->irq);
+	i82540_device->irq_event=event_create();
+	IRQ_HANDLER_CTX(i82540_device->irq)=i82540_device;
+	IRQ_HANDLER(i82540_device->irq)=_irq_handler;
 	i82540_device->mmio[REG_ITR]=0x0000;
 	i82540_device->mmio[REG_IMS]=0x0084;
 	(void)i82540_device->mmio[REG_ICR];
