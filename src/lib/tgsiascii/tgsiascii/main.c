@@ -221,7 +221,6 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 	for (;out->length&3;out->length++){
 		*((char*)(out->data+out->length))=0;
 	}
-	sys_io_print("===SHADER===\n%s\n==!SHADER===\n",out->data);
 	out->data=sys_heap_realloc(NULL,out->data,out->length);
 	return GLSL_NO_ERROR;
 }

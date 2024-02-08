@@ -600,7 +600,7 @@ _skip_update_buffer_command:
 					}
 					virgl_set_vertex_buffers_command[i*3+1]=(command->vertex_buffers+i)->stride;
 					virgl_set_vertex_buffers_command[i*3+2]=(command->vertex_buffers+i)->offset;
-					virgl_set_vertex_buffers_command[i*3+3]=(handle?((virgl_opengl_buffer_t*)(handle->object))->resource_handle:0);
+					virgl_set_vertex_buffers_command[i*3+3]=(handle?((const virgl_opengl_buffer_t*)(handle->object))->resource_handle:0);
 					if (handle){
 						handle_release(handle);
 					}
