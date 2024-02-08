@@ -58,13 +58,13 @@ static void* _alloc_handle(opengl_handle_type_t type,u32 size){
 
 
 
-static void* _get_handle(GLuint handle,opengl_handle_type_t type,_Bool always_invalid_operation){
+static void* _get_handle(GLuint handle,opengl_handle_type_t type,_Bool always_invalid_operation,_Bool alwats_invalid_value){
 	if (handle>=_gl_internal_state->handle_count||!_gl_internal_state->handles[handle]){
 		_gl_internal_state->gl_error=(always_invalid_operation?GL_INVALID_OPERATION:GL_INVALID_VALUE);
 		return NULL;
 	}
 	if (_gl_internal_state->handles[handle]->type!=type){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		_gl_internal_state->gl_error=(alwats_invalid_value?GL_INVALID_VALUE:GL_INVALID_OPERATION);
 		return NULL;
 	}
 	return _gl_internal_state->handles[handle];
@@ -746,7 +746,7 @@ static void _sync_state(void){
 	if (!_gl_internal_state->gl_used_vertex_array){
 		goto _skip_vertex_array_sync;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		goto _skip_vertex_array_sync;
 	}
@@ -864,7 +864,7 @@ _skip_vertex_array_sync:
 	};
 	_Bool update_buffers=0;
 	if (_gl_internal_state->gl_bound_index_buffer!=_gl_internal_state->gl_used_index_buffer||_gl_internal_state->gl_bound_index_offset!=_gl_internal_state->gl_used_index_offset||_gl_internal_state->gl_bound_index_width!=_gl_internal_state->gl_used_index_width){
-		opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+		opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1,0);
 		set_buffers_command.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0);
 		set_buffers_command.index_buffer_index_width=_gl_internal_state->gl_used_index_width;
 		set_buffers_command.index_buffer_offset=_gl_internal_state->gl_used_index_offset;
@@ -874,15 +874,15 @@ _skip_vertex_array_sync:
 		update_buffers=1;
 	}
 	if (_gl_internal_state->gl_constant_buffer_needs_update){
-		opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+		opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1,0);
 		set_buffers_command.uniform_buffer_data=(program_state?program_state->uniform_data:NULL);
 		set_buffers_command.uniform_buffer_size=(program_state?program_state->uniform_data_size:0);
 		_gl_internal_state->gl_constant_buffer_needs_update=0;
 		update_buffers=1;
 	}
 	if (_gl_internal_state->gl_bound_array_buffer!=_gl_internal_state->gl_used_array_buffer){
-		opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
-		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+		opengl_buffer_state_t* array_buffer_state=_get_handle(_gl_internal_state->gl_used_array_buffer,OPENGL_HANDLE_TYPE_BUFFER,1,0);
+		opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 		if (!state){
 			goto _skip_array_buffers_sync;
 		}
@@ -1012,7 +1012,7 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return;
 	}
-	opengl_buffer_state_t* state=_get_handle(id,OPENGL_HANDLE_TYPE_BUFFER,1);
+	opengl_buffer_state_t* state=_get_handle(id,OPENGL_HANDLE_TYPE_BUFFER,1,0);
 	if (!state){
 		return;
 	}
@@ -1054,7 +1054,7 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 
 
 static void _update_uniform(GLint location,const void* buffer,GLuint size){
-	opengl_program_state_t* state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+	opengl_program_state_t* state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1,0);
 	if (!state){
 		return;
 	}
@@ -1109,7 +1109,7 @@ static void _set_vertex_attrib_pointer(GLuint index,GLint size,GLenum type,GLboo
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}
@@ -1123,7 +1123,7 @@ static void _set_vertex_attrib_pointer(GLuint index,GLint size,GLenum type,GLboo
 
 
 
-static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean normalized,const void* data,GLuint data_size){opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}
@@ -1174,11 +1174,11 @@ SYS_PUBLIC void glActiveTexture(GLenum texture){
 
 
 SYS_PUBLIC void glAttachShader(GLuint program,GLuint shader){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return;
 	}
-	opengl_shader_state_t* shader_state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
+	opengl_shader_state_t* shader_state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0,0);
 	if (!state){
 		return;
 	}
@@ -1222,7 +1222,7 @@ SYS_PUBLIC void glBindAttribLocation(GLuint program,GLuint index,const GLchar* n
 
 
 SYS_PUBLIC void glBindBuffer(GLenum target,GLuint buffer){
-	if (buffer&&!_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1)){
+	if (buffer&&!_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1,0)){
 		return;
 	}
 	switch (target){
@@ -1284,13 +1284,33 @@ SYS_PUBLIC void glBindSampler(GLuint unit,GLuint sampler){
 
 
 SYS_PUBLIC void glBindTexture(GLenum target,GLuint texture){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindTexture\x1b[0m\n");
+	opengl_texture_state_t* state=NULL;
+	if (texture){
+		state=_get_handle(texture,OPENGL_HANDLE_TYPE_TEXTURE,0,1);
+		if (!state){
+			return;
+		}
+		if (state->target&&state->target!=target){
+			_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+			return;
+		}
+	}
+	switch (target){
+		case GL_TEXTURE_2D:
+			_gl_internal_state->gl_used_texture_2d=texture;
+			break;
+		default:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glBindTexture\x1b[0m\n");
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	state->target=target;
 }
 
 
 
 SYS_PUBLIC void glBindVertexArray(GLuint array){
-	if (array&&!_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1)){
+	if (array&&!_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0)){
 		return;
 	}
 	_gl_internal_state->gl_used_vertex_array=array;
@@ -1479,7 +1499,7 @@ SYS_PUBLIC void glColorMaski(GLuint index,GLboolean r,GLboolean g,GLboolean b,GL
 
 
 SYS_PUBLIC void glCompileShader(GLuint shader){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0,0);
 	if (!state){
 		return;
 	}
@@ -1730,7 +1750,7 @@ SYS_PUBLIC void glDisableVertexAttribArray(GLuint index){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}
@@ -1840,7 +1860,7 @@ SYS_PUBLIC void glEnableVertexAttribArray(GLuint index){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}
@@ -1987,7 +2007,16 @@ SYS_PUBLIC void glGenSamplers(GLsizei count,GLuint* samplers){
 
 
 SYS_PUBLIC void glGenTextures(GLsizei n,GLuint* textures){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glGenTextures\x1b[0m\n");
+	if (n<0){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	for (GLsizei i=0;i<n;i++){
+		opengl_texture_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_TEXTURE,sizeof(opengl_texture_state_t));
+		state->driver_handle=0;
+		state->target=0;
+		textures[i]=state->header.index;
+	}
 }
 
 
@@ -2186,7 +2215,7 @@ SYS_PUBLIC void glGetPointerv(GLenum pname,void** params){
 
 
 SYS_PUBLIC void glGetProgramInfoLog(GLuint program,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return;
 	}
@@ -2210,7 +2239,7 @@ SYS_PUBLIC void glGetProgramInfoLog(GLuint program,GLsizei bufSize,GLsizei* leng
 
 
 SYS_PUBLIC void glGetProgramiv(GLuint program,GLenum pname,GLint* params){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return;
 	}
@@ -2341,7 +2370,7 @@ SYS_PUBLIC void glGetSamplerParameteriv(GLuint sampler,GLenum pname,GLint* param
 
 
 SYS_PUBLIC void glGetShaderInfoLog(GLuint shader,GLsizei bufSize,GLsizei* length,GLchar* infoLog){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0,0);
 	if (!state){
 		return;
 	}
@@ -2365,7 +2394,7 @@ SYS_PUBLIC void glGetShaderInfoLog(GLuint shader,GLsizei bufSize,GLsizei* length
 
 
 SYS_PUBLIC void glGetShaderiv(GLuint shader,GLenum pname,GLint* params){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0,0);
 	if (!state){
 		return;
 	}
@@ -2516,7 +2545,7 @@ SYS_PUBLIC GLint glGetUniformLocation(GLuint program,const GLchar* name){
 		_gl_internal_state->gl_used_program=0;
 		return 0;
 	}
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return 0;
 	}
@@ -2584,7 +2613,7 @@ SYS_PUBLIC void glHint(GLenum target,GLenum mode){
 
 SYS_PUBLIC GLboolean glIsBuffer(GLuint buffer){
 	GLenum error=_gl_internal_state->gl_error;
-	void* ptr=_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1);
+	void* ptr=_get_handle(buffer,OPENGL_HANDLE_TYPE_BUFFER,1,0);
 	_gl_internal_state->gl_error=error;
 	return !!ptr;
 }
@@ -2614,7 +2643,7 @@ SYS_PUBLIC GLboolean glIsFramebuffer(GLuint framebuffer){
 
 SYS_PUBLIC GLboolean glIsProgram(GLuint program){
 	GLenum error=_gl_internal_state->gl_error;
-	void* ptr=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,1);
+	void* ptr=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,1,0);
 	_gl_internal_state->gl_error=error;
 	return !!ptr;
 }
@@ -2644,7 +2673,7 @@ SYS_PUBLIC GLboolean glIsSampler(GLuint sampler){
 
 SYS_PUBLIC GLboolean glIsShader(GLuint shader){
 	GLenum error=_gl_internal_state->gl_error;
-	void* ptr=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,1);
+	void* ptr=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,1,0);
 	_gl_internal_state->gl_error=error;
 	return !!ptr;
 }
@@ -2667,7 +2696,7 @@ SYS_PUBLIC GLboolean glIsTexture(GLuint texture){
 
 SYS_PUBLIC GLboolean glIsVertexArray(GLuint array){
 	GLenum error=_gl_internal_state->gl_error;
-	void* ptr=_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	void* ptr=_get_handle(array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	_gl_internal_state->gl_error=error;
 	return !!ptr;
 }
@@ -2681,7 +2710,7 @@ SYS_PUBLIC void glLineWidth(GLfloat width){
 
 
 SYS_PUBLIC void glLinkProgram(GLuint program){
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return;
 	}
@@ -2889,7 +2918,7 @@ SYS_PUBLIC void glScissor(GLint x,GLint y,GLsizei width,GLsizei height){
 
 
 SYS_PUBLIC void glShaderSource(GLuint shader,GLsizei count,const GLchar*const* string,const GLint* length){
-	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0);
+	opengl_shader_state_t* state=_get_handle(shader,OPENGL_HANDLE_TYPE_SHADER,0,0);
 	if (!state){
 		return;
 	}
@@ -3491,7 +3520,7 @@ SYS_PUBLIC void glUseProgram(GLuint program){
 		_gl_internal_state->gl_constant_buffer_needs_update=1;
 		return;
 	}
-	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0);
+	opengl_program_state_t* state=_get_handle(program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
 	if (!state){
 		return;
 	}
@@ -3758,7 +3787,7 @@ SYS_PUBLIC void glVertexAttribDivisor(GLuint index,GLuint divisor){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}
@@ -3919,7 +3948,7 @@ SYS_PUBLIC void glVertexAttribIPointer(GLuint index,GLint size,GLenum type,GLsiz
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
-	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1);
+	opengl_vertex_array_state_t* state=_get_handle(_gl_internal_state->gl_used_vertex_array,OPENGL_HANDLE_TYPE_VERTEX_ARRAY,1,0);
 	if (!state){
 		return;
 	}

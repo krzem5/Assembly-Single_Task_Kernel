@@ -69,6 +69,7 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	out->gl_used_index_offset=0;
 	out->gl_used_index_width=0;
 	out->gl_used_program=0;
+	out->gl_used_texture_2d=0;
 	out->gl_used_vertex_array=0;
 	for (u8 i=0;i<4;i++){
 		out->gl_viewport[i]=0;

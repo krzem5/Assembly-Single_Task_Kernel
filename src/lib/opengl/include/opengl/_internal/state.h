@@ -13,6 +13,7 @@
 #define OPENGL_HANDLE_TYPE_PROGRAM 2
 #define OPENGL_HANDLE_TYPE_VERTEX_ARRAY 3
 #define OPENGL_HANDLE_TYPE_BUFFER 4
+#define OPENGL_HANDLE_TYPE_TEXTURE 5
 
 #define OPENGL_MAX_VERTEX_ATTRIBUTES 16
 #define OPENGL_MAX_CONST_VERTEX_ELEMENT_SIZE (4*sizeof(double))
@@ -113,6 +114,14 @@ typedef struct _OPENGL_BUFFER_STATE{
 
 
 
+typedef struct _OPENGL_TEXTURE_STATE{
+	opengl_handle_header_t header;
+	u64 driver_handle;
+	GLenum target;
+} opengl_texture_state_t;
+
+
+
 typedef struct _OPENGL_DRIVER_INSTANCE_DATA{
 	u16 opengl_version;
 	char driver_name[32];
@@ -148,6 +157,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLuint64 gl_used_index_offset;
 	GLuint gl_used_index_width;
 	GLuint gl_used_program;
+	GLuint gl_used_texture_2d;
 	GLuint gl_used_vertex_array;
 	GLint gl_viewport[4];
 	opengl_handle_header_t** handles;
