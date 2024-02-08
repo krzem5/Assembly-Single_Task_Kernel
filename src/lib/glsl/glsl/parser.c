@@ -247,6 +247,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				goto _cleanup;
 			}
 			if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_LEFT_PAREN){
+				sys_io_print("=> Call: %s\n",identifier);
 				*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
 				goto _cleanup;
 			}

@@ -25,9 +25,11 @@ static const char* _vertex_shader=" \
  \n\
 layout (location=0) in vec2 in_pos; \n\
 layout (location=1) in vec3 in_color; \n\
+layout (location=2) in vec2 in_uv; \n\
 uniform vec4 vs_color; \n\
 uniform mat3x3 vs_transform; \n\
 out vec4 fs_color; \n\
+out vec2 fs_uv; \n\
  \n\
  \n\
  \n\
@@ -35,6 +37,7 @@ void main(void){ \n\
 	vec3 local=vs_transform*vec3(in_pos,1.0); \n\
 	gl_Position=vec4(local.xy,0.0,1.0); \n\
 	fs_color=vs_color/2.0+vec4(in_color,1.0); \n\
+	fs_uv=in_uv; \n\
 } \n\
 ";
 
@@ -44,12 +47,14 @@ static const char* _fragment_shader=" \
  \n\
  \n\
 in vec4 fs_color; \n\
+in vec2 fs_uv; \n\
+uniform sampler2D fs_texture; \n\
 out vec4 out_color; \n\
  \n\
  \n\
  \n\
 void main(void){ \n\
-	out_color=fs_color; \n\
+	out_color=fs_color+vec4(texture(fs_texture,fs_uv).rgb,1.0); \n\
 } \n\
 ";
 
@@ -215,10 +220,12 @@ int main(int argc,const char** argv){
 			}
 			glUseProgram(program);
 			uniform_vs_color=glGetUniformLocation(program,"vs_color");
-			sys_io_print("uniform.vs_color=%u\n",uniform_vs_color);
 			GLint uniform_vs_transform=glGetUniformLocation(program,"vs_transform");
+			GLint uniform_fs_texture=glGetUniformLocation(program,"fs_texture");
+			sys_io_print("uniform.vs_color=%u\nuniform.vs_transform=%u\nuniform.fs_texture=%u\n",uniform_vs_color,uniform_vs_transform,uniform_fs_texture);
 			float matrix[9]={1.0f,0.0f,0.0f,0.0f,-1.0f,0.0f,0.0f,0.0f,1.0f};
 			glUniformMatrix3fv(uniform_vs_transform,1,GL_FALSE,matrix);
+			glUniform1i(uniform_fs_texture,0);
 		}
 		u64 timer_interval=1000000000ull/data.mode.freq;
 		sys_timer_t timer=sys_timer_create(0,0);
@@ -231,19 +238,35 @@ int main(int argc,const char** argv){
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbo[1]);
-		float buffer[15]={
-			0.0f,1.0f,1.0f,0.0f,0.0f,
-			-1.0f,-1.0f,0.0f,1.0f,0.0f,
-			1.0f,-1.0f,0.0f,0.0f,1.0f
+		float buffer[]={
+			+0.0f,+1.0f,1.0f,0.0f,0.0f,0.0f,0.0f,
+			-1.0f,-1.0f,0.0f,1.0f,0.0f,1.0f,0.0f,
+			+1.0f,-1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,
 		};
 		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_DYNAMIC_DRAW);
 		u32 indices[3]={0,1,2};
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices,GL_STATIC_DRAW);
-		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,5*sizeof(float),NULL);
-		glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,5*sizeof(float),(void*)(2*sizeof(float)));
+		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,7*sizeof(float),NULL);
+		glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,7*sizeof(float),(void*)(2*sizeof(float)));
+		glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,7*sizeof(float),(void*)(5*sizeof(float)));
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
 		glVertexAttrib4f(1,1.0f,0.25f,0.5f,1.0f);
+		GLuint texture_id;
+		glGenTextures(1,&texture_id);
+		glBindTexture(GL_TEXTURE_2D,texture_id);
+		const u32 texture_data[2*2]={
+			0xff0000,0x00ff00,
+			0x0000ff,0xffff00
+		};
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,2,2,0,GL_RGBA,GL_UNSIGNED_BYTE,texture_data);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D,texture_id);
 		float start=sys_clock_get_time();
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);
