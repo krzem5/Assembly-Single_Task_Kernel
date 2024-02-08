@@ -1,6 +1,7 @@
 #include <glsl/ast.h>
 #include <glsl/builtin_types.h>
 #include <glsl/compiler.h>
+#include <glsl/internal_functions.h>
 #include <glsl/lexer.h>
 #include <glsl/linker.h>
 #include <glsl/operators.h>
@@ -44,12 +45,14 @@ static const char*const _glsl_instruction_type_to_string[]={
 	[GLSL_INSTRUCTION_TYPE_IGN]="IGN",
 	[GLSL_INSTRUCTION_TYPE_EMV]="EMV",
 	[GLSL_INSTRUCTION_TYPE_EMP]="EMP",
+	[GLSL_INSTRUCTION_TYPE_FUN]="FUN",
 };
 
 static const char*const _glsl_compilation_output_var_type_to_string[GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE+1]={
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT]="input",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT]="output",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM]="uniform",
+	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER]="sampler",
 	[GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION]="<position>",
 };
 
@@ -99,15 +102,17 @@ static void _print_ast_node(const glsl_ast_node_t* node,u32 indentation){
 			sys_io_print("GLSL_AST_NODE_TYPE_ARRAY_ACCESS");
 			break;
 		case GLSL_AST_NODE_TYPE_CALL:
-			sys_io_print("GLSL_AST_NODE_TYPE_CALL");
-			break;
 		case GLSL_AST_NODE_TYPE_CONSTRUCTOR:
 			sys_io_print("{\n");
 			_print_indentation(indentation+2);
-			sys_io_print("op: constructor,\n");
+			sys_io_print("op: %s,\n",(node->type==GLSL_AST_NODE_TYPE_CALL?"call":"constructor"));
 			_print_indentation(indentation+2);
 			sys_io_print("type: %s,\n",type_str);
 			_print_indentation(indentation+2);
+			if (node->type==GLSL_AST_NODE_TYPE_CALL){
+				sys_io_print("func: '%s',\n",glsl_internal_function_type_to_string(node->internal_function_type));
+				_print_indentation(indentation+2);
+			}
 			sys_io_print("args: [");
 			for (u32 i=0;i<node->args.count;i++){
 				sys_io_print("\n");
@@ -632,6 +637,9 @@ SYS_PUBLIC void glsl_debug_print_compilation_output(const glsl_compilation_outpu
 	for (u32 i=0;i<output->instruction_count;i++){
 		const glsl_instruction_t* instruction=output->instructions[i];
 		sys_io_print("\n    %s",_glsl_instruction_type_to_string[instruction->type]);
+		if (instruction->type==GLSL_INSTRUCTION_TYPE_FUN){
+			sys_io_print(" (%s)",glsl_internal_function_type_to_string(instruction->function_type));
+		}
 		for (u32 j=0;j<instruction->arg_count;j++){
 			const glsl_instruction_arg_t* arg=instruction->args+j;
 			if (!j){

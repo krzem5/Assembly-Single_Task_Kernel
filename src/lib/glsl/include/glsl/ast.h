@@ -1,6 +1,7 @@
 #ifndef _GLSL_AST_H_
 #define _GLSL_AST_H_ 1
 #include <glsl/builtin_types.h>
+#include <glsl/internal_functions.h>
 #include <glsl/shader.h>
 #include <sys/types.h>
 
@@ -107,6 +108,7 @@ typedef struct _GLSL_AST_NODE{
 	glsl_ast_node_type_t type;
 	union{
 		glsl_ast_scope_t block_scope;
+		glsl_internal_function_type_t internal_function_type;
 		glsl_ast_node_operator_type_t operator_type;
 	};
 	glsl_ast_type_t* value_type;

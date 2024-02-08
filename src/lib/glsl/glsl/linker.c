@@ -110,7 +110,7 @@ _error:
 
 
 
-static glsl_error_t _allocate_uniform_slots(glsl_linker_program_t* program,glsl_linker_linked_program_t* linked_program){
+static glsl_error_t _allocate_global_slots(glsl_linker_program_t* program,glsl_linker_linked_program_t* linked_program){
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(gl_MaxVertexUniformComponents,&allocator);
@@ -123,7 +123,7 @@ _second_pass:
 		}
 		for (u32 j=0;j<(program->shaders+i)->var_count;j++){
 			glsl_compilation_output_var_t* var=(program->shaders+i)->vars+j;
-			if (var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM&&(var->slot!=0xffffffff)==has_slot){
+			if ((var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM||var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER)&&(var->slot!=0xffffffff)==has_slot){
 				for (u32 k=0;k<linked_program->uniform_count;k++){
 					const glsl_linker_linked_program_uniform_t* uniform=linked_program->uniforms+k;
 					if (!sys_string_compare(uniform->name,var->name)){
@@ -252,7 +252,7 @@ SYS_PUBLIC glsl_error_t glsl_linker_program_link(glsl_linker_program_t* program,
 	if (error!=GLSL_NO_ERROR){
 		return error;
 	}
-	error=_allocate_uniform_slots(program,out);
+	error=_allocate_global_slots(program,out);
 	if (error!=GLSL_NO_ERROR){
 		goto _cleanup;
 	}

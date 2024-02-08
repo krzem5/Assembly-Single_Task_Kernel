@@ -54,7 +54,7 @@ out vec4 out_color; \n\
  \n\
  \n\
 void main(void){ \n\
-	out_color=fs_color+vec4(texture(fs_texture,fs_uv).rgb,1.0); \n\
+	out_color=fs_color+vec4(__gl_texture(fs_texture,fs_uv).rgb,1.0); \n\
 } \n\
 ";
 

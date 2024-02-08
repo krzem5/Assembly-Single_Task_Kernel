@@ -10,7 +10,8 @@
 #define GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT 0
 #define GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT 1
 #define GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM 2
-#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION 3
+#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER 3
+#define GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION 4
 
 #define GLSL_COMPILATION_OUTPUT_VAR_MAX_TYPE GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION
 
@@ -42,6 +43,7 @@
 #define GLSL_INSTRUCTION_TYPE_IGN 25	// ignore (fragment shader only)
 #define GLSL_INSTRUCTION_TYPE_EMV 26	// emit vertex (geometry shader only)
 #define GLSL_INSTRUCTION_TYPE_EMP 27	// emit primitive (geometry shader only)
+#define GLSL_INSTRUCTION_TYPE_FUN 28	// call internal function
 
 #define GLSL_INSTRUCTION_ARG_FLAG_CONST 0x40
 #define GLSL_INSTRUCTION_ARG_FLAG_LOCAL 0x80
@@ -66,7 +68,8 @@ typedef struct _GLSL_INSTURCTION_ARG{
 
 typedef struct _GLSL_INSTURCTION{
 	glsl_instruction_type_t type;
-	u32 arg_count;
+	u16 arg_count;
+	u16 function_type;
 	glsl_instruction_arg_t args[6];
 } glsl_instruction_t;
 

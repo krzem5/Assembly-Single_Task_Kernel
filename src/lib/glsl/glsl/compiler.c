@@ -46,6 +46,10 @@ static const glsl_compilation_output_var_type_t _glsl_ast_storage_type_to_output
 
 
 
+static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* state,register_state_t* output_register);
+
+
+
 static u16 _push_var(glsl_compilation_output_t* output,const char* name,u32 slot,glsl_compilation_output_var_type_t type,u16 slot_count){
 	if (output->var_count==output->_var_capacity){
 		output->_var_capacity+=VAR_LIST_GROWTH_SIZE;
@@ -87,6 +91,25 @@ static void _push_consts(glsl_compilation_output_t* output,u32 offset,const floa
 		} while (output->const_count<const_count);
 	}
 	sys_memory_copy(values,output->consts+offset,count*sizeof(float));
+}
+
+
+
+static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg,u8 max_size){
+	arg->index=reg->base;
+	if (reg->pattern_length){
+		arg->pattern_length_and_flags=reg->pattern_length-1;
+		arg->pattern=reg->pattern;
+	}
+	else{
+		arg->pattern_length_and_flags=glsl_builtin_type_to_vector_length(reg->builtin_type)-1;
+		arg->pattern=0b11100100;
+	}
+	if (arg->pattern_length_and_flags>max_size){
+		arg->pattern_length_and_flags=max_size;
+	}
+	arg->pattern+=0b01010101*(reg->offset&3);
+	arg->pattern_length_and_flags|=(reg->offset&0xfc)|(reg->flags&(GLSL_INSTRUCTION_ARG_FLAG_CONST|GLSL_INSTRUCTION_ARG_FLAG_LOCAL));
 }
 
 
@@ -134,12 +157,28 @@ static void _calculate_output_target(compiler_state_t* state,const glsl_ast_node
 		node=node->swizzle.value;
 	}
 	if (node->type==GLSL_AST_NODE_TYPE_VAR){
+		out->base=node->var->_compiler_data;
 		if (node->var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT){
-			out->base=node->var->_compiler_data;
 			out->flags|=GLSL_INSTRUCTION_ARG_FLAG_LOCAL;
 		}
-		else{
-			out->base=node->var->_compiler_data;
+		return;
+	}
+	if (node->type==GLSL_AST_NODE_TYPE_CALL){
+		register_state_t regs[7];
+		for (u32 i=0;i<node->args.count;i++){
+			(regs+i)->is_initialized=0;
+			glsl_error_t error=_visit_node(node->args.data[i],state,regs+i);
+			if (error!=GLSL_NO_ERROR){
+				sys_io_print("_calculate_output_target: error: %s\n",error);
+				return;
+			}
+		}
+		_calculate_output_target(state,NULL,node->value_type->builtin_type,out);
+		glsl_instruction_t* instruction=_push_instruction(state->output,GLSL_INSTRUCTION_TYPE_FUN,node->args.count+1);
+		instruction->function_type=node->internal_function_type;
+		_generate_instruction_arg(out,instruction->args,4);
+		for (u32 i=0;i<node->args.count;i++){
+			_generate_instruction_arg(regs+i,instruction->args+i+1,4);
 		}
 		return;
 	}
@@ -152,25 +191,6 @@ static void _release_local_regs(compiler_state_t* state,const register_state_t* 
 	if (reg->flags&GLSL_INSTRUCTION_ARG_FLAG_LOCAL){
 		_glsl_interface_allocator_release(&(state->local_variable_allocator),reg->base,glsl_builtin_type_to_slot_count(reg->builtin_type));
 	}
-}
-
-
-
-static void _generate_instruction_arg(const register_state_t* reg,glsl_instruction_arg_t* arg,u8 max_size){
-	arg->index=reg->base;
-	if (reg->pattern_length){
-		arg->pattern_length_and_flags=reg->pattern_length-1;
-		arg->pattern=reg->pattern;
-	}
-	else{
-		arg->pattern_length_and_flags=glsl_builtin_type_to_vector_length(reg->builtin_type)-1;
-		arg->pattern=0b11100100;
-	}
-	if (arg->pattern_length_and_flags>max_size){
-		arg->pattern_length_and_flags=max_size;
-	}
-	arg->pattern+=0b01010101*(reg->offset&3);
-	arg->pattern_length_and_flags|=(reg->offset&0xfc)|(reg->flags&(GLSL_INSTRUCTION_ARG_FLAG_CONST|GLSL_INSTRUCTION_ARG_FLAG_LOCAL));
 }
 
 
@@ -501,6 +521,9 @@ static const glsl_ast_var_t* _allocate_vars(const glsl_ast_t* ast,compiler_state
 		glsl_ast_var_t* var=ast->vars[i];
 		if (var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_CONST&&_is_var_used(var)){
 			glsl_compilation_output_var_type_t type=_glsl_ast_storage_type_to_output_var_type[var->storage.type];
+			if (type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM&&var->type->type==GLSL_AST_TYPE_TYPE_BUILTIN&&(var->type->builtin_type>=GLSL_BUILTIN_TYPE_SAMPLER_1D&&var->type->builtin_type<=GLSL_BUILTIN_TYPE_USAMPLER_2D_MULTI_SAMPLE_ARRAY)){
+				type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER;
+			}
 			if (var->flags&GLSL_AST_VAR_FLAG_BUILTIN){
 				if (!sys_string_compare(var->name,"gl_Position")){
 					type=GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION;

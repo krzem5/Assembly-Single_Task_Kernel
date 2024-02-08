@@ -1,4 +1,5 @@
 #include <glsl/_internal/error.h>
+#include <glsl/_internal/internal_function_table.h>
 #include <glsl/_internal/operator_table.h>
 #include <glsl/ast.h>
 #include <glsl/builtin_types.h>
@@ -247,9 +248,41 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 				goto _cleanup;
 			}
 			if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_LEFT_PAREN){
-				sys_io_print("=> Call: %s\n",identifier);
-				*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
-				goto _cleanup;
+				parser->index++;
+				glsl_ast_node_t* node=glsl_ast_node_create(GLSL_AST_NODE_TYPE_CALL);
+				node->args.count=0;
+				do{
+					if (node->args.count==GLSL_AST_NODE_MAX_ARG_COUNT){
+						glsl_ast_node_delete(node);
+						*error=_glsl_error_create_parser_too_many_arguments();
+						goto _cleanup;
+					}
+					glsl_ast_node_t* arg=_parse_expression(parser,GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN,1,error);
+					if (!arg){
+						glsl_ast_node_delete(node);
+						goto _cleanup;
+					}
+					node->args.data[node->args.count]=arg;
+					node->args.count++;
+				} while (parser->tokens[parser->index-1].type!=GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN);
+				if (sys_string_length(identifier)>5&&!sys_memory_compare(identifier,"__gl_",5)){
+					if (!_glsl_internal_function_table_find(identifier,node)){
+						*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
+						goto _cleanup;
+					}
+					if (value_stack_size==PARSER_EXPRESSION_STACK_SIZE){
+						*error=_glsl_error_create_parser_expression_stack_overflow();
+						goto _cleanup;
+					}
+					value_stack[value_stack_size]=node;
+					value_stack_size++;
+					last_token_was_value=1;
+					continue;
+				}
+				else{
+					*error=_glsl_error_create_unimplemented(__FILE__,__LINE__,__func__);
+					goto _cleanup;
+				}
 			}
 			if (value_stack_size==PARSER_EXPRESSION_STACK_SIZE){
 				*error=_glsl_error_create_parser_expression_stack_overflow();

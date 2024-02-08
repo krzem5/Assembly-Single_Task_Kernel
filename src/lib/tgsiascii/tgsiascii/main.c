@@ -44,6 +44,19 @@ static const char* _glsl_instruction_type_to_tgsi_instruction[]={
 	[GLSL_INSTRUCTION_TYPE_IGN]="KILL",
 	[GLSL_INSTRUCTION_TYPE_EMV]="EMIT",
 	[GLSL_INSTRUCTION_TYPE_EMP]="ENDPRIM",
+	[GLSL_INSTRUCTION_TYPE_FUN]="?????????",
+};
+
+
+
+static const u32 _default_arg_order[6]={
+	0,1,2,3,4,5
+};
+
+
+
+static const u32 _tex_arg_order[6]={
+	0,2,1,3,4,5
 };
 
 
@@ -82,15 +95,18 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			_output_string(out,"FRAG\nPROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n",0);
 			break;
 	}
+	u32 generic_index=0;
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* var=output->vars+i;
 		const char* storage=NULL;
 		const char* suffix="";
+		_Bool has_generic_specifier=0;
 		switch (var->type){
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
 				storage="IN";
 				if (output->shader_type==GLSL_SHADER_TYPE_FRAGMENT){
-					suffix=", GENERIC, PERSPECTIVE";
+					has_generic_specifier=1;
+					suffix=", PERSPECTIVE";
 				}
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_OUTPUT:
@@ -99,11 +115,14 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 					suffix=", COLOR";
 				}
 				else{
-					suffix=", GENERIC";
+					has_generic_specifier=1;
 				}
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM:
 				storage="CONST";
+				break;
+			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER:
+				storage="SAMP";
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION:
 				if (output->shader_type==GLSL_SHADER_TYPE_VERTEX){
@@ -118,11 +137,16 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 				break;
 		}
 		if (var->slot_count==1){
-			_output_string_template(out,"DCL %s[%u]%s\n",storage,var->slot,suffix);
+			_output_string_template(out,"DCL %s[%u]",storage,var->slot);
 		}
 		else{
-			_output_string_template(out,"DCL %s[%u..%u]%s\n",storage,var->slot,var->slot+var->slot_count-1,suffix);
+			_output_string_template(out,"DCL %s[%u..%u]",storage,var->slot,var->slot+var->slot_count-1);
 		}
+		if (has_generic_specifier){
+			_output_string_template(out,", GENERIC[%u]",generic_index);
+			generic_index++;
+		}
+		_output_string_template(out,"%s\n",suffix);
 	}
 	if (output->local_count){
 		_output_string_template(out,"DCL TEMP[0..%u], LOCAL\n",output->local_count-1);
@@ -137,11 +161,20 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			offset++;
 			continue;
 		}
-		_output_string_template(out,"%u:\t%s",i-offset,_glsl_instruction_type_to_tgsi_instruction[instruction->type]);
+		_output_string_template(out,"%u:\t",i-offset);
+		const u32* order=_default_arg_order;
+		if (instruction->type!=GLSL_INSTRUCTION_TYPE_FUN){
+			_output_string(out,_glsl_instruction_type_to_tgsi_instruction[instruction->type],0);
+		}
+		else if (instruction->function_type==GLSL_INTERNAL_FUNCTION_TYPE_TEXTURE_VEC4_SAMPLER_2D_VEC2){
+			order=_tex_arg_order;
+			_output_string(out,"TEX",0);
+		}
 		for (u32 j=0;j<instruction->arg_count;j++){
-			const glsl_instruction_arg_t* arg=instruction->args+j;
+			const glsl_instruction_arg_t* arg=instruction->args+(order[j]&7);
 			const char* storage=NULL;
 			u32 slot=arg->index;
+			_Bool has_swizzle=1;
 			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
 				storage="IMM";
 			}
@@ -159,8 +192,16 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 					case GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM:
 						storage="CONST";
 						break;
+					case GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER:
+						storage="SAMP";
+						has_swizzle=0;
+						break;
 				}
 				slot=(output->vars+arg->index)->slot+((arg->pattern_length_and_flags>>2)&0xf);
+			}
+			_output_string_template(out,"%s\t%s[%u]",(j?",":""),storage,slot);
+			if (!has_swizzle){
+				continue;
 			}
 			char swizzle[5];
 			u8 pattern_length=(j?4:(arg->pattern_length_and_flags&3)+1);
@@ -169,7 +210,10 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 				swizzle[k]="xyzw"[(pattern>>(k<<1))&3];
 			}
 			swizzle[pattern_length]=0;
-			_output_string_template(out,"%s\t%s[%u].%s",(j?",":""),storage,slot,swizzle);
+			_output_string_template(out,".%s",swizzle);
+		}
+		if (order==_tex_arg_order){
+			_output_string(out,",\t2D",0);
 		}
 		_output_string(out,"\n",0);
 	}
@@ -177,6 +221,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 	for (;out->length&3;out->length++){
 		*((char*)(out->data+out->length))=0;
 	}
+	sys_io_print("===SHADER===\n%s\n==!SHADER===\n",out->data);
 	out->data=sys_heap_realloc(NULL,out->data,out->length);
 	return GLSL_NO_ERROR;
 }
