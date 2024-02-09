@@ -69,6 +69,70 @@ static const virgl_opengl_vertex_array_element_type_t _virgl_vertex_array_elemen
 
 
 
+static const u32 _virgl_texture_format_map[]={
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32F]=VIRGL_FORMAT_R32G32B32A32_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32I]=VIRGL_FORMAT_RGBA32I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32UI]=VIRGL_FORMAT_RGBA32UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16]=VIRGL_FORMAT_R16G16B16A16_UNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16F]=VIRGL_FORMAT_R16G16B16A16_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16I]=VIRGL_FORMAT_RGBA16I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16UI]=VIRGL_FORMAT_RGBA16UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8]=VIRGL_FORMAT_R8G8B8A8_UNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8UI]=VIRGL_FORMAT_RGBA8UI,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_SRGB8_ALPHA8]=VIRGL_FORMAT_SRGB8_ALPHA8,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB10_A2]=VIRGL_FORMAT_R10G10B10A2_UNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB10_A2UI]=VIRGL_FORMAT_RGB10_A2UI,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R11F_G11F_B10F]=VIRGL_FORMAT_R11F_G11F_B10F,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32F]=VIRGL_FORMAT_R32G32_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32I]=VIRGL_FORMAT_RG32I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32UI]=VIRGL_FORMAT_RG32UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16]=VIRGL_FORMAT_R16G16_UNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16F]=VIRGL_FORMAT_R16G16_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16I]=VIRGL_FORMAT_RGB16I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16UI]=VIRGL_FORMAT_RGB16UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8]=VIRGL_FORMAT_R8G8_UNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8I]=VIRGL_FORMAT_RG8I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8UI]=VIRGL_FORMAT_RG8UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32F]=VIRGL_FORMAT_R32_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32I]=VIRGL_FORMAT_R32I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32UI]=VIRGL_FORMAT_R32UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16F]=VIRGL_FORMAT_R16_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16I]=VIRGL_FORMAT_R16I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16UI]=VIRGL_FORMAT_R16UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8]=VIRGL_FORMAT_R8_UNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8I]=VIRGL_FORMAT_R8I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8UI]=VIRGL_FORMAT_R8UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16_SNORM]=VIRGL_FORMAT_R16G16B16A16_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8_SNORM]=VIRGL_FORMAT_R8G8B8A8_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32F]=VIRGL_FORMAT_R32G32B32_FLOAT,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32I]=VIRGL_FORMAT_RGB32I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32UI]=VIRGL_FORMAT_RGB32UI,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16_SNORM]=VIRGL_FORMAT_R16G16B16_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16F]=VIRGL_FORMAT_R16G16B16_FLOAT,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16]=VIRGL_FORMAT_R16G16B16_UNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8_SNORM]=VIRGL_FORMAT_R8G8B8_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8]=VIRGL_FORMAT_R8G8B8_UNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8I]=VIRGL_FORMAT_RGB8I,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8UI]=VIRGL_FORMAT_RGB8UI,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_SRGB8]=VIRGL_FORMAT_SRGB8,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB9_E5]=VIRGL_FORMAT_RGB9_E5,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16_SNORM]=VIRGL_FORMAT_R16G16_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8_SNORM]=VIRGL_FORMAT_R8G8_SNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_RG_RGTC2]=VIRGL_FORMAT_COMPRESSED_RG_RGTC2,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_SIGNED_RG_RGTC2]=VIRGL_FORMAT_COMPRESSED_SIGNED_RG_RGTC2,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16_SNORM]=VIRGL_FORMAT_R16_SNORM,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8_SNORM]=VIRGL_FORMAT_R8_SNORM,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_RED_RGTC1]=VIRGL_FORMAT_COMPRESSED_RED_RGTC1,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_SIGNED_RED_RGTC1]=VIRGL_FORMAT_COMPRESSED_SIGNED_RED_RGTC1,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT32F]=VIRGL_FORMAT_DEPTH_COMPONENT32F,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT24]=VIRGL_FORMAT_DEPTH_COMPONENT24,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT16]=VIRGL_FORMAT_DEPTH_COMPONENT16,
+	// [OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH32F_STENCIL8]=VIRGL_FORMAT_DEPTH32F_STENCIL8,
+	[OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH24_STENCIL8]=VIRGL_FORMAT_S8_UINT_Z24_UNORM,
+};
+
+
+
 static pmm_counter_descriptor_t* _virgl_opengl_context_command_buffer_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _virgl_opengl_buffer_pmm_counter=NULL;
 static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
@@ -76,9 +140,11 @@ static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_vertex_array_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_buffer_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_texture_allocator=NULL;
 static handle_type_t _virgl_opengl_shader_handle_type=0;
 static handle_type_t _virgl_opengl_vertex_array_handle_type=0;
 static handle_type_t _virgl_opengl_buffer_handle_type=0;
+static handle_type_t _virgl_opengl_texture_handle_type=0;
 
 
 
@@ -645,8 +711,37 @@ _skip_set_index_buffer:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE){
 			opengl_protocol_update_texture_t* command=(void*)header;
+			if (command->data&&syscall_get_user_pointer_max_length(command->data)<command->width*command->height*command->depth*/*element size*/16){
+				ERROR("_process_commands: invalid user pointer");
+				goto _skip_update_buffer_command;
+			}
+			if (!command->driver_handle){
+				virgl_opengl_texture_t* texture=omm_alloc(_virgl_opengl_texture_allocator);
+				handle_new(texture,_virgl_opengl_texture_handle_type,&(texture->handle));
+				texture->resource_handle=0;
+				handle_finish_setup(&(texture->handle));
+				command->driver_handle=texture->handle.rb_node.key;
+			}
+			handle_t* texture_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_texture_handle_type);
+			if (!texture_handle){
+				ERROR("_process_commands: invalid texture handle: %p",command->driver_handle);
+				goto _skip_update_texture_command;
+			}
+			virgl_opengl_texture_t* texture=texture_handle->object;
 			ERROR("_process_commands: OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE");
-			(void)command;
+			if (command->format!=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_NONE){
+				if (texture->resource_handle){
+					virtio_gpu_command_ctx_detach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
+					virtio_gpu_command_resource_unref(ctx->gpu_device,texture->resource_handle);
+				}
+				else{
+					texture->resource_handle=resource_alloc(state_ctx->resource_manager);
+				}
+				texture->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,texture->resource_handle,VIRGL_TARGET_TEXTURE_2D,_virgl_texture_format_map[command->format],VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,command->width,command->height,command->depth,1,0,0);
+				virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
+			}
+			handle_release(texture_handle);
+_skip_update_texture_command:
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);
@@ -682,9 +777,12 @@ void virgl_init(void){
 	spinlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
 	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4,pmm_alloc_counter("omm_virgl_opengl_buffer"));
 	spinlock_init(&(_virgl_opengl_buffer_allocator->lock));
+	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4,pmm_alloc_counter("omm_virgl_opengl_texture"));
+	spinlock_init(&(_virgl_opengl_texture_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
 	_virgl_opengl_buffer_handle_type=handle_alloc("virgl_opengl_buffer",NULL);
+	_virgl_opengl_texture_handle_type=handle_alloc("virgl_opengl_texture",NULL);
 }
 
 

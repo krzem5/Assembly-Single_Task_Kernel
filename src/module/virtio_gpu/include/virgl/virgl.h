@@ -75,6 +75,13 @@ typedef struct _VIRGL_OPENGL_BUFFER{
 
 
 
+typedef struct _VIRGL_OPENGL_TEXTURE{
+	handle_t handle;
+	resource_t resource_handle;
+} virgl_opengl_texture_t;
+
+
+
 void virgl_init(void);
 
 
