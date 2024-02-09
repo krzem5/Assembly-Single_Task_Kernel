@@ -1292,6 +1292,12 @@ _enum_error:
 
 
 
+static void _update_texture_size(GLint dim,GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint x_offset,GLint y_offset,GLint z_offset,GLint border,GLenum format,GLenum type,const void* data){
+	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_size\x1b[0m\n");
+}
+
+
+
 void _gl_set_internal_state(void* internal_state){
 	_gl_internal_state=internal_state;
 }
@@ -3137,13 +3143,13 @@ SYS_PUBLIC void glTexBuffer(GLenum target,GLenum internalformat,GLuint buffer){
 
 
 SYS_PUBLIC void glTexImage1D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLint border,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexImage1D\x1b[0m\n");
+	_update_texture_size(1,target,level,internalformat,width,1,1,0,0,0,border,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexImage2D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLint border,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexImage2D\x1b[0m\n");
+	_update_texture_size(2,target,level,internalformat,width,height,1,0,0,0,border,format,type,pixels);
 }
 
 
@@ -3155,7 +3161,7 @@ SYS_PUBLIC void glTexImage2DMultisample(GLenum target,GLsizei samples,GLenum int
 
 
 SYS_PUBLIC void glTexImage3D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint border,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexImage3D\x1b[0m\n");
+	_update_texture_size(3,target,level,internalformat,width,height,depth,0,0,0,border,format,type,pixels);
 }
 
 
@@ -3203,19 +3209,19 @@ SYS_PUBLIC void glTexParameteriv(GLenum target,GLenum pname,const GLint* params)
 
 
 SYS_PUBLIC void glTexSubImage1D(GLenum target,GLint level,GLint xoffset,GLsizei width,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexSubImage1D\x1b[0m\n");
+	_update_texture_size(-1,target,level,0,width,1,1,xoffset,0,0,0,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexSubImage2D(GLenum target,GLint level,GLint xoffset,GLint yoffset,GLsizei width,GLsizei height,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexSubImage2D\x1b[0m\n");
+	_update_texture_size(-2,target,level,0,width,height,1,xoffset,yoffset,0,0,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLint yoffset,GLint zoffset,GLsizei width,GLsizei height,GLsizei depth,GLenum format,GLenum type,const void* pixels){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexSubImage3D\x1b[0m\n");
+	_update_texture_size(-3,target,level,0,width,height,depth,xoffset,yoffset,zoffset,0,format,type,pixels);
 }
 
 
