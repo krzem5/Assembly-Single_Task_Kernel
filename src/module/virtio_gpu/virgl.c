@@ -711,7 +711,9 @@ _skip_set_index_buffer:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE){
 			opengl_protocol_update_texture_t* command=(void*)header;
-			if (command->data&&syscall_get_user_pointer_max_length(command->data)<command->width*command->height*command->depth*/*element size*/16){
+			#define ELEMENT_SIZE 4
+			u64 size=command->width*command->height*command->depth*ELEMENT_SIZE;
+			if (command->data&&syscall_get_user_pointer_max_length(command->data)<size){
 				ERROR("_process_commands: invalid user pointer");
 				goto _skip_update_buffer_command;
 			}
@@ -740,6 +742,47 @@ _skip_set_index_buffer:
 				texture->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,texture->resource_handle,VIRGL_TARGET_TEXTURE_2D,_virgl_texture_format_map[command->format],VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,command->width,command->height,command->depth,1,0,0);
 				virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
 			}
+			u32 AAAAAAAA[]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
+				0xff8080ff,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				VIRGL_PROTOCOL_COMMAND_BIND_SAMPLER_STATES(1),
+				VIRGL_SHADER_FRAGMENT,
+				0,
+				0xff8080ff,
+			};
+			_command_buffer_extend(instance->ctx,AAAAAAAA,sizeof(AAAAAAAA)/sizeof(u32),0);
+			if (!command->data){
+				goto _update_texture_cleanup;
+			}
+			if (size<=MAX_INLINE_WRITE_SIZE){
+				u32 virgl_resource_inline_write_command[12+MAX_INLINE_WRITE_SIZE/sizeof(u32)]={
+					VIRGL_PROTOCOL_COMMAND_RESOURCE_INLINE_WRITE(size),
+					texture->resource_handle,
+					command->level,
+					0,
+					0,
+					0,
+					command->x_offset,
+					command->y_offset,
+					command->z_offset,
+					command->width,
+					command->height,
+					command->depth,
+				};
+				memcpy(virgl_resource_inline_write_command+12,command->data,size);
+				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+(size+sizeof(u32)-1)/sizeof(u32),0);
+				goto _update_texture_cleanup;
+			}
+			ERROR("_process_commands: texture update via buffer");
+_update_texture_cleanup:
 			handle_release(texture_handle);
 _skip_update_texture_command:
 		}
