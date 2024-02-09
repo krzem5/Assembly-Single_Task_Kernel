@@ -236,8 +236,9 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_SET_BUFFERS{
 
 typedef struct SYS_PACKED _OPENGL_PROTOCOL_UPDATE_TEXTURE{
 	opengl_protocol_header_t header;
-	u32 format;
+	u32 dim;
 	u64 driver_handle;
+	u32 format;
 	u32 x_offset;
 	u32 y_offset;
 	u32 z_offset;

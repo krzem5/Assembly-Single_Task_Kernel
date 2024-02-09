@@ -643,6 +643,11 @@ _skip_set_index_buffer:
 		else if (header->type==OPENGL_PROTOCOL_TYPE_FLUSH){
 			_command_buffer_extend(instance->ctx,NULL,0,1);
 		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE){
+			opengl_protocol_update_texture_t* command=(void*)header;
+			ERROR("_process_commands: OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE");
+			(void)command;
+		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);
 		}

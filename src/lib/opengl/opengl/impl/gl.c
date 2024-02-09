@@ -1305,7 +1305,7 @@ static void _update_texture(GLint dim,GLenum target,GLint level,GLint internalfo
 	GLuint texture=0;
 	switch (target){
 		case GL_TEXTURE_2D:
-			if (dim<3){
+			if (dim==3){
 				goto _enum_error;
 			}
 			texture=_gl_internal_state->gl_used_texture_2d;
@@ -1509,12 +1509,12 @@ _enum_error:
 				return;
 		}
 	}
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture\x1b[0m\n");
 	opengl_protocol_update_texture_t command={
 		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE,
 		.header.length=sizeof(opengl_protocol_update_texture_t),
-		.format=protocol_format,
+		.dim=dim,
 		.driver_handle=state->driver_handle,
+		.format=protocol_format,
 		.x_offset=x_offset,
 		.y_offset=y_offset,
 		.z_offset=z_offset,
