@@ -51,7 +51,8 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 	sys_format_string(out->gl_vendor,32,"opengl/%s/%s",driver_instance_data.driver_name,out->glsl_backend_descriptor->name);
 	sys_format_string(out->gl_version,16,"%u.%u.%u",out->driver_opengl_version/100,(out->driver_opengl_version/10)%10,out->driver_opengl_version%10);
 	out->gl_error=GL_NO_ERROR;
-	out->gl_active_texture=0;
+	out->gl_active_texture=GL_TEXTURE0;
+	out->gl_active_texture_bitmap=0;
 	out->gl_bound_array_buffer=0;
 	out->gl_bound_index_buffer=0;
 	out->gl_bound_index_offset=0;

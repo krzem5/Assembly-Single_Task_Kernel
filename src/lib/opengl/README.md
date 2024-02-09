@@ -16,7 +16,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glBindFramebuffer`
 - [ ] `glBindRenderbuffer`
 - [ ] `glBindSampler`
-- [ ] `glBindTexture`
+- [x] `glBindTexture`
 - [x] `glBindVertexArray`
 - [ ] `glBlendColor`
 - [ ] `glBlendEquation`
@@ -105,7 +105,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glGenQueries`
 - [ ] `glGenRenderbuffers`
 - [ ] `glGenSamplers`
-- [ ] `glGenTextures`
+- [x] `glGenTextures`
 - [x] `glGenVertexArrays`
 - [ ] `glGetActiveAttrib`
 - [ ] `glGetActiveUniform`
@@ -231,12 +231,12 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glTexImage2DMultisample`
 - [ ] `glTexImage3D`
 - [ ] `glTexImage3DMultisample`
-- [ ] `glTexParameterf`
-- [ ] `glTexParameterfv`
-- [ ] `glTexParameteri`
+- [x] `glTexParameterf`
+- [x] `glTexParameterfv`
+- [x] `glTexParameteri`
 - [ ] `glTexParameterIiv`
 - [ ] `glTexParameterIuiv`
-- [ ] `glTexParameteriv`
+- [x] `glTexParameteriv`
 - [ ] `glTexSubImage1D`
 - [ ] `glTexSubImage2D`
 - [ ] `glTexSubImage3D`

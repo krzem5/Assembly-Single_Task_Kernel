@@ -907,6 +907,25 @@ _skip_array_buffers_sync:
 		set_buffers_command.header.length=sizeof(opengl_protocol_set_buffers_t)-(32-set_buffers_command.vertex_buffer_count)*sizeof(opengl_protocol_vertex_buffer_config_t);
 		opengl_command_buffer_push_single(&(set_buffers_command.header));
 	}
+	for (u64 mask=_gl_internal_state->gl_active_texture_bitmap;mask;mask&=mask-1){
+		GLuint i=__builtin_ffsll(mask)-1;
+		opengl_texture_state_t* state=_get_handle(_gl_internal_state->gl_active_textures[i],OPENGL_HANDLE_TYPE_TEXTURE,0,0);
+		if (!state){
+			continue;
+		}
+		// sys_io_print("Sync texture: %u as sampler #%u\n",state->header.index,i);
+		// parameter_wrap_s
+		// parameter_wrap_t
+		// parameter_wrap_r
+		// parameter_min_filter
+		// parameter_mag_filter
+		// parameter_compare_func
+		// parameter_compare_mode
+		// parameter_lod_bias
+		// parameter_min_lod
+		// parameter_max_lod
+		// parameter_border_color
+	}
 	_gl_internal_state->gl_error=error;
 }
 
@@ -1157,6 +1176,122 @@ static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean nor
 
 
 
+static void _update_texture_parameter(GLenum target,GLenum pname,const void* ptr,_Bool is_float,_Bool was_ptr){
+	GLuint texture=0;
+	switch (target){
+		case GL_TEXTURE_2D:
+			texture=_gl_internal_state->gl_used_texture_2d;
+			break;
+		default:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter\x1b[0m\n");
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	opengl_texture_state_t* state=_get_handle(texture,OPENGL_HANDLE_TYPE_TEXTURE,0,0);
+	if (!state){
+		return;
+	}
+	GLint int_value=*((const GLint*)ptr);
+	switch (pname){
+		case GL_TEXTURE_BASE_LEVEL:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_BASE_LEVEL\x1b[0m\n");
+			break;
+		case GL_TEXTURE_BORDER_COLOR:
+			if (!was_ptr){
+				goto _enum_error;
+			}
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_BORDER_COLOR\x1b[0m\n");
+			break;
+		case GL_TEXTURE_COMPARE_FUNC:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_COMPARE_FUNC\x1b[0m\n");
+			break;
+		case GL_TEXTURE_COMPARE_MODE:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_COMPARE_MODE\x1b[0m\n");
+			break;
+		case GL_TEXTURE_LOD_BIAS:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_LOD_BIAS\x1b[0m\n");
+			break;
+		case GL_TEXTURE_MIN_FILTER:
+			if (is_float){
+				goto _enum_error;
+			}
+			if (int_value!=GL_NEAREST&&int_value!=GL_LINEAR&&int_value!=GL_NEAREST_MIPMAP_NEAREST&&int_value!=GL_LINEAR_MIPMAP_NEAREST&&int_value!=GL_NEAREST_MIPMAP_LINEAR&&int_value!=GL_LINEAR_MIPMAP_LINEAR){
+				goto _enum_error;
+			}
+			state->parameter_min_filter=int_value;
+			break;
+		case GL_TEXTURE_MAG_FILTER:
+			if (is_float){
+				goto _enum_error;
+			}
+			if (int_value!=GL_NEAREST&&int_value!=GL_LINEAR){
+				goto _enum_error;
+			}
+			state->parameter_mag_filter=int_value;
+			break;
+		case GL_TEXTURE_MIN_LOD:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_MIN_LOD\x1b[0m\n");
+			break;
+		case GL_TEXTURE_MAX_LOD:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_MAG_LOD\x1b[0m\n");
+			break;
+		case GL_TEXTURE_MAX_LEVEL:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_MAX_LEVEL\x1b[0m\n");
+			break;
+		case GL_TEXTURE_SWIZZLE_R:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_SWIZZLE_R\x1b[0m\n");
+			break;
+		case GL_TEXTURE_SWIZZLE_G:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_SWIZZLE_G\x1b[0m\n");
+			break;
+		case GL_TEXTURE_SWIZZLE_B:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_SWIZZLE_B\x1b[0m\n");
+			break;
+		case GL_TEXTURE_SWIZZLE_A:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_SWIZZLE_A\x1b[0m\n");
+			break;
+		case GL_TEXTURE_SWIZZLE_RGBA:
+			if (!was_ptr){
+				goto _enum_error;
+			}
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_parameter: GL_TEXTURE_SWIZZLE_RGBA\x1b[0m\n");
+			break;
+		case GL_TEXTURE_WRAP_S:
+			if (is_float){
+				goto _enum_error;
+			}
+			if (int_value!=GL_CLAMP_TO_EDGE&&int_value!=GL_CLAMP_TO_BORDER&&int_value!=GL_MIRRORED_REPEAT&&int_value!=GL_REPEAT){
+				goto _enum_error;
+			}
+			state->parameter_wrap_s=int_value;
+			break;
+		case GL_TEXTURE_WRAP_T:
+			if (is_float){
+				goto _enum_error;
+			}
+			if (int_value!=GL_CLAMP_TO_EDGE&&int_value!=GL_CLAMP_TO_BORDER&&int_value!=GL_MIRRORED_REPEAT&&int_value!=GL_REPEAT){
+				goto _enum_error;
+			}
+			state->parameter_wrap_t=int_value;
+			break;
+		case GL_TEXTURE_WRAP_R:
+			if (is_float){
+				goto _enum_error;
+			}
+			if (int_value!=GL_CLAMP_TO_EDGE&&int_value!=GL_CLAMP_TO_BORDER&&int_value!=GL_MIRRORED_REPEAT&&int_value!=GL_REPEAT){
+				goto _enum_error;
+			}
+			state->parameter_wrap_r=int_value;
+			break;
+		default:
+_enum_error:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			break;
+	}
+}
+
+
+
 void _gl_set_internal_state(void* internal_state){
 	_gl_internal_state=internal_state;
 }
@@ -1168,7 +1303,7 @@ SYS_PUBLIC void glActiveTexture(GLenum texture){
 		_gl_internal_state->gl_error=GL_INVALID_ENUM;
 		return;
 	}
-	_gl_internal_state->gl_active_texture=texture-GL_TEXTURE0;
+	_gl_internal_state->gl_active_texture=texture;
 }
 
 
@@ -1305,6 +1440,8 @@ SYS_PUBLIC void glBindTexture(GLenum target,GLuint texture){
 			return;
 	}
 	state->target=target;
+	_gl_internal_state->gl_active_textures[_gl_internal_state->gl_active_texture-GL_TEXTURE0]=texture;
+	_gl_internal_state->gl_active_texture_bitmap|=1ull<<(_gl_internal_state->gl_active_texture-GL_TEXTURE0);
 }
 
 
@@ -2015,6 +2152,20 @@ SYS_PUBLIC void glGenTextures(GLsizei n,GLuint* textures){
 		opengl_texture_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_TEXTURE,sizeof(opengl_texture_state_t));
 		state->driver_handle=0;
 		state->target=0;
+		state->parameter_wrap_s=GL_REPEAT;
+		state->parameter_wrap_t=GL_REPEAT;
+		state->parameter_wrap_r=GL_REPEAT;
+		state->parameter_min_filter=GL_NEAREST_MIPMAP_LINEAR;
+		state->parameter_mag_filter=GL_LINEAR;
+		state->parameter_compare_func=GL_NEVER;
+		state->parameter_compare_mode=GL_NONE;
+		state->parameter_lod_bias=0.0f;
+		state->parameter_min_lod=-1000.0f;
+		state->parameter_max_lod=1000.0f;
+		state->parameter_border_color[0]=0.0f;
+		state->parameter_border_color[1]=0.0f;
+		state->parameter_border_color[2]=0.0f;
+		state->parameter_border_color[3]=0.0f;
 		textures[i]=state->header.index;
 	}
 }
@@ -3016,19 +3167,19 @@ SYS_PUBLIC void glTexImage3DMultisample(GLenum target,GLsizei samples,GLenum int
 
 
 SYS_PUBLIC void glTexParameterf(GLenum target,GLenum pname,GLfloat param){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexParameterf\x1b[0m\n");
+	_update_texture_parameter(target,pname,&param,1,0);
 }
 
 
 
 SYS_PUBLIC void glTexParameterfv(GLenum target,GLenum pname,const GLfloat* params){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexParameterfv\x1b[0m\n");
+	_update_texture_parameter(target,pname,params,1,1);
 }
 
 
 
 SYS_PUBLIC void glTexParameteri(GLenum target,GLenum pname,GLint param){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexParameteri\x1b[0m\n");
+	_update_texture_parameter(target,pname,&param,0,0);
 }
 
 
@@ -3046,7 +3197,7 @@ SYS_PUBLIC void glTexParameterIuiv(GLenum target,GLenum pname,const GLuint* para
 
 
 SYS_PUBLIC void glTexParameteriv(GLenum target,GLenum pname,const GLint* params){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glTexParameteriv\x1b[0m\n");
+	_update_texture_parameter(target,pname,params,0,1);
 }
 
 
