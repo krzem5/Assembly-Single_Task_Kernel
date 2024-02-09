@@ -1678,9 +1678,14 @@ SYS_PUBLIC void glBindTexture(GLenum target,GLuint texture){
 			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return;
 	}
-	state->target=target;
 	_gl_internal_state->gl_active_textures[_gl_internal_state->gl_active_texture-GL_TEXTURE0]=texture;
-	_gl_internal_state->gl_active_texture_bitmap|=1ull<<(_gl_internal_state->gl_active_texture-GL_TEXTURE0);
+	if (state){
+		state->target=target;
+		_gl_internal_state->gl_active_texture_bitmap|=1ull<<(_gl_internal_state->gl_active_texture-GL_TEXTURE0);
+	}
+	else{
+		_gl_internal_state->gl_active_texture_bitmap&=~(1ull<<(_gl_internal_state->gl_active_texture-GL_TEXTURE0));
+	}
 }
 
 

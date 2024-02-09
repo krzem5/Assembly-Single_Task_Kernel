@@ -730,7 +730,6 @@ _skip_set_index_buffer:
 				goto _skip_update_texture_command;
 			}
 			virgl_opengl_texture_t* texture=texture_handle->object;
-			ERROR("_process_commands: OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE");
 			if (command->format!=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_NONE){
 				if (texture->resource_handle){
 					virtio_gpu_command_ctx_detach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
