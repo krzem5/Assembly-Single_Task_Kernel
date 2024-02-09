@@ -1292,8 +1292,241 @@ _enum_error:
 
 
 
-static void _update_texture_size(GLint dim,GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint x_offset,GLint y_offset,GLint z_offset,GLint border,GLenum format,GLenum type,const void* data){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture_size\x1b[0m\n");
+static void _update_texture(GLint dim,GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint x_offset,GLint y_offset,GLint z_offset,GLint border,GLenum format,GLenum type,const void* data){
+	if (level<0||width<0||height<0||depth<0||x_offset<0||y_offset<0||z_offset<0||border){
+		_gl_internal_state->gl_error=GL_INVALID_VALUE;
+		return;
+	}
+	_Bool is_update=0;
+	if (dim<0){
+		is_update=1;
+		dim=-dim;
+	}
+	GLuint texture=0;
+	switch (target){
+		case GL_TEXTURE_2D:
+			if (dim<3){
+				goto _enum_error;
+			}
+			texture=_gl_internal_state->gl_used_texture_2d;
+			break;
+		default:
+_enum_error:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture\x1b[0m\n");
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	opengl_texture_state_t* state=_get_handle(texture,OPENGL_HANDLE_TYPE_TEXTURE,0,0);
+	if (!state){
+		return;
+	}
+	if (is_update&&!state->driver_handle){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	u32 protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_NONE;
+	if (!is_update){
+		switch (internalformat){
+			case GL_RGBA32F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32F;
+				break;
+			case GL_RGBA32I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32I;
+				break;
+			case GL_RGBA32UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA32UI;
+				break;
+			case GL_RGBA16:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16;
+				break;
+			case GL_RGBA16F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16F;
+				break;
+			case GL_RGBA16I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16I;
+				break;
+			case GL_RGBA16UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16UI;
+				break;
+			case GL_RGBA8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8;
+				break;
+			case GL_RGBA8UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8UI;
+				break;
+			case GL_SRGB8_ALPHA8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_SRGB8_ALPHA8;
+				break;
+			case GL_RGB10_A2:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB10_A2;
+				break;
+			case GL_RGB10_A2UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB10_A2UI;
+				break;
+			case GL_R11F_G11F_B10F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R11F_G11F_B10F;
+				break;
+			case GL_RG32F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32F;
+				break;
+			case GL_RG32I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32I;
+				break;
+			case GL_RG32UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG32UI;
+				break;
+			case GL_RG16:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16;
+				break;
+			case GL_RG16F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16F;
+				break;
+			case GL_RGB16I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16I;
+				break;
+			case GL_RGB16UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16UI;
+				break;
+			case GL_RG8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8;
+				break;
+			case GL_RG8I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8I;
+				break;
+			case GL_RG8UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8UI;
+				break;
+			case GL_R32F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32F;
+				break;
+			case GL_R32I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32I;
+				break;
+			case GL_R32UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R32UI;
+				break;
+			case GL_R16F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16F;
+				break;
+			case GL_R16I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16I;
+				break;
+			case GL_R16UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16UI;
+				break;
+			case GL_R8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8;
+				break;
+			case GL_R8I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8I;
+				break;
+			case GL_R8UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8UI;
+				break;
+			case GL_RGBA16_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA16_SNORM;
+				break;
+			case GL_RGBA8_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGBA8_SNORM;
+				break;
+			case GL_RGB32F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32F;
+				break;
+			case GL_RGB32I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32I;
+				break;
+			case GL_RGB32UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB32UI;
+				break;
+			case GL_RGB16_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16_SNORM;
+				break;
+			case GL_RGB16F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16F;
+				break;
+			case GL_RGB16:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB16;
+				break;
+			case GL_RGB8_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8_SNORM;
+				break;
+			case GL_RGB8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8;
+				break;
+			case GL_RGB8I:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8I;
+				break;
+			case GL_RGB8UI:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB8UI;
+				break;
+			case GL_SRGB8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_SRGB8;
+				break;
+			case GL_RGB9_E5:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RGB9_E5;
+				break;
+			case GL_RG16_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG16_SNORM;
+				break;
+			case GL_RG8_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_RG8_SNORM;
+				break;
+			case GL_COMPRESSED_RG_RGTC2:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_RG_RGTC2;
+				break;
+			case GL_COMPRESSED_SIGNED_RG_RGTC2:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_SIGNED_RG_RGTC2;
+				break;
+			case GL_R16_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R16_SNORM;
+				break;
+			case GL_R8_SNORM:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_R8_SNORM;
+				break;
+			case GL_COMPRESSED_RED_RGTC1:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_RED_RGTC1;
+				break;
+			case GL_COMPRESSED_SIGNED_RED_RGTC1:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_COMPRESSED_SIGNED_RED_RGTC1;
+				break;
+			case GL_DEPTH_COMPONENT32F:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT32F;
+				break;
+			case GL_DEPTH_COMPONENT24:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT24;
+				break;
+			case GL_DEPTH_COMPONENT16:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH_COMPONENT16;
+				break;
+			case GL_DEPTH32F_STENCIL8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH32F_STENCIL8;
+				break;
+			case GL_DEPTH24_STENCIL8:
+				protocol_format=OPENGL_PROTOCOL_BUFFER_TEXTURE_FORMAT_DEPTH24_STENCIL8;
+				break;
+			default:
+				_gl_internal_state->gl_error=GL_INVALID_ENUM;
+				return;
+		}
+	}
+	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture\x1b[0m\n");
+	opengl_protocol_update_texture_t command={
+		.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE,
+		.header.length=sizeof(opengl_protocol_update_texture_t),
+		.format=protocol_format,
+		.driver_handle=state->driver_handle,
+		.x_offset=x_offset,
+		.y_offset=y_offset,
+		.z_offset=z_offset,
+		.width=width,
+		.height=height,
+		.depth=depth,
+		.level=level,
+		.data=data
+	};
+	const opengl_protocol_update_texture_t* output=(const opengl_protocol_update_texture_t*)opengl_command_buffer_push_single(&(command.header));
+	glFlush();
+	state->driver_handle=output->driver_handle;
 }
 
 
@@ -3143,13 +3376,13 @@ SYS_PUBLIC void glTexBuffer(GLenum target,GLenum internalformat,GLuint buffer){
 
 
 SYS_PUBLIC void glTexImage1D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLint border,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(1,target,level,internalformat,width,1,1,0,0,0,border,format,type,pixels);
+	_update_texture(1,target,level,internalformat,width,1,1,0,0,0,border,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexImage2D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLint border,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(2,target,level,internalformat,width,height,1,0,0,0,border,format,type,pixels);
+	_update_texture(2,target,level,internalformat,width,height,1,0,0,0,border,format,type,pixels);
 }
 
 
@@ -3161,7 +3394,7 @@ SYS_PUBLIC void glTexImage2DMultisample(GLenum target,GLsizei samples,GLenum int
 
 
 SYS_PUBLIC void glTexImage3D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint border,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(3,target,level,internalformat,width,height,depth,0,0,0,border,format,type,pixels);
+	_update_texture(3,target,level,internalformat,width,height,depth,0,0,0,border,format,type,pixels);
 }
 
 
@@ -3209,19 +3442,19 @@ SYS_PUBLIC void glTexParameteriv(GLenum target,GLenum pname,const GLint* params)
 
 
 SYS_PUBLIC void glTexSubImage1D(GLenum target,GLint level,GLint xoffset,GLsizei width,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(-1,target,level,0,width,1,1,xoffset,0,0,0,format,type,pixels);
+	_update_texture(-1,target,level,0,width,1,1,xoffset,0,0,0,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexSubImage2D(GLenum target,GLint level,GLint xoffset,GLint yoffset,GLsizei width,GLsizei height,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(-2,target,level,0,width,height,1,xoffset,yoffset,0,0,format,type,pixels);
+	_update_texture(-2,target,level,0,width,height,1,xoffset,yoffset,0,0,format,type,pixels);
 }
 
 
 
 SYS_PUBLIC void glTexSubImage3D(GLenum target,GLint level,GLint xoffset,GLint yoffset,GLint zoffset,GLsizei width,GLsizei height,GLsizei depth,GLenum format,GLenum type,const void* pixels){
-	_update_texture_size(-3,target,level,0,width,height,depth,xoffset,yoffset,zoffset,0,format,type,pixels);
+	_update_texture(-3,target,level,0,width,height,depth,xoffset,yoffset,zoffset,0,format,type,pixels);
 }
 
 
