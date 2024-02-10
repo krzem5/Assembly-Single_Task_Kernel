@@ -172,6 +172,50 @@ static KERNEL_INLINE u32 _decode_sampler_swizzle(u32 flags){
 
 
 
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST 0
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR 1
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST_MIPMAP_NEAREST 2
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR_MIPMAP_NEAREST 3
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST_MIPMAP_LINEAR 4
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR_MIPMAP_LINEAR 5
+#define OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_MASK 7
+
+#define OPENGL_PROTOCOL_SAMPLER_MAG_FILTER_NEAREST 0
+#define OPENGL_PROTOCOL_SAMPLER_MAG_FILTER_LINEAR 1
+#define OPENGL_PROTOCOL_SAMPLER_MAG_FILTER_MASK 1
+
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_LESS_EQUAL 0
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_GREATER_EQUAL 1
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_LESS 2
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_GREATER 3
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_EQUAL 4
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_NOT_EQUAL 5
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_ALWAYS 6
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_NEVER 7
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_MASK 7
+
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_MODE_NONE 0
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_MODE_TEXTURE 1
+#define OPENGL_PROTOCOL_SAMPLER_COMPARE_MODE_MASK 1
+
+
+
+static KERNEL_INLINE u32 _decode_sampler_wrap(u32 flags){
+	flags&=OPENGL_PROTOCOL_SAMPLER_WRAP_MASK;
+	if (flags==OPENGL_PROTOCOL_SAMPLER_WRAP_REPEAT){
+		return VIRGL_WRAP_REPEAT;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_BORDER){
+		return VIRGL_WRAP_CLAMP_TO_BORDER;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_EDGE){
+		return VIRGL_WRAP_CLAMP_TO_EDGE;
+	}
+	return VIRGL_WRAP_MIRROR_REPEAT;
+}
+
+
+
 static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,_Bool flush){
 	spinlock_acquire_exclusive(&(ctx->command_buffer.lock));
 	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE){
@@ -837,7 +881,7 @@ _skip_update_texture_command:
 			else{
 				sampler->state_resource_handle=resource_alloc(state_ctx->resource_manager);
 			}
-			u32 virgl_sampler_setup_commands[]={
+			u32 virgl_sampler_setup_commands[33]={
 				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_VIEW,
 				sampler->view_resource_handle,
 				texture->resource_handle,
@@ -847,7 +891,7 @@ _skip_update_texture_command:
 				_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT)<<3)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT)<<6)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT)<<9),
 				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
 				sampler->state_resource_handle,
-				0,
+				_decode_sampler_wrap(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_S_SHIFT)|(_decode_sampler_wrap(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_T_SHIFT)<<3)|(_decode_sampler_wrap(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_R_SHIFT)<<6),
 				command->lod_bias.raw_value,
 				command->min_lod.raw_value,
 				command->max_lod.raw_value,
@@ -872,7 +916,7 @@ _skip_update_texture_command:
 				command->index,
 				sampler->state_resource_handle,
 			};
-			_command_buffer_extend(instance->ctx,virgl_sampler_setup_commands,sizeof(virgl_sampler_setup_commands)/sizeof(u32),0);
+			_command_buffer_extend(instance->ctx,virgl_sampler_setup_commands,33,0);
 			handle_release(sampler_handle);
 			handle_release(texture_handle);
 _skip_update_sampler_command:
