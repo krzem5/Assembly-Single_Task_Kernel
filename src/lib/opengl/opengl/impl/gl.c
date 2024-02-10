@@ -3096,7 +3096,7 @@ SYS_PUBLIC GLboolean glIsSync(GLsync sync){
 
 SYS_PUBLIC GLboolean glIsTexture(GLuint texture){
 	GLenum error=_gl_internal_state->gl_error;
-	void* ptr=_get_handle(array,OPENGL_HANDLE_TYPE_TEXTURE,1,0);
+	void* ptr=_get_handle(texture,OPENGL_HANDLE_TYPE_TEXTURE,1,0);
 	_gl_internal_state->gl_error=error;
 	return !!ptr;
 }
