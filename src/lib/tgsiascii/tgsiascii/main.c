@@ -96,6 +96,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			break;
 	}
 	u32 generic_index=0;
+	u32 sampler_count=0;
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* var=output->vars+i;
 		const char* storage=NULL;
@@ -123,6 +124,8 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER:
 				storage="SAMP";
+				var->slot=sampler_count;
+				sampler_count++;
 				break;
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_BUILTIN_POSITION:
 				if (output->shader_type==GLSL_SHADER_TYPE_VERTEX){

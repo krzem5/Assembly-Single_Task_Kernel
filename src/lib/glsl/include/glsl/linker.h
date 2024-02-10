@@ -22,6 +22,7 @@ typedef struct _GLSL_LINKER_LINKED_PROGRAM_UNIFORM{
 	char* name;
 	u32 slot;
 	u32 slot_count;
+	u32 sampler_index;
 } glsl_linker_linked_program_uniform_t;
 
 

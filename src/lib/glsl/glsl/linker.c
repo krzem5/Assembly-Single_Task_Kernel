@@ -121,6 +121,7 @@ _second_pass:
 		if (!(program->shader_bitmap&(1<<i))){
 			continue;
 		}
+		u32 sampler_index=0;
 		for (u32 j=0;j<(program->shaders+i)->var_count;j++){
 			glsl_compilation_output_var_t* var=(program->shaders+i)->vars+j;
 			if ((var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_UNIFORM||var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER)&&(var->slot!=0xffffffff)==has_slot){
@@ -148,11 +149,13 @@ _second_pass:
 				(linked_program->uniforms+linked_program->uniform_count-1)->name=sys_string_duplicate(var->name);
 				(linked_program->uniforms+linked_program->uniform_count-1)->slot=var->slot;
 				(linked_program->uniforms+linked_program->uniform_count-1)->slot_count=var->slot_count;
+				(linked_program->uniforms+linked_program->uniform_count-1)->sampler_index=(var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER?sampler_index:0xffffffff);
 				if (var->slot+var->slot_count>linked_program->uniform_slot_count){
 					linked_program->uniform_slot_count=var->slot+var->slot_count;
 				}
 _skip_slot_allocation:
 			}
+			sampler_index+=(var->type==GLSL_COMPILATION_OUTPUT_VAR_TYPE_SAMPLER);
 		}
 	}
 	if (has_slot){

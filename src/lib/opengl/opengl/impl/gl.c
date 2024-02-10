@@ -1264,6 +1264,19 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 	}
 	sys_memory_copy(buffer,state->uniform_data+location,size);
 	_gl_internal_state->gl_constant_buffer_needs_update=1;
+	if (!state->was_linkage_attempted||state->error){
+		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
+		return;
+	}
+	for (u32 i=0;i<state->linked_program.uniform_count;i++){
+		if ((state->linked_program.uniforms+i)->slot==location/(4*sizeof(float))){
+			if ((state->linked_program.uniforms+i)->sampler_index==0xffffffff){
+				return;
+			}
+			sys_io_print(">>> [%u:%u]\n",(state->linked_program.uniforms+i)->sampler_index,*((const u32*)buffer));
+			return;
+		}
+	}
 }
 
 
