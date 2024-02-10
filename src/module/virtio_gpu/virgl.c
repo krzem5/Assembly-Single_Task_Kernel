@@ -843,8 +843,7 @@ _skip_set_index_buffer:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE){
 			opengl_protocol_update_texture_t* command=(void*)header;
-			#define ELEMENT_SIZE 4
-			u64 size=command->width*command->height*command->depth*ELEMENT_SIZE;
+			u64 size=command->width*command->height*command->depth*command->elem_size;
 			if (command->data&&syscall_get_user_pointer_max_length(command->data)<size){
 				ERROR("_process_commands: invalid user pointer");
 				goto _skip_update_buffer_command;

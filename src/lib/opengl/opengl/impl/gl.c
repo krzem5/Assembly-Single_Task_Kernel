@@ -1471,6 +1471,44 @@ static void _update_texture(GLint dim,GLenum target,GLint level,GLint internalfo
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
 		return;
 	}
+	u32 element_size=0;
+	switch (format){
+		case GL_RED:
+			element_size=1;
+			break;
+		case GL_RG:
+			element_size=2;
+			break;
+		case GL_RGB:
+		case GL_BGR:
+			element_size=3;
+			break;
+		case GL_RGBA:
+		case GL_BGRA:
+			element_size=4;
+			break;
+		default:
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
+	switch (type){
+		case GL_UNSIGNED_BYTE:
+		case GL_BYTE:
+			break;
+		case GL_UNSIGNED_SHORT:
+		case GL_SHORT:
+			element_size<<=1;
+			break;
+		case GL_UNSIGNED_INT:
+		case GL_INT:
+		case GL_FLOAT:
+			element_size<<=2;
+			break;
+		default:
+			sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: _update_texture: packed int type?\x1b[0m\n");
+			_gl_internal_state->gl_error=GL_INVALID_ENUM;
+			return;
+	}
 	_Bool is_update=0;
 	if (dim<0){
 		is_update=1;
@@ -1696,6 +1734,7 @@ _enum_error:
 		.height=height,
 		.depth=depth,
 		.level=level,
+		.elem_size=element_size,
 		.data=data
 	};
 	const opengl_protocol_update_texture_t* output=(const opengl_protocol_update_texture_t*)opengl_command_buffer_push_single(&(command.header));

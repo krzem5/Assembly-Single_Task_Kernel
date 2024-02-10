@@ -313,6 +313,7 @@ typedef struct KERNEL_PACKED _OPENGL_PROTOCOL_UPDATE_TEXTURE{
 	u32 height;
 	u32 depth;
 	u32 level;
+	u32 elem_size;
 	const void* data;
 } opengl_protocol_update_texture_t;
 
