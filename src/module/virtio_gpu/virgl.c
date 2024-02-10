@@ -742,6 +742,17 @@ _skip_set_index_buffer:
 				virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
 			}
 			u32 AAAAAAAA[]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_VIEW,
+				0x80ff80ff,
+				texture->resource_handle,
+				_virgl_texture_format_map[command->format],
+				0,
+				0,
+				(0<<0)|(1<<3)|(2<<6)|(3<<9),
+				VIRGL_PROTOCOL_COMMAND_SET_SAMPLER_VIEWS(1),
+				VIRGL_SHADER_FRAGMENT,
+				0,
+				0x80ff80ff,
 				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
 				0xff8080ff,
 				0,
