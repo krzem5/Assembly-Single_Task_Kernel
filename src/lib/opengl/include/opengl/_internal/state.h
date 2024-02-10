@@ -66,6 +66,9 @@ typedef struct _OPENGL_PROGRAM_STATE{
 	u64 driver_handle;
 	void* uniform_data;
 	u32 uniform_data_size;
+	u32 sampler_texture_units[OPENGL_MAX_ACTIVE_TEXTURES];
+	u64 sampler_texture_unit_bitmap;
+	u64 sampler_texture_unit_force_update_bitmap;
 } opengl_program_state_t;
 
 

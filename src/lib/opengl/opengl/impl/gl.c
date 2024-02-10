@@ -907,18 +907,29 @@ _skip_array_buffers_sync:
 		set_buffers_command.header.length=sizeof(opengl_protocol_set_buffers_t)-(32-set_buffers_command.vertex_buffer_count)*sizeof(opengl_protocol_vertex_buffer_config_t);
 		opengl_command_buffer_push_single(&(set_buffers_command.header));
 	}
-	for (u64 mask=_gl_internal_state->gl_active_texture_bitmap;mask;mask&=mask-1){
+	opengl_program_state_t* program_state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,0,0);
+	if (!program_state){
+		goto _skip_sampler_sync;
+	}
+	for (u64 mask=program_state->sampler_texture_unit_bitmap;mask;mask&=mask-1){
 		GLuint i=__builtin_ffsll(mask)-1;
-		opengl_texture_state_t* state=_get_handle(_gl_internal_state->gl_active_textures[i],OPENGL_HANDLE_TYPE_TEXTURE,0,0);
-		if (!state||!state->driver_handle||state->data_version==_gl_internal_state->gl_active_texture_data_versions[i]){
+		GLuint j=program_state->sampler_texture_units[i];
+		if (!(_gl_internal_state->gl_active_texture_bitmap&(1ull<<j))){
 			continue;
 		}
-		_gl_internal_state->gl_active_texture_data_versions[i]=state->data_version;
+		opengl_texture_state_t* state=_get_handle(_gl_internal_state->gl_active_textures[j],OPENGL_HANDLE_TYPE_TEXTURE,0,0);
+		if (!state||!state->driver_handle){
+			continue;
+		}
+		if (!(program_state->sampler_texture_unit_force_update_bitmap&(1ull<<i))&&state->data_version==_gl_internal_state->gl_active_texture_data_versions[j]){
+			continue;
+		}
+		_gl_internal_state->gl_active_texture_data_versions[j]=state->data_version;
 		opengl_protocol_update_sampler_t command={
 			.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER,
 			.header.length=sizeof(opengl_protocol_update_sampler_t),
 			.index=i,
-			.driver_handle=_gl_internal_state->gl_active_texture_driver_handles[i],
+			.driver_handle=_gl_internal_state->gl_active_texture_driver_handles[j],
 			state->driver_handle,
 			0,
 			state->parameter_lod_bias,
@@ -1096,9 +1107,11 @@ _skip_array_buffers_sync:
 		const opengl_protocol_update_buffer_t* output=(const opengl_protocol_update_buffer_t*)opengl_command_buffer_push_single(&(command.header));
 		if (!command.driver_handle){
 			glFlush();
-			_gl_internal_state->gl_active_texture_driver_handles[i]=output->driver_handle;
+			_gl_internal_state->gl_active_texture_driver_handles[j]=output->driver_handle;
 		}
 	}
+	program_state->sampler_texture_unit_force_update_bitmap=0;
+_skip_sampler_sync:
 	_gl_internal_state->gl_error=error;
 }
 
@@ -1270,10 +1283,13 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 	}
 	for (u32 i=0;i<state->linked_program.uniform_count;i++){
 		if ((state->linked_program.uniforms+i)->slot==location/(4*sizeof(float))){
-			if ((state->linked_program.uniforms+i)->sampler_index==0xffffffff){
+			u32 j=(state->linked_program.uniforms+i)->sampler_index;
+			if (j==0xffffffff){
 				return;
 			}
-			sys_io_print(">>> [%u:%u]\n",(state->linked_program.uniforms+i)->sampler_index,*((const u32*)buffer));
+			state->sampler_texture_units[j]=*((const u32*)buffer);
+			state->sampler_texture_unit_bitmap|=1<<j;
+			state->sampler_texture_unit_force_update_bitmap|=1<<j;
 			return;
 		}
 	}
@@ -2229,6 +2245,8 @@ SYS_PUBLIC GLuint glCreateProgram(void){
 	state->driver_handle=0;
 	state->uniform_data=NULL;
 	state->uniform_data_size=0;
+	state->sampler_texture_unit_bitmap=0;
+	state->sampler_texture_unit_force_update_bitmap=0;
 	return state->header.index;
 }
 
