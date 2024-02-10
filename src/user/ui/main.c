@@ -256,15 +256,15 @@ int main(int argc,const char** argv){
 		GLuint texture_id;
 		glGenTextures(1,&texture_id);
 		glBindTexture(GL_TEXTURE_2D,texture_id);
-		const u32 texture_data[2*2]={
-			0xff0000,0x00ff00,
-			0x0000ff,0xffff00
+		const u32 texture_data[2*3]={
+			0xff0000,0x00ff00,0x00ffff,
+			0x0000ff,0xffff00,0xff00ff
 		};
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,2,2,0,GL_RGBA,GL_UNSIGNED_BYTE,texture_data);
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,2,3,0,GL_RGBA,GL_UNSIGNED_BYTE,texture_data);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D,texture_id);
 		float start=sys_clock_get_time();
