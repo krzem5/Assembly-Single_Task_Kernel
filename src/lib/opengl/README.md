@@ -183,7 +183,7 @@ https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf
 - [ ] `glIsSampler`
 - [x] `glIsShader`
 - [ ] `glIsSync`
-- [ ] `glIsTexture`
+- [x] `glIsTexture`
 - [x] `glIsVertexArray`
 - [ ] `glLineWidth`
 - [x] `glLinkProgram`

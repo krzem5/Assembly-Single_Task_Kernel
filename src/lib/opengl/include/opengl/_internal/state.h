@@ -119,6 +119,7 @@ typedef struct _OPENGL_BUFFER_STATE{
 typedef struct _OPENGL_TEXTURE_STATE{
 	opengl_handle_header_t header;
 	u64 driver_handle;
+	u64 data_version;
 	GLenum target;
 	GLenum parameter_wrap_s;
 	GLenum parameter_wrap_t;
@@ -131,6 +132,10 @@ typedef struct _OPENGL_TEXTURE_STATE{
 	GLfloat parameter_min_lod;
 	GLfloat parameter_max_lod;
 	GLfloat parameter_border_color[4];
+	GLenum parameter_swizzle_r;
+	GLenum parameter_swizzle_g;
+	GLenum parameter_swizzle_b;
+	GLenum parameter_swizzle_a;
 } opengl_texture_state_t;
 
 
@@ -156,6 +161,8 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLenum gl_error;
 	GLuint gl_active_texture;
 	GLuint gl_active_textures[OPENGL_MAX_ACTIVE_TEXTURES];
+	u64 gl_active_texture_data_versions[OPENGL_MAX_ACTIVE_TEXTURES];
+	u64 gl_active_texture_driver_handles[OPENGL_MAX_ACTIVE_TEXTURES];
 	u64 gl_active_texture_bitmap;
 	GLuint gl_bound_array_buffer;
 	GLuint gl_bound_index_buffer;

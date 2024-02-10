@@ -910,10 +910,11 @@ _skip_array_buffers_sync:
 	for (u64 mask=_gl_internal_state->gl_active_texture_bitmap;mask;mask&=mask-1){
 		GLuint i=__builtin_ffsll(mask)-1;
 		opengl_texture_state_t* state=_get_handle(_gl_internal_state->gl_active_textures[i],OPENGL_HANDLE_TYPE_TEXTURE,0,0);
-		if (!state){
+		if (!state||state->data_version==_gl_internal_state->gl_active_texture_data_versions[i]){
 			continue;
 		}
-		// sys_io_print("Sync texture: %u as sampler #%u\n",state->header.index,i);
+		_gl_internal_state->gl_active_texture_data_versions[i]=state->data_version;
+		sys_io_print("Sync texture: %u as sampler #%u\n",state->header.index,i);
 		// parameter_wrap_s
 		// parameter_wrap_t
 		// parameter_wrap_r
@@ -925,6 +926,10 @@ _skip_array_buffers_sync:
 		// parameter_min_lod
 		// parameter_max_lod
 		// parameter_border_color
+		// parameter_swizzle_r
+		// parameter_swizzle_g
+		// parameter_swizzle_b
+		// parameter_swizzle_a
 	}
 	_gl_internal_state->gl_error=error;
 }
@@ -1286,8 +1291,9 @@ static void _update_texture_parameter(GLenum target,GLenum pname,const void* ptr
 		default:
 _enum_error:
 			_gl_internal_state->gl_error=GL_INVALID_ENUM;
-			break;
+			return;
 	}
+	state->data_version++;
 }
 
 
@@ -1679,6 +1685,7 @@ SYS_PUBLIC void glBindTexture(GLenum target,GLuint texture){
 			return;
 	}
 	_gl_internal_state->gl_active_textures[_gl_internal_state->gl_active_texture-GL_TEXTURE0]=texture;
+	_gl_internal_state->gl_active_texture_data_versions[_gl_internal_state->gl_active_texture-GL_TEXTURE0]=0;
 	if (state){
 		state->target=target;
 		_gl_internal_state->gl_active_texture_bitmap|=1ull<<(_gl_internal_state->gl_active_texture-GL_TEXTURE0);
@@ -2395,6 +2402,7 @@ SYS_PUBLIC void glGenTextures(GLsizei n,GLuint* textures){
 	for (GLsizei i=0;i<n;i++){
 		opengl_texture_state_t* state=_alloc_handle(OPENGL_HANDLE_TYPE_TEXTURE,sizeof(opengl_texture_state_t));
 		state->driver_handle=0;
+		state->data_version=1;
 		state->target=0;
 		state->parameter_wrap_s=GL_REPEAT;
 		state->parameter_wrap_t=GL_REPEAT;
@@ -2410,6 +2418,10 @@ SYS_PUBLIC void glGenTextures(GLsizei n,GLuint* textures){
 		state->parameter_border_color[1]=0.0f;
 		state->parameter_border_color[2]=0.0f;
 		state->parameter_border_color[3]=0.0f;
+		state->parameter_swizzle_r=GL_RED;
+		state->parameter_swizzle_g=GL_GREEN;
+		state->parameter_swizzle_b=GL_BLUE;
+		state->parameter_swizzle_a=GL_ALPHA;
 		textures[i]=state->header.index;
 	}
 }
@@ -3083,8 +3095,10 @@ SYS_PUBLIC GLboolean glIsSync(GLsync sync){
 
 
 SYS_PUBLIC GLboolean glIsTexture(GLuint texture){
-	sys_io_print("\x1b[1m\x1b[38;2;231;72;86mUnimplemented: glIsTexture\x1b[0m\n");
-	return 0;
+	GLenum error=_gl_internal_state->gl_error;
+	void* ptr=_get_handle(array,OPENGL_HANDLE_TYPE_TEXTURE,1,0);
+	_gl_internal_state->gl_error=error;
+	return !!ptr;
 }
 
 
