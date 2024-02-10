@@ -741,34 +741,6 @@ _skip_set_index_buffer:
 				texture->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,texture->resource_handle,VIRGL_TARGET_TEXTURE_2D,_virgl_texture_format_map[command->format],VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,command->width,command->height,command->depth,1,0,0);
 				virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
 			}
-			u32 AAAAAAAA[]={
-				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_VIEW,
-				0x80ff80ff,
-				texture->resource_handle,
-				_virgl_texture_format_map[command->format],
-				0,
-				0,
-				(0<<0)|(1<<3)|(2<<6)|(3<<9),
-				VIRGL_PROTOCOL_COMMAND_SET_SAMPLER_VIEWS(1),
-				VIRGL_SHADER_FRAGMENT,
-				0,
-				0x80ff80ff,
-				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
-				0xff8080ff,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				VIRGL_PROTOCOL_COMMAND_BIND_SAMPLER_STATES(1),
-				VIRGL_SHADER_FRAGMENT,
-				0,
-				0xff8080ff,
-			};
-			_command_buffer_extend(instance->ctx,AAAAAAAA,sizeof(AAAAAAAA)/sizeof(u32),0);
 			if (!command->data){
 				goto _update_texture_cleanup;
 			}
@@ -795,6 +767,38 @@ _skip_set_index_buffer:
 _update_texture_cleanup:
 			handle_release(texture_handle);
 _skip_update_texture_command:
+		}
+		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER){
+			opengl_protocol_update_sampler_t* command=(void*)header;
+			(void)command;
+			u32 AAAAAAAA[]={
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_VIEW,
+				0x80ff80ff,
+				/*texture->resource_handle*/0,
+				VIRGL_FORMAT_R8G8B8A8_UNORM,
+				0,
+				0,
+				(0<<0)|(1<<3)|(2<<6)|(3<<9),
+				VIRGL_PROTOCOL_COMMAND_SET_SAMPLER_VIEWS(1),
+				VIRGL_SHADER_FRAGMENT,
+				0,
+				0x80ff80ff,
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
+				0xff8080ff,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				VIRGL_PROTOCOL_COMMAND_BIND_SAMPLER_STATES(1),
+				VIRGL_SHADER_FRAGMENT,
+				0,
+				0xff8080ff,
+			};
+			_command_buffer_extend(instance->ctx,AAAAAAAA,sizeof(AAAAAAAA)/sizeof(u32),0);
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);

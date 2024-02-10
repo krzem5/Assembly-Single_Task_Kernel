@@ -910,26 +910,195 @@ _skip_array_buffers_sync:
 	for (u64 mask=_gl_internal_state->gl_active_texture_bitmap;mask;mask&=mask-1){
 		GLuint i=__builtin_ffsll(mask)-1;
 		opengl_texture_state_t* state=_get_handle(_gl_internal_state->gl_active_textures[i],OPENGL_HANDLE_TYPE_TEXTURE,0,0);
-		if (!state||state->data_version==_gl_internal_state->gl_active_texture_data_versions[i]){
+		if (!state||!state->driver_handle||state->data_version==_gl_internal_state->gl_active_texture_data_versions[i]){
 			continue;
 		}
 		_gl_internal_state->gl_active_texture_data_versions[i]=state->data_version;
 		sys_io_print("Sync texture: %u as sampler #%u\n",state->header.index,i);
-		// parameter_wrap_s
-		// parameter_wrap_t
-		// parameter_wrap_r
-		// parameter_min_filter
-		// parameter_mag_filter
-		// parameter_compare_func
-		// parameter_compare_mode
-		// parameter_lod_bias
-		// parameter_min_lod
-		// parameter_max_lod
-		// parameter_border_color
-		// parameter_swizzle_r
-		// parameter_swizzle_g
-		// parameter_swizzle_b
-		// parameter_swizzle_a
+		opengl_protocol_update_sampler_t command={
+			.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER,
+			.header.length=sizeof(opengl_protocol_update_sampler_t),
+			.index=i,
+			.driver_handle=_gl_internal_state->gl_active_texture_driver_handles[i],
+			state->driver_handle,
+			0,
+			state->parameter_lod_bias,
+			state->parameter_min_lod,
+			state->parameter_max_lod,
+			{
+				state->parameter_border_color[0],
+				state->parameter_border_color[1],
+				state->parameter_border_color[2],
+				state->parameter_border_color[3]
+			}
+		};
+		if (state->parameter_wrap_s==GL_REPEAT){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_S_SHIFT;
+		}
+		else if (state->parameter_wrap_s==GL_CLAMP_TO_BORDER){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_BORDER<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_S_SHIFT;
+		}
+		else if (state->parameter_wrap_s==GL_CLAMP_TO_EDGE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_EDGE<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_S_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_MIRRORED_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_S_SHIFT;
+		}
+		if (state->parameter_wrap_t==GL_REPEAT){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_T_SHIFT;
+		}
+		else if (state->parameter_wrap_t==GL_CLAMP_TO_BORDER){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_BORDER<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_T_SHIFT;
+		}
+		else if (state->parameter_wrap_t==GL_CLAMP_TO_EDGE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_EDGE<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_T_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_MIRRORED_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_T_SHIFT;
+		}
+		if (state->parameter_wrap_r==GL_REPEAT){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_R_SHIFT;
+		}
+		else if (state->parameter_wrap_r==GL_CLAMP_TO_BORDER){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_BORDER<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_R_SHIFT;
+		}
+		else if (state->parameter_wrap_r==GL_CLAMP_TO_EDGE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_CLAMP_TO_EDGE<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_R_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_WRAP_MIRRORED_REPEAT<<OPENGL_PROTOCOL_SAMPLER_FLAG_WRAP_R_SHIFT;
+		}
+		if (state->parameter_min_filter==GL_NEAREST){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		else if (state->parameter_min_filter==GL_LINEAR){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		else if (state->parameter_min_filter==GL_NEAREST_MIPMAP_NEAREST){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST_MIPMAP_NEAREST<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		else if (state->parameter_min_filter==GL_LINEAR_MIPMAP_NEAREST){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR_MIPMAP_NEAREST<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		else if (state->parameter_min_filter==GL_NEAREST_MIPMAP_LINEAR){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_NEAREST_MIPMAP_LINEAR<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MIN_FILTER_LINEAR_MIPMAP_LINEAR<<OPENGL_PROTOCOL_SAMPLER_FLAG_MIN_FILTER_SHIFT;
+		}
+		if (state->parameter_mag_filter==GL_NEAREST){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MAG_FILTER_NEAREST<<OPENGL_PROTOCOL_SAMPLER_FLAG_MAG_FILTER_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_MAG_FILTER_LINEAR<<OPENGL_PROTOCOL_SAMPLER_FLAG_MAG_FILTER_SHIFT;
+		}
+		if (state->parameter_compare_func==GL_LEQUAL){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_LESS_EQUAL<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_GEQUAL){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_GREATER_EQUAL<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_LESS){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_LESS<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_GREATER){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_GREATER<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_EQUAL){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_EQUAL<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_NOTEQUAL){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_NOT_EQUAL<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else if (state->parameter_compare_func==GL_ALWAYS){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_ALWAYS<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_FUNC_NEVER<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_FUNC_SHIFT;
+		}
+		if (state->parameter_compare_mode==GL_NONE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_MODE_NONE<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_MODE_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_COMPARE_MODE_TEXTURE<<OPENGL_PROTOCOL_SAMPLER_FLAG_COMPARE_MODE_SHIFT;
+		}
+		if (state->parameter_swizzle_r==GL_RED){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_RED<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		else if (state->parameter_swizzle_r==GL_GREEN){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_GREEN<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		else if (state->parameter_swizzle_r==GL_BLUE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_BLUE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		else if (state->parameter_swizzle_r==GL_ALPHA){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ALPHA<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		else if (state->parameter_swizzle_r==GL_ONE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ONE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ZERO<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT;
+		}
+		if (state->parameter_swizzle_g==GL_RED){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_RED<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		else if (state->parameter_swizzle_g==GL_GREEN){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_GREEN<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		else if (state->parameter_swizzle_g==GL_BLUE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_BLUE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		else if (state->parameter_swizzle_g==GL_ALPHA){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ALPHA<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		else if (state->parameter_swizzle_g==GL_ONE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ONE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ZERO<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT;
+		}
+		if (state->parameter_swizzle_b==GL_RED){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_RED<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		else if (state->parameter_swizzle_b==GL_GREEN){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_GREEN<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		else if (state->parameter_swizzle_b==GL_BLUE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_BLUE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		else if (state->parameter_swizzle_b==GL_ALPHA){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ALPHA<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		else if (state->parameter_swizzle_b==GL_ONE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ONE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ZERO<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT;
+		}
+		if (state->parameter_swizzle_a==GL_RED){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_RED<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		else if (state->parameter_swizzle_a==GL_GREEN){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_GREEN<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		else if (state->parameter_swizzle_a==GL_BLUE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_BLUE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		else if (state->parameter_swizzle_a==GL_ALPHA){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ALPHA<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		else if (state->parameter_swizzle_a==GL_ONE){
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ONE<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		else{
+			command.flags|=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ZERO<<OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT;
+		}
+		const opengl_protocol_update_buffer_t* output=(const opengl_protocol_update_buffer_t*)opengl_command_buffer_push_single(&(command.header));
+		if (!command.driver_handle){
+			glFlush();
+			_gl_internal_state->gl_active_texture_driver_handles[i]=output->driver_handle;
+		}
 	}
 	_gl_internal_state->gl_error=error;
 }
