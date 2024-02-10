@@ -78,7 +78,16 @@ typedef struct _VIRGL_OPENGL_BUFFER{
 typedef struct _VIRGL_OPENGL_TEXTURE{
 	handle_t handle;
 	resource_t resource_handle;
+	u32 format;
 } virgl_opengl_texture_t;
+
+
+
+typedef struct _VIRGL_OPENGL_SAMPLER{
+	handle_t handle;
+	resource_t view_resource_handle;
+	resource_t state_resource_handle;
+} virgl_opengl_sampler_t;
 
 
 

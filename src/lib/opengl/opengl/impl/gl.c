@@ -914,7 +914,6 @@ _skip_array_buffers_sync:
 			continue;
 		}
 		_gl_internal_state->gl_active_texture_data_versions[i]=state->data_version;
-		sys_io_print("Sync texture: %u as sampler #%u\n",state->header.index,i);
 		opengl_protocol_update_sampler_t command={
 			.header.type=OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER,
 			.header.length=sizeof(opengl_protocol_update_sampler_t),

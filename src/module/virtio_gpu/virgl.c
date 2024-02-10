@@ -141,10 +141,34 @@ static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_vertex_array_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_buffer_allocator=NULL;
 static omm_allocator_t* _virgl_opengl_texture_allocator=NULL;
+static omm_allocator_t* _virgl_opengl_sampler_allocator=NULL;
 static handle_type_t _virgl_opengl_shader_handle_type=0;
 static handle_type_t _virgl_opengl_vertex_array_handle_type=0;
 static handle_type_t _virgl_opengl_buffer_handle_type=0;
 static handle_type_t _virgl_opengl_texture_handle_type=0;
+static handle_type_t _virgl_opengl_sampler_handle_type=0;
+
+
+
+static KERNEL_INLINE u32 _decode_sampler_swizzle(u32 flags){
+	flags&=OPENGL_PROTOCOL_SAMPLER_SWIZZLE_MASK;
+	if (flags==OPENGL_PROTOCOL_SAMPLER_SWIZZLE_RED){
+		return VIRGL_SWIZZLE_X;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_SWIZZLE_GREEN){
+		return VIRGL_SWIZZLE_Y;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_SWIZZLE_BLUE){
+		return VIRGL_SWIZZLE_Z;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ALPHA){
+		return VIRGL_SWIZZLE_W;
+	}
+	if (flags==OPENGL_PROTOCOL_SAMPLER_SWIZZLE_ONE){
+		return VIRGL_SWIZZLE_1;
+	}
+	return VIRGL_SWIZZLE_0;
+}
 
 
 
@@ -721,6 +745,7 @@ _skip_set_index_buffer:
 				virgl_opengl_texture_t* texture=omm_alloc(_virgl_opengl_texture_allocator);
 				handle_new(texture,_virgl_opengl_texture_handle_type,&(texture->handle));
 				texture->resource_handle=0;
+				texture->format=0;
 				handle_finish_setup(&(texture->handle));
 				command->driver_handle=texture->handle.rb_node.key;
 			}
@@ -738,7 +763,8 @@ _skip_set_index_buffer:
 				else{
 					texture->resource_handle=resource_alloc(state_ctx->resource_manager);
 				}
-				texture->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,texture->resource_handle,VIRGL_TARGET_TEXTURE_2D,_virgl_texture_format_map[command->format],VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,command->width,command->height,command->depth,1,0,0);
+				texture->format=_virgl_texture_format_map[command->format];
+				texture->resource_handle=virtio_gpu_command_resource_create_3d(ctx->gpu_device,texture->resource_handle,VIRGL_TARGET_TEXTURE_2D,texture->format,VIRGL_PROTOCOL_BIND_FLAG_RENDER_TARGET,command->width,command->height,command->depth,1,0,0);
 				virtio_gpu_command_ctx_attach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
 			}
 			if (!command->data){
@@ -770,35 +796,86 @@ _skip_update_texture_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER){
 			opengl_protocol_update_sampler_t* command=(void*)header;
-			(void)command;
-			u32 AAAAAAAA[]={
+			if (!command->driver_handle){
+				virgl_opengl_sampler_t* sampler=omm_alloc(_virgl_opengl_sampler_allocator);
+				handle_new(sampler,_virgl_opengl_sampler_handle_type,&(sampler->handle));
+				sampler->view_resource_handle=0;
+				sampler->state_resource_handle=0;
+				handle_finish_setup(&(sampler->handle));
+				command->driver_handle=sampler->handle.rb_node.key;
+			}
+			handle_t* sampler_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_sampler_handle_type);
+			if (!sampler_handle){
+				ERROR("_process_commands: invalid sampler handle: %p",command->driver_handle);
+				goto _skip_update_sampler_command;
+			}
+			handle_t* texture_handle=handle_lookup_and_acquire(command->texture_driver_handle,_virgl_opengl_texture_handle_type);
+			if (!texture_handle){
+				handle_release(sampler_handle);
+				ERROR("_process_commands: invalid texture handle: %p",command->texture_driver_handle);
+				goto _skip_update_sampler_command;
+			}
+			virgl_opengl_sampler_t* sampler=sampler_handle->object;
+			virgl_opengl_texture_t* texture=texture_handle->object;
+			if (sampler->view_resource_handle){
+				u32 virgl_desrtoy_sampler_view_command[2]={
+					VIRGL_PROTOCOL_COMMAND_DESTROY_OBJECT_SAMPLER_VIEW,
+					sampler->view_resource_handle
+				};
+				_command_buffer_extend(instance->ctx,virgl_desrtoy_sampler_view_command,2,0);
+			}
+			else{
+				sampler->view_resource_handle=resource_alloc(state_ctx->resource_manager);
+			}
+			if (sampler->state_resource_handle){
+				u32 virgl_desrtoy_sampler_state_command[2]={
+					VIRGL_PROTOCOL_COMMAND_DESTROY_OBJECT_SAMPLER_STATE,
+					sampler->state_resource_handle
+				};
+				_command_buffer_extend(instance->ctx,virgl_desrtoy_sampler_state_command,2,0);
+			}
+			else{
+				sampler->state_resource_handle=resource_alloc(state_ctx->resource_manager);
+			}
+			u32 virgl_sampler_setup_commands[]={
 				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_VIEW,
-				0x80ff80ff,
-				/*texture->resource_handle*/0,
-				VIRGL_FORMAT_R8G8B8A8_UNORM,
+				sampler->view_resource_handle,
+				texture->resource_handle,
+				texture->format,
 				0,
 				0,
-				(0<<0)|(1<<3)|(2<<6)|(3<<9),
+				_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_R_SHIFT)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_G_SHIFT)<<3)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_B_SHIFT)<<6)|(_decode_sampler_swizzle(command->flags>>OPENGL_PROTOCOL_SAMPLER_FLAG_SWIZZLE_A_SHIFT)<<9),
+				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
+				sampler->state_resource_handle,
+				0,
+				command->lod_bias.raw_value,
+				command->min_lod.raw_value,
+				command->max_lod.raw_value,
+				command->border_color[0].raw_value,
+				command->border_color[1].raw_value,
+				command->border_color[2].raw_value,
+				command->border_color[3].raw_value,
+				VIRGL_PROTOCOL_COMMAND_SET_SAMPLER_VIEWS(1),
+				VIRGL_SHADER_VERTEX,
+				command->index,
+				sampler->view_resource_handle,
 				VIRGL_PROTOCOL_COMMAND_SET_SAMPLER_VIEWS(1),
 				VIRGL_SHADER_FRAGMENT,
-				0,
-				0x80ff80ff,
-				VIRGL_PROTOCOL_COMMAND_CREATE_OBJECT_SAMPLER_STATE,
-				0xff8080ff,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
+				command->index,
+				sampler->view_resource_handle,
+				VIRGL_PROTOCOL_COMMAND_BIND_SAMPLER_STATES(1),
+				VIRGL_SHADER_VERTEX,
+				command->index,
+				sampler->state_resource_handle,
 				VIRGL_PROTOCOL_COMMAND_BIND_SAMPLER_STATES(1),
 				VIRGL_SHADER_FRAGMENT,
-				0,
-				0xff8080ff,
+				command->index,
+				sampler->state_resource_handle,
 			};
-			_command_buffer_extend(instance->ctx,AAAAAAAA,sizeof(AAAAAAAA)/sizeof(u32),0);
+			_command_buffer_extend(instance->ctx,virgl_sampler_setup_commands,sizeof(virgl_sampler_setup_commands)/sizeof(u32),0);
+			handle_release(sampler_handle);
+			handle_release(texture_handle);
+_skip_update_sampler_command:
 		}
 		else{
 			ERROR("_process_commands: unknown command: 0x%X",header->type);
@@ -836,10 +913,13 @@ void virgl_init(void){
 	spinlock_init(&(_virgl_opengl_buffer_allocator->lock));
 	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4,pmm_alloc_counter("omm_virgl_opengl_texture"));
 	spinlock_init(&(_virgl_opengl_texture_allocator->lock));
+	_virgl_opengl_sampler_allocator=omm_init("virgl_opengl_sampler",sizeof(virgl_opengl_sampler_t),8,4,pmm_alloc_counter("omm_virgl_opengl_sampler"));
+	spinlock_init(&(_virgl_opengl_sampler_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
 	_virgl_opengl_buffer_handle_type=handle_alloc("virgl_opengl_buffer",NULL);
 	_virgl_opengl_texture_handle_type=handle_alloc("virgl_opengl_texture",NULL);
+	_virgl_opengl_sampler_handle_type=handle_alloc("virgl_opengl_sampler",NULL);
 }
 
 
