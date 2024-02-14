@@ -1259,33 +1259,23 @@ static void _update_buffer_data(GLenum target,GLintptr offset,GLsizeiptr size,co
 
 
 static void _update_uniform(GLint location,const void* buffer,GLuint size){
+	if (location==-1){
+		return;
+	}
 	opengl_program_state_t* state=_get_handle(_gl_internal_state->gl_used_program,OPENGL_HANDLE_TYPE_PROGRAM,1,0);
 	if (!state){
 		return;
 	}
-	if (location<-1){
+	if (!state->was_linkage_attempted||state->error||location<-1||location+size>state->uniform_data_size){
 		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	if (location==-1){
 		return;
 	}
 	location*=4*sizeof(float);
-	if (location+size>state->uniform_data_size){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
-	sys_memory_copy(buffer,state->uniform_data+location,size);
-	_gl_internal_state->gl_constant_buffer_needs_update=1;
-	if (!state->was_linkage_attempted||state->error){
-		_gl_internal_state->gl_error=GL_INVALID_OPERATION;
-		return;
-	}
 	for (u32 i=0;i<state->linked_program.uniform_count;i++){
 		if ((state->linked_program.uniforms+i)->slot==location/(4*sizeof(float))){
 			u32 j=(state->linked_program.uniforms+i)->sampler_index;
 			if (j==0xffffffff){
-				return;
+				break;
 			}
 			state->sampler_texture_units[j]=*((const u32*)buffer);
 			state->sampler_texture_unit_bitmap|=1<<j;
@@ -1293,6 +1283,8 @@ static void _update_uniform(GLint location,const void* buffer,GLuint size){
 			return;
 		}
 	}
+	sys_memory_copy(buffer,state->uniform_data+location,size);
+	_gl_internal_state->gl_constant_buffer_needs_update=1;
 }
 
 
