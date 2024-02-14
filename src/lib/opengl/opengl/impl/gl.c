@@ -4185,6 +4185,7 @@ SYS_PUBLIC void glUseProgram(GLuint program){
 	};
 	opengl_command_buffer_push_single(&(command.header));
 	_gl_internal_state->gl_constant_buffer_needs_update=1;
+	state->sampler_texture_unit_force_update_bitmap=0xffffffffffffffffull;
 }
 
 

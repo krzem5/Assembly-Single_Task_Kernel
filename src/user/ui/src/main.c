@@ -18,6 +18,39 @@ static const char*const _ui_framebuffer_format_names[UI_DISPLAY_FRAMEBUFFER_FORM
 	[UI_DISPLAY_FRAMEBUFFER_FORMAT_XRGB]="XRGB",
 };
 
+static const char* _bg_vertex_shader=" \
+#version 330 core \n\
+ \n\
+ \n\
+ \n\
+layout (location=0) in vec2 in_pos; \n\
+layout (location=1) in vec2 in_uv; \n\
+out vec2 fs_uv; \n\
+ \n\
+ \n\
+ \n\
+void main(void){ \n\
+	gl_Position=vec4(in_pos,0.0,1.0); \n\
+	fs_uv=in_uv; \n\
+} \n\
+";
+
+static const char* _bg_fragment_shader=" \
+#version 330 core \n\
+ \n\
+ \n\
+ \n\
+in vec2 fs_uv; \n\
+uniform sampler2D fs_texture; \n\
+out vec4 out_color; \n\
+ \n\
+ \n\
+ \n\
+void main(void){ \n\
+	out_color=vec4(__gl_texture(fs_texture,fs_uv).rgb,1.0); \n\
+} \n\
+";
+
 static const char* _vertex_shader=" \
 #version 330 core \n\
  \n\
@@ -149,6 +182,53 @@ int main(int argc,const char** argv){
 		glGetIntegerv(GL_NUM_EXTENSIONS,&extension_count);
 		sys_io_print("GL_NUM_EXTENSIONS: %u\n",extension_count);
 		GLint uniform_vs_color;
+		GLuint bg_program=glCreateProgram();
+		{
+			GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertex_shader,1,&_bg_vertex_shader,NULL);
+			glCompileShader(vertex_shader);
+			GLint compilation_status;
+			glGetShaderiv(vertex_shader,GL_COMPILE_STATUS,&compilation_status);
+			if (!compilation_status){
+				GLsizei length;
+				glGetShaderiv(vertex_shader,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetShaderInfoLog(vertex_shader,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
+			GLuint fragment_shader=glCreateShader(GL_FRAGMENT_SHADER);
+			glShaderSource(fragment_shader,1,&_bg_fragment_shader,NULL);
+			glCompileShader(fragment_shader);
+			glGetShaderiv(fragment_shader,GL_COMPILE_STATUS,&compilation_status);
+			if (!compilation_status){
+				GLsizei length;
+				glGetShaderiv(fragment_shader,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetShaderInfoLog(fragment_shader,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
+			glAttachShader(bg_program,vertex_shader);
+			glAttachShader(bg_program,fragment_shader);
+			glLinkProgram(bg_program);
+			GLint link_status;
+			glGetProgramiv(bg_program,GL_LINK_STATUS,&link_status);
+			if (!link_status){
+				GLsizei length;
+				glGetProgramiv(bg_program,GL_INFO_LOG_LENGTH,&length);
+				char* buffer=sys_heap_alloc(NULL,length);
+				glGetProgramInfoLog(bg_program,length,&length,buffer);
+				sys_io_print("%s\n",buffer);
+				sys_heap_dealloc(NULL,buffer);
+				return 1;
+			}
+			glUseProgram(bg_program);
+			glUniform1i(glGetUniformLocation(bg_program,"fs_texture"),0);
+		}
+		GLuint program=glCreateProgram();
 		{
 			GLuint vertex_shader=glCreateShader(GL_VERTEX_SHADER);
 			glShaderSource(vertex_shader,1,&_vertex_shader,NULL);
@@ -177,7 +257,6 @@ int main(int argc,const char** argv){
 				sys_heap_dealloc(NULL,buffer);
 				return 1;
 			}
-			GLuint program=glCreateProgram();
 			glAttachShader(program,vertex_shader);
 			glAttachShader(program,fragment_shader);
 			glLinkProgram(program);
@@ -205,6 +284,40 @@ int main(int argc,const char** argv){
 		sys_timer_t timer=sys_timer_create(0,0);
 		sys_event_t timer_event=sys_timer_get_event(timer);
 		glViewport(0,0,config.width,config.height);
+		GLuint bg_vao;
+		GLuint bg_vbo[2];
+		glGenVertexArrays(1,&bg_vao);
+		glGenBuffers(2,bg_vbo);
+		glBindVertexArray(bg_vao);
+		glBindBuffer(GL_ARRAY_BUFFER,bg_vbo[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,bg_vbo[1]);
+		const float bg_buffer[]={
+			-1.0f,+1.0f,0.0f,0.0f,
+			+1.0f,+1.0f,1.0f,0.0f,
+			+1.0f,-1.0f,1.0f,1.0f,
+			-1.0f,-1.0f,0.0f,1.0f,
+		};
+		glBufferData(GL_ARRAY_BUFFER,sizeof(bg_buffer),bg_buffer,GL_STATIC_DRAW);
+		const u16 bg_indices[6]={0,1,2,0,2,3};
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(bg_indices),bg_indices,GL_STATIC_DRAW);
+		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,4*sizeof(float),NULL);
+		glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,4*sizeof(float),(void*)(2*sizeof(float)));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		GLuint bg_texture_id;
+		glGenTextures(1,&bg_texture_id);
+		glBindTexture(GL_TEXTURE_2D,bg_texture_id);
+		const u32 bg_texture_data[4*4]={
+			0xff0000,0xff0000,0xff0000,0xff0000,
+			0xff0000,0x00ff00,0x00ff00,0xff0000,
+			0xff0000,0x00ff00,0x00ff00,0xff0000,
+			0xff0000,0xff0000,0xff0000,0x0000ff,
+		};
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,4,4,0,GL_RGBA,GL_UNSIGNED_BYTE,bg_texture_data);
 		GLuint vao;
 		GLuint vbo[2];
 		glGenVertexArrays(1,&vao);
@@ -218,7 +331,7 @@ int main(int argc,const char** argv){
 			+1.0f,-1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,
 		};
 		glBufferData(GL_ARRAY_BUFFER,sizeof(buffer),buffer,GL_DYNAMIC_DRAW);
-		u32 indices[3]={0,1,2};
+		const u32 indices[3]={0,1,2};
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices,GL_STATIC_DRAW);
 		glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,7*sizeof(float),NULL);
 		glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,7*sizeof(float),(void*)(2*sizeof(float)));
@@ -239,8 +352,6 @@ int main(int argc,const char** argv){
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,2,3,0,GL_RGBA,GL_UNSIGNED_BYTE,texture_data);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D,texture_id);
 		float start=sys_clock_get_time();
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);
@@ -255,6 +366,19 @@ int main(int argc,const char** argv){
 			_hsl_to_rgb((frame+60)*255/120,127,255,color);
 			glUniform4f(uniform_vs_color,color[0]/255.0f,color[1]/255.0f,color[2]/255.0f,1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glBindVertexArray(bg_vao);
+			glBindBuffer(GL_ARRAY_BUFFER,bg_vbo[0]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,bg_vbo[1]);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D,bg_texture_id);
+			glUseProgram(bg_program);
+			glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_SHORT,NULL);
+			glBindVertexArray(vao);
+			glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbo[1]);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D,texture_id);
+			glUseProgram(program);
 			buffer[0]=(frame%120)/60.0f-1.0f;
 			glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float),buffer);
 			glDrawArrays(GL_TRIANGLES,0,3);
