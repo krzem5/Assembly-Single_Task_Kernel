@@ -17,6 +17,7 @@ static CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_da
 static CPU_LOCAL_DATA(scheduler_load_balancer_data_t*,_scheduler_load_balancer_priority_queue);
 static CPU_LOCAL_DATA(scheduler_load_balancer_group_t,_scheduler_load_balancer_groups);
 static scheduler_load_balancer_t _scheduler_load_balancer;
+// 64 queues [multilevel feedback queue w/ FIFO RR] => each thread has a valid queue range, decreased when used entire time, increased when I/O blocked
 
 
 
