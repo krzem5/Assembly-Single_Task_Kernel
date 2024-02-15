@@ -355,7 +355,7 @@ int main(int argc,const char** argv){
 		float start=sys_clock_get_time();
 		for (u64 frame=0;;frame++){
 			sys_timer_update(timer,timer_interval,1);
-			if (!(frame%data.mode.freq)){
+			if ((frame%data.mode.freq)==data.mode.freq-1){
 				float end=sys_clock_get_time();
 				sys_io_print("==> %f, %f fps\n",end-start,data.mode.freq/(end-start));
 				start=end;
