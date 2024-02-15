@@ -9,158 +9,56 @@
 
 
 
-#define DECLARE_QUEUE_ORDER(a,b,c,d,e) ((a)|((b)<<SCHEDULER_PRIORITY_SHIFT)|((c)<<(2*SCHEDULER_PRIORITY_SHIFT))|((d)<<(3*SCHEDULER_PRIORITY_SHIFT))|((e)<<(4*SCHEDULER_PRIORITY_SHIFT)))
-
-
-
-static CPU_LOCAL_DATA(scheduler_load_balancer_data_t,_scheduler_load_balancer_data);
-static CPU_LOCAL_DATA(scheduler_load_balancer_data_t*,_scheduler_load_balancer_priority_queue);
-static CPU_LOCAL_DATA(scheduler_load_balancer_group_t,_scheduler_load_balancer_groups);
-static scheduler_load_balancer_t _scheduler_load_balancer;
-// 64 queues [multilevel feedback queue w/ FIFO RR] => each thread has a valid queue range, decreased when used entire time, increased when I/O blocked
-
-
-
-static void _thread_queue_init(scheduler_load_balancer_thread_queue_t* queue){
-	spinlock_init(&(queue->lock));
-	queue->head=NULL;
-	queue->tail=NULL;
-}
-
-
-
-static u32 _get_queue_order(scheduler_load_balancer_data_t* lb_data){
-	lb_data->queue_access_timing++;
-	if (!(lb_data->queue_access_timing&15)){
-		return DECLARE_QUEUE_ORDER(
-			SCHEDULER_PRIORITY_REALTIME,
-			SCHEDULER_PRIORITY_LOW,
-			SCHEDULER_PRIORITY_HIGH,
-			SCHEDULER_PRIORITY_NORMAL,
-			SCHEDULER_PRIORITY_BACKGROUND
-		);
-	}
-	else if (!(lb_data->queue_access_timing&3)){
-		return DECLARE_QUEUE_ORDER(
-			SCHEDULER_PRIORITY_REALTIME,
-			SCHEDULER_PRIORITY_NORMAL,
-			SCHEDULER_PRIORITY_HIGH,
-			SCHEDULER_PRIORITY_LOW,
-			SCHEDULER_PRIORITY_BACKGROUND
-		);
-	}
-	else{
-		return DECLARE_QUEUE_ORDER(
-			SCHEDULER_PRIORITY_REALTIME,
-			SCHEDULER_PRIORITY_HIGH,
-			SCHEDULER_PRIORITY_NORMAL,
-			SCHEDULER_PRIORITY_LOW,
-			SCHEDULER_PRIORITY_BACKGROUND
-		);
-	}
-}
-
-
-
-static thread_t* _try_pop_from_queue(scheduler_load_balancer_thread_queue_t* queue){
-	if (!queue->head){
-		return NULL;
-	}
-	spinlock_acquire_exclusive(&(queue->lock));
-	if (!queue->head){
-		spinlock_release_exclusive(&(queue->lock));
-		return NULL;
-	}
-	thread_t* out=queue->head;
-	queue->head=out->scheduler_load_balancer_thread_queue_next;
-	if (queue->tail==out){
-		queue->tail=NULL;
-	}
-	spinlock_release_exclusive(&(queue->lock));
-	return out;
-}
+static u64 _NEW_scheduler_load_balancer_bitmap=0;
+static scheduler_load_balancer_thread_queue_t _scheduler_load_balancer_queues[SCHEDULER_LOAD_BALANCER_QUEUE_COUNT];
+static CPU_LOCAL_DATA(scheduler_load_balancer_stats_t,_scheduler_load_balancer_stats);
+// 1. 64 queues [multilevel feedback queue w/ FIFO RR] => DONE
+// 2. each thread has a valid queue range, decreased when used entire time, increased when I/O blocked
 
 
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing scheduler load balancer...");
-	spinlock_init(&(_scheduler_load_balancer.lock));
-	_scheduler_load_balancer.free_group=NULL;
-	_scheduler_load_balancer_groups->length=cpu_count;
-	_scheduler_load_balancer_groups->end=cpu_count-1;
-	for (u16 i=0;i<cpu_count;i++){
-		scheduler_load_balancer_data_t* lb_data=_scheduler_load_balancer_data+i;
-		_scheduler_load_balancer_priority_queue[i]=lb_data;
-		lb_data->stats.added_thread_count=0;
-		lb_data->stats.free_slot_count=0;
-		lb_data->stats.used_slot_count=0;
-		lb_data->group=_scheduler_load_balancer_groups;
-		for (u8 j=0;j<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;j++){
-			_thread_queue_init(lb_data->queues+j);
-		}
-		lb_data->cpu_index=i;
-		lb_data->queue_access_timing=0;
-		if (!i){
-			continue;
-		}
-		(_scheduler_load_balancer_groups+i)->next_group=_scheduler_load_balancer.free_group;
-		_scheduler_load_balancer.free_group=_scheduler_load_balancer_groups+i;
+	_NEW_scheduler_load_balancer_bitmap=0;
+	for (u32 i=0;i<SCHEDULER_LOAD_BALANCER_QUEUE_COUNT;i++){
+		spinlock_init(&((_scheduler_load_balancer_queues+i)->lock));
+		(_scheduler_load_balancer_queues+i)->head=NULL;
+		(_scheduler_load_balancer_queues+i)->tail=NULL;
 	}
 }
 
 
 
 thread_t* scheduler_load_balancer_get(void){
-	scheduler_load_balancer_data_t* lb_data=CPU_LOCAL(_scheduler_load_balancer_data);
-	u32 queue_order=_get_queue_order(lb_data);
-	for (u8 i=0;i<SCHEDULER_LOAD_BALANCER_THREAD_QUEUE_COUNT;i++){
-		thread_t* out=_try_pop_from_queue(lb_data->queues+(queue_order&((1<<SCHEDULER_PRIORITY_SHIFT)-1)));
-		if (out){
-			lb_data->stats.used_slot_count++;
-			return out;
+	while (_NEW_scheduler_load_balancer_bitmap){
+		u32 i=__builtin_ffsll(_NEW_scheduler_load_balancer_bitmap)-1;
+		scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+i;
+		spinlock_acquire_exclusive(&(queue->lock));
+		if (!queue->head){
+			spinlock_release_exclusive(&(queue->lock));
+			continue;
 		}
-		queue_order>>=SCHEDULER_PRIORITY_SHIFT;
+		thread_t* out=queue->head;
+		queue->head=out->scheduler_load_balancer_thread_queue_next;
+		if (!queue->head){
+			queue->tail=NULL;
+			_NEW_scheduler_load_balancer_bitmap&=~(1ull<<i);
+		}
+		spinlock_release_exclusive(&(queue->lock));
+		((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->used_slot_count++;
+		return out;
 	}
-	lb_data->stats.free_slot_count++;
+	((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->free_slot_count++;
 	return NULL;
 }
 
 
 
 void scheduler_load_balancer_add(thread_t* thread){
-	spinlock_acquire_exclusive(&(_scheduler_load_balancer.lock));
-	u16 i=0;
-	scheduler_load_balancer_data_t* out;
-	while (1){
-		out=_scheduler_load_balancer_priority_queue[i];
-		if (i==cpu_count-1||(thread->cpu_mask->bitmap[out->cpu_index>>6]&(1ull<<(out->cpu_index&63)))){
-			break;
-		}
-		i++;
-	}
-	out->stats.added_thread_count++;
-	u16 j=out->group->end;
-	_scheduler_load_balancer_priority_queue[i]=_scheduler_load_balancer_priority_queue[j];
-	_scheduler_load_balancer_priority_queue[j]=out;
-	out->group->end--;
-	out->group->length--;
-	if (!out->group->length){
-		out->group->next_group=_scheduler_load_balancer.free_group;
-		_scheduler_load_balancer.free_group=out->group;
-	}
-	if (j==cpu_count-1||_scheduler_load_balancer_priority_queue[j+1]->stats.added_thread_count>out->stats.added_thread_count){
-		out->group=_scheduler_load_balancer.free_group;
-		_scheduler_load_balancer.free_group=_scheduler_load_balancer.free_group->next_group;
-		out->group->length=1;
-		out->group->end=j;
-	}
-	else{
-		out->group=_scheduler_load_balancer_priority_queue[j+1]->group;
-		out->group->length++;
-	}
-	spinlock_release_exclusive(&(_scheduler_load_balancer.lock));
-	scheduler_load_balancer_thread_queue_t* queue=out->queues+thread->priority;
+	u32 i=0;
+	scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+i;
 	spinlock_acquire_exclusive(&(queue->lock));
+	thread->scheduler_load_balancer_thread_queue_next=NULL;
 	if (queue->tail){
 		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
 	}
@@ -168,15 +66,12 @@ void scheduler_load_balancer_add(thread_t* thread){
 		queue->head=thread;
 	}
 	queue->tail=thread;
-	thread->scheduler_load_balancer_thread_queue_next=NULL;
 	spinlock_release_exclusive(&(queue->lock));
+	_NEW_scheduler_load_balancer_bitmap|=1ull<<i;
 }
 
 
 
 KERNEL_PUBLIC const scheduler_load_balancer_stats_t* scheduler_load_balancer_get_stats(u16 cpu_index){
-	if (cpu_index>=cpu_count){
-		return NULL;
-	}
-	return &((_scheduler_load_balancer_data+cpu_index)->stats);
+	return (cpu_index>=cpu_count?NULL:_scheduler_load_balancer_stats+cpu_index);
 }
