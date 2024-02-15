@@ -110,8 +110,8 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
-	INFO("Resetting memory...");
 #ifndef KERNEL_DISABLE_ASSERT
+	INFO("Resetting memory...");
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,end-address);
 #endif
 	do{

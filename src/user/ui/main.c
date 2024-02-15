@@ -357,7 +357,9 @@ int main(int argc,const char** argv){
 			sys_timer_update(timer,timer_interval,1);
 			if ((frame%data.mode.freq)==data.mode.freq-1){
 				float end=sys_clock_get_time();
-				sys_io_print("==> %f, %f fps\n",end-start,data.mode.freq/(end-start));
+				if (0){
+					sys_io_print("==> %f, %f fps\n",end-start,data.mode.freq/(end-start));
+				}
 				start=end;
 			}
 			u8 color[3];
