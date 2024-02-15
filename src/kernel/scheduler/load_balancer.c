@@ -36,7 +36,7 @@ static u32 _get_queue_index_offset(const thread_t* thread){
 
 
 
-static u32 _get_queue_time(u32 i){
+static u32 _get_queue_time_us(u32 i){
 	return 968+((i&((SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1)-1))<<7);
 }
 
@@ -71,7 +71,7 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 		}
 		spinlock_release_exclusive(&(queue->lock));
 		((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->used_slot_count++;
-		*time_us=_get_queue_time(i);
+		*time_us=_get_queue_time_us(i);
 		return out;
 	}
 	((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->free_slot_count++;
