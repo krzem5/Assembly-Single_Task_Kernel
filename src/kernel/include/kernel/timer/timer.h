@@ -48,7 +48,7 @@ void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypass_acl);
 
 
 
-void timer_dispatch_timers(void);
+u32 timer_dispatch_timers(void);
 
 
 

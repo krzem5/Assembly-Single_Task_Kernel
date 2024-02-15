@@ -20,6 +20,10 @@
 
 
 
+#define SCHEDULER_MIN_TIME_QUANTUM_US 5
+
+
+
 static _Bool KERNEL_INIT_WRITE _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
@@ -116,9 +120,18 @@ void scheduler_isr_handler(isr_state_t* state){
 #ifndef KERNEL_DISABLE_WATCHDOG
 	watchdog_update();
 #endif
-	timer_dispatch_timers();
+	u32 next_timer_time_us=timer_dispatch_timers();
 	u32 time_us;
 	current_thread=scheduler_load_balancer_get(&time_us);
+	if (time_us>next_timer_time_us){
+		time_us=next_timer_time_us;
+		if (current_thread){
+			current_thread->scheduler_early_yield=1;
+		}
+	}
+	if (time_us<SCHEDULER_MIN_TIME_QUANTUM_US){
+		time_us=SCHEDULER_MIN_TIME_QUANTUM_US;
+	}
 	if (current_thread){
 		spinlock_acquire_exclusive(&(current_thread->lock));
 		current_thread->header.index=CPU_HEADER_DATA->index;

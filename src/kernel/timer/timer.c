@@ -105,11 +105,11 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypa
 
 
 
-void timer_dispatch_timers(void){
+u32 timer_dispatch_timers(void){
 	u64 time=clock_get_time();
 	timer_t* timer=(timer_t*)rb_tree_lookup_decreasing_node(&_timer_tree,time);
 	if (!timer){
-		return;
+		goto _return;
 	}
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(timer->lock));
@@ -127,6 +127,9 @@ void timer_dispatch_timers(void){
 	}
 	spinlock_release_exclusive(&(timer->lock));
 	scheduler_resume();
+_return:
+	timer=(timer_t*)rb_tree_iter_start(&_timer_tree);
+	return (timer?(timer->rb_node.key>time?(timer->rb_node.key-time)/1000:0):0xffffffff);
 }
 
 
