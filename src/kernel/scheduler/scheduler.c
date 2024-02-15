@@ -10,7 +10,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/msr/msr.h>
-#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/timer/timer.h>
@@ -18,10 +17,6 @@
 #include <kernel/util/util.h>
 #include <kernel/watchdog/watchdog.h>
 #define KERNEL_LOG_NAME "scheduler"
-
-
-
-#define THREAD_TIMESLICE_US 5000
 
 
 
@@ -122,7 +117,8 @@ void scheduler_isr_handler(isr_state_t* state){
 	watchdog_update();
 #endif
 	timer_dispatch_timers();
-	current_thread=scheduler_load_balancer_get();
+	u32 time_us;
+	current_thread=scheduler_load_balancer_get(&time_us);
 	if (current_thread){
 		spinlock_acquire_exclusive(&(current_thread->lock));
 		current_thread->header.index=CPU_HEADER_DATA->index;
@@ -140,13 +136,13 @@ void scheduler_isr_handler(isr_state_t* state){
 	}
 	if (!current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
-		lapic_timer_start(THREAD_TIMESLICE_US);
+		lapic_timer_start(time_us);
 		scheduler_task_wait_loop();
 	}
 	msr_set_gs_base((u64)current_thread,0);
 	scheduler->current_thread=current_thread;
 	scheduler_set_timer((state->cs==0x08?SCHEDULER_TIMER_KERNEL:SCHEDULER_TIMER_USER));
-	lapic_timer_start(THREAD_TIMESLICE_US);
+	lapic_timer_start(time_us);
 }
 
 
@@ -187,6 +183,7 @@ void scheduler_set_timer(u8 timer){
 
 
 error_t syscall_scheduler_yield(void){
+	THREAD_DATA->scheduler_early_yield=1;
 	scheduler_yield();
 	return ERROR_OK;
 }

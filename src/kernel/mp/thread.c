@@ -15,7 +15,6 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
-#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
@@ -57,7 +56,6 @@ static void _thread_handle_destructor(handle_t* handle){
 	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
 	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
-	cpu_mask_delete(thread->cpu_mask);
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
 	}
@@ -103,10 +101,12 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	out->reg_state.reg_state_not_present=0;
 	out->reg_state.fpu_state=omm_alloc(_thread_fpu_state_allocator);
 	fpu_init(out->reg_state.fpu_state);
-	out->cpu_mask=cpu_mask_new();
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
 	out->event_sequence_id=0;
+	out->scheduler_load_balancer_queue_index=0;
+	out->scheduler_early_yield=0;
+	out->scheduler_io_yield=0;
 #if KERNEL_DISABLE_ASSERT==0
 	__lock_profiling_init_thread_data(&(out->__lock_profiling_data));
 #endif
@@ -260,45 +260,6 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	thread->priority=priority;
-	handle_release(handle);
-	return ERROR_OK;
-}
-
-
-
-error_t syscall_thread_get_cpu_mask(handle_id_t thread_handle,void* buffer,u32 buffer_size){
-	if (buffer_size>cpu_mask_size){
-		buffer_size=cpu_mask_size;
-	}
-	if (buffer_size>syscall_get_user_pointer_max_length(buffer)){
-		return ERROR_INVALID_ARGUMENT(1);
-	}
-	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
-	if (!handle){
-		return ERROR_INVALID_HANDLE;
-	}
-	thread_t* thread=handle->object;
-	memcpy(buffer,thread->cpu_mask,buffer_size);
-	handle_release(handle);
-	return ERROR_OK;
-}
-
-
-
-error_t syscall_thread_set_cpu_mask(handle_id_t thread_handle,const void* buffer,u32 buffer_size){
-	if (buffer_size>cpu_mask_size){
-		buffer_size=cpu_mask_size;
-	}
-	if (buffer_size>syscall_get_user_pointer_max_length(buffer)){
-		return ERROR_INVALID_ARGUMENT(2);
-	}
-	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
-	if (!handle){
-		return ERROR_INVALID_HANDLE;
-	}
-	thread_t* thread=handle->object;
-	memcpy(thread->cpu_mask,buffer,buffer_size);
-	memset((void*)(((u64)(thread->cpu_mask))+buffer_size),0,cpu_mask_size-buffer_size);
 	handle_release(handle);
 	return ERROR_OK;
 }

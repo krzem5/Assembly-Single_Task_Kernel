@@ -144,8 +144,10 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 
 
 
-KERNEL_PUBLIC void event_await(event_t* event){
+KERNEL_PUBLIC void event_await(event_t* event,_Bool is_io_wait){
+	THREAD_DATA->scheduler_io_yield=1;
 	event_await_multiple(&event,1);
+	THREAD_DATA->scheduler_io_yield=0;
 }
 
 

@@ -163,7 +163,7 @@ _cleanup:
 static void _cache_cleanup_thread(void){
 	timer_t* timer=timer_create(DNS_CACHE_CLEAR_INTERVAL_NS,TIMER_COUNT_INFINITE);
 	while (1){
-		event_await(timer->event);
+		event_await(timer->event,0);
 		INFO("Cleaning-up expired cache...");
 		spinlock_acquire_exclusive(&_net_dns_cache_lock);
 		u64 time=clock_get_time();

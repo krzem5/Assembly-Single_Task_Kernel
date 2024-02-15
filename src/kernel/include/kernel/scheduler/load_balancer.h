@@ -37,7 +37,7 @@ typedef struct _SCHEDULER_LOAD_BALANCER_STATS{
 
 
 
-thread_t* scheduler_load_balancer_get(void);
+thread_t* scheduler_load_balancer_get(u32* time_us);
 
 
 

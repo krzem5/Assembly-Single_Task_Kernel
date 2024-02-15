@@ -35,19 +35,11 @@ sys_error_t __attribute__((nonnull(1))) sys_thread_create(void* func,void* arg,u
 
 
 
-sys_error_t __attribute__((access(write_only,2,3))) thread_get_cpu_mask(sys_thread_t thread,void* cpumask,u32 cpumask_size);
-
-
-
 sys_thread_priority_t sys_thread_get_priority(sys_thread_t thread);
 
 
 
 sys_thread_t sys_thread_get_handle(void);
-
-
-
-sys_error_t __attribute__((access(read_only,2,3))) sys_thread_set_cpu_mask(sys_thread_t thread,const void* cpumask,u32 cpumask_size);
 
 
 

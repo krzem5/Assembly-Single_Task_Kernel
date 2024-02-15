@@ -324,7 +324,7 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 
 KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 	while (queue->last_used_index==queue->used->index){
-		event_await(queue->event);
+		event_await(queue->event,1);
 		event_set_active(queue->event,0,1);
 	}
 }

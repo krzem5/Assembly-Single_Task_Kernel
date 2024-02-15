@@ -27,7 +27,7 @@ void event_dispatch(event_t* event,u32 flags);
 
 
 
-void event_await(event_t* event);
+void event_await(event_t* event,_Bool is_io_wait);
 
 
 

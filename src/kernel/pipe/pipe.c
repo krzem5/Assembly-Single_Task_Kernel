@@ -65,7 +65,7 @@ _retry_read:
 			scheduler_resume();
 			return 0;
 		}
-		event_await(pipe->read_event);
+		event_await(pipe->read_event,1);
 		goto _retry_read;
 	}
 	u32 max_read_size=(pipe->write_offset-pipe->read_offset)&(PIPE_BUFFER_SIZE-1);
@@ -106,7 +106,7 @@ _retry_write:
 			scheduler_resume();
 			return 0;
 		}
-		event_await(pipe->write_event);
+		event_await(pipe->write_event,1);
 		goto _retry_write;
 	}
 	u32 max_write_size=(pipe->read_offset-pipe->write_offset)&(PIPE_BUFFER_SIZE-1);

@@ -49,7 +49,7 @@ static void _rx_thread(i82540_device_t* device){
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 		while (!(desc->status&RDESC_DD)){
 			spinlock_release_exclusive(&(device->lock));
-			event_await(device->irq_event);
+			event_await(device->irq_event,1);
 			scheduler_pause();
 			spinlock_acquire_exclusive(&(device->lock));
 			event_set_active(device->irq_event,0,0);

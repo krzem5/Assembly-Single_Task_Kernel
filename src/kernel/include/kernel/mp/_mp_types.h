@@ -11,7 +11,6 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/scheduler/_scheduler_types.h>
-#include <kernel/scheduler/cpu_mask.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
@@ -90,7 +89,6 @@ typedef struct _THREAD{
 		thread_fs_gs_state_t fs_gs_state;
 		void* fpu_state;
 	} reg_state;
-	cpu_mask_t* cpu_mask;
 	KERNEL_ATOMIC scheduler_priority_t priority;
 	thread_state_t state;
 	u64 event_sequence_id;
@@ -98,6 +96,9 @@ typedef struct _THREAD{
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;
+	u32 scheduler_load_balancer_queue_index;
+	_Bool scheduler_early_yield;
+	_Bool scheduler_io_yield;
 #if KERNEL_DISABLE_ASSERT==0
 	lock_profiling_thread_data_t __lock_profiling_data;
 #endif
