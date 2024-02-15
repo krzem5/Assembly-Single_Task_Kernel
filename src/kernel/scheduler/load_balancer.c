@@ -8,10 +8,37 @@
 
 
 
+static const u32 _scheduler_load_balancer_priority_to_min_queue_index[SCHEDULER_PRIORITY_MAX+1]={
+	[SCHEDULER_PRIORITY_REALTIME]=0,
+	[SCHEDULER_PRIORITY_HIGH]=2,
+	[SCHEDULER_PRIORITY_NORMAL]=8,
+	[SCHEDULER_PRIORITY_LOW]=16,
+	[SCHEDULER_PRIORITY_BACKGROUND]=24,
+};
+
+static const u32 _scheduler_load_balancer_priority_to_max_queue_index[SCHEDULER_PRIORITY_MAX+1]={
+	[SCHEDULER_PRIORITY_REALTIME]=1,
+	[SCHEDULER_PRIORITY_HIGH]=7,
+	[SCHEDULER_PRIORITY_NORMAL]=15,
+	[SCHEDULER_PRIORITY_LOW]=23,
+	[SCHEDULER_PRIORITY_BACKGROUND]=31,
+};
+
 static u64 _scheduler_load_balancer_bitmap=0;
 static scheduler_load_balancer_thread_queue_t _scheduler_load_balancer_queues[SCHEDULER_LOAD_BALANCER_QUEUE_COUNT];
 static CPU_LOCAL_DATA(scheduler_load_balancer_stats_t,_scheduler_load_balancer_stats);
-// each thread has a valid queue range, decreased when used entire time, increased when I/O blocked
+
+
+
+static u32 _get_queue_index_offset(const thread_t* thread){
+	return (thread->process->handle.rb_node.key?SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1:0);
+}
+
+
+
+static u32 _get_queue_time(u32 i){
+	return 968+((i&((SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1)-1))<<7);
+}
 
 
 
@@ -44,7 +71,7 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 		}
 		spinlock_release_exclusive(&(queue->lock));
 		((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->used_slot_count++;
-		*time_us=968+(i<<6);
+		*time_us=_get_queue_time(i);
 		return out;
 	}
 	((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->free_slot_count++;
@@ -63,6 +90,14 @@ void scheduler_load_balancer_add(thread_t* thread){
 	}
 	thread->scheduler_early_yield=0;
 	thread->scheduler_io_yield=0;
+	u32 min=_get_queue_index_offset(thread)+_scheduler_load_balancer_priority_to_min_queue_index[thread->priority];
+	u32 max=_get_queue_index_offset(thread)+_scheduler_load_balancer_priority_to_max_queue_index[thread->priority];
+	if (thread->scheduler_load_balancer_queue_index<min){
+		thread->scheduler_load_balancer_queue_index=min;
+	}
+	else if (thread->scheduler_load_balancer_queue_index>max){
+		thread->scheduler_load_balancer_queue_index=max;
+	}
 	scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+thread->scheduler_load_balancer_queue_index;
 	spinlock_acquire_exclusive(&(queue->lock));
 	thread->scheduler_load_balancer_thread_queue_next=NULL;
