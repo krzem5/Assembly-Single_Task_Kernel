@@ -2,6 +2,7 @@
 #include <kernel/cpu/local.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "load_balancer"
@@ -25,7 +26,7 @@ static const u32 _scheduler_load_balancer_priority_to_max_queue_index[SCHEDULER_
 };
 
 static u64 _scheduler_load_balancer_bitmap=0;
-static scheduler_load_balancer_thread_queue_t _scheduler_load_balancer_queues[SCHEDULER_LOAD_BALANCER_QUEUE_COUNT];
+static scheduler_load_balancer_thread_queue_t* KERNEL_INIT_WRITE _scheduler_load_balancer_queues;
 static CPU_LOCAL_DATA(scheduler_load_balancer_stats_t,_scheduler_load_balancer_stats);
 
 
@@ -44,7 +45,7 @@ static u32 _get_queue_time_us(u32 i){
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing scheduler load balancer...");
-	_scheduler_load_balancer_bitmap=0;
+	_scheduler_load_balancer_queues=(void*)(pmm_alloc(pmm_align_up_address(SCHEDULER_LOAD_BALANCER_QUEUE_COUNT*sizeof(scheduler_load_balancer_thread_queue_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("scheduler_load_balancer"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u32 i=0;i<SCHEDULER_LOAD_BALANCER_QUEUE_COUNT;i++){
 		spinlock_init(&((_scheduler_load_balancer_queues+i)->lock));
 		(_scheduler_load_balancer_queues+i)->head=NULL;
