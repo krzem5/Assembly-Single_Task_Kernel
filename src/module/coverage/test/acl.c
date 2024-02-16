@@ -37,6 +37,10 @@ void coverage_test_acl(void){
 	acl_set(acl,process_kernel,ACL_PERMISSION_MASK,ACL_PERMISSION_MASK);
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
 	process_t* test_process=process_create("test-process","test-process");
+	process_t* test_process_buffer[ACL_PROCESS_CACHE_SIZE-1];
+	for (u32 i=0;i<ACL_PROCESS_CACHE_SIZE-1;i++){
+		test_process_buffer[i]=process_create("filler-test-process","filler-test-process");
+	}
 	process_t* test2_process=process_create("test2-process","test2-process");
 	TEST_ASSERT(!acl_get(acl,test_process));
 	acl_set(acl,test_process,0,0);
@@ -54,12 +58,18 @@ void coverage_test_acl(void){
 	acl_set(acl,test_process,ACL_PERMISSION_MASK,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
 	acl_set(acl,test2_process,0,1);
+	acl_set(acl,test_process,0,1);
+	acl_set(acl,test_process,1,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
 	TEST_ASSERT(acl_get(acl,test2_process)==1);
 	acl_set(acl,test2_process,1,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
 	TEST_ASSERT(!acl_get(acl,test2_process));
 	handle_release(&(test_process->handle));
+	for (u32 i=0;i<ACL_PROCESS_CACHE_SIZE-1;i++){
+		(void)test_process_buffer;
+		// handle_release(&(test_process_buffer[i]->handle));
+	}
 	handle_release(&(test2_process->handle));
 	acl_delete(acl);
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
