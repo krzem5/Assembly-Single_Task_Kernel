@@ -5,7 +5,9 @@
 
 
 static _Bool _init(module_t* module){
-	coverage_init();
+	if (!coverage_init()){
+		return 0;
+	}
 	coverage_test_acl();
 	return 1;
 }

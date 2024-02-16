@@ -226,11 +226,13 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".module")){
 			ctx->module->descriptor=(void*)(section_header->sh_addr);
 		}
+#if KERNEL_COVERAGE_ENABLED
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
 			ctx->module->gcov_info.base=section_header->sh_addr;
 			ctx->module->gcov_info.size=section_header->sh_size;
-			INFO("Found .gcov_info section at %p (%u records)",ctx->module->gcov_info.base,ctx->module->gcov_info.size/sizeof(void*));
+			INFO("Found .gcov_info section at %p (%u record%s)",ctx->module->gcov_info.base,ctx->module->gcov_info.size/sizeof(void*),(ctx->module->gcov_info.size/sizeof(void*)==1?"":"s"));
 		}
+#endif
 	}
 	if (!ctx->module->descriptor){
 		ERROR("'.module' section not present");

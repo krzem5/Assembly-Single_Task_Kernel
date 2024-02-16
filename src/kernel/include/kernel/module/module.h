@@ -40,7 +40,9 @@ typedef struct _MODULE{
 	module_address_range_t ex_region;
 	module_address_range_t nx_region;
 	module_address_range_t rw_region;
+#if KERNEL_COVERAGE_ENABLED
 	module_address_range_t gcov_info;
+#endif
 	u32 flags;
 	u8 state;
 } module_t;

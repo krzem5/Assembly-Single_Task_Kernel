@@ -24,6 +24,7 @@ static error_t _permission_request_callback(handle_t* handle,process_t* process,
 
 
 void coverage_test_acl(void){
+	LOG("Executing ACL tests...");
 	acl_t* acl=acl_create();
 	TEST_ASSERT(acl);
 	acl_delete(acl);

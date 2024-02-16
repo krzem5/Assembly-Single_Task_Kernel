@@ -1,3 +1,4 @@
+#if KERNEL_COVERAGE_ENABLED
 #include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -128,7 +129,7 @@ static syscall_callback_t const _coverage_syscall_functions[]={
 
 
 
-void KERNEL_NOCOVERAGE coverage_init(void){
+_Bool KERNEL_NOCOVERAGE coverage_init(void){
 	LOG("Initializing coverage reporting module...");
 	INFO("Checking serial port...");
 	if (!COVERAGE_SERIAL_PORT->io_port){
@@ -140,4 +141,20 @@ void KERNEL_NOCOVERAGE coverage_init(void){
 	if (IS_ERROR(elf_load("/bin/coverage_test",0,NULL,0,NULL,0))){
 		panic("Unable to load coverage tests");
 	}
+	return 1;
 }
+
+
+
+#else
+#include <kernel/log/log.h>
+#include <kernel/types.h>
+#define KERNEL_LOG_NAME "coverage"
+
+
+
+_Bool KERNEL_NOCOVERAGE coverage_init(void){
+	ERROR("Kernel built without coverage support");
+	return 0;
+}
+#endif

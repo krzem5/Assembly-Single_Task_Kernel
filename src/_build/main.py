@@ -814,7 +814,7 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") or mode==MODE_COVERAGE else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
 		# Shared folder
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER and not os.getenv("GITHUB_ACTIONS","") else []),
 		# Serial

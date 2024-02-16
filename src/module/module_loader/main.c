@@ -28,6 +28,10 @@ static void _load_modules_from_order_file(_Bool early){
 		if (item->value&&streq(item->value->data,"coverage")){
 			continue;
 		}
+#else
+		if (item->value&&streq(item->value->data,"not-coverage")){
+			continue;
+		}
 #endif
 		module_load(item->key->data);
 	}
@@ -42,9 +46,11 @@ static _Bool _init(module_t* module){
 	LOG("Loading modules...");
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
+#if !KERNEL_COVERAGE_ENABLED
 	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,0))){
 		panic("Unable to load user shell");
 	}
+#endif
 	return 0;
 }
 

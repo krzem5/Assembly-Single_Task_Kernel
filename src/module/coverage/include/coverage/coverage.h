@@ -3,7 +3,7 @@
 
 
 
-void coverage_init(void);
+_Bool coverage_init(void);
 
 
 
