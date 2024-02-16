@@ -1,6 +1,7 @@
 #include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
 #include <kernel/serial/serial.h>
@@ -47,6 +48,10 @@ typedef struct _GCOV_INFO{
 
 
 
+static spinlock_t _coverage_lock;
+
+
+
 static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 	INFO("Procesing .gcov_info section %p - %p...",base,base+size);
 	for (const gcov_info_t*const* info_ptr=(void*)base;(u64)info_ptr<base+size;info_ptr++){
@@ -54,6 +59,7 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 		if (!info||!info->merge[0]){
 			continue;
 		}
+		spinlock_acquire_exclusive(&_coverage_lock);
 		u64 marker=COVERAGE_FILE_REPORT_MARKER;
 		serial_send(COVERAGE_SERIAL_PORT,&marker,sizeof(u64));
 		serial_send(COVERAGE_SERIAL_PORT,&(info->version),sizeof(u32));
@@ -81,6 +87,7 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 			serial_send(COVERAGE_SERIAL_PORT,&(fn_info->ctrs->num),sizeof(u32));
 			serial_send(COVERAGE_SERIAL_PORT,fn_info->ctrs->values,fn_info->ctrs->num*sizeof(u64));
 		}
+		spinlock_release_exclusive(&_coverage_lock);
 	}
 }
 
@@ -127,6 +134,7 @@ void KERNEL_NOCOVERAGE coverage_init(void){
 	if (!COVERAGE_SERIAL_PORT->io_port){
 		panic("Coverage serial port not present");
 	}
+	spinlock_init(&_coverage_lock);
 	shutdown_register_notification_listener(&_coverage_shutdown_notification_listener);
 	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
 	if (IS_ERROR(elf_load("/bin/coverage_test",0,NULL,0,NULL,0))){
