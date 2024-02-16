@@ -524,13 +524,11 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			file_list.append(file_name)
 			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
-			print(file_name)
 			with open(file_name,"wb") as wf:
 				wf.write(b"adcg")
 				wf.write(struct.pack("III",version,stamp,checksum))
 				for i in range(0,struct.unpack("I",rf.read(4))[0]):
 					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
-					print(id_,lineno_checksum,cfg_checksum,counter_count)
 					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
 					wf.write(rf.read(counter_count<<3))
 	with open(output_file_path,"w") as wf:
