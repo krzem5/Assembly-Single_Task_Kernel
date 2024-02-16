@@ -215,7 +215,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 def _generate_kernel_build_info():
 	version=time.time_ns()
 	with open("src/kernel/_generated/build_info.c","w") as wf:
-		wf.write(f"#include <kernel/types.h>\n\n\n\nKERNEL_PUBLIC const u64 __version=0x{version:016x};\nKERNEL_PUBLIC const char* __build_name=\"x86_64 { {MODE_NORMAL:'debug',MODE_COVERAGE:'coverage',MODE_RELEASE:'release'}[mode]}\";\n")
+		wf.write(f"#include <kernel/types.h>\n\n\n\nKERNEL_PUBLIC const u64 _version=0x{version:016x};\nKERNEL_PUBLIC const char* _build_name=\"x86_64 { {MODE_NORMAL:'debug',MODE_COVERAGE:'coverage',MODE_RELEASE:'release'}[mode]}\";\n")
 	return version
 
 

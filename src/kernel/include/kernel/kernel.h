@@ -46,8 +46,8 @@ typedef void (*kernel_initializer_t)(void);
 
 
 
-extern const u64 __version;
-extern const char* __build_name;
+extern const u64 _version;
+extern const char* _build_name;
 extern const u64 _raw_kernel_symbols[];
 extern u32 _syscalls_kernel_count;
 extern const void* _syscalls_kernel_functions[];
@@ -57,13 +57,13 @@ extern kernel_data_t kernel_data;
 
 
 static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_get_version(void){
-	return __version;
+	return _version;
 }
 
 
 
 static KERNEL_INLINE const char* KERNEL_NOCOVERAGE kernel_get_build_name(void){
-	return __build_name;
+	return _build_name;
 }
 
 
