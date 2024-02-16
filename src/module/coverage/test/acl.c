@@ -62,8 +62,13 @@ static void _thread(process_t* second_test_process){
 	TEST_ASSERT(syscall_acl_set_permissions(0xaabbccdd,0,0,0)==ERROR_INVALID_HANDLE);
 	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,0,0,0)==ERROR_NO_ACL);
 	handle.acl=acl_create();
-	handle_release(&handle);
 	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
+	acl_set(handle.acl,THREAD_DATA->process,0,ACL_PERMISSION_MASK);
+	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0,0x1234)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x1234);
+	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x0204,0x8000)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
+	handle_release(&handle);
 }
 
 
