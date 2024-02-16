@@ -510,7 +510,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(USER_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
 			os.remove(os.path.join(USER_OBJECT_FILE_DIRECTORY,file))
-	file_list=[]
+	file_list=set()
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(8)
@@ -521,7 +521,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				continue
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
-			file_list.append(file_name)
+			file_list.add(file_name)
 			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
 			with open(file_name,"wb") as wf:
@@ -534,7 +534,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	with open(output_file_path,"w") as wf:
 		wf.write("TN:\n")
 		function_stats=None
-		for line in subprocess.run(["gcov-12","-b","-t"]+file_list,stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+		for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
 			line=line.strip().split(":")
 			if (len(line)<2):
 				if (line[0].startswith("function ")):

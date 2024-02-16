@@ -266,7 +266,7 @@ void shared_object_execute_fini(void){
 #if KERNEL_COVERAGE_ENABLED
 	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
 #endif
-	for (shared_object_t* so=_shared_object_tail;so!=shared_object_root;so=so->prev){ // do not cleanup liblinker.so, prevent double libsys cleanup
+	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
 		if (so->dynamic_section.fini){
 			((void (*)(void))(so->dynamic_section.fini))();
 		}
