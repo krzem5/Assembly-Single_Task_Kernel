@@ -504,6 +504,12 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(MODULE_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
 			os.remove(os.path.join(MODULE_OBJECT_FILE_DIRECTORY,file))
+	for file in os.listdir(LIBRARY_OBJECT_FILE_DIRECTORY):
+		if (file.endswith(".gcda")):
+			os.remove(os.path.join(LIBRARY_OBJECT_FILE_DIRECTORY,file))
+	for file in os.listdir(USER_OBJECT_FILE_DIRECTORY):
+		if (file.endswith(".gcda")):
+			os.remove(os.path.join(USER_OBJECT_FILE_DIRECTORY,file))
 	file_list=[]
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
