@@ -1,7 +1,7 @@
 %include "sys/types.inc"
 extern _sys_clock_conversion_factor
 extern _sys_clock_conversion_shift
-global sys_clock_convert_ticks_to_time_ns
+global sys_clock_convert_ticks_to_time_ns:function
 section .text exec nowrite
 
 
