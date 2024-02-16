@@ -1,64 +1,44 @@
 OUTPUT_FORMAT("elf64-x86-64","elf64-x86-64","elf64-x86-64")
 OUTPUT_ARCH(i386:x86-64)
-ENTRY(_start)
 SEARCH_DIR("=build/lib");
+ENTRY(_start)
 SECTIONS{
-  PROVIDE (__executable_start = SEGMENT_START("text-segment", 0x400000)); . = SEGMENT_START("text-segment", 0x400000) + SIZEOF_HEADERS;
-  .interp         : { *(.interp) }
-  .hash           : { *(.hash) }
-  .dynsym         : { *(.dynsym) }
-  .dynstr         : { *(.dynstr) }
-  .rela.dyn       :
-    {
-      *(.rela.init)
-      *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*)
-      *(.rela.fini)
-      *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*)
-      *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*)
-      *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*)
-      *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*)
-      *(.rela.ctors)
-      *(.rela.dtors)
-      *(.rela.got)
-      *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*)
-      *(.rela.ldata .rela.ldata.* .rela.gnu.linkonce.l.*)
-      *(.rela.lbss .rela.lbss.* .rela.gnu.linkonce.lb.*)
-      *(.rela.lrodata .rela.lrodata.* .rela.gnu.linkonce.lr.*)
-      *(.rela.ifunc)
-    }
-  .rela.plt       :
-    {
-      *(.rela.plt)
-      PROVIDE_HIDDEN (__rela_iplt_start = .);
-      *(.rela.iplt)
-      PROVIDE_HIDDEN (__rela_iplt_end = .);
-    }
-  .relr.dyn : { *(.relr.dyn) }
-  . = ALIGN(CONSTANT (MAXPAGESIZE));
-  .init           :
-  {
-    KEEP (*(SORT_NONE(.init)))
-  }
-  .plt            : { *(.plt) *(.iplt) }
-.plt.got        : { *(.plt.got) }
-.plt.sec        : { *(.plt.sec) }
-  .text           :
-  {
-    *(.text.unlikely .text.*_unlikely .text.unlikely.*)
-    *(.text.exit .text.exit.*)
-    *(.text.startup .text.startup.*)
-    *(.text.hot .text.hot.*)
-    *(SORT(.text.sorted.*))
-    *(.text .stub .text.* .gnu.linkonce.t.*)
-  }
-  .fini           :
-  {
-    KEEP (*(SORT_NONE(.fini)))
-  }
-  PROVIDE (__etext = .);
-  PROVIDE (_etext = .);
-  PROVIDE (etext = .);
-  . = ALIGN(CONSTANT (MAXPAGESIZE));
+	. = 0x400000;
+	.interp : {
+		*(.interp)
+	}
+	.hash : {
+		*(.hash)
+	}
+	.dynsym : {
+		*(.dynsym)
+	}
+	.dynstr : {
+		*(.dynstr)
+	}
+	.rela.plt : {
+		*(.rela.plt)
+	}
+	.rela.dyn : {
+		*(.rela .rela.*)
+	}
+	. = ALIGN(4096);
+	.init : {
+		KEEP(*(SORT_NONE(.init)))
+	}
+	.plt : {
+		*(.plt)
+	}
+	.plt.got : {
+		*(.plt.got)
+	}
+	.text : {
+		*(.text .text.*)
+	}
+	.fini : {
+		KEEP(*(SORT_NONE(.fini)))
+	}
+	. = ALIGN(4096);
   /* Adjust the address for the rodata segment.  We want to adjust up to
      the same address within the page on the next page up.  */
   . = SEGMENT_START("rodata-segment", ALIGN(CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 1)));
@@ -137,23 +117,6 @@ SECTIONS{
       pad the .data section.  */
    . = ALIGN(. != 0 ? 64 / 8 : 1);
   }
-  .lbss   :
-  {
-    *(.dynlbss)
-    *(.lbss .lbss.* .gnu.linkonce.lb.*)
-    *(LARGE_COMMON)
-  }
-  . = ALIGN(64 / 8);
-  . = SEGMENT_START("ldata-segment", .);
-  .lrodata   ALIGN(CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 1)) :
-  {
-    *(.lrodata .lrodata.* .gnu.linkonce.lr.*)
-  }
-  .ldata   ALIGN(CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 1)) :
-  {
-    *(.ldata .ldata.* .gnu.linkonce.l.*)
-    . = ALIGN(. != 0 ? 64 / 8 : 1);
-  }
   . = ALIGN(64 / 8);
   _end = .; PROVIDE (end = .);
   . = DATA_SEGMENT_END (.);
@@ -164,8 +127,6 @@ SECTIONS{
   .stab.exclstr  0 : { *(.stab.exclstr) }
   .stab.index    0 : { *(.stab.index) }
   .stab.indexstr 0 : { *(.stab.indexstr) }
-  .comment 0 (INFO) : { *(.comment); LINKER_VERSION; }
-  .gnu.build.attributes : { *(.gnu.build.attributes .gnu.build.attributes.*) }
   /* DWARF debug sections.
      Symbols in the DWARF debugging sections are relative to the beginning
      of the section so we begin them at 0.  */
@@ -203,6 +164,7 @@ SECTIONS{
   .debug_rnglists 0 : { *(.debug_rnglists) }
   .debug_str_offsets 0 : { *(.debug_str_offsets) }
   .debug_sup      0 : { *(.debug_sup) }
-  .gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }
-  /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }
+	/DISCARD/ : {
+		*(.note.GNU-stack .gnu_debuglink .gnu.lto_*)
+	}
 }
