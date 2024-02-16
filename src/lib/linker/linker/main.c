@@ -9,6 +9,8 @@
 
 
 extern const elf_dyn_t _DYNAMIC[];
+extern u64 __gcov_info_start[1];
+extern u64 __gcov_info_end[1];
 
 shared_object_t* shared_object_executable;
 
@@ -58,8 +60,12 @@ u64 main(const u64* data){
 			interpreter=(void*)(program_header->p_vaddr);
 		}
 	}
-	shared_object_init(interpreter_image_base,_DYNAMIC,interpreter,0);
-	shared_object_t* so=shared_object_load("libsys.so",SHARED_OBJECT_FLAG_RESOLVE_GOT);
+	shared_object_t* so=shared_object_init(interpreter_image_base,_DYNAMIC,interpreter,0);
+#if KERNEL_COVERAGE_ENABLED
+	so->gcov_info_base=(u64)__gcov_info_start;
+	so->gcov_info_size=((u64)__gcov_info_end)-((u64)__gcov_info_start);
+#endif
+	so=shared_object_load("libsys.so",SHARED_OBJECT_FLAG_RESOLVE_GOT);
 	if (so){
 		alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
 	}
