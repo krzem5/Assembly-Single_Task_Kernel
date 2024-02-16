@@ -108,12 +108,12 @@ error_t syscall_gid_set(u64 gid){
 
 
 
-error_t syscall_gid_get_name(u64 gid,char* buffer,u32 buffer_length){
+error_t syscall_gid_get_name(u64 gid,KERNEL_USER char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	return gid_get_name(gid,buffer,buffer_length);
+	return gid_get_name(gid,(char*)buffer,buffer_length);
 }

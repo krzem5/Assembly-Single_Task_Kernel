@@ -131,11 +131,11 @@ error_t syscall_process_get_pid(void){
 
 
 
-error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
-	if (!syscall_get_string_length(path)){
+error_t syscall_process_start(KERNEL_USER const char* path,u32 argc,KERNEL_USER const char*const* argv,KERNEL_USER const char*const* environ,u32 flags){
+	if (!syscall_get_string_length((const char*)path)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	if (argc*sizeof(const char*)>syscall_get_user_pointer_max_length(argv)){
+	if (argc*sizeof(const char*)>syscall_get_user_pointer_max_length((const char*const*)argv)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	char** kernel_argv=amm_alloc(argc*sizeof(char*));
@@ -143,27 +143,27 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 	u64 kernel_environ_length=0;
 	error_t out=ERROR_OK;
 	for (u64 i=0;i<argc;i++){
-		u64 length=syscall_get_string_length(argv[i]);
+		u64 length=syscall_get_string_length((const char*)(argv[i]));
 		if (!length){
 			argc=i;
 			out=ERROR_INVALID_ARGUMENT(2);
 			goto _cleanup;
 		}
 		kernel_argv[i]=amm_alloc(length+1);
-		memcpy(kernel_argv[i],argv[i],length);
+		memcpy(kernel_argv[i],(const char*)(argv[i]),length);
 		kernel_argv[i][length]=0;
 	}
 	if (environ){
 		u64 max_length=syscall_get_user_pointer_max_length(environ)/sizeof(const char*);
 		for (;environ[kernel_environ_length]&&kernel_environ_length<max_length;kernel_environ_length++){
-			u64 length=syscall_get_string_length(environ[kernel_environ_length]);
+			u64 length=syscall_get_string_length((const char*)(environ[kernel_environ_length]));
 			if (!length){
 				out=ERROR_INVALID_ARGUMENT(3);
 				goto _cleanup;
 			}
 			kernel_environ=amm_realloc(kernel_environ,(kernel_environ_length+1)*sizeof(char*));
 			kernel_environ[kernel_environ_length]=amm_alloc(length+1);
-			memcpy(kernel_environ[kernel_environ_length],environ[kernel_environ_length],length);
+			memcpy(kernel_environ[kernel_environ_length],(const char*)(environ[kernel_environ_length]),length);
 			kernel_environ[kernel_environ_length][length]=0;
 		}
 		if (kernel_environ_length==max_length){
@@ -171,7 +171,7 @@ error_t syscall_process_start(const char* path,u32 argc,const char*const* argv,c
 			goto _cleanup;
 		}
 	}
-	out=elf_load(path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,flags);
+	out=elf_load((const char*)path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,flags);
 _cleanup:
 	for (u64 i=0;i<argc;i++){
 		amm_dealloc(kernel_argv[i]);

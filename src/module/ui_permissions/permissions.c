@@ -77,11 +77,11 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 
 
 
-static error_t _syscall_get_permission_request(ui_permission_user_request_t* buffer,u32 buffer_length){
+static error_t _syscall_get_permission_request(KERNEL_USER ui_permission_user_request_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_permission_user_request_t)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (THREAD_DATA->process->handle.rb_node.key!=ui_common_get_process()){
@@ -89,8 +89,8 @@ static error_t _syscall_get_permission_request(ui_permission_user_request_t* buf
 	}
 	event_await(_ui_permission_request_list_event,0);
 	buffer->id=_ui_permission_request_list_head->id;
-	memcpy(buffer->process,_ui_permission_request_list_head->process,sizeof(buffer->process));
-	memcpy(buffer->handle,_ui_permission_request_list_head->handle,sizeof(buffer->handle));
+	memcpy((char*)(buffer->process),_ui_permission_request_list_head->process,sizeof(buffer->process));
+	memcpy((char*)(buffer->handle),_ui_permission_request_list_head->handle,sizeof(buffer->handle));
 	buffer->flags=_ui_permission_request_list_head->flags;
 	return ERROR_OK;
 }

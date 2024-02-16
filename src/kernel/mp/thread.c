@@ -7,6 +7,7 @@
 #include <kernel/lock/profiling.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -266,12 +267,16 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 
 
 
-error_t syscall_thread_await_events(const handle_id_t* events,u64 event_count){
+error_t syscall_thread_await_events(KERNEL_USER const void* events,u64 event_count){
 	if (!event_count){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	if (event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length(events)){
+	if (event_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((const void*)events)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	return event_await_multiple_handles(events,event_count);
+	handle_id_t* buffer=amm_alloc(event_count*sizeof(handle_id_t));
+	memcpy(buffer,(const void*)events,event_count*sizeof(handle_id_t));
+	u32 out=event_await_multiple_handles(buffer,event_count);
+	amm_dealloc(buffer);
+	return out;
 }

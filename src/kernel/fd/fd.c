@@ -90,16 +90,16 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 
-error_t syscall_fd_open(handle_id_t root,const char* path,u32 flags){
+error_t syscall_fd_open(handle_id_t root,KERNEL_USER const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	u64 path_length=syscall_get_string_length(path);
+	u64 path_length=syscall_get_string_length((const char*)path);
 	if (!path_length||path_length>4095){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	char buffer[4096];
-	memcpy(buffer,path,path_length);
+	memcpy(buffer,(const char*)path,path_length);
 	buffer[path_length]=0;
 	handle_t* root_handle=NULL;
 	vfs_node_t* root_node=NULL;
@@ -140,8 +140,8 @@ error_t syscall_fd_close(handle_id_t fd){
 
 
 
-error_t syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
-	if (count>syscall_get_user_pointer_max_length(buffer)){
+error_t syscall_fd_read(handle_id_t fd,KERNEL_USER void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length((void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
@@ -161,7 +161,7 @@ error_t syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	count=vfs_node_read(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
+	count=vfs_node_read(data->node,data->offset,(void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
@@ -170,8 +170,8 @@ error_t syscall_fd_read(handle_id_t fd,void* buffer,u64 count,u32 flags){
 
 
 
-error_t syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
-	if (count>syscall_get_user_pointer_max_length(buffer)){
+error_t syscall_fd_write(handle_id_t fd,KERNEL_USER const void* buffer,u64 count,u32 flags){
+	if (count>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
@@ -191,7 +191,7 @@ error_t syscall_fd_write(handle_id_t fd,const void* buffer,u64 count,u32 flags){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	count=vfs_node_write(data->node,data->offset,buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
+	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
@@ -256,11 +256,11 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-error_t syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
+error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER fd_stat_t* out,u32 buffer_length){
 	if (buffer_length<sizeof(fd_stat_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length(out)){
+	if (buffer_length>syscall_get_user_pointer_max_length((void*)out)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
@@ -285,7 +285,7 @@ error_t syscall_fd_stat(handle_id_t fd,fd_stat_t* out,u32 buffer_length){
 	out->time_birth=data->node->time_birth;
 	out->gid=data->node->gid;
 	out->uid=data->node->uid;
-	memcpy(out->name,data->node->name->data,data->node->name->length+1);
+	memcpy((char*)(out->name),data->node->name->data,data->node->name->length+1);
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return ERROR_OK;
@@ -299,8 +299,8 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 
 
 
-error_t syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+error_t syscall_fd_path(handle_id_t fd,KERNEL_USER char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	if (buffer_length<2){
@@ -316,7 +316,7 @@ error_t syscall_fd_path(handle_id_t fd,char* buffer,u32 buffer_length){
 		return ERROR_DENIED;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	u32 out=vfs_path(data->node,buffer,buffer_length);
+	u32 out=vfs_path(data->node,(char*)buffer,buffer_length);
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return (!out&&buffer_length?ERROR_NO_SPACE:out);
@@ -364,8 +364,8 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 
 
 
-error_t syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length){
-	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
@@ -384,7 +384,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,char* buffer,u32 buffer_length)
 		}
 		if (buffer_length){
 			buffer_length--;
-			memcpy(buffer,data->current_name->data,buffer_length);
+			memcpy((char*)buffer,data->current_name->data,buffer_length);
 			buffer[buffer_length]=0;
 		}
 	}

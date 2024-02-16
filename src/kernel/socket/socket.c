@@ -347,8 +347,8 @@ error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_p
 
 
 
-error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,u64* out){
-	if (syscall_get_user_pointer_max_length(out)<2*sizeof(handle_id_t)){
+error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,KERNEL_USER u64* out){
+	if (syscall_get_user_pointer_max_length((u64*)out)<2*sizeof(handle_id_t)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
 	socket_pair_t pair;
@@ -378,8 +378,8 @@ error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 
 
 
-error_t syscall_socket_bind(handle_id_t fd,const void* address,u32 address_length){
-	if (address_length>syscall_get_user_pointer_max_length(address)){
+error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER const void* address,u32 address_length){
+	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	vfs_node_t* node=fd_get_node(fd);
@@ -389,13 +389,13 @@ error_t syscall_socket_bind(handle_id_t fd,const void* address,u32 address_lengt
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	return (socket_bind(node,address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+	return (socket_bind(node,(const void*)address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
 }
 
 
 
-error_t syscall_socket_connect(handle_id_t fd,const void* address,u32 address_length){
-	if (address_length>syscall_get_user_pointer_max_length(address)){
+error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER const void* address,u32 address_length){
+	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	vfs_node_t* node=fd_get_node(fd);
@@ -405,16 +405,16 @@ error_t syscall_socket_connect(handle_id_t fd,const void* address,u32 address_le
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	return (socket_connect(node,address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+	return (socket_connect(node,(const void*)address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
 }
 
 
 
-error_t syscall_socket_recv(handle_id_t fd,void* buffer,u32 buffer_length,u32 flags){
+error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+	if (buffer_length>syscall_get_user_pointer_max_length((void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	vfs_node_t* node=fd_get_node(fd);
@@ -435,21 +435,21 @@ error_t syscall_socket_recv(handle_id_t fd,void* buffer,u32 buffer_length,u32 fl
 	if (!packet){
 		return ERROR_NO_DATA;
 	}
-	memcpy(buffer,packet->data,(packet->size>buffer_length?buffer_length:packet->size));
+	memcpy((void*)buffer,packet->data,(packet->size>buffer_length?buffer_length:packet->size));
 	socket_dealloc_packet(packet);
 	return (packet->size>buffer_length?ERROR_NO_SPACE:ERROR_OK);
 }
 
 
 
-error_t syscall_socket_send(handle_id_t fd,void* buffer,u32 buffer_length,u32 flags){
+error_t syscall_socket_send(handle_id_t fd,KERNEL_USER const void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
 	if (!buffer_length){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (buffer_length>syscall_get_user_pointer_max_length(buffer)){
+	if (buffer_length>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	vfs_node_t* node=fd_get_node(fd);
@@ -462,5 +462,5 @@ error_t syscall_socket_send(handle_id_t fd,void* buffer,u32 buffer_length,u32 fl
 	if (!(((socket_vfs_node_t*)node)->flags&SOCKET_FLAG_WRITE)){
 		return ERROR_DISABLED_OPERATION;
 	}
-	return (socket_push_packet(node,buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);
+	return (socket_push_packet(node,(const void*)buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);
 }

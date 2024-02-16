@@ -768,7 +768,6 @@ if ("--run" in sys.argv):
 		# Drive files
 		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
 		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
-		# "-drive","file=build/vm/ssd.qcow2,if=virtio,id=ssd",
 		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
 		# Drives
 		"-device","ahci,id=ahci",

@@ -27,11 +27,11 @@ static error_t _syscall_get_driver_instance(u16 min_version){
 
 
 
-static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t instance,opengl_user_driver_instance_data_t* buffer,u64 buffer_length){
+static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t instance,KERNEL_USER opengl_user_driver_instance_data_t* buffer,u64 buffer_length){
 	if (buffer_length<sizeof(opengl_user_driver_instance_data_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* driver_instance_handle=handle_lookup_and_acquire(instance,opengl_driver_instance_handle_type);
@@ -40,9 +40,9 @@ static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t i
 	}
 	opengl_driver_instance_t* driver_instance=driver_instance_handle->object;
 	buffer->opengl_version=driver_instance->driver->opengl_version;
-	strcpy(buffer->driver_name,driver_instance->driver->name,32);
-	strcpy(buffer->renderer_name,driver_instance->renderer,64);
-	strcpy(buffer->library,driver_instance->driver->library,128);
+	strcpy((char*)(buffer->driver_name),driver_instance->driver->name,32);
+	strcpy((char*)(buffer->renderer_name),driver_instance->renderer,64);
+	strcpy((char*)(buffer->library),driver_instance->driver->library,128);
 	handle_release(driver_instance_handle);
 	return ERROR_OK;
 }
@@ -105,11 +105,11 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 
 
 
-static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,void* buffer,u32 buffer_length){
+static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,KERNEL_USER void* buffer,u32 buffer_length){
 	if (buffer_length&(sizeof(u32)-1)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* state_handle=handle_lookup_and_acquire(state_handle_id,opengl_state_handle_type);

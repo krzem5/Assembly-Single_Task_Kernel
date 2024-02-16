@@ -15,6 +15,7 @@
 #define KERNEL_PUBLIC __attribute__((visibility("default")))
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
+#define KERNEL_USER volatile
 
 #define KERNEL_INIT() static KERNEL_EARLY_EXEC void __initializer(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=__initializer;static KERNEL_EARLY_EXEC void __initializer(void)
 #define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void __einitializer(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=__einitializer;static KERNEL_EARLY_EXEC void __einitializer(void)

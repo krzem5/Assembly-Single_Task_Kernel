@@ -81,7 +81,7 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-error_t syscall_clock_get_converion(u64* buffer){
+error_t syscall_clock_get_converion(KERNEL_USER u64* buffer){
 	buffer[0]=clock_conversion_factor;
 	buffer[1]=clock_conversion_shift;
 	buffer[2]=clock_cpu_frequency;

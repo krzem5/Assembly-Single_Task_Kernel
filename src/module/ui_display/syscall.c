@@ -24,11 +24,11 @@ static error_t _syscall_get_next_display(handle_id_t display_handle_id){
 
 
 
-static error_t _syscall_get_display_data(handle_id_t display_handle_id,ui_display_user_data_t* buffer,u32 buffer_length){
+static error_t _syscall_get_display_data(handle_id_t display_handle_id,KERNEL_USER ui_display_user_data_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_data_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* display_handle=handle_lookup_and_acquire(display_handle_id,ui_display_handle_type);
@@ -53,11 +53,11 @@ static error_t _syscall_get_display_data(handle_id_t display_handle_id,ui_displa
 
 
 
-static error_t _syscall_get_display_info(handle_id_t display_handle_id,ui_display_user_info_t* buffer,u32 buffer_length){
+static error_t _syscall_get_display_info(handle_id_t display_handle_id,KERNEL_USER ui_display_user_info_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_info_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* display_handle=handle_lookup_and_acquire(display_handle_id,ui_display_handle_type);
@@ -66,13 +66,13 @@ static error_t _syscall_get_display_info(handle_id_t display_handle_id,ui_displa
 	}
 	ui_display_t* display=display_handle->object;
 	const ui_display_info_t* display_info=display->display_info;
-	memcpy(buffer->manufacturer,display_info->manufacturer,sizeof(buffer->manufacturer));
+	memcpy((char*)(buffer->manufacturer),display_info->manufacturer,sizeof(buffer->manufacturer));
 	buffer->manufacturer_product_code=display_info->manufacturer_product_code;
 	buffer->serial_number=display_info->serial_number;
 	buffer->video_interface=display_info->video_interface;
 	buffer->screen_width_cm=display_info->screen_width_cm;
 	buffer->screen_height_cm=display_info->screen_height_cm;
-	memcpy(buffer->name,display_info->name,sizeof(buffer->name));
+	memcpy((char*)(buffer->name),display_info->name,sizeof(buffer->name));
 	u32 buffer_mode_count=(buffer_length-sizeof(ui_display_user_info_t))/sizeof(ui_display_user_mode_t);
 	u32 mode_count=0;
 	for (const ui_display_info_mode_t* mode=display_info->modes;mode;mode=mode->next){
@@ -103,11 +103,11 @@ static error_t _syscall_get_display_framebuffer(handle_id_t display_handle_id){
 
 
 
-static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id,ui_display_user_framebuffer_t* buffer,u32 buffer_length){
+static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id,KERNEL_USER ui_display_user_framebuffer_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_framebuffer_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (syscall_get_user_pointer_max_length(buffer)<buffer_length){
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	handle_t* framebuffer_handle=handle_lookup_and_acquire(framebuffer_handle_id,ui_framebuffer_handle_type);

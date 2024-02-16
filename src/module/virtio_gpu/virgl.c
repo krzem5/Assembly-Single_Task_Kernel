@@ -432,7 +432,7 @@ static void _update_render_target(opengl_driver_instance_t* instance,opengl_stat
 
 
 
-static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t* state,void* command_buffer,u32 command_buffer_size){
+static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t* state,KERNEL_USER void* command_buffer,u32 command_buffer_size){
 	virgl_opengl_context_t* ctx=instance->ctx;
 	virgl_opengl_state_context_t* state_ctx=state->ctx;
 	u32 virgl_set_sub_ctx_command[2]={
@@ -441,13 +441,13 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 	};
 	_command_buffer_extend(instance->ctx,virgl_set_sub_ctx_command,2,0);
 	for (u32 offset=0;offset+sizeof(opengl_protocol_header_t)<=command_buffer_size;){
-		opengl_protocol_header_t* header=command_buffer+offset;
+		KERNEL_USER opengl_protocol_header_t* header=command_buffer+offset;
 		if ((header->length&(sizeof(u32)-1))||offset+header->length>command_buffer_size){
 			ERROR("_process_commands: invalid command size");
 			return;
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_CLEAR){
-			opengl_protocol_clear_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_clear_t* command=(void*)header;
 			u32 flags=0;
 			if (command->flags&OPENGL_PROTOCOL_CLEAR_FLAG_COLOR){
 				flags|=VIRGL_PROTOCOL_CLEAR_FLAG_COLOR;
@@ -472,7 +472,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,9,0);
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_VIEWPORT){
-			opengl_protocol_set_viewport_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_set_viewport_t* command=(void*)header;
 			u32 virgl_set_viewport_state_command[8]={
 				VIRGL_PROTOCOL_COMMAND_SET_VIEWPORT_STATE,
 				0,
@@ -486,7 +486,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			_command_buffer_extend(instance->ctx,virgl_set_viewport_state_command,8,0);
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_CREATE_SHADER){
-			opengl_protocol_create_shader_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_create_shader_t* command=(void*)header;
 			if (syscall_get_user_pointer_max_length(command->vertex_shader_data)<command->vertex_shader_size||syscall_get_user_pointer_max_length(command->fragment_shader_data)<command->fragment_shader_size){
 				ERROR("_process_commands: invalid user pointers");
 				goto _skip_create_shader_command;
@@ -520,7 +520,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 _skip_create_shader_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_USE_SHADER){
-			opengl_protocol_use_shader_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_use_shader_t* command=(void*)header;
 			handle_t* handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_shader_handle_type);
 			if (!handle){
 				ERROR("_process_commands: invalid shader handle: %p");
@@ -547,7 +547,7 @@ _skip_create_shader_command:
 _skip_use_shader:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_DRAW){
-			opengl_protocol_draw_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_draw_t* command=(void*)header;
 			u32 mode=0;
 			switch (command->mode){
 				case OPENGL_PROTOCOL_DRAW_MODE_POINTS:
@@ -606,7 +606,7 @@ _skip_use_shader:
 _skip_draw_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_VERTEX_ARRAY){
-			opengl_protocol_update_vertex_array_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_update_vertex_array_t* command=(void*)header;
 			if (command->count==0xffffffff){
 				handle_t* vertex_array_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_vertex_array_handle_type);
 				if (!vertex_array_handle){
@@ -677,7 +677,7 @@ _skip_type_resolution:
 _skip_update_vertex_array_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_BUFFER){
-			opengl_protocol_update_buffer_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_update_buffer_t* command=(void*)header;
 			if (command->data&&syscall_get_user_pointer_max_length(command->data)<command->size){
 				ERROR("_process_commands: invalid user pointer");
 				goto _skip_update_buffer_command;
@@ -785,7 +785,7 @@ _update_buffer_cleanup:
 _skip_update_buffer_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_SET_BUFFERS){
-			opengl_protocol_set_buffers_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_set_buffers_t* command=(void*)header;
 			if (command->vertex_buffer_count){
 				u32 virgl_set_vertex_buffers_command[97]={
 					VIRGL_PROTOCOL_COMMAND_SET_VERTEX_BUFFERS(command->vertex_buffer_count),
@@ -842,7 +842,7 @@ _skip_set_index_buffer:
 			_command_buffer_extend(instance->ctx,NULL,0,1);
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_TEXTURE){
-			opengl_protocol_update_texture_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_update_texture_t* command=(void*)header;
 			u64 size=command->width*command->height*command->depth*command->elem_size;
 			if (command->data&&syscall_get_user_pointer_max_length(command->data)<size){
 				ERROR("_process_commands: invalid user pointer");
@@ -902,7 +902,7 @@ _update_texture_cleanup:
 _skip_update_texture_command:
 		}
 		else if (header->type==OPENGL_PROTOCOL_TYPE_UPDATE_SAMPLER){
-			opengl_protocol_update_sampler_t* command=(void*)header;
+			KERNEL_USER opengl_protocol_update_sampler_t* command=(void*)header;
 			if (!command->driver_handle){
 				virgl_opengl_sampler_t* sampler=omm_alloc(_virgl_opengl_sampler_allocator);
 				handle_new(sampler,_virgl_opengl_sampler_handle_type,&(sampler->handle));
