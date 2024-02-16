@@ -30,7 +30,6 @@ typedef struct _SCHEDULER_LOAD_BALANCER_THREAD_QUEUE{
 
 
 typedef struct _SCHEDULER_LOAD_BALANCER_STATS{
-	u64 added_thread_count;
 	u64 free_slot_count;
 	u64 used_slot_count;
 } scheduler_load_balancer_stats_t;
