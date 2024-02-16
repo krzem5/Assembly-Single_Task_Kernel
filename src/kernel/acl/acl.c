@@ -105,17 +105,21 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 		cache_entry->key=node->rb_node.key;
 		cache_entry->flags=node->flags;
 	}
+	else if (!node&&cache_entry->key==key){
+		cache_entry->key=0;
+	}
 	spinlock_release_exclusive(&(acl->lock));
 }
 
 
 
-KERNEL_PUBLIC void acl_register_request_callback(acl_request_callback_t callback){
+KERNEL_PUBLIC _Bool acl_register_request_callback(acl_request_callback_t callback){
 	if (callback&&_acl_request_callback){
 		ERROR("ACL request callback already registered");
-		return;
+		return 0;
 	}
 	_acl_request_callback=callback;
+	return 1;
 }
 
 

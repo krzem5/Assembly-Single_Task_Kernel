@@ -64,7 +64,7 @@ void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set);
 
 
 
-void acl_register_request_callback(acl_request_callback_t callback);
+_Bool acl_register_request_callback(acl_request_callback_t callback);
 
 
 
