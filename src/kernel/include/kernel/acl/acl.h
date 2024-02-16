@@ -44,10 +44,6 @@ typedef error_t (*acl_request_callback_t)(struct _HANDLE*,struct _PROCESS*,u64);
 
 
 
-extern KERNEL_ATOMIC acl_request_callback_t acl_request_callback;
-
-
-
 void acl_init(void);
 
 
@@ -65,6 +61,10 @@ u64 acl_get(acl_t* acl,struct _PROCESS* process);
 
 
 void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set);
+
+
+
+void acl_register_request_callback(acl_request_callback_t callback);
 
 
 

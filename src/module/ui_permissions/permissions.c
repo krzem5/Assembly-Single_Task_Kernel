@@ -133,6 +133,6 @@ void ui_permission_backend_init(void){
 	spinlock_init(&(_ui_permission_request_allocator->lock));
 	spinlock_init(&_ui_permission_request_list_lock);
 	_ui_permission_request_list_event=event_create();
-	acl_request_callback=_acl_permission_request_callback;
+	acl_register_request_callback(_acl_permission_request_callback);
 	syscall_create_table("ui_permission_request",_ui_permission_request_syscall_functions,sizeof(_ui_permission_request_syscall_functions)/sizeof(syscall_callback_t));
 }

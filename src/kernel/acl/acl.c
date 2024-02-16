@@ -17,8 +17,7 @@
 
 static omm_allocator_t* _acl_allocator=NULL;
 static omm_allocator_t* _acl_tree_node_allocator=NULL;
-
-KERNEL_PUBLIC KERNEL_ATOMIC acl_request_callback_t acl_request_callback=NULL;
+static KERNEL_ATOMIC acl_request_callback_t _acl_request_callback=NULL;
 
 
 
@@ -111,6 +110,16 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 
 
 
+KERNEL_PUBLIC void acl_register_request_callback(acl_request_callback_t callback){
+	if (callback&&_acl_request_callback){
+		ERROR("ACL request callback already registered");
+		return;
+	}
+	_acl_request_callback=callback;
+}
+
+
+
 error_t syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
 	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
 	if (!handle){
@@ -193,7 +202,7 @@ error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t proces
 	}
 	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
 	LOG("'%s' requested permissions '%x' for handle '%s'",process->name->data,flags,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name);
-	acl_request_callback_t callback=acl_request_callback;
+	acl_request_callback_t callback=_acl_request_callback;
 	u64 out=(callback?callback(handle,process,flags):ERROR_DENIED);
 	if (out==ERROR_OK){
 		acl_set(handle->acl,process,0,flags);
