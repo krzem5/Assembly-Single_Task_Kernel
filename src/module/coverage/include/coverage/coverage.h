@@ -3,7 +3,7 @@
 
 
 
-void coverage_export(void);
+void coverage_init(void);
 
 
 

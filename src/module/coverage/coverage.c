@@ -85,22 +85,35 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 
 
 
-void KERNEL_NOCOVERAGE coverage_export(void){
-	// return; /*********************************************/
-	LOG("Exporting coverage information...");
-	INFO("Checking serial port...");
-	if (!COVERAGE_SERIAL_PORT->io_port){
-		panic("Coverage serial port not present");
-	}
-	INFO("Writing coverage data...");
+static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
+	LOG("Exporting kernel coverage data...");
 	u64 size;
 	u64 base=kernel_gcov_info_data(&size);
 	_process_gcov_info_section(base,size);
+	LOG("Exporting module coverage data...");
 	HANDLE_FOREACH(module_handle_type){
 		module_t* module=handle->object;
 		if (module->state==MODULE_STATE_LOADED&&module->gcov_info.size){
 			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.size);
 		}
 	}
+}
+
+
+
+static notification_listener_t _coverage_shutdown_notification_listener={
+	_listener
+};
+
+
+
+void KERNEL_NOCOVERAGE coverage_init(void){
+	LOG("Initializing coverage reporting module...");
+	INFO("Checking serial port...");
+	if (!COVERAGE_SERIAL_PORT->io_port){
+		panic("Coverage serial port not present");
+	}
+	shutdown_register_notification_listener(&_coverage_shutdown_notification_listener);
+	// return; /*********************************************/
 	shutdown(0);
 }

@@ -4,7 +4,7 @@
 
 
 static _Bool _init(module_t* module){
-	coverage_export();
+	coverage_init();
 	return 1;
 }
 

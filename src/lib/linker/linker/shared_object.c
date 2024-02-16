@@ -7,6 +7,9 @@
 #include <sys/memory/memory.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
+#if KERNEL_COVERAGE_ENABLED
+#include <sys/syscall/syscall.h>
+#endif
 
 
 
@@ -260,6 +263,9 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 
 
 void shared_object_execute_fini(void){
+#if KERNEL_COVERAGE_ENABLED
+	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
+#endif
 	for (shared_object_t* so=_shared_object_tail;so!=shared_object_root;so=so->prev){ // do not cleanup liblinker.so, prevent double libsys cleanup
 		if (so->dynamic_section.fini){
 			((void (*)(void))(so->dynamic_section.fini))();
@@ -273,7 +279,9 @@ void shared_object_execute_fini(void){
 			}
 		}
 #if KERNEL_COVERAGE_ENABLED
-		sys_io_print("Coverage data: %s: %p (%u B)\n",so->path,so->gcov_info_base,so->gcov_info_size);
+		if (so->gcov_info_base&&so->gcov_info_size){
+			_sys_syscall2(syscall_table_offset|0x00000001,so->gcov_info_base,so->gcov_info_size);
+		}
 #endif
 	}
 }
