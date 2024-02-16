@@ -6,6 +6,7 @@
 #define SYS_PUBLIC __attribute__((visibility("default")))
 #define SYS_PACKED __attribute__((packed))
 #define SYS_CONSTRUCTOR __attribute__((constructor))
+#define SYS_DESTRUCTOR __attribute__((destructor))
 
 
 

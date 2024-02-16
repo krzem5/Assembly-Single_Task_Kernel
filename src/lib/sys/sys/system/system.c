@@ -8,7 +8,12 @@
 
 
 
+extern void __sys_linker_execute_fini(void) __attribute__((weak));
+
+
+
 static _Bool _sys_initialized=0;
+static _Bool _sys_deinitialized=0;
 
 
 
@@ -24,8 +29,23 @@ static void SYS_CONSTRUCTOR _execute_init(void){
 
 
 
+static void SYS_DESTRUCTOR _execute_fini(void){
+	if (_sys_deinitialized){
+		return;
+	}
+	_sys_deinitialized=1;
+}
+
+
+
 SYS_PUBLIC void __sys_init(void){
 	_execute_init();
+}
+
+
+
+SYS_PUBLIC void __sys_fini(void){
+	__sys_linker_execute_fini();
 }
 
 

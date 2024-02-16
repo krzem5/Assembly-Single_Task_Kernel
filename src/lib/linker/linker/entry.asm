@@ -1,6 +1,7 @@
 %include "sys/types.inc"
 extern __sys_init
 extern main
+extern end
 global _start:function hidden
 section .text exec nowrite
 

@@ -23,6 +23,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 		return NULL;
 	}
 	shared_object_t* so=alloc(sizeof(shared_object_t));
+	so->prev=_shared_object_tail;
 	so->next=NULL;
 	if (_shared_object_tail){
 		_shared_object_tail->next=so;
@@ -234,4 +235,22 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
 	sys_memory_unmap((void*)base_file_address,0);
 	return so;
+}
+
+
+
+void shared_object_execute_fini(void){
+	for (shared_object_t* so=_shared_object_tail;so!=shared_object_root;so=so->prev){ // do not cleanup liblinker.so, prevent double libsys cleanup
+		if (so->dynamic_section.fini){
+			((void (*)(void))(so->dynamic_section.fini))();
+		}
+		if (so->dynamic_section.fini_array&&so->dynamic_section.fini_array_size){
+			for (u64 i=0;i+sizeof(void*)<=so->dynamic_section.fini_array_size;i+=sizeof(void*)){
+				void* func=*((void*const*)(so->dynamic_section.fini_array+i));
+				if (func&&func!=(void*)0xffffffffffffffffull){
+					((void (*)(void))func)();
+				}
+			}
+		}
+	}
 }

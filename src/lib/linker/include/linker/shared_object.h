@@ -33,6 +33,7 @@ typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 
 
 typedef struct _SHARED_OBJECT{
+	struct _SHARED_OBJECT* prev;
 	struct _SHARED_OBJECT* next;
 	char path[256];
 	u64 image_base;
@@ -50,6 +51,10 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 
 
 shared_object_t* shared_object_load(const char* name,u32 flags);
+
+
+
+void shared_object_execute_fini(void);
 
 
 

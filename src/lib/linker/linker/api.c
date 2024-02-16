@@ -5,6 +5,12 @@
 
 
 
+SYS_PUBLIC void __sys_linker_execute_fini(void){
+	shared_object_execute_fini();
+}
+
+
+
 SYS_PUBLIC u64 __sys_linker_get_object_root(void){
 	return (u64)shared_object_root;
 }

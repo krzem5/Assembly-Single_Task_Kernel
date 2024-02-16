@@ -51,12 +51,14 @@ BUILD_DIRECTORIES=[
 	"build/objects/kernel_coverage",
 	"build/objects/kernel_debug",
 	"build/objects/lib",
+	"build/objects/lib_coverage",
 	"build/objects/lib_debug",
 	"build/objects/modules",
 	"build/objects/modules_coverage",
 	"build/objects/modules_debug",
 	"build/objects/uefi",
 	"build/objects/user",
+	"build/objects/user_coverage",
 	"build/objects/user_debug",
 	"build/partitions",
 	"build/share",
@@ -122,22 +124,22 @@ LIBRARY_HASH_FILE_SUFFIX={
 }[mode]
 LIBRARY_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/lib_debug/",
-	MODE_COVERAGE: "build/objects/lib_debug/",
+	MODE_COVERAGE: "build/objects/lib_coverage/",
 	MODE_RELEASE: "build/objects/lib/"
 }[mode]
 LIBRARY_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_NORMAL: ["-O1","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O1","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
+	MODE_NORMAL: ["-O1","-g"],
+	MODE_COVERAGE: ["-O1","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
 LIBRARY_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
+	MODE_NORMAL: ["-O1","-g"],
+	MODE_COVERAGE: ["-O1","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 USER_HASH_FILE_SUFFIX={
@@ -147,12 +149,12 @@ USER_HASH_FILE_SUFFIX={
 }[mode]
 USER_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/user_debug/",
-	MODE_COVERAGE: "build/objects/user_debug/",
+	MODE_COVERAGE: "build/objects/user_coverage/",
 	MODE_RELEASE: "build/objects/user/"
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
