@@ -279,6 +279,7 @@ void shared_object_execute_fini(void){
 			}
 		}
 #if KERNEL_COVERAGE_ENABLED
+		sys_io_print("%s: %p %p\n",so->path,so->gcov_info_base,so->gcov_info_size);
 		if (so->gcov_info_base&&so->gcov_info_size){
 			_sys_syscall2(syscall_table_offset|0x00000001,so->gcov_info_base,so->gcov_info_size);
 		}
