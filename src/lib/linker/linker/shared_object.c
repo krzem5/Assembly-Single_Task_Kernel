@@ -223,7 +223,7 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 	for (u16 i=0;i<header->e_shnum;i++){
 		const elf_shdr_t* section_header=(void*)(base_file_address+header->e_shoff+i*header->e_shentsize);
 		if (!sys_string_compare(section_header_name_string_table+section_header->sh_name,".gcov_info")){
-			gcov_info_base=((u64)base_file_address)+section_header->sh_size;
+			gcov_info_base=((u64)image_base)+section_header->sh_addr;
 			gcov_info_size=section_header->sh_size;
 		}
 	}

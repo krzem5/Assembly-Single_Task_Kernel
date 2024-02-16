@@ -1,3 +1,4 @@
+#include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
@@ -50,7 +51,7 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 	INFO("Procesing .gcov_info section %p - %p...",base,base+size);
 	for (const gcov_info_t*const* info_ptr=(void*)base;(u64)info_ptr<base+size;info_ptr++){
 		const gcov_info_t* info=*info_ptr;
-		if (!info->merge[0]){
+		if (!info||!info->merge[0]){
 			continue;
 		}
 		u64 marker=COVERAGE_FILE_REPORT_MARKER;
@@ -107,6 +108,19 @@ static notification_listener_t _coverage_shutdown_notification_listener={
 
 
 
+static void _syscall_export_coverage_data(u64 base,u64 size){
+	LOG("Exporting user/library coverage data...");
+	_process_gcov_info_section(base,size);
+}
+
+
+
+static syscall_callback_t const _coverage_syscall_functions[]={
+	[1]=(syscall_callback_t)_syscall_export_coverage_data
+};
+
+
+
 void KERNEL_NOCOVERAGE coverage_init(void){
 	LOG("Initializing coverage reporting module...");
 	INFO("Checking serial port...");
@@ -114,6 +128,8 @@ void KERNEL_NOCOVERAGE coverage_init(void){
 		panic("Coverage serial port not present");
 	}
 	shutdown_register_notification_listener(&_coverage_shutdown_notification_listener);
-	// return; /*********************************************/
-	shutdown(0);
+	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
+	if (IS_ERROR(elf_load("/bin/coverage_test",0,NULL,0,NULL,0))){
+		panic("Unable to load coverage tests");
+	}
 }

@@ -1,5 +1,6 @@
 alloc_test:runtime@static,sys
 cat:runtime@static,sys
+coverage_test:runtime@static,sys
 cpu:runtime@static,sys
 fs:runtime@static,sys
 glsltest:runtime@static,sys,glsl

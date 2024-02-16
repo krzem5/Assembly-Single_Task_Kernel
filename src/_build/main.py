@@ -575,9 +575,9 @@ def _kvm_flags():
 
 
 
-for dir in BUILD_DIRECTORIES:
-	if (not os.path.exists(dir)):
-		os.mkdir(dir)
+for dir_ in BUILD_DIRECTORIES:
+	if (not os.path.exists(dir_)):
+		os.mkdir(dir_)
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)

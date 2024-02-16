@@ -257,7 +257,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 			}
 		}
 		else if (elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
-			symbol_add(ctx->name,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
+			symbol_add(ctx->module->name->data,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 		}
 	}
 	return ret;
