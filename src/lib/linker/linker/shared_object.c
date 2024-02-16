@@ -35,6 +35,10 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	so->image_base=image_base;
 	sys_memory_copy(path,so->path,path_length);
 	so->path[path_length]=0;
+#if KERNEL_COVERAGE_ENABLED
+	so->gcov_info_base=0;
+	so->gcov_info_size=0;
+#endif
 	if (!dynamic_section){
 		return so;
 	}
@@ -209,6 +213,18 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 		}
 	}
 	void* image_base=(void*)sys_memory_map(sys_memory_align_up_address(max_address),SYS_MEMORY_FLAG_WRITE,0);
+#if KERNEL_COVERAGE_ENABLED
+	u64 gcov_info_base=0;
+	u64 gcov_info_size=0;
+	const char* section_header_name_string_table=base_file_address+((const elf_shdr_t*)(base_file_address+header->e_shoff+header->e_shstrndx*header->e_shentsize))->sh_offset;
+	for (u16 i=0;i<header->e_shnum;i++){
+		const elf_shdr_t* section_header=(void*)(base_file_address+header->e_shoff+i*header->e_shentsize);
+		if (!sys_string_compare(section_header_name_string_table+section_header->sh_name,".gcov_info")){
+			gcov_info_base=((u64)base_file_address)+section_header->sh_size;
+			gcov_info_size=section_header->sh_size;
+		}
+	}
+#endif
 	const elf_dyn_t* dynamic_section=NULL;
 	for (u16 i=0;i<header->e_phnum;i++){
 		const elf_phdr_t* program_header=(void*)(base_file_address+header->e_phoff+i*header->e_phentsize);
@@ -233,6 +249,10 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
+#if KERNEL_COVERAGE_ENABLED
+	so->gcov_info_base=gcov_info_base;
+	so->gcov_info_size=gcov_info_size;
+#endif
 	sys_memory_unmap((void*)base_file_address,0);
 	return so;
 }
@@ -252,5 +272,8 @@ void shared_object_execute_fini(void){
 				}
 			}
 		}
+#if KERNEL_COVERAGE_ENABLED
+		sys_io_print("Coverage data: %s: %p (%u B)\n",so->path,so->gcov_info_base,so->gcov_info_size);
+#endif
 	}
 }

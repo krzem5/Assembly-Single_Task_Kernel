@@ -86,6 +86,7 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 
 
 void KERNEL_NOCOVERAGE coverage_export(void){
+	// return; /*********************************************/
 	LOG("Exporting coverage information...");
 	INFO("Checking serial port...");
 	if (!COVERAGE_SERIAL_PORT->io_port){

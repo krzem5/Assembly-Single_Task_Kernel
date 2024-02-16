@@ -5,6 +5,15 @@
 
 
 
+#if KERNEL_COVERAGE_ENABLED
+SYS_PUBLIC void __sys_linker_set_root_object_gcov_info(u64 base,u64 size){
+	shared_object_executable->gcov_info_base=base;
+	shared_object_executable->gcov_info_size=size;
+}
+#endif
+
+
+
 SYS_PUBLIC void __sys_linker_execute_fini(void){
 	shared_object_execute_fini();
 }

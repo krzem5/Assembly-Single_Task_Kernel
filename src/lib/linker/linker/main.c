@@ -10,6 +10,8 @@
 
 extern const elf_dyn_t _DYNAMIC[];
 
+shared_object_t* shared_object_executable;
+
 
 
 u64 main(const u64* data){
@@ -61,6 +63,6 @@ u64 main(const u64* data){
 	if (so){
 		alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
 	}
-	shared_object_init(0,dynamic_section,path,0);
+	shared_object_executable=shared_object_init(0,dynamic_section,path,0);
 	return entry_address;
 }
