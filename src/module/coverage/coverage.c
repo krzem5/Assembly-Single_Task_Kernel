@@ -1,5 +1,4 @@
 #if KERNEL_COVERAGE_ENABLED
-#include <kernel/elf/elf.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -138,9 +137,6 @@ _Bool KERNEL_NOCOVERAGE coverage_init(void){
 	spinlock_init(&_coverage_lock);
 	shutdown_register_notification_listener(&_coverage_shutdown_notification_listener);
 	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
-	if (IS_ERROR(elf_load("/bin/coverage_test",0,NULL,0,NULL,0))){
-		panic("Unable to load coverage tests");
-	}
 	return 1;
 }
 
