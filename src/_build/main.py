@@ -485,7 +485,7 @@ def _compile_user_program(program,dependencies):
 
 
 def _get_early_modules(file_path):
-	out=["os_loader"]
+	out=["module_loader"]
 	with open(file_path,"r") as rf:
 		for module in rf.read().split("\n"):
 			module=module.strip()

@@ -21,7 +21,7 @@ static void _main_thread(void){
 	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();
 	scheduler_resume();
-	module_load("os_loader");
+	module_load("module_loader");
 }
 
 

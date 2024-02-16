@@ -6,7 +6,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
-#define KERNEL_LOG_NAME "os_loader"
+#define KERNEL_LOG_NAME "module_loader"
 
 
 
