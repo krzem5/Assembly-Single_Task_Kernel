@@ -4,11 +4,15 @@
 
 
 
-typedef void* (*allocator_backend_t)(void* null,u64 size);
+typedef void* (*allocator_backend_t)(void* null,void* ptr,u64 size);
 
 
 
 void* alloc(u64 size);
+
+
+
+void dealloc(void* ptr);
 
 
 

@@ -59,7 +59,7 @@ u64 main(const u64* data){
 	shared_object_init(interpreter_image_base,_DYNAMIC,interpreter,0);
 	shared_object_t* so=shared_object_load("libsys.so",SHARED_OBJECT_FLAG_RESOLVE_GOT);
 	if (so){
-		alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_alloc"));
+		alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
 	}
 	shared_object_init(0,dynamic_section,path,0);
 	return entry_address;

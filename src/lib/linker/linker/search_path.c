@@ -7,7 +7,7 @@
 
 
 
-static const char* _library_default_search_directories="/lib:.";
+static const char* _library_default_search_directories="/lib:/:.";
 static _Bool _library_search_directories_was_allocated=0;
 static char* _library_search_directories=NULL;
 
@@ -48,7 +48,7 @@ const char* search_path_update_search_directories(const char* new){
 		return _library_search_directories;
 	}
 	if (_library_search_directories_was_allocated){
-		// deallocate _library_search_directories
+		dealloc(_library_search_directories);
 	}
 	u32 size=sys_string_length(new)+1;
 	_library_search_directories_was_allocated=1;

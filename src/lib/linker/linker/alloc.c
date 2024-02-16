@@ -11,7 +11,10 @@ static allocator_backend_t _alloc_allocator_backend=NULL;
 
 
 
-static void* _default_allocator(void* null,u64 size){
+static void* _default_allocator(void* null,void* ptr,u64 size){
+	if (ptr){
+		return NULL;
+	}
 	size=(size+sizeof(u64)-1)&(-sizeof(u64));
 	if (_alloc_default_allocator_size<size){
 		_alloc_default_allocator_size=sys_memory_align_up_address(size);
@@ -29,7 +32,16 @@ void* alloc(u64 size){
 	if (!_alloc_allocator_backend){
 		_alloc_allocator_backend=_default_allocator;
 	}
-	return _alloc_allocator_backend(NULL,size);
+	return _alloc_allocator_backend(NULL,NULL,size);
+}
+
+
+
+void dealloc(void* ptr){
+	if (!_alloc_allocator_backend){
+		_alloc_allocator_backend=_default_allocator;
+	}
+	_alloc_allocator_backend(NULL,ptr,0);
 }
 
 
