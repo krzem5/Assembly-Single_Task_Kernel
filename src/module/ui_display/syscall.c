@@ -24,7 +24,7 @@ static error_t _syscall_get_next_display(handle_id_t display_handle_id){
 
 
 
-static error_t _syscall_get_display_data(handle_id_t display_handle_id,KERNEL_USER ui_display_user_data_t* buffer,u32 buffer_length){
+static error_t _syscall_get_display_data(handle_id_t display_handle_id,KERNEL_USER_POINTER ui_display_user_data_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_data_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -53,7 +53,7 @@ static error_t _syscall_get_display_data(handle_id_t display_handle_id,KERNEL_US
 
 
 
-static error_t _syscall_get_display_info(handle_id_t display_handle_id,KERNEL_USER ui_display_user_info_t* buffer,u32 buffer_length){
+static error_t _syscall_get_display_info(handle_id_t display_handle_id,KERNEL_USER_POINTER ui_display_user_info_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_info_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -103,7 +103,7 @@ static error_t _syscall_get_display_framebuffer(handle_id_t display_handle_id){
 
 
 
-static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id,KERNEL_USER ui_display_user_framebuffer_t* buffer,u32 buffer_length){
+static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id,KERNEL_USER_POINTER ui_display_user_framebuffer_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_display_user_framebuffer_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}

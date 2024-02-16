@@ -267,7 +267,7 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 
 
 
-error_t syscall_thread_await_events(KERNEL_USER const void* events,u64 event_count){
+error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 event_count){
 	if (!event_count){
 		return ERROR_INVALID_ARGUMENT(1);
 	}

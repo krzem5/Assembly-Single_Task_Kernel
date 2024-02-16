@@ -347,7 +347,7 @@ error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_p
 
 
 
-error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,KERNEL_USER u64* out){
+error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,KERNEL_USER_POINTER u64* out){
 	if (syscall_get_user_pointer_max_length((u64*)out)<2*sizeof(handle_id_t)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
@@ -378,7 +378,7 @@ error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 
 
 
-error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER const void* address,u32 address_length){
+error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -394,7 +394,7 @@ error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER const void* address,u32 a
 
 
 
-error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER const void* address,u32 address_length){
+error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -410,7 +410,7 @@ error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER const void* address,u3
 
 
 
-error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER void* buffer,u32 buffer_length,u32 flags){
+error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
@@ -442,7 +442,7 @@ error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER void* buffer,u32 buffer_l
 
 
 
-error_t syscall_socket_send(handle_id_t fd,KERNEL_USER const void* buffer,u32 buffer_length,u32 flags){
+error_t syscall_socket_send(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}

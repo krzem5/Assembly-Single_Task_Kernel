@@ -27,7 +27,7 @@ static error_t _syscall_get_driver_instance(u16 min_version){
 
 
 
-static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t instance,KERNEL_USER opengl_user_driver_instance_data_t* buffer,u64 buffer_length){
+static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t instance,KERNEL_USER_POINTER opengl_user_driver_instance_data_t* buffer,u64 buffer_length){
 	if (buffer_length<sizeof(opengl_user_driver_instance_data_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -105,7 +105,7 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 
 
 
-static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,KERNEL_USER void* buffer,u32 buffer_length){
+static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id,KERNEL_USER_POINTER void* buffer,u32 buffer_length){
 	if (buffer_length&(sizeof(u32)-1)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}

@@ -108,7 +108,7 @@ error_t syscall_gid_set(u64 gid){
 
 
 
-error_t syscall_gid_get_name(u64 gid,KERNEL_USER char* buffer,u32 buffer_length){
+error_t syscall_gid_get_name(u64 gid,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_INVALID_ARGUMENT(2);
 	}

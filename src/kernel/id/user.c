@@ -147,7 +147,7 @@ error_t syscall_uid_set(u64 uid){
 
 
 
-error_t syscall_uid_get_name(u64 uid,KERNEL_USER char* buffer,u32 buffer_length){
+error_t syscall_uid_get_name(u64 uid,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_INVALID_ARGUMENT(2);
 	}

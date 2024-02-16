@@ -117,7 +117,7 @@ error_t syscall_fs_get_next(handle_id_t fs_handle_id){
 
 
 
-error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER filesystem_user_data_t* buffer,u32 buffer_length){
+error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user_data_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(filesystem_user_data_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -141,7 +141,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER filesystem_user_data_t*
 
 
 
-error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER const char* path){
+error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER_POINTER const char* path){
 	u64 path_length=syscall_get_string_length((const char*)path);
 	if (!path_length||path_length>4095){
 		return ERROR_INVALID_ARGUMENT(1);

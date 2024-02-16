@@ -23,7 +23,7 @@ volatile u32 _syscall_table_list_length=0;
 
 
 
-error_t syscall_syscall_table_get_offset(KERNEL_USER const char* table_name){
+error_t syscall_syscall_table_get_offset(KERNEL_USER_POINTER const char* table_name){
 	if (!syscall_get_string_length((const char*)table_name)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}

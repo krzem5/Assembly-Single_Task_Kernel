@@ -90,7 +90,7 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 
-error_t syscall_fd_open(handle_id_t root,KERNEL_USER const char* path,u32 flags){
+error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -140,7 +140,7 @@ error_t syscall_fd_close(handle_id_t fd){
 
 
 
-error_t syscall_fd_read(handle_id_t fd,KERNEL_USER void* buffer,u64 count,u32 flags){
+error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 count,u32 flags){
 	if (count>syscall_get_user_pointer_max_length((void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
@@ -170,7 +170,7 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER void* buffer,u64 count,u32 fl
 
 
 
-error_t syscall_fd_write(handle_id_t fd,KERNEL_USER const void* buffer,u64 count,u32 flags){
+error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u64 count,u32 flags){
 	if (count>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -256,7 +256,7 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER fd_stat_t* out,u32 buffer_length){
+error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 buffer_length){
 	if (buffer_length<sizeof(fd_stat_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -299,7 +299,7 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 
 
 
-error_t syscall_fd_path(handle_id_t fd,KERNEL_USER char* buffer,u32 buffer_length){
+error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -364,7 +364,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 
 
 
-error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER char* buffer,u32 buffer_length){
+error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}

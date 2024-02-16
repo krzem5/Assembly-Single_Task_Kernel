@@ -26,7 +26,7 @@ typedef struct _OPENGL_DRIVER{
 	_Bool (*init_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
 	void (*deinit_state)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
 	void (*update_render_target)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*);
-	void (*process_commands)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*,KERNEL_USER void* command_buffer,u32 command_buffer_size);
+	void (*process_commands)(struct _OPENGL_DRIVER_INSTANCE*,opengl_state_t*,KERNEL_USER_POINTER void* command_buffer,u32 command_buffer_size);
 } opengl_driver_t;
 
 
