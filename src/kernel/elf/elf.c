@@ -94,7 +94,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 			}
 			ctx->interpreter_path=ctx->data+program_header->p_offset;
 			if (ctx->interpreter_path[program_header->p_filesz-1]){
-				ERROR("Interpreter string not null-terminated");
+				ERROR("Interpreter string is not null-terminated");
 				return ERROR_INVALID_FORMAT;
 			}
 			continue;

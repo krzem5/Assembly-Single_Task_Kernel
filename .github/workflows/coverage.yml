@@ -22,8 +22,8 @@ jobs:
       - name: Setup environment
         run: |
           sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools libcap-ng-dev libseccomp-dev
-          mkdir -p build/tmp
-          cd build/tmp
+          mkdir -p build/external
+          cd build/external
           git clone https://gitlab.com/virtio-fs/virtiofsd.git
           cd virtiofsd
           cargo build --release

@@ -28,10 +28,11 @@ void test_elf(void){
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_type",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_machine",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_version",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_ASSERT(elf_load("/share/test/elf/multiple_interpreters",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_ASSERT(elf_load("/share/test/elf/unterminated_interpreter",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	vfs_node_dettach_external_child(no_permission_node);
 	vfs_node_delete(no_permission_node);
 	// ################################ Negative tests ################################
-	// multiple interpreters
 	// invalid interpreter path ==> ERROR_NOT_FOUND
 	// invalid interpreter path permissions ==> ERROR_NOT_FOUND
 	// invalid interpreter header: e_ident.signature ==> ERROR_INVALID_FORMAT
