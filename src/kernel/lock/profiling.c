@@ -36,7 +36,7 @@ KERNEL_PUBLIC const lock_profiling_data_descriptor_t* lock_profiling_data_descri
 
 
 
-static KERNEL_INLINE lock_profiling_thread_data_t* _get_lock_data(void){
+static KERNEL_INLINE lock_profiling_thread_data_t* KERNEL_NOCOVERAGE _get_lock_data(void){
 	if (!_lock_profiling_cpu_local_data){
 		return &_early_lock_profiling_data;
 	}
@@ -50,7 +50,7 @@ static KERNEL_INLINE lock_profiling_thread_data_t* _get_lock_data(void){
 
 
 
-static KERNEL_INLINE u32 _get_edge_index(u16 from,u16 to){
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE _get_edge_index(u16 from,u16 to){
 	return (from<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)|to;
 }
 
