@@ -46,4 +46,8 @@ void test_format(void){
 	u8 null_guid[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	u8 test_guid[16]={0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff};
 	_test_format("00000000-0000-0000-0000-000000000000,00112233-4455-6677-8899-aabbccddeeff","%g,%g",null_guid,test_guid);
+	u8 null_mac_address[6]={0,0,0,0,0,0};
+	u8 test_mac_address[6]={0x11,0x22,0x33,0xaa,0xbb,0xcc};
+	_test_format("00:00:00:00:00:00,11:22:33:aa:bb:cc","%M,%M",null_mac_address,test_mac_address);
+	_test_format("0.0.0.0,11.22.33.255","%I,%I",0x00000000,0x0b1621ff);
 }
