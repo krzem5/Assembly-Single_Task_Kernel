@@ -55,7 +55,9 @@ static const drive_type_t _test_drive_type_readonly={
 
 
 void test_drive(void){
+	TEST_MODULE("drive");
 	TEST_FUNC("drive_create");
+	TEST_GROUP("correct args");
 	drive_config_t config={
 		&_test_drive_type,
 		1,
@@ -79,7 +81,9 @@ void test_drive(void){
 	TEST_ASSERT(drive->extra_data==config.extra_data);
 	TEST_ASSERT(!drive->partition_table_descriptor);
 	TEST_FUNC("drive_read");
+	TEST_GROUP("empty buffer");
 	TEST_ASSERT(!drive_read(drive,0,NULL,0));
+	TEST_GROUP("correct args");
 	u8 buffer[512];
 	u8 buffer2[512];
 	random_generate(buffer,sizeof(buffer));
@@ -95,11 +99,14 @@ void test_drive(void){
 		TEST_ASSERT(buffer[i]==buffer2[i]);
 	}
 	TEST_FUNC("drive_write");
+	TEST_GROUP("empty buffer");
 	TEST_ASSERT(!drive_write(drive,0,NULL,0));
-	memset(buffer,0,sizeof(buffer));
-	random_generate(buffer2,sizeof(buffer2));
+	TEST_GROUP("read-only drive");
 	drive->type=&_test_drive_type_readonly;
 	TEST_ASSERT(!drive_write(drive,0,buffer2,1));
+	TEST_GROUP("correct args");
+	memset(buffer,0,sizeof(buffer));
+	random_generate(buffer2,sizeof(buffer2));
 	drive->type=&_test_drive_type;
 	TEST_ASSERT(drive_write(drive,0,buffer2,1)==1);
 	TEST_ASSERT(_drive_io_callback_drive==drive);

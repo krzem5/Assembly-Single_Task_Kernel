@@ -94,11 +94,17 @@ static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,c
 
 
 void test_elf(void){
+	TEST_MODULE("elf");
 	TEST_FUNC("elf_load");
+	TEST_GROUP("invalid path");
 	TEST_ASSERT(elf_load("/invalid/path",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no read and execute permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/no_read_and_execute_access_file",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no execute permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/no_execute_access_file",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no read permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/no_read_access_file",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("invalid header");
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_signature",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_word_size",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_endianess",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
@@ -107,12 +113,19 @@ void test_elf(void){
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_type",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_machine",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/invalid_header_version",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_GROUP("multiple interpreters");
 	TEST_ASSERT(elf_load("/share/test/elf/multiple_interpreters",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_GROUP("unterminated interpreter");
 	TEST_ASSERT(elf_load("/share/test/elf/unterminated_interpreter",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_GROUP("invalid interpreter path");
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_path",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no read and execute interpreter permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_no_read_and_execute_permissions",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no execute interpreter permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_no_execute_permissions",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("no read interpreter permissions");
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_no_read_permissions",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("invalid interpreter header");
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_signature",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_word_size",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_endianess",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
@@ -121,8 +134,10 @@ void test_elf(void){
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_type",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_machine",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
 	TEST_ASSERT(elf_load("/share/test/elf/interpreter_invalid_header_version",0,NULL,0,NULL,0)==ERROR_INVALID_FORMAT);
+	TEST_GROUP("no args");
 	syscall_create_table("test_elf",_test_elf_syscall_functions,sizeof(_test_elf_syscall_functions)/sizeof(syscall_callback_t));
 	_test_arguments(0,NULL,0,NULL);
+	TEST_GROUP("correct args");
 	const char*const argv[]={
 		"/bin/other_executable",
 		"arg0",

@@ -4,6 +4,9 @@
 
 
 
+#define TEST_MODULE(name) WARN("Module '%s'...",name)
+#define TEST_FUNC(name) WARN("Function '%s'...",name)
+#define TEST_GROUP(name) WARN("Group '%s'...",name)
 #define TEST_ASSERT(x) \
 	do{ \
 		if (!(x)){ \
@@ -14,7 +17,6 @@
 			test_pass_count++; \
 		} \
 	} while (0)
-#define TEST_FUNC(name) WARN("Testing '%s'...",name)
 
 
 
