@@ -8,6 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <test/test.h>
@@ -33,6 +34,7 @@ extern error_t syscall_fd_iter_stop();
 
 static void _thread(void){
 	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
+	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	vfs_node_t* root=vfs_lookup(NULL,"/",0,0,0);
 	TEST_FUNC("fd_from_node");
 	error_t fd=fd_from_node(root,0);
@@ -40,19 +42,19 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	fd=fd_from_node(root,FD_FLAG_READ);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_read(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/no_read_access_file",0,0,0),FD_FLAG_READ);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_read(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	fd=fd_from_node(root,FD_FLAG_WRITE);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(syscall_fd_write(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_write(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/no_write_access_file",0,0,0),FD_FLAG_WRITE);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(syscall_fd_write(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_write(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),FD_FLAG_READ);
 	TEST_ASSERT(!IS_ERROR(fd));
@@ -70,16 +72,26 @@ static void _thread(void){
 	TEST_ASSERT(fd_get_node(fd)==root);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_open");
-	// syscall_fd_open: invalid flags => ERROR_INVALID_ARGUMENT(2)
-	// syscall_fd_open: empty path => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_open: path >4095 => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_open: invalid root handle => ERROR_INVALID_HANDLE
+	TEST_ASSERT(syscall_fd_open(0,NULL,0xffffffffffffffff)==ERROR_INVALID_ARGUMENT(2));
+	buffer[0]=0;
+	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
+	memset(buffer,'A',PAGE_SIZE);
+	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
+	strcpy(buffer,"/",PAGE_SIZE);
+	TEST_ASSERT(syscall_fd_open(0xaabbccdd,buffer,0)==ERROR_INVALID_HANDLE);
 	// syscall_fd_open: create file => UNIMPLEMENTED
 	// syscall_fd_open: create directory => UNIMPLEMENTED
 	// syscall_fd_open: do not follow links, not found => ERROR_NOT_FOUND
 	// syscall_fd_open: do not follow links, found => !IS_ERROR(...)
-	// syscall_fd_open: not found => ERROR_NOT_FOUND
-	// syscall_fd_open: correct args => !IS_ERROR(...)
+	strcpy(buffer,"/invalid/path",PAGE_SIZE);
+	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_NOT_FOUND);
+	strcpy(buffer,"/",PAGE_SIZE);
+	fd=syscall_fd_open(0,buffer,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(fd_get_node(fd)==root);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	// syscall_fd_open: parent, not found => ERROR_NOT_FOUND
+	// syscall_fd_open: parent, found => !IS_ERROR(...)
 	TEST_FUNC("syscall_fd_close");
 	// syscall_fd_close: invalid handle => ERROR_INVALID_HANDLE
 	// syscall_fd_close: no FD_ACL_FLAG_CLOSE => ERROR_DENIED

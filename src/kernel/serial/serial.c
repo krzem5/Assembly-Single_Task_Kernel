@@ -85,7 +85,7 @@ void KERNEL_EARLY_EXEC serial_init(void){
 
 
 
-KERNEL_PUBLIC void serial_send(serial_port_t* port,const void* buffer,u32 length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE serial_send(serial_port_t* port,const void* buffer,u32 length){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(port->write_lock));
 	for (;length;length--){
