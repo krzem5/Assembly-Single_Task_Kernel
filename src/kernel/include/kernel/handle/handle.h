@@ -101,13 +101,13 @@ _Bool handle_unregister_notification_listener(handle_type_t type,notification_li
 
 
 
-static KERNEL_INLINE void handle_acquire(handle_t* handle){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE handle_acquire(handle_t* handle){
 	handle->rc++;
 }
 
 
 
-static KERNEL_INLINE _Bool handle_release(handle_t* handle){
+static KERNEL_INLINE _Bool KERNEL_NOCOVERAGE handle_release(handle_t* handle){
 	handle->rc--;
 	if (handle->rc){
 		return 1;

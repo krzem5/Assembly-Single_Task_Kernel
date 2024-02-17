@@ -70,91 +70,91 @@ extern handle_type_t pci_device_handle_type;
 
 
 
-static KERNEL_INLINE u32 pci_device_get_offset(const pci_device_address_t* device_address){
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_get_offset(const pci_device_address_t* device_address){
 	return (device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|0x80000000;
 }
 
 
 
-static KERNEL_INLINE u8 pci_device_read_config8(u32 offset){
+static KERNEL_INLINE u8 KERNEL_NOCOVERAGE pci_device_read_config8(u32 offset){
 	io_port_out32(0xcf8,offset);
 	return io_port_in8(0xcfc);
 }
 
 
 
-static KERNEL_INLINE u16 pci_device_read_config16(u32 offset){
+static KERNEL_INLINE u16 KERNEL_NOCOVERAGE pci_device_read_config16(u32 offset){
 	io_port_out32(0xcf8,offset);
 	return io_port_in16(0xcfc);
 }
 
 
 
-static KERNEL_INLINE u32 pci_device_read_config32(u32 offset){
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_read_config32(u32 offset){
 	io_port_out32(0xcf8,offset);
 	return io_port_in32(0xcfc);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_config8(u32 offset,u8 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config8(u32 offset,u8 value){
 	io_port_out32(0xcf8,offset);
 	io_port_out8(0xcfc,value);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_config16(u32 offset,u16 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config16(u32 offset,u16 value){
 	io_port_out32(0xcf8,offset);
 	io_port_out16(0xcfc,value);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_config32(u32 offset,u32 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config32(u32 offset,u32 value){
 	io_port_out32(0xcf8,offset);
 	io_port_out32(0xcfc,value);
 }
 
 
 
-static KERNEL_INLINE u32 pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_read_data_raw(const pci_device_address_t* device_address,u8 offset){
 	return pci_device_read_config32(pci_device_get_offset(device_address)|(offset&0xfc));
 }
 
 
 
-static KERNEL_INLINE u32 pci_device_read_data(const pci_device_t* device,u8 offset){
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_read_data(const pci_device_t* device,u8 offset){
 	return pci_device_read_data_raw(&(device->address),offset);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_data_raw(const pci_device_address_t* device_address,u8 offset,u32 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_data_raw(const pci_device_address_t* device_address,u8 offset,u32 value){
 	pci_device_write_config32(pci_device_get_offset(device_address)|(offset&0xfc),value);
 }
 
 
 
-static KERNEL_INLINE void pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_data(const pci_device_t* device,u8 offset,u32 value){
 	pci_device_write_data_raw(&(device->address),offset,value);
 }
 
 
 
-static KERNEL_INLINE void pci_device_enable_io_access(const pci_device_t* device){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_io_access(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|1);
 }
 
 
 
-static KERNEL_INLINE void pci_device_enable_memory_access(const pci_device_t* device){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_memory_access(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|2);
 }
 
 
 
-static KERNEL_INLINE void pci_device_enable_bus_mastering(const pci_device_t* device){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_bus_mastering(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|4);
 }
 

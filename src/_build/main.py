@@ -54,9 +54,9 @@ BUILD_DIRECTORIES=[
 	"build/objects/lib",
 	"build/objects/lib_coverage",
 	"build/objects/lib_debug",
-	"build/objects/modules",
-	"build/objects/modules_coverage",
-	"build/objects/modules_debug",
+	"build/objects/module",
+	"build/objects/module_coverage",
+	"build/objects/module_debug",
 	"build/objects/uefi",
 	"build/objects/user",
 	"build/objects/user_coverage",
@@ -112,9 +112,9 @@ MODULE_HASH_FILE_SUFFIX={
 	MODE_RELEASE: ".release.txt"
 }[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/modules_debug/",
-	MODE_COVERAGE: "build/objects/modules_coverage/",
-	MODE_RELEASE: "build/objects/modules/"
+	MODE_NORMAL: "build/objects/module_debug/",
+	MODE_COVERAGE: "build/objects/module_coverage/",
+	MODE_RELEASE: "build/objects/module/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
@@ -401,6 +401,8 @@ def _compile_module(module,dependencies):
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			print(file)
+			if (os.path.exists(object_file+".gcno")):
+				os.remove(os.path.exists(object_file+".gcno"))
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
@@ -450,6 +452,8 @@ def _compile_library(library,flags,dependencies):
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
+			if (os.path.exists(object_file+".gcno")):
+				os.remove(os.path.exists(object_file+".gcno"))
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
@@ -492,6 +496,8 @@ def _compile_user_program(program,dependencies):
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			print(file)
+			if (os.path.exists(object_file+".gcno")):
+				os.remove(os.path.exists(object_file+".gcno"))
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
 				error=True
@@ -680,6 +686,8 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		print(file)
+		if (os.path.exists(object_file+".gcno")):
+			os.remove(os.path.exists(object_file+".gcno"))
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
