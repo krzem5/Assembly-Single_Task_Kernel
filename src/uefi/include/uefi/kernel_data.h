@@ -20,7 +20,7 @@ typedef struct _KERNEL_DATA{
 	uint64_t smbios_address;
 	uint64_t initramfs_address;
 	uint64_t initramfs_size;
-	uint8_t boot_fs_uuid[16];
+	uint8_t boot_fs_guid[16];
 	struct{
 		uint16_t year;
 		uint8_t month;

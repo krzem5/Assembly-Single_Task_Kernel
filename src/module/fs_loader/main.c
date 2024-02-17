@@ -22,7 +22,7 @@ static filesystem_t* _match_fs(const char* guid,const char* type){
 		if (guid){
 			if (streq(guid,"boot")){
 				for (u8 i=0;i<16;i++){
-					if (fs->uuid[i]!=kernel_data.boot_fs_uuid[i]){
+					if (fs->guid[i]!=kernel_data.boot_fs_guid[i]){
 						goto _check_next_fs;
 					}
 				}

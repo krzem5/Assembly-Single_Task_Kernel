@@ -26,7 +26,6 @@ KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
 
 static void _fs_handle_destructor(handle_t* handle){
 	filesystem_t* fs=handle->object;
-	WARN("Delete filesystem: %p",fs);
 	if (fs->descriptor->config->deinit_callback){
 		fs->descriptor->config->deinit_callback(fs);
 	}
@@ -88,7 +87,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->partition=NULL;
 	out->extra_data=NULL;
 	out->root=NULL;
-	memset(out->uuid,0,16);
+	memset(out->guid,0,16);
 	out->is_mounted=0;
 	handle_finish_setup(&(out->handle));
 	return out;
@@ -134,7 +133,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 	filesystem_t* fs=fs_handle->object;
 	strcpy((char*)(buffer->type),fs->descriptor->config->name,sizeof(buffer->type));
 	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
-	memcpy((void*)(buffer->uuid),fs->uuid,sizeof(buffer->uuid));
+	memcpy((void*)(buffer->guid),fs->guid,sizeof(buffer->guid));
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){
 		buffer->mount_path[0]=0;
 	}
