@@ -35,6 +35,7 @@ void test_format(void){
 	LOG("Executing format tests...");
 	_test_format_empty("");
 	_test_format("","");
+	_test_format("","%");
 	_test_format("The quick brown fox jumps over the lazy dog","The quick brown fox jumps over the lazy dog");
 	_test_format("N","%c",'N');
 	_test_format("%","%c",'%');
