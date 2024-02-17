@@ -311,17 +311,78 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_get");
-	// syscall_fd_iter_get: invalid buffer => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_iter_get: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_iter_get: no FD_ITERATOR_ACL_FLAG_ACCESS => ERROR_DENIED
-	// syscall_fd_iter_get: correct args => !IS_ERROR(...) => correct return value
+	TEST_GROUP("invalid buffer");
+	TEST_ASSERT(syscall_fd_iter_get(0,NULL,1)==ERROR_INVALID_ARGUMENT(1));
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_iter_get(0xaabbccdd,buffer,2*PAGE_SIZE)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ITERATOR_ACL_FLAG_ACCESS");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	_set_acl_flags(fd_iter,FD_ITERATOR_ACL_FLAG_ACCESS,0);
+	TEST_ASSERT(syscall_fd_iter_get(fd_iter,buffer,2*PAGE_SIZE)==ERROR_DENIED);
+	_set_acl_flags(fd_iter,0,FD_ITERATOR_ACL_FLAG_ACCESS);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
+	TEST_GROUP("correct args");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/directory_with_abc_child",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_get(fd_iter,buffer,2*PAGE_SIZE)==3);
+	TEST_ASSERT(streq(buffer,"abc"));
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_next");
-	// syscall_fd_iter_next: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_iter_next: no FD_ITERATOR_ACL_FLAG_ACCESS => ERROR_DENIED
-	// syscall_fd_iter_next: correct args, no next child => ERROR_NO_DATA
-	// syscall_fd_iter_next: correct args, next child => same handle
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_iter_next(0xaabbccdd)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ITERATOR_ACL_FLAG_ACCESS");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	_set_acl_flags(fd_iter,FD_ITERATOR_ACL_FLAG_ACCESS,0);
+	TEST_ASSERT(syscall_fd_iter_next(fd_iter)==ERROR_DENIED);
+	_set_acl_flags(fd_iter,0,FD_ITERATOR_ACL_FLAG_ACCESS);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
+	TEST_GROUP("no next child");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/directory_with_abc_child",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_next(fd_iter)==ERROR_NO_DATA);
+	TEST_GROUP("correct args");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_next(fd_iter)==fd_iter);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_stop");
-	// syscall_fd_iter_stop: UNIMPLEMENTE
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_iter_stop(0xaabbccdd)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ITERATOR_ACL_FLAG_ACCESS");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	_set_acl_flags(fd_iter,FD_ITERATOR_ACL_FLAG_ACCESS,0);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_DENIED);
+	_set_acl_flags(fd_iter,0,FD_ITERATOR_ACL_FLAG_ACCESS);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
+	TEST_GROUP("correct args");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_INVALID_HANDLE);
 	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
 }
 

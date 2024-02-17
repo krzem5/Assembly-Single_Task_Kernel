@@ -137,3 +137,9 @@ def generate_test_resource_files():
 		wf.write(b"abcdef")
 	if (not os.path.exists("build/share/test/fd/empty_directory")):
 		os.mkdir("build/share/test/fd/empty_directory")
+	if (not os.path.exists("build/share/test/fd/directory_with_abc_child")):
+		os.mkdir("build/share/test/fd/directory_with_abc_child")
+	if (not os.path.exists("build/share/test/fd/directory_with_abc_child")):
+		os.mkdir("build/share/test/fd/directory_with_abc_child")
+	with open("build/share/test/fd/directory_with_abc_child/abc","wb") as wf:
+		wf.write(b"abcdef")
