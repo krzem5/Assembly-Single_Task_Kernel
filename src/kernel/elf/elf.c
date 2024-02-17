@@ -360,6 +360,10 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	}
 	return process->handle.rb_node.key;
 _error:
+	if (ctx.thread){
+		ctx.thread->state=THREAD_STATE_TYPE_TERMINATED;
+		thread_delete(ctx.thread);
+	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	handle_release(&(process->handle));
 	return out;
