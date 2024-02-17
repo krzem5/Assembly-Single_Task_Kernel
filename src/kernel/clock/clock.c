@@ -35,7 +35,7 @@ static KERNEL_INLINE u64 KERNEL_NOCOVERAGE _wait_for_pit(u8 high){
 
 
 
-static u64 KERNEL_EARLY_EXEC _get_cpu_frequency(void){
+static u64 KERNEL_EARLY_EXEC KERNEL_NOCOVERAGE _get_cpu_frequency(void){
 	while (1){
 		io_port_out8(0x61,(io_port_in8(0x61)&0xfd)|0x01);
 		io_port_out8(0x43,0xb0);
