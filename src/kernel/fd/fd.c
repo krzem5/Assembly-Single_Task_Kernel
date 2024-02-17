@@ -64,7 +64,7 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	handle_new(out,_fd_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO);
+	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
 	spinlock_init(&(out->lock));
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
@@ -131,7 +131,7 @@ error_t syscall_fd_close(handle_id_t fd){
 		return ERROR_INVALID_HANDLE;
 	}
 	fd_t* data=fd_handle->object;
-	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_CLOSE)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
@@ -145,7 +145,7 @@ error_t syscall_fd_close(handle_id_t fd){
 
 error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 count,u32 flags){
 	if (count>syscall_get_user_pointer_max_length((void*)buffer)){
-		return ERROR_INVALID_ARGUMENT(0);
+		return ERROR_INVALID_ARGUMENT(1);
 	}
 	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
 		return ERROR_INVALID_ARGUMENT(3);
@@ -177,7 +177,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 	if (count>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	if (flags&(~(FD_FLAG_NONBLOCKING|FD_FLAG_PIPE_PEEK))){
+	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
@@ -194,7 +194,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	spinlock_acquire_exclusive(&(data->lock));
-	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
+	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0));
 	data->offset+=count;
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);

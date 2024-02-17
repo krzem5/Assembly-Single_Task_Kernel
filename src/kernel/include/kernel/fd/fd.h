@@ -27,6 +27,7 @@
 #define FD_ACL_FLAG_STAT 1
 #define FD_ACL_FLAG_DUP 2
 #define FD_ACL_FLAG_IO 4
+#define FD_ACL_FLAG_CLOSE 8
 
 #define FD_ITERATOR_ACL_FLAG_ACCESS 1
 
