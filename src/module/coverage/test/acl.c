@@ -68,6 +68,11 @@ static void _thread(process_t* second_test_process){
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x1234);
 	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x0204,0x8000)==ERROR_OK);
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
+	acl_set(handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0x00f3);
+	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
+	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x9f20,0x000f)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x0013);
+	// syscall_acl_request_permissions
 	handle_release(&handle);
 }
 
