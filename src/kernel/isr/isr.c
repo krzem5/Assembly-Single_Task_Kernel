@@ -51,7 +51,7 @@ KERNEL_PUBLIC u8 isr_allocate(void){
 
 
 
-void KERNEL_NOCOVERAGE _isr_handler(isr_state_t* isr_state){
+void _isr_handler(isr_state_t* isr_state){
 	if (isr_state->isr==32){
 		scheduler_isr_handler(isr_state);
 		return;

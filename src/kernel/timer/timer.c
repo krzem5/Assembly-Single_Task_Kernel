@@ -105,7 +105,7 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypa
 
 
 
-u32 KERNEL_NOCOVERAGE timer_dispatch_timers(void){
+u32 timer_dispatch_timers(void){
 	u64 time=clock_get_time();
 	timer_t* timer=(timer_t*)rb_tree_lookup_decreasing_node(&_timer_tree,time);
 	if (!timer){
