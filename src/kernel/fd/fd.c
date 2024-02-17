@@ -38,6 +38,9 @@ static void _fd_handle_destructor(handle_t* handle){
 
 static void _fd_iterator_handle_destructor(handle_t* handle){
 	fd_iterator_t* data=handle->object;
+	if (data->current_name){
+		smm_dealloc(data->current_name);
+	}
 	omm_dealloc(_fd_iterator_allocator,data);
 }
 
@@ -412,6 +415,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 	s64 out=ERROR_NO_DATA;
 	if (data->current_name){
 		smm_dealloc(data->current_name);
+		data->current_name=NULL;
 		data->pointer=vfs_node_iterate(data->node,data->pointer,&(data->current_name));
 		if (!data->pointer){
 			handle_release(fd_iterator_handle);
