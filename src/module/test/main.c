@@ -9,6 +9,7 @@
 #include <test/drive.h>
 #include <test/elf.h>
 #include <test/format.h>
+#include <test/handle_list.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
 
@@ -23,6 +24,7 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	test_drive();
 	test_elf();
 	test_format();
+	test_handle_list();
 	WARN("%u test%s passed, %u test%s failed",test_pass_count,(test_pass_count==1?"":"s"),test_fail_count,(test_fail_count==1?"":"s"));
 	if (test_fail_count){
 		coverage_mark_failure();

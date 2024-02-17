@@ -1,5 +1,5 @@
-#include <kernel/log/log.h>
 #include <kernel/format/format.h>
+#include <kernel/log/log.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <test/test.h>

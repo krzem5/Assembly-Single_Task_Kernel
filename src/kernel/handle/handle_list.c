@@ -60,7 +60,7 @@ KERNEL_PUBLIC void handle_list_push(handle_list_t* list,handle_t* handle){
 	}
 	spinlock_acquire_exclusive(&(list->lock));
 	if (handle->handle_list){
-		panic("Already in a list");
+		panic("Handle already in a list");
 	}
 	handle->handle_list=list;
 	if (list->tail){

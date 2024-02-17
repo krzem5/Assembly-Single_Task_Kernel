@@ -79,6 +79,7 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	out->object=object;
 	out->rc=1;
 	out->acl=NULL;
+	out->handle_list=NULL;
 	spinlock_acquire_exclusive(&(handle_descriptor->lock));
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;

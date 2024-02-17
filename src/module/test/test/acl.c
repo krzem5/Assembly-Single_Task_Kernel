@@ -37,7 +37,7 @@ static error_t _permission_request_callback(handle_t* handle,process_t* process,
 static void _thread(process_t* second_test_process){
 	TEST_ASSERT(syscall_acl_get_permissions(0,0)==ERROR_INVALID_HANDLE);
 	TEST_ASSERT(syscall_acl_get_permissions(0xaabbccdd,0)==ERROR_INVALID_HANDLE);
-	handle_type_t handle_type=handle_alloc("test-handle",NULL);
+	handle_type_t handle_type=handle_alloc("test-acl-handle",NULL);
 	handle_t handle;
 	handle_new(&handle,handle_type,&handle);
 	handle_finish_setup(&handle);
