@@ -35,7 +35,7 @@ static void _thread(void){
 	// fd_from_node: write dir
 	// fd_from_node: no write permissions
 	// fd_from_node: appends moves offset to EOF
-	// fd_from_node: delete on exit
+	// fd_from_node: delete on exit => UNIMPLEMENTED
 	// ==> fd_get_node
 	// fd_get_node: invalid handle
 	// fd_get_node: correct handle
