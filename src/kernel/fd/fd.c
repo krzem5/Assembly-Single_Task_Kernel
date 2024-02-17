@@ -432,5 +432,16 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 
 
 error_t syscall_fd_iter_stop(handle_id_t iterator){
-	panic("syscall_fd_iter_stop");
+	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
+	if (!fd_iterator_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_iterator_t* data=fd_iterator_handle->object;
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
+		handle_release(fd_iterator_handle);
+		return ERROR_DENIED;
+	}
+	handle_release(fd_iterator_handle);
+	handle_release(fd_iterator_handle);
+	return ERROR_OK;
 }

@@ -135,3 +135,5 @@ def generate_test_resource_files():
 	os.chmod("build/share/test/fd/no_write_access_file",0o444)
 	with open("build/share/test/fd/length_6_file","wb") as wf:
 		wf.write(b"abcdef")
+	if (not os.path.exists("build/share/test/fd/empty_directory")):
+		os.mkdir("build/share/test/fd/empty_directory")

@@ -48,6 +48,7 @@ static void _thread(void){
 	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,2*PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	vfs_node_t* root=vfs_lookup(NULL,"/",0,0,0);
+	vfs_node_t* test_node=vfs_lookup(NULL,"/dev",0,0,0);
 	TEST_FUNC("fd_from_node");
 	TEST_GROUP("no flags");
 	error_t fd=fd_from_node(root,0);
@@ -226,7 +227,7 @@ static void _thread(void){
 	// syscall_fd_resize: correct args => correct offset
 	// syscall_fd_resize: shrink to zero => adjust offset correctly
 	TEST_FUNC("syscall_fd_stat");
-	TEST_GROUP("invalid buffer_length");
+	TEST_GROUP("invalid buffer length");
 	TEST_ASSERT(syscall_fd_stat(0,NULL,sizeof(fd_stat_t)-1)==ERROR_INVALID_ARGUMENT(2));
 	TEST_GROUP("invalid buffer");
 	TEST_ASSERT(syscall_fd_stat(0,NULL,sizeof(fd_stat_t))==ERROR_INVALID_ARGUMENT(1));
@@ -239,7 +240,6 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_stat(fd,buffer,2*PAGE_SIZE)==ERROR_DENIED);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_GROUP("correct args");
-	vfs_node_t* test_node=vfs_lookup(NULL,"/dev",0,0,0);
 	fd=fd_from_node(test_node,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_stat(fd,buffer,2*PAGE_SIZE)==ERROR_OK);
@@ -261,18 +261,55 @@ static void _thread(void){
 	TEST_FUNC("syscall_fd_dup");
 	// syscall_fd_dup: UNIMPLEMENTED
 	TEST_FUNC("syscall_fd_path");
-	// syscall_fd_path: invalid buffer => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_path: invalid buffer_length => ERROR_NO_SPACE
-	// syscall_fd_path: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_path: no FD_ACL_FLAG_STAT => ERROR_DENIED
-	// syscall_fd_path: no space => ERROR_NO_SPACE
-	// syscall_fd_path: correct args => !IS_ERROR(...) => correct data returned
+	TEST_GROUP("invalid buffer");
+	TEST_ASSERT(syscall_fd_path(0,NULL,1)==ERROR_INVALID_ARGUMENT(1));
+	TEST_GROUP("invalid buffer length");
+	TEST_ASSERT(syscall_fd_path(0,buffer,1)==ERROR_NO_SPACE);
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_path(0xaabbccdd,buffer,2*PAGE_SIZE)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_STAT");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_STAT,0);
+	TEST_ASSERT(syscall_fd_path(fd,buffer,2*PAGE_SIZE)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("no space");
+	fd=fd_from_node(test_node,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_path(fd,buffer,3)==ERROR_NO_SPACE);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("correct args");
+	fd=fd_from_node(test_node,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_path(fd,buffer,2*PAGE_SIZE)==4);
+	TEST_ASSERT(streq(buffer,"/dev"));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_start");
-	// syscall_fd_iter_start: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_iter_start: no FD_ACL_FLAG_STAT => ERROR_DENIED
-	// syscall_fd_iter_start: no read permission => ERROR_DENIED
-	// syscall_fd_iter_start: correct args, no children => ERROR_NO_DATA
-	// syscall_fd_iter_start: correct args, children => handle
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_iter_start(0xaabbccdd)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_STAT");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_STAT,0);
+	TEST_ASSERT(syscall_fd_iter_start(fd)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("no read permissions");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/no_read_access_file",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_iter_start(fd)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("no children");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/empty_directory",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_iter_start(fd)==ERROR_NO_DATA);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("correct args");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	error_t fd_iter=syscall_fd_iter_start(fd);
+	TEST_ASSERT(!IS_ERROR(fd_iter));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_get");
 	// syscall_fd_iter_get: invalid buffer => ERROR_INVALID_ARGUMENT(1)
 	// syscall_fd_iter_get: invalid handle => ERROR_INVALID_HANDLE
