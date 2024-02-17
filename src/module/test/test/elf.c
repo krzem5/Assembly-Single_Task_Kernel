@@ -31,6 +31,7 @@ void test_elf(void){
 	vfs_node_dettach_external_child(no_permission_node);
 	vfs_node_delete(no_permission_node);
 	// ################################ Negative tests ################################
+	// multiple interpreters
 	// invalid interpreter path ==> ERROR_NOT_FOUND
 	// invalid interpreter path permissions ==> ERROR_NOT_FOUND
 	// invalid interpreter header: e_ident.signature ==> ERROR_INVALID_FORMAT
