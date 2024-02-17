@@ -182,7 +182,6 @@ static void _thread(void){
 	// syscall_fd_write: correct args => !IS_ERROR(...) => UNIMPLEMENTED
 	// syscall_fd_write: nonblocking => !IS_ERROR(...) => correct flag passed to FS
 	TEST_FUNC("syscall_fd_seek");
-	// (handle_id_t fd,u64 offset,u32 type)
 	TEST_GROUP("invalid handle");
 	TEST_ASSERT(syscall_fd_seek(0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("no FD_ACL_FLAG_IO");
@@ -196,9 +195,25 @@ static void _thread(void){
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_seek(fd,0,0xaabbccdd)==ERROR_INVALID_ARGUMENT(2));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
-	// syscall_fd_seek: FD_SEEK_SET => correct offset
-	// syscall_fd_seek: FD_SEEK_ADD => correct offset
-	// syscall_fd_seek: FD_SEEK_END => correct offset
+	TEST_GROUP("correct args, FD_SEEK_SET");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_seek(fd,3,FD_SEEK_SET)==3);
+	TEST_ASSERT(syscall_fd_seek(fd,2,FD_SEEK_SET)==2);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("correct args, FD_SEEK_ADD");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_seek(fd,2,FD_SEEK_ADD)==2);
+	TEST_ASSERT(syscall_fd_seek(fd,(s64)(-1),FD_SEEK_ADD)==1);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("correct args, FD_SEEK_END");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_seek(fd,0,FD_SEEK_END)==6);
+	TEST_ASSERT(syscall_fd_seek(fd,2,FD_SEEK_SET)==2);
+	TEST_ASSERT(syscall_fd_seek(fd,1,FD_SEEK_END)==5);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_resize");
 	// syscall_fd_resize: invalid handle => ERROR_INVALID_HANDLE
 	// syscall_fd_resize: no FD_ACL_FLAG_IO => ERROR_DENIED

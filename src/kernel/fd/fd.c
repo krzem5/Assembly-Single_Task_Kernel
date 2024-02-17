@@ -203,7 +203,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 
 
 
-error_t syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
+error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -222,7 +222,7 @@ error_t syscall_fd_seek(handle_id_t fd,u64 offset,u32 type){
 			data->offset+=offset;
 			break;
 		case FD_SEEK_END:
-			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE);
+			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE)-offset;
 			break;
 		default:
 			spinlock_release_exclusive(&(data->lock));
