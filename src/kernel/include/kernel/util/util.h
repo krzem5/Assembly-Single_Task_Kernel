@@ -28,6 +28,13 @@
 		} \
 		__nocoverage_counter_spinloop(); \
 	} while(0)
+#define panic(error) \
+	do{ \
+		KERNEL_INLINE void KERNEL_NORETURN KERNEL_NOCOVERAGE __nocoverage_panic(void){ \
+			(panic)(error); \
+		} \
+		__nocoverage_panic(); \
+	} while(0)
 #else
 #define SPINLOOP(cond) \
 	while (cond){ \
@@ -98,7 +105,7 @@ void memcpy_bswap16_trunc_spaces(const u16* src,u64 length,char* dst);
 
 
 
-void KERNEL_NORETURN panic(const char* error);
+void KERNEL_NORETURN (panic)(const char* error);
 
 
 
