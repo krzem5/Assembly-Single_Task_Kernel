@@ -29,6 +29,7 @@ jobs:
           cargo build --release
           mkdir -p /usr/libexec
           sudo cp target/release/virtiofsd /usr/libexec
+          sudo chmod u+s /usr/libexec/virtiofsd
           popd
       - name: Build & Test
         run: |
