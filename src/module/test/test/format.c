@@ -50,4 +50,5 @@ void test_format(void){
 	u8 test_mac_address[6]={0x11,0x22,0x33,0xaa,0xbb,0xcc};
 	_test_format("00:00:00:00:00:00,11:22:33:aa:bb:cc","%M,%M",null_mac_address,test_mac_address);
 	_test_format("0.0.0.0,11.22.33.255","%I,%I",0x00000000,0x0b1621ff);
+	_test_format("%%%q%!","%%%q%!");
 }

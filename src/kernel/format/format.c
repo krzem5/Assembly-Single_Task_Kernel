@@ -251,6 +251,7 @@ KERNEL_PUBLIC u32 format_string_va(char* buffer,u32 length,const char* template,
 			}
 		}
 		else{
+			_buffer_state_add(&out,'%');
 			_buffer_state_add(&out,*template);
 		}
 		template++;
