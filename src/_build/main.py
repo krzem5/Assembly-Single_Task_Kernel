@@ -544,13 +544,33 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			file_list.add(file_name)
 			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
+			present_data={}
+			if (os.path.exists(file_name)):
+				with open(file_name,"rb") as out_rf:
+					out_rf.read(16)
+					while (True):
+						buffer=out_rf.read(28)
+						if (not buffer):
+							break
+						_,_,id_,lineno_checksum,cfg_checksum,_,counter_byte_count=struct.unpack("IIIIIII",buffer)
+						present_data[(id_,lineno_checksum,cfg_checksum)]=out_rf.read(counter_byte_count)
 			with open(file_name,"wb") as wf:
 				wf.write(b"adcg")
 				wf.write(struct.pack("III",version,stamp,checksum))
 				for i in range(0,struct.unpack("I",rf.read(4))[0]):
 					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
-					wf.write(rf.read(counter_count<<3))
+					counters=rf.read(counter_count<<3)
+					present_counters=present_data.get((id_,lineno_checksum,cfg_checksum),None)
+					if (present_counters is not None):
+						dst=array.array("Q")
+						dst.frombytes(counters)
+						src=array.array("Q")
+						src.frombytes(present_counters)
+						for i in range(0,counter_count):
+							dst[i]+=src[i]
+						counters=dst.tobytes()
+					wf.write(counters)
 	with open(output_file_path,"w") as wf:
 		wf.write("TN:\n")
 		function_stats=None

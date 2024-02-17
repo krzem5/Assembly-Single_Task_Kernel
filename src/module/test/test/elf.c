@@ -72,7 +72,6 @@ static syscall_callback_t const _test_elf_syscall_functions[]={
 
 
 
-
 static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,const char*const* environ){
 	const char* path="/bin/test_elf_send_results";
 	error_t ret=elf_load(path,argc,argv,environ_length,environ,0);
@@ -85,14 +84,13 @@ static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,c
 	_test_elf_expected_environ_length=environ_length;
 	_test_elf_expected_environ=environ;
 	TEST_ASSERT(!IS_ERROR(ret));
-	if (IS_ERROR(ret)){
-		return;
+	if (!IS_ERROR(ret)){
+		handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
+		process_t* process=handle->object;
+		event_t* delete_event=process->event;
+		handle_release(handle);
+		event_await(delete_event,0);
 	}
-	handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
-	process_t* process=handle->object;
-	event_t* delete_event=process->event;
-	handle_release(handle);
-	event_await(delete_event,0);
 }
 
 
