@@ -38,6 +38,9 @@ static void _fd_handle_destructor(handle_t* handle){
 
 static void _fd_iterator_handle_destructor(handle_t* handle){
 	fd_iterator_t* data=handle->object;
+	if (data->current_name){
+		smm_dealloc(data->current_name);
+	}
 	omm_dealloc(_fd_iterator_allocator,data);
 }
 
