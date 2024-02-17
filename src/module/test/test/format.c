@@ -3,7 +3,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <test/test.h>
-#define KERNEL_LOG_NAME "test_format"
+#define KERNEL_LOG_NAME "test"
 
 
 
@@ -32,8 +32,7 @@ static void _test_format(const char* expected,const char* template,...){
 
 
 void test_format(void){
-	LOG("Executing format tests...");
-	INFO("format_string_va");
+	TEST_FUNC("format_string_va");
 	_test_format_empty("");
 	_test_format("","");
 	_test_format("","%");

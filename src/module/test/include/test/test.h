@@ -14,6 +14,7 @@
 			test_pass_count++; \
 		} \
 	} while (0)
+#define TEST_FUNC(name) WARN("Testing '%s'...",name)
 
 
 

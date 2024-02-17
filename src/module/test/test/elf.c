@@ -13,7 +13,7 @@
 #include <kernel/vfs/vfs.h>
 #include <test/elf.h>
 #include <test/test.h>
-#define KERNEL_LOG_NAME "test_elf"
+#define KERNEL_LOG_NAME "test"
 
 
 
@@ -96,8 +96,7 @@ static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,c
 
 
 void test_elf(void){
-	LOG("Executing ELF tests...");
-	INFO("elf_load");
+	TEST_FUNC("elf_load");
 	SMM_TEMPORARY_STRING temp_name=smm_alloc("no-permission-node",0);
 	vfs_node_t* no_permission_node=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,temp_name);
 	TEST_ASSERT(elf_load("/invalid/path",0,NULL,0,NULL,0)==ERROR_NOT_FOUND);
