@@ -215,16 +215,49 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_seek(fd,1,FD_SEEK_END)==5);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_resize");
-	// syscall_fd_resize: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_resize: no FD_ACL_FLAG_IO => ERROR_DENIED
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_resize(0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_IO");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_IO,0);
+	TEST_ASSERT(syscall_fd_resize(fd,0,0)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// syscall_fd_resize: correct args => correct offset
 	// syscall_fd_resize: shrink to zero => adjust offset correctly
 	TEST_FUNC("syscall_fd_stat");
-	// syscall_fd_stat: invalid buffer_length => ERROR_INVALID_ARGUMENT(2)
-	// syscall_fd_stat: invalid buffer => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_stat: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_stat: no FD_ACL_FLAG_STAT => ERROR_DENIED
-	// syscall_fd_stat: correct args => !IS_ERROR(...) => correct data returned
+	TEST_GROUP("invalid buffer_length");
+	TEST_ASSERT(syscall_fd_stat(0,NULL,sizeof(fd_stat_t)-1)==ERROR_INVALID_ARGUMENT(2));
+	TEST_GROUP("invalid buffer");
+	TEST_ASSERT(syscall_fd_stat(0,NULL,sizeof(fd_stat_t))==ERROR_INVALID_ARGUMENT(1));
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_stat(0xaabbccdd,buffer,2*PAGE_SIZE)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_STAT");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_STAT,0);
+	TEST_ASSERT(syscall_fd_stat(fd,buffer,2*PAGE_SIZE)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("correct args");
+	vfs_node_t* test_node=vfs_lookup(NULL,"/dev",0,0,0);
+	fd=fd_from_node(test_node,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_stat(fd,buffer,2*PAGE_SIZE)==ERROR_OK);
+	const fd_stat_t* stat=(const void*)buffer;
+	TEST_ASSERT(stat->type==VFS_NODE_TYPE_DIRECTORY);
+	TEST_ASSERT(stat->flags==FD_STAT_FLAG_VIRTUAL);
+	TEST_ASSERT(stat->permissions==((test_node->flags&VFS_NODE_PERMISSION_MASK)>>VFS_NODE_PERMISSION_SHIFT));
+	TEST_ASSERT(stat->name_length==test_node->name->length);
+	TEST_ASSERT(stat->fs_handle==test_node->fs->handle.rb_node.key);
+	TEST_ASSERT(!stat->size);
+	TEST_ASSERT(stat->time_access==test_node->time_access);
+	TEST_ASSERT(stat->time_modify==test_node->time_modify);
+	TEST_ASSERT(stat->time_change==test_node->time_change);
+	TEST_ASSERT(stat->time_birth==test_node->time_birth);
+	TEST_ASSERT(stat->gid==test_node->gid);
+	TEST_ASSERT(stat->uid==test_node->uid);
+	TEST_ASSERT(streq(stat->name,test_node->name->data));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_dup");
 	// syscall_fd_dup: UNIMPLEMENTED
 	TEST_FUNC("syscall_fd_path");
