@@ -1,11 +1,14 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/mmap.h>
+#include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/vfs/vfs.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
 
@@ -28,13 +31,35 @@ extern error_t syscall_fd_iter_stop();
 
 
 static void _thread(void){
+	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
 	TEST_FUNC("fd_from_node");
-	// fd_from_node: no flags
-	// fd_from_node: read dir
-	// fd_from_node: no read permissions
-	// fd_from_node: write dir
-	// fd_from_node: no write permissions
-	// fd_from_node: appends moves offset to EOF
+	error_t fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),FD_FLAG_READ);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/no_read_access_file",0,0,0),FD_FLAG_READ);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),FD_FLAG_WRITE);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_write(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/no_write_access_file",0,0,0),FD_FLAG_WRITE);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_write(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),FD_FLAG_READ);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(!syscall_fd_seek(fd,0,FD_SEEK_ADD));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),FD_FLAG_READ|FD_FLAG_APPEND);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_seek(fd,0,FD_SEEK_ADD)==6);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// fd_from_node: delete on exit => UNIMPLEMENTED
 	TEST_FUNC("fd_get_node");
 	// fd_get_node: invalid handle
@@ -115,7 +140,8 @@ static void _thread(void){
 	// syscall_fd_iter_next: correct args, no next child => ERROR_NO_DATA
 	// syscall_fd_iter_next: correct args, next child => same handle
 	TEST_FUNC("syscall_fd_iter_stop");
-	// syscall_fd_iter_stop: UNIMPLEMENTED
+	// syscall_fd_iter_stop: UNIMPLEMENTE
+	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
 }
 
 

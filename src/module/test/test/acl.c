@@ -114,7 +114,6 @@ void test_acl(void){
 	TEST_FUNC("acl_get");
 	acl=acl_create();
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
-	TEST_FUNC("acl_set");
 	acl_set(acl,process_kernel,0,ACL_PERMISSION_MASK);
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
 	acl_set(acl,process_kernel,ACL_PERMISSION_MASK,0);
@@ -128,6 +127,7 @@ void test_acl(void){
 	}
 	process_t* second_test_process=process_create("second-test-process","second-test-process");
 	TEST_ASSERT(!acl_get(acl,test_process));
+	TEST_FUNC("acl_set");
 	acl_set(acl,test_process,0,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
 	acl_set(acl,test_process,ACL_PERMISSION_MASK,0);
