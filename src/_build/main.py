@@ -8,6 +8,7 @@ import os
 import struct
 import subprocess
 import sys
+import test
 import time
 
 
@@ -64,6 +65,7 @@ BUILD_DIRECTORIES=[
 	"build/share",
 	"build/share/bin",
 	"build/share/lib",
+	"build/share/test",
 	"build/uefi",
 	"build/user",
 	"build/vm",
@@ -74,7 +76,7 @@ CLEAR_BUILD_DIRECTORIES=[
 	"build/module",
 	"build/share/bin",
 	"build/share/lib",
-	"build/user",
+	"build/user"
 ]
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
@@ -593,6 +595,9 @@ def _kvm_flags():
 
 
 
+if (mode==MODE_COVERAGE):
+	NO_FILE_SERVER=False
+	NO_DISPLAY=True
 for dir_ in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir_)):
 		os.mkdir(dir_)
@@ -600,6 +605,8 @@ for dir_ in CLEAR_BUILD_DIRECTORIES:
 	for file in os.listdir(dir_):
 		os.remove(os.path.join(dir_,file))
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
+if (mode==MODE_COVERAGE):
+	test.generate_test_resource_files()
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 object_files=[]
@@ -835,7 +842,7 @@ if ("--run" in sys.argv):
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") or mode==MODE_COVERAGE else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
 		# Shared folder
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER and not os.getenv("GITHUB_ACTIONS","") else []),
 		# Serial
