@@ -159,7 +159,7 @@ void test_acl(void){
 	handle_release(&(second_test_process->handle));
 }
 #else
-void coverage_test_acl(void){
+void test_acl(void){
 	return;
 }
 #endif
