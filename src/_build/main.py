@@ -179,6 +179,7 @@ INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 INITRAMFS_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
+COVERAGE_FILE_FAILURE_MARKER=0xb9beb6b34c494146
 KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
@@ -517,7 +518,11 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			buffer=rf.read(8)
 			if (len(buffer)<8):
 				break
-			if (struct.unpack("<Q",buffer)[0]!=COVERAGE_FILE_REPORT_MARKER):
+			marker=struct.unpack("<Q",buffer)[0]
+			if (marker==COVERAGE_FILE_FAILURE_MARKER):
+				print("Tests failed")
+				sys.exit(1)
+			if (marker!=COVERAGE_FILE_REPORT_MARKER):
 				rf.seek(rf.tell()-7)
 				continue
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))

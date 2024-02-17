@@ -1,4 +1,5 @@
 #if KERNEL_COVERAGE_ENABLED
+#include <coverage/test/test.h>
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
@@ -9,15 +10,6 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "test_acl"
-
-
-
-#define TEST_ASSERT(x) \
-	do{ \
-		if (!(x)){ \
-			ERROR("%u: %s: Test failed",__LINE__,#x); \
-		} \
-	} while (0)
 
 
 

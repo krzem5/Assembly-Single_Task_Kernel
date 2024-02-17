@@ -16,6 +16,7 @@
 #define COVERAGE_SERIAL_PORT (serial_ports+1)
 
 #define COVERAGE_FILE_REPORT_MARKER 0xb8bcbbbe41444347
+#define COVERAGE_FILE_FAILURE_MARKER 0xb9beb6b34c494146
 
 
 
@@ -49,6 +50,7 @@ typedef struct _GCOV_INFO{
 
 
 static spinlock_t _coverage_lock;
+static _Bool _coverage_failed=0;
 
 
 
@@ -94,6 +96,9 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 
 
 static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
+	if (_coverage_failed){
+		return;
+	}
 	LOG("Exporting kernel coverage data...");
 	u64 size;
 	u64 base=kernel_gcov_info_data(&size);
@@ -142,6 +147,18 @@ _Bool KERNEL_NOCOVERAGE coverage_init(void){
 
 
 
+void KERNEL_NOCOVERAGE coverage_mark_failure(void){
+	ERROR("Marking coverage as failed");
+	spinlock_acquire_exclusive(&_coverage_lock);
+	_coverage_failed=1;
+	u64 marker=COVERAGE_FILE_FAILURE_MARKER;
+	serial_send(COVERAGE_SERIAL_PORT,&marker,sizeof(u64));
+	spinlock_release_exclusive(&_coverage_lock);
+	shutdown(0);
+}
+
+
+
 #else
 #include <kernel/log/log.h>
 #include <kernel/types.h>
@@ -153,4 +170,13 @@ _Bool KERNEL_NOCOVERAGE coverage_init(void){
 	ERROR("Kernel built without coverage support");
 	return 0;
 }
+
+
+
+void KERNEL_NOCOVERAGE coverage_mark_failure(void){
+	return;
+}
+
+
+
 #endif
