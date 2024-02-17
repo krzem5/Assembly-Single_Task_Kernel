@@ -844,7 +844,7 @@ if ("--run" in sys.argv):
 		# Graphics
 		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
 		# Shared folder
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER and not os.getenv("GITHUB_ACTIONS","") else []),
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
