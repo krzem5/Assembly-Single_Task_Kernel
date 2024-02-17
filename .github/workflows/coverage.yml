@@ -22,15 +22,15 @@ jobs:
       - name: Setup environment
         run: |
           sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools libcap-ng-dev libseccomp-dev
-          pushd .
-          cd /tmp
+          mkdir -p build/tmp
+          cd build/tmp
           git clone https://gitlab.com/virtio-fs/virtiofsd.git
           cd virtiofsd
           cargo build --release
           mkdir -p /usr/libexec
-          sudo cp target/release/virtiofsd /usr/libexec
-          sudo chmod u+s /usr/libexec/virtiofsd
-          popd
+          sudo chmod u+s target/release/virtiofsd
+          stat target/release/virtiofsd
+          cd ../..
       - name: Build & Test
         run: |
           echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf

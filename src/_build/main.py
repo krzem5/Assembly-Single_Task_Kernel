@@ -775,7 +775,7 @@ if (rebuild_data_partition):
 #####################################################################################################################################
 if ("--run" in sys.argv):
 	if (not NO_FILE_SERVER):
-		subprocess.Popen(["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}","--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
+		subprocess.Popen([("/usr/libexec/virtiofsd" if not os.getenv("GITHUB_ACTIONS","") else "build/tmp/virtiofsd/target/release/virtiofsd"),f"--socket-group={os.getlogin()}","--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
