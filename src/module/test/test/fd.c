@@ -106,25 +106,35 @@ static void _thread(void){
 	// syscall_fd_open: parent, found => !IS_ERROR(...)
 	TEST_FUNC("syscall_fd_close");
 	TEST_ASSERT(syscall_fd_close(0xaabbccdd)==ERROR_INVALID_HANDLE);
-	// syscall_fd_close: no FD_ACL_FLAG_CLOSE => ERROR_DENIED
 	fd=fd_from_node(root,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	_set_acl_flags(fd,FD_ACL_FLAG_CLOSE,0);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_DENIED);
 	_set_acl_flags(fd,0,FD_ACL_FLAG_CLOSE);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
-	//
 	fd=fd_from_node(root,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_ASSERT(!fd_get_node(fd));
 	TEST_FUNC("syscall_fd_read");
-	// syscall_fd_read: invalid buffer pointer => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_read: invalid flags => ERROR_INVALID_ARGUMENT(3)
-	// syscall_fd_read: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_read: no FD_ACL_FLAG_IO => ERROR_DENIED
-	// syscall_fd_read: no FD_FLAG_READ => ERROR_UNSUPPORTED_OPERATION
-	// syscall_fd_read: correct args => !IS_ERROR(...) => read data is correct => advance offset
+	TEST_ASSERT(syscall_fd_read(0,NULL,1,0)==ERROR_INVALID_ARGUMENT(1));
+	TEST_ASSERT(syscall_fd_read(0,buffer,0,0xffffffffffffffff)==ERROR_INVALID_ARGUMENT(3));
+	TEST_ASSERT(syscall_fd_read(0xaabbccdd,buffer,0,0)==ERROR_INVALID_HANDLE);
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_IO,0);
+	TEST_ASSERT(syscall_fd_read(fd,buffer,0,0)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_read(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),FD_FLAG_READ);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_read(fd,buffer,PAGE_SIZE,0)==6);
+	TEST_ASSERT(buffer[0]=='a'&&buffer[1]=='b'&&buffer[2]=='c'&&buffer[3]=='d'&&buffer[4]=='e'&&buffer[5]=='f');
+	TEST_ASSERT(syscall_fd_seek(fd,0,FD_SEEK_ADD)==6);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// syscall_fd_read: nonblocking => !IS_ERROR(...) => correct flag passed to FS
 	// syscall_fd_read: peek => !IS_ERROR(...) => next read is same value => next read is different value
 	TEST_FUNC("syscall_fd_write");
