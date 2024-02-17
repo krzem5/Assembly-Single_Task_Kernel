@@ -15,6 +15,7 @@ extern error_t syscall_cpu_get_count();
 
 
 static void _thread(void){
+	INFO("syscall_cpu_get_count");
 	TEST_ASSERT(syscall_cpu_get_count()==cpu_count);
 }
 

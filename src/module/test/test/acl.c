@@ -35,6 +35,7 @@ static error_t _permission_request_callback(handle_t* handle,process_t* process,
 
 
 static void _thread(process_t* second_test_process){
+	INFO("syscall_acl_get_permissions");
 	TEST_ASSERT(syscall_acl_get_permissions(0,0)==ERROR_INVALID_HANDLE);
 	TEST_ASSERT(syscall_acl_get_permissions(0xaabbccdd,0)==ERROR_INVALID_HANDLE);
 	handle_type_t handle_type=handle_alloc("test-acl-handle",NULL);
@@ -52,6 +53,7 @@ static void _thread(process_t* second_test_process){
 	acl_set(handle.acl,second_test_process,0,0x44556677);
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==0xabcd);
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x44556677);
+	INFO("syscall_acl_set_permissions");
 	acl_delete(handle.acl);
 	handle.acl=NULL;
 	TEST_ASSERT(syscall_acl_set_permissions(0,0,0xffffffffffffffff,0)==ERROR_INVALID_ARGUMENT(2));
@@ -69,6 +71,7 @@ static void _thread(process_t* second_test_process){
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
 	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x9f20,0x000f)==ERROR_OK);
 	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x0013);
+	INFO("syscall_acl_request_permissions");
 	acl_delete(handle.acl);
 	handle.acl=NULL;
 	TEST_ASSERT(syscall_acl_request_permissions(0,0,0xffffffffffffffff)==ERROR_INVALID_ARGUMENT(2));
@@ -104,9 +107,11 @@ static void _thread(process_t* second_test_process){
 
 void test_acl(void){
 	LOG("Executing ACL tests...");
+	INFO("acl_create + acl_delete");
 	acl_t* acl=acl_create();
 	TEST_ASSERT(acl);
 	acl_delete(acl);
+	INFO("acl_get + acl_set");
 	acl=acl_create();
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
 	acl_set(acl,process_kernel,0,ACL_PERMISSION_MASK);
@@ -149,6 +154,7 @@ void test_acl(void){
 		// handle_release(&(test_process_buffer[i]->handle));
 	}
 	acl_delete(acl);
+	INFO("acl_register_request_callback");
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
 	TEST_ASSERT(acl_register_request_callback(_permission_request_callback)==1);
 	TEST_ASSERT(!acl_register_request_callback(_permission_request_callback));

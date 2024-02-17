@@ -56,6 +56,7 @@ static const drive_type_t _test_drive_type_readonly={
 
 void test_drive(void){
 	LOG("Executing drive tests...");
+	INFO("drive_create");
 	drive_config_t config={
 		&_test_drive_type,
 		1,
@@ -78,6 +79,7 @@ void test_drive(void){
 	TEST_ASSERT(drive->block_size==config.block_size);
 	TEST_ASSERT(drive->extra_data==config.extra_data);
 	TEST_ASSERT(!drive->partition_table_descriptor);
+	INFO("drive_read");
 	TEST_ASSERT(!drive_read(drive,0,NULL,0));
 	u8 buffer[512];
 	u8 buffer2[512];
@@ -93,6 +95,7 @@ void test_drive(void){
 	for (u32 i=0;i<512;i++){
 		TEST_ASSERT(buffer[i]==buffer2[i]);
 	}
+	INFO("drive_write");
 	TEST_ASSERT(!drive_write(drive,0,NULL,0));
 	memset(buffer,0,sizeof(buffer));
 	random_generate(buffer2,sizeof(buffer2));

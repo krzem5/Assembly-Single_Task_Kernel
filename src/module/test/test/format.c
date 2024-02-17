@@ -33,6 +33,7 @@ static void _test_format(const char* expected,const char* template,...){
 
 void test_format(void){
 	LOG("Executing format tests...");
+	INFO("format_string_va");
 	_test_format_empty("");
 	_test_format("","");
 	_test_format("","%");
