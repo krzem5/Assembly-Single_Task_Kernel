@@ -20,10 +20,11 @@ KERNEL_PUBLIC handle_type_t drive_handle_type=0;
 
 static void _drive_handle_destructor(handle_t* handle){
 	drive_t* drive=handle->object;
-	WARN("Delete drive: %s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
 	if (drive->partition_table_descriptor){
 		handle_release(&(drive->partition_table_descriptor->handle));
 	}
+	smm_dealloc(drive->serial_number);
+	smm_dealloc(drive->model_number);
 	omm_dealloc(_drive_allocator,drive);
 }
 
