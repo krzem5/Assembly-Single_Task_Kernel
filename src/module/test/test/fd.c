@@ -8,6 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
@@ -32,11 +33,12 @@ extern error_t syscall_fd_iter_stop();
 
 static void _thread(void){
 	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
+	vfs_node_t* root=vfs_lookup(NULL,"/",0,0,0);
 	TEST_FUNC("fd_from_node");
-	error_t fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),0);
+	error_t fd=fd_from_node(root,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
-	fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),FD_FLAG_READ);
+	fd=fd_from_node(root,FD_FLAG_READ);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
@@ -44,7 +46,7 @@ static void _thread(void){
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_read(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
-	fd=fd_from_node(vfs_lookup(NULL,"/",0,0,0),FD_FLAG_WRITE);
+	fd=fd_from_node(root,FD_FLAG_WRITE);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_write(fd,temp_mmap_region->rb_node.key,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
@@ -62,8 +64,11 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// fd_from_node: delete on exit => UNIMPLEMENTED
 	TEST_FUNC("fd_get_node");
-	// fd_get_node: invalid handle
-	// fd_get_node: correct handle
+	TEST_ASSERT(!fd_get_node(0xaabbccdd));
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(fd_get_node(fd)==root);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_open");
 	// syscall_fd_open: invalid flags => ERROR_INVALID_ARGUMENT(2)
 	// syscall_fd_open: empty path => ERROR_INVALID_ARGUMENT(1)
