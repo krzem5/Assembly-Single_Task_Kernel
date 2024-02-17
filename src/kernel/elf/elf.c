@@ -71,36 +71,7 @@ static vfs_node_t* _get_executable_file(const char* path){
 
 
 static error_t _check_elf_header(elf_loader_context_t* ctx){
-	if (ctx->elf_header->e_ident.signature!=0x464c457f){
-		ERROR("ELF header error: e_ident.signature != 0x464c457f");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_ident.word_size!=2){
-		ERROR("ELF header error: e_ident.word_size != 2");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_ident.endianess!=1){
-		ERROR("ELF header error: e_ident.endianess != 1");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_ident.header_version!=1){
-		ERROR("ELF header error: e_ident.header_version != 1");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_ident.abi!=0){
-		ERROR("ELF header error: e_ident.abi != 0");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_type!=ET_EXEC){
-		ERROR("ELF header error: e_type != ET_EXEC");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_machine!=0x3e){
-		ERROR("ELF header error: machine != 0x3e");
-		return ERROR_INVALID_FORMAT;
-	}
-	if (ctx->elf_header->e_version!=1){
-		ERROR("ELF header error: version != 1");
+	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_EXEC||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
 		return ERROR_INVALID_FORMAT;
 	}
 	return ERROR_OK;
