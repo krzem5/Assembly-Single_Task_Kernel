@@ -25,11 +25,11 @@ static void _load_modules_from_order_file(_Bool early){
 			continue;
 		}
 #if !KERNEL_COVERAGE_ENABLED
-		if (item->value&&streq(item->value->data,"coverage")){
+		if (item->value&&streq(item->value->data,"test")){
 			continue;
 		}
 #else
-		if (item->value&&streq(item->value->data,"not-coverage")){
+		if (item->value&&streq(item->value->data,"not-test")){
 			continue;
 		}
 #endif

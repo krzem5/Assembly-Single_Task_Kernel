@@ -520,7 +520,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				break
 			marker=struct.unpack("<Q",buffer)[0]
 			if (marker==COVERAGE_FILE_FAILURE_MARKER):
-				print("Tests failed")
 				sys.exit(1)
 			if (marker!=COVERAGE_FILE_REPORT_MARKER):
 				rf.seek(rf.tell()-7)

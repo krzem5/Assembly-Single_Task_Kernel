@@ -3,7 +3,6 @@ aml:
 aml_bus:aml
 aml_shutdown:aml
 ata:
-coverage:
 devfs:dynamicfs
 dynamicfs:
 fs_loader:
@@ -24,6 +23,7 @@ nvme:
 opengl:ui_common,ui_display
 procfs:dynamicfs
 sysfs:dynamicfs
+test:
 ui_common:
 ui_display:ui_common
 ui_launcher:ui_common

@@ -1,5 +1,4 @@
 #if KERNEL_COVERAGE_ENABLED
-#include <coverage/test/test.h>
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
@@ -9,6 +8,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <test/test.h>
 #define KERNEL_LOG_NAME "test_acl"
 
 
@@ -103,7 +103,7 @@ static void _thread(process_t* second_test_process){
 
 
 
-void coverage_test_acl(void){
+void test_acl(void){
 	LOG("Executing ACL tests...");
 	acl_t* acl=acl_create();
 	TEST_ASSERT(acl);
