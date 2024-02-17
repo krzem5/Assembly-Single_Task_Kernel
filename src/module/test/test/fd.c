@@ -162,17 +162,40 @@ static void _thread(void){
 	// syscall_fd_read: nonblocking => !IS_ERROR(...) => correct flag passed to FS
 	// syscall_fd_read: peek => !IS_ERROR(...) => next read is same value => next read is different value
 	TEST_FUNC("syscall_fd_write");
-	// syscall_fd_write: invalid buffer pointer => ERROR_INVALID_ARGUMENT(1)
-	// syscall_fd_write: invalid flags => ERROR_INVALID_ARGUMENT(3)
-	// syscall_fd_write: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_write: no FD_ACL_FLAG_IO => ERROR_DENIED
-	// syscall_fd_write: no FD_FLAG_WRITE => ERROR_UNSUPPORTED_OPERATION
-	// syscall_fd_write: correct args => !IS_ERROR(...) => written data is correct => advance offset
+	TEST_GROUP("invalid buffer pointer");
+	TEST_ASSERT(syscall_fd_write(0,NULL,1,0)==ERROR_INVALID_ARGUMENT(1));
+	TEST_GROUP("invalid flags");
+	TEST_ASSERT(syscall_fd_write(0,buffer,0,0xffffffffffffffff)==ERROR_INVALID_ARGUMENT(3));
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_write(0xaabbccdd,buffer,0,0)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_IO");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_IO,0);
+	TEST_ASSERT(syscall_fd_write(fd,buffer,0,0)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("no FD_FLAG_WRITE");
+	fd=fd_from_node(vfs_lookup(NULL,"/share/test/fd/length_6_file",0,0,0),0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_write(fd,buffer,PAGE_SIZE,0)==ERROR_UNSUPPORTED_OPERATION);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	// syscall_fd_write: correct args => !IS_ERROR(...) => UNIMPLEMENTED
 	// syscall_fd_write: nonblocking => !IS_ERROR(...) => correct flag passed to FS
 	TEST_FUNC("syscall_fd_seek");
-	// syscall_fd_seek: invalid handle => ERROR_INVALID_HANDLE
-	// syscall_fd_seek: no FD_ACL_FLAG_IO => ERROR_DENIED
-	// syscall_fd_seek: invalid type => ERROR_INVALID_ARGUMENT(2)
+	// (handle_id_t fd,u64 offset,u32 type)
+	TEST_GROUP("invalid handle");
+	TEST_ASSERT(syscall_fd_seek(0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
+	TEST_GROUP("no FD_ACL_FLAG_IO");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_IO,0);
+	TEST_ASSERT(syscall_fd_seek(fd,0,0)==ERROR_DENIED);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_GROUP("invalid type");
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_seek(fd,0,0xaabbccdd)==ERROR_INVALID_ARGUMENT(2));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// syscall_fd_seek: FD_SEEK_SET => correct offset
 	// syscall_fd_seek: FD_SEEK_ADD => correct offset
 	// syscall_fd_seek: FD_SEEK_END => correct offset
