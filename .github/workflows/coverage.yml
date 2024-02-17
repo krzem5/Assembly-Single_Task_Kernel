@@ -27,9 +27,6 @@ jobs:
           git clone https://gitlab.com/virtio-fs/virtiofsd.git
           cd virtiofsd
           cargo build --release
-          mkdir -p /usr/libexec
-          sudo chmod u+s target/release/virtiofsd
-          stat target/release/virtiofsd
           cd ../..
       - name: Build & Test
         run: |
