@@ -1,4 +1,3 @@
-#if KERNEL_COVERAGE_ENABLED
 #include <kernel/drive/drive.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -112,8 +111,3 @@ void test_drive(void){
 	_drive_io_callback_return_buffer=NULL;
 	handle_release(&(drive->handle));
 }
-#else
-void test_drive(void){
-	return;
-}
-#endif

@@ -1,4 +1,3 @@
-#if KERNEL_COVERAGE_ENABLED
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -156,27 +155,3 @@ void KERNEL_NOCOVERAGE coverage_mark_failure(void){
 	spinlock_release_exclusive(&_coverage_lock);
 	shutdown(0);
 }
-
-
-
-#else
-#include <kernel/log/log.h>
-#include <kernel/types.h>
-#define KERNEL_LOG_NAME "coverage"
-
-
-
-_Bool KERNEL_NOCOVERAGE coverage_init(void){
-	ERROR("Kernel built without coverage support");
-	return 0;
-}
-
-
-
-void KERNEL_NOCOVERAGE coverage_mark_failure(void){
-	return;
-}
-
-
-
-#endif

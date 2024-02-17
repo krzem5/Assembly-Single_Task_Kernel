@@ -1,4 +1,3 @@
-#if KERNEL_COVERAGE_ENABLED
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
@@ -158,8 +157,3 @@ void test_acl(void){
 	event_await(test_process->event,0);
 	handle_release(&(second_test_process->handle));
 }
-#else
-void test_acl(void){
-	return;
-}
-#endif

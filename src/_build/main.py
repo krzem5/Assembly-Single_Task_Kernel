@@ -69,6 +69,13 @@ BUILD_DIRECTORIES=[
 	"build/vm",
 	"src/kernel/_generated"
 ]
+CLEAR_BUILD_DIRECTORIES=[
+	"build/lib",
+	"build/module",
+	"build/share/bin",
+	"build/share/lib",
+	"build/user",
+]
 UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
@@ -369,6 +376,8 @@ def _compress(file_path):
 
 
 def _compile_module(module,dependencies):
+	if (mode!=MODE_COVERAGE and module.startswith("test")):
+		return
 	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include",*[MODULE_FILE_DIRECTORY+"/"+dep for dep in dependencies])
 	object_files=[]
@@ -400,6 +409,8 @@ def _compile_module(module,dependencies):
 
 
 def _compile_library(library,flags,dependencies):
+	if (mode!=MODE_COVERAGE and library.startswith("test")):
+		return
 	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
 		for file_name in files:
 			if (not os.path.exists(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")):
@@ -456,6 +467,8 @@ def _compile_library(library,flags,dependencies):
 
 
 def _compile_user_program(program,dependencies):
+	if (mode!=MODE_COVERAGE and program.startswith("test")):
+		return
 	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,*[LIBRARY_FILE_DIRECTORY+"/"+dep[0] for dep in dependencies])
 	object_files=[]
@@ -583,6 +596,9 @@ def _kvm_flags():
 for dir_ in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir_)):
 		os.mkdir(dir_)
+for dir_ in CLEAR_BUILD_DIRECTORIES:
+	for file in os.listdir(dir_):
+		os.remove(os.path.join(dir_,file))
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
 #####################################################################################################################################
 changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
