@@ -1,11 +1,30 @@
 #include <kernel/elf/elf.h>
+#include <kernel/error/error.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test_elf"
+
+
+
+static void _test_arguments(void){
+	error_t ret=elf_load("/bin/test_elf_send_results",0,NULL,0,NULL,0);
+	TEST_ASSERT(!IS_ERROR(ret));
+	if (IS_ERROR(ret)){
+		return;
+	}
+	handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
+	process_t* process=handle->object;
+	event_t* delete_event=process->event;
+	handle_release(handle);
+	event_await(delete_event,0);
+}
 
 
 
@@ -48,12 +67,11 @@ void test_elf(void){
 	vfs_node_dettach_external_child(no_permission_node);
 	vfs_node_delete(no_permission_node);
 	// ################################ Positive tests ################################
+	_test_arguments();
 	// argc
 	// argv[...]
 	// environ[...]
-	// auxv: phdr
 	// auxv: phent
-	// auxv: phnum
 	// auxv: pagesz
 	// auxv: base
 	// auxv: flags
