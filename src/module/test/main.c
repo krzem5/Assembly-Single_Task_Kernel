@@ -5,6 +5,7 @@
 #include <kernel/module/module.h>
 #include <kernel/util/util.h>
 #include <test/acl.h>
+#include <test/cpu.h>
 #include <test/drive.h>
 #include <test/elf.h>
 #include <test/format.h>
@@ -18,6 +19,7 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 		return 0;
 	}
 	test_acl();
+	test_cpu();
 	test_drive();
 	test_elf();
 	test_format();

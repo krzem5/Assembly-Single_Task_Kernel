@@ -26,7 +26,6 @@ static void _test_format(const char* expected,const char* template,...){
 	__builtin_va_start(va,template);
 	format_string_va(buffer,TEST_FORMAT_BUFFER_SIZE,template,&va);
 	__builtin_va_end(va);
-	WARN("%s | %s",expected,buffer);
 	TEST_ASSERT(streq(buffer,expected));
 }
 
