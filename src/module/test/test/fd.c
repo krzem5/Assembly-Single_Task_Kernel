@@ -1,5 +1,7 @@
+#include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
@@ -29,6 +31,16 @@ extern error_t syscall_fd_iter_start();
 extern error_t syscall_fd_iter_get();
 extern error_t syscall_fd_iter_next();
 extern error_t syscall_fd_iter_stop();
+
+
+
+static void _set_acl_flags(handle_id_t handle_id,u64 clear,u64 set){
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	if (handle&&handle->acl){
+		acl_set(handle->acl,THREAD_DATA->process,clear,set);
+	}
+	handle_release(handle);
+}
 
 
 
@@ -93,9 +105,19 @@ static void _thread(void){
 	// syscall_fd_open: parent, not found => ERROR_NOT_FOUND
 	// syscall_fd_open: parent, found => !IS_ERROR(...)
 	TEST_FUNC("syscall_fd_close");
-	// syscall_fd_close: invalid handle => ERROR_INVALID_HANDLE
+	TEST_ASSERT(syscall_fd_close(0xaabbccdd)==ERROR_INVALID_HANDLE);
 	// syscall_fd_close: no FD_ACL_FLAG_CLOSE => ERROR_DENIED
-	// syscall_fd_close: correct args => ERROR_OK => handle becomes invalid
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	_set_acl_flags(fd,FD_ACL_FLAG_CLOSE,0);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_DENIED);
+	_set_acl_flags(fd,0,FD_ACL_FLAG_CLOSE);
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	//
+	fd=fd_from_node(root,0);
+	TEST_ASSERT(!IS_ERROR(fd));
+	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
+	TEST_ASSERT(!fd_get_node(fd));
 	TEST_FUNC("syscall_fd_read");
 	// syscall_fd_read: invalid buffer pointer => ERROR_INVALID_ARGUMENT(1)
 	// syscall_fd_read: invalid flags => ERROR_INVALID_ARGUMENT(3)
