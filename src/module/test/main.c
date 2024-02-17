@@ -10,7 +10,7 @@
 
 
 
-static _Bool _init(module_t* module){
+static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	if (!coverage_init()){
 		return 0;
 	}
@@ -28,7 +28,7 @@ static _Bool _init(module_t* module){
 
 
 
-static void _deinit(module_t* module){
+static KERNEL_NOCOVERAGE void _deinit(module_t* module){
 	return;
 }
 
