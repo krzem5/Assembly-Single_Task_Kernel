@@ -42,7 +42,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE memcpy_bswap16_trunc_spaces(const u16* src,
 
 
 
-KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE (panic)(const char* error){
+KERNEL_PUBLIC void KERNEL_NORETURN KERNEL_NOCOVERAGE panic(const char* error){
 	log("\x1b[1m\x1b[1m\x1b[38;2;192;28;40mFatal error: %s\x1b[0m\n",error);
 	io_port_out16(0x604,0x2000);
 	for (;;);

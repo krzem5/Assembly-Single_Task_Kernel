@@ -56,7 +56,7 @@ static KERNEL_INLINE u32 _get_edge_index(u16 from,u16 to){
 
 
 
-KERNEL_PUBLIC u16 __lock_profiling_alloc_type(const char* func,u32 line,const char* arg,u16* out){
+KERNEL_PUBLIC u16 KERNEL_NOCOVERAGE __lock_profiling_alloc_type(const char* func,u32 line,const char* arg,u16* out){
 	if (((u16)((*out)+1))>1){
 		return *out;
 	}
@@ -93,7 +93,7 @@ _skip_alloc:
 
 
 
-KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr){
+KERNEL_PUBLIC lock_local_profiling_data_t* KERNEL_NOCOVERAGE __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr){
 	u64 expected=0;
 	if (__atomic_compare_exchange_n(ptr,&expected,1,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){
 		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
@@ -119,19 +119,19 @@ KERNEL_PUBLIC lock_local_profiling_data_t* __lock_profiling_alloc_data(const cha
 
 
 
-void __lock_profiling_enable_dependency_graph(void){
+void KERNEL_NOCOVERAGE __lock_profiling_enable_dependency_graph(void){
 	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<((LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1)-3))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 
 
-void __lock_profiling_init_thread_data(lock_profiling_thread_data_t* out){
+void KERNEL_NOCOVERAGE __lock_profiling_init_thread_data(lock_profiling_thread_data_t* out){
 	out->stack_size=0;
 }
 
 
 
-KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func,u32 line){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE __lock_profiling_push_lock(void* lock,u16 id,const char* func,u32 line){
 	if (!_lock_profiling_dependency_matrix){
 		return;
 	}
@@ -161,7 +161,7 @@ KERNEL_PUBLIC void __lock_profiling_push_lock(void* lock,u16 id,const char* func
 
 
 #pragma GCC optimize("no-tree-loop-distribute-patterns") // disable memmove
-KERNEL_PUBLIC void __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line){
 	if (!_lock_profiling_dependency_matrix){
 		return;
 	}

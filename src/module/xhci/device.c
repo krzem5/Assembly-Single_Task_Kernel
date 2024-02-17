@@ -136,10 +136,8 @@ static void _enqueue_event(xhci_ring_t* ring,const void* data,u32 size,u32 flags
 
 static u8 _wait_for_all_events(xhci_device_t* xhci_device,xhci_ring_t* ring){
 	while (ring->eidx!=ring->nidx){
+		SPINLOOP(((xhci_device->event_ring->ring+xhci_device->event_ring->nidx)->flags&1)!=xhci_device->event_ring->cs);
 		xhci_transfer_block_t* transfer_block=xhci_device->event_ring->ring+xhci_device->event_ring->nidx;
-		if ((transfer_block->flags&1)!=xhci_device->event_ring->cs){
-			continue;
-		}
 		u32 type=transfer_block->flags&TRB_TYPE_MASK;
 		if (type==TRB_TYPE_ER_TRANSFER||type==TRB_TYPE_ER_COMMAND_COMPLETE){
 			xhci_ring_t* ring=(void*)((transfer_block->address&(-XHCI_RING_SIZE*sizeof(xhci_transfer_block_t)))+VMM_HIGHER_HALF_ADDRESS_OFFSET);
