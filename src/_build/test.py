@@ -32,6 +32,21 @@ def _generate_header_and_interpreter(interpreter):
 def generate_test_resource_files():
 	if (not os.path.exists("build/share/test/elf")):
 		os.mkdir("build/share/test/elf")
+	if (os.path.exists("build/share/test/elf/no_read_and_execute_access_file")):
+		os.remove("build/share/test/elf/no_read_and_execute_access_file")
+	with open("build/share/test/elf/no_read_and_execute_access_file","wb") as wf:
+		wf.write(b"")
+	os.chmod("build/share/test/elf/no_read_and_execute_access_file",0o000)
+	if (os.path.exists("build/share/test/elf/no_read_access_file")):
+		os.remove("build/share/test/elf/no_read_access_file")
+	with open("build/share/test/elf/no_read_access_file","wb") as wf:
+		wf.write(b"")
+	os.chmod("build/share/test/elf/no_read_access_file",0o111)
+	if (os.path.exists("build/share/test/elf/no_execute_access_file")):
+		os.remove("build/share/test/elf/no_execute_access_file")
+	with open("build/share/test/elf/no_execute_access_file","wb") as wf:
+		wf.write(b"")
+	os.chmod("build/share/test/elf/no_execute_access_file",0o444)
 	with open("build/share/test/elf/invalid_header_signature","wb") as wf:
 		wf.write(_generate_header(0xaabbccdd,2,1,1,0,ET_EXEC,0x3e,1,0,0))
 	os.chmod("build/share/test/elf/invalid_header_signature",0o755)
@@ -73,9 +88,15 @@ def generate_test_resource_files():
 	with open("build/share/test/elf/interpreter_invalid_path","wb") as wf:
 		wf.write(_generate_header_and_interpreter("/invalid/path"))
 	os.chmod("build/share/test/elf/interpreter_invalid_path",0o755)
-	with open("build/share/test/elf/interpreter_no_permissions","wb") as wf:
-		wf.write(_generate_header_and_interpreter("/no-permission-node"))
-	os.chmod("build/share/test/elf/interpreter_no_permissions",0o755)
+	with open("build/share/test/elf/interpreter_no_read_and_execute_permissions","wb") as wf:
+		wf.write(_generate_header_and_interpreter("/share/test/elf/no_read_and_execute_access_file"))
+	os.chmod("build/share/test/elf/interpreter_no_read_and_execute_permissions",0o755)
+	with open("build/share/test/elf/interpreter_no_read_permissions","wb") as wf:
+		wf.write(_generate_header_and_interpreter("/share/test/elf/no_read_access_file"))
+	os.chmod("build/share/test/elf/interpreter_no_read_permissions",0o755)
+	with open("build/share/test/elf/interpreter_no_execute_permissions","wb") as wf:
+		wf.write(_generate_header_and_interpreter("/share/test/elf/no_execute_access_file"))
+	os.chmod("build/share/test/elf/interpreter_no_execute_permissions",0o755)
 	with open("build/share/test/elf/interpreter_invalid_header_signature","wb") as wf:
 		wf.write(_generate_header_and_interpreter("/share/test/elf/invalid_header_signature"))
 	os.chmod("build/share/test/elf/interpreter_invalid_header_signature",0o755)
