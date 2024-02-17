@@ -54,6 +54,12 @@ typedef struct KERNEL_PACKED _SMBIO_HEADER{
 
 
 
+static const char*const KERNEL_EARLY_READ _bios_wakeup_type_to_string[]={
+	[BIOS_DATA_WAKEUP_TYPE_UNKNOWN]="Unknown",
+	[BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH]="Power switch",
+	[BIOS_DATA_WAKEUP_TYPE_AC_POWER]="AC power",
+};
+
 KERNEL_PUBLIC bios_data_t KERNEL_INIT_WRITE bios_data;
 
 
@@ -93,6 +99,7 @@ KERNEL_INIT(){
 	u64 table_start=vmm_identity_map(smbios->table_address,smbios->table_length);
 	u64 table_end=table_start+smbios->table_length;
 	_Bool serial_number_found=0;
+	bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
 	for (u64 offset=table_start;offset<table_end;){
 		const smbios_header_t* header=(void*)offset;
 		switch (header->type){
@@ -124,9 +131,6 @@ KERNEL_INIT(){
 					case 8:
 						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_AC_POWER;
 						break;
-					default:
-						bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
-						break;
 				}
 				break;
 			case SMBIOS_HEADER_TYPE_BASEBOARD_INFORMATION:
@@ -139,19 +143,7 @@ KERNEL_INIT(){
 	char buffer[37];
 	format_string(buffer,37,"%g",bios_data.uuid);
 	bios_data.uuid_str=smm_alloc(buffer,36);
-	switch (bios_data.wakeup_type){
-		case BIOS_DATA_WAKEUP_TYPE_POWER_SWITCH:
-			bios_data.wakeup_type_str=smm_alloc("Power switch",0);
-			break;
-		case BIOS_DATA_WAKEUP_TYPE_AC_POWER:
-			bios_data.wakeup_type_str=smm_alloc("AC power",0);
-			break;
-		default:
-		case BIOS_DATA_WAKEUP_TYPE_UNKNOWN:
-			bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
-			bios_data.wakeup_type_str=smm_alloc("Unknown",0);
-			break;
-	}
+	bios_data.wakeup_type_str=smm_alloc(_bios_wakeup_type_to_string[bios_data.wakeup_type],0);
 	INFO("BIOS data:");
 	INFO("  BIOS vendor: %s",bios_data.bios_vendor->data);
 	INFO("  BIOS version: %s",bios_data.bios_version->data);
