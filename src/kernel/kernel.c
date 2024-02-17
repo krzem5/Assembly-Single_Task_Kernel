@@ -30,7 +30,7 @@ KERNEL_PUBLIC kernel_data_t KERNEL_INIT_WRITE kernel_data;
 
 
 
-void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC kernel_init(const kernel_data_t* bootloader_kernel_data){
+void KERNEL_EARLY_EXEC kernel_init(const kernel_data_t* bootloader_kernel_data){
 	LOG("Loading kernel data...");
 	LOG("Clearing .bss section (%v)...",kernel_section_kernel_zw_end()-kernel_section_kernel_zw_start());
 	for (u64* bss=(u64*)kernel_section_kernel_zw_start();bss<(u64*)kernel_section_kernel_zw_end();bss++){

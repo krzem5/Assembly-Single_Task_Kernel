@@ -26,7 +26,7 @@ static void _main_thread(void){
 
 
 
-void KERNEL_NORETURN KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kernel_data){
+void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kernel_data){
 	serial_init();
 	cpu_check_features();
 	LOG("Starting kernel...");
