@@ -21,13 +21,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup environment
         run: |
-          sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools libcap-ng-dev libseccomp-dev
+          sudo apt update&&sudo apt install -y nasm gcc-12 qemu qemu-utils qemu-system-x86 gnu-efi ovmf mtools
           mkdir -p build/external
-          cd build/external
-          git clone https://gitlab.com/virtio-fs/virtiofsd.git
-          cd virtiofsd
-          cargo build --release
-          cd ../..
+          curl -L -o /tmp/virtiofsd.zip https://gitlab.com/virtio-fs/virtiofsd/-/jobs/artifacts/main/download?job=publish
+          unzip /tmp/virtiofsd.zip -d /tmp/virtiofsd
+          cp /tmp/virtiofsd/target/x86_64-unknown-linux-musl/release/virtiofsd build/external/virtiofsd
       - name: Build & Test
         run: |
           echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
