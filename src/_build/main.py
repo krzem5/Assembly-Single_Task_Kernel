@@ -399,7 +399,7 @@ def _compile_module(module,dependencies):
 			if (suffix==".c"):
 				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-address-of-packed-member","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+MODULE_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			print(file)
 			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 				del file_hash_list[file]
