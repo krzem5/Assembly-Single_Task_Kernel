@@ -26,6 +26,7 @@ static void _test_format(const char* expected,const char* template,...){
 	__builtin_va_start(va,template);
 	format_string_va(buffer,TEST_FORMAT_BUFFER_SIZE,template,&va);
 	__builtin_va_end(va);
+	WARN("%s | %s",expected,buffer);
 	TEST_ASSERT(streq(buffer,expected));
 }
 
@@ -40,7 +41,12 @@ void test_format(void){
 	_test_format("N","%c",'N');
 	_test_format("%","%c",'%');
 	_test_format("(null) | The quick brown fox...","%s | %s",NULL,"The quick brown fox...");
-	// d,u,x
+	_test_format("0,-1","%d,%d",0,-1);
+	_test_format("-22,-22,-22","%hhd,%hd,%ld",0x88ea,0x8888ffea,0xffffffffffffffea);
+	_test_format("0,1","%u,%u",0,1);
+	_test_format("22,22,22","%hhu,%hu,%lu",0x8816,0x88880016,0x16);
+	_test_format("0,1","%x,%x",0,1);
+	_test_format("22,22,22","%hhx,%hx,%lx",0x8822,0x88880022,0x22);
 	_test_format("00,4b","%X,%X",0,0x4b);
 	_test_format("0 B,1 B,2 KB,3 MB,4 GB,5 TB,6 PB,7 EB","%v,%v,%v,%v,%v,%v,%v,%v",0,1,0x800,0x300000,0x100000000,0x50000000000,0x18000000000000,0x7000000000000000);
 	_test_format("00000000_00000000,11223344_aabbccdd","%p,%p",NULL,(void*)0x11223344aabbccdd);
