@@ -120,7 +120,7 @@ static notification_listener_t _coverage_shutdown_notification_listener={
 
 
 
-static void _syscall_export_coverage_data(u64 base,u64 size){
+static KERNEL_NOCOVERAGE void _syscall_export_coverage_data(u64 base,u64 size){
 	LOG("Exporting user/library coverage data...");
 	_process_gcov_info_section(base,size);
 }
