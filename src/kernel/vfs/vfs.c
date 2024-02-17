@@ -31,6 +31,12 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 
 
 KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mode){
+	if (fs->is_mounted){
+		if (user_mode){
+			return ERROR_ALREADY_MOUNTED;
+		}
+		panic("Filesystem is already mounted");
+	}
 	if (!path){
 		if (user_mode){
 			return ERROR_DENIED;
