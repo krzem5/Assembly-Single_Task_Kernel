@@ -17,6 +17,18 @@ KERNEL_PUBLIC void notification_dispatcher_init(notification_dispatcher_t* dispa
 
 
 
+KERNEL_PUBLIC void notification_dispatcher_deinit(notification_dispatcher_t* dispatcher){
+	spinlock_acquire_exclusive(&(dispatcher->lock));
+	while (dispatcher->head){
+		notification_listener_t* listener=dispatcher->head;
+		dispatcher->head=listener->next;
+		omm_dealloc(_notification_listener_allocator,listener);
+	}
+	spinlock_release_exclusive(&(dispatcher->lock));
+}
+
+
+
 KERNEL_PUBLIC void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback){
 	if (!_notification_listener_allocator){
 		_notification_listener_allocator=omm_init("notification_listener",sizeof(notification_listener_t),8,4,pmm_alloc_counter("notification_listener"));

@@ -36,6 +36,10 @@ void notification_dispatcher_init(notification_dispatcher_t* dispatcher);
 
 
 
+void notification_dispatcher_deinit(notification_dispatcher_t* dispatcher);
+
+
+
 void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback);
 
 
