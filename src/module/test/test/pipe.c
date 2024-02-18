@@ -8,6 +8,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
+#include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -15,6 +16,10 @@
 #include <kernel/vfs/vfs.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
+
+
+
+#define TEST_BUFFER_SIZE 64
 
 
 
@@ -79,18 +84,50 @@ void test_pipe(void){
 	pipe=pipe_create(NULL,NULL);
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
+	TEST_FUNC("_pipe_read");
+	TEST_GROUP("empty buffer");
+	TEST_ASSERT(!vfs_node_read(pipe,0,NULL,0,0));
+	TEST_GROUP("empty nonblocking read");
+	char buffer[TEST_BUFFER_SIZE];
+	TEST_ASSERT(!vfs_node_read(pipe,0,buffer,TEST_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
+	TEST_GROUP("blocking read");
+	random_generate(buffer,TEST_BUFFER_SIZE);
+	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
+	char buffer2[TEST_BUFFER_SIZE];
+	memset(buffer2,0,TEST_BUFFER_SIZE);
+	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(buffer2[i]==buffer[i]);
+	}
+	TEST_GROUP("empty blocking read");
+	// empty blocking read
+	TEST_GROUP("peek");
+	random_generate(buffer,TEST_BUFFER_SIZE);
+	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
+	memset(buffer2,0,TEST_BUFFER_SIZE);
+	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,VFS_NODE_FLAG_PIPE_PEEK)==TEST_BUFFER_SIZE);
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(buffer2[i]==buffer[i]);
+	}
+	memset(buffer2,0,TEST_BUFFER_SIZE);
+	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(buffer2[i]==buffer[i]);
+	}
+	TEST_FUNC("_pipe_write");
+	TEST_GROUP("empty buffer");
+	TEST_ASSERT(!vfs_node_write(pipe,0,NULL,0,0));
+	TEST_GROUP("blocking write");
+	for (u32 i=0;i<PIPE_BUFFER_SIZE/TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
+	}
+	TEST_ASSERT(vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE,0)==(PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE));
+	TEST_GROUP("full nonblocking write");
+	TEST_ASSERT(!vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
+	TEST_GROUP("full blocking write");
+	// full blocking write
 	vfs_node_dettach_external_child(pipe);
 	vfs_node_delete(pipe);
-	TEST_FUNC("_pipe_read");
-	// empty buffer
-	// empty nonblocking read
-	// blocking read
-	// empty blocking read
-	TEST_FUNC("_pipe_write");
-	// empty buffer
-	// full nonblocking write
-	// blocking write
-	// full blocking write
 	process_t* test_process=process_create("test-process","test-process");
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-pipe-thread",_thread,0x200000,0));
 	event_await(test_process->event,0);
