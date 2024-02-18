@@ -24,6 +24,7 @@ opengl:ui_common,ui_display
 procfs:dynamicfs
 sysfs:dynamicfs
 test:
+test_module_no_descriptor:
 ui_common:
 ui_display:ui_common
 ui_launcher:ui_common

@@ -130,13 +130,17 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			ctx->elf_symbol_string_table=ctx->data+section_header->sh_offset;
 		}
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".module")){
+			if (section_header->sh_size!=sizeof(module_descriptor_t)){
+				ERROR("'.module' section has wrong size");
+				return 0;
+			}
 			ctx->module->descriptor=(void*)(section_header->sh_addr);
 		}
 #if KERNEL_COVERAGE_ENABLED
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
 			ctx->module->gcov_info_base=section_header->sh_addr;
 			ctx->module->gcov_info_size=section_header->sh_size;
-			INFO("Found .gcov_info section at %p (%u record%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
+			INFO("Found .gcov_info section at %p (%u file%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
 		}
 #endif
 	}
@@ -164,7 +168,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 				ret=0;
 			}
 		}
-		else if (elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
+		else if (ret&&elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
 			symbol_add(ctx->module->name->data,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 		}
 	}
@@ -311,6 +315,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
+	symbol_remove(name);
 	if (module->region){
 		mmap_dealloc_region(&process_kernel_image_mmap,module->region);
 	}

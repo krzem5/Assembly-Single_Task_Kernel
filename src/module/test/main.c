@@ -15,6 +15,7 @@
 #include <test/fs.h>
 #include <test/gid.h>
 #include <test/handle_list.h>
+#include <test/module.h>
 #include <test/test.h>
 #include <test/uid.h>
 #define KERNEL_LOG_NAME "test"
@@ -36,6 +37,7 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	test_fs();
 	test_gid();
 	test_handle_list();
+	test_module();
 	test_uid();
 	WARN("%u test%s passed, %u test%s failed",test_pass_count,(test_pass_count==1?"":"s"),test_fail_count,(test_fail_count==1?"":"s"));
 	if (test_fail_count){

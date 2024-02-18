@@ -19,6 +19,10 @@ void symbol_add(const char* module,const char* name,u64 address,_Bool is_public)
 
 
 
+void symbol_remove(const char* module);
+
+
+
 const symbol_t* symbol_lookup(u64 address);
 
 
