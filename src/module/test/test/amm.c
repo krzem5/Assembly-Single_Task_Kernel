@@ -66,11 +66,17 @@ void test_amm(void){
 	}
 	_verify_integrity(test_data,test_buffer);
 	TEST_FUNC("amm_realloc");
-	TEST_GROUP("allocation");
-	_verify_integrity(test_data,test_buffer);
 	TEST_GROUP("deallocation");
+	for (u32 i=0;i<(TEST_COUNT>>3);i++){
+		u32 j=0;
+		random_generate(&j,sizeof(u32));
+		j%=TEST_COUNT;
+		amm_realloc((test_data+j)->ptr,0);
+		(test_data+j)->size=0;
+		(test_data+j)->ptr=NULL;
+	}
 	_verify_integrity(test_data,test_buffer);
-	TEST_GROUP("reallocation");
+	TEST_GROUP("allocation and reallocation");
 	for (u32 i=0;i<(TEST_COUNT>>1);i++){
 		u32 j=0;
 		random_generate(&j,sizeof(u32));
