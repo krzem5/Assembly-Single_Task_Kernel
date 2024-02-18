@@ -74,10 +74,13 @@ KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descrip
 
 
 
-KERNEL_PUBLIC void partition_load_from_drive(drive_t* drive){
+void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
 	HANDLE_FOREACH(partition_table_descriptor_handle_type){
 		partition_table_descriptor_t* descriptor=handle->object;
+		if (!descriptor->config->load_callback){
+			continue;
+		}
 		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
 		if (descriptor->config->load_callback(drive)){
