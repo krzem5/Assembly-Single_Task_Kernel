@@ -377,4 +377,10 @@ static inline u64 _sys_syscall_process_set_root(u64 process,u64 fd){
 
 
 
+static inline u64 _sys_syscall_pipe_create(const char* path){
+	return _sys_syscall1(0x100000041,(u64)path);
+}
+
+
+
 #endif

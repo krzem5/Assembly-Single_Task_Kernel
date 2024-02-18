@@ -1,3 +1,5 @@
+#include <kernel/error/error.h>
+#include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/mmap.h>
@@ -8,6 +10,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -175,4 +178,30 @@ KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 	}
 	out->flags|=VFS_NODE_TYPE_PIPE;
 	return out;
+}
+
+
+
+error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
+	vfs_node_t* parent=NULL;
+	SMM_TEMPORARY_STRING name_string=NULL;
+	if (path){
+		u64 path_length=syscall_get_string_length((const char*)path);
+		if (!path_length||path_length>4095){
+			return ERROR_INVALID_ARGUMENT(0);
+		}
+		char buffer[4096];
+		memcpy(buffer,(const char*)path,path_length);
+		buffer[path_length]=0;
+		const char* name;
+		if (vfs_lookup_for_creation(NULL,buffer,0,0,0,&parent,&name)){
+			return ERROR_ALREADY_PRESENT;
+		}
+		if (!parent||!name){
+			return ERROR_NOT_FOUND;
+		}
+		name_string=smm_alloc(name,0);
+	}
+	vfs_node_t* out=pipe_create(parent,name_string);
+	return fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE);
 }

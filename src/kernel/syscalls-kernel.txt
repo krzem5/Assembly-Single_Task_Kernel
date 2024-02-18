@@ -60,3 +60,4 @@
 62,process_set_cwd(u64 process,u64 fd) -> u64
 63,process_get_parent(u64 process) -> u64
 64,process_set_root(u64 process,u64 fd) -> u64
+65,pipe_create(const char* path) -> u64
