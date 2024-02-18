@@ -48,6 +48,14 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 
 
 KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager){
+	// /*******************************************************************************************************************/
+	// WARN("pre-delete");
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+	// }
+	// /*******************************************************************************************************************/
 	for (resource_t value=1;value<=resource_manager->max;){
 		resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
 		value=region->rb_node.key+region->length;
@@ -61,8 +69,27 @@ KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager)
 
 KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 	spinlock_acquire_exclusive(&(resource_manager->lock));
+	// /*******************************************************************************************************************/
+	// WARN("pre-alloc");
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+	// }
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	if (value<=resource_manager->max){
+	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+	// 		if (!next_region||next_region->is_used==region->is_used){
+	// 			panic("A");
+	// 		}
+	// 	}
+	// }
+	// /*******************************************************************************************************************/
 	resource_region_t* prev_region=NULL;
-	resource_region_t* region=(void*)rb_tree_lookup_increasing_node(&(resource_manager->tree),0);
+	resource_region_t* region=(void*)rb_tree_lookup_increasing_node(&(resource_manager->tree),1);
 	if (region->is_used){
 		prev_region=region;
 		region=(void*)rb_tree_lookup_node(&(resource_manager->tree),region->rb_node.key+region->length);
@@ -70,9 +97,8 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 			spinlock_release_exclusive(&(resource_manager->lock));
 			return 0;
 		}
-		KERNEL_ASSERT(region->is_used);
+		KERNEL_ASSERT(!region->is_used);
 	}
-	KERNEL_ASSERT(region->length);
 	resource_t out=region->rb_node.key;
 	rb_tree_remove_node(&(resource_manager->tree),&(region->rb_node));
 	if (!prev_region){
@@ -80,24 +106,42 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 		prev_region->rb_node.key=out;
 		prev_region->length=0;
 		prev_region->is_used=1;
+		rb_tree_insert_node(&(resource_manager->tree),&(prev_region->rb_node));
 	}
 	prev_region->length++;
-	region->rb_node.key++;
 	region->length--;
 	if (region->length){
+		region->rb_node.key++;
 		rb_tree_insert_node(&(resource_manager->tree),&(region->rb_node));
 	}
 	else{
 		omm_dealloc(_resource_region_allocator,region);
-		if (out+1<resource_manager->max){
-			resource_region_t* next_region=(void*)rb_tree_lookup_node(&(resource_manager->tree),out+1);
-			KERNEL_ASSERT(next_region);
-			KERNEL_ASSERT(next_region->is_used);
+		resource_region_t* next_region=(void*)rb_tree_lookup_node(&(resource_manager->tree),out+1);
+		if (next_region){
 			rb_tree_remove_node(&(resource_manager->tree),&(next_region->rb_node));
 			prev_region->length+=next_region->length;
 			omm_dealloc(_resource_region_allocator,next_region);
 		}
 	}
+	// /*******************************************************************************************************************/
+	// WARN("post-alloc: %u",out);
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+	// }
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	if (value<=resource_manager->max){
+	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+	// 		if (!next_region||next_region->is_used==region->is_used){
+	// 			panic("A");
+	// 		}
+	// 	}
+	// }
+	// /*******************************************************************************************************************/
 	spinlock_release_exclusive(&(resource_manager->lock));
 	return out;
 }
@@ -105,6 +149,28 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 
 
 KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
+	// /*******************************************************************************************************************/
+	// WARN("pre-dealloc: %u",resource);
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+	// }
+	// for (resource_t value=1;value<=resource_manager->max;){
+	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+	// 	value=region->rb_node.key+region->length;
+	// 	if (value<=resource_manager->max){
+	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+	// 		if (!next_region||next_region->is_used==region->is_used){
+	// 			panic("A");
+	// 		}
+	// 	}
+	// }
+	// /*******************************************************************************************************************/
+	if (!resource||resource>resource_manager->max){
+		return 0;
+	}
 	spinlock_acquire_exclusive(&(resource_manager->lock));
 	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
 	if (!region||!region->is_used){
@@ -113,13 +179,129 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 	}
 	KERNEL_ASSERT(region->rb_node.key+region->length>resource);
 	if (resource==region->rb_node.key){
-		panic("resource_dealloc: increase prev");
+		rb_tree_remove_node(&(resource_manager->tree),&(region->rb_node));
+		resource_region_t* prev_region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource-1);
+		if (prev_region){
+			prev_region->length++;
+		}
+		else{
+			prev_region=omm_alloc(_resource_region_allocator);
+			prev_region->rb_node.key=resource;
+			prev_region->length=1;
+			prev_region->is_used=0;
+			rb_tree_insert_node(&(resource_manager->tree),&(prev_region->rb_node));
+		}
+		region->length--;
+		if (region->length){
+			region->rb_node.key++;
+			rb_tree_insert_node(&(resource_manager->tree),&(region->rb_node));
+		}
+		else{
+			omm_dealloc(_resource_region_allocator,region);
+			region=(void*)rb_tree_lookup_increasing_node(&(resource_manager->tree),resource+1);
+			if (region){
+				rb_tree_remove_node(&(resource_manager->tree),&(region->rb_node));
+				prev_region->length+=region->length;
+				omm_dealloc(_resource_region_allocator,region);
+			}
+		}
+		// /*******************************************************************************************************************/
+		// for (resource_t value=1;value<=resource_manager->max;){
+		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 	value=region->rb_node.key+region->length;
+		// 	if (value<=resource_manager->max){
+		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+		// 		if (!next_region||next_region->is_used==region->is_used){
+		// 			WARN("%u:%u",value,resource);
+		// 			for (value=1;value<=resource_manager->max;){
+		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 				value=region->rb_node.key+region->length;
+		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// 			}
+		// 			panic("A");
+		// 		}
+		// 	}
+		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// }
+		// /*******************************************************************************************************************/
 	}
 	else if (resource==region->rb_node.key+region->length-1){
-		panic("resource_dealloc: increase next");
+		resource_region_t* next_region=(void*)rb_tree_lookup_node(&(resource_manager->tree),resource+1);
+		if (next_region){
+			rb_tree_remove_node(&(resource_manager->tree),&(next_region->rb_node));
+		}
+		else{
+			next_region=omm_alloc(_resource_region_allocator);
+			next_region->length=0;
+			next_region->is_used=0;
+		}
+		next_region->rb_node.key=resource;
+		next_region->length++;
+		rb_tree_insert_node(&(resource_manager->tree),&(next_region->rb_node));
+		region->length--;
+		if (!region->length){
+			omm_dealloc(_resource_region_allocator,region);
+			region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource-1);
+			if (region){
+				rb_tree_remove_node(&(resource_manager->tree),&(next_region->rb_node));
+				region->length+=next_region->length;
+				omm_dealloc(_resource_region_allocator,next_region);
+			}
+		}
+		// /*******************************************************************************************************************/
+		// for (resource_t value=1;value<=resource_manager->max;){
+		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 	value=region->rb_node.key+region->length;
+		// 	if (value<=resource_manager->max){
+		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+		// 		if (!next_region||next_region->is_used==region->is_used){
+		// 			WARN("%u:%u",value,resource);
+		// 			for (value=1;value<=resource_manager->max;){
+		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 				value=region->rb_node.key+region->length;
+		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// 			}
+		// 			panic("A");
+		// 		}
+		// 	}
+		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// }
+		// /*******************************************************************************************************************/
 	}
 	else{
-		panic("resource_dealloc: split into three");
+		resource_region_t* new_unused_region=omm_alloc(_resource_region_allocator);
+		new_unused_region->rb_node.key=resource;
+		new_unused_region->length=1;
+		new_unused_region->is_used=0;
+		rb_tree_insert_node(&(resource_manager->tree),&(new_unused_region->rb_node));
+		resource_region_t* new_used_region=omm_alloc(_resource_region_allocator);
+		new_used_region->rb_node.key=resource+1;
+		new_used_region->length=region->rb_node.key+region->length-resource-1;
+		new_used_region->is_used=1;
+		rb_tree_insert_node(&(resource_manager->tree),&(new_used_region->rb_node));
+		region->length=resource-region->rb_node.key;
+		// /*******************************************************************************************************************/
+		// for (resource_t value=1;value<=resource_manager->max;){
+		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 	value=region->rb_node.key+region->length;
+		// 	if (value<=resource_manager->max){
+		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
+		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
+		// 		if (!next_region||next_region->is_used==region->is_used){
+		// 			WARN("%u:%u",value,resource);
+		// 			for (value=1;value<=resource_manager->max;){
+		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		// 				value=region->rb_node.key+region->length;
+		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// 			}
+		// 			panic("A");
+		// 		}
+		// 	}
+		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
+		// }
+		// /*******************************************************************************************************************/
 	}
 	spinlock_release_exclusive(&(resource_manager->lock));
 	return 1;
