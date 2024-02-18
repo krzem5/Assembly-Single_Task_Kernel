@@ -9,7 +9,7 @@
 
 
 
-#define TEST_COUNT 124
+#define TEST_COUNT 128
 
 #define TEST_ALLOC_MIN_SIZE 1
 #define TEST_ALLOC_MAX_SIZE 16384
