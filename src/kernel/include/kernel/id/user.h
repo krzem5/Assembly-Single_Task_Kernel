@@ -15,6 +15,10 @@ error_t uid_create(uid_t uid,const char* name);
 
 
 
+error_t uid_delete(uid_t uid);
+
+
+
 error_t uid_add_group(uid_t uid,gid_t gid);
 
 

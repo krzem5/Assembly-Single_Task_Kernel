@@ -74,6 +74,30 @@ KERNEL_PUBLIC error_t uid_create(uid_t uid,const char* name){
 
 
 
+KERNEL_PUBLIC error_t uid_delete(uid_t uid){
+	spinlock_acquire_exclusive(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	if (!uid_data){
+		spinlock_release_exclusive(&_uid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	smm_dealloc(uid_data->name);
+	while (1){
+		uid_group_t* uid_group=(uid_group_t*)rb_tree_lookup_increasing_node(&(uid_data->group_tree),0);
+		if (!uid_group){
+			break;
+		}
+		rb_tree_remove_node(&(uid_data->group_tree),&(uid_group->rb_node));
+		omm_dealloc(_uid_group_allocator,uid_group);
+	}
+	rb_tree_remove_node(&_uid_tree,&(uid_data->rb_node));
+	spinlock_release_exclusive(&_uid_global_lock);
+	omm_dealloc(_uid_data_allocator,uid_data);
+	return ERROR_OK;
+}
+
+
+
 KERNEL_PUBLIC error_t uid_add_group(uid_t uid,gid_t gid){
 	spinlock_acquire_exclusive(&_uid_global_lock);
 	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);

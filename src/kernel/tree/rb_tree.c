@@ -201,7 +201,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
-	while (x&&x->key!=key){
+	while (x!=NIL_NODE&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
 		if (y!=NIL_NODE){
 			x=y;
@@ -221,7 +221,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64
 		break;
 	}
 	spinlock_release_shared(&(tree->lock));
-	return x;
+	return (x==NIL_NODE?NULL:x);
 }
 
 
@@ -229,7 +229,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
-	while (x&&x->key!=key){
+	while (x!=NIL_NODE&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
 		if (y!=NIL_NODE){
 			x=y;
@@ -249,7 +249,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64
 		break;
 	}
 	spinlock_release_shared(&(tree->lock));
-	return x;
+	return (x==NIL_NODE?NULL:x);
 }
 
 
