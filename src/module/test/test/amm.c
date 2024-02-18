@@ -10,7 +10,6 @@
 
 #define TEST_COUNT 256
 
-#define TEST_ALLOC_MIN_SIZE 0
 #define TEST_ALLOC_MAX_SIZE 16384
 
 
@@ -46,7 +45,7 @@ void test_amm(void){
 	TEST_GROUP("allocation");
 	for (u32 i=0;i<TEST_COUNT;i++){
 		random_generate(&((test_data+i)->size),sizeof(u64));
-		(test_data+i)->size=((test_data+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		(test_data+i)->size=(test_data+i)->size%(TEST_ALLOC_MAX_SIZE+1);
 		(test_data+i)->ptr=amm_alloc((test_data+i)->size);
 		TEST_ASSERT(!(test_data+i)->size||(test_data+i)->ptr);
 		memcpy((test_data+i)->ptr,test_buffer,(test_data+i)->size);
@@ -78,7 +77,7 @@ void test_amm(void){
 		j%=TEST_COUNT;
 		u64 new_size;
 		random_generate(&new_size,sizeof(u64));
-		new_size=(new_size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		new_size=new_size%(TEST_ALLOC_MAX_SIZE+1);
 		(test_data+j)->ptr=amm_realloc((test_data+j)->ptr,new_size);
 		if (new_size>(test_data+j)->size){
 			memcpy((test_data+j)->ptr+(test_data+j)->size,test_buffer+(test_data+j)->size,new_size-(test_data+j)->size);
