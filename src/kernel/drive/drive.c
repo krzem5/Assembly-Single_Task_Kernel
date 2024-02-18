@@ -42,6 +42,10 @@ KERNEL_EARLY_EARLY_INIT(){
 
 KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	LOG("Creating drive '%s%ud%u' as '%s/%s'...",config->type->name,config->controller_index,config->device_index,config->model_number->data,config->serial_number->data);
+	if (config->block_size&(config->block_size-1)){
+		ERROR("Drive block size is not a power of 2");
+		return NULL;
+	}
 	drive_t* out=omm_alloc(_drive_allocator);
 	handle_new(out,drive_handle_type,&(out->handle));
 	out->type=config->type;
@@ -55,9 +59,6 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	out->extra_data=config->extra_data;
 	out->partition_table_descriptor=NULL;
 	INFO("Drive size: %v (%lu * %lu)",out->block_count*out->block_size,out->block_count,out->block_size);
-	if (out->block_size&(out->block_size-1)){
-		WARN("Drive block size is not a power of 2");
-	}
 	partition_load_from_drive(out);
 	handle_finish_setup(&(out->handle));
 	return out;

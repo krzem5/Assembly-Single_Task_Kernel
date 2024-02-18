@@ -57,7 +57,7 @@ static const drive_type_t _test_drive_type_readonly={
 void test_drive(void){
 	TEST_MODULE("drive");
 	TEST_FUNC("drive_create");
-	TEST_GROUP("correct args");
+	TEST_GROUP("invalid block_size");
 	drive_config_t config={
 		&_test_drive_type,
 		1,
@@ -65,9 +65,12 @@ void test_drive(void){
 		smm_alloc("serial_number",0),
 		smm_alloc("model_number",0),
 		4,
-		512,
-		(void*)6
+		33,
+		(void*)5
 	};
+	TEST_ASSERT(!drive_create(&config));
+	TEST_GROUP("correct args");
+	config.block_size=512;
 	drive_t* drive=drive_create(&config);
 	TEST_ASSERT(drive);
 	TEST_ASSERT(drive->type==&_test_drive_type);
