@@ -175,6 +175,20 @@ KERNEL_PUBLIC id_flags_t uid_get_flags(uid_t uid){
 
 
 
+KERNEL_PUBLIC error_t uid_set_flags(uid_t uid,id_flags_t clear,id_flags_t set){
+	spinlock_acquire_shared(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	if (!uid_data){
+		spinlock_release_shared(&_uid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	uid_data->flags=(uid_data->flags&(~clear))|set;
+	spinlock_release_shared(&_uid_global_lock);
+	return ERROR_OK;
+}
+
+
+
 error_t syscall_uid_get(void){
 	return THREAD_DATA->process->uid;
 }

@@ -39,4 +39,8 @@ id_flags_t uid_get_flags(uid_t uid);
 
 
 
+error_t uid_set_flags(uid_t uid,id_flags_t clear,id_flags_t set);
+
+
+
 #endif
