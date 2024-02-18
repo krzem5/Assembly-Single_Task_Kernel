@@ -254,7 +254,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	LOG("Loading module '%s'...",name);
 	module_t* module=_lookup_module_by_name(name);
 	if (module){
-		INFO("Module '%s' already loaded",name);
+		INFO("Module '%s' is already loaded",name);
 		return module;
 	}
 	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0,0,0);

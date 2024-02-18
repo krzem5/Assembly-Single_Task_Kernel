@@ -45,12 +45,16 @@ void symbol_add(const char* module,const char* name,u64 address,_Bool is_public)
 
 
 void symbol_remove(const char* module){
-	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
-		symbol_t* symbol=(symbol_t*)rb_node;
+	for (u64 address=0;1;){
+		symbol_t* symbol=(symbol_t*)rb_tree_lookup_increasing_node(&_symbol_tree,address);
+		if (!symbol){
+			return;
+		}
+		address=symbol->rb_node.key+1;
 		if (streq(symbol->module,module)){
-			rb_tree_remove_node(&_symbol_tree,&(symbol->rb_node));
-			smm_dealloc(symbol->name);
-			omm_dealloc(_symbol_allocator,symbol);
+			// rb_tree_remove_node(&_symbol_tree,&(symbol->rb_node));
+			// smm_dealloc(symbol->name);
+			// omm_dealloc(_symbol_allocator,symbol);
 		}
 	}
 }
