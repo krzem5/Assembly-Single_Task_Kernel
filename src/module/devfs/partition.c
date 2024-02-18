@@ -41,14 +41,8 @@ static void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _devfs_partition_notification_listener={
-	_listener
-};
-
-
-
 void devfs_partition_init(void){
 	LOG("Creating partition subsystem...");
 	_devfs_partition_root=dynamicfs_create_node(devfs->root,"partition",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	handle_register_notification_listener(partition_handle_type,&_devfs_partition_notification_listener);
+	handle_register_notification_listener(partition_handle_type,_listener);
 }

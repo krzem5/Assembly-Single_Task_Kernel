@@ -61,14 +61,8 @@ static void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _sysfs_module_notification_listener={
-	_listener
-};
-
-
-
 void sysfs_module_init(void){
 	LOG("Creating module subsystem...");
 	_sysfs_module_type_root=dynamicfs_create_node(sysfs->root,"module",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	handle_register_notification_listener(module_handle_type,&_sysfs_module_notification_listener);
+	handle_register_notification_listener(module_handle_type,_listener);
 }

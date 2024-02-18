@@ -93,11 +93,11 @@ void _handle_delete_internal(handle_t* handle);
 
 
 
-_Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener);
+_Bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
 
 
 
-_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener);
+_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
 
 
 

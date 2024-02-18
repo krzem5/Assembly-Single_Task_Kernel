@@ -149,15 +149,15 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 
 
 
-KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,notification_listener_t* listener){
+KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;
 	}
 	spinlock_acquire_exclusive(&(handle_descriptor->lock));
-	notification_dispatcher_add_listener(&(handle_descriptor->notification_dispatcher),listener);
+	notification_dispatcher_add_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
 	for (handle_t* handle=HANDLE_ITER_START(handle_descriptor);handle;handle=HANDLE_ITER_NEXT(handle_descriptor,handle)){
-		listener->callback(handle,NOTIFICATION_TYPE_HANDLE_CREATE);
+		listener_callback(handle,NOTIFICATION_TYPE_HANDLE_CREATE);
 	}
 	spinlock_release_exclusive(&(handle_descriptor->lock));
 	return 1;
@@ -165,13 +165,13 @@ KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,not
 
 
 
-KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_t* listener){
+KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;
 	}
 	spinlock_acquire_exclusive(&(handle_descriptor->lock));
-	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener);
+	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
 	spinlock_release_exclusive(&(handle_descriptor->lock));
 	return 1;
 }

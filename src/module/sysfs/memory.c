@@ -43,12 +43,6 @@ static void _pmm_counter_listener(void* object,u32 type){
 
 
 
-static notification_listener_t _sysfs_memory_pmm_counter_notification_listener={
-	_pmm_counter_listener
-};
-
-
-
 static void _omm_allocator_listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
@@ -66,20 +60,14 @@ static void _omm_allocator_listener(void* object,u32 type){
 
 
 
-static notification_listener_t _sysfs_memory_omm_allocator_notification_listener={
-	_omm_allocator_listener
-};
-
-
-
 void sysfs_memory_init(void){
 	LOG("Creating memory subsystem...");
 	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"mem",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	_init_memory_load_balancer_data();
 	_sysfs_memory_pmm_counter_root=dynamicfs_create_node(_sysfs_memory_root,"physical",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(_sysfs_memory_pmm_counter_root);
-	handle_register_notification_listener(pmm_counter_handle_type,&_sysfs_memory_pmm_counter_notification_listener);
+	handle_register_notification_listener(pmm_counter_handle_type,_pmm_counter_listener);
 	_sysfs_memory_object_counter_root=dynamicfs_create_node(_sysfs_memory_root,"object",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(_sysfs_memory_object_counter_root);
-	handle_register_notification_listener(omm_handle_type,&_sysfs_memory_omm_allocator_notification_listener);
+	handle_register_notification_listener(omm_handle_type,_omm_allocator_listener);
 }

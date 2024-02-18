@@ -50,14 +50,14 @@ KERNEL_PUBLIC void KERNEL_NORETURN shutdown(u32 flags){
 
 
 
-KERNEL_PUBLIC void shutdown_register_notification_listener(notification_listener_t* listener){
-	notification_dispatcher_add_listener(&_shutdown_notification_dispatcher,listener);
+KERNEL_PUBLIC void shutdown_register_notification_listener(notification_listener_callback_t listener_callback){
+	notification_dispatcher_add_listener(&_shutdown_notification_dispatcher,listener_callback);
 }
 
 
 
-KERNEL_PUBLIC void shutdown_unregister_notification_listener(notification_listener_t* listener){
-	notification_dispatcher_add_listener(&_shutdown_notification_dispatcher,listener);
+KERNEL_PUBLIC void shutdown_unregister_notification_listener(notification_listener_callback_t listener_callback){
+	notification_dispatcher_add_listener(&_shutdown_notification_dispatcher,listener_callback);
 }
 
 

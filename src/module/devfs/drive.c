@@ -37,14 +37,8 @@ static void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _devfs_drive_notification_listener={
-	_listener
-};
-
-
-
 void devfs_drive_init(void){
 	LOG("Creating drive subsystem...");
 	_devfs_drive_root=dynamicfs_create_node(devfs->root,"drive",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-	handle_register_notification_listener(drive_handle_type,&_devfs_drive_notification_listener);
+	handle_register_notification_listener(drive_handle_type,_listener);
 }

@@ -46,12 +46,6 @@ static void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _procfs_thread_notification_listener={
-	_listener
-};
-
-
-
 static u64 _thread_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char link[32];
 	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",(THREAD_DATA->header.current_thread?HANDLE_ID_GET_INDEX(THREAD_DATA->handle.rb_node.key):0)),offset,buffer,size);
@@ -63,5 +57,5 @@ void procfs_thread_init(void){
 	LOG("Creating thread subsystem...");
 	_procfs_thread_root=dynamicfs_create_node(procfs->root,"thread",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_create_node(_procfs_thread_root,"self",VFS_NODE_TYPE_LINK,NULL,_thread_self_read_callback,NULL);
-	handle_register_notification_listener(thread_handle_type,&_procfs_thread_notification_listener);
+	handle_register_notification_listener(thread_handle_type,_listener);
 }

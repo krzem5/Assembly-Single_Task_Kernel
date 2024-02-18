@@ -26,11 +26,11 @@ void KERNEL_NORETURN shutdown(u32 flags);
 
 
 
-void shutdown_register_notification_listener(notification_listener_t* listener);
+void shutdown_register_notification_listener(notification_listener_callback_t listener_callback);
 
 
 
-void shutdown_unregister_notification_listener(notification_listener_t* listener);
+void shutdown_unregister_notification_listener(notification_listener_callback_t listener_callback);
 
 
 

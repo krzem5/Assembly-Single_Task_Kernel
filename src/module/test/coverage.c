@@ -113,12 +113,6 @@ static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _coverage_shutdown_notification_listener={
-	_listener
-};
-
-
-
 static KERNEL_NOCOVERAGE void _syscall_export_coverage_data(u64 base,u64 size){
 	LOG("Exporting user/library coverage data...");
 	_process_gcov_info_section(base,size);
@@ -139,7 +133,7 @@ _Bool KERNEL_NOCOVERAGE coverage_init(void){
 		panic("Coverage serial port not present");
 	}
 	spinlock_init(&_coverage_lock);
-	shutdown_register_notification_listener(&_coverage_shutdown_notification_listener);
+	shutdown_register_notification_listener(_listener);
 	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
 	return 1;
 }

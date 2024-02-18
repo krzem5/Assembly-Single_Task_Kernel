@@ -30,15 +30,9 @@ static void _listener(void* object,u32 type){
 
 
 
-static notification_listener_t _sysfs_handle_notification_listener={
-	_listener
-};
-
-
-
 void sysfs_handle_init(void){
 	LOG("Creating handle subsystem...");
 	_sysfs_handle_type_root=dynamicfs_create_node(sysfs->root,"handle",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(_sysfs_handle_type_root);
-	handle_register_notification_listener(handle_handle_type,&_sysfs_handle_notification_listener);
+	handle_register_notification_listener(handle_handle_type,_listener);
 }

@@ -13,8 +13,12 @@
 
 
 
+typedef void (*notification_listener_callback_t)(void*,u32);
+
+
+
 typedef struct _NOTIFICATION_LISTENER{
-	void (*callback)(void*,u32);
+	notification_listener_callback_t callback;
 	struct _NOTIFICATION_LISTENER* prev;
 	struct _NOTIFICATION_LISTENER* next;
 } notification_listener_t;
@@ -32,11 +36,11 @@ void notification_dispatcher_init(notification_dispatcher_t* dispatcher);
 
 
 
-void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener);
+void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback);
 
 
 
-void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_t* listener);
+void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback);
 
 
 
