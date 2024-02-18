@@ -7,18 +7,6 @@
 
 
 
-#define NIL_NODE (&_rb_tree_nil_node)
-
-
-
-static rb_tree_node_t _rb_tree_nil_node={
-	.rb_parent_and_color=0,
-	.rb_left=NULL,
-	.rb_right=NULL
-};
-
-
-
 static KERNEL_INLINE rb_tree_node_t* _get_parent(rb_tree_node_t* node){
 	return (rb_tree_node_t*)(node->rb_parent_and_color&0xfffffffffffffffeull);
 }
@@ -47,7 +35,7 @@ static void _rotate_subtree(rb_tree_t* tree,rb_tree_node_t* x,_Bool dir){
 	rb_tree_node_t* y=_get_parent(x);
 	rb_tree_node_t* z=x->rb_nodes[dir^1];
 	x->rb_nodes[dir^1]=z->rb_nodes[dir];
-	if (z->rb_nodes[dir]!=NIL_NODE){
+	if (z->rb_nodes[dir]){
 		_set_parent(z->rb_nodes[dir],x);
 	}
 	z->rb_nodes[dir]=x;
@@ -64,7 +52,7 @@ static void _rotate_subtree(rb_tree_t* tree,rb_tree_node_t* x,_Bool dir){
 
 
 KERNEL_PUBLIC void rb_tree_init(rb_tree_t* tree){
-	tree->root=NIL_NODE;
+	tree->root=NULL;
 	spinlock_init(&(tree->lock));
 }
 
@@ -72,16 +60,16 @@ KERNEL_PUBLIC void rb_tree_init(rb_tree_t* tree){
 
 KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_exclusive(&(tree->lock));
-	x->rb_left=NIL_NODE;
-	x->rb_right=NIL_NODE;
-	if (tree->root==NIL_NODE){
+	x->rb_left=NULL;
+	x->rb_right=NULL;
+	if (!tree->root){
 		x->rb_parent_and_color=0;
 		tree->root=x;
 		goto _cleanup;
 	}
 	x->rb_parent_and_color=1;
 	rb_tree_node_t* y=tree->root;
-	while (y->rb_nodes[y->key<x->key]!=NIL_NODE){
+	while (y->rb_nodes[y->key<x->key]){
 		if (x->key==y->key){
 			panic("rb_tree_insert_node: duplicated key");
 		}
@@ -100,7 +88,7 @@ KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 		}
 		_Bool dir=(y==z->rb_right);
 		rb_tree_node_t* w=z->rb_nodes[dir^1];
-		if (w==NIL_NODE||!_get_color(w)){
+		if (!w||!_get_color(w)){
 			if (x==y->rb_nodes[dir^1]){
 				_rotate_subtree(tree,y,dir);
 				y=z->rb_nodes[dir];
@@ -124,7 +112,7 @@ _cleanup:
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
-	for (rb_tree_node_t* x=tree->root;x!=NIL_NODE;x=x->rb_nodes[x->key<key]){
+	for (rb_tree_node_t* x=tree->root;x;x=x->rb_nodes[x->key<key]){
 		if (x->key==key){
 			spinlock_release_shared(&(tree->lock));
 			return x;
@@ -139,17 +127,17 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
-	while (x!=NIL_NODE&&x->key!=key){
+	while (x&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
-		if (y!=NIL_NODE){
+		if (y){
 			x=y;
 			continue;
 		}
 		if (x->key<key){
 			break;
 		}
-		if (x->rb_left!=NIL_NODE){
-			for (x=x->rb_left;x->rb_right!=NIL_NODE;x=x->rb_right);
+		if (x->rb_left){
+			for (x=x->rb_left;x->rb_right;x=x->rb_right);
 			break;
 		}
 		do{
@@ -159,7 +147,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64
 		break;
 	}
 	spinlock_release_shared(&(tree->lock));
-	return (x==NIL_NODE?NULL:x);
+	return x;
 }
 
 
@@ -167,17 +155,17 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
-	while (x!=NIL_NODE&&x->key!=key){
+	while (x&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
-		if (y!=NIL_NODE){
+		if (y){
 			x=y;
 			continue;
 		}
 		if (x->key>key){
 			break;
 		}
-		if (x->rb_right!=NIL_NODE){
-			for (x=x->rb_right;x->rb_left!=NIL_NODE;x=x->rb_left);
+		if (x->rb_right){
+			for (x=x->rb_right;x->rb_left;x=x->rb_left);
 			break;
 		}
 		do{
@@ -187,7 +175,7 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64
 		break;
 	}
 	spinlock_release_shared(&(tree->lock));
-	return (x==NIL_NODE?NULL:x);
+	return x;
 }
 
 
@@ -195,9 +183,9 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64
 KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_exclusive(&(tree->lock));
 	rb_tree_node_t* y=_get_parent(x);
-	if (x->rb_left!=NIL_NODE&&x->rb_right!=NIL_NODE){
+	if (x->rb_left&&x->rb_right){
 		rb_tree_node_t* z=x->rb_right;
-		for (;z->rb_left!=NIL_NODE;z=z->rb_left);
+		for (;z->rb_left;z=z->rb_left);
 		if (y){
 			y->rb_nodes[x==y->rb_right]=z;
 		}
@@ -205,7 +193,7 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 			tree->root=z;
 		}
 		z->rb_left=x->rb_left;
-		x->rb_left=NIL_NODE;
+		x->rb_left=NULL;
 		_set_parent(z->rb_left,z);
 		if (z==x->rb_right){
 			x->rb_right=z->rb_right;
@@ -230,8 +218,8 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 		_set_color(z,_get_color(x));
 		_set_color(x,tmp);
 	}
-	if (x->rb_left!=NIL_NODE||x->rb_right!=NIL_NODE){
-		rb_tree_node_t* z=(x->rb_left!=NIL_NODE?x->rb_left:x->rb_right);
+	if (x->rb_left||x->rb_right){
+		rb_tree_node_t* z=(x->rb_left?x->rb_left:x->rb_right);
 		if (y){
 			y->rb_nodes[x==y->rb_right]=z;
 		}
@@ -243,18 +231,15 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 		goto _cleanup;
 	}
 	if (x==tree->root){
-		tree->root=NIL_NODE;
+		tree->root=NULL;
 		goto _cleanup;
 	}
 	_Bool dir=(x==y->rb_right);
-	y->rb_nodes[dir]=NIL_NODE;
+	y->rb_nodes[dir]=NULL;
 	if (_get_color(x)){
 		goto _cleanup;
 	}
-	goto _skip_first_dir;
-	do{
-		dir=(x==y->rb_right);
-_skip_first_dir:
+	while (1){
 		rb_tree_node_t* z=y->rb_nodes[dir^1];
 		rb_tree_node_t* u=z->rb_nodes[dir^1];
 		rb_tree_node_t* v=z->rb_nodes[dir];
@@ -266,14 +251,14 @@ _skip_first_dir:
 			u=z->rb_nodes[dir^1];
 			v=z->rb_nodes[dir];
 		}
-		if (u!=NIL_NODE&&_get_color(u)){
+		if (u&&_get_color(u)){
 			_rotate_subtree(tree,y,dir);
 			_set_color(z,_get_color(y));
 			_set_color(y,0);
 			_set_color(u,0);
 			break;
 		}
-		if (v!=NIL_NODE&&_get_color(v)){
+		if (v&&_get_color(v)){
 			_rotate_subtree(tree,z,dir^1);
 			_rotate_subtree(tree,y,dir);
 			_set_color(v,_get_color(y));
@@ -288,7 +273,11 @@ _skip_first_dir:
 		}
 		x=y;
 		y=_get_parent(x);
-	} while (y);
+		if (!y){
+			break;
+		}
+		dir=(x==y->rb_right);
+	}
 _cleanup:
 	spinlock_release_exclusive(&(tree->lock));
 }
@@ -296,12 +285,12 @@ _cleanup:
 
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
-	if (tree->root==NIL_NODE){
+	if (!tree->root){
 		return NULL;
 	}
 	spinlock_acquire_shared(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
-	for (;x->rb_left!=NIL_NODE;x=x->rb_left);
+	for (;x->rb_left;x=x->rb_left);
 	spinlock_release_shared(&(tree->lock));
 	return x;
 }
@@ -310,8 +299,8 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
 	spinlock_acquire_shared(&(tree->lock));
-	if (x->rb_right!=NIL_NODE){
-		for (x=x->rb_right;x->rb_left!=NIL_NODE;x=x->rb_left);
+	if (x->rb_right){
+		for (x=x->rb_right;x->rb_left;x=x->rb_left);
 	}
 	else{
 		rb_tree_node_t* y;
