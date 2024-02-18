@@ -76,7 +76,7 @@ static void _find_static_elf_sections(module_loader_context_t* ctx){
 
 static _Bool _check_elf_header(module_loader_context_t* ctx){
 	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_REL||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
-		ERROR("ELF header error");
+		ERROR("Invalid ELF header");
 		return 0;
 	}
 	return 1;
@@ -264,6 +264,16 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	char buffer[256];
 	SMM_TEMPORARY_STRING name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
+#if KERNEL_COVERAGE_ENABLED
+	if (!module_file&&name[0]=='/'){
+		module_file=vfs_lookup(NULL,name,0,0,0);
+		for (const char* path=name;path[0];path++){
+			if (path[0]=='/'){
+				name=path+1;
+			}
+		}
+	}
+#endif
 	if (!module_file){
 		ERROR("Unable to find module '%s'",name);
 		return NULL;
