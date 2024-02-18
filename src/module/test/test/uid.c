@@ -23,15 +23,36 @@ extern error_t syscall_uid_get_name();
 
 
 static void _thread(void){
-	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,2*PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
+	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
-	(void)buffer;
 	TEST_FUNC("syscall_uid_get");
-	// syscall_uid_get
+	TEST_GROUP("correct args");
+	TEST_ASSERT(!syscall_uid_get());
+	THREAD_DATA->process->uid=1000;
+	TEST_ASSERT(syscall_uid_get()==1000);
+	THREAD_DATA->process->uid=0;
 	TEST_FUNC("syscall_uid_set");
-	// syscall_uid_set
+	TEST_GROUP("not root");
+	THREAD_DATA->process->uid=1000;
+	THREAD_DATA->process->gid=1000;
+	TEST_ASSERT(syscall_uid_set(1001)==ERROR_DENIED);
+	THREAD_DATA->process->uid=0;
+	THREAD_DATA->process->gid=0;
+	TEST_GROUP("correct args");
+	TEST_ASSERT(!syscall_uid_get());
+	TEST_ASSERT(syscall_uid_set(1000)==ERROR_OK);
+	TEST_ASSERT(syscall_uid_get()==1000);
+	THREAD_DATA->process->uid=0;
 	TEST_FUNC("syscall_uid_get_name");
-	// syscall_uid_get_name
+	TEST_GROUP("invalid buffer length");
+	TEST_ASSERT(syscall_uid_get_name(0,buffer,0)==ERROR_INVALID_ARGUMENT(2));
+	TEST_GROUP("invalid buffer");
+	TEST_ASSERT(syscall_uid_get_name(0,NULL,PAGE_SIZE)==ERROR_INVALID_ARGUMENT(1));
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(syscall_uid_get_name(0xaabbccdd,buffer,PAGE_SIZE)==ERROR_NOT_FOUND);
+	TEST_GROUP("correct args");
+	TEST_ASSERT(uid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
+	TEST_ASSERT(streq(buffer,"root"));
 	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
 }
 
