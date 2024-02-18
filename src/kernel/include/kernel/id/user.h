@@ -27,6 +27,10 @@ error_t uid_has_group(uid_t uid,gid_t gid);
 
 
 
+error_t uid_remove_group(uid_t uid,gid_t gid);
+
+
+
 error_t uid_get_name(uid_t uid,char* buffer,u32 buffer_length);
 
 

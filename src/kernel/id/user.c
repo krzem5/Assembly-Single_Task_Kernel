@@ -124,6 +124,26 @@ KERNEL_PUBLIC error_t uid_has_group(uid_t uid,gid_t gid){
 
 
 
+KERNEL_PUBLIC error_t uid_remove_group(uid_t uid,gid_t gid){
+	spinlock_acquire_exclusive(&_uid_global_lock);
+	uid_data_t* uid_data=(uid_data_t*)rb_tree_lookup_node(&_uid_tree,uid);
+	if (!uid_data){
+		spinlock_release_exclusive(&_uid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	uid_group_t* uid_group=(uid_group_t*)rb_tree_lookup_node(&(uid_data->group_tree),gid);
+	if (!uid_group){
+		spinlock_release_exclusive(&_uid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	rb_tree_remove_node(&(uid_data->group_tree),&(uid_group->rb_node));
+	omm_dealloc(_uid_group_allocator,uid_group);
+	spinlock_release_exclusive(&_uid_global_lock);
+	return ERROR_OK;
+}
+
+
+
 KERNEL_PUBLIC error_t uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_NO_SPACE;

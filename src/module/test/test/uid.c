@@ -50,14 +50,44 @@ void test_uid(void){
 	TEST_ASSERT(uid_delete(0xaabbccdd)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
 	TEST_ASSERT(uid_create(1000,"user")==ERROR_OK);
+	TEST_ASSERT(uid_add_group(1000,1000)==ERROR_OK);
 	TEST_ASSERT(uid_delete(1000)==ERROR_OK);
 	TEST_ASSERT(uid_delete(1000)==ERROR_NOT_FOUND);
 	TEST_FUNC("uid_add_group");
-	// uid_add_group
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(uid_add_group(0xaabbccdd,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("already present");
+	TEST_ASSERT(uid_add_group(0,0)==ERROR_ALREADY_PRESENT);
+	TEST_GROUP("correct args");
+	TEST_ASSERT(!uid_has_group(0,1000));
+	TEST_ASSERT(uid_add_group(0,1000)==ERROR_OK);
+	TEST_ASSERT(uid_has_group(0,1000)==1);
+	TEST_ASSERT(uid_remove_group(0,1000)==ERROR_OK);
 	TEST_FUNC("uid_has_group");
-	// uid_has_group
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(uid_has_group(0xaabbccdd,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("correct args, group not present");
+	TEST_ASSERT(!uid_has_group(0,1000));
+	TEST_GROUP("correct args, group present");
+	TEST_ASSERT(uid_has_group(0,0)==1);
+	TEST_FUNC("uid_remove_group");
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(uid_remove_group(0xaabbccdd,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("group not found");
+	TEST_ASSERT(uid_remove_group(0,0xaabbccdd)==ERROR_NOT_FOUND);
+	TEST_GROUP("correct args");
+	TEST_ASSERT(uid_add_group(0,1000)==ERROR_OK);
+	TEST_ASSERT(uid_remove_group(0,1000)==ERROR_OK);
+	TEST_ASSERT(!uid_has_group(0,1000));
 	TEST_FUNC("uid_get_name");
-	// uid_get_name
+	TEST_GROUP("invalid buffer length");
+	TEST_ASSERT(uid_get_name(0,NULL,0)==ERROR_NO_SPACE);
+	char buffer[256];
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(uid_get_name(0xaabbccdd,buffer,256)==ERROR_NOT_FOUND);
+	TEST_GROUP("correct args");
+	TEST_ASSERT(uid_get_name(0,buffer,256)==ERROR_OK);
+	TEST_ASSERT(streq(buffer,"root"));
 	TEST_FUNC("uid_get_flags");
 	// uid_get_flags
 	process_t* test_process=process_create("test-process","test-process");
