@@ -54,7 +54,6 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		drive->partition_table_descriptor=out;
 		if (config->load_callback(drive)){
 			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,config->name);
-			break;
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
