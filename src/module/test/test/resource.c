@@ -63,6 +63,12 @@ void test_resource(void){
 	TEST_GROUP("invalid resource");
 	TEST_ASSERT(!resource_dealloc(resource_manager,0));
 	TEST_ASSERT(!resource_dealloc(resource_manager,TEST_MAX+1));
+	_Bool was_used=resource_is_used(resource_manager,1);
+	resource_dealloc(resource_manager,1);
+	TEST_ASSERT(!resource_dealloc(resource_manager,1));
+	if (was_used){
+		TEST_ASSERT(resource_alloc(resource_manager)==1);
+	}
 	_verify_integrity(resource_manager,test_data);
 	TEST_GROUP("deallocation");
 	for (u32 i=0;i<(TEST_COUNT>>1);i++){
