@@ -48,14 +48,6 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 
 
 KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager){
-	// /*******************************************************************************************************************/
-	// WARN("pre-delete");
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-	// }
-	// /*******************************************************************************************************************/
 	for (resource_t value=1;value<=resource_manager->max;){
 		resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
 		value=region->rb_node.key+region->length;
@@ -69,25 +61,6 @@ KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager)
 
 KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 	spinlock_acquire_exclusive(&(resource_manager->lock));
-	// /*******************************************************************************************************************/
-	// WARN("pre-alloc");
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-	// }
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	if (value<=resource_manager->max){
-	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-	// 		if (!next_region||next_region->is_used==region->is_used){
-	// 			panic("A");
-	// 		}
-	// 	}
-	// }
-	// /*******************************************************************************************************************/
 	resource_region_t* prev_region=NULL;
 	resource_region_t* region=(void*)rb_tree_lookup_increasing_node(&(resource_manager->tree),1);
 	if (region->is_used){
@@ -123,25 +96,6 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 			omm_dealloc(_resource_region_allocator,next_region);
 		}
 	}
-	// /*******************************************************************************************************************/
-	// WARN("post-alloc: %u",out);
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-	// }
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	if (value<=resource_manager->max){
-	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-	// 		if (!next_region||next_region->is_used==region->is_used){
-	// 			panic("A");
-	// 		}
-	// 	}
-	// }
-	// /*******************************************************************************************************************/
 	spinlock_release_exclusive(&(resource_manager->lock));
 	return out;
 }
@@ -149,25 +103,6 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 
 
 KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
-	// /*******************************************************************************************************************/
-	// WARN("pre-dealloc: %u",resource);
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-	// }
-	// for (resource_t value=1;value<=resource_manager->max;){
-	// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-	// 	value=region->rb_node.key+region->length;
-	// 	if (value<=resource_manager->max){
-	// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-	// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-	// 		if (!next_region||next_region->is_used==region->is_used){
-	// 			panic("A");
-	// 		}
-	// 	}
-	// }
-	// /*******************************************************************************************************************/
 	if (!resource||resource>resource_manager->max){
 		return 0;
 	}
@@ -205,26 +140,6 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 				omm_dealloc(_resource_region_allocator,region);
 			}
 		}
-		// /*******************************************************************************************************************/
-		// for (resource_t value=1;value<=resource_manager->max;){
-		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 	value=region->rb_node.key+region->length;
-		// 	if (value<=resource_manager->max){
-		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-		// 		if (!next_region||next_region->is_used==region->is_used){
-		// 			WARN("%u:%u",value,resource);
-		// 			for (value=1;value<=resource_manager->max;){
-		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 				value=region->rb_node.key+region->length;
-		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// 			}
-		// 			panic("A");
-		// 		}
-		// 	}
-		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// }
-		// /*******************************************************************************************************************/
 	}
 	else if (resource==region->rb_node.key+region->length-1){
 		resource_region_t* next_region=(void*)rb_tree_lookup_node(&(resource_manager->tree),resource+1);
@@ -249,26 +164,6 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 				omm_dealloc(_resource_region_allocator,next_region);
 			}
 		}
-		// /*******************************************************************************************************************/
-		// for (resource_t value=1;value<=resource_manager->max;){
-		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 	value=region->rb_node.key+region->length;
-		// 	if (value<=resource_manager->max){
-		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-		// 		if (!next_region||next_region->is_used==region->is_used){
-		// 			WARN("%u:%u",value,resource);
-		// 			for (value=1;value<=resource_manager->max;){
-		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 				value=region->rb_node.key+region->length;
-		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// 			}
-		// 			panic("A");
-		// 		}
-		// 	}
-		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// }
-		// /*******************************************************************************************************************/
 	}
 	else{
 		resource_region_t* new_unused_region=omm_alloc(_resource_region_allocator);
@@ -282,26 +177,6 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 		new_used_region->is_used=1;
 		rb_tree_insert_node(&(resource_manager->tree),&(new_used_region->rb_node));
 		region->length=resource-region->rb_node.key;
-		// /*******************************************************************************************************************/
-		// for (resource_t value=1;value<=resource_manager->max;){
-		// 	resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 	value=region->rb_node.key+region->length;
-		// 	if (value<=resource_manager->max){
-		// 		resource_region_t* next_region=(resource_region_t*)rb_tree_lookup_node(&(resource_manager->tree),value);
-		// 		KERNEL_ASSERT(next_region&&next_region->is_used==!region->is_used);
-		// 		if (!next_region||next_region->is_used==region->is_used){
-		// 			WARN("%u:%u",value,resource);
-		// 			for (value=1;value<=resource_manager->max;){
-		// 				region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
-		// 				value=region->rb_node.key+region->length;
-		// 				ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// 			}
-		// 			panic("A");
-		// 		}
-		// 	}
-		// 	// ERROR("%u - %u: %u",region->rb_node.key,value-1,region->is_used);
-		// }
-		// /*******************************************************************************************************************/
 	}
 	spinlock_release_exclusive(&(resource_manager->lock));
 	return 1;

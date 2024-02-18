@@ -55,7 +55,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	descriptor->active_count=0;
 	descriptor->rb_node.key=out;
 	notification_dispatcher_init(&(descriptor->notification_dispatcher));
-	rb_tree_insert_node_increasing(&_handle_type_tree,&(descriptor->rb_node));
+	rb_tree_insert_node(&_handle_type_tree,&(descriptor->rb_node));
 	if (handle_handle_type){
 		handle_finish_setup(&(descriptor->handle));
 	}
@@ -84,7 +84,7 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;
 	handle_descriptor->active_count++;
-	rb_tree_insert_node_increasing(&(handle_descriptor->tree),&(out->rb_node));
+	rb_tree_insert_node(&(handle_descriptor->tree),&(out->rb_node));
 	spinlock_release_exclusive(&(handle_descriptor->lock));
 }
 

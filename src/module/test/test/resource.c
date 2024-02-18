@@ -8,7 +8,7 @@
 
 
 
-#define TEST_COUNT 256
+#define TEST_COUNT 1024
 
 #define TEST_MIN 1
 #define TEST_MAX (TEST_MIN+TEST_COUNT-1)

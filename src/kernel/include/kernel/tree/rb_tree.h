@@ -34,10 +34,6 @@ void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x);
 
 
 
-void rb_tree_insert_node_increasing(rb_tree_t* tree,rb_tree_node_t* x);
-
-
-
 rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key);
 
 

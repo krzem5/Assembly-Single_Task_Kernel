@@ -52,9 +52,9 @@ void symbol_remove(const char* module){
 		}
 		address=symbol->rb_node.key+1;
 		if (streq(symbol->module,module)){
-			// rb_tree_remove_node(&_symbol_tree,&(symbol->rb_node));
-			// smm_dealloc(symbol->name);
-			// omm_dealloc(_symbol_allocator,symbol);
+			rb_tree_remove_node(&_symbol_tree,&(symbol->rb_node));
+			smm_dealloc(symbol->name);
+			omm_dealloc(_symbol_allocator,symbol);
 		}
 	}
 }
