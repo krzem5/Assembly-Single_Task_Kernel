@@ -97,7 +97,16 @@ void test_uid(void){
 	TEST_ASSERT(uid_get_flags(0)==ID_FLAG_BYPASS_VFS_PERMISSIONS);
 	TEST_ASSERT(uid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS,0)==ERROR_OK);
 	TEST_FUNC("uid_set_flags");
-	// uid_set_flags
+	TEST_GROUP("invalid uid");
+	TEST_ASSERT(uid_set_flags(0xaabbccdd,0,0)==ERROR_NOT_FOUND);
+	TEST_GROUP("correct args");
+	TEST_ASSERT(!uid_get_flags(0));
+	TEST_ASSERT(uid_set_flags(0,0,ID_FLAG_BYPASS_VFS_PERMISSIONS)==ERROR_OK);
+	TEST_ASSERT(uid_get_flags(0)==ID_FLAG_BYPASS_VFS_PERMISSIONS);
+	TEST_ASSERT(uid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS,ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL)==ERROR_OK);
+	TEST_ASSERT(uid_get_flags(0)==(ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL));
+	TEST_ASSERT(uid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL,0)==ERROR_OK);
+	TEST_ASSERT(!uid_get_flags(0));
 	process_t* test_process=process_create("test-process","test-process");
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-uid-thread",_thread,0x200000,0));
 	event_await(test_process->event,0);
