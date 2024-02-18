@@ -13,15 +13,6 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count)
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		return 0;
 	}
-	if (offset>=kernel_data.initramfs_size){
-		return 0;
-	}
-	if (offset+count>kernel_data.initramfs_size){
-		count=kernel_data.initramfs_size-offset;
-	}
-	if (!count){
-		return 0;
-	}
 	memcpy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(void*)(kernel_data.initramfs_address+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),count);
 	return count;
 }

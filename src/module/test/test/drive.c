@@ -83,6 +83,8 @@ void test_drive(void){
 	TEST_FUNC("drive_read");
 	TEST_GROUP("empty buffer");
 	TEST_ASSERT(!drive_read(drive,0,NULL,0));
+	TEST_GROUP("out of bounds");
+	TEST_ASSERT(!drive_read(drive,0xffffffff,NULL,0));
 	TEST_GROUP("correct args");
 	u8 buffer[512];
 	u8 buffer2[512];
@@ -98,19 +100,43 @@ void test_drive(void){
 	for (u32 i=0;i<512;i++){
 		TEST_ASSERT(buffer[i]==buffer2[i]);
 	}
+	TEST_GROUP("partially out of bounds");
+	random_generate(buffer,sizeof(buffer));
+	memset(buffer2,0,sizeof(buffer2));
+	TEST_ASSERT(drive_read(drive,3,buffer2,5)==1);
+	TEST_ASSERT(_drive_io_callback_drive==drive);
+	TEST_ASSERT(_drive_io_callback_offset==3);
+	TEST_ASSERT(!(_drive_io_callback_buffer&(PAGE_SIZE-1)));
+	TEST_ASSERT(_drive_io_callback_size==1);
+	for (u32 i=0;i<512;i++){
+		TEST_ASSERT(buffer[i]==buffer2[i]);
+	}
 	TEST_FUNC("drive_write");
 	TEST_GROUP("empty buffer");
 	TEST_ASSERT(!drive_write(drive,0,NULL,0));
 	TEST_GROUP("read-only drive");
 	drive->type=&_test_drive_type_readonly;
 	TEST_ASSERT(!drive_write(drive,0,buffer2,1));
+	TEST_GROUP("out of bounds");
+	drive->type=&_test_drive_type;
+	TEST_ASSERT(!drive_write(drive,0xffffffff,NULL,0));
 	TEST_GROUP("correct args");
 	memset(buffer,0,sizeof(buffer));
 	random_generate(buffer2,sizeof(buffer2));
-	drive->type=&_test_drive_type;
 	TEST_ASSERT(drive_write(drive,0,buffer2,1)==1);
 	TEST_ASSERT(_drive_io_callback_drive==drive);
 	TEST_ASSERT(_drive_io_callback_offset==DRIVE_OFFSET_FLAG_WRITE);
+	TEST_ASSERT(!(_drive_io_callback_buffer&(PAGE_SIZE-1)));
+	TEST_ASSERT(_drive_io_callback_size==1);
+	for (u32 i=0;i<512;i++){
+		TEST_ASSERT(buffer[i]==buffer2[i]);
+	}
+	TEST_GROUP("partially out of bounds");
+	memset(buffer,0,sizeof(buffer));
+	random_generate(buffer2,sizeof(buffer2));
+	TEST_ASSERT(drive_write(drive,3,buffer2,5)==1);
+	TEST_ASSERT(_drive_io_callback_drive==drive);
+	TEST_ASSERT(_drive_io_callback_offset==(3|DRIVE_OFFSET_FLAG_WRITE));
 	TEST_ASSERT(!(_drive_io_callback_buffer&(PAGE_SIZE-1)));
 	TEST_ASSERT(_drive_io_callback_size==1);
 	for (u32 i=0;i<512;i++){

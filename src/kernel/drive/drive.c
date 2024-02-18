@@ -66,6 +66,12 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 
 
 KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
+	if (offset>=drive->block_count){
+		return 0;
+	}
+	if (offset+size>drive->block_count){
+		size=drive->block_count-offset;
+	}
 	if (!size){
 		return 0;
 	}
@@ -79,7 +85,13 @@ KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
 
 
 KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 size){
-	if (!size||(drive->type->flags&DRIVE_TYPE_FLAG_READ_ONLY)){
+	if ((drive->type->flags&DRIVE_TYPE_FLAG_READ_ONLY)||offset>=drive->block_count){
+		return 0;
+	}
+	if (offset+size>drive->block_count){
+		size=drive->block_count-offset;
+	}
+	if (!size){
 		return 0;
 	}
 	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
