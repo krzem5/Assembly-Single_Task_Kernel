@@ -27,7 +27,6 @@ KERNEL_PUBLIC _Bool pci_msix_load(const pci_device_t* device,msix_table_t* out){
 	u32 table_offset_and_bar=pci_device_read_data(device,offset+4);
 	pci_bar_t pci_bar;
 	if ((table_offset_and_bar&7)>5||!pci_device_get_bar(device,table_offset_and_bar&7,&pci_bar)||!(pci_bar.flags&PCI_BAR_FLAG_MEMORY)){
-		WARN("Invalid MSI-x config");
 		return 0;
 	}
 	u32 message_control=pci_device_read_data(device,offset);
