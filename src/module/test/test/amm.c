@@ -10,26 +10,25 @@
 
 #define TEST_COUNT 256
 
-#define TEST_ALLOC_MIN_SIZE 1
-// #define TEST_ALLOC_MAX_SIZE 16384
-#define TEST_ALLOC_MAX_SIZE 4095
+#define TEST_ALLOC_MIN_SIZE 0
+#define TEST_ALLOC_MAX_SIZE 16384
 
 
 
-typedef struct _SINGLE_TEST_DATA{
+typedef struct _ALLOCATOR_TEST_DATA{
 	u64 size;
 	u8* ptr;
-} single_test_data_t;
+} allocator_test_data_t;
 
 
 
-static void _verify_integrity(const single_test_data_t* tests,const u8* test_buffer){
+static void _verify_integrity(const allocator_test_data_t* test_data,const u8* test_buffer){
 	for (u32 i=0;i<TEST_COUNT;i++){
-		if (!(tests+i)->ptr){
+		if (!(test_data+i)->ptr){
 			continue;
 		}
-		for (u64 i=0;i<(tests+i)->size;i++){
-			TEST_ASSERT((tests+i)->ptr[i]==test_buffer[i]);
+		for (u64 j=0;j<(test_data+i)->size;j++){
+			TEST_ASSERT((test_data+i)->ptr[j]==test_buffer[j]);
 		}
 	}
 }
@@ -38,7 +37,7 @@ static void _verify_integrity(const single_test_data_t* tests,const u8* test_buf
 
 void test_amm(void){
 	TEST_MODULE("amm");
-	single_test_data_t tests[TEST_COUNT];
+	allocator_test_data_t test_data[TEST_COUNT];
 	u8 test_buffer[TEST_ALLOC_MAX_SIZE];
 	random_generate(test_buffer,TEST_ALLOC_MAX_SIZE);
 	TEST_FUNC("amm_alloc");
@@ -46,32 +45,32 @@ void test_amm(void){
 	TEST_ASSERT(!amm_alloc(0));
 	TEST_GROUP("allocation");
 	for (u32 i=0;i<TEST_COUNT;i++){
-		random_generate(&((tests+i)->size),sizeof(u64));
-		(tests+i)->size=((tests+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		(tests+i)->ptr=amm_alloc((tests+i)->size);
-		memcpy((tests+i)->ptr,test_buffer,(tests+i)->size);
-		TEST_ASSERT((tests+i)->ptr);
+		random_generate(&((test_data+i)->size),sizeof(u64));
+		(test_data+i)->size=((test_data+i)->size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
+		(test_data+i)->ptr=amm_alloc((test_data+i)->size);
+		TEST_ASSERT(!(test_data+i)->size||(test_data+i)->ptr);
+		memcpy((test_data+i)->ptr,test_buffer,(test_data+i)->size);
 	}
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	TEST_FUNC("amm_dealloc");
 	TEST_GROUP("NULL pointer");
 	amm_dealloc(NULL);
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	TEST_GROUP("deallocation");
 	for (u32 i=0;i<(TEST_COUNT>>1);i++){
 		u32 j=0;
 		random_generate(&j,sizeof(u32));
 		j%=TEST_COUNT;
-		amm_dealloc((tests+j)->ptr);
-		(tests+j)->size=0;
-		(tests+j)->ptr=NULL;
+		amm_dealloc((test_data+j)->ptr);
+		(test_data+j)->size=0;
+		(test_data+j)->ptr=NULL;
 	}
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	TEST_FUNC("amm_realloc");
 	TEST_GROUP("allocation");
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	TEST_GROUP("deallocation");
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	TEST_GROUP("reallocation");
 	for (u32 i=0;i<(TEST_COUNT>>1);i++){
 		u32 j=0;
@@ -80,14 +79,14 @@ void test_amm(void){
 		u64 new_size;
 		random_generate(&new_size,sizeof(u64));
 		new_size=(new_size%(TEST_ALLOC_MAX_SIZE-TEST_ALLOC_MIN_SIZE+1))+TEST_ALLOC_MIN_SIZE;
-		(tests+j)->ptr=amm_realloc((tests+j)->ptr,new_size);
-		if (new_size>(tests+j)->size){
-			memcpy((tests+j)->ptr+(tests+j)->size,test_buffer+(tests+j)->size,new_size-(tests+j)->size);
+		(test_data+j)->ptr=amm_realloc((test_data+j)->ptr,new_size);
+		if (new_size>(test_data+j)->size){
+			memcpy((test_data+j)->ptr+(test_data+j)->size,test_buffer+(test_data+j)->size,new_size-(test_data+j)->size);
 		}
-		(tests+j)->size=new_size;
+		(test_data+j)->size=new_size;
 	}
-	_verify_integrity(tests,test_buffer);
+	_verify_integrity(test_data,test_buffer);
 	for (u32 i=0;i<TEST_COUNT;i++){
-		amm_dealloc((tests+i)->ptr);
+		amm_dealloc((test_data+i)->ptr);
 	}
 }

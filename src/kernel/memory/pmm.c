@@ -313,7 +313,7 @@ _retry_allocator:
 		if (ptr[k]==PMM_DEBUG_VALUE*0x0101010101010101ull){
 			continue;
 		}
-		ERROR("pmm_alloc: use after free at %p +%u /%u: %p",out,k<<3,_get_block_size(i),ptr[k]);
+		ERROR("pmm_alloc: use after free at %p+%u/%u: %p",out,k<<3,_get_block_size(i),ptr[k]);
 		error=1;
 	}
 	if (error){

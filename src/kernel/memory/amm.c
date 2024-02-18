@@ -23,7 +23,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _amm_allocators[ALLOCATOR_COUNT];
 static KERNEL_INLINE u64 _size_to_index(u64 size){
 	size=(size+7)&0xfffffffffffffff8ull;
 	u32 i=60-__builtin_clzll(size);
-	return (size>3ull<<(PAGE_SIZE_SHIFT-2)?pmm_align_up_address(size):(i<<1)+(!!(size&(size-1)))+(size>(3<<(i+2))));
+	return (size>3ull<<(PAGE_SIZE_SHIFT-2)?8ull<<(i+(!!(size&(size-1)))):(i<<1)+(!!(size&(size-1)))+(size>(3<<(i+2))));
 }
 
 
