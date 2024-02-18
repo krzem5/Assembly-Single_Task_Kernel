@@ -407,7 +407,7 @@ def _compile_module(module,dependencies):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
 
 

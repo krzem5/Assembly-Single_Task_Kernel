@@ -1,5 +1,3 @@
-OUTPUT_FORMAT("elf64-x86-64","elf64-x86-64","elf64-x86-64")
-OUTPUT_ARCH(i386:x86-64)
 SEARCH_DIR("=build/lib");
 ENTRY(_start)
 SECTIONS{

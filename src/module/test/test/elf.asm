@@ -1,5 +1,5 @@
 global test_elf_get_correct_hwcap:function hidden
-section .etext exec nowrite
+section .text exec nowrite
 
 
 

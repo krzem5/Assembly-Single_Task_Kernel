@@ -50,28 +50,6 @@ static void _module_handle_destructor(handle_t* handle){
 
 
 
-static _Bool _alloc_region_memory(module_address_range_t* region){
-	region->size=pmm_align_up_address((region->size?region->size:1));
-	mmap_region_t* mmap_region=mmap_alloc(&process_kernel_image_mmap,0,region->size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
-	if (!mmap_region){
-		ERROR("Unable to reserve module section memory");
-		return 0;
-	}
-	region->base=mmap_region->rb_node.key;
-	return 1;
-}
-
-
-
-static void _dealloc_region_memory(const module_address_range_t* region){
-	if (!region->size||!region->base){
-		return;
-	}
-	mmap_dealloc(&process_kernel_image_mmap,region->base,region->size);
-}
-
-
-
 static module_t* _lookup_module_by_name(const char* name){
 	HANDLE_FOREACH(module_handle_type){
 		handle_acquire(handle);
@@ -97,69 +75,9 @@ static void _find_static_elf_sections(module_loader_context_t* ctx){
 
 
 static _Bool _check_elf_header(module_loader_context_t* ctx){
-	if (ctx->elf_header->e_ident.signature!=0x464c457f){
-		ERROR("ELF header error: e_ident.signature != 0x464c457f");
+	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_REL||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
+		ERROR("ELF header error");
 		return 0;
-	}
-	if (ctx->elf_header->e_ident.word_size!=2){
-		ERROR("ELF header error: e_ident.word_size != 2");
-		return 0;
-	}
-	if (ctx->elf_header->e_ident.endianess!=1){
-		ERROR("ELF header error: e_ident.endianess != 1");
-		return 0;
-	}
-	if (ctx->elf_header->e_ident.header_version!=1){
-		ERROR("ELF header error: e_ident.header_version != 1");
-		return 0;
-	}
-	if (ctx->elf_header->e_ident.abi!=0){
-		ERROR("ELF header error: e_ident.abi != 0");
-		return 0;
-	}
-	if (ctx->elf_header->e_type!=ET_REL){
-		ERROR("ELF header error: e_type != ET_REL");
-		return 0;
-	}
-	if (ctx->elf_header->e_machine!=0x3e){
-		ERROR("ELF header error: machine != 0x3e");
-		return 0;
-	}
-	if (ctx->elf_header->e_version!=1){
-		ERROR("ELF header error: version != 1");
-		return 0;
-	}
-	return 1;
-}
-
-
-
-static _Bool _accumulate_sections(module_loader_context_t* ctx){
-	INFO("Accumulating sections...");
-	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
-		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
-		if (!(section_header->sh_flags&SHF_ALLOC)){
-			continue;
-		}
-		u64* var=NULL;
-		switch (section_header->sh_flags&(SHF_WRITE|SHF_EXECINSTR)){
-			case 0:
-				var=&(ctx->module->nx_region.size);
-				break;
-			case SHF_WRITE:
-				var=&(ctx->module->rw_region.size);
-				break;
-			case SHF_EXECINSTR:
-				var=&(ctx->module->ex_region.size);
-				break;
-			default:
-				ERROR("Invalid section flag combination: SHF_WRITE|SHF_EXECINSTR");
-				return 0;
-		}
-		if (section_header->sh_addralign){
-			*var+=(-(*var))&(section_header->sh_addralign-1);
-		}
-		*var+=section_header->sh_size;
 	}
 	return 1;
 }
@@ -168,42 +86,30 @@ static _Bool _accumulate_sections(module_loader_context_t* ctx){
 
 static _Bool _map_sections(module_loader_context_t* ctx){
 	INFO("Mapping sections...");
-	if (!_alloc_region_memory(&(ctx->module->ex_region))){
+	u64 region_size=0;
+	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
+		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
+		if (!(section_header->sh_flags&SHF_ALLOC)){
+			continue;
+		}
+		u64 section_end=pmm_align_up_address(section_header->sh_addr+section_header->sh_size);
+		if (section_end>region_size){
+			region_size=section_end;
+		}
+	}
+	INFO("Region size: %v",region_size);
+	ctx->module->region=mmap_alloc(&process_kernel_image_mmap,0,region_size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	if (!ctx->module->region){
+		ERROR("Unable to reserve module memory");
 		return 0;
 	}
-	if (!_alloc_region_memory(&(ctx->module->nx_region))){
-		return 0;
-	}
-	if (!_alloc_region_memory(&(ctx->module->rw_region))){
-		return 0;
-	}
-	INFO("Regions: EX: %v, NX: %v, RW: %v",ctx->module->ex_region.size,ctx->module->nx_region.size,ctx->module->rw_region.size);
-	u64 ex_base=ctx->module->ex_region.base;
-	u64 nx_base=ctx->module->nx_region.base;
-	u64 rw_base=ctx->module->rw_region.base;
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			section_header->sh_addr=0;
 			continue;
 		}
-		u64* var=NULL;
-		switch (section_header->sh_flags&(SHF_WRITE|SHF_EXECINSTR)){
-			case 0:
-				var=&nx_base;
-				break;
-			case SHF_WRITE:
-				var=&rw_base;
-				break;
-			case SHF_EXECINSTR:
-				var=&ex_base;
-				break;
-		}
-		if (section_header->sh_addralign){
-			*var+=(-*var)&(section_header->sh_addralign-1);
-		}
-		section_header->sh_addr=*var;
-		*var+=section_header->sh_size;
+		section_header->sh_addr+=ctx->module->region->rb_node.key;
 		if (section_header->sh_type==SHT_PROGBITS){
 			memcpy((void*)(section_header->sh_addr),ctx->data+section_header->sh_offset,section_header->sh_size);
 		}
@@ -228,9 +134,9 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 		}
 #if KERNEL_COVERAGE_ENABLED
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
-			ctx->module->gcov_info.base=section_header->sh_addr;
-			ctx->module->gcov_info.size=section_header->sh_size;
-			INFO("Found .gcov_info section at %p (%u record%s)",ctx->module->gcov_info.base,ctx->module->gcov_info.size/sizeof(void*),(ctx->module->gcov_info.size/sizeof(void*)==1?"":"s"));
+			ctx->module->gcov_info_base=section_header->sh_addr;
+			ctx->module->gcov_info_size=section_header->sh_size;
+			INFO("Found .gcov_info section at %p (%u record%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
 		}
 #endif
 	}
@@ -275,35 +181,30 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 			continue;
 		}
 		u64 base=((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+section_header->sh_info*ctx->elf_header->e_shentsize))->sh_addr;
-		if (!base){
+		if (!base||section_header->sh_type!=SHT_RELA){
 			continue;
 		}
-		if (section_header->sh_type==SHT_REL){
-			panic("SHT_REL");
-		}
-		else if (section_header->sh_type==SHT_RELA){
-			const elf_rela_t* entry=ctx->data+section_header->sh_offset;
-			for (u64 j=0;j<section_header->sh_size;j+=sizeof(elf_rela_t)){
-				const elf_sym_t* symbol=ctx->elf_symbol_table+(entry->r_info>>32);
-				u64 relocation_address=base+entry->r_offset;
-				u64 value=symbol->st_value+entry->r_addend+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
-				switch (entry->r_info&0xffffffff){
-					case R_X86_64_64:
-						*((u64*)relocation_address)=value;
-						break;
-					case R_X86_64_PC32:
-					case R_X86_64_PLT32:
-						value-=relocation_address;
-					case R_X86_64_32:
-					case R_X86_64_32S:
-						*((u32*)relocation_address)=value;
-						break;
-					default:
-						ERROR("Unknown relocation type: %u",entry->r_info&0xffffffff);
-						return 0;
-				}
-				entry++;
+		const elf_rela_t* entry=ctx->data+section_header->sh_offset;
+		for (u64 j=0;j<section_header->sh_size;j+=sizeof(elf_rela_t)){
+			const elf_sym_t* symbol=ctx->elf_symbol_table+(entry->r_info>>32);
+			u64 relocation_address=base+entry->r_offset;
+			u64 value=symbol->st_value+entry->r_addend+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
+			switch (entry->r_info&0xffffffff){
+				case R_X86_64_64:
+					*((u64*)relocation_address)=value;
+					break;
+				case R_X86_64_PC32:
+				case R_X86_64_PLT32:
+					value-=relocation_address;
+				case R_X86_64_32:
+				case R_X86_64_32S:
+					*((u32*)relocation_address)=value;
+					break;
+				default:
+					ERROR("Unknown relocation type: %u",entry->r_info&0xffffffff);
+					return 0;
 			}
+			entry++;
 		}
 	}
 	return 1;
@@ -313,9 +214,21 @@ static _Bool _apply_relocations(module_loader_context_t* ctx){
 
 static void _adjust_memory_flags(module_loader_context_t* ctx){
 	INFO("Adjusting memory flags...");
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->ex_region.base,0,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,ctx->module->ex_region.size>>PAGE_SIZE_SHIFT,1);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->nx_region.base,0,VMM_PAGE_FLAG_READWRITE,ctx->module->nx_region.size>>PAGE_SIZE_SHIFT,1);
-	vmm_adjust_flags(&vmm_kernel_pagemap,ctx->module->rw_region.base,0,0,ctx->module->rw_region.size>>PAGE_SIZE_SHIFT,1);
+	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
+		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
+		if (!(section_header->sh_flags&SHF_ALLOC)){
+			continue;
+		}
+		u64 addr=pmm_align_down_address(section_header->sh_addr);
+		u64 flags=0;
+		if (section_header->sh_flags&SHF_WRITE){
+			flags|=VMM_PAGE_FLAG_READWRITE;
+		}
+		if (!(section_header->sh_flags&SHF_EXECINSTR)){
+			flags|=VMM_PAGE_FLAG_NOEXECUTE;
+		}
+		vmm_adjust_flags(&vmm_kernel_pagemap,addr,flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(section_header->sh_size+section_header->sh_addr-addr)>>PAGE_SIZE_SHIFT,1);
+	}
 }
 
 
@@ -354,10 +267,16 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file,0);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
-	memset(module,0,sizeof(module_t));
-	module->name=smm_alloc(name,0);
-	module->state=MODULE_STATE_LOADING;
 	handle_new(module,module_handle_type,&(module->handle));
+	module->name=smm_alloc(name,0);
+	module->descriptor=NULL;
+	module->region=NULL;
+#if KERNEL_COVERAGE_ENABLED
+	module->gcov_info_base=0;
+	module->gcov_info_size=0;
+#endif
+	module->flags=0;
+	module->state=MODULE_STATE_LOADING;
 	module_loader_context_t ctx={
 		name,
 		module,
@@ -365,9 +284,6 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	};
 	_find_static_elf_sections(&ctx);
 	if (!_check_elf_header(&ctx)){
-		goto _error;
-	}
-	if (!_accumulate_sections(&ctx)){
 		goto _error;
 	}
 	if (!_map_sections(&ctx)){
@@ -384,7 +300,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	}
 	_adjust_memory_flags(&ctx);
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	LOG("Module '%s' loaded successfully at %p",name,module->ex_region.base);
+	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
 	*(module->descriptor->module_self_ptr)=module;
@@ -395,9 +311,9 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
-	_dealloc_region_memory(&(module->ex_region));
-	_dealloc_region_memory(&(module->nx_region));
-	_dealloc_region_memory(&(module->rw_region));
+	if (module->region){
+		mmap_dealloc_region(&process_kernel_image_mmap,module->region);
+	}
 	handle_release(&(module->handle));
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	return NULL;
@@ -413,9 +329,9 @@ KERNEL_PUBLIC void module_unload(module_t* module){
 	module->state=MODULE_STATE_UNLOADING;
 	module->descriptor->deinit_callback(module);
 	module->state=MODULE_STATE_UNLOADED;
-	_dealloc_region_memory(&(module->ex_region));
-	_dealloc_region_memory(&(module->nx_region));
-	_dealloc_region_memory(&(module->rw_region));
+	if (module->region){
+		mmap_dealloc_region(&process_kernel_image_mmap,module->region);
+	}
 	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
 		INFO("Preventing future module loads...");
 		return;

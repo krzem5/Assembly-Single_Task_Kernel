@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MODULE_MODULE_H_
 #define _KERNEL_MODULE_MODULE_H_ 1
 #include <kernel/handle/handle.h>
+#include <kernel/memory/mmap.h>
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -26,25 +27,17 @@
 
 
 
-typedef struct _MODULE_ADDRESS_REGION{
-	u64 base;
-	u64 size;
-} module_address_range_t;
-
-
-
 typedef struct _MODULE{
 	handle_t handle;
 	string_t* name;
 	const struct _MODULE_DESCRIPTOR* descriptor;
-	module_address_range_t ex_region;
-	module_address_range_t nx_region;
-	module_address_range_t rw_region;
+	mmap_region_t* region;
 #if KERNEL_COVERAGE_ENABLED
-	module_address_range_t gcov_info;
+	u64 gcov_info_base;
+	u64 gcov_info_size;
 #endif
 	u32 flags;
-	u8 state;
+	u32 state;
 } module_t;
 
 

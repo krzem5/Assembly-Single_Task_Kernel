@@ -105,8 +105,8 @@ static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
 	LOG("Exporting module coverage data...");
 	HANDLE_FOREACH(module_handle_type){
 		module_t* module=handle->object;
-		if (module->state==MODULE_STATE_LOADED&&module->gcov_info.size){
-			_process_gcov_info_section(module->gcov_info.base,module->gcov_info.size);
+		if (module->state==MODULE_STATE_LOADED&&module->gcov_info_base&&module->gcov_info_size){
+			_process_gcov_info_section(module->gcov_info_base,module->gcov_info_size);
 		}
 	}
 }
