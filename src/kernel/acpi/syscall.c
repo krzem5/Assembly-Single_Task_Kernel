@@ -9,5 +9,5 @@
 
 
 void KERNEL_NORETURN syscall_system_shutdown(u32 flags){
-	shutdown(!!(flags&USER_SHUTDOWN_FLAG_RESTART));
+	shutdown(((flags&USER_SHUTDOWN_FLAG_RESTART)?SHUTDOWN_FLAG_RESTART:0));
 }

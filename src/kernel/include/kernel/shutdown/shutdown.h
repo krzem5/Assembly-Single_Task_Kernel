@@ -5,6 +5,11 @@
 
 
 
+#define SHUTDOWN_FLAG_RESTART 1
+#define SHUTDOWN_FLAG_NO_CLEANUP 2
+
+
+
 typedef void (*shutdown_function_callback_t)(void);
 
 
@@ -17,7 +22,7 @@ typedef struct _SHUTDOWN_FUNCTION{
 
 
 
-void KERNEL_NORETURN shutdown(_Bool restart);
+void KERNEL_NORETURN shutdown(u32 flags);
 
 
 

@@ -12,6 +12,9 @@ shell:runtime@static,sys
 shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
 test:runtime@static,sys
+test_crash_invalid_read:runtime@static,sys
+test_crash_invalid_write:runtime@static,sys
+test_crash_normal:runtime@static,sys
 test_elf_send_results:runtime@static,sys
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor

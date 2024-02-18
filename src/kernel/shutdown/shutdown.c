@@ -27,10 +27,12 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC void KERNEL_NORETURN shutdown(_Bool restart){
+KERNEL_PUBLIC void KERNEL_NORETURN shutdown(u32 flags){
 	scheduler_pause();
-	notification_dispatcher_dispatch(&_shutdown_notification_dispatcher,NULL,(restart?NOTIFICATION_TYPE_SHUTDOWN_RESTART:NOTIFICATION_TYPE_SHUTDOWN_POWEROFF));
-	if (restart){
+	if (!(flags&SHUTDOWN_FLAG_NO_CLEANUP)){
+		notification_dispatcher_dispatch(&_shutdown_notification_dispatcher,NULL,((flags&SHUTDOWN_FLAG_RESTART)?NOTIFICATION_TYPE_SHUTDOWN_RESTART:NOTIFICATION_TYPE_SHUTDOWN_POWEROFF));
+	}
+	if (flags&SHUTDOWN_FLAG_RESTART){
 		_shutdown_restart();
 	}
 	for (const shutdown_function_t* function=_shutdown_root_function;function;function=function->next){

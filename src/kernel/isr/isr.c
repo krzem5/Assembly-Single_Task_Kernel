@@ -8,6 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/shutdown/shutdown.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -126,8 +127,9 @@ void _isr_handler(isr_state_t* isr_state){
 			rbp=*((u64*)rbp);
 		}
 	}
-	if (isr_state->cs==0x23){
+	if (CPU_HEADER_DATA->current_thread){
 		thread_terminate();
 	}
+	shutdown(SHUTDOWN_FLAG_NO_CLEANUP);
 	for (;;);
 }

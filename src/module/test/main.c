@@ -7,6 +7,7 @@
 #include <test/acl.h>
 #include <test/amm.h>
 #include <test/cpu.h>
+#include <test/crash.h>
 #include <test/drive.h>
 #include <test/elf.h>
 #include <test/fd.h>
@@ -27,6 +28,7 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	test_acl();
 	test_amm();
 	test_cpu();
+	test_crash();
 	test_drive();
 	test_elf();
 	test_fd();
