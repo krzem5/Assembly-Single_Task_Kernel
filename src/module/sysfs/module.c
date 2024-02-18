@@ -50,6 +50,9 @@ static void _listener(void* object,u32 type){
 	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
 		const module_t* module=handle->object;
 		vfs_node_t* node=vfs_lookup(_sysfs_module_type_root,module->name->data,0,0,0);
+		if (!node){
+			return;
+		}
 		dynamicfs_delete_node(vfs_lookup(node,"exe",0,0,0),1);
 		dynamicfs_delete_node(vfs_lookup(node,"state",0,0,0),1);
 		dynamicfs_delete_node(node,0);

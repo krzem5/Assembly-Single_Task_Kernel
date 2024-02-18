@@ -45,7 +45,6 @@ void symbol_add(const char* module,const char* name,u64 address,_Bool is_public)
 
 
 void symbol_remove(const char* module){
-	panic("symbol_remove");
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
 		symbol_t* symbol=(symbol_t*)rb_node;
 		if (streq(symbol->module,module)){
