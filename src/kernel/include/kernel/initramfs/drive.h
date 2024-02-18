@@ -7,4 +7,8 @@ void initramfs_drive_init(void);
 
 
 
+void initramfs_drive_deinit(void);
+
+
+
 #endif

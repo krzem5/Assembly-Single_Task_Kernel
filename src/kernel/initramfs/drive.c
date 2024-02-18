@@ -9,6 +9,10 @@
 
 
 
+static drive_t* _initramfs_drive=NULL;
+
+
+
 static u64 _initramfs_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		return 0;
@@ -40,5 +44,16 @@ void KERNEL_EARLY_EXEC initramfs_drive_init(void){
 		1,
 		NULL
 	};
-	drive_create(&config);
+	_initramfs_drive=drive_create(&config);
+}
+
+
+
+void initramfs_drive_deinit(void){
+	INFO("Unloading initramfs drive...");
+	if (!_initramfs_drive){
+		return;
+	}
+	handle_release(&(_initramfs_drive->handle));
+	_initramfs_drive=NULL;
 }

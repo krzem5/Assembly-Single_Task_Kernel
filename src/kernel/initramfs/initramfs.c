@@ -7,9 +7,27 @@
 
 
 
+static _Bool _initramfs_is_loaded=0;
+
+
+
 KERNEL_INIT(){
 	LOG("Loading initramfs...");
 	initramfs_fs_init();
 	initramfs_partition_init();
 	initramfs_drive_init();
+	_initramfs_is_loaded=1;
+}
+
+
+
+KERNEL_PUBLIC void initramfs_unload(void){
+	LOG("Unloading initramfs...");
+	if (!_initramfs_is_loaded){
+		return;
+	}
+	_initramfs_is_loaded=0;
+	initramfs_drive_deinit();
+	initramfs_partition_deinit();
+	initramfs_fs_deinit();
 }

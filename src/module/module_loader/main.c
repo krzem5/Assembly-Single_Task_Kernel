@@ -1,6 +1,7 @@
 #include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
+#include <kernel/initramfs/initramfs.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
 #include <kernel/types.h>
@@ -43,6 +44,8 @@ static void _load_modules_from_order_file(_Bool early){
 static _Bool _init(module_t* module){
 	LOG("Loading early modules...");
 	_load_modules_from_order_file(1);
+	LOG("Unloading initramfs...");
+	initramfs_unload();
 	LOG("Loading modules...");
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");

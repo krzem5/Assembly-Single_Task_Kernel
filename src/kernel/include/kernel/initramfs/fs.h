@@ -7,4 +7,8 @@ void initramfs_fs_init(void);
 
 
 
+void initramfs_fs_deinit(void);
+
+
+
 #endif

@@ -50,6 +50,7 @@ typedef struct _INITRAMFS_VFS_NODE{
 
 static omm_allocator_t* _initramfs_vfs_node_allocator=NULL;
 static filesystem_descriptor_t* _initramfs_filesystem_descriptor=NULL;
+static filesystem_t* _initramfs_fs=NULL;
 
 
 
@@ -177,12 +178,6 @@ static const vfs_functions_t _initramfs_functions={
 
 
 
-static void _initramfs_fs_deinit(filesystem_t* fs){
-	panic("_initramfs_fs_deinit");
-}
-
-
-
 static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	drive_t* drive=partition->drive;
 	if (partition->start_lba||!streq(drive->type->name,"initramfs")||drive->block_size!=1){
@@ -196,35 +191,49 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	if (drive_read(drive,sizeof(initramfs_header_t),&node,sizeof(initramfs_node_t))!=sizeof(initramfs_node_t)){
 		return NULL;
 	}
-	filesystem_t* out=fs_create(_initramfs_filesystem_descriptor);
-	out->functions=&_initramfs_functions;
-	out->partition=partition;
-	memcpy(out->guid,header.uuid,16);
+	_initramfs_fs=fs_create(_initramfs_filesystem_descriptor);
+	_initramfs_fs->functions=&_initramfs_functions;
+	_initramfs_fs->partition=partition;
+	memcpy(_initramfs_fs->guid,header.uuid,16);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	out->root=vfs_node_create(out,root_name);
-	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
-	((initramfs_vfs_node_t*)(out->root))->offset=sizeof(initramfs_header_t);
-	((initramfs_vfs_node_t*)(out->root))->size=node.size;
-	((initramfs_vfs_node_t*)(out->root))->data_size=node.data_size;
-	((initramfs_vfs_node_t*)(out->root))->child_count=node.child_count;
-	((initramfs_vfs_node_t*)(out->root))->name_length=node.name_length;
-	((initramfs_vfs_node_t*)(out->root))->flags=node.flags;
-	return out;
+	_initramfs_fs->root=vfs_node_create(_initramfs_fs,root_name);
+	_initramfs_fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->offset=sizeof(initramfs_header_t);
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->size=node.size;
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->data_size=node.data_size;
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->child_count=node.child_count;
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->name_length=node.name_length;
+	((initramfs_vfs_node_t*)(_initramfs_fs->root))->flags=node.flags;
+	return _initramfs_fs;
 }
 
 
 
 static const filesystem_descriptor_config_t _initramfs_filesystem_descriptor_config={
 	"initramfs",
-	_initramfs_fs_deinit,
+	NULL,
 	_initramfs_fs_load
 };
 
 
 
 void KERNEL_EARLY_EXEC initramfs_fs_init(void){
-	LOG("Registering initramfs filesystem descriptor...");
+	INFO("Registering initramfs filesystem descriptor...");
 	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,pmm_alloc_counter("omm_initramfs_node"));
 	spinlock_init(&(_initramfs_vfs_node_allocator->lock));
 	_initramfs_filesystem_descriptor=fs_register_descriptor(&_initramfs_filesystem_descriptor_config);
+}
+
+
+
+void initramfs_fs_deinit(void){
+	INFO("Unregistering initramfs filesystem descriptor...");
+	if (_initramfs_fs){
+		handle_release(&(_initramfs_fs->handle));
+		_initramfs_fs=NULL;
+	}
+	if (_initramfs_filesystem_descriptor){
+		fs_unregister_descriptor(_initramfs_filesystem_descriptor);
+		_initramfs_filesystem_descriptor=NULL;
+	}
 }

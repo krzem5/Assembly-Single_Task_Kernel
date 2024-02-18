@@ -7,4 +7,8 @@ void initramfs_partition_init(void);
 
 
 
+void initramfs_partition_deinit(void);
+
+
+
 #endif

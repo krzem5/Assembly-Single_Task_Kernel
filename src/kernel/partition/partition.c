@@ -24,10 +24,10 @@ KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
 
 static void _partition_handle_destructor(handle_t* handle){
 	partition_t* partition=handle->object;
-	WARN("Delete partition: %s",partition->name);
 	if (partition->descriptor){
 		handle_release(&(partition->descriptor->handle));
 	}
+	smm_dealloc(partition->name);
 	omm_dealloc(_partition_allocator,partition);
 }
 
@@ -54,6 +54,7 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		drive->partition_table_descriptor=out;
 		if (config->load_callback(drive)){
 			INFO("Detected partitioning of drive '%s' as '%s'",drive->model_number->data,config->name);
+			break;
 		}
 		else{
 			drive->partition_table_descriptor=NULL;

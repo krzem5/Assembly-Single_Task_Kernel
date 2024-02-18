@@ -24,10 +24,23 @@ KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
 
 
 
+static void _delete_nodes_recursive(vfs_node_t* node){
+	while (node->relatives.child){
+		_delete_nodes_recursive(node->relatives.child);
+	}
+	vfs_node_dettach_child(node);
+	vfs_node_delete(node);
+}
+
+
+
 static void _fs_handle_destructor(handle_t* handle){
 	filesystem_t* fs=handle->object;
 	if (fs->descriptor->config->deinit_callback){
 		fs->descriptor->config->deinit_callback(fs);
+	}
+	if (fs->root){
+		_delete_nodes_recursive(fs->root);
 	}
 	handle_release(&(fs->descriptor->handle));
 	omm_dealloc(_fs_allocator,fs);
