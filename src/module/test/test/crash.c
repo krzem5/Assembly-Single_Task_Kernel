@@ -56,4 +56,7 @@ void test_crash(void){
 	_test_crash_state=0x00;
 	_execute_elf("/bin/test_crash_invalid_write");
 	TEST_ASSERT(_test_crash_state==0x00);
+	_test_crash_state=0x00;
+	_execute_elf("/bin/test_crash_wrong_iopl");
+	TEST_ASSERT(_test_crash_state==0x00);
 }

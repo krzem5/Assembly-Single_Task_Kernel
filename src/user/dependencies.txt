@@ -15,6 +15,7 @@ test:runtime@static,sys
 test_crash_invalid_read:runtime@static,sys
 test_crash_invalid_write:runtime@static,sys
 test_crash_normal:runtime@static,sys
+test_crash_wrong_iopl:runtime@static,sys
 test_elf_send_results:runtime@static,sys
 time:runtime@static,sys
 tree:runtime@static,sys,dircolor

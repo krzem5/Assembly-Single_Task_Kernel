@@ -8,6 +8,7 @@ section .text exec nowrite
 vmm_get_pagemap:
 	mov rax, cr3
 	mov qword [rdi], rax
+	mov dword [rdi+8], 0
 	ret
 
 
