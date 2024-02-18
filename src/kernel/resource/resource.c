@@ -30,7 +30,8 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 		min=1;
 	}
 	if (min>=max){
-		panic("resource_manager_create: invalid arguments");
+		ERROR("resource_manager_create: invalid arguments");
+		return NULL;
 	}
 	resource_manager_t* out=omm_alloc(_resource_manager_allocator);
 	rb_tree_init(&(out->tree));
@@ -47,7 +48,13 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 
 
 KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager){
-	panic("resource_manager_delete");
+	for (resource_t value=1;value<=resource_manager->max;){
+		resource_region_t* region=(resource_region_t*)rb_tree_lookup_increasing_node(&(resource_manager->tree),value);
+		value=region->rb_node.key+region->length;
+		rb_tree_remove_node(&(resource_manager->tree),&(region->rb_node));
+		omm_dealloc(_resource_region_allocator,region);
+	}
+	omm_dealloc(_resource_manager_allocator,resource_manager);
 }
 
 
@@ -98,5 +105,32 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 
 
 KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
-	panic("resource_dealloc");
+	spinlock_acquire_exclusive(&(resource_manager->lock));
+	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
+	if (!region||!region->is_used){
+		spinlock_release_exclusive(&(resource_manager->lock));
+		return 0;
+	}
+	KERNEL_ASSERT(region->rb_node.key+region->length>resource);
+	if (resource==region->rb_node.key){
+		panic("resource_dealloc: increase prev");
+	}
+	else if (resource==region->rb_node.key+region->length-1){
+		panic("resource_dealloc: increase next");
+	}
+	else{
+		panic("resource_dealloc: split into three");
+	}
+	spinlock_release_exclusive(&(resource_manager->lock));
+	return 1;
+}
+
+
+
+KERNEL_PUBLIC _Bool resource_is_used(resource_manager_t* resource_manager,resource_t resource){
+	spinlock_acquire_shared(&(resource_manager->lock));
+	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
+	_Bool out=(region&&region->is_used);
+	spinlock_release_shared(&(resource_manager->lock));
+	return out;
 }

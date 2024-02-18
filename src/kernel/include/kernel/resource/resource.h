@@ -42,4 +42,8 @@ _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource)
 
 
 
+_Bool resource_is_used(resource_manager_t* resource_manager,resource_t resource);
+
+
+
 #endif

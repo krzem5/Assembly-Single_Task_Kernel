@@ -99,8 +99,6 @@ void test_pipe(void){
 	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
 		TEST_ASSERT(buffer2[i]==buffer[i]);
 	}
-	TEST_GROUP("empty blocking read");
-	// empty blocking read
 	TEST_GROUP("peek");
 	random_generate(buffer,TEST_BUFFER_SIZE);
 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
@@ -124,8 +122,6 @@ void test_pipe(void){
 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE,0)==(PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE));
 	TEST_GROUP("full nonblocking write");
 	TEST_ASSERT(!vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
-	TEST_GROUP("full blocking write");
-	// full blocking write
 	vfs_node_dettach_external_child(pipe);
 	vfs_node_delete(pipe);
 	process_t* test_process=process_create("test-process","test-process");

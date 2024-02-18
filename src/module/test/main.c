@@ -18,6 +18,7 @@
 #include <test/module.h>
 #include <test/notification.h>
 #include <test/pipe.h>
+#include <test/resource.h>
 #include <test/test.h>
 #include <test/uid.h>
 #define KERNEL_LOG_NAME "test"
@@ -42,6 +43,7 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	test_module();
 	test_notification();
 	test_pipe();
+	test_resource();
 	test_uid();
 	WARN("%u test%s passed, %u test%s failed",test_pass_count,(test_pass_count==1?"":"s"),test_fail_count,(test_fail_count==1?"":"s"));
 	if (test_fail_count){
