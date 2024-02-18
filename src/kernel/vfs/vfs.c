@@ -139,9 +139,8 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 			if (!path[0]){
 				*parent=root;
 				*child_name=path-i;
-				return NULL;
 			}
-			panic("vfs_lookup_for_creation: alloc virtual node");
+			return NULL;
 		}
 		root=child;
 	}

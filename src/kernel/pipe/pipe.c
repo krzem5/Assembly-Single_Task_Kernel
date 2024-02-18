@@ -8,6 +8,7 @@
 #include <kernel/memory/smm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
@@ -53,6 +54,16 @@ static vfs_node_t* _pipe_create(void){
 	out->read_event=event_create();
 	out->write_event=event_create();
 	return (vfs_node_t*)out;
+}
+
+
+
+static void _pipe_delete(vfs_node_t* node){
+	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
+	mmap_dealloc(&(process_kernel->mmap),(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
+	event_delete(pipe->read_event);
+	event_delete(pipe->write_event);
+	omm_dealloc(_pipe_vfs_node_allocator,node);
 }
 
 
@@ -139,7 +150,7 @@ _retry_write:
 
 static const vfs_functions_t _pipe_vfs_functions={
 	_pipe_create,
-	NULL,
+	_pipe_delete,
 	NULL,
 	NULL,
 	NULL,
@@ -202,6 +213,9 @@ error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 		}
 		name_string=smm_alloc(name,0);
 	}
-	vfs_node_t* out=pipe_create(parent,name_string);
-	return fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE);
+	vfs_node_t* node=pipe_create(parent,name_string);
+	node->flags|=0660<<VFS_NODE_PERMISSION_SHIFT;
+	node->uid=THREAD_DATA->process->uid;
+	node->gid=THREAD_DATA->process->gid;
+	return fd_from_node(node,FD_FLAG_READ|FD_FLAG_WRITE);
 }
