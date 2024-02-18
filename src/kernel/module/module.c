@@ -50,21 +50,6 @@ static void _module_handle_destructor(handle_t* handle){
 
 
 
-static module_t* _lookup_module_by_name(const char* name){
-	HANDLE_FOREACH(module_handle_type){
-		handle_acquire(handle);
-		module_t* module=handle->object;
-		if (streq(module->name->data,name)){
-			handle_release(handle);
-			return module;
-		}
-		handle_release(handle);
-	}
-	return NULL;
-}
-
-
-
 static void _find_static_elf_sections(module_loader_context_t* ctx){
 	INFO("Locating static ELF sections...");
 	ctx->elf_header=ctx->data;
@@ -252,7 +237,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		return NULL;
 	}
 	LOG("Loading module '%s'...",name);
-	module_t* module=_lookup_module_by_name(name);
+	module_t* module=module_lookup(name);
 	if (module){
 		INFO("Module '%s' is already loaded",name);
 		return module;
@@ -336,9 +321,9 @@ _error:
 
 
 
-KERNEL_PUBLIC void module_unload(module_t* module){
+KERNEL_PUBLIC _Bool module_unload(module_t* module){
 	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
-		return;
+		return 0;
 	}
 	LOG("Unloading module '%s'...",module->name->data);
 	module->state=MODULE_STATE_UNLOADING;
@@ -349,7 +334,23 @@ KERNEL_PUBLIC void module_unload(module_t* module){
 	}
 	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
 		INFO("Preventing future module loads...");
-		return;
+		return 1;
 	}
 	handle_release(&(module->handle));
+	return 1;
+}
+
+
+
+KERNEL_PUBLIC module_t* module_lookup(const char* name){
+	HANDLE_FOREACH(module_handle_type){
+		handle_acquire(handle);
+		module_t* module=handle->object;
+		if (streq(module->name->data,name)){
+			handle_release(handle);
+			return module;
+		}
+		handle_release(handle);
+	}
+	return NULL;
 }

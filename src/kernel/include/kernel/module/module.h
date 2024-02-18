@@ -60,7 +60,11 @@ module_t* module_load(const char* name);
 
 
 
-void module_unload(module_t* module);
+_Bool module_unload(module_t* module);
+
+
+
+module_t* module_lookup(const char* name);
 
 
 

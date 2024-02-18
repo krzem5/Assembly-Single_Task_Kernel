@@ -26,6 +26,8 @@ sysfs:dynamicfs
 test:
 test_module_failed_init:test
 test_module_no_module_section:
+test_module_normal_module:test
+test_module_prevent_future_loads:test
 test_module_unresolved_symbols:
 test_module_wrong_module_section_size:
 ui_common:

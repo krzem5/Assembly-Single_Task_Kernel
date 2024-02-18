@@ -44,9 +44,32 @@ void test_module(void){
 	TEST_ASSERT(_test_module_deinit_triggered==1);
 	TEST_FUNC("module_unload");
 	TEST_GROUP("already unloaded module");
-	// already unloaded module
+	module_t* module=module_load("test_module_prevent_future_loads");
+	TEST_ASSERT(module);
+	_test_module_deinit_triggered=0;
+	u64 module_handle=module->handle.rb_node.key;
+	TEST_ASSERT(module_unload(module));
+	TEST_ASSERT(_test_module_deinit_triggered==1);
+	TEST_ASSERT(!module_unload(module));
 	TEST_GROUP("prevent future module loads");
-	// prevent future module loads
+	TEST_ASSERT(module_load("test_module_prevent_future_loads")->handle.rb_node.key==module_handle);
 	TEST_GROUP("correct args");
-	// correct args
+	module=module_load("test_module_normal_module");
+	TEST_ASSERT(module);
+	_test_module_deinit_triggered=0;
+	module_handle=module->handle.rb_node.key;
+	TEST_ASSERT(module_unload(module));
+	TEST_ASSERT(_test_module_deinit_triggered==1);
+	TEST_ASSERT(!module_unload(module));
+	module_t* new_module=module_load("test_module_normal_module");
+	TEST_ASSERT(new_module);
+	TEST_ASSERT(new_module->handle.rb_node.key!=module_handle);
+	TEST_ASSERT(module_unload(new_module));
+	TEST_FUNC("module_lookup");
+	TEST_GROUP("loaded module");
+	TEST_ASSERT(module_lookup("test"));
+	TEST_GROUP("unloaded module");
+	TEST_ASSERT(module_lookup("module_loader"));
+	TEST_GROUP("not found");
+	TEST_ASSERT(!module_lookup("invalid_module_name"));
 }
