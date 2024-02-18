@@ -14,11 +14,19 @@ error_t gid_create(gid_t gid,const char* name);
 
 
 
+error_t gid_delete(gid_t gid);
+
+
+
 error_t gid_get_name(gid_t gid,char* buffer,u32 buffer_length);
 
 
 
 id_flags_t gid_get_flags(gid_t gid);
+
+
+
+error_t gid_set_flags(gid_t gid,id_flags_t clear,id_flags_t set);
 
 
 

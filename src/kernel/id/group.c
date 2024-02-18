@@ -61,6 +61,22 @@ KERNEL_PUBLIC error_t gid_create(gid_t gid,const char* name){
 
 
 
+KERNEL_PUBLIC error_t gid_delete(gid_t gid){
+	spinlock_acquire_exclusive(&_gid_global_lock);
+	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
+	if (!gid_data){
+		spinlock_release_shared(&_gid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	smm_dealloc(gid_data->name);
+	rb_tree_remove_node(&_gid_tree,&(gid_data->rb_node));
+	omm_dealloc(_gid_data_allocator,gid_data);
+	spinlock_release_exclusive(&_gid_global_lock);
+	return ERROR_OK;
+}
+
+
+
 KERNEL_PUBLIC error_t gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 	if (!buffer_length){
 		return ERROR_NO_SPACE;
@@ -88,6 +104,20 @@ KERNEL_PUBLIC id_flags_t gid_get_flags(gid_t gid){
 	id_flags_t out=gid_data->flags;
 	spinlock_release_shared(&_gid_global_lock);
 	return out;
+}
+
+
+
+KERNEL_PUBLIC error_t gid_set_flags(gid_t gid,id_flags_t clear,id_flags_t set){
+	spinlock_acquire_shared(&_gid_global_lock);
+	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
+	if (!gid_data){
+		spinlock_release_shared(&_gid_global_lock);
+		return ERROR_NOT_FOUND;
+	}
+	gid_data->flags=(gid_data->flags&(~clear))|set;
+	spinlock_release_shared(&_gid_global_lock);
+	return ERROR_OK;
 }
 
 

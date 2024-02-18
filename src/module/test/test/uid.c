@@ -1,5 +1,6 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
+#include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/log/log.h>
@@ -51,7 +52,7 @@ static void _thread(void){
 	TEST_GROUP("invalid uid");
 	TEST_ASSERT(syscall_uid_get_name(0xaabbccdd,buffer,PAGE_SIZE)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
-	TEST_ASSERT(uid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
+	TEST_ASSERT(syscall_uid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
 	TEST_ASSERT(streq(buffer,"root"));
 	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
 }
@@ -59,7 +60,7 @@ static void _thread(void){
 
 
 void test_uid(void){
-	TEST_MODULE("id");
+	TEST_MODULE("uid");
 	TEST_FUNC("uid_create");
 	TEST_GROUP("already present");
 	TEST_ASSERT(uid_create(0,"root")==ERROR_ALREADY_PRESENT);
