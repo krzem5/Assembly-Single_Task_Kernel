@@ -8,7 +8,7 @@
 
 
 
-#define TEST_BUFFER_SIZE 64
+#define TEST_RING_SIZE 64
 
 
 
@@ -19,7 +19,10 @@ void test_ring(void){
 	TEST_ASSERT(!ring_init(0));
 	TEST_GROUP("capacity not a power of 2");
 	TEST_ASSERT(!ring_init(3));
-	// TEST_GROUP("create named");
+	TEST_GROUP("correct args");
+	ring_t* ring=ring_init(TEST_RING_SIZE);
+	TEST_ASSERT(ring);
+	ring_deinit(ring);
 	// SMM_TEMPORARY_STRING name=smm_alloc("test-pipe",0);
 	// vfs_node_t* pipe=pipe_create(vfs_lookup(NULL,"/",0,0,0),name);
 	// TEST_ASSERT(pipe);
