@@ -41,6 +41,8 @@ void test_sys_lib(void){
 	TEST_GROUP("correct args");
 	sys_lib_set_search_path("/lib:/:.:/new/lib/path");
 	TEST_ASSERT(!sys_string_compare(sys_lib_get_search_path(),"/lib:/:.:/new/lib/path"));
+	sys_lib_set_search_path("/lib:/:.");
+	TEST_ASSERT(!sys_string_compare(sys_lib_get_search_path(),"/lib:/:."));
 	// _Bool found_libld=0;
 	// _Bool found_libsys=0;
 	// _Bool found_test=0;

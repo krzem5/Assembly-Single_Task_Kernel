@@ -281,7 +281,7 @@ void shared_object_execute_fini(void){
 
 
 #if KERNEL_COVERAGE_ENABLED
-SYS_PUBLIC void __attribute__((destructor)) __sys_linker_dump_coverage(void){
+SYS_PUBLIC void SYS_DESTRUCTOR SYS_NOCOVERAGE __sys_linker_dump_coverage(void){
 	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
 	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
 		if (so->gcov_info_base&&so->gcov_info_size){
