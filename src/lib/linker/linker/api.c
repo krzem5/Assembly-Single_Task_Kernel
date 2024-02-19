@@ -14,7 +14,7 @@ SYS_PUBLIC void __sys_linker_set_root_object_gcov_info(u64 base,u64 size){
 
 
 
-SYS_PUBLIC void __sys_linker_execute_fini(void){
+SYS_PUBLIC void SYS_NOCOVERAGE __sys_linker_execute_fini(void){
 	shared_object_execute_fini();
 }
 
