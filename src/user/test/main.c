@@ -6,6 +6,7 @@
 #include <sys/string/string.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <test/test.h>
 
 
 
@@ -13,16 +14,8 @@ extern void __sys_linker_dump_coverage(void) __attribute__((weak));
 
 
 
-#define TEST_ASSERT(x) \
-	do{ \
-		if (!(x)){ \
-			sys_io_print("%s: assertion failed\n",#x); \
-		} \
-	} while (0)
-
-
-
 void test_sys_lib(void){
+	TEST_MODULE("sys_lib");
 	_Bool found_libld=0;
 	_Bool found_libsys=0;
 	_Bool found_test=0;
@@ -59,6 +52,8 @@ void main(void){
 	};
 	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
 	test_sys_lib();
+	// u64 test_pass_count=0;
+	// u64 test_fail_count=0;
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);
 }
