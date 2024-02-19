@@ -40,7 +40,9 @@ void test_ring(void){
 		TEST_ASSERT(ring_push(ring,(void*)12345,0));
 	}
 	TEST_ASSERT(!ring_push(ring,(void*)12345,0));
+	ring_deinit(ring);
 	TEST_FUNC("ring_pop");
+	ring=ring_init(TEST_RING_SIZE);
 	TEST_GROUP("empty ring");
 	// ring_pop: empty ring
 	TEST_GROUP("correct args");
