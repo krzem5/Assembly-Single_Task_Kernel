@@ -9,6 +9,7 @@
 
 
 #define TEST_RING_SIZE 64
+#define TEST_BUFFER_SIZE 8
 
 
 
@@ -23,55 +24,31 @@ void test_ring(void){
 	ring_t* ring=ring_init(TEST_RING_SIZE);
 	TEST_ASSERT(ring);
 	ring_deinit(ring);
-	// SMM_TEMPORARY_STRING name=smm_alloc("test-pipe",0);
-	// vfs_node_t* pipe=pipe_create(vfs_lookup(NULL,"/",0,0,0),name);
-	// TEST_ASSERT(pipe);
-	// TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
-	// TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
-	// vfs_node_dettach_external_child(pipe);
-	// vfs_node_delete(pipe);
-	// TEST_GROUP("create unnamed");
-	// pipe=pipe_create(NULL,NULL);
-	// TEST_ASSERT(pipe);
-	// TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
-	// TEST_FUNC("_pipe_read");
-	// TEST_GROUP("empty buffer");
-	// TEST_ASSERT(!vfs_node_read(pipe,0,NULL,0,0));
-	// TEST_GROUP("empty nonblocking read");
-	// char buffer[TEST_BUFFER_SIZE];
-	// TEST_ASSERT(!vfs_node_read(pipe,0,buffer,TEST_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
-	// TEST_GROUP("blocking read");
-	// random_generate(buffer,TEST_BUFFER_SIZE);
-	// TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	// char buffer2[TEST_BUFFER_SIZE];
-	// memset(buffer2,0,TEST_BUFFER_SIZE);
-	// TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	// for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
-	// 	TEST_ASSERT(buffer2[i]==buffer[i]);
-	// }
-	// TEST_GROUP("peek");
-	// random_generate(buffer,TEST_BUFFER_SIZE);
-	// TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	// memset(buffer2,0,TEST_BUFFER_SIZE);
-	// TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,VFS_NODE_FLAG_PIPE_PEEK)==TEST_BUFFER_SIZE);
-	// for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
-	// 	TEST_ASSERT(buffer2[i]==buffer[i]);
-	// }
-	// memset(buffer2,0,TEST_BUFFER_SIZE);
-	// TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	// for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
-	// 	TEST_ASSERT(buffer2[i]==buffer[i]);
-	// }
-	// TEST_FUNC("_pipe_write");
-	// TEST_GROUP("empty buffer");
-	// TEST_ASSERT(!vfs_node_write(pipe,0,NULL,0,0));
-	// TEST_GROUP("blocking write");
-	// for (u32 i=0;i<PIPE_BUFFER_SIZE/TEST_BUFFER_SIZE;i++){
-	// 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	// }
-	// TEST_ASSERT(vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE,0)==(PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE));
-	// TEST_GROUP("full nonblocking write");
-	// TEST_ASSERT(!vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
-	// vfs_node_dettach_external_child(pipe);
-	// vfs_node_delete(pipe);
+	TEST_FUNC("ring_push");
+	ring=ring_init(TEST_RING_SIZE);
+	void* test_buffer[TEST_BUFFER_SIZE];
+	random_generate(test_buffer,TEST_BUFFER_SIZE*sizeof(void*));
+	TEST_GROUP("correct args");
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_push(ring,test_buffer[i],0));
+	}
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_pop(ring,0)==test_buffer[i]);
+	}
+	TEST_GROUP("full ring");
+	for (u32 i=0;i<TEST_RING_SIZE;i++){
+		TEST_ASSERT(ring_push(ring,(void*)12345,0));
+	}
+	TEST_ASSERT(!ring_push(ring,(void*)12345,0));
+	TEST_FUNC("ring_pop");
+	TEST_GROUP("empty ring");
+	// ring_pop: empty ring
+	TEST_GROUP("correct args");
+	// ring_pop: correct args
+	TEST_FUNC("ring_peek");
+	TEST_GROUP("empty ring");
+	// ring_peek: empty ring
+	TEST_GROUP("correct args");
+	// ring_peek: correct args
+	ring_deinit(ring);
 }
