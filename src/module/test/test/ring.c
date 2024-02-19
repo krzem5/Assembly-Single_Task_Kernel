@@ -27,8 +27,8 @@ void test_ring(void){
 	TEST_FUNC("ring_push");
 	ring=ring_init(TEST_RING_SIZE);
 	void* test_buffer[TEST_BUFFER_SIZE];
-	random_generate(test_buffer,TEST_BUFFER_SIZE*sizeof(void*));
 	TEST_GROUP("correct args");
+	random_generate(test_buffer,TEST_BUFFER_SIZE*sizeof(void*));
 	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
 		TEST_ASSERT(ring_push(ring,test_buffer[i],0));
 	}
@@ -40,17 +40,31 @@ void test_ring(void){
 		TEST_ASSERT(ring_push(ring,(void*)12345,0));
 	}
 	TEST_ASSERT(!ring_push(ring,(void*)12345,0));
-	ring_deinit(ring);
+	for (u32 i=0;i<TEST_RING_SIZE;i++){
+		TEST_ASSERT(ring_pop(ring,0)==((void*)12345));
+	}
 	TEST_FUNC("ring_pop");
-	ring=ring_init(TEST_RING_SIZE);
 	TEST_GROUP("empty ring");
-	// ring_pop: empty ring
+	TEST_ASSERT(!ring_pop(ring,0));
 	TEST_GROUP("correct args");
-	// ring_pop: correct args
+	random_generate(test_buffer,TEST_BUFFER_SIZE*sizeof(void*));
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_push(ring,test_buffer[i],0));
+	}
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_pop(ring,0)==test_buffer[i]);
+	}
 	TEST_FUNC("ring_peek");
 	TEST_GROUP("empty ring");
-	// ring_peek: empty ring
+	TEST_ASSERT(!ring_peek(ring,0));
 	TEST_GROUP("correct args");
-	// ring_peek: correct args
+	random_generate(test_buffer,TEST_BUFFER_SIZE*sizeof(void*));
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_push(ring,test_buffer[i],0));
+	}
+	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
+		TEST_ASSERT(ring_peek(ring,0)==test_buffer[i]);
+		TEST_ASSERT(ring_pop(ring,0)==test_buffer[i]);
+	}
 	ring_deinit(ring);
 }
