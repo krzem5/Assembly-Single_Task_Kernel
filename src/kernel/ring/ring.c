@@ -47,6 +47,10 @@ _retry_pop:
 
 
 KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
+	if (!capacity){
+		ERROR("Empty ring");
+		return NULL;
+	}
 	if (capacity&(capacity-1)){
 		ERROR("Ring capacity must be a power of 2");
 		return NULL;
@@ -75,7 +79,12 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 
 
 
-KERNEL_PUBLIC void ring_deinit(ring_t* ring);
+KERNEL_PUBLIC void ring_deinit(ring_t* ring){
+	pmm_dealloc((u64)(ring->buffer-VMM_HIGHER_HALF_ADDRESS_OFFSET),pmm_align_up_address(ring->capacity*sizeof(void*))>>PAGE_SIZE_SHIFT,_ring_buffer_pmm_counter);
+	event_delete(ring->read_event);
+	event_delete(ring->write_event);
+	omm_dealloc(_ring_allocator,ring);
+}
 
 
 
