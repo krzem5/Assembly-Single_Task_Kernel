@@ -263,9 +263,6 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 
 
 void shared_object_execute_fini(void){
-#if KERNEL_COVERAGE_ENABLED
-	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
-#endif
 	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
 		if (so->dynamic_section.fini){
 			((void (*)(void))(so->dynamic_section.fini))();
@@ -278,10 +275,18 @@ void shared_object_execute_fini(void){
 				}
 			}
 		}
+	}
+}
+
+
+
 #if KERNEL_COVERAGE_ENABLED
+SYS_PUBLIC void __attribute__((destructor)) __sys_linker_dump_coverage(void){
+	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
+	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
 		if (so->gcov_info_base&&so->gcov_info_size){
 			_sys_syscall2(syscall_table_offset|0x00000001,so->gcov_info_base,so->gcov_info_size);
 		}
-#endif
 	}
 }
+#endif

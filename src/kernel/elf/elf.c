@@ -208,6 +208,9 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	while (1){
 		elf_sym_t* symbol=symbol_table+(relocations->r_info>>32)*symbol_table_entry_size;
 		switch (relocations->r_info&0xffffffff){
+			case R_X86_64_64:
+				symbol->st_value+=relocations->r_addend;
+				break;
 			case R_X86_64_GLOB_DAT:
 				symbol->st_value+=ctx->interpreter_image_base;
 				break;
