@@ -2,7 +2,6 @@
 #include <linker/shared_object.h>
 #include <linker/symbol.h>
 #include <sys/elf/elf.h>
-#include <sys/io/io.h>
 #include <sys/mp/thread.h>
 #include <sys/types.h>
 
@@ -40,14 +39,6 @@ u64 main(const u64* data){
 		else if (data[0]==AT_ENTRY){
 			entry_address=data[1];
 		}
-	}
-	if (!phdr_entries||!phdr_entry_size||!phdr_entry_count){
-		sys_io_print("No PHDR supplied to the dynamic linker\n");
-		sys_thread_stop(0);
-	}
-	if (!entry_address){
-		sys_io_print("No entry address supplied to the dynamic linker\n");
-		sys_thread_stop(0);
 	}
 	const elf_dyn_t* dynamic_section=NULL;
 	const char* interpreter="";
