@@ -5,6 +5,7 @@
 #include <test/sys_acl.h>
 #include <test/sys_cpu.h>
 #include <test/sys_format.h>
+#include <test/sys_id.h>
 #include <test/sys_lib.h>
 #include <test/test.h>
 
@@ -23,6 +24,7 @@ void main(void){
 	test_sys_acl();
 	test_sys_cpu();
 	test_sys_format();
+	test_sys_id();
 	test_sys_lib();
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);

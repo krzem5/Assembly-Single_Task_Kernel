@@ -9,6 +9,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <test/test.h>
@@ -19,6 +20,18 @@
 extern error_t syscall_gid_get();
 extern error_t syscall_gid_set();
 extern error_t syscall_gid_get_name();
+
+
+
+static void _syscall_set_arbitrary_gid(u64 gid){
+	THREAD_DATA->process->gid=gid;
+}
+
+
+
+static syscall_callback_t const _test_sys_gid_syscall_functions[]={
+	[1]=(syscall_callback_t)_syscall_set_arbitrary_gid,
+};
 
 
 
@@ -104,4 +117,5 @@ void test_gid(void){
 	process_t* test_process=process_create("test-process","test-process");
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-gid-thread",_thread,0x200000,0));
 	event_await(test_process->event,0);
+	syscall_create_table("test_sys_gid",_test_sys_gid_syscall_functions,sizeof(_test_sys_gid_syscall_functions)/sizeof(syscall_callback_t));
 }
