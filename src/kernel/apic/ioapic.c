@@ -100,11 +100,12 @@ void KERNEL_EARLY_EXEC ioapic_add_override(u8 irq,u32 gsi,u16 flags){
 KERNEL_PUBLIC void ioapic_redirect_irq(u8 irq,u8 vector){
 	u16 flags=0;
 	for (const ioapic_override_t* ioapic_override=_ioapic_override_data;ioapic_override<_ioapic_override_data+_ioapic_override_count;ioapic_override++){
-		if (ioapic_override->irq==irq){
-			irq=ioapic_override->gsi;
-			flags=ioapic_override->flags;
-			break;
+		if (ioapic_override->irq!=irq){
+			continue;
 		}
+		irq=ioapic_override->gsi;
+		flags=ioapic_override->flags;
+		break;
 	}
 	const ioapic_t* ioapic=_ioapic_data;
 	for (;ioapic->gsi_base>irq||ioapic->gsi_base+ioapic->gsi_count<=irq;ioapic++){
