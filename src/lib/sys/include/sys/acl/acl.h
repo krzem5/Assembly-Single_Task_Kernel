@@ -6,6 +6,10 @@
 
 
 
+#define SYS_ACL_PERMISSION_FLAG_MASK 0x7fffffffffffffffull
+
+
+
 typedef u64 sys_handle_t;
 
 

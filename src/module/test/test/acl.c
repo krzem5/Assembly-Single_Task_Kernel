@@ -6,6 +6,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
@@ -18,51 +19,85 @@ extern error_t syscall_acl_request_permissions();
 
 
 
-static handle_t* _permission_request_handle=NULL;
-static process_t* _permission_request_process=NULL;
-static u64 _permission_request_flags=0;
-static error_t _permission_request_response=ERROR_OK;
+static handle_t* _test_acl_permission_request_handle=NULL;
+static process_t* _test_acl_permission_request_process=NULL;
+static u64 _test_acl_permission_request_flags=0;
+static error_t _test_acl_permission_request_response=ERROR_OK;
+static handle_t _test_acl_handle_without_acl;
+static handle_t _test_acl_handle;
+static process_t* _test_acl_second_test_process;
 
 
 
 static error_t _permission_request_callback(handle_t* handle,process_t* process,u64 flags){
-	_permission_request_handle=handle;
-	_permission_request_process=process;
-	_permission_request_flags=flags;
-	return _permission_request_response;
+	_test_acl_permission_request_handle=handle;
+	_test_acl_permission_request_process=process;
+	_test_acl_permission_request_flags=flags;
+	return _test_acl_permission_request_response;
 }
 
 
 
-static void _thread(process_t* second_test_process){
+static u64 _syscall_get_test_handle_without_acl(void){
+	return _test_acl_handle_without_acl.rb_node.key;
+}
+
+
+
+static u64 _syscall_get_test_handle(void){
+	return _test_acl_handle.rb_node.key;
+}
+
+
+
+static void _syscall_set_test_handle_flags(u64 process,u64 clear,u64 set){
+	handle_t* handle=handle_lookup_and_acquire(process,process_handle_type);
+	acl_set(_test_acl_handle.acl,(handle?handle->object:THREAD_DATA->process),clear,set);
+	if (handle){
+		handle_release(handle);
+	}
+}
+
+
+
+static u64 _syscall_get_second_test_process(void){
+	return _test_acl_second_test_process->handle.rb_node.key;
+}
+
+
+
+static syscall_callback_t const _test_sys_acl_syscall_functions[]={
+	[1]=(syscall_callback_t)_syscall_get_test_handle_without_acl,
+	[2]=(syscall_callback_t)_syscall_get_test_handle,
+	[3]=(syscall_callback_t)_syscall_set_test_handle_flags,
+	[4]=(syscall_callback_t)_syscall_get_second_test_process
+};
+
+
+
+static void _thread(void){
 	TEST_FUNC("syscall_acl_get_permissions");
 	TEST_GROUP("null arguments");
 	TEST_ASSERT(syscall_acl_get_permissions(0,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("invalid handle");
 	TEST_ASSERT(syscall_acl_get_permissions(0xaabbccdd,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("handle without ACL");
-	handle_type_t handle_type=handle_alloc("test-acl-handle",NULL);
-	handle_t handle;
-	handle_new(&handle,handle_type,&handle);
-	handle_finish_setup(&handle);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==ERROR_NO_ACL);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle_without_acl.rb_node.key,0)==ERROR_NO_ACL);
 	TEST_GROUP("default permissions");
-	handle.acl=acl_create();
-	TEST_ASSERT(!syscall_acl_get_permissions(handle.rb_node.key,0));
+	TEST_ASSERT(!syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0));
 	TEST_GROUP("invalid process handle");
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0xaabbccdd)==ERROR_INVALID_HANDLE);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0xaabbccdd)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("default other process permissions");
-	TEST_ASSERT(!syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key));
+	TEST_ASSERT(!syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key));
 	TEST_GROUP("correct args");
-	acl_set(handle.acl,THREAD_DATA->process,0,0xabcd);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==0xabcd);
-	TEST_ASSERT(!syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key));
-	acl_set(handle.acl,second_test_process,0,0x44556677);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==0xabcd);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x44556677);
+	acl_set(_test_acl_handle.acl,THREAD_DATA->process,0,0xabcd);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0)==0xabcd);
+	TEST_ASSERT(!syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key));
+	acl_set(_test_acl_handle.acl,_test_acl_second_test_process,0,0x44556677);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0)==0xabcd);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0x44556677);
+	acl_set(_test_acl_handle.acl,_test_acl_second_test_process,ACL_PERMISSION_MASK,0);
 	TEST_FUNC("syscall_acl_set_permissions");
-	acl_delete(handle.acl);
-	handle.acl=NULL;
 	TEST_GROUP("invalid clear flags");
 	TEST_ASSERT(syscall_acl_set_permissions(0,0,0xffffffffffffffff,0)==ERROR_INVALID_ARGUMENT(2));
 	TEST_GROUP("invalid set flags");
@@ -70,60 +105,59 @@ static void _thread(process_t* second_test_process){
 	TEST_GROUP("invalid handle");
 	TEST_ASSERT(syscall_acl_set_permissions(0xaabbccdd,0,0,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("handle without ACL");
-	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,0,0,0)==ERROR_NO_ACL);
+	TEST_ASSERT(syscall_acl_set_permissions(_test_acl_handle_without_acl.rb_node.key,0,0,0)==ERROR_NO_ACL);
 	TEST_GROUP("invalid process handle");
-	handle.acl=acl_create();
-	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
+	TEST_ASSERT(syscall_acl_set_permissions(_test_acl_handle.rb_node.key,0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("correct args");
-	acl_set(handle.acl,THREAD_DATA->process,0,ACL_PERMISSION_MASK);
-	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0,0x1234)==ERROR_OK);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x1234);
-	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x0204,0x8000)==ERROR_OK);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
+	acl_set(_test_acl_handle.acl,THREAD_DATA->process,0,ACL_PERMISSION_MASK);
+	TEST_ASSERT(syscall_acl_set_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key,0,0x1234)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0x1234);
+	TEST_ASSERT(syscall_acl_set_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key,0x0204,0x8000)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0x9030);
 	TEST_GROUP("correct args, masked by current process permissions");
-	acl_set(handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0x00f3);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x9030);
-	TEST_ASSERT(syscall_acl_set_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0x9f20,0x000f)==ERROR_OK);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0x0013);
+	acl_set(_test_acl_handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0x00f3);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0x9030);
+	TEST_ASSERT(syscall_acl_set_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key,0x9f20,0x000f)==ERROR_OK);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0x0013);
+	acl_set(_test_acl_handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0);
+	acl_set(_test_acl_handle.acl,_test_acl_second_test_process,ACL_PERMISSION_MASK,0);
 	TEST_FUNC("syscall_acl_request_permissions");
-	acl_delete(handle.acl);
-	handle.acl=NULL;
 	TEST_GROUP("invalid flags");
 	TEST_ASSERT(syscall_acl_request_permissions(0,0,0xffffffffffffffff)==ERROR_INVALID_ARGUMENT(2));
 	TEST_GROUP("invalid handle");
 	TEST_ASSERT(syscall_acl_request_permissions(0xaabbccdd,0,0)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("handle without ACL");
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,0,0)==ERROR_NO_ACL);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle_without_acl.rb_node.key,0,0)==ERROR_NO_ACL);
 	TEST_GROUP("denied request without callback");
-	handle.acl=acl_create();
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,0,1)==ERROR_DENIED);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,0,1)==ERROR_DENIED);
 	TEST_GROUP("invalid process handle");
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,0xaabbccdd,1)==ERROR_INVALID_HANDLE);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,0xaabbccdd,1)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("denied request for other process without callback");
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,1)==ERROR_DENIED);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key,1)==ERROR_DENIED);
 	TEST_GROUP("request accepted");
 	TEST_ASSERT(acl_register_request_callback(_permission_request_callback)==1);
-	_permission_request_response=ERROR_OK;
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,0,0x12345)==ERROR_OK);
-	TEST_ASSERT(_permission_request_handle==&handle);
-	TEST_ASSERT(_permission_request_process==THREAD_DATA->process);
-	TEST_ASSERT(_permission_request_flags==0x12345);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==0x12345);
+	_test_acl_permission_request_response=ERROR_OK;
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,0,0x12345)==ERROR_OK);
+	TEST_ASSERT(_test_acl_permission_request_handle==&_test_acl_handle);
+	TEST_ASSERT(_test_acl_permission_request_process==THREAD_DATA->process);
+	TEST_ASSERT(_test_acl_permission_request_flags==0x12345);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0)==0x12345);
 	TEST_GROUP("request for other process");
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key,0xabcd)==ERROR_OK);
-	TEST_ASSERT(_permission_request_handle==&handle);
-	TEST_ASSERT(_permission_request_process==second_test_process);
-	TEST_ASSERT(_permission_request_flags==0xabcd);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,second_test_process->handle.rb_node.key)==0xabcd);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key,0xabcd)==ERROR_OK);
+	TEST_ASSERT(_test_acl_permission_request_handle==&_test_acl_handle);
+	TEST_ASSERT(_test_acl_permission_request_process==_test_acl_second_test_process);
+	TEST_ASSERT(_test_acl_permission_request_flags==0xabcd);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,_test_acl_second_test_process->handle.rb_node.key)==0xabcd);
 	TEST_GROUP("request denied");
-	_permission_request_response=_ERROR(0xaabb);
-	TEST_ASSERT(syscall_acl_request_permissions(handle.rb_node.key,0,0xffbb)==_ERROR(0xaabb));
-	TEST_ASSERT(_permission_request_handle==&handle);
-	TEST_ASSERT(_permission_request_process==THREAD_DATA->process);
-	TEST_ASSERT(_permission_request_flags==0xffbb);
-	TEST_ASSERT(syscall_acl_get_permissions(handle.rb_node.key,0)==0x12345);
+	_test_acl_permission_request_response=_ERROR(0xaabb);
+	TEST_ASSERT(syscall_acl_request_permissions(_test_acl_handle.rb_node.key,0,0xffbb)==_ERROR(0xaabb));
+	TEST_ASSERT(_test_acl_permission_request_handle==&_test_acl_handle);
+	TEST_ASSERT(_test_acl_permission_request_process==THREAD_DATA->process);
+	TEST_ASSERT(_test_acl_permission_request_flags==0xffbb);
+	TEST_ASSERT(syscall_acl_get_permissions(_test_acl_handle.rb_node.key,0)==0x12345);
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
-	handle_release(&handle);
+	acl_set(_test_acl_handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0);
+	acl_set(_test_acl_handle.acl,_test_acl_second_test_process,ACL_PERMISSION_MASK,0);
 }
 
 
@@ -152,7 +186,7 @@ void test_acl(void){
 	for (u32 i=0;i<ACL_PROCESS_CACHE_SIZE-1;i++){
 		test_process_buffer[i]=process_create("filler-test-process","filler-test-process");
 	}
-	process_t* second_test_process=process_create("second-test-process","second-test-process");
+	_test_acl_second_test_process=process_create("second-test-process","second-test-process");
 	TEST_GROUP("default permissions");
 	TEST_ASSERT(!acl_get(acl,test_process));
 	TEST_FUNC("acl_set");
@@ -178,14 +212,14 @@ void test_acl(void){
 	acl_set(acl,test_process,ACL_PERMISSION_MASK,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
 	TEST_GROUP("cache repopulation");
-	acl_set(acl,second_test_process,0,1);
+	acl_set(acl,_test_acl_second_test_process,0,1);
 	acl_set(acl,test_process,0,1);
 	acl_set(acl,test_process,1,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
-	TEST_ASSERT(acl_get(acl,second_test_process)==1);
-	acl_set(acl,second_test_process,1,0);
+	TEST_ASSERT(acl_get(acl,_test_acl_second_test_process)==1);
+	acl_set(acl,_test_acl_second_test_process,1,0);
 	TEST_ASSERT(!acl_get(acl,test_process));
-	TEST_ASSERT(!acl_get(acl,second_test_process));
+	TEST_ASSERT(!acl_get(acl,_test_acl_second_test_process));
 	for (u32 i=0;i<ACL_PROCESS_CACHE_SIZE-1;i++){
 		(void)test_process_buffer;
 		// handle_release(&(test_process_buffer[i]->handle));
@@ -199,7 +233,13 @@ void test_acl(void){
 	TEST_GROUP("callback already registered");
 	TEST_ASSERT(!acl_register_request_callback(_permission_request_callback));
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
-	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-acl-thread",_thread,0x200000,1,second_test_process));
+	handle_type_t handle_type=handle_alloc("test-acl-handle",NULL);
+	handle_new(&_test_acl_handle_without_acl,handle_type,&_test_acl_handle_without_acl);
+	handle_finish_setup(&_test_acl_handle_without_acl);
+	handle_new(&_test_acl_handle,handle_type,&_test_acl_handle);
+	handle_finish_setup(&_test_acl_handle);
+	_test_acl_handle.acl=acl_create();
+	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-acl-thread",_thread,0x200000,0));
 	event_await(test_process->event,0);
-	handle_release(&(second_test_process->handle));
+	syscall_create_table("test_sys_acl",_test_sys_acl_syscall_functions,sizeof(_test_sys_acl_syscall_functions)/sizeof(syscall_callback_t));
 }

@@ -3,7 +3,10 @@
 
 
 
-SYS_PUBLIC void __gcov_merge_add(void){
+SYS_PUBLIC void SYS_NOCOVERAGE __gcov_merge_add(void){
 	return;
 }
+
+
+
 #endif
