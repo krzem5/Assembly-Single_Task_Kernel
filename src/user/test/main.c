@@ -7,6 +7,7 @@
 #include <test/sys_format.h>
 #include <test/sys_id.h>
 #include <test/sys_lib.h>
+#include <test/sys_pipe.h>
 #include <test/test.h>
 
 
@@ -26,6 +27,7 @@ void main(void){
 	test_sys_format();
 	test_sys_id();
 	test_sys_lib();
+	test_sys_pipe();
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);
 }

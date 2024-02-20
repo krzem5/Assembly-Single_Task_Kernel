@@ -50,3 +50,14 @@ SYS_PUBLIC char* sys_string_duplicate(const char* str){
 	sys_memory_copy(str,out,length+1);
 	return out;
 }
+
+
+
+SYS_PUBLIC void sys_string_copy(const char* src,char* dst){
+	for (u64 i=0;1;i++){
+		dst[i]=src[i];
+		if (!src[i]){
+			return;
+		}
+	}
+}

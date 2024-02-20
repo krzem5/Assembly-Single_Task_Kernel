@@ -20,4 +20,8 @@ char* __attribute__((access(read_only,1),nonnull,warn_unused_result)) sys_string
 
 
 
+void __attribute__((access(read_only,1),access(write_only,2),nonnull)) sys_string_copy(const char* src,char* dst);
+
+
+
 #endif

@@ -48,4 +48,8 @@ s32 __attribute__((access(read_only,1,3),access(read_only,2,3))) sys_memory_comp
 
 
 
+void __attribute__((access(write_only,1,2))) sys_memory_set(void* dst,u64 length,u8 value);
+
+
+
 #endif

@@ -44,3 +44,12 @@ SYS_PUBLIC s32 sys_memory_compare(const void* a,const void* b,u64 length){
 	}
 	return 0;
 }
+
+
+
+SYS_PUBLIC void sys_memory_set(void* dst,u64 length,u8 value){
+	u8* dst_ptr=dst;
+	for (u64 i=0;i<length;i++){
+		dst_ptr[i]=value;
+	}
+}
