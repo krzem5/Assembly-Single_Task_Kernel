@@ -62,6 +62,12 @@ static void _format_int(sys_var_arg_list_t* va,u8 flags,format_buffer_state_t* o
 	u64 data;
 	if (flags&FLAG_SIGN){
 		s64 signed_data=((flags&FLAG_LONG)?sys_var_arg_get(*va,s64):sys_var_arg_get(*va,s32));
+		if ((flags&FLAG_SHORT)){
+			signed_data=(s16)signed_data;
+		}
+		else if ((flags&FLAG_SHORT_SHORT)){
+			signed_data=(s8)signed_data;
+		}
 		if (signed_data<0){
 			_buffer_state_add(out,'-');
 			signed_data=-signed_data;
@@ -70,6 +76,12 @@ static void _format_int(sys_var_arg_list_t* va,u8 flags,format_buffer_state_t* o
 	}
 	else{
 		data=((flags&FLAG_LONG)?sys_var_arg_get(*va,u64):sys_var_arg_get(*va,u32));
+		if ((flags&FLAG_SHORT)){
+			data=(u16)data;
+		}
+		else if ((flags&FLAG_SHORT_SHORT)){
+			data=(u8)data;
+		}
 	}
 	if (!data){
 		_buffer_state_add(out,'0');
@@ -284,6 +296,7 @@ SYS_PUBLIC u32 sys_format_string_va(char* buffer,u32 length,const char* template
 			_format_base10_int(time%1000000000,9,&out);
 		}
 		else{
+			_buffer_state_add(&out,'%');
 			_buffer_state_add(&out,*template);
 		}
 		template++;
