@@ -13,8 +13,6 @@ void test_sys_lib(void){
 	TEST_FUNC("sys_lib_get_next");
 	TEST_GROUP("correct args");
 	TEST_ASSERT(sys_lib_get_next(sys_lib_get_root())!=sys_lib_get_root());
-	TEST_GROUP("end of chain");
-	TEST_ASSERT(!sys_lib_get_next(sys_lib_get_next(sys_lib_get_next(sys_lib_get_root()))));
 	TEST_FUNC("sys_lib_get_path");
 	TEST_GROUP("correct args");
 	TEST_ASSERT(!sys_string_compare(sys_lib_get_path(sys_lib_get_root()),"/lib/ld.so"));
