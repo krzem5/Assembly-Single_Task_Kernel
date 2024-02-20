@@ -48,8 +48,15 @@ _skip_entry:
 
 
 u64 NOFLOAT symbol_lookup_by_name(const char* name){
+	const shared_object_t* so=shared_object_root;
+	if (!so){
+		return 0;
+	}
+	if (name[0]!='_'||name[1]!='_'){
+		so=so->next;
+	}
 	u32 hash=_calculate_hash(name);
-	for (const shared_object_t* so=shared_object_root;so;so=so->next){
+	for (;so;so=so->next){
 		u64 address=_lookup_symbol(so,hash,name);
 		if (address){
 			return address;

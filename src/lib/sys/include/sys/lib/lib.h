@@ -33,7 +33,7 @@ sys_library_t sys_lib_load(const char* name,u32 flags);
 
 
 
-u64 sys_lib_lookup_symbol(sys_library_t library,const char* name);
+void* sys_lib_lookup_symbol(sys_library_t library,const char* name);
 
 
 

@@ -44,8 +44,8 @@ SYS_PUBLIC sys_library_t sys_lib_load(const char* name,u32 flags){
 
 
 
-SYS_PUBLIC u64 sys_lib_lookup_symbol(sys_library_t library,const char* name){
-	return __sys_linker_lookup_symbol(library,name);
+SYS_PUBLIC void* sys_lib_lookup_symbol(sys_library_t library,const char* name){
+	return (void*)__sys_linker_lookup_symbol(library,name);
 }
 
 

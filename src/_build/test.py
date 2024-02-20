@@ -162,3 +162,29 @@ def generate_test_resource_files():
 		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_REL,0x3f,1,0,0))
 	with open("build/share/test/module/invalid_header_version","wb") as wf:
 		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_REL,0x3e,2,0,0))
+	if (not os.path.exists("build/share/test/sys_lib")):
+		os.mkdir("build/share/test/sys_lib")
+	with open("build/share/test/sys_lib/invalid_header_signature","wb") as wf:
+		wf.write(_generate_header(0xaabbccdd,2,1,1,0,ET_DYN,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_signature",0o755)
+	with open("build/share/test/sys_lib/invalid_header_word_size","wb") as wf:
+		wf.write(_generate_header(0x464c457f,4,1,1,0,ET_DYN,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_word_size",0o755)
+	with open("build/share/test/sys_lib/invalid_header_endianess","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,2,1,0,ET_DYN,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_endianess",0o755)
+	with open("build/share/test/sys_lib/invalid_header_header_version","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,1,2,0,ET_DYN,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_header_version",0o755)
+	with open("build/share/test/sys_lib/invalid_header_abi","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,1,1,3,ET_DYN,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_abi",0o755)
+	with open("build/share/test/sys_lib/invalid_header_type","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_EXEC,0x3e,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_type",0o755)
+	with open("build/share/test/sys_lib/invalid_header_machine","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_DYN,0x3f,1,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_machine",0o755)
+	with open("build/share/test/sys_lib/invalid_header_version","wb") as wf:
+		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_DYN,0x3e,2,0,0))
+	os.chmod("build/share/test/sys_lib/invalid_header_version",0o755)

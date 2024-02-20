@@ -14,7 +14,8 @@ extern void __sys_linker_dump_coverage(void) __attribute__((weak));
 
 
 
-void test_sys_lib(void){
+
+SYS_PUBLIC void test_sys_lib(void){
 	TEST_MODULE("sys_lib");
 	TEST_FUNC("sys_lib_get_root");
 	TEST_GROUP("correct args");
@@ -31,8 +32,24 @@ void test_sys_lib(void){
 	TEST_GROUP("correct args");
 	TEST_ASSERT(sys_lib_get_image_base(sys_lib_get_root()));
 	TEST_FUNC("sys_lib_load");
+	TEST_GROUP("not found");
+	TEST_ASSERT(!sys_lib_load("/invalid/path",0));
+	TEST_GROUP("invalid header");
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_signature",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_word_size",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_endianess",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_header_version",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_abi",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_type",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_machine",0));
+	TEST_ASSERT(!sys_lib_load("/share/test/sys_lib/invalid_header_version",0));
 	// sys_lib_load
 	TEST_FUNC("sys_lib_lookup_symbol");
+	TEST_GROUP("symbol not found");
+	TEST_ASSERT(!sys_lib_lookup_symbol(0,"symbol_not_found"));
+	// TEST_GROUP("correct args");
+	// sys_io_print("%p %p\n",sys_lib_lookup_symbol(0,"test_sys_lib"),test_sys_lib);
+	// TEST_ASSERT(sys_lib_lookup_symbol(0,"test_sys_lib")==test_sys_lib);
 	// sys_lib_lookup_symbol
 	TEST_FUNC("sys_lib_get_search_path");
 	TEST_GROUP("correct args");
