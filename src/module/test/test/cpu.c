@@ -4,6 +4,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
@@ -11,6 +12,18 @@
 
 
 extern error_t syscall_cpu_get_count();
+
+
+
+static u64 _syscall_get_cpu_count(void){
+	return cpu_count;
+}
+
+
+
+static syscall_callback_t const _test_sys_cpu_syscall_functions[]={
+	[1]=(syscall_callback_t)_syscall_get_cpu_count,
+};
 
 
 
@@ -27,4 +40,5 @@ void test_cpu(void){
 	process_t* test_process=process_create("test-process","test-process");
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-cpu-thread",_thread,0x200000,0));
 	event_await(test_process->event,0);
+	syscall_create_table("test_sys_cpu",_test_sys_cpu_syscall_functions,sizeof(_test_sys_cpu_syscall_functions)/sizeof(syscall_callback_t));
 }

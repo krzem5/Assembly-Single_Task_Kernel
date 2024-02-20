@@ -1,6 +1,5 @@
 #include <sys/acl/acl.h>
 #include <sys/error/error.h>
-#include <sys/string/string.h>
 #include <sys/syscall/kernel_syscalls.h>
 #include <sys/syscall/syscall.h>
 #include <sys/types.h>
@@ -73,26 +72,4 @@ void test_sys_acl(void){
 	TEST_ASSERT(sys_acl_request_permissions(handle,0xaabbccdd,1)==SYS_ERROR_INVALID_HANDLE);
 	TEST_GROUP("denied request for other process without callback");
 	TEST_ASSERT(sys_acl_request_permissions(handle,second_test_process,1)==SYS_ERROR_DENIED);
-	// TEST_GROUP("request accepted");
-	// TEST_ASSERT(acl_register_request_callback(_permission_request_callback)==1);
-	// _permission_request_response=SYS_ERROR_OK;
-	// TEST_ASSERT(sys_acl_request_permissions(handle,0,0x12345)==SYS_ERROR_OK);
-	// TEST_ASSERT(_permission_request_handle==&handle);
-	// TEST_ASSERT(_permission_request_process==THREAD_DATA->process);
-	// TEST_ASSERT(_permission_request_flags==0x12345);
-	// TEST_ASSERT(sys_acl_get_permissions(handle,0)==0x12345);
-	// TEST_GROUP("request for other process");
-	// TEST_ASSERT(sys_acl_request_permissions(handle,second_test_process,0xabcd)==SYS_ERROR_OK);
-	// TEST_ASSERT(_permission_request_handle==&handle);
-	// TEST_ASSERT(_permission_request_process==second_test_process);
-	// TEST_ASSERT(_permission_request_flags==0xabcd);
-	// TEST_ASSERT(sys_acl_get_permissions(handle,second_test_process)==0xabcd);
-	// TEST_GROUP("request denied");
-	// _permission_request_response=_ERROR(0xaabb);
-	// TEST_ASSERT(sys_acl_request_permissions(handle,0,0xffbb)==_ERROR(0xaabb));
-	// TEST_ASSERT(_permission_request_handle==&handle);
-	// TEST_ASSERT(_permission_request_process==THREAD_DATA->process);
-	// TEST_ASSERT(_permission_request_flags==0xffbb);
-	// TEST_ASSERT(sys_acl_get_permissions(handle,0)==0x12345);
-	// TEST_ASSERT(acl_register_request_callback(NULL)==1);
 }

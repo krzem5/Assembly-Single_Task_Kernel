@@ -3,6 +3,7 @@
 #include <sys/system/system.h>
 #include <sys/types.h>
 #include <test/sys_acl.h>
+#include <test/sys_cpu.h>
 #include <test/sys_lib.h>
 #include <test/test.h>
 
@@ -19,6 +20,7 @@ void main(void){
 	};
 	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
 	test_sys_acl();
+	test_sys_cpu();
 	test_sys_lib();
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);
