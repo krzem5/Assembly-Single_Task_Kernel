@@ -4,6 +4,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/msr/msr.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "ioapic"
 
 
@@ -54,7 +55,10 @@ static KERNEL_INLINE void _write_register(const ioapic_t* ioapic,u32 reg,u32 val
 
 
 void KERNEL_EARLY_EXEC ioapic_init(u16 count,u16 override_count){
-	LOG("Initializing IOAPIC controller...");
+	LOG("Initializing IOAPIC controllers...");
+	if (!count){
+		panic("No IOAPIC controllers found");
+	}
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("ioapic"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_ioapic_data=buffer;
 	_ioapic_count=count;
@@ -95,21 +99,18 @@ void KERNEL_EARLY_EXEC ioapic_add_override(u8 irq,u32 gsi,u16 flags){
 
 KERNEL_PUBLIC void ioapic_redirect_irq(u8 irq,u8 vector){
 	u16 flags=0;
-	const ioapic_override_t* ioapic_override=_ioapic_override_data;
-	for (u16 i=0;i<_ioapic_override_count;i++){
+	for (const ioapic_override_t* ioapic_override=_ioapic_override_data;ioapic_override<_ioapic_override_data+_ioapic_override_count;ioapic_override++){
 		if (ioapic_override->irq==irq){
 			irq=ioapic_override->gsi;
 			flags=ioapic_override->flags;
 			break;
 		}
-		ioapic_override++;
 	}
 	const ioapic_t* ioapic=_ioapic_data;
-	for (u16 i=0;i<_ioapic_count;i++){
-		if (ioapic->gsi_base<=irq&&ioapic->gsi_base+ioapic->gsi_count>irq){
-			break;
+	for (;ioapic->gsi_base>irq||ioapic->gsi_base+ioapic->gsi_count<=irq;ioapic++){
+		if (ioapic==_ioapic_data+_ioapic_count){
+			panic("ioapic_redirect_irq: unable to find matching IOAPIC controller");
 		}
-		ioapic++;
 	}
 	_write_register(ioapic,((irq-ioapic->gsi_base)<<1)+16,vector|((flags&0x0a)<<12));
 	_write_register(ioapic,((irq-ioapic->gsi_base)<<1)+17,_ioapic_irq_destination_cpu<<24);
