@@ -8,6 +8,7 @@
 #define SYS_CONSTRUCTOR __attribute__((constructor))
 #define SYS_DESTRUCTOR __attribute__((destructor))
 #define SYS_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
+#define SYS_NORETURN __attribute__((noreturn))
 
 
 

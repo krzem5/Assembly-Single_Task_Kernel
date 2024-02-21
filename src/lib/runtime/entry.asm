@@ -25,8 +25,4 @@ _start:
 ._empty_environ:
 	add rcx, 8
 	call [REF(main)]
-	call _execute_fini
-	mov rax, 0x100000019
-	xor edi, edi
-	syscall
-	jmp $
+	jmp _execute_fini
