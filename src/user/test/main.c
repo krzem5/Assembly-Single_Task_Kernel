@@ -2,6 +2,7 @@
 #include <sys/mp/thread.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <test/glsl_version.h>
 #include <test/sys_acl.h>
 #include <test/sys_cpu.h>
 #include <test/sys_format.h>
@@ -12,8 +13,8 @@
 
 
 
-extern void __sys_linker_dump_coverage(void) __attribute__((weak));
 extern void __sys_linker_set_root_object_gcov_info(u64,u64) __attribute__((weak));
+extern void __sys_linker_dump_coverage(void) __attribute__((weak));
 extern u64 __gcov_info_start[1];
 extern u64 __gcov_info_end[1];
 
@@ -25,6 +26,7 @@ void SYS_NOCOVERAGE main(void){
 		"/share/test"
 	};
 	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
+	test_glsl_version();
 	test_sys_acl();
 	test_sys_cpu();
 	test_sys_format();
