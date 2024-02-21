@@ -13,10 +13,13 @@
 
 
 extern void __sys_linker_dump_coverage(void) __attribute__((weak));
+extern void __sys_linker_set_root_object_gcov_info(u64,u64) __attribute__((weak));
+extern u64 __gcov_info_start[1];
+extern u64 __gcov_info_end[1];
 
 
 
-void main(void){
+void SYS_NOCOVERAGE main(void){
 	const char*const argv[2]={
 		"/bin/tree",
 		"/share/test"
@@ -28,6 +31,7 @@ void main(void){
 	test_sys_id();
 	test_sys_lib();
 	test_sys_pipe();
+	__sys_linker_set_root_object_gcov_info((u64)__gcov_info_start,((u64)__gcov_info_end)-((u64)__gcov_info_start));
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);
 }

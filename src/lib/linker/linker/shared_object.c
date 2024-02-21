@@ -284,6 +284,7 @@ void shared_object_execute_fini(void){
 SYS_PUBLIC void SYS_DESTRUCTOR SYS_NOCOVERAGE __sys_linker_dump_coverage(void){
 	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
 	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
+		sys_io_print("%s: %p %p\n",so->path,so->gcov_info_base,so->gcov_info_size);
 		if (so->gcov_info_base&&so->gcov_info_size){
 			_sys_syscall2(syscall_table_offset|0x00000001,so->gcov_info_base,so->gcov_info_size);
 		}
