@@ -11,7 +11,7 @@ reboot:runtime@static,sys
 shell:runtime@static,sys
 shutdown:runtime@static,sys
 stat:runtime@static,sys,dircolor
-test:runtime@static,sys,dircolor,glsl,opengl,tgsiascii,uidisplay
+test:runtime@static,sys,dircolor,glsl,opengl,uidisplay
 test_crash_invalid_read:runtime@static,sys
 test_crash_invalid_write:runtime@static,sys
 test_crash_normal:runtime@static,sys
