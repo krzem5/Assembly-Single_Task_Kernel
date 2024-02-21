@@ -65,8 +65,11 @@ glsl_error_t _glsl_error_create_preprocessor_invalid_version(u32 version){
 
 
 glsl_error_t _glsl_error_create_preprocessor_invalid_profile(const char* profile,u32 profile_length){
+	char profile_buffer[ERROR_BUFFER_SIZE];
+	sys_memory_copy(profile,profile_buffer,profile_length);
+	profile_buffer[profile_length]=0;
 	char buffer[ERROR_BUFFER_SIZE];
-	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Unsupported GLSL profile '%.*s'",profile_length,profile));
+	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Unsupported GLSL profile '%s'",profile_buffer));
 }
 
 
