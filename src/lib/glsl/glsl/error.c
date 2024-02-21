@@ -34,8 +34,11 @@ glsl_error_t _glsl_error_create_unimplemented(const char* file,u32 line,const ch
 
 
 glsl_error_t _glsl_error_create_preprocessor_unknown_directive(const char* directive,u32 directive_length){
+	char directive_buffer[ERROR_BUFFER_SIZE];
+	sys_memory_copy(directive,directive_buffer,directive_length);
+	directive_buffer[directive_length]=0;
 	char buffer[ERROR_BUFFER_SIZE];
-	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Unknown preprocessor directive '%.*s'",directive_length,directive));
+	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"Unknown preprocessor directive '%s'",directive_buffer));
 }
 
 

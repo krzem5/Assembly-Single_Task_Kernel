@@ -1,6 +1,20 @@
+#include <glsl/error.h>
 #include <glsl/preprocessor.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 #include <test/test.h>
+
+
+
+static _Bool _compare_and_cleanup_error(glsl_error_t error,const char* expected){
+	TEST_ASSERT(error);
+	if (!error){
+		return 0;
+	}
+	_Bool out=!sys_string_compare(expected,error);
+	glsl_error_delete(error);
+	return out;
+}
 
 
 
@@ -12,5 +26,31 @@ void test_glsl_preprocessor(void){
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(!state.data);
 	TEST_ASSERT(!state.length);
+	glsl_preprocessor_state_deinit(&state);
+	TEST_FUNC("glsl_preprocessor_add_file");
+	TEST_GROUP("empty file");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_add_file("",0,&state));
+	TEST_ASSERT(!sys_string_compare(state.data,"\n"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("version only");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_add_file("#version 330 core\n",0,&state));
+	TEST_ASSERT(!sys_string_compare(state.data,"\n"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("text only");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_add_file("\nvery long preprocessing text\n\twith inline #directives\n\t\r ",0,&state));
+	TEST_ASSERT(!sys_string_compare(state.data,"\nvery long preprocessing text\n\twith inline #directives\n"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#invalid_directive",0,&state),"Unknown preprocessor directive 'invalid_directive'"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid version directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version",0,&state),"Expected version, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version not-a-valid-number",0,&state),"Expected version, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 999",0,&state),"Unknown GLSL version '999'"));
 	glsl_preprocessor_state_deinit(&state);
 }

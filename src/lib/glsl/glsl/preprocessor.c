@@ -47,7 +47,7 @@ static void _emit_line(glsl_preprocessor_state_t* state,u32 line,u32 file){
 
 static _Bool _begins_with_word(const char** src,const char* word){
 	u32 length=sys_string_length(word);
-	if (!sys_memory_compare(*src,word,length)&&LEXER_IS_WHITESPACE((*src)[length])){
+	if (!sys_memory_compare(*src,word,length)&&(!(*src)[length]||LEXER_IS_WHITESPACE((*src)[length]))){
 		(*src)+=length;
 		return 1;
 	}
