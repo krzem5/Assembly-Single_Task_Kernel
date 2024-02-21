@@ -1,3 +1,4 @@
+#include <coverage/coverage.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
@@ -120,8 +121,18 @@ static KERNEL_NOCOVERAGE void _syscall_export_coverage_data(u64 base,u64 size){
 
 
 
+static KERNEL_NOCOVERAGE void _syscall_process_test_results(u64 pass,u64 fail){
+	WARN("%u test%s passed, %u test%s failed",pass,(pass==1?"":"s"),fail,(fail==1?"":"s"));
+	if (fail){
+		coverage_mark_failure();
+	}
+}
+
+
+
 static syscall_callback_t const _coverage_syscall_functions[]={
-	[1]=(syscall_callback_t)_syscall_export_coverage_data
+	[1]=(syscall_callback_t)_syscall_export_coverage_data,
+	[2]=(syscall_callback_t)_syscall_process_test_results
 };
 
 

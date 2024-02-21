@@ -2,7 +2,6 @@
 #include <sys/id/group.h>
 #include <sys/id/user.h>
 #include <sys/string/string.h>
-#include <sys/syscall/kernel_syscalls.h>
 #include <sys/syscall/syscall.h>
 #include <sys/types.h>
 #include <test/test.h>

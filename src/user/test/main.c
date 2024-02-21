@@ -1,7 +1,9 @@
 #include <sys/mp/process.h>
 #include <sys/mp/thread.h>
+#include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <test/glsl_preprocessor.h>
 #include <test/glsl_version.h>
 #include <test/sys_acl.h>
 #include <test/sys_cpu.h>
@@ -26,6 +28,7 @@ void SYS_NOCOVERAGE main(void){
 		"/share/test"
 	};
 	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
+	test_glsl_preprocessor();
 	test_glsl_version();
 	test_sys_acl();
 	test_sys_cpu();
@@ -33,6 +36,7 @@ void SYS_NOCOVERAGE main(void){
 	test_sys_id();
 	test_sys_lib();
 	test_sys_pipe();
+	_sys_syscall2(sys_syscall_get_table_offset("coverage")|0x00000002,test_pass_count,test_fail_count);
 	__sys_linker_set_root_object_gcov_info((u64)__gcov_info_start,((u64)__gcov_info_end)-((u64)__gcov_info_start));
 	__sys_linker_dump_coverage();
 	sys_system_shutdown(0);

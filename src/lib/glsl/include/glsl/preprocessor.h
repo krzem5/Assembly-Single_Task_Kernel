@@ -37,7 +37,7 @@ void glsl_preprocessor_state_init(glsl_preprocessor_state_t* state);
 
 
 
-void glsl_preprocessor_state_delete(glsl_preprocessor_state_t* state);
+void glsl_preprocessor_state_deinit(glsl_preprocessor_state_t* state);
 
 
 

@@ -148,7 +148,7 @@ SYS_PUBLIC void glsl_preprocessor_state_init(glsl_preprocessor_state_t* state){
 
 
 
-SYS_PUBLIC void glsl_preprocessor_state_delete(glsl_preprocessor_state_t* state){
+SYS_PUBLIC void glsl_preprocessor_state_deinit(glsl_preprocessor_state_t* state){
 	sys_heap_dealloc(NULL,state->data);
 	sys_heap_dealloc(NULL,state->lines);
 	for (u32 i=0;i<state->macro_count;i++){

@@ -1,6 +1,5 @@
 #include <sys/acl/acl.h>
 #include <sys/error/error.h>
-#include <sys/syscall/kernel_syscalls.h>
 #include <sys/syscall/syscall.h>
 #include <sys/types.h>
 #include <test/test.h>

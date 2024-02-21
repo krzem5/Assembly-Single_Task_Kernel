@@ -2142,7 +2142,7 @@ SYS_PUBLIC void glCompileShader(GLuint shader){
 	}
 	glsl_lexer_token_list_t token_list;
 	state->error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
-	glsl_preprocessor_state_delete(&preprocessor_state);
+	glsl_preprocessor_state_deinit(&preprocessor_state);
 	if (state->error!=GLSL_NO_ERROR){
 		return;
 	}

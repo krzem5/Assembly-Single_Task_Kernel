@@ -135,7 +135,7 @@ int main(void){
 	// sys_io_print("%s\n",preprocessor_state.data);
 	glsl_lexer_token_list_t token_list;
 	error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
-	glsl_preprocessor_state_delete(&preprocessor_state);
+	glsl_preprocessor_state_deinit(&preprocessor_state);
 	if (error){
 		goto _error;
 	}
@@ -174,7 +174,7 @@ int main(void){
 	}
 	// sys_io_print("%s\n",preprocessor_state.data);
 	error=glsl_lexer_extract_tokens(preprocessor_state.data,&token_list);
-	glsl_preprocessor_state_delete(&preprocessor_state);
+	glsl_preprocessor_state_deinit(&preprocessor_state);
 	if (error){
 		goto _error;
 	}
