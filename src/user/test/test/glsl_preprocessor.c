@@ -19,20 +19,11 @@ static _Bool _check_and_cleanup_error(glsl_error_t error,const char* expected){
 
 
 static _Bool _check_line(const glsl_preprocessor_state_t* state,char marker,u32 expected_line,u32 expected_file){
-	if (!state->line_count){
-		return 0;
-	}
 	u32 offset=0;
 	for (;state->data[offset]!=marker;offset++);
-	u32 i=0;
-	for (;i+1<state->line_count&&(state->lines+i+1)->offset<=offset;i++);
-	u32 line=(state->lines+i)->line;
-	for (;offset>(state->lines+i)->offset;offset--){
-		if (state->data[offset]=='\n'){
-			line++;
-		}
-	}
-	return (state->lines+i)->file==expected_file&&line==expected_line;
+	u32 file;
+	u32 line;
+	return glsl_preprocessor_get_location(state,offset,&file,&line)&&file==expected_file&&line==expected_line;
 }
 
 
@@ -105,7 +96,18 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(!glsl_preprocessor_add_file("#define macro1 aaa\n#define macro2 bbb\n#undef macro1\n#define macro1 new macro 1\ntest insert macro1 and macro2.",0,&state));
 	TEST_ASSERT(!sys_string_compare(state.data,"\n\n\n\ntest insert new macro 1 and bbb.\n"));
 	glsl_preprocessor_state_deinit(&state);
-	TEST_GROUP("line numbering");
+	TEST_FUNC("glsl_preprocessor_get_location");
+	TEST_GROUP("empty state");
+	u32 tmp[2];
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_get_location(&state,0,tmp,tmp+1));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("out-of-bounds offset");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_add_file("text",0,&state));
+	TEST_ASSERT(!glsl_preprocessor_get_location(&state,state.length,tmp,tmp+1));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("correct args");
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(!glsl_preprocessor_add_file("A\n#\nB\n#line 55\nC\n\nD\n#line 0 789\nE\n",123,&state));
 	TEST_ASSERT(_check_line(&state,'A',1,123));

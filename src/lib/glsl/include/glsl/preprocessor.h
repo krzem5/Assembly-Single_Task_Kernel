@@ -45,4 +45,8 @@ glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,glsl_preproces
 
 
 
+_Bool glsl_preprocessor_get_location(const glsl_preprocessor_state_t* state,u32 offset,u32* file,u32* line);
+
+
+
 #endif

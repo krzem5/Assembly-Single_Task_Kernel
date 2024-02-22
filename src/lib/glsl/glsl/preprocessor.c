@@ -334,3 +334,22 @@ _emit_missing_newlines:
 	_emit_char(state,'\n');
 	return GLSL_NO_ERROR;
 }
+
+
+
+SYS_PUBLIC _Bool glsl_preprocessor_get_location(const glsl_preprocessor_state_t* state,u32 offset,u32* file,u32* line){
+	if (!state->line_count||offset>=state->length){
+		return 0;
+	}
+	u32 i=0;
+	for (;i+1<state->line_count&&(state->lines+i+1)->offset<=offset;i++);
+	u32 out=(state->lines+i)->line;
+	for (u32 end=(state->lines+i)->offset;offset>end;offset--){
+		if (state->data[offset]=='\n'){
+			out++;
+		}
+	}
+	*file=(state->lines+i)->file;
+	*line=out;
+	return 1;
+}
