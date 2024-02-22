@@ -43,6 +43,11 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(!glsl_preprocessor_add_file("\nvery long preprocessing text\n\twith inline #directives\n\t\r ",0,&state));
 	TEST_ASSERT(!sys_string_compare(state.data,"\nvery long preprocessing text\n\twith inline #directives\n"));
 	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("empty directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(!glsl_preprocessor_add_file("line1\n#\n#",0,&state));
+	TEST_ASSERT(!sys_string_compare(state.data,"line1\n"));
+	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid directive");
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#invalid_directive",0,&state),"Unknown preprocessor directive 'invalid_directive'"));
