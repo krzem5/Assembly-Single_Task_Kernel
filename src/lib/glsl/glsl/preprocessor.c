@@ -313,7 +313,7 @@ _emit_missing_newlines:
 			}
 			continue;
 		}
-		while (src[0]!='\n'){
+		while (src[0]&&src[0]!='\n'){
 			if (LEXER_IS_IDENTIFIER_START(src[0])){
 				const char* identifier=src;
 				for (src++;LEXER_IS_IDENTIFIER(src[0]);src++);
