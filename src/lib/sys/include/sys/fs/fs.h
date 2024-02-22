@@ -26,11 +26,11 @@ sys_fs_t sys_fs_iter_next(sys_fs_t fs);
 
 
 
-sys_error_t sys_fs_get_data(sys_fs_t fs,sys_fs_data_t* out);
+sys_error_t __attribute__((access(write_only,2),nonnull)) sys_fs_get_data(sys_fs_t fs,sys_fs_data_t* out);
 
 
 
-sys_error_t sys_fs_mount(sys_fs_t fs,const char* path);
+sys_error_t __attribute__((access(read_only,2),nonnull)) sys_fs_mount(sys_fs_t fs,const char* path);
 
 
 

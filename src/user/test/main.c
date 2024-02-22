@@ -8,6 +8,7 @@
 #include <test/sys_acl.h>
 #include <test/sys_cpu.h>
 #include <test/sys_format.h>
+#include <test/sys_fs.h>
 #include <test/sys_id.h>
 #include <test/sys_lib.h>
 #include <test/sys_pipe.h>
@@ -33,6 +34,7 @@ void SYS_NOCOVERAGE main(void){
 	test_sys_acl();
 	test_sys_cpu();
 	test_sys_format();
+	test_sys_fs();
 	test_sys_id();
 	test_sys_lib();
 	test_sys_pipe();

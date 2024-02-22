@@ -8,6 +8,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <test/test.h>
@@ -22,6 +23,7 @@ extern error_t syscall_fs_mount();
 
 
 static filesystem_t* _test_fs_deleted_filesystem=NULL;
+static filesystem_t* _test_fs_filesystem=NULL;
 
 
 
@@ -35,6 +37,18 @@ static const filesystem_descriptor_config_t _test_fs_filesystem_descriptor_confi
 	"test-fs-descriptor-config",
 	_deinit_callback,
 	NULL
+};
+
+
+
+static u64 _syscall_get_test_fs_handle(void){
+	return _test_fs_filesystem->handle.rb_node.key;
+}
+
+
+
+static syscall_callback_t const _test_sys_fs_syscall_functions[]={
+	[1]=(syscall_callback_t)_syscall_get_test_fs_handle
 };
 
 
@@ -59,20 +73,19 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	TEST_GROUP("invalid handle");
 	TEST_ASSERT(syscall_fs_get_data(0xaabbccdd,buffer,2*PAGE_SIZE)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("correct args");
-	filesystem_t* fs=fs_create(fs_descriptor);
-	TEST_ASSERT(fs);
+	_test_fs_filesystem=fs_create(fs_descriptor);
+	TEST_ASSERT(_test_fs_filesystem);
 	for (u32 i=0;i<16;i++){
-		fs->guid[i]=i*17;
+		_test_fs_filesystem->guid[i]=i*17;
 	}
-	TEST_ASSERT(syscall_fs_get_data(fs->handle.rb_node.key,buffer,2*PAGE_SIZE)==ERROR_OK);
+	TEST_ASSERT(syscall_fs_get_data(_test_fs_filesystem->handle.rb_node.key,buffer,2*PAGE_SIZE)==ERROR_OK);
 	const filesystem_user_data_t* fs_user_data=(const void*)buffer;
 	TEST_ASSERT(streq(fs_user_data->type,_test_fs_filesystem_descriptor_config.name));
 	TEST_ASSERT(!fs_user_data->partition);
 	for (u32 i=0;i<16;i++){
-		TEST_ASSERT(fs->guid[i]==i*17);
+		TEST_ASSERT(fs_user_data->guid[i]==i*17);
 	}
 	TEST_ASSERT(streq(fs_user_data->mount_path,""));
-	handle_release(&(fs->handle));
 	TEST_FUNC("syscall_fs_mount");
 	TEST_GROUP("empty path");
 	buffer[0]=0;
@@ -84,11 +97,8 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	strcpy(buffer,"/",2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(0xaabbccdd,buffer)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("path already present");
-	fs=fs_create(fs_descriptor);
-	TEST_ASSERT(fs);
 	strcpy(buffer,"/share",2*PAGE_SIZE);
-	TEST_ASSERT(syscall_fs_mount(fs->handle.rb_node.key,buffer)==ERROR_ALREADY_PRESENT);
-	handle_release(&(fs->handle));
+	TEST_ASSERT(syscall_fs_mount(_test_fs_filesystem->handle.rb_node.key,buffer)==ERROR_ALREADY_PRESENT);
 	TEST_GROUP("correct args");
 	strcpy(buffer,"/test-mount-path",2*PAGE_SIZE);
 	// syscall_fs_mount: correct args => ERROR_OK
@@ -121,5 +131,5 @@ void test_fs(void){
 	process_t* test_process=process_create("test-process","test-process");
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-fs-thread",_thread,0x200000,1,fs_descriptor));
 	event_await(test_process->event,0);
-	fs_unregister_descriptor(fs_descriptor);
+	syscall_create_table("test_sys_fs",_test_sys_fs_syscall_functions,sizeof(_test_sys_fs_syscall_functions)/sizeof(syscall_callback_t));
 }
