@@ -54,4 +54,18 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 990",0,&state),"Unknown GLSL version '990'"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 330 invalid_profile",0,&state),"Unsupported GLSL profile 'invalid_profile'"));
 	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid define directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#define",0,&state),"Expected macro name, got ???"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid undef directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#undef",0,&state),"Expected macro name, got ???"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid line directive");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line",0,&state),"Expected line number, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line not-a-valid-number",0,&state),"Expected line number, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 not-a-valid-number",0,&state),"Expected file number, got ???"));
+	glsl_preprocessor_state_deinit(&state);
 }
