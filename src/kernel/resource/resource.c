@@ -155,15 +155,7 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 		next_region->length++;
 		rb_tree_insert_node(&(resource_manager->tree),&(next_region->rb_node));
 		region->length--;
-		if (!region->length){
-			omm_dealloc(_resource_region_allocator,region);
-			region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource-1);
-			if (region){
-				rb_tree_remove_node(&(resource_manager->tree),&(next_region->rb_node));
-				region->length+=next_region->length;
-				omm_dealloc(_resource_region_allocator,next_region);
-			}
-		}
+		KERNEL_ASSERT(region->length);
 	}
 	else{
 		resource_region_t* new_unused_region=omm_alloc(_resource_region_allocator);

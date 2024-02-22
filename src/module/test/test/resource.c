@@ -104,4 +104,19 @@ void test_resource(void){
 	}
 	_verify_integrity(resource_manager,test_data);
 	resource_manager_delete(resource_manager);
+	TEST_GROUP("edge cases");
+	resource_manager=resource_manager_create(1,4);
+	KERNEL_ASSERT(resource_alloc(resource_manager)==1);
+	KERNEL_ASSERT(resource_alloc(resource_manager)==2);
+	KERNEL_ASSERT(resource_dealloc(resource_manager,1));
+	KERNEL_ASSERT(resource_dealloc(resource_manager,2));
+	KERNEL_ASSERT(resource_alloc(resource_manager)==1);
+	KERNEL_ASSERT(resource_alloc(resource_manager)==2);
+	KERNEL_ASSERT(resource_alloc(resource_manager)==3);
+	KERNEL_ASSERT(resource_alloc(resource_manager)==4);
+	KERNEL_ASSERT(resource_dealloc(resource_manager,1));
+	KERNEL_ASSERT(resource_dealloc(resource_manager,2));
+	KERNEL_ASSERT(resource_dealloc(resource_manager,4));
+	KERNEL_ASSERT(resource_dealloc(resource_manager,3));
+	resource_manager_delete(resource_manager);
 }
