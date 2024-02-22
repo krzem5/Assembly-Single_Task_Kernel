@@ -71,13 +71,13 @@ static glsl_error_t _parse_int(const char** src,u64* out){
 	}
 	ptr++;
 	if (ptr[0]!='x'&&ptr[0]!='X'){
-		do{
+		while (LEXER_IS_IDENTIFIER(ptr[0])){
 			if (!LEXER_IS_OCT_DIGIT(ptr[0])){
 				return _glsl_error_create_lexer_digit_expected(ptr[0],8);
 			}
 			value=(value<<3)+ptr[0]-48;
 			ptr++;
-		} while (LEXER_IS_IDENTIFIER(ptr[0]));
+		}
 		goto _no_error;
 	}
 	ptr++;
@@ -168,7 +168,7 @@ SYS_PUBLIC void glsl_preprocessor_state_deinit(glsl_preprocessor_state_t* state)
 
 
 SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,glsl_preprocessor_state_t* state){
-	_emit_line(state,0,index);
+	_emit_line(state,1,index);
 	_Bool is_first=1;
 	while (1){
 		const char* line_start=src;
