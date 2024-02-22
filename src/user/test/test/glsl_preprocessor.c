@@ -62,6 +62,7 @@ void test_glsl_preprocessor(void){
 	TEST_GROUP("invalid define directive");
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#define",0,&state),"Expected macro name, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#define aaa\n#define aaa",0,&state),"Preprocessor macro 'aaa' is already defined"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid undef directive");
 	glsl_preprocessor_state_init(&state);
@@ -72,5 +73,11 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line",0,&state),"Expected line number, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line not-a-valid-number",0,&state),"Expected line number, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 not-a-valid-number",0,&state),"Expected file number, got ???"));
+	glsl_preprocessor_state_deinit(&state);
+	TEST_GROUP("invalid number");
+	glsl_preprocessor_state_init(&state);
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 1abc",0,&state),"Decimal digit expected, got 'a'"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 078a",0,&state),"Octal digit expected, got '8'"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 0xfg",0,&state),"Hexadecimal digit expected, got 'g'"));
 	glsl_preprocessor_state_deinit(&state);
 }

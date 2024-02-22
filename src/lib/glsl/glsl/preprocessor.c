@@ -70,7 +70,7 @@ static glsl_error_t _parse_int(const char** src,u64* out){
 		goto _no_error;
 	}
 	ptr++;
-	if (ptr[1]!='x'){
+	if (ptr[0]!='x'&&ptr[0]!='X'){
 		do{
 			if (!LEXER_IS_OCT_DIGIT(ptr[0])){
 				return _glsl_error_create_lexer_digit_expected(ptr[0],8);
