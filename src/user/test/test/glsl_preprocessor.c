@@ -8,11 +8,11 @@
 
 static _Bool _compare_and_cleanup_error(glsl_error_t error,const char* expected){
 	TEST_ASSERT(error);
-	if (!error){
-		return 0;
+	_Bool out=0;
+	if (error){
+		out=!sys_string_compare(expected,error);
+		glsl_error_delete(error);
 	}
-	_Bool out=!sys_string_compare(expected,error);
-	glsl_error_delete(error);
 	return out;
 }
 
@@ -81,7 +81,7 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 078a",0,&state),"Octal digit expected, got '8'"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 0xfg",0,&state),"Hexadecimal digit expected, got 'g'"));
 	glsl_preprocessor_state_deinit(&state);
-	TEST_GROUP("macro expansion");
+	TEST_GROUP("macro deletion and expansion");
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(!glsl_preprocessor_add_file("#define macro1 aaa\n#define macro2 bbb\n#undef macro1\n#define macro1 new macro 1\ntest insert macro1 and macro2.",0,&state));
 	TEST_ASSERT(!sys_string_compare(state.data,"\n\n\n\ntest insert new macro 1 and bbb.\n"));
