@@ -46,7 +46,7 @@ void test_glsl_preprocessor(void){
 	TEST_GROUP("empty directive");
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(!glsl_preprocessor_add_file("line1\n#\n#",0,&state));
-	TEST_ASSERT(!sys_string_compare(state.data,"line1\n"));
+	TEST_ASSERT(!sys_string_compare(state.data,"line1\n\n\n"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid directive");
 	glsl_preprocessor_state_init(&state);
@@ -56,7 +56,7 @@ void test_glsl_preprocessor(void){
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version",0,&state),"Expected version, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version not-a-valid-number",0,&state),"Expected version, got ???"));
-	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 990",0,&state),"Unknown GLSL version '990'"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 01736",0,&state),"Unknown GLSL version '990'"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#version 330 invalid_profile",0,&state),"Unsupported GLSL profile 'invalid_profile'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid define directive");
@@ -73,6 +73,7 @@ void test_glsl_preprocessor(void){
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line",0,&state),"Expected line number, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line not-a-valid-number",0,&state),"Expected line number, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 not-a-valid-number",0,&state),"Expected file number, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 2not-a-valid-number",0,&state),"Decimal digit expected, got 'n'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid number");
 	glsl_preprocessor_state_init(&state);

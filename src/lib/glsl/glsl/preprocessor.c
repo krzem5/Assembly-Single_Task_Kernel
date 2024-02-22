@@ -179,7 +179,7 @@ SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,gls
 		if (src[0]=='#'){
 			for (src++;src[0]!='\n'&&LEXER_IS_WHITESPACE(src[0]);src++);
 			if (!src[0]||src[0]=='\n'){
-				continue;
+				goto _emit_missing_newlines;
 			}
 			if (_begins_with_word(&src,"version")){
 				if (!is_first){
@@ -303,13 +303,14 @@ SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,gls
 				for (;LEXER_IS_IDENTIFIER(src[length]);length++);
 				return _glsl_error_create_preprocessor_unknown_directive(src,length);
 			}
+			is_first=0;
 			for (;src[0]&&src[0]!='\n';src++);
+_emit_missing_newlines:
 			for (;line_start!=src;line_start++){
 				if (line_start[0]=='\n'){
 					_emit_char(state,'\n');
 				}
 			}
-			is_first=0;
 			continue;
 		}
 		while (src[0]!='\n'){
