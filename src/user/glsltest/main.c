@@ -120,15 +120,15 @@ int main(void){
 	}
 	glsl_preprocessor_state_t preprocessor_state;
 	glsl_preprocessor_state_init(&preprocessor_state);
-	glsl_error_t error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
+	glsl_error_t error=glsl_preprocessor_add_file(&preprocessor_state,global_setup,0xffffffff);
 	if (error){
 		goto _error;
 	}
-	error=glsl_preprocessor_add_file(vertex_shader_setup,0xffffffff,&preprocessor_state);
+	error=glsl_preprocessor_add_file(&preprocessor_state,vertex_shader_setup,0xffffffff);
 	if (error){
 		goto _error;
 	}
-	error=glsl_preprocessor_add_file(vertex_shader,0,&preprocessor_state);
+	error=glsl_preprocessor_add_file(&preprocessor_state,vertex_shader,0);
 	if (error){
 		goto _error;
 	}
@@ -160,15 +160,15 @@ int main(void){
 		goto _error;
 	}
 	glsl_preprocessor_state_init(&preprocessor_state);
-	error=glsl_preprocessor_add_file(global_setup,0xffffffff,&preprocessor_state);
+	error=glsl_preprocessor_add_file(&preprocessor_state,global_setup,0xffffffff);
 	if (error){
 		goto _error;
 	}
-	error=glsl_preprocessor_add_file(fragment_shader_setup,0xffffffff,&preprocessor_state);
+	error=glsl_preprocessor_add_file(&preprocessor_state,fragment_shader_setup,0xffffffff);
 	if (error){
 		goto _error;
 	}
-	error=glsl_preprocessor_add_file(fragment_shader,0,&preprocessor_state);
+	error=glsl_preprocessor_add_file(&preprocessor_state,fragment_shader,0);
 	if (error){
 		goto _error;
 	}

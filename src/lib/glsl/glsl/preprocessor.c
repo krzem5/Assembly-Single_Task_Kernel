@@ -167,7 +167,7 @@ SYS_PUBLIC void glsl_preprocessor_state_deinit(glsl_preprocessor_state_t* state)
 
 
 
-SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(const char* src,u32 index,glsl_preprocessor_state_t* state){
+SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(glsl_preprocessor_state_t* state,const char* src,u32 index){
 	_emit_line(state,1,index);
 	_Bool is_first=1;
 	while (1){

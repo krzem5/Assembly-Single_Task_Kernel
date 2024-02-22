@@ -2126,16 +2126,16 @@ SYS_PUBLIC void glCompileShader(GLuint shader){
 	}
 	glsl_preprocessor_state_t preprocessor_state;
 	glsl_preprocessor_state_init(&preprocessor_state);
-	state->error=glsl_preprocessor_add_file((const char*)src_lib_opengl_rsrc_glsl_global_setup_glsl,0xffffffff,&preprocessor_state);
+	state->error=glsl_preprocessor_add_file(&preprocessor_state,(const char*)src_lib_opengl_rsrc_glsl_global_setup_glsl,0xffffffff);
 	if (state->error!=GLSL_NO_ERROR){
 		return;
 	}
-	state->error=glsl_preprocessor_add_file((const char*)(state->type==GL_VERTEX_SHADER?src_lib_opengl_rsrc_glsl_vert_setup_glsl:src_lib_opengl_rsrc_glsl_frag_setup_glsl),0xffffffff,&preprocessor_state);
+	state->error=glsl_preprocessor_add_file(&preprocessor_state,(const char*)(state->type==GL_VERTEX_SHADER?src_lib_opengl_rsrc_glsl_vert_setup_glsl:src_lib_opengl_rsrc_glsl_frag_setup_glsl),0xffffffff);
 	if (state->error!=GLSL_NO_ERROR){
 		return;
 	}
 	for (GLuint i=0;i<state->source_count;i++){
-		state->error=glsl_preprocessor_add_file((state->sources+i)->data,i,&preprocessor_state);
+		state->error=glsl_preprocessor_add_file(&preprocessor_state,(state->sources+i)->data,i);
 		if (state->error!=GLSL_NO_ERROR){
 			return;
 		}
