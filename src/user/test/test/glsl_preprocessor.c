@@ -72,8 +72,8 @@ void test_glsl_preprocessor(void){
 	glsl_preprocessor_state_init(&state);
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line",0,&state),"Expected line number, got ???"));
 	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line not-a-valid-number",0,&state),"Expected line number, got ???"));
-	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 not-a-valid-number",0,&state),"Expected file number, got ???"));
-	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 2 2not-a-valid-number",0,&state),"Decimal digit expected, got 'n'"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 0x2 not-a-valid-number",0,&state),"Expected file number, got ???"));
+	TEST_ASSERT(_compare_and_cleanup_error(glsl_preprocessor_add_file("#line 0x2 2not-a-valid-number",0,&state),"Decimal digit expected, got 'n'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid number");
 	glsl_preprocessor_state_init(&state);
