@@ -25,7 +25,7 @@ static _Bool _compare_storage(const glsl_ast_var_storage_t* storage,u8 type,u8 f
 	_Bool out=1;
 	out&=(storage->type==type);
 	out&=(storage->flags==flags);
-	out&=(!storage->block);
+	out&=(storage->block==block);
 	out&=(!(storage->flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||storage->layout_location==layout_location);
 	return out;
 }
@@ -72,6 +72,19 @@ static _Bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl
 		out&=(var->type->builtin_type==builtin_type);
 	}
 	return out;
+}
+
+
+
+static _Bool _check_var_type_array_length(const glsl_ast_t* ast,const char* name,u32 array_length){
+	const glsl_ast_var_t* var=NULL;
+	for (u32 i=0;i<ast->var_count;i++){
+		if (!sys_string_compare(ast->vars[i]->name,name)){
+			var=ast->vars[i];
+			break;
+		}
+	}
+	return (var&&var->type->array_length==array_length);
 }
 
 
@@ -130,10 +143,19 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member name, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("float xyz;in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'xyz' is already defined"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[]",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	// nonempty array length
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz+",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
-	TEST_ASSERT(!_execute_parser("in block_name{};",GLSL_SHADER_TYPE_ANY,&ast));
-	const glsl_ast_block_t* block=_check_block(&ast,"block_name",GLSL_AST_VAR_STORAGE_TYPE_IN,0,0);
+	TEST_ASSERT(!_execute_parser("in block_name_a{};\ncentroid out block_name_b{out mat4 xxx;float yyy[];};",GLSL_SHADER_TYPE_ANY,&ast));
+	TEST_ASSERT(_check_block(&ast,"block_name_a",GLSL_AST_VAR_STORAGE_TYPE_IN,0,0));
+	const glsl_ast_block_t* block=_check_block(&ast,"block_name_b",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_CENTROID,0);
 	TEST_ASSERT(block);
+	TEST_ASSERT(_check_var_storage(&ast,"xxx",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_BLOCK,0,block));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"xxx",GLSL_BUILTIN_TYPE_MAT44));
+	TEST_ASSERT(_check_var_type_array_length(&ast,"xxx",GLSL_AST_TYPE_NO_ARRAY));
+	TEST_ASSERT(_check_var_storage(&ast,"yyy",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_BLOCK,0,block));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"yyy",GLSL_BUILTIN_TYPE_FLOAT));
+	TEST_ASSERT(_check_var_type_array_length(&ast,"yyy",0));
 	glsl_ast_delete(&ast);
 	// block instance name
 	TEST_GROUP("global var");
