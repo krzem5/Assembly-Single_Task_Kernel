@@ -391,7 +391,7 @@ SYS_PUBLIC glsl_error_t glsl_lexer_extract_tokens(const char* src,glsl_lexer_tok
 					is_negative=1;
 					src++;
 				}
-				s64 exponent=0;
+				u64 exponent=0;
 				do{
 					if (!LEXER_IS_DIGIT(src[0])){
 						error=_glsl_error_create_lexer_digit_expected(src[0],10);
@@ -403,10 +403,6 @@ SYS_PUBLIC glsl_error_t glsl_lexer_extract_tokens(const char* src,glsl_lexer_tok
 				for (double factor=(is_negative?0.1:10.0);exponent;exponent--){
 					value*=factor;
 				}
-			}
-			if (LEXER_IS_IDENTIFIER(src[0])){
-				error=_glsl_error_create_lexer_unexpected_character(src[0]);
-				goto _error;
 			}
 			_emit_token(out,GLSL_LEXER_TOKEN_TYPE_CONST_FLOAT)->float_=value;
 			continue;

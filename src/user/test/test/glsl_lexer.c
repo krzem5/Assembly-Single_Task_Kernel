@@ -62,6 +62,16 @@ static void _check_one_token_int(glsl_lexer_token_list_t* token_list,u64 value){
 
 
 
+static void _check_one_token_float(glsl_lexer_token_list_t* token_list,double value){
+	TEST_ASSERT(token_list->length==1);
+	TEST_ASSERT(token_list->data->type==GLSL_LEXER_TOKEN_TYPE_CONST_FLOAT);
+	double error=token_list->data->float_-value;
+	TEST_ASSERT(-0.0001f<error&&error<0.0001f);
+	glsl_lexer_delete_token_list(token_list);
+}
+
+
+
 void test_glsl_lexer(void){
 	TEST_MODULE("glsl_lexer");
 	TEST_FUNC("glsl_lexer_extract_tokens");
@@ -472,6 +482,22 @@ void test_glsl_lexer(void){
 	_check_one_token_int(&token_list,987);
 	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("1ux",&token_list),"Unexpected character 'x'"));
 	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("9Uu",&token_list),"Unexpected character 'u'"));
+	TEST_GROUP("floats");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("123.456",&token_list));
+	_check_one_token_float(&token_list,123.456);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(".999",&token_list));
+	_check_one_token_float(&token_list,.999);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("2.",&token_list));
+	_check_one_token_float(&token_list,2.0);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("123.456e2",&token_list));
+	_check_one_token_float(&token_list,12345.6);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("314E-2",&token_list));
+	_check_one_token_float(&token_list,3.14);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(".2e+1",&token_list));
+	_check_one_token_float(&token_list,2.0);
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("1.2x",&token_list),"Decimal digit expected, got 'x'"));
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("1.2E-3y",&token_list),"Decimal digit expected, got 'y'"));
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("1E+2z",&token_list),"Decimal digit expected, got 'z'"));
 	TEST_GROUP("unexpected character");
 	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("$",&token_list),"Unexpected character '$'"));
 	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("123#",&token_list),"Unexpected character '#'"));
