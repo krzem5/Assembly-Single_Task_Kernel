@@ -21,7 +21,31 @@ static glsl_error_t _execute_parser(const char* src,glsl_shader_type_t shader_ty
 
 
 
-static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storage_type,u8 storage_flags,u16 storage_layout_location,glsl_ast_block_t* storage_block){
+static _Bool _compare_storage(const glsl_ast_var_storage_t* storage,u8 type,u8 flags,u16 layout_location,const glsl_ast_block_t* block){
+	_Bool out=1;
+	out&=(storage->type==type);
+	out&=(storage->flags==flags);
+	out&=(!storage->block);
+	out&=(!(storage->flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||storage->layout_location==layout_location);
+	return out;
+}
+
+
+
+static const glsl_ast_block_t* _check_block(const glsl_ast_t* ast,const char* name,u8 storage_type,u8 storage_flags,u16 storage_layout_location){
+	const glsl_ast_block_t* block=NULL;
+	for (u32 i=0;i<ast->block_count;i++){
+		if (!sys_string_compare(ast->blocks[i]->name,name)){
+			block=ast->blocks[i];
+			break;
+		}
+	}
+	return (block&&_compare_storage(&(block->storage),storage_type,storage_flags,storage_layout_location,NULL)?block:NULL);
+}
+
+
+
+static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storage_type,u8 storage_flags,u16 storage_layout_location,const glsl_ast_block_t* storage_block){
 	const glsl_ast_var_t* var=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		if (!sys_string_compare(ast->vars[i]->name,name)){
@@ -29,14 +53,7 @@ static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storag
 			break;
 		}
 	}
-	_Bool out=0;
-	if (var){
-		out=(var->storage.type==storage_type);
-		out&=(var->storage.flags==storage_flags);
-		out&=(var->storage.block==storage_block);
-		out&=(!(var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||var->storage.layout_location==storage_layout_location);
-	}
-	return out;
+	return (var&&_compare_storage(&(var->storage),storage_type,storage_flags,storage_layout_location,storage_block));
 }
 
 
@@ -100,9 +117,19 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_type_builtin(&ast,"var_a",GLSL_BUILTIN_TYPE_INT));
 	TEST_ASSERT(_check_var_type_builtin(&ast,"var_b",GLSL_BUILTIN_TYPE_FLOAT));
 	TEST_ASSERT(_check_var_type_builtin(&ast,"var_c",GLSL_BUILTIN_TYPE_MAT44));
+	glsl_ast_delete(&ast);
 	// named types
 	// structures
+	TEST_GROUP("block");
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name-",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
+	TEST_ASSERT(!_execute_parser("in block_name{};",GLSL_SHADER_TYPE_ANY,&ast));
+	const glsl_ast_block_t* block=_check_block(&ast,"block_name",GLSL_AST_VAR_STORAGE_TYPE_IN,0,0);
+	TEST_ASSERT(block);
 	glsl_ast_delete(&ast);
+	// block instance name
 	TEST_GROUP("global var");
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
 }
