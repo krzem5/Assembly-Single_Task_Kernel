@@ -512,6 +512,7 @@ _cleanup:
 static glsl_error_t _parse_storage(glsl_parser_state_t* parser,glsl_ast_var_storage_t* out){
 	out->type=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT;
 	out->flags=0;
+	out->block=NULL;
 	if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_LAYOUT){
 		parser->index++;
 		if (parser->index==parser->length||parser->tokens[parser->index].type!=GLSL_LEXER_TOKEN_TYPE_LEFT_PAREN){
@@ -557,15 +558,12 @@ _parse_next_layout_qualifier:
 			return _glsl_error_create_parser_expected("end of layout qualifiers");
 		}
 		parser->index++;
-		if (parser->index==parser->length){
-			return _glsl_error_create_parser_expected("layout qualifier");
-		}
 	}
-	if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_CENTROID){
+	if (parser->index<parser->length&&parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_CENTROID){
 		out->flags|=GLSL_AST_VAR_STORAGE_FLAG_CENTROID;
 		parser->index++;
 	}
-	if (parser->index<=parser->length&&(parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_CONST||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_VARYING||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_IN||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_OUT||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_UNIFORM)){
+	if (parser->index<parser->length&&(parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_CONST||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_VARYING||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_IN||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_OUT||parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_UNIFORM)){
 		switch (parser->tokens[parser->index].type){
 			case GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE:
 				return _glsl_error_create_parser_deprecated_keyword("attribute");
