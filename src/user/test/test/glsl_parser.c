@@ -125,6 +125,12 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name-",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{varying",GLSL_SHADER_TYPE_ANY,&ast),"Deprecated keyword: varying"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{centroid",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member name, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("float xyz;in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'xyz' is already defined"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz+",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(!_execute_parser("in block_name{};",GLSL_SHADER_TYPE_ANY,&ast));
 	const glsl_ast_block_t* block=_check_block(&ast,"block_name",GLSL_AST_VAR_STORAGE_TYPE_IN,0,0);
 	TEST_ASSERT(block);
