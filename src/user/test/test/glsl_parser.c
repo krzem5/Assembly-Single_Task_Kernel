@@ -177,6 +177,14 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_type_array_length(&ast,"yyy",0));
 	glsl_ast_delete(&ast);
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var;float var=",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'var' is already defined"));
-	// assignment
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var=",GLSL_SHADER_TYPE_ANY,&ast),"Expected expression, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var=if",GLSL_SHADER_TYPE_ANY,&ast),"Expected expression, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in float xxx;\nint var=1.0+xxx;",GLSL_SHADER_TYPE_ANY,&ast),"Initializer is not constant"));
+	TEST_ASSERT(!_execute_parser("const float var=5.0;\n",GLSL_SHADER_TYPE_ANY,&ast));
+	TEST_ASSERT(_check_var_storage(&ast,"var",GLSL_AST_VAR_STORAGE_TYPE_CONST,0,0,NULL));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"var",GLSL_BUILTIN_TYPE_FLOAT));
+	TEST_ASSERT(_check_var_type_array_length(&ast,"var",GLSL_AST_TYPE_NO_ARRAY));
+	// verify var value
+	glsl_ast_delete(&ast);
 	TEST_GROUP("function");
 }

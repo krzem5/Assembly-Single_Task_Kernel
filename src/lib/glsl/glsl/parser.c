@@ -371,7 +371,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 		}
 		const glsl_operator_t* operator=_glsl_operator_table+parser->tokens[parser->index].type;
 		if (!operator->name){
-			*error=_glsl_error_create_parser_expected("operator");
+			*error=_glsl_error_create_parser_expected((last_token_was_value?"operator":"expression"));
 			goto _cleanup;
 		}
 		if (last_token_was_value&&!operator->binary){
