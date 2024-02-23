@@ -4,6 +4,7 @@
 #include <sys/system/system.h>
 #include <sys/types.h>
 #include <test/glsl_lexer.h>
+#include <test/glsl_parser.h>
 #include <test/glsl_preprocessor.h>
 #include <test/glsl_version.h>
 #include <test/sys_acl.h>
@@ -31,6 +32,7 @@ void SYS_NOCOVERAGE main(void){
 	};
 	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
 	test_glsl_lexer();
+	test_glsl_parser();
 	test_glsl_preprocessor();
 	test_glsl_version();
 	test_sys_acl();

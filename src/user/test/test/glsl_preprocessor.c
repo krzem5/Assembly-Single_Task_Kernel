@@ -1,20 +1,8 @@
-#include <glsl/error.h>
 #include <glsl/preprocessor.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
+#include <test/glsl_common.h>
 #include <test/test.h>
-
-
-
-static _Bool _check_and_cleanup_error(glsl_error_t error,const char* expected){
-	TEST_ASSERT(error);
-	_Bool out=0;
-	if (error){
-		out=!sys_string_compare(expected,error);
-		glsl_error_delete(error);
-	}
-	return out;
-}
 
 
 
@@ -60,36 +48,36 @@ void test_glsl_preprocessor(void){
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid directive");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#invalid_directive",0),"Unknown preprocessor directive 'invalid_directive'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#invalid_directive",0),"Unknown preprocessor directive 'invalid_directive'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid version directive");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version",0),"Expected version, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version not-a-valid-number",0),"Expected version, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 01736",0),"Unknown GLSL version '990'"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 330 invalid_profile",0),"Unsupported GLSL profile 'invalid_profile'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version",0),"Expected version, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version not-a-valid-number",0),"Expected version, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 01736",0),"Unknown GLSL version '990'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 330 invalid_profile",0),"Unsupported GLSL profile 'invalid_profile'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid define directive");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#define",0),"Expected macro name, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#define aaa\n#define aaa",0),"Preprocessor macro 'aaa' is already defined"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#define",0),"Expected macro name, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#define aaa\n#define aaa",0),"Preprocessor macro 'aaa' is already defined"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid undef directive");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#undef",0),"Expected macro name, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#undef",0),"Expected macro name, got ???"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid line directive");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line",0),"Expected line number, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line not-a-valid-number",0),"Expected line number, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line 0x2 not-a-valid-number",0),"Expected file number, got ???"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line 0x2 2not-a-valid-number",0),"Decimal digit expected, got 'n'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line",0),"Expected line number, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line not-a-valid-number",0),"Expected line number, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line 0x2 not-a-valid-number",0),"Expected file number, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#line 0x2 2not-a-valid-number",0),"Decimal digit expected, got 'n'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("invalid number");
 	glsl_preprocessor_state_init(&state);
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 1abc",0),"Decimal digit expected, got 'a'"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 078a",0),"Octal digit expected, got '8'"));
-	TEST_ASSERT(_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 0xfg",0),"Hexadecimal digit expected, got 'g'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 1abc",0),"Decimal digit expected, got 'a'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 078a",0),"Octal digit expected, got '8'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(glsl_preprocessor_add_file(&state,"#version 0xfg",0),"Hexadecimal digit expected, got 'g'"));
 	glsl_preprocessor_state_deinit(&state);
 	TEST_GROUP("macro deletion and expansion");
 	glsl_preprocessor_state_init(&state);

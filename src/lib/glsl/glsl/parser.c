@@ -613,7 +613,7 @@ SYS_PUBLIC glsl_error_t glsl_parser_parse_tokens(const glsl_lexer_token_list_t* 
 				error=_glsl_error_create_parser_expected("precision qualifier");
 				goto _cleanup;
 			}
-			u32 precision=parser.tokens[parser.index].type;
+			glsl_lexer_token_type_t precision=parser.tokens[parser.index].type;
 			parser.index++;
 			if (parser.index==parser.length||parser.tokens[parser.index].type!=GLSL_LEXER_TOKEN_TYPE_BUILTIN_TYPE){
 				error=_glsl_error_create_parser_expected("type");
