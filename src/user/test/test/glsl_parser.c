@@ -30,10 +30,10 @@ static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storag
 	}
 	_Bool out=0;
 	if (var){
-		out=(var->storage.type==storage_type&&var->storage.flags==storage_flags&&var->storage.block==storage_block);
-		if (out&&(var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)&&var->storage.layout_location!=storage_layout_location){
-			out=0;
-		}
+		out=(var->storage.type==storage_type);
+		out&=(var->storage.flags==storage_flags);
+		out&=(var->storage.block==storage_block);
+		out&=(!(var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||var->storage.layout_location==storage_layout_location);
 	}
 	return out;
 }
