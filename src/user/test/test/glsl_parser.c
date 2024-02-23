@@ -1,4 +1,5 @@
 #include <glsl/ast.h>
+#include <glsl/builtin_types.h>
 #include <glsl/error.h>
 #include <glsl/lexer.h>
 #include <glsl/parser.h>
@@ -34,6 +35,24 @@ static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storag
 		out&=(var->storage.flags==storage_flags);
 		out&=(var->storage.block==storage_block);
 		out&=(!(var->storage.flags&GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION)||var->storage.layout_location==storage_layout_location);
+	}
+	return out;
+}
+
+
+
+static _Bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl_builtin_type_t builtin_type){
+	const glsl_ast_var_t* var=NULL;
+	for (u32 i=0;i<ast->var_count;i++){
+		if (!sys_string_compare(ast->vars[i]->name,name)){
+			var=ast->vars[i];
+			break;
+		}
+	}
+	_Bool out=0;
+	if (var){
+		out=(var->type->type==GLSL_AST_TYPE_TYPE_BUILTIN);
+		out&=(var->type->builtin_type==builtin_type);
 	}
 	return out;
 }
@@ -76,4 +95,14 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_storage(&ast,"var_d",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_CENTROID|GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION,1,NULL));
 	TEST_ASSERT(_check_var_storage(&ast,"var_e",GLSL_AST_VAR_STORAGE_TYPE_UNIFORM,0,0,NULL));
 	glsl_ast_delete(&ast);
+	TEST_GROUP("type");
+	TEST_ASSERT(!_execute_parser("int var_a=1;\nfloat var_b=1.0;\nmat4 var_c;",GLSL_SHADER_TYPE_ANY,&ast));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"var_a",GLSL_BUILTIN_TYPE_INT));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"var_b",GLSL_BUILTIN_TYPE_FLOAT));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"var_c",GLSL_BUILTIN_TYPE_MAT44));
+	// named types
+	// structures
+	glsl_ast_delete(&ast);
+	TEST_GROUP("global var");
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
 }

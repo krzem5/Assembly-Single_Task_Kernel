@@ -1,3 +1,4 @@
+#include <glsl/builtin_types.h>
 #include <glsl/lexer.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
