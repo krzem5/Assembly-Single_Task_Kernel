@@ -144,8 +144,8 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("float xyz;in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'xyz' is already defined"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[",GLSL_SHADER_TYPE_ANY,&ast),"Expected right bracket, got ???"));
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[]",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	// nonempty array length
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[]",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz+",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz;}",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(!_execute_parser("in block_name_a{};\ncentroid out block_name_b{out mat4 xxx;float yyy[];};",GLSL_SHADER_TYPE_ANY,&ast));
@@ -160,6 +160,23 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_type_array_length(&ast,"yyy",0));
 	glsl_ast_delete(&ast);
 	// block instance name
-	TEST_GROUP("global var");
+	TEST_GROUP("variable");
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int",GLSL_SHADER_TYPE_ANY,&ast),"Expected variable or function name, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var[",GLSL_SHADER_TYPE_ANY,&ast),"Expected right bracket, got ???"));
+	// nonempty array length
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var[]",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var;float var;",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'var' is already defined"));
+	TEST_ASSERT(!_execute_parser("layout(location=3) out float xxx;\nuniform int yyy[];",GLSL_SHADER_TYPE_ANY,&ast));
+	TEST_ASSERT(_check_var_storage(&ast,"xxx",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_HAS_LAYOUT_LOCATION,3,NULL));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"xxx",GLSL_BUILTIN_TYPE_FLOAT));
+	TEST_ASSERT(_check_var_type_array_length(&ast,"xxx",GLSL_AST_TYPE_NO_ARRAY));
+	TEST_ASSERT(_check_var_storage(&ast,"yyy",GLSL_AST_VAR_STORAGE_TYPE_UNIFORM,0,0,NULL));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"yyy",GLSL_BUILTIN_TYPE_INT));
+	TEST_ASSERT(_check_var_type_array_length(&ast,"yyy",0));
+	glsl_ast_delete(&ast);
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var;float var=",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'var' is already defined"));
+	// assignment
+	TEST_GROUP("function");
 }
