@@ -27,6 +27,23 @@ static void _check_one_token_builtin_type(glsl_lexer_token_list_t* token_list,gl
 
 
 
+static void _check_one_token_bool(glsl_lexer_token_list_t* token_list,_Bool value){
+	TEST_ASSERT(token_list->length==1);
+	TEST_ASSERT(token_list->data->type==GLSL_LEXER_TOKEN_TYPE_CONST_BOOL);
+	TEST_ASSERT(token_list->data->bool_==value);
+	glsl_lexer_delete_token_list(token_list);
+}
+
+
+
+static void _check_one_token(glsl_lexer_token_list_t* token_list,glsl_lexer_token_type_t type){
+	TEST_ASSERT(token_list->length==1);
+	TEST_ASSERT(token_list->data->type==type);
+	glsl_lexer_delete_token_list(token_list);
+}
+
+
+
 void test_glsl_lexer(void){
 	TEST_MODULE("glsl_lexer");
 	TEST_FUNC("glsl_lexer_extract_tokens");
@@ -241,4 +258,147 @@ void test_glsl_lexer(void){
 	_check_one_token_builtin_type(&token_list,GLSL_BUILTIN_TYPE_ISAMPLER_2D_MULTI_SAMPLE_ARRAY);
 	TEST_ASSERT(!glsl_lexer_extract_tokens("usampler2DMSArray",&token_list));
 	_check_one_token_builtin_type(&token_list,GLSL_BUILTIN_TYPE_USAMPLER_2D_MULTI_SAMPLE_ARRAY);
+	TEST_GROUP("keywords");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("attribute",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("break",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_BREAK);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("centroid",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_CENTROID);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("const",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_CONST);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("continue",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_CONTINUE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("discard",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_DISCARD);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("do",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_DO);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("else",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_ELSE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("flat",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_FLAT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("for",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_FOR);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("highp",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_HIGHP);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("if",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_IF);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("in",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_IN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("inout",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_INOUT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("invariant",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_INVARIANT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("layout",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LAYOUT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("lowp",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LOWP);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("mediump",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MEDIUMP);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("noperspective",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_NOPERSPECTIVE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("out",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_OUT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("precision",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_PRECISION);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("return",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RETURN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("smooth",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_SMOOTH);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("struct",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_STRUCT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("uniform",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_UNIFORM);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("varying",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_VARYING);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("while",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_WHILE);
+	TEST_GROUP("booleans");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("true",&token_list));
+	_check_one_token_bool(&token_list,1);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("false",&token_list));
+	_check_one_token_bool(&token_list,0);
+	TEST_GROUP("operators");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("attribute",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("<<=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LSH_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(">>=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RSH_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("!=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_NEQ);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("%=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MOD_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("&&",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LAND);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("*=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MUL_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("++",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_INC);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("+=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_ADD_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("--",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_DEC);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("-=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_SUB_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("/=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_DIV_ASSIGN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("<<",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LSH);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("<=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LEQ);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("==",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_EQU);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(">=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_GEQ);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(">>",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RSH);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("||",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LOR);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("!",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_NOT);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("%",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MOD);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("&",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_AND);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("(",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LEFT_PAREN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(")",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RIGHT_PAREN);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("*",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MUL);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("+",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_ADD);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(",",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_COMMA);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("-",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_SUB);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("/",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_DIV);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(":",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_COLON);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(";",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_SEMICOLON);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("<",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LESS);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("=",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_EQUAL);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(">",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_MORE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("?",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_QUESTION_MARK);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("[",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LEFT_BRACKET);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("]",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RIGHT_BRACKET);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("^",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_XOR);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("{",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_LEFT_BRACE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("|",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_OR);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("}",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RIGHT_BRACE);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("~",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_INV);
 }

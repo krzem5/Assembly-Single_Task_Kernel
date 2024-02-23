@@ -327,9 +327,6 @@ SYS_PUBLIC void glsl_debug_print_token_list(const glsl_lexer_token_list_t* token
 			case GLSL_LEXER_TOKEN_TYPE_ATTRIBUTE:
 				sys_io_print("ATTRIBUTE\n");
 				break;
-			case GLSL_LEXER_TOKEN_TYPE_BOOL:
-				sys_io_print("BOOL\n");
-				break;
 			case GLSL_LEXER_TOKEN_TYPE_BREAK:
 				sys_io_print("BREAK\n");
 				break;
@@ -393,9 +390,6 @@ SYS_PUBLIC void glsl_debug_print_token_list(const glsl_lexer_token_list_t* token
 			case GLSL_LEXER_TOKEN_TYPE_FLAT:
 				sys_io_print("FLAT\n");
 				break;
-			case GLSL_LEXER_TOKEN_TYPE_FLOAT:
-				sys_io_print("FLOAT\n");
-				break;
 			case GLSL_LEXER_TOKEN_TYPE_FOR:
 				sys_io_print("FOR\n");
 				break;
@@ -419,9 +413,6 @@ SYS_PUBLIC void glsl_debug_print_token_list(const glsl_lexer_token_list_t* token
 				break;
 			case GLSL_LEXER_TOKEN_TYPE_INOUT:
 				sys_io_print("INOUT\n");
-				break;
-			case GLSL_LEXER_TOKEN_TYPE_INT:
-				sys_io_print("INT\n");
 				break;
 			case GLSL_LEXER_TOKEN_TYPE_INV:
 				sys_io_print("INV\n");
@@ -545,9 +536,6 @@ SYS_PUBLIC void glsl_debug_print_token_list(const glsl_lexer_token_list_t* token
 				break;
 			case GLSL_LEXER_TOKEN_TYPE_VARYING:
 				sys_io_print("VARYING\n");
-				break;
-			case GLSL_LEXER_TOKEN_TYPE_VOID:
-				sys_io_print("VOID\n");
 				break;
 			case GLSL_LEXER_TOKEN_TYPE_WHILE:
 				sys_io_print("WHILE\n");
