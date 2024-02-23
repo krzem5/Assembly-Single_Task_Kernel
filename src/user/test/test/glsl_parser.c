@@ -27,4 +27,13 @@ void test_glsl_parser(void){
 	glsl_ast_t ast;
 	TEST_ASSERT(!_execute_parser("",GLSL_SHADER_TYPE_ANY,&ast));
 	glsl_ast_delete(&ast);
+	TEST_GROUP("precision");
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision",GLSL_SHADER_TYPE_ANY,&ast),"Expected precision qualifier, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision 10.5",GLSL_SHADER_TYPE_ANY,&ast),"Expected precision qualifier, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision lowp",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision mediump",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision highp",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision lowp int",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(!_execute_parser("precision mediump float;",GLSL_SHADER_TYPE_ANY,&ast));
+	glsl_ast_delete(&ast);
 }
