@@ -36,4 +36,15 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("precision lowp int",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(!_execute_parser("precision mediump float;",GLSL_SHADER_TYPE_ANY,&ast));
 	glsl_ast_delete(&ast);
+	TEST_GROUP("storage class");
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout",GLSL_SHADER_TYPE_ANY,&ast),"Expected layout qualifiers, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(",GLSL_SHADER_TYPE_ANY,&ast),"Expected layout qualifier, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(<<=",GLSL_SHADER_TYPE_ANY,&ast),"Expected layout qualifier, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(key",GLSL_SHADER_TYPE_ANY,&ast),"Expected end of layout qualifiers, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(key=value",GLSL_SHADER_TYPE_ANY,&ast),"Expected integer constant, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(key=2",GLSL_SHADER_TYPE_ANY,&ast),"Expected end of layout qualifiers, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(location=1,location=2)",GLSL_SHADER_TYPE_ANY,&ast),"Duplicated layout qualifier 'location'"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(location,",GLSL_SHADER_TYPE_ANY,&ast),"Expected layout qualifier, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(location+",GLSL_SHADER_TYPE_ANY,&ast),"Expected end of layout qualifiers, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("layout(key)",GLSL_SHADER_TYPE_ANY,&ast),"Unknown layout qualifier 'key'"));
 }
