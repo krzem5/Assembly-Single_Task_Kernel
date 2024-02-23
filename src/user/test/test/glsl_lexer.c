@@ -44,6 +44,15 @@ static void _check_one_token(glsl_lexer_token_list_t* token_list,glsl_lexer_toke
 
 
 
+static void _check_one_token_identifier(glsl_lexer_token_list_t* token_list,const char* value){
+	TEST_ASSERT(token_list->length==1);
+	TEST_ASSERT(token_list->data->type==GLSL_LEXER_TOKEN_TYPE_IDENTIFIER);
+	TEST_ASSERT(!sys_string_compare(token_list->data->string,value));
+	glsl_lexer_delete_token_list(token_list);
+}
+
+
+
 void test_glsl_lexer(void){
 	TEST_MODULE("glsl_lexer");
 	TEST_FUNC("glsl_lexer_extract_tokens");
@@ -401,4 +410,17 @@ void test_glsl_lexer(void){
 	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_RIGHT_BRACE);
 	TEST_ASSERT(!glsl_lexer_extract_tokens("~",&token_list));
 	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_INV);
+	TEST_ASSERT(!glsl_lexer_extract_tokens(".",&token_list));
+	_check_one_token(&token_list,GLSL_LEXER_TOKEN_TYPE_PERIOD);
+	TEST_GROUP("identifiers");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("Abc/**/",&token_list));
+	_check_one_token_identifier(&token_list,"Abc");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("Z88\n",&token_list));
+	_check_one_token_identifier(&token_list,"Z88");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("aabbcc",&token_list));
+	_check_one_token_identifier(&token_list,"aabbcc");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("zyx",&token_list));
+	_check_one_token_identifier(&token_list,"zyx");
+	TEST_ASSERT(!glsl_lexer_extract_tokens("_internal",&token_list));
+	_check_one_token_identifier(&token_list,"_internal");
 }
