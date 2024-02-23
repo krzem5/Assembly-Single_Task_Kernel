@@ -53,6 +53,15 @@ static void _check_one_token_identifier(glsl_lexer_token_list_t* token_list,cons
 
 
 
+static void _check_one_token_int(glsl_lexer_token_list_t* token_list,u64 value){
+	TEST_ASSERT(token_list->length==1);
+	TEST_ASSERT(token_list->data->type==GLSL_LEXER_TOKEN_TYPE_CONST_INT);
+	TEST_ASSERT(token_list->data->int_==value);
+	glsl_lexer_delete_token_list(token_list);
+}
+
+
+
 void test_glsl_lexer(void){
 	TEST_MODULE("glsl_lexer");
 	TEST_FUNC("glsl_lexer_extract_tokens");
@@ -423,4 +432,14 @@ void test_glsl_lexer(void){
 	_check_one_token_identifier(&token_list,"zyx");
 	TEST_ASSERT(!glsl_lexer_extract_tokens("_internal",&token_list));
 	_check_one_token_identifier(&token_list,"_internal");
+	TEST_GROUP("hexadecimal integers");
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("0xg",&token_list),"Hexadecimal digit expected, got 'g'"));
+	TEST_ASSERT(!glsl_lexer_extract_tokens("0x123aBc",&token_list));
+	_check_one_token_int(&token_list,0x123aBc);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("0XFFFu",&token_list));
+	_check_one_token_int(&token_list,0xfff);
+	TEST_ASSERT(!glsl_lexer_extract_tokens("0x9a9U",&token_list));
+	_check_one_token_int(&token_list,0x9a9);
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("0x1ux",&token_list),"Unexpected character 'x'"));
+	TEST_ASSERT(_check_and_cleanup_error(glsl_lexer_extract_tokens("0x1Uu",&token_list),"Unexpected character 'u'"));
 }
