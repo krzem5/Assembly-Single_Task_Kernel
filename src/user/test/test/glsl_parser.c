@@ -143,9 +143,11 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member name, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("float xyz;in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'xyz' is already defined"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[",GLSL_SHADER_TYPE_ANY,&ast),"Expected right bracket, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz[]",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	// nonempty array length
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz+",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int xyz;}",GLSL_SHADER_TYPE_ANY,&ast),"Expected semicolon, got ???"));
 	TEST_ASSERT(!_execute_parser("in block_name_a{};\ncentroid out block_name_b{out mat4 xxx;float yyy[];};",GLSL_SHADER_TYPE_ANY,&ast));
 	TEST_ASSERT(_check_block(&ast,"block_name_a",GLSL_AST_VAR_STORAGE_TYPE_IN,0,0));
 	const glsl_ast_block_t* block=_check_block(&ast,"block_name_b",GLSL_AST_VAR_STORAGE_TYPE_OUT,GLSL_AST_VAR_STORAGE_FLAG_CENTROID,0);
