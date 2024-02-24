@@ -208,4 +208,8 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_value_const_int(&ast,"var",5));
 	glsl_ast_delete(&ast);
 	TEST_GROUP("function");
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var+",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("out int var(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("centroid int var(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var(",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
 }
