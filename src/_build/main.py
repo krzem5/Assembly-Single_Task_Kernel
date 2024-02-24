@@ -45,6 +45,7 @@ BUILD_DIRECTORIES=[
 	"build/initramfs",
 	"build/initramfs/boot",
 	"build/initramfs/boot/module",
+	"build/kernel",
 	"build/lib",
 	"build/module",
 	"build/objects",
@@ -697,13 +698,13 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 object_files.append(_generate_symbol_file(kernel_symbol_names,KERNEL_SYMBOL_FILE_PATH))
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
-if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel.elf","build/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel/kernel.elf","build/kernel/kernel.bin"]).returncode!=0):
 	sys.exit(1)
-kernel_symbols=_read_kernel_symbols("build/kernel.elf")
-_patch_kernel("build/kernel.bin",kernel_symbols)
-with open("build/kernel.bin","ab+") as wf:
+kernel_symbols=_read_kernel_symbols("build/kernel/kernel.elf")
+_patch_kernel("build/kernel/kernel.bin",kernel_symbols)
+with open("build/kernel/kernel.bin","ab+") as wf:
 	wf.write(b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
-_compress("build/kernel.bin")
+_compress("build/kernel/kernel.bin")
 #####################################################################################################################################
 with open("src/module/dependencies.txt","r") as rf:
 	for line in rf.read().split("\n"):
@@ -774,7 +775,7 @@ if (rebuild_data_partition):
 	kfs2.get_inode(data_fs,"/boot/module",0o700,True)
 	kfs2.get_inode(data_fs,"/lib",0o755,True)
 	kfs2.get_inode(data_fs,"/bin",0o755,True)
-	with open("build/kernel.bin.compressed","rb") as rf:
+	with open("build/kernel/kernel.bin.compressed","rb") as rf:
 		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
 		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 		kfs2.set_kernel_inode(data_fs,kernel_inode)
@@ -845,7 +846,7 @@ if ("--run" in sys.argv):
 		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
 		"-device","e1000,netdev=network", ### 'Real' network card
 		# "-device","virtio-net,netdev=network",
-		"-object","filter-dump,id=network-filter,netdev=network,file=build/network.dat",
+		"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
 		"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required virtiofsd
