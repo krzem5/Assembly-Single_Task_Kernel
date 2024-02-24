@@ -480,7 +480,7 @@ static glsl_ast_node_t* _parse_statements(glsl_parser_state_t* parser,u32 end_gl
 			out->block.data[out->block.length-1]=expression;
 			continue;
 		}
-_read_next_type:
+_parse_next_var_declaration:
 		if (parser->index==parser->length||parser->tokens[parser->index].type!=GLSL_LEXER_TOKEN_TYPE_IDENTIFIER){
 			*error=_glsl_error_create_parser_expected("variable name");
 			goto _cleanup;
@@ -499,7 +499,7 @@ _read_next_type:
 		out->block.data=sys_heap_realloc(NULL,out->block.data,out->block.length*sizeof(glsl_ast_node_t*));
 		out->block.data[out->block.length-1]=expression;
 		if (parser->tokens[parser->index-1].type==GLSL_LEXER_TOKEN_TYPE_COMMA){
-			goto _read_next_type;
+			goto _parse_next_var_declaration;
 		}
 	}
 _cleanup:
