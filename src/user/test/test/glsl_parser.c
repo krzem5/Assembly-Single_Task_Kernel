@@ -208,8 +208,18 @@ void test_glsl_parser(void){
 	TEST_ASSERT(_check_var_value_const_int(&ast,"var",5));
 	glsl_ast_delete(&ast);
 	TEST_GROUP("function");
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var+",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("out int var(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("centroid int var(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var(",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func+",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("out int func(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("centroid int func(",GLSL_SHADER_TYPE_ANY,&ast),"Storage '???' cannot be applied to a function"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(",GLSL_SHADER_TYPE_ANY,&ast),"Expected argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void",GLSL_SHADER_TYPE_ANY,&ast),"Expected end of argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void+",GLSL_SHADER_TYPE_ANY,&ast),"Expected end of argument list, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func()",GLSL_SHADER_TYPE_ANY,&ast),"Expected function definition or declaration, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void)",GLSL_SHADER_TYPE_ANY,&ast),"Expected function definition or declaration, got ???"));
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void){}\nint func(void){}",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'func' is already defined"));
+	TEST_ASSERT(!_execute_parser("int func(void);\nint func(void){}",GLSL_SHADER_TYPE_ANY,&ast));
+	glsl_ast_delete(&ast);
+	TEST_ASSERT(!_execute_parser("float func(void){}\nint func(void){}",GLSL_SHADER_TYPE_ANY,&ast));
+	glsl_ast_delete(&ast);
+	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void)+",GLSL_SHADER_TYPE_ANY,&ast),"Expected function definition, got ???"));
 }
