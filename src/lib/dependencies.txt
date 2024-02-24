@@ -1,8 +1,8 @@
 sys:
-dircolor:sys@dynamic
-glsl:sys@dynamic
-uidisplay:sys@dynamic
-linker@nostatic:sys
-opengl@nostatic:sys@dynamic,glsl@dynamic,uidisplay@dynamic
-tgsiascii@nostatic:sys@dynamic,glsl@dynamic
-runtime@nodynamic:sys
+dircolor:sys
+glsl:sys
+linker@nostatic:sys@static
+runtime@nodynamic:sys@static
+uidisplay:sys
+opengl@nostatic:sys,glsl,uidisplay
+tgsiascii@nostatic:sys,glsl
