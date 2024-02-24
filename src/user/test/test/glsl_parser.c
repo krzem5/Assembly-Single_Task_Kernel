@@ -224,9 +224,9 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void)+",GLSL_SHADER_TYPE_ANY,&ast),"Expected function definition, got ???"));
 	TEST_GROUP("statements");
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("void func(void){",GLSL_SHADER_TYPE_ANY,&ast),"Expected statement, got ???"));
-	// expression, local var decl, local multi-var decl
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("void func(void){int",GLSL_SHADER_TYPE_ANY,&ast),"Expected variable name, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void){int func",GLSL_SHADER_TYPE_ANY,&ast),"Identifier 'func' is already defined"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void){int x=2,",GLSL_SHADER_TYPE_ANY,&ast),"Expected variable name, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int func(void){int x=2,y=3",GLSL_SHADER_TYPE_ANY,&ast),"Expected operator, got ???"));
+	TEST_GROUP("expressions");
 }
