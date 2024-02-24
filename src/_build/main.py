@@ -344,15 +344,6 @@ def _generate_symbol_file(kernel_symbols,file_path):
 def _patch_kernel(file_path,kernel_symbols):
 	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"][0]
 	with open(file_path,"r+b") as wf:
-		wf.seek(kernel_symbols["_idt_data"][0]-address_offset)
-		for i in range(0,256):
-			address=kernel_symbols[f"_isr_entry_{i}"][0]
-			ist=0
-			if (i==14):
-				ist=1
-			elif (i==32):
-				ist=2
-			wf.write(struct.pack("<HIHQ",address&0xffff,0x8e000008|(ist<<16),(address>>16)&0xffff,address>>32))
 		offset=kernel_symbols["_raw_kernel_symbols"][0]-address_offset
 		while (True):
 			wf.seek(offset+8)
@@ -805,7 +796,7 @@ if (rebuild_data_partition):
 #####################################################################################################################################
 if ("--run" in sys.argv):
 	if (not NO_FILE_SERVER):
-		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
+		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
@@ -874,7 +865,7 @@ if ("--run" in sys.argv):
 		# Graphics
 		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
 		# Shared folder
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
@@ -885,10 +876,10 @@ if ("--run" in sys.argv):
 		# Debugging
 		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
 	]+_kvm_flags())
-	if (os.path.exists("build/virtiofsd.sock")):
-		os.remove("build/virtiofsd.sock")
-	if (os.path.exists("build/virtiofsd.sock.pid")):
-		os.remove("build/virtiofsd.sock.pid")
+	if (os.path.exists("build/vm/virtiofsd.sock")):
+		os.remove("build/vm/virtiofsd.sock")
+	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
+		os.remove("build/vm/virtiofsd.sock.pid")
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")

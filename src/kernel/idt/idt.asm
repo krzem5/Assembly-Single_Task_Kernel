@@ -1,30 +1,28 @@
+global _idt_set_data_pointer:function hidden
 global idt_enable:function hidden
 section .etext exec nowrite
 
 
 
 [bits 64]
+_idt_set_data_pointer:
+	mov qword [idt_pointer.data], rdi
+	ret
+
+
+
 idt_enable:
 	lidt [idt_pointer]
 	ret
 
 
 
-section .erdata noexec nowrite
+section .edata noexec write
 
 
 
 align 16
 idt_pointer:
 	dw 0x0fff
-	dq _idt_data
-
-
-
-section .rdata noexec nowrite
-
-
-
-align 8
-_idt_data:
-	times 512 dq 0
+.data:
+	dq 0

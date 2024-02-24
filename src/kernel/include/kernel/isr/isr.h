@@ -14,6 +14,7 @@ typedef void (*irq_handler_t)(void*);
 
 
 
+extern const u64 _isr_handler_list[256];
 extern KERNEL_ATOMIC irq_handler_t irq_handlers[223];
 extern void* KERNEL_ATOMIC irq_handler_contexts[223];
 

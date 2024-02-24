@@ -1,6 +1,7 @@
 extern _isr_handler
 extern _random_entropy_pool
 extern _random_entropy_pool_length
+global _isr_handler_list:data hidden
 section .text exec nowrite
 
 
@@ -84,5 +85,19 @@ _isr_entry_%+idx:
 %endif
 	push qword idx
 	jmp _isr_trampoline
+%assign idx idx+1
+%endrep
+
+
+
+section .erdata noexec nowrite
+
+
+
+align 8
+_isr_handler_list:
+%assign idx 0
+%rep 256
+	dq _isr_entry_%+idx
 %assign idx idx+1
 %endrep

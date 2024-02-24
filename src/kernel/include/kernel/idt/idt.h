@@ -8,4 +8,8 @@ void idt_enable(void);
 
 
 
+void _idt_set_data_pointer(u64 addr);
+
+
+
 #endif
