@@ -330,7 +330,7 @@ def _generate_symbol_file(kernel_symbols,file_path):
 		for i,symbol in enumerate(kernel_symbols):
 			wf.write(f"static const char __attribute__((section(\".erdata\"))) _sym_{i}[]=\"{symbol}\";\n")
 		wf.write("const u64 __attribute__((section(\".erdata\"))) _raw_kernel_symbols[]={\n")
-		for i in range(0,len(kernel_symbols)):
+		for i,symbol in enumerate(kernel_symbols):
 			wf.write(f"\t0,(u64)_sym_{i},\n")
 		wf.write("\t0,0\n};\n")
 	object_file=KERNEL_OBJECT_FILE_DIRECTORY+file_path.replace("/","#")+".o"
