@@ -89,6 +89,27 @@ static _Bool _check_var_type_array_length(const glsl_ast_t* ast,const char* name
 
 
 
+static _Bool _check_var_value_const_int(const glsl_ast_t* ast,const char* name,s32 value){
+	const glsl_ast_var_t* var=NULL;
+	for (u32 i=0;i<ast->var_count;i++){
+		if (!sys_string_compare(ast->vars[i]->name,name)){
+			var=ast->vars[i];
+			break;
+		}
+	}
+	_Bool out=0;
+	if (var&&var->value){
+		out=1;
+		out&=(var->value->type==GLSL_AST_NODE_TYPE_VAR_CONST);
+		out&=(var->value->value_type->type==GLSL_AST_TYPE_TYPE_BUILTIN);
+		out&=(var->value->value_type->builtin_type==GLSL_BUILTIN_TYPE_INT);
+		out&=(var->value->var_int==value);
+	}
+	return out;
+}
+
+
+
 void test_glsl_parser(void){
 	TEST_MODULE("glsl_parser");
 	TEST_FUNC("glsl_parser_parse_tokens");
@@ -180,11 +201,11 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var=",GLSL_SHADER_TYPE_ANY,&ast),"Expected expression, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("int var=if",GLSL_SHADER_TYPE_ANY,&ast),"Expected expression, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in float xxx;\nint var=1.0+xxx;",GLSL_SHADER_TYPE_ANY,&ast),"Initializer is not constant"));
-	TEST_ASSERT(!_execute_parser("const float var=5.0;\n",GLSL_SHADER_TYPE_ANY,&ast));
+	TEST_ASSERT(!_execute_parser("const int var=5;\n",GLSL_SHADER_TYPE_ANY,&ast));
 	TEST_ASSERT(_check_var_storage(&ast,"var",GLSL_AST_VAR_STORAGE_TYPE_CONST,0,0,NULL));
-	TEST_ASSERT(_check_var_type_builtin(&ast,"var",GLSL_BUILTIN_TYPE_FLOAT));
+	TEST_ASSERT(_check_var_type_builtin(&ast,"var",GLSL_BUILTIN_TYPE_INT));
 	TEST_ASSERT(_check_var_type_array_length(&ast,"var",GLSL_AST_TYPE_NO_ARRAY));
-	// verify var value
+	TEST_ASSERT(_check_var_value_const_int(&ast,"var",5));
 	glsl_ast_delete(&ast);
 	TEST_GROUP("function");
 }
