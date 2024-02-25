@@ -28,15 +28,7 @@ static void _main_thread(void){
 
 
 
-void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kernel_data){
-	serial_init();
-	cpu_check_features();
-	LOG("Starting kernel...");
-	kernel_init(bootloader_kernel_data);
-	pmm_init();
-	vmm_init();
-	random_init();
-	aslr_reloc_kernel();
+static void KERNEL_NORETURN KERNEL_EARLY_EXEC _main_relocated(void){
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
 	cpu_init_early_header();
@@ -49,4 +41,17 @@ void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kern
 	thread_create_kernel_thread(NULL,"main",_main_thread,0x200000,0);
 	scheduler_yield();
 	scheduler_task_wait_loop();
+}
+
+
+
+void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kernel_data){
+	serial_init();
+	cpu_check_features();
+	LOG("Starting kernel...");
+	kernel_init(bootloader_kernel_data);
+	pmm_init();
+	vmm_init();
+	random_init();
+	aslr_reloc_kernel(_main_relocated);
 }

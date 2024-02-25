@@ -8,7 +8,11 @@ extern u64 aslr_module_base;
 
 
 
-void aslr_reloc_kernel(void);
+void KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN next_stage_callback)(void));
+
+
+
+void KERNEL_NORETURN _aslr_adjust_rip(void* arg,void* callback);
 
 
 

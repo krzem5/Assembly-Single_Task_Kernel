@@ -7,8 +7,10 @@ section .entry exec nowrite
 [bits 64]
 _start:
 	cli
+	mov rax, 0xffff8000
+	shl rax, 32
+	or rdx, rax
 	mov rsp, rdx
-	or rsp, 0xffffffffc0000000
 	xor rbp, rbp
 	mov cr3, rsi
 	mov rax, main

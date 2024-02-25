@@ -182,8 +182,8 @@ void KERNEL_EARLY_EXEC vmm_init(void){
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
-	INFO("Mapping %v from %p to %p",kernel_data.first_free_address+kernel_get_offset()-kernel_section_kernel_start(),kernel_section_kernel_start()-kernel_get_offset(),kernel_section_kernel_start());
-	for (u64 i=kernel_section_kernel_start();i<kernel_data.first_free_address+kernel_get_offset();i+=PAGE_SIZE){
+	INFO("Mapping %v from %p to %p",kernel_section_kernel_end()-kernel_section_kernel_start(),kernel_section_kernel_start()-kernel_get_offset(),kernel_section_kernel_start());
+	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){
 		vmm_map_page(&vmm_kernel_pagemap,i-kernel_get_offset(),i,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	u64 highest_address=0;
