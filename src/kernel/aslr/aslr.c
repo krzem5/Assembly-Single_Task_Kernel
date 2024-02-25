@@ -47,7 +47,7 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	for (u64 i=0;__kernel_relocation_data[i];i++){
 		*((u32*)(__kernel_relocation_data[i]))+=_aslr_offset;
 	}
-	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust kernel address in memory
+	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust only kernel address in memory
 	random_generate(&aslr_module_base,sizeof(u64));
 	aslr_module_base=KERNEL_ASLR_KERNEL_END+pmm_align_down_address(aslr_module_base%(KERNEL_ASLR_MODULE_START-KERNEL_ASLR_KERNEL_END));
 	INFO("Module base: %p",aslr_module_base);

@@ -28,8 +28,8 @@ R_X86_64_32S=11
 
 
 
-KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
 KERNEL_START_ADDRESS=0xffffffffc0100000
+KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
 
 
