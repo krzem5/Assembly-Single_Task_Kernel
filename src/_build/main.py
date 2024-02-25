@@ -192,6 +192,28 @@ COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 COVERAGE_FILE_FAILURE_MARKER=0xb9beb6b34c494146
 KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
+SHT_PROGBITS=1
+SHT_SYMTAB=2
+SHT_RELA=4
+
+SHF_ALLOC=2
+
+SHN_UNDEF=0
+
+STT_FUNC=2
+STT_SECTION=3
+STT_FILE=4
+
+STB_GLOBAL=1
+
+STV_DEFAULT=0
+
+R_X86_64_64=1
+R_X86_64_PC32=2
+R_X86_64_PLT32=4
+R_X86_64_32=10
+R_X86_64_32S=11
+
 
 
 def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,header_name):
@@ -322,28 +344,6 @@ def _extract_object_file_symbol_names(object_file,out):
 
 
 def _process_kernel(src_file_path,dst_file_path):
-	SHT_PROGBITS=1
-	SHT_SYMTAB=2
-	SHT_RELA=4
-
-	SHF_ALLOC=2
-
-	SHN_UNDEF=0
-
-	STT_FUNC=2
-	STT_SECTION=3
-	STT_FILE=4
-
-	STB_GLOBAL=1
-
-	STV_DEFAULT=0
-
-	R_X86_64_64=1
-	R_X86_64_PC32=2
-	R_X86_64_PLT32=4
-	R_X86_64_32=10
-	R_X86_64_32S=11
-	#################################
 	with open(src_file_path,"rb") as rf:
 		data=rf.read()
 	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])
@@ -397,6 +397,8 @@ def _process_kernel(src_file_path,dst_file_path):
 	extra_kernel_data+=struct.pack("<QQ",0,0)
 	for offset,size,section_name,is_early in relocation_sections:
 		section_base_offset=section_addresses[section_name]
+		if (not section_base_offset):
+			continue
 		for i in range(offset,offset+size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",data[i:i+24])
 			relocation_type=r_info&0xffffffff
