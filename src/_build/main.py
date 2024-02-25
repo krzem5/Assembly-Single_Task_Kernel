@@ -3,6 +3,7 @@ import binascii
 import compression
 import hashlib
 import initramfs
+import kernel_linker
 import kfs2
 import os
 import struct
@@ -192,28 +193,6 @@ COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 COVERAGE_FILE_FAILURE_MARKER=0xb9beb6b34c494146
 KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
-SHT_PROGBITS=1
-SHT_SYMTAB=2
-SHT_RELA=4
-
-SHF_ALLOC=2
-
-SHN_UNDEF=0
-
-STT_FUNC=2
-STT_SECTION=3
-STT_FILE=4
-
-STB_GLOBAL=1
-
-STV_DEFAULT=0
-
-R_X86_64_64=1
-R_X86_64_PC32=2
-R_X86_64_PLT32=4
-R_X86_64_32=10
-R_X86_64_32S=11
-
 
 
 def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,header_name):
@@ -340,84 +319,6 @@ def _extract_object_file_symbol_names(object_file,out):
 				continue
 			out.append(line[2])
 			wf.write(line[2]+"\n")
-
-
-
-def _process_kernel(src_file_path,dst_file_path):
-	# SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw",".kernel_zw"]
-	with open(src_file_path,"rb") as rf:
-		data=rf.read()
-	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])
-	sh_name_offset=struct.unpack("<24xQ32x",data[e_shoff+e_shstrndx*e_shentsize:e_shoff+(e_shstrndx+1)*e_shentsize])[0]
-	section_addresses={}
-	section_offsets={}
-	data_sections=[]
-	address_space_range=[0xffffffffffffffff,0]
-	relocation_sections=[]
-	symbol_table=None
-	for i in range(0,e_shnum):
-		sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link=struct.unpack("<IIQQQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
-		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
-		section_addresses[i]=sh_addr
-		section_addresses[name]=sh_addr
-		section_offsets[i]=sh_offset
-		if (sh_type==SHT_RELA):
-			relocation_sections.append((sh_offset,sh_size,name.replace(".rela",""),".kernel_u" in name))
-		elif (sh_type==SHT_SYMTAB):
-			symbol_table=(sh_offset,sh_size,sh_link)
-		elif (sh_flags&SHF_ALLOC):
-			if (sh_type==SHT_PROGBITS):
-				data_sections.append((sh_addr,sh_offset,sh_size))
-			address_space_range[0]=min(address_space_range[0],sh_addr)
-			address_space_range[1]=max(address_space_range[1],sh_addr+sh_size)
-	out=bytearray(address_space_range[1]-address_space_range[0])
-	for address,offset,size in data_sections:
-		out[address-address_space_range[0]:address-address_space_range[0]+size]=data[offset:offset+size]
-	st_name_offset=section_offsets[symbol_table[2]]
-	symbol_table_addresses={}
-	extra_kernel_data=bytearray()
-	kernel_symbol_table=[]
-	for i in range(symbol_table[0],symbol_table[0]+symbol_table[1],24):
-		st_name,st_info,st_other,st_shndx,st_value=struct.unpack("<IBBHQ8x",data[i:i+24])
-		name=data[st_name_offset+st_name:data.index(b"\x00",st_name_offset+st_name)].decode("utf-8")
-		if (st_shndx==SHN_UNDEF or (st_info&0x0f)==STT_FILE):
-			continue
-		is_func=((st_info&0x0f)==STT_FUNC)
-		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
-		if (is_func or is_public):
-			kernel_symbol_table.append((len(extra_kernel_data),section_addresses[st_shndx]+st_value,is_public))
-			extra_kernel_data+=name.encode("utf-8")+b"\x00"
-		value=section_addresses[st_shndx]+st_value
-		symbol_table_addresses[(i-symbol_table[0])//24]=value
-		symbol_table_addresses[name]=value
-	extra_kernel_data+=b"\x00"*((-len(extra_kernel_data))&7)
-	kernel_symbol_data_offset=symbol_table_addresses["__kernel_symbol_data"]-address_space_range[0]
-	out[kernel_symbol_data_offset:kernel_symbol_data_offset+8]=struct.pack("<Q",address_space_range[1]+len(extra_kernel_data))
-	for offset,value,is_public in kernel_symbol_table:
-		extra_kernel_data+=struct.pack("<QQ",value^((not is_public)<<63),address_space_range[1]+offset)
-	extra_kernel_data+=struct.pack("<QQ",0,0)
-	for offset,size,section_name,is_early in relocation_sections:
-		section_base_offset=section_addresses[section_name]
-		if (not section_base_offset):
-			continue
-		for i in range(offset,offset+size,24):
-			r_offset,r_info,r_addend=struct.unpack("<QQq",data[i:i+24])
-			relocation_type=r_info&0xffffffff
-			relocation_address=r_offset+section_base_offset-address_space_range[0]
-			relocation_value=symbol_table_addresses[r_info>>32]+r_addend
-			if (relocation_type==R_X86_64_64):
-				out[relocation_address:relocation_address+8]=struct.pack("<Q",relocation_value)
-			elif (relocation_type==R_X86_64_PC32 or relocation_type==R_X86_64_PLT32):
-				out[relocation_address:relocation_address+4]=struct.pack("<I",(relocation_value-r_offset-section_base_offset)&0xffffffff)
-			elif (relocation_type==R_X86_64_32 or relocation_type==R_X86_64_32S):
-				out[relocation_address:relocation_address+4]=struct.pack("<I",relocation_value&0xffffffff)
-			else:
-				print(f"Unknown relocation type '{relocation_type}'")
-				sys.exit(1)
-	with open(dst_file_path,"wb") as wf:
-		wf.write(out)
-		wf.write(extra_kernel_data)
-		wf.write(b"\x00"*((-len(extra_kernel_data))&4095))
 
 
 
@@ -748,7 +649,7 @@ _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
 if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
 	sys.exit(1)
-_process_kernel("build/kernel/kernel.elf","build/kernel/kernel.bin")
+kernel_linker.link("build/kernel/kernel.elf","build/kernel/kernel.bin")
 _compress("build/kernel/kernel.bin")
 #####################################################################################################################################
 with open("src/module/dependencies.txt","r") as rf:
