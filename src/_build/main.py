@@ -344,6 +344,7 @@ def _extract_object_file_symbol_names(object_file,out):
 
 
 def _process_kernel(src_file_path,dst_file_path):
+	# SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw",".kernel_zw"]
 	with open(src_file_path,"rb") as rf:
 		data=rf.read()
 	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])

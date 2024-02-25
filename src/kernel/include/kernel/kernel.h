@@ -81,7 +81,6 @@ _KERNEL_DECLARE_SECTION(kernel_ex);
 _KERNEL_DECLARE_SECTION(kernel_nx);
 _KERNEL_DECLARE_SECTION(kernel_rw);
 _KERNEL_DECLARE_SECTION(kernel_iw);
-_KERNEL_DECLARE_SECTION(kernel_zw);
 
 _KERNEL_DECLARE_SECTION(cpu_local);
 _KERNEL_DECLARE_SECTION(early_early_initializers);

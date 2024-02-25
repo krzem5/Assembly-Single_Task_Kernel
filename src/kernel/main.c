@@ -1,4 +1,5 @@
 #include <kernel/acl/acl.h>
+#include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
@@ -8,6 +9,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
+#include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
@@ -34,6 +36,8 @@ void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kern
 	pmm_init();
 	vmm_init();
 	pmm_init_high_mem();
+	random_init();
+	aslr_reloc_kernel();
 	kernel_adjust_memory_flags();
 	cpu_init_early_header();
 	amm_init();

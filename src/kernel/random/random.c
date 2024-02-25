@@ -54,7 +54,7 @@ static u32 _random_chacha_buffer[16];
 
 
 
-KERNEL_EARLY_INIT(){
+void KERNEL_EARLY_EXEC random_init(void){
 	LOG("Initializing PRNG...");
 	spinlock_init(&_random_chacha_lock);
 	_random_init_entropy_pool();

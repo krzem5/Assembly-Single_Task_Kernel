@@ -68,7 +68,7 @@ SECTIONS{
 	DECLARE_SECTION_END(kernel_nx);
 	DECLARE_SECTION_START(kernel_rw);
 	.kernel_rw : AT(ADDR(.kernel_rw) - BASE_ADDRESS_OFFSET){
-		*(.data .data*)
+		*(.data .data* .bss .bss*)
 		. = ALIGN(0x1000);
 	}
 	DECLARE_SECTION_END(kernel_rw);
@@ -78,12 +78,6 @@ SECTIONS{
 		. = ALIGN(0x1000);
 	}
 	DECLARE_SECTION_END(kernel_iw);
-	DECLARE_SECTION_START(kernel_zw);
-	.kernel_zw : AT(ADDR(.kernel_zw) - BASE_ADDRESS_OFFSET){
-		*(.bss)
-		. = ALIGN(0x1000);
-	}
-	DECLARE_SECTION_END(kernel_zw);
 	DECLARE_SECTION_END(kernel);
 #ifndef _KERNEL_DEBUG_BUILD_
 	/DISCARD/ : {
