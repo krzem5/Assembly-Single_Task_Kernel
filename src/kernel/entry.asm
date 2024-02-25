@@ -1,7 +1,3 @@
-%define KERNEL_OFFSET 0xffffffffc0000000
-
-
-
 extern main
 global _start:function hidden
 section .entry exec nowrite
@@ -12,7 +8,7 @@ section .entry exec nowrite
 _start:
 	cli
 	mov rsp, rdx
-	or rsp, KERNEL_OFFSET
+	or rsp, 0xffffffffc0000000
 	xor rbp, rbp
 	mov cr3, rsi
 	mov rax, main

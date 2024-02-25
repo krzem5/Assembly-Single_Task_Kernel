@@ -417,7 +417,6 @@ def _process_kernel(src_file_path,dst_file_path):
 		wf.write(out)
 		wf.write(extra_kernel_data)
 		wf.write(b"\x00"*((-len(extra_kernel_data))&4095))
-	# sys.exit(1)
 
 
 
