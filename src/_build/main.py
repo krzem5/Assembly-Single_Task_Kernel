@@ -337,6 +337,11 @@ def _process_kernel(file_path):
 	STB_GLOBAL=1
 
 	STV_DEFAULT=0
+
+	R_X86_64_64=1
+	R_X86_64_PC32=2
+	R_X86_64_PLT32=4
+	R_X86_64_32S=11
 	#################################
 	with open(file_path,"rb") as rf:
 		data=rf.read()
@@ -379,10 +384,21 @@ def _process_kernel(file_path):
 			kernel_symbol_table[name]=(section_addresses[st_shndx]+st_value,is_public)
 		symbol_table_addresses[(i-symbol_table[0])//24]=(section_addresses[st_shndx] if is_code_or_data else 0)+st_value
 	for offset,size,section_index,is_early in relocation_sections:
-		section_offset=section_addresses[section_index]
+		section_base_offset=section_addresses[section_index]
 		for i in range(offset,offset+size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",data[i:i+24])
-	# 		print(hex(r_offset+section_offset),symbol_table_addresses[r_info>>32],r_addend,r_info&0xffffffff)
+			relocation_type=r_info&0xffffffff
+			relocation_address=r_offset+section_base_offset
+			relocation_value=symbol_table_addresses[r_info>>32]+r_addend
+			if (relocation_type==R_X86_64_64):
+				out[relocation_address:relocation_address+8]=struct.pack("<Q",relocation_value)
+			elif (relocation_type==R_X86_64_PC32 or relocation_type==R_X86_64_PLT32):
+				out[relocation_address:relocation_address+4]=struct.pack("<I",(relocation_value-relocation_address)&0xffffffff)
+			elif (relocation_type==R_X86_64_32S):
+				out[relocation_address:relocation_address+4]=struct.pack("<I",relocation_value)
+			else:
+				print(f"Unknown relocation type '{relocation_type}'")
+				sys.exit(1)
 	# sys.exit(1)
 
 
