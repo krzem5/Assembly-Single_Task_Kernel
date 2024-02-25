@@ -1,3 +1,4 @@
+#include <kernel/aslr/aslr.h>
 #include <kernel/elf/structures.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
@@ -37,6 +38,7 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 static pmm_counter_descriptor_t* _module_image_pmm_counter=NULL;
 static omm_allocator_t* _module_allocator=NULL;
+static mmap_t _module_image_mmap;
 
 KERNEL_PUBLIC handle_type_t module_handle_type=0;
 
@@ -83,7 +85,7 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 		}
 	}
 	INFO("Region size: %v",region_size);
-	ctx->module->region=mmap_alloc(&process_kernel_image_mmap,0,region_size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	ctx->module->region=mmap_alloc(&_module_image_mmap,0,region_size,_module_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|VMM_PAGE_FLAG_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
 	if (!ctx->module->region){
 		ERROR("Unable to reserve module memory");
 		return 0;
@@ -222,12 +224,14 @@ static void _adjust_memory_flags(module_loader_context_t* ctx){
 
 
 
-KERNEL_INIT(){
+KERNEL_EARLY_INIT(){
 	LOG("Initializing module loader...");
 	_module_image_pmm_counter=pmm_alloc_counter("module_image");
 	_module_allocator=omm_init("module",sizeof(module_t),8,4,pmm_alloc_counter("omm_module"));
 	spinlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("module",_module_handle_destructor);
+	mmap_init(&vmm_kernel_pagemap,aslr_module_base,-PAGE_SIZE,&_module_image_mmap);
+	aslr_module_base=0;
 }
 
 
@@ -312,7 +316,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 _error:
 	symbol_remove(name);
 	if (module->region){
-		mmap_dealloc_region(&process_kernel_image_mmap,module->region);
+		mmap_dealloc_region(&_module_image_mmap,module->region);
 	}
 	handle_release(&(module->handle));
 	mmap_dealloc_region(&(process_kernel->mmap),region);
@@ -330,7 +334,7 @@ KERNEL_PUBLIC _Bool module_unload(module_t* module){
 	module->descriptor->deinit_callback(module);
 	module->state=MODULE_STATE_UNLOADED;
 	if (module->region){
-		mmap_dealloc_region(&process_kernel_image_mmap,module->region);
+		mmap_dealloc_region(&_module_image_mmap,module->region);
 	}
 	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
 		INFO("Preventing future module loads...");

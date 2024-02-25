@@ -1,5 +1,4 @@
 #include <kernel/acl/acl.h>
-#include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
@@ -39,7 +38,6 @@ static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t process_handle_type;
 KERNEL_PUBLIC process_t* KERNEL_INIT_WRITE process_kernel;
-KERNEL_PUBLIC mmap_t process_kernel_image_mmap;
 
 
 
@@ -79,7 +77,6 @@ KERNEL_EARLY_INIT(){
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=process_kernel->vfs_root;
 	process_kernel->parent=process_kernel;
-	mmap_init(&vmm_kernel_pagemap,aslr_module_base,-PAGE_SIZE,&process_kernel_image_mmap);
 	handle_finish_setup(&(process_kernel->handle));
 }
 
