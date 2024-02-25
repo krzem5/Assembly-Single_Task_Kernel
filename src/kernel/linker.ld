@@ -1,8 +1,3 @@
-#define DECLARE_SECTION_START(name) PROVIDE_HIDDEN(__KERNEL_SECTION_##name##_START__ = .)
-#define DECLARE_SECTION_END(name) PROVIDE_HIDDEN(__KERNEL_SECTION_##name##_END__ = .)
-
-
-
 ENTRY(_start)
 SECTIONS{
 	. = 0;
@@ -13,22 +8,22 @@ SECTIONS{
 	.kernel_ur : {
 		*(.erdata .erdata*)
 		. = ALIGN(8);
-		DECLARE_SECTION_START(cpu_local);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_cpu_local_START__ = .);
 		*(.cpulocal)
 		. = ALIGN(8);
-		DECLARE_SECTION_END(cpu_local);
-		DECLARE_SECTION_START(early_early_initializers);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_cpu_local_END__ = .);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_early_early_initializers_START__ = .);
 		*(.eeinitializer)
 		. = ALIGN(8);
-		DECLARE_SECTION_END(early_early_initializers);
-		DECLARE_SECTION_START(early_initializers);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_early_early_initializers_END__ = .);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_early_initializers_START__ = .);
 		*(.einitializer)
 		. = ALIGN(8);
-		DECLARE_SECTION_END(early_initializers);
-		DECLARE_SECTION_START(initializers);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_early_initializers_END__ = .);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_initializers_START__ = .);
 		*(.initializer)
 		. = ALIGN(8);
-		DECLARE_SECTION_END(initializers);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_initializers_END__ = .);
 		. = ALIGN(0x1000);
 		*(.ap_startup)
 	}
@@ -41,10 +36,10 @@ SECTIONS{
 	.kernel_nx : {
 		*(.rodata .rodata* .rdata .rdata*)
 		. = ALIGN(8);
-		DECLARE_SECTION_START(gcov_info);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_gcov_info_START__ = .);
 		*(.gcov_info)
 		. = ALIGN(8);
-		DECLARE_SECTION_END(gcov_info);
+		PROVIDE_HIDDEN(__KERNEL_SECTION_gcov_info_END__ = .);
 	}
 	.kernel_rw : {
 		*(.data .data* .bss .bss*)

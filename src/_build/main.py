@@ -233,12 +233,6 @@ def _generate_kernel_build_info():
 
 
 
-def _read_file(file_path):
-	with open(file_path,"rb") as rf:
-		return rf.read()
-
-
-
 def _copy_file(src,dst):
 	with open(src,"rb") as rf,open(dst,"wb") as wf:
 		wf.write(rf.read())
@@ -288,37 +282,6 @@ def _file_not_changed(changed_files,deps_file_path):
 		if (file in changed_files or not os.path.exists(file)):
 			return False
 	return True
-
-
-
-def _read_kernel_symbols(file_path):
-	out={}
-	for line in subprocess.run(["objdump","-t",file_path],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-		line=line.strip().split("\t")
-		if (len(line)!=2 or line[1].startswith("__func__") or "." in line[1].split(" ")[-1]):
-			continue
-		out[line[1].split(" ")[-1]]=(int(line[0][:16],16),".hidden" not in line[1] and line[0][17]=="g")
-	return out
-
-
-
-def _read_extracted_object_file_symbols(object_file,out):
-	with open(object_file+".syms","r") as rf:
-		for symbol in rf.read().split("\n"):
-			symbol=symbol.strip()
-			if (symbol):
-				out.append(symbol)
-
-
-
-def _extract_object_file_symbol_names(object_file,out):
-	with open(object_file+".syms","w") as wf:
-		for line in subprocess.run(["nm","-f","bsd","--defined-only",object_file],stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-			line=line.strip().split(" ")
-			if (len(line)<3 or line[1].lower() in "vw" or line[2].startswith("__func__") or "." in line[2]):
-				continue
-			out.append(line[2])
-			wf.write(line[2]+"\n")
 
 
 
@@ -619,7 +582,6 @@ changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FI
 object_files=[]
 rebuild_data_partition=False
 error=False
-kernel_symbol_names=[]
 for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 	for file_name in files:
 		suffix=file_name[file_name.rindex("."):]
@@ -629,7 +591,6 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
-			_read_extracted_object_file_symbols(object_file,kernel_symbol_names)
 			continue
 		command=None
 		rebuild_data_partition=True
@@ -643,11 +604,8 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
 			del file_hash_list[file]
 			error=True
-		else:
-			_extract_object_file_symbol_names(object_file,kernel_symbol_names)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
-if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
+if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
 	sys.exit(1)
 kernel_linker.link("build/kernel/kernel.elf","build/kernel/kernel.bin")
 _compress("build/kernel/kernel.bin")
