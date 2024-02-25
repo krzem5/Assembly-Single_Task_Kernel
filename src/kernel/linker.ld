@@ -1,5 +1,5 @@
-#define DECLARE_SECTION_START(name) __KERNEL_SECTION_##name##_START__ = .
-#define DECLARE_SECTION_END(name) __KERNEL_SECTION_##name##_END__ = .
+#define DECLARE_SECTION_START(name) PROVIDE_HIDDEN(__KERNEL_SECTION_##name##_START__ = .)
+#define DECLARE_SECTION_END(name) PROVIDE_HIDDEN(__KERNEL_SECTION_##name##_END__ = .)
 
 #define BASE_ADDRESS_OFFSET 0xffffffffc0000000
 

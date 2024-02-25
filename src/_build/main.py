@@ -321,7 +321,7 @@ def _extract_object_file_symbol_names(object_file,out):
 
 
 
-def _process_kernel(file_path):
+def _process_kernel(src_file_path,dst_file_path):
 	SHT_PROGBITS=1
 	SHT_SYMTAB=2
 	SHT_RELA=4
@@ -341,105 +341,81 @@ def _process_kernel(file_path):
 	R_X86_64_64=1
 	R_X86_64_PC32=2
 	R_X86_64_PLT32=4
+	R_X86_64_32=10
 	R_X86_64_32S=11
 	#################################
-	with open(file_path,"rb") as rf:
+	with open(src_file_path,"rb") as rf:
 		data=rf.read()
 	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])
 	sh_name_offset=struct.unpack("<24xQ32x",data[e_shoff+e_shstrndx*e_shentsize:e_shoff+(e_shstrndx+1)*e_shentsize])[0]
 	section_addresses={}
 	section_offsets={}
 	data_sections=[]
-	total_output_size=0
+	address_space_range=[0xffffffffffffffff,0]
 	relocation_sections=[]
 	symbol_table=None
 	for i in range(0,e_shnum):
 		sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link=struct.unpack("<IIQQQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
-		section_addresses[i]=sh_addr
-		section_offsets[i]=sh_offset
 		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
+		section_addresses[i]=sh_addr
+		section_addresses[name]=sh_addr
+		section_offsets[i]=sh_offset
 		if (sh_type==SHT_RELA):
-			relocation_sections.append((sh_offset,sh_size,sh_link,".kernel_u" in name))
+			relocation_sections.append((sh_offset,sh_size,name.replace(".rela",""),".kernel_u" in name))
 		elif (sh_type==SHT_SYMTAB):
 			symbol_table=(sh_offset,sh_size,sh_link)
 		elif (sh_flags&SHF_ALLOC):
 			if (sh_type==SHT_PROGBITS):
 				data_sections.append((sh_addr,sh_offset,sh_size))
-			total_output_size=max(total_output_size,sh_addr+sh_size)
-	out=bytearray(total_output_size)
+			address_space_range[0]=min(address_space_range[0],sh_addr)
+			address_space_range[1]=max(address_space_range[1],sh_addr+sh_size)
+	out=bytearray(address_space_range[1]-address_space_range[0])
 	for address,offset,size in data_sections:
-		out[address:address+size]=data[offset:offset+size]
+		out[address-address_space_range[0]:address-address_space_range[0]+size]=data[offset:offset+size]
 	st_name_offset=section_offsets[symbol_table[2]]
-	kernel_symbol_table={}
 	symbol_table_addresses={}
+	extra_kernel_data=bytearray()
+	kernel_symbol_table=[]
 	for i in range(symbol_table[0],symbol_table[0]+symbol_table[1],24):
 		st_name,st_info,st_other,st_shndx,st_value=struct.unpack("<IBBHQ8x",data[i:i+24])
 		name=data[st_name_offset+st_name:data.index(b"\x00",st_name_offset+st_name)].decode("utf-8")
-		if (st_shndx==SHN_UNDEF):
+		if (st_shndx==SHN_UNDEF or (st_info&0x0f)==STT_FILE):
 			continue
-		is_code_or_data=(st_info&0x0f)!=STT_SECTION and (st_info&0x0f)!=STT_FILE
 		is_func=((st_info&0x0f)==STT_FUNC)
 		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
-		if (is_code_or_data and (is_func or is_public)):
-			kernel_symbol_table[name]=(section_addresses[st_shndx]+st_value,is_public)
-		symbol_table_addresses[(i-symbol_table[0])//24]=(section_addresses[st_shndx] if is_code_or_data else 0)+st_value
-	for offset,size,section_index,is_early in relocation_sections:
-		section_base_offset=section_addresses[section_index]
+		if (is_func or is_public):
+			kernel_symbol_table.append((len(extra_kernel_data),section_addresses[st_shndx]+st_value,is_public))
+			extra_kernel_data+=name.encode("utf-8")+b"\x00"
+		value=section_addresses[st_shndx]+st_value
+		symbol_table_addresses[(i-symbol_table[0])//24]=value
+		symbol_table_addresses[name]=value
+	extra_kernel_data+=b"\x00"*((-len(extra_kernel_data))&7)
+	kernel_symbol_data_offset=symbol_table_addresses["__kernel_symbol_data"]-address_space_range[0]
+	out[kernel_symbol_data_offset:kernel_symbol_data_offset+8]=struct.pack("<Q",address_space_range[1]+len(extra_kernel_data))
+	for offset,value,is_public in kernel_symbol_table:
+		extra_kernel_data+=struct.pack("<QQ",value^((not is_public)<<63),address_space_range[1]+offset)
+	extra_kernel_data+=struct.pack("<QQ",0,0)
+	for offset,size,section_name,is_early in relocation_sections:
+		section_base_offset=section_addresses[section_name]
 		for i in range(offset,offset+size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",data[i:i+24])
 			relocation_type=r_info&0xffffffff
-			relocation_address=r_offset+section_base_offset
+			relocation_address=r_offset+section_base_offset-address_space_range[0]
 			relocation_value=symbol_table_addresses[r_info>>32]+r_addend
 			if (relocation_type==R_X86_64_64):
 				out[relocation_address:relocation_address+8]=struct.pack("<Q",relocation_value)
 			elif (relocation_type==R_X86_64_PC32 or relocation_type==R_X86_64_PLT32):
-				out[relocation_address:relocation_address+4]=struct.pack("<I",(relocation_value-relocation_address)&0xffffffff)
-			elif (relocation_type==R_X86_64_32S):
-				out[relocation_address:relocation_address+4]=struct.pack("<I",relocation_value)
+				out[relocation_address:relocation_address+4]=struct.pack("<I",(relocation_value-r_offset-section_base_offset)&0xffffffff)
+			elif (relocation_type==R_X86_64_32 or relocation_type==R_X86_64_32S):
+				out[relocation_address:relocation_address+4]=struct.pack("<I",relocation_value&0xffffffff)
 			else:
 				print(f"Unknown relocation type '{relocation_type}'")
 				sys.exit(1)
+	with open(dst_file_path,"wb") as wf:
+		wf.write(out)
+		wf.write(extra_kernel_data)
+		wf.write(b"\x00"*((-len(extra_kernel_data))&4095))
 	# sys.exit(1)
-
-
-
-def _generate_symbol_file(kernel_symbols,file_path):
-	kernel_symbols=tuple(sorted(set(kernel_symbols)))
-	with open(file_path,"w") as wf:
-		wf.write("typedef unsigned long long int u64;\n")
-		for i,symbol in enumerate(kernel_symbols):
-			wf.write(f"static const char __attribute__((section(\".erdata\"))) _sym_{i}[]=\"{symbol}\";\n")
-		wf.write("const u64 __attribute__((section(\".erdata\"))) _raw_kernel_symbols[]={\n")
-		for i,symbol in enumerate(kernel_symbols):
-			wf.write(f"\t0,(u64)_sym_{i},\n")
-		wf.write("\t0,0\n};\n")
-	object_file=KERNEL_OBJECT_FILE_DIRECTORY+file_path.replace("/","#")+".o"
-	if (subprocess.run(["gcc-12","-mcmodel=large","-fno-lto","-fno-pie","-fno-common","-fno-builtin","-nostdinc","-nostdlib","-ffreestanding","-m64","-Wall","-Werror","-Wno-trigraphs","-O3","-g0","-o",object_file,"-c",file_path]).returncode!=0):
-		sys.exit(1)
-	os.remove(file_path)
-	return object_file
-
-
-
-def _patch_kernel(file_path,kernel_symbols):
-	address_offset=kernel_symbols["__KERNEL_SECTION_kernel_START__"][0]
-	with open(file_path,"r+b") as wf:
-		offset=kernel_symbols["_raw_kernel_symbols"][0]-address_offset
-		while (True):
-			wf.seek(offset+8)
-			name_address=struct.unpack("<Q",wf.read(8))[0]
-			if (not name_address):
-				break
-			wf.seek(name_address-address_offset)
-			name=""
-			while (True):
-				char=wf.read(1)[0]
-				if (not char):
-					break
-				name+=chr(char)
-			wf.seek(offset)
-			wf.write(struct.pack("<Q",kernel_symbols[name][0]^((not kernel_symbols[name][1])<<63)))
-			offset+=16
 
 
 
@@ -747,44 +723,6 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		if (suffix not in SOURCE_FILE_SUFFIXES):
 			continue
 		file=os.path.join(root,file_name)
-		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".2.o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			_read_extracted_object_file_symbols(object_file,kernel_symbol_names)
-			continue
-		command=None
-		rebuild_data_partition=True
-		if (suffix==".c"):
-			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-shared","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include","-D__NEW_KERNEL=1"]+KERNEL_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-		print(file)
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
-			del file_hash_list[file]
-			error=True
-		else:
-			_extract_object_file_symbol_names(object_file,kernel_symbol_names)
-# # _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
-if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker2.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel2.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
-	sys.exit(1)
-_process_kernel("build/kernel/kernel2.elf")
-_compress("build/kernel/kernel2.elf")
-#####################################################################################################################################
-_generate_kernel_build_info()
-changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
-object_files=[]
-rebuild_data_partition=False
-error=False
-kernel_symbol_names=[]
-for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
-	for file_name in files:
-		suffix=file_name[file_name.rindex("."):]
-		if (suffix not in SOURCE_FILE_SUFFIXES):
-			continue
-		file=os.path.join(root,file_name)
 		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -805,14 +743,10 @@ for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		else:
 			_extract_object_file_symbol_names(object_file,kernel_symbol_names)
 _save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-object_files.append(_generate_symbol_file(kernel_symbol_names,KERNEL_SYMBOL_FILE_PATH))
 linker_file=KERNEL_OBJECT_FILE_DIRECTORY+"linker.ld"
-if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-o","build/kernel/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0 or subprocess.run(["objcopy","-S","-O","binary","build/kernel/kernel.elf","build/kernel/kernel.bin"]).returncode!=0):
+if (error or subprocess.run(["gcc-12","-E","-o",linker_file,"-x","none"]+KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS+["-"],input=_read_file("src/kernel/linker.ld")).returncode!=0 or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T",linker_file]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
 	sys.exit(1)
-kernel_symbols=_read_kernel_symbols("build/kernel/kernel.elf")
-_patch_kernel("build/kernel/kernel.bin",kernel_symbols)
-with open("build/kernel/kernel.bin","ab+") as wf:
-	wf.write(b"\x00"*(kernel_symbols["__KERNEL_SECTION_kernel_zw_END__"][0]-kernel_symbols["__KERNEL_SECTION_kernel_zw_START__"][0]))
+_process_kernel("build/kernel/kernel.elf","build/kernel/kernel.bin")
 _compress("build/kernel/kernel.bin")
 #####################################################################################################################################
 with open("src/module/dependencies.txt","r") as rf:

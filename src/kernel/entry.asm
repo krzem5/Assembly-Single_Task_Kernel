@@ -12,7 +12,8 @@ section .entry exec nowrite
 _start:
 	cli
 	mov rsp, rdx
-	add rsp, KERNEL_OFFSET
+	or rsp, KERNEL_OFFSET
 	xor rbp, rbp
 	mov cr3, rsi
-	jmp (KERNEL_OFFSET+main)
+	mov rax, main
+	jmp rax

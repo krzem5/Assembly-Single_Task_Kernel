@@ -48,7 +48,6 @@ typedef void (*kernel_initializer_t)(void);
 
 extern const u64 _version;
 extern const char* _build_name;
-extern const u64 _raw_kernel_symbols[];
 extern u32 _syscalls_kernel_count;
 extern const void* _syscalls_kernel_functions[];
 

@@ -1,4 +1,3 @@
-#include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -14,6 +13,8 @@
 static omm_allocator_t* KERNEL_INIT_WRITE _symbol_allocator=NULL;
 static rb_tree_t _symbol_tree;
 
+volatile const u64* KERNEL_EARLY_READ __kernel_symbol_data=NULL;
+
 
 
 KERNEL_EARLY_INIT(){
@@ -21,13 +22,9 @@ KERNEL_EARLY_INIT(){
 	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2,pmm_alloc_counter("omm_symbol"));
 	spinlock_init(&(_symbol_allocator->lock));
 	rb_tree_init(&_symbol_tree);
-#ifndef __NEW_KERNEL
-	for (u32 i=0;_raw_kernel_symbols[i];i+=2){
-		symbol_add("kernel",(const char*)(_raw_kernel_symbols[i+1]),_raw_kernel_symbols[i]|0x8000000000000000ull,_raw_kernel_symbols[i]>>63);
+	for (u32 i=0;__kernel_symbol_data[i];i+=2){
+		symbol_add("kernel",(const char*)(__kernel_symbol_data[i+1]),__kernel_symbol_data[i]|0x8000000000000000ull,__kernel_symbol_data[i]>>63);
 	}
-#else
-	panic("Unimplemented: symbol_init");
-#endif
 }
 
 
