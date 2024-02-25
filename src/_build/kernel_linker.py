@@ -182,6 +182,26 @@ def _generate_symbol_table(ctx):
 
 
 
+def _generate_relocation_table(ctx):
+	output_section=ctx.section_headers_by_name[KERNEL_EARLY_READ_ONLY_SECTION_NAME]
+	output_section.suffix_data+=b"\x00"*((-len(output_section.suffix_data))&7)
+	relocation_table_relocation_offset=output_section.size+len(output_section.suffix_data)
+	for relocation in ctx.relocation_entries[:]:
+		width=0
+		if (relocation.type==R_X86_64_64):
+			width=8
+		elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
+			width=4
+		if (not width):
+			continue
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),(width==8)<<63)
+		output_section.suffix_data+=struct.pack("<Q",0)
+	output_section.suffix_data+=struct.pack("<Q",0)
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_relocation_data"]
+	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",relocation_table_relocation_offset,output_section,0,0),0)
+
+
+
 def _place_sections(ctx):
 	symbol=ctx.symbol_table.symbols_by_name[f"__KERNEL_SECTION_kernel_START__"]
 	symbol.section=ctx.section_headers_by_name[KERNEL_SECTION_ORDER[0]]
@@ -229,6 +249,7 @@ def link(src_file_path,dst_file_path):
 	_parse_symbol_table(ctx)
 	_parse_relocation_tables(ctx)
 	_generate_symbol_table(ctx)
+	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
 	with open(dst_file_path,"wb") as wf:
