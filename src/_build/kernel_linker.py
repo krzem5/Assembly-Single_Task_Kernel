@@ -64,13 +64,12 @@ class LinkerContext(object):
 
 
 class SectionHeader(object):
-	def __init__(self,index,name,offset,size,has_data):
+	def __init__(self,index,name,offset,size):
 		self.index=index
 		self.name=name
 		self.address=0
 		self.offset=offset
 		self.size=size
-		self.has_data=has_data
 		self.suffix_data=bytearray()
 
 
@@ -125,7 +124,7 @@ def _parse_headers(data):
 	for i in range(0,e_shnum):
 		sh_name,sh_type,sh_flags,sh_offset,sh_size,sh_link=struct.unpack("<IIQ8xQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
 		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
-		out.add_section_header(SectionHeader(i,name,sh_offset,sh_size,(sh_type==SHT_PROGBITS and (sh_flags&SHF_ALLOC))))
+		out.add_section_header(SectionHeader(i,name,sh_offset,sh_size))
 		if (sh_type==SHT_RELA):
 			out.add_relocation_table(RelocationTable(sh_offset,sh_size,name.replace(".rela","")))
 		elif (sh_type==SHT_SYMTAB):
@@ -153,7 +152,7 @@ def _parse_symbol_table(ctx):
 def _parse_relocation_tables(ctx):
 	for relocation_table in ctx.relocation_tables:
 		section=ctx.section_headers_by_name[relocation_table.target_section]
-		if (not section.has_data):
+		if (section.name not in KERNEL_SECTION_ORDER):
 			continue
 		for i in range(relocation_table.offset,relocation_table.offset+relocation_table.size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])

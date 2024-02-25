@@ -95,13 +95,8 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
-}[mode]
-KERNEL_EXTRA_LINKER_PREPROCESSING_OPTIONS={
-	MODE_NORMAL: ["-D_KERNEL_DEBUG_BUILD_=1"],
-	MODE_COVERAGE: ["-D_KERNEL_COVERAGE_BUILD_=1"],
-	MODE_RELEASE: []
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-g"],
@@ -120,7 +115,7 @@ MODULE_OBJECT_FILE_DIRECTORY={
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
