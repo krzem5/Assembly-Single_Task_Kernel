@@ -187,14 +187,9 @@ def _generate_relocation_table(ctx):
 	output_section.suffix_data+=b"\x00"*((-len(output_section.suffix_data))&7)
 	relocation_table_relocation_offset=output_section.size+len(output_section.suffix_data)
 	for relocation in ctx.relocation_entries[:]:
-		width=0
-		if (relocation.type==R_X86_64_64):
-			width=8
-		elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
-			width=4
-		if (not width):
+		if (relocation.type!=R_X86_64_64 and relocation.type!=R_X86_64_32 and relocation.type!=R_X86_64_32S):
 			continue
-		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),(width==8)<<63)
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),0)
 		output_section.suffix_data+=struct.pack("<Q",0)
 	output_section.suffix_data+=struct.pack("<Q",0)
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_relocation_data"]

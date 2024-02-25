@@ -35,9 +35,9 @@ void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kern
 	kernel_init(bootloader_kernel_data);
 	pmm_init();
 	vmm_init();
-	pmm_init_high_mem();
 	random_init();
 	aslr_reloc_kernel();
+	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
 	cpu_init_early_header();
 	amm_init();

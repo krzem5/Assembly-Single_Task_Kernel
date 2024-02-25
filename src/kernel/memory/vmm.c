@@ -11,6 +11,10 @@
 
 
 
+#define KERNEL_BASE_ADDRESS 0x100000
+
+
+
 static pmm_counter_descriptor_t _vmm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("vmm");
 
 
@@ -178,10 +182,9 @@ void KERNEL_EARLY_EXEC vmm_init(void){
 	for (u32 i=256;i<512;i++){
 		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
-	u64 kernel_length=pmm_align_up_address(kernel_data.first_free_address);
-	INFO("Mapping %v from %p to %p",kernel_length,NULL,kernel_get_offset());
-	for (u64 i=0;i<kernel_length;i+=PAGE_SIZE){
-		vmm_map_page(&vmm_kernel_pagemap,i,i+kernel_get_offset(),VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+	INFO("Mapping %v from %p to %p",kernel_data.first_free_address+kernel_get_offset()-kernel_section_kernel_start(),kernel_section_kernel_start()-kernel_get_offset(),kernel_section_kernel_start());
+	for (u64 i=kernel_section_kernel_start();i<kernel_data.first_free_address+kernel_get_offset();i+=PAGE_SIZE){
+		vmm_map_page(&vmm_kernel_pagemap,i-kernel_get_offset(),i,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	u64 highest_address=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){

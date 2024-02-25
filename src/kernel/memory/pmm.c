@@ -31,6 +31,7 @@ static pmm_block_descriptor_t* KERNEL_INIT_WRITE _pmm_block_descriptors;
 static pmm_load_balancer_t _pmm_load_balancer;
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _pmm_counter_omm_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
+static u64 KERNEL_EARLY_WRITE _pmm_self_counter_value;
 
 KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
@@ -155,19 +156,21 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 			max_address=address;
 		}
 	}
+	u64 first_free_address=kernel_data.first_free_address;
 	LOG("Allocating memory...");
 	_pmm_allocator_count=(max_address+PMM_ALLOCATOR_MAX_REGION_SIZE-1)>>PMM_ALLOCATOR_MAX_REGION_SIZE_SHIFT;
-	INFO("Allocator count: %u (%v)",_pmm_allocator_count,pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t)));
-	_pmm_allocators=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	kernel_data.first_free_address+=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t));
-	memset(_pmm_allocators,0,_pmm_allocator_count*sizeof(pmm_allocator_t));
+	u64 allocator_array_size=pmm_align_up_address(_pmm_allocator_count*sizeof(pmm_allocator_t));
+	INFO("Allocator count: %u (%v)",_pmm_allocator_count,allocator_array_size);
+	_pmm_allocators=(void*)(first_free_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	first_free_address+=allocator_array_size;
+	memset(_pmm_allocators,0,allocator_array_size);
 	for (u32 i=0;i<_pmm_allocator_count;i++){
 		spinlock_init(&((_pmm_allocators+i)->lock));
 	}
 	u64 block_descriptor_array_size=pmm_align_up_address(((max_address>>PAGE_SIZE_SHIFT)+1)*sizeof(pmm_block_descriptor_t));
 	INFO("Block descriptor array size: %v",block_descriptor_array_size);
-	_pmm_block_descriptors=(void*)(pmm_align_up_address(kernel_data.first_free_address)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	kernel_data.first_free_address+=block_descriptor_array_size;
+	_pmm_block_descriptors=(void*)(first_free_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	first_free_address+=block_descriptor_array_size;
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
 		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED;
 		(_pmm_block_descriptors+i)->next=0;
@@ -183,13 +186,23 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
 		u64 address=pmm_align_up_address((kernel_data.mmap+i)->base);
-		if (address<kernel_data.first_free_address){
-			address=kernel_data.first_free_address;
+		if (address<first_free_address){
+			address=first_free_address;
 		}
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
 	}
 	_pmm_initialization_flags|=PMM_FLAG_ALLOCATOR_INITIALIZED;
+	LOG("Allocating structures...");
+	pmm_counter_descriptor_t tmp_counter={
+		.count=0
+	};
+	void* pmm_data=(void*)(pmm_alloc(pmm_align_up_address(allocator_array_size+block_descriptor_array_size)>>PAGE_SIZE_SHIFT,&tmp_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	memcpy(pmm_data,_pmm_allocators,allocator_array_size);
+	memcpy(pmm_data+allocator_array_size,_pmm_block_descriptors,block_descriptor_array_size);
+	_pmm_allocators=pmm_data;
+	_pmm_block_descriptors=pmm_data+allocator_array_size;
+	_pmm_self_counter_value=tmp_counter.count;
 }
 
 
@@ -216,7 +229,7 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 	handle_new(_pmm_counter_omm_pmm_counter,pmm_counter_handle_type,&(_pmm_counter_omm_pmm_counter->handle));
 	handle_finish_setup(&(_pmm_counter_omm_pmm_counter->handle));
 	_pmm_counter_allocator->pmm_counter=_pmm_counter_omm_pmm_counter;
-	pmm_alloc_counter("pmm")->count=pmm_align_up_address(kernel_data.first_free_address-kernel_section_kernel_end())>>PAGE_SIZE_SHIFT;
+	pmm_alloc_counter("pmm")->count=_pmm_self_counter_value;
 	pmm_alloc_counter("kernel_image")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_alloc_counter("total")->count=total_memory;
 	_pmm_initialization_flags|=PMM_FLAG_HANDLE_INITIALIZED;
