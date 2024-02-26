@@ -286,6 +286,75 @@ def _compress(file_path):
 
 
 
+def _compile_uefi():
+	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
+	object_files=[]
+	rebuild_uefi_partition=False
+	error=False
+	for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
+		for file_name in files:
+			suffix=file_name[file_name.rindex("."):]
+			if (suffix not in SOURCE_FILE_SUFFIXES):
+				continue
+			file=os.path.join(root,file_name)
+			object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			object_files.append(object_file)
+			if (_file_not_changed(changed_files,object_file+".deps")):
+				continue
+			rebuild_uefi_partition=True
+			command=None
+			if (suffix==".c"):
+				command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+			else:
+				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+			print(file)
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+				del file_hash_list[file]
+				error=True
+	_save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
+	if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
+		sys.exit(1)
+	return rebuild_uefi_partition
+
+
+
+def _compile_kernel():
+	_generate_kernel_build_info()
+	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
+	object_files=[]
+	rebuild_data_partition=False
+	error=False
+	for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
+		for file_name in files:
+			suffix=file_name[file_name.rindex("."):]
+			if (suffix not in SOURCE_FILE_SUFFIXES):
+				continue
+			file=os.path.join(root,file_name)
+			object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+			object_files.append(object_file)
+			if (_file_not_changed(changed_files,object_file+".deps")):
+				continue
+			command=None
+			rebuild_data_partition=True
+			if (suffix==".c"):
+				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+			else:
+				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+			print(file)
+			if (os.path.exists(object_file+".gcno")):
+				os.remove(os.path.exists(object_file+".gcno"))
+			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
+				del file_hash_list[file]
+				error=True
+	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
+		sys.exit(1)
+	kernel_linker.link("build/kernel/kernel.elf","build/kernel/kernel.bin")
+	_compress("build/kernel/kernel.bin")
+	return rebuild_data_partition
+
+
+
 def _compile_module(module,dependencies):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return
@@ -318,6 +387,17 @@ def _compile_module(module,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
+
+
+
+def _compile_all_modules():
+	with open("src/module/dependencies.txt","r") as rf:
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			name,dependencies=line.split(":")
+			_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
 
 
 
@@ -381,6 +461,18 @@ def _compile_library(library,flags,dependencies):
 
 
 
+def _compile_all_libraries():
+	with open("src/lib/dependencies.txt","r") as rf:
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			name,dependencies=line.split(":")
+			flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
+			_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
+
+
+
 def _compile_user_program(program,dependencies):
 	if (mode!=MODE_COVERAGE and program.startswith("test")):
 		return
@@ -412,8 +504,36 @@ def _compile_user_program(program,dependencies):
 				del file_hash_list[file]
 				error=True
 	_save_file_hash_list(file_hash_list,hash_file_path)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{name}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
+	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
+
+
+
+def _compile_all_user_programs():
+	with open("src/user/dependencies.txt","r") as rf:
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			name,dependencies=line.split(":")
+			_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
+
+
+
+def _generate_shared_directory():
+	for library in os.listdir("build/lib"):
+		if (not library.endswith(".so")):
+			continue
+		with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
+			wf.write(rf.read())
+		os.chmod(f"build/share/lib/{library}",0o775)
+	if (os.path.islink("build/share/lib/ld.so")):
+		os.unlink("build/share/lib/ld.so")
+	os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
+	for program in os.listdir("build/user"):
+		with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
+			wf.write(rf.read())
+		os.chmod(f"build/share/bin/{program}",0o775)
 
 
 
@@ -427,6 +547,66 @@ def _get_early_modules(file_path):
 				if (type_=="early"):
 					out.append(name)
 	return out
+
+
+
+def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
+	if (not os.path.exists("build/install_disk.img")):
+		rebuild_uefi_partition=True
+		rebuild_data_partition=True
+		subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
+		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
+		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
+		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
+		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+	if (not os.path.exists("build/partitions/efi.img")):
+		rebuild_uefi_partition=True
+		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
+		subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
+		subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
+	if (rebuild_uefi_partition):
+		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
+		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
+	if (rebuild_data_partition):
+		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
+			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
+		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
+		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
+		initramfs.create("build/initramfs","build/partitions/initramfs.img")
+		_compress("build/partitions/initramfs.img")
+		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
+		kfs2.format_partition(data_fs)
+		kfs2.get_inode(data_fs,"/boot",0o500,True)
+		kfs2.get_inode(data_fs,"/boot/module",0o700,True)
+		kfs2.get_inode(data_fs,"/lib",0o755,True)
+		kfs2.get_inode(data_fs,"/bin",0o755,True)
+		with open("build/kernel/kernel.bin.compressed","rb") as rf:
+			kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
+			kfs2.set_file_content(data_fs,kernel_inode,rf.read())
+			kfs2.set_kernel_inode(data_fs,kernel_inode)
+		with open("build/partitions/initramfs.img.compressed","rb") as rf:
+			initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400)
+			kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
+			kfs2.set_initramfs_inode(data_fs,initramfs_inode)
+		for library in os.listdir("build/lib"):
+			if (not library.endswith(".so")):
+				continue
+			with open(f"build/lib/{library}","rb") as rf:
+				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
+		dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
+		kfs2.convert_to_link(data_fs,dynamic_linker_inode)
+		kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
+		for program in os.listdir("build/user"):
+			with open(f"build/user/{program}","rb") as rf:
+				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
+		with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
+		with open(FS_LIST_FILE_PATH,"rb") as rf:
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/fs_list.config",0o600),rf.read())
+		for module in os.listdir("build/module"):
+			with open(f"build/module/{module}","rb") as rf:
+				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o400),rf.read())
+		data_fs.close()
 
 
 
@@ -543,251 +723,102 @@ for dir_ in CLEAR_BUILD_DIRECTORIES:
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
-#####################################################################################################################################
-changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
-object_files=[]
-rebuild_uefi_partition=False
-error=False
-for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
-	for file_name in files:
-		suffix=file_name[file_name.rindex("."):]
-		if (suffix not in SOURCE_FILE_SUFFIXES):
-			continue
-		file=os.path.join(root,file_name)
-		object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			continue
-		rebuild_uefi_partition=True
-		command=None
-		if (suffix==".c"):
-			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
-		else:
-			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-		print(file)
-		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
-			del file_hash_list[file]
-			error=True
-_save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
-if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
-	sys.exit(1)
-#####################################################################################################################################
-_generate_kernel_build_info()
-changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
-object_files=[]
-rebuild_data_partition=False
-error=False
-for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
-	for file_name in files:
-		suffix=file_name[file_name.rindex("."):]
-		if (suffix not in SOURCE_FILE_SUFFIXES):
-			continue
-		file=os.path.join(root,file_name)
-		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			continue
-		command=None
-		rebuild_data_partition=True
-		if (suffix==".c"):
-			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-		print(file)
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
-			del file_hash_list[file]
-			error=True
-_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
-	sys.exit(1)
-kernel_linker.link("build/kernel/kernel.elf","build/kernel/kernel.bin")
-_compress("build/kernel/kernel.bin")
-#####################################################################################################################################
-with open("src/module/dependencies.txt","r") as rf:
-	for line in rf.read().split("\n"):
-		line=line.strip()
-		if (not line):
-			continue
-		name,dependencies=line.split(":")
-		_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
-#####################################################################################################################################
-with open("src/lib/dependencies.txt","r") as rf:
-	for line in rf.read().split("\n"):
-		line=line.strip()
-		if (not line):
-			continue
-		name,dependencies=line.split(":")
-		flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
-		_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
-#####################################################################################################################################
-with open("src/user/dependencies.txt","r") as rf:
-	for line in rf.read().split("\n"):
-		line=line.strip()
-		if (not line):
-			continue
-		name,dependencies=line.split(":")
-		_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
-#####################################################################################################################################
-for library in os.listdir("build/lib"):
-	if (not library.endswith(".so")):
-		continue
-	with open(f"build/lib/{library}","rb") as rf,open(f"build/share/lib/{library}","wb") as wf:
-		wf.write(rf.read())
-	os.chmod(f"build/share/lib/{library}",0o775)
-if (os.path.islink("build/share/lib/ld.so")):
-	os.unlink("build/share/lib/ld.so")
-os.symlink("/lib/liblinker.so","build/share/lib/ld.so")
-for program in os.listdir("build/user"):
-	with open(f"build/user/{program}","rb") as rf,open(f"build/share/bin/{program}","wb") as wf:
-		wf.write(rf.read())
-	os.chmod(f"build/share/bin/{program}",0o775)
+rebuild_uefi_partition=_compile_uefi()
+rebuild_data_partition=_compile_kernel()
+_compile_all_modules()
+_compile_all_libraries()
+_compile_all_user_programs()
+_generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
-if (not os.path.exists("build/install_disk.img")):
-	rebuild_uefi_partition=True
-	rebuild_data_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
-	subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
-if (not os.path.exists("build/partitions/efi.img")):
-	rebuild_uefi_partition=True
-	subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
-	subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
-	subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
-if (rebuild_uefi_partition):
-	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
-if (rebuild_data_partition):
-	for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
-		_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
-	_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
-	_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
-	initramfs.create("build/initramfs","build/partitions/initramfs.img")
-	_compress("build/partitions/initramfs.img")
-	data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
-	kfs2.format_partition(data_fs)
-	kfs2.get_inode(data_fs,"/boot",0o500,True)
-	kfs2.get_inode(data_fs,"/boot/module",0o700,True)
-	kfs2.get_inode(data_fs,"/lib",0o755,True)
-	kfs2.get_inode(data_fs,"/bin",0o755,True)
-	with open("build/kernel/kernel.bin.compressed","rb") as rf:
-		kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
-		kfs2.set_file_content(data_fs,kernel_inode,rf.read())
-		kfs2.set_kernel_inode(data_fs,kernel_inode)
-	with open("build/partitions/initramfs.img.compressed","rb") as rf:
-		initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400)
-		kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
-		kfs2.set_initramfs_inode(data_fs,initramfs_inode)
-	for library in os.listdir("build/lib"):
-		if (not library.endswith(".so")):
-			continue
-		with open(f"build/lib/{library}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
-	dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
-	kfs2.convert_to_link(data_fs,dynamic_linker_inode)
-	kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
-	for program in os.listdir("build/user"):
-		with open(f"build/user/{program}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
-	with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
-	with open(FS_LIST_FILE_PATH,"rb") as rf:
-		kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/fs_list.config",0o600),rf.read())
-	for module in os.listdir("build/module"):
-		with open(f"build/module/{module}","rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o400),rf.read())
-	data_fs.close()
-#####################################################################################################################################
-if ("--run" in sys.argv):
-	if (not NO_FILE_SERVER):
-		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
-	if (not os.path.exists("build/vm/hdd.qcow2")):
-		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
-			sys.exit(1)
-	if (not os.path.exists("build/vm/ssd.qcow2")):
-		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
-			sys.exit(1)
-	if (not os.path.exists("build/vm/OVMF_CODE.fd")):
-		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
-			sys.exit(1)
-	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
-		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
-			sys.exit(1)
-	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
-		"qemu-system-x86_64",
-		# "-d","trace:virtio*,trace:virtio_blk*",
-		# "-d","trace:virtio*,trace:virtio_gpu*",
-		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
-		# "-d","trace:usb*",
-		# "-d","trace:nvme*,trace:pci_nvme*",
-		# "-d","int,cpu_reset",
-		# "--no-reboot",
-		# "-d","guest_errors",
-		# Bios
-		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
-		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
-		# Drive files
-		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
-		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
-		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
-		# Drives
-		"-device","ahci,id=ahci",
-		"-device","ide-hd,drive=hdd,bus=ahci.0",
-		"-device","nvme,serial=00112233,drive=ssd",
-		# USB
-		"-device","nec-usb-xhci,id=xhci",
-		"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
-		# Network
-		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
-		"-device","e1000,netdev=network", ### 'Real' network card
-		# "-device","virtio-net,netdev=network",
-		"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
-		# Memory
-		"-m","2G,slots=2,maxmem=4G",
-		"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required virtiofsd
-		"-object","memory-backend-memfd,size=1G,id=mem1,share=on",
-		# CPU
-		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
-		"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
-		# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
-		# NUMA
-		"-numa","node,nodeid=0,memdev=mem0",
-		"-numa","node,nodeid=1,memdev=mem1",
-		"-numa","cpu,node-id=0,socket-id=0",
-		"-numa","cpu,node-id=1,socket-id=1",
-		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
-		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
-		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-		"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
-		"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-		"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
-		"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-		"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-		"-numa","dist,src=0,dst=1,val=20",
-		# Graphics
-		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
-		# Shared folder
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
-		# Serial
-		"-serial","mon:stdio",
-		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
-		# Config
-		"-machine","hmat=on",
-		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
-		"-smbios","type=2,serial=SERIAL_NUMBER",
-		# Debugging
-		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
-	]+_kvm_flags())
-	if (os.path.exists("build/vm/virtiofsd.sock")):
-		os.remove("build/vm/virtiofsd.sock")
-	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
-		os.remove("build/vm/virtiofsd.sock.pid")
-	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
-		os.remove("build/raw_coverage")
+_generate_install_disk(rebuild_uefi_partition,rebuild_data_partition)
+if ("--run" not in sys.argv):
+	sys.exit(0)
+if (not NO_FILE_SERVER):
+	subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
+if (not os.path.exists("build/vm/hdd.qcow2")):
+	if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
+		sys.exit(1)
+if (not os.path.exists("build/vm/ssd.qcow2")):
+	if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
+		sys.exit(1)
+if (not os.path.exists("build/vm/OVMF_CODE.fd")):
+	if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+		sys.exit(1)
+if (not os.path.exists("build/vm/OVMF_VARS.fd")):
+	if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+		sys.exit(1)
+subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
+	"qemu-system-x86_64",
+	# "-d","trace:virtio*,trace:virtio_blk*",
+	# "-d","trace:virtio*,trace:virtio_gpu*",
+	# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
+	# "-d","trace:usb*",
+	# "-d","trace:nvme*,trace:pci_nvme*",
+	# "-d","int,cpu_reset",
+	# "--no-reboot",
+	# "-d","guest_errors",
+	# Bios
+	"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+	"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+	# Drive files
+	"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
+	"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
+	"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
+	# Drives
+	"-device","ahci,id=ahci",
+	"-device","ide-hd,drive=hdd,bus=ahci.0",
+	"-device","nvme,serial=00112233,drive=ssd",
+	# USB
+	"-device","nec-usb-xhci,id=xhci",
+	"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
+	# Network
+	"-netdev","user,hostfwd=tcp::10023-:22,id=network",
+	"-device","e1000,netdev=network", ### 'Real' network card
+	# "-device","virtio-net,netdev=network",
+	"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
+	# Memory
+	"-m","2G,slots=2,maxmem=4G",
+	"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required by virtiofsd
+	"-object","memory-backend-memfd,size=1G,id=mem1,share=on",
+	# CPU
+	"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
+	"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
+	# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
+	# NUMA
+	"-numa","node,nodeid=0,memdev=mem0",
+	"-numa","node,nodeid=1,memdev=mem1",
+	"-numa","cpu,node-id=0,socket-id=0",
+	"-numa","cpu,node-id=1,socket-id=1",
+	"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
+	"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+	"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
+	"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+	"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
+	"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+	"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
+	"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+	"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+	"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+	"-numa","dist,src=0,dst=1,val=20",
+	# Graphics
+	*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+	# Shared directory
+	*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
+	# Serial
+	"-serial","mon:stdio",
+	"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
+	# Config
+	"-machine","hmat=on",
+	"-uuid","00112233-4455-6677-8899-aabbccddeeff",
+	"-smbios","type=2,serial=SERIAL_NUMBER",
+	# Debugging
+	*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
+]+_kvm_flags())
+if (os.path.exists("build/vm/virtiofsd.sock")):
+	os.remove("build/vm/virtiofsd.sock")
+if (os.path.exists("build/vm/virtiofsd.sock.pid")):
+	os.remove("build/vm/virtiofsd.sock.pid")
+if (mode==MODE_COVERAGE):
+	_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
+	os.remove("build/raw_coverage")
