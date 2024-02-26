@@ -121,10 +121,6 @@ gdt64_pointer:
 
 
 
-times 4096-($-$$) db 0
-
-
-
 extern vmm_kernel_pagemap
 global cpu_ap_startup_init:function hidden
 section .etext exec nowrite
