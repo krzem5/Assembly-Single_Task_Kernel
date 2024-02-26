@@ -31,6 +31,7 @@ static void _pmm_counter_listener(void* object,u32 type){
 	handle_t* handle=object;
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const pmm_counter_descriptor_t* descriptor=handle->object;
+		ERROR("%p: %s",descriptor,descriptor->name);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_memory_pmm_counter_root,descriptor->name,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_set_root_only(node);
 		dynamicfs_set_root_only(dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count))));

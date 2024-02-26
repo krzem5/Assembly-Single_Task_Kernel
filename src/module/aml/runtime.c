@@ -330,10 +330,7 @@ static aml_object_t* _exec_opcode_name_reference(aml_runtime_context_t* ctx){
 	string_t* name=_get_name(ctx);
 	aml_namespace_t* value=aml_namespace_lookup(ctx->namespace,name->data,0);
 	if (!value||!value->value){
-		ERROR("_exec_opcode_name_reference: object '%s' not found",name->data);
-		for (;;);
-		smm_dealloc(name);
-		return NULL;
+		return aml_object_alloc_dynamic(ctx->namespace,name);
 	}
 	smm_dealloc(name);
 	if (value->value->type==AML_OBJECT_TYPE_FIELD_UNIT){

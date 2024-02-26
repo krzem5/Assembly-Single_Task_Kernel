@@ -14,12 +14,19 @@
 
 
 
-static pmm_counter_descriptor_t _handle_descriptor_omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
+static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _handle_descriptor_omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
 static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
 static KERNEL_ATOMIC handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
 
 KERNEL_PUBLIC handle_type_t handle_handle_type=0;
+
+
+
+void KERNEL_EARLY_EXEC handle_alloc_counter(void){
+	_handle_descriptor_allocator->pmm_counter=pmm_alloc_counter("omm_handle_descriptor");
+	_handle_descriptor_allocator->pmm_counter->count=_handle_descriptor_omm_pmm_counter.count;
+}
 
 
 

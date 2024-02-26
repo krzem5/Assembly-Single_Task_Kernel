@@ -92,6 +92,20 @@ _Bool aml_field_write(aml_object_t* object,aml_object_t* value){
 	}
 	switch (object->field_unit.type){
 		case 0x00:
+			if (value->type!=AML_OBJECT_TYPE_INTEGER){
+				panic("aml_field_write: SystemMemory: value is not an integer");
+			}
+			switch (object->field_unit.size){
+				case 8:
+					*((u8*)(object->field_unit.address+(object->field_unit.offset>>3)))=value->integer;
+					return 1;
+				case 16:
+					*((u16*)(object->field_unit.address+(object->field_unit.offset>>3)))=value->integer;
+					return 1;
+				case 32:
+					*((u32*)(object->field_unit.address+(object->field_unit.offset>>3)))=value->integer;
+					return 1;
+			}
 			panic("aml_field_write: SystemMemory");
 			break;
 		case 0x01:

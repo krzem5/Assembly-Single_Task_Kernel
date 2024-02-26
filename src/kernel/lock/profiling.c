@@ -15,7 +15,8 @@
 
 
 
-static pmm_counter_descriptor_t _lock_profiling_pmm_counter=_PMM_COUNTER_INIT_STRUCT("lock_profiling");
+static pmm_counter_descriptor_t _lock_profiling_early_pmm_counter=_PMM_COUNTER_INIT_STRUCT("lock_profiling");
+static pmm_counter_descriptor_t* _lock_profiling_pmm_counter=&_lock_profiling_early_pmm_counter;
 static spinlock_t _lock_profiling_data_lock=SPINLOCK_INIT_STRUCT;
 static KERNEL_ATOMIC u16 KERNEL_NOBSS _lock_next_type_id=0;
 static lock_profiling_type_descriptor_t* _lock_profiling_type_descriptors=NULL;
@@ -66,7 +67,7 @@ KERNEL_PUBLIC u16 KERNEL_NOCOVERAGE __lock_profiling_alloc_type(const char* func
 		if (_lock_profiling_type_descriptors){
 			goto _skip_alloc;
 		}
-		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_profiling_type_descriptor_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
+		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_profiling_type_descriptor_t))>>PAGE_SIZE_SHIFT,_lock_profiling_pmm_counter,0);
 		if (!data){
 			goto _skip_alloc;
 		}
@@ -96,7 +97,7 @@ _skip_alloc:
 KERNEL_PUBLIC lock_local_profiling_data_t* KERNEL_NOCOVERAGE __lock_profiling_alloc_data(const char* func,u32 line,const char* arg,u16 offset,u64* ptr){
 	u64 expected=0;
 	if (__atomic_compare_exchange_n(ptr,&expected,1,0,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST)){
-		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0);
+		u64 data=pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_TYPES*sizeof(lock_local_profiling_data_t))>>PAGE_SIZE_SHIFT,_lock_profiling_pmm_counter,0);
 		if (!data){
 			return NULL;
 		}
@@ -120,7 +121,12 @@ KERNEL_PUBLIC lock_local_profiling_data_t* KERNEL_NOCOVERAGE __lock_profiling_al
 
 
 void KERNEL_NOCOVERAGE __lock_profiling_enable_dependency_graph(void){
-	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<((LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1)-3))>>PAGE_SIZE_SHIFT,&_lock_profiling_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_lock_profiling_pmm_counter=pmm_alloc_counter("lock_profiling");
+	_lock_profiling_pmm_counter->count=_lock_profiling_early_pmm_counter.count;
+	if (_lock_profiling_early_pmm_counter.handle.rb_node.key){
+		handle_destroy(&(_lock_profiling_early_pmm_counter.handle));
+	}
+	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<((LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1)-3))>>PAGE_SIZE_SHIFT,_lock_profiling_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
 
 

@@ -20,6 +20,7 @@
 #define KERNEL_INIT() static KERNEL_EARLY_EXEC void __initializer(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=__initializer;static KERNEL_EARLY_EXEC void __initializer(void)
 #define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void __einitializer(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=__einitializer;static KERNEL_EARLY_EXEC void __einitializer(void)
 #define KERNEL_EARLY_EARLY_INIT() static KERNEL_EARLY_EXEC void __eeinitializer(void);static void* __attribute__((section(".eeinitializer"),used)) __eeinitializer_ptr=__eeinitializer;static KERNEL_EARLY_EXEC void __eeinitializer(void)
+#define KERNEL_EARLY_POINTER(name) static void* __attribute__((section(".epointer"),used)) __epointer=&(name)
 
 #if KERNEL_DISABLE_ASSERT
 #define KERNEL_ASSERT(expression)

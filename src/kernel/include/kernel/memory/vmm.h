@@ -42,6 +42,10 @@ void vmm_init(void);
 
 
 
+void vmm_alloc_counter(void);
+
+
+
 void vmm_pagemap_init(vmm_pagemap_t* pagemap);
 
 

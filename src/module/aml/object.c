@@ -1,3 +1,4 @@
+#include <aml/namespace.h>
 #include <aml/object.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -130,6 +131,9 @@ static void _print_object(aml_object_t* object,u32 indent){
 			break;
 		case AML_OBJECT_TYPE_THERMAL_ZONE:
 			log("thermal_zone");
+			break;
+		case AML_OBJECT_TYPE_DYNAMIC:
+			log("dynamic");
 			break;
 	}
 }
@@ -271,6 +275,15 @@ KERNEL_PUBLIC aml_object_t* aml_object_alloc_string(string_t* string){
 
 KERNEL_PUBLIC aml_object_t* aml_object_alloc_thermal_zone(void){
 	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_THERMAL_ZONE);
+	return out;
+}
+
+
+
+KERNEL_PUBLIC aml_object_t* aml_object_alloc_dynamic(aml_namespace_t* namespace,string_t* name){
+	aml_object_t* out=_alloc_object(AML_OBJECT_TYPE_DYNAMIC);
+	out->dynamic.namespace=namespace;
+	out->dynamic.name=name;
 	return out;
 }
 

@@ -11,7 +11,7 @@
 
 
 
-static pmm_counter_descriptor_t _omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm");
+static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm");
 static omm_allocator_t* _omm_self_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t omm_handle_type=0;
@@ -84,6 +84,13 @@ void KERNEL_EARLY_EXEC omm_init_handle_type(omm_allocator_t* handle_allocator){
 	handle_finish_setup(&(_omm_self_allocator->handle));
 	handle_new(handle_allocator,omm_handle_type,&(handle_allocator->handle));
 	handle_finish_setup(&(handle_allocator->handle));
+}
+
+
+
+void KERNEL_EARLY_EXEC omm_alloc_counter(void){
+	_omm_self_allocator->pmm_counter=pmm_alloc_counter("omm");
+	_omm_self_allocator->pmm_counter->count=_omm_pmm_counter.count;
 }
 
 

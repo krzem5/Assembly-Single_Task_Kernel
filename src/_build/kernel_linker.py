@@ -190,6 +190,13 @@ def _generate_relocation_table(ctx):
 			continue
 		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),0)
 		output_section.suffix_data+=struct.pack("<Q",0)
+	early_pointer_relocation_section=ctx.section_headers_by_name[".rela.kernel_early_pointer"]
+	for i in range(early_pointer_relocation_section.offset,early_pointer_relocation_section.offset+early_pointer_relocation_section.size,24):
+		r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
+		if ((r_info&0xffffffff)!=R_X86_64_64):
+			continue
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),ctx.symbol_table.symbols[r_info>>32],r_addend)
+		output_section.suffix_data+=struct.pack("<Q",0)
 	output_section.suffix_data+=struct.pack("<Q",0)
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_relocation_data"]
 	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",relocation_table_relocation_offset,output_section,0,0),0)

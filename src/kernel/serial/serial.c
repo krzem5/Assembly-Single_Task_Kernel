@@ -22,6 +22,7 @@ static event_t* KERNEL_INIT_WRITE _serial_irq_event=NULL;
 
 KERNEL_PUBLIC serial_port_t __attribute__((section(".data"))) serial_ports[SERIAL_PORT_COUNT]; // not defined as KERNEL_INIT_WRITE due to inline spinlocks
 KERNEL_PUBLIC serial_port_t* KERNEL_INIT_WRITE serial_default_port=NULL;
+KERNEL_EARLY_POINTER(serial_default_port);
 
 
 

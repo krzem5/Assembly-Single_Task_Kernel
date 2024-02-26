@@ -22,6 +22,7 @@
 #define AML_OBJECT_TYPE_REGION 14
 #define AML_OBJECT_TYPE_STRING 15
 #define AML_OBJECT_TYPE_THERMAL_ZONE 16
+#define AML_OBJECT_TYPE_DYNAMIC 17
 
 
 
@@ -86,6 +87,10 @@ typedef struct _AML_OBJECT{
 		struct{
 			// undefined
 		} thermal_zone;
+		struct{
+			struct _AML_NAMESPACE* namespace;
+			string_t* name;
+		} dynamic;
 	};
 } aml_object_t;
 
@@ -160,6 +165,10 @@ aml_object_t* aml_object_alloc_string(string_t* string);
 
 
 aml_object_t* aml_object_alloc_thermal_zone(void);
+
+
+
+aml_object_t* aml_object_alloc_dynamic(struct _AML_NAMESPACE* namespace,string_t* name);
 
 
 

@@ -1,10 +1,12 @@
 #include <kernel/acl/acl.h>
 #include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
+#include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
+#include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
@@ -31,6 +33,9 @@ static void _main_thread(void){
 static void KERNEL_NORETURN KERNEL_EARLY_EXEC _main_relocated(void){
 	pmm_init_high_mem();
 	kernel_adjust_memory_flags();
+	handle_alloc_counter();
+	omm_alloc_counter();
+	vmm_alloc_counter();
 	cpu_init_early_header();
 	amm_init();
 	acl_init();

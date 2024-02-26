@@ -4,7 +4,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/random/random.h>
-#include <kernel/serial/serial.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aslr"
@@ -61,7 +60,6 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	for (u64 i=0;__kernel_relocation_data[i];i++){
 		*((u32*)(__kernel_relocation_data[i]))+=_aslr_offset;
 	}
-	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust the only kernel address in memory
 	_aslr_adjust_rip(next_stage_callback+_aslr_offset,_finish_relocation);
 #endif
 }

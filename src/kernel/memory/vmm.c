@@ -15,7 +15,8 @@
 
 
 
-static pmm_counter_descriptor_t _vmm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("vmm");
+static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _vmm_early_pmm_counter=_PMM_COUNTER_INIT_STRUCT("vmm");
+static pmm_counter_descriptor_t* _vmm_pmm_counter=&_vmm_early_pmm_counter;
 
 
 
@@ -37,7 +38,7 @@ static KERNEL_INLINE _Bool _decrease_length(u64* table){
 	if ((*table)&VMM_PAGE_COUNT_MASK){
 		return 0;
 	}
-	pmm_dealloc((*table)&VMM_PAGE_ADDRESS_MASK,1,&_vmm_pmm_counter);
+	pmm_dealloc((*table)&VMM_PAGE_ADDRESS_MASK,1,_vmm_pmm_counter);
 	*table=0;
 	return 1;
 }
@@ -71,7 +72,7 @@ static void _delete_pagemap_recursive(u64* table,u8 level,u16 limit){
 			_delete_pagemap_recursive(entries+i,level-1,512);
 		}
 	}
-	pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,&_vmm_pmm_counter);
+	pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,_vmm_pmm_counter);
 }
 
 
@@ -85,7 +86,7 @@ static u64* _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present)
 		return NULL;
 	}
 	_increase_length(table);
-	u64 out=pmm_alloc(1,&_vmm_pmm_counter,0);
+	u64 out=pmm_alloc(1,_vmm_pmm_counter,0);
 	*entry=((u64)out)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	return entry;
 }
@@ -176,11 +177,11 @@ static u64 _unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 
 void KERNEL_EARLY_EXEC vmm_init(void){
 	LOG("Initializing virtual memory manager...");
-	vmm_kernel_pagemap.toplevel=pmm_alloc(1,&_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
+	vmm_kernel_pagemap.toplevel=pmm_alloc(1,_vmm_pmm_counter,PMM_MEMORY_HINT_LOW_MEMORY);
 	spinlock_init(&(vmm_kernel_pagemap.lock));
 	INFO("Kernel top-level page map allocated at %p",vmm_kernel_pagemap.toplevel);
 	for (u32 i=256;i<512;i++){
-		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1,&_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
+		_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i]=pmm_alloc(1,_vmm_pmm_counter,0)|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT;
 	}
 	INFO("Mapping %v from %p to %p",kernel_section_kernel_end()-kernel_section_kernel_start(),kernel_section_kernel_start()-kernel_get_offset(),kernel_section_kernel_start());
 	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){
@@ -203,8 +204,15 @@ void KERNEL_EARLY_EXEC vmm_init(void){
 
 
 
+void KERNEL_EARLY_EXEC vmm_alloc_counter(void){
+	_vmm_pmm_counter=pmm_alloc_counter("vmm");
+	_vmm_pmm_counter->count=_vmm_early_pmm_counter.count;
+}
+
+
+
 void vmm_pagemap_init(vmm_pagemap_t* pagemap){
-	pagemap->toplevel=pmm_alloc(1,&_vmm_pmm_counter,0);
+	pagemap->toplevel=pmm_alloc(1,_vmm_pmm_counter,0);
 	spinlock_init(&(pagemap->lock));
 	for (u16 i=256;i<512;i++){
 		_get_table(&(pagemap->toplevel))->entries[i]=_get_table(&(vmm_kernel_pagemap.toplevel))->entries[i];

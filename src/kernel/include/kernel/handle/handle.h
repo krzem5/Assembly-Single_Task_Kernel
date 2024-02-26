@@ -65,6 +65,10 @@ extern handle_type_t handle_handle_type;
 
 
 
+void handle_alloc_counter(void);
+
+
+
 handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback);
 
 
