@@ -248,4 +248,3 @@ def link(src_file_path,dst_file_path):
 	_apply_relocations(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
-	# quit()

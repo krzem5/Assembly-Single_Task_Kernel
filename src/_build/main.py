@@ -94,8 +94,8 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
+	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DISABLE_ASLR=1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-DKERNEL_DISABLE_ASLR=1","-O1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={

@@ -41,6 +41,15 @@ static void KERNEL_EARLY_EXEC KERNEL_NORETURN _finish_relocation(void (*KERNEL_N
 
 
 void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN next_stage_callback)(void)){
+#if KERNEL_DISABLE_ASLR
+	ERROR("ASLR disabled");
+	(void)_finish_relocation;
+	INFO("Kernel range: %p - %p",kernel_section_kernel_start(),kernel_section_kernel_end());
+	aslr_module_base=KERNEL_ASLR_KERNEL_END;
+	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_MAX_END;
+	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
+	next_stage_callback();
+#else
 	LOG("Relocating kernel...");
 	u64 kernel_size=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start());
 	random_generate(&_aslr_offset,sizeof(u64));
@@ -54,4 +63,5 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	}
 	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust the only kernel address in memory
 	_aslr_adjust_rip(next_stage_callback+_aslr_offset,_finish_relocation);
+#endif
 }
