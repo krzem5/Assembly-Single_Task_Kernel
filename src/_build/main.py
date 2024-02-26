@@ -190,7 +190,7 @@ KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
 
-def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path,header_name):
+def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path):
 	syscalls={}
 	with open(src_file_path,"r") as rf:
 		for line in rf.read().split("\n"):
@@ -206,7 +206,7 @@ def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,use
 			syscalls[index]=(name,args,ret)
 	if (user_header_file_path is not None):
 		with open(user_header_file_path,"w") as wf:
-			wf.write(f"#ifndef {header_name}\n#define {header_name} 1\n#include <sys/syscall/syscall.h>\n#include <sys/types.h>\n\n\n\n")
+			wf.write(f"#ifndef _SYS_SYSCALL_KERNEL_SYSCALLS_H_\n#define _SYS_SYSCALL_KERNEL_SYSCALLS_H_ 1\n#include <sys/syscall/syscall.h>\n#include <sys/types.h>\n\n\n\n")
 			for index,(name,args,ret) in syscalls.items():
 				wf.write(f"static inline {ret} _sys_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_sys_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
 			wf.write("#endif\n")
@@ -610,6 +610,20 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 
 
 
+def _kvm_flags():
+	if (not os.path.exists("/dev/kvm")):
+		return []
+	with open("/proc/cpuinfo","r") as rf:
+		if (" vmx" not in rf.read()):
+			return []
+	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
+		if ("tsc" in rf.read() and not BYPASS_KVM_LOCK):
+			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
+			return []
+	return ["-accel","kvm"]
+
+
+
 def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
 		if (file.endswith(".gcda")):
@@ -697,17 +711,96 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 
 
 
-def _kvm_flags():
-	if (not os.path.exists("/dev/kvm")):
-		return []
-	with open("/proc/cpuinfo","r") as rf:
-		if (" vmx" not in rf.read()):
-			return []
-	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
-		if ("tsc" in rf.read() and not BYPASS_KVM_LOCK):
-			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
-			return []
-	return ["-accel","kvm"]
+
+def _execute_vm():
+	if (not NO_FILE_SERVER):
+		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
+	if (not os.path.exists("build/vm/hdd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
+			sys.exit(1)
+	if (not os.path.exists("build/vm/ssd.qcow2")):
+		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
+			sys.exit(1)
+	if (not os.path.exists("build/vm/OVMF_CODE.fd")):
+		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+			sys.exit(1)
+	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
+		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+			sys.exit(1)
+	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
+		"qemu-system-x86_64",
+		# "-d","trace:virtio*,trace:virtio_blk*",
+		# "-d","trace:virtio*,trace:virtio_gpu*",
+		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
+		# "-d","trace:usb*",
+		# "-d","trace:nvme*,trace:pci_nvme*",
+		# "-d","int,cpu_reset",
+		# "--no-reboot",
+		# "-d","guest_errors",
+		# Bios
+		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
+		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
+		# Drive files
+		"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
+		"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
+		"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
+		# Drives
+		"-device","ahci,id=ahci",
+		"-device","ide-hd,drive=hdd,bus=ahci.0",
+		"-device","nvme,serial=00112233,drive=ssd",
+		# USB
+		"-device","nec-usb-xhci,id=xhci",
+		"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
+		# Network
+		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
+		"-device","e1000,netdev=network", ### 'Real' network card
+		# "-device","virtio-net,netdev=network",
+		"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
+		# Memory
+		"-m","2G,slots=2,maxmem=4G",
+		"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required by virtiofsd
+		"-object","memory-backend-memfd,size=1G,id=mem1,share=on",
+		# CPU
+		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
+		"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
+		# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
+		# NUMA
+		"-numa","node,nodeid=0,memdev=mem0",
+		"-numa","node,nodeid=1,memdev=mem1",
+		"-numa","cpu,node-id=0,socket-id=0",
+		"-numa","cpu,node-id=1,socket-id=1",
+		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
+		"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
+		"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+		"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
+		"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
+		"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
+		"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
+		"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
+		"-numa","dist,src=0,dst=1,val=20",
+		# Graphics
+		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+		# Shared directory
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
+		# Serial
+		"-serial","mon:stdio",
+		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
+		# Config
+		"-machine","hmat=on",
+		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
+		"-smbios","type=2,serial=SERIAL_NUMBER",
+		# Debugging
+		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
+	]+_kvm_flags())
+	if (os.path.exists("build/vm/virtiofsd.sock")):
+		os.remove("build/vm/virtiofsd.sock")
+	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
+		os.remove("build/vm/virtiofsd.sock.pid")
+	if (mode==MODE_COVERAGE):
+		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
+		os.remove("build/raw_coverage")
 
 
 
@@ -720,7 +813,7 @@ for dir_ in BUILD_DIRECTORIES:
 for dir_ in CLEAR_BUILD_DIRECTORIES:
 	for file in os.listdir(dir_):
 		os.remove(os.path.join(dir_,file))
-_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h","_SYS_SYSCALL_KERNEL_SYSCALLS_H_")
+_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h")
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi_partition=_compile_uefi()
@@ -734,91 +827,4 @@ if ("--share" in sys.argv):
 _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition)
 if ("--run" not in sys.argv):
 	sys.exit(0)
-if (not NO_FILE_SERVER):
-	subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
-if (not os.path.exists("build/vm/hdd.qcow2")):
-	if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
-		sys.exit(1)
-if (not os.path.exists("build/vm/ssd.qcow2")):
-	if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
-		sys.exit(1)
-if (not os.path.exists("build/vm/OVMF_CODE.fd")):
-	if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
-		sys.exit(1)
-if (not os.path.exists("build/vm/OVMF_VARS.fd")):
-	if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
-		sys.exit(1)
-subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
-	"qemu-system-x86_64",
-	# "-d","trace:virtio*,trace:virtio_blk*",
-	# "-d","trace:virtio*,trace:virtio_gpu*",
-	# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
-	# "-d","trace:usb*",
-	# "-d","trace:nvme*,trace:pci_nvme*",
-	# "-d","int,cpu_reset",
-	# "--no-reboot",
-	# "-d","guest_errors",
-	# Bios
-	"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
-	"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
-	# Drive files
-	"-drive","file=build/vm/hdd.qcow2,if=none,id=hdd",
-	"-drive","file=build/vm/ssd.qcow2,if=none,id=ssd",
-	"-drive","file=build/install_disk.img,if=none,id=bootusb,format=raw",
-	# Drives
-	"-device","ahci,id=ahci",
-	"-device","ide-hd,drive=hdd,bus=ahci.0",
-	"-device","nvme,serial=00112233,drive=ssd",
-	# USB
-	"-device","nec-usb-xhci,id=xhci",
-	"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
-	# Network
-	"-netdev","user,hostfwd=tcp::10023-:22,id=network",
-	"-device","e1000,netdev=network", ### 'Real' network card
-	# "-device","virtio-net,netdev=network",
-	"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
-	# Memory
-	"-m","2G,slots=2,maxmem=4G",
-	"-object","memory-backend-memfd,size=1G,id=mem0,share=on", # share=on is required by virtiofsd
-	"-object","memory-backend-memfd,size=1G,id=mem1,share=on",
-	# CPU
-	"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
-	"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
-	# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
-	# NUMA
-	"-numa","node,nodeid=0,memdev=mem0",
-	"-numa","node,nodeid=1,memdev=mem1",
-	"-numa","cpu,node-id=0,socket-id=0",
-	"-numa","cpu,node-id=1,socket-id=1",
-	"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-latency,latency=5",
-	"-numa","hmat-lb,initiator=0,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-	"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-latency,latency=10",
-	"-numa","hmat-lb,initiator=0,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-	"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-latency,latency=5",
-	"-numa","hmat-lb,initiator=1,target=1,hierarchy=memory,data-type=access-bandwidth,bandwidth=128M",
-	"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-latency,latency=10",
-	"-numa","hmat-lb,initiator=1,target=0,hierarchy=memory,data-type=access-bandwidth,bandwidth=64M",
-	"-numa","hmat-cache,node-id=0,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-	"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
-	"-numa","dist,src=0,dst=1,val=20",
-	# Graphics
-	*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
-	# Shared directory
-	*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
-	# Serial
-	"-serial","mon:stdio",
-	"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
-	# Config
-	"-machine","hmat=on",
-	"-uuid","00112233-4455-6677-8899-aabbccddeeff",
-	"-smbios","type=2,serial=SERIAL_NUMBER",
-	# Debugging
-	*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
-]+_kvm_flags())
-if (os.path.exists("build/vm/virtiofsd.sock")):
-	os.remove("build/vm/virtiofsd.sock")
-if (os.path.exists("build/vm/virtiofsd.sock.pid")):
-	os.remove("build/vm/virtiofsd.sock.pid")
-if (mode==MODE_COVERAGE):
-	_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
-	os.remove("build/raw_coverage")
+_execute_vm()
