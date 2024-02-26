@@ -248,6 +248,13 @@ KERNEL_PUBLIC pmm_counter_descriptor_t* pmm_alloc_counter(const char* name){
 
 
 
+KERNEL_PUBLIC void pmm_dealloc_counter(pmm_counter_descriptor_t* counter){
+	handle_destroy(&(counter->handle));
+	omm_dealloc(_pmm_counter_allocator,counter);
+}
+
+
+
 KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
 	if (!(_pmm_initialization_flags&PMM_FLAG_PARTIALLY_INITIALIZED)){
 		return 0;

@@ -61,6 +61,10 @@ omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 pag
 
 
 
+void omm_deinit(omm_allocator_t* allocator);
+
+
+
 void* omm_alloc(omm_allocator_t* allocator);
 
 

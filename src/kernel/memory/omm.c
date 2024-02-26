@@ -110,6 +110,13 @@ KERNEL_PUBLIC omm_allocator_t* omm_init(const char* name,u64 object_size,u64 ali
 
 
 
+KERNEL_PUBLIC void omm_deinit(omm_allocator_t* allocator){
+	handle_destroy(&(allocator->handle));
+	omm_dealloc(_omm_self_allocator,allocator);
+}
+
+
+
 KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(allocator->lock));

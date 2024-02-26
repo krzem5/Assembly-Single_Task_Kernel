@@ -124,6 +124,7 @@ KERNEL_PUBLIC handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t t
 
 KERNEL_PUBLIC void handle_destroy(handle_t* handle){
 	SPINLOOP(handle->rc>1);
+	handle->rc=0;
 	_handle_delete_internal(handle);
 }
 
