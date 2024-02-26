@@ -230,7 +230,7 @@ KERNEL_EARLY_INIT(){
 	_module_allocator=omm_init("module",sizeof(module_t),8,4,pmm_alloc_counter("omm_module"));
 	spinlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("module",_module_handle_destructor);
-	mmap_init(&vmm_kernel_pagemap,aslr_module_base,-PAGE_SIZE,&_module_image_mmap);
+	mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size,&_module_image_mmap);
 	aslr_module_base=0;
 }
 

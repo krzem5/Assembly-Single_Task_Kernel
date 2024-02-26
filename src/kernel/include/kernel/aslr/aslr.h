@@ -5,6 +5,7 @@
 
 
 extern u64 aslr_module_base;
+extern u64 aslr_module_size;
 
 
 

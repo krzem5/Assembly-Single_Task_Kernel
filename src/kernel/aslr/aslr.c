@@ -12,7 +12,7 @@
 
 
 #define KERNEL_ASLR_KERNEL_END (kernel_get_offset()+0x8000000)
-#define KERNEL_ASLR_MODULE_START (kernel_get_offset()+0xc000000)
+#define KERNEL_ASLR_MODULE_MAX_END (kernel_get_offset()+0xc000000)
 
 
 
@@ -21,10 +21,15 @@ static u64 KERNEL_EARLY_WRITE _aslr_offset=0;
 volatile const u64* KERNEL_EARLY_READ __kernel_relocation_data=NULL;
 
 u64 KERNEL_EARLY_WRITE aslr_module_base=0;
+u64 KERNEL_EARLY_WRITE aslr_module_size=0;
 
 
 
-static void KERNEL_EARLY_EXEC KERNEL_NORETURN KERNEL_NOINLINE _unmap_default_kernel(void (*KERNEL_NORETURN next_stage_callback)(void)){
+static void KERNEL_EARLY_EXEC KERNEL_NORETURN _finish_relocation(void (*KERNEL_NORETURN next_stage_callback)(void)){
+	random_generate(&aslr_module_base,sizeof(u64));
+	aslr_module_base=KERNEL_ASLR_KERNEL_END+pmm_align_down_address(aslr_module_base%(KERNEL_ASLR_MODULE_MAX_END-KERNEL_ASLR_KERNEL_END));
+	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_MAX_END;
+	INFO("Module base: %p",aslr_module_base);
 	INFO("Unmapping default kernel location...");
 	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){
 		vmm_unmap_page(&vmm_kernel_pagemap,i-_aslr_offset);
@@ -47,9 +52,6 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	for (u64 i=0;__kernel_relocation_data[i];i++){
 		*((u32*)(__kernel_relocation_data[i]))+=_aslr_offset;
 	}
-	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust only kernel address in memory
-	random_generate(&aslr_module_base,sizeof(u64));
-	aslr_module_base=KERNEL_ASLR_KERNEL_END+pmm_align_down_address(aslr_module_base%(KERNEL_ASLR_MODULE_START-KERNEL_ASLR_KERNEL_END));
-	INFO("Module base: %p",aslr_module_base);
-	_aslr_adjust_rip(next_stage_callback+_aslr_offset,_unmap_default_kernel);
+	serial_default_port=(void*)(((u64)serial_default_port)+_aslr_offset); // adjust the only kernel address in memory
+	_aslr_adjust_rip(next_stage_callback+_aslr_offset,_finish_relocation);
 }
