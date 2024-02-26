@@ -6,6 +6,8 @@ SECTIONS{
 		*(.etext .etext*)
 	}
 	.kernel_ur : {
+		*(.ap_startup)
+		. = ALIGN(8);
 		*(.erdata .erdata*)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__KERNEL_SECTION_cpu_local_START__ = .);
@@ -24,8 +26,6 @@ SECTIONS{
 		*(.initializer)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__KERNEL_SECTION_initializers_END__ = .);
-		. = ALIGN(0x1000);
-		*(.ap_startup)
 	}
 	.kernel_uw : {
 		*(.edata .edata*)

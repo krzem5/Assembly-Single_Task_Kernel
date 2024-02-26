@@ -19,8 +19,8 @@
 
 #define PMM_DEBUG_VALUE 0xde
 
-#define PMM_FLAG_ALLOCATOR_INITIALIZED 1
-#define PMM_FLAG_HANDLE_INITIALIZED 2
+#define PMM_FLAG_PARTIALLY_INITIALIZED 1
+#define PMM_FLAG_FULLY_INITIALIZED 2
 
 
 
@@ -192,7 +192,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 		u64 end=pmm_align_down_address((kernel_data.mmap+i)->base+(kernel_data.mmap+i)->length);
 		_add_memory_range(address,(end>PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:end));
 	}
-	_pmm_initialization_flags|=PMM_FLAG_ALLOCATOR_INITIALIZED;
+	_pmm_initialization_flags|=PMM_FLAG_PARTIALLY_INITIALIZED;
 	LOG("Allocating structures...");
 	pmm_counter_descriptor_t tmp_counter={
 		.count=0
@@ -218,21 +218,21 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 	}
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
-	pmm_counter_descriptor_t tmp={
+	pmm_counter_descriptor_t tmp_counter={
 		.count=0
 	};
-	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1,&tmp);
+	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1,&tmp_counter);
 	spinlock_init(&(_pmm_counter_allocator->lock));
 	_pmm_counter_omm_pmm_counter=omm_alloc(_pmm_counter_allocator);
 	_pmm_counter_omm_pmm_counter->name="pmm_counter";
-	_pmm_counter_omm_pmm_counter->count=tmp.count;
+	_pmm_counter_omm_pmm_counter->count=tmp_counter.count;
 	handle_new(_pmm_counter_omm_pmm_counter,pmm_counter_handle_type,&(_pmm_counter_omm_pmm_counter->handle));
 	handle_finish_setup(&(_pmm_counter_omm_pmm_counter->handle));
 	_pmm_counter_allocator->pmm_counter=_pmm_counter_omm_pmm_counter;
 	pmm_alloc_counter("pmm")->count=_pmm_self_counter_value;
 	pmm_alloc_counter("kernel_image")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_alloc_counter("total")->count=total_memory;
-	_pmm_initialization_flags|=PMM_FLAG_HANDLE_INITIALIZED;
+	_pmm_initialization_flags|=PMM_FLAG_FULLY_INITIALIZED;
 }
 
 
@@ -249,7 +249,7 @@ KERNEL_PUBLIC pmm_counter_descriptor_t* pmm_alloc_counter(const char* name){
 
 
 KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
-	if (!(_pmm_initialization_flags&PMM_FLAG_ALLOCATOR_INITIALIZED)){
+	if (!(_pmm_initialization_flags&PMM_FLAG_PARTIALLY_INITIALIZED)){
 		return 0;
 	}
 	if (!count){
@@ -349,7 +349,7 @@ _retry_allocator:
 		block_descriptor++;
 	}
 	scheduler_resume();
-	if ((_pmm_initialization_flags&PMM_FLAG_HANDLE_INITIALIZED)&&!counter->handle.rb_node.key){
+	if ((_pmm_initialization_flags&PMM_FLAG_FULLY_INITIALIZED)&&!counter->handle.rb_node.key){
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
 		handle_finish_setup(&(counter->handle));
 	}
