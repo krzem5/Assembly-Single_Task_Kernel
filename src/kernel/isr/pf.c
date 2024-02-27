@@ -19,7 +19,7 @@ _Bool pf_handle_fault(isr_state_t* isr_state){
 		return 0;
 	}
 	mmap_region_t* region=mmap_lookup((isr_state->cs==0x8&&(address>>63)?&(process_kernel->mmap):&(THREAD_DATA->process->mmap)),address);
-	if (!region){
+	if (!region||!region->pmm_counter){
 		return 0;
 	}
 	u64 physical_address=pmm_alloc(1,region->pmm_counter,0);

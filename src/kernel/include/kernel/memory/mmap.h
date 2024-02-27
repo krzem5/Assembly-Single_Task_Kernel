@@ -15,6 +15,7 @@
 #define MMAP_REGION_FLAG_VMM_NOEXECUTE 8
 #define MMAP_REGION_FLAG_COMMIT 16
 #define MMAP_REGION_FLAG_NO_FILE_WRITEBACK 32
+#define MMAP_REGION_FLAG_EXTERNAL 64
 
 #define MMAP_REGION_FILE_OFFSET_SHIFT 6
 #define MMAP_REGION_FILE_OFFSET(offset) (((u64)(offset))<<MMAP_REGION_FILE_OFFSET_SHIFT)
@@ -77,6 +78,10 @@ _Bool mmap_change_flags(mmap_t* mmap,u64 address,u64 length,u64 vmm_set_flags,u6
 
 
 _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offset,const void* data,u64 length);
+
+
+
+mmap_region_t* mmap_map_region(mmap_t* mmap,mmap_region_t* region,u64 offset,u64 length);
 
 
 

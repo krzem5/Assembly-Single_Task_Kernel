@@ -6,6 +6,7 @@
 #include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -207,7 +208,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 	if (!pmm_counter){
 		pmm_counter=(file?_mmap_file_pmm_counter:_mmap_generic_pmm_counter);
 	}
-	if (physical_address){
+	if (physical_address||(flags&MMAP_REGION_FLAG_EXTERNAL)){
 		pmm_counter=NULL;
 	}
 	if (!length&&file){
@@ -381,6 +382,30 @@ KERNEL_PUBLIC _Bool mmap_set_memory(mmap_t* mmap,mmap_region_t* region,u64 offse
 	}
 	spinlock_release_shared(&(mmap->lock));
 	return 1;
+}
+
+
+
+KERNEL_PUBLIC mmap_region_t* mmap_map_region(mmap_t* mmap,mmap_region_t* region,u64 offset,u64 length){
+	KERNEL_ASSERT(mmap);
+	KERNEL_ASSERT(region);
+	KERNEL_ASSERT(!((offset|length)&(PAGE_SIZE-1)));
+	mmap_region_t* out=mmap_alloc(&(process_kernel->mmap),0,length,NULL,MMAP_REGION_FLAG_EXTERNAL|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	spinlock_acquire_shared(&(mmap->lock));
+	for (u64 i=offset;i<offset+length;i+=PAGE_SIZE){
+		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,region->rb_node.key+i);
+		if (!physical_address){
+			physical_address=pmm_alloc(1,region->pmm_counter,0);
+			if (region->file){
+				panic("mmap_map_region: file-backed region");
+			}
+			vmm_map_page(mmap->pagemap,physical_address,region->rb_node.key+i,mmap_get_vmm_flags(region));
+		}
+		vmm_map_page(&(process_kernel->pagemap),physical_address,out->rb_node.key+i-offset,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
+		pf_invalidate_tlb_entry(out->rb_node.key+i-offset);
+	}
+	spinlock_release_shared(&(mmap->lock));
+	return out;
 }
 
 

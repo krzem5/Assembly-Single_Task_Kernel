@@ -37,6 +37,7 @@ static void _syscall_verify_elf_data(u32 argc,const char*const* argv,const char*
 		return;
 	}
 	for (u32 i=0;i<environ_length;i++){
+		WARN("%u:%p | %s %s",i,environ[i],environ[i],_test_elf_expected_environ[i]);
 		TEST_ASSERT(streq(environ[i],_test_elf_expected_environ[i]));
 	}
 	while (auxv[0]!=AT_NULL){

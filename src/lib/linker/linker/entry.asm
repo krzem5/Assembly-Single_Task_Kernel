@@ -10,6 +10,6 @@ section .text exec nowrite
 [bits 64]
 _start:
 	call __sys_init
-	mov rdi, r15
+	mov rdi, rsp
 	call [REF(main)]
 	jmp rax
