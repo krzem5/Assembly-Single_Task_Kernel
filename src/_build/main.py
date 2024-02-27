@@ -828,3 +828,8 @@ _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition)
 if ("--run" not in sys.argv):
 	sys.exit(0)
 _execute_vm()
+for root,_,files in os.walk("build/share",followlinks=False):
+	for file in files:
+		if (os.path.islink(os.path.join(root,file))):
+			continue
+		os.chmod(os.path.join(root,file),0o664)
