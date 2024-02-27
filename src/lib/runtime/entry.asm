@@ -13,8 +13,8 @@ _start:
 	; environ = rsp+1+argc
 	; auxv    = rsp+1+argc+#environ+1
 	mov edi, dword [rsp]
-	lea rsi, qword [rsp+8]
-	lea rdx, qword [rsi+rdi*8]
+	lea rsi, [rsp+8]
+	lea rdx, [rsi+rdi*8]
 	mov rcx, rdx
 	cmp qword [rcx], 0
 	je ._empty_environ

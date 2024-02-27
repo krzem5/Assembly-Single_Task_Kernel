@@ -57,7 +57,9 @@ void _isr_handler(isr_state_t* isr_state){
 		scheduler_isr_handler(isr_state);
 		return;
 	}
+	scheduler_pause();
 	if (isr_state->isr==14&&pf_handle_fault(isr_state)){
+		scheduler_resume();
 		return;
 	}
 	if (isr_state->isr>32){
@@ -66,6 +68,7 @@ void _isr_handler(isr_state_t* isr_state){
 		if (handler){
 			handler(IRQ_HANDLER_CTX(isr_state->isr));
 		}
+		scheduler_resume();
 		return;
 	}
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){

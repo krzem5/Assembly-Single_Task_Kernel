@@ -158,7 +158,6 @@ void test_glsl_parser(void){
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name-",GLSL_SHADER_TYPE_ANY,&ast),"Expected type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
-	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{varying",GLSL_SHADER_TYPE_ANY,&ast),"Deprecated keyword: varying"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{centroid",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member type, got ???"));
 	TEST_ASSERT(test_glsl_check_and_cleanup_error(_execute_parser("in block_name{int",GLSL_SHADER_TYPE_ANY,&ast),"Expected block member name, got ???"));
