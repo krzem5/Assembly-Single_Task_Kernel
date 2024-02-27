@@ -11,7 +11,7 @@
 
 
 #define KERNEL_ASLR_KERNEL_END (kernel_get_offset()+0x8000000)
-#define KERNEL_ASLR_MODULE_MAX_END (kernel_get_offset()+0xc000000)
+#define KERNEL_ASLR_MODULE_START (kernel_get_offset()+0xc000000)
 
 
 
@@ -26,8 +26,8 @@ u64 KERNEL_EARLY_WRITE aslr_module_size=0;
 
 static void KERNEL_EARLY_EXEC KERNEL_NORETURN _finish_relocation(void (*KERNEL_NORETURN next_stage_callback)(void)){
 	random_generate(&aslr_module_base,sizeof(u64));
-	aslr_module_base=KERNEL_ASLR_KERNEL_END+pmm_align_down_address(aslr_module_base%(KERNEL_ASLR_MODULE_MAX_END-KERNEL_ASLR_KERNEL_END));
-	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_MAX_END;
+	aslr_module_base=KERNEL_ASLR_KERNEL_END+pmm_align_down_address(aslr_module_base%(KERNEL_ASLR_MODULE_START-KERNEL_ASLR_KERNEL_END));
+	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_START;
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
 	INFO("Unmapping default kernel location...");
 	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){
@@ -45,7 +45,7 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	(void)_finish_relocation;
 	INFO("Kernel range: %p - %p",kernel_section_kernel_start(),kernel_section_kernel_end());
 	aslr_module_base=KERNEL_ASLR_KERNEL_END;
-	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_MAX_END;
+	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_START;
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
 	next_stage_callback();
 #else
