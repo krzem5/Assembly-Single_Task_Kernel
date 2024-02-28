@@ -13,6 +13,6 @@ KERNEL_EARLY_INIT(){
 		return;
 	}
 	LOG("KVM hypervisor detected");
-	WARN("features = %p",features);
-	WARN("feature_hints = %p",feature_hints);
+	WARN("kvm.features = %p",features);
+	WARN("kvm.feature_hints = %p",feature_hints);
 }
