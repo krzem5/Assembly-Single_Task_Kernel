@@ -16,7 +16,7 @@ static _Bool KERNEL_INIT_WRITE _kvm_clock_source_is_stable=0;
 
 
 
-static u64 _calibration_callback(void){
+static u64 KERNEL_EARLY_EXEC _calibration_callback(void){
 	pmm_counter_descriptor_t* pmm_counter=pmm_alloc_counter("kvm");
 	u64 physical_time_info=pmm_alloc(pmm_align_up_address(sizeof(kvm_time_info_t))>>PAGE_SIZE_SHIFT,pmm_counter,0);
 	msr_write(KVM_MSR_SYSTEM_TIME_NEW,physical_time_info|KVM_MSR_FLAG_ENABLED);
@@ -31,7 +31,7 @@ static u64 _calibration_callback(void){
 
 
 static const clock_source_t _kvm_tsc_clock_source={
-	"KVM/TSC",
+	"TSC/KVM",
 	_calibration_callback,
 	&_kvm_clock_source_is_stable
 };
