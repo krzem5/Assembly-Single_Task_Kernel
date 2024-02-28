@@ -290,7 +290,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,pmm_
 		if (file){
 			panic("mmap_alloc: both file and MMAP_REGION_FLAG_COMMIT specfied");
 		}
-		for (u64 i=0;i<region->length;i+=PAGE_SIZE){
+		for (u64 i=((flags&MMAP_REGION_FLAG_STACK)?PAGE_SIZE:0);i<region->length;i+=PAGE_SIZE){
 			vmm_map_page(mmap->pagemap,pmm_alloc(1,pmm_counter,0),address+i,vmm_flags);
 		}
 	}
