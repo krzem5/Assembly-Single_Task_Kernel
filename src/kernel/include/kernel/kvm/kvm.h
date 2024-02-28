@@ -52,6 +52,14 @@ typedef volatile struct KERNEL_PACKED _KVM_TIME_INFO{
 
 
 
+typedef volatile struct KERNEL_PACKED _KVM_WALL_CLOCK{
+	u32 version;
+	u32 sec;
+	u32 nsec;
+} kvm_wall_clock_t;
+
+
+
 _Bool _kvm_get_flags(u32* features,u32* feature_hints);
 
 
