@@ -24,4 +24,8 @@ void msr_set_gs_base(u64 gs_base,_Bool is_alternate_gs);
 
 
 
+void msr_write(u32 msr,u64 value);
+
+
+
 #endif

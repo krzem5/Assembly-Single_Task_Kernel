@@ -36,6 +36,7 @@ msr_enable_rdtsc:
 
 global msr_set_fs_base:function hidden
 global msr_set_gs_base:function hidden
+global msr_write:function hidden
 section .text exec nowrite
 
 
@@ -57,6 +58,16 @@ msr_set_gs_base:
 	mov eax, edi
 	mov ecx, 0xc0000101
 	add ecx, esi
+	shr rdx, 32
+	wrmsr
+	ret
+
+
+
+msr_write:
+	mov eax, esi
+	mov ecx, edi
+	mov rdx, rsi
 	shr rdx, 32
 	wrmsr
 	ret
