@@ -258,7 +258,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=size+((string_table_size+7)&0xfffffff8);
 	total_size+=total_size&8; // 16-byte stack alignment
-	if (total_size>ctx->thread->user_stack_region->length){
+	if (total_size+PAGE_SIZE/*guard page*/>ctx->thread->user_stack_region->length){
 		ERROR("Stack too small for arguments");
 		return ERROR_NO_SPACE;
 	}
