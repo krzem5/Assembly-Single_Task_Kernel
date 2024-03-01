@@ -47,6 +47,7 @@ typedef struct _ELF_LOADER_CONTEXT{
 	u64 user_phdr_address;
 	const char* interpreter_path;
 	u64 interpreter_image_base;
+	u64 entry_address;
 } elf_loader_context_t;
 
 
@@ -117,14 +118,8 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		}
 		mmap_set_memory(&(ctx->process->mmap),program_region,padding,ctx->data+program_header->p_offset,program_header->p_filesz);
 	}
+	ctx->entry_address=ctx->elf_header->e_entry;
 	return ERROR_OK;
-}
-
-
-
-static void _create_executable_thread(elf_loader_context_t* ctx){
-	INFO("Creating main thread...");
-	ctx->thread=thread_create_user_thread(ctx->process,ctx->elf_header->e_entry,0x200000);
 }
 
 
@@ -232,11 +227,18 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	}
 _skip_dynamic_section:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	ctx->thread->reg_state.gpr_state.rip=header.e_entry+ctx->interpreter_image_base;
+	ctx->entry_address=ctx->interpreter_image_base+header.e_entry;
 	return ERROR_OK;
 _error:
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	return out;
+}
+
+
+
+static void _create_executable_thread(elf_loader_context_t* ctx){
+	INFO("Creating main thread...");
+	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,0x200000);
 }
 
 
@@ -338,6 +340,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		(void*)(region->rb_node.key),
 		0,
 		NULL,
+		0,
 		0
 	};
 	error_t out=_check_elf_header(&ctx);
@@ -348,11 +351,11 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (out!=ERROR_OK){
 		goto _error;
 	}
-	_create_executable_thread(&ctx);
 	out=_load_interpreter(&ctx);
 	if (out!=ERROR_OK){
 		goto _error;
 	}
+	_create_executable_thread(&ctx);
 	out=_generate_input_data(&ctx);
 	if (out!=ERROR_OK){
 		goto _error;
