@@ -1,3 +1,4 @@
+#include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/elf/structures.h>
@@ -8,6 +9,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/random/random.h>
@@ -20,6 +22,15 @@
 #define KERNEL_LOG_NAME "elf"
 
 
+
+#define ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN 0x8000000 // 128 MB
+#define ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX 0x40000000 // 1 GB
+#define ELF_ASLR_MMAP_TOP_OFFSET_MIN 0x40000000 // 1 GB
+#define ELF_ASLR_MMAP_TOP_OFFSET_MAX 0x80000000 // 2 GB
+#define ELF_ASLR_STACK_TOP_MIN 0x7fffe0000000ull // -512 MB
+#define ELF_ASLR_STACK_TOP_MAX 0x7ffffffff000ull // -4 KB
+
+#define ELF_STACK_SIZE 0x800000 // 8 MB
 
 #define ELF_STACK_ALIGNMENT 16
 
@@ -81,6 +92,26 @@ static error_t _check_elf_header(elf_loader_context_t* ctx){
 
 
 
+static void _create_executable_process(elf_loader_context_t* ctx,const char* image,const char* name){
+	INFO("Creating process...");
+	u64 highest_address=0;
+	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
+		const elf_phdr_t* program_header=ctx->data+ctx->elf_header->e_phoff+i*ctx->elf_header->e_phentsize;
+		if (program_header->p_type!=PT_LOAD){
+			continue;
+		}
+		u64 end=program_header->p_vaddr+program_header->p_memsz;
+		if (end>highest_address){
+			highest_address=end;
+		}
+	}
+	ctx->process=process_create(image,name);
+	u64 stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
+	ctx->process->mmap2=mmap2_init(&(ctx->process->pagemap),pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),stack_top-ELF_STACK_SIZE-aslr_generate_address(ELF_ASLR_MMAP_TOP_OFFSET_MIN,ELF_ASLR_MMAP_TOP_OFFSET_MAX),stack_top,ELF_STACK_SIZE);
+}
+
+
+
 static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 	INFO("Mapping and locating sections...");
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
@@ -118,7 +149,6 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		}
 		mmap_set_memory(&(ctx->process->mmap),program_region,padding,ctx->data+program_header->p_offset,program_header->p_filesz);
 	}
-	ctx->entry_address=ctx->elf_header->e_entry;
 	return ERROR_OK;
 }
 
@@ -325,7 +355,6 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	process_t* process=process_create(path,file->name->data);
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
@@ -334,19 +363,20 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		argv,
 		environ_length,
 		environ,
-		process,
+		NULL,
 		NULL,
 		(void*)(region->rb_node.key),
 		(void*)(region->rb_node.key),
 		0,
 		NULL,
-		0,
 		0
 	};
+	ctx.entry_address=ctx.elf_header->e_entry;
 	error_t out=_check_elf_header(&ctx);
 	if (out!=ERROR_OK){
 		goto _error;
 	}
+	_create_executable_process(&ctx,path,file->name->data);
 	out=_map_and_locate_sections(&ctx);
 	if (out!=ERROR_OK){
 		goto _error;
@@ -364,13 +394,15 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
-	return process->handle.rb_node.key;
+	return ctx.process->handle.rb_node.key;
 _error:
 	if (ctx.thread){
 		ctx.thread->state=THREAD_STATE_TYPE_TERMINATED;
 		thread_delete(ctx.thread);
 	}
+	if (ctx.process){
+		handle_release(&(ctx.process->handle));
+	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
-	handle_release(&(process->handle));
 	return out;
 }

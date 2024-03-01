@@ -134,11 +134,16 @@ def _parse_headers(data):
 
 
 def _parse_symbol_table(ctx):
+	error=False
 	st_name_offset=ctx.section_headers[ctx.symbol_table.string_table_section].offset
 	for i in range(ctx.symbol_table.offset,ctx.symbol_table.offset+ctx.symbol_table.size,24):
 		st_name,st_info,st_other,st_shndx,st_value=struct.unpack("<IBBHQ8x",ctx.data[i:i+24])
 		name=ctx.data[st_name_offset+st_name:ctx.data.index(b"\x00",st_name_offset+st_name)].decode("utf-8")
-		if ((st_shndx==SHN_UNDEF and not name.startswith("__KERNEL_SECTION_")) or (st_info&0x0f)==STT_FILE):
+		if ((st_info&0x0f)==STT_FILE or ((st_info&0x0f)!=STT_SECTION and not name)):
+			continue
+		if (st_shndx==SHN_UNDEF and not name.startswith("__KERNEL_SECTION_")):
+			print(f"Undefiend symbol: {name}")
+			error=True
 			continue
 		is_func=((st_info&0x0f)==STT_FUNC)
 		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
@@ -146,6 +151,8 @@ def _parse_symbol_table(ctx):
 			is_func=False
 			is_public=False
 		ctx.symbol_table.add_symbol((i-ctx.symbol_table.offset)//24,Symbol(name,st_value,ctx.section_headers[st_shndx],is_public,is_func or is_public))
+	if (error):
+		sys.exit(1)
 
 
 
