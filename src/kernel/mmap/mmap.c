@@ -42,5 +42,12 @@ _Bool mmap2_handle_pf(mmap2_t* mmap,u64 address){
 	if (!mmap){
 		return 0;
 	}
+	spinlock_acquire_exclusive(&(mmap->lock));
+	if (address<mmap->stack_top_address&&address>=mmap->stack_top_address-mmap->stack_size){
+		WARN("Stack");
+		spinlock_release_exclusive(&(mmap->lock));
+		return 0;
+	}
+	spinlock_release_exclusive(&(mmap->lock));
 	return 0;
 }
