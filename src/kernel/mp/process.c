@@ -28,9 +28,6 @@
 
 
 
-#define USERSPACE_LOWEST_ADDRESS 0x0000000000001000ull
-#define USERSPACE_HIGHEST_ADDRESS 0x0000800000000000ull
-
 #define KERNELSPACE_LOWEST_ADDRESS 0xfffff00000000000ull
 
 
@@ -96,7 +93,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	}
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
-	mmap_init(&(out->pagemap),USERSPACE_LOWEST_ADDRESS,USERSPACE_HIGHEST_ADDRESS,&(out->mmap));
+	mmap_init(&(out->pagemap),0x0000000000001000ull,0x0000800000000000ull,&(out->mmap));
 	out->mmap2=NULL;
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);

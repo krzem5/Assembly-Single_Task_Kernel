@@ -27,4 +27,8 @@ void mmap2_deinit(mmap2_t* mmap);
 
 
 
+_Bool mmap2_handle_pf(mmap2_t* mmap,u64 address);
+
+
+
 #endif

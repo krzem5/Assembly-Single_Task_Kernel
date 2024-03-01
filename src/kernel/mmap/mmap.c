@@ -35,3 +35,12 @@ mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address,u6
 void mmap2_deinit(mmap2_t* mmap){
 	omm_dealloc(_mmap_allocator,mmap);
 }
+
+
+
+_Bool mmap2_handle_pf(mmap2_t* mmap,u64 address){
+	if (!mmap){
+		return 0;
+	}
+	return 0;
+}
