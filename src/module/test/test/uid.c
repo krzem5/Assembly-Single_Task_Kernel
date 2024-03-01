@@ -143,7 +143,7 @@ void test_uid(void){
 	TEST_ASSERT(uid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL,0)==ERROR_OK);
 	TEST_ASSERT(!uid_get_flags(0));
 	process_t* test_process=process_create("test-process","test-process");
-	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-uid-thread",_thread,0x200000,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-uid-thread",_thread,0));
 	event_await(test_process->event,0);
 	syscall_create_table("test_sys_uid",_test_sys_uid_syscall_functions,sizeof(_test_sys_uid_syscall_functions)/sizeof(syscall_callback_t));
 }

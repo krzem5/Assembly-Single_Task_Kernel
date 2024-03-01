@@ -38,7 +38,7 @@ static void _thread(void){
 void test_cpu(void){
 	TEST_MODULE("cpu");
 	process_t* test_process=process_create("test-process","test-process");
-	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-cpu-thread",_thread,0x200000,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-cpu-thread",_thread,0));
 	event_await(test_process->event,0);
 	syscall_create_table("test_sys_cpu",_test_sys_cpu_syscall_functions,sizeof(_test_sys_cpu_syscall_functions)/sizeof(syscall_callback_t));
 }

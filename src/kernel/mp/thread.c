@@ -25,6 +25,8 @@
 
 
 
+#define KERNEL_THREAD_STACK_SIZE 0x200000
+
 #define SET_KERNEL_THREAD_ARG(register) \
 	if ((arg_count)){ \
 		(arg_count)--; \
@@ -130,8 +132,8 @@ KERNEL_EARLY_INIT(){
 
 
 KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 stack_size){
-	thread_t* out=_thread_alloc(process,stack_size,CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
-	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+(CPU_KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
+	thread_t* out=_thread_alloc(process,stack_size,KERNEL_THREAD_STACK_SIZE);
+	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+KERNEL_THREAD_STACK_SIZE;
 	out->reg_state.gpr_state.rip=rip;
 	out->reg_state.gpr_state.rsp=out->user_stack_region->rb_node.key+stack_size;
 	out->reg_state.gpr_state.cs=0x23;
@@ -147,19 +149,19 @@ KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64
 
 
 
-KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u64 stack_size,u8 arg_count,...){
+KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u8 arg_count,...){
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
 	_Bool start_thread=!process;
-	thread_t* out=_thread_alloc((process?process:process_kernel),0,stack_size);
+	thread_t* out=_thread_alloc((process?process:process_kernel),0,KERNEL_THREAD_STACK_SIZE);
 	if (name){
 		smm_dealloc(out->name);
 		out->name=smm_alloc(name,0);
 	}
 	out->reg_state.gpr_state.rip=(u64)_thread_bootstrap_kernel_thread;
 	out->reg_state.gpr_state.rax=(u64)func;
-	out->reg_state.gpr_state.rsp=out->kernel_stack_region->rb_node.key+stack_size;
+	out->reg_state.gpr_state.rsp=out->kernel_stack_region->rb_node.key+KERNEL_THREAD_STACK_SIZE;
 	__builtin_va_list va;
 	__builtin_va_start(va,arg_count);
 	SET_KERNEL_THREAD_ARG(rdi);

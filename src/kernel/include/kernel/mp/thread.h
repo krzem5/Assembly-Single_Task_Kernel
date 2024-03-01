@@ -25,7 +25,7 @@ thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 stack_size);
 
 
 
-thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u64 stack_size,u8 arg_count,...);
+thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u8 arg_count,...);
 
 
 

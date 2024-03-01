@@ -239,7 +239,7 @@ void test_acl(void){
 	handle_new(&_test_acl_handle,handle_type,&_test_acl_handle);
 	handle_finish_setup(&_test_acl_handle);
 	_test_acl_handle.acl=acl_create();
-	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-acl-thread",_thread,0x200000,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-acl-thread",_thread,0));
 	event_await(test_process->event,0);
 	syscall_create_table("test_sys_acl",_test_sys_acl_syscall_functions,sizeof(_test_sys_acl_syscall_functions)/sizeof(syscall_callback_t));
 }
