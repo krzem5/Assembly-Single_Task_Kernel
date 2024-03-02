@@ -45,7 +45,7 @@ static void _set_acl_flags(handle_id_t handle_id,u64 clear,u64 set){
 
 
 static void _thread(void){
-	mmap2_region_t* temp_mmap_region=mmap2_alloc(THREAD_DATA->process->mmap2,0,2*PAGE_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* temp_mmap_region=mmap_alloc(THREAD_DATA->process->mmap,0,2*PAGE_SIZE,MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	vfs_node_t* root=vfs_lookup(NULL,"/",0,0,0);
 	vfs_node_t* test_node=vfs_lookup(NULL,"/dev",0,0,0);
@@ -383,7 +383,7 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_INVALID_HANDLE);
-	mmap2_dealloc_region(THREAD_DATA->process->mmap2,temp_mmap_region);
+	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }
 
 

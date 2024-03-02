@@ -42,7 +42,7 @@ static KERNEL_ATOMIC u64 _pipe_next_id=0;
 static vfs_node_t* _pipe_create(void){
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
 	spinlock_init(&(out->lock));
-	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,PIPE_BUFFER_SIZE,MMAP2_REGION_FLAG_VMM_WRITE,NULL);
+	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,PIPE_BUFFER_SIZE,MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!region){
 		panic("Unable to allocate pipe buffer");
 	}
@@ -59,7 +59,7 @@ static vfs_node_t* _pipe_create(void){
 
 static void _pipe_delete(vfs_node_t* node){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
-	mmap2_dealloc(process_kernel->mmap2,(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
+	mmap_dealloc(process_kernel->mmap,(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
 	event_delete(pipe->read_event);
 	event_delete(pipe->write_event);
 	omm_dealloc(_pipe_vfs_node_allocator,node);

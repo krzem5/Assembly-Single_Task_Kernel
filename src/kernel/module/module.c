@@ -37,7 +37,7 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 
 static omm_allocator_t* _module_allocator=NULL;
-static mmap2_t* _module_image_mmap=NULL;
+static mmap_t* _module_image_mmap=NULL;
 
 KERNEL_PUBLIC handle_type_t module_handle_type=0;
 
@@ -84,7 +84,7 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 		}
 	}
 	INFO("Region size: %v",region_size);
-	ctx->module->region=mmap2_alloc(_module_image_mmap,0,region_size,MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
+	ctx->module->region=mmap_alloc(_module_image_mmap,0,region_size,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!ctx->module->region){
 		ERROR("Unable to reserve module memory");
 		return 0;
@@ -228,7 +228,7 @@ KERNEL_EARLY_INIT(){
 	_module_allocator=omm_init("module",sizeof(module_t),8,4,pmm_alloc_counter("omm_module"));
 	spinlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("module",_module_handle_destructor);
-	_module_image_mmap=mmap2_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
+	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
 	aslr_module_base=0;
 }
 
@@ -265,7 +265,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		ERROR("Unable to find module '%s'",name);
 		return NULL;
 	}
-	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,module_file);
+	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
 	handle_new(module,module_handle_type,&(module->handle));
@@ -300,7 +300,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
@@ -314,10 +314,10 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 _error:
 	symbol_remove(name);
 	if (module->region){
-		mmap2_dealloc_region(_module_image_mmap,module->region);
+		mmap_dealloc_region(_module_image_mmap,module->region);
 	}
 	handle_release(&(module->handle));
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	return NULL;
 }
 
@@ -332,7 +332,7 @@ KERNEL_PUBLIC _Bool module_unload(module_t* module){
 	module->descriptor->deinit_callback(module);
 	module->state=MODULE_STATE_UNLOADED;
 	if (module->region){
-		mmap2_dealloc_region(_module_image_mmap,module->region);
+		mmap_dealloc_region(_module_image_mmap,module->region);
 	}
 	if (module->flags&MODULE_FLAG_PREVENT_LOADS){
 		INFO("Preventing future module loads...");

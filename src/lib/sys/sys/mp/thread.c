@@ -1,4 +1,5 @@
 #include <sys/error/error.h>
+#include <sys/memory/memory.h>
 #include <sys/mp/event.h>
 #include <sys/mp/thread.h>
 #include <sys/syscall/kernel_syscalls.h>
@@ -6,8 +7,17 @@
 
 
 
-static void _thread_bootstrap(void (*func)(void*),void* arg){
-	func(arg);
+#define DEFAULT_STACK_SIZE 0x200000
+
+
+
+static void _thread_bootstrap(u64 func_and_flags,void* arg){
+	u64 stack_top;
+    asm volatile("mov %%rsp,%0":"=rm"(stack_top));
+	((void (*)(void*))(func_and_flags&0x7fffffffffffffffull))(arg);
+	if (func_and_flags>>63){
+		sys_memory_unmap((void*)(stack_top-DEFAULT_STACK_SIZE),DEFAULT_STACK_SIZE);
+	}
 	_sys_syscall_thread_stop(0);
 }
 
@@ -25,8 +35,20 @@ SYS_PUBLIC u64 sys_thread_await_events(const sys_event_t* events,u32 count){
 
 
 
-SYS_PUBLIC sys_thread_t sys_thread_create(void* func,void* arg,u64 stack_size){
-	return _sys_syscall_thread_create((u64)_thread_bootstrap,(u64)func,(u64)arg,stack_size);
+SYS_PUBLIC sys_thread_t sys_thread_create(void* func,void* arg,void* stack){
+	u64 func_and_flags=(u64)func;
+	if (func_and_flags>>63){
+		return SYS_ERROR_INVALID_ARGUMENT(0);
+	}
+	if (!stack){
+		stack=(void*)sys_memory_map(DEFAULT_STACK_SIZE,SYS_MEMORY_FLAG_STACK|SYS_MEMORY_FLAG_WRITE|SYS_MEMORY_FLAG_READ,0);
+		if (SYS_IS_ERROR(stack)){
+			return (u64)stack;
+		}
+		stack+=DEFAULT_STACK_SIZE;
+		func_and_flags|=0x8000000000000000ull;
+	}
+	return _sys_syscall_thread_create((u64)_thread_bootstrap,func_and_flags,(u64)arg,(u64)stack);
 }
 
 

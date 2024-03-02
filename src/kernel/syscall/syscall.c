@@ -70,8 +70,8 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 
 
 KERNEL_PUBLIC u64 syscall_get_user_pointer_max_length(const void* address){
-	mmap2_region_t* region=mmap2_lookup(THREAD_DATA->process->mmap2,(u64)address);
-	if (!region||!(region->flags&MMAP2_REGION_FLAG_VMM_USER)){
+	mmap_region_t* region=mmap_lookup(THREAD_DATA->process->mmap,(u64)address);
+	if (!region||!(region->flags&MMAP_REGION_FLAG_VMM_USER)){
 		return 0;
 	}
 	return region->rb_node.key+region->length-((u64)address);

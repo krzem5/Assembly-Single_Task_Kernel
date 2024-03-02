@@ -8,27 +8,27 @@
 
 
 
-#define MMAP2_REGION_FLAG_FORCE 1
-#define MMAP2_REGION_FLAG_VMM_USER 2
-#define MMAP2_REGION_FLAG_VMM_WRITE 4
-#define MMAP2_REGION_FLAG_VMM_EXEC 8
-#define MMAP2_REGION_FLAG_COMMIT 16
-#define MMAP2_REGION_FLAG_EXTERNAL 32
-#define MMAP2_REGION_FLAG_NO_WRITEBACK 64
-#define MMAP2_REGION_FLAG_STACK 128
+#define MMAP_REGION_FLAG_FORCE 1
+#define MMAP_REGION_FLAG_VMM_USER 2
+#define MMAP_REGION_FLAG_VMM_WRITE 4
+#define MMAP_REGION_FLAG_VMM_EXEC 8
+#define MMAP_REGION_FLAG_COMMIT 16
+#define MMAP_REGION_FLAG_EXTERNAL 32
+#define MMAP_REGION_FLAG_NO_WRITEBACK 64
+#define MMAP_REGION_FLAG_STACK 128
 
 
 
-typedef struct _MMAP2_REGION{
+typedef struct _MMAP_REGION{
 	rb_tree_node_t rb_node;
 	u64 length;
 	u32 flags;
 	vfs_node_t* file;
-} mmap2_region_t;
+} mmap_region_t;
 
 
 
-typedef struct _MMAP2{
+typedef struct _MMAP{
 	spinlock_t lock;
 	vmm_pagemap_t* pagemap;
 	u64 bottom_address;
@@ -36,39 +36,39 @@ typedef struct _MMAP2{
 	u64 heap_address;
 	u64 top_address;
 	rb_tree_t address_tree;
-} mmap2_t;
+} mmap_t;
 
 
 
-mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address);
+mmap_t* mmap_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address);
 
 
 
-void mmap2_deinit(mmap2_t* mmap);
+void mmap_deinit(mmap_t* mmap);
 
 
 
-mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags,vfs_node_t* file);
+mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 flags,vfs_node_t* file);
 
 
 
-_Bool mmap2_dealloc(mmap2_t* mmap,u64 address,u64 length);
+_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
 
 
 
-void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region);
+void mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region);
 
 
 
-mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address);
+mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address);
 
 
 
-mmap2_region_t* mmap2_map_to_kernel(mmap2_t* mmap,u64 address,u64 length);
+mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 length);
 
 
 
-u64 mmap2_handle_pf(mmap2_t* mmap,u64 address);
+u64 mmap_handle_pf(mmap_t* mmap,u64 address);
 
 
 

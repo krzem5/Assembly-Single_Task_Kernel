@@ -37,7 +37,7 @@ static syscall_callback_t const _test_sys_uid_syscall_functions[]={
 
 
 static void _thread(void){
-	mmap2_region_t* temp_mmap_region=mmap2_alloc(THREAD_DATA->process->mmap2,0,PAGE_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* temp_mmap_region=mmap_alloc(THREAD_DATA->process->mmap,0,PAGE_SIZE,MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	TEST_FUNC("syscall_uid_get");
 	TEST_GROUP("correct args");
@@ -67,7 +67,7 @@ static void _thread(void){
 	TEST_GROUP("correct args");
 	TEST_ASSERT(syscall_uid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
 	TEST_ASSERT(streq(buffer,"root"));
-	mmap2_dealloc_region(THREAD_DATA->process->mmap2,temp_mmap_region);
+	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }
 
 

@@ -31,7 +31,7 @@ u64 __attribute__((access(read_only,1,2),nonnull)) sys_thread_await_events(const
 
 
 
-sys_error_t __attribute__((nonnull(1))) sys_thread_create(void* func,void* arg,u64 stack_size);
+sys_error_t __attribute__((nonnull(1))) sys_thread_create(void* func,void* arg,void* stack);
 
 
 

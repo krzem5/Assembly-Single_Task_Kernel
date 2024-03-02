@@ -107,7 +107,7 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 	}
 	ctx->process=process_create(image,name,pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),aslr_generate_address(ELF_ASLR_MMAP_TOP_MIN,ELF_ASLR_MMAP_TOP_MAX));
 	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
-	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE,NULL)){
+	if (!mmap_alloc(ctx->process->mmap,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_FORCE,NULL)){
 		panic("Unable to allocate stack");
 	}
 }
@@ -138,23 +138,23 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 			continue;
 		}
 		u64 padding=program_header->p_vaddr&(PAGE_SIZE-1);
-		u32 flags=MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE;
+		u32 flags=MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_FORCE;
 		if (program_header->p_flags&PF_X){
-			flags|=MMAP2_REGION_FLAG_VMM_EXEC;
+			flags|=MMAP_REGION_FLAG_VMM_EXEC;
 		}
 		if (program_header->p_flags&PF_W){
-			flags|=MMAP2_REGION_FLAG_VMM_WRITE;
+			flags|=MMAP_REGION_FLAG_VMM_WRITE;
 		}
-		mmap2_region_t* region=mmap2_alloc(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),flags,NULL);
+		mmap_region_t* region=mmap_alloc(ctx->process->mmap,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),flags,NULL);
 		if (!region){
 			return ERROR_NO_MEMORY;
 		}
 		if (!program_header->p_filesz){
 			continue;
 		}
-		mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_filesz+padding));
+		mmap_region_t* kernel_region=mmap_map_to_kernel(ctx->process->mmap,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_filesz+padding));
 		memcpy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
-		mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
+		mmap_dealloc_region(process_kernel->mmap,kernel_region);
 	}
 	return ERROR_OK;
 }
@@ -170,8 +170,8 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,file);
-	mmap2_region_t* kernel_program_region=NULL;
+	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,file);
+	mmap_region_t* kernel_program_region=NULL;
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	error_t out=ERROR_OK;
@@ -195,13 +195,13 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap2_region_t* program_region=mmap2_alloc(ctx->process->mmap2,0,max_address,MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* program_region=mmap_alloc(ctx->process->mmap,0,max_address,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER,NULL);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		out=ERROR_NO_MEMORY;
 		goto _error;
 	}
-	kernel_program_region=mmap2_map_to_kernel(ctx->process->mmap2,program_region->rb_node.key,max_address);
+	kernel_program_region=mmap_map_to_kernel(ctx->process->mmap,program_region->rb_node.key,max_address);
 	ctx->interpreter_image_base=program_region->rb_node.key;
 	for (u16 i=0;i<header.e_phnum;i++){
 		const elf_phdr_t* program_header=file_data+header.e_phoff+i*header.e_phentsize;
@@ -275,16 +275,16 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	}
 _skip_dynamic_section:
 	if (kernel_program_region){
-		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
+		mmap_dealloc_region(process_kernel->mmap,kernel_program_region);
 	}
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	ctx->entry_address=ctx->interpreter_image_base+header.e_entry;
 	return ERROR_OK;
 _error:
 	if (kernel_program_region){
-		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
+		mmap_dealloc_region(process_kernel->mmap,kernel_program_region);
 	}
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	return out;
 }
 
@@ -319,7 +319,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		ERROR("Stack too small for arguments");
 		return ERROR_NO_SPACE;
 	}
-	mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,ctx->stack_top-pmm_align_up_address(total_size),pmm_align_up_address(total_size));
+	mmap_region_t* kernel_region=mmap_map_to_kernel(ctx->process->mmap,ctx->stack_top-pmm_align_up_address(total_size),pmm_align_up_address(total_size));
 	ctx->stack_top-=total_size;
 	void* buffer=(void*)(kernel_region->rb_node.key+((-total_size)&(PAGE_SIZE-1)));
 	u64* data_ptr=buffer;
@@ -352,7 +352,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr+pointer_difference);
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
-	mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
+	mmap_dealloc_region(process_kernel->mmap,kernel_region);
 	return ERROR_OK;
 }
 
@@ -379,7 +379,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,file);
+	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,file);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
 		path,
@@ -416,7 +416,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		goto _error;
 	}
 	_create_executable_thread(&ctx);
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
@@ -429,6 +429,6 @@ _error:
 	if (ctx.process){
 		handle_release(&(ctx.process->handle));
 	}
-	mmap2_dealloc_region(process_kernel->mmap2,region);
+	mmap_dealloc_region(process_kernel->mmap,region);
 	return out;
 }

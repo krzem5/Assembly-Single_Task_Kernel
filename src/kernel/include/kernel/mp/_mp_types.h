@@ -51,7 +51,7 @@ typedef struct _PROCESS{
 	handle_t handle;
 	spinlock_t lock;
 	vmm_pagemap_t pagemap;
-	mmap2_t* mmap2;
+	mmap_t* mmap;
 	thread_list_t thread_list;
 	string_t* name;
 	string_t* image;
@@ -80,8 +80,8 @@ typedef struct _THREAD{
 	process_t* process;
 	string_t* name;
 	vmm_pagemap_t* pagemap;
-	mmap2_region_t* kernel_stack_region;
-	mmap2_region_t* pf_stack_region;
+	mmap_region_t* kernel_stack_region;
+	mmap_region_t* pf_stack_region;
 	struct{
 		_Bool reg_state_not_present;
 		isr_state_t gpr_state;

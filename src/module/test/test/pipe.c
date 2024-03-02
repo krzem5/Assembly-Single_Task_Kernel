@@ -29,7 +29,7 @@ extern error_t syscall_pipe_create();
 
 
 static void _thread(void){
-	mmap2_region_t* temp_mmap_region=mmap2_alloc(THREAD_DATA->process->mmap2,0,2*PAGE_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER,NULL);
+	mmap_region_t* temp_mmap_region=mmap_alloc(THREAD_DATA->process->mmap,0,2*PAGE_SIZE,MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	TEST_FUNC("syscall_pipe_create");
 	TEST_GROUP("empty path");
@@ -64,7 +64,7 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);
 	vfs_node_dettach_external_child(pipe);
 	vfs_node_delete(pipe);
-	mmap2_dealloc_region(THREAD_DATA->process->mmap2,temp_mmap_region);
+	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }
 
 

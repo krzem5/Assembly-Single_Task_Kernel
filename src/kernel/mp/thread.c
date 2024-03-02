@@ -50,8 +50,8 @@ static void _thread_handle_destructor(handle_t* handle){
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
-	mmap2_dealloc_region(process_kernel->mmap2,thread->kernel_stack_region);
-	mmap2_dealloc_region(process_kernel->mmap2,thread->pf_stack_region);
+	mmap_dealloc_region(process_kernel->mmap,thread->kernel_stack_region);
+	mmap_dealloc_region(process_kernel->mmap,thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
@@ -76,11 +76,11 @@ static thread_t* _thread_alloc(process_t* process){
 	out->process=process;
 	char buffer[128];
 	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
-	out->kernel_stack_region=mmap2_alloc(process_kernel->mmap2,0,KERNEL_THREAD_STACK_SIZE,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
+	out->kernel_stack_region=mmap_alloc(process_kernel->mmap,0,KERNEL_THREAD_STACK_SIZE,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->pf_stack_region=mmap2_alloc(process_kernel->mmap2,0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
+	out->pf_stack_region=mmap_alloc(process_kernel->mmap,0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}
@@ -195,16 +195,15 @@ error_t syscall_thread_get_tid(void){
 
 
 
-error_t syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
-	if (!syscall_get_user_pointer_max_length((void*)func)){
+error_t syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rsp){
+	if (!syscall_get_user_pointer_max_length((void*)rip)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	panic("Unimplemented");
-	// thread_t* thread=thread_create_user_thread(THREAD_DATA->process,func,(stack_size?stack_size:THREAD_DATA->user_stack_region->length));
-	// thread->reg_state.gpr_state.rdi=arg0;
-	// thread->reg_state.gpr_state.rsi=arg1;
-	// scheduler_enqueue_thread(thread);
-	// return thread->handle.rb_node.key;
+	thread_t* thread=thread_create_user_thread(THREAD_DATA->process,rip,rsp);
+	thread->reg_state.gpr_state.rdi=rdi;
+	thread->reg_state.gpr_state.rsi=rsi;
+	scheduler_enqueue_thread(thread);
+	return thread->handle.rb_node.key;
 }
 
 

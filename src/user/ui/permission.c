@@ -33,5 +33,5 @@ static void _ui_permission_thread(void* arg){
 
 
 void ui_permission_thread_start(void){
-	sys_thread_create(_ui_permission_thread,NULL,0);
+	sys_thread_create(_ui_permission_thread,NULL,NULL);
 }
