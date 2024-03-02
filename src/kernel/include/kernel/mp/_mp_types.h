@@ -8,7 +8,6 @@
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/lock/spinlock.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/scheduler/_scheduler_types.h>
@@ -52,7 +51,6 @@ typedef struct _PROCESS{
 	handle_t handle;
 	spinlock_t lock;
 	vmm_pagemap_t pagemap;
-	mmap_t mmap;
 	mmap2_t* mmap2;
 	thread_list_t thread_list;
 	string_t* name;

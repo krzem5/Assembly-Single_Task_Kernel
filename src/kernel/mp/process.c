@@ -12,7 +12,6 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mmap/mmap.h>
@@ -46,7 +45,6 @@ static void _process_handle_destructor(handle_t* handle){
 	}
 	handle_list_destroy(&(process->handle_list));
 	event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	mmap_deinit(&(process->mmap));
 	mmap2_deinit(process->mmap2);
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);
@@ -65,8 +63,7 @@ KERNEL_EARLY_INIT(){
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
-	mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,KERNELSPACE_LOWEST_ADDRESS+0x80000000000ull,&(process_kernel->mmap));
-	process_kernel->mmap2=mmap2_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS/*temp*/+0x80000000000ull/*temp*/,kernel_get_offset());
+	process_kernel->mmap2=mmap2_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset());
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
@@ -91,7 +88,6 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	}
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
-	mmap_init(&(out->pagemap),0x0000000000001000ull,0x0000800000000000ull,&(out->mmap));
 	out->mmap2=mmap2_init(&(out->pagemap),mmap_bottom_address,mmap_top_address);
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);

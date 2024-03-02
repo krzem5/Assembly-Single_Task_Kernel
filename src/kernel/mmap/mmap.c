@@ -1,3 +1,5 @@
+#include <kernel/error/error.h>
+#include <kernel/fd/fd.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -5,6 +7,8 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -14,6 +18,12 @@
 
 
 #define MMAP_STACK_GUARD_PAGE_COUNT 2
+
+#define USER_MEMORY_FLAG_READ 1
+#define USER_MEMORY_FLAG_WRITE 2
+#define USER_MEMORY_FLAG_EXEC 4
+#define USER_MEMORY_FLAG_FILE 8
+#define USER_MEMORY_FLAG_NOWRITEBACK 16
 
 
 
@@ -103,6 +113,13 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 KERNEL_PUBLIC _Bool mmap2_dealloc(mmap2_t* mmap,u64 address,u64 length){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap2_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
+	if (!region||region->rb_node.key+region->length<=address){
+		spinlock_release_exclusive(&(mmap->lock));
+		return 0;
+	}
+	if (!length){
+		length=region->rb_node.key+region->length-address;
+	}
 	if (region->rb_node.key!=address||region->length!=length){
 		panic("mmap2_dealloc: partial dealloc");
 	}
@@ -180,4 +197,56 @@ u64 mmap2_handle_pf(mmap2_t* mmap,u64 address){
 	}
 	spinlock_release_exclusive(&(mmap->lock));
 	return 0;
+}
+
+
+
+error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
+	u64 mmap_flags=MMAP2_REGION_FLAG_VMM_USER;
+	vfs_node_t* file=NULL;
+	if (flags&USER_MEMORY_FLAG_WRITE){
+		mmap_flags|=MMAP2_REGION_FLAG_VMM_WRITE;
+	}
+	if (flags&USER_MEMORY_FLAG_EXEC){
+		mmap_flags|=MMAP2_REGION_FLAG_VMM_EXEC;
+	}
+	if (flags&USER_MEMORY_FLAG_FILE){
+		file=fd_get_node(fd);
+		if (!file){
+			return ERROR_INVALID_HANDLE;
+		}
+	}
+	if (flags&USER_MEMORY_FLAG_NOWRITEBACK){
+		mmap_flags|=MMAP2_REGION_FLAG_NO_WRITEBACK;
+	}
+	mmap2_region_t* out=mmap2_alloc(THREAD_DATA->process->mmap2,0,pmm_align_up_address(size),mmap_flags,file);
+	return (out?out->rb_node.key:ERROR_NO_MEMORY);
+}
+
+
+
+error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
+	u64 vmm_set_flags=0;
+	if (flags&USER_MEMORY_FLAG_WRITE){
+		vmm_set_flags|=VMM_PAGE_FLAG_READWRITE;
+	}
+	if (!(flags&USER_MEMORY_FLAG_EXEC)){
+		vmm_set_flags|=VMM_PAGE_FLAG_NOEXECUTE;
+	}
+	size=pmm_align_up_address(size+(address&(PAGE_SIZE-1)));
+	address=pmm_align_down_address(address);
+	mmap2_t* mmap=THREAD_DATA->process->mmap2;
+	for (u64 offset=address;offset<address+size;offset+=PAGE_SIZE){
+		if (!vmm_virtual_to_physical(mmap->pagemap,offset)&&!mmap2_handle_pf(mmap,offset)){
+			return ERROR_INVALID_ARGUMENT(0);
+		}
+		vmm_adjust_flags(mmap->pagemap,offset,vmm_set_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,1,1);
+	}
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_memory_unmap(u64 address,u64 size){
+	return (mmap2_dealloc(THREAD_DATA->process->mmap2,pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))))?ERROR_OK:ERROR_INVALID_ARGUMENT(0));
 }

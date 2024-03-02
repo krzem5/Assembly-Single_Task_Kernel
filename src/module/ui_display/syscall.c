@@ -2,7 +2,6 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
