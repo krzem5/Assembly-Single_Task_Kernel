@@ -74,6 +74,7 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 		return NULL;
 	}
 	u64 guard_page_size=((flags&MMAP2_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
+	length+=guard_page_size;
 	spinlock_acquire_exclusive(&(mmap->lock));
 	if (!address){
 		mmap->heap_address-=length;

@@ -181,12 +181,12 @@ void test_acl(void){
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
 	acl_set(acl,process_kernel,ACL_PERMISSION_MASK,ACL_PERMISSION_MASK);
 	TEST_ASSERT(acl_get(acl,process_kernel)==ACL_PERMISSION_MASK);
-	process_t* test_process=process_create("test-process","test-process");
+	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
 	process_t* test_process_buffer[ACL_PROCESS_CACHE_SIZE-1];
 	for (u32 i=0;i<ACL_PROCESS_CACHE_SIZE-1;i++){
-		test_process_buffer[i]=process_create("filler-test-process","filler-test-process");
+		test_process_buffer[i]=process_create("filler-test-process","filler-test-process",0x1000,0x3000);
 	}
-	_test_acl_second_test_process=process_create("second-test-process","second-test-process");
+	_test_acl_second_test_process=process_create("second-test-process","second-test-process",0x1000,0x3000);
 	TEST_GROUP("default permissions");
 	TEST_ASSERT(!acl_get(acl,test_process));
 	TEST_FUNC("acl_set");

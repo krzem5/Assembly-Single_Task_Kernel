@@ -1,9 +1,9 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -29,7 +29,7 @@ extern error_t syscall_pipe_create();
 
 
 static void _thread(void){
-	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,2*PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
+	mmap2_region_t* temp_mmap_region=mmap2_alloc(THREAD_DATA->process->mmap2,0,2*PAGE_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	TEST_FUNC("syscall_pipe_create");
 	TEST_GROUP("empty path");
@@ -64,7 +64,7 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);
 	vfs_node_dettach_external_child(pipe);
 	vfs_node_delete(pipe);
-	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
+	mmap2_dealloc_region(THREAD_DATA->process->mmap2,temp_mmap_region);
 }
 
 
@@ -124,7 +124,7 @@ void test_pipe(void){
 	TEST_ASSERT(!vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
 	vfs_node_dettach_external_child(pipe);
 	vfs_node_delete(pipe);
-	process_t* test_process=process_create("test-process","test-process");
+	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-pipe-thread",_thread,0));
 	event_await(test_process->event,0);
 }

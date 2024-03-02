@@ -3,8 +3,8 @@
 #include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -36,7 +36,7 @@ static syscall_callback_t const _test_sys_gid_syscall_functions[]={
 
 
 static void _thread(void){
-	mmap_region_t* temp_mmap_region=mmap_alloc(&(THREAD_DATA->process->mmap),0,PAGE_SIZE,NULL,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE|MMAP_REGION_FLAG_VMM_USER,NULL,0);
+	mmap2_region_t* temp_mmap_region=mmap2_alloc(THREAD_DATA->process->mmap2,0,PAGE_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	TEST_FUNC("syscall_gid_get");
 	TEST_GROUP("correct args");
@@ -66,7 +66,7 @@ static void _thread(void){
 	TEST_GROUP("correct args");
 	TEST_ASSERT(syscall_gid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
 	TEST_ASSERT(streq(buffer,"root"));
-	mmap_dealloc_region(&(THREAD_DATA->process->mmap),temp_mmap_region);
+	mmap2_dealloc_region(THREAD_DATA->process->mmap2,temp_mmap_region);
 }
 
 
@@ -114,7 +114,7 @@ void test_gid(void){
 	TEST_ASSERT(gid_get_flags(0)==(ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL));
 	TEST_ASSERT(gid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL,0)==ERROR_OK);
 	TEST_ASSERT(!gid_get_flags(0));
-	process_t* test_process=process_create("test-process","test-process");
+	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-gid-thread",_thread,0));
 	event_await(test_process->event,0);
 	syscall_create_table("test_sys_gid",_test_sys_gid_syscall_functions,sizeof(_test_sys_gid_syscall_functions)/sizeof(syscall_callback_t));

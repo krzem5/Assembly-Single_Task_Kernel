@@ -8,10 +8,10 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -35,8 +35,6 @@
 
 
 
-static pmm_counter_descriptor_t* _thread_kernel_stack_pmm_counter=NULL;
-static pmm_counter_descriptor_t* _thread_pf_stack_pmm_counter=NULL;
 static omm_allocator_t* _thread_allocator=NULL;
 static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
@@ -52,8 +50,8 @@ static void _thread_handle_destructor(handle_t* handle){
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
-	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
-	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
+	mmap2_dealloc_region(process_kernel->mmap2,thread->kernel_stack_region);
+	mmap2_dealloc_region(process_kernel->mmap2,thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (thread_list_remove(&(process->thread_list),thread)){
 		handle_release(&(process->handle));
@@ -78,11 +76,11 @@ static thread_t* _thread_alloc(process_t* process){
 	out->process=process;
 	char buffer[128];
 	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
-	out->kernel_stack_region=mmap_alloc(&(process_kernel->mmap),0,KERNEL_THREAD_STACK_SIZE,_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	out->kernel_stack_region=mmap2_alloc(process_kernel->mmap2,0,KERNEL_THREAD_STACK_SIZE,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->pf_stack_region=mmap_alloc(&(process_kernel->mmap),0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,_thread_pf_stack_pmm_counter,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	out->pf_stack_region=mmap2_alloc(process_kernel->mmap2,0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
 	if (!out->pf_stack_region){
 		panic("Unable to reserve thread stack");
 	}
@@ -106,8 +104,6 @@ static thread_t* _thread_alloc(process_t* process){
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
-	_thread_kernel_stack_pmm_counter=pmm_alloc_counter("kernel_stack");
-	_thread_pf_stack_pmm_counter=pmm_alloc_counter("pf_stack");
 	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,pmm_alloc_counter("omm_thread"));
 	spinlock_init(&(_thread_allocator->lock));
 	thread_handle_type=handle_alloc("thread",_thread_handle_destructor);

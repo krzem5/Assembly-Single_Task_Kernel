@@ -47,9 +47,7 @@ static void _process_handle_destructor(handle_t* handle){
 	handle_list_destroy(&(process->handle_list));
 	event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	mmap_deinit(&(process->mmap));
-	if (process->mmap2){
-		mmap2_deinit(process->mmap2);
-	}
+	mmap2_deinit(process->mmap2);
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);
 }
@@ -84,7 +82,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
+KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 mmap_bottom_address,u64 mmap_top_address){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(out,process_handle_type,&(out->handle));
 	process_kernel->handle.acl=acl_create();
@@ -94,7 +92,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name){
 	spinlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	mmap_init(&(out->pagemap),0x0000000000001000ull,0x0000800000000000ull,&(out->mmap));
-	out->mmap2=NULL;
+	out->mmap2=mmap2_init(&(out->pagemap),mmap_bottom_address,mmap_top_address);
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);
 	out->image=smm_alloc(image,0);

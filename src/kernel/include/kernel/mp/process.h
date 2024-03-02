@@ -19,7 +19,7 @@ void process_init(void);
 
 
 
-process_t* process_create(const char* image,const char* name);
+process_t* process_create(const char* image,const char* name,u64 mmap_bottom_address,u64 mmap_top_address);
 
 
 
