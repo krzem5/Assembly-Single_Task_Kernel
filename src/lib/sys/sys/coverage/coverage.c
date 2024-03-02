@@ -1,4 +1,4 @@
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 #include <sys/types.h>
 
 
