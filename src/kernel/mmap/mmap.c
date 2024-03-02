@@ -96,6 +96,9 @@ void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 
 
 mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address){
+	if (!mmap){
+		return NULL;
+	}
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap2_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (out&&out->rb_node.key+out->length<=address){
