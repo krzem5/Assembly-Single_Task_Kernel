@@ -37,7 +37,36 @@ static omm_allocator_t* _mmap_free_region_allocator=NULL;
 
 
 
+static void _pop_free_region(mmap_t* mmap,mmap_free_region_t* free_region){
+	mmap_length_group_t* group=free_region->group;
+	rb_tree_remove_node(&(mmap->free_address_tree),&(free_region->rb_node));
+	if (free_region->prev){
+		free_region->prev->next=free_region->next;
+	}
+	else{
+		group->head=free_region->next;
+		if (!group->head){
+			rb_tree_remove_node(&(mmap->length_tree),&(group->rb_node));
+			omm_dealloc(_mmap_length_group_allocator,group);
+		}
+	}
+	if (free_region->next){
+		free_region->next->prev=free_region->prev;
+	}
+	omm_dealloc(_mmap_free_region_allocator,free_region);
+}
+
+
+
 static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
+	mmap_free_region_t* free_region=(void*)rb_tree_lookup_node(&(mmap->free_address_tree),address+length);
+	if (free_region){
+		WARN("Coalesce ahead");
+	}
+	free_region=(void*)rb_tree_lookup_decreasing_node(&(mmap->free_address_tree),address);
+	if (free_region&&free_region->rb_node.key+free_region->group->rb_node.key==address){
+		WARN("Coalesce behind");
+	}
 	mmap_length_group_t* group=(void*)rb_tree_lookup_node(&(mmap->length_tree),length);
 	if (!group){
 		group=omm_alloc(_mmap_length_group_allocator);
@@ -45,10 +74,16 @@ static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
 		group->head=NULL;
 		rb_tree_insert_node(&(mmap->length_tree),&(group->rb_node));
 	}
-	mmap_free_region_t* free_region=omm_alloc(_mmap_free_region_allocator);
+	free_region=omm_alloc(_mmap_free_region_allocator);
+	free_region->rb_node.key=address;
+	free_region->prev=NULL;
 	free_region->next=group->head;
-	free_region->address=address;
+	free_region->group=group;
+	if (group->head){
+		group->head->prev=free_region;
+	}
 	group->head=free_region;
+	rb_tree_insert_node(&(mmap->free_address_tree),&(free_region->rb_node));
 }
 
 
@@ -99,6 +134,7 @@ mmap_t* mmap_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
 	out->top_address=top_address;
 	rb_tree_init(&(out->address_tree));
 	rb_tree_init(&(out->length_tree));
+	rb_tree_init(&(out->free_address_tree));
 	return out;
 }
 
@@ -128,15 +164,11 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 		mmap_length_group_t* group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),length);
 		if (group){
 			mmap_free_region_t* free_region=group->head;
-			group->head=free_region->next;
-			address=free_region->address;
-			if (group->rb_node.key>length){
-				_push_free_region(mmap,address+length,group->rb_node.key-length);
-			}
-			omm_dealloc(_mmap_free_region_allocator,free_region);
-			if (!group->head){
-				rb_tree_remove_node(&(mmap->length_tree),&(group->rb_node));
-				omm_dealloc(_mmap_length_group_allocator,group);
+			u64 free_region_length=group->rb_node.key;
+			address=free_region->rb_node.key;
+			_pop_free_region(mmap,free_region);
+			if (free_region_length>length){
+				_push_free_region(mmap,address+length,free_region_length-length);
 			}
 		}
 		else{

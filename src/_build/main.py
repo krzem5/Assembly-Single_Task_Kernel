@@ -652,7 +652,10 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
 			file_list.add(file_name)
-			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
+			gcno_file_name=file_name[:-5]+".gcno"
+			stat=os.stat(gcno_file_name)
+			os.utime(gcno_file_name,times=(stat.st_atime,time.time()))
+			with open(gcno_file_name,"rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
 			present_data={}
 			if (os.path.exists(file_name)):
