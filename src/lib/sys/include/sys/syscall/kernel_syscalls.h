@@ -119,8 +119,8 @@ static inline u64 _sys_syscall_system_shutdown(u32 flags){
 
 
 
-static inline u64 _sys_syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rsp){
-	return _sys_syscall4(0x100000014,rip,rdi,rsi,rsp);
+static inline u64 _sys_syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rdx,u64 rsp){
+	return _sys_syscall5(0x100000014,rip,rdi,rsi,rdx,rsp);
 }
 
 

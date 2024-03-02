@@ -67,8 +67,9 @@ KERNEL_EARLY_INIT(){
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
-	process_kernel->mmap=mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,aslr_generate_address(ASLR_KERNEL_MMAP_TOP_MIN,ASLR_KERNEL_MMAP_TOP_MAX));
-	INFO("Kernel memory map range: %p - %p",process_kernel->mmap->bottom_address,process_kernel->mmap->top_address);
+	u64 mmap_top=aslr_generate_address(ASLR_KERNEL_MMAP_TOP_MIN,ASLR_KERNEL_MMAP_TOP_MAX);
+	INFO("Kernel memory map range: %p - %p",KERNELSPACE_LOWEST_ADDRESS+mmap_top-ASLR_KERNEL_MMAP_TOP_MIN,mmap_top);
+	process_kernel->mmap=mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS+mmap_top-ASLR_KERNEL_MMAP_TOP_MIN,mmap_top);
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
@@ -97,13 +98,13 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);
 	out->image=smm_alloc(image,0);
-	out->uid=0;
-	out->gid=0;
 	out->event=event_create();
 	handle_list_init(&(out->handle_list));
 	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
 	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
+	out->uid=out->parent->uid;
+	out->gid=out->parent->gid;
 	handle_finish_setup(&(out->handle));
 	return out;
 }

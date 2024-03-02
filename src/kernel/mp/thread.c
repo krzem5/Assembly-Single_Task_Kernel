@@ -195,13 +195,14 @@ error_t syscall_thread_get_tid(void){
 
 
 
-error_t syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rsp){
+error_t syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rdx,u64 rsp){
 	if (!syscall_get_user_pointer_max_length((void*)rip)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	thread_t* thread=thread_create_user_thread(THREAD_DATA->process,rip,rsp);
 	thread->reg_state.gpr_state.rdi=rdi;
 	thread->reg_state.gpr_state.rsi=rsi;
+	thread->reg_state.gpr_state.rdx=rdx;
 	scheduler_enqueue_thread(thread);
 	return thread->handle.rb_node.key;
 }

@@ -19,5 +19,5 @@ _Bool pf_handle_fault(isr_state_t* isr_state){
 		pf_invalidate_tlb_entry(address);
 		return 1;
 	}
-	return 1;
+	return 0;
 }

@@ -17,7 +17,7 @@
 17,memory_change_flags(void* address,u64 length,u32 flags) -> u64
 18,memory_unmap(void* address,u64 length) -> u64
 19,system_shutdown(u32 flags) -> u64
-20,thread_create(u64 rip,u64 rdi,u64 rsi,u64 rsp) -> u64
+20,thread_create(u64 rip,u64 rdi,u64 rsi,u64 rdx,u64 rsp) -> u64
 22,thread_get_priority(u64 thread) -> u64
 24,thread_set_priority(u64 thread,u32 priority) -> u64
 25,thread_stop(u64 thread) -> u64

@@ -11,9 +11,7 @@
 
 
 
-static void _thread_bootstrap(u64 func_and_flags,void* arg){
-	u64 stack_top;
-    asm volatile("mov %%rsp,%0":"=rm"(stack_top));
+static void _thread_bootstrap(u64 func_and_flags,void* arg,u64 stack_top){
 	((void (*)(void*))(func_and_flags&0x7fffffffffffffffull))(arg);
 	if (func_and_flags>>63){
 		sys_memory_unmap((void*)(stack_top-DEFAULT_STACK_SIZE),DEFAULT_STACK_SIZE);
@@ -48,7 +46,7 @@ SYS_PUBLIC sys_thread_t sys_thread_create(void* func,void* arg,void* stack){
 		stack+=DEFAULT_STACK_SIZE;
 		func_and_flags|=0x8000000000000000ull;
 	}
-	return _sys_syscall_thread_create((u64)_thread_bootstrap,func_and_flags,(u64)arg,(u64)stack);
+	return _sys_syscall_thread_create((u64)_thread_bootstrap,func_and_flags,(u64)arg,(u64)stack,(u64)stack);
 }
 
 
