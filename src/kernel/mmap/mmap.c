@@ -61,11 +61,18 @@ static void _pop_free_region(mmap_t* mmap,mmap_free_region_t* free_region){
 static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
 	mmap_free_region_t* free_region=(void*)rb_tree_lookup_node(&(mmap->free_address_tree),address+length);
 	if (free_region){
-		WARN("Coalesce ahead");
+		length+=free_region->group->rb_node.key;
+		_pop_free_region(mmap,free_region);
 	}
 	free_region=(void*)rb_tree_lookup_decreasing_node(&(mmap->free_address_tree),address);
 	if (free_region&&free_region->rb_node.key+free_region->group->rb_node.key==address){
-		WARN("Coalesce behind");
+		address-=free_region->group->rb_node.key;
+		length+=free_region->group->rb_node.key;
+		_pop_free_region(mmap,free_region);
+	}
+	if (address==mmap->heap_address){
+		mmap->heap_address+=length;
+		return;
 	}
 	mmap_length_group_t* group=(void*)rb_tree_lookup_node(&(mmap->length_tree),length);
 	if (!group){
