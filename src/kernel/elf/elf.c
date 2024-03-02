@@ -5,7 +5,6 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
@@ -109,7 +108,7 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 	ctx->process=process_create(image,name);
 	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
 	ctx->process->mmap2=mmap2_init(&(ctx->process->pagemap),pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),ctx->stack_top-ELF_STACK_SIZE-aslr_generate_address(ELF_ASLR_MMAP_TOP_OFFSET_MIN,ELF_ASLR_MMAP_TOP_OFFSET_MAX));
-	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE)){
+	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE,NULL)){
 		panic("Unable to allocate stack");
 	}
 }
@@ -147,7 +146,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		if (program_header->p_flags&PF_W){
 			flags|=MMAP2_REGION_FLAG_VMM_WRITE;
 		}
-		mmap2_region_t* region=mmap2_alloc(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),flags);
+		mmap2_region_t* region=mmap2_alloc(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),flags,NULL);
 		if (!region){
 			return ERROR_NO_MEMORY;
 		}
@@ -172,7 +171,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
+	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,file);
 	mmap2_region_t* kernel_program_region=NULL;
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
@@ -197,7 +196,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap2_region_t* program_region=mmap2_alloc(ctx->process->mmap2,0,max_address,MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_USER);
+	mmap2_region_t* program_region=mmap2_alloc(ctx->process->mmap2,0,max_address,MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_USER,NULL);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		out=ERROR_NO_MEMORY;
@@ -279,14 +278,14 @@ _skip_dynamic_section:
 	if (kernel_program_region){
 		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	ctx->entry_address=ctx->interpreter_image_base+header.e_entry;
 	return ERROR_OK;
 _error:
 	if (kernel_program_region){
 		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	return out;
 }
 
@@ -381,7 +380,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (!file){
 		return ERROR_NOT_FOUND;
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
+	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,file);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
 		path,
@@ -418,7 +417,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (out!=ERROR_OK){
 		goto _error;
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
@@ -431,6 +430,6 @@ _error:
 	if (ctx.process){
 		handle_release(&(ctx.process->handle));
 	}
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	return out;
 }

@@ -8,6 +8,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "mmap"
 
 
@@ -24,18 +25,18 @@ static void _dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 
 
 
+KERNEL_EARLY_EARLY_INIT(){
+	LOG("Initializing mmap allocator...");
+	_mmap_pmm_counter=pmm_alloc_counter("mmap");
+	_mmap_allocator=omm_init("mmap",sizeof(mmap2_t),8,4,pmm_alloc_counter("omm_mmap"));
+	spinlock_init(&(_mmap_allocator->lock));
+	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap2_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
+	spinlock_init(&(_mmap_region_allocator->lock));
+}
+
+
+
 mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
-	if (!_mmap_pmm_counter){
-		_mmap_pmm_counter=pmm_alloc_counter("mmap");
-	}
-	if (!_mmap_allocator){
-		_mmap_allocator=omm_init("mmap",sizeof(mmap2_t),8,4,pmm_alloc_counter("omm_mmap"));
-		spinlock_init(&(_mmap_allocator->lock));
-	}
-	if (!_mmap_region_allocator){
-		_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap2_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
-		spinlock_init(&(_mmap_region_allocator->lock));
-	}
 	mmap2_t* out=omm_alloc(_mmap_allocator);
 	spinlock_init(&(out->lock));
 	out->pagemap=pagemap;
@@ -55,8 +56,14 @@ void mmap2_deinit(mmap2_t* mmap){
 
 
 
-KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags){
+KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags,vfs_node_t* file){
 	if ((address|length)&(PAGE_SIZE-1)){
+		return NULL;
+	}
+	if (!length&&file){
+		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));
+	}
+	if (!length){
 		return NULL;
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
@@ -71,6 +78,7 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 	out->rb_node.key=address;
 	out->length=length;
 	out->flags=flags;
+	out->file=file;
 	rb_tree_insert_node(&(mmap->address_tree),&(out->rb_node));
 	spinlock_release_exclusive(&(mmap->lock));
 	if (flags&MMAP2_REGION_FLAG_COMMIT){
@@ -93,7 +101,7 @@ KERNEL_PUBLIC void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
 	_dealloc_region(mmap,region);
-	WARN("Push %p, %v",region->rb_node.key,region->length);
+	WARN("Push free region: %p, %v",region->rb_node.key,region->length);
 	omm_dealloc(_mmap_region_allocator,region);
 	spinlock_release_exclusive(&(mmap->lock));
 }
@@ -116,7 +124,7 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address){
 
 
 KERNEL_PUBLIC mmap2_region_t* mmap2_map_to_kernel(mmap2_t* mmap,u64 address,u64 length){
-	mmap2_region_t* out=mmap2_alloc(process_kernel->mmap2,0,length,MMAP2_REGION_FLAG_EXTERNAL|MMAP2_REGION_FLAG_VMM_WRITE);
+	mmap2_region_t* out=mmap2_alloc(process_kernel->mmap2,0,length,MMAP2_REGION_FLAG_EXTERNAL|MMAP2_REGION_FLAG_VMM_WRITE,NULL);
 	for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,offset);
 		if (!physical_address){
@@ -140,6 +148,9 @@ u64 mmap2_handle_pf(mmap2_t* mmap,u64 address){
 	mmap2_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (region&&region->rb_node.key+region->length>address){
 		u64 out=pmm_alloc(1,_mmap_pmm_counter,0);
+		if (region->file){
+			vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+		}
 		u64 flags=VMM_PAGE_FLAG_PRESENT;
 		if (region->flags&MMAP2_REGION_FLAG_VMM_USER){
 			flags|=VMM_PAGE_FLAG_USER;
@@ -150,7 +161,6 @@ u64 mmap2_handle_pf(mmap2_t* mmap,u64 address){
 		if (!(region->flags&MMAP2_REGION_FLAG_VMM_EXEC)){
 			flags|=VMM_PAGE_FLAG_NOEXECUTE;
 		}
-		WARN("%p: %p, %p",address,out,flags);
 		vmm_map_page(mmap->pagemap,out,address,flags);
 		spinlock_release_exclusive(&(mmap->lock));
 		return out;
