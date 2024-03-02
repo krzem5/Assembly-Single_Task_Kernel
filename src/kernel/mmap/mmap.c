@@ -157,20 +157,19 @@ void mmap_deinit(mmap_t* mmap){
 		}
 		_dealloc_region(mmap,region,0);
 	}
-	rb_tree_init(&(mmap->address_tree));
 	while (1){
 		mmap_length_group_t* group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),0);
 		if (!group){
 			break;
 		}
 		rb_tree_remove_node(&(mmap->length_tree),&(group->rb_node));
-		for (mmap_free_region_t* free_region=group->head;free_region;free_region=free_region->next){
+		for (mmap_free_region_t* free_region=group->head;free_region;){
+			mmap_free_region_t* next=free_region->next;
 			omm_dealloc(_mmap_free_region_allocator,free_region);
+			free_region=next;
 		}
 		omm_dealloc(_mmap_length_group_allocator,group);
 	}
-	rb_tree_init(&(mmap->length_tree));
-	rb_tree_init(&(mmap->free_address_tree));
 	omm_dealloc(_mmap_allocator,mmap);
 }
 
