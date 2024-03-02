@@ -5,14 +5,19 @@
 
 
 typedef struct _HASH_SHA256_STATE{
-	u32 a;
-	u32 b;
-	u32 c;
-	u32 d;
-	u32 e;
-	u32 f;
-	u32 g;
-	u32 h;
+	union{
+		struct{
+			u32 a;
+			u32 b;
+			u32 c;
+			u32 d;
+			u32 e;
+			u32 f;
+			u32 g;
+			u32 h;
+		};
+		u32 result[8];
+	};
 	u64 length;
 	u8 buffer[64];
 } hash_sha256_state_t;

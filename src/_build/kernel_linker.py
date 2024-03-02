@@ -1,4 +1,5 @@
 import array
+import hashlib
 import struct
 import sys
 
@@ -30,6 +31,7 @@ R_X86_64_32S=11
 
 KERNEL_START_ADDRESS=0xffffffffc0100000
 KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
+KERNEL_HASH_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_ex",".kernel_nx"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
 
 
@@ -250,6 +252,17 @@ def _apply_relocations(ctx):
 
 
 
+def _generate_signature(ctx):
+	data_hash=hashlib.sha256()
+	for section_name in KERNEL_HASH_SECTION_ORDER:
+		section=ctx.section_headers_by_name[section_name]
+		data_hash.update(ctx.out[section.address-KERNEL_START_ADDRESS:section.address-KERNEL_START_ADDRESS+section.size])
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_signature"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+32]=data_hash.digest()
+
+
+
 def link(src_file_path,dst_file_path):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
@@ -260,5 +273,6 @@ def link(src_file_path,dst_file_path):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
+	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)

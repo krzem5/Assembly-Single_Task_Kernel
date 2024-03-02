@@ -14,6 +14,7 @@
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
+#include <kernel/signature/signature.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "main"
 
@@ -57,6 +58,7 @@ void KERNEL_NORETURN KERNEL_EARLY_EXEC main(const kernel_data_t* bootloader_kern
 	kernel_init(bootloader_kernel_data);
 	pmm_init();
 	vmm_init();
+	signature_verify_kernel();
 	random_init();
 	aslr_reloc_kernel(_main_relocated);
 }
