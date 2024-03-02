@@ -12,17 +12,19 @@
 
 
 
-static pmm_counter_descriptor_t* _mmap_stack_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _mmap_data_pmm_counter=NULL;
 static omm_allocator_t* _mmap_allocator=NULL;
 static omm_allocator_t* _mmap_region_allocator=NULL;
 
 
 
-mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address,u64 stack_top_address,u64 stack_size){
-	if (!_mmap_stack_pmm_counter){
-		_mmap_stack_pmm_counter=pmm_alloc_counter("mmap_stack");
-	}
+static void _dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
+	//
+}
+
+
+
+mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
 	if (!_mmap_data_pmm_counter){
 		_mmap_data_pmm_counter=pmm_alloc_counter("mmap_data");
 	}
@@ -41,8 +43,6 @@ mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address,u6
 	out->break_address=bottom_address;
 	out->heap_address=top_address;
 	out->top_address=top_address;
-	out->stack_top_address=stack_top_address;
-	out->stack_size=stack_size;
 	rb_tree_init(&(out->address_tree));
 	return out;
 }
@@ -55,7 +55,7 @@ void mmap2_deinit(mmap2_t* mmap){
 
 
 
-mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags){
+KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags){
 	if ((address|length)&(PAGE_SIZE-1)){
 		return NULL;
 	}
@@ -83,19 +83,24 @@ mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u32 flags){
 
 
 
-_Bool mmap2_dealloc(mmap2_t* mmap,u64 address,u64 length){
+KERNEL_PUBLIC _Bool mmap2_dealloc(mmap2_t* mmap,u64 address,u64 length){
 	panic("mmap2_dealloc");
 }
 
 
 
-void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
-	// panic("mmap2_dealloc_region");
+KERNEL_PUBLIC void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
+	spinlock_acquire_exclusive(&(mmap->lock));
+	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
+	_dealloc_region(mmap,region);
+	WARN("Push %p, %v",region->rb_node.key,region->length);
+	omm_dealloc(_mmap_region_allocator,region);
+	spinlock_release_exclusive(&(mmap->lock));
 }
 
 
 
-mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address){
+KERNEL_PUBLIC mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address){
 	if (!mmap){
 		return NULL;
 	}
@@ -110,8 +115,8 @@ mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address){
 
 
 
-mmap2_region_t* mmap2_map_to_kernel(mmap2_t* mmap,u64 address,u64 length){
-	mmap2_region_t* out=mmap2_alloc(process_kernel->mmap2,0,length,MMAP2_REGION_FLAG_VMM_WRITE);
+KERNEL_PUBLIC mmap2_region_t* mmap2_map_to_kernel(mmap2_t* mmap,u64 address,u64 length){
+	mmap2_region_t* out=mmap2_alloc(process_kernel->mmap2,0,length,MMAP2_REGION_FLAG_EXTERNAL|MMAP2_REGION_FLAG_VMM_WRITE);
 	for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,offset);
 		if (!physical_address){
@@ -132,13 +137,6 @@ u64 mmap2_handle_pf(mmap2_t* mmap,u64 address){
 		return 0;
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
-	if (address<mmap->stack_top_address&&address>=mmap->stack_top_address-mmap->stack_size){
-		WARN("Stack: %p",address);
-		u64 out=pmm_alloc(1,_mmap_stack_pmm_counter,0);
-		vmm_map_page(mmap->pagemap,out,address,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_USER|VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
-		spinlock_release_exclusive(&(mmap->lock));
-		return out;
-	}
 	mmap2_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (region&&region->rb_node.key+region->length>address){
 		u64 out=pmm_alloc(1,_mmap_data_pmm_counter,0);

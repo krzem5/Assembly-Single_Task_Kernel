@@ -68,7 +68,7 @@ KERNEL_EARLY_INIT(){
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,KERNELSPACE_LOWEST_ADDRESS+0x80000000000ull,&(process_kernel->mmap));
-	process_kernel->mmap2=mmap2_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS/*temp*/+0x80000000000ull/*temp*/,kernel_get_offset(),0,0);
+	process_kernel->mmap2=mmap2_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS/*temp*/+0x80000000000ull/*temp*/,kernel_get_offset());
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);

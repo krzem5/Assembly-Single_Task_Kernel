@@ -12,6 +12,7 @@
 #define MMAP2_REGION_FLAG_VMM_WRITE 4
 #define MMAP2_REGION_FLAG_VMM_EXEC 8
 #define MMAP2_REGION_FLAG_COMMIT 16
+#define MMAP2_REGION_FLAG_EXTERNAL 32
 
 
 
@@ -30,14 +31,12 @@ typedef struct _MMAP2{
 	u64 break_address;
 	u64 heap_address;
 	u64 top_address;
-	u64 stack_top_address;
-	u64 stack_size;
 	rb_tree_t address_tree;
 } mmap2_t;
 
 
 
-mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address,u64 stack_top_address,u64 stack_size);
+mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address);
 
 
 

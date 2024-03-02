@@ -59,6 +59,7 @@ typedef struct _ELF_LOADER_CONTEXT{
 	const char* interpreter_path;
 	u64 interpreter_image_base;
 	u64 entry_address;
+	u64 stack_top;
 } elf_loader_context_t;
 
 
@@ -106,8 +107,11 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 		}
 	}
 	ctx->process=process_create(image,name);
-	u64 stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
-	ctx->process->mmap2=mmap2_init(&(ctx->process->pagemap),pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),stack_top-ELF_STACK_SIZE-aslr_generate_address(ELF_ASLR_MMAP_TOP_OFFSET_MIN,ELF_ASLR_MMAP_TOP_OFFSET_MAX),stack_top,ELF_STACK_SIZE);
+	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
+	ctx->process->mmap2=mmap2_init(&(ctx->process->pagemap),pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),ctx->stack_top-ELF_STACK_SIZE-aslr_generate_address(ELF_ASLR_MMAP_TOP_OFFSET_MIN,ELF_ASLR_MMAP_TOP_OFFSET_MAX));
+	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE)){
+		panic("Unable to allocate stack");
+	}
 }
 
 
@@ -300,11 +304,14 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		ERROR("Stack too small for arguments");
 		return ERROR_NO_SPACE;
 	}
-	mmap_region_t* kernel_region=mmap_map_region(&(ctx->process->mmap),ctx->thread->user_stack_region,pmm_align_down_address(ctx->thread->user_stack_region->length-total_size),pmm_align_up_address(total_size));
+	mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,ctx->stack_top-pmm_align_up_address(total_size),pmm_align_up_address(total_size));
+	// memcpy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
+	// mmap_region_t* kernel_region=mmap_map_region(&(ctx->process->mmap),ctx->thread->user_stack_region,pmm_align_down_address(ctx->thread->user_stack_region->length-total_size),pmm_align_up_address(total_size));
 	void* buffer=(void*)(kernel_region->rb_node.key+((-total_size)&(PAGE_SIZE-1)));
 	u64* data_ptr=buffer;
 	void* string_table_ptr=buffer+size;
-	u64 pointer_difference=((void*)(ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size))-buffer;
+	u64 pointer_difference=((void*)(ctx->stack_top-total_size))-buffer;
+	// u64 pointer_difference=((void*)(ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size))-buffer;
 	PUSH_DATA_VALUE(ctx->argc);
 	for (u64 i=0;i<ctx->argc;i++){
 		PUSH_DATA_VALUE(string_table_ptr+pointer_difference);
@@ -332,8 +339,10 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr+pointer_difference);
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
-	mmap_dealloc_region(&(process_kernel->mmap),kernel_region);
-	ctx->thread->reg_state.gpr_state.rsp=ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size;
+	// mmap_dealloc_region(&(process_kernel->mmap),kernel_region);
+	mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
+	// ctx->thread->reg_state.gpr_state.rsp=ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size;
+	ctx->thread->reg_state.gpr_state.rsp=ctx->stack_top-total_size;
 	return ERROR_OK;
 }
 
@@ -374,6 +383,8 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		(void*)(region->rb_node.key),
 		0,
 		NULL,
+		0,
+		0,
 		0
 	};
 	ctx.entry_address=ctx.elf_header->e_entry;
