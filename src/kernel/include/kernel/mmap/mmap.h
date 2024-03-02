@@ -18,6 +18,7 @@
 typedef struct _MMAP2_REGION{
 	rb_tree_node_t rb_node;
 	u64 length;
+	u32 flags;
 } mmap2_region_t;
 
 
@@ -56,7 +57,15 @@ void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region);
 
 
 
-_Bool mmap2_handle_pf(mmap2_t* mmap,u64 address);
+mmap2_region_t* mmap2_lookup(mmap2_t* mmap,u64 address);
+
+
+
+mmap2_region_t* mmap2_map_to_kernel(mmap2_t* mmap,u64 address,u64 length);
+
+
+
+u64 mmap2_handle_pf(mmap2_t* mmap,u64 address);
 
 
 

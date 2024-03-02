@@ -136,18 +136,23 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 			continue;
 		}
 		u64 padding=program_header->p_vaddr&(PAGE_SIZE-1);
-		u64 flags=MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER;
-		if (!(program_header->p_flags&PF_X)){
-			flags|=MMAP_REGION_FLAG_VMM_NOEXECUTE;
+		u32 flags=MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE;
+		if (program_header->p_flags&PF_X){
+			flags|=MMAP2_REGION_FLAG_VMM_EXEC;
 		}
 		if (program_header->p_flags&PF_W){
-			flags|=MMAP_REGION_FLAG_VMM_READWRITE;
+			flags|=MMAP2_REGION_FLAG_VMM_WRITE;
 		}
-		mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),_user_image_pmm_counter,flags,NULL,0);
-		if (!program_region){
+		mmap2_region_t* region=mmap2_alloc(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_memsz+padding),flags);
+		if (!region){
 			return ERROR_NO_MEMORY;
 		}
-		mmap_set_memory(&(ctx->process->mmap),program_region,padding,ctx->data+program_header->p_offset,program_header->p_filesz);
+		if (!program_header->p_filesz){
+			continue;
+		}
+		mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_filesz+padding));
+		memcpy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
+		mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
 	}
 	return ERROR_OK;
 }
