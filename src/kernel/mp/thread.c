@@ -35,7 +35,6 @@
 
 
 
-static pmm_counter_descriptor_t* _thread_user_stack_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _thread_kernel_stack_pmm_counter=NULL;
 static pmm_counter_descriptor_t* _thread_pf_stack_pmm_counter=NULL;
 static omm_allocator_t* _thread_allocator=NULL;
@@ -107,7 +106,6 @@ static thread_t* _thread_alloc(process_t* process){
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
-	_thread_user_stack_pmm_counter=pmm_alloc_counter("user_stack");
 	_thread_kernel_stack_pmm_counter=pmm_alloc_counter("kernel_stack");
 	_thread_pf_stack_pmm_counter=pmm_alloc_counter("pf_stack");
 	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,pmm_alloc_counter("omm_thread"));

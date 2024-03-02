@@ -13,6 +13,10 @@
 
 
 
+#define MMAP_STACK_GUARD_PAGE_COUNT 2
+
+
+
 static pmm_counter_descriptor_t* _mmap_pmm_counter=NULL;
 static omm_allocator_t* _mmap_allocator=NULL;
 static omm_allocator_t* _mmap_region_allocator=NULL;
@@ -21,7 +25,8 @@ static omm_allocator_t* _mmap_region_allocator=NULL;
 
 static void _dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
-	WARN("Push free region: %p, %v",region->rb_node.key,region->length);
+	u64 guard_page_size=((region->flags&MMAP2_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
+	WARN("Push free region: %p, %v",region->rb_node.key-guard_page_size,region->length+guard_page_size);
 	omm_dealloc(_mmap_region_allocator,region);
 }
 
@@ -68,6 +73,7 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 	if (!length){
 		return NULL;
 	}
+	u64 guard_page_size=((flags&MMAP2_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	spinlock_acquire_exclusive(&(mmap->lock));
 	if (!address){
 		mmap->heap_address-=length;
@@ -77,14 +83,14 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 		panic("mmap2_alloc: check user address and length");
 	}
 	mmap2_region_t* out=omm_alloc(_mmap_region_allocator);
-	out->rb_node.key=address;
-	out->length=length;
+	out->rb_node.key=address+guard_page_size;
+	out->length=length-guard_page_size;
 	out->flags=flags;
 	out->file=file;
 	rb_tree_insert_node(&(mmap->address_tree),&(out->rb_node));
 	spinlock_release_exclusive(&(mmap->lock));
 	if (flags&MMAP2_REGION_FLAG_COMMIT){
-		for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
+		for (u64 offset=address+guard_page_size;offset<address+length;offset+=PAGE_SIZE){
 			mmap2_handle_pf(mmap,offset);
 		}
 	}

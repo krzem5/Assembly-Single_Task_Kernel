@@ -108,7 +108,7 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 	ctx->process=process_create(image,name);
 	ctx->process->mmap2=mmap2_init(&(ctx->process->pagemap),pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),aslr_generate_address(ELF_ASLR_MMAP_TOP_MIN,ELF_ASLR_MMAP_TOP_MAX));
 	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
-	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE,NULL)){
+	if (!mmap2_alloc(ctx->process->mmap2,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP2_REGION_FLAG_STACK|MMAP2_REGION_FLAG_VMM_WRITE|MMAP2_REGION_FLAG_VMM_USER|MMAP2_REGION_FLAG_FORCE,NULL)){
 		panic("Unable to allocate stack");
 	}
 }
