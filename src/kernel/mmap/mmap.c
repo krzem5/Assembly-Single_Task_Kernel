@@ -95,7 +95,7 @@ static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
 
 
 
-static void _dealloc_region(mmap_t* mmap,mmap_region_t* region){
+static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,_Bool push_free_region){
 	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
 	u64 guard_page_size=((region->flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	for (u64 address=0;address<region->length;address+=PAGE_SIZE){
@@ -110,7 +110,9 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region){
 			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,_mmap_pmm_counter);
 		}
 	}
-	_push_free_region(mmap,region->rb_node.key-guard_page_size,region->length+guard_page_size);
+	if (push_free_region){
+		_push_free_region(mmap,region->rb_node.key-guard_page_size,region->length+guard_page_size);
+	}
 	omm_dealloc(_mmap_region_allocator,region);
 }
 
@@ -148,7 +150,27 @@ mmap_t* mmap_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
 
 
 void mmap_deinit(mmap_t* mmap){
-	ERROR("mmap_deinit");
+	while (1){
+		mmap_region_t* region=(void*)rb_tree_lookup_increasing_node(&(mmap->address_tree),0);
+		if (!region){
+			break;
+		}
+		_dealloc_region(mmap,region,0);
+	}
+	rb_tree_init(&(mmap->address_tree));
+	while (1){
+		mmap_length_group_t* group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),0);
+		if (!group){
+			break;
+		}
+		rb_tree_remove_node(&(mmap->length_tree),&(group->rb_node));
+		for (mmap_free_region_t* free_region=group->head;free_region;free_region=free_region->next){
+			omm_dealloc(_mmap_free_region_allocator,free_region);
+		}
+		omm_dealloc(_mmap_length_group_allocator,group);
+	}
+	rb_tree_init(&(mmap->length_tree));
+	rb_tree_init(&(mmap->free_address_tree));
 	omm_dealloc(_mmap_allocator,mmap);
 }
 
@@ -217,7 +239,7 @@ KERNEL_PUBLIC _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	if (region->rb_node.key!=address||region->length!=length){
 		panic("mmap_dealloc: partial dealloc");
 	}
-	_dealloc_region(mmap,region);
+	_dealloc_region(mmap,region,1);
 	spinlock_release_exclusive(&(mmap->lock));
 	return 1;
 }
@@ -226,7 +248,7 @@ KERNEL_PUBLIC _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 
 KERNEL_PUBLIC void mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
 	spinlock_acquire_exclusive(&(mmap->lock));
-	_dealloc_region(mmap,region);
+	_dealloc_region(mmap,region,1);
 	spinlock_release_exclusive(&(mmap->lock));
 }
 
