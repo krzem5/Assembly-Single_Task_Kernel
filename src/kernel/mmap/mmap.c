@@ -81,7 +81,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	if (!length&&file){
 		length=pmm_align_up_address(vfs_node_resize(file,0,VFS_NODE_FLAG_RESIZE_RELATIVE));
 	}
-	if (!length){
+	if (!length||(length>>47)){
 		return NULL;
 	}
 	u64 guard_page_size=((flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
@@ -90,9 +90,6 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	if (!address){
 		mmap->heap_address-=length;
 		address=mmap->heap_address;
-	}
-	else if (!(flags&MMAP_REGION_FLAG_FORCE)){
-		panic("mmap_alloc: check user address and length");
 	}
 	mmap_region_t* out=omm_alloc(_mmap_region_allocator);
 	out->rb_node.key=address+guard_page_size;
