@@ -19,6 +19,20 @@
 
 
 
+typedef struct _MMAP_FREE_REGION{
+	struct _MMAP_FREE_REGION* next;
+	u64 address;
+} mmap_free_region_t;
+
+
+
+typedef struct _MMAP_LENGTH_GROUP{
+	rb_tree_node_t rb_node;
+	mmap_free_region_t* head;
+} mmap_length_group_t;
+
+
+
 typedef struct _MMAP_REGION{
 	rb_tree_node_t rb_node;
 	u64 length;
@@ -36,6 +50,7 @@ typedef struct _MMAP{
 	u64 heap_address;
 	u64 top_address;
 	rb_tree_t address_tree;
+	rb_tree_t length_tree;
 } mmap_t;
 
 

@@ -329,6 +329,7 @@ KERNEL_PUBLIC _Bool module_unload(module_t* module){
 	}
 	LOG("Unloading module '%s'...",module->name->data);
 	module->state=MODULE_STATE_UNLOADING;
+	symbol_remove(module->name->data);
 	module->descriptor->deinit_callback(module);
 	module->state=MODULE_STATE_UNLOADED;
 	if (module->region){
