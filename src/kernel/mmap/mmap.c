@@ -20,7 +20,9 @@ static omm_allocator_t* _mmap_region_allocator=NULL;
 
 
 static void _dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
-	//
+	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
+	WARN("Push free region: %p, %v",region->rb_node.key,region->length);
+	omm_dealloc(_mmap_region_allocator,region);
 }
 
 
@@ -92,17 +94,21 @@ KERNEL_PUBLIC mmap2_region_t* mmap2_alloc(mmap2_t* mmap,u64 address,u64 length,u
 
 
 KERNEL_PUBLIC _Bool mmap2_dealloc(mmap2_t* mmap,u64 address,u64 length){
-	panic("mmap2_dealloc");
+	spinlock_acquire_exclusive(&(mmap->lock));
+	mmap2_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
+	if (region->rb_node.key!=address||region->length!=length){
+		panic("mmap2_dealloc: partial dealloc");
+	}
+	_dealloc_region(mmap,region);
+	spinlock_release_exclusive(&(mmap->lock));
+	return 1;
 }
 
 
 
 KERNEL_PUBLIC void mmap2_dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 	spinlock_acquire_exclusive(&(mmap->lock));
-	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
 	_dealloc_region(mmap,region);
-	WARN("Push free region: %p, %v",region->rb_node.key,region->length);
-	omm_dealloc(_mmap_region_allocator,region);
 	spinlock_release_exclusive(&(mmap->lock));
 }
 

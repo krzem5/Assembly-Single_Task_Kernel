@@ -1,8 +1,8 @@
 #ifndef _KERNEL_MODULE_MODULE_H_
 #define _KERNEL_MODULE_MODULE_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
@@ -31,7 +31,7 @@ typedef struct _MODULE{
 	handle_t handle;
 	string_t* name;
 	const struct _MODULE_DESCRIPTOR* descriptor;
-	mmap_region_t* region;
+	mmap2_region_t* region;
 #if KERNEL_COVERAGE_ENABLED
 	u64 gcov_info_base;
 	u64 gcov_info_size;

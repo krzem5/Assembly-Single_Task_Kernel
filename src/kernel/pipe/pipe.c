@@ -2,10 +2,10 @@
 #include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
-#include <kernel/memory/mmap.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -33,7 +33,6 @@ typedef struct _PIPE_VFS_NODE{
 
 
 
-static pmm_counter_descriptor_t* _pipe_buffer_pmm_counter=NULL;
 static omm_allocator_t* _pipe_vfs_node_allocator=NULL;
 static vfs_node_t* _pipe_root=NULL;
 static KERNEL_ATOMIC u64 _pipe_next_id=0;
@@ -43,7 +42,7 @@ static KERNEL_ATOMIC u64 _pipe_next_id=0;
 static vfs_node_t* _pipe_create(void){
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
 	spinlock_init(&(out->lock));
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,PIPE_BUFFER_SIZE,_pipe_buffer_pmm_counter,MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,PIPE_BUFFER_SIZE,MMAP2_REGION_FLAG_VMM_WRITE,NULL);
 	if (!region){
 		panic("Unable to allocate pipe buffer");
 	}
@@ -60,7 +59,7 @@ static vfs_node_t* _pipe_create(void){
 
 static void _pipe_delete(vfs_node_t* node){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
-	mmap_dealloc(&(process_kernel->mmap),(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
+	mmap2_dealloc(process_kernel->mmap2,(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
 	event_delete(pipe->read_event);
 	event_delete(pipe->write_event);
 	omm_dealloc(_pipe_vfs_node_allocator,node);
@@ -165,7 +164,6 @@ static const vfs_functions_t _pipe_vfs_functions={
 
 KERNEL_INIT(){
 	LOG("Initializing pipes...");
-	_pipe_buffer_pmm_counter=pmm_alloc_counter("pipe_buffer");
 	_pipe_vfs_node_allocator=omm_init("pipe_node",sizeof(pipe_vfs_node_t),8,4,pmm_alloc_counter("omm_pipe_node"));
 	spinlock_init(&(_pipe_vfs_node_allocator->lock));
 }

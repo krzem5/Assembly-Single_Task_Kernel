@@ -293,7 +293,7 @@ _error:
 
 static void _create_executable_thread(elf_loader_context_t* ctx){
 	INFO("Creating main thread...");
-	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,0);
+	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,ctx->stack_top);
 }
 
 
@@ -321,10 +321,11 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		return ERROR_NO_SPACE;
 	}
 	mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,ctx->stack_top-pmm_align_up_address(total_size),pmm_align_up_address(total_size));
+	ctx->stack_top-=total_size;
 	void* buffer=(void*)(kernel_region->rb_node.key+((-total_size)&(PAGE_SIZE-1)));
 	u64* data_ptr=buffer;
 	void* string_table_ptr=buffer+size;
-	u64 pointer_difference=((void*)(ctx->stack_top-total_size))-buffer;
+	u64 pointer_difference=((void*)(ctx->stack_top))-buffer;
 	PUSH_DATA_VALUE(ctx->argc);
 	for (u64 i=0;i<ctx->argc;i++){
 		PUSH_DATA_VALUE(string_table_ptr+pointer_difference);
@@ -353,7 +354,6 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
 	mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
-	ctx->thread->reg_state.gpr_state.rsp=ctx->stack_top-total_size;
 	return ERROR_OK;
 }
 
@@ -412,11 +412,11 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (out!=ERROR_OK){
 		goto _error;
 	}
-	_create_executable_thread(&ctx);
 	out=_generate_input_data(&ctx);
 	if (out!=ERROR_OK){
 		goto _error;
 	}
+	_create_executable_thread(&ctx);
 	mmap2_dealloc_region(process_kernel->mmap2,region);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
