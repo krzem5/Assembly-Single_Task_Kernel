@@ -1,4 +1,5 @@
 #include <kernel/acl/acl.h>
+#include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
@@ -28,6 +29,9 @@
 
 
 #define KERNELSPACE_LOWEST_ADDRESS 0xfffff00000000000ull
+
+#define ASLR_KERNEL_MMAP_TOP_MIN 0xffffffff80000000ull // -2 GB
+#define ASLR_KERNEL_MMAP_TOP_MAX 0xffffffffc0000000ull // -1 GB
 
 
 
@@ -63,7 +67,8 @@ KERNEL_EARLY_INIT(){
 	handle_acquire(&(process_kernel->handle));
 	spinlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
-	process_kernel->mmap=mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,kernel_get_offset());
+	process_kernel->mmap=mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS,aslr_generate_address(ASLR_KERNEL_MMAP_TOP_MIN,ASLR_KERNEL_MMAP_TOP_MAX));
+	INFO("Kernel memory map range: %p - %p",process_kernel->mmap->bottom_address,process_kernel->mmap->top_address);
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
 	process_kernel->image=smm_alloc("/boot/kernel.bin",0);
