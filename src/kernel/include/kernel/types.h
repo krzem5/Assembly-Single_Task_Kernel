@@ -3,7 +3,7 @@
 
 
 
-#define KERNEL_EARLY_EXEC __attribute__((section(".etext"))) KERNEL_NOCOVERAGE
+#define KERNEL_EARLY_EXEC __attribute__((section(".etext")))
 #define KERNEL_EARLY_READ __attribute__((section(".erdata")))
 #define KERNEL_EARLY_WRITE __attribute__((section(".edata")))
 #define KERNEL_INIT_WRITE __attribute__((section(".idata")))
