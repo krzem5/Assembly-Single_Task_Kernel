@@ -331,6 +331,9 @@ _retry_allocator:
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
 	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
+		if (_get_block_descriptor(out+k)->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE){
+			k+=PAGE_SIZE/sizeof(u64);
+		}
 		if (ptr[k]==PMM_DEBUG_VALUE*0x0101010101010101ull){
 			continue;
 		}
