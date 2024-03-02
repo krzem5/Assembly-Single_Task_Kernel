@@ -115,7 +115,9 @@ void test_gid(void){
 	TEST_ASSERT(gid_set_flags(0,ID_FLAG_BYPASS_VFS_PERMISSIONS|ID_FLAG_ROOT_ACL,0)==ERROR_OK);
 	TEST_ASSERT(!gid_get_flags(0));
 	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
+	handle_acquire(&(test_process->handle));
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-gid-thread",_thread,0));
 	event_await(test_process->event,0);
+	handle_release(&(test_process->handle));
 	syscall_create_table("test_sys_gid",_test_sys_gid_syscall_functions,sizeof(_test_sys_gid_syscall_functions)/sizeof(syscall_callback_t));
 }

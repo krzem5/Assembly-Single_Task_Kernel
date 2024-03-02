@@ -54,6 +54,7 @@ static void _thread_handle_destructor(handle_t* handle){
 	mmap_dealloc_region(process_kernel->mmap,thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (thread_list_remove(&(process->thread_list),thread)){
+		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		handle_release(&(process->handle));
 	}
 	omm_dealloc(_thread_allocator,thread);

@@ -36,9 +36,8 @@ static void _execute_elf(const char* path){
 	if (!IS_ERROR(ret)){
 		handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
 		process_t* process=handle->object;
-		event_t* delete_event=process->event;
+		event_await(process->event,0);
 		handle_release(handle);
-		event_await(delete_event,0);
 	}
 }
 

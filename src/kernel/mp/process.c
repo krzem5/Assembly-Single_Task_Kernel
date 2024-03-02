@@ -48,7 +48,6 @@ static void _process_handle_destructor(handle_t* handle){
 		panic("Unterminated process not referenced");
 	}
 	handle_list_destroy(&(process->handle_list));
-	event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	mmap_deinit(process->mmap);
 	vmm_pagemap_deinit(&(process->pagemap));
 	omm_dealloc(_process_allocator,process);

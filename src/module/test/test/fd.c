@@ -391,6 +391,8 @@ static void _thread(void){
 void test_fd(void){
 	TEST_MODULE("fd");
 	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
+	handle_acquire(&(test_process->handle));
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test-fd-thread",_thread,0));
 	event_await(test_process->event,0);
+	handle_release(&(test_process->handle));
 }
