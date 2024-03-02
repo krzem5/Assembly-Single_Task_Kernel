@@ -267,7 +267,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		ERROR("Unable to find module '%s'",name);
 		return NULL;
 	}
-	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,module_file,0);
+	mmap2_region_t* region=mmap2_alloc(process_kernel->mmap2,0,0,MMAP2_REGION_FLAG_NO_WRITEBACK|MMAP2_REGION_FLAG_VMM_WRITE,module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
 	handle_new(module,module_handle_type,&(module->handle));
@@ -302,7 +302,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
@@ -319,7 +319,7 @@ _error:
 		mmap_dealloc_region(&_module_image_mmap,module->region);
 	}
 	handle_release(&(module->handle));
-	mmap_dealloc_region(&(process_kernel->mmap),region);
+	mmap2_dealloc_region(process_kernel->mmap2,region);
 	return NULL;
 }
 
