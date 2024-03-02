@@ -131,11 +131,11 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 stack_size){
-	thread_t* out=_thread_alloc(process,stack_size,KERNEL_THREAD_STACK_SIZE);
+KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 rsp){
+	thread_t* out=_thread_alloc(process,0x200000,KERNEL_THREAD_STACK_SIZE);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+KERNEL_THREAD_STACK_SIZE;
 	out->reg_state.gpr_state.rip=rip;
-	out->reg_state.gpr_state.rsp=out->user_stack_region->rb_node.key+stack_size;
+	out->reg_state.gpr_state.rsp=rsp;
 	out->reg_state.gpr_state.cs=0x23;
 	out->reg_state.gpr_state.ds=0x1b;
 	out->reg_state.gpr_state.es=0x1b;
@@ -219,11 +219,12 @@ error_t syscall_thread_create(u64 func,u64 arg0,u64 arg1,u64 stack_size){
 	if (!syscall_get_user_pointer_max_length((void*)func)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
-	thread_t* thread=thread_create_user_thread(THREAD_DATA->process,func,(stack_size?stack_size:THREAD_DATA->user_stack_region->length));
-	thread->reg_state.gpr_state.rdi=arg0;
-	thread->reg_state.gpr_state.rsi=arg1;
-	scheduler_enqueue_thread(thread);
-	return thread->handle.rb_node.key;
+	panic("Unimplemented");
+	// thread_t* thread=thread_create_user_thread(THREAD_DATA->process,func,(stack_size?stack_size:THREAD_DATA->user_stack_region->length));
+	// thread->reg_state.gpr_state.rdi=arg0;
+	// thread->reg_state.gpr_state.rsi=arg1;
+	// scheduler_enqueue_thread(thread);
+	// return thread->handle.rb_node.key;
 }
 
 

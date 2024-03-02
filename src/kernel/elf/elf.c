@@ -268,7 +268,7 @@ _error:
 
 static void _create_executable_thread(elf_loader_context_t* ctx){
 	INFO("Creating main thread...");
-	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,0x200000);
+	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,0);
 }
 
 
@@ -291,7 +291,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	string_table_size+=smm_length(ctx->path)+1;
 	size+=13*sizeof(elf_auxv_t); // auxiliary vector entries
 	u64 total_size=(size+string_table_size+ELF_STACK_ALIGNMENT-1)&(-ELF_STACK_ALIGNMENT);
-	if (total_size+PAGE_SIZE/*guard page*/>ctx->thread->user_stack_region->length){
+	if (total_size>ELF_STACK_SIZE){
 		ERROR("Stack too small for arguments");
 		return ERROR_NO_SPACE;
 	}
