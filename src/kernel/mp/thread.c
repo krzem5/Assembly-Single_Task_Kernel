@@ -53,9 +53,6 @@ static void _thread_handle_destructor(handle_t* handle){
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
-	if (thread->user_stack_region){
-		mmap_dealloc_region(&(process->mmap),thread->user_stack_region);
-	}
 	mmap_dealloc_region(&(process_kernel->mmap),thread->kernel_stack_region);
 	mmap_dealloc_region(&(process_kernel->mmap),thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
@@ -67,13 +64,11 @@ static void _thread_handle_destructor(handle_t* handle){
 
 
 
-static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel_stack_size){
+static thread_t* _thread_alloc(process_t* process){
 	if (!_thread_fpu_state_allocator){
 		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,pmm_alloc_counter("omm_thread_fpu_state"));
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
-	user_stack_size=pmm_align_up_address(user_stack_size);
-	kernel_stack_size=pmm_align_up_address(kernel_stack_size);
 	thread_t* out=omm_alloc(_thread_allocator);
 	memset(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
@@ -84,16 +79,7 @@ static thread_t* _thread_alloc(process_t* process,u64 user_stack_size,u64 kernel
 	out->process=process;
 	char buffer[128];
 	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
-	if (user_stack_size){
-		out->user_stack_region=mmap_alloc(&(process->mmap),0,user_stack_size,_thread_user_stack_pmm_counter,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
-		if (!out->user_stack_region){
-			panic("Unable to reserve thread stack");
-		}
-	}
-	else{
-		out->user_stack_region=NULL;
-	}
-	out->kernel_stack_region=mmap_alloc(&(process_kernel->mmap),0,kernel_stack_size,_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	out->kernel_stack_region=mmap_alloc(&(process_kernel->mmap),0,KERNEL_THREAD_STACK_SIZE,_thread_kernel_stack_pmm_counter,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
@@ -132,7 +118,7 @@ KERNEL_EARLY_INIT(){
 
 
 KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 rsp){
-	thread_t* out=_thread_alloc(process,0x200000,KERNEL_THREAD_STACK_SIZE);
+	thread_t* out=_thread_alloc(process);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+KERNEL_THREAD_STACK_SIZE;
 	out->reg_state.gpr_state.rip=rip;
 	out->reg_state.gpr_state.rsp=rsp;
@@ -154,7 +140,7 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 		panic("Too many kernel thread arguments");
 	}
 	_Bool start_thread=!process;
-	thread_t* out=_thread_alloc((process?process:process_kernel),0,KERNEL_THREAD_STACK_SIZE);
+	thread_t* out=_thread_alloc((process?process:process_kernel));
 	if (name){
 		smm_dealloc(out->name);
 		out->name=smm_alloc(name,0);

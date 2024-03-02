@@ -173,6 +173,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		return ERROR_NOT_FOUND;
 	}
 	mmap_region_t* region=mmap_alloc(&(process_kernel->mmap),0,0,NULL,MMAP_REGION_FLAG_NO_FILE_WRITEBACK|MMAP_REGION_FLAG_VMM_NOEXECUTE|MMAP_REGION_FLAG_VMM_READWRITE,file,0);
+	mmap2_region_t* kernel_program_region=NULL;
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
 	error_t out=ERROR_OK;
@@ -196,19 +197,29 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 			max_address=address;
 		}
 	}
-	mmap_region_t* program_region=mmap_alloc(&(ctx->process->mmap),0,max_address,_user_image_pmm_counter,MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_VMM_READWRITE,NULL,0);
+	mmap2_region_t* program_region=mmap2_alloc(ctx->process->mmap2,0,max_address,MMAP2_REGION_FLAG_COMMIT|MMAP2_REGION_FLAG_VMM_USER);
 	if (!program_region){
 		ERROR("Unable to allocate interpreter program memory");
 		out=ERROR_NO_MEMORY;
 		goto _error;
 	}
+	kernel_program_region=mmap2_map_to_kernel(ctx->process->mmap2,program_region->rb_node.key,max_address);
 	ctx->interpreter_image_base=program_region->rb_node.key;
 	for (u16 i=0;i<header.e_phnum;i++){
 		const elf_phdr_t* program_header=file_data+header.e_phoff+i*header.e_phentsize;
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		mmap_set_memory(&(ctx->process->mmap),program_region,program_header->p_vaddr,file_data+program_header->p_offset,program_header->p_filesz);
+		memcpy((void*)(kernel_program_region->rb_node.key+program_header->p_vaddr),file_data+program_header->p_offset,program_header->p_filesz);
+		u64 flags=0;
+		if (!(program_header->p_flags&PF_X)){
+			flags|=VMM_PAGE_FLAG_NOEXECUTE;
+		}
+		if (program_header->p_flags&PF_W){
+			flags|=VMM_PAGE_FLAG_READWRITE;
+		}
+		u64 padding=program_header->p_vaddr&(PAGE_SIZE-1);
+		vmm_adjust_flags(&(ctx->process->pagemap),program_region->rb_node.key+program_header->p_vaddr-padding,flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(program_header->p_memsz+padding),0);
 	}
 	if (!dyn){
 		goto _skip_dynamic_section;
@@ -257,7 +268,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 				out=ERROR_INVALID_FORMAT;
 				goto _error;
 		}
-		mmap_set_memory(&(ctx->process->mmap),program_region,relocations->r_offset,&(symbol->st_value),sizeof(u64));
+		*((u64*)(kernel_program_region->rb_node.key+relocations->r_offset))=symbol->st_value;
 		if (relocation_size<=relocation_entry_size){
 			break;
 		}
@@ -265,10 +276,16 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		relocation_size-=relocation_entry_size;
 	}
 _skip_dynamic_section:
+	if (kernel_program_region){
+		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
+	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	ctx->entry_address=ctx->interpreter_image_base+header.e_entry;
 	return ERROR_OK;
 _error:
+	if (kernel_program_region){
+		mmap2_dealloc_region(process_kernel->mmap2,kernel_program_region);
+	}
 	mmap_dealloc_region(&(process_kernel->mmap),region);
 	return out;
 }
@@ -305,13 +322,10 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 		return ERROR_NO_SPACE;
 	}
 	mmap2_region_t* kernel_region=mmap2_map_to_kernel(ctx->process->mmap2,ctx->stack_top-pmm_align_up_address(total_size),pmm_align_up_address(total_size));
-	// memcpy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
-	// mmap_region_t* kernel_region=mmap_map_region(&(ctx->process->mmap),ctx->thread->user_stack_region,pmm_align_down_address(ctx->thread->user_stack_region->length-total_size),pmm_align_up_address(total_size));
 	void* buffer=(void*)(kernel_region->rb_node.key+((-total_size)&(PAGE_SIZE-1)));
 	u64* data_ptr=buffer;
 	void* string_table_ptr=buffer+size;
 	u64 pointer_difference=((void*)(ctx->stack_top-total_size))-buffer;
-	// u64 pointer_difference=((void*)(ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size))-buffer;
 	PUSH_DATA_VALUE(ctx->argc);
 	for (u64 i=0;i<ctx->argc;i++){
 		PUSH_DATA_VALUE(string_table_ptr+pointer_difference);
@@ -339,9 +353,7 @@ static error_t _generate_input_data(elf_loader_context_t* ctx){
 	PUSH_AUXV_VALUE(AT_EXECFN,string_table_ptr+pointer_difference);
 	PUSH_STRING(ctx->path);
 	PUSH_AUXV_VALUE(AT_NULL,0);
-	// mmap_dealloc_region(&(process_kernel->mmap),kernel_region);
 	mmap2_dealloc_region(process_kernel->mmap2,kernel_region);
-	// ctx->thread->reg_state.gpr_state.rsp=ctx->thread->user_stack_region->rb_node.key+ctx->thread->user_stack_region->length-total_size;
 	ctx->thread->reg_state.gpr_state.rsp=ctx->stack_top-total_size;
 	return ERROR_OK;
 }

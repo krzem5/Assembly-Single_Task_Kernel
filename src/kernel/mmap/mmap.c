@@ -12,7 +12,7 @@
 
 
 
-static pmm_counter_descriptor_t* _mmap_data_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _mmap_pmm_counter=NULL;
 static omm_allocator_t* _mmap_allocator=NULL;
 static omm_allocator_t* _mmap_region_allocator=NULL;
 
@@ -25,8 +25,8 @@ static void _dealloc_region(mmap2_t* mmap,mmap2_region_t* region){
 
 
 mmap2_t* mmap2_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
-	if (!_mmap_data_pmm_counter){
-		_mmap_data_pmm_counter=pmm_alloc_counter("mmap_data");
+	if (!_mmap_pmm_counter){
+		_mmap_pmm_counter=pmm_alloc_counter("mmap");
 	}
 	if (!_mmap_allocator){
 		_mmap_allocator=omm_init("mmap",sizeof(mmap2_t),8,4,pmm_alloc_counter("omm_mmap"));
@@ -139,7 +139,7 @@ u64 mmap2_handle_pf(mmap2_t* mmap,u64 address){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap2_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (region&&region->rb_node.key+region->length>address){
-		u64 out=pmm_alloc(1,_mmap_data_pmm_counter,0);
+		u64 out=pmm_alloc(1,_mmap_pmm_counter,0);
 		u64 flags=VMM_PAGE_FLAG_PRESENT;
 		if (region->flags&MMAP2_REGION_FLAG_VMM_USER){
 			flags|=VMM_PAGE_FLAG_USER;
