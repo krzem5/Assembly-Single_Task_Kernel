@@ -16,10 +16,10 @@
 
 
 
-#ifdef KERNEL_DISABLE_ASSERT
-#define BYPASS_BACKTRACE_PROTECTION 0
+#ifdef KERNEL_RELEASE
+#define USER_STACKTRACE 0
 #else
-#define BYPASS_BACKTRACE_PROTECTION 1
+#define USER_STACKTRACE 1
 #endif
 
 
@@ -106,7 +106,7 @@ void _isr_handler(isr_state_t* isr_state){
 	WARN("rflags = %p",isr_state->rflags);
 	WARN("rsp    = %p",isr_state->rsp);
 	WARN("ss     = %p",isr_state->ss);
-	if (BYPASS_BACKTRACE_PROTECTION||isr_state->cs==0x08){
+	if (USER_STACKTRACE||isr_state->cs==0x08){
 		vmm_pagemap_t current_pagemap;
 		vmm_get_pagemap(&current_pagemap);
 		u64 rip=isr_state->rip;

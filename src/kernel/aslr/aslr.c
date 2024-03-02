@@ -36,7 +36,7 @@ static void KERNEL_EARLY_EXEC KERNEL_NORETURN _finish_relocation(void (*KERNEL_N
 
 
 u64 aslr_generate_address(u64 min,u64 max){
-#if KERNEL_DISABLE_ASLR
+#ifndef KERNEL_RELEASE
 	return min;
 #else
 	u64 value=0;
@@ -50,7 +50,7 @@ u64 aslr_generate_address(u64 min,u64 max){
 void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN next_stage_callback)(void)){
 	aslr_module_base=aslr_generate_address(KERNEL_ASLR_KERNEL_END,KERNEL_ASLR_MODULE_START);
 	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_START;
-#if KERNEL_DISABLE_ASLR
+#ifdef KERNEL_RELEASE
 	ERROR("ASLR disabled");
 	(void)_finish_relocation;
 	INFO("Kernel range: %p - %p",kernel_section_kernel_start(),kernel_section_kernel_end());

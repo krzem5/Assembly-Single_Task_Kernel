@@ -38,7 +38,7 @@ typedef struct _SHARED_OBJECT{
 	char path[256];
 	u64 image_base;
 	shared_object_dynamic_section_data_t dynamic_section;
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	u64 gcov_info_base;
 	u64 gcov_info_size;
 #endif

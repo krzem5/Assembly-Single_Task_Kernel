@@ -36,7 +36,7 @@ _Bool spinlock_is_held(spinlock_t* lock);
 
 
 
-#if KERNEL_DISABLE_ASSERT==0
+#ifndef KERNEL_RELEASE
 #include <kernel/lock/profiling.h>
 #define spinlock_init(lock) __lock_overload_type_function(spinlock_init,lock)
 #define spinlock_acquire_exclusive(lock) __lock_overload_acquire_function(spinlock_acquire_exclusive,lock)

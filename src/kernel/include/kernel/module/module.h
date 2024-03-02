@@ -32,7 +32,7 @@ typedef struct _MODULE{
 	string_t* name;
 	const struct _MODULE_DESCRIPTOR* descriptor;
 	mmap_region_t* region;
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	u64 gcov_info_base;
 	u64 gcov_info_size;
 #endif

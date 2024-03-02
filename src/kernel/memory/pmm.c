@@ -112,7 +112,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 		return;
 	}
 	INFO("Registering memory range %p - %p",address,end);
-#ifndef KERNEL_DISABLE_ASSERT
+#ifndef KERNEL_RELEASE
 	INFO("Resetting memory...");
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,end-address);
 #endif
@@ -301,7 +301,7 @@ _retry_allocator:
 	_pmm_load_balancer.stats.hit_count++;
 	u32 j=__builtin_ffs(allocator->bucket_bitmap>>i)+i-1;
 	u64 out=(allocator->buckets+j)->head;
-#ifndef KERNEL_DISABLE_ASSERT
+#ifndef KERNEL_RELEASE
 	if (_block_descriptor_get_idx(out)!=j){
 		ERROR("List head corrupted [%u]: %p, %u",j,out,_block_descriptor_get_idx(out));
 		panic("List head corrupted");
@@ -327,7 +327,7 @@ _retry_allocator:
 		allocator->bucket_bitmap|=1<<j;
 	}
 	spinlock_release_exclusive(&(allocator->lock));
-#ifndef KERNEL_DISABLE_ASSERT
+#ifndef KERNEL_RELEASE
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_Bool error=0;
 	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
@@ -368,7 +368,7 @@ _retry_allocator:
 
 
 KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
-#ifndef KERNEL_DISABLE_ASSERT
+#ifndef KERNEL_RELEASE
 	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,count<<PAGE_SIZE_SHIFT);
 #endif
 	if (!count){

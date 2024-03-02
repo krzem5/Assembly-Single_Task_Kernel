@@ -52,7 +52,7 @@ u64 main(const u64* data){
 		}
 	}
 	shared_object_t* so=shared_object_init(interpreter_image_base,_DYNAMIC,interpreter,0);
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	so->gcov_info_base=(u64)__gcov_info_start;
 	so->gcov_info_size=((u64)__gcov_info_end)-((u64)__gcov_info_start);
 #endif

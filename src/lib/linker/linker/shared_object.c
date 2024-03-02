@@ -7,7 +7,7 @@
 #include <sys/memory/memory.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 #include <sys/syscall/syscall.h>
 #endif
 
@@ -38,7 +38,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	so->image_base=image_base;
 	sys_memory_copy(path,so->path,path_length);
 	so->path[path_length]=0;
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	so->gcov_info_base=0;
 	so->gcov_info_size=0;
 #endif
@@ -216,7 +216,7 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 		}
 	}
 	void* image_base=(void*)sys_memory_map(sys_memory_align_up_address(max_address),SYS_MEMORY_FLAG_WRITE,0);
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	u64 gcov_info_base=0;
 	u64 gcov_info_size=0;
 	const char* section_header_name_string_table=base_file_address+((const elf_shdr_t*)(base_file_address+header->e_shoff+header->e_shstrndx*header->e_shentsize))->sh_offset;
@@ -252,7 +252,7 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
 	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	so->gcov_info_base=gcov_info_base;
 	so->gcov_info_size=gcov_info_size;
 #endif
@@ -280,7 +280,7 @@ void shared_object_execute_fini(void){
 
 
 
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 SYS_PUBLIC void SYS_DESTRUCTOR SYS_NOCOVERAGE __sys_linker_dump_coverage(void){
 	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
 	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){

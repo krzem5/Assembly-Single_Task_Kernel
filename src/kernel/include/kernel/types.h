@@ -7,7 +7,6 @@
 #define KERNEL_EARLY_READ __attribute__((section(".erdata")))
 #define KERNEL_EARLY_WRITE __attribute__((section(".edata")))
 #define KERNEL_INIT_WRITE __attribute__((section(".idata")))
-#define KERNEL_NOBSS __attribute__((section(".data")))
 #define KERNEL_NORETURN __attribute__((noreturn))
 #define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define KERNEL_NOINLINE __attribute__((noinline))
@@ -20,11 +19,10 @@
 #define KERNEL_INIT() static KERNEL_EARLY_EXEC void __initializer(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=__initializer;static KERNEL_EARLY_EXEC void __initializer(void)
 #define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void __einitializer(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=__einitializer;static KERNEL_EARLY_EXEC void __einitializer(void)
 #define KERNEL_EARLY_EARLY_INIT() static KERNEL_EARLY_EXEC void __eeinitializer(void);static void* __attribute__((section(".eeinitializer"),used)) __eeinitializer_ptr=__eeinitializer;static KERNEL_EARLY_EXEC void __eeinitializer(void)
-#define KERNEL_EARLY_POINTER(name) static void* __attribute__((section(".epointer"),used)) __epointer=&(name)
+#define KERNEL_EARLY_POINTER(name) static void* __attribute__((section(".epointer"),used)) __epointer_##name=&(name)
 
-#if KERNEL_DISABLE_ASSERT
+#ifdef KERNEL_RELEASE
 #define KERNEL_ASSERT(expression)
-#define KERNEL_ASSERT_BLOCK(block)
 #else
 #define KERNEL_ASSERT(expression) \
 	do{ \
@@ -32,7 +30,6 @@
 			ERROR("[line %u] "#expression": Assertion failed",__LINE__); \
 		} \
 	} while (0)
-#define KERNEL_ASSERT_BLOCK(block) do{block} while(0)
 #endif
 
 

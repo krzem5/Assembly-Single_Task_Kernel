@@ -94,9 +94,9 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DISABLE_ASLR=1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-DKERNEL_DISABLE_ASLR=1","-O1"],
-	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
+	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DEBUG=1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O1","-DKERNEL_COVERAGE=1"],
+	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-g"],
@@ -114,9 +114,9 @@ MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/module/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1","-O1"],
-	MODE_RELEASE: ["-O3","-g0","-DKERNEL_DISABLE_ASSERT=1"]
+	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DEBUG=1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O1","-DKERNEL_COVERAGE=1"],
+	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-g"],
@@ -135,7 +135,7 @@ LIBRARY_OBJECT_FILE_DIRECTORY={
 }[mode]
 LIBRARY_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O1","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O1","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_COVERAGE: ["-O1","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
@@ -160,7 +160,7 @@ USER_OBJECT_FILE_DIRECTORY={
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
 	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE_ENABLED=1"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={

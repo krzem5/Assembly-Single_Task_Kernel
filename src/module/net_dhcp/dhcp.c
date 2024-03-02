@@ -224,7 +224,7 @@ void net_dhcp_init(void){
 	spinlock_init(&_net_dhcp_lock);
 	thread_create_kernel_thread(NULL,"net-dhcp-rx-thread",_rx_thread,0);
 	// load _net_dhcp_preferred_address
-#if !KERNEL_COVERAGE_ENABLED
+#ifndef KERNEL_COVERAGE
 	net_dhcp_negotiate_address();
 #endif
 }

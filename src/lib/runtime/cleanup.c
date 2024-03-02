@@ -11,7 +11,7 @@ extern u64 __gcov_info_end[1];
 
 
 void SYS_NORETURN SYS_NOCOVERAGE _execute_fini(void){
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	__sys_linker_set_root_object_gcov_info((u64)__gcov_info_start,((u64)__gcov_info_end)-((u64)__gcov_info_start));
 #endif
 	__sys_fini();

@@ -9,7 +9,7 @@
 
 
 
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 #define SPINLOOP(cond) \
 	do{ \
 		KERNEL_INLINE void KERNEL_NOCOVERAGE __nocoverage_spinloop(void){ \

@@ -122,7 +122,7 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			}
 			ctx->module->descriptor=(void*)(section_header->sh_addr);
 		}
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 		else if (streq(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
 			ctx->module->gcov_info_base=section_header->sh_addr;
 			ctx->module->gcov_info_size=section_header->sh_size;
@@ -251,7 +251,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	char buffer[256];
 	SMM_TEMPORARY_STRING name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	if (!module_file&&name[0]=='/'){
 		module_file=vfs_lookup(NULL,name,0,0,0);
 		for (const char* path=name;path[0];path++){
@@ -272,7 +272,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	module->name=smm_alloc(name,0);
 	module->descriptor=NULL;
 	module->region=NULL;
-#if KERNEL_COVERAGE_ENABLED
+#ifdef KERNEL_COVERAGE
 	module->gcov_info_base=0;
 	module->gcov_info_size=0;
 #endif
