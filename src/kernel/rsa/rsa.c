@@ -357,29 +357,3 @@ void rsa_state_process(const rsa_state_t* state,rsa_number_t* value,u32 key,rsa_
 	rsa_number_delete(tmp[0]);
 	rsa_number_delete(tmp[1]);
 }
-
-
-
-// KERNEL_INIT(){
-// 	rsa_state_t state;
-// 	const u32 modulus[]={11,4};
-// 	rsa_state_init(modulus,35,&state);
-// 	state.public_key=rsa_number_create(&state);
-// 	state.public_key->data[0]=0x00010001;
-// 	state.public_key->length=1;
-// 	state.private_key=rsa_number_create(&state);
-// 	state.private_key->data[0]=0x0100ff03;
-// 	state.private_key->data[1]=0x00000003;
-// 	state.private_key->length=2;
-// 	rsa_number_t* tmp=rsa_number_create(&state);
-// 	tmp->data[0]=5;
-// 	tmp->data[1]=1;
-// 	tmp->length=2;
-// 	rsa_number_t* ret=rsa_number_create(&state);
-// 	rsa_state_process(&state,tmp,RSA_PRIVATE_KEY,ret);
-// 	WARN("%u: %p_%p",ret->length,ret->data[3]*0x100000000ull+ret->data[2],ret->data[1]*0x100000000ull+ret->data[0]);
-// 	rsa_number_delete(tmp);
-// 	rsa_number_delete(ret);
-// 	rsa_state_deinit(&state);
-// 	panic("AAA");
-// }
