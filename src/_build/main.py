@@ -6,6 +6,7 @@ import initramfs
 import kernel_linker
 import kfs2
 import os
+import process_pool
 import signature
 import struct
 import subprocess
@@ -324,8 +325,7 @@ def _compile_kernel():
 	_generate_kernel_build_info()
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 	object_files=[]
-	rebuild_data_partition=False
-	process_pool=[]
+	pool=process_pool.ProcessPool()
 	for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -337,38 +337,29 @@ def _compile_kernel():
 			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
 			command=None
-			rebuild_data_partition=True
 			if (suffix==".c"):
 				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			process_pool.append((file,subprocess.Popen(command+["-MD","-MT",object_file,"-MF",object_file+".deps"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)))
-	error=False
-	for file,process in process_pool:
-		print(file)
-		process.wait()
-		sys.stdout.buffer.write(process.stdout.read())
-		if (not process.returncode):
-			continue
-		del file_hash_list[file]
-		error=True
+			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,"build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
+	pool.add(process_pool.PROCESS_POOL_COMMAND_PATCH,"build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
+	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
+	if (error):
 		sys.exit(1)
-	kernel_linker.link_kernel("build/kernel/kernel.elf","build/kernel/kernel.bin")
-	_compress("build/kernel/kernel.bin")
-	return rebuild_data_partition
+	return True
 
 
 
-def _compile_module(module,dependencies,changed_files,file_hash_list):
+def _compile_module(module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
-		return False
+		return
 	object_files=[]
 	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
-	process_pool=[]
+	has_updates=False
 	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -386,45 +377,36 @@ def _compile_module(module,dependencies,changed_files,file_hash_list):
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			process_pool.append((file,subprocess.Popen(command+["-MD","-MT",object_file,"-MF",object_file+".deps"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)))
-	if (os.path.exists(f"build/module/{module}.mod") and not process_pool):
-		return False
-	error=False
-	for file,process in process_pool:
-		print(file)
-		process.wait()
-		sys.stdout.buffer.write(process.stdout.read())
-		if (not process.returncode):
-			continue
-		del file_hash_list[file]
-		error=True
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
-		return True
-	kernel_linker.link_module(f"build/module/{module}.mod")
-	return False
+			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+			has_updates=True
+	if (os.path.exists(f"build/module/{module}.mod") and not has_updates):
+		return
+	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
+	pool.add(process_pool.PROCESS_POOL_COMMAND_PATCH,f"build/module/{module}.mod",[kernel_linker.link_module,f"build/module/{module}.mod"])
 
 
 
 def _compile_all_modules():
-	hash_file_path=f"build/hashes/modules"+MODULE_HASH_FILE_SUFFIX
+	hash_file_path=f"build/hashes/module"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
-	error=False
+	pool=process_pool.ProcessPool()
 	with open("src/module/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
 			if (not line):
 				continue
 			name,dependencies=line.split(":")
-			error|=_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+			_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
 
 
 
-def _compile_library(library,flags,dependencies,changed_files,file_hash_list):
+def _compile_library(library,flags,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and library.startswith("test")):
-		return False
+		return
 	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
 		for file_name in files:
 			if (not os.path.exists(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")):
@@ -443,14 +425,14 @@ def _compile_library(library,flags,dependencies,changed_files,file_hash_list):
 				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
 	object_files=[]
 	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
-	process_pool=[]
+	has_updates=False
 	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
 			if (suffix not in SOURCE_FILE_SUFFIXES):
 				continue
 			file=os.path.join(root,file_name)
-			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".pic.o"
+			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
 				continue
@@ -461,37 +443,21 @@ def _compile_library(library,flags,dependencies,changed_files,file_hash_list):
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			process_pool.append((file,subprocess.Popen(command+["-MD","-MT",object_file,"-MF",object_file+".deps"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)))
-	if ((os.path.exists(f"build/lib/lib{library}.a") or os.path.exists(f"build/lib/lib{library}.so")) and not process_pool):
-		return False
-	error=False
-	for file,process in process_pool:
-		print(file)
-		process.wait()
-		sys.stdout.buffer.write(process.stdout.read())
-		if (not process.returncode):
-			continue
-		del file_hash_list[file]
-		error=True
-	if (error):
-		return True
-	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
-		return True
-	if ("nostatic" in flags):
-		return False
-	static_library_file=f"build/lib/lib{library}.a"
-	if (os.path.exists(static_library_file)):
-		os.remove(static_library_file)
-	if (subprocess.run(["ar","rcs",static_library_file]+object_files).returncode!=0):
-		return True
-	return False
+			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+			has_updates=True
+	if ("nodynamic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.so"))):
+		pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
+	if ("nostatic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.a"))):
+		if (os.path.exists(f"build/lib/lib{library}.a")):
+			os.remove(f"build/lib/lib{library}.a")
+		pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
 
 
 
 def _compile_all_libraries():
-	hash_file_path=f"build/hashes/libs"+MODULE_HASH_FILE_SUFFIX
+	hash_file_path=f"build/hashes/lib"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
-	error=False
+	pool=process_pool.ProcessPool()
 	with open("src/lib/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
@@ -499,21 +465,21 @@ def _compile_all_libraries():
 				continue
 			name,dependencies=line.split(":")
 			flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
-			error|=_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+			_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
 
 
 
-def _compile_user_program(program,dependencies,changed_files,file_hash_list):
+def _compile_user_program(program,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and program.startswith("test")):
-		return False
+		return
 	dependencies.append(["runtime","static"])
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
-	error=False
-	has_updates=not os.path.exists(f"build/user/{program}.so")
+	has_updates=False
 	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -529,32 +495,28 @@ def _compile_user_program(program,dependencies,changed_files,file_hash_list):
 				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-c",file,"-DNULL=((void*)0)"]+included_directories+USER_EXTRA_COMPILER_OPTIONS
 			else:
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-			print(file)
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
-				del file_hash_list[file]
-				error=True
+			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 			has_updates=True
-	if (not error and not has_updates):
-		return False
-	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
-		return True
-	return False
+	if (os.path.exists(f"build/user/{program}") and not has_updates):
+		return
+	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
 
 
 
 def _compile_all_user_programs():
 	hash_file_path=f"build/hashes/user"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
-	error=False
+	pool=process_pool.ProcessPool()
 	with open("src/user/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
 			if (not line):
 				continue
 			name,dependencies=line.split(":")
-			error|=_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+			_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
@@ -614,17 +576,18 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
 		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
-		_compress("build/partitions/initramfs.img")
 		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 		kfs2.format_partition(data_fs)
 		kfs2.get_inode(data_fs,"/boot",0o500,True)
 		kfs2.get_inode(data_fs,"/boot/module",0o700,True)
 		kfs2.get_inode(data_fs,"/lib",0o755,True)
 		kfs2.get_inode(data_fs,"/bin",0o755,True)
+		_compress("build/kernel/kernel.bin")
 		with open("build/kernel/kernel.bin.compressed","rb") as rf:
 			kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
 			kfs2.set_file_content(data_fs,kernel_inode,rf.read())
 			kfs2.set_kernel_inode(data_fs,kernel_inode)
+		_compress("build/partitions/initramfs.img")
 		with open("build/partitions/initramfs.img.compressed","rb") as rf:
 			initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400)
 			kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
