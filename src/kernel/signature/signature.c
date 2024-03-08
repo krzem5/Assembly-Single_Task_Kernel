@@ -28,13 +28,11 @@ static rsa_state_t _signature_rsa_state;
 
 KERNEL_EARLY_INIT(){
 	LOG("Loading module signature key...");
-	ERROR("%p %p",__kernel_module_key_modulus[0],__kernel_module_key_modulus_bit_length);
 	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_rsa_state);
 	_signature_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
 	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
 	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_modulus));
 	__kernel_module_key_modulus_bit_length=0;
-	WARN("%p",_signature_rsa_state.modulus);
 }
 
 
