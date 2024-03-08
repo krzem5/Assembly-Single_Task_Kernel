@@ -39,11 +39,6 @@ if ("--coverage" in sys.argv):
 BUILD_DIRECTORIES=[
 	"build",
 	"build/hashes",
-	"build/hashes/kernel",
-	"build/hashes/lib",
-	"build/hashes/modules",
-	"build/hashes/uefi",
-	"build/hashes/user",
 	"build/initramfs",
 	"build/initramfs/boot",
 	"build/initramfs/boot/module",
@@ -79,13 +74,13 @@ CLEAR_BUILD_DIRECTORIES=[
 	"build/share/bin",
 	"build/share/lib"
 ]
-UEFI_HASH_FILE_PATH="build/hashes/uefi/uefi.txt"
+UEFI_HASH_FILE_PATH="build/hashes/uefi.release.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
 KERNEL_HASH_FILE_PATH={
-	MODE_NORMAL: "build/hashes/kernel/debug.txt",
-	MODE_COVERAGE: "build/hashes/kernel/coverage.txt",
-	MODE_RELEASE: "build/hashes/kernel/release.txt"
+	MODE_NORMAL: "build/hashes/kernel.debug.txt",
+	MODE_COVERAGE: "build/hashes/kernel.coverage.txt",
+	MODE_RELEASE: "build/hashes/kernel.release.txt"
 }[mode]
 KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/kernel_debug/",
@@ -368,11 +363,9 @@ def _compile_kernel():
 
 
 
-def _compile_module(module,dependencies):
+def _compile_module(module,dependencies,changed_files,file_hash_list):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
-		return
-	hash_file_path=f"build/hashes/modules/"+module+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY+"/"+module,KERNEL_FILE_DIRECTORY+"/include",*[MODULE_FILE_DIRECTORY+"/"+dep for dep in dependencies])
+		return False
 	object_files=[]
 	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	process_pool=[]
@@ -395,7 +388,7 @@ def _compile_module(module,dependencies):
 				os.remove(os.path.exists(object_file+".gcno"))
 			process_pool.append((file,subprocess.Popen(command+["-MD","-MT",object_file,"-MF",object_file+".deps"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)))
 	if (os.path.exists(f"build/module/{module}.mod") and not process_pool):
-		return
+		return False
 	error=False
 	for file,process in process_pool:
 		print(file)
@@ -405,27 +398,33 @@ def _compile_module(module,dependencies):
 			continue
 		del file_hash_list[file]
 		error=True
-	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
-		sys.exit(1)
+		return True
 	kernel_linker.link_module(f"build/module/{module}.mod")
+	return False
 
 
 
 def _compile_all_modules():
+	hash_file_path=f"build/hashes/modules"+MODULE_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
+	error=False
 	with open("src/module/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
 			if (not line):
 				continue
 			name,dependencies=line.split(":")
-			_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
+			error|=_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
 
 
 
-def _compile_library(library,flags,dependencies):
+def _compile_library(library,flags,dependencies,changed_files,file_hash_list):
 	if (mode!=MODE_COVERAGE and library.startswith("test")):
-		return
+		return False
 	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
 		for file_name in files:
 			if (not os.path.exists(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")):
@@ -442,8 +441,6 @@ def _compile_library(library,flags,dependencies):
 					size+=len(line)
 					wf.write("\n\t"+"".join([f"0x{e:02x}," for e in line]))
 				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
-	hash_file_path=f"build/hashes/lib/"+library+LIBRARY_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY+"/"+library,*[LIBRARY_FILE_DIRECTORY+"/"+dep.split('@')[0] for dep in dependencies])
 	object_files=[]
 	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
 	process_pool=[]
@@ -466,7 +463,7 @@ def _compile_library(library,flags,dependencies):
 				os.remove(os.path.exists(object_file+".gcno"))
 			process_pool.append((file,subprocess.Popen(command+["-MD","-MT",object_file,"-MF",object_file+".deps"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)))
 	if ((os.path.exists(f"build/lib/lib{library}.a") or os.path.exists(f"build/lib/lib{library}.so")) and not process_pool):
-		return
+		return False
 	error=False
 	for file,process in process_pool:
 		print(file)
@@ -476,22 +473,25 @@ def _compile_library(library,flags,dependencies):
 			continue
 		del file_hash_list[file]
 		error=True
-	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
-		sys.exit(1)
+		return True
 	if ("nodynamic" not in flags and subprocess.run(["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS).returncode!=0):
-		sys.exit(1)
+		return True
 	if ("nostatic" in flags):
-		return
+		return False
 	static_library_file=f"build/lib/lib{library}.a"
 	if (os.path.exists(static_library_file)):
 		os.remove(static_library_file)
 	if (subprocess.run(["ar","rcs",static_library_file]+object_files).returncode!=0):
-		sys.exit(1)
+		return True
+	return False
 
 
 
 def _compile_all_libraries():
+	hash_file_path=f"build/hashes/libs"+MODULE_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
+	error=False
 	with open("src/lib/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
@@ -499,16 +499,17 @@ def _compile_all_libraries():
 				continue
 			name,dependencies=line.split(":")
 			flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
-			_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()])
+			error|=_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
 
 
 
-def _compile_user_program(program,dependencies):
+def _compile_user_program(program,dependencies,changed_files,file_hash_list):
 	if (mode!=MODE_COVERAGE and program.startswith("test")):
-		return
+		return False
 	dependencies.append(["runtime","static"])
-	hash_file_path=f"build/hashes/user/"+program+USER_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY+"/"+program,*[LIBRARY_FILE_DIRECTORY+"/"+dep[0] for dep in dependencies])
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
 	error=False
@@ -535,22 +536,28 @@ def _compile_user_program(program,dependencies):
 				del file_hash_list[file]
 				error=True
 			has_updates=True
-	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (not error and not has_updates):
-		return
+		return False
 	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS).returncode!=0):
-		sys.exit(1)
+		return True
+	return False
 
 
 
 def _compile_all_user_programs():
+	hash_file_path=f"build/hashes/user"+MODULE_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
+	error=False
 	with open("src/user/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
 			if (not line):
 				continue
 			name,dependencies=line.split(":")
-			_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()])
+			error|=_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()],changed_files,file_hash_list)
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
 
 
 
