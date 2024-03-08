@@ -4,6 +4,11 @@ import sys
 
 
 
+SIGNATURE_KEY_FILE_PATH="build/keys/signature_key_debug"
+SIGNATURE_RELEASE_KEY_FILE_PATH="build/keys/signature_key_release"
+
+
+
 __all__=["load_key","get_public_key","sign"]
 
 
@@ -20,9 +25,10 @@ def _decode_hex(data):
 
 
 
-def load_key(file_path):
+def load_key(use_release_key):
+	file_path=(SIGNATURE_RELEASE_KEY_FILE_PATH if use_release_key else SIGNATURE_KEY_FILE_PATH)
 	if (not os.path.exists(file_path)):
-		if (subprocess.run(["openssl","genpkey","-algorithm","rsa","-pkeyopt","rsa_keygen_bits:4096","-out",file_path]).returncode):
+		if (subprocess.run(["openssl","genpkey","-algorithm","rsa","-pkeyopt",f"rsa_keygen_bits:{4096 if use_release_key else 512}","-out",file_path]).returncode):
 			sys.exit(1)
 	process=subprocess.run(["openssl","asn1parse","-in",file_path,"-inform","pem"],stdout=subprocess.PIPE)
 	if (process.returncode):

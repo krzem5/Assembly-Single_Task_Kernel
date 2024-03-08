@@ -320,11 +320,17 @@ def link_module(file_path):
 		wf.write(struct.pack("<Q",0))
 		wf.seek(ctx.symbol_table.symbols_by_name["_module_signature"].index*24+ctx.symbol_table.offset)
 		wf.write(struct.pack("<IBBHQQ",0,STT_NOTYPE|(STB_LOCAL<<4),STV_HIDDEN,0,0,0))
-	with open(file_path,"rb") as rf:
-		digest=hashlib.sha256(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":"+rf.read()+b"\x00"*((-len(data))&4095)).digest()
-	signed_digest=signature.sign(digest)
-	if (len(signed_digest)!=MODULE_SIGNATURE_SECTION_SIZE):
-		raise RuntimeError
-	with open(file_path,"r+b") as wf:
+		hash_state=hashlib.sha256()
+		hash_state.update(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":")
+		wf.seek(0)
+		while (True):
+			chunk=wf.read(4096)
+			if (not chunk):
+				break
+			hash_state.update(chunk)
+		hash_state.update(b"\x00"*((-len(data))&4095))
+		signed_digest=signature.sign(hash_state.digest())
+		if (len(signed_digest)!=MODULE_SIGNATURE_SECTION_SIZE):
+			raise RuntimeError
 		wf.seek(section.offset)
 		wf.write(signed_digest)
