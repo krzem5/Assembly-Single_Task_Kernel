@@ -10,6 +10,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
+#include <kernel/signature/signature.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -285,6 +286,9 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	};
 	_find_static_elf_sections(&ctx);
 	if (!_check_elf_header(&ctx)){
+		goto _error;
+	}
+	if (!signature_verify_module(name,region)){
 		goto _error;
 	}
 	if (!_map_sections(&ctx)){

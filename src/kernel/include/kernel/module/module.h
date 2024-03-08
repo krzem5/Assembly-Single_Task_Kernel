@@ -24,6 +24,7 @@
 		(flags), \
 		&module_self \
 	}
+#define MODULE_DECLARE_SIGNATURE() static const u8 __attribute__((used,section(".signature"))) _module_signature[4096]
 
 
 

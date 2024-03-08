@@ -12,6 +12,14 @@
 
 
 
+static void _clear(rsa_number_t* a){
+	for (u32 i=0;i<a->capacity;i++){
+		a->data[i]=0;
+	}
+}
+
+
+
 static void _normalize(rsa_number_t* a){
 	for (u32 i=a->length;i<a->capacity;i++){
 		a->data[i]=0;
@@ -88,9 +96,7 @@ static void _subtract_fixed_length(const rsa_number_t* a,const rsa_number_t* b,u
 
 
 static void _mult(const rsa_number_t* a,u32 a_right_shift,const rsa_number_t* b,rsa_number_t* out){
-	for (u32 i=0;i<out->capacity;i++){
-		out->data[i]=0;
-	}
+	_clear(out);
 	if (a_right_shift>=a->length){
 		out->length=1;
 		return;
@@ -129,9 +135,7 @@ static void _mult_int(const rsa_number_t* a,u32 b,rsa_number_t* out,u32 out_offs
 
 
 static void _square(const rsa_number_t* a,rsa_number_t* out){
-	for (u32 i=0;i<out->capacity;i++){
-		out->data[i]=0;
-	}
+	_clear(out);
 	for (u32 i=0;i<a->length;i++){
 		u64 x=a->data[i];
 		u64 carry=x*x+out->data[i<<1];
@@ -224,14 +228,14 @@ rsa_number_t* rsa_number_create(const rsa_state_t* state){
 	rsa_number_t* out=amm_alloc(sizeof(rsa_number_t)+state->max_number_length*sizeof(u32));
 	out->length=0;
 	out->capacity=state->max_number_length;
-	memset(out->data,0,state->max_number_length*sizeof(u32));
+	_clear(out);
 	return out;
 }
 
 
 
 void rsa_number_delete(rsa_number_t* number){
-	memset(number->data,0,number->capacity*sizeof(u32));
+	_clear(number);
 	number->length=0;
 	number->capacity=0;
 	amm_dealloc(number);

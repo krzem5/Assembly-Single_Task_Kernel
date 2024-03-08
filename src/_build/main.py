@@ -349,7 +349,7 @@ def _compile_kernel():
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files).returncode!=0):
 		sys.exit(1)
-	kernel_linker.link("build/kernel/kernel.elf","build/kernel/kernel.bin")
+	kernel_linker.link_kernel("build/kernel/kernel.elf","build/kernel/kernel.bin")
 	_compress("build/kernel/kernel.bin")
 	return rebuild_data_partition
 
@@ -387,6 +387,7 @@ def _compile_module(module,dependencies):
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error or subprocess.run(["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS).returncode!=0):
 		sys.exit(1)
+	kernel_linker.link_module(f"build/module/{module}.mod")
 
 
 

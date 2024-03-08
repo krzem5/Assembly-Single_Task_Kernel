@@ -13,13 +13,16 @@ SHF_ALLOC=2
 
 SHN_UNDEF=0
 
+STT_NOTYPE=0
 STT_FUNC=2
 STT_SECTION=3
 STT_FILE=4
 
+STB_LOCAL=0
 STB_GLOBAL=1
 
 STV_DEFAULT=0
+STV_HIDDEN=2
 
 R_X86_64_64=1
 R_X86_64_PC32=2
@@ -33,16 +36,20 @@ KERNEL_START_ADDRESS=0xffffffffc0100000
 KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
 KERNEL_HASH_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_ex",".kernel_nx"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
+MODULE_SIGNATURE_SECTION_NAME=".signature"
+MODULE_SIGNATURE_SECTION_SIZE=4096
 
 
 
-__all__=["link"]
+__all__=["link_kernel","link_module"]
 
 
 
 class LinkerContext(object):
 	def __init__(self,data):
 		self.data=data
+		self.e_shoff=None
+		self.e_shentsize=None
 		self.section_headers={}
 		self.section_headers_by_name={}
 		self.symbol_table=None
@@ -85,6 +92,7 @@ class SymbolTable(object):
 		self.symbols_by_name={}
 
 	def add_symbol(self,index,symbol):
+		symbol.index=index
 		self.symbols[index]=symbol
 		self.symbols_by_name[symbol.name]=symbol
 
@@ -98,6 +106,7 @@ class Symbol(object):
 		self.is_public=is_public
 		self.add_to_generated_table=add_to_generated_table
 		self.name_relocation_offset=None
+		self.index=-1
 
 
 
@@ -122,6 +131,8 @@ class RelocationEntry(object):
 def _parse_headers(data):
 	out=LinkerContext(data)
 	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])
+	out.e_shoff=e_shoff
+	out.e_shentsize=e_shentsize
 	sh_name_offset=struct.unpack("<24xQ32x",data[e_shoff+e_shstrndx*e_shentsize:e_shoff+(e_shstrndx+1)*e_shentsize])[0]
 	for i in range(0,e_shnum):
 		sh_name,sh_type,sh_flags,sh_offset,sh_size,sh_link=struct.unpack("<IIQ8xQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
@@ -135,7 +146,7 @@ def _parse_headers(data):
 
 
 
-def _parse_symbol_table(ctx):
+def _parse_symbol_table(ctx,allow_undefined=False):
 	error=False
 	st_name_offset=ctx.section_headers[ctx.symbol_table.string_table_section].offset
 	for i in range(ctx.symbol_table.offset,ctx.symbol_table.offset+ctx.symbol_table.size,24):
@@ -144,8 +155,9 @@ def _parse_symbol_table(ctx):
 		if ((st_info&0x0f)==STT_FILE or ((st_info&0x0f)!=STT_SECTION and not name)):
 			continue
 		if (st_shndx==SHN_UNDEF and not name.startswith("__KERNEL_SECTION_")):
-			print(f"Undefiend symbol: {name}")
-			error=True
+			if (not allow_undefined):
+				print(f"Undefiend symbol: {name}")
+				error=True
 			continue
 		is_func=((st_info&0x0f)==STT_FUNC)
 		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
@@ -263,7 +275,7 @@ def _generate_signature(ctx):
 
 
 
-def link(src_file_path,dst_file_path):
+def link_kernel(src_file_path,dst_file_path):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
@@ -276,3 +288,24 @@ def link(src_file_path,dst_file_path):
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
+
+
+
+def link_module(file_path):
+	with open(file_path,"rb") as rf:
+		data=bytearray(rf.read())
+	ctx=_parse_headers(data)
+	section=ctx.section_headers_by_name[MODULE_SIGNATURE_SECTION_NAME]
+	if (section.size!=MODULE_SIGNATURE_SECTION_SIZE):
+		return
+	_parse_symbol_table(ctx,allow_undefined=True)
+	with open(file_path,"r+b") as wf:
+		wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+8)
+		wf.write(struct.pack("<Q",0))
+		wf.seek(ctx.symbol_table.symbols_by_name["_module_signature"].index*24+ctx.symbol_table.offset)
+		wf.write(struct.pack("<IBBHQQ",0,STT_NOTYPE|(STB_LOCAL<<4),STV_HIDDEN,0,0,0))
+	with open(file_path,"rb") as rf:
+		digest=hashlib.sha256(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":"+rf.read()+b"\x00"*((-len(data))&4095)).digest()
+	with open(file_path,"r+b") as wf:
+		wf.seek(section.offset)
+		wf.write(digest)
