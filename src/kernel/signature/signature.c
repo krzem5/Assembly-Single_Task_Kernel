@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
+#include <kernel/rsa/rsa.h>
 #include <kernel/signature/signature.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -17,7 +18,24 @@
 
 
 
-static u32 KERNEL_EARLY_WRITE __kernel_signature[8];
+static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
+static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
+static rsa_state_t _signature_rsa_state;
+
+
+
+KERNEL_EARLY_INIT(){
+	LOG("Loading module signature key...");
+	ERROR("%p %p",__kernel_module_key_modulus[0],__kernel_module_key_modulus_bit_length);
+	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_rsa_state);
+	_signature_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
+	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
+	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_modulus));
+	__kernel_module_key_modulus_bit_length=0;
+	WARN("%p",_signature_rsa_state.modulus);
+}
 
 
 
@@ -60,8 +78,15 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region){
 		ERROR("Module '%s' is not signed",name);
 		return 1;
 	}
-	u8 module_signature[SIGNATURE_SECTION_SIZE];
-	memcpy(module_signature,file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE);
+	return 1;
+	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE/sizeof(u32));
+	WARN("%u %p",value->length,value->data[1]*0x100000000ull+value->data[0]);
+	rsa_number_t* tmp=rsa_number_create(&_signature_rsa_state);
+	rsa_state_process(&_signature_rsa_state,value,RSA_PUBLIC_KEY,tmp);
+	WARN("%u %p %p",tmp->length,tmp->data[0],_signature_rsa_state.modulus->data[1]*0x100000000ull+_signature_rsa_state.modulus->data[0]);
+	ERROR("%u",_signature_rsa_state.public_key->data[0]);
+	// u8 module_signature[SIGNATURE_SECTION_SIZE];
+	// memcpy(module_signature,file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE);
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
@@ -69,13 +94,14 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region){
 	hash_sha256_process_chunk(&state,":",1);
 	hash_sha256_process_chunk(&state,file_base,region->length);
 	hash_sha256_finalize(&state);
-	for (u32 i=0;i<8;i++){
-		if (*((const u32*)(module_signature+4*i))!=__builtin_bswap32(state.result[i])){
-			goto _error;
-		}
-		state.result[i]=0;
-	}
-	memset(module_signature,0,SIGNATURE_SECTION_SIZE);
+	goto _error;
+	// for (u32 i=0;i<8;i++){
+	// 	if (*((const u32*)(module_signature+4*i))!=__builtin_bswap32(state.result[i])){
+	// 		goto _error;
+	// 	}
+	// 	state.result[i]=0;
+	// }
+	// memset(module_signature,0,SIGNATURE_SECTION_SIZE);
 	ERROR("Module '%s' is not signed",name);
 	return 1;
 _error:

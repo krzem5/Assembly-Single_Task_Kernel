@@ -32,6 +32,10 @@ rsa_number_t* rsa_number_create(const rsa_state_t* state);
 
 
 
+rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* state,const u32* data,u32 length);
+
+
+
 void rsa_number_delete(rsa_number_t* number);
 
 

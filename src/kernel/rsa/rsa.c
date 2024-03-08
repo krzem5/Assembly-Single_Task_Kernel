@@ -234,6 +234,20 @@ rsa_number_t* rsa_number_create(const rsa_state_t* state){
 
 
 
+rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* state,const u32* data,u32 length){
+	rsa_number_t* out=amm_alloc(sizeof(rsa_number_t)+state->max_number_length*sizeof(u32));
+	if (length>state->max_number_length){
+		length=state->max_number_length;
+	}
+	out->length=length;
+	out->capacity=state->max_number_length;
+	memcpy(out->data,data,length*sizeof(u32));
+	_normalize(out);
+	return out;
+}
+
+
+
 void rsa_number_delete(rsa_number_t* number){
 	_clear(number);
 	number->length=0;
@@ -253,6 +267,7 @@ void rsa_state_init(const u32* modulus,u32 modulus_bit_length,rsa_state_t* out){
 	out->modulus->length=modulus_length;
 	memcpy(out->modulus->data,modulus,modulus_length*sizeof(u32));
 	out->modulus->data[modulus_bit_length>>5]&=(1ull<<(modulus_bit_length&31))-1;
+	_normalize(out->modulus);
 	_calculate_mu(out);
 }
 
@@ -292,6 +307,9 @@ void rsa_state_process(const rsa_state_t* state,rsa_number_t* value,u32 key,rsa_
 	}
 	if (!exponent){
 		panic("rsa_state_process: invalid key");
+	}
+	if (!_is_less_than(exponent,state->modulus)){
+		panic("rsa_state_process: invalid exponent");
 	}
 	if (out->capacity!=state->max_number_length){
 		panic("rsa_state_process: invalid argument");

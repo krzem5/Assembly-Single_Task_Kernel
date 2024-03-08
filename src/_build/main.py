@@ -6,6 +6,7 @@ import initramfs
 import kernel_linker
 import kfs2
 import os
+import signature
 import struct
 import subprocess
 import sys
@@ -820,6 +821,7 @@ for dir_ in CLEAR_BUILD_DIRECTORIES:
 	for file in os.listdir(dir_):
 		os.remove(os.path.join(dir_,file))
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h")
+signature.load_key("build/signature_key")
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi_partition=_compile_uefi()

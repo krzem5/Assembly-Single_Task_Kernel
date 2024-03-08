@@ -1,5 +1,6 @@
 import array
 import hashlib
+import signature
 import struct
 import sys
 
@@ -264,6 +265,20 @@ def _apply_relocations(ctx):
 
 
 
+def _generate_module_signature_key(ctx):
+	exponent,modulus=signature.get_public_key()
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_exponent"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+1024]=exponent.to_bytes(1024,"little")
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_modulus"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+1024]=modulus.to_bytes(1024,"little")
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_modulus_bit_length"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+4]=struct.pack("<I",modulus.bit_length())
+
+
+
 def _generate_signature(ctx):
 	data_hash=hashlib.sha256()
 	for section_name in KERNEL_HASH_SECTION_ORDER:
@@ -285,6 +300,7 @@ def link_kernel(src_file_path,dst_file_path):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
+	_generate_module_signature_key(ctx)
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
@@ -306,6 +322,9 @@ def link_module(file_path):
 		wf.write(struct.pack("<IBBHQQ",0,STT_NOTYPE|(STB_LOCAL<<4),STV_HIDDEN,0,0,0))
 	with open(file_path,"rb") as rf:
 		digest=hashlib.sha256(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":"+rf.read()+b"\x00"*((-len(data))&4095)).digest()
+	signed_digest=signature.sign(digest)
+	if (len(signed_digest)!=MODULE_SIGNATURE_SECTION_SIZE):
+		raise RuntimeError
 	with open(file_path,"r+b") as wf:
 		wf.seek(section.offset)
-		wf.write(digest)
+		wf.write(signed_digest)

@@ -24,7 +24,7 @@ SECTIONS{
 	. = ALIGN(4096);
 	.signature : {
 		*(.signature)
-		. = ALIGN(4096);
+		. = ALIGN(1024);
 	}
 	/DISCARD/ : {
 		*(.comment .gnu .gnu.* .note .note.*)
