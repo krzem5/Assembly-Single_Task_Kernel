@@ -135,6 +135,8 @@ static void _mult_int(const rsa_number_t* a,u32 b,rsa_number_t* out,u32 out_offs
 
 
 static void _square(const rsa_number_t* a,rsa_number_t* out){
+	_mult(a,0,a,out);
+	return;
 	_clear(out);
 	for (u32 i=0;i<a->length;i++){
 		u64 x=a->data[i];
@@ -143,7 +145,7 @@ static void _square(const rsa_number_t* a,rsa_number_t* out){
 		carry>>=32;
 		x<<=1;
 		for (u32 j=i+1;j<a->length;j++){
-			carry+=out->data[i+j]+x*a->data[j];
+			carry+=x*a->data[j]+out->data[i+j];
 			out->data[i+j]=carry;
 			carry>>=32;
 		}
