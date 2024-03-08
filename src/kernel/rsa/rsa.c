@@ -135,17 +135,12 @@ static void _mult_int(const rsa_number_t* a,u32 b,rsa_number_t* out,u32 out_offs
 
 
 static void _square(const rsa_number_t* a,rsa_number_t* out){
-	_mult(a,0,a,out);
-	return;
 	_clear(out);
 	for (u32 i=0;i<a->length;i++){
 		u64 x=a->data[i];
-		u64 carry=x*x+out->data[i<<1];
-		out->data[i<<1]=carry;
-		carry>>=32;
-		x<<=1;
-		for (u32 j=i+1;j<a->length;j++){
-			carry+=x*a->data[j]+out->data[i+j];
+		u64 carry=0;
+		for (u32 j=0;j<a->length;j++){
+			carry+=out->data[i+j]+x*a->data[j];
 			out->data[i+j]=carry;
 			carry>>=32;
 		}
@@ -206,9 +201,9 @@ static void _calculate_mu(rsa_state_t* state){
 	for (u32 i=(b->length<<1);i>=b->length;i--){
 		u32 j=i-b->length;
 		u64 a64=(((u64)(a->data[i]))<<32)|a->data[i-1];
-		__uint128_t a128=(((__uint128_t)a64)<<32)|a->data[i-2];
+		u128 a128=(((u128)a64)<<32)|a->data[i-2];
 		state->_mu->data[j]=(a->data[i]==b32?0xffffffff:a64/b32);
-		for (__uint128_t k=((__uint128_t)b64)*state->_mu->data[j];a128<k;k-=b64){
+		for (u128 k=((u128)b64)*state->_mu->data[j];a128<k;k-=b64){
 			state->_mu->data[j]--;
 		}
 		_mult_int(b,state->_mu->data[j],tmp,j);
