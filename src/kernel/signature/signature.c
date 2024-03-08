@@ -23,6 +23,7 @@ static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
 static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
 static rsa_state_t _signature_rsa_state;
+static _Bool _signature_is_kernel_tainted=0;
 
 
 
@@ -74,6 +75,10 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region){
 	}
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE){
 		ERROR("Module '%s' is not signed",name);
+		if (!_signature_is_kernel_tainted){
+			ERROR("Kernel tainted");
+			_signature_is_kernel_tainted=1;
+		}
 		return 1;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE/sizeof(u32));
@@ -95,4 +100,10 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region){
 		ERROR("Module '%s' has an invalid signature",name);
 	}
 	return !mask;
+}
+
+
+
+KERNEL_PUBLIC _Bool signature_is_kernel_tainted(void){
+	return _signature_is_kernel_tainted;
 }

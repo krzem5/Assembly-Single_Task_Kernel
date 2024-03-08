@@ -226,7 +226,7 @@ static void _calculate_mu(rsa_state_t* state){
 
 
 
-rsa_number_t* rsa_number_create(const rsa_state_t* state){
+KERNEL_PUBLIC rsa_number_t* rsa_number_create(const rsa_state_t* state){
 	rsa_number_t* out=amm_alloc(sizeof(rsa_number_t)+state->max_number_length*sizeof(u32));
 	out->length=0;
 	out->capacity=state->max_number_length;
@@ -236,7 +236,7 @@ rsa_number_t* rsa_number_create(const rsa_state_t* state){
 
 
 
-rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* state,const u32* data,u32 length){
+KERNEL_PUBLIC rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* state,const u32* data,u32 length){
 	rsa_number_t* out=amm_alloc(sizeof(rsa_number_t)+state->max_number_length*sizeof(u32));
 	if (length>state->max_number_length){
 		length=state->max_number_length;
@@ -250,7 +250,7 @@ rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* state,const u32* d
 
 
 
-void rsa_number_delete(rsa_number_t* number){
+KERNEL_PUBLIC void rsa_number_delete(rsa_number_t* number){
 	_clear(number);
 	number->length=0;
 	number->capacity=0;
@@ -259,7 +259,7 @@ void rsa_number_delete(rsa_number_t* number){
 
 
 
-void rsa_state_init(const u32* modulus,u32 modulus_bit_length,rsa_state_t* out){
+KERNEL_PUBLIC void rsa_state_init(const u32* modulus,u32 modulus_bit_length,rsa_state_t* out){
 	u32 modulus_length=(modulus_bit_length+31)>>5;
 	out->max_number_length=(modulus_length<<1)+3;
 	out->modulus_bit_length=modulus_bit_length;
@@ -275,7 +275,7 @@ void rsa_state_init(const u32* modulus,u32 modulus_bit_length,rsa_state_t* out){
 
 
 
-void rsa_state_deinit(rsa_state_t* state){
+KERNEL_PUBLIC void rsa_state_deinit(rsa_state_t* state){
 	if (state->public_key){
 		rsa_number_delete(state->public_key);
 	}
@@ -292,7 +292,7 @@ void rsa_state_deinit(rsa_state_t* state){
 
 
 
-void rsa_state_process(const rsa_state_t* state,rsa_number_t* value,u32 key,rsa_number_t* out){
+KERNEL_PUBLIC void rsa_state_process(const rsa_state_t* state,rsa_number_t* value,u32 key,rsa_number_t* out){
 	if (value->capacity!=state->max_number_length){
 		panic("rsa_state_process: invalid argument");
 	}
