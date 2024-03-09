@@ -9,24 +9,6 @@ __all__=["ProcessPool"]
 
 
 
-def _process_thread(pool_command):
-	error=False
-	output=b""
-	if (isinstance(pool_command.command[0],str)):
-		process=subprocess.run(pool_command.command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-		output=process.stdout
-		error=(process.returncode!=0)
-	else:
-		pool_command.command[0](*pool_command.command[1:])
-	sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(pool_command.name,"utf-8")+b"\x1b[0m\n"+output)
-	if (error):
-		del pool_command.pool._file_hash_list[pool_command.name]
-		pool_command.pool._error=True
-	else:
-		pool_command.pool.dispatch(pool_command.file)
-
-
-
 class ProcessPoolCommand(object):
 	def __init__(self,pool,file,dependencies,command,name):
 		self.pool=pool
@@ -43,9 +25,28 @@ class ProcessPoolCommand(object):
 			self._trigger()
 
 	def _trigger(self):
-		thr=threading.Thread(target=_process_thread,args=(self,))
+		thr=threading.Thread(target=self._thread)
 		thr.start()
 		self.pool._threads.append(thr)
+
+	def _thread(self):
+		error=False
+		output=b""
+		if (isinstance(self.command[0],str)):
+			process=subprocess.run(self.command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+			output=process.stdout
+			error=(process.returncode!=0)
+		else:
+			self.command[0](*self.command[1:])
+		sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(self.name,"utf-8")+b"\x1b[0m\n"+output)
+		if (error):
+			if (self.name in self.pool._file_hash_list):
+				del self.pool._file_hash_list[self.name]
+			elif (self.file.startswith("build") and os.path.exists(self.file)):
+				os.remove(self.file)
+			self.pool._error=True
+		else:
+			self.pool.dispatch(self.file)
 
 
 
