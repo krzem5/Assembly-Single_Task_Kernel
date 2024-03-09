@@ -335,6 +335,7 @@ def _compile_kernel():
 			object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
+				pool.dispatch(object_file)
 				continue
 			command=None
 			if (suffix==".c"):
@@ -343,9 +344,9 @@ def _compile_kernel():
 				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,"build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
-	pool.add(process_pool.PROCESS_POOL_COMMAND_PATCH,"build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
+			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
+	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
 	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
@@ -369,6 +370,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 			object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
+				pool.dispatch(object_file)
 				continue
 			command=None
 			if (suffix==".c"):
@@ -377,12 +379,12 @@ def _compile_module(module,dependencies,changed_files,pool):
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 			has_updates=True
 	if (os.path.exists(f"build/module/{module}.mod") and not has_updates):
 		return
-	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
-	pool.add(process_pool.PROCESS_POOL_COMMAND_PATCH,f"build/module/{module}.mod",[kernel_linker.link_module,f"build/module/{module}.mod"])
+	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
+	pool.add([f"build/module/{module}.mod"],f"build/module/{module}.mod",f"P build/module/{module}.mod",[kernel_linker.link_module,f"build/module/{module}.mod"])
 
 
 
@@ -435,6 +437,7 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
+				pool.dispatch(object_file)
 				continue
 			command=None
 			if (suffix==".c"):
@@ -443,14 +446,14 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 			has_updates=True
 	if ("nodynamic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.so"))):
-		pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
+		pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
 	if ("nostatic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.a"))):
 		if (os.path.exists(f"build/lib/lib{library}.a")):
 			os.remove(f"build/lib/lib{library}.a")
-		pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
+		pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
 
 
 
@@ -489,6 +492,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 			object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
+				pool.dispatch(object_file)
 				continue
 			command=None
 			if (suffix==".c"):
@@ -497,11 +501,11 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add(process_pool.PROCESS_POOL_COMMAND_COMPILE,file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 			has_updates=True
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return
-	pool.add(process_pool.PROCESS_POOL_COMMAND_LINK,f"build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
+	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
 
 
 
