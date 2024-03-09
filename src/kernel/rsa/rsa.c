@@ -67,9 +67,7 @@ static void _add(const rsa_number_t* a,const rsa_number_t* b,u32 b_offset,rsa_nu
 
 
 static void _subtract(const rsa_number_t* a,const rsa_number_t* b,rsa_number_t* out){
-	if (_is_less_than(a,b)){
-		panic("_subtract: invalid argument");
-	}
+	KERNEL_ASSERT(!_is_less_than(a,b));
 	u32 carry=0;
 	for (u32 i=0;i<a->length;i++){
 		s64 value=((s64)(a->data[i]))-b->data[i]-carry;
@@ -157,9 +155,7 @@ static void _modulo(rsa_number_t* a,const rsa_state_t* state){
 		return;
 	}
 	u32 k=state->modulus->length;
-	if (a->length>(k<<1)){
-		panic("_modulo: invalid argument");
-	}
+	KERNEL_ASSERT(a->length<=(k<<1));
 	rsa_number_t* tmp1=rsa_number_create(state);
 	_mult(a,k-1,state->_mu,tmp1);
 	rsa_number_t* tmp2=rsa_number_create(state);
