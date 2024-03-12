@@ -288,8 +288,12 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	if (!_check_elf_header(&ctx)){
 		goto _error;
 	}
-	if (!signature_verify_module(name,region)){
+	_Bool is_tainted=1;
+	if (!(module->flags&MODULE_FLAG_NO_SIGNATURE)&&!signature_verify_module(name,region,&is_tainted)){
 		goto _error;
+	}
+	if (is_tainted){
+		module->flags|=MODULE_FLAG_TAINTED;
 	}
 	if (!_map_sections(&ctx)){
 		goto _error;

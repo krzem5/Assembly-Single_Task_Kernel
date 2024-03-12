@@ -8,7 +8,7 @@ void signature_verify_kernel(void);
 
 
 
-_Bool signature_verify_module(const char* name,const mmap_region_t* region);
+_Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool* is_tainted);
 
 
 

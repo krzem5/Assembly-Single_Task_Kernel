@@ -60,7 +60,8 @@ void KERNEL_EARLY_EXEC signature_verify_kernel(void){
 
 
 
-_Bool signature_verify_module(const char* name,const mmap_region_t* region){
+_Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool* is_tainted){
+	*is_tainted=1;
 	INFO("Verifying signature of '%s'...",name);
 	void* file_base=(void*)(region->rb_node.key);
 	const elf_hdr_t* elf_header=file_base;
@@ -98,6 +99,9 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region){
 	rsa_number_delete(value);
 	if (mask){
 		ERROR("Module '%s' has an invalid signature",name);
+	}
+	else{
+		*is_tainted=0;
 	}
 	return !mask;
 }

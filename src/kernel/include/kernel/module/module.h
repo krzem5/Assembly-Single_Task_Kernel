@@ -16,6 +16,7 @@
 
 #define MODULE_FLAG_PREVENT_LOADS 1
 #define MODULE_FLAG_NO_SIGNATURE 2
+#define MODULE_FLAG_TAINTED 4
 
 #define MODULE_DECLARE(init_callback,deinit_callback,flags) \
 	module_t* module_self=NULL; \
