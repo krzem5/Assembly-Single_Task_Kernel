@@ -13,6 +13,7 @@ static void _hmac_sha256_callback(const void* data1,u32 length1,const void* data
 	u32* out=buffer;
 	for (u32 i=0;i<8;i++){
 		out[i]=__builtin_bswap32(state.result[i]);
+		state.result[i]=0;
 	}
 }
 

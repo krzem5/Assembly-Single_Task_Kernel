@@ -27,5 +27,8 @@ KERNEL_PUBLIC void hmac_compute(const void* key,u32 key_length,const void* messa
 		buffer[i]^=0x6a;
 	}
 	func->callback(buffer,func->block_size+func->output_size,NULL,0,out);
+	for (u32 i=0;i<func->block_size+func->output_size;i++){
+		buffer[i]=0;
+	}
 	amm_dealloc(buffer);
 }
