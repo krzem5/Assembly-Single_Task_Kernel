@@ -27,4 +27,4 @@ static const hmac_hash_function_t _hmac_sha256_function_data={
 
 
 
-KERNEL_PUBLIC const hmac_hash_function_t* hmac_sha256_function=&_hmac_sha256_function_data;
+const hmac_hash_function_t* hmac_sha256_function=&_hmac_sha256_function_data;
