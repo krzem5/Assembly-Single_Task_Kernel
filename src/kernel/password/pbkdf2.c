@@ -17,17 +17,12 @@ KERNEL_PUBLIC void pbkdf2_compute(const void* password,u32 password_length,const
 			chunk_length=prf->output_size;
 		}
 		memcpy(buffer,salt,salt_length);
-		buffer[salt_length]=i>>24;
-		buffer[salt_length+1]=i>>16;
-		buffer[salt_length+2]=i>>8;
-		buffer[salt_length+3]=i;
-		u32 buffer_length=salt_length+4;
+		*((u32*)(buffer+salt_length))=__builtin_bswap32(i);
 		for (u32 j=0;j<iterations;j++){
-			prf->callback(password,password_length,buffer,buffer_length,buffer);
+			prf->callback(password,password_length,buffer,(j?prf->output_size:salt_length+4),buffer);
 			for (u32 k=0;k<chunk_length;k++){
 				((u8*)out)[out_offset+k]^=buffer[k];
 			}
-			buffer_length=prf->output_size;
 		}
 		out_offset+=chunk_length;
 	}
