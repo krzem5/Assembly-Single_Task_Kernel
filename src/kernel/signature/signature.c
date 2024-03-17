@@ -4,8 +4,10 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
+#include <kernel/mp/thread.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/signature/signature.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "signature"
@@ -173,4 +175,28 @@ _unsigned_library:
 
 KERNEL_PUBLIC _Bool signature_is_kernel_tainted(void){
 	return _signature_is_kernel_tainted;
+}
+
+
+
+void syscall_signature_verify(const char* name,void* data,u64 size){
+	u64 name_length=syscall_get_string_length((const char*)name);
+	mmap_region_t* region=mmap_lookup(THREAD_DATA->process->mmap,(u64)data);
+	if (!name_length||name_length>255||!size||!region||region->length!=size){
+		ERROR("syscall_signature_verify: invalid arguments");
+		goto _error;
+	}
+	char buffer[256];
+	memcpy(buffer,(const char*)name,name_length);
+	buffer[name_length]=0;
+	_Bool has_signature;
+	if (!signature_verify_library(buffer,region,&has_signature)){
+		goto _error;
+	}
+	if (!has_signature&&/*FORCE_SIGNED_LIBRARIES*/0){
+		goto _error;
+	}
+	return;
+_error:
+	*((u8*)0)=0;
 }

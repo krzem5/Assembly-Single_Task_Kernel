@@ -37,6 +37,10 @@ sys_error_t __attribute__((nonnull)) sys_memory_change_flags(void* address,u64 l
 
 
 
+sys_error_t __attribute__((nonnull)) sys_memory_get_size(void* address);
+
+
+
 sys_error_t __attribute__((nonnull)) sys_memory_unmap(void* address,u64 length);
 
 

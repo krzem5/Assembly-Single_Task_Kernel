@@ -451,13 +451,19 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 				os.remove(os.path.exists(object_file+".gcno"))
 			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 			has_updates=True
-	if ("nodynamic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.so"))):
-		pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
-		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","library"])
-	if ("nostatic" not in flags and (has_updates or not os.path.exists(f"build/lib/lib{library}.a"))):
-		if (os.path.exists(f"build/lib/lib{library}.a")):
-			os.remove(f"build/lib/lib{library}.a")
-		pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
+	if ("nodynamic" not in flags):
+		if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
+			pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
+			pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","library"])
+		else:
+			pool.dispatch(f"build/lib/lib{library}.so")
+	if ("nostatic" not in flags):
+		if (has_updates or not os.path.exists(f"build/lib/lib{library}.a")):
+			if (os.path.exists(f"build/lib/lib{library}.a")):
+				os.remove(f"build/lib/lib{library}.a")
+			pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
+		else:
+			pool.dispatch(f"build/lib/lib{library}.a")
 
 
 

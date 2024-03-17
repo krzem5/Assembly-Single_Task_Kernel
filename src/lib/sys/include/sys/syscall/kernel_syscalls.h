@@ -383,4 +383,16 @@ static inline u64 _sys_syscall_pipe_create(const char* path){
 
 
 
+static inline void _sys_syscall_signature_verify(const char* name,void* data,u64 size){
+	_sys_syscall3(0x100000042,(u64)name,(u64)data,size);
+}
+
+
+
+static inline u64 _sys_syscall_memory_get_size(void* address){
+	return _sys_syscall1(0x100000043,(u64)address);
+}
+
+
+
 #endif

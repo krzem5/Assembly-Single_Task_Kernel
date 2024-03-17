@@ -61,3 +61,5 @@
 63,process_get_parent(u64 process) -> u64
 64,process_set_root(u64 process,u64 fd) -> u64
 65,pipe_create(const char* path) -> u64
+66,signature_verify(const char* name,void* data,u64 size) -> void
+67,memory_get_size(void* address) -> u64

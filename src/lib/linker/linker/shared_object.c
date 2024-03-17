@@ -6,6 +6,7 @@
 #include <sys/io/io.h>
 #include <sys/memory/memory.h>
 #include <sys/string/string.h>
+#include <sys/syscall/kernel_syscalls.h>
 #include <sys/types.h>
 #ifdef KERNEL_COVERAGE
 #include <sys/syscall/syscall.h>
@@ -199,6 +200,7 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 	}
 	void* base_file_address=(void*)sys_memory_map(0,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE|SYS_MEMORY_FLAG_FILE|SYS_MEMORY_FLAG_NOWRITEBACK,fd);
 	sys_fd_close(fd);
+	_sys_syscall_signature_verify(buffer,base_file_address,sys_memory_get_size(base_file_address));
 	const elf_hdr_t* header=base_file_address;
 	if (header->e_ident.signature!=0x464c457f||header->e_ident.word_size!=2||header->e_ident.endianess!=1||header->e_ident.header_version!=1||header->e_ident.abi!=0||header->e_type!=ET_DYN||header->e_machine!=0x3e||header->e_version!=1){
 		sys_memory_unmap((void*)base_file_address,0);

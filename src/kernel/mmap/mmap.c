@@ -365,6 +365,13 @@ error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 
 
 
+error_t syscall_memory_get_size(u64 address){
+	mmap_region_t* region=mmap_lookup(THREAD_DATA->process->mmap,address);
+	return (region?region->length:ERROR_INVALID_ARGUMENT(0));
+}
+
+
+
 error_t syscall_memory_unmap(u64 address,u64 size){
 	return (mmap_dealloc(THREAD_DATA->process->mmap,pmm_align_down_address(address),pmm_align_up_address(size+(address&(PAGE_SIZE-1))))?ERROR_OK:ERROR_INVALID_ARGUMENT(0));
 }

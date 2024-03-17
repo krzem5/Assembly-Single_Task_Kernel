@@ -18,6 +18,12 @@ SYS_PUBLIC sys_error_t sys_memory_change_flags(void* address,u64 length,u32 flag
 
 
 
+SYS_PUBLIC sys_error_t sys_memory_get_size(void* address){
+	return _sys_syscall_memory_get_size(address);
+}
+
+
+
 SYS_PUBLIC sys_error_t sys_memory_unmap(void* address,u64 length){
 	return _sys_syscall_memory_unmap(address,length);
 }
