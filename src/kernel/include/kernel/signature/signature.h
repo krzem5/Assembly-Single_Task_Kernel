@@ -12,6 +12,10 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool
 
 
 
+_Bool signature_verify_library(const char* name,const mmap_region_t* region,_Bool* has_signature);
+
+
+
 _Bool signature_is_kernel_tainted(void);
 
 

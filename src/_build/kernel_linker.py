@@ -267,15 +267,15 @@ def _apply_relocations(ctx):
 
 
 
-def _generate_module_signature_key(ctx):
-	exponent,modulus=signature.get_public_key("module")
-	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_exponent"]
+def _generate_signature_key(ctx,key):
+	exponent,modulus=signature.get_public_key(key)
+	symbol=ctx.symbol_table.symbols_by_name[f"__kernel_{key}_key_exponent"]
 	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
 	ctx.out[address:address+1024]=exponent.to_bytes(1024,"little")
-	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_modulus"]
+	symbol=ctx.symbol_table.symbols_by_name[f"__kernel_{key}_key_modulus"]
 	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
 	ctx.out[address:address+1024]=modulus.to_bytes(1024,"little")
-	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_modulus_bit_length"]
+	symbol=ctx.symbol_table.symbols_by_name[f"__kernel_{key}_key_modulus_bit_length"]
 	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
 	ctx.out[address:address+4]=struct.pack("<I",modulus.bit_length())
 
@@ -302,7 +302,8 @@ def link_kernel(src_file_path,dst_file_path):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
-	_generate_module_signature_key(ctx)
+	_generate_signature_key(ctx,"module")
+	_generate_signature_key(ctx,"library")
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)

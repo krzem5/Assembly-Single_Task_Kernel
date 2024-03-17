@@ -13,6 +13,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/signature/signature.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -177,6 +178,11 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 	error_t out=ERROR_OK;
 	if (header.e_ident.signature!=0x464c457f||header.e_ident.word_size!=2||header.e_ident.endianess!=1||header.e_ident.header_version!=1||header.e_ident.abi!=0||header.e_type!=ET_DYN||header.e_machine!=0x3e||header.e_version!=1){
 		out=ERROR_INVALID_FORMAT;
+		goto _error;
+	}
+	_Bool has_signature=0;
+	if (!signature_verify_library(ctx->interpreter_path,region,&has_signature)){
+		out=ERROR_DENIED;
 		goto _error;
 	}
 	u64 max_address=0;

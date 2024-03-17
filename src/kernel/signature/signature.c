@@ -24,18 +24,27 @@ static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
 static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
-static rsa_state_t _signature_rsa_state;
+static volatile u8 KERNEL_EARLY_WRITE __kernel_library_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_WRITE __kernel_library_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_WRITE __kernel_library_key_modulus_bit_length;
+static rsa_state_t _signature_module_rsa_state;
+static rsa_state_t _signature_library_rsa_state;
 static _Bool _signature_is_kernel_tainted=0;
 
 
 
 KERNEL_EARLY_INIT(){
 	LOG("Loading module signature key...");
-	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_rsa_state);
-	_signature_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
+	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_module_rsa_state);
+	_signature_module_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_module_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
 	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
 	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
 	__kernel_module_key_modulus_bit_length=0;
+	rsa_state_init((const void*)__kernel_library_key_modulus,__kernel_library_key_modulus_bit_length,&_signature_library_rsa_state);
+	_signature_library_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_library_rsa_state,(const void*)__kernel_library_key_exponent,1024/sizeof(u32));
+	memset((void*)__kernel_library_key_exponent,0,sizeof(__kernel_library_key_exponent));
+	memset((void*)__kernel_library_key_modulus,0,sizeof(__kernel_library_key_modulus));
+	__kernel_library_key_modulus_bit_length=0;
 }
 
 
@@ -89,9 +98,9 @@ _unsigned_module:
 	if (!streq(file_base+section_header->sh_offset,"builtin-module")){
 		goto _unsigned_module;
 	}
-	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
+	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_module_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
-	rsa_state_process(&_signature_rsa_state,value,RSA_PUBLIC_KEY,value);
+	rsa_state_process(&_signature_module_rsa_state,value,RSA_PUBLIC_KEY,value);
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
 	hash_sha256_process_chunk(&state,name,smm_length(name));
@@ -109,6 +118,53 @@ _unsigned_module:
 	}
 	else{
 		*is_tainted=0;
+	}
+	return !mask;
+}
+
+
+
+_Bool signature_verify_library(const char* name,const mmap_region_t* region,_Bool* has_signature){
+	*has_signature=0;
+	INFO("Verifying signature of '%s'...",name);
+	void* file_base=(void*)(region->rb_node.key);
+	const elf_hdr_t* elf_header=file_base;
+	const elf_shdr_t* section_header=file_base+elf_header->e_shoff+elf_header->e_shstrndx*elf_header->e_shentsize;
+	const char* elf_string_table=file_base+section_header->sh_offset;
+	for (u16 i=0;i<elf_header->e_shnum;i++){
+		section_header=file_base+elf_header->e_shoff+i*elf_header->e_shentsize;
+		if (streq(elf_string_table+section_header->sh_name,".signature")){
+			break;
+		}
+		section_header=NULL;
+	}
+	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
+_unsigned_library:
+		WARN("Library '%s' is not signed",name);
+		return 1;
+	}
+	INFO("Signature key: %s",file_base+section_header->sh_offset);
+	if (!streq(file_base+section_header->sh_offset,"builtin-library")){
+		goto _unsigned_library;
+	}
+	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_library_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
+	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
+	rsa_state_process(&_signature_library_rsa_state,value,RSA_PUBLIC_KEY,value);
+	hash_sha256_state_t state;
+	hash_sha256_init(&state);
+	hash_sha256_process_chunk(&state,file_base,region->length);
+	hash_sha256_finalize(&state);
+	u32 mask=0;
+	for (u32 i=0;i<8;i++){
+		mask|=__builtin_bswap32(state.result[i])^value->data[i];
+		state.result[i]=0;
+	}
+	rsa_number_delete(value);
+	if (mask){
+		ERROR("Library '%s' has an invalid signature",name);
+	}
+	else{
+		*has_signature=1;
 	}
 	return !mask;
 }

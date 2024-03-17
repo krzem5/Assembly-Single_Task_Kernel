@@ -63,3 +63,7 @@ u64 main(const u64* data){
 	shared_object_executable=shared_object_init(0,dynamic_section,path,0);
 	return entry_address;
 }
+
+
+
+__SYS_SIGNATURE;
