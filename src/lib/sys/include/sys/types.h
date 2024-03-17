@@ -9,6 +9,7 @@
 #define SYS_DESTRUCTOR __attribute__((destructor))
 #define SYS_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define SYS_NORETURN __attribute__((noreturn))
+#define __SYS_SIGNATURE static const u8 __attribute__((used,section(".signature"))) _library_signature[4096]
 
 
 

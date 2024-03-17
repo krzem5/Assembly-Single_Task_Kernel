@@ -37,12 +37,12 @@ KERNEL_START_ADDRESS=0xffffffffc0100000
 KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
 KERNEL_HASH_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_ex",".kernel_nx"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
-MODULE_SIGNATURE_SECTION_NAME=".signature"
-MODULE_SIGNATURE_SECTION_SIZE=4096
+SIGNATURE_SECTION_NAME=".signature"
+SIGNATURE_SECTION_SIZE=4096
 
 
 
-__all__=["link_kernel","link_module"]
+__all__=["link_kernel","link_module_or_library"]
 
 
 
@@ -148,6 +148,8 @@ def _parse_headers(data):
 
 
 def _parse_symbol_table(ctx,allow_undefined=False):
+	if (ctx.symbol_table is None):
+		return
 	error=False
 	st_name_offset=ctx.section_headers[ctx.symbol_table.string_table_section].offset
 	for i in range(ctx.symbol_table.offset,ctx.symbol_table.offset+ctx.symbol_table.size,24):
@@ -266,7 +268,7 @@ def _apply_relocations(ctx):
 
 
 def _generate_module_signature_key(ctx):
-	exponent,modulus=signature.get_public_key()
+	exponent,modulus=signature.get_public_key("module")
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_module_key_exponent"]
 	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
 	ctx.out[address:address+1024]=exponent.to_bytes(1024,"little")
@@ -307,21 +309,25 @@ def link_kernel(src_file_path,dst_file_path):
 
 
 
-def link_module(file_path):
+def link_module_or_library(file_path,key_name):
 	with open(file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
-	section=ctx.section_headers_by_name[MODULE_SIGNATURE_SECTION_NAME]
-	if (section.size!=MODULE_SIGNATURE_SECTION_SIZE):
+	if (SIGNATURE_SECTION_NAME not in ctx.section_headers_by_name):
+		return
+	section=ctx.section_headers_by_name[SIGNATURE_SECTION_NAME]
+	if (section.size!=SIGNATURE_SECTION_SIZE):
 		return
 	_parse_symbol_table(ctx,allow_undefined=True)
 	with open(file_path,"r+b") as wf:
 		wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+8)
 		wf.write(struct.pack("<Q",0))
-		wf.seek(ctx.symbol_table.symbols_by_name["_module_signature"].index*24+ctx.symbol_table.offset)
-		wf.write(struct.pack("<IBBHQQ",0,STT_NOTYPE|(STB_LOCAL<<4),STV_HIDDEN,0,0,0))
+		if (ctx.symbol_table is not None):
+			wf.seek(ctx.symbol_table.symbols_by_name[f"_{key_name}_signature"].index*24+ctx.symbol_table.offset)
+			wf.write(struct.pack("<IBBHQQ",0,STT_NOTYPE|(STB_LOCAL<<4),STV_HIDDEN,0,0,0))
 		hash_state=hashlib.sha256()
-		hash_state.update(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":")
+		if (key_name=="module"):
+			hash_state.update(bytes(file_path.split("/")[-1].split(".")[0],"utf-8")+b":")
 		wf.seek(0)
 		while (True):
 			chunk=wf.read(4096)
@@ -329,8 +335,8 @@ def link_module(file_path):
 				break
 			hash_state.update(chunk)
 		hash_state.update(b"\x00"*((-len(data))&4095))
-		signed_digest=signature.sign(hash_state.digest())
-		if (len(signed_digest)!=MODULE_SIGNATURE_SECTION_SIZE):
+		signed_digest=signature.sign(hash_state.digest(),key_name)
+		if (len(signed_digest)!=SIGNATURE_SECTION_SIZE):
 			raise RuntimeError
 		wf.seek(section.offset)
 		wf.write(signed_digest)

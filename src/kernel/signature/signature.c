@@ -86,7 +86,7 @@ _unsigned_module:
 		return 1;
 	}
 	INFO("Signature key: %s",file_base+section_header->sh_offset);
-	if (!streq(file_base+section_header->sh_offset,"kernel-module")){
+	if (!streq(file_base+section_header->sh_offset,"builtin-module")){
 		goto _unsigned_module;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));

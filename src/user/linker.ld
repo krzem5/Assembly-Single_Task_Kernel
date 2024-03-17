@@ -168,6 +168,6 @@ SECTIONS{
 		*(.debug_weaknames)
 	}
 	/DISCARD/ : {
-		*(.note.GNU-stack .gnu_debuglink .gnu.lto_* .comment)
+		*(.note.* .gnu_debuglink .gnu.lto_* .comment)
 	}
 }

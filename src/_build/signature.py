@@ -4,8 +4,9 @@ import sys
 
 
 
-SIGNATURE_KEY_FILE_PATH="build/keys/signature_key_debug"
-SIGNATURE_RELEASE_KEY_FILE_PATH="build/keys/signature_key_release"
+SIGNATURE_KEY_PREFIX="build/keys/"
+SIGNATURE_KEY_SUFFIX=".key"
+SIGNATURE_RELEASE_KEY_SUFFIX=".release.key"
 SIGNATURE_SECTION_SIZE=4096
 SIGNATURE_KEY_NAME_LENGTH=64
 
@@ -15,7 +16,7 @@ __all__=["load_key","get_public_key","sign"]
 
 
 
-_signature_key=[0,0,0]
+_signature_keys={}
 
 
 
@@ -27,8 +28,8 @@ def _decode_hex(data):
 
 
 
-def load_key(use_release_key):
-	file_path=(SIGNATURE_RELEASE_KEY_FILE_PATH if use_release_key else SIGNATURE_KEY_FILE_PATH)
+def load_key(key,use_release_key):
+	file_path=SIGNATURE_KEY_PREFIX+key+(SIGNATURE_RELEASE_KEY_SUFFIX if use_release_key else SIGNATURE_KEY_SUFFIX)
 	if (not os.path.exists(file_path)):
 		if (subprocess.run(["openssl","genpkey","-algorithm","rsa","-pkeyopt",f"rsa_keygen_bits:{4096 if use_release_key else 512}","-out",file_path]).returncode):
 			sys.exit(1)
@@ -46,16 +47,14 @@ def load_key(use_release_key):
 	if (d==e or d>=n or e>=n or pow(0x12345,d*e,n)!=0x12345):
 		print("Invalid RSA key")
 		sys.exit(1)
-	_signature_key[0]=d
-	_signature_key[1]=e
-	_signature_key[2]=n
+	_signature_keys[key]=(d,e,n)
 
 
 
-def get_public_key():
-	return (_signature_key[1],_signature_key[2])
+def get_public_key(key):
+	return (_signature_keys[key][1],_signature_keys[key][2])
 
 
 
-def sign(digest):
-	return b"kernel-module".ljust(SIGNATURE_KEY_NAME_LENGTH,b"\x00")+pow(int.from_bytes(digest,"little"),_signature_key[0],_signature_key[2]).to_bytes(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH,"little")
+def sign(digest,key):
+	return bytes(f"builtin-{key}","utf-8").ljust(SIGNATURE_KEY_NAME_LENGTH,b"\x00")+pow(int.from_bytes(digest,"little"),_signature_keys[key][0],_signature_keys[key][2]).to_bytes(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH,"little")
