@@ -189,7 +189,7 @@ void syscall_signature_verify(const char* name,void* data,u64 size){
 	char buffer[256];
 	memcpy(buffer,(const char*)name,name_length);
 	buffer[name_length]=0;
-	_Bool has_signature;
+	_Bool has_signature=0;
 	if (!signature_verify_library(buffer,region,&has_signature)){
 		goto _error;
 	}

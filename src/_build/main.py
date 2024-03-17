@@ -516,6 +516,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return
 	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
+	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[kernel_linker.link_module_or_library,f"build/user/{program}","library"])
 
 
 

@@ -98,6 +98,9 @@ SECTIONS{
 		*(COMMON)
 		. = ALIGN(8);
 	}
+	.signature : {
+		KEEP(*(.signature))
+	}
 	.debug_abbrev 0 : {
 		*(.debug_abbrev)
 	}
