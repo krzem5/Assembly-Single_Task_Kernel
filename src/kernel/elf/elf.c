@@ -180,8 +180,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		out=ERROR_INVALID_FORMAT;
 		goto _error;
 	}
-	_Bool has_signature=0;
-	if (!signature_verify_library(ctx->interpreter_path,region,&has_signature)){
+	if (!signature_verify_library(ctx->interpreter_path,region)){
 		out=ERROR_DENIED;
 		goto _error;
 	}
@@ -408,8 +407,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (out!=ERROR_OK){
 		goto _error;
 	}
-	_Bool has_signature=0;
-	if (!signature_verify_library(path,region,&has_signature)){
+	if (!signature_verify_library(path,region)){
 		out=ERROR_DENIED;
 		goto _error;
 	}

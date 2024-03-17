@@ -32,6 +32,7 @@ static volatile u32 KERNEL_EARLY_WRITE __kernel_library_key_modulus_bit_length;
 static rsa_state_t _signature_module_rsa_state;
 static rsa_state_t _signature_library_rsa_state;
 static _Bool _signature_is_kernel_tainted=0;
+static _Bool _signature_require_signatures=0;
 
 
 
@@ -126,8 +127,7 @@ _unsigned_module:
 
 
 
-_Bool signature_verify_library(const char* name,const mmap_region_t* region,_Bool* has_signature){
-	*has_signature=0;
+_Bool signature_verify_library(const char* name,const mmap_region_t* region){
 	INFO("Verifying signature of '%s'...",name);
 	void* file_base=(void*)(region->rb_node.key);
 	const elf_hdr_t* elf_header=file_base;
@@ -142,6 +142,9 @@ _Bool signature_verify_library(const char* name,const mmap_region_t* region,_Boo
 	}
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
 _unsigned_library:
+		if (_signature_require_signatures){
+			goto _invalid_signature;
+		}
 		WARN("Library '%s' is not signed",name);
 		return 1;
 	}
@@ -163,10 +166,8 @@ _unsigned_library:
 	}
 	rsa_number_delete(value);
 	if (mask){
+_invalid_signature:
 		ERROR("Library '%s' has an invalid signature",name);
-	}
-	else{
-		*has_signature=1;
 	}
 	return !mask;
 }
@@ -182,18 +183,14 @@ KERNEL_PUBLIC _Bool signature_is_kernel_tainted(void){
 void syscall_signature_verify(const char* name,void* data,u64 size){
 	u64 name_length=syscall_get_string_length((const char*)name);
 	mmap_region_t* region=mmap_lookup(THREAD_DATA->process->mmap,(u64)data);
-	if (!name_length||name_length>255||!size||!region||region->length!=size){
+	if (!name_length||name_length>255||!size||!region||region->rb_node.key!=(u64)data||region->length!=size){
 		ERROR("syscall_signature_verify: invalid arguments");
 		goto _error;
 	}
 	char buffer[256];
 	memcpy(buffer,(const char*)name,name_length);
 	buffer[name_length]=0;
-	_Bool has_signature=0;
-	if (!signature_verify_library(buffer,region,&has_signature)){
-		goto _error;
-	}
-	if (!has_signature&&/*FORCE_SIGNED_LIBRARIES*/0){
+	if (!signature_verify_library(buffer,region)){
 		goto _error;
 	}
 	return;
