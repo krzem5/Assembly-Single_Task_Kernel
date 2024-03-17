@@ -16,6 +16,8 @@
 
 #define SIGNATURE_SECTION_SIZE 4096
 
+#define SIGNATURE_KEY_NAME_LENGTH 64
+
 
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
@@ -32,7 +34,7 @@ KERNEL_EARLY_INIT(){
 	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_rsa_state);
 	_signature_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
 	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
-	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_modulus));
+	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
 	__kernel_module_key_modulus_bit_length=0;
 }
 
@@ -74,7 +76,8 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool
 		}
 		section_header=NULL;
 	}
-	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE){
+	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
+_unsigned_module:
 		ERROR("Module '%s' is not signed",name);
 		if (!_signature_is_kernel_tainted){
 			ERROR("Kernel tainted");
@@ -82,7 +85,11 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool
 		}
 		return 1;
 	}
-	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE/sizeof(u32));
+	INFO("Signature key: %s",file_base+section_header->sh_offset);
+	if (!streq(file_base+section_header->sh_offset,"kernel-module")){
+		goto _unsigned_module;
+	}
+	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
 	rsa_state_process(&_signature_rsa_state,value,RSA_PUBLIC_KEY,value);
 	hash_sha256_state_t state;

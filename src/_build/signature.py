@@ -6,6 +6,8 @@ import sys
 
 SIGNATURE_KEY_FILE_PATH="build/keys/signature_key_debug"
 SIGNATURE_RELEASE_KEY_FILE_PATH="build/keys/signature_key_release"
+SIGNATURE_SECTION_SIZE=4096
+SIGNATURE_KEY_NAME_LENGTH=64
 
 
 
@@ -56,4 +58,4 @@ def get_public_key():
 
 
 def sign(digest):
-	return pow(int.from_bytes(digest,"little"),_signature_key[0],_signature_key[2]).to_bytes(4096,"little")
+	return b"kernel-module".ljust(SIGNATURE_KEY_NAME_LENGTH,b"\x00")+pow(int.from_bytes(digest,"little"),_signature_key[0],_signature_key[2]).to_bytes(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH,"little")
