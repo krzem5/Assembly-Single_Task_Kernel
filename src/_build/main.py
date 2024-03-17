@@ -269,7 +269,7 @@ def _save_file_hash_list(file_hash_list,hash_file_path):
 
 
 def _file_not_changed(changed_files,deps_file_path):
-	if (not os.path.exists(deps_file_path)):
+	if (not os.path.exists(deps_file_path) or not os.path.exists(deps_file_path[:-5])):
 		return False
 	with open(deps_file_path,"r") as rf:
 		files=rf.read().replace("\\\n","").split(" ")[1:]
