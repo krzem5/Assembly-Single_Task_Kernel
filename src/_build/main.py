@@ -292,8 +292,8 @@ def _compress(file_path):
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 	object_files=[]
+	pool=process_pool.ProcessPool()
 	rebuild_uefi_partition=False
-	error=False
 	for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -303,6 +303,7 @@ def _compile_uefi():
 			object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 			object_files.append(object_file)
 			if (_file_not_changed(changed_files,object_file+".deps")):
+				pool.dispatch(object_file)
 				continue
 			rebuild_uefi_partition=True
 			command=None
@@ -310,14 +311,16 @@ def _compile_uefi():
 				command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
 			else:
 				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-			print(file)
-			if (subprocess.run(command+["-MD","-MT",object_file,"-MF",object_file+".deps"]).returncode!=0):
-				del file_hash_list[file]
-				error=True
+			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	if (not rebuild_uefi_partition):
+		return False
+	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.efi","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files)
+	pool.add(["build/uefi/loader.efi"],"build/uefi/loader.efi","P build/uefi/loader.efi",["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.efi","build/uefi/loader.efi"])
+	error=pool.wait(file_hash_list)
 	_save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
-	if (error or subprocess.run(["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.so","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files).returncode!=0 or subprocess.run(["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.so","build/uefi/loader.efi"]).returncode!=0):
+	if (error):
 		sys.exit(1)
-	return rebuild_uefi_partition
+	return True
 
 
 
