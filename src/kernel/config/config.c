@@ -196,6 +196,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		if (data[0]=='{'){
+			data++;
 			config_tag_t* tag=omm_alloc(_config_tag_allocator);
 			tag->name=name;
 			tag->type=CONFIG_TAG_TYPE_ARRAY;
@@ -206,6 +207,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		if (data[0]=='}'){
+			data++;
 			out=out->parent;
 			if (!out){
 				panic("Unbalanced brackets");

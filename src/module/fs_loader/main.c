@@ -56,41 +56,48 @@ static _Bool _init(module_t* module){
 	if (root_tag->type!=CONFIG_TAG_TYPE_ARRAY){
 		panic("Invalid tag type");
 	}
-	const char* path=NULL;
-	const char* guid=NULL;
-	const char* type=NULL;
-	_Bool required=1;
 	for (u32 i=0;i<root_tag->array->length;i++){
 		config_tag_t* tag=root_tag->array->data[i];
-		if (streq(tag->name->data,"path")){
-			path=tag->string->data;
+		if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+			panic("Invalid tag type");
 		}
-		else if (streq(tag->name->data,"guid")){
-			guid=tag->string->data;
-		}
-		else if (streq(tag->name->data,"type")){
-			type=tag->string->data;
-		}
-		else if (streq(tag->name->data,"not-required")){
-			required=0;
-		}
-		if (i==root_tag->array->length-1||streq(root_tag->array->data[i+1]->name->data,"path")){
-			if (!path){
-				ERROR("Malformated file");
-			}
-			else{
-				filesystem_t* fs=_match_fs(guid,type);
-				if (!fs&&required){
-					ERROR("Filesystem not found");
+		const char* path=NULL;
+		const char* guid=NULL;
+		const char* type=NULL;
+		_Bool required=1;
+		for (u32 j=0;j<tag->array->length;j++){
+			config_tag_t* subtag=tag->array->data[j];
+			if (streq(subtag->name->data,"path")){
+				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
+					panic("Invalid tag type");
 				}
-				else if (fs){
-					vfs_mount(fs,(streq(path,"/")?NULL:path),0);
-				}
+				path=subtag->string->data;
 			}
-			path=NULL;
-			guid=NULL;
-			type=NULL;
-			required=1;
+			else if (streq(subtag->name->data,"guid")){
+				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
+					panic("Invalid tag type");
+				}
+				guid=subtag->string->data;
+			}
+			else if (streq(subtag->name->data,"type")){
+				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
+					panic("Invalid tag type");
+				}
+				type=subtag->string->data;
+			}
+			else if (streq(subtag->name->data,"not-required")){
+				required=0;
+			}
+		}
+		if (!path){
+			panic("'path' tag missing");
+		}
+		filesystem_t* fs=_match_fs(guid,type);
+		if (!fs&&required){
+			ERROR("Filesystem not found");
+		}
+		else if (fs){
+			vfs_mount(fs,(streq(path,"/")?NULL:path),0);
 		}
 	}
 	config_tag_delete(root_tag);
