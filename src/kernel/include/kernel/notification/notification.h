@@ -11,6 +11,8 @@
 #define NOTIFICATION_TYPE_SHUTDOWN_POWEROFF 3
 #define NOTIFICATION_TYPE_SHUTDOWN_RESTART 4
 
+#define NOTIFICATION_TYPE_KEYRING_UPDATE 5
+
 
 
 typedef void (*notification_listener_callback_t)(void*,u32);

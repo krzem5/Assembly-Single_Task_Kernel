@@ -6,6 +6,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -23,6 +24,7 @@ static volatile u32 KERNEL_EARLY_READ __kernel_user_key_modulus_bit_length;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
 static handle_type_t KERNEL_INIT_WRITE _keyring_handle_type=0;
+static notification_dispatcher_t _keyring_notification_dispatcher;
 
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
@@ -43,6 +45,7 @@ KERNEL_INIT(){
 	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2,pmm_alloc_counter("omm_keyring_key"));
 	spinlock_init(&(_keyring_key_allocator->lock));
 	_keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
+	notification_dispatcher_init(&_keyring_notification_dispatcher);
 	INFO("Creating module signature keyring...");
 	keyring_module_signature=keyring_create("module-signature");
 	keyring_key_t* key=keyring_key_create(keyring_module_signature,"builtin-module");
@@ -69,6 +72,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	spinlock_init(&(out->lock));
 	out->head=NULL;
 	handle_finish_setup(&(out->handle));
+	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,out,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -106,6 +110,7 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 		keyring->head=out;
 	}
 	spinlock_release_exclusive(&(keyring->lock));
+	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,keyring,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -124,4 +129,19 @@ KERNEL_PUBLIC _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,
 	}
 	spinlock_release_exclusive(&(key->lock));
 	return ret;
+}
+
+
+
+KERNEL_PUBLIC void keyring_register_notification_listener(notification_listener_callback_t listener_callback){
+	notification_dispatcher_add_listener(&_keyring_notification_dispatcher,listener_callback);
+	HANDLE_FOREACH(_keyring_handle_type){
+		listener_callback(handle->object,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	}
+}
+
+
+
+KERNEL_PUBLIC void keyring_unregister_notification_listener(notification_listener_callback_t listener_callback){
+	notification_dispatcher_add_listener(&_keyring_notification_dispatcher,listener_callback);
 }

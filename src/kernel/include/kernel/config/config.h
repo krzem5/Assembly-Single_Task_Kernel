@@ -34,7 +34,7 @@ typedef struct _CONFIG_TAG_ARRAY{
 
 
 
-config_tag_t* config_tag_create(u32 type,const char* name,u8 name_length);
+config_tag_t* config_tag_create(u32 type,const char* name);
 
 
 

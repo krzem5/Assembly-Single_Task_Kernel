@@ -243,10 +243,10 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC config_tag_t* config_tag_create(u32 type,const char* name,u8 name_length){
+KERNEL_PUBLIC config_tag_t* config_tag_create(u32 type,const char* name){
 	config_tag_t* out=omm_alloc(_config_tag_allocator);
 	out->parent=NULL;
-	out->name=smm_alloc(name,name_length);
+	out->name=smm_alloc(name,0);
 	out->type=type;
 	if (type==CONFIG_TAG_TYPE_ARRAY){
 		out->array=amm_alloc(sizeof(config_tag_array_t));

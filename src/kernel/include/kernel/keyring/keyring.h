@@ -3,6 +3,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/smm.h>
+#include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
 
@@ -74,6 +75,14 @@ void keyring_key_delete(keyring_key_t* key);
 
 
 _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out);
+
+
+
+void keyring_register_notification_listener(notification_listener_callback_t listener_callback);
+
+
+
+void keyring_unregister_notification_listener(notification_listener_callback_t listener_callback);
 
 
 
