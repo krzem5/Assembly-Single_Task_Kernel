@@ -49,25 +49,32 @@ static _Bool _init(module_t* module){
 	if (!file){
 		panic("Unable to locate filesystem list file");
 	}
-	config_t* config=config_load(file);
+	config_tag_t* root_tag=config_load_from_file(file,NULL);
+	if (!root_tag){
+		panic("Unable to parse filesystem list file");
+	}
+	if (root_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		panic("Invalid tag type");
+	}
 	const char* path=NULL;
 	const char* guid=NULL;
 	const char* type=NULL;
 	_Bool required=1;
-	for (config_item_t* item=config->head;item;item=item->next){
-		if (streq(item->key->data,"path")){
-			path=item->value->data;
+	for (u32 i=0;i<root_tag->array->length;i++){
+		config_tag_t* tag=root_tag->array->data[i];
+		if (streq(tag->name->data,"path")){
+			path=tag->string->data;
 		}
-		else if (streq(item->key->data,"guid")){
-			guid=item->value->data;
+		else if (streq(tag->name->data,"guid")){
+			guid=tag->string->data;
 		}
-		else if (streq(item->key->data,"type")){
-			type=item->value->data;
+		else if (streq(tag->name->data,"type")){
+			type=tag->string->data;
 		}
-		else if (streq(item->key->data,"not-required")){
+		else if (streq(tag->name->data,"not-required")){
 			required=0;
 		}
-		if (!item->next||streq(item->next->key->data,"path")){
+		if (i==root_tag->array->length-1||streq(root_tag->array->data[i+1]->name->data,"path")){
 			if (!path){
 				ERROR("Malformated file");
 			}
@@ -86,7 +93,7 @@ static _Bool _init(module_t* module){
 			required=1;
 		}
 	}
-	config_dealloc(config);
+	config_tag_delete(root_tag);
 	return 0;
 }
 

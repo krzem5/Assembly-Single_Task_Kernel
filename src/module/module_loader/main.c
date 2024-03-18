@@ -20,7 +20,7 @@ static void _load_modules_from_order_file(_Bool early){
 	if (!file){
 		panic("Unable to locate module order file");
 	}
-	config_tag_t* root_tag=config_tag_load_from_file(file,NULL);
+	config_tag_t* root_tag=config_load_from_file(file,NULL);
 	if (!root_tag){
 		panic("Unable to parse module order file");
 	}

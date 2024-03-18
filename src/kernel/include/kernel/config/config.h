@@ -6,34 +6,6 @@
 
 
 
-typedef struct _CONFIG_ITEM{
-	struct _CONFIG_ITEM* prev;
-	struct _CONFIG_ITEM* next;
-	string_t* key;
-	string_t* value;
-} config_item_t;
-
-
-
-typedef struct _CONFIG{
-	config_item_t* head;
-	config_item_t* tail;
-} config_t;
-
-
-
-config_t* config_load(vfs_node_t* file);
-
-
-
-void config_dealloc(config_t* config);
-
-
-
-/************************************************/
-
-
-
 #define CONFIG_TAG_TYPE_NONE 0
 #define CONFIG_TAG_TYPE_ARRAY 1
 #define CONFIG_TAG_TYPE_STRING 2
@@ -78,19 +50,19 @@ void config_tag_detach(config_tag_t* child);
 
 
 
-config_tag_t* config_tag_load(const void* data,u64 length,const char* password);
+config_tag_t* config_load(const void* data,u64 length,const char* password);
 
 
 
-config_tag_t* config_tag_load_from_file(vfs_node_t* file,const char* password);
+config_tag_t* config_load_from_file(vfs_node_t* file,const char* password);
 
 
 
-_Bool config_tag_save(const config_tag_t* tag,void** data,u64* length,const char* password);
+_Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password);
 
 
 
-_Bool config_tag_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
+_Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
 
 
 

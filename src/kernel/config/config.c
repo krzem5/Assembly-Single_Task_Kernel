@@ -24,8 +24,8 @@
 
 #define CONFIG_TEXT_FILE_IS_NUMBER(c) ((c)>='0'&&(c)<='9')
 
-#define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.')
-#define CONFIG_TEXT_FILE_IS_IDENTIFIER(c) (CONFIG_TEXT_FILE_IS_IDENTIFIER_START((c))||CONFIG_TEXT_FILE_IS_NUMBER((c)))
+#define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.'||(c)=='$'||(c)==':')
+#define CONFIG_TEXT_FILE_IS_IDENTIFIER(c) (CONFIG_TEXT_FILE_IS_IDENTIFIER_START((c))||CONFIG_TEXT_FILE_IS_NUMBER((c))||(c)=='-')
 
 
 
@@ -212,7 +212,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			}
 			continue;
 		}
-		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])){
+		if (data[0]=='-'||data[1]=='+'||CONFIG_TEXT_FILE_IS_NUMBER(data[0])){
 			panic("Number");
 		}
 		if (data[0]=='\"'){
@@ -301,7 +301,7 @@ KERNEL_PUBLIC void config_tag_detach(config_tag_t* child){
 
 
 
-KERNEL_PUBLIC config_tag_t* config_tag_load(const void* data,u64 length,const char* password){
+KERNEL_PUBLIC config_tag_t* config_load(const void* data,u64 length,const char* password){
 	if (length>=sizeof(u32)&&*((const u32*)data)==CONFIG_BINARY_FILE_SIGNATURE){
 		return _parse_binary_config(data,length,password);
 	}
@@ -310,17 +310,17 @@ KERNEL_PUBLIC config_tag_t* config_tag_load(const void* data,u64 length,const ch
 
 
 
-KERNEL_PUBLIC config_tag_t* config_tag_load_from_file(vfs_node_t* file,const char* password){
+KERNEL_PUBLIC config_tag_t* config_load_from_file(vfs_node_t* file,const char* password){
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK,file);
-	config_tag_t* out=config_tag_load((const void*)(region->rb_node.key),region->length,password);
+	config_tag_t* out=config_load((const void*)(region->rb_node.key),region->length,password);
 	mmap_dealloc_region(process_kernel->mmap,region);
 	return out;
 }
 
 
 
-KERNEL_PUBLIC _Bool config_tag_save(const config_tag_t* tag,void** data,u64* length,const char* password);
+KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password);
 
 
 
-KERNEL_PUBLIC _Bool config_tag_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
+KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
