@@ -24,23 +24,8 @@
 
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_exponent[1024];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_modulus[1024];
-static volatile u32 KERNEL_EARLY_WRITE __kernel_user_key_modulus_bit_length;
-static rsa_state_t _signature_user_rsa_state;
 static _Bool _signature_is_kernel_tainted=0;
 static _Bool _signature_require_signatures=0;
-
-
-
-KERNEL_EARLY_INIT(){
-	LOG("Loading module signature key...");
-	rsa_state_init((const void*)__kernel_user_key_modulus,__kernel_user_key_modulus_bit_length,&_signature_user_rsa_state);
-	_signature_user_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_user_rsa_state,(const void*)__kernel_user_key_exponent,1024/sizeof(u32));
-	memset((void*)__kernel_user_key_exponent,0,sizeof(__kernel_user_key_exponent));
-	memset((void*)__kernel_user_key_modulus,0,sizeof(__kernel_user_key_modulus));
-	__kernel_user_key_modulus_bit_length=0;
-}
 
 
 
@@ -81,7 +66,7 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool
 		section_header=NULL;
 	}
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
-_unsigned_module:
+_signature_error:
 		ERROR("Module '%s' is not signed",name);
 		if (!_signature_is_kernel_tainted){
 			ERROR("Kernel tainted");
@@ -92,13 +77,13 @@ _unsigned_module:
 	INFO("Signature key: %s",file_base+section_header->sh_offset);
 	keyring_key_t* key=keyring_search(keyring_module_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
 	if (!key||key->type!=KEYRING_KEY_TYPE_RSA){
-		goto _unsigned_module;
+		goto _signature_error;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
 	if (!keyring_key_process_rsa(key,value,value)){
 		rsa_number_delete(value);
-		goto _unsigned_module;
+		goto _signature_error;
 	}
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
@@ -137,7 +122,7 @@ _Bool signature_verify_user(const char* name,const mmap_region_t* region){
 		section_header=NULL;
 	}
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
-_unsigned_library:
+_signature_error:
 		if (_signature_require_signatures){
 			goto _invalid_signature;
 		}
@@ -145,12 +130,16 @@ _unsigned_library:
 		return 1;
 	}
 	INFO("Signature key: %s",file_base+section_header->sh_offset);
-	if (!streq(file_base+section_header->sh_offset,"builtin-user")){
-		goto _unsigned_library;
+	keyring_key_t* key=keyring_search(keyring_user_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
+	if (!key||key->type!=KEYRING_KEY_TYPE_RSA){
+		goto _signature_error;
 	}
-	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_user_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
+	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
-	rsa_state_process(&_signature_user_rsa_state,value,RSA_PUBLIC_KEY,value);
+	if (!keyring_key_process_rsa(key,value,value)){
+		rsa_number_delete(value);
+		goto _signature_error;
+	}
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
 	hash_sha256_process_chunk(&state,file_base,region->length);
