@@ -30,4 +30,59 @@ void config_dealloc(config_t* config);
 
 
 
+/************************************************/
+
+
+
+#define CONFIG_TAG_TYPE_NONE 0
+#define CONFIG_TAG_TYPE_ARRAY 1
+#define CONFIG_TAG_TYPE_STRING 2
+#define CONFIG_TAG_TYPE_INT 3
+#define CONFIG_TAG_TYPE_INT_NEGATIVE 4
+
+
+
+typedef struct _CONFIG_TAG{
+	string_t* name;
+	u32 type;
+	union{
+		struct _CONFIG_TAG_ARRAY* array;
+		string_t* string;
+		s64 int_;
+	};
+} config_tag_t;
+
+
+
+typedef struct _CONFIG_TAG_ARRAY{
+	u32 length;
+	config_tag_t* data[];
+} config_tag_array_t;
+
+
+
+config_tag_t* config_tag_create(u32 type,const char* name,u8 name_length);
+
+
+
+void config_tag_delete(config_tag_t* tag);
+
+
+
+config_tag_t* config_tag_load(const void* data,u64 length,const char* password);
+
+
+
+config_tag_t* config_tag_load_from_file(vfs_node_t* file,const char* password);
+
+
+
+_Bool config_tag_save(const config_tag_t* tag,void** data,u64* length,const char* password);
+
+
+
+_Bool config_tag_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
+
+
+
 #endif
