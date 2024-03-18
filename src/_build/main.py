@@ -454,7 +454,7 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 	if ("nodynamic" not in flags):
 		if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
 			pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
-			pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","library"])
+			pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
 		else:
 			pool.dispatch(f"build/lib/lib{library}.so")
 	if ("nostatic" not in flags):
@@ -516,7 +516,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return
 	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
-	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[kernel_linker.link_module_or_library,f"build/user/{program}","library"])
+	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[kernel_linker.link_module_or_library,f"build/user/{program}","user"])
 
 
 
@@ -848,7 +848,7 @@ with open("build/last_mode","w") as wf:
 	wf.write(f"{mode}\n")
 _generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h")
 signature.load_key("module",mode==MODE_RELEASE)
-signature.load_key("library",mode==MODE_RELEASE)
+signature.load_key("user",mode==MODE_RELEASE)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi_partition=_compile_uefi()

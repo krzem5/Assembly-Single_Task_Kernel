@@ -26,11 +26,11 @@ static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
 static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
-static volatile u8 KERNEL_EARLY_WRITE __kernel_library_key_exponent[1024];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_library_key_modulus[1024];
-static volatile u32 KERNEL_EARLY_WRITE __kernel_library_key_modulus_bit_length;
+static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_WRITE __kernel_user_key_modulus_bit_length;
 static rsa_state_t _signature_module_rsa_state;
-static rsa_state_t _signature_library_rsa_state;
+static rsa_state_t _signature_user_rsa_state;
 static _Bool _signature_is_kernel_tainted=0;
 static _Bool _signature_require_signatures=0;
 
@@ -43,11 +43,11 @@ KERNEL_EARLY_INIT(){
 	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
 	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
 	__kernel_module_key_modulus_bit_length=0;
-	rsa_state_init((const void*)__kernel_library_key_modulus,__kernel_library_key_modulus_bit_length,&_signature_library_rsa_state);
-	_signature_library_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_library_rsa_state,(const void*)__kernel_library_key_exponent,1024/sizeof(u32));
-	memset((void*)__kernel_library_key_exponent,0,sizeof(__kernel_library_key_exponent));
-	memset((void*)__kernel_library_key_modulus,0,sizeof(__kernel_library_key_modulus));
-	__kernel_library_key_modulus_bit_length=0;
+	rsa_state_init((const void*)__kernel_user_key_modulus,__kernel_user_key_modulus_bit_length,&_signature_user_rsa_state);
+	_signature_user_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_user_rsa_state,(const void*)__kernel_user_key_exponent,1024/sizeof(u32));
+	memset((void*)__kernel_user_key_exponent,0,sizeof(__kernel_user_key_exponent));
+	memset((void*)__kernel_user_key_modulus,0,sizeof(__kernel_user_key_modulus));
+	__kernel_user_key_modulus_bit_length=0;
 }
 
 
@@ -127,7 +127,7 @@ _unsigned_module:
 
 
 
-_Bool signature_verify_library(const char* name,const mmap_region_t* region){
+_Bool signature_verify_user(const char* name,const mmap_region_t* region){
 	INFO("Verifying signature of '%s'...",name);
 	void* file_base=(void*)(region->rb_node.key);
 	const elf_hdr_t* elf_header=file_base;
@@ -145,16 +145,16 @@ _unsigned_library:
 		if (_signature_require_signatures){
 			goto _invalid_signature;
 		}
-		WARN("Library '%s' is not signed",name);
+		WARN("Executable '%s' is not signed",name);
 		return 1;
 	}
 	INFO("Signature key: %s",file_base+section_header->sh_offset);
-	if (!streq(file_base+section_header->sh_offset,"builtin-library")){
+	if (!streq(file_base+section_header->sh_offset,"builtin-user")){
 		goto _unsigned_library;
 	}
-	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_library_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
+	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_user_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
-	rsa_state_process(&_signature_library_rsa_state,value,RSA_PUBLIC_KEY,value);
+	rsa_state_process(&_signature_user_rsa_state,value,RSA_PUBLIC_KEY,value);
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
 	hash_sha256_process_chunk(&state,file_base,region->length);
@@ -167,7 +167,7 @@ _unsigned_library:
 	rsa_number_delete(value);
 	if (mask){
 _invalid_signature:
-		ERROR("Library '%s' has an invalid signature",name);
+		ERROR("Executable '%s' has an invalid signature",name);
 	}
 	return !mask;
 }
@@ -190,7 +190,7 @@ void syscall_signature_verify(const char* name,void* data,u64 size){
 	char buffer[256];
 	memcpy(buffer,(const char*)name,name_length);
 	buffer[name_length]=0;
-	if (!signature_verify_library(buffer,region)){
+	if (!signature_verify_user(buffer,region)){
 		goto _error;
 	}
 	return;

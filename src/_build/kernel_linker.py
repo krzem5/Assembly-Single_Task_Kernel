@@ -303,7 +303,7 @@ def link_kernel(src_file_path,dst_file_path):
 	_place_sections(ctx)
 	_apply_relocations(ctx)
 	_generate_signature_key(ctx,"module")
-	_generate_signature_key(ctx,"library")
+	_generate_signature_key(ctx,"user")
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
