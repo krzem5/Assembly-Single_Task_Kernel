@@ -74,7 +74,6 @@ _signature_error:
 		}
 		return 1;
 	}
-	INFO("Signature key: %s",file_base+section_header->sh_offset);
 	keyring_key_t* key=keyring_search(keyring_module_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
 	if (!key||key->type!=KEYRING_KEY_TYPE_RSA){
 		goto _signature_error;
@@ -129,7 +128,6 @@ _signature_error:
 		WARN("Executable '%s' is not signed",name);
 		return 1;
 	}
-	INFO("Signature key: %s",file_base+section_header->sh_offset);
 	keyring_key_t* key=keyring_search(keyring_user_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
 	if (!key||key->type!=KEYRING_KEY_TYPE_RSA){
 		goto _signature_error;

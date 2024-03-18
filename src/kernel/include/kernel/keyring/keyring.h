@@ -12,6 +12,8 @@
 #define KEYRING_KEY_TYPE_RAW 1
 #define KEYRING_KEY_TYPE_RSA 2
 
+#define KEYRING_KEY_FLAG_VIRTUAL 0
+
 #define KEYRING_SEARCH_FLAG_BYPASS_ACL 1
 
 
@@ -21,7 +23,8 @@ typedef struct _KEYRING_KEY{
 	struct _KEYRING_KEY* prev;
 	struct _KEYRING_KEY* next;
 	string_t* name;
-	u32 type;
+	u16 type;
+	u16 flags;
 	spinlock_t lock;
 	union{
 		struct{

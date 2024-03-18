@@ -13,16 +13,16 @@
 
 
 
-static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
-static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
-static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_exponent[1024];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_modulus[1024];
-static volatile u32 KERNEL_EARLY_WRITE __kernel_user_key_modulus_bit_length;
+static volatile u8 KERNEL_EARLY_READ __kernel_module_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_READ __kernel_module_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_READ __kernel_module_key_modulus_bit_length;
+static volatile u8 KERNEL_EARLY_READ __kernel_user_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_READ __kernel_user_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_READ __kernel_user_key_modulus_bit_length;
 
-static omm_allocator_t* _keyring_allocator=NULL;
-static omm_allocator_t* _keyring_key_allocator=NULL;
-static handle_type_t _keyring_handle_type=0;
+static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
+static handle_type_t KERNEL_INIT_WRITE _keyring_handle_type=0;
 
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
@@ -47,20 +47,16 @@ KERNEL_INIT(){
 	keyring_module_signature=keyring_create("module-signature");
 	keyring_key_t* key=keyring_key_create(keyring_module_signature,"builtin-module");
 	key->type=KEYRING_KEY_TYPE_RSA;
+	key->flags|=KEYRING_KEY_FLAG_VIRTUAL;
 	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&(key->data.rsa.state));
 	key->data.rsa.state.public_key=rsa_number_create_from_bytes(&(key->data.rsa.state),(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
-	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
-	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
-	__kernel_module_key_modulus_bit_length=0;
 	INFO("Creating user signature keyring...");
 	keyring_user_signature=keyring_create("user-signature");
 	key=keyring_key_create(keyring_user_signature,"builtin-user");
 	key->type=KEYRING_KEY_TYPE_RSA;
+	key->flags|=KEYRING_KEY_FLAG_VIRTUAL;
 	rsa_state_init((const void*)__kernel_user_key_modulus,__kernel_user_key_modulus_bit_length,&(key->data.rsa.state));
 	key->data.rsa.state.public_key=rsa_number_create_from_bytes(&(key->data.rsa.state),(const void*)__kernel_user_key_exponent,1024/sizeof(u32));
-	memset((void*)__kernel_user_key_exponent,0,sizeof(__kernel_user_key_exponent));
-	memset((void*)__kernel_user_key_modulus,0,sizeof(__kernel_user_key_modulus));
-	__kernel_user_key_modulus_bit_length=0;
 }
 
 
@@ -98,6 +94,7 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 	out->keyring=keyring;
 	out->name=smm_alloc(name,0);
 	out->type=KEYRING_KEY_TYPE_NONE;
+	out->flags=0;
 	spinlock_init(&(out->lock));
 	spinlock_acquire_exclusive(&(keyring->lock));
 	out->prev=NULL;
