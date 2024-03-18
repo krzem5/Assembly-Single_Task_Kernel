@@ -20,23 +20,33 @@ static void _load_modules_from_order_file(_Bool early){
 	if (!file){
 		panic("Unable to locate module order file");
 	}
-	config_t* config=config_load(file);
-	for (config_item_t* item=config->head;item;item=item->next){
-		if (early!=(item->value&&streq(item->value->data,"early"))){
+	config_tag_t* root_tag=config_tag_load_from_file(file,NULL);
+	if (!root_tag){
+		panic("Unable to parse module order file");
+	}
+	if (root_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		panic("Invalid tag type");
+	}
+	for (u32 i=0;i<root_tag->array->length;i++){
+		config_tag_t* tag=root_tag->array->data[i];
+		if (tag->type!=CONFIG_TAG_TYPE_NONE&&tag->type!=CONFIG_TAG_TYPE_STRING){
+			panic("Invalid tag type");
+		}
+		if (early!=(tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"early"))){
 			continue;
 		}
 #ifdef KERNEL_COVERAGE
-		if (item->value&&streq(item->value->data,"not-test")){
+		if (tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"not-test")){
 			continue;
 		}
 #else
-		if (item->value&&streq(item->value->data,"test")){
+		if (tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"test")){
 			continue;
 		}
 #endif
-		module_load(item->key->data);
+		module_load(tag->name->data);
 	}
-	config_dealloc(config);
+	config_tag_delete(root_tag);
 }
 
 

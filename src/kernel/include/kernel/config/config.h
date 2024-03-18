@@ -43,6 +43,7 @@ void config_dealloc(config_t* config);
 
 
 typedef struct _CONFIG_TAG{
+	struct _CONFIG_TAG* parent;
 	string_t* name;
 	u32 type;
 	union{
@@ -66,6 +67,14 @@ config_tag_t* config_tag_create(u32 type,const char* name,u8 name_length);
 
 
 void config_tag_delete(config_tag_t* tag);
+
+
+
+void config_tag_attach(config_tag_t* tag,config_tag_t* child);
+
+
+
+void config_tag_detach(config_tag_t* child);
 
 
 

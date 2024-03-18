@@ -13,16 +13,23 @@
 
 
 
-#define CONFIG_FILE_SIGNATURE 0x80474643
+#define CONFIG_BINARY_FILE_SIGNATURE 0x80474643
 
-#define CONFIG_FILE_VERSION 1
+#define CONFIG_BINARY_FILE_VERSION 1
 
-#define COFNIG_FILE_FLAG_COMPRESSED 1
-#define COFNIG_FILE_FLAG_ENCRYPTED 2
+#define COFNIG_BINARY_FILE_FLAG_COMPRESSED 1
+#define COFNIG_BINARY_FILE_FLAG_ENCRYPTED 2
+
+#define CONFIG_TEXT_FILE_IS_WHITESPACE(c) (!(c)||(c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\r')
+
+#define CONFIG_TEXT_FILE_IS_NUMBER(c) ((c)>='0'&&(c)<='9')
+
+#define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.')
+#define CONFIG_TEXT_FILE_IS_IDENTIFIER(c) (CONFIG_TEXT_FILE_IS_IDENTIFIER_START((c))||CONFIG_TEXT_FILE_IS_NUMBER((c)))
 
 
 
-typedef struct KERNEL_PACKED _CONFIG_FILE_HEADER{
+typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_HEADER{
 	u32 signature;
 	u8 version;
 	u8 flags;
@@ -32,14 +39,14 @@ typedef struct KERNEL_PACKED _CONFIG_FILE_HEADER{
 
 
 
-typedef struct KERNEL_PACKED _CONFIG_FILE_ENCRYPTION_HEADER{
+typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_ENCRYPTION_HEADER{
 	u8 hmac[32];
 	u8 salt[16];
 } config_file_encryption_header_t;
 
 
 
-typedef struct KERNEL_PACKED _CONFIG_FILE_TAG_HEADER{
+typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_TAG_HEADER{
 	u8 type;
 	u8 name_length;
 	u16 length;
@@ -52,7 +59,7 @@ static omm_allocator_t* _config_tag_allocator=NULL;
 
 
 
-static const void* _parse_tag(const void* data,const void* end,config_tag_t** out){
+static const void* _parse_binary_tag(const void* data,const void* end,config_tag_t** out){
 	if (data+sizeof(config_file_tag_header_t)>end){
 		return NULL;
 	}
@@ -62,6 +69,7 @@ static const void* _parse_tag(const void* data,const void* end,config_tag_t** ou
 		return NULL;
 	}
 	*out=omm_alloc(_config_tag_allocator);
+	(*out)->parent=NULL;
 	(*out)->name=smm_alloc(data,header->name_length);
 	(*out)->type=header->type;
 	data+=header->name_length;
@@ -71,14 +79,15 @@ static const void* _parse_tag(const void* data,const void* end,config_tag_t** ou
 		data+=sizeof(u32);
 	}
 	if (header->type==CONFIG_TAG_TYPE_ARRAY){
-		(*out)->array=amm_alloc(sizeof(config_tag_array_t)+sizeof(config_tag_t*)*tag_length);
+		(*out)->array=amm_alloc(sizeof(config_tag_array_t)+tag_length*sizeof(config_tag_t*));
 		(*out)->array->length=tag_length;
 		memset((*out)->array->data,0,sizeof(config_tag_t*)*tag_length);
 		for (u32 i=0;i<tag_length;i++){
-			data=_parse_tag(data,end,(*out)->array->data+i);
+			data=_parse_binary_tag(data,end,(*out)->array->data+i);
 			if (!data){
 				goto _error;
 			}
+			(*out)->array->data[i]->parent=*out;
 		}
 	}
 	else if (header->type==CONFIG_TAG_TYPE_STRING){
@@ -112,6 +121,117 @@ _error:
 
 
 
+static config_tag_t* _parse_binary_config(const void* data,u64 length,const char* password){
+	const config_file_header_t* header=data;
+	data+=sizeof(config_file_header_t);
+	length-=sizeof(config_file_header_t);
+	if (header->signature!=CONFIG_BINARY_FILE_SIGNATURE||header->version!=CONFIG_BINARY_FILE_VERSION||header->size>length){
+		return NULL;
+	}
+	if (header->flags&COFNIG_BINARY_FILE_FLAG_ENCRYPTED){
+		panic("Decrypt data");
+	}
+	if (header->flags&COFNIG_BINARY_FILE_FLAG_COMPRESSED){
+		panic("Decompress data");
+	}
+	config_tag_t* out;
+	data=_parse_binary_tag(data,data+length,&out);
+	return (data?out:NULL);
+}
+
+
+
+static config_tag_t* _parse_text_config(const char* data,u64 length){
+	config_tag_t* out=omm_alloc(_config_tag_allocator);
+	out->parent=NULL;
+	out->name=smm_alloc("",0);
+	out->type=CONFIG_TAG_TYPE_ARRAY;
+	out->array=amm_alloc(sizeof(config_tag_array_t));
+	out->array->length=0;
+	for (const char* end=data+length;data<end;){
+		for (;data<end&&CONFIG_TEXT_FILE_IS_WHITESPACE(data[0]);data++);
+		if (data>=end){
+			break;
+		}
+		string_t* name=NULL;
+		if (CONFIG_TEXT_FILE_IS_IDENTIFIER_START(data[0])){
+			u32 name_length=0;
+			for (;data+name_length<end&&CONFIG_TEXT_FILE_IS_IDENTIFIER(data[name_length]);name_length++);
+			name=smm_alloc(data,name_length);
+			data+=name_length;
+			for (;data<end&&data[0]!='\n'&&CONFIG_TEXT_FILE_IS_WHITESPACE(data[0]);data++);
+		}
+		else{
+			name=smm_alloc("",0);
+		}
+		if (data==end||data[0]==','||data[0]=='\n'){
+			if (!name->length){
+				smm_dealloc(name);
+				continue;
+			}
+			config_tag_t* tag=omm_alloc(_config_tag_allocator);
+			tag->name=name;
+			tag->type=CONFIG_TAG_TYPE_NONE;
+			config_tag_attach(out,tag);
+			continue;
+		}
+		if (name->length||data[0]=='='){
+			if (data[0]!='='){
+				smm_dealloc(name);
+				ERROR("Expected '=', got '%c'",data[0]);
+				return NULL;
+			}
+			data++;
+			for (;data<end&&data[0]!='\n'&&CONFIG_TEXT_FILE_IS_WHITESPACE(data[0]);data++);
+		}
+		if (data==end){
+			config_tag_t* tag=omm_alloc(_config_tag_allocator);
+			tag->name=name;
+			tag->type=CONFIG_TAG_TYPE_NONE;
+			config_tag_attach(out,tag);
+			continue;
+		}
+		if (data[0]=='#'){
+			for (;data<end&&data[0]!='\n';data++);
+			continue;
+		}
+		if (data[0]=='{'){
+			config_tag_t* tag=omm_alloc(_config_tag_allocator);
+			tag->name=name;
+			tag->type=CONFIG_TAG_TYPE_ARRAY;
+			tag->array=amm_alloc(sizeof(config_tag_array_t));
+			tag->array->length=0;
+			config_tag_attach(out,tag);
+			out=tag;
+			continue;
+		}
+		if (data[0]=='}'){
+			out=out->parent;
+			if (!out){
+				panic("Unbalanced brackets");
+			}
+			continue;
+		}
+		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])){
+			panic("Number");
+		}
+		if (data[0]=='\"'){
+			panic("Quoted string");
+		}
+		u32 string_length=0;
+		for (;data+string_length<end&&data[string_length]!='\n';string_length++);
+		config_tag_t* tag=omm_alloc(_config_tag_allocator);
+		tag->name=name;
+		tag->type=CONFIG_TAG_TYPE_STRING;
+		tag->string=smm_alloc(data,string_length);
+		data+=string_length;
+		config_tag_attach(out,tag);
+	}
+	return out;
+}
+
+
+
 KERNEL_INIT(){
 	LOG("Initializing config tags...");
 	_config_buffer_pmm_counter=pmm_alloc_counter("config_buffer");
@@ -123,6 +243,7 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC config_tag_t* config_tag_create(u32 type,const char* name,u8 name_length){
 	config_tag_t* out=omm_alloc(_config_tag_allocator);
+	out->parent=NULL;
 	out->name=smm_alloc(name,name_length);
 	out->type=type;
 	if (type==CONFIG_TAG_TYPE_ARRAY){
@@ -159,29 +280,32 @@ KERNEL_PUBLIC void config_tag_delete(config_tag_t* tag){
 
 
 
+KERNEL_PUBLIC void config_tag_attach(config_tag_t* tag,config_tag_t* child){
+	if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		panic("config_tag_attach: tag is not an array");
+	}
+	tag->array->length++;
+	tag->array=amm_realloc(tag->array,sizeof(config_tag_array_t)+tag->array->length*sizeof(config_tag_t*));
+	tag->array->data[tag->array->length-1]=child;
+	child->parent=tag;
+}
+
+
+
+KERNEL_PUBLIC void config_tag_detach(config_tag_t* child){
+	if (!child->parent){
+		return;
+	}
+	panic("config_tag_detach");
+}
+
+
+
 KERNEL_PUBLIC config_tag_t* config_tag_load(const void* data,u64 length,const char* password){
-	if (length<sizeof(config_file_header_t)){
-		return NULL;
+	if (length>=sizeof(u32)&&*((const u32*)data)==CONFIG_BINARY_FILE_SIGNATURE){
+		return _parse_binary_config(data,length,password);
 	}
-	const config_file_header_t* header=data;
-	data+=sizeof(config_file_header_t);
-	length-=sizeof(config_file_header_t);
-	if (header->signature!=CONFIG_FILE_SIGNATURE||header->version!=CONFIG_FILE_VERSION||header->size>length){
-		return NULL;
-	}
-	void* buffer=NULL;
-	if (header->flags&COFNIG_FILE_FLAG_ENCRYPTED){
-		panic("Decrypt data");
-	}
-	if (header->flags&COFNIG_FILE_FLAG_COMPRESSED){
-		panic("Decompress data");
-	}
-	config_tag_t* out;
-	data=_parse_tag(data,data+length,&out);
-	if (buffer){
-		pmm_dealloc((u64)(buffer-VMM_HIGHER_HALF_ADDRESS_OFFSET),pmm_align_up_address(header->size)>>PAGE_SIZE_SHIFT,_config_buffer_pmm_counter);
-	}
-	return (data?out:NULL);
+	return _parse_text_config(data,length);
 }
 
 
