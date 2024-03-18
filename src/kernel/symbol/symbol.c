@@ -69,13 +69,12 @@ const symbol_t* symbol_lookup(u64 address){
 
 
 const symbol_t* symbol_lookup_by_name(const char* name){
-	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
+	SMM_TEMPORARY_STRING str=smm_alloc(name,0);
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
 		const symbol_t* symbol=(const symbol_t*)rb_node;
-		if (symbol->name->length!=name_string->length||symbol->name->hash!=name_string->hash||!streq(symbol->name->data,name)){
-			continue;
+		if (smm_equal(symbol->name,str)){
+			return symbol;
 		}
-		return symbol;
 	}
 	return NULL;
 }

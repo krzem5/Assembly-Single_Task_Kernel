@@ -48,6 +48,7 @@ class ProcessPoolCommand(object):
 			self.pool._error=True
 		else:
 			self.pool.dispatch(self.file)
+		self.pool._process_count-=1
 
 
 
@@ -58,6 +59,7 @@ class ProcessPool(object):
 		self._dependency_map={}
 		self._threads=[]
 		self._lock=threading.Lock()
+		self._process_count=0
 
 	def add(self,dependencies,file,name,command):
 		pool_command=ProcessPoolCommand(self,file,dependencies,command,name)
@@ -69,6 +71,7 @@ class ProcessPool(object):
 			else:
 				dep_state.append(pool_command)
 				self._dependency_map[dep]=dep_state
+		self._process_count+=1
 		self._lock.release()
 
 	def dispatch(self,file):
@@ -84,4 +87,4 @@ class ProcessPool(object):
 		self._error=False
 		while (self._threads):
 			self._threads.pop().join()
-		return self._error
+		return self._error or bool(self._process_count)

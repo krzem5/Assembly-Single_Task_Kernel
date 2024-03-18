@@ -123,29 +123,15 @@ KERNEL_PUBLIC void vfs_node_delete(vfs_node_t* node){
 KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name){
 	vfs_node_t* out=node->relatives.child;
 	for (;out;out=out->relatives.next_sibling){
-		if (out->name->length!=name->length||out->name->hash!=name->hash){
-			continue;
+		if (smm_equal(out->name,name)){
+			return out;
 		}
-		for (u32 i=0;i<out->name->length;i++){
-			if (out->name->data[i]!=name->data[i]){
-				goto _check_next_sibling;
-			}
-		}
-		return out;
-_check_next_sibling:
 	}
 	out=node->relatives.external_child;
 	for (;out;out=out->relatives.external_next_sibling){
-		if (out->name->length!=name->length||out->name->hash!=name->hash){
-			continue;
+		if (smm_equal(out->name,name)){
+			return out;
 		}
-		for (u32 i=0;i<out->name->length;i++){
-			if (out->name->data[i]!=name->data[i]){
-				goto _check_next_external_sibling;
-			}
-		}
-		return out;
-_check_next_external_sibling:
 	}
 	if (!node->functions->lookup){
 		return NULL;

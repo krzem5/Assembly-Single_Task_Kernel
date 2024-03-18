@@ -58,6 +58,20 @@ KERNEL_PUBLIC u32 smm_length(const char* data){
 
 
 
+KERNEL_PUBLIC _Bool smm_equal(const string_t* a,const string_t* b){
+	if (a->length!=b->length||a->hash!=b->hash){
+		return 0;
+	}
+	for (u32 i=0;i<a->length;i++){
+		if (a->data[i]!=b->data[i]){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+
 KERNEL_PUBLIC void _smm_cleanup(string_t** string){
 	smm_dealloc(*string);
 }

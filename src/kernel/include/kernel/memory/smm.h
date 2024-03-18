@@ -38,6 +38,10 @@ u32 smm_length(const char* data);
 
 
 
+_Bool smm_equal(const string_t* a,const string_t* b);
+
+
+
 void _smm_cleanup(string_t** string);
 
 

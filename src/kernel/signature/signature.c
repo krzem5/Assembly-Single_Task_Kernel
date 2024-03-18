@@ -1,6 +1,7 @@
 #include <kernel/elf/structures.h>
 #include <kernel/hash/sha256.h>
 #include <kernel/kernel.h>
+#include <kernel/keyring/keyring.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
@@ -23,13 +24,9 @@
 
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
-static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
-static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
 static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_exponent[1024];
 static volatile u8 KERNEL_EARLY_WRITE __kernel_user_key_modulus[1024];
 static volatile u32 KERNEL_EARLY_WRITE __kernel_user_key_modulus_bit_length;
-static rsa_state_t _signature_module_rsa_state;
 static rsa_state_t _signature_user_rsa_state;
 static _Bool _signature_is_kernel_tainted=0;
 static _Bool _signature_require_signatures=0;
@@ -38,11 +35,6 @@ static _Bool _signature_require_signatures=0;
 
 KERNEL_EARLY_INIT(){
 	LOG("Loading module signature key...");
-	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&_signature_module_rsa_state);
-	_signature_module_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_module_rsa_state,(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
-	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
-	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
-	__kernel_module_key_modulus_bit_length=0;
 	rsa_state_init((const void*)__kernel_user_key_modulus,__kernel_user_key_modulus_bit_length,&_signature_user_rsa_state);
 	_signature_user_rsa_state.public_key=rsa_number_create_from_bytes(&_signature_user_rsa_state,(const void*)__kernel_user_key_exponent,1024/sizeof(u32));
 	memset((void*)__kernel_user_key_exponent,0,sizeof(__kernel_user_key_exponent));
@@ -98,12 +90,16 @@ _unsigned_module:
 		return 1;
 	}
 	INFO("Signature key: %s",file_base+section_header->sh_offset);
-	if (!streq(file_base+section_header->sh_offset,"builtin-module")){
+	keyring_key_t* key=keyring_search(keyring_module_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
+	if (!key||key->type!=KEYRING_KEY_TYPE_RSA){
 		goto _unsigned_module;
 	}
-	rsa_number_t* value=rsa_number_create_from_bytes(&_signature_module_rsa_state,file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
+	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
 	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
-	rsa_state_process(&_signature_module_rsa_state,value,RSA_PUBLIC_KEY,value);
+	if (!keyring_key_process_rsa(key,value,value)){
+		rsa_number_delete(value);
+		goto _unsigned_module;
+	}
 	hash_sha256_state_t state;
 	hash_sha256_init(&state);
 	hash_sha256_process_chunk(&state,name,smm_length(name));

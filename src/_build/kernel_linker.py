@@ -159,7 +159,7 @@ def _parse_symbol_table(ctx,allow_undefined=False):
 			continue
 		if (st_shndx==SHN_UNDEF and not name.startswith("__KERNEL_SECTION_")):
 			if (not allow_undefined):
-				print(f"Undefiend symbol: {name}")
+				print(f"Undefined symbol: {name}")
 				error=True
 			continue
 		is_func=((st_info&0x0f)==STT_FUNC)

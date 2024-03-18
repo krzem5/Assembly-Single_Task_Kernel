@@ -1,0 +1,120 @@
+#include <kernel/acl/acl.h>
+#include <kernel/handle/handle.h>
+#include <kernel/keyring/keyring.h>
+#include <kernel/lock/spinlock.h>
+#include <kernel/log/log.h>
+#include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
+#include <kernel/rsa/rsa.h>
+#include <kernel/types.h>
+#include <kernel/util/util.h>
+#define KERNEL_LOG_NAME "keyring"
+
+
+
+static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_exponent[1024];
+static volatile u8 KERNEL_EARLY_WRITE __kernel_module_key_modulus[1024];
+static volatile u32 KERNEL_EARLY_WRITE __kernel_module_key_modulus_bit_length;
+
+static omm_allocator_t* _keyring_allocator=NULL;
+static omm_allocator_t* _keyring_key_allocator=NULL;
+static handle_type_t _keyring_handle_type=0;
+
+KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
+KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
+
+
+
+static void _keyring_handle_destructor(handle_t* handle){
+	keyring_t* keyring=handle->object;
+	ERROR("Delete keyring '%s'",keyring->name->data);
+}
+
+
+
+KERNEL_INIT(){
+	LOG("Initializing keyrings...");
+	_keyring_allocator=omm_init("keyring",sizeof(keyring_t),8,2,pmm_alloc_counter("omm_keyring"));
+	spinlock_init(&(_keyring_allocator->lock));
+	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2,pmm_alloc_counter("omm_keyring_key"));
+	spinlock_init(&(_keyring_key_allocator->lock));
+	_keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
+	INFO("Creating module signature keyring...");
+	keyring_module_signature=keyring_create("module-signature");
+	keyring_key_t* key=keyring_key_create(keyring_module_signature,"builtin-module");
+	key->type=KEYRING_KEY_TYPE_RSA;
+	rsa_state_init((const void*)__kernel_module_key_modulus,__kernel_module_key_modulus_bit_length,&(key->data.rsa.state));
+	key->data.rsa.state.public_key=rsa_number_create_from_bytes(&(key->data.rsa.state),(const void*)__kernel_module_key_exponent,1024/sizeof(u32));
+	memset((void*)__kernel_module_key_exponent,0,sizeof(__kernel_module_key_exponent));
+	memset((void*)__kernel_module_key_modulus,0,sizeof(__kernel_module_key_modulus));
+	__kernel_module_key_modulus_bit_length=0;
+	INFO("Creating user signature keyring...");
+	keyring_user_signature=keyring_create("user-signature");
+}
+
+
+
+KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
+	keyring_t* out=omm_alloc(_keyring_allocator);
+	out->name=smm_alloc(name,0);
+	handle_new(out,_keyring_handle_type,&(out->handle));
+	out->handle.acl=acl_create();
+	spinlock_init(&(out->lock));
+	out->head=NULL;
+	handle_finish_setup(&(out->handle));
+	return out;
+}
+
+
+
+KERNEL_PUBLIC void keyring_delete(keyring_t* keyring);
+
+
+
+KERNEL_PUBLIC keyring_key_t* keyring_search(keyring_t* keyring,const char* name,u32 flags){
+	SMM_TEMPORARY_STRING str=smm_alloc(name,0);
+	spinlock_acquire_shared(&(keyring->lock));
+	keyring_key_t* key=keyring->head;
+	for (;key&&!smm_equal(key->name,str);key=key->next);
+	spinlock_release_shared(&(keyring->lock));
+	return key;
+}
+
+
+
+KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* name){
+	keyring_key_t* out=omm_alloc(_keyring_key_allocator);
+	out->keyring=keyring;
+	out->name=smm_alloc(name,0);
+	out->type=KEYRING_KEY_TYPE_NONE;
+	spinlock_init(&(out->lock));
+	spinlock_acquire_exclusive(&(keyring->lock));
+	out->prev=NULL;
+	out->next=keyring->head;
+	if (keyring->head){
+		keyring->head->prev=out;
+	}
+	else{
+		keyring->head=out;
+	}
+	spinlock_release_exclusive(&(keyring->lock));
+	return out;
+}
+
+
+
+KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key);
+
+
+
+KERNEL_PUBLIC _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out){
+	spinlock_acquire_exclusive(&(key->lock));
+	_Bool ret=0;
+	if (key->type==KEYRING_KEY_TYPE_RSA){
+		rsa_state_process(&(key->data.rsa.state),in,RSA_PUBLIC_KEY,out);
+		ret=1;
+	}
+	spinlock_release_exclusive(&(key->lock));
+	return ret;
+}
