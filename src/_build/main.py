@@ -750,7 +750,7 @@ def _execute_vm():
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
-		"qemu-system-x86_64",
+		"qemu-system-x86_64","-machine","q35",
 		# "-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
@@ -785,7 +785,7 @@ def _execute_vm():
 		# CPU
 		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
 		"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
-		"-device","intel-iommu","-machine","q35",
+		"-device","intel-iommu",
 		# NUMA
 		"-numa","node,nodeid=0,memdev=mem0",
 		"-numa","node,nodeid=1,memdev=mem1",
