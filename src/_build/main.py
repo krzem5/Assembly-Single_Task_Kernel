@@ -69,6 +69,7 @@ BUILD_DIRECTORIES=[
 	"build/uefi",
 	"build/user",
 	"build/vm",
+	"build/vm/tpm",
 	"src/kernel/_generated"
 ]
 CLEAR_BUILD_DIRECTORIES=[
@@ -733,8 +734,10 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 
 
 
-
 def _execute_vm():
+	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=20"])
+	while (not os.path.exists("/tmp/swtpm.sock")):
+		time.sleep(0.01)
 	if (not NO_FILE_SERVER):
 		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
@@ -750,7 +753,7 @@ def _execute_vm():
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
-		"qemu-system-x86_64","-machine","q35",
+		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
@@ -812,9 +815,13 @@ def _execute_vm():
 		"-serial","chardev:console",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
-		"-machine","hmat=on",
+		"-machine","q35,hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER",
+		# TPM
+		"-chardev","socket,id=chrtpm,path=/tmp/swtpm.sock",
+		"-tpmdev","emulator,id=tpm0,chardev=chrtpm",
+		"-device","tpm-tis,tpmdev=tpm0",
 		# Debugging
 		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
 	]+_kvm_flags())
@@ -822,6 +829,8 @@ def _execute_vm():
 		os.remove("build/vm/virtiofsd.sock")
 	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
 		os.remove("build/vm/virtiofsd.sock.pid")
+	if (os.path.exists("/tmp/swtpm.sock")):
+		os.remove("/tmp/swtpm.sock")
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")
