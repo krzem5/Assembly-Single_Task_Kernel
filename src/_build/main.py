@@ -785,7 +785,7 @@ def _execute_vm():
 		# CPU
 		"-cpu","Skylake-Client-v4,tsc,invtsc,avx,avx2,bmi1,bmi2,pdpe1gb",
 		"-smp","4,sockets=2,cores=1,threads=2,maxcpus=4",
-		# "-device","intel-iommu","-machine","q35", ### Required for 256-288 cores
+		"-device","intel-iommu","-machine","q35",
 		# NUMA
 		"-numa","node,nodeid=0,memdev=mem0",
 		"-numa","node,nodeid=1,memdev=mem1",

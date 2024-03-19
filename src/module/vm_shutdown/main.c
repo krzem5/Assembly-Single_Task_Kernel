@@ -8,7 +8,6 @@
 
 static void _qemu_shutdown_function(void){
 	io_port_out16(0xb004,0x2000);
-	for (;;);
 }
 
 
