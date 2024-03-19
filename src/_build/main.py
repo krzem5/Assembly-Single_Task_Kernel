@@ -735,6 +735,8 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 
 
 def _execute_vm():
+	if (not os.path.exists("/tmp/tpm")):
+		os.mkdir("/tmp/tpm")
 	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=20"])
 	while (not os.path.exists("/tmp/swtpm.sock")):
 		time.sleep(0.01)
@@ -819,8 +821,8 @@ def _execute_vm():
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER",
 		# TPM
-		"-chardev","socket,id=chrtpm,path=/tmp/swtpm.sock",
-		"-tpmdev","emulator,id=tpm0,chardev=chrtpm",
+		"-chardev","socket,id=tpm,path=/tmp/swtpm.sock",
+		"-tpmdev","emulator,id=tpm0,chardev=tpm",
 		"-device","tpm-tis,tpmdev=tpm0",
 		# Debugging
 		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
@@ -829,8 +831,8 @@ def _execute_vm():
 		os.remove("build/vm/virtiofsd.sock")
 	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
 		os.remove("build/vm/virtiofsd.sock.pid")
-	if (os.path.exists("/tmp/swtpm.sock")):
-		os.remove("/tmp/swtpm.sock")
+	if (os.path.exists("/tmp/tpm/swtpm.sock")):
+		os.remove("/tmp/tpm/swtpm.sock")
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")
