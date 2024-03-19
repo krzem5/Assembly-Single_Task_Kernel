@@ -34,7 +34,7 @@ typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_HEADER{
 	u8 version;
 	u8 flags;
 	u32 size;
-	u8 padding[6];
+	u8 _padding[6];
 } config_file_header_t;
 
 

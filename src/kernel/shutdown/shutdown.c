@@ -5,9 +5,14 @@
 #include <kernel/notification/notification.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/shutdown/shutdown.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "shutdown"
+
+
+
+#define USER_SHUTDOWN_FLAG_RESTART 1
 
 
 
@@ -70,4 +75,10 @@ KERNEL_PUBLIC void shutdown_register_shutdown_function(shutdown_function_callbac
 	function->is_high_priority=is_high_priority;
 	_shutdown_root_function=function;
 	spinlock_release_exclusive(&_shutdown_function_lock);
+}
+
+
+
+void KERNEL_NORETURN syscall_system_shutdown(u32 flags){
+	shutdown(((flags&USER_SHUTDOWN_FLAG_RESTART)?SHUTDOWN_FLAG_RESTART:0));
 }

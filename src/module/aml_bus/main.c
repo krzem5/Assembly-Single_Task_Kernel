@@ -304,7 +304,7 @@ static _Bool _init(module_t* module){
 	spinlock_init(&(_aml_bus_device_allocator->lock));
 	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 	_enumerate_system_bus(system_bus,NULL);
-	// for (;;);
+	// WARN("%p",*((u32*)(vmm_identity_map(0x00000000fed40000,0x0000000000005000)+0x0014)));
 	return 1;
 }
 

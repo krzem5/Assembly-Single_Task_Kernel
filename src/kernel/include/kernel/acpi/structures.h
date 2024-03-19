@@ -155,4 +155,15 @@ typedef struct KERNEL_PACKED _ACPI_SRAT_ENTRY{
 
 
 
+typedef struct KERNEL_PACKED _ACPI_TPM2{
+	acpi_sdt_t header;
+	u16 platform_class;
+	u8 _padding[2];
+	u64 control_area_address;
+	u32 start_method;
+	u8 start_method_parameters[12];
+} acpi_tpm2_t;
+
+
+
 #endif

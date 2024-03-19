@@ -4,6 +4,7 @@
 #include <kernel/acpi/slit.h>
 #include <kernel/acpi/srat.h>
 #include <kernel/acpi/structures.h>
+#include <kernel/acpi/tpm2.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
@@ -35,6 +36,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	const acpi_hmat_t* hmat=NULL;
 	const acpi_srat_t* srat=NULL;
 	const acpi_slit_t* slit=NULL;
+	const acpi_tpm2_t* tpm2=NULL;
 	for (u32 i=0;i<entry_count;i++){
 		const acpi_sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
 		sdt=(void*)vmm_identity_map((u64)sdt,((const acpi_sdt_t*)vmm_identity_map((u64)sdt,sizeof(acpi_sdt_t)))->length);
@@ -58,6 +60,10 @@ KERNEL_EARLY_EARLY_INIT(){
 			slit=(const acpi_slit_t*)sdt;
 			INFO("Found SLIT at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
+		else if (sdt->signature==0x324d5054){
+			tpm2=(const acpi_tpm2_t*)sdt;
+			INFO("Found TPM2 at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		}
 	}
 	if (madt){
 		acpi_madt_load(madt);
@@ -73,5 +79,8 @@ KERNEL_EARLY_EARLY_INIT(){
 		if (slit){
 			acpi_slit_load(slit);
 		}
+	}
+	if (tpm2){
+		acpi_tpm2_load(tpm2);
 	}
 }
