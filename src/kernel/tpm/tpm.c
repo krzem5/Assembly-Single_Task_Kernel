@@ -232,91 +232,90 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	_chip_start(tpm);
 	tpm->regs[TPM_REG_INT_ENABLE(0)]=interrupt_mask;
 	_probe_tpm2(tpm);
-	if (tpm->flags&TPM_FLAG_VERSION_2){
-		_Bool require_initialization=_self_test_tpm2(tpm);
-		if (require_initialization){
-			panic("TPM2 requires initialization");
-		}
-		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
-		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
-		tpm->command->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
-		tpm->command->get_capability.property_count=__builtin_bswap32(1);
-		_execute_command(tpm);
-		if (!__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.property_count)){
-			panic("No properties returned");
-		}
-		tpm->device_command_count=__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.value);
-		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
-		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_COMMANDS);
-		tpm->command->get_capability.property=__builtin_bswap32(TPM2_CC_FIRST);
-		tpm->command->get_capability.property_count=__builtin_bswap32(tpm->device_command_count);
-		_execute_command(tpm);
-		if (__builtin_bswap32(tpm->command->get_capability_resp_commands.command_count)!=tpm->device_command_count){
-			panic("Inconsistent command count");
-		}
-		tpm->device_commands=amm_alloc(tpm->device_command_count*sizeof(tpm_device_command_t));
-		for (u32 i=0;i<tpm->device_command_count;i++){
-			u32 entry=__builtin_bswap32(tpm->command->get_capability_resp_commands.commands[i]);
-			(tpm->device_commands+i)->cc=entry;
-			(tpm->device_commands+i)->attributes=entry>>16;
-		}
-		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
-		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_PCRS);
-		tpm->command->get_capability.property=__builtin_bswap32(0);
-		tpm->command->get_capability.property_count=__builtin_bswap32(1);
-		_execute_command(tpm);
-		tpm->bank_count=__builtin_bswap32(tpm->command->get_capability_resp_pcrs.bank_count);
-		tpm->banks=amm_alloc(tpm->bank_count*sizeof(tpm_bank_t));
-		u32 bank_idx=0;
-		const u8* ptr=tpm->command->get_capability_resp_pcrs.data;
-		for (u32 i=0;i<tpm->bank_count;i++){
-			u16 hash_alg=(ptr[0]<<8)|ptr[1];
-			u8 size_of_selection=ptr[2];
-			ptr+=3;
-			for (u32 j=0;j<size_of_selection;j++){
-				if (!ptr[j]){
-					continue;
-				}
-				u32 digest_size=0;
-				if (hash_alg==TPM_ALG_SHA1){
-					digest_size=20;
-				}
-				else if (hash_alg==TPM_ALG_SHA256){
-					digest_size=32;
-				}
-				else if (hash_alg==TPM_ALG_SHA384){
-					digest_size=48;
-				}
-				else if (hash_alg==TPM_ALG_SHA512){
-					digest_size=64;
-				}
-				else{
-					panic("Unknown hash algorithm digest size");
-				}
-				(tpm->banks+bank_idx)->hash_alg=hash_alg;
-				(tpm->banks+bank_idx)->digest_size=digest_size;
-				bank_idx++;
-				break;
-			}
-			ptr+=size_of_selection;
-		}
-		tpm->bank_count=bank_idx;
-		tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
-		for (u32 i=0;i<TPM2_PLATFORM_PCR_COUNT;i++){
-			u8 buffer[20];
-			if (_read_pcr_value(tpm,i,TPM_ALG_SHA1,buffer,sizeof(buffer))==sizeof(buffer)){
-				WARN("PCR[%u]: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",i,buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19]);
-			}
-		}
+	if (!(tpm->flags&TPM_FLAG_VERSION_2)){
+		ERROR("Found legacy TPM device");
+		panic("Legacy TPM device");
 	}
-	else{
-		panic("TPM 1.2 init");
+	_Bool require_initialization=_self_test_tpm2(tpm);
+	if (require_initialization){
+		panic("TPM2 requires initialization");
+	}
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+	tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
+	tpm->command->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
+	tpm->command->get_capability.property_count=__builtin_bswap32(1);
+	_execute_command(tpm);
+	if (!__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.property_count)){
+		panic("No properties returned");
+	}
+	tpm->device_command_count=__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.value);
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+	tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_COMMANDS);
+	tpm->command->get_capability.property=__builtin_bswap32(TPM2_CC_FIRST);
+	tpm->command->get_capability.property_count=__builtin_bswap32(tpm->device_command_count);
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->get_capability_resp_commands.command_count)!=tpm->device_command_count){
+		panic("Inconsistent command count");
+	}
+	tpm->device_commands=amm_alloc(tpm->device_command_count*sizeof(tpm_device_command_t));
+	for (u32 i=0;i<tpm->device_command_count;i++){
+		u32 entry=__builtin_bswap32(tpm->command->get_capability_resp_commands.commands[i]);
+		(tpm->device_commands+i)->cc=entry;
+		(tpm->device_commands+i)->attributes=entry>>16;
+	}
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+	tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_PCRS);
+	tpm->command->get_capability.property=__builtin_bswap32(0);
+	tpm->command->get_capability.property_count=__builtin_bswap32(1);
+	_execute_command(tpm);
+	tpm->bank_count=__builtin_bswap32(tpm->command->get_capability_resp_pcrs.bank_count);
+	tpm->banks=amm_alloc(tpm->bank_count*sizeof(tpm_bank_t));
+	u32 bank_idx=0;
+	const u8* ptr=tpm->command->get_capability_resp_pcrs.data;
+	for (u32 i=0;i<tpm->bank_count;i++){
+		u16 hash_alg=(ptr[0]<<8)|ptr[1];
+		u8 size_of_selection=ptr[2];
+		ptr+=3;
+		for (u32 j=0;j<size_of_selection;j++){
+			if (!ptr[j]){
+				continue;
+			}
+			u32 digest_size=0;
+			if (hash_alg==TPM_ALG_SHA1){
+				digest_size=20;
+			}
+			else if (hash_alg==TPM_ALG_SHA256){
+				digest_size=32;
+			}
+			else if (hash_alg==TPM_ALG_SHA384){
+				digest_size=48;
+			}
+			else if (hash_alg==TPM_ALG_SHA512){
+				digest_size=64;
+			}
+			else{
+				panic("Unknown hash algorithm digest size");
+			}
+			(tpm->banks+bank_idx)->hash_alg=hash_alg;
+			(tpm->banks+bank_idx)->digest_size=digest_size;
+			bank_idx++;
+			break;
+		}
+		ptr+=size_of_selection;
+	}
+	tpm->bank_count=bank_idx;
+	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
+	for (u32 i=0;i<TPM2_PLATFORM_PCR_COUNT;i++){
+		u8 buffer[20];
+		if (_read_pcr_value(tpm,i,TPM_ALG_SHA1,buffer,sizeof(buffer))==sizeof(buffer)){
+			WARN("PCR[%u]: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",i,buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19]);
+		}
 	}
 	_chip_stop(tpm);
 	return 1;
