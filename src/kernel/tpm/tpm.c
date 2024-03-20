@@ -76,9 +76,12 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	u32 capabilites=regs[TPM_REG_INTF_CAPS(0)];
 	INFO("Interrupt mask: %x, Capabilites: %x",interrupt_mask,capabilites);
 	interrupt_mask=(interrupt_mask|TPM_INTF_CMD_READY_INT|TPM_INTF_LOCALITY_CHANGE_INT|TPM_INTF_STS_VALID_INT|TPM_INTF_DATA_AVAIL_INT)&(~TPM_GLOBAL_INT_ENABLE);
-	_chip_start(regs);
-	regs[TPM_REG_INT_ENABLE(0)]=interrupt_mask;
-	_chip_stop(regs);
+	// _chip_start(regs);
+	// regs[TPM_REG_INT_ENABLE(0)]=interrupt_mask;
+	// _chip_stop(regs);
+	// panic("a");
+	(void)_chip_start;
+	(void)_chip_stop;
 	return 1;
 }
 
