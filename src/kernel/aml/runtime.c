@@ -1,4 +1,5 @@
 #include <kernel/acpi/fadt.h>
+#include <kernel/aml/bus.h>
 #include <kernel/aml/field.h>
 #include <kernel/aml/namespace.h>
 #include <kernel/aml/object.h>
@@ -1874,6 +1875,7 @@ KERNEL_INIT(){
 		NULL
 	};
 	aml_runtime_execute(&ctx);
+	aml_bus_scan();
 }
 
 

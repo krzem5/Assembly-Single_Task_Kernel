@@ -1,3 +1,4 @@
+#include <kernel/aml/bus.h>
 #include <kernel/aml/namespace.h>
 #include <kernel/aml/object.h>
 #include <kernel/aml/runtime.h>
@@ -10,44 +11,13 @@
 
 
 
-#define AML_BUS_ADDRESS_TYPE_ADR 0
-#define AML_BUS_ADDRESS_TYPE_HID 1
-#define AML_BUS_ADDRESS_TYPE_HID_STR 2
+static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_allocator=NULL;
 
-#define AML_BUS_UID_TYPE_INT 0
-#define AML_BUS_UID_TYPE_STR 1
-
-#define AML_BUS_DEVICE_SLOT_UNKNOWN 0xffffffffffffffffull
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE aml_bus_device_handle_type=0;
 
 
 
-typedef struct _AML_BUS_DEVICE{
-	u8 address_type;
-	u8 uid_type;
-	union{
-		u64 adr;
-		u64 hid;
-		string_t* hid_str;
-	} address;
-	handle_t handle;
-	aml_namespace_t* device;
-	struct _AML_BUS_DEVICE* parent;
-	u64 slot_unique_id;
-	union{
-		u64 uid;
-		string_t* uid_str;
-	};
-} aml_bus_device_t;
-
-
-
-static omm_allocator_t* _aml_bus_device_allocator=NULL;
-
-KERNEL_PUBLIC handle_type_t aml_bus_device_handle_type=0;
-
-
-
-KERNEL_PUBLIC _Bool aml_bus_device_get_crs(aml_bus_device_t* device){
+static _Bool _get_device_crs(aml_bus_device_t* device){
 	aml_namespace_t* crs_object=aml_namespace_lookup(device->device,"_CRS",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
 	if (!crs_object||!crs_object->value){
 		return 0;
@@ -206,7 +176,7 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 	}
 	handle_new(out,aml_bus_device_handle_type,&(out->handle));
 	handle_finish_setup(&(out->handle));
-	aml_bus_device_get_crs(out);
+	_get_device_crs(out);
 	return out;
 _cleanup:
 	if (out->address_type==AML_BUS_ADDRESS_TYPE_HID_STR){
@@ -295,29 +265,14 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 
 
 
-static _Bool _init(module_t* module){
+void aml_bus_scan(void){
 	aml_namespace_t* system_bus=aml_namespace_lookup(NULL,"\\_SB_",0);
 	if (!system_bus){
-		return 0;
+		return;
 	}
 	_aml_bus_device_allocator=omm_init("aml_bus_device",sizeof(aml_bus_device_t),8,2,pmm_alloc_counter("omm_aml_bus_device"));
 	spinlock_init(&(_aml_bus_device_allocator->lock));
 	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 	_enumerate_system_bus(system_bus,NULL);
-	// WARN("%p",*((u32*)(vmm_identity_map(0x00000000fed40000,0x0000000000005000)+0x0014)));
-	return 1;
+	// WARN("%p",*((u32*)(vmm_identity_map(0x00000000fed40000,0x0000000000005000)+0x0014))); // TPM2
 }
-
-
-
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);

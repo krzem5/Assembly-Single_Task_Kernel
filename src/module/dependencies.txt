@@ -1,5 +1,4 @@
 ahci:
-aml_bus:aml
 aml_shutdown:aml
 ata:
 devfs:dynamicfs
