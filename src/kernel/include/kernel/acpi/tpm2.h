@@ -4,6 +4,10 @@
 
 
 
+extern const acpi_tpm2_t* acpi_tpm2;
+
+
+
 void acpi_tpm2_load(const acpi_tpm2_t* tpm2);
 
 

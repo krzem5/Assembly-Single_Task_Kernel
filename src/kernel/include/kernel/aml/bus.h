@@ -88,7 +88,31 @@ typedef struct _AML_BUS_DEVICE{
 	};
 	aml_bus_device_resource_t* resource_head;
 	aml_bus_device_resource_t* resource_tail;
+	const struct _AML_BUS_DEVICE_DRIVER* driver;
+	void* extra_data;
 } aml_bus_device_t;
+
+
+
+typedef struct _AML_BUS_DEVICE_DRIVER{
+	const char* name;
+	u32 address_type;
+	union{
+		u64 adr;
+		u64 hid;
+		const char* hid_str;
+	} address;
+	_Bool (*init)(aml_bus_device_t*);
+	void (*deinit)(aml_bus_device_t*);
+} aml_bus_device_driver_t;
+
+
+
+typedef struct _AML_BUS_DEVICE_DRIVER_NODE{
+	struct _AML_BUS_DEVICE_DRIVER_NODE* prev;
+	struct _AML_BUS_DEVICE_DRIVER_NODE* next;
+	const aml_bus_device_driver_t* driver;
+} aml_bus_device_driver_node_t;
 
 
 
@@ -97,6 +121,18 @@ extern handle_type_t aml_bus_device_handle_type;
 
 
 void aml_bus_scan(void);
+
+
+
+const aml_bus_device_resource_t* aml_bus_device_get_resource(aml_bus_device_t* device,u32 type,u32 index);
+
+
+
+void aml_bus_register_device_driver(const aml_bus_device_driver_t* driver);
+
+
+
+void aml_bus_unregister_device_driver(const aml_bus_device_driver_t* driver);
 
 
 

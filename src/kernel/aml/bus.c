@@ -6,13 +6,15 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/module/module.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aml_bus"
 
 
 
 static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_resource_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_driver_node_allocator=NULL;
+static aml_bus_device_driver_node_t* _aml_bus_device_driver_head=NULL;
 
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE aml_bus_device_handle_type=0;
 
@@ -237,6 +239,8 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 	out->device=device;
 	out->parent=NULL;
 	out->slot_unique_id=AML_BUS_DEVICE_SLOT_UNKNOWN;
+	out->driver=NULL;
+	out->extra_data=NULL;
 	aml_namespace_t* sun_object=aml_namespace_lookup(device,"_SUN",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
 	if (sun_object&&sun_object->value){
 		aml_object_t* value=aml_runtime_execute_method(sun_object->value,0,NULL);
@@ -322,6 +326,21 @@ static aml_bus_device_t* _parse_full_device_descriptor(aml_namespace_t* device){
 
 
 
+static _Bool _match_device(const aml_bus_device_driver_t* driver,aml_bus_device_t* device){
+	if (driver->address_type!=device->address_type){
+		return 0;
+	}
+	if (driver->address_type==AML_BUS_ADDRESS_TYPE_ADR){
+		return driver->address.adr==device->address.adr;
+	}
+	if (driver->address_type==AML_BUS_ADDRESS_TYPE_HID){
+		return driver->address.hid==device->address.hid;
+	}
+	return streq(driver->address.hid_str,device->address.hid_str->data);
+}
+
+
+
 static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml_device){
 	for (aml_namespace_t* device=bus->first_child;device;device=device->next_sibling){
 		if (!device->value||device->value->type!=AML_OBJECT_TYPE_DEVICE){
@@ -358,7 +377,31 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 			aml_device->parent=bus_aml_device;
 		}
 		_enumerate_system_bus(device,aml_device);
+		if (!(status&1)){
+			continue;
+		}
+		for (aml_bus_device_driver_node_t* node=_aml_bus_device_driver_head;node;node=node->next){
+			if (!_match_device(node->driver,aml_device)){
+				continue;
+			}
+			if (node->driver->init(aml_device)){
+				break;
+			}
+		}
 	}
+}
+
+
+
+KERNEL_EARLY_INIT(){
+	LOG("Initializing AML System Bus...");
+	_aml_bus_device_allocator=omm_init("aml_bus_device",sizeof(aml_bus_device_t),8,2,pmm_alloc_counter("omm_aml_bus_device"));
+	spinlock_init(&(_aml_bus_device_allocator->lock));
+	_aml_bus_device_resource_allocator=omm_init("aml_bus_device_resource",sizeof(aml_bus_device_resource_t),8,2,pmm_alloc_counter("omm_aml_bus_device_resource"));
+	spinlock_init(&(_aml_bus_device_resource_allocator->lock));
+	_aml_bus_device_driver_node_allocator=omm_init("aml_bus_device_driver_node",sizeof(aml_bus_device_driver_node_t),8,2,pmm_alloc_counter("omm_aml_bus_device_driver_node"));
+	spinlock_init(&(_aml_bus_device_driver_node_allocator->lock));
+	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 }
 
 
@@ -366,13 +409,43 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 void aml_bus_scan(void){
 	LOG("Scanning AML System Bus...");
 	aml_namespace_t* system_bus=aml_namespace_lookup(NULL,"\\_SB_",0);
-	if (!system_bus){
-		return;
+	if (system_bus){
+		_enumerate_system_bus(system_bus,NULL);
 	}
-	_aml_bus_device_allocator=omm_init("aml_bus_device",sizeof(aml_bus_device_t),8,2,pmm_alloc_counter("omm_aml_bus_device"));
-	spinlock_init(&(_aml_bus_device_allocator->lock));
-	_aml_bus_device_resource_allocator=omm_init("aml_bus_device_resource",sizeof(aml_bus_device_resource_t),8,2,pmm_alloc_counter("omm_aml_bus_device_resource"));
-	spinlock_init(&(_aml_bus_device_resource_allocator->lock));
-	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
-	_enumerate_system_bus(system_bus,NULL);
+}
+
+
+
+KERNEL_PUBLIC const aml_bus_device_resource_t* aml_bus_device_get_resource(aml_bus_device_t* device,u32 type,u32 index){
+	for (const aml_bus_device_resource_t* res=device->resource_head;res;res=res->next){
+		if (res->type==type){
+			if (!index){
+				return res;
+			}
+			index--;
+		}
+	}
+	return NULL;
+}
+
+
+
+KERNEL_PUBLIC void aml_bus_register_device_driver(const aml_bus_device_driver_t* driver){
+	aml_bus_device_driver_node_t* node=omm_alloc(_aml_bus_device_driver_node_allocator);
+	node->prev=NULL;
+	node->next=_aml_bus_device_driver_head;
+	node->driver=driver;
+	_aml_bus_device_driver_head=node;
+	HANDLE_FOREACH(aml_bus_device_handle_type){
+		if (!_match_device(driver,handle->object)){
+			continue;
+		}
+		driver->init(handle->object);
+	}
+}
+
+
+
+KERNEL_PUBLIC void aml_bus_unregister_device_driver(const aml_bus_device_driver_t* driver){
+	ERROR("aml_bus_unregister_device_driver");
 }

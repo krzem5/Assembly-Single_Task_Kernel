@@ -20,7 +20,7 @@
 
 
 static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count;
-static u16 KERNEL_EARLY_WRITE _cpu_bootstra_core_apic_id;
+static u16 KERNEL_EARLY_WRITE _cpu_bootstrap_core_apic_id;
 static cpu_header_t KERNEL_EARLY_WRITE _cpu_early_header={
 	.index=0,
 	.current_thread=NULL
@@ -35,19 +35,19 @@ void _cpu_init_core(void);
 
 
 
-static void KERNEL_EARLY_EXEC _wakeup_cpu(u8 idx){
-	if (idx>=cpu_count){
+static void KERNEL_EARLY_EXEC _wakeup_cpu(u8 index){
+	if (index>=cpu_count){
 		return;
 	}
-	if (idx==_cpu_bootstra_core_apic_id){
+	if (index==_cpu_bootstrap_core_apic_id){
 		_cpu_init_core();
 		return;
 	}
-	lapic_send_ipi(idx,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
-	lapic_send_ipi(idx,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
+	lapic_send_ipi(index,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_LEVEL_ASSERT|APIC_ICR0_DELIVERY_MODE_INIT);
+	lapic_send_ipi(index,APIC_ICR0_TRIGGER_MODE_LEVEL|APIC_ICR0_DELIVERY_MODE_INIT);
 	COUNTER_SPINLOOP(0xfff);
 	for (u8 i=0;i<2;i++){
-		lapic_send_ipi(idx,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
+		lapic_send_ipi(index,APIC_ICR0_DELIVERY_MODE_STARTUP|(CPU_AP_STARTUP_MEMORY_ADDRESS>>PAGE_SIZE_SHIFT));
 	}
 }
 
@@ -75,7 +75,7 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	LOG("Core #%u initialized",index);
 	_wakeup_cpu((index<<1)+1);
 	_wakeup_cpu((index+1)<<1);
-	if (index!=_cpu_bootstra_core_apic_id){
+	if (index!=_cpu_bootstrap_core_apic_id){
 		scheduler_yield();
 	}
 }
@@ -99,11 +99,10 @@ void KERNEL_EARLY_EXEC cpu_init(u16 count){
 		(cpu_extra_data+i)->header.index=i;
 		(cpu_extra_data+i)->header.kernel_rsp=((u64)((cpu_extra_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
 		(cpu_extra_data+i)->tss.rsp0=((u64)((cpu_extra_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
-		(cpu_extra_data+i)->tss.ist1=(cpu_extra_data+i)->tss.rsp0;
 		(cpu_extra_data+i)->tss.ist2=(cpu_extra_data+i)->header.kernel_rsp;
 	}
-	_cpu_bootstra_core_apic_id=msr_get_apic_id();
-	INFO("Bootstrap CPU APIC id: #%u",_cpu_bootstra_core_apic_id);
+	_cpu_bootstrap_core_apic_id=msr_get_apic_id();
+	INFO("Bootstrap CPU APIC id: #%u",_cpu_bootstrap_core_apic_id);
 }
 
 
