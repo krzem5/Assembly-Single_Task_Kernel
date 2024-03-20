@@ -6,6 +6,9 @@
 
 
 
+#define AML_BUS_RESOURCE_TYPE_NONE 0
+#define AML_BUS_RESOURCE_TYPE_MEMORY_REGION 1
+
 #define AML_BUS_ADDRESS_TYPE_ADR 0
 #define AML_BUS_ADDRESS_TYPE_HID 1
 #define AML_BUS_ADDRESS_TYPE_HID_STR 2
@@ -17,9 +20,24 @@
 
 
 
+typedef struct _AML_BUS_DEVICE_RESOURCE{
+	struct _AML_BUS_DEVICE_RESOURCE* prev;
+	struct _AML_BUS_DEVICE_RESOURCE* next;
+	u32 type;
+	union{
+		struct{
+			u32 base;
+			u32 size;
+			_Bool writable;
+		} memory_region;
+	};
+} aml_bus_device_resource_t;
+
+
+
 typedef struct _AML_BUS_DEVICE{
-	u8 address_type;
-	u8 uid_type;
+	u32 address_type;
+	u32 uid_type;
 	union{
 		u64 adr;
 		u64 hid;
@@ -33,6 +51,8 @@ typedef struct _AML_BUS_DEVICE{
 		u64 uid;
 		string_t* uid_str;
 	};
+	aml_bus_device_resource_t* resource_head;
+	aml_bus_device_resource_t* resource_tail;
 } aml_bus_device_t;
 
 

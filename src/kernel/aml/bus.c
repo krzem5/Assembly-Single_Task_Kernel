@@ -12,12 +12,32 @@
 
 
 static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _aml_bus_device_resource_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE aml_bus_device_handle_type=0;
 
 
 
+static aml_bus_device_resource_t* _create_device_resource(aml_bus_device_t* device,u32 type){
+	aml_bus_device_resource_t* out=omm_alloc(_aml_bus_device_resource_allocator);
+	out->prev=device->resource_tail;
+	out->next=NULL;
+	out->type=type;
+	if (device->resource_tail){
+		device->resource_tail->next=out;
+	}
+	else{
+		device->resource_head=out;
+	}
+	device->resource_tail=out;
+	return out;
+}
+
+
+
 static _Bool _get_device_crs(aml_bus_device_t* device){
+	device->resource_head=NULL;
+	device->resource_tail=NULL;
 	aml_namespace_t* crs_object=aml_namespace_lookup(device->device,"_CRS",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
 	if (!crs_object||!crs_object->value){
 		return 0;
@@ -48,79 +68,82 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 		}
 		switch (type){
 			case 0x04:
-				INFO("IRQ Format Descriptor");
+				ERROR("IRQ Format Descriptor");
 				break;
 			case 0x05:
-				INFO("DMA Format Descriptor");
+				ERROR("DMA Format Descriptor");
 				break;
 			case 0x06:
-				INFO("Start Dependent Functions Descriptor");
+				ERROR("Start Dependent Functions Descriptor");
 				break;
 			case 0x07:
-				INFO("End Dependent Functions Descriptor");
+				ERROR("End Dependent Functions Descriptor");
 				break;
 			case 0x08:
-				INFO("I/O Port Descriptor");
+				ERROR("I/O Port Descriptor");
 				break;
 			case 0x09:
-				INFO("Fixed Location I/O Port Descriptor");
+				ERROR("Fixed Location I/O Port Descriptor");
 				break;
 			case 0x0a:
-				INFO("Fixed DMA Descriptor");
+				ERROR("Fixed DMA Descriptor");
 				break;
 			case 0x0e:
-				INFO("Vendor Defined Descriptor");
+				ERROR("Vendor Defined Descriptor");
 				break;
 			case 0x81:
-				INFO("24-Bit Memory Range Descriptor");
+				ERROR("24-Bit Memory Range Descriptor");
 				break;
 			case 0x82:
-				INFO("Generic Register Descriptor");
+				ERROR("Generic Register Descriptor");
 				break;
 			case 0x84:
-				INFO("Vendor-Defined Descriptor");
+				ERROR("Vendor-Defined Descriptor");
 				break;
 			case 0x85:
-				INFO("32-Bit Memory Range Descriptor");
+				ERROR("32-Bit Memory Range Descriptor");
 				break;
 			case 0x86:
-				INFO("32-Bit Fixed Memory Range Descriptor: %p - %p (%s)",*((const u32*)(value->buffer.data+i+1)),*((const u32*)(value->buffer.data+i+5)),((value->buffer.data[0]&1)?"RW":"RD"));
+				aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_MEMORY_REGION);
+				res->memory_region.base=*((const u32*)(value->buffer.data+i+1));
+				res->memory_region.size=*((const u32*)(value->buffer.data+i+5));
+				res->memory_region.writable=!!(value->buffer.data[0]&1);
 				break;
 			case 0x87:
-				INFO("Address Space Resource Descriptors");
+				ERROR("Address Space Resource Descriptors");
 				break;
 			case 0x88:
-				INFO("Word Address Space Descriptor");
+				ERROR("Word Address Space Descriptor");
 				break;
 			case 0x89:
-				INFO("Extended Interrupt Descriptor");
+				ERROR("Extended Interrupt Descriptor");
 				break;
 			case 0x8a:
-				INFO("QWord Address Space Descriptor");
+				ERROR("QWord Address Space Descriptor");
 				break;
 			case 0x8b:
-				INFO("Extended Address Space Descriptor");
+				ERROR("Extended Address Space Descriptor");
 				break;
 			case 0x8c:
-				INFO("GPIO Connection Descriptor");
+				ERROR("GPIO Connection Descriptor");
 				break;
 			case 0x8d:
-				INFO("Pin Function Descriptor");
+				ERROR("Pin Function Descriptor");
 				break;
 			case 0x8e:
-				INFO("GenericSerialBus Connection Descriptors");
+				ERROR("GenericSerialBus Connection Descriptors");
 				break;
 			case 0x8f:
-				INFO("Pin Configuration Descriptor");
+				ERROR("Pin Configuration Descriptor");
 				break;
 			case 0x90:
-				INFO("Pin Group Descriptor");
+				ERROR("Pin Group Descriptor");
 				break;
 			case 0x91:
-				INFO("Pin Group Function Descriptor");
+				ERROR("Pin Group Function Descriptor");
 				break;
 			case 0x92:
-				INFO("Pin Group Configuration Descriptor");
+				ERROR("Pin Group Configuration Descriptor");
 				break;
 			default:
 				ERROR("Unrecognized _CRS tag: %X [%u bytes]",type,length);
@@ -272,6 +295,8 @@ void aml_bus_scan(void){
 	}
 	_aml_bus_device_allocator=omm_init("aml_bus_device",sizeof(aml_bus_device_t),8,2,pmm_alloc_counter("omm_aml_bus_device"));
 	spinlock_init(&(_aml_bus_device_allocator->lock));
+	_aml_bus_device_resource_allocator=omm_init("aml_bus_device_resource",sizeof(aml_bus_device_resource_t),8,2,pmm_alloc_counter("omm_aml_bus_device_resource"));
+	spinlock_init(&(_aml_bus_device_resource_allocator->lock));
 	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 	_enumerate_system_bus(system_bus,NULL);
 	// WARN("%p",*((u32*)(vmm_identity_map(0x00000000fed40000,0x0000000000005000)+0x0014))); // TPM2
