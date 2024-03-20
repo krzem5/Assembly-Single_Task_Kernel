@@ -176,6 +176,39 @@ _retry_self_test:
 
 
 
+static u32 _read_pcr_value(tpm_t* tpm,u32 pcr_index,u16 hash_alg,void* buffer,u32 buffer_size){
+	u32 digest_size=0;
+	for (u32 i=0;i<tpm->bank_count;i++){
+		if ((tpm->banks+i)->hash_alg==hash_alg){
+			digest_size=(tpm->banks+i)->digest_size;
+			goto _digest_size_found;
+		}
+	}
+	return 0;
+_digest_size_found:
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->pcr_read));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_PCR_READ);
+	tpm->command->pcr_read.selection_count=__builtin_bswap32(1);
+	tpm->command->pcr_read.selection_hash_alg=__builtin_bswap16(hash_alg);
+	tpm->command->pcr_read.selection_size=sizeof(tpm->command->pcr_read.selection_data);
+	for (u32 i=0;i<tpm->command->pcr_read.selection_size;i++){
+		tpm->command->pcr_read.selection_data[i]=0;
+	}
+	tpm->command->pcr_read.selection_data[pcr_index>>3]|=1<<(pcr_index&7);
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)!=TPM2_RC_SUCCESS||!__builtin_bswap32(tpm->command->pcr_read_resp.digest_count)||__builtin_bswap16(tpm->command->pcr_read_resp.digest_size)!=digest_size){
+		return 0;
+	}
+	if (digest_size<buffer_size){
+		buffer_size=digest_size;
+	}
+	memcpy(buffer,tpm->command->pcr_read_resp.data,buffer_size);
+	return buffer_size;
+}
+
+
+
 static _Bool _init_aml_device(aml_bus_device_t* device){
 	if (!acpi_tpm2||acpi_tpm2->start_method!=ACPI_TPM2_START_METHOD_MEMORY_MAPPED){
 		return 0;
@@ -252,16 +285,16 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 				}
 				u32 digest_size=0;
 				if (hash_alg==TPM_ALG_SHA1){
-					digest_size=5;
+					digest_size=20;
 				}
 				else if (hash_alg==TPM_ALG_SHA256){
-					digest_size=8;
+					digest_size=32;
 				}
 				else if (hash_alg==TPM_ALG_SHA384){
-					digest_size=12;
+					digest_size=48;
 				}
 				else if (hash_alg==TPM_ALG_SHA512){
-					digest_size=16;
+					digest_size=64;
 				}
 				else{
 					panic("Unknown hash algorithm digest size");
@@ -275,6 +308,12 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 		}
 		tpm->bank_count=bank_idx;
 		tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
+		for (u32 i=0;i<TPM2_PLATFORM_PCR_COUNT;i++){
+			u8 buffer[20];
+			if (_read_pcr_value(tpm,i,TPM_ALG_SHA1,buffer,sizeof(buffer))==sizeof(buffer)){
+				WARN("PCR[%u]: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",i,buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19]);
+			}
+		}
 	}
 	else{
 		panic("TPM 1.2 init");

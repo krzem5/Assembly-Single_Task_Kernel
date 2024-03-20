@@ -4,6 +4,10 @@
 
 
 
+#define TPM2_PLATFORM_PCR_COUNT 24
+
+
+
 #define TPM2_ST_NO_SESSIONS 0x8001
 
 #define TPM2_RC_SUCCESS 0x0000
@@ -12,6 +16,7 @@
 
 #define TPM2_CC_SELF_TEST 0x0143
 #define TPM2_CC_GET_CAPABILITY 0x017a
+#define TPM2_CC_PCR_READ 0x017e
 
 #define TPM2_CAP_COMMANDS 2
 #define TPM2_CAP_PCRS 5
@@ -70,6 +75,22 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 			u32 property;
 			u32 value;
 		} get_capability_resp_tpm_properties;
+		struct KERNEL_PACKED{
+			u32 selection_count;
+			u16 selection_hash_alg;
+			u8 selection_size;
+			u8 selection_data[(TPM2_PLATFORM_PCR_COUNT+7)>>3];
+		} pcr_read;
+		struct KERNEL_PACKED{
+			u32 update_counter_value;
+			u32 selection_count;
+			u16 selection_hash_alg;
+			u8 selection_size;
+			u8 selection_data[(TPM2_PLATFORM_PCR_COUNT+7)>>3];
+			u32 digest_count;
+			u16 digest_size;
+			u8 data[];
+		} pcr_read_resp;
 	};
 } tpm_command_t;
 
