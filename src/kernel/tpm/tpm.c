@@ -319,7 +319,6 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 		panic("TPM 1.2 init");
 	}
 	_chip_stop(tpm);
-	// panic("a");
 	return 1;
 }
 
