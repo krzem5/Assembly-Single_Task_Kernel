@@ -1,5 +1,6 @@
 #ifndef _KERNEL_TPM_TPM_H_
 #define _KERNEL_TPM_TPM_H_ 1
+#include <kernel/tpm/commands.h>
 #include <kernel/types.h>
 
 
@@ -8,10 +9,10 @@
 
 
 
-typedef struct _TPM_COMMAND{
+typedef struct _TPM_DEVICE_COMMAND{
 	u16 cc;
 	u16 attributes;
-} tpm_command_t;
+} tpm_device_command_t;
 
 
 
@@ -25,10 +26,10 @@ typedef struct _TPM_BANK{
 typedef struct _TPM{
 	u32 flags;
 	volatile u32* regs;
-	void* command_buffer;
-	u32 command_count;
+	tpm_command_t* command;
+	u32 device_command_count;
 	u32 bank_count;
-	tpm_command_t* commands;
+	tpm_device_command_t* device_commands;
 	tpm_bank_t* banks;
 } tpm_t;
 

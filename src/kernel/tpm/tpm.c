@@ -6,6 +6,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/tpm/commands.h>
 #include <kernel/tpm/tpm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -49,69 +50,6 @@
 #define TPM_STS_VALID 0x80
 
 #define TPM_STS_READ_ZERO 0x23
-
-
-
-#define TPM2_ST_NO_SESSIONS 0x8001
-
-#define TPM2_CC_SELF_TEST 0x0143
-#define TPM2_CC_GET_CAPABILITY 0x017a
-
-#define TPM2_CAP_COMMANDS 2
-#define TPM2_CAP_PCRS 5
-#define TPM2_CAP_TPM_PROPERTIES 6
-
-#define TPM_PT_TOTAL_COMMANDS 0x0129
-
-#define TPM2_RC_SUCCESS 0x0000
-#define TPM2_RC_INITIALIZE 0x0100
-#define TPM2_RC_TESTING 0x090a
-
-#define TPM2_CC_FIRST 0x011f
-
-#define TPM_ALG_SHA1 0x0004
-#define TPM_ALG_SHA256 0x000b
-#define TPM_ALG_SHA384 0x000c
-#define TPM_ALG_SHA512 0x000d
-
-
-
-typedef struct KERNEL_PACKED _TPM_COMMAND_HEADER{
-	u16 tag;
-	u32 length;
-	union{
-		u32 command_code;
-		u32 return_code;
-	};
-	union{
-		struct KERNEL_PACKED{
-			u8 full_test;
-		} self_test;
-		struct KERNEL_PACKED{
-			u32 capability;
-			u32 property;
-			u32 property_count;
-		} get_capability;
-		struct KERNEL_PACKED{
-			u8 more_data;
-			u32 subcap_id;
-			u32 property_count;
-			u32 property_id;
-			u32 value;
-		} get_capability_resp_tpm_properties;
-	};
-} tpm_command_header_t;
-
-
-
-typedef struct KERNEL_PACKED _TPM_COMMAND2_HEADER{
-	u16 tag;
-	u32 length;
-	union{
-		u32 command_code;
-		u32 return_code;
-	};
-} tpm_command_header2_t;
 
 
 
@@ -188,31 +126,29 @@ static void _recv_data(tpm_t* tpm,void* buffer,u32 buffer_size){
 
 
 
-static void _transmit_message(tpm_t* tpm){
-	volatile tpm_command_header_t* header=tpm->command_buffer;
-	_send_data(tpm,tpm->command_buffer,__builtin_bswap32(header->length));
+static void _execute_command(tpm_t* tpm){
+	_send_data(tpm,tpm->command,__builtin_bswap32(tpm->command->header.length));
 	tpm->regs[TPM_REG_STS(0)]=TPM_STS_GO;
 	SPINLOOP((tpm->regs[TPM_REG_STS(0)]&(TPM_STS_VALID|TPM_STS_DATA_AVAIL))!=(TPM_STS_VALID|TPM_STS_DATA_AVAIL));
-	_recv_data(tpm,tpm->command_buffer,sizeof(tpm_command_header2_t));
-	if (__builtin_bswap32(header->length)>TPM_COMMAND_BUFFER_SIZE){
+	_recv_data(tpm,tpm->command,sizeof(tpm_command_header_t));
+	if (__builtin_bswap32(tpm->command->header.length)>TPM_COMMAND_BUFFER_SIZE){
 		panic("Response too large");
 	}
-	_recv_data(tpm,tpm->command_buffer+sizeof(tpm_command_header2_t),__builtin_bswap32(header->length)-sizeof(tpm_command_header2_t));
+	_recv_data(tpm,tpm->command->_raw_data,__builtin_bswap32(tpm->command->header.length)-sizeof(tpm_command_header_t));
 	tpm->regs[TPM_REG_STS(0)]=TPM_STS_COMMAND_READY;
 }
 
 
 
 static void _probe_tpm2(tpm_t* tpm){
-	tpm_command_header_t* header=tpm->command_buffer;
-	header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-	header->length=__builtin_bswap32(sizeof(tpm_command_header2_t)+3*sizeof(u32));
-	header->command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-	header->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
-	header->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
-	header->get_capability.property_count=__builtin_bswap32(1);
-	_transmit_message(tpm);
-	if (__builtin_bswap16(header->tag)==TPM2_ST_NO_SESSIONS){
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+	tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
+	tpm->command->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
+	tpm->command->get_capability.property_count=__builtin_bswap32(1);
+	_execute_command(tpm);
+	if (__builtin_bswap16(tpm->command->header.tag)==TPM2_ST_NO_SESSIONS){
 		tpm->flags|=TPM_FLAG_VERSION_2;
 	}
 	INFO("Detected chip version: %s",((tpm->flags&TPM_FLAG_VERSION_2)?"2.0":"1.2"));
@@ -223,14 +159,13 @@ static void _probe_tpm2(tpm_t* tpm){
 static _Bool _self_test_tpm2(tpm_t* tpm){
 	_Bool full_self_test=0;
 _retry_self_test:
-	tpm_command_header_t* header=tpm->command_buffer;
-	header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-	header->length=__builtin_bswap32(sizeof(tpm_command_header2_t)+sizeof(u8));
-	header->command_code=__builtin_bswap32(TPM2_CC_SELF_TEST);
-	header->self_test.full_test=full_self_test;
-	_transmit_message(tpm);
-	if (__builtin_bswap32(header->return_code)==TPM2_RC_SUCCESS||__builtin_bswap32(header->return_code)==TPM2_RC_INITIALIZE||__builtin_bswap32(header->return_code)==TPM2_RC_TESTING){
-		return __builtin_bswap32(header->return_code)==TPM2_RC_INITIALIZE;
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->self_test));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_SELF_TEST);
+	tpm->command->self_test.full_test=full_self_test;
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)==TPM2_RC_SUCCESS||__builtin_bswap32(tpm->command->header.return_code)==TPM2_RC_INITIALIZE||__builtin_bswap32(tpm->command->header.return_code)==TPM2_RC_TESTING){
+		return __builtin_bswap32(tpm->command->header.return_code)==TPM2_RC_INITIALIZE;
 	}
 	if (!full_self_test){
 		full_self_test=1;
@@ -253,7 +188,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	tpm_t* tpm=omm_alloc(_tpm_allocator);
 	tpm->flags=0;
 	tpm->regs=(void*)vmm_identity_map(res->memory_region.base,res->memory_region.size);
-	tpm->command_buffer=(void*)(pmm_alloc(pmm_align_up_address(TPM_COMMAND_BUFFER_SIZE)>>PAGE_SIZE_SHIFT,_tpm_command_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	tpm->command=(void*)(pmm_alloc(pmm_align_up_address(TPM_COMMAND_BUFFER_SIZE)>>PAGE_SIZE_SHIFT,_tpm_command_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	INFO("Memory range: %p - %p",res->memory_region.base,res->memory_region.base+res->memory_region.size);
 	INFO("Vendor ID: %x, Device ID: %x, Revision ID: %x",tpm->regs[TPM_REG_DID_VID(0)]&0xffff,tpm->regs[TPM_REG_DID_VID(0)]>>16,tpm->regs[TPM_REG_RID(0)]);
 	SPINLOOP(!(tpm->regs[TPM_REG_ACCESS(0)]&TPM_ACCESS_VALID));
@@ -269,46 +204,50 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 		if (require_initialization){
 			panic("TPM2 requires initialization");
 		}
-		tpm_command_header_t* header=tpm->command_buffer;
-		header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		header->length=__builtin_bswap32(sizeof(tpm_command_header2_t)+3*sizeof(u32));
-		header->command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		header->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
-		header->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
-		header->get_capability.property_count=__builtin_bswap32(1);
-		_transmit_message(tpm);
-		if (!__builtin_bswap32(header->get_capability_resp_tpm_properties.property_count)){
+		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
+		tpm->command->get_capability.property=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
+		tpm->command->get_capability.property_count=__builtin_bswap32(1);
+		_execute_command(tpm);
+		if (!__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.property_count)){
 			panic("No properties returned");
 		}
-		u32 command_count=__builtin_bswap32(header->get_capability_resp_tpm_properties.value);
-		header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		header->length=__builtin_bswap32(sizeof(tpm_command_header2_t)+3*sizeof(u32));
-		header->command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		header->get_capability.capability=__builtin_bswap32(TPM2_CAP_COMMANDS);
-		header->get_capability.property=__builtin_bswap32(TPM2_CC_FIRST);
-		header->get_capability.property_count=__builtin_bswap32(command_count);
-		_transmit_message(tpm);
-		if (__builtin_bswap32(*((const u32*)(tpm->command_buffer+sizeof(tpm_command_header2_t)+5)))!=command_count){
+		tpm->device_command_count=__builtin_bswap32(tpm->command->get_capability_resp_tpm_properties.value);
+		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_COMMANDS);
+		tpm->command->get_capability.property=__builtin_bswap32(TPM2_CC_FIRST);
+		tpm->command->get_capability.property_count=__builtin_bswap32(tpm->device_command_count);
+		_execute_command(tpm);
+		if (__builtin_bswap32(tpm->command->get_capability_resp_commands.command_count)!=tpm->device_command_count){
 			panic("Inconsistent command count");
 		}
-		for (u32 i=0;i<command_count;i++){
-			u32 attrs=__builtin_bswap32(*((const u32*)(tpm->command_buffer+sizeof(tpm_command_header2_t)+i*4+9)));
-			WARN("CC: %x, Attrs: %x",attrs&0xffff,attrs>>16);
+		tpm->device_commands=amm_alloc(tpm->device_command_count*sizeof(tpm_device_command_t));
+		for (u32 i=0;i<tpm->device_command_count;i++){
+			u32 entry=__builtin_bswap32(tpm->command->get_capability_resp_commands.commands[i]);
+			(tpm->device_commands+i)->cc=entry;
+			(tpm->device_commands+i)->attributes=entry>>16;
 		}
-		header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		header->length=__builtin_bswap32(sizeof(tpm_command_header2_t)+3*sizeof(u32));
-		header->command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
-		header->get_capability.capability=__builtin_bswap32(TPM2_CAP_PCRS);
-		header->get_capability.property=__builtin_bswap32(0);
-		header->get_capability.property_count=__builtin_bswap32(1);
-		_transmit_message(tpm);
-		u32 bank_count=__builtin_bswap32(*((const u32*)(tpm->command_buffer+sizeof(tpm_command_header2_t)+5)));
-		const void* ptr=tpm->command_buffer+sizeof(tpm_command_header2_t)+9;
-		for (u32 i=0;i<bank_count;i++){
-			u16 hash_alg=__builtin_bswap16(*((const u16*)ptr));
-			u8 size_of_selection=*((const u8*)(ptr+2));
+		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->get_capability));
+		tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+		tpm->command->get_capability.capability=__builtin_bswap32(TPM2_CAP_PCRS);
+		tpm->command->get_capability.property=__builtin_bswap32(0);
+		tpm->command->get_capability.property_count=__builtin_bswap32(1);
+		_execute_command(tpm);
+		tpm->bank_count=__builtin_bswap32(tpm->command->get_capability_resp_pcrs.bank_count);
+		tpm->banks=amm_alloc(tpm->bank_count*sizeof(tpm_bank_t));
+		u32 bank_idx=0;
+		const u8* ptr=tpm->command->get_capability_resp_pcrs.data;
+		for (u32 i=0;i<tpm->bank_count;i++){
+			u16 hash_alg=(ptr[0]<<8)|ptr[1];
+			u8 size_of_selection=ptr[2];
+			ptr+=3;
 			for (u32 j=0;j<size_of_selection;j++){
-				if (!(*((const u8*)(ptr+j+3)))){
+				if (!ptr[j]){
 					continue;
 				}
 				u32 digest_size=0;
@@ -327,11 +266,15 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 				else{
 					panic("Unknown hash algorithm digest size");
 				}
-				WARN("%u -> %u",hash_alg,digest_size);
+				(tpm->banks+bank_idx)->hash_alg=hash_alg;
+				(tpm->banks+bank_idx)->digest_size=digest_size;
+				bank_idx++;
 				break;
 			}
-			ptr+=sizeof(u16)+sizeof(u8)+size_of_selection;
+			ptr+=size_of_selection;
 		}
+		tpm->bank_count=bank_idx;
+		tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
 	}
 	else{
 		panic("TPM 1.2 init");
