@@ -761,7 +761,7 @@ def _execute_vm():
 		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
-		"-d","trace:tpm*",
+		# "-d","trace:tpm*",
 		# "-d","int,cpu_reset",
 		# "--no-reboot",
 		# "-d","guest_errors",
