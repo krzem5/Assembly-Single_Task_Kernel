@@ -9,11 +9,19 @@
 #define AML_BUS_RESOURCE_TYPE_NONE 0
 #define AML_BUS_RESOURCE_TYPE_MEMORY_REGION 1
 #define AML_BUS_RESOURCE_TYPE_INTERRUPT 2
+#define AML_BUS_RESOURCE_TYPE_IO_PORT 3
+#define AML_BUS_RESOURCE_TYPE_ADDRESS_SPACE 4
 
 #define AML_BUS_RESOURCE_INTERRUPT_FLAG_EDGE_TRIGGER 1
 #define AML_BUS_RESOURCE_INTERRUPT_FLAG_ACTIVE_LOW 2
 #define AML_BUS_RESOURCE_INTERRUPT_FLAG_SHARED 4
 #define AML_BUS_RESOURCE_INTERRUPT_FLAG_WAKE_CAPALE 8
+
+#define AML_BUS_RESOURCE_ADDRESS_SPACE_TYPE_MEMORY 0
+#define AML_BUS_RESOURCE_ADDRESS_SPACE_TYPE_IO 1
+
+#define AML_BUS_RESOURCE_ADDRESS_SPACE_FLAG_MIN_FIXED 1
+#define AML_BUS_RESOURCE_ADDRESS_SPACE_FLAG_MAX_FIXED 2
 
 #define AML_BUS_ADDRESS_TYPE_ADR 0
 #define AML_BUS_ADDRESS_TYPE_HID 1
@@ -40,6 +48,23 @@ typedef struct _AML_BUS_DEVICE_RESOURCE{
 			u32 pin;
 			u32 flags;
 		} interrupt;
+		struct{
+			u16 base_min;
+			u16 base_max;
+			u8 base_alignment;
+			u8 length;
+			_Bool decode_all_address_bits;
+		} io_port;
+		struct{
+			u8 type;
+			u8 flags;
+			u8 extra_flags;
+			u64 granularity;
+			u64 min;
+			u64 max;
+			u64 translation_offset;
+			u64 length;
+		} address_space;
 	};
 } aml_bus_device_resource_t;
 

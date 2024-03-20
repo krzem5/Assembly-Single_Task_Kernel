@@ -339,6 +339,7 @@ _retry_allocator:
 		}
 		ERROR("pmm_alloc: use after free at %p+%u/%u: %p",out,k<<3,_get_block_size(i),ptr[k]);
 		error=1;
+		break;
 	}
 	if (error){
 		panic("pmm_alloc: use after free");

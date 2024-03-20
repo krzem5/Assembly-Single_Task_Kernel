@@ -101,8 +101,15 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 				ERROR("End Dependent Functions Descriptor");
 				break;
 			case 0x08:
-				ERROR("I/O Port Descriptor");
-				break;
+				{
+					aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_IO_PORT);
+					res->io_port.base_min=*((const u16*)(value->buffer.data+i+1));
+					res->io_port.base_max=*((const u16*)(value->buffer.data+i+3));
+					res->io_port.base_alignment=value->buffer.data[i+5];
+					res->io_port.length=value->buffer.data[i+6];
+					res->io_port.decode_all_address_bits=!!(value->buffer.data[i]&1);
+					break;
+				}
 			case 0x09:
 				ERROR("Fixed Location I/O Port Descriptor");
 				break;
@@ -129,15 +136,44 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 					aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_MEMORY_REGION);
 					res->memory_region.base=*((const u32*)(value->buffer.data+i+1));
 					res->memory_region.size=*((const u32*)(value->buffer.data+i+5));
-					res->memory_region.writable=!!(value->buffer.data[0]&1);
+					res->memory_region.writable=!!(value->buffer.data[i]&1);
 					break;
 				}
 			case 0x87:
-				ERROR("Address Space Resource Descriptors");
-				break;
 			case 0x88:
-				ERROR("Word Address Space Descriptor");
-				break;
+			case 0x8a:
+				{
+					aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_ADDRESS_SPACE);
+					res->address_space.type=value->buffer.data[i];
+					res->address_space.flags=0;
+					if (value->buffer.data[i+1]&4){
+						res->address_space.flags|=AML_BUS_RESOURCE_ADDRESS_SPACE_FLAG_MIN_FIXED;
+					}
+					if (value->buffer.data[i+1]&8){
+						res->address_space.flags|=AML_BUS_RESOURCE_ADDRESS_SPACE_FLAG_MAX_FIXED;
+					}
+					res->address_space.extra_flags=value->buffer.data[i+2];
+					res->address_space.granularity=*((const u32*)(value->buffer.data+i+3));
+					if (type==0x87){
+						res->address_space.min=*((const u32*)(value->buffer.data+i+7));
+						res->address_space.max=*((const u32*)(value->buffer.data+i+11));
+						res->address_space.translation_offset=*((const u32*)(value->buffer.data+i+15));
+						res->address_space.length=*((const u32*)(value->buffer.data+i+19));
+					}
+					else if (type==0x88){
+						res->address_space.min=*((const u16*)(value->buffer.data+i+7));
+						res->address_space.max=*((const u16*)(value->buffer.data+i+9));
+						res->address_space.translation_offset=*((const u16*)(value->buffer.data+i+11));
+						res->address_space.length=*((const u16*)(value->buffer.data+i+13));
+					}
+					else if (type==0x8a){
+						res->address_space.min=*((const u64*)(value->buffer.data+i+7));
+						res->address_space.max=*((const u64*)(value->buffer.data+i+15));
+						res->address_space.translation_offset=*((const u64*)(value->buffer.data+i+23));
+						res->address_space.length=*((const u64*)(value->buffer.data+i+31));
+					}
+					break;
+				}
 			case 0x89:
 				{
 					u32 flags=0;
@@ -160,9 +196,6 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 					}
 					break;
 				}
-			case 0x8a:
-				ERROR("QWord Address Space Descriptor");
-				break;
 			case 0x8b:
 				ERROR("Extended Address Space Descriptor");
 				break;
@@ -331,6 +364,7 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 
 
 void aml_bus_scan(void){
+	LOG("Scanning AML System Bus...");
 	aml_namespace_t* system_bus=aml_namespace_lookup(NULL,"\\_SB_",0);
 	if (!system_bus){
 		return;
@@ -341,5 +375,4 @@ void aml_bus_scan(void){
 	spinlock_init(&(_aml_bus_device_resource_allocator->lock));
 	aml_bus_device_handle_type=handle_alloc("aml_bus_device",NULL);
 	_enumerate_system_bus(system_bus,NULL);
-	// WARN("%p",*((u32*)(vmm_identity_map(0x00000000fed40000,0x0000000000005000)+0x0014))); // TPM2
 }
