@@ -68,8 +68,29 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 		}
 		switch (type){
 			case 0x04:
-				ERROR("IRQ Format Descriptor");
-				break;
+				{
+					u32 flags=0;
+					if (length>=3){
+						if (value->buffer.data[i+2]&1){
+							flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_EDGE_TRIGGER;
+						}
+						if (value->buffer.data[i+2]&8){
+							flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_ACTIVE_LOW;
+						}
+						if (value->buffer.data[i+2]&16){
+							flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_SHARED;
+						}
+						if (value->buffer.data[i+2]&32){
+							flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_WAKE_CAPALE;
+						}
+					}
+					for (u16 mask=*((const u16*)(value->buffer.data+i));mask;mask&=mask-1){
+						aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_INTERRUPT);
+						res->interrupt.pin=__builtin_ffs(mask)-1;
+						res->interrupt.flags=flags;
+					}
+					break;
+				}
 			case 0x05:
 				ERROR("DMA Format Descriptor");
 				break;
@@ -104,11 +125,13 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 				ERROR("32-Bit Memory Range Descriptor");
 				break;
 			case 0x86:
-				aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_MEMORY_REGION);
-				res->memory_region.base=*((const u32*)(value->buffer.data+i+1));
-				res->memory_region.size=*((const u32*)(value->buffer.data+i+5));
-				res->memory_region.writable=!!(value->buffer.data[0]&1);
-				break;
+				{
+					aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_MEMORY_REGION);
+					res->memory_region.base=*((const u32*)(value->buffer.data+i+1));
+					res->memory_region.size=*((const u32*)(value->buffer.data+i+5));
+					res->memory_region.writable=!!(value->buffer.data[0]&1);
+					break;
+				}
 			case 0x87:
 				ERROR("Address Space Resource Descriptors");
 				break;
@@ -116,8 +139,27 @@ static _Bool _get_device_crs(aml_bus_device_t* device){
 				ERROR("Word Address Space Descriptor");
 				break;
 			case 0x89:
-				ERROR("Extended Interrupt Descriptor");
-				break;
+				{
+					u32 flags=0;
+					if (value->buffer.data[i]&2){
+						flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_EDGE_TRIGGER;
+					}
+					if (value->buffer.data[i]&4){
+						flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_ACTIVE_LOW;
+					}
+					if (value->buffer.data[i]&8){
+						flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_SHARED;
+					}
+					if (value->buffer.data[i]&16){
+						flags|=AML_BUS_RESOURCE_INTERRUPT_FLAG_WAKE_CAPALE;
+					}
+					for (u32 j=0;j<value->buffer.data[i+1];j++){
+						aml_bus_device_resource_t* res=_create_device_resource(device,AML_BUS_RESOURCE_TYPE_INTERRUPT);
+						res->interrupt.pin=*((const u32*)(value->buffer.data+i+j*4+2));
+						res->interrupt.flags=flags;
+					}
+					break;
+				}
 			case 0x8a:
 				ERROR("QWord Address Space Descriptor");
 				break;
