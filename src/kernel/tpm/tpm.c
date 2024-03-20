@@ -13,6 +13,7 @@
 #define	TPM_REG_INT_ENABLE(locality) (0x0002|((locality)<<10))
 #define	TPM_REG_INTF_CAPS(locality) (0x0005|((locality)<<10))
 #define	TPM_REG_STS(locality) (0x0006|((locality)<<10))
+#define	TPM_REG_DATA_FIFO(locality) (0x009|((locality)<<10))
 #define	TPM_REG_DID_VID(locality) (0x03c0|((locality)<<10))
 #define	TPM_REG_RID(locality) (0x03c1|((locality)<<10))
 
@@ -43,10 +44,33 @@
 
 
 
+#define TPM2_ST_NO_SESSIONS 0x8001
+
+#define TPM2_CC_GET_CAPABILITY 0x017a
+
+#define TPM2_CAP_TPM_PROPERTIES 6
+
+#define TPM_PT_TOTAL_COMMANDS 0x0129
+
+#define TPM2_RC_SUCCESS 0x0000
+
+
+
+typedef struct KERNEL_PACKED _TPM_MESSAGE_HEADER{
+	u16 tag;
+	u32 length;
+	union{
+		u32 ordinal;
+		u32 return_code;
+	};
+} tpm_message_header_t;
+
+
+
 static void _chip_start(volatile u32* regs){
-	if ((regs[TPM_REG_ACCESS(0)]&(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY|TPM_ACCESS_REQUEST_USE))==(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY)){
+	if ((regs[TPM_REG_ACCESS(0)]&(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY|TPM_ACCESS_REQUEST_USE))!=(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY)){
 		regs[TPM_REG_ACCESS(0)]=TPM_ACCESS_REQUEST_USE;
-		SPINLOOP((regs[TPM_REG_ACCESS(0)]&(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY|TPM_ACCESS_REQUEST_USE))==(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY));
+		SPINLOOP((regs[TPM_REG_ACCESS(0)]&(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY|TPM_ACCESS_REQUEST_USE))!=(TPM_ACCESS_VALID|TPM_ACCESS_ACTIVE_LOCALITY));
 	}
 	regs[TPM_REG_STS(0)]=TPM_STS_COMMAND_READY;
 }
@@ -55,6 +79,83 @@ static void _chip_start(volatile u32* regs){
 
 static void _chip_stop(volatile u32* regs){
 	regs[TPM_REG_ACCESS(0)]=TPM_ACCESS_ACTIVE_LOCALITY;
+}
+
+
+
+static void _send_data(volatile u32* regs,const void* buffer,u32 buffer_size){
+	if (!(regs[TPM_REG_STS(0)]&TPM_STS_COMMAND_READY)){
+		regs[TPM_REG_STS(0)]=TPM_STS_COMMAND_READY;
+		SPINLOOP((regs[TPM_REG_STS(0)]&TPM_STS_COMMAND_READY)!=TPM_STS_COMMAND_READY);
+	}
+	u32 count=0;
+	while (count<buffer_size-1){
+		u32 burst_count;
+		do{
+			burst_count=(regs[TPM_REG_STS(0)]>>8)&0xffff;
+		} while (!burst_count);
+		if (buffer_size-count-1<burst_count){
+			burst_count=buffer_size-count-1;
+		}
+		burst_count+=count;
+		for (volatile u8* fifo=(volatile u8*)(regs+TPM_REG_DATA_FIFO(0));count<burst_count;count++){
+			*fifo=*((const u8*)(buffer+count));
+		}
+		SPINLOOP((regs[TPM_REG_STS(0)]&TPM_STS_VALID)!=TPM_STS_VALID);
+		if (!(regs[TPM_REG_STS(0)]&TPM_STS_DATA_EXPECT)){
+			panic("End of data");
+		}
+	}
+	*((u8*)(regs+TPM_REG_DATA_FIFO(0)))=*((const u8*)(buffer+count));
+	SPINLOOP((regs[TPM_REG_STS(0)]&TPM_STS_VALID)!=TPM_STS_VALID);
+	if (regs[TPM_REG_STS(0)]&TPM_STS_DATA_EXPECT){
+		panic("Not enough data");
+	}
+}
+
+
+
+static void _recv_data(volatile u32* regs,void* buffer,u32 buffer_size){
+	u32 count=0;
+	while (count<buffer_size){
+		SPINLOOP((regs[TPM_REG_STS(0)]&(TPM_STS_VALID|TPM_STS_DATA_AVAIL))!=(TPM_STS_VALID|TPM_STS_DATA_AVAIL));
+		u32 burst_count;
+		do{
+			burst_count=(regs[TPM_REG_STS(0)]>>8)&0xffff;
+		} while (!burst_count);
+		if (buffer_size-count<burst_count){
+			burst_count=buffer_size-count;
+		}
+		burst_count+=count;
+		for (volatile u8* fifo=(volatile u8*)(regs+TPM_REG_DATA_FIFO(0));count<burst_count;count++){
+			*((u8*)(buffer+count))=*fifo;
+		}
+	}
+}
+
+
+
+static void _transmit_message(volatile u32* regs,tpm_message_header_t* header){
+	_send_data(regs,header,__builtin_bswap32(header->length));
+	regs[TPM_REG_STS(0)]=TPM_STS_GO;
+	SPINLOOP((regs[TPM_REG_STS(0)]&(TPM_STS_VALID|TPM_STS_DATA_AVAIL))!=(TPM_STS_VALID|TPM_STS_DATA_AVAIL));
+	_recv_data(regs,header,__builtin_bswap32(header->length));
+}
+
+
+
+static void _probe_tpm2(volatile u32* regs){
+	u8 message[1024];
+	tpm_message_header_t* header=(void*)message;
+	header->tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	header->length=__builtin_bswap32(sizeof(tpm_message_header_t)+3*sizeof(u32));
+	header->ordinal=__builtin_bswap32(TPM2_CC_GET_CAPABILITY);
+	*((u32*)(message+sizeof(tpm_message_header_t)))=__builtin_bswap32(TPM2_CAP_TPM_PROPERTIES);
+	*((u32*)(message+sizeof(tpm_message_header_t)+4))=__builtin_bswap32(TPM_PT_TOTAL_COMMANDS);
+	*((u32*)(message+sizeof(tpm_message_header_t)+8))=1;
+	_transmit_message(regs,header);
+	_Bool is_tpm2=header->return_code==TPM2_RC_SUCCESS;
+	INFO("Detected chip version: %s",(is_tpm2?"2.0":"1.2"));
 }
 
 
@@ -76,12 +177,13 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	u32 capabilites=regs[TPM_REG_INTF_CAPS(0)];
 	INFO("Interrupt mask: %x, Capabilites: %x",interrupt_mask,capabilites);
 	interrupt_mask=(interrupt_mask|TPM_INTF_CMD_READY_INT|TPM_INTF_LOCALITY_CHANGE_INT|TPM_INTF_STS_VALID_INT|TPM_INTF_DATA_AVAIL_INT)&(~TPM_GLOBAL_INT_ENABLE);
-	// _chip_start(regs);
-	// regs[TPM_REG_INT_ENABLE(0)]=interrupt_mask;
-	// _chip_stop(regs);
+	_chip_start(regs);
+	regs[TPM_REG_INT_ENABLE(0)]=interrupt_mask;
+	_chip_stop(regs);
+	_chip_start(regs);
+	_probe_tpm2(regs);
+	_chip_stop(regs);
 	// panic("a");
-	(void)_chip_start;
-	(void)_chip_stop;
 	return 1;
 }
 
