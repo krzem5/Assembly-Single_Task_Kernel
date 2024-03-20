@@ -1,5 +1,5 @@
-#include <aml/namespace.h>
-#include <aml/object.h>
+#include <kernel/aml/namespace.h>
+#include <kernel/aml/object.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>

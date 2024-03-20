@@ -1,8 +1,9 @@
-#include <aml/field.h>
-#include <aml/namespace.h>
-#include <aml/object.h>
-#include <aml/opcode.h>
-#include <aml/runtime.h>
+#include <kernel/acpi/fadt.h>
+#include <kernel/aml/field.h>
+#include <kernel/aml/namespace.h>
+#include <kernel/aml/object.h>
+#include <kernel/aml/opcode.h>
+#include <kernel/aml/runtime.h>
 #include <kernel/apic/ioapic.h>
 #include <kernel/isr/isr.h>
 #include <kernel/log/log.h>
@@ -1858,6 +1859,25 @@ static aml_object_t*(*const _aml_opcode_table[512])(aml_runtime_context_t*)={
 
 
 
+KERNEL_INIT(){
+	if (!acpi_dsdt||!acpi_dsdt->header.length){
+		WARN("No AML code present");
+		return;
+	}
+	LOG("Executing top-level AML code...");
+	INFO("AML interrupt: %u",acpi_fadt->sci_int);
+	ioapic_redirect_irq(acpi_fadt->sci_int,isr_allocate());
+	aml_runtime_context_t ctx={
+		acpi_dsdt->data,
+		acpi_dsdt->header.length-sizeof(acpi_dsdt_t),
+		NULL,
+		NULL
+	};
+	aml_runtime_execute(&ctx);
+}
+
+
+
 KERNEL_PUBLIC aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ctx){
 	u16 key=ctx->data[ctx->offset];
 	ctx->offset++;
@@ -1926,10 +1946,4 @@ KERNEL_PUBLIC aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 a
 		aml_object_dealloc(vars.locals[i]);
 	}
 	return (ret?vars.ret:NULL);
-}
-
-
-
-void aml_runtime_register_irq(u8 irq){
-	ioapic_redirect_irq(irq,isr_allocate());
 }

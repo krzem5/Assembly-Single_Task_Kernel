@@ -1,6 +1,6 @@
-#ifndef _AML_FIELD_H_
-#define _AML_FIELD_H_ 1
-#include <aml/object.h>
+#ifndef _KERNEL_AML_FIELD_H_
+#define _KERNEL_AML_FIELD_H_ 1
+#include <kernel/aml/object.h>
 #include <kernel/types.h>
 
 

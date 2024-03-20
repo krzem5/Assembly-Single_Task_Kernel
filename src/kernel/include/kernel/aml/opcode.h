@@ -1,5 +1,5 @@
-#ifndef _AML_OPCODE_H_
-#define _AML_OPCODE_H_ 1
+#ifndef _KERNEL_AML_OPCODE_H_
+#define _KERNEL_AML_OPCODE_H_ 1
 
 
 

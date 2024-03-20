@@ -53,8 +53,8 @@ class ProcessPoolCommand(object):
 
 
 class ProcessPool(object):
-	def __init__(self):
-		self._file_hash_list=None
+	def __init__(self,file_hash_list):
+		self._file_hash_list=file_hash_list
 		self._error=None
 		self._dependency_map={}
 		self._threads=[]
@@ -82,8 +82,7 @@ class ProcessPool(object):
 		self._dependency_map[file]=True
 		self._lock.release()
 
-	def wait(self,file_hash_list):
-		self._file_hash_list=file_hash_list
+	def wait(self):
 		self._error=False
 		while (self._threads):
 			self._threads.pop().join()

@@ -1,5 +1,5 @@
-#ifndef _AML_OBJECT_H_
-#define _AML_OBJECT_H_ 1
+#ifndef _KERNEL_AML_OBJECT_H_
+#define _KERNEL_AML_OBJECT_H_ 1
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
 

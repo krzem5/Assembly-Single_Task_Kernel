@@ -1,7 +1,7 @@
-#ifndef _AML_RUNTIME_H_
-#define _AML_RUNTIME_H_ 1
-#include <aml/namespace.h>
-#include <aml/object.h>
+#ifndef _KERNEL_AML_RUNTIME_H_
+#define _KERNEL_AML_RUNTIME_H_ 1
+#include <kernel/aml/namespace.h>
+#include <kernel/aml/object.h>
 #include <kernel/types.h>
 
 
@@ -33,10 +33,6 @@ _Bool aml_runtime_execute(aml_runtime_context_t* ctx);
 
 
 aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 arg_count,aml_object_t*const* args);
-
-
-
-void aml_runtime_register_irq(u8 irq);
 
 
 

@@ -293,7 +293,7 @@ def _compress(file_path):
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 	object_files=[]
-	pool=process_pool.ProcessPool()
+	pool=process_pool.ProcessPool(file_hash_list)
 	rebuild_uefi_partition=False
 	for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
 		for file_name in files:
@@ -317,7 +317,7 @@ def _compile_uefi():
 		return False
 	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.efi","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files)
 	pool.add(["build/uefi/loader.efi"],"build/uefi/loader.efi","P build/uefi/loader.efi",["objcopy","-j",".text","-j",".sdata","-j",".data","-j",".dynamic","-j",".dynsym","-j",".rel","-j",".rela","-j",".reloc","-S","--target=efi-app-x86_64","build/uefi/loader.efi","build/uefi/loader.efi"])
-	error=pool.wait(file_hash_list)
+	error=pool.wait()
 	_save_file_hash_list(file_hash_list,UEFI_HASH_FILE_PATH)
 	if (error):
 		sys.exit(1)
@@ -329,7 +329,7 @@ def _compile_kernel():
 	_generate_kernel_build_info()
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 	object_files=[]
-	pool=process_pool.ProcessPool()
+	pool=process_pool.ProcessPool(file_hash_list)
 	for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
 		for file_name in files:
 			suffix=file_name[file_name.rindex("."):]
@@ -351,7 +351,7 @@ def _compile_kernel():
 			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
-	error=pool.wait(file_hash_list)
+	error=pool.wait()
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
 		sys.exit(1)
@@ -395,7 +395,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 def _compile_all_modules():
 	hash_file_path=f"build/hashes/module"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
-	pool=process_pool.ProcessPool()
+	pool=process_pool.ProcessPool(file_hash_list)
 	with open("src/module/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
@@ -403,7 +403,7 @@ def _compile_all_modules():
 				continue
 			name,dependencies=line.split(":")
 			_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
-	error=pool.wait(file_hash_list)
+	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
@@ -471,7 +471,7 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 def _compile_all_libraries():
 	hash_file_path=f"build/hashes/lib"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
-	pool=process_pool.ProcessPool()
+	pool=process_pool.ProcessPool(file_hash_list)
 	with open("src/lib/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
@@ -480,7 +480,7 @@ def _compile_all_libraries():
 			name,dependencies=line.split(":")
 			flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
 			_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
-	error=pool.wait(file_hash_list)
+	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
@@ -524,7 +524,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 def _compile_all_user_programs():
 	hash_file_path=f"build/hashes/user"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
-	pool=process_pool.ProcessPool()
+	pool=process_pool.ProcessPool(file_hash_list)
 	with open("src/user/dependencies.txt","r") as rf:
 		for line in rf.read().split("\n"):
 			line=line.strip()
@@ -532,7 +532,7 @@ def _compile_all_user_programs():
 				continue
 			name,dependencies=line.split(":")
 			_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
-	error=pool.wait(file_hash_list)
+	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)

@@ -1,4 +1,4 @@
-#include <aml/object.h>
+#include <kernel/aml/object.h>
 #include <kernel/io/io.h>
 #include <kernel/log/log.h>
 #include <kernel/pci/pci.h>

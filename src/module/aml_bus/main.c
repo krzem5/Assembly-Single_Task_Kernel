@@ -1,6 +1,6 @@
-#include <aml/namespace.h>
-#include <aml/object.h>
-#include <aml/runtime.h>
+#include <kernel/aml/namespace.h>
+#include <kernel/aml/object.h>
+#include <kernel/aml/runtime.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
