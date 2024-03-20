@@ -72,6 +72,7 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	INFO("Calculating topology...");
 	topology_compute(index,&((cpu_extra_data+index)->topology));
 	_cpu_online_count++;
+	LOG("Core #%u initialized",index);
 	_wakeup_cpu((index<<1)+1);
 	_wakeup_cpu((index+1)<<1);
 	if (index!=_cpu_bootstra_core_apic_id){
@@ -98,6 +99,7 @@ void KERNEL_EARLY_EXEC cpu_init(u16 count){
 		(cpu_extra_data+i)->header.index=i;
 		(cpu_extra_data+i)->header.kernel_rsp=((u64)((cpu_extra_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
 		(cpu_extra_data+i)->tss.rsp0=((u64)((cpu_extra_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
+		(cpu_extra_data+i)->tss.ist1=(cpu_extra_data+i)->tss.rsp0;
 		(cpu_extra_data+i)->tss.ist2=(cpu_extra_data+i)->header.kernel_rsp;
 	}
 	_cpu_bootstra_core_apic_id=msr_get_apic_id();

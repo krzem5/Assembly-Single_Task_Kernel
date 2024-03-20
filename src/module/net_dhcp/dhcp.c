@@ -195,7 +195,7 @@ static void _rx_thread(void){
 			for (const net_info_address_list_entry_t* router=net_info_get_dns_entries();router;router=router->next){
 				INFO("- %I",router->address);
 			}
-			INFO("Lease time: %u s",lease_time);
+			INFO("Lease time: %us",lease_time);
 			timer_update(_net_dhcp_timeout_timer,lease_time*1000000000ull-DHCP_LEASE_EXPIRY_EARLY_TIME_NS,1,1);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
