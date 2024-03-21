@@ -3,6 +3,7 @@
 #include <uefi/kernel_data.h>
 #include <uefi/kfs2.h>
 #include <uefi/relocator.h>
+#include <uefi/tpm2.h>
 
 
 
@@ -102,6 +103,43 @@ static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* d
 
 
 
+static void _extend_tpm2_event(EFI_SYSTEM_TABLE* system_table,uint64_t data,uint64_t data_end){
+	EFI_GUID efi_tpm2_guid=EFI_TCG2_PROTOCOL_GUID;
+	UINTN buffer_size=0;
+	system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,NULL);
+	if (!buffer_size){
+		return;
+	}
+	EFI_HANDLE* buffer;
+	system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
+	system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,buffer);
+	EFI_TCG2* tcg2;
+	_Bool is_error=EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&tcg2)));
+	system_table->BootServices->FreePool(buffer);
+	if (is_error){
+		return;
+	}
+	EFI_TCG2_BOOT_SERVICE_CAPABILITY capability;
+	capability.Size=sizeof(EFI_TCG2_BOOT_SERVICE_CAPABILITY);
+	if (EFI_ERROR(tcg2->GetCapability(tcg2,&capability))||!capability.TPMPresentFlag){
+		return;
+	}
+	EFI_TCG2_EVENT* tcg2_event;
+	system_table->BootServices->AllocatePool(0x80000000,sizeof(EFI_TCG2_EVENT),(void**)(&tcg2_event));
+	system_table->BootServices->SetMem(tcg2_event,sizeof(EFI_TCG2_EVENT),0);
+	tcg2_event->Size=sizeof(EFI_TCG2_EVENT);
+	tcg2_event->Header.HeaderSize=sizeof(EFI_TCG2_EVENT_HEADER);
+	tcg2_event->Header.HeaderVersion=EFI_TCG2_EVENT_HEADER_VERSION;
+	tcg2_event->Header.PCRIndex=8;
+	tcg2_event->Header.EventType=13;
+	if (EFI_INVALID_PARAMETER==(tcg2->HashLogExtendEvent(tcg2,0,data,data_end-data,tcg2_event))){
+		// for (;;);
+	}
+	system_table->BootServices->FreePool(tcg2_event);
+}
+
+
+
 static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_BLOCK_IO_PROTOCOL* block_io_protocol,const kfs2_root_block_t* kfs2_root_block,uint32_t block_size_shift,uint32_t inode,uint64_t address){
 	uint8_t disk_buffer[KFS2_BLOCK_SIZE];
 	if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
@@ -148,6 +186,7 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 	}
 	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,node.size,address);
 	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	_extend_tpm2_event(system_table,address,out-address);
 	return out;
 _cleanup:
 	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);

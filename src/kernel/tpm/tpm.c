@@ -55,6 +55,7 @@
 
 static omm_allocator_t* _tpm_allocator=NULL;
 static pmm_counter_descriptor_t* _tpm_command_buffer_pmm_counter=NULL;
+static u8 _tpm_signatures[TPM_SIGNATURE_MAX_TYPE+1][32];
 
 
 
@@ -312,9 +313,9 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	tpm->bank_count=bank_idx;
 	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
 	for (u32 i=0;i<TPM2_PLATFORM_PCR_COUNT;i++){
-		u8 buffer[20];
-		if (_read_pcr_value(tpm,i,TPM_ALG_SHA1,buffer,sizeof(buffer))==sizeof(buffer)){
-			WARN("PCR[%u]: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",i,buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19]);
+		u8 buffer[32];
+		if (_read_pcr_value(tpm,i,TPM_ALG_SHA256,buffer,sizeof(buffer))==sizeof(buffer)){
+			WARN("PCR[%u]: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",i,buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19],buffer[20],buffer[21],buffer[22],buffer[23],buffer[24],buffer[25],buffer[26],buffer[27],buffer[28],buffer[29],buffer[30],buffer[31]);
 		}
 	}
 	_chip_stop(tpm);
@@ -339,10 +340,28 @@ static const aml_bus_device_driver_t _tmp_aml_bus_device_driver={
 
 
 
+KERNEL_EARLY_EARLY_INIT(){
+	LOG("Clearing TPM signatures...");
+	for (u32 i=0;i<=TPM_SIGNATURE_MAX_TYPE;i++){
+		memset(_tpm_signatures[i],0,32);
+	}
+}
+
+
+
 KERNEL_INIT(){
 	LOG("Initializing TPM driver...");
 	_tpm_allocator=omm_init("tpm",sizeof(tpm_t),8,1,pmm_alloc_counter("omm_tpm"));
 	spinlock_init(&(_tpm_allocator->lock));
 	_tpm_command_buffer_pmm_counter=pmm_alloc_counter("tpm_command_buffer");
 	aml_bus_register_device_driver(&_tmp_aml_bus_device_driver);
+}
+
+
+
+void KERNEL_EARLY_EXEC tpm_register_signature(u32 type,const void* data){
+	if (type>TPM_SIGNATURE_MAX_TYPE){
+		panic("tpm_register_signature: invalid signature type");
+	}
+	memcpy(_tpm_signatures[type],data,32);
 }
