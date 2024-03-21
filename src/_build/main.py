@@ -754,6 +754,12 @@ def _execute_vm():
 	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
 		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 			sys.exit(1)
+	# if (1 or not os.path.exists("build/vm/OVMF_CODE.fd")):
+	# 	if (subprocess.run(["cp","/mnt/d/k/.other/edk2/Build/OvmfX64/DEBUG_GCC5/FV/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+	# 		sys.exit(1)
+	# if (1 or not os.path.exists("build/vm/OVMF_VARS.fd")):
+	# 	if (subprocess.run(["cp","/mnt/d/k/.other/edk2/Build/OvmfX64/DEBUG_GCC5/FV/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+	# 		sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
@@ -766,6 +772,7 @@ def _execute_vm():
 		# "--no-reboot",
 		# "-d","guest_errors",
 		# Bios
+		# "-debugcon","file:build/debug.log","-global","isa-debugcon.iobase=0x402",
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
 		# Drive files

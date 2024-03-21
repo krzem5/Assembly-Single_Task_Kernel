@@ -132,9 +132,7 @@ static void _extend_tpm2_event(EFI_SYSTEM_TABLE* system_table,uint64_t data,uint
 	tcg2_event->Header.HeaderVersion=EFI_TCG2_EVENT_HEADER_VERSION;
 	tcg2_event->Header.PCRIndex=8;
 	tcg2_event->Header.EventType=13;
-	if (EFI_INVALID_PARAMETER==(tcg2->HashLogExtendEvent(tcg2,0,data,data_end-data,tcg2_event))){
-		// for (;;);
-	}
+	tcg2->HashLogExtendEvent(tcg2,0,data,data_end-data,tcg2_event);
 	system_table->BootServices->FreePool(tcg2_event);
 }
 
@@ -186,7 +184,7 @@ static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_B
 	}
 	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,node.size,address);
 	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
-	_extend_tpm2_event(system_table,address,out-address);
+	_extend_tpm2_event(system_table,address,out);
 	return out;
 _cleanup:
 	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);

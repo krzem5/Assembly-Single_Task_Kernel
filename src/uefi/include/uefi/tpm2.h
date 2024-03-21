@@ -36,14 +36,14 @@ typedef struct tdEFI_TCG2_BOOT_SERVICE_CAPABILITY {
 
 #define EFI_TCG2_EVENT_HEADER_VERSION  1
 
-typedef struct {
+typedef struct __attribute__((packed)){
         UINT32 HeaderSize;
         UINT16 HeaderVersion;
         UINT32 PCRIndex;
         UINT32 EventType;
 } EFI_TCG2_EVENT_HEADER;
 
-typedef struct tdEFI_TCG2_EVENT {
+typedef struct __attribute__((packed)) tdEFI_TCG2_EVENT {
         UINT32 Size;
         EFI_TCG2_EVENT_HEADER Header;
         UINT8 Event[1];
