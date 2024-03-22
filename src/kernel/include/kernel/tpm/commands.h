@@ -91,6 +91,17 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 			u16 digest_size;
 			u8 data[];
 		} pcr_read_resp;
+		struct KERNEL_PACKED{
+			u32 key_handle;
+			u32 auth_length;
+			u32 auth_session_handle;
+			u16 auth_nonce_length;
+			u8 auth_attributes;
+			u16 auth_hmac_length;
+			u8 auth_hmac[20];
+			u16	sensitive_length;
+			u8 sensitive_data[128];
+		} pcr_create;
 	};
 } tpm_command_t;
 
