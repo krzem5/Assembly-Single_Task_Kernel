@@ -210,6 +210,29 @@ _digest_size_found:
 
 
 
+static void _test_create_key(tpm_t* tpm){
+	memset(tpm->command,0,TPM_COMMAND_BUFFER_SIZE);WARN("A");
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_SESSIONS);
+	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->createprimary));
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_CREATEPRIMARY);
+	tpm->command->createprimary.primary_handle=__builtin_bswap32(TPM_RH_OWNER);
+	tpm->command->createprimary.sensitive_length=__builtin_bswap16(2*sizeof(u16));
+	tpm->command->createprimary.sensitive_auth_length=__builtin_bswap16(0);
+	tpm->command->createprimary.sensitive_data_length=__builtin_bswap16(0);
+	tpm->command->createprimary.public_length=__builtin_bswap16(0xaabbccdd);
+	tpm->command->createprimary.public_type=__builtin_bswap16(0x11223344);
+	tpm->command->createprimary.public_name_alg=__builtin_bswap16(TPM_ALG_SHA256);
+	tpm->command->createprimary.public_object_attributes=__builtin_bswap16(TPMA_OBJECT_RESTRICTED|TPMA_OBJECT_DECRYPT|TPMA_OBJECT_FIXEDTPM|TPMA_OBJECT_FIXEDPARENT|TPMA_OBJECT_SENSITIVEDATAORIGIN|TPMA_OBJECT_USERWITHAUTH);
+	tpm->command.creation_pcr_count.public_auth_policy_length=__builtin_bswap16(0);
+	tpm->command->createprimary.outside_info=__builtin_bswap32(0);
+	tpm->command->createprimary.creation_pcr_count=__builtin_bswap32(0);
+	_execute_command(tpm);
+	WARN("%x",__builtin_bswap32(tpm->command->header.return_code));
+	// panic("A");
+}
+
+
+
 static _Bool _init_aml_device(aml_bus_device_t* device){
 	if (!acpi_tpm2||acpi_tpm2->start_method!=ACPI_TPM2_START_METHOD_MEMORY_MAPPED){
 		return 0;
@@ -312,6 +335,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	}
 	tpm->bank_count=bank_idx;
 	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
+	_test_create_key(tpm);
 	for (u32 i=0;i<TPM2_PLATFORM_PCR_COUNT;i++){
 		u8 buffer[32];
 		if (_read_pcr_value(tpm,i,TPM_ALG_SHA256,buffer,sizeof(buffer))==sizeof(buffer)){

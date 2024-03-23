@@ -9,14 +9,18 @@
 
 
 #define TPM2_ST_NO_SESSIONS 0x8001
+#define TPM2_ST_SESSIONS 0x8002
 
 #define TPM2_RC_SUCCESS 0x0000
 #define TPM2_RC_INITIALIZE 0x0100
 #define TPM2_RC_TESTING 0x090a
 
+#define TPM2_CC_CREATEPRIMARY 0x0131
 #define TPM2_CC_SELF_TEST 0x0143
 #define TPM2_CC_GET_CAPABILITY 0x017a
 #define TPM2_CC_PCR_READ 0x017e
+
+#define TPM_RH_OWNER 0x40000001
 
 #define TPM2_CAP_COMMANDS 2
 #define TPM2_CAP_PCRS 5
@@ -48,6 +52,22 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 	tpm_command_header_t header;
 	union{
 		u8 _raw_data[0];
+		struct KERNEL_PACKED{
+			u32 primary_handle;
+			u16 sensitive_length;
+			u16 sensitive_auth_length;
+			u16 sensitive_data_length;
+			// public
+			u16 public_length;
+			u16 public_type;
+			u16 public_name_alg;
+			u16 public_object_attributes;
+			u16 public_auth_policy_length;
+			XXX auth_policy;
+			// !public
+			u32 outside_info;
+			u32 creation_pcr_count;
+		} createprimary;
 		struct KERNEL_PACKED{
 			u8 full_test;
 		} self_test;
@@ -91,17 +111,6 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 			u16 digest_size;
 			u8 data[];
 		} pcr_read_resp;
-		struct KERNEL_PACKED{
-			u32 key_handle;
-			u32 auth_length;
-			u32 auth_session_handle;
-			u16 auth_nonce_length;
-			u8 auth_attributes;
-			u16 auth_hmac_length;
-			u8 auth_hmac[20];
-			u16	sensitive_length;
-			u8 sensitive_data[128];
-		} pcr_create;
 	};
 } tpm_command_t;
 
