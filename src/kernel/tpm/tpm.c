@@ -201,6 +201,9 @@ static _Bool _get_tpm_key(tpm_t* tpm,hash_sha256_state_t* out){
 		}
 		hash_sha256_process_chunk(out,tpm->command->pcr_read_resp.data,__builtin_bswap16(tpm->command->pcr_read_resp.digest_size));
 	}
+	for (u32 i=0;i<=TPM_SIGNATURE_MAX_TYPE;i++){
+		hash_sha256_process_chunk(out,_tpm_signatures[i],32);
+	}
 	hash_sha256_finalize(out);
 	return 1;
 }
