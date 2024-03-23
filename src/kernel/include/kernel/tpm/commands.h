@@ -53,22 +53,6 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 	union{
 		u8 _raw_data[0];
 		struct KERNEL_PACKED{
-			u32 primary_handle;
-			u16 sensitive_length;
-			u16 sensitive_auth_length;
-			u16 sensitive_data_length;
-			// public
-			u16 public_length;
-			u16 public_type;
-			u16 public_name_alg;
-			u16 public_object_attributes;
-			u16 public_auth_policy_length;
-			XXX auth_policy;
-			// !public
-			u32 outside_info;
-			u32 creation_pcr_count;
-		} createprimary;
-		struct KERNEL_PACKED{
 			u8 full_test;
 		} self_test;
 		struct KERNEL_PACKED{
