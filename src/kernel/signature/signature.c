@@ -42,7 +42,7 @@ void KERNEL_EARLY_EXEC signature_verify_kernel(void){
 	tpm_register_signature(TPM_SIGNATURE_TYPE_KERNEL_SHA256,(const void*)__kernel_signature);
 	u32 mask=0;
 	for (u32 i=0;i<8;i++){
-		mask|=__builtin_bswap32(state.result[i])^__kernel_signature[i];
+		mask|=state.result32[i]^__kernel_signature[i];
 		state.result[i]=0;
 		__kernel_signature[i]=0;
 	}
@@ -94,7 +94,7 @@ _signature_error:
 	hash_sha256_finalize(&state);
 	u32 mask=0;
 	for (u32 i=0;i<8;i++){
-		mask|=__builtin_bswap32(state.result[i])^value->data[i];
+		mask|=state.result32[i]^value->data[i];
 		state.result[i]=0;
 	}
 	rsa_number_delete(value);
@@ -146,7 +146,7 @@ _signature_error:
 	hash_sha256_finalize(&state);
 	u32 mask=0;
 	for (u32 i=0;i<8;i++){
-		mask|=__builtin_bswap32(state.result[i])^value->data[i];
+		mask|=state.result32[i]^value->data[i];
 		state.result[i]=0;
 	}
 	rsa_number_delete(value);

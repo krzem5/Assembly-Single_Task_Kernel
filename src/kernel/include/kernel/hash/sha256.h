@@ -16,7 +16,8 @@ typedef struct _HASH_SHA256_STATE{
 			u32 g;
 			u32 h;
 		};
-		u32 result[8];
+		u32 result32[8];
+		u8 result[32];
 	};
 	u64 length;
 	u8 buffer[64];

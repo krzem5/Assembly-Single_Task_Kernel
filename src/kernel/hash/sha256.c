@@ -160,4 +160,7 @@ KERNEL_PUBLIC void hash_sha256_finalize(hash_sha256_state_t* state){
 	memset(buffer+1,0,padding);
 	*((u64*)(buffer+1+padding))=__builtin_bswap64(state->length<<3);
 	hash_sha256_process_chunk(state,buffer,padding+9);
+	for (u32 i=0;i<8;i++){
+		state->result32[i]=__builtin_bswap32(state->result32[i]);
+	}
 }

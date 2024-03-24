@@ -7,6 +7,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/rsa/rsa.h>
 #include <kernel/tpm/commands.h>
 #include <kernel/tpm/tpm.h>
 #include <kernel/types.h>
@@ -20,6 +21,11 @@
 #define TPM_KEY_PCR_MIN 0
 #define TPM_KEY_PCR_MAX 8
 #define TPM_KEY_PCR_HASH TPM_ALG_SHA256
+
+#define ROOT_STORAGE_OBEJCT_PERSISTENT_HANDLE 0x81000200
+#define ROOT_STORAGE_OBJECT_NAME_HASH TPM_ALG_SHA256
+#define ROOT_STORAGE_OBJECT_NAME_HASH_LENGTH 32
+#define ROOT_STORAGE_OBJECT_RSA_KEY_BITS 2048
 
 
 
@@ -182,7 +188,7 @@ _retry_self_test:
 
 
 
-static _Bool _get_tpm_key(tpm_t* tpm,hash_sha256_state_t* out){
+static _Bool _get_pcr_hash(tpm_t* tpm,hash_sha256_state_t* out){
 	hash_sha256_init(out);
 	for (u32 pcr_index=TPM_KEY_PCR_MIN;pcr_index<=TPM_KEY_PCR_MAX;pcr_index++){
 		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
@@ -201,10 +207,202 @@ static _Bool _get_tpm_key(tpm_t* tpm,hash_sha256_state_t* out){
 		}
 		hash_sha256_process_chunk(out,tpm->command->pcr_read_resp.data,__builtin_bswap16(tpm->command->pcr_read_resp.digest_size));
 	}
-	for (u32 i=0;i<=TPM_SIGNATURE_MAX_TYPE;i++){
-		hash_sha256_process_chunk(out,_tpm_signatures[i],32);
-	}
 	hash_sha256_finalize(out);
+	return 1;
+}
+
+
+
+static KERNEL_INLINE void _tpm_command_emit_bytes_padded(void** buffer,const void* data,u32 data_length,u32 length){
+	if (data_length>length){
+		data_length=length;
+	}
+	memcpy(*buffer,data,data_length);
+	memset((*buffer)+data_length,0,length-data_length);
+	*buffer+=length;
+}
+
+
+
+static KERNEL_INLINE void _tpm_command_emit_u8(void** buffer,u8 value){
+	*((u8*)(*buffer))=value;
+	*buffer+=sizeof(u8);
+}
+
+
+
+static KERNEL_INLINE void _tpm_command_emit_u16(void** buffer,u16 value){
+	*((u16*)(*buffer))=__builtin_bswap16(value);
+	*buffer+=sizeof(u16);
+}
+
+
+
+static KERNEL_INLINE void _tpm_command_emit_u32(void** buffer,u32 value){
+	*((u32*)(*buffer))=__builtin_bswap32(value);
+	*buffer+=sizeof(u32);
+}
+
+
+
+static KERNEL_INLINE u8 _tpm_command_get_u8(void** buffer){
+	u8 out=*((const u8*)(*buffer));
+	*buffer+=sizeof(u8);
+	return out;
+}
+
+
+
+static KERNEL_INLINE u16 _tpm_command_get_u16(void** buffer){
+	u16 out=__builtin_bswap16(*((const u16*)(*buffer)));
+	*buffer+=sizeof(u16);
+	return out;
+}
+
+
+
+static KERNEL_INLINE u32 _tpm_command_get_u32(void** buffer){
+	u32 out=__builtin_bswap32(*((const u32*)(*buffer)));
+	*buffer+=sizeof(u32);
+	return out;
+}
+
+
+
+static _Bool _get_rsa_key(tpm_t* tpm,rsa_state_t* out){
+	// read key
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_READPUBLIC);
+	void* buffer=tpm->command->_raw_data;
+	// handles
+	_tpm_command_emit_u32(&buffer,ROOT_STORAGE_OBEJCT_PERSISTENT_HANDLE);
+	tpm->command->header.length=__builtin_bswap32(buffer-((void*)(tpm->command)));
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)!=TPM2_RC_SUCCESS){
+		goto _create_key;
+	}
+	buffer=tpm->command->_raw_data;
+	if (!_tpm_command_get_u16(&buffer)){
+		return 0;
+	}
+	if (_tpm_command_get_u16(&buffer)!=TPM_ALG_RSA){
+		return 0;
+	}
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u32(&buffer);
+	buffer+=_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	u32 exponent=_tpm_command_get_u32(&buffer);
+	if (!exponent){
+		exponent=0x10001;
+	}
+	if (_tpm_command_get_u16(&buffer)!=ROOT_STORAGE_OBJECT_RSA_KEY_BITS/8){
+		return 0;
+	}
+	rsa_state_init(buffer,ROOT_STORAGE_OBJECT_RSA_KEY_BITS,out);
+	out->public_key=rsa_number_create_from_bytes(out,&exponent,1);
+	return 1;
+_create_key:
+	// create key
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_SESSIONS);
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_CREATEPRIMARY);
+	buffer=tpm->command->_raw_data;
+	// handles
+	_tpm_command_emit_u32(&buffer,TPM_RH_OWNER);
+	// auth
+	_tpm_command_emit_u32(&buffer,sizeof(u8)+2*sizeof(u16)+sizeof(u32));
+	_tpm_command_emit_u32(&buffer,TPM_RS_PW);
+	_tpm_command_emit_u16(&buffer,0);
+	_tpm_command_emit_u8(&buffer,0);
+	_tpm_command_emit_u16(&buffer,0);
+	// sensitive
+	_tpm_command_emit_u16(&buffer,2*sizeof(u16)+ROOT_STORAGE_OBJECT_NAME_HASH_LENGTH);
+	_tpm_command_emit_u16(&buffer,ROOT_STORAGE_OBJECT_NAME_HASH_LENGTH);
+	_tpm_command_emit_bytes_padded(&buffer,"TestAuthString",14,ROOT_STORAGE_OBJECT_NAME_HASH_LENGTH);
+	_tpm_command_emit_u16(&buffer,0);
+	// public
+	_tpm_command_emit_u16(&buffer,9*sizeof(u16)+2*sizeof(u32));
+	_tpm_command_emit_u16(&buffer,TPM_ALG_RSA);
+	_tpm_command_emit_u16(&buffer,ROOT_STORAGE_OBJECT_NAME_HASH);
+	_tpm_command_emit_u32(&buffer,TPM_OBJECT_ATTRIBUTE_FIXED_TPM|TPM_OBJECT_ATTRIBUTE_FIXED_PARENT|TPM_OBJECT_ATTRIBUTE_SENSITIVE_DATA_ORIGIN|TPM_OBJECT_ATTRIBUTE_USER_WITH_AUTH|TPM_OBJECT_ATTRIBUTE_NO_DA|TPM_OBJECT_ATTRIBUTE_RESTRICTED|TPM_OBJECT_ATTRIBUTE_DECRYPT);
+	_tpm_command_emit_u16(&buffer,0);
+	_tpm_command_emit_u16(&buffer,TPM_ALG_AES);
+	_tpm_command_emit_u16(&buffer,128);
+	_tpm_command_emit_u16(&buffer,TPM_ALG_CFB);
+	_tpm_command_emit_u16(&buffer,TPM_ALG_NULL);
+	_tpm_command_emit_u16(&buffer,ROOT_STORAGE_OBJECT_RSA_KEY_BITS);
+	_tpm_command_emit_u32(&buffer,0);
+	_tpm_command_emit_u16(&buffer,0);
+	// outside info
+	_tpm_command_emit_u16(&buffer,0);
+	// creation PCRs
+	_tpm_command_emit_u32(&buffer,0);
+	tpm->command->header.length=__builtin_bswap32(buffer-((void*)(tpm->command)));
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)!=TPM2_RC_SUCCESS){
+		return 0;
+	}
+	buffer=tpm->command->_raw_data;
+	u32 key_handle=_tpm_command_get_u32(&buffer);
+	_tpm_command_get_u32(&buffer);
+	if (!_tpm_command_get_u16(&buffer)){
+		return 0;
+	}
+	if (_tpm_command_get_u16(&buffer)!=TPM_ALG_RSA){
+		return 0;
+	}
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u32(&buffer);
+	buffer+=_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	_tpm_command_get_u16(&buffer);
+	exponent=_tpm_command_get_u32(&buffer);
+	if (!exponent){
+		exponent=0x10001;
+	}
+	if (_tpm_command_get_u16(&buffer)!=ROOT_STORAGE_OBJECT_RSA_KEY_BITS/8){
+		return 0;
+	}
+	rsa_state_init(buffer,ROOT_STORAGE_OBJECT_RSA_KEY_BITS,out);
+	out->public_key=rsa_number_create_from_bytes(out,&exponent,1);
+	// store key
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_SESSIONS);
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_EVICTCONTROL);
+	buffer=tpm->command->_raw_data;
+	// handles
+	_tpm_command_emit_u32(&buffer,TPM_RH_OWNER);
+	_tpm_command_emit_u32(&buffer,key_handle);
+	// auth
+	_tpm_command_emit_u32(&buffer,sizeof(u8)+2*sizeof(u16)+sizeof(u32));
+	_tpm_command_emit_u32(&buffer,TPM_RS_PW);
+	_tpm_command_emit_u16(&buffer,0);
+	_tpm_command_emit_u8(&buffer,0);
+	_tpm_command_emit_u16(&buffer,0);
+	// persistent handle
+	_tpm_command_emit_u32(&buffer,ROOT_STORAGE_OBEJCT_PERSISTENT_HANDLE);
+	tpm->command->header.length=__builtin_bswap32(buffer-((void*)(tpm->command)));
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)!=TPM2_RC_SUCCESS){
+		return 0;
+	}
+	// flush context
+	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
+	tpm->command->header.command_code=__builtin_bswap32(TPM2_CC_FLUSHCONTEXT);
+	buffer=tpm->command->_raw_data;
+	// handles
+	_tpm_command_emit_u32(&buffer,key_handle);
+	tpm->command->header.length=__builtin_bswap32(buffer-((void*)(tpm->command)));
+	_execute_command(tpm);
+	if (__builtin_bswap32(tpm->command->header.return_code)!=TPM2_RC_SUCCESS){
+		return 0;
+	}
 	return 1;
 }
 
@@ -313,10 +511,12 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	tpm->bank_count=bank_idx;
 	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
 	hash_sha256_state_t key_state;
-	if (_get_tpm_key(tpm,&key_state)){
-		u8 buffer[32];
-		memcpy(buffer,key_state.result,32);
-		WARN("TPM KEY: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8],buffer[9],buffer[10],buffer[11],buffer[12],buffer[13],buffer[14],buffer[15],buffer[16],buffer[17],buffer[18],buffer[19],buffer[20],buffer[21],buffer[22],buffer[23],buffer[24],buffer[25],buffer[26],buffer[27],buffer[28],buffer[29],buffer[30],buffer[31]);
+	if (_get_pcr_hash(tpm,&key_state)){
+		WARN("TPM PCR key: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",key_state.result[0],key_state.result[1],key_state.result[2],key_state.result[3],key_state.result[4],key_state.result[5],key_state.result[6],key_state.result[7],key_state.result[8],key_state.result[9],key_state.result[10],key_state.result[11],key_state.result[12],key_state.result[13],key_state.result[14],key_state.result[15],key_state.result[16],key_state.result[17],key_state.result[18],key_state.result[19],key_state.result[20],key_state.result[21],key_state.result[22],key_state.result[23],key_state.result[24],key_state.result[25],key_state.result[26],key_state.result[27],key_state.result[28],key_state.result[29],key_state.result[30],key_state.result[31]);
+	}
+	rsa_state_t rsa_state;
+	if (!_get_rsa_key(tpm,&rsa_state)){
+		panic("TPM error");
 	}
 	_chip_stop(tpm);
 	return 1;
