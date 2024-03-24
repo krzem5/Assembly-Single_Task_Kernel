@@ -52,6 +52,11 @@ static void _keyring_update_callback(void* object,u32 type){
 
 void keyringstore_store_init(void){
 	LOG("Initializing keyringstore...");
-	_get_store_directory();
+	vfs_node_t* dir=_get_store_directory();
+	if (!dir){
+		ERROR("Unable to create keyringstore directory");
+		return;
+	}
+	INFO("Loading keyrings...");
 	keyring_register_notification_listener(_keyring_update_callback);
 }

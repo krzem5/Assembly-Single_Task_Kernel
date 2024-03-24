@@ -1,4 +1,3 @@
-#include <kernel/acl/acl.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "keyring_master_key"
