@@ -485,24 +485,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 			if (!ptr[j]){
 				continue;
 			}
-			u32 digest_size=0;
-			if (hash_alg==TPM_ALG_SHA1){
-				digest_size=20;
-			}
-			else if (hash_alg==TPM_ALG_SHA256){
-				digest_size=32;
-			}
-			else if (hash_alg==TPM_ALG_SHA384){
-				digest_size=48;
-			}
-			else if (hash_alg==TPM_ALG_SHA512){
-				digest_size=64;
-			}
-			else{
-				panic("Unknown hash algorithm digest size");
-			}
 			(tpm->banks+bank_idx)->hash_alg=hash_alg;
-			(tpm->banks+bank_idx)->digest_size=digest_size;
 			bank_idx++;
 			break;
 		}

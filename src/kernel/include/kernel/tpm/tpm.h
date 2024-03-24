@@ -22,7 +22,6 @@ typedef struct _TPM_DEVICE_COMMAND{
 
 typedef struct _TPM_BANK{
 	u16 hash_alg;
-	u16 digest_size;
 } tpm_bank_t;
 
 
