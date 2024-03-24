@@ -326,8 +326,13 @@ def _compile_uefi():
 
 
 def _compile_kernel():
-	_generate_kernel_build_info()
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
+	if ("src/kernel/_generated/build_info.c" in changed_files):
+		changed_files.remove("src/kernel/_generated/build_info.c")
+	if (changed_files):
+		print(changed_files)
+		_generate_kernel_build_info()
+		changed_files.append("src/kernel/_generated/build_info.c")
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
 	for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
@@ -349,12 +354,14 @@ def _compile_kernel():
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
 			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	if (not changed_files):
+		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
 		sys.exit(1)
+	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	return True
 
 
