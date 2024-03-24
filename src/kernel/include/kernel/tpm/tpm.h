@@ -7,10 +7,6 @@
 
 #define TPM_FLAG_VERSION_2 1
 
-#define TPM_SIGNATURE_TYPE_KERNEL_SHA256 0
-#define TPM_SIGNATURE_TYPE_INITRAMFS_SHA256 1
-#define TPM_SIGNATURE_MAX_TYPE TPM_SIGNATURE_TYPE_INITRAMFS_SHA256
-
 
 
 typedef struct _TPM_DEVICE_COMMAND{
@@ -22,6 +18,7 @@ typedef struct _TPM_DEVICE_COMMAND{
 
 typedef struct _TPM_BANK{
 	u16 hash_alg;
+	u16 digest_size;
 } tpm_bank_t;
 
 
@@ -35,10 +32,6 @@ typedef struct _TPM{
 	tpm_device_command_t* device_commands;
 	tpm_bank_t* banks;
 } tpm_t;
-
-
-
-void tpm_register_signature(u32 type,const void* data);
 
 
 

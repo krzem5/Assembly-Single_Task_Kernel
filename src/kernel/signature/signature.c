@@ -9,7 +9,6 @@
 #include <kernel/rsa/rsa.h>
 #include <kernel/signature/signature.h>
 #include <kernel/syscall/syscall.h>
-#include <kernel/tpm/tpm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "signature"
@@ -39,7 +38,6 @@ void KERNEL_EARLY_EXEC signature_verify_kernel(void){
 	PROCESS_SECTION(kernel_ex);
 	PROCESS_SECTION(kernel_nx);
 	hash_sha256_finalize(&state);
-	tpm_register_signature(TPM_SIGNATURE_TYPE_KERNEL_SHA256,(const void*)__kernel_signature);
 	u32 mask=0;
 	for (u32 i=0;i<8;i++){
 		mask|=state.result32[i]^__kernel_signature[i];

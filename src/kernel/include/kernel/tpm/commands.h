@@ -15,16 +15,11 @@
 #define TPM2_RC_INITIALIZE 0x0100
 #define TPM2_RC_TESTING 0x090a
 
-#define TPM2_CC_EVICTCONTROL 0x0120
-#define TPM2_CC_CREATEPRIMARY 0x0131
 #define TPM2_CC_SELF_TEST 0x0143
-#define TPM2_CC_CREATE 0x0153
-#define TPM2_CC_FLUSHCONTEXT 0x0165
 #define TPM2_CC_GET_CAPABILITY 0x017a
-#define TPM2_CC_READPUBLIC 0x0173
 #define TPM2_CC_PCR_READ 0x017e
+#define TPM2_CC_PCR_EXTEND 0x0182
 
-#define TPM_RH_OWNER 0x40000001
 #define TPM_RS_PW 0x40000009
 
 #define TPM2_CAP_COMMANDS 2
@@ -35,22 +30,10 @@
 
 #define TPM_PT_TOTAL_COMMANDS 0x0129
 
-#define TPM_ALG_RSA 0x0001
 #define TPM_ALG_SHA1 0x0004
-#define TPM_ALG_AES 0x0006
-#define TPM_ALG_NULL 0x0010
 #define TPM_ALG_SHA256 0x000b
 #define TPM_ALG_SHA384 0x000c
 #define TPM_ALG_SHA512 0x000d
-#define TPM_ALG_CFB 0x0043
-
-#define TPM_OBJECT_ATTRIBUTE_FIXED_TPM 0x00000002
-#define TPM_OBJECT_ATTRIBUTE_FIXED_PARENT 0x00000010
-#define TPM_OBJECT_ATTRIBUTE_SENSITIVE_DATA_ORIGIN 0x00000020
-#define TPM_OBJECT_ATTRIBUTE_USER_WITH_AUTH 0x00000040
-#define TPM_OBJECT_ATTRIBUTE_NO_DA 0x00000400
-#define TPM_OBJECT_ATTRIBUTE_RESTRICTED 0x00010000
-#define TPM_OBJECT_ATTRIBUTE_DECRYPT 0x00020000
 
 
 
@@ -112,6 +95,16 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 			u16 digest_size;
 			u8 data[];
 		} pcr_read_resp;
+		struct KERNEL_PACKED{
+			u32 pcr_index;
+			u32 auth_size;
+			u32 auth_handle;
+			u16 auth_nonce_size;
+			u8 auth_attributes;
+			u16 auth_hmac_size;
+			u32 digest_count;
+			u8 data[];
+		} pcr_extend;
 	};
 } tpm_command_t;
 

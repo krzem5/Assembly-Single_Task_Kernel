@@ -737,7 +737,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 def _execute_vm():
 	if (not os.path.exists("/tmp/tpm")):
 		os.mkdir("/tmp/tpm")
-	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=20"])
+	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=0"])
 	while (not os.path.exists("/tmp/swtpm.sock")):
 		time.sleep(0.01)
 	if (not NO_FILE_SERVER):
