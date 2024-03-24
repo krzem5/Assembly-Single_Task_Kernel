@@ -330,7 +330,6 @@ def _compile_kernel():
 	if ("src/kernel/_generated/build_info.c" in changed_files):
 		changed_files.remove("src/kernel/_generated/build_info.c")
 	if (changed_files):
-		print(changed_files)
 		_generate_kernel_build_info()
 		changed_files.append("src/kernel/_generated/build_info.c")
 	object_files=[]

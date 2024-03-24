@@ -2,6 +2,7 @@
 #include <kernel/acpi/tpm2.h>
 #include <kernel/aml/bus.h>
 #include <kernel/hash/sha256.h>
+#include <kernel/keyring/master_key.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -298,7 +299,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
 	hash_sha256_state_t key_state;
 	if (_get_pcr_hash(tpm,&key_state)){
-		WARN("Platform key: %X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X%X",key_state.result[0],key_state.result[1],key_state.result[2],key_state.result[3],key_state.result[4],key_state.result[5],key_state.result[6],key_state.result[7],key_state.result[8],key_state.result[9],key_state.result[10],key_state.result[11],key_state.result[12],key_state.result[13],key_state.result[14],key_state.result[15],key_state.result[16],key_state.result[17],key_state.result[18],key_state.result[19],key_state.result[20],key_state.result[21],key_state.result[22],key_state.result[23],key_state.result[24],key_state.result[25],key_state.result[26],key_state.result[27],key_state.result[28],key_state.result[29],key_state.result[30],key_state.result[31]);
+		keyring_master_key_set_platform_key(key_state.result);
 	}
 	_chip_stop(tpm);
 	return 1;
