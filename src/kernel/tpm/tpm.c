@@ -299,7 +299,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 	tpm->banks=amm_realloc(tpm->banks,tpm->bank_count*sizeof(tpm_bank_t));
 	hash_sha256_state_t key_state;
 	if (_get_pcr_hash(tpm,&key_state)){
-		keyring_master_key_set_platform_key(key_state.result);
+		keyring_master_key_set_platform_key(key_state.result,NULL);
 	}
 	_chip_stop(tpm);
 	return 1;

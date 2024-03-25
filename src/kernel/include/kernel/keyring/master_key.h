@@ -4,7 +4,7 @@
 
 
 
-void keyring_master_key_set_platform_key(u8* key);
+void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key);
 
 
 

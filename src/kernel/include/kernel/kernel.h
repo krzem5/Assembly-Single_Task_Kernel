@@ -28,7 +28,7 @@ typedef struct _KERNEL_DATA{
 	u64 initramfs_address;
 	u64 initramfs_size;
 	u8 boot_fs_guid[16];
-	u8 master_key[32];
+	u8 master_key[64];
 	struct{
 		u16 year;
 		u8 month;

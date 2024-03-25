@@ -337,7 +337,7 @@ static void _generate_encryption_key(aes_state_t* state,const void* key,u32 key_
 
 
 static void _generate_decryption_key(aes_state_t* state){
-	state->decryption_key=amm_alloc((state->rounds+1)<<2);
+	state->decryption_key=amm_alloc((state->rounds+1)<<4);
 	for (u32 i=0;i<((state->rounds+1)<<2);i+=4){
 		for (u32 j=0;j<4;j++){
 			state->decryption_key[i+j]=state->encryption_key[(state->rounds<<2)-i+j];
