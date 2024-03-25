@@ -24,7 +24,7 @@ static void _xor_block(u8* dst,const u8* src){
 
 
 KERNEL_EARLY_EARLY_INIT(){
-	LOG("Clearing master key...");
+	LOG("Loading master key...");
 	for (u32 i=0;i<64;i++){
 		_keyring_master_key_encrypted[i]=kernel_data.master_key[i];
 		_keyring_master_key_present|=_keyring_master_key_encrypted[i];
@@ -36,6 +36,7 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
+	LOG("Decrypting master key...");
 	hash_sha256_state_t sha256_state;
 	hash_sha256_init(&sha256_state);
 	hash_sha256_process_chunk(&sha256_state,platform_key,32);
@@ -51,9 +52,11 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 		memcpy(_keyring_master_key,_keyring_master_key_encrypted+32,32);
 	}
 	else if (master_key){
+		INFO("Generating master key (external RNG)...");
 		memcpy(_keyring_master_key,master_key,32);
 	}
 	else{
+		INFO("Generating master key (internal RNG)...");
 		random_generate(_keyring_master_key,32);
 	}
 	random_generate(_keyring_master_key_encrypted,32);
