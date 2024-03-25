@@ -11,7 +11,6 @@
 
 static u8 _keyring_master_key_encrypted[64];
 static u8 _keyring_master_key[32];
-static u8 _keyring_master_key_present=0;
 
 
 
@@ -27,23 +26,34 @@ KERNEL_EARLY_EARLY_INIT(){
 	LOG("Loading master key...");
 	for (u32 i=0;i<64;i++){
 		_keyring_master_key_encrypted[i]=kernel_data.master_key[i];
-		_keyring_master_key_present|=_keyring_master_key_encrypted[i];
 		kernel_data.master_key[i]=0;
 	}
-	_keyring_master_key_present=!!_keyring_master_key_present;
+}
+
+
+
+KERNEL_PUBLIC void keyring_master_key_get_encrypted(u8* buffer,u32 buffer_size){
+	if (buffer_size!=64){
+		panic("keyring_master_key_get_encrypted: invalid buffer size");
+	}
+	memcpy(buffer,_keyring_master_key_encrypted,64);
 }
 
 
 
 void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	LOG("Decrypting master key...");
+	_Bool master_key_present=0;
+	for (u32 i=0;i<64;i++){
+		master_key_present|=_keyring_master_key_encrypted[i];
+	}
 	hash_sha256_state_t sha256_state;
 	hash_sha256_init(&sha256_state);
 	hash_sha256_process_chunk(&sha256_state,platform_key,32);
 	hash_sha256_finalize(&sha256_state);
 	aes_state_t state;
-	aes_init(platform_key,32,AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION,&state);
-	if (_keyring_master_key_present){
+	aes_init(platform_key,32,AES_FLAG_ENCRYPTION|(master_key_present?AES_FLAG_DECRYPTION:0),&state);
+	if (master_key_present){
 		for (u32 i=64;i;){
 			i-=16;
 			aes_decrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
@@ -69,8 +79,5 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	memset(platform_key,0,32);
 	if (master_key){
 		memset(master_key,0,32);
-	}
-	for (u32 i=0;i<64;i+=8){
-		WARN("[%u] %p",i,*((u64*)(_keyring_master_key_encrypted+i)));
 	}
 }

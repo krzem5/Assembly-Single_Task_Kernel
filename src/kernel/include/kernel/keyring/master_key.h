@@ -4,6 +4,10 @@
 
 
 
+void keyring_master_key_get_encrypted(u8* buffer,u32 buffer_size);
+
+
+
 void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key);
 
 
