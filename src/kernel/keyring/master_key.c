@@ -1,5 +1,4 @@
 #include <kernel/aes/aes.h>
-#include <kernel/hash/sha256.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
@@ -47,17 +46,12 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	for (u32 i=0;i<64;i++){
 		master_key_present|=_keyring_master_key_encrypted[i];
 	}
-	hash_sha256_state_t sha256_state;
-	hash_sha256_init(&sha256_state);
-	hash_sha256_process_chunk(&sha256_state,platform_key,32);
-	hash_sha256_finalize(&sha256_state);
 	aes_state_t state;
 	aes_init(platform_key,32,AES_FLAG_ENCRYPTION|(master_key_present?AES_FLAG_DECRYPTION:0),&state);
 	if (master_key_present){
-		for (u32 i=64;i;){
-			i-=16;
+		for (u32 i=48;i>=32;i-=16){
 			aes_decrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
-			_xor_block(_keyring_master_key_encrypted+i,(i?_keyring_master_key_encrypted+(i-16):sha256_state.result));
+			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
 		}
 		memcpy(_keyring_master_key,_keyring_master_key_encrypted+32,32);
 	}
@@ -72,7 +66,9 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	random_generate(_keyring_master_key_encrypted,32);
 	memcpy(_keyring_master_key_encrypted+32,_keyring_master_key,32);
 	for (u32 i=0;i<64;i+=16){
-		_xor_block(_keyring_master_key_encrypted+i,(i?_keyring_master_key_encrypted+(i-16):sha256_state.result));
+		if (i){
+			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
+		}
 		aes_encrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
 	}
 	aes_deinit(&state);
