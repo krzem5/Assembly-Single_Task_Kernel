@@ -32,6 +32,7 @@
 typedef struct KERNEL_PACKED _KFS2_ROOT_BLOCK{
 	u64 signature;
 	u8 uuid[16];
+	u8 master_key[64];
 	u64 block_count;
 	u64 inode_count;
 	u64 data_block_count;

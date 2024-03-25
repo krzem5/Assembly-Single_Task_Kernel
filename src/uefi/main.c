@@ -223,7 +223,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 			boot_fs_guid[j]=kfs2_root_block.uuid[j];
 		}
 		for (uint8_t j=0;j<64;j++){
-			master_key[j]=0;
+			master_key[j]=kfs2_root_block.master_key[j];
 		}
 		uint32_t block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/block_io_protocol->Media->BlockSize);
 		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.kernel_inode,KERNEL_MEMORY_ADDRESS);

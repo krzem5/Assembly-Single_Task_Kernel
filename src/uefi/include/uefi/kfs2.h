@@ -29,6 +29,7 @@
 typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 	uint64_t signature;
 	uint8_t uuid[16];
+	uint8_t master_key[64];
 	uint64_t block_count;
 	uint64_t inode_count;
 	uint64_t data_block_count;

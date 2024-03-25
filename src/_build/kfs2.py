@@ -98,9 +98,10 @@ class KFS2RootBlock(object):
 		self.initramfs_inode=initramfs_inode
 
 	def save(self):
-		header=struct.pack(f"<Q16BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
+		header=struct.pack(f"<Q16B64BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
 			KFS2_SIGNATURE,
 			*self.uuid,
+			*(b"\x00"*64),
 			self.block_count,
 			self.inode_count,
 			self.data_block_count,
@@ -120,26 +121,25 @@ class KFS2RootBlock(object):
 	@staticmethod
 	def load(backend):
 		backend.seek(0)
-		header=backend.read(168)
-		crc=binascii.crc32(header[:-4])
-		data=struct.unpack(f"<Q16BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
-		if (data[0]!=KFS2_SIGNATURE or data[23+2*KFS2_BITMAP_LEVEL_COUNT+4]!=crc):
+		header=backend.read(232)
+		data=struct.unpack(f"<Q16B64BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
+		if (data[0]!=KFS2_SIGNATURE or data[87+2*KFS2_BITMAP_LEVEL_COUNT+4]!=binascii.crc32(header[:-4])):
 			raise RuntimeError
 		return KFS2RootBlock(
 			backend,
 			data[1:17],
-			data[17],
-			data[18],
-			data[19],
-			data[20],
-			data[21],
-			data[22],
-			data[23:23+KFS2_BITMAP_LEVEL_COUNT],
-			data[23+KFS2_BITMAP_LEVEL_COUNT:23+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[23+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[23+2*KFS2_BITMAP_LEVEL_COUNT+1],
-			data[23+2*KFS2_BITMAP_LEVEL_COUNT+2],
-			data[23+2*KFS2_BITMAP_LEVEL_COUNT+3]
+			data[81],
+			data[82],
+			data[83],
+			data[84],
+			data[85],
+			data[86],
+			data[87:87+KFS2_BITMAP_LEVEL_COUNT],
+			data[87+KFS2_BITMAP_LEVEL_COUNT:87+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[87+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[87+2*KFS2_BITMAP_LEVEL_COUNT+1],
+			data[87+2*KFS2_BITMAP_LEVEL_COUNT+2],
+			data[87+2*KFS2_BITMAP_LEVEL_COUNT+3]
 		)
 
 
