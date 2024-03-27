@@ -27,10 +27,10 @@ static u64 _drive_io_callback(drive_t* drive,u64 offset,u64 buffer,u64 size){
 	_drive_io_callback_size=size;
 	if (_drive_io_callback_return_buffer){
 		if (offset&DRIVE_OFFSET_FLAG_WRITE){
-			memcpy(_drive_io_callback_return_buffer,(const void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),size<<drive->block_size_shift);
+			mem_copy(_drive_io_callback_return_buffer,(const void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),size<<drive->block_size_shift);
 		}
 		else{
-			memcpy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),_drive_io_callback_return_buffer,size<<drive->block_size_shift);
+			mem_copy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),_drive_io_callback_return_buffer,size<<drive->block_size_shift);
 		}
 	}
 	return _drive_io_callback_return;
@@ -92,7 +92,7 @@ void test_drive(void){
 	u8 buffer[512];
 	u8 buffer2[512];
 	random_generate(buffer,sizeof(buffer));
-	memset(buffer2,0,sizeof(buffer2));
+	mem_fill(buffer2,0,sizeof(buffer2));
 	_drive_io_callback_return=1;
 	_drive_io_callback_return_buffer=buffer;
 	TEST_ASSERT(drive_read(drive,0,buffer2,1)==1);
@@ -105,7 +105,7 @@ void test_drive(void){
 	}
 	TEST_GROUP("partially out of bounds");
 	random_generate(buffer,sizeof(buffer));
-	memset(buffer2,0,sizeof(buffer2));
+	mem_fill(buffer2,0,sizeof(buffer2));
 	TEST_ASSERT(drive_read(drive,3,buffer2,5)==1);
 	TEST_ASSERT(_drive_io_callback_drive==drive);
 	TEST_ASSERT(_drive_io_callback_offset==3);
@@ -124,7 +124,7 @@ void test_drive(void){
 	drive->type=&_test_drive_type;
 	TEST_ASSERT(!drive_write(drive,0xffffffff,NULL,0));
 	TEST_GROUP("correct args");
-	memset(buffer,0,sizeof(buffer));
+	mem_fill(buffer,0,sizeof(buffer));
 	random_generate(buffer2,sizeof(buffer2));
 	TEST_ASSERT(drive_write(drive,0,buffer2,1)==1);
 	TEST_ASSERT(_drive_io_callback_drive==drive);
@@ -135,7 +135,7 @@ void test_drive(void){
 		TEST_ASSERT(buffer[i]==buffer2[i]);
 	}
 	TEST_GROUP("partially out of bounds");
-	memset(buffer,0,sizeof(buffer));
+	mem_fill(buffer,0,sizeof(buffer));
 	random_generate(buffer2,sizeof(buffer2));
 	TEST_ASSERT(drive_write(drive,3,buffer2,5)==1);
 	TEST_ASSERT(_drive_io_callback_drive==drive);

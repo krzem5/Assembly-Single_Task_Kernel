@@ -35,7 +35,7 @@ KERNEL_PUBLIC void keyring_master_key_get_encrypted(u8* buffer,u32 buffer_size){
 	if (buffer_size!=64){
 		panic("keyring_master_key_get_encrypted: invalid buffer size");
 	}
-	memcpy(buffer,_keyring_master_key_encrypted,64);
+	mem_copy(buffer,_keyring_master_key_encrypted,64);
 }
 
 
@@ -53,18 +53,18 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 			aes_decrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
 			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
 		}
-		memcpy(_keyring_master_key,_keyring_master_key_encrypted+32,32);
+		mem_copy(_keyring_master_key,_keyring_master_key_encrypted+32,32);
 	}
 	else if (master_key){
 		INFO("Generating master key (external RNG)...");
-		memcpy(_keyring_master_key,master_key,32);
+		mem_copy(_keyring_master_key,master_key,32);
 	}
 	else{
 		INFO("Generating master key (internal RNG)...");
 		random_generate(_keyring_master_key,32);
 	}
 	random_generate(_keyring_master_key_encrypted,32);
-	memcpy(_keyring_master_key_encrypted+32,_keyring_master_key,32);
+	mem_copy(_keyring_master_key_encrypted+32,_keyring_master_key,32);
 	for (u32 i=0;i<64;i+=16){
 		if (i){
 			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
@@ -72,8 +72,8 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 		aes_encrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
 	}
 	aes_deinit(&state);
-	memset(platform_key,0,32);
+	mem_fill(platform_key,0,32);
 	if (master_key){
-		memset(master_key,0,32);
+		mem_fill(master_key,0,32);
 	}
 }

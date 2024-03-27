@@ -81,7 +81,7 @@ static const void* _parse_binary_tag(const void* data,const void* end,config_tag
 	if (header->type==CONFIG_TAG_TYPE_ARRAY){
 		(*out)->array=amm_alloc(sizeof(config_tag_array_t)+tag_length*sizeof(config_tag_t*));
 		(*out)->array->length=tag_length;
-		memset((*out)->array->data,0,sizeof(config_tag_t*)*tag_length);
+		mem_fill((*out)->array->data,0,sizeof(config_tag_t*)*tag_length);
 		for (u32 i=0;i<tag_length;i++){
 			data=_parse_binary_tag(data,end,(*out)->array->data+i);
 			if (!data){

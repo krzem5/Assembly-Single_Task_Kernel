@@ -92,9 +92,9 @@ _retry_read:
 	if (chunk_size>size){
 		chunk_size=size;
 	}
-	memcpy(buffer,pipe->buffer+pipe->read_offset,chunk_size);
+	mem_copy(buffer,pipe->buffer+pipe->read_offset,chunk_size);
 	if (size>chunk_size){
-		memcpy(buffer+chunk_size,pipe->buffer,size-chunk_size);
+		mem_copy(buffer+chunk_size,pipe->buffer,size-chunk_size);
 	}
 	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
 		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
@@ -133,9 +133,9 @@ _retry_write:
 	if (chunk_size>size){
 		chunk_size=size;
 	}
-	memcpy(pipe->buffer+pipe->write_offset,buffer,chunk_size);
+	mem_copy(pipe->buffer+pipe->write_offset,buffer,chunk_size);
 	if (size>chunk_size){
-		memcpy(pipe->buffer,buffer+chunk_size,size-chunk_size);
+		mem_copy(pipe->buffer,buffer+chunk_size,size-chunk_size);
 	}
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
@@ -200,7 +200,7 @@ error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 			return ERROR_INVALID_ARGUMENT(0);
 		}
 		char buffer[4096];
-		memcpy(buffer,(const char*)path,path_length);
+		mem_copy(buffer,(const char*)path,path_length);
 		buffer[path_length]=0;
 		const char* name;
 		if (vfs_lookup_for_creation(NULL,buffer,0,0,0,&parent,&name)){

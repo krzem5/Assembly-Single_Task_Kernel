@@ -184,7 +184,7 @@ static _Bool _get_pcr_hash(tpm_t* tpm,hash_sha256_state_t* out){
 		for (u32 i=0;i<tpm->bank_count;i++){
 			buffer[0]=(tpm->banks+i)->hash_alg>>8;
 			buffer[1]=(tpm->banks+i)->hash_alg;
-			memset(buffer+2,0,(tpm->banks+i)->digest_size);
+			mem_fill(buffer+2,0,(tpm->banks+i)->digest_size);
 			buffer+=2+(tpm->banks+i)->digest_size;
 		}
 		tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->pcr_extend)+buffer-tpm->command->pcr_extend.data);

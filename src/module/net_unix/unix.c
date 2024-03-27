@@ -76,7 +76,7 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 	if (length>socket_packet->size){
 		length=socket_packet->size;
 	}
-	memcpy(buffer,socket_packet->data,length);
+	mem_copy(buffer,socket_packet->data,length);
 	socket_dealloc_packet(socket_packet);
 	return length;
 }
@@ -88,7 +88,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 		return 0;
 	}
 	void* data=amm_alloc(length);
-	memcpy(data,buffer,length);
+	mem_copy(data,buffer,length);
 	if (socket_alloc_packet(&(socket_node->node),data,length)){
 		return length;
 	}

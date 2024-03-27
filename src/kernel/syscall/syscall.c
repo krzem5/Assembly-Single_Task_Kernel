@@ -59,7 +59,7 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 	table->index=_syscall_table_list_length;
 	syscall_table_t** old_syscall_table_list=(syscall_table_t**)_syscall_table_list;
 	syscall_table_t** new_syscall_table_list=amm_alloc((_syscall_table_list_length+1)*sizeof(syscall_table_t*));
-	memcpy(new_syscall_table_list,old_syscall_table_list,_syscall_table_list_length*sizeof(syscall_table_t*));
+	mem_copy(new_syscall_table_list,old_syscall_table_list,_syscall_table_list_length*sizeof(syscall_table_t*));
 	new_syscall_table_list[_syscall_table_list_length]=table;
 	_syscall_table_list=new_syscall_table_list;
 	_syscall_table_list_length++;

@@ -132,7 +132,7 @@ KERNEL_PUBLIC void hash_sha256_process_chunk(hash_sha256_state_t* state,const vo
 	u64 padding=state->length&63;
 	if (padding){
 		u64 fragment=(length>64-padding?64-padding:length);
-		memcpy(state->buffer+padding,chunk,fragment);
+		mem_copy(state->buffer+padding,chunk,fragment);
 		chunk+=fragment;
 		length-=fragment;
 		state->length+=fragment;
@@ -147,7 +147,7 @@ KERNEL_PUBLIC void hash_sha256_process_chunk(hash_sha256_state_t* state,const vo
 		chunk+=64;
 	}
 	if (length){
-		memcpy(state->buffer,chunk,length);
+		mem_copy(state->buffer,chunk,length);
 	}
 }
 
@@ -157,7 +157,7 @@ KERNEL_PUBLIC void hash_sha256_finalize(hash_sha256_state_t* state){
 	u8 buffer[128];
 	buffer[0]=0x80;
 	u64 padding=(-state->length-9)&63;
-	memset(buffer+1,0,padding);
+	mem_fill(buffer+1,0,padding);
 	*((u64*)(buffer+1+padding))=__builtin_bswap64(state->length<<3);
 	hash_sha256_process_chunk(state,buffer,padding+9);
 	for (u32 i=0;i<8;i++){

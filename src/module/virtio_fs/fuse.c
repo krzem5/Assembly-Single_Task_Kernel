@@ -204,7 +204,7 @@ static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 	if (fuse_read_out->header.len<size){
 		size=fuse_read_out->header.len;
 	}
-	memcpy(buffer,fuse_read_out->data,size);
+	mem_copy(buffer,fuse_read_out->data,size);
 	amm_dealloc(fuse_read_out);
 	return size;
 }

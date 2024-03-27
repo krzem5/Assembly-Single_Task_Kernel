@@ -53,7 +53,7 @@ static u64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32
 	if (offset+size>dynamicfs_node->data->length){
 		size=dynamicfs_node->data->length-offset;
 	}
-	memcpy(buffer,dynamicfs_node->data->data+offset,size);
+	mem_copy(buffer,dynamicfs_node->data->data+offset,size);
 	return size;
 }
 
@@ -163,7 +163,7 @@ KERNEL_PUBLIC u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 
 	if (offset+size>length){
 		size=length-offset;
 	}
-	memcpy(buffer,data+offset,size);
+	mem_copy(buffer,data+offset,size);
 	return size;
 }
 

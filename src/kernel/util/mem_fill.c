@@ -2,7 +2,7 @@
 
 
 
-KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memset)(void* dst,u8 value,u64 length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE (mem_fill)(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	if (length<16){
 		switch (length){
@@ -38,7 +38,7 @@ KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memset)(void* dst,u8 value,u64 length){
 				ptr[0]=value;
 			case 0:
 		}
-		return dst;
+		return;
 	}
 	u8 padding=(-((u64)ptr))&7;
 	if (padding){
@@ -71,5 +71,4 @@ KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memset)(void* dst,u8 value,u64 length){
 			ptr[0]=value;
 		case 0:
 	}
-	return dst;
 }

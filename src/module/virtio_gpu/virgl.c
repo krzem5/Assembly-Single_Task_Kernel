@@ -287,7 +287,7 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 		ctx->command_buffer.size=0;
 	}
 	if (command){
-		memcpy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
+		mem_copy(ctx->command_buffer.buffer+ctx->command_buffer.size,command,command_size*sizeof(u32));
 		ctx->command_buffer.size+=command_size;
 	}
 	if (flush&&ctx->command_buffer.size){
@@ -748,7 +748,7 @@ _skip_buffer_resize:
 					1,
 					1,
 				};
-				memcpy(virgl_resource_inline_write_command+12,command->data,size);
+				mem_copy(virgl_resource_inline_write_command+12,command->data,size);
 				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+(size+sizeof(u32)-1)/sizeof(u32),0);
 				goto _update_buffer_cleanup;
 			}
@@ -765,7 +765,7 @@ _skip_buffer_resize:
 				};
 				virtio_gpu_command_transfer_from_host_3d(ctx->gpu_device,buffer->resource_handle,&box,0,0,0);
 			}
-			memcpy((void*)(buffer->address+command->offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),command->data,size);
+			mem_copy((void*)(buffer->address+command->offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),command->data,size);
 			virtio_gpu_box_t box={
 				command->offset,
 				0,
@@ -892,7 +892,7 @@ _skip_set_index_buffer:
 					command->height,
 					command->depth,
 				};
-				memcpy(virgl_resource_inline_write_command+12,command->data,size);
+				mem_copy(virgl_resource_inline_write_command+12,command->data,size);
 				_command_buffer_extend(instance->ctx,virgl_resource_inline_write_command,12+(size+sizeof(u32)-1)/sizeof(u32),0);
 				goto _update_texture_cleanup;
 			}

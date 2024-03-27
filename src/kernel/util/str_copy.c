@@ -20,7 +20,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy(const char* src,char* dst,u64 max_
 
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy_from_padded(const char* src,char* dst,u64 length){
 	for (;length&&src[length-1]==32;length--);
-	memcpy(dst,src,length);
+	mem_copy(dst,src,length);
 	dst[length]=0;
 }
 

@@ -51,7 +51,7 @@ KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_desc
 	network_layer1_device_t* out=omm_alloc(_network_layer1_device_allocator);
 	handle_new(out,network_layer1_device_handle_type,&(out->handle));
 	out->descriptor=descriptor;
-	memcpy(out->mac_address,*mac_address,sizeof(mac_address_t));
+	mem_copy(out->mac_address,*mac_address,sizeof(mac_address_t));
 	out->extra_data=extra_data;
 	handle_finish_setup(&(out->handle));
 	if (!network_layer1_device){
@@ -65,10 +65,10 @@ KERNEL_PUBLIC network_layer1_packet_t* network_layer1_create_packet(u16 length,c
 	network_layer1_packet_t* out=amm_alloc(length+sizeof(network_layer1_packet_t));
 	out->length=length;
 	if (dst_mac_address){
-		memcpy(out->dst_mac,*dst_mac_address,sizeof(mac_address_t));
+		mem_copy(out->dst_mac,*dst_mac_address,sizeof(mac_address_t));
 	}
 	if (src_mac_address){
-		memcpy(out->src_mac,*src_mac_address,sizeof(mac_address_t));
+		mem_copy(out->src_mac,*src_mac_address,sizeof(mac_address_t));
 	}
 	out->ether_type=__builtin_bswap16(ether_type);
 	return out;

@@ -147,7 +147,7 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 			goto _cleanup;
 		}
 		kernel_argv[i]=amm_alloc(length+1);
-		memcpy(kernel_argv[i],(const char*)(argv[i]),length);
+		mem_copy(kernel_argv[i],(const char*)(argv[i]),length);
 		kernel_argv[i][length]=0;
 	}
 	if (environ){
@@ -160,7 +160,7 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 			}
 			kernel_environ=amm_realloc(kernel_environ,(kernel_environ_length+1)*sizeof(char*));
 			kernel_environ[kernel_environ_length]=amm_alloc(length+1);
-			memcpy(kernel_environ[kernel_environ_length],(const char*)(environ[kernel_environ_length]),length);
+			mem_copy(kernel_environ[kernel_environ_length],(const char*)(environ[kernel_environ_length]),length);
 			kernel_environ[kernel_environ_length][length]=0;
 		}
 		if (kernel_environ_length==max_length){

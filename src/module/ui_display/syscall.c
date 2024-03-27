@@ -65,13 +65,13 @@ static error_t _syscall_get_display_info(handle_id_t display_handle_id,KERNEL_US
 	}
 	ui_display_t* display=display_handle->object;
 	const ui_display_info_t* display_info=display->display_info;
-	memcpy((char*)(buffer->manufacturer),display_info->manufacturer,sizeof(buffer->manufacturer));
+	mem_copy((char*)(buffer->manufacturer),display_info->manufacturer,sizeof(buffer->manufacturer));
 	buffer->manufacturer_product_code=display_info->manufacturer_product_code;
 	buffer->serial_number=display_info->serial_number;
 	buffer->video_interface=display_info->video_interface;
 	buffer->screen_width_cm=display_info->screen_width_cm;
 	buffer->screen_height_cm=display_info->screen_height_cm;
-	memcpy((char*)(buffer->name),display_info->name,sizeof(buffer->name));
+	mem_copy((char*)(buffer->name),display_info->name,sizeof(buffer->name));
 	u32 buffer_mode_count=(buffer_length-sizeof(ui_display_user_info_t))/sizeof(ui_display_user_mode_t);
 	u32 mode_count=0;
 	for (const ui_display_info_mode_t* mode=display_info->modes;mode;mode=mode->next){

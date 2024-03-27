@@ -68,7 +68,7 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 	if (length>packet->length){
 		length=packet->length;
 	}
-	memcpy(buffer,packet->data,length);
+	mem_copy(buffer,packet->data,length);
 	socket_dealloc_packet(socket_packet);
 	return length;
 }
@@ -89,7 +89,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 	udp_packet->src_port=__builtin_bswap16(udp_local_address->port);
 	udp_packet->dst_port=__builtin_bswap16(udp_remote_address->port);
 	udp_packet->length=__builtin_bswap16(length+sizeof(net_udp_packet_t));
-	memcpy(udp_packet->data,buffer,length);
+	mem_copy(udp_packet->data,buffer,length);
 	net_checksum_calculate_checksum(udp_packet,length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
 	net_udp_ipv4_pseudo_header_t pseudo_header={
 		ip_packet->packet->src_address,
@@ -124,7 +124,7 @@ static _Bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const 
 	udp_packet->src_port=__builtin_bswap16(packet->src_port);
 	udp_packet->dst_port=__builtin_bswap16(packet->dst_port);
 	udp_packet->length=__builtin_bswap16(packet->length+sizeof(net_udp_packet_t));
-	memcpy(udp_packet->data,packet->data,packet->length);
+	mem_copy(udp_packet->data,packet->data,packet->length);
 	net_checksum_calculate_checksum(udp_packet,packet->length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
 	net_udp_ipv4_pseudo_header_t pseudo_header={
 		ip_packet->packet->src_address,
@@ -194,7 +194,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	socket_packet->src_port=__builtin_bswap16(udp_packet->src_port);
 	socket_packet->dst_port=__builtin_bswap16(udp_packet->dst_port);
 	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
-	memcpy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
+	mem_copy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
 	if (!socket_alloc_packet(&(socket->node),socket_packet,sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t))){
 		amm_dealloc(packet);
 		ERROR("UDP packet dropped, socket rx ring full");

@@ -9,14 +9,14 @@
 
 KERNEL_PUBLIC void pbkdf2_compute(const void* password,u32 password_length,const void* salt,u32 salt_length,const prf_t* prf,u32 iterations,void* out,u32 out_length){
 	u8* buffer=amm_alloc((prf->output_size>salt_length+4?prf->output_size:salt_length+4));
-	memset(out,0,out_length);
+	mem_fill(out,0,out_length);
 	u32 out_offset=0;
 	for (u32 i=1;out_offset<out_length;i++){
 		u32 chunk_length=out_length-out_offset;
 		if (chunk_length>prf->output_size){
 			chunk_length=prf->output_size;
 		}
-		memcpy(buffer,salt,salt_length);
+		mem_copy(buffer,salt,salt_length);
 		*((u32*)(buffer+salt_length))=__builtin_bswap32(i);
 		for (u32 j=0;j<iterations;j++){
 			prf->callback(password,password_length,buffer,(j?prf->output_size:salt_length+4),buffer);

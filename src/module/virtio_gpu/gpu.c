@@ -564,7 +564,7 @@ void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device,u32 ctx,u32 t
 	request->header.ctx_id=ctx;
 	request->debug_name_length=sizeof(CONTEXT_NAME)-1;
 	request->context_init=type;
-	memcpy(request->debug_name,CONTEXT_NAME,sizeof(CONTEXT_NAME));
+	mem_copy(request->debug_name,CONTEXT_NAME,sizeof(CONTEXT_NAME));
 	virtio_gpu_control_header_t* response=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	virtio_buffer_t buffers[2]={
 		{

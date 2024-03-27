@@ -68,7 +68,7 @@ static thread_t* _thread_alloc(process_t* process){
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	thread_t* out=omm_alloc(_thread_allocator);
-	memset(out,0,sizeof(thread_t));
+	mem_fill(out,0,sizeof(thread_t));
 	out->header.current_thread=out;
 	handle_new(out,thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
@@ -259,7 +259,7 @@ error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 e
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	handle_id_t* buffer=amm_alloc(event_count*sizeof(handle_id_t));
-	memcpy(buffer,(const void*)events,event_count*sizeof(handle_id_t));
+	mem_copy(buffer,(const void*)events,event_count*sizeof(handle_id_t));
 	u32 out=event_await_multiple_handles(buffer,event_count);
 	amm_dealloc(buffer);
 	return out;

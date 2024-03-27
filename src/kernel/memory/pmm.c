@@ -114,7 +114,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 	INFO("Registering memory range %p - %p",address,end);
 #ifndef KERNEL_RELEASE
 	INFO("Resetting memory...");
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,end-address);
+	mem_fill((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,end-address);
 #endif
 	do{
 		pmm_allocator_t* allocator=_get_allocator_from_address(address);
@@ -164,7 +164,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	INFO("Allocator count: %u (%v)",_pmm_allocator_count,allocator_array_size);
 	_pmm_allocators=(void*)(first_free_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	first_free_address+=allocator_array_size;
-	memset(_pmm_allocators,0,allocator_array_size);
+	mem_fill(_pmm_allocators,0,allocator_array_size);
 	for (u32 i=0;i<_pmm_allocator_count;i++){
 		spinlock_init(&((_pmm_allocators+i)->lock));
 	}
@@ -199,8 +199,8 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 		.count=0
 	};
 	void* pmm_data=(void*)(pmm_alloc(pmm_align_up_address(allocator_array_size+block_descriptor_array_size)>>PAGE_SIZE_SHIFT,&tmp_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	memcpy(pmm_data,_pmm_allocators,allocator_array_size);
-	memcpy(pmm_data+allocator_array_size,_pmm_block_descriptors,block_descriptor_array_size);
+	mem_copy(pmm_data,_pmm_allocators,allocator_array_size);
+	mem_copy(pmm_data+allocator_array_size,_pmm_block_descriptors,block_descriptor_array_size);
 	_pmm_allocators=pmm_data;
 	_pmm_block_descriptors=pmm_data+allocator_array_size;
 	_pmm_self_counter_value=tmp_counter.count;
@@ -373,7 +373,7 @@ _retry_allocator:
 
 KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* counter){
 #ifndef KERNEL_RELEASE
-	memset((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,count<<PAGE_SIZE_SHIFT);
+	mem_fill((void*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET),PMM_DEBUG_VALUE,count<<PAGE_SIZE_SHIFT);
 #endif
 	if (!count){
 		panic("pmm_dealloc: trying to deallocate zero physical pages");

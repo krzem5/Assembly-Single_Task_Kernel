@@ -194,7 +194,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	_initramfs_fs=fs_create(_initramfs_filesystem_descriptor);
 	_initramfs_fs->functions=&_initramfs_functions;
 	_initramfs_fs->partition=partition;
-	memcpy(_initramfs_fs->guid,header.uuid,16);
+	mem_copy(_initramfs_fs->guid,header.uuid,16);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	_initramfs_fs->root=vfs_node_create(_initramfs_fs,root_name);
 	_initramfs_fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;

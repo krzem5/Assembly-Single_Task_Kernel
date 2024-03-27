@@ -17,7 +17,7 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count)
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		return 0;
 	}
-	memcpy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(void*)(kernel_data.initramfs_address+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),count);
+	mem_copy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(void*)(kernel_data.initramfs_address+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),count);
 	return count;
 }
 

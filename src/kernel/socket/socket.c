@@ -435,7 +435,7 @@ error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 
 	if (!packet){
 		return ERROR_NO_DATA;
 	}
-	memcpy((void*)buffer,packet->data,(packet->size>buffer_length?buffer_length:packet->size));
+	mem_copy((void*)buffer,packet->data,(packet->size>buffer_length?buffer_length:packet->size));
 	socket_dealloc_packet(packet);
 	return (packet->size>buffer_length?ERROR_NO_SPACE:ERROR_OK);
 }

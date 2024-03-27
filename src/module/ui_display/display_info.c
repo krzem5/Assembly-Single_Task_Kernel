@@ -188,7 +188,7 @@ KERNEL_PUBLIC ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 e
 	}
 	ui_display_info_t* out=omm_alloc(_ui_display_info_allocator);
 	out->edid=amm_alloc(edid_length);
-	memcpy(out->edid,edid,edid_length);
+	mem_copy(out->edid,edid,edid_length);
 	out->edid_length=edid_length;
 	u16 manufacturer_id=__builtin_bswap16(*((const u16*)(edid+8)));
 	out->manufacturer[0]=((manufacturer_id>>10)&0x1f)+64;

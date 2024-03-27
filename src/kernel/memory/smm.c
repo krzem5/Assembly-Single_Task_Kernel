@@ -35,7 +35,7 @@ KERNEL_PUBLIC void smm_dealloc(string_t* string){
 
 KERNEL_PUBLIC string_t* smm_duplicate(const string_t* string){
 	string_t* out=amm_alloc(sizeof(string_t)+string->length+1);
-	memcpy(out,string,sizeof(string_t)+string->length+1);
+	mem_copy(out,string,sizeof(string_t)+string->length+1);
 	return out;
 }
 

@@ -39,7 +39,7 @@
 #define PUSH_STRING(string) \
 	do{ \
 		u32 __length=smm_length((string))+1; \
-		memcpy(string_table_ptr,(string),__length); \
+		mem_copy(string_table_ptr,(string),__length); \
 		string_table_ptr+=__length; \
 	} while (0)
 
@@ -154,7 +154,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 			continue;
 		}
 		mmap_region_t* kernel_region=mmap_map_to_kernel(ctx->process->mmap,program_header->p_vaddr-padding,pmm_align_up_address(program_header->p_filesz+padding));
-		memcpy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
+		mem_copy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
 		mmap_dealloc_region(process_kernel->mmap,kernel_region);
 	}
 	return ERROR_OK;
@@ -213,7 +213,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		if (program_header->p_type!=PT_LOAD){
 			continue;
 		}
-		memcpy((void*)(kernel_program_region->rb_node.key+program_header->p_vaddr),file_data+program_header->p_offset,program_header->p_filesz);
+		mem_copy((void*)(kernel_program_region->rb_node.key+program_header->p_vaddr),file_data+program_header->p_offset,program_header->p_filesz);
 		u64 flags=0;
 		if (!(program_header->p_flags&PF_X)){
 			flags|=VMM_PAGE_FLAG_NOEXECUTE;

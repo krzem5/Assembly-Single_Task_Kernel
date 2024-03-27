@@ -79,7 +79,7 @@ _signature_error:
 		goto _signature_error;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
-	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
+	mem_fill(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
 	if (!keyring_key_process_rsa(key,value,value)){
 		rsa_number_delete(value);
 		goto _signature_error;
@@ -133,7 +133,7 @@ _signature_error:
 		goto _signature_error;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
-	memset(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
+	mem_fill(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
 	if (!keyring_key_process_rsa(key,value,value)){
 		rsa_number_delete(value);
 		goto _signature_error;
@@ -171,7 +171,7 @@ void syscall_signature_verify(const char* name,void* data,u64 size){
 		goto _error;
 	}
 	char buffer[256];
-	memcpy(buffer,(const char*)name,name_length);
+	mem_copy(buffer,(const char*)name,name_length);
 	buffer[name_length]=0;
 	if (!signature_verify_user(buffer,region)){
 		goto _error;

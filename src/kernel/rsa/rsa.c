@@ -234,7 +234,7 @@ KERNEL_PUBLIC rsa_number_t* rsa_number_create_from_bytes(const rsa_state_t* stat
 	}
 	out->length=length;
 	out->capacity=state->max_number_length;
-	memcpy(out->data,data,length*sizeof(u32));
+	mem_copy(out->data,data,length*sizeof(u32));
 	_normalize(out);
 	return out;
 }
@@ -258,7 +258,7 @@ KERNEL_PUBLIC void rsa_state_init(const u32* modulus,u32 modulus_bit_length,rsa_
 	out->private_key=NULL;
 	out->modulus=rsa_number_create(out);
 	out->modulus->length=modulus_length;
-	memcpy(out->modulus->data,modulus,modulus_length*sizeof(u32));
+	mem_copy(out->modulus->data,modulus,modulus_length*sizeof(u32));
 	out->modulus->data[modulus_bit_length>>5]&=(1ull<<(modulus_bit_length&31))-1;
 	_normalize(out->modulus);
 	_calculate_mu(out);

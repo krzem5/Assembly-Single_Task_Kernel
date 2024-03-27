@@ -89,8 +89,8 @@ static error_t _syscall_get_permission_request(KERNEL_USER_POINTER ui_permission
 	}
 	event_await(_ui_permission_request_list_event,0);
 	buffer->id=_ui_permission_request_list_head->id;
-	memcpy((char*)(buffer->process),_ui_permission_request_list_head->process,sizeof(buffer->process));
-	memcpy((char*)(buffer->handle),_ui_permission_request_list_head->handle,sizeof(buffer->handle));
+	mem_copy((char*)(buffer->process),_ui_permission_request_list_head->process,sizeof(buffer->process));
+	mem_copy((char*)(buffer->handle),_ui_permission_request_list_head->handle,sizeof(buffer->handle));
 	buffer->flags=_ui_permission_request_list_head->flags;
 	return ERROR_OK;
 }

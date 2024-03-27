@@ -125,7 +125,7 @@ static u64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 f
 		if (drive_read(drive,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
 			return 0;
 		}
-		memcpy(buffer,disk_buffer+padding,2048-padding);
+		mem_copy(buffer,disk_buffer+padding,2048-padding);
 		block_index++;
 		buffer+=2048-padding;
 		size-=2048-padding;
@@ -142,7 +142,7 @@ static u64 _iso9660_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 f
 		if (drive_read(drive,iso9660_node->data_offset+block_index,disk_buffer,1)!=1){
 			return 0;
 		}
-		memcpy(buffer,disk_buffer,padding);
+		mem_copy(buffer,disk_buffer,padding);
 	}
 	return out;
 }

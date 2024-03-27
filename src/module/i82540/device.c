@@ -65,7 +65,7 @@ static void _rx_thread(i82540_device_t* device){
 		}
 		if (desc->length>=NETWORK_LAYER1_PACKET_HEADER_SIZE&&(desc->status&RDESC_EOP)&&!desc->errors){
 			network_layer1_packet_t* packet=network_layer1_create_packet(desc->length-NETWORK_LAYER1_PACKET_HEADER_SIZE,NULL,NULL,0);
-			memcpy(packet->raw_data,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),desc->length);
+			mem_copy(packet->raw_data,(void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),desc->length);
 			network_layer1_push_packet(packet);
 		}
 		desc->status=0;
@@ -87,7 +87,7 @@ static void _tx_thread(i82540_device_t* device){
 		spinlock_acquire_exclusive(&(device->lock));
 		u16 tail=device->mmio[REG_TDT];
 		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
-		memcpy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),packet->raw_data,length);
+		mem_copy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),packet->raw_data,length);
 		network_layer1_delete_packet(packet);
 		desc->length=length;
 		desc->cmd=TXDESC_EOP|TXDESC_RS;

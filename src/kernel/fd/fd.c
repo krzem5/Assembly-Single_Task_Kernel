@@ -102,7 +102,7 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	char buffer[4096];
-	memcpy(buffer,(const char*)path,path_length);
+	mem_copy(buffer,(const char*)path,path_length);
 	buffer[path_length]=0;
 	handle_t* root_handle=NULL;
 	vfs_node_t* root_node=NULL;
@@ -288,7 +288,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 	out->time_birth=data->node->time_birth;
 	out->gid=data->node->gid;
 	out->uid=data->node->uid;
-	memcpy((char*)(out->name),data->node->name->data,data->node->name->length+1);
+	mem_copy((char*)(out->name),data->node->name->data,data->node->name->length+1);
 	spinlock_release_exclusive(&(data->lock));
 	handle_release(fd_handle);
 	return ERROR_OK;
@@ -387,7 +387,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffe
 		}
 		if (buffer_length){
 			buffer_length--;
-			memcpy((char*)buffer,data->current_name->data,buffer_length);
+			mem_copy((char*)buffer,data->current_name->data,buffer_length);
 			buffer[buffer_length]=0;
 		}
 	}

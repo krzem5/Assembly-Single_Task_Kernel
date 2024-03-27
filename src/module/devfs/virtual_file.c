@@ -13,7 +13,7 @@ static u64 _zero_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	if (!buffer){
 		return 0;
 	}
-	memset(buffer,0,size);
+	mem_fill(buffer,0,size);
 	return size;
 }
 
@@ -23,7 +23,7 @@ static u64 _one_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	if (!buffer){
 		return 0;
 	}
-	memset(buffer,0xff,size);
+	mem_fill(buffer,0xff,size);
 	return size;
 }
 

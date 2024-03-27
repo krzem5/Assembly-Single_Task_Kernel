@@ -48,7 +48,7 @@ void test_amm(void){
 		(test_data+i)->size=(test_data+i)->size%(TEST_ALLOC_MAX_SIZE+1);
 		(test_data+i)->ptr=amm_alloc((test_data+i)->size);
 		TEST_ASSERT(!(test_data+i)->size||(test_data+i)->ptr);
-		memcpy((test_data+i)->ptr,test_buffer,(test_data+i)->size);
+		mem_copy((test_data+i)->ptr,test_buffer,(test_data+i)->size);
 	}
 	_verify_integrity(test_data,test_buffer);
 	TEST_FUNC("amm_dealloc");
@@ -86,7 +86,7 @@ void test_amm(void){
 		new_size=new_size%(TEST_ALLOC_MAX_SIZE+1);
 		(test_data+j)->ptr=amm_realloc((test_data+j)->ptr,new_size);
 		if (new_size>(test_data+j)->size){
-			memcpy((test_data+j)->ptr+(test_data+j)->size,test_buffer+(test_data+j)->size,new_size-(test_data+j)->size);
+			mem_copy((test_data+j)->ptr+(test_data+j)->size,test_buffer+(test_data+j)->size,new_size-(test_data+j)->size);
 		}
 		(test_data+j)->size=new_size;
 	}

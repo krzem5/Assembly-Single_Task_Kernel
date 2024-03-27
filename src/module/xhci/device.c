@@ -41,7 +41,7 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 static xhci_ring_t* _alloc_ring(_Bool cs){
 	xhci_ring_t* out=omm_alloc(_xhci_ring_allocator);
-	memset(out,0,sizeof(xhci_ring_t));
+	mem_fill(out,0,sizeof(xhci_ring_t));
 	spinlock_init(&(out->lock));
 	out->cs=cs;
 	return out;
@@ -104,7 +104,7 @@ static void _enqueue_event_raw(xhci_ring_t* ring,const void* data,u32 size,u32 f
 		if (size>8){
 			panic("_enqueue_event_raw: inline size too large");
 		}
-		memcpy((void*)(transfer_block->inline_data),data,size);
+		mem_copy((void*)(transfer_block->inline_data),data,size);
 	}
 	else if (!data){
 		transfer_block->address=0;

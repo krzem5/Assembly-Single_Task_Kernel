@@ -98,7 +98,7 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 		}
 		section_header->sh_addr+=ctx->module->region->rb_node.key;
 		if (section_header->sh_type==SHT_PROGBITS){
-			memcpy((void*)(section_header->sh_addr),ctx->data+section_header->sh_offset,section_header->sh_size);
+			mem_copy((void*)(section_header->sh_addr),ctx->data+section_header->sh_offset,section_header->sh_size);
 		}
 	}
 	return 1;

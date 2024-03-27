@@ -100,7 +100,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->partition=NULL;
 	out->extra_data=NULL;
 	out->root=NULL;
-	memset(out->guid,0,16);
+	mem_fill(out->guid,0,16);
 	out->is_mounted=0;
 	handle_finish_setup(&(out->handle));
 	return out;
@@ -146,7 +146,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 	filesystem_t* fs=fs_handle->object;
 	str_copy(fs->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
 	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
-	memcpy((void*)(buffer->guid),fs->guid,sizeof(buffer->guid));
+	mem_copy((void*)(buffer->guid),fs->guid,sizeof(buffer->guid));
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){
 		buffer->mount_path[0]=0;
 	}
@@ -162,7 +162,7 @@ error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER_POINTER const char* path){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
 	char buffer[4096];
-	memcpy(buffer,(const char*)path,path_length);
+	mem_copy(buffer,(const char*)path,path_length);
 	buffer[path_length]=0;
 	handle_t* fs_handle=handle_lookup_and_acquire(fs_handle_id,fs_handle_type);
 	if (!fs_handle){

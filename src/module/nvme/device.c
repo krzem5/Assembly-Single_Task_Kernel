@@ -71,7 +71,7 @@ static nvme_submission_queue_entry_t* _submission_queue_init_entry(nvme_submissi
 	spinlock_acquire_exclusive(&(queue->lock));
 	SPINLOOP(((queue->head+1)&queue->queue.mask)==queue->tail);
 	nvme_submission_queue_entry_t* out=queue->entries+queue->tail;
-	memset((void*)out,0,sizeof(nvme_submission_queue_entry_t));
+	mem_fill((void*)out,0,sizeof(nvme_submission_queue_entry_t));
 	out->cdw0=(queue->tail<<16)|opc;
 	return out;
 }

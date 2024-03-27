@@ -45,9 +45,9 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		reply_arp_packet->hlen=sizeof(mac_address_t);
 		reply_arp_packet->plen=sizeof(net_ip4_address_t);
 		reply_arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REPLY);
-		memcpy(reply_arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
+		mem_copy(reply_arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
 		reply_arp_packet->spa=arp_packet->tpa;
-		memcpy(reply_arp_packet->tha,arp_packet->sha,sizeof(mac_address_t));
+		mem_copy(reply_arp_packet->tha,arp_packet->sha,sizeof(mac_address_t));
 		reply_arp_packet->tpa=arp_packet->spa;
 		network_layer1_send_packet(packet);
 		return;
@@ -62,7 +62,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
-		memcpy(&(cache_entry->address),arp_packet->sha,sizeof(mac_address_t));
+		mem_copy(&(cache_entry->address),arp_packet->sha,sizeof(mac_address_t));
 #pragma GCC diagnostic pop
 		cache_entry->resolved=1;
 		event_dispatch(_net_arp_cache_resolution_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
@@ -94,17 +94,17 @@ void net_arp_init(void){
 
 KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking){
 	if (!address){
-		memset(out,0,sizeof(mac_address_t));
+		mem_fill(out,0,sizeof(mac_address_t));
 		return 1;
 	}
 	if (address==0xffffffff){
-		memset(out,0xff,sizeof(mac_address_t));
+		mem_fill(out,0xff,sizeof(mac_address_t));
 		return 1;
 	}
 	spinlock_acquire_exclusive(&_net_arp_cache_lock);
 	net_arp_cache_entry_t* cache_entry=(net_arp_cache_entry_t*)rb_tree_lookup_node(&_net_arp_cache_address_tree,address);
 	if (cache_entry&&cache_entry->resolved){
-		memcpy(out,cache_entry->address,sizeof(mac_address_t));
+		mem_copy(out,cache_entry->address,sizeof(mac_address_t));
 		spinlock_release_exclusive(&_net_arp_cache_lock);
 		return 1;
 	}
@@ -131,9 +131,9 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		arp_packet->hlen=sizeof(mac_address_t);
 		arp_packet->plen=sizeof(net_ip4_address_t);
 		arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REQUEST);
-		memcpy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
+		mem_copy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
 		arp_packet->spa=__builtin_bswap32(net_info_get_address());
-		memset(arp_packet->tha,0,sizeof(mac_address_t));
+		mem_fill(arp_packet->tha,0,sizeof(mac_address_t));
 		arp_packet->tpa=__builtin_bswap32(address);
 		network_layer1_send_packet(packet);
 	}
@@ -147,6 +147,6 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 	if (!cache_entry->resolved){
 		return 0;
 	}
-	memcpy(out,cache_entry->address,sizeof(mac_address_t));
+	mem_copy(out,cache_entry->address,sizeof(mac_address_t));
 	return 1;
 }

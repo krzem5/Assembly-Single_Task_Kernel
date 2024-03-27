@@ -266,7 +266,7 @@ static aml_object_t* _exec_opcode_buffer(aml_runtime_context_t* ctx){
 	if (size>buffer_size->integer){
 		size=buffer_size->integer;
 	}
-	memcpy(buffer,ctx->data+ctx->offset,size);
+	mem_copy(buffer,ctx->data+ctx->offset,size);
 	ctx->offset=end_offset;
 	return aml_object_alloc_buffer(size,buffer);
 }

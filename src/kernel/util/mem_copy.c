@@ -2,7 +2,7 @@
 
 
 
-KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memcpy)(void* dst,const void* src,u64 length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE (mem_copy)(void* dst,const void* src,u64 length){
 	const u8* src_ptr=src;
 	u8* dst_ptr=dst;
 	if (length<16){
@@ -39,7 +39,7 @@ KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memcpy)(void* dst,const void* src,u64 len
 				dst_ptr[0]=src_ptr[0];
 			case 0:
 		}
-		return dst;
+		return;
 	}
 	u8 padding=(-((u64)dst_ptr))&7;
 	if (padding){
@@ -73,5 +73,4 @@ KERNEL_PUBLIC void* KERNEL_NOCOVERAGE (memcpy)(void* dst,const void* src,u64 len
 			dst_ptr[0]=src_ptr[0];
 		case 0:
 	}
-	return dst;
 }

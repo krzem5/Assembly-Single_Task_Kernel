@@ -14,7 +14,7 @@ KERNEL_PUBLIC void hmac_compute(const void* key,u32 key_length,const void* messa
 		key_length=func->output_size;
 	}
 	else{
-		memcpy(buffer,key,key_length);
+		mem_copy(buffer,key,key_length);
 	}
 	for (u32 i=0;i<key_length;i++){
 		buffer[i]^=0x36;

@@ -39,12 +39,12 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 	_net_dhcp_current_xid++;
 	option_size=(option_size+1)&0xfffffffe;
 	net_dhcp_packet_t* out=amm_alloc(sizeof(net_dhcp_packet_t)+option_size);
-	memset(out,0,sizeof(net_dhcp_packet_t)+option_size);
+	mem_fill(out,0,sizeof(net_dhcp_packet_t)+option_size);
 	out->op=NET_DHCP_OP_BOOTREQUEST;
 	out->htype=1;
 	out->hlen=6;
 	out->xid=__builtin_bswap32(_net_dhcp_current_xid);
-	memcpy(out->chaddr,network_layer1_device->mac_address,sizeof(mac_address_t));
+	mem_copy(out->chaddr,network_layer1_device->mac_address,sizeof(mac_address_t));
 	out->cookie=__builtin_bswap32(NET_DHCP_COOKIE);
 	return out;
 }
@@ -59,7 +59,7 @@ static void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_addre
 	udp_packet->src_port=68;
 	udp_packet->dst_port=67;
 	udp_packet->length=sizeof(net_dhcp_packet_t)+option_size;
-	memcpy(udp_packet->data,packet,udp_packet->length);
+	mem_copy(udp_packet->data,packet,udp_packet->length);
 	amm_dealloc(packet);
 	socket_push_packet(_net_dhcp_socket,udp_packet,sizeof(net_udp_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
 	amm_dealloc(udp_packet);

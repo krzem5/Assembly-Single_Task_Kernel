@@ -72,7 +72,7 @@ static u32 _decode_name(const u8* data,u32 offset,u32 max_size,char* out,u32 out
 		if (out_index){
 			out[out_index-1]='.';
 		}
-		memcpy(out+out_index,data+offset,i);
+		mem_copy(out+out_index,data+offset,i);
 		out_index+=i;
 		out[out_index]=0;
 		out_index++;
@@ -97,7 +97,7 @@ static u32 _encode_name(const char* name,u8* out,u32 max_size){
 			return 0;
 		}
 		out[i]=j;
-		memcpy(out+i+1,name,j);
+		mem_copy(out+i+1,name,j);
 		i+=j+1;
 		name+=j;
 		if (name[0]=='.'){

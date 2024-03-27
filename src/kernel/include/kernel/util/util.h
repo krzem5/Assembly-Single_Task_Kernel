@@ -4,37 +4,35 @@
 
 
 
-#define memcpy(dst,src,length) ((__builtin_constant_p(length)?__memcpy_inline:(memcpy))((dst),(src),(length)))
-#define memset(dst,src,length) ((__builtin_constant_p(length)?__memset_inline:(memset))((dst),(src),(length)))
+#define mem_copy(dst,src,length) ((__builtin_constant_p(length)?__mem_copy_inline:(mem_copy))((dst),(src),(length)))
+#define mem_fill(dst,src,length) ((__builtin_constant_p(length)?__mem_fill_inline:(mem_fill))((dst),(src),(length)))
 
 
 
-static KERNEL_INLINE void* KERNEL_NOCOVERAGE __memcpy_inline(void* dst,const void* src,u64 length){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE __mem_copy_inline(void* dst,const void* src,u64 length){
 	u8* dst_ptr=dst;
 	const u8* src_ptr=src;
 	for (u64 i=0;i<length;i++){
 		dst_ptr[i]=src_ptr[i];
 	}
-	return dst;
 }
 
 
 
-static KERNEL_INLINE void* KERNEL_NOCOVERAGE __memset_inline(void* dst,u8 value,u64 length){
+static KERNEL_INLINE void KERNEL_NOCOVERAGE __mem_fill_inline(void* dst,u8 value,u64 length){
 	u8* ptr=dst;
 	for (u64 i=0;i<length;i++){
 		ptr[i]=value;
 	}
-	return dst;
 }
 
 
 
-void* (memcpy)(void* dst,const void* src,u64 length);
+void (mem_copy)(void* dst,const void* src,u64 length);
 
 
 
-void* (memset)(void* dst,u8 value,u64 length);
+void (mem_fill)(void* dst,u8 value,u64 length);
 
 
 

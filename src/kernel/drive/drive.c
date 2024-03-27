@@ -78,7 +78,7 @@ KERNEL_PUBLIC u64 drive_read(drive_t* drive,u64 offset,void* buffer,u64 size){
 	}
 	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
 	u64 out=drive->type->io_callback(drive,offset&DRIVE_OFFSET_MASK,aligned_buffer,size);
-	memcpy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),out<<drive->block_size_shift);
+	mem_copy(buffer,(void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),out<<drive->block_size_shift);
 	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
 	return out;
 }
@@ -96,7 +96,7 @@ KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 s
 		return 0;
 	}
 	u64 aligned_buffer=pmm_alloc(pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter,0);
-	memcpy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,size<<drive->block_size_shift);
+	mem_copy((void*)(aligned_buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),buffer,size<<drive->block_size_shift);
 	u64 out=drive->type->io_callback(drive,(offset&DRIVE_OFFSET_MASK)|DRIVE_OFFSET_FLAG_WRITE,aligned_buffer,size);
 	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
 	return out;

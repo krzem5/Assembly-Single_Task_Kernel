@@ -181,7 +181,7 @@ KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 		}
 		i-=node->name->length+1;
 		buffer[i]='/';
-		memcpy(buffer+i+1,node->name->data,node->name->length);
+		mem_copy(buffer+i+1,node->name->data,node->name->length);
 	}
 	if (!i){
 		return 0;

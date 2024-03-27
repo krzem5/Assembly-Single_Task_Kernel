@@ -292,7 +292,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 		}
 		u64 padding=offset-chunk.offset;
 		u64 read_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
-		memcpy(buffer,chunk.data+padding,read_size);
+		mem_copy(buffer,chunk.data+padding,read_size);
 		buffer+=read_size;
 		offset+=chunk.length-padding;
 	}
@@ -374,7 +374,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=_load_inode(out,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
-	memcpy(out->guid,root_block->uuid,16);
+	mem_copy(out->guid,root_block->uuid,16);
 	return out;
 }
 

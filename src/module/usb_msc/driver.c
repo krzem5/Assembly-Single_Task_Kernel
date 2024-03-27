@@ -130,7 +130,7 @@ static u16 _usb_msc_index=0;
 static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
-	memset(context->cbw.CBWCB._data,0,16);
+	mem_fill(context->cbw.CBWCB._data,0,16);
 	context->cbw.dCBWSignature=USB_MSC_CBW_SIGNATURE;
 	context->cbw.dCBWTag=context->tag;
 	context->cbw.dCBWDataTransferLength=sizeof(usb_scsi_inquiry_responce_t);
@@ -156,7 +156,7 @@ static _Bool _wait_for_device(usb_msc_lun_context_t* context){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
 	while (1){
-		memset(context->cbw.CBWCB._data,0,16);
+		mem_fill(context->cbw.CBWCB._data,0,16);
 		context->cbw.dCBWSignature=USB_MSC_CBW_SIGNATURE;
 		context->cbw.dCBWTag=context->tag;
 		context->cbw.dCBWDataTransferLength=0;
@@ -184,7 +184,7 @@ static _Bool _wait_for_device(usb_msc_lun_context_t* context){
 static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
-	memset(context->cbw.CBWCB._data,0,16);
+	mem_fill(context->cbw.CBWCB._data,0,16);
 	context->cbw.dCBWSignature=USB_MSC_CBW_SIGNATURE;
 	context->cbw.dCBWTag=context->tag;
 	context->cbw.dCBWDataTransferLength=sizeof(usb_scsi_read_capacity_10_responce_t);
@@ -209,7 +209,7 @@ static u64 _usb_msc_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	usb_msc_lun_context_t* context=drive->extra_data;
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
-	memset(context->cbw.CBWCB._data,0,16);
+	mem_fill(context->cbw.CBWCB._data,0,16);
 	context->cbw.dCBWSignature=USB_MSC_CBW_SIGNATURE;
 	context->cbw.dCBWTag=context->tag;
 	context->cbw.dCBWDataTransferLength=count<<drive->block_size_shift;
