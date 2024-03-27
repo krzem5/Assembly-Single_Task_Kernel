@@ -154,7 +154,7 @@ KERNEL_PUBLIC error_t uid_get_name(uid_t uid,char* buffer,u32 buffer_length){
 		spinlock_release_shared(&_uid_global_lock);
 		return ERROR_NOT_FOUND;
 	}
-	str_copy(buffer,uid_data->name->data,buffer_length);
+	str_copy(uid_data->name->data,buffer,buffer_length);
 	spinlock_release_shared(&_uid_global_lock);
 	return ERROR_OK;
 }

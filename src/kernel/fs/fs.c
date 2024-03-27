@@ -144,7 +144,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 		return ERROR_INVALID_HANDLE;
 	}
 	filesystem_t* fs=fs_handle->object;
-	str_copy((char*)(buffer->type),fs->descriptor->config->name,sizeof(buffer->type));
+	str_copy(fs->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
 	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
 	memcpy((void*)(buffer->guid),fs->guid,sizeof(buffer->guid));
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){

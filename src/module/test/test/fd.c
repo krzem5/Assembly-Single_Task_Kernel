@@ -103,17 +103,17 @@ static void _thread(void){
 	memset(buffer,'A',2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid root handle");
-	str_copy(buffer,"/",PAGE_SIZE);
+	str_copy("/",buffer,PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0xaabbccdd,buffer,0)==ERROR_INVALID_HANDLE);
 	// syscall_fd_open: create file => UNIMPLEMENTED
 	// syscall_fd_open: create directory => UNIMPLEMENTED
 	// syscall_fd_open: do not follow links, not found => ERROR_NOT_FOUND
 	// syscall_fd_open: do not follow links, found => !IS_ERROR(...)
 	TEST_GROUP("not found");
-	str_copy(buffer,"/invalid/path",PAGE_SIZE);
+	str_copy("/invalid/path",buffer,PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
-	str_copy(buffer,"/",PAGE_SIZE);
+	str_copy("/",buffer,PAGE_SIZE);
 	fd=syscall_fd_open(0,buffer,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(fd_get_node(fd)==root);

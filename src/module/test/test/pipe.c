@@ -39,13 +39,13 @@ static void _thread(void){
 	memset(buffer,'A',2*PAGE_SIZE);
 	TEST_ASSERT(syscall_pipe_create(buffer)==ERROR_INVALID_ARGUMENT(0));
 	TEST_GROUP("already present");
-	str_copy(buffer,"/dev",2*PAGE_SIZE);
+	str_copy("/dev",buffer,2*PAGE_SIZE);
 	TEST_ASSERT(syscall_pipe_create(buffer)==ERROR_ALREADY_PRESENT);
 	TEST_GROUP("not found");
-	str_copy(buffer,"/invalid/path/",2*PAGE_SIZE);
+	str_copy("/invalid/path/",buffer,2*PAGE_SIZE);
 	TEST_ASSERT(syscall_pipe_create(buffer)==ERROR_NOT_FOUND);
 	TEST_GROUP("create named");
-	str_copy(buffer,"/test-pipe",2*PAGE_SIZE);
+	str_copy("/test-pipe",buffer,2*PAGE_SIZE);
 	error_t pipe_fd=syscall_pipe_create(buffer);
 	TEST_ASSERT(!IS_ERROR(pipe_fd));
 	vfs_node_t* pipe=fd_get_node(pipe_fd);

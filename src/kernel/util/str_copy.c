@@ -3,7 +3,7 @@
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy(char* dst,const char* src,u64 max_length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy(const char* src,char* dst,u64 max_length){
 	if (!max_length){
 		return;
 	}

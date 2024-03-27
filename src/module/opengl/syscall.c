@@ -40,9 +40,9 @@ static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t i
 	}
 	opengl_driver_instance_t* driver_instance=driver_instance_handle->object;
 	buffer->opengl_version=driver_instance->driver->opengl_version;
-	str_copy((char*)(buffer->driver_name),driver_instance->driver->name,32);
-	str_copy((char*)(buffer->renderer_name),driver_instance->renderer,64);
-	str_copy((char*)(buffer->library),driver_instance->driver->library,128);
+	str_copy(driver_instance->driver->name,(char*)(buffer->driver_name),32);
+	str_copy(driver_instance->renderer,(char*)(buffer->renderer_name),64);
+	str_copy(driver_instance->driver->library,(char*)(buffer->library),128);
 	handle_release(driver_instance_handle);
 	return ERROR_OK;
 }

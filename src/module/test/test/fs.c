@@ -94,13 +94,13 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	memset(buffer,'A',2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(0,buffer)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid handle");
-	str_copy(buffer,"/",2*PAGE_SIZE);
+	str_copy("/",buffer,2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(0xaabbccdd,buffer)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("path already present");
-	str_copy(buffer,"/share",2*PAGE_SIZE);
+	str_copy("/share",buffer,2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(_test_fs_filesystem->handle.rb_node.key,buffer)==ERROR_ALREADY_PRESENT);
 	TEST_GROUP("correct args");
-	str_copy(buffer,"/test-mount-path",2*PAGE_SIZE);
+	str_copy("/test-mount-path",buffer,2*PAGE_SIZE);
 	// syscall_fs_mount: correct args => ERROR_OK
 	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }

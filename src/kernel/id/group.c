@@ -87,7 +87,7 @@ KERNEL_PUBLIC error_t gid_get_name(gid_t gid,char* buffer,u32 buffer_length){
 		spinlock_release_shared(&_gid_global_lock);
 		return ERROR_NOT_FOUND;
 	}
-	str_copy(buffer,gid_data->name->data,buffer_length);
+	str_copy(gid_data->name->data,buffer,buffer_length);
 	spinlock_release_shared(&_gid_global_lock);
 	return ERROR_OK;
 }

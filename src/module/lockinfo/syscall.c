@@ -37,10 +37,10 @@ static _Bool _syscall_lockinfo_get_data_descriptor(u32 index,u32 type_index,KERN
 	}
 	out->line=descriptor->line;
 	out->type_line=(lock_profiling_type_descriptors+type_index)->line;
-	str_copy((char*)(out->func),descriptor->func,64);
-	str_copy((char*)(out->type_func),(lock_profiling_type_descriptors+type_index)->func,64);
-	str_copy((char*)(out->name),descriptor->arg,128);
-	str_copy((char*)(out->type_name),((lock_profiling_type_descriptors+type_index)->arg?(lock_profiling_type_descriptors+type_index)->arg:""),128);
+	str_copy(descriptor->func,(char*)(out->func),64);
+	str_copy((lock_profiling_type_descriptors+type_index)->func,(char*)(out->type_func),64);
+	str_copy(descriptor->arg,(char*)(out->name),128);
+	str_copy(((lock_profiling_type_descriptors+type_index)->arg?(lock_profiling_type_descriptors+type_index)->arg:""),(char*)(out->type_name),128);
 	out->count=(descriptor->data+type_index)->count;
 	out->ticks=(descriptor->data+type_index)->ticks;
 	out->max_ticks=(descriptor->data+type_index)->max_ticks;

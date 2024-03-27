@@ -50,8 +50,8 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 	INFO("Forwarding permission request to the UI...");
 	ui_permission_request_t* request=omm_alloc(_ui_permission_request_allocator);
 	request->next=NULL;
-	str_copy(request->process,process->name->data,sizeof(request->process));
-	str_copy(request->handle,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name,sizeof(request->handle));
+	str_copy(process->name->data,request->process,sizeof(request->process));
+	str_copy(handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name,request->handle,sizeof(request->handle));
 	request->flags=flags;
 	request->event=event_create();
 	request->accepted=0;

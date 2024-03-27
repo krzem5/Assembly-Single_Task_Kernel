@@ -42,7 +42,7 @@ _Bool str_equal(const char* a,const char* b);
 
 
 
-void str_copy(char* dst,const char* src,u64 max_length);
+void str_copy(const char* src,char* dst,u64 max_length);
 
 
 
