@@ -1,13 +1,14 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
+#include <kernel/keyring/master_key.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
 #include <kernel/vfs/node.h>
 #include <kfs2/crc.h>
 #include <kfs2/structures.h>
@@ -379,10 +380,23 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 
 
 
+static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
+	if (!path||!streq(path,"/")){
+		return;
+	}
+	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	keyring_master_key_get_encrypted(extra_data->root_block.master_key,sizeof(extra_data->root_block.master_key));
+	kfs2_insert_crc(&(extra_data->root_block),sizeof(kfs2_root_block_t));
+	drive_write(fs->partition->drive,fs->partition->start_lba,&(extra_data->root_block),1);
+}
+
+
+
 static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 	"kfs2",
 	_kfs2_fs_deinit,
-	_kfs2_fs_load
+	_kfs2_fs_load,
+	_kfs2_fs_mount
 };
 
 
@@ -395,4 +409,10 @@ void kfs2_register_fs(void){
 	spinlock_init(&(_kfs2_vfs_node_allocator->lock));
 	_kfs2_fs_extra_data_allocator=omm_init("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,pmm_alloc_counter("omm_kfs2_extra_data"));
 	spinlock_init(&(_kfs2_fs_extra_data_allocator->lock));
+}
+
+
+
+KERNEL_PUBLIC void kfs2_update_root_block_master_key(filesystem_t* fs){
+	panic("kfs2_update_root_block_master_key");
 }

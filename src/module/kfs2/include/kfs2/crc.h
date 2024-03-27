@@ -8,6 +8,12 @@ u32 kfs2_calculate_crc(const void* data,u64 size);
 
 
 
+static KERNEL_INLINE void kfs2_insert_crc(void* data,u32 size){
+	*((u32*)(data+size-4))=kfs2_calculate_crc(data,size-4);
+}
+
+
+
 static KERNEL_INLINE _Bool kfs2_verify_crc(const void* data,u32 size){
 	return kfs2_calculate_crc(data,size-4)==*((const u32*)(data+size-4));
 }

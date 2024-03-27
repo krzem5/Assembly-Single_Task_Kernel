@@ -43,6 +43,9 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 		}
 		if (_vfs_root_node){
 			_vfs_root_node->fs->is_mounted=0;
+			if (_vfs_root_node->fs->descriptor->config->mount_callback){
+				_vfs_root_node->fs->descriptor->config->mount_callback(_vfs_root_node->fs,NULL);
+			}
 		}
 		_vfs_root_node=fs->root;
 		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
@@ -51,6 +54,9 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 		process_kernel->vfs_root=_vfs_root_node;
 		process_kernel->vfs_cwd=_vfs_root_node;
 		fs->is_mounted=1;
+		if (fs->descriptor->config->mount_callback){
+			fs->descriptor->config->mount_callback(fs,"/");
+		}
 		return ERROR_OK;
 	}
 	vfs_node_t* parent;
@@ -67,6 +73,9 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 	spinlock_release_exclusive(&(fs->root->lock));
 	vfs_node_attach_external_child(parent,fs->root);
 	fs->is_mounted=1;
+	if (fs->descriptor->config->mount_callback){
+		fs->descriptor->config->mount_callback(fs,path);
+	}
 	return ERROR_OK;
 }
 

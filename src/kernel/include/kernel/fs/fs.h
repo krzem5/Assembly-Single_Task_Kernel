@@ -13,6 +13,7 @@ typedef struct _FILESYSTEM_DESCRIPTOR_CONFIG{
 	const char* name;
 	void (*deinit_callback)(filesystem_t*);
 	filesystem_t* (*load_callback)(partition_t*);
+	void (*mount_callback)(filesystem_t*,const char*);
 } filesystem_descriptor_config_t;
 
 
