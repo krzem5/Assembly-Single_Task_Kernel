@@ -58,6 +58,7 @@ KERNEL_PUBLIC void* amm_alloc(u32 length){
 	u64 index=_size_to_index(((u64)length)+sizeof(amm_header_t));
 	amm_header_t* out=(index>=PAGE_SIZE?(void*)(pmm_alloc(index>>PAGE_SIZE_SHIFT,_amm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET):omm_alloc(_amm_allocators[index]));
 	out->index=index;
+	memset(out->data,length,0);
 	return out->data;
 }
 
@@ -68,11 +69,13 @@ KERNEL_PUBLIC void amm_dealloc(void* ptr){
 		return;
 	}
 	amm_header_t* header=(amm_header_t*)(((u64)ptr)-__builtin_offsetof(amm_header_t,data));
-	if (header->index>=PAGE_SIZE){
-		pmm_dealloc(((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET,header->index>>PAGE_SIZE_SHIFT,_amm_pmm_counter);
+	u64 index=header->index;
+	memset(header,0,_index_to_size(index));
+	if (index>=PAGE_SIZE){
+		pmm_dealloc(((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET,index>>PAGE_SIZE_SHIFT,_amm_pmm_counter);
 	}
 	else{
-		omm_dealloc(_amm_allocators[header->index],header);
+		omm_dealloc(_amm_allocators[index],header);
 	}
 }
 
@@ -91,7 +94,7 @@ KERNEL_PUBLIC void* amm_realloc(void* ptr,u32 length){
 	if (index==header->index){
 		return ptr;
 	}
-	u64 current_length=_index_to_size(header->index);
+	u64 current_length=_index_to_size(header->index)-sizeof(amm_header_t);
 	void* out=amm_alloc(length);
 	memcpy(out,ptr,(length<current_length?length:current_length));
 	amm_dealloc(ptr);
