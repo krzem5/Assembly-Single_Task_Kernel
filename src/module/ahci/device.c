@@ -9,6 +9,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "ahci"
 
@@ -144,8 +145,8 @@ static void _ahci_init(ahci_device_t* device,u8 port_index){
 	_device_wait_command(device,cmd_slot);
 	char serial_number_buffer[21];
 	char model_number_buffer[41];
-	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),10,serial_number_buffer);
-	memcpy_bswap16_trunc_spaces((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),20,model_number_buffer);
+	str_copy_byte_swap_from_padded((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+20),serial_number_buffer,10);
+	str_copy_byte_swap_from_padded((const u16*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET+54),model_number_buffer,20);
 	drive_config_t config={
 		&_ahci_drive_type_config,
 		device->controller->index,

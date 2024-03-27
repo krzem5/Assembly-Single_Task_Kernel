@@ -381,7 +381,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 
 
 static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
-	if (!path||!streq(path,"/")){
+	if (!path||!str_equal(path,"/")){
 		return;
 	}
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;

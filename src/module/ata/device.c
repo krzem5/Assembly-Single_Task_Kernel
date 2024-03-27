@@ -214,8 +214,8 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 	_send_atapi_command(device,(const u16*)atapi_command,8,(u16*)output_buffer);
 	char serial_number_buffer[21];
 	char model_number_buffer[41];
-	memcpy_bswap16_trunc_spaces(buffer+10,10,serial_number_buffer);
-	memcpy_bswap16_trunc_spaces(buffer+27,20,model_number_buffer);
+	str_copy_byte_swap_from_padded(buffer+10,serial_number_buffer,10);
+	str_copy_byte_swap_from_padded(buffer+27,model_number_buffer,20);
 	drive_config_t config={
 		(device->is_atapi?&_atapi_drive_type_config:&_ata_drive_type_config),
 		_ata_device_index,

@@ -80,12 +80,12 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	}
 	TEST_ASSERT(syscall_fs_get_data(_test_fs_filesystem->handle.rb_node.key,buffer,2*PAGE_SIZE)==ERROR_OK);
 	const filesystem_user_data_t* fs_user_data=(const void*)buffer;
-	TEST_ASSERT(streq(fs_user_data->type,_test_fs_filesystem_descriptor_config.name));
+	TEST_ASSERT(str_equal(fs_user_data->type,_test_fs_filesystem_descriptor_config.name));
 	TEST_ASSERT(!fs_user_data->partition);
 	for (u32 i=0;i<16;i++){
 		TEST_ASSERT(fs_user_data->guid[i]==i*17);
 	}
-	TEST_ASSERT(streq(fs_user_data->mount_path,""));
+	TEST_ASSERT(str_equal(fs_user_data->mount_path,""));
 	TEST_FUNC("syscall_fs_mount");
 	TEST_GROUP("empty path");
 	buffer[0]=0;
@@ -94,13 +94,13 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	memset(buffer,'A',2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(0,buffer)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid handle");
-	strcpy(buffer,"/",2*PAGE_SIZE);
+	str_copy(buffer,"/",2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(0xaabbccdd,buffer)==ERROR_INVALID_HANDLE);
 	TEST_GROUP("path already present");
-	strcpy(buffer,"/share",2*PAGE_SIZE);
+	str_copy(buffer,"/share",2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fs_mount(_test_fs_filesystem->handle.rb_node.key,buffer)==ERROR_ALREADY_PRESENT);
 	TEST_GROUP("correct args");
-	strcpy(buffer,"/test-mount-path",2*PAGE_SIZE);
+	str_copy(buffer,"/test-mount-path",2*PAGE_SIZE);
 	// syscall_fs_mount: correct args => ERROR_OK
 	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }

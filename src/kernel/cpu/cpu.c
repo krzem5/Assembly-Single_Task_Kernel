@@ -14,7 +14,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/topology/topology.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/spinloop.h>
 #define KERNEL_LOG_NAME "cpu"
 
 

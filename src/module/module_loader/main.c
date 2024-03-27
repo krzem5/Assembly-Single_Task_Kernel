@@ -32,15 +32,15 @@ static void _load_modules_from_order_file(_Bool early){
 		if (tag->type!=CONFIG_TAG_TYPE_NONE&&tag->type!=CONFIG_TAG_TYPE_STRING){
 			panic("Invalid tag type");
 		}
-		if (early!=(tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"early"))){
+		if (early!=(tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"early"))){
 			continue;
 		}
 #ifdef KERNEL_COVERAGE
-		if (tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"not-test")){
+		if (tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"not-test")){
 			continue;
 		}
 #else
-		if (tag->type==CONFIG_TAG_TYPE_STRING&&streq(tag->string->data,"test")){
+		if (tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"test")){
 			continue;
 		}
 #endif

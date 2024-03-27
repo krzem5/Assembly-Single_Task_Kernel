@@ -60,7 +60,7 @@ _Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool
 	const char* elf_string_table=file_base+section_header->sh_offset;
 	for (u16 i=0;i<elf_header->e_shnum;i++){
 		section_header=file_base+elf_header->e_shoff+i*elf_header->e_shentsize;
-		if (streq(elf_string_table+section_header->sh_name,".signature")){
+		if (str_equal(elf_string_table+section_header->sh_name,".signature")){
 			break;
 		}
 		section_header=NULL;
@@ -115,7 +115,7 @@ _Bool signature_verify_user(const char* name,const mmap_region_t* region){
 	const char* elf_string_table=file_base+section_header->sh_offset;
 	for (u16 i=0;i<elf_header->e_shnum;i++){
 		section_header=file_base+elf_header->e_shoff+i*elf_header->e_shentsize;
-		if (streq(elf_string_table+section_header->sh_name,".signature")){
+		if (str_equal(elf_string_table+section_header->sh_name,".signature")){
 			break;
 		}
 		section_header=NULL;

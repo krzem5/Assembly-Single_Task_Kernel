@@ -37,7 +37,7 @@ KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const open
 	LOG("Creating new OpenGL driver instance '%s/%s'...",driver->name,renderer);
 	opengl_driver_instance_t* out=omm_alloc(_opengl_driver_instance_allocator);
 	handle_new(out,opengl_driver_instance_handle_type,&(out->handle));
-	strcpy(out->renderer,renderer,64);
+	str_copy(out->renderer,renderer,64);
 	out->driver=driver;
 	out->ctx=ctx;
 	handle_finish_setup(&(out->handle));

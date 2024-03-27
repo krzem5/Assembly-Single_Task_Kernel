@@ -5,7 +5,7 @@
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE strcpy(char* dst,const char* src,u64 max_length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy(char* dst,const char* src,u64 max_length){
 	if (!max_length){
 		return;
 	}
@@ -20,7 +20,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE strcpy(char* dst,const char* src,u64 max_le
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE memcpy_trunc_spaces(char* dst,const char* src,u64 length){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy_from_padded(const char* src,char* dst,u64 length){
 	for (;length&&src[length-1]==32;length--);
 	memcpy(dst,src,length);
 	dst[length]=0;
@@ -28,7 +28,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE memcpy_trunc_spaces(char* dst,const char* s
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE memcpy_bswap16_trunc_spaces(const u16* src,u64 length,char* dst){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE str_copy_byte_swap_from_padded(const u16* src,char* dst,u64 length){
 	u16* dst16=(u16*)dst;
 	for (u64 i=0;i<length;i++){
 		dst16[i]=__builtin_bswap16(src[i]);

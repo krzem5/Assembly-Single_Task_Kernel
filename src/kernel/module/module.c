@@ -116,7 +116,7 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			section_header=ctx->data+ctx->elf_header->e_shoff+section_header->sh_link*ctx->elf_header->e_shentsize;
 			ctx->elf_symbol_string_table=ctx->data+section_header->sh_offset;
 		}
-		else if (streq(ctx->elf_string_table+section_header->sh_name,".module")){
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module")){
 			if (section_header->sh_size!=sizeof(module_descriptor_t)){
 				ERROR("'.module' section has wrong size");
 				return 0;
@@ -124,7 +124,7 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			ctx->module->descriptor=(void*)(section_header->sh_addr);
 		}
 #ifdef KERNEL_COVERAGE
-		else if (streq(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
 			ctx->module->gcov_info_base=section_header->sh_addr;
 			ctx->module->gcov_info_size=section_header->sh_size;
 			INFO("Found .gcov_info section at %p (%u file%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
@@ -357,7 +357,7 @@ KERNEL_PUBLIC module_t* module_lookup(const char* name){
 	HANDLE_FOREACH(module_handle_type){
 		handle_acquire(handle);
 		module_t* module=handle->object;
-		if (streq(module->name->data,name)){
+		if (str_equal(module->name->data,name)){
 			handle_release(handle);
 			return module;
 		}

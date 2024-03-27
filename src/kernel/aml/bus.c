@@ -336,7 +336,7 @@ static _Bool _match_device(const aml_bus_device_driver_t* driver,aml_bus_device_
 	if (driver->address_type==AML_BUS_ADDRESS_TYPE_HID){
 		return driver->address.hid==device->address.hid;
 	}
-	return streq(driver->address.hid_str,device->address.hid_str->data);
+	return str_equal(driver->address.hid_str,device->address.hid_str->data);
 }
 
 

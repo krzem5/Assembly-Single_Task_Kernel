@@ -25,11 +25,12 @@ volatile u32 _syscall_table_list_length=0;
 
 
 error_t syscall_syscall_table_get_offset(KERNEL_USER_POINTER const char* table_name){
-	if (!syscall_get_string_length((const char*)table_name)){
+	u64 string_length=syscall_get_string_length((const char*)table_name);
+	if (!string_length){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	for (u32 i=0;i<_syscall_table_list_length;i++){
-		if (_syscall_table_list[i]&&streq(_syscall_table_list[i]->name,(const char*)table_name)){
+		if (_syscall_table_list[i]&&str_equal(_syscall_table_list[i]->name,(const char*)table_name)){
 			return ((u64)(_syscall_table_list[i]->index))<<32;
 		}
 	}

@@ -2,7 +2,7 @@
 
 
 
-KERNEL_PUBLIC _Bool KERNEL_NOCOVERAGE streq(const char* a,const char* b){
+KERNEL_PUBLIC _Bool KERNEL_NOCOVERAGE str_equal(const char* a,const char* b){
 	u64 padding=(-((u64)a))&7;
 	if (padding){
 		for (u64 i=0;i<padding;i++){

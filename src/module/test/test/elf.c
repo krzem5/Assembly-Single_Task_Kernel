@@ -28,7 +28,7 @@ static void _syscall_verify_elf_data(u32 argc,const char*const* argv,const char*
 		return;
 	}
 	for (u32 i=0;i<argc;i++){
-		TEST_ASSERT(streq(argv[i],_test_elf_expected_argv[i]));
+		TEST_ASSERT(str_equal(argv[i],_test_elf_expected_argv[i]));
 	}
 	u32 environ_length=0;
 	for (;environ[environ_length];environ_length++);
@@ -37,7 +37,7 @@ static void _syscall_verify_elf_data(u32 argc,const char*const* argv,const char*
 		return;
 	}
 	for (u32 i=0;i<environ_length;i++){
-		TEST_ASSERT(streq(environ[i],_test_elf_expected_environ[i]));
+		TEST_ASSERT(str_equal(environ[i],_test_elf_expected_environ[i]));
 	}
 	while (auxv[0]!=AT_NULL){
 		if (auxv[0]==AT_PAGESZ){
@@ -47,7 +47,7 @@ static void _syscall_verify_elf_data(u32 argc,const char*const* argv,const char*
 			TEST_ASSERT(!auxv[1]);
 		}
 		else if (auxv[0]==AT_PLATFORM){
-			TEST_ASSERT(streq((const char*)auxv[1],ELF_AUXV_PLATFORM));
+			TEST_ASSERT(str_equal((const char*)auxv[1],ELF_AUXV_PLATFORM));
 		}
 		else if (auxv[0]==AT_HWCAP){
 			TEST_ASSERT(auxv[1]==test_elf_get_correct_hwcap());
@@ -56,7 +56,7 @@ static void _syscall_verify_elf_data(u32 argc,const char*const* argv,const char*
 			TEST_ASSERT(!auxv[1]);
 		}
 		else if (auxv[0]==AT_EXECFN){
-			TEST_ASSERT(streq((const char*)auxv[1],"/bin/test_elf_send_results"));
+			TEST_ASSERT(str_equal((const char*)auxv[1],"/bin/test_elf_send_results"));
 		}
 		auxv+=2;
 	}

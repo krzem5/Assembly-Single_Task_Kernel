@@ -103,17 +103,17 @@ static void _thread(void){
 	memset(buffer,'A',2*PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid root handle");
-	strcpy(buffer,"/",PAGE_SIZE);
+	str_copy(buffer,"/",PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0xaabbccdd,buffer,0)==ERROR_INVALID_HANDLE);
 	// syscall_fd_open: create file => UNIMPLEMENTED
 	// syscall_fd_open: create directory => UNIMPLEMENTED
 	// syscall_fd_open: do not follow links, not found => ERROR_NOT_FOUND
 	// syscall_fd_open: do not follow links, found => !IS_ERROR(...)
 	TEST_GROUP("not found");
-	strcpy(buffer,"/invalid/path",PAGE_SIZE);
+	str_copy(buffer,"/invalid/path",PAGE_SIZE);
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
-	strcpy(buffer,"/",PAGE_SIZE);
+	str_copy(buffer,"/",PAGE_SIZE);
 	fd=syscall_fd_open(0,buffer,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(fd_get_node(fd)==root);
@@ -256,7 +256,7 @@ static void _thread(void){
 	TEST_ASSERT(stat->time_birth==test_node->time_birth);
 	TEST_ASSERT(stat->gid==test_node->gid);
 	TEST_ASSERT(stat->uid==test_node->uid);
-	TEST_ASSERT(streq(stat->name,test_node->name->data));
+	TEST_ASSERT(str_equal(stat->name,test_node->name->data));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_dup");
 	// syscall_fd_dup: UNIMPLEMENTED
@@ -282,7 +282,7 @@ static void _thread(void){
 	fd=fd_from_node(test_node,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_path(fd,buffer,2*PAGE_SIZE)==4);
-	TEST_ASSERT(streq(buffer,"/dev"));
+	TEST_ASSERT(str_equal(buffer,"/dev"));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_start");
 	TEST_GROUP("invalid handle");
@@ -332,7 +332,7 @@ static void _thread(void){
 	TEST_ASSERT(!IS_ERROR(fd_iter));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_ASSERT(syscall_fd_iter_get(fd_iter,buffer,2*PAGE_SIZE)==3);
-	TEST_ASSERT(streq(buffer,"abc"));
+	TEST_ASSERT(str_equal(buffer,"abc"));
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_FUNC("syscall_fd_iter_next");
 	TEST_GROUP("invalid handle");

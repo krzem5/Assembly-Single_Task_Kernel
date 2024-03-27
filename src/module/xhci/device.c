@@ -8,6 +8,7 @@
 #include <kernel/usb/controller.h>
 #include <kernel/usb/device.h>
 #include <kernel/usb/structures.h>
+#include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #include <xhci/device.h>
 #include <xhci/registers.h>

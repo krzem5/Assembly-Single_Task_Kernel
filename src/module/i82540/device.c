@@ -15,6 +15,7 @@
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "i82540"
 

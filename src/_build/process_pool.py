@@ -41,8 +41,8 @@ class ProcessPoolCommand(object):
 		sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(self.name,"utf-8")+b"\x1b[0m\n"+output)
 		sys.stdout.buffer.flush()
 		if (error):
-			if (self.name in self.pool._file_hash_list):
-				del self.pool._file_hash_list[self.name]
+			if (self.name.split(" ")[-1] in self.pool._file_hash_list):
+				del self.pool._file_hash_list[self.name.split(" ")[-1]]
 			elif (self.file.startswith("build") and os.path.exists(self.file)):
 				os.remove(self.file)
 			self.pool._error=True

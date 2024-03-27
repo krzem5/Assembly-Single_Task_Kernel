@@ -66,7 +66,7 @@ static void _thread(void){
 	TEST_ASSERT(syscall_uid_get_name(0xaabbccdd,buffer,PAGE_SIZE)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
 	TEST_ASSERT(syscall_uid_get_name(0,buffer,PAGE_SIZE)==ERROR_OK);
-	TEST_ASSERT(streq(buffer,"root"));
+	TEST_ASSERT(str_equal(buffer,"root"));
 	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }
 
@@ -122,7 +122,7 @@ void test_uid(void){
 	TEST_ASSERT(uid_get_name(0xaabbccdd,buffer,256)==ERROR_NOT_FOUND);
 	TEST_GROUP("correct args");
 	TEST_ASSERT(uid_get_name(0,buffer,256)==ERROR_OK);
-	TEST_ASSERT(streq(buffer,"root"));
+	TEST_ASSERT(str_equal(buffer,"root"));
 	TEST_FUNC("uid_get_flags");
 	TEST_GROUP("invalid uid");
 	TEST_ASSERT(uid_get_flags(0xaabbccdd)==ERROR_NOT_FOUND);

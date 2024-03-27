@@ -256,7 +256,7 @@ static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	context->next=driver->lun_context;
 	driver->lun_context=context;
 	char model_number_buffer[41];
-	memcpy_trunc_spaces(model_number_buffer,inquiry_data->product,16);
+	str_copy_from_padded(inquiry_data->product,model_number_buffer,16);
 	drive_config_t config={
 		&_usb_msc_drive_type_config,
 		device_index,

@@ -11,6 +11,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
+#include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "lock_profiling"
 

@@ -358,9 +358,9 @@ def _compile_kernel():
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
 	error=pool.wait()
+	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
 		sys.exit(1)
-	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	return True
 
 

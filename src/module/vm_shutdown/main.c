@@ -13,7 +13,7 @@ static void _qemu_shutdown_function(void){
 
 
 static _Bool _init(module_t* module){
-	if (bios_data.manufacturer->length==4&&streq(bios_data.manufacturer->data,"QEMU")){
+	if (bios_data.manufacturer->length==4&&str_equal(bios_data.manufacturer->data,"QEMU")){
 		shutdown_register_shutdown_function(_qemu_shutdown_function,1);
 		return 1;
 	}

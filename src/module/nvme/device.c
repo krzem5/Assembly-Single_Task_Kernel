@@ -8,6 +8,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #include <nvme/device.h>
 #include <nvme/registers.h>
@@ -152,8 +153,8 @@ static void _load_namespace(nvme_device_t* device,u32 namespace_id,const nvme_id
 	INFO("Found valid namespace: %u",namespace_id);
 	char serial_number_buffer[21];
 	char model_number_buffer[41];
-	memcpy_trunc_spaces(serial_number_buffer,(const char*)(controller_identify_data->controller.sn),20);
-	memcpy_trunc_spaces(model_number_buffer,(const char*)(controller_identify_data->controller.mn),40);
+	str_copy_from_padded((const char*)(controller_identify_data->controller.sn),serial_number_buffer,20);
+	str_copy_from_padded((const char*)(controller_identify_data->controller.mn),model_number_buffer,40);
 	drive_config_t config={
 		&_nvme_drive_type_config,
 		device->index,

@@ -8,7 +8,7 @@
 
 
 static _Bool _iso9660_load_partitions(drive_t* drive){
-	if (drive->block_size!=2048||(!streq(drive->type->name,"ATA")&&!streq(drive->type->name,"ATAPI"))){
+	if (drive->block_size!=2048||(!str_equal(drive->type->name,"ATA")&&!str_equal(drive->type->name,"ATAPI"))){
 		return 0;
 	}
 	u64 block_index=16;
@@ -24,7 +24,7 @@ static _Bool _iso9660_load_partitions(drive_t* drive){
 		switch (volume_descriptor->type){
 			case 1:
 				char name_buffer[32];
-				memcpy_trunc_spaces(name_buffer,volume_descriptor->primary_volume_descriptor.volume_name,32);
+				str_copy_from_padded(volume_descriptor->primary_volume_descriptor.volume_name,name_buffer,32);
 				partition_create(drive,block_index-16,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size);
 				return 1;
 			case 255:

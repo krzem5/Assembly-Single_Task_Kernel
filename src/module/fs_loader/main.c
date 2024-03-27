@@ -20,7 +20,7 @@ static filesystem_t* _match_fs(const char* guid,const char* type){
 		handle_acquire(handle);
 		filesystem_t* fs=handle->object;
 		if (guid){
-			if (streq(guid,"boot")){
+			if (str_equal(guid,"boot")){
 				for (u8 i=0;i<16;i++){
 					if (fs->guid[i]!=kernel_data.boot_fs_guid[i]){
 						goto _check_next_fs;
@@ -31,7 +31,7 @@ static filesystem_t* _match_fs(const char* guid,const char* type){
 				ERROR("Unimplemented: _match_fs.guid");
 			}
 		}
-		if (type&&!streq(fs->descriptor->config->name,type)){
+		if (type&&!str_equal(fs->descriptor->config->name,type)){
 			goto _check_next_fs;
 		}
 		return fs;
@@ -67,25 +67,25 @@ static _Bool _init(module_t* module){
 		_Bool required=1;
 		for (u32 j=0;j<tag->array->length;j++){
 			config_tag_t* subtag=tag->array->data[j];
-			if (streq(subtag->name->data,"path")){
+			if (str_equal(subtag->name->data,"path")){
 				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
 					panic("Invalid tag type");
 				}
 				path=subtag->string->data;
 			}
-			else if (streq(subtag->name->data,"guid")){
+			else if (str_equal(subtag->name->data,"guid")){
 				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
 					panic("Invalid tag type");
 				}
 				guid=subtag->string->data;
 			}
-			else if (streq(subtag->name->data,"type")){
+			else if (str_equal(subtag->name->data,"type")){
 				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
 					panic("Invalid tag type");
 				}
 				type=subtag->string->data;
 			}
-			else if (streq(subtag->name->data,"not-required")){
+			else if (str_equal(subtag->name->data,"not-required")){
 				required=0;
 			}
 		}
@@ -97,7 +97,7 @@ static _Bool _init(module_t* module){
 			ERROR("Filesystem not found");
 		}
 		else if (fs){
-			vfs_mount(fs,(streq(path,"/")?NULL:path),0);
+			vfs_mount(fs,(str_equal(path,"/")?NULL:path),0);
 		}
 	}
 	config_tag_delete(root_tag);

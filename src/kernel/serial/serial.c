@@ -7,7 +7,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/serial/serial.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/spinloop.h>
 #define KERNEL_LOG_NAME "serial"
 
 
