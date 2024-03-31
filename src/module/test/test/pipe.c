@@ -36,7 +36,7 @@ static void _thread(void){
 	buffer[0]=0;
 	TEST_ASSERT(syscall_pipe_create(buffer)==ERROR_INVALID_ARGUMENT(0));
 	TEST_GROUP("path too long");
-	mem_fill(buffer,'A',2*PAGE_SIZE);
+	mem_fill(buffer,2*PAGE_SIZE,'A');
 	TEST_ASSERT(syscall_pipe_create(buffer)==ERROR_INVALID_ARGUMENT(0));
 	TEST_GROUP("already present");
 	str_copy("/dev",buffer,2*PAGE_SIZE);
@@ -94,7 +94,7 @@ void test_pipe(void){
 	random_generate(buffer,TEST_BUFFER_SIZE);
 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
 	char buffer2[TEST_BUFFER_SIZE];
-	mem_fill(buffer2,0,TEST_BUFFER_SIZE);
+	mem_fill(buffer2,TEST_BUFFER_SIZE,0);
 	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
 	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
 		TEST_ASSERT(buffer2[i]==buffer[i]);
@@ -102,12 +102,12 @@ void test_pipe(void){
 	TEST_GROUP("peek");
 	random_generate(buffer,TEST_BUFFER_SIZE);
 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
-	mem_fill(buffer2,0,TEST_BUFFER_SIZE);
+	mem_fill(buffer2,TEST_BUFFER_SIZE,0);
 	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,VFS_NODE_FLAG_PIPE_PEEK)==TEST_BUFFER_SIZE);
 	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
 		TEST_ASSERT(buffer2[i]==buffer[i]);
 	}
-	mem_fill(buffer2,0,TEST_BUFFER_SIZE);
+	mem_fill(buffer2,TEST_BUFFER_SIZE,0);
 	TEST_ASSERT(vfs_node_read(pipe,0,buffer2,TEST_BUFFER_SIZE,0)==TEST_BUFFER_SIZE);
 	for (u32 i=0;i<TEST_BUFFER_SIZE;i++){
 		TEST_ASSERT(buffer2[i]==buffer[i]);

@@ -17,6 +17,9 @@ memcpy:
 
 memset:
 	push rdi
+	mov rcx, rdx
+	mov rdx, rsi
+	mov rsi, rcx
 	call mem_fill
 	pop rax
 	ret

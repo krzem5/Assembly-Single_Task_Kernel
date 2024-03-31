@@ -79,7 +79,7 @@ _signature_error:
 		goto _signature_error;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
-	mem_fill(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
+	mem_fill(file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE,0);
 	if (!keyring_key_process_rsa(key,value,value)){
 		rsa_number_delete(value);
 		goto _signature_error;
@@ -133,7 +133,7 @@ _signature_error:
 		goto _signature_error;
 	}
 	rsa_number_t* value=rsa_number_create_from_bytes(&(key->data.rsa.state),file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH,(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH)/sizeof(u32));
-	mem_fill(file_base+section_header->sh_offset,0,SIGNATURE_SECTION_SIZE);
+	mem_fill(file_base+section_header->sh_offset,SIGNATURE_SECTION_SIZE,0);
 	if (!keyring_key_process_rsa(key,value,value)){
 		rsa_number_delete(value);
 		goto _signature_error;

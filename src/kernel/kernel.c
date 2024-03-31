@@ -20,7 +20,7 @@
 static void _unmap_section(u64 start,u64 end){
 	INFO("Unmapping region %p - %p [%v]",start,end,pmm_align_up_address(end-start));
 	vmm_adjust_flags(&vmm_kernel_pagemap,start,VMM_PAGE_FLAG_READWRITE,0,pmm_align_up_address(end-start)>>PAGE_SIZE_SHIFT,1);
-	mem_fill((void*)start,0,end-start);
+	mem_fill((void*)start,end-start,0);
 	for (;start<end;start+=PAGE_SIZE){
 		vmm_unmap_page(&vmm_kernel_pagemap,start);
 	}

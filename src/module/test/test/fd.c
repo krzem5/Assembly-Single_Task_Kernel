@@ -100,7 +100,7 @@ static void _thread(void){
 	buffer[0]=0;
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("path too long");
-	mem_fill(buffer,'A',2*PAGE_SIZE);
+	mem_fill(buffer,2*PAGE_SIZE,'A');
 	TEST_ASSERT(syscall_fd_open(0,buffer,0)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid root handle");
 	str_copy("/",buffer,PAGE_SIZE);

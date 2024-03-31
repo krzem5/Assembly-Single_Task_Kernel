@@ -68,7 +68,7 @@ static thread_t* _thread_alloc(process_t* process){
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	thread_t* out=omm_alloc(_thread_allocator);
-	mem_fill(out,0,sizeof(thread_t));
+	mem_fill(out,sizeof(thread_t),0);
 	out->header.current_thread=out;
 	handle_new(out,thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();

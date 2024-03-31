@@ -41,7 +41,7 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 
 static xhci_ring_t* _alloc_ring(_Bool cs){
 	xhci_ring_t* out=omm_alloc(_xhci_ring_allocator);
-	mem_fill(out,0,sizeof(xhci_ring_t));
+	mem_fill(out,sizeof(xhci_ring_t),0);
 	spinlock_init(&(out->lock));
 	out->cs=cs;
 	return out;

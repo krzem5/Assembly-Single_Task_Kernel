@@ -72,8 +72,8 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 		aes_encrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
 	}
 	aes_deinit(&state);
-	mem_fill(platform_key,0,32);
+	mem_fill(platform_key,32,0);
 	if (master_key){
-		mem_fill(master_key,0,32);
+		mem_fill(master_key,32,0);
 	}
 }

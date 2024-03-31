@@ -34,7 +34,7 @@ void KERNEL_EARLY_EXEC acl_init(void){
 KERNEL_PUBLIC acl_t* acl_create(void){
 	acl_t* out=omm_alloc(_acl_allocator);
 	spinlock_init(&(out->lock));
-	mem_fill(out->cache,0,ACL_PROCESS_CACHE_SIZE*sizeof(acl_cache_entry_t));
+	mem_fill(out->cache,ACL_PROCESS_CACHE_SIZE*sizeof(acl_cache_entry_t),0);
 	rb_tree_init(&(out->tree));
 	return out;
 }

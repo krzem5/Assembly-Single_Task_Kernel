@@ -91,7 +91,7 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	buffer[0]=0;
 	TEST_ASSERT(syscall_fs_mount(0,buffer)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("path too long");
-	mem_fill(buffer,'A',2*PAGE_SIZE);
+	mem_fill(buffer,2*PAGE_SIZE,'A');
 	TEST_ASSERT(syscall_fs_mount(0,buffer)==ERROR_INVALID_ARGUMENT(1));
 	TEST_GROUP("invalid handle");
 	str_copy("/",buffer,2*PAGE_SIZE);

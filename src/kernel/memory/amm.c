@@ -70,7 +70,7 @@ KERNEL_PUBLIC void amm_dealloc(void* ptr){
 	}
 	amm_header_t* header=(amm_header_t*)(((u64)ptr)-__builtin_offsetof(amm_header_t,data));
 	u64 index=header->index;
-	mem_fill(header,0,_index_to_size(index));
+	mem_fill(header,_index_to_size(index),0);
 	if (index>=PAGE_SIZE){
 		pmm_dealloc(((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET,index>>PAGE_SIZE_SHIFT,_amm_pmm_counter);
 	}

@@ -94,11 +94,11 @@ void net_arp_init(void){
 
 KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking){
 	if (!address){
-		mem_fill(out,0,sizeof(mac_address_t));
+		mem_fill(out,sizeof(mac_address_t),0);
 		return 1;
 	}
 	if (address==0xffffffff){
-		mem_fill(out,0xff,sizeof(mac_address_t));
+		mem_fill(out,sizeof(mac_address_t),0xff);
 		return 1;
 	}
 	spinlock_acquire_exclusive(&_net_arp_cache_lock);
@@ -133,7 +133,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REQUEST);
 		mem_copy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
 		arp_packet->spa=__builtin_bswap32(net_info_get_address());
-		mem_fill(arp_packet->tha,0,sizeof(mac_address_t));
+		mem_fill(arp_packet->tha,sizeof(mac_address_t),0);
 		arp_packet->tpa=__builtin_bswap32(address);
 		network_layer1_send_packet(packet);
 	}

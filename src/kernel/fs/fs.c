@@ -100,7 +100,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->partition=NULL;
 	out->extra_data=NULL;
 	out->root=NULL;
-	mem_fill(out->guid,0,16);
+	mem_fill(out->guid,16,0);
 	out->is_mounted=0;
 	handle_finish_setup(&(out->handle));
 	return out;

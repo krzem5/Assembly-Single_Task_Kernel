@@ -39,7 +39,7 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 	_net_dhcp_current_xid++;
 	option_size=(option_size+1)&0xfffffffe;
 	net_dhcp_packet_t* out=amm_alloc(sizeof(net_dhcp_packet_t)+option_size);
-	mem_fill(out,0,sizeof(net_dhcp_packet_t)+option_size);
+	mem_fill(out,sizeof(net_dhcp_packet_t)+option_size,0);
 	out->op=NET_DHCP_OP_BOOTREQUEST;
 	out->htype=1;
 	out->hlen=6;
