@@ -12,6 +12,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "uid"

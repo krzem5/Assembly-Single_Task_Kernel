@@ -2,7 +2,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/notification/notification.h>
-#include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
 #define KERNEL_LOG_NAME "sysfs_handle"

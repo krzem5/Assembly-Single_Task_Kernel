@@ -11,7 +11,8 @@
 #include <kernel/random/random.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <test/test.h>

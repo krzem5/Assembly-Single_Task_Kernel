@@ -12,7 +12,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
 

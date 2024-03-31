@@ -9,7 +9,7 @@
 #include <kernel/timer/timer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <net/dns.h>
 #include <net/info.h>

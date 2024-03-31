@@ -9,7 +9,6 @@
 #include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "keyring"
 
 

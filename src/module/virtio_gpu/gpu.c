@@ -6,7 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/resource/resource.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <ui/display.h>
 #include <virgl/virgl.h>
 #include <virgl/protocol.h>

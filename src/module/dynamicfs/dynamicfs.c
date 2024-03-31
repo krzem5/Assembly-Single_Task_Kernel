@@ -4,7 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 

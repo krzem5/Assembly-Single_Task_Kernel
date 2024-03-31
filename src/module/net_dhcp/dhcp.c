@@ -10,7 +10,7 @@
 #include <kernel/socket/socket.h>
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <net/dhcp.h>
 #include <net/info.h>

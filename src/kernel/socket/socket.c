@@ -13,7 +13,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "socket"

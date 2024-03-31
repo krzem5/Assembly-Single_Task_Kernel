@@ -2,7 +2,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/password/pbkdf2.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "pbkdf2"
 
 

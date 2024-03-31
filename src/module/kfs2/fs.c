@@ -7,7 +7,8 @@
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kfs2/crc.h>

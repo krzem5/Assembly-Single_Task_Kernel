@@ -6,7 +6,6 @@
 #include <kernel/network/layer2.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <net/arp.h>
 #include <net/checksum.h>
 #include <net/ip4.h>

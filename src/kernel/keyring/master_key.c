@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "keyring_master_key"
 

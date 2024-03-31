@@ -7,7 +7,7 @@
 #include <kernel/timer/timer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <net/arp.h>
 #include <net/info.h>
 #include <net/ip4.h>

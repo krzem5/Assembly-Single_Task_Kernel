@@ -5,6 +5,7 @@
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
 #include <kernel/types.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "module_loader"

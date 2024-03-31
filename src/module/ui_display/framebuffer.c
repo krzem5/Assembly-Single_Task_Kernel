@@ -7,7 +7,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <ui/display.h>
 #include <ui/framebuffer.h>
 #define KERNEL_LOG_NAME "ui_framebuffer"

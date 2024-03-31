@@ -4,7 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <ui/display.h>
 #define KERNEL_LOG_NAME "ui_display_info"
 

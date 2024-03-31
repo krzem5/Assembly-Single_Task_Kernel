@@ -5,7 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <test/test.h>
 #define KERNEL_LOG_NAME "test"
 

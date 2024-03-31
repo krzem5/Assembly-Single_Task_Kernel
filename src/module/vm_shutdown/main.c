@@ -2,7 +2,7 @@
 #include <kernel/io/io.h>
 #include <kernel/module/module.h>
 #include <kernel/shutdown/shutdown.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 
 
 

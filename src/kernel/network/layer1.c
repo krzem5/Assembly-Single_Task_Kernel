@@ -11,7 +11,7 @@
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "network_layer1"
 
 

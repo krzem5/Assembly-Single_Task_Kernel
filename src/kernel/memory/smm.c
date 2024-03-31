@@ -1,7 +1,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 
 
 

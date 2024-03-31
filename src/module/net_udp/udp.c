@@ -5,6 +5,7 @@
 #include <kernel/socket/port.h>
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <net/checksum.h>
 #include <net/ip4.h>

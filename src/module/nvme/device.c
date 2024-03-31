@@ -8,8 +8,9 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/spinloop.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 #include <nvme/device.h>
 #include <nvme/registers.h>
 #define KERNEL_LOG_NAME "nvme"

@@ -10,7 +10,7 @@
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #include <kernel/util/spinloop.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 #define KERNEL_LOG_NAME "ahci"
 
 

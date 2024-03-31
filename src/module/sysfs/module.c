@@ -4,7 +4,6 @@
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
-#include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #include <sysfs/fs.h>

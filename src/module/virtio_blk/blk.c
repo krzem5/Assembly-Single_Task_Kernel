@@ -7,7 +7,6 @@
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <virtio/blk.h>
 #include <virtio/blk_registers.h>
 #include <virtio/registers.h>

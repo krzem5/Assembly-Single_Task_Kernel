@@ -2,7 +2,7 @@
 #include <kernel/log/log.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "initramfs_partition"
 

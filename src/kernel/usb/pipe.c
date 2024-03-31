@@ -2,7 +2,6 @@
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
 #include <kernel/usb/structures.h>
-#include <kernel/util/util.h>
 
 
 

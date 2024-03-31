@@ -9,6 +9,8 @@
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
 #include <kernel/usb/usb.h>
+#include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "usb_msc_driver"
 

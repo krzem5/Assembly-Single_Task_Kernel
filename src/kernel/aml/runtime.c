@@ -12,6 +12,7 @@
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "aml_runtime"
 

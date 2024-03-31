@@ -10,7 +10,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "acl"
 
 

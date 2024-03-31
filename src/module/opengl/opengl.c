@@ -7,6 +7,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
 #define KERNEL_LOG_NAME "opengl"

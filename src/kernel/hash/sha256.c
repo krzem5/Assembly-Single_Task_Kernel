@@ -1,6 +1,6 @@
 #include <kernel/hash/sha256.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 
 
 

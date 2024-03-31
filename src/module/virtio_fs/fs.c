@@ -7,7 +7,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <virtio/fs.h>
 #include <virtio/fs_registers.h>
 #include <virtio/registers.h>

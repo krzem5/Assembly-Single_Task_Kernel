@@ -6,6 +6,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <opengl/opengl.h>
 #include <opengl/protocol.h>

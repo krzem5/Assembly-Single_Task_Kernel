@@ -2,7 +2,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/string.h>
 #define KERNEL_LOG_NAME "iso9660_partition"
 
 

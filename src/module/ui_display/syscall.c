@@ -6,7 +6,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <ui/common.h>
 #include <ui/display.h>
 #include <ui/display_syscall.h>

@@ -4,7 +4,6 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <ui/display.h>
 #include <ui/display_info.h>
 #include <ui/framebuffer.h>

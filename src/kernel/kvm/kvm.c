@@ -6,7 +6,6 @@
 #include <kernel/msr/msr.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "kvm"
 
 

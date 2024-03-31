@@ -3,7 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/random/random.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_virtual_file"
 

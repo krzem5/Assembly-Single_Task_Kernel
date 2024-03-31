@@ -2,6 +2,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "rsa"
 #pragma GCC optimize("no-tree-loop-distribute-patterns") // disable memmove

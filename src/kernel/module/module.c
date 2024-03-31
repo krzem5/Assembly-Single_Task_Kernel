@@ -13,6 +13,8 @@
 #include <kernel/signature/signature.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>

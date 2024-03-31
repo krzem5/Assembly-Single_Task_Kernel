@@ -7,6 +7,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/mp/process.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "config"

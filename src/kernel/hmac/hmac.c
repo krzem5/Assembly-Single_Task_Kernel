@@ -2,7 +2,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
+#include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "hmac"
 
 

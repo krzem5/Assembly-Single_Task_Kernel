@@ -9,6 +9,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #include <virtio/fs.h>

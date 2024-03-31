@@ -4,7 +4,6 @@
 #include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "pci_msix"
 
 

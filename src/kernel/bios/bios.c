@@ -2,10 +2,9 @@
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
-#include <kernel/memory/smm.h>
 #define KERNEL_LOG_NAME "bios"
 
 

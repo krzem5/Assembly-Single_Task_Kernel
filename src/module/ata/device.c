@@ -11,6 +11,7 @@
 #include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "ata"
 
