@@ -47,19 +47,21 @@ u64 aslr_generate_address(u64 min,u64 max){
 
 
 void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN next_stage_callback)(void)){
-	aslr_module_base=aslr_generate_address(KERNEL_ASLR_KERNEL_END,KERNEL_ASLR_MODULE_START);
-	aslr_module_size=-PAGE_SIZE-KERNEL_ASLR_MODULE_START;
 #ifndef KERNEL_RELEASE
 	ERROR("ASLR disabled");
-	(void)_finish_relocation;
+	aslr_module_base=KERNEL_ASLR_MODULE_START;
+	aslr_module_size=-PAGE_SIZE*2-KERNEL_ASLR_MODULE_START;
 	INFO("Kernel range: %p - %p",kernel_section_kernel_start(),kernel_section_kernel_end());
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
+	(void)_finish_relocation;
 	next_stage_callback();
 #else
 	LOG("Generating ASLR addresses...");
 	u64 kernel_size=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start());
 	random_generate(&_aslr_offset,sizeof(u64));
 	_aslr_offset=pmm_align_down_address(_aslr_offset%(KERNEL_ASLR_KERNEL_END-kernel_size-kernel_section_kernel_end()-1));
+	aslr_module_base=aslr_generate_address(KERNEL_ASLR_KERNEL_END,KERNEL_ASLR_MODULE_START);
+	aslr_module_size=-PAGE_SIZE*2-KERNEL_ASLR_MODULE_START;
 	INFO("Kernel range: %p - %p",kernel_section_kernel_end()+_aslr_offset,kernel_section_kernel_end()+_aslr_offset+kernel_size);
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
 	LOG("Relocating kernel...");
