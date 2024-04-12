@@ -72,7 +72,7 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mod
 	smm_dealloc(fs->root->name);
 	fs->root->name=smm_alloc(child_name,0);
 	spinlock_release_exclusive(&(fs->root->lock));
-	vfs_node_attach_external_child(parent,fs->root);
+	vfs_node_attach_child(parent,fs->root);
 	fs->is_mounted=1;
 	if (fs->descriptor->config->mount_callback){
 		fs->descriptor->config->mount_callback(fs,path);

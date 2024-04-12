@@ -62,9 +62,6 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	out->relatives.prev_sibling=NULL;
 	out->relatives.next_sibling=NULL;
 	out->relatives.child=NULL;
-	out->relatives.external_prev_sibling=NULL;
-	out->relatives.external_next_sibling=NULL;
-	out->relatives.external_child=NULL;
 	out->fs=fs;
 	out->functions=functions;
 	out->time_access=time;
@@ -98,7 +95,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_f
 		return NULL;
 	}
 	out->flags|=VFS_NODE_FLAG_VIRTUAL;
-	vfs_node_attach_external_child(parent,out);
+	vfs_node_attach_child(parent,out);
 	return out;
 }
 
@@ -128,12 +125,6 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name)
 			return out;
 		}
 	}
-	out=node->relatives.external_child;
-	for (;out;out=out->relatives.external_next_sibling){
-		if (smm_equal(out->name,name)){
-			return out;
-		}
-	}
 	if (!node->functions->lookup){
 		return NULL;
 	}
@@ -157,11 +148,13 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name)
 
 
 KERNEL_PUBLIC u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
-	if ((pointer>>63)||(!pointer&&node->relatives.external_child)){
-		vfs_node_t* child=(pointer?((vfs_node_t*)pointer)->relatives.external_next_sibling:node->relatives.external_child);
-		if (child){
-			*out=smm_duplicate(child->name);
-			return (u64)child;
+	if (!pointer||(pointer>>63)){
+		vfs_node_t* child=(pointer?((vfs_node_t*)pointer)->relatives.next_sibling:node->relatives.child);
+		for (;child;child=child->relatives.next_sibling){
+			if (child->flags&VFS_NODE_FLAG_VIRTUAL){
+				*out=smm_duplicate(child->name);
+				return (u64)child;
+			}
 		}
 		pointer=0;
 	}
@@ -230,41 +223,16 @@ KERNEL_PUBLIC void vfs_node_flush(vfs_node_t* node){
 
 
 
-KERNEL_PUBLIC void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child){
+KERNEL_PUBLIC void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child){
 	spinlock_acquire_exclusive(&(node->lock));
 	child->relatives.parent=node;
-	child->relatives.external_next_sibling=node->relatives.external_child;
-	if (node->relatives.external_child){
-		spinlock_acquire_exclusive(&(node->relatives.external_child->lock));
-		node->relatives.external_child->relatives.external_prev_sibling=child;
-		spinlock_release_exclusive(&(node->relatives.external_child->lock));
+	child->relatives.next_sibling=node->relatives.child;
+	if (node->relatives.child){
+		spinlock_acquire_exclusive(&(node->relatives.child->lock));
+		node->relatives.child->relatives.prev_sibling=child;
+		spinlock_release_exclusive(&(node->relatives.child->lock));
 	}
-	node->relatives.external_child=child;
-	spinlock_release_exclusive(&(node->lock));
-}
-
-
-
-KERNEL_PUBLIC void vfs_node_dettach_external_child(vfs_node_t* node){
-	spinlock_acquire_exclusive(&(node->lock));
-	if (node->relatives.parent){
-		if (node->relatives.external_prev_sibling){
-			spinlock_acquire_exclusive(&(node->relatives.external_prev_sibling->lock));
-			node->relatives.external_prev_sibling->relatives.external_next_sibling=node->relatives.external_next_sibling;
-			spinlock_release_exclusive(&(node->relatives.external_prev_sibling->lock));
-		}
-		else{
-			spinlock_acquire_exclusive(&(node->relatives.parent->lock));
-			node->relatives.parent->relatives.external_child=node->relatives.external_next_sibling;
-			spinlock_release_exclusive(&(node->relatives.parent->lock));
-		}
-		if (node->relatives.external_next_sibling){
-			spinlock_acquire_exclusive(&(node->relatives.external_next_sibling->lock));
-			node->relatives.external_next_sibling->relatives.external_prev_sibling=node->relatives.external_prev_sibling;
-			spinlock_release_exclusive(&(node->relatives.external_next_sibling->lock));
-		}
-		node->relatives.parent=NULL;
-	}
+	node->relatives.child=child;
 	spinlock_release_exclusive(&(node->lock));
 }
 

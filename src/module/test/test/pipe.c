@@ -54,7 +54,7 @@ static void _thread(void){
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);
-	vfs_node_dettach_external_child(pipe);
+	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
 	TEST_GROUP("create unnamed");
 	pipe_fd=syscall_pipe_create(NULL);
@@ -63,7 +63,7 @@ static void _thread(void){
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);
-	vfs_node_dettach_external_child(pipe);
+	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
 	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
 }
@@ -79,7 +79,7 @@ void test_pipe(void){
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
-	vfs_node_dettach_external_child(pipe);
+	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
 	TEST_GROUP("create unnamed");
 	pipe=pipe_create(NULL,NULL);
@@ -123,7 +123,7 @@ void test_pipe(void){
 	TEST_ASSERT(vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE,0)==(PIPE_BUFFER_SIZE%TEST_BUFFER_SIZE));
 	TEST_GROUP("full nonblocking write");
 	TEST_ASSERT(!vfs_node_write(pipe,0,buffer,PIPE_BUFFER_SIZE,VFS_NODE_FLAG_NONBLOCKING));
-	vfs_node_dettach_external_child(pipe);
+	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
 	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
 	handle_acquire(&(test_process->handle));

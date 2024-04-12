@@ -31,7 +31,7 @@ void test_sys_pipe(void){
 	// TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	// TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
 	// TEST_ASSERT(sys_fd_close(pipe_fd)==SYS_ERROR_OK);
-	// vfs_node_dettach_external_child(pipe);
+	// vfs_node_dettach_child(pipe);
 	// vfs_node_delete(pipe);
 	// TEST_GROUP("create unnamed");
 	// pipe_fd=sys_pipe_create(NULL);
@@ -40,6 +40,6 @@ void test_sys_pipe(void){
 	// TEST_ASSERT(pipe);
 	// TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	// TEST_ASSERT(sys_fd_close(pipe_fd)==SYS_ERROR_OK);
-	// vfs_node_dettach_external_child(pipe);
+	// vfs_node_dettach_child(pipe);
 	// vfs_node_delete(pipe);
 }

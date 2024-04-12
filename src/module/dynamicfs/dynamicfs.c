@@ -110,7 +110,7 @@ KERNEL_PUBLIC vfs_node_t* dynamicfs_create_node(vfs_node_t* parent,const char* n
 	out->data=data;
 	out->read_callback=read_callback;
 	out->read_callback_ctx=read_callback_ctx;
-	vfs_node_attach_external_child(parent,(vfs_node_t*)out);
+	vfs_node_attach_child(parent,(vfs_node_t*)out);
 	return (vfs_node_t*)out;
 }
 
@@ -147,7 +147,7 @@ KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
 	if (delete_string&&string){
 		smm_dealloc(string);
 	}
-	vfs_node_dettach_external_child(node);
+	vfs_node_dettach_child(node);
 	vfs_node_delete(node);
 }
 

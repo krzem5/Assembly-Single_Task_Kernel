@@ -48,9 +48,6 @@ typedef struct _VFS_NODE_RELATIVES{
 	struct _VFS_NODE* prev_sibling;
 	struct _VFS_NODE* next_sibling;
 	struct _VFS_NODE* child;
-	struct _VFS_NODE* external_prev_sibling;
-	struct _VFS_NODE* external_next_sibling;
-	struct _VFS_NODE* external_child;
 } vfs_node_relatives_t;
 
 
@@ -117,11 +114,7 @@ void vfs_node_flush(vfs_node_t* node);
 
 
 
-void vfs_node_attach_external_child(vfs_node_t* node,vfs_node_t* child);
-
-
-
-void vfs_node_dettach_external_child(vfs_node_t* node);
+void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child);
 
 
 

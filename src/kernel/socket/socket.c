@@ -315,13 +315,13 @@ KERNEL_PUBLIC _Bool socket_move(vfs_node_t* node,const char* path){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
-	vfs_node_dettach_external_child(node);
+	vfs_node_dettach_child(node);
 	if (!path){
 		spinlock_acquire_exclusive(&(node->lock));
 		smm_dealloc(node->name);
 		node->name=_get_unique_id();
 		spinlock_release_exclusive(&(node->lock));
-		vfs_node_attach_external_child(_socket_root,node);
+		vfs_node_attach_child(_socket_root,node);
 		return 1;
 	}
 	vfs_node_t* parent;
@@ -334,7 +334,7 @@ KERNEL_PUBLIC _Bool socket_move(vfs_node_t* node,const char* path){
 	smm_dealloc(node->name);
 	node->name=smm_alloc(child_name,0);
 	spinlock_release_exclusive(&(node->lock));
-	vfs_node_attach_external_child(parent,node);
+	vfs_node_attach_child(parent,node);
 	return 1;
 }
 
