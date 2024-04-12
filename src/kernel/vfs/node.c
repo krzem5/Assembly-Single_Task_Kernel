@@ -87,6 +87,9 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,vfs_node_t* parent,const string_t* name,u32 flags){
+	if (!fs){
+		fs=parent->fs;
+	}
 	return _init_node(fs,fs->functions,parent,name,flags);
 }
 

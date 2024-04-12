@@ -6,6 +6,7 @@ glsltest:sys,glsl
 hexdump:sys
 lockinfo:sys
 ls:sys,dircolor
+mkdir:sys
 random:sys
 reboot:sys
 shell:sys

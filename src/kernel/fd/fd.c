@@ -95,7 +95,7 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	u64 path_length=syscall_get_string_length((const char*)path);
@@ -114,14 +114,28 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		}
 		root_node=((fd_t*)(root_handle->object))->node;
 	}
+	error_t error=ERROR_NOT_FOUND;
+	vfs_node_t* node;
 	if (flags&FD_FLAG_CREATE){
-		panic("FD_FLAG_CREATE");
+		vfs_node_t* parent;
+		const char* child_name;
+		node=vfs_lookup_for_creation(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid,&parent,&child_name);
+		if (!node&&parent&&child_name){
+			SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+			node=vfs_node_create(NULL,parent,child_name_string,((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:0)|VFS_NODE_FLAG_CREATE);
+		}
+		else if (flags&FD_FLAG_EXCLUSIVE_CREATE){
+			node=NULL;
+			error=ERROR_ALREADY_PRESENT;
+		}
 	}
-	vfs_node_t* node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	else{
+		node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+	}
 	if (root_handle){
 		handle_release(root_handle);
 	}
-	return (node?fd_from_node(node,flags):ERROR_NOT_FOUND);
+	return (node?fd_from_node(node,flags):error);
 }
 
 
