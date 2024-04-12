@@ -41,7 +41,7 @@ static KERNEL_ATOMIC u64 _pipe_next_id=0;
 
 
 static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flags){
-	if (parent||name){
+	if (flags&VFS_NODE_FLAG_CREATE){
 		return NULL;
 	}
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);

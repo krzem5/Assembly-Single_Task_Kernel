@@ -17,9 +17,19 @@
 
 
 
+typedef struct _KFS2_BITMAP_ALLOCATOR{
+	spinlock_t lock;
+	u64* bitmap_offsets;
+	u16 highest_level_length;
+} kfs2_bitmap_allocator_t;
+
+
+
 typedef struct _KFS2_FS_EXTRA_DATA{
 	kfs2_root_block_t root_block;
 	u32 block_size_shift;
+	kfs2_bitmap_allocator_t data_block_allocator;
+	kfs2_bitmap_allocator_t inode_allocator;
 } kfs2_fs_extra_data_t;
 
 
@@ -169,12 +179,25 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 
+static u64 _bitmap_allocator_alloc(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator){
+	panic("_bitmap_allocator_alloc");
+}
+
+
+
 static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flags){
-	if (parent||name){
-		panic("_kfs2_create: unimplemented");
-	}
 	kfs2_vfs_node_t* out=omm_alloc(_kfs2_vfs_node_allocator);
 	out->kfs2_node._inode=0xffffffff;
+	if (flags&VFS_NODE_FLAG_CREATE){
+		filesystem_t* fs=parent->fs;
+		kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+		out->kfs2_node._inode=_bitmap_allocator_alloc(fs,&(extra_data->inode_allocator));
+		if (!out->kfs2_node._inode){
+			omm_dealloc(_kfs2_vfs_node_allocator,out);
+			return NULL;
+		}
+		panic("_kfs2_create: unimplemented");
+	}
 	return (vfs_node_t*)out;
 }
 
@@ -328,7 +351,11 @@ static u64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
 
 
 static void _kfs2_flush(vfs_node_t* node){
+	if (!(node->flags&VFS_NODE_FLAG_DIRTY)){
+		return;
+	}
 	panic("_kfs2_flush");
+	node->flags&=~VFS_NODE_FLAG_DIRTY;
 }
 
 
@@ -371,6 +398,12 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
+	spinlock_init(&(extra_data->data_block_allocator.lock));
+	extra_data->data_block_allocator.bitmap_offsets=extra_data->root_block.data_block_allocation_bitmap_offsets;
+	extra_data->data_block_allocator.highest_level_length=extra_data->root_block.data_block_allocation_bitmap_highest_level_length;
+	spinlock_init(&(extra_data->inode_allocator.lock));
+	extra_data->inode_allocator.bitmap_offsets=extra_data->root_block.inode_allocation_bitmap_offsets;
+	extra_data->inode_allocator.highest_level_length=extra_data->root_block.inode_allocation_bitmap_highest_level_length;
 	filesystem_t* out=fs_create(_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;

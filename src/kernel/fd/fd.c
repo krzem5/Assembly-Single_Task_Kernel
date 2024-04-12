@@ -123,6 +123,12 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		if (!node&&parent&&child_name){
 			SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 			node=vfs_node_create(NULL,parent,child_name_string,((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:0)|VFS_NODE_FLAG_CREATE);
+			if (node){
+				node->uid=THREAD_DATA->process->uid;
+				node->gid=THREAD_DATA->process->gid;
+				node->flags|=VFS_NODE_FLAG_DIRTY;
+				vfs_node_flush(node);
+			}
 		}
 		else if (flags&FD_FLAG_EXCLUSIVE_CREATE){
 			node=NULL;

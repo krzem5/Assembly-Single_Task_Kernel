@@ -19,7 +19,7 @@ static omm_allocator_t* _vfs_node_empty_node_allocator=NULL;
 
 
 static vfs_node_t* _empty_node_alloc(vfs_node_t* parent,const string_t* name,u32 flags){
-	if (parent||name){
+	if (flags&VFS_NODE_FLAG_CREATE){
 		return NULL;
 	}
 	return omm_alloc(_vfs_node_empty_node_allocator);

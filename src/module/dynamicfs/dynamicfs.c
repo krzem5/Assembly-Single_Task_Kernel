@@ -24,7 +24,7 @@ static omm_allocator_t* _dynamicfs_vfs_node_allocator=NULL;
 
 
 static vfs_node_t* _dynamicfs_create(vfs_node_t* parent,const string_t* name,u32 flags){
-	if (parent||name){
+	if (flags&VFS_NODE_FLAG_CREATE){
 		return NULL;
 	}
 	dynamicfs_vfs_node_t* out=omm_alloc(_dynamicfs_vfs_node_allocator);
