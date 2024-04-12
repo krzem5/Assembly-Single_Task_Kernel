@@ -120,7 +120,10 @@ static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const stri
 
 
 
-static vfs_node_t* _fuse_create(void){
+static vfs_node_t* _fuse_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		panic("_fuse_create: unimplemented");
+	}
 	fuse_vfs_node_t* out=omm_alloc(_fuse_vfs_node_allocator);
 	out->node_id=0;
 	out->file_handle=0;

@@ -28,7 +28,10 @@ static filesystem_descriptor_t* _iso9660_filesystem_descriptor=NULL;
 
 
 
-static vfs_node_t* _iso9660_create(void){
+static vfs_node_t* _iso9660_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		return NULL;
+	}
 	iso9660_vfs_node_t* out=omm_alloc(_iso9660_vfs_node_allocator);
 	out->current_offset=0xffffffffffffffffull;
 	out->data_offset=0;

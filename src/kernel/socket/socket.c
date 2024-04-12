@@ -34,7 +34,10 @@ static KERNEL_ATOMIC u64 _socket_next_id=0;
 
 
 
-static vfs_node_t* _socket_create(void){
+static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		return NULL;
+	}
 	socket_vfs_node_t* out=omm_alloc(_socket_vfs_node_allocator);
 	spinlock_init(&(out->read_lock));
 	spinlock_init(&(out->write_lock));

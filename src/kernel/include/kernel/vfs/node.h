@@ -29,7 +29,7 @@
 
 
 typedef struct _VFS_FUNCTIONS{
-	struct _VFS_NODE* (*create)(void);
+	struct _VFS_NODE* (*create)(struct _VFS_NODE*,const string_t*,u32);
 	void (*delete)(struct _VFS_NODE*);
 	struct _VFS_NODE* (*lookup)(struct _VFS_NODE*,const string_t*);
 	u64 (*iterate)(struct _VFS_NODE*,u64,string_t**);

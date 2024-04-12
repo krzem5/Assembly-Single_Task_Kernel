@@ -18,7 +18,10 @@ static omm_allocator_t* _vfs_node_empty_node_allocator=NULL;
 
 
 
-static vfs_node_t* _empty_node_alloc(void){
+static vfs_node_t* _empty_node_alloc(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		return NULL;
+	}
 	return omm_alloc(_vfs_node_empty_node_allocator);
 }
 
@@ -49,7 +52,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	if (!functions->create){
 		return NULL;
 	}
-	vfs_node_t* out=functions->create();
+	vfs_node_t* out=functions->create(NULL,NULL,0);
 	if (!out){
 		return NULL;
 	}

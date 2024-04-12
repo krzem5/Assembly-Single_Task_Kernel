@@ -169,7 +169,10 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 
-static vfs_node_t* _kfs2_create(void){
+static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		panic("_kfs2_create: unimplemented");
+	}
 	kfs2_vfs_node_t* out=omm_alloc(_kfs2_vfs_node_allocator);
 	out->kfs2_node._inode=0xffffffff;
 	return (vfs_node_t*)out;

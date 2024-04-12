@@ -55,7 +55,10 @@ static filesystem_t* _initramfs_fs=NULL;
 
 
 
-static vfs_node_t* _initramfs_create(void){
+static vfs_node_t* _initramfs_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		return NULL;
+	}
 	initramfs_vfs_node_t* out=omm_alloc(_initramfs_vfs_node_allocator);
 	out->offset=0;
 	out->size=0;

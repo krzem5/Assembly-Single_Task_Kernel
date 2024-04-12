@@ -40,7 +40,10 @@ static KERNEL_ATOMIC u64 _pipe_next_id=0;
 
 
 
-static vfs_node_t* _pipe_create(void){
+static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flags){
+	if (parent||name){
+		return NULL;
+	}
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
 	spinlock_init(&(out->lock));
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,PIPE_BUFFER_SIZE,MMAP_REGION_FLAG_VMM_WRITE,NULL);
