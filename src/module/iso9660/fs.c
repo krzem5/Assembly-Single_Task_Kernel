@@ -91,7 +91,7 @@ static vfs_node_t* _iso9660_lookup(vfs_node_t* node,const string_t* name){
 				goto _skip_directory_entry;
 			}
 		}
-		vfs_node_t* out=vfs_node_create(node->fs,name);
+		vfs_node_t* out=vfs_node_create(node->fs,NULL,name,0);
 		out->flags|=((directory->flags&ISO9660_DIRECTORY_FLAG_DIRECTOR)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 		((iso9660_vfs_node_t*)out)->current_offset=(iso9660_node->data_offset<<11)+iso9660_node->data_length-data_length;
 		((iso9660_vfs_node_t*)out)->data_offset=directory->lba;
@@ -216,7 +216,7 @@ _directory_lba_found:
 	out->functions=&_iso9660_functions;
 	out->partition=partition;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	out->root=vfs_node_create(out,root_name);
+	out->root=vfs_node_create(out,NULL,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((iso9660_vfs_node_t*)(out->root))->data_offset=directory_lba;
 	((iso9660_vfs_node_t*)(out->root))->data_length=directory_data_length;

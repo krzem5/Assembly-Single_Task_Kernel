@@ -56,7 +56,7 @@ static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)||!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
 		goto _cleanup;
 	}
-	out=(kfs2_vfs_node_t*)vfs_node_create(fs,name);
+	out=(kfs2_vfs_node_t*)vfs_node_create(fs,NULL,name,0);
 	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
 		out->node.flags|=VFS_NODE_TYPE_DIRECTORY;
 	}

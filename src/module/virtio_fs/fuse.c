@@ -111,7 +111,7 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 
 static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
 	virtio_fs_device_t* fs_device=fs->extra_data;
-	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,name);
+	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,NULL,name,0);
 	out->node_id=node_id;
 	out->file_handle=virtio_fs_fuse_open(fs_device,node_id);
 	_update_attr(out);

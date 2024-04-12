@@ -22,6 +22,7 @@
 #define VFS_NODE_FLAG_RESIZE_RELATIVE 64
 #define VFS_NODE_FLAG_NONBLOCKING 128
 #define VFS_NODE_FLAG_PIPE_PEEK 256
+#define VFS_NODE_FLAG_CREATE 512
 
 #define VFS_NODE_PERMISSION_MASK 0x3fe00
 #define VFS_NODE_PERMISSION_SHIFT 9
@@ -70,7 +71,7 @@ typedef struct _VFS_NODE{
 
 
 
-vfs_node_t* vfs_node_create(struct _FILESYSTEM* fs,const string_t* name);
+vfs_node_t* vfs_node_create(struct _FILESYSTEM* fs,vfs_node_t* parent,const string_t* name,u32 flags);
 
 
 

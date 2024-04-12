@@ -101,7 +101,7 @@ static vfs_node_t* _initramfs_lookup(vfs_node_t* node,const string_t* name){
 				goto _skip_entry;
 			}
 		}
-		vfs_node_t* out=vfs_node_create(node->fs,name);
+		vfs_node_t* out=vfs_node_create(node->fs,NULL,name,0);
 		out->flags|=((child_node.flags&INITRAMFS_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:VFS_NODE_TYPE_FILE);
 		((initramfs_vfs_node_t*)out)->offset=offset;
 		((initramfs_vfs_node_t*)out)->size=child_node.size;
@@ -200,7 +200,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	_initramfs_fs->partition=partition;
 	mem_copy(_initramfs_fs->guid,header.uuid,16);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	_initramfs_fs->root=vfs_node_create(_initramfs_fs,root_name);
+	_initramfs_fs->root=vfs_node_create(_initramfs_fs,NULL,root_name,0);
 	_initramfs_fs->root->flags|=VFS_NODE_FLAG_PERMANENT|VFS_NODE_TYPE_DIRECTORY;
 	((initramfs_vfs_node_t*)(_initramfs_fs->root))->offset=sizeof(initramfs_header_t);
 	((initramfs_vfs_node_t*)(_initramfs_fs->root))->size=node.size;

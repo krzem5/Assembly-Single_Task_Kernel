@@ -48,11 +48,11 @@ static const vfs_functions_t _vfs_node_empty_functions={
 
 
 
-static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,const string_t* name){
+static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,vfs_node_t* parent,const string_t* name,u32 flags){
 	if (!functions->create){
 		return NULL;
 	}
-	vfs_node_t* out=functions->create(NULL,NULL,0);
+	vfs_node_t* out=((flags&VFS_NODE_FLAG_CREATE)?functions->create(parent,name,flags):functions->create(NULL,NULL,0));
 	if (!out){
 		return NULL;
 	}
@@ -86,14 +86,14 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,const string_t* name){
-	return _init_node(fs,fs->functions,name);
+KERNEL_PUBLIC vfs_node_t* vfs_node_create(filesystem_t* fs,vfs_node_t* parent,const string_t* name,u32 flags){
+	return _init_node(fs,fs->functions,parent,name,flags);
 }
 
 
 
 KERNEL_PUBLIC vfs_node_t* vfs_node_create_virtual(vfs_node_t* parent,const vfs_functions_t* functions,const string_t* name){
-	vfs_node_t* out=_init_node(NULL,(functions?functions:&_vfs_node_empty_functions),name);
+	vfs_node_t* out=_init_node(NULL,(functions?functions:&_vfs_node_empty_functions),NULL,name,0);
 	if (!out){
 		return NULL;
 	}
