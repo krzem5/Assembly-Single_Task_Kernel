@@ -631,8 +631,13 @@ static u64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
 		if (!size){
 			return kfs2_node->kfs2_node.size;
 		}
+		size+=kfs2_node->kfs2_node.size;
 	}
-	panic("_kfs2_resize");
+	if (size<0){
+		size=0;
+	}
+	_node_resize(kfs2_node,size);
+	return kfs2_node->kfs2_node.size;
 }
 
 
