@@ -394,16 +394,15 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	if (drive->block_size>4096){
 		return NULL;
 	}
-	u8 buffer[4096];
-	if (drive_read(drive,partition->start_lba,buffer,1)!=1){
-		return NULL;
-	}
+	void* buffer=(void*)(pmm_alloc(1,_kfs2_root_block_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	kfs2_root_block_t* root_block=(kfs2_root_block_t*)buffer;
-	if (root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_verify_crc(root_block,sizeof(kfs2_root_block_t))){
+	if (drive_read(drive,partition->start_lba,buffer,1)!=1||root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_verify_crc(root_block,sizeof(kfs2_root_block_t))){
+		pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_root_block_buffer_pmm_counter);
 		return NULL;
 	}
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_root_block_buffer_pmm_counter);
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
 	filesystem_t* out=fs_create(_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
