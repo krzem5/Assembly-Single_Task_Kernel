@@ -4,22 +4,15 @@
 
 
 
-static _Bool _init(module_t* module){
+MODULE_INIT(){
 	kfs2_io_init();
 	kfs2_register_fs();
-	return 1;
-}
-
-
-
-static void _deinit(module_t* module){
-	return;
 }
 
 
 
 MODULE_DECLARE(
-	_init,
-	_deinit,
+	NULL,
+	NULL,
 	0
 );
