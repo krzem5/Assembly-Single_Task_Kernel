@@ -72,9 +72,12 @@ static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 	drive_t* drive=partition->drive;
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
 	kfs2_vfs_node_t* out=NULL;
+	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+		panic("_load_inode: I/O error");
+	}
 	kfs2_node_t* node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(inode)*sizeof(kfs2_node_t));
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)||!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
-		goto _cleanup;
+	if (!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
+		panic("_load_inode: invlaid CRC");
 	}
 	out=(kfs2_vfs_node_t*)vfs_node_create(fs,NULL,name,0);
 	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
@@ -95,9 +98,27 @@ static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
 	out->node.uid=node->uid;
 	out->kfs2_node=*node;
 	out->kfs2_node._inode=inode;
-_cleanup:
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_buffer_pmm_counter);
 	return (vfs_node_t*)out;
+}
+
+
+
+static void _store_inode(kfs2_vfs_node_t* node){
+	void* buffer=(void*)(pmm_alloc(1,_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	partition_t* partition=node->node.fs->partition;
+	drive_t* drive=partition->drive;
+	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
+	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+		panic("_store_inode: I/O error");
+	}
+	kfs2_node_t* tmp_node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(node->kfs2_node._inode)*sizeof(kfs2_node_t));
+	*tmp_node=node->kfs2_node;
+	kfs2_insert_crc(tmp_node,sizeof(kfs2_node_t));
+	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+		panic("_store_inode: I/O error");
+	}
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_buffer_pmm_counter);
 }
 
 
@@ -375,7 +396,6 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 			next_entry->inode=0;
 			next_entry->size=entry->size-new_entry_size;
 			next_entry->name_length=0;
-			next_entry->name_compressed_hash=0;
 			entry->size=new_entry_size;
 		}
 		_node_set_chunk(parent,&chunk);
@@ -404,8 +424,18 @@ static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flag
 		omm_dealloc(_kfs2_vfs_node_allocator,out);
 		return NULL;
 	}
-	out->kfs2_node.size=0;
-	out->kfs2_node.flags=KFS2_INODE_STORAGE_TYPE_INLINE;
+	if (flags&VFS_NODE_TYPE_DIRECTORY){
+		out->kfs2_node.size=48;
+		out->kfs2_node.flags=KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE;
+		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(out->kfs2_node.data.inline_);
+		entry->inode=0;
+		entry->size=48;
+		entry->name_length=0;
+	}
+	else{
+		out->kfs2_node.size=0;
+		out->kfs2_node.flags=KFS2_INODE_TYPE_FILE|KFS2_INODE_STORAGE_TYPE_INLINE;
+	}
 	out->kfs2_node.time_access=0;
 	out->kfs2_node.time_modify=0;
 	out->kfs2_node.time_change=0;
@@ -569,7 +599,28 @@ static void _kfs2_flush(vfs_node_t* node){
 	if (!(node->flags&VFS_NODE_FLAG_DIRTY)){
 		return;
 	}
-	panic("_kfs2_flush");
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	kfs2_node->kfs2_node.flags&=~(KFS2_INODE_TYPE_MASK|KFS2_INODE_PERMISSION_MASK);
+	if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_FILE){
+		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_FILE;
+	}
+	else if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
+		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_DIRECTORY;
+	}
+	else if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_LINK;
+	}
+	else{
+		panic("_kfs2_flush: invalid node type");
+	}
+	kfs2_node->kfs2_node.flags|=((kfs2_node->node.flags&VFS_NODE_PERMISSION_MASK)>>VFS_NODE_PERMISSION_SHIFT)<<KFS2_INODE_PERMISSION_SHIFT;
+	kfs2_node->kfs2_node.time_access=kfs2_node->node.time_access;
+	kfs2_node->kfs2_node.time_modify=kfs2_node->node.time_modify;
+	kfs2_node->kfs2_node.time_change=kfs2_node->node.time_change;
+	kfs2_node->kfs2_node.time_birth=kfs2_node->node.time_birth;
+	kfs2_node->kfs2_node.gid=kfs2_node->node.gid;
+	kfs2_node->kfs2_node.uid=kfs2_node->node.uid;
+	_store_inode(kfs2_node);
 	node->flags&=~VFS_NODE_FLAG_DIRTY;
 }
 
