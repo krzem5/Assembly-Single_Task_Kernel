@@ -203,9 +203,11 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 
 static void _node_set_chunk(kfs2_vfs_node_t* node,kfs2_data_chunk_t* chunk){
 	if ((node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK)==KFS2_INODE_STORAGE_TYPE_INLINE){
-		return;
+		_store_inode(node);
 	}
-	_write_data_block(node->node.fs,chunk->data_offset,chunk->data);
+	else{
+		_write_data_block(node->node.fs,chunk->data_offset,chunk->data);
+	}
 }
 
 
@@ -367,6 +369,7 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 	}
 	node->kfs2_node.size=size;
 	node->kfs2_node.flags=(node->kfs2_node.flags&(~KFS2_INODE_STORAGE_MASK))|new_storage_type;
+	_store_inode(node);
 }
 
 
