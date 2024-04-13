@@ -73,6 +73,11 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	out->time_birth=time;
 	out->gid=0;
 	out->uid=0;
+	if (flags&VFS_NODE_FLAG_CREATE){
+		out->flags=(flags&VFS_NODE_TYPE_MASK)|VFS_NODE_FLAG_DIRTY;
+		vfs_node_flush(out);
+		vfs_node_attach_child(parent,out);
+	}
 	return out;
 }
 

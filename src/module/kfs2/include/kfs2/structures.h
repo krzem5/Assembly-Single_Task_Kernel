@@ -49,15 +49,19 @@ typedef struct KERNEL_PACKED _KFS2_ROOT_BLOCK{
 
 
 
+typedef union KERNEL_PACKED _KFS2_NODE_DATA{
+	u8 inline_[48];
+	u64 single[6];
+	u64 double_;
+	u64 triple;
+	u64 quadruple;
+} kfs2_node_data_t;
+
+
+
 typedef struct KERNEL_PACKED _KFS2_NODE{
 	u64 size;
-	union{
-		u8 inline_[48];
-		u64 single[6];
-		u64 double_;
-		u64 triple;
-		u64 quadruple;
-	} data;
+	kfs2_node_data_t data;
 	u32 flags;
 	u64 time_access;
 	u64 time_modify;
