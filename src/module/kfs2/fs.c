@@ -12,42 +12,9 @@
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
 #include <kfs2/crc.h>
+#include <kfs2/io.h>
 #include <kfs2/structures.h>
 #define KERNEL_LOG_NAME "kfs2"
-
-
-
-typedef struct _KFS2_BITMAP_ALLOCATOR_CACHE_ENTRY{
-	u64 offset;
-	u64 block_index;
-	u64* data;
-} kfs2_bitmap_allocator_cache_entry_t;
-
-
-
-typedef struct _KFS2_BITMAP_ALLOCATOR{
-	spinlock_t lock;
-	u64 bitmap_offset;
-	u32 highest_level_length;
-	u32 highest_level_offset;
-	kfs2_bitmap_allocator_cache_entry_t cache[KFS2_BITMAP_LEVEL_COUNT];
-} kfs2_bitmap_allocator_t;
-
-
-
-typedef struct _KFS2_FS_EXTRA_DATA{
-	kfs2_root_block_t root_block;
-	u32 block_size_shift;
-	kfs2_bitmap_allocator_t data_block_allocator;
-	kfs2_bitmap_allocator_t inode_allocator;
-} kfs2_fs_extra_data_t;
-
-
-
-typedef struct _KFS2_VFS_NODE{
-	vfs_node_t node;
-	kfs2_node_t kfs2_node;
-} kfs2_vfs_node_t;
 
 
 
@@ -66,86 +33,7 @@ static KERNEL_INLINE u8 _calculate_compressed_hash(const string_t* name){
 
 
 
-static vfs_node_t* _load_inode(filesystem_t* fs,const string_t* name,u32 inode){
-	void* buffer=(void*)(pmm_alloc(1,_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-	kfs2_vfs_node_t* out=NULL;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("_load_inode: I/O error");
-	}
-	kfs2_node_t* node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(inode)*sizeof(kfs2_node_t));
-	if (!kfs2_verify_crc(node,sizeof(kfs2_node_t))){
-		panic("_load_inode: invlaid CRC");
-	}
-	out=(kfs2_vfs_node_t*)vfs_node_create(fs,NULL,name,0);
-	if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_DIRECTORY){
-		out->node.flags|=VFS_NODE_TYPE_DIRECTORY;
-	}
-	else if ((node->flags&KFS2_INODE_TYPE_MASK)==KFS2_INODE_TYPE_LINK){
-		out->node.flags|=VFS_NODE_TYPE_LINK;
-	}
-	else{
-		out->node.flags|=VFS_NODE_TYPE_FILE;
-	}
-	out->node.flags|=((node->flags&KFS2_INODE_PERMISSION_MASK)>>KFS2_INODE_PERMISSION_SHIFT)<<VFS_NODE_PERMISSION_SHIFT;
-	out->node.time_access=node->time_access;
-	out->node.time_modify=node->time_modify;
-	out->node.time_change=node->time_change;
-	out->node.time_birth=node->time_birth;
-	out->node.gid=node->gid;
-	out->node.uid=node->uid;
-	out->kfs2_node=*node;
-	out->kfs2_node._inode=inode;
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_buffer_pmm_counter);
-	return (vfs_node_t*)out;
-}
-
-
-
-static void _store_inode(kfs2_vfs_node_t* node){
-	void* buffer=(void*)(pmm_alloc(1,_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	partition_t* partition=node->node.fs->partition;
-	drive_t* drive=partition->drive;
-	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("_store_inode: I/O error");
-	}
-	kfs2_node_t* tmp_node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(node->kfs2_node._inode)*sizeof(kfs2_node_t));
-	*tmp_node=node->kfs2_node;
-	kfs2_insert_crc(tmp_node,sizeof(kfs2_node_t));
-	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("_store_inode: I/O error");
-	}
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_buffer_pmm_counter);
-}
-
-
-
-static void _read_data_block(filesystem_t* fs,u64 block_index,void* buffer){
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("_read_data_block: I/O error");
-	}
-}
-
-
-
-static void _write_data_block(filesystem_t* fs,u64 block_index,const void* buffer){
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("_write_data_block: I/O error");
-	}
-}
-
-
-
-static void _chunk_init(kfs2_data_chunk_t* out){
+void kfs2_chunk_init(kfs2_data_chunk_t* out){
 	out->offset=0;
 	out->quadruple_cache=NULL;
 	out->triple_cache=NULL;
@@ -180,7 +68,7 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				out->data_offset=node->kfs2_node.data.single[index];
 				out->length=KFS2_BLOCK_SIZE;
-				_read_data_block(node->node.fs,out->data_offset,out->data);
+				kfs2_io_data_block_read(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
@@ -191,7 +79,7 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 				}
 				if (!out->double_cache){
 					out->double_cache=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-					_read_data_block(node->node.fs,node->kfs2_node.data.double_,out->double_cache);
+					kfs2_io_data_block_read(node->node.fs,node->kfs2_node.data.double_,out->double_cache);
 				}
 				if (!out->data){
 					out->data=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -199,7 +87,7 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				out->data_offset=out->double_cache[index];
 				out->length=KFS2_BLOCK_SIZE;
-				_read_data_block(node->node.fs,out->data_offset,out->data);
+				kfs2_io_data_block_read(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
@@ -215,10 +103,10 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 
 static void _node_set_chunk(kfs2_vfs_node_t* node,kfs2_data_chunk_t* chunk){
 	if ((node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK)==KFS2_INODE_STORAGE_TYPE_INLINE){
-		_store_inode(node);
+		kfs2_io_inode_write(node);
 	}
 	else{
-		_write_data_block(node->node.fs,chunk->data_offset,chunk->data);
+		kfs2_io_data_block_write(node->node.fs,chunk->data_offset,chunk->data);
 	}
 }
 
@@ -340,7 +228,7 @@ static void _node_migrate_data_inline_single(kfs2_vfs_node_t* node,u64 size){
 	}
 	void* buffer=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	mem_copy(buffer,old_data.inline_,node->kfs2_node.size);
-	_write_data_block(node->node.fs,node->kfs2_node.data.single[0],buffer);
+	kfs2_io_data_block_write(node->node.fs,node->kfs2_node.data.single[0],buffer);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_chunk_pmm_counter);
 }
 
@@ -381,7 +269,7 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 	}
 	node->kfs2_node.size=size;
 	node->kfs2_node.flags=(node->kfs2_node.flags&(~KFS2_INODE_STORAGE_MASK))|new_storage_type;
-	_store_inode(node);
+	kfs2_io_inode_write(node);
 }
 
 
@@ -389,7 +277,7 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_node_t* child){
 	u16 new_entry_size=(sizeof(kfs2_directory_entry_t)+name->length+3)&0xfffc;
 	kfs2_data_chunk_t chunk;
-	_chunk_init(&chunk);
+	kfs2_chunk_init(&chunk);
 	for (u64 offset=0;offset<parent->kfs2_node.size;){
 		if (offset-chunk.offset>=chunk.length){
 			_node_get_chunk_at_offset(parent,offset,&chunk);
@@ -504,7 +392,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 		return NULL;
 	}
 	kfs2_data_chunk_t chunk;
-	_chunk_init(&chunk);
+	kfs2_chunk_init(&chunk);
 	u64 offset=0;
 	u8 compressed_hash=_calculate_compressed_hash(name);
 	while (offset<kfs2_node->kfs2_node.size){
@@ -522,7 +410,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 		}
 		u64 inode=entry->inode;
 		_node_dealloc_chunk(&chunk);
-		return _load_inode(node->fs,name,inode);
+		return kfs2_io_inode_read(node->fs,name,inode);
 _skip_entry:
 		offset+=entry->size;
 	}
@@ -538,7 +426,7 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 		return 0;
 	}
 	kfs2_data_chunk_t chunk;
-	_chunk_init(&chunk);
+	kfs2_chunk_init(&chunk);
 	while (pointer<kfs2_node->kfs2_node.size){
 		if (pointer-chunk.offset>=chunk.length){
 			_node_get_chunk_at_offset(kfs2_node,pointer,&chunk);
@@ -582,7 +470,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 	}
 	u64 out=size;
 	kfs2_data_chunk_t chunk;
-	_chunk_init(&chunk);
+	kfs2_chunk_init(&chunk);
 	size+=offset;
 	while (offset<size){
 		if (offset-chunk.offset>=chunk.length){
@@ -651,7 +539,7 @@ static void _kfs2_flush(vfs_node_t* node){
 	kfs2_node->kfs2_node.time_birth=kfs2_node->node.time_birth;
 	kfs2_node->kfs2_node.gid=kfs2_node->node.gid;
 	kfs2_node->kfs2_node.uid=kfs2_node->node.uid;
-	_store_inode(kfs2_node);
+	kfs2_io_inode_write(kfs2_node);
 	node->flags&=~VFS_NODE_FLAG_DIRTY;
 }
 
@@ -702,7 +590,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	_bitmap_allocator_init(out,&(extra_data->data_block_allocator),extra_data->root_block.data_block_allocation_bitmap_offsets,extra_data->root_block.data_block_allocation_bitmap_highest_level_length);
 	_bitmap_allocator_init(out,&(extra_data->inode_allocator),extra_data->root_block.inode_allocation_bitmap_offsets,extra_data->root_block.inode_allocation_bitmap_highest_level_length);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
-	out->root=_load_inode(out,root_name,0);
+	out->root=kfs2_io_inode_read(out,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
 	mem_copy(out->guid,root_block->uuid,16);
 	return out;

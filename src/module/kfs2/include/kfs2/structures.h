@@ -100,4 +100,38 @@ typedef struct _KFS2_DATA_CHUNK{
 
 
 
+typedef struct _KFS2_BITMAP_ALLOCATOR_CACHE_ENTRY{
+	u64 offset;
+	u64 block_index;
+	u64* data;
+} kfs2_bitmap_allocator_cache_entry_t;
+
+
+
+typedef struct _KFS2_BITMAP_ALLOCATOR{
+	spinlock_t lock;
+	u64 bitmap_offset;
+	u32 highest_level_length;
+	u32 highest_level_offset;
+	kfs2_bitmap_allocator_cache_entry_t cache[KFS2_BITMAP_LEVEL_COUNT];
+} kfs2_bitmap_allocator_t;
+
+
+
+typedef struct _KFS2_FS_EXTRA_DATA{
+	kfs2_root_block_t root_block;
+	u32 block_size_shift;
+	kfs2_bitmap_allocator_t data_block_allocator;
+	kfs2_bitmap_allocator_t inode_allocator;
+} kfs2_fs_extra_data_t;
+
+
+
+typedef struct _KFS2_VFS_NODE{
+	vfs_node_t node;
+	kfs2_node_t kfs2_node;
+} kfs2_vfs_node_t;
+
+
+
 #endif
