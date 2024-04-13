@@ -145,6 +145,18 @@ static void _write_data_block(filesystem_t* fs,u64 block_index,const void* buffe
 
 
 
+static void _chunk_init(kfs2_data_chunk_t* out){
+	out->offset=0;
+	out->quadruple_cache=NULL;
+	out->triple_cache=NULL;
+	out->double_cache=NULL;
+	out->data=NULL;
+	out->length=0;
+	out->data_offset=0;
+}
+
+
+
 static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 	switch (node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK){
 		case KFS2_INODE_STORAGE_TYPE_INLINE:
@@ -376,15 +388,8 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 
 static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_node_t* child){
 	u16 new_entry_size=(sizeof(kfs2_directory_entry_t)+name->length+3)&0xfffc;
-	kfs2_data_chunk_t chunk={
-		0,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		0,
-		0
-	};
+	kfs2_data_chunk_t chunk;
+	_chunk_init(&chunk);
 	for (u64 offset=0;offset<parent->kfs2_node.size;){
 		if (offset-chunk.offset>=chunk.length){
 			_node_get_chunk_at_offset(parent,offset,&chunk);
@@ -498,15 +503,8 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 	if (kfs2_node->kfs2_node._inode==0xffffffff||!kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return NULL;
 	}
-	kfs2_data_chunk_t chunk={
-		0,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		0,
-		0
-	};
+	kfs2_data_chunk_t chunk;
+	_chunk_init(&chunk);
 	u64 offset=0;
 	u8 compressed_hash=_calculate_compressed_hash(name);
 	while (offset<kfs2_node->kfs2_node.size){
@@ -539,15 +537,8 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	if (kfs2_node->kfs2_node._inode==0xffffffff||pointer>=kfs2_node->kfs2_node.size||(kfs2_node->kfs2_node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
 	}
-	kfs2_data_chunk_t chunk={
-		0,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		0,
-		0
-	};
+	kfs2_data_chunk_t chunk;
+	_chunk_init(&chunk);
 	while (pointer<kfs2_node->kfs2_node.size){
 		if (pointer-chunk.offset>=chunk.length){
 			_node_get_chunk_at_offset(kfs2_node,pointer,&chunk);
@@ -590,15 +581,8 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 		return 0;
 	}
 	u64 out=size;
-	kfs2_data_chunk_t chunk={
-		0,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		0,
-		0
-	};
+	kfs2_data_chunk_t chunk;
+	_chunk_init(&chunk);
 	size+=offset;
 	while (offset<size){
 		if (offset-chunk.offset>=chunk.length){
