@@ -154,6 +154,7 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 			out->offset=0;
 			out->data=node->kfs2_node.data.inline_;
 			out->length=48;
+			out->data_offset=0;
 			break;
 		case KFS2_INODE_STORAGE_TYPE_SINGLE:
 			{
@@ -165,8 +166,9 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 					out->data=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				}
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
-				_read_data_block(node->node.fs,node->kfs2_node.data.single[index],out->data);
+				out->data_offset=node->kfs2_node.data.single[index];
 				out->length=KFS2_BLOCK_SIZE;
+				_read_data_block(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
@@ -183,8 +185,9 @@ static void _node_get_chunk_at_offset(kfs2_vfs_node_t* node,u64 offset,kfs2_data
 					out->data=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 				}
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
-				_read_data_block(node->node.fs,out->double_cache[index],out->data);
+				out->data_offset=out->double_cache[index];
 				out->length=KFS2_BLOCK_SIZE;
+				_read_data_block(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
@@ -202,7 +205,7 @@ static void _node_set_chunk(kfs2_vfs_node_t* node,kfs2_data_chunk_t* chunk){
 	if ((node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK)==KFS2_INODE_STORAGE_TYPE_INLINE){
 		return;
 	}
-	panic("_node_set_chunk: external chunk");
+	_write_data_block(node->node.fs,chunk->data_offset,chunk->data);
 }
 
 
@@ -376,6 +379,7 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 		NULL,
 		NULL,
 		NULL,
+		0,
 		0
 	};
 	for (u64 offset=0;offset<parent->kfs2_node.size;){
@@ -399,10 +403,42 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 			entry->size=new_entry_size;
 		}
 		_node_set_chunk(parent,&chunk);
+		_node_dealloc_chunk(&chunk);
 		return;
 	}
-	(void)_node_resize;
-	panic("_attach_child");
+	_node_dealloc_chunk(&chunk);
+	_node_resize(parent,(parent->kfs2_node.size==48?KFS2_BLOCK_SIZE:parent->kfs2_node.size+KFS2_BLOCK_SIZE));
+	_node_get_chunk_at_offset(parent,parent->kfs2_node.size-KFS2_BLOCK_SIZE,&chunk);
+	if (parent->kfs2_node.size>KFS2_BLOCK_SIZE){
+		panic("_attach_child: update large parent");
+		_node_dealloc_chunk(&chunk);
+		return;
+	}
+	kfs2_directory_entry_t* entry;
+	u64 offset=0;
+	while (offset<48){
+		entry=(kfs2_directory_entry_t*)(chunk.data+offset);
+		offset+=entry->size;
+	}
+	if (!entry->name_length){
+		offset-=entry->size;
+		entry->size+=KFS2_BLOCK_SIZE-offset;
+	}
+	else{
+		entry=(kfs2_directory_entry_t*)(chunk.data+offset);
+		entry->size=KFS2_BLOCK_SIZE-offset;
+	}
+	entry->inode=child->kfs2_node._inode;
+	entry->name_length=name->length;
+	entry->name_compressed_hash=_calculate_compressed_hash(name);
+	mem_copy(entry->name,name->data,name->length);
+	kfs2_directory_entry_t* next_entry=(kfs2_directory_entry_t*)(chunk.data+offset+new_entry_size);
+	next_entry->inode=0;
+	next_entry->size=entry->size-new_entry_size;
+	next_entry->name_length=0;
+	entry->size=new_entry_size;
+	_node_set_chunk(parent,&chunk);
+	_node_dealloc_chunk(&chunk);
 }
 
 
@@ -465,6 +501,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 		NULL,
 		NULL,
 		NULL,
+		0,
 		0
 	};
 	u64 offset=0;
@@ -505,6 +542,7 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 		NULL,
 		NULL,
 		NULL,
+		0,
 		0
 	};
 	while (pointer<kfs2_node->kfs2_node.size){
@@ -555,6 +593,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 		NULL,
 		NULL,
 		NULL,
+		0,
 		0
 	};
 	size+=offset;

@@ -95,6 +95,7 @@ typedef struct _KFS2_DATA_CHUNK{
 	u64* double_cache;
 	void* data;
 	u16 length;
+	u64 data_offset;
 } kfs2_data_chunk_t;
 
 

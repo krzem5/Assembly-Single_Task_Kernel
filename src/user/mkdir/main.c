@@ -11,7 +11,7 @@ int main(int argc,const char** argv){
 	if (!i||i>=argc){
 		return 1;
 	}
-	sys_fd_t fd=sys_fd_open(0,argv[i],SYS_FD_FLAG_CREATE|SYS_FD_FLAG_DIRECTORY);
+	sys_fd_t fd=sys_fd_open(0,argv[i],SYS_FD_FLAG_CREATE|SYS_FD_FLAG_DIRECTORY|SYS_FD_FLAG_EXCLUSIVE_CREATE);
 	if (SYS_IS_ERROR(fd)){
 		sys_io_print("mkdir: unable to create file '%s': error %d\n",argv[i],fd);
 		return 1;
