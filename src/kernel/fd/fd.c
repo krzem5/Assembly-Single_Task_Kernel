@@ -126,7 +126,7 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 			if (node){
 				node->uid=THREAD_DATA->process->uid;
 				node->gid=THREAD_DATA->process->gid;
-				node->flags|=VFS_NODE_FLAG_DIRTY;
+				node->flags|=(((flags&FD_FLAG_DIRECTORY)?0775:0664)<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 				vfs_node_flush(node);
 			}
 		}
