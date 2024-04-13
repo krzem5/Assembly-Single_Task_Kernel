@@ -20,7 +20,8 @@
 
 
 
-static pmm_counter_descriptor_t* _kfs2_chunk_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _kfs2_resize_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* _kfs2_root_block_buffer_pmm_counter=NULL;
 static omm_allocator_t* _kfs2_vfs_node_allocator=NULL;
 static omm_allocator_t* _kfs2_fs_extra_data_allocator=NULL;
 static filesystem_descriptor_t* _kfs2_filesystem_descriptor=NULL;
@@ -34,23 +35,23 @@ static KERNEL_INLINE u8 _calculate_compressed_hash(const string_t* name){
 
 
 
-static void _node_migrate_data_inline_inline(kfs2_vfs_node_t* node,u64 size){
-	panic("_node_migrate_data_inline_inline");
+static void _node_resize_data_inline_inline(kfs2_vfs_node_t* node,u64 size){
+	panic("_node_resize_data_inline_inline");
 }
 
 
 
-static void _node_migrate_data_inline_single(kfs2_vfs_node_t* node,u64 size){
+static void _node_resize_data_inline_single(kfs2_vfs_node_t* node,u64 size){
 	kfs2_node_data_t old_data=node->kfs2_node.data;
 	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
 	node->kfs2_node.data.single[0]=kfs2_bitmap_alloc(node->node.fs,&(extra_data->data_block_allocator));
 	for (u32 i=1;i<6;i++){
 		node->kfs2_node.data.single[i]=0;
 	}
-	void* buffer=(void*)(pmm_alloc(1,_kfs2_chunk_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(1,_kfs2_resize_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	mem_copy(buffer,old_data.inline_,node->kfs2_node.size);
 	kfs2_io_data_block_write(node->node.fs,node->kfs2_node.data.single[0],buffer);
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_chunk_pmm_counter);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_resize_buffer_pmm_counter);
 }
 
 
@@ -80,10 +81,10 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 	}
 	u32 old_storage_type=node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK;
 	if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE){
-		_node_migrate_data_inline_inline(node,size);
+		_node_resize_data_inline_inline(node,size);
 	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
-		_node_migrate_data_inline_single(node,size);
+		_node_resize_data_inline_single(node,size);
 	}
 	else{
 		panic("_node_resize");
@@ -413,7 +414,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=kfs2_io_inode_read(out,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
-	mem_copy(out->guid,root_block->uuid,16);
+	mem_copy(out->guid,extra_data->root_block.uuid,16);
 	return out;
 }
 
@@ -426,7 +427,10 @@ static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
 	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
 	keyring_master_key_get_encrypted(extra_data->root_block.master_key,sizeof(extra_data->root_block.master_key));
 	kfs2_insert_crc(&(extra_data->root_block),sizeof(kfs2_root_block_t));
-	drive_write(fs->partition->drive,fs->partition->start_lba,&(extra_data->root_block),1);
+	void* buffer=(void*)(pmm_alloc(1,_kfs2_root_block_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	mem_copy(buffer,&(extra_data->root_block),sizeof(kfs2_root_block_t));
+	drive_write(fs->partition->drive,fs->partition->start_lba,buffer,1);
+	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_root_block_buffer_pmm_counter);
 }
 
 
@@ -442,15 +446,10 @@ static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 
 void kfs2_register_fs(void){
 	_kfs2_filesystem_descriptor=fs_register_descriptor(&_kfs2_filesystem_descriptor_config);
-	_kfs2_chunk_pmm_counter=pmm_alloc_counter("kfs2_chunk");
+	_kfs2_resize_buffer_pmm_counter=pmm_alloc_counter("kfs2_resize_buffer");
+	_kfs2_root_block_buffer_pmm_counter=pmm_alloc_counter("kfs2_root_block_buffer");
 	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,pmm_alloc_counter("omm_kfs2_node"));
 	spinlock_init(&(_kfs2_vfs_node_allocator->lock));
 	_kfs2_fs_extra_data_allocator=omm_init("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,pmm_alloc_counter("omm_kfs2_extra_data"));
 	spinlock_init(&(_kfs2_fs_extra_data_allocator->lock));
-}
-
-
-
-KERNEL_PUBLIC void kfs2_update_root_block_master_key(filesystem_t* fs){
-	panic("kfs2_update_root_block_master_key");
 }
