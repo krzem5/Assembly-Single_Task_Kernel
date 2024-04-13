@@ -325,7 +325,7 @@ def _compile_uefi():
 
 
 
-def _compile_kernel():
+def _compile_kernel(force_patch_kernel):
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
 	if ("src/kernel/_generated/build_info.c" in changed_files):
 		changed_files.remove("src/kernel/_generated/build_info.c")
@@ -353,7 +353,7 @@ def _compile_kernel():
 			if (os.path.exists(object_file+".gcno")):
 				os.remove(os.path.exists(object_file+".gcno"))
 			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-	if (not changed_files):
+	if (not changed_files and not force_patch_kernel):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
@@ -858,10 +858,12 @@ def _execute_vm():
 if (mode==MODE_COVERAGE):
 	NO_FILE_SERVER=False
 	NO_DISPLAY=True
+force_patch_kernel=False
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
 		if (int(rf.read())!=mode):
 			CLEAR_BUILD_DIRECTORIES.extend(["build/lib","build/module","build/user"])
+			force_patch_kernel=True
 for dir_ in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir_)):
 		os.mkdir(dir_)
@@ -879,7 +881,7 @@ signature.load_key("user",mode==MODE_RELEASE)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi_partition=_compile_uefi()
-rebuild_data_partition=_compile_kernel()
+rebuild_data_partition=_compile_kernel(force_patch_kernel)
 rebuild_data_partition|=_compile_all_modules()
 rebuild_data_partition|=_compile_all_libraries()
 rebuild_data_partition|=_compile_all_user_programs()
