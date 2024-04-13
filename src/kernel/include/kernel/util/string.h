@@ -8,6 +8,10 @@ _Bool str_equal(const char* a,const char* b);
 
 
 
+_Bool str_startswith(const char* str,const char* prefix);
+
+
+
 void str_copy(const char* src,char* dst,u64 max_length);
 
 

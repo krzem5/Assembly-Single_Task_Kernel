@@ -110,6 +110,7 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 
 static _Bool _find_elf_sections(module_loader_context_t* ctx){
 	INFO("Locating ELF sections...");
+	ctx->elf_symbol_table=NULL;
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
 		if (section_header->sh_type==SHT_SYMTAB){
@@ -117,17 +118,11 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			ctx->elf_symbol_table_size=section_header->sh_size;
 			section_header=ctx->data+ctx->elf_header->e_shoff+section_header->sh_link*ctx->elf_header->e_shentsize;
 			ctx->elf_symbol_string_table=ctx->data+section_header->sh_offset;
-		}
-		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module")){
-			if (section_header->sh_size!=sizeof(module_descriptor_t)){
-				ERROR("'.module' section has wrong size");
-				return 0;
-			}
-			ctx->module->descriptor=(void*)(section_header->sh_addr);
+			break;
 		}
 	}
-	if (!ctx->module->descriptor){
-		ERROR("'.module' section not present");
+	if (!ctx->elf_symbol_table){
+		ERROR("'.symtab' section not present");
 		return 0;
 	}
 	return 1;
@@ -152,16 +147,18 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 			}
 		}
 		else if (ret&&elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
-			u32 i=0;
-			for (;i<8;i++){
-				if (name[i]!="__module"[i]){
-					break;
-				}
+			u64 address=elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
+			if (str_equal(name,"__module_header")){
+				ctx->module->descriptor=(void*)address;
 			}
-			if (i<8){
-				symbol_add(ctx->module->name->data,name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
+			else if (!str_startswith(name,"__module")){
+				symbol_add(ctx->module->name->data,name,address,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 			}
 		}
+	}
+	if (ret&&!ctx->module->descriptor){
+		ERROR("module header not present");
+		return 0;
 	}
 	return ret;
 }

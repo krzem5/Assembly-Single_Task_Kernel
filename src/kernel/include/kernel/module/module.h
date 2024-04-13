@@ -19,14 +19,22 @@
 #define MODULE_FLAG_TAINTED 4
 
 #define MODULE_DECLARE(init_callback,deinit_callback,flags) \
+	extern u64 __module_init_start[1]; \
+	extern u64 __module_init_end[1]; \
+	extern u64 __module_deinit_start[1]; \
+	extern u64 __module_deinit_end[1]; \
 	extern u64 __module_gcov_info_start[1]; \
 	extern u64 __module_gcov_info_end[1]; \
 	module_t* module_self=NULL; \
-	static const module_descriptor_t __attribute__((used,section(".module"))) _module_descriptor={ \
+	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
 		(init_callback), \
 		(deinit_callback), \
 		(flags), \
 		&module_self, \
+		(u64)(__module_init_start), \
+		(u64)(__module_init_end), \
+		(u64)(__module_deinit_start), \
+		(u64)(__module_deinit_end), \
 		(u64)(__module_gcov_info_start), \
 		(u64)(__module_gcov_info_end) \
 	}; \
@@ -57,6 +65,10 @@ typedef struct _MODULE_DESCRIPTOR{
 	void (*deinit_callback)(module_t*);
 	u32 flags;
 	module_t** module_self_ptr;
+	u64 init_start;
+	u64 init_end;
+	u64 deinit_start;
+	u64 deinit_end;
 	u64 gcov_info_start;
 	u64 gcov_info_end;
 } module_descriptor_t;
