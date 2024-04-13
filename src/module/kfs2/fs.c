@@ -17,10 +17,20 @@
 
 
 
+typedef struct _KFS2_BITMAP_ALLOCATOR_CACHE_ENTRY{
+	u64 base_offset;
+	u64 offset;
+	u64* data;
+} kfs2_bitmap_allocator_cache_entry_t;
+
+
+
 typedef struct _KFS2_BITMAP_ALLOCATOR{
 	spinlock_t lock;
-	u64* bitmap_offsets;
-	u16 highest_level_length;
+	u64 bitmap_offset;
+	u32 highest_level_length;
+	u32 highest_level_offset;
+	kfs2_bitmap_allocator_cache_entry_t cache[KFS2_BITMAP_LEVEL_COUNT];
 } kfs2_bitmap_allocator_t;
 
 
@@ -179,8 +189,40 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 
+static u64* _fetch_bitmap_data(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator,u32 level,u64 offset){
+	u64 block_index=((allocator->cache+level)->base_offset+offset)*sizeof(u64)/KFS2_BLOCK_SIZE;
+	if ((allocator->cache+level)->offset!=block_index){
+		kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+		partition_t* partition=fs->partition;
+		drive_t* drive=partition->drive;
+		if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_bitmap_block+block_index)<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+			panic("_fetch_bitmap_data: I/O error");
+		}
+		(allocator->cache+level)->offset=block_index;
+	}
+	return (allocator->cache+level)->data+(((allocator->cache+level)->base_offset+offset)&(KFS2_BLOCK_SIZE/sizeof(u64)-1));
+}
+
+
+
+static void _bitmap_allocator_init(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator,const u64* bitmap_offsets,u32 highest_level_length){
+	spinlock_init(&(allocator->lock));
+	allocator->highest_level_length=highest_level_length;
+	allocator->highest_level_offset=0;
+	for (u32 i=0;i<KFS2_BITMAP_LEVEL_COUNT;i++){
+		(allocator->cache+i)->base_offset=bitmap_offsets[i];
+		(allocator->cache+i)->offset=0xffffffffffffffffull;
+		(allocator->cache+i)->data=(void*)(pmm_alloc(pmm_align_up_address(KFS2_BLOCK_SIZE)>>PAGE_SIZE_SHIFT,_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	}
+	for (;allocator->highest_level_offset<allocator->highest_level_length&&!(*_fetch_bitmap_data(fs,allocator,KFS2_BITMAP_LEVEL_COUNT-1,allocator->highest_level_offset));allocator->highest_level_offset++);
+}
+
+
+
 static u64 _bitmap_allocator_alloc(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator){
+	spinlock_acquire_exclusive(&(allocator->lock));
 	panic("_bitmap_allocator_alloc");
+	spinlock_release_exclusive(&(allocator->lock));
 }
 
 
@@ -398,16 +440,12 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
 	extra_data->root_block=*root_block;
 	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
-	spinlock_init(&(extra_data->data_block_allocator.lock));
-	extra_data->data_block_allocator.bitmap_offsets=extra_data->root_block.data_block_allocation_bitmap_offsets;
-	extra_data->data_block_allocator.highest_level_length=extra_data->root_block.data_block_allocation_bitmap_highest_level_length;
-	spinlock_init(&(extra_data->inode_allocator.lock));
-	extra_data->inode_allocator.bitmap_offsets=extra_data->root_block.inode_allocation_bitmap_offsets;
-	extra_data->inode_allocator.highest_level_length=extra_data->root_block.inode_allocation_bitmap_highest_level_length;
 	filesystem_t* out=fs_create(_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
+	_bitmap_allocator_init(out,&(extra_data->data_block_allocator),extra_data->root_block.data_block_allocation_bitmap_offsets,extra_data->root_block.data_block_allocation_bitmap_highest_level_length);
+	_bitmap_allocator_init(out,&(extra_data->inode_allocator),extra_data->root_block.inode_allocation_bitmap_offsets,extra_data->root_block.inode_allocation_bitmap_highest_level_length);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=_load_inode(out,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
