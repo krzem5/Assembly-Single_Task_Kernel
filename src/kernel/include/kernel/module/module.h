@@ -18,7 +18,8 @@
 #define MODULE_FLAG_NO_SIGNATURE 2
 #define MODULE_FLAG_TAINTED 4
 
-#define MODULE_DECLARE(init_callback,deinit_callback,flags) \
+#define MODULE_DECLARE(preinit_callback,deinit_callback,flags) \
+	static void* __attribute__((used)) __TMP=deinit_callback; \
 	extern u64 __module_init_start[1]; \
 	extern u64 __module_init_end[1]; \
 	extern u64 __module_deinit_start[1]; \
@@ -27,9 +28,8 @@
 	extern u64 __module_gcov_info_end[1]; \
 	module_t* module_self=NULL; \
 	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
-		(init_callback), \
-		(deinit_callback), \
 		(flags), \
+		(preinit_callback), \
 		&module_self, \
 		(u64)(__module_init_start), \
 		(u64)(__module_init_end), \
@@ -50,6 +50,8 @@ typedef struct _MODULE{
 	string_t* name;
 	const struct _MODULE_DESCRIPTOR* descriptor;
 	mmap_region_t* region;
+	u64 deinit_array_base;
+	u64 deinit_array_size;
 #ifdef KERNEL_COVERAGE
 	u64 gcov_info_base;
 	u64 gcov_info_size;
@@ -61,9 +63,8 @@ typedef struct _MODULE{
 
 
 typedef struct _MODULE_DESCRIPTOR{
-	_Bool (*init_callback)(module_t*);
-	void (*deinit_callback)(module_t*);
 	u32 flags;
+	_Bool (*preinit_callback)(module_t*);
 	module_t** module_self_ptr;
 	u64 init_start;
 	u64 init_end;

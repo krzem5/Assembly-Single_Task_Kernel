@@ -305,6 +305,8 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
+	module->deinit_array_base=module->descriptor->deinit_start;
+	module->deinit_array_size=module->descriptor->deinit_end-module->descriptor->deinit_start;
 #ifdef KERNEL_COVERAGE
 	module->gcov_info_base=module->descriptor->gcov_info_start;
 	module->gcov_info_size=module->descriptor->gcov_info_end-module->descriptor->gcov_info_start;
@@ -320,9 +322,15 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
 	*(module->descriptor->module_self_ptr)=module;
-	if (!module->descriptor->init_callback(module)){
+	if (module->descriptor->preinit_callback&&!module->descriptor->preinit_callback(module)){
 		module_unload(module);
 		return NULL;
+	}
+	for (u64 i=0;i+sizeof(void*)<=module->descriptor->init_end-module->descriptor->init_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(module->descriptor->init_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
 	}
 	module->state=MODULE_STATE_LOADED;
 	return module;
@@ -344,9 +352,14 @@ KERNEL_PUBLIC _Bool module_unload(module_t* module){
 	}
 	LOG("Unloading module '%s'...",module->name->data);
 	module->state=MODULE_STATE_UNLOADING;
-	symbol_remove(module->name->data);
-	module->descriptor->deinit_callback(module);
+	for (u64 i=0;i+sizeof(void*)<=module->deinit_array_size;i+=sizeof(void*)){
+		void* func=*((void*const*)(module->deinit_array_base+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
 	module->state=MODULE_STATE_UNLOADED;
+	symbol_remove(module->name->data);
 	if (module->region){
 		mmap_dealloc_region(_module_image_mmap,module->region);
 	}
