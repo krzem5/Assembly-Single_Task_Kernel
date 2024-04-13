@@ -19,5 +19,6 @@ test_crash_normal:sys
 test_crash_wrong_iopl:sys
 test_elf_send_results:sys
 time:sys
+touch:sys
 tree:sys,dircolor
 ui:sys,opengl,uidisplay

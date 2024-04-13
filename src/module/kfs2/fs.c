@@ -643,13 +643,13 @@ static void _kfs2_flush(vfs_node_t* node){
 	}
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
 	kfs2_node->kfs2_node.flags&=~(KFS2_INODE_TYPE_MASK|KFS2_INODE_PERMISSION_MASK);
-	if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_FILE){
+	if ((kfs2_node->node.flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_FILE){
 		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_FILE;
 	}
-	else if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
+	else if ((kfs2_node->node.flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_DIRECTORY;
 	}
-	else if ((kfs2_node->node.flags&KFS2_INODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+	else if ((kfs2_node->node.flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
 		kfs2_node->kfs2_node.flags|=KFS2_INODE_TYPE_LINK;
 	}
 	else{
