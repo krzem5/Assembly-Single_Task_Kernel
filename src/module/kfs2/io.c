@@ -1,6 +1,5 @@
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
-#include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
@@ -10,7 +9,6 @@
 #include <kfs2/crc.h>
 #include <kfs2/io.h>
 #include <kfs2/structures.h>
-#define KERNEL_LOG_NAME "kfs2_io"
 
 
 
