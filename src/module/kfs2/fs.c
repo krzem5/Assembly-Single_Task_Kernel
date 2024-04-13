@@ -21,6 +21,7 @@ typedef struct _KFS2_BITMAP_ALLOCATOR_CACHE_ENTRY{
 	u64 base_offset;
 	u64 offset;
 	u64* data;
+	_Bool dirty;
 } kfs2_bitmap_allocator_cache_entry_t;
 
 
@@ -189,18 +190,28 @@ static void _node_dealloc_chunk(kfs2_data_chunk_t* chunk){
 
 
 
-static u64* _fetch_bitmap_data(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator,u32 level,u64 offset){
+static u64* _bitmap_allocator_fetch_data(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator,u32 level,u64 offset){
 	u64 block_index=((allocator->cache+level)->base_offset+offset)*sizeof(u64)/KFS2_BLOCK_SIZE;
 	if ((allocator->cache+level)->offset!=block_index){
+		if ((allocator->cache+level)->dirty){
+			panic("_bitmap_allocator_fetch_data: dirty");
+		}
 		kfs2_fs_extra_data_t* extra_data=fs->extra_data;
 		partition_t* partition=fs->partition;
 		drive_t* drive=partition->drive;
 		if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_bitmap_block+block_index)<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-			panic("_fetch_bitmap_data: I/O error");
+			panic("_bitmap_allocator_fetch_data: I/O error");
 		}
 		(allocator->cache+level)->offset=block_index;
+		(allocator->cache+level)->dirty=0;
 	}
 	return (allocator->cache+level)->data+(((allocator->cache+level)->base_offset+offset)&(KFS2_BLOCK_SIZE/sizeof(u64)-1));
+}
+
+
+
+static void _bitmap_allocator_find_next_highest_level_offset(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator){
+	for (;allocator->highest_level_offset<allocator->highest_level_length&&!(*_bitmap_allocator_fetch_data(fs,allocator,KFS2_BITMAP_LEVEL_COUNT-1,allocator->highest_level_offset));allocator->highest_level_offset++);
 }
 
 
@@ -213,16 +224,40 @@ static void _bitmap_allocator_init(filesystem_t* fs,kfs2_bitmap_allocator_t* all
 		(allocator->cache+i)->base_offset=bitmap_offsets[i];
 		(allocator->cache+i)->offset=0xffffffffffffffffull;
 		(allocator->cache+i)->data=(void*)(pmm_alloc(pmm_align_up_address(KFS2_BLOCK_SIZE)>>PAGE_SIZE_SHIFT,_kfs2_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		(allocator->cache+i)->dirty=0;
 	}
-	for (;allocator->highest_level_offset<allocator->highest_level_length&&!(*_fetch_bitmap_data(fs,allocator,KFS2_BITMAP_LEVEL_COUNT-1,allocator->highest_level_offset));allocator->highest_level_offset++);
+	_bitmap_allocator_find_next_highest_level_offset(fs,allocator);
 }
 
 
 
 static u64 _bitmap_allocator_alloc(filesystem_t* fs,kfs2_bitmap_allocator_t* allocator){
 	spinlock_acquire_exclusive(&(allocator->lock));
-	panic("_bitmap_allocator_alloc");
+	if (allocator->highest_level_offset==allocator->highest_level_length){
+		spinlock_release_exclusive(&(allocator->lock));
+		return 0;
+	}
+	u64 out=allocator->highest_level_offset;
+	u64* ptr[KFS2_BITMAP_LEVEL_COUNT];
+	for (u32 i=KFS2_BITMAP_LEVEL_COUNT;i;){
+		i--;
+		ptr[i]=_bitmap_allocator_fetch_data(fs,allocator,i,out);
+		out=(out<<6)|(__builtin_ffsll(*(ptr[i]))-1);
+	}
+	u32 i=0;
+	for (;i<KFS2_BITMAP_LEVEL_COUNT;i++){
+		*(ptr[i])&=(*(ptr[i]))-1;
+		(allocator->cache+i)->dirty=1;
+		if (*(ptr[i])){
+			break;
+		}
+	}
+	if (i==KFS2_BITMAP_LEVEL_COUNT){
+		allocator->highest_level_offset++;
+		_bitmap_allocator_find_next_highest_level_offset(fs,allocator);
+	}
 	spinlock_release_exclusive(&(allocator->lock));
+	return out;
 }
 
 
@@ -230,16 +265,17 @@ static u64 _bitmap_allocator_alloc(filesystem_t* fs,kfs2_bitmap_allocator_t* all
 static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flags){
 	kfs2_vfs_node_t* out=omm_alloc(_kfs2_vfs_node_allocator);
 	out->kfs2_node._inode=0xffffffff;
-	if (flags&VFS_NODE_FLAG_CREATE){
-		filesystem_t* fs=parent->fs;
-		kfs2_fs_extra_data_t* extra_data=fs->extra_data;
-		out->kfs2_node._inode=_bitmap_allocator_alloc(fs,&(extra_data->inode_allocator));
-		if (!out->kfs2_node._inode){
-			omm_dealloc(_kfs2_vfs_node_allocator,out);
-			return NULL;
-		}
-		panic("_kfs2_create: unimplemented");
+	if (!(flags&VFS_NODE_FLAG_CREATE)){
+		return (vfs_node_t*)out;
 	}
+	filesystem_t* fs=parent->fs;
+	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	out->kfs2_node._inode=_bitmap_allocator_alloc(fs,&(extra_data->inode_allocator));
+	if (!out->kfs2_node._inode){
+		omm_dealloc(_kfs2_vfs_node_allocator,out);
+		return NULL;
+	}
+	panic("_kfs2_create: unimplemented");
 	return (vfs_node_t*)out;
 }
 

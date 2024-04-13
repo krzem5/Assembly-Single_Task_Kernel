@@ -406,7 +406,7 @@ def _init_bitmap(backend,base_offset,count,bitmap,bitmap_offsets):
 
 def _alloc_inode(backend,root_block):
 	offset=root_block.first_bitmap_block*KFS2_BLOCK_SIZE
-	backend.seek(offset+root_block.inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1])
+	backend.seek(offset+(root_block.inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]<<3))
 	idx=0
 	while (True):
 		mask=backend.read_u64()
@@ -417,12 +417,12 @@ def _alloc_inode(backend,root_block):
 		if (idx==root_block.inode_allocation_bitmap_highest_level_length):
 			raise RuntimeError
 	for i in range(KFS2_BITMAP_LEVEL_COUNT-2,-1,-1):
-		backend.seek(offset+root_block.inode_allocation_bitmap_offsets[i]+(idx<<3))
+		backend.seek(offset+((root_block.inode_allocation_bitmap_offsets[i]+idx)<<3))
 		idx=ffs(backend.read_u64())|(idx<<6)
 	out=idx
 	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
 		idx>>=6
-		k=offset+root_block.inode_allocation_bitmap_offsets[i]+(idx<<3)
+		k=offset+((root_block.inode_allocation_bitmap_offsets[i]+idx)<<3)
 		backend.seek(k)
 		mask=backend.read_u64()
 		mask&=mask-1
@@ -436,7 +436,7 @@ def _alloc_inode(backend,root_block):
 
 def _alloc_data_block(backend,root_block):
 	offset=root_block.first_bitmap_block*KFS2_BLOCK_SIZE
-	backend.seek(offset+root_block.data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1])
+	backend.seek(offset+(root_block.data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]<<3))
 	idx=0
 	while (True):
 		mask=backend.read_u64()
@@ -447,12 +447,12 @@ def _alloc_data_block(backend,root_block):
 		if (idx==root_block.data_block_allocation_bitmap_highest_level_length):
 			raise RuntimeError
 	for i in range(KFS2_BITMAP_LEVEL_COUNT-2,-1,-1):
-		backend.seek(offset+root_block.data_block_allocation_bitmap_offsets[i]+(idx<<3))
+		backend.seek(offset+((root_block.data_block_allocation_bitmap_offsets[i]+idx)<<3))
 		idx=ffs(backend.read_u64())|(idx<<6)
 	out=idx
 	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
 		idx>>=6
-		k=offset+root_block.data_block_allocation_bitmap_offsets[i]+(idx<<3)
+		k=offset+((root_block.data_block_allocation_bitmap_offsets[i]+idx)<<3)
 		backend.seek(k)
 		mask=backend.read_u64()
 		mask&=mask-1
