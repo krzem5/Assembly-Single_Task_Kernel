@@ -1,24 +1,47 @@
 SECTIONS{
 	. = 0;
-	.text : {
+	.module_ue : {
+		*(.etext .etext.*)
+	}
+	. = ALIGN(4096);
+	.module_ur : {
+		*(.erdata .erdata.*)
+	}
+	.init : {
+		*(.init)
+	}
+	. = ALIGN(4096);
+	.module_uw : {
+		*(.edata .edata.*)
+	}
+	. = ALIGN(4096);
+	.module_ex : {
 		*(.text .text.*)
 	}
 	. = ALIGN(4096);
-	.rodata : {
+	.module_nx : {
 		*(.rodata .rodata.*)
-	}
-	.gcov_info : {
+		. = ALIGN(8);
+		PROVIDE_HIDDEN(__module_gcov_info_start = .);
 		*(.gcov_info)
+		PROVIDE_HIDDEN(__module_gcov_info_end = .);
+	}
+	.deinit : {
+		*(.deinit)
 	}
 	.module : {
 		*(.module)
 	}
 	. = ALIGN(4096);
-	.data : {
+	.module_rw : {
 		*(.data .data.*)
 	}
 	. = ALIGN(4096);
-	.bss : {
+	.module_iw : {
+		*(.idata .idata.*)
+	}
+	. = ALIGN(4096);
+	.module_zw : {
 		*(.bss .bss.*)
 	}
 	. = ALIGN(4096);

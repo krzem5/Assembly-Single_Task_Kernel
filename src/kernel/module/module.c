@@ -125,13 +125,6 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			}
 			ctx->module->descriptor=(void*)(section_header->sh_addr);
 		}
-#ifdef KERNEL_COVERAGE
-		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".gcov_info")){
-			ctx->module->gcov_info_base=section_header->sh_addr;
-			ctx->module->gcov_info_size=section_header->sh_size;
-			INFO("Found .gcov_info section at %p (%u file%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
-		}
-#endif
 	}
 	if (!ctx->module->descriptor){
 		ERROR("'.module' section not present");
@@ -147,18 +140,27 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 	_Bool ret=1;
 	for (u64 i=1;i<ctx->elf_symbol_table_size/sizeof(elf_sym_t);i++){
 		elf_sym_t* elf_symbol=ctx->elf_symbol_table+i;
-		if (elf_symbol->st_shndx==SHN_UNDEF&&ctx->elf_symbol_string_table[elf_symbol->st_name]){
-			const symbol_t* symbol=symbol_lookup_by_name(ctx->elf_symbol_string_table+elf_symbol->st_name);
+		const char* name=ctx->elf_symbol_string_table+elf_symbol->st_name;
+		if (elf_symbol->st_shndx==SHN_UNDEF&&name[0]){
+			const symbol_t* symbol=symbol_lookup_by_name(name);
 			if (symbol&&symbol->is_public){
 				elf_symbol->st_value=symbol->rb_node.key;
 			}
 			else{
-				ERROR("Unresolved symbol: %s",ctx->elf_symbol_string_table+elf_symbol->st_name);
+				ERROR("Unresolved symbol: %s",name);
 				ret=0;
 			}
 		}
 		else if (ret&&elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
-			symbol_add(ctx->module->name->data,ctx->elf_symbol_string_table+elf_symbol->st_name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
+			u32 i=0;
+			for (;i<8;i++){
+				if (name[i]!="__module"[i]){
+					break;
+				}
+			}
+			if (i<8){
+				symbol_add(ctx->module->name->data,name,elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
+			}
 		}
 	}
 	return ret;
@@ -275,10 +277,6 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	module->name=smm_alloc(name,0);
 	module->descriptor=NULL;
 	module->region=NULL;
-#ifdef KERNEL_COVERAGE
-	module->gcov_info_base=0;
-	module->gcov_info_size=0;
-#endif
 	module->flags=0;
 	module->state=MODULE_STATE_LOADING;
 	module_loader_context_t ctx={
@@ -310,6 +308,16 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
+#ifdef KERNEL_COVERAGE
+	module->gcov_info_base=module->descriptor->gcov_info_start;
+	module->gcov_info_size=module->descriptor->gcov_info_end-module->descriptor->gcov_info_start;
+	if (module->gcov_info_size){
+		INFO("Found .gcov_info data at %p (%u file%s)",module->gcov_info_base,module->gcov_info_size/sizeof(void*),(module->gcov_info_size/sizeof(void*)==1?"":"s"));
+	}
+	else{
+		module->gcov_info_base=0;
+	}
+#endif
 	mmap_dealloc_region(process_kernel->mmap,region);
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
