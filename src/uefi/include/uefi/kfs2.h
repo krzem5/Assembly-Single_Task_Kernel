@@ -35,7 +35,6 @@ typedef struct __attribute__((packed)) _KFS2_ROOT_BLOCK{
 	uint64_t data_block_count;
 	uint64_t first_inode_block;
 	uint64_t first_data_block;
-	uint64_t first_bitmap_block;
 	uint64_t inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
 	uint64_t data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
 	uint16_t inode_allocation_bitmap_highest_level_length;

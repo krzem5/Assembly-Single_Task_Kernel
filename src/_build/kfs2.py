@@ -81,7 +81,7 @@ class KFS2FileBackend(object):
 
 
 class KFS2RootBlock(object):
-	def __init__(self,backend,uuid,block_count,inode_count,data_block_count,first_inode_block,first_data_block,first_bitmap_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode,initramfs_inode):
+	def __init__(self,backend,uuid,block_count,inode_count,data_block_count,first_inode_block,first_data_block,inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets,inode_allocation_bitmap_highest_level_length,data_block_allocation_bitmap_highest_level_length,kernel_inode,initramfs_inode):
 		self._backend=backend
 		self.uuid=uuid
 		self.block_count=block_count
@@ -89,7 +89,6 @@ class KFS2RootBlock(object):
 		self.data_block_count=data_block_count
 		self.first_inode_block=first_inode_block
 		self.first_data_block=first_data_block
-		self.first_bitmap_block=first_bitmap_block
 		self.inode_allocation_bitmap_offsets=inode_allocation_bitmap_offsets
 		self.data_block_allocation_bitmap_offsets=data_block_allocation_bitmap_offsets
 		self.inode_allocation_bitmap_highest_level_length=inode_allocation_bitmap_highest_level_length
@@ -98,7 +97,7 @@ class KFS2RootBlock(object):
 		self.initramfs_inode=initramfs_inode
 
 	def save(self):
-		header=struct.pack(f"<Q16B64BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
+		header=struct.pack(f"<Q16B64BQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHII",
 			KFS2_SIGNATURE,
 			*self.uuid,
 			*(b"\x00"*64),
@@ -107,7 +106,6 @@ class KFS2RootBlock(object):
 			self.data_block_count,
 			self.first_inode_block,
 			self.first_data_block,
-			self.first_bitmap_block,
 			*self.inode_allocation_bitmap_offsets,
 			*self.data_block_allocation_bitmap_offsets,
 			self.inode_allocation_bitmap_highest_level_length,
@@ -121,9 +119,9 @@ class KFS2RootBlock(object):
 	@staticmethod
 	def load(backend):
 		backend.seek(0)
-		header=backend.read(232)
-		data=struct.unpack(f"<Q16B64BQQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
-		if (data[0]!=KFS2_SIGNATURE or data[87+2*KFS2_BITMAP_LEVEL_COUNT+4]!=binascii.crc32(header[:-4])):
+		header=backend.read(224)
+		data=struct.unpack(f"<Q16B64BQQQQQ{KFS2_BITMAP_LEVEL_COUNT}Q{KFS2_BITMAP_LEVEL_COUNT}QHHIII",header)
+		if (data[0]!=KFS2_SIGNATURE or data[86+2*KFS2_BITMAP_LEVEL_COUNT+4]!=binascii.crc32(header[:-4])):
 			raise RuntimeError
 		return KFS2RootBlock(
 			backend,
@@ -133,13 +131,12 @@ class KFS2RootBlock(object):
 			data[83],
 			data[84],
 			data[85],
-			data[86],
-			data[87:87+KFS2_BITMAP_LEVEL_COUNT],
-			data[87+KFS2_BITMAP_LEVEL_COUNT:87+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[87+2*KFS2_BITMAP_LEVEL_COUNT],
-			data[87+2*KFS2_BITMAP_LEVEL_COUNT+1],
-			data[87+2*KFS2_BITMAP_LEVEL_COUNT+2],
-			data[87+2*KFS2_BITMAP_LEVEL_COUNT+3]
+			data[86:86+KFS2_BITMAP_LEVEL_COUNT],
+			data[86+KFS2_BITMAP_LEVEL_COUNT:86+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[86+2*KFS2_BITMAP_LEVEL_COUNT],
+			data[86+2*KFS2_BITMAP_LEVEL_COUNT+1],
+			data[86+2*KFS2_BITMAP_LEVEL_COUNT+2],
+			data[86+2*KFS2_BITMAP_LEVEL_COUNT+3]
 		)
 
 
@@ -371,23 +368,9 @@ def _compute_bitmap(size):
 
 
 
-def _compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap):
-	offset=0
-	inode_allocation_bitmap_offsets=[]
-	data_block_allocation_bitmap_offsets=[]
+def _init_bitmap(backend,count,bitmap,bitmap_offsets):
 	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		inode_allocation_bitmap_offsets.append(offset)
-		offset+=inode_allocation_bitmap[i]
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		data_block_allocation_bitmap_offsets.append(offset)
-		offset+=data_block_allocation_bitmap[i]
-	return inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets
-
-
-
-def _init_bitmap(backend,base_offset,count,bitmap,bitmap_offsets):
-	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
-		backend.seek(base_offset+bitmap_offsets[i]*8)
+		backend.seek(bitmap_offsets[i]*KFS2_BLOCK_SIZE)
 		new_count=0
 		for j in range(0,bitmap[i]):
 			mask=0
@@ -405,8 +388,7 @@ def _init_bitmap(backend,base_offset,count,bitmap,bitmap_offsets):
 
 
 def _alloc_inode(backend,root_block):
-	offset=root_block.first_bitmap_block*KFS2_BLOCK_SIZE
-	backend.seek(offset+(root_block.inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]<<3))
+	backend.seek(root_block.inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]*KFS2_BLOCK_SIZE)
 	idx=0
 	while (True):
 		mask=backend.read_u64()
@@ -417,12 +399,12 @@ def _alloc_inode(backend,root_block):
 		if (idx==root_block.inode_allocation_bitmap_highest_level_length):
 			raise RuntimeError
 	for i in range(KFS2_BITMAP_LEVEL_COUNT-2,-1,-1):
-		backend.seek(offset+((root_block.inode_allocation_bitmap_offsets[i]+idx)<<3))
+		backend.seek(root_block.inode_allocation_bitmap_offsets[i]*KFS2_BLOCK_SIZE+(idx<<3))
 		idx=ffs(backend.read_u64())|(idx<<6)
 	out=idx
 	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
 		idx>>=6
-		k=offset+((root_block.inode_allocation_bitmap_offsets[i]+idx)<<3)
+		k=root_block.inode_allocation_bitmap_offsets[i]*KFS2_BLOCK_SIZE+(idx<<3)
 		backend.seek(k)
 		mask=backend.read_u64()
 		mask&=mask-1
@@ -435,8 +417,7 @@ def _alloc_inode(backend,root_block):
 
 
 def _alloc_data_block(backend,root_block):
-	offset=root_block.first_bitmap_block*KFS2_BLOCK_SIZE
-	backend.seek(offset+(root_block.data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]<<3))
+	backend.seek(root_block.data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT-1]*KFS2_BLOCK_SIZE)
 	idx=0
 	while (True):
 		mask=backend.read_u64()
@@ -447,12 +428,12 @@ def _alloc_data_block(backend,root_block):
 		if (idx==root_block.data_block_allocation_bitmap_highest_level_length):
 			raise RuntimeError
 	for i in range(KFS2_BITMAP_LEVEL_COUNT-2,-1,-1):
-		backend.seek(offset+((root_block.data_block_allocation_bitmap_offsets[i]+idx)<<3))
+		backend.seek(root_block.data_block_allocation_bitmap_offsets[i]*KFS2_BLOCK_SIZE+(idx<<3))
 		idx=ffs(backend.read_u64())|(idx<<6)
 	out=idx
 	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
 		idx>>=6
-		k=offset+((root_block.data_block_allocation_bitmap_offsets[i]+idx)<<3)
+		k=root_block.data_block_allocation_bitmap_offsets[i]*KFS2_BLOCK_SIZE+(idx<<3)
 		backend.seek(k)
 		mask=backend.read_u64()
 		mask&=mask-1
@@ -508,14 +489,18 @@ def format_partition(backend):
 	if (inode_count>KFS2_MAX_INODES):
 		inode_count=KFS2_MAX_INODES
 	inode_allocation_bitmap=_compute_bitmap(inode_count)
-	inode_allocation_bitmap_entry_count=sum(inode_allocation_bitmap)
 	first_inode_block=1
 	first_data_block=first_inode_block+inode_block_count
 	data_block_allocation_bitmap=_compute_bitmap(backend.block_count-first_data_block)
-	data_block_allocation_bitmap_entry_count=sum(data_block_allocation_bitmap)
-	first_bitmap_block=backend.block_count-((inode_allocation_bitmap_entry_count+data_block_allocation_bitmap_entry_count)*8+KFS2_BLOCK_SIZE-1)//KFS2_BLOCK_SIZE
+	inode_allocation_bitmap_offsets=[]
+	data_block_allocation_bitmap_offsets=[]
+	first_bitmap_block=backend.block_count
+	for i in range(0,KFS2_BITMAP_LEVEL_COUNT):
+		first_bitmap_block-=(inode_allocation_bitmap[i]+KFS2_BLOCK_SIZE-1)//KFS2_BLOCK_SIZE
+		inode_allocation_bitmap_offsets.append(first_bitmap_block)
+		first_bitmap_block-=(data_block_allocation_bitmap[i]+KFS2_BLOCK_SIZE-1)//KFS2_BLOCK_SIZE
+		data_block_allocation_bitmap_offsets.append(first_bitmap_block)
 	data_block_count=first_bitmap_block-first_data_block
-	inode_allocation_bitmap_offsets,data_block_allocation_bitmap_offsets=_compute_bitmap_offsets(inode_allocation_bitmap,data_block_allocation_bitmap)
 	root_block=KFS2RootBlock(
 		backend,
 		uuid.uuid4().bytes,
@@ -524,7 +509,6 @@ def format_partition(backend):
 		data_block_count,
 		first_inode_block,
 		first_data_block,
-		first_bitmap_block,
 		inode_allocation_bitmap_offsets,
 		data_block_allocation_bitmap_offsets,
 		inode_allocation_bitmap[KFS2_BITMAP_LEVEL_COUNT-1],
@@ -533,8 +517,8 @@ def format_partition(backend):
 		0
 	)
 	root_block.save()
-	_init_bitmap(backend,first_bitmap_block*KFS2_BLOCK_SIZE,inode_count,inode_allocation_bitmap,inode_allocation_bitmap_offsets)
-	_init_bitmap(backend,first_bitmap_block*KFS2_BLOCK_SIZE,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
+	_init_bitmap(backend,inode_count,inode_allocation_bitmap,inode_allocation_bitmap_offsets)
+	_init_bitmap(backend,data_block_count,data_block_allocation_bitmap,data_block_allocation_bitmap_offsets)
 	if (_alloc_inode(backend,root_block)):
 		raise RuntimeError
 	_init_node_as_directory(backend,root_block,0,0o755).save()

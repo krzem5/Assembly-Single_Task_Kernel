@@ -38,7 +38,6 @@ typedef struct KERNEL_PACKED _KFS2_ROOT_BLOCK{
 	u64 data_block_count;
 	u64 first_inode_block;
 	u64 first_data_block;
-	u64 first_bitmap_block;
 	u64 inode_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
 	u64 data_block_allocation_bitmap_offsets[KFS2_BITMAP_LEVEL_COUNT];
 	u16 inode_allocation_bitmap_highest_level_length;
