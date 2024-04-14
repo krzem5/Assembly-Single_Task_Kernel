@@ -2,6 +2,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/socket/port.h>
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
@@ -18,7 +19,7 @@
 
 
 
-static omm_allocator_t* _net_udp_address_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_udp_address_allocator=NULL;
 
 
 
@@ -212,10 +213,15 @@ static const net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
 
 
 
-void net_udp_init(void){
+MODULE_INIT(){
+	_net_udp_address_allocator=omm_init("net_udp_address",sizeof(net_udp_address_t),8,4,pmm_alloc_counter("omm_net_udp_address"));
+	spinlock_init(&(_net_udp_address_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	LOG("Registering UDP protocol...");
 	socket_register_dtp_descriptor(&_net_udp_socket_dtp_descriptor);
 	net_ip4_register_protocol_descriptor(&_net_udp_ip4_protocol_descriptor);
-	_net_udp_address_allocator=omm_init("net_udp_address",sizeof(net_udp_address_t),8,4,pmm_alloc_counter("omm_net_udp_address"));
-	spinlock_init(&(_net_udp_address_allocator->lock));
 }

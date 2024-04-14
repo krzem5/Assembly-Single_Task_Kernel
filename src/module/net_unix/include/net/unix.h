@@ -10,8 +10,4 @@ typedef struct _NET_UNIX_ADDRESS{
 
 
 
-void net_unix_init(void);
-
-
-
 #endif

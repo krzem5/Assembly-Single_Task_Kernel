@@ -2,6 +2,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/tree/rb_tree.h>
@@ -19,8 +20,8 @@
 
 static spinlock_t _net_ip4_protocol_lock;
 static rb_tree_t _net_ip4_protocol_type_tree;
-static omm_allocator_t* _net_ip4_protocol_allocator=NULL;
-static omm_allocator_t* _net_ip4_packet_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_ip4_protocol_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_ip4_packet_allocator=NULL;
 
 
 
@@ -63,15 +64,20 @@ static const network_layer2_protocol_descriptor_t _net_ip4_protocol_descriptor={
 
 
 
-void net_ip4_init(void){
-	LOG("Registering IPv4 protocol...");
-	network_layer2_register_descriptor(&_net_ip4_protocol_descriptor);
+MODULE_INIT(){
 	spinlock_init(&_net_ip4_protocol_lock);
 	rb_tree_init(&_net_ip4_protocol_type_tree);
 	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1,pmm_alloc_counter("omm_net_ip4_protocol"));
 	spinlock_init(&(_net_ip4_protocol_allocator->lock));
 	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4,pmm_alloc_counter("omm_net_ip4_packet"));
 	spinlock_init(&(_net_ip4_packet_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
+	LOG("Registering IPv4 protocol...");
+	network_layer2_register_descriptor(&_net_ip4_protocol_descriptor);
 }
 
 

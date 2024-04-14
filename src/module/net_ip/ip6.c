@@ -1,4 +1,5 @@
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
 #include <kernel/types.h>
@@ -24,7 +25,7 @@ static const network_layer2_protocol_descriptor_t _net_ip6_protocol_descriptor={
 
 
 
-void net_ip6_init(void){
+MODULE_POSTINIT(){
 	LOG("Registering IPv6 protocol...");
 	network_layer2_register_descriptor(&_net_ip6_protocol_descriptor);
 }

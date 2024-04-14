@@ -44,8 +44,4 @@ typedef struct KERNEL_PACKED _NET_UDP_PACKET{
 
 
 
-void net_udp_init(void);
-
-
-
 #endif

@@ -52,10 +52,6 @@ typedef struct _NET_IP4_PROTOCOL{
 
 
 
-void net_ip4_init(void);
-
-
-
 void net_ip4_register_protocol_descriptor(const net_ip4_protocol_descriptor_t* descriptor);
 
 

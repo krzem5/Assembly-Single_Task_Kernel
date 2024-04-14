@@ -1,5 +1,6 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
+#include <kernel/module/module.h>
 #include <kernel/socket/socket.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -121,7 +122,7 @@ static const socket_dtp_descriptor_t _net_unix_socket_dtp_descriptor={
 
 
 
-void net_unix_init(void){
+MODULE_POSTINIT(){
 	LOG("Registering UNIX datagram sockets...");
 	socket_register_dtp_descriptor(&_net_unix_socket_dtp_descriptor);
 }
