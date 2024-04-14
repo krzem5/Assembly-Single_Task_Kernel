@@ -3,6 +3,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <ui/display.h>
@@ -123,8 +124,8 @@ static const eia_resolution_and_timing_t _eia_timings[256]={
 	[219]={4096,2160,120}
 };
 
-static omm_allocator_t* _ui_display_info_allocator=NULL;
-static omm_allocator_t* _ui_display_info_mode_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ui_display_info_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ui_display_info_mode_allocator=NULL;
 
 
 
@@ -152,7 +153,7 @@ static void _add_mode(u32 width,u32 height,u32 freq,ui_display_info_t* out){
 
 
 
-void ui_display_info_init(void){
+MODULE_INIT(){
 	LOG("Initializing UI display information...");
 	_ui_display_info_allocator=omm_init("ui_display_info",sizeof(ui_display_info_t),8,2,pmm_alloc_counter("omm_ui_display_info"));
 	spinlock_init(&(_ui_display_info_allocator->lock));

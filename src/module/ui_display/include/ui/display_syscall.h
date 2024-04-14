@@ -41,8 +41,4 @@ typedef struct _UI_DISPLAY_USER_FRAMEBUFFER{
 
 
 
-void ui_display_syscall_init(void);
-
-
-
 #endif

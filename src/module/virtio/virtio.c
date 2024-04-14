@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/event.h>
 #include <kernel/pci/msix.h>
 #include <kernel/pci/pci.h>
@@ -22,12 +23,12 @@
 
 
 static u16 _virtio_device_next_index=0;
-static omm_allocator_t* _virtio_device_allocator=NULL;
-static omm_allocator_t* _virtio_device_driver_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_device_driver_node_allocator=NULL;
 static rb_tree_t _virtio_device_driver_tree;
 static spinlock_t _virtio_device_driver_tree_lock;
-static omm_allocator_t* _virtio_queue_allocator=NULL;
-static pmm_counter_descriptor_t* _virtio_queue_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_queue_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _virtio_queue_pmm_counter=NULL;
 static handle_type_t _virtio_device_handle_type=0;
 
 
@@ -344,7 +345,7 @@ KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
 
 
 
-void virtio_locate_devices(void){
+MODULE_INIT(){
 	LOG("Initializing VirtIO driver...");
 	_virtio_device_allocator=omm_init("virtio_device",sizeof(virtio_device_t),8,1,pmm_alloc_counter("omm_virtio_device"));
 	spinlock_init(&(_virtio_device_allocator->lock));
@@ -356,6 +357,11 @@ void virtio_locate_devices(void){
 	_virtio_queue_allocator=omm_init("virtio_queue",sizeof(virtio_queue_t),8,1,pmm_alloc_counter("omm_virtio_queue"));
 	spinlock_init(&(_virtio_queue_allocator->lock));
 	_virtio_queue_pmm_counter=pmm_alloc_counter("virtio_queue");
+}
+
+
+
+MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_virtio_init_device(device);

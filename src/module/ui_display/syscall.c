@@ -2,6 +2,7 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
@@ -152,7 +153,7 @@ static syscall_callback_t const _ui_display_syscall_functions[]={
 
 
 
-void ui_display_syscall_init(void){
+MODULE_POSTINIT(){
 	LOG("Initializing UI display syscalls...");
 	syscall_create_table("ui_display",_ui_display_syscall_functions,sizeof(_ui_display_syscall_functions)/sizeof(syscall_callback_t));
 }

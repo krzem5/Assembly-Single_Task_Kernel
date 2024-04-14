@@ -5,6 +5,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <ui/display.h>
@@ -13,14 +14,14 @@
 
 
 
-static pmm_counter_descriptor_t* _ui_framebuffer_pmm_counter=NULL;
-static omm_allocator_t* _ui_framebuffer_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ui_framebuffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ui_framebuffer_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t ui_framebuffer_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE ui_framebuffer_handle_type=0;
 
 
 
-void ui_framebuffer_init(void){
+MODULE_INIT(){
 	LOG("Initializing UI framebuffers...");
 	_ui_framebuffer_pmm_counter=pmm_alloc_counter("ui_framebuffer");
 	_ui_framebuffer_allocator=omm_init("ui_framebuffer",sizeof(ui_framebuffer_t),8,2,pmm_alloc_counter("omm_ui_framebuffer"));

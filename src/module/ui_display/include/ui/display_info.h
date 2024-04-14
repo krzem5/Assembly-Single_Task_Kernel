@@ -38,10 +38,6 @@ typedef struct _UI_DISPLAY_INFO{
 
 
 
-void ui_display_info_init(void);
-
-
-
 ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 edid_length);
 
 

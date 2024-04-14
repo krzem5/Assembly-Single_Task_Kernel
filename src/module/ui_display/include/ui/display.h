@@ -33,10 +33,6 @@ extern handle_type_t ui_display_handle_type;
 
 
 
-void ui_display_init(void);
-
-
-
 ui_display_t* ui_display_create(const ui_display_driver_t* driver,void* ctx,u32 index,const u8* edid,u32 edid_length);
 
 

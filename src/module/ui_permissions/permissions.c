@@ -5,6 +5,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -38,12 +39,12 @@ typedef struct _UI_PERMISSION_USER_REQUEST{
 
 
 
-static omm_allocator_t* _ui_permission_request_allocator=NULL;
-static ui_permission_request_t* _ui_permission_request_list_head=NULL;
-static ui_permission_request_t* _ui_permission_request_list_tail=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ui_permission_request_allocator=NULL;
+static ui_permission_request_t* KERNEL_INIT_WRITE _ui_permission_request_list_head=NULL;
+static ui_permission_request_t* KERNEL_INIT_WRITE _ui_permission_request_list_tail=NULL;
 static u64 _ui_permission_request_list_id=0;
 static spinlock_t _ui_permission_request_list_lock;
-static event_t* _ui_permission_request_list_event;
+static event_t* KERNEL_INIT_WRITE _ui_permission_request_list_event=NULL;
 
 
 
@@ -128,12 +129,17 @@ static syscall_callback_t const _ui_permission_request_syscall_functions[]={
 
 
 
-void ui_permission_backend_init(void){
+MODULE_INIT(){
 	LOG("Initializing UI permission backend...");
 	_ui_permission_request_allocator=omm_init("ui_permission_request",sizeof(ui_permission_request_t),8,1,pmm_alloc_counter("omm_ui_permission_request"));
 	spinlock_init(&(_ui_permission_request_allocator->lock));
 	spinlock_init(&_ui_permission_request_list_lock);
 	_ui_permission_request_list_event=event_create();
+}
+
+
+
+MODULE_POSTINIT(){
 	acl_register_request_callback(_acl_permission_request_callback);
 	syscall_create_table("ui_permission_request",_ui_permission_request_syscall_functions,sizeof(_ui_permission_request_syscall_functions)/sizeof(syscall_callback_t));
 }

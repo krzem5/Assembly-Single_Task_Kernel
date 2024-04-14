@@ -37,10 +37,6 @@ extern handle_type_t ui_framebuffer_handle_type;
 
 
 
-void ui_framebuffer_init(void);
-
-
-
 ui_framebuffer_t* ui_framebuffer_create(struct _UI_DISPLAY* display,u32 width,u32 height,u32 format);
 
 

@@ -13,7 +13,7 @@
 
 
 
-static _Bool _init(module_t* module){
+MODULE_PREINIT(){
 	if (!vfs_lookup(NULL,"/bin/ui",0,0,0)){
 		WARN("UI executable not found");
 		return 0;
@@ -28,14 +28,4 @@ static _Bool _init(module_t* module){
 
 
 
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	MODULE_FLAG_PREVENT_LOADS
-);
+MODULE_DECLARE_NEW(MODULE_FLAG_PREVENT_LOADS);

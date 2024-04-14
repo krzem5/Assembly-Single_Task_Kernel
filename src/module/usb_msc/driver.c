@@ -5,6 +5,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/usb/device.h>
 #include <kernel/usb/pipe.h>
@@ -115,16 +116,11 @@ typedef struct _USB_MSC_DRIVER{
 
 
 
-static pmm_counter_descriptor_t* _usb_msc_driver_pmm_counter=NULL;
-static omm_allocator_t* _usb_msc_driver_allocator=NULL;
-static omm_allocator_t* _usb_msc_lun_context_allocator=NULL;
-
-
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _usb_msc_driver_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_msc_driver_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_msc_lun_context_allocator=NULL;
 
 static usb_driver_descriptor_t _usb_msc_driver_descriptor;
-
-
-
 static u16 _usb_msc_index=0;
 
 
@@ -334,12 +330,17 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor={
 
 
 
-void usb_msc_driver_install(void){
-	LOG("Installing USB MSC driver...");
+MODULE_INIT(){
 	_usb_msc_driver_pmm_counter=pmm_alloc_counter("usb_msc");
 	_usb_msc_driver_allocator=omm_init("usb_msc_driver",sizeof(usb_msc_driver_t),8,1,pmm_alloc_counter("omm_usb_msc_driver"));
 	spinlock_init(&(_usb_msc_driver_allocator->lock));
 	_usb_msc_lun_context_allocator=omm_init("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1,pmm_alloc_counter("omm_usb_msc_lun_context"));
 	spinlock_init(&(_usb_msc_lun_context_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
+	LOG("Installing USB MSC driver...");
 	usb_register_driver(&_usb_msc_driver_descriptor);
 }

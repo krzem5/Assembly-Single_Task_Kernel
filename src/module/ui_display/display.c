@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <ui/display.h>
 #include <ui/display_info.h>
@@ -11,13 +12,13 @@
 
 
 
-static omm_allocator_t* _ui_display_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ui_display_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t ui_display_handle_type;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE ui_display_handle_type=0;
 
 
 
-void ui_display_init(void){
+MODULE_INIT(){
 	LOG("Initializing UI displays...");
 	_ui_display_allocator=omm_init("ui_display",sizeof(ui_display_t),8,2,pmm_alloc_counter("omm_ui_display"));
 	spinlock_init(&(_ui_display_allocator->lock));
