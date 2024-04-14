@@ -8,8 +8,4 @@ extern filesystem_t* sysfs;
 
 
 
-void sysfs_create_fs(void);
-
-
-
 #endif

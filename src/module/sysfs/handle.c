@@ -1,6 +1,7 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
@@ -8,7 +9,7 @@
 
 
 
-static vfs_node_t* _sysfs_handle_type_root;
+static vfs_node_t* KERNEL_INIT_WRITE _sysfs_handle_type_root;
 
 
 
@@ -29,7 +30,7 @@ static void _listener(void* object,u32 type){
 
 
 
-void sysfs_handle_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating handle subsystem...");
 	_sysfs_handle_type_root=dynamicfs_create_node(sysfs->root,"handle",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(_sysfs_handle_type_root);

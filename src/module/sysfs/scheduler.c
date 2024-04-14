@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
@@ -9,7 +10,7 @@
 
 
 
-void sysfs_scheduler_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating scheduler subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(sysfs->root,"sched",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u16 i=0;i<cpu_count;i++){

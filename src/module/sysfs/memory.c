@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
@@ -11,9 +12,9 @@
 
 
 
-static vfs_node_t* _sysfs_memory_root;
-static vfs_node_t* _sysfs_memory_pmm_counter_root;
-static vfs_node_t* _sysfs_memory_object_counter_root;
+static vfs_node_t* KERNEL_INIT_WRITE _sysfs_memory_root;
+static vfs_node_t* KERNEL_INIT_WRITE _sysfs_memory_pmm_counter_root;
+static vfs_node_t* KERNEL_INIT_WRITE _sysfs_memory_object_counter_root;
 
 
 
@@ -60,7 +61,7 @@ static void _omm_allocator_listener(void* object,u32 type){
 
 
 
-void sysfs_memory_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating memory subsystem...");
 	_sysfs_memory_root=dynamicfs_create_node(sysfs->root,"mem",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	_init_memory_load_balancer_data();

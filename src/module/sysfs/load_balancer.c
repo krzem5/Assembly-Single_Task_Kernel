@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/vfs/node.h>
 #include <sysfs/fs.h>
@@ -9,7 +10,7 @@
 
 
 
-void sysfs_load_balancer_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating load balancer subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(sysfs->root,"lb",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_set_root_only(root);
