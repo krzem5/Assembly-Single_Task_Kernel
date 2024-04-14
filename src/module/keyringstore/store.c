@@ -19,11 +19,19 @@ static vfs_node_t* _get_store_directory(void){
 	vfs_node_t* parent;
 	const char* child_name;
 	vfs_node_t* out=vfs_lookup_for_creation(NULL,KEYRING_STORE_DIRECTORY,0,0,0,&parent,&child_name);
-	if (out){
-		return out;
+	if (!out){
+		INFO("Generating keyringstore directory...");
+		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+		out=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_CREATE);
+		if (!out){
+			return NULL;
+		}
 	}
-	WARN("Generating keyringstore directory...");
-	return NULL;
+	out->uid=0;
+	out->gid=0;
+	out->flags|=(0500<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	vfs_node_flush(out);
+	return out;
 }
 
 
