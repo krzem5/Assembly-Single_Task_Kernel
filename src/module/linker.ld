@@ -8,11 +8,11 @@ SECTIONS{
 		*(.erdata .erdata.*)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__module_init_start = .);
-		*(.init)
+		*(.module_init)
 		PROVIDE_HIDDEN(__module_init_end = .);
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__module_postinit_start = .);
-		*(.postinit)
+		*(.module_postinit)
 		PROVIDE_HIDDEN(__module_postinit_end = .);
 	}
 	. = ALIGN(4096);
@@ -28,7 +28,7 @@ SECTIONS{
 		*(.rodata .rodata.*)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__module_deinit_start = .);
-		*(.deinit)
+		*(.module_deinit)
 		PROVIDE_HIDDEN(__module_deinit_end = .);
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__module_gcov_info_start = .);

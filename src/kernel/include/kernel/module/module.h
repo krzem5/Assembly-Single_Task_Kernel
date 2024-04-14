@@ -44,9 +44,9 @@
 	}; \
 	static const u8 __attribute__((used,section(".signature"))) _module_signature[(((flags)&MODULE_FLAG_NO_SIGNATURE)?0:4096)]
 
-#define MODULE_INIT() static KERNEL_EARLY_EXEC void __init(void);static void* __attribute__((section(".init"),used)) __init_ptr=__init;static KERNEL_EARLY_EXEC void __init(void)
-#define MODULE_POSTINIT() static KERNEL_EARLY_EXEC void __postinit(void);static void* __attribute__((section(".postinit"),used)) __postinit_ptr=__postinit;static KERNEL_EARLY_EXEC void __postinit(void)
-#define MODULE_DEINIT() static void __deinit(void);static void* __attribute__((section(".deinit"),used)) __deinit_ptr=__deinit;static void __deinit(void)
+#define MODULE_INIT() static KERNEL_EARLY_EXEC void __init(void);static void* __attribute__((section(".module_init"),used)) __init_ptr=__init;static KERNEL_EARLY_EXEC void __init(void)
+#define MODULE_POSTINIT() static KERNEL_EARLY_EXEC void __postinit(void);static void* __attribute__((section(".module_postinit"),used)) __postinit_ptr=__postinit;static KERNEL_EARLY_EXEC void __postinit(void)
+#define MODULE_DEINIT() static void __deinit(void);static void* __attribute__((section(".module_deinit"),used)) __deinit_ptr=__deinit;static void __deinit(void)
 
 
 
