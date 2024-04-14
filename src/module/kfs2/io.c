@@ -3,6 +3,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
@@ -16,7 +17,7 @@ static pmm_counter_descriptor_t* _kfs2_io_inode_buffer_pmm_counter=NULL;
 
 
 
-void kfs2_io_init(void){
+MODULE_INIT(){
 	_kfs2_io_inode_buffer_pmm_counter=pmm_alloc_counter("kfs2_io_inode_buffer");
 }
 

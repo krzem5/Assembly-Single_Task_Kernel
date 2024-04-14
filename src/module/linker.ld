@@ -10,6 +10,10 @@ SECTIONS{
 		PROVIDE_HIDDEN(__module_init_start = .);
 		*(.init)
 		PROVIDE_HIDDEN(__module_init_end = .);
+		. = ALIGN(8);
+		PROVIDE_HIDDEN(__module_postinit_start = .);
+		*(.postinit)
+		PROVIDE_HIDDEN(__module_postinit_end = .);
 	}
 	. = ALIGN(4096);
 	.module_uw : {

@@ -7,10 +7,6 @@
 
 
 
-void kfs2_io_init(void);
-
-
-
 vfs_node_t* kfs2_io_inode_read(filesystem_t* fs,const string_t* name,u32 inode);
 
 

@@ -2,6 +2,7 @@
 #include <kernel/fs/fs.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kfs2/crc.h>
@@ -46,10 +47,13 @@ static void _find_next_highest_level_offset(filesystem_t* fs,kfs2_bitmap_t* allo
 
 
 
+MODULE_INIT(){
+	_kfs2_bitmap_buffer_pmm_counter=pmm_alloc_counter("kfs2_bitmap_buffer");
+}
+
+
+
 void kfs2_bitmap_init(filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* bitmap_offsets,u32 highest_level_length){
-	if (!_kfs2_bitmap_buffer_pmm_counter){
-		_kfs2_bitmap_buffer_pmm_counter=pmm_alloc_counter("kfs2_bitmap_buffer");
-	}
 	spinlock_init(&(allocator->lock));
 	allocator->highest_level_length=highest_level_length;
 	allocator->highest_level_offset=0;

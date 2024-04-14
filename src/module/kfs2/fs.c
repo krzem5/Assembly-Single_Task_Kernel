@@ -6,6 +6,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/string.h>
@@ -443,12 +444,17 @@ static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 
 
 
-void kfs2_register_fs(void){
-	_kfs2_filesystem_descriptor=fs_register_descriptor(&_kfs2_filesystem_descriptor_config);
+MODULE_INIT(){
 	_kfs2_resize_buffer_pmm_counter=pmm_alloc_counter("kfs2_resize_buffer");
 	_kfs2_root_block_buffer_pmm_counter=pmm_alloc_counter("kfs2_root_block_buffer");
 	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,pmm_alloc_counter("omm_kfs2_node"));
 	spinlock_init(&(_kfs2_vfs_node_allocator->lock));
 	_kfs2_fs_extra_data_allocator=omm_init("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,pmm_alloc_counter("omm_kfs2_extra_data"));
 	spinlock_init(&(_kfs2_fs_extra_data_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
+	_kfs2_filesystem_descriptor=fs_register_descriptor(&_kfs2_filesystem_descriptor_config);
 }

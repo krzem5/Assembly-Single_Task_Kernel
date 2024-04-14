@@ -1,5 +1,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kfs2/io.h>
@@ -11,10 +12,13 @@ static pmm_counter_descriptor_t* _kfs2_chunk_pmm_counter=NULL;
 
 
 
+MODULE_INIT(){
+	_kfs2_chunk_pmm_counter=pmm_alloc_counter("kfs2_chunk");
+}
+
+
+
 void kfs2_chunk_init(kfs2_data_chunk_t* out){
-	if (!_kfs2_chunk_pmm_counter){
-		_kfs2_chunk_pmm_counter=pmm_alloc_counter("kfs2_chunk");
-	}
 	out->offset=0;
 	out->quadruple_cache=NULL;
 	out->triple_cache=NULL;

@@ -332,6 +332,12 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 			((void (*)(void))func)();
 		}
 	}
+	for (u64 i=0;i+sizeof(void*)<=module->descriptor->postinit_end-module->descriptor->postinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(module->descriptor->postinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
