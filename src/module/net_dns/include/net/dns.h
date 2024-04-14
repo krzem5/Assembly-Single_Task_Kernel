@@ -108,10 +108,6 @@ typedef struct _NET_DNS_REQUEST{
 
 
 
-void net_dns_init(void);
-
-
-
 net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking);
 
 

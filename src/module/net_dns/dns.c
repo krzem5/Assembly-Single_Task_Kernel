@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/socket/socket.h>
@@ -24,9 +25,9 @@
 
 
 
-static omm_allocator_t* _net_dns_cache_entry_allocator=NULL;
-static omm_allocator_t* _net_dns_request_allocator=NULL;
-static event_t* _net_dns_cache_resolution_event=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_dns_cache_entry_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_dns_request_allocator=NULL;
+static event_t* KERNEL_INIT_WRITE _net_dns_cache_resolution_event=NULL;
 static spinlock_t _net_dns_cache_lock;
 static rb_tree_t _net_dns_cache_address_tree;
 static spinlock_t _net_dns_request_tree_lock;
@@ -184,7 +185,7 @@ static void _cache_cleanup_thread(void){
 
 
 
-void net_dns_init(void){
+MODULE_INIT(){
 	LOG("Initializing DNS resolver...");
 	_net_dns_cache_entry_allocator=omm_init("net_dns_cache_entry",sizeof(net_dns_cache_entry_t),8,4,pmm_alloc_counter("omm_net_dns_cache_entry"));
 	spinlock_init(&(_net_dns_cache_entry_allocator->lock));

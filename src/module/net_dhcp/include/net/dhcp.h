@@ -58,10 +58,6 @@ typedef struct KERNEL_PACKED _NET_DHCP_PACKET{
 
 
 
-void net_dhcp_init(void);
-
-
-
 void net_dhcp_negotiate_address(void);
 
 

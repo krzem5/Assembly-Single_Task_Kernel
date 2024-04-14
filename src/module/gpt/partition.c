@@ -10,7 +10,7 @@
 
 
 
-static pmm_counter_descriptor_t* _gpt_driver_pmm_counter;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _gpt_driver_pmm_counter;
 
 
 

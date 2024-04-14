@@ -1,6 +1,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/event.h>
 #include <kernel/network/layer1.h>
 #include <kernel/network/layer2.h>
@@ -21,7 +22,7 @@
 
 
 
-static omm_allocator_t* _net_arp_cache_entry_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_arp_cache_entry_allocator=NULL;
 static event_t* _net_arp_cache_resolution_event=NULL;
 static spinlock_t _net_arp_cache_lock;
 static rb_tree_t _net_arp_cache_address_tree;
@@ -80,13 +81,18 @@ static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 
 
 
-void net_arp_init(void){
+MODULE_INIT(){
 	LOG("Initializing ARP resolver...");
 	_net_arp_cache_entry_allocator=omm_init("net_arp_cache_entry",sizeof(net_arp_cache_entry_t),8,4,pmm_alloc_counter("omm_net_arp_cache_entry"));
 	spinlock_init(&(_net_arp_cache_entry_allocator->lock));
 	_net_arp_cache_resolution_event=event_create();
 	spinlock_init(&_net_arp_cache_lock);
 	rb_tree_init(&_net_arp_cache_address_tree);
+}
+
+
+
+MODULE_POSTINIT(){
 	network_layer2_register_descriptor(&_net_arp_protocol_descriptor);
 }
 

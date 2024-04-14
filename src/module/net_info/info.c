@@ -1,13 +1,14 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <net/info.h>
 #include <net/ip4.h>
 
 
 
-static omm_allocator_t* _net_info_address_list_entry_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _net_info_address_list_entry_allocator=NULL;
 static net_ip4_address_t _net_info_address=0;
 static net_ip4_address_t _net_info_subnet_mask=0;
 static net_info_address_list_t _net_info_dns_address_list;
@@ -54,13 +55,22 @@ static void _extend_address_list(net_info_address_list_t* address_list,net_ip4_a
 
 
 
+MODULE_INIT(){
+	_net_info_address_list_entry_allocator=omm_init("net_info_address_list_entry",sizeof(net_info_address_list_entry_t),8,1,pmm_alloc_counter("omm_net_info_address_list_entry"));
+	spinlock_init(&(_net_info_address_list_entry_allocator->lock));
+	_init_address_list(&_net_info_dns_address_list);
+	_init_address_list(&_net_info_router_address_list);
+}
+
+
+
+MODULE_POSTINIT(){
+	net_info_reset();
+}
+
+
+
 KERNEL_PUBLIC void net_info_reset(void){
-	if (!_net_info_address_list_entry_allocator){
-		_net_info_address_list_entry_allocator=omm_init("net_info_address_list_entry",sizeof(net_info_address_list_entry_t),8,1,pmm_alloc_counter("omm_net_info_address_list_entry"));
-		spinlock_init(&(_net_info_address_list_entry_allocator->lock));
-		_init_address_list(&_net_info_dns_address_list);
-		_init_address_list(&_net_info_router_address_list);
-	}
 	_net_info_address=0;
 	_net_info_subnet_mask=0;
 	_clear_address_list(&_net_info_dns_address_list);

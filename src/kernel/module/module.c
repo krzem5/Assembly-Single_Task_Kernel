@@ -371,16 +371,16 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 			((void (*)(void))func)();
 		}
 	}
-	// _unmap_region(&(ctx->elf_region_ue));
-	// _unmap_region(&(ctx->elf_region_ur));
-	// _unmap_region(&(ctx->elf_region_uw));
-	// _adjust_region_flags(&(ctx->elf_region_iw));
 	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->postinit_end-ctx.module_descriptor->postinit_start;i+=sizeof(void*)){
 		void* func=*((void*const*)(ctx.module_descriptor->postinit_start+i));
 		if (func){
 			((void (*)(void))func)();
 		}
 	}
+	// _unmap_region(&(ctx->elf_region_ue));
+	// _unmap_region(&(ctx->elf_region_ur));
+	// _unmap_region(&(ctx->elf_region_uw));
+	// _adjust_region_flags(&(ctx->elf_region_iw));
 	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:

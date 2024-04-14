@@ -2,6 +2,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
@@ -25,8 +26,8 @@
 
 
 
-static vfs_node_t* _net_dhcp_socket=NULL;
-static timer_t* _net_dhcp_timeout_timer=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _net_dhcp_socket=NULL;
+static timer_t* KERNEL_INIT_WRITE _net_dhcp_timeout_timer=NULL;
 static spinlock_t _net_dhcp_lock;
 static u32 _net_dhcp_current_xid=0;
 static net_ip4_address_t _net_dhcp_offer_address=0;
@@ -209,7 +210,7 @@ _cleanup:
 
 
 
-void net_dhcp_init(void){
+MODULE_INIT(){
 	LOG("Initializing DHCP client...");
 	_net_dhcp_socket=socket_create(SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
@@ -223,6 +224,11 @@ void net_dhcp_init(void){
 	_net_dhcp_timeout_timer=timer_create(0,0);
 	spinlock_init(&_net_dhcp_lock);
 	thread_create_kernel_thread(NULL,"net-dhcp-rx-thread",_rx_thread,0);
+}
+
+
+
+MODULE_POSTINIT(){
 	// load _net_dhcp_preferred_address
 #ifndef KERNEL_COVERAGE
 	net_dhcp_negotiate_address();

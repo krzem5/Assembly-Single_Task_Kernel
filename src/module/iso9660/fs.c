@@ -24,8 +24,8 @@ typedef struct _ISO9660_VFS_NODE{
 
 
 
-static omm_allocator_t* _iso9660_vfs_node_allocator=NULL;
-static filesystem_descriptor_t* _iso9660_filesystem_descriptor=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _iso9660_vfs_node_allocator=NULL;
+static filesystem_descriptor_t* KERNEL_INIT_WRITE _iso9660_filesystem_descriptor=NULL;
 
 
 
@@ -235,7 +235,12 @@ static const filesystem_descriptor_config_t _iso9660_filesystem_descriptor_confi
 
 
 MODULE_INIT(){
-	_iso9660_filesystem_descriptor=fs_register_descriptor(&_iso9660_filesystem_descriptor_config);
 	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,pmm_alloc_counter("omm_iso9660_node"));
 	spinlock_init(&(_iso9660_vfs_node_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
+	_iso9660_filesystem_descriptor=fs_register_descriptor(&_iso9660_filesystem_descriptor_config);
 }
