@@ -26,10 +26,7 @@
 
 
 
-static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
-	if (!coverage_init()){
-		return 0;
-	}
+MODULE_INIT(){
 	test_acl();
 	test_amm();
 	test_cpu();
@@ -50,24 +47,14 @@ static KERNEL_NOCOVERAGE _Bool _init(module_t* module){
 	WARN("%u test%s passed, %u test%s failed",test_pass_count,(test_pass_count==1?"":"s"),test_fail_count,(test_fail_count==1?"":"s"));
 	if (test_fail_count){
 		coverage_mark_failure();
-		return 1;
+		return;
 	}
 	if (IS_ERROR(elf_load("/bin/test",0,NULL,0,NULL,0))){
 		panic("Unable to load test program");
 	}
-	return 1;
-}
-
-
-
-static KERNEL_NOCOVERAGE void _deinit(module_t* module){
 	return;
 }
 
 
 
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);
+MODULE_DECLARE_NEW(0);

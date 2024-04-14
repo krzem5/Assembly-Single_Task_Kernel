@@ -7,7 +7,7 @@ extern void test_module_mark_deinit_triggered(void);
 
 
 
-static _Bool _init(module_t* module){
+MODULE_PREINIT(){
 	return 1;
 }
 
@@ -19,9 +19,4 @@ MODULE_DEINIT(){
 
 
 
-MODULE_DECLARE(
-	_init,
-	NULL,
-	0
-);
-
+MODULE_DECLARE_NEW(0);

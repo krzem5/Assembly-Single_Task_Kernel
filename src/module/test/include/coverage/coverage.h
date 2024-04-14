@@ -3,10 +3,6 @@
 
 
 
-_Bool coverage_init(void);
-
-
-
 void coverage_mark_failure(void);
 
 

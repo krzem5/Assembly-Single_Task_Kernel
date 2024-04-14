@@ -1,3 +1,1 @@
-void init(void){
-	return;
-}
+// no MODULE_DECLARE tag

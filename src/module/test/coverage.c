@@ -4,6 +4,7 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
+#include <kernel/module/module.h>
 #include <kernel/serial/serial.h>
 #include <kernel/shutdown/shutdown.h>
 #include <kernel/syscall/syscall.h>
@@ -137,7 +138,7 @@ static syscall_callback_t const _coverage_syscall_functions[]={
 
 
 
-_Bool KERNEL_NOCOVERAGE coverage_init(void){
+MODULE_PREINIT(){
 	LOG("Initializing coverage reporting module...");
 	INFO("Checking serial port...");
 	if (!COVERAGE_SERIAL_PORT->io_port){
