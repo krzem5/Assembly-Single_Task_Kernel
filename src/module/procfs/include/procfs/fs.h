@@ -8,8 +8,4 @@ extern filesystem_t* procfs;
 
 
 
-void procfs_create_fs(void);
-
-
-
 #endif

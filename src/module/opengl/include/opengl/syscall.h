@@ -21,8 +21,4 @@ typedef u64 opengl_user_state_t;
 
 
 
-void opengl_syscall_init(void);
-
-
-
 #endif

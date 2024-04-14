@@ -6,7 +6,7 @@
 
 
 
-filesystem_t* devfs;
+filesystem_t* KERNEL_INIT_WRITE devfs;
 
 
 

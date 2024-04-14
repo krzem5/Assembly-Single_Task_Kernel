@@ -2,6 +2,7 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/notification/notification.h>
@@ -51,7 +52,7 @@ static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 siz
 
 
 
-void procfs_process_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating process subsystem...");
 	dynamicfs_create_node(procfs->root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL);
 	handle_register_notification_listener(process_handle_type,_listener);

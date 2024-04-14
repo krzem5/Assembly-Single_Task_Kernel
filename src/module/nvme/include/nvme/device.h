@@ -46,8 +46,4 @@ typedef struct _NVME_DEVICE{
 
 
 
-void nvme_locate_devices(void);
-
-
-
 #endif

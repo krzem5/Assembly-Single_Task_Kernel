@@ -45,10 +45,6 @@ extern handle_type_t opengl_state_handle_type;
 
 
 
-void opengl_init(void);
-
-
-
 opengl_driver_instance_t* opengl_create_driver_instance(const opengl_driver_t* driver,const char* renderer,void* ctx);
 
 

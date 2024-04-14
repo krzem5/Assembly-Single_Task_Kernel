@@ -6,6 +6,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -17,10 +18,8 @@
 
 
 
-static pmm_counter_descriptor_t* _nvme_driver_pmm_counter=NULL;
-static omm_allocator_t* _nvme_device_allocator=NULL;
-
-
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _nvme_driver_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _nvme_device_allocator=NULL;
 
 static u16 _nvme_device_index=0;
 
@@ -219,10 +218,15 @@ static void _nvme_init_device(pci_device_t* device){
 
 
 
-void nvme_locate_devices(void){
+MODULE_INIT(){
 	_nvme_driver_pmm_counter=pmm_alloc_counter("nvme");
 	_nvme_device_allocator=omm_init("nvme_device",sizeof(nvme_device_t),8,1,pmm_alloc_counter("omm_nvme_device"));
 	spinlock_init(&(_nvme_device_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_nvme_init_device(device);

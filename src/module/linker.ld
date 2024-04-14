@@ -18,6 +18,10 @@ SECTIONS{
 		PROVIDE_HIDDEN(__module_postinit_start = .);
 		*(.module_postinit)
 		PROVIDE_HIDDEN(__module_postinit_end = .);
+		. = ALIGN(8);
+		PROVIDE_HIDDEN(__module_postpostinit_start = .);
+		*(.module_postpostinit)
+		PROVIDE_HIDDEN(__module_postpostinit_end = .);
 	}
 	. = ALIGN(4096);
 	.module_uw : {

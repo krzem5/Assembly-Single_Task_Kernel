@@ -377,6 +377,12 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 			((void (*)(void))func)();
 		}
 	}
+	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->postpostinit_end-ctx.module_descriptor->postpostinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx.module_descriptor->postpostinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
 	// _unmap_region(&(ctx->elf_region_ue));
 	// _unmap_region(&(ctx->elf_region_ur));
 	// _unmap_region(&(ctx->elf_region_uw));

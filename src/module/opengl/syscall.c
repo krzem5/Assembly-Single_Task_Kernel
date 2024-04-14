@@ -1,6 +1,7 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -143,7 +144,7 @@ static syscall_callback_t const _opengl_syscall_functions[]={
 
 
 
-void opengl_syscall_init(void){
+MODULE_INIT(){
 	LOG("Initializing OpenGL syscalls...");
 	syscall_create_table("opengl",_opengl_syscall_functions,sizeof(_opengl_syscall_functions)/sizeof(syscall_callback_t));
 }

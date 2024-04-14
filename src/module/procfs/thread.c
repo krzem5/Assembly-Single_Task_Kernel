@@ -2,6 +2,7 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/notification/notification.h>
 #include <kernel/vfs/node.h>
@@ -11,7 +12,7 @@
 
 
 
-static vfs_node_t* _procfs_thread_root;
+static vfs_node_t* KERNEL_INIT_WRITE _procfs_thread_root=NULL;
 
 
 
@@ -52,7 +53,7 @@ static u64 _thread_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size
 
 
 
-void procfs_thread_init(void){
+MODULE_POSTPOSTINIT(){
 	LOG("Creating thread subsystem...");
 	_procfs_thread_root=dynamicfs_create_node(procfs->root,"thread",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_create_node(_procfs_thread_root,"self",VFS_NODE_TYPE_LINK,NULL,_thread_self_read_callback,NULL);

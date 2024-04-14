@@ -5,6 +5,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
@@ -14,15 +15,15 @@
 
 
 
-static omm_allocator_t* _opengl_driver_instance_allocator=NULL;
-static omm_allocator_t* _opengl_state_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _opengl_driver_instance_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _opengl_state_allocator=NULL;
 
-handle_type_t opengl_driver_instance_handle_type=0;
-handle_type_t opengl_state_handle_type=0;
+handle_type_t KERNEL_INIT_WRITE opengl_driver_instance_handle_type=0;
+handle_type_t KERNEL_INIT_WRITE opengl_state_handle_type=0;
 
 
 
-void opengl_init(void){
+MODULE_INIT(){
 	LOG("Initializing OpenGL...");
 	_opengl_driver_instance_allocator=omm_init("opengl_driver_instance",sizeof(opengl_driver_instance_t),8,2,pmm_alloc_counter("omm_opengl_driver_instance"));
 	spinlock_init(&(_opengl_driver_instance_allocator->lock));
