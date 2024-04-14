@@ -18,8 +18,9 @@
 #define MODULE_FLAG_NO_SIGNATURE 2
 #define MODULE_FLAG_TAINTED 4
 
-#define MODULE_DECLARE(preinit_callback,deinit_callback,flags) \
-	static void* __attribute__((used)) __TMP=deinit_callback; \
+#define MODULE_DECLARE_NEW(flags) \
+	extern u64 __module_preinit_start[1]; \
+	extern u64 __module_preinit_end[1]; \
 	extern u64 __module_init_start[1]; \
 	extern u64 __module_init_end[1]; \
 	extern u64 __module_postinit_start[1]; \
@@ -31,8 +32,9 @@
 	module_t* module_self=NULL; \
 	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
 		(flags), \
-		(preinit_callback), \
 		&module_self, \
+		(u64)(__module_preinit_start), \
+		(u64)(__module_preinit_end), \
 		(u64)(__module_init_start), \
 		(u64)(__module_init_end), \
 		(u64)(__module_postinit_start), \
@@ -44,6 +46,12 @@
 	}; \
 	static const u8 __attribute__((used,section(".signature"))) _module_signature[(((flags)&MODULE_FLAG_NO_SIGNATURE)?0:4096)]
 
+#define MODULE_DECLARE(preinit_callback,deinit_callback,flags) \
+	MODULE_PREINIT(){return preinit_callback(module_self);} \
+	static void* __attribute__((used)) __TMP=deinit_callback; \
+	MODULE_DECLARE_NEW(flags)
+
+#define MODULE_PREINIT() static KERNEL_EARLY_EXEC _Bool __preinit(void);static void* __attribute__((section(".module_preinit"),used)) __preinit_ptr=__preinit;static KERNEL_EARLY_EXEC _Bool __preinit(void)
 #define MODULE_INIT() static KERNEL_EARLY_EXEC void __init(void);static void* __attribute__((section(".module_init"),used)) __init_ptr=__init;static KERNEL_EARLY_EXEC void __init(void)
 #define MODULE_POSTINIT() static KERNEL_EARLY_EXEC void __postinit(void);static void* __attribute__((section(".module_postinit"),used)) __postinit_ptr=__postinit;static KERNEL_EARLY_EXEC void __postinit(void)
 #define MODULE_DEINIT() static void __deinit(void);static void* __attribute__((section(".module_deinit"),used)) __deinit_ptr=__deinit;static void __deinit(void)
@@ -69,8 +77,9 @@ typedef struct _MODULE{
 
 typedef struct _MODULE_DESCRIPTOR{
 	u32 flags;
-	_Bool (*preinit_callback)(module_t*);
 	module_t** module_self_ptr;
+	u64 preinit_start;
+	u64 preinit_end;
 	u64 init_start;
 	u64 init_end;
 	u64 postinit_start;

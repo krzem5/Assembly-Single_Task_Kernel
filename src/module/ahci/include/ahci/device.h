@@ -23,8 +23,4 @@ typedef struct _AHCI_DEVICE{
 
 
 
-void ahci_locate_devices(void);
-
-
-
 #endif

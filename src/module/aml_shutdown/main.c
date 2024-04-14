@@ -1,7 +1,7 @@
+#include <kernel/acpi/fadt.h>
 #include <kernel/aml/namespace.h>
 #include <kernel/aml/object.h>
 #include <kernel/aml/runtime.h>
-#include <kernel/acpi/fadt.h>
 #include <kernel/io/io.h>
 #include <kernel/module/module.h>
 #include <kernel/shutdown/shutdown.h>
@@ -42,25 +42,17 @@ static void _aml_shutdown_function(void){
 
 
 
-static _Bool _init(module_t* module){
+MODULE_PREINIT(){
 	aml_namespace_t* s5_package=aml_namespace_lookup(NULL,"\\_S5_",0);
-	if (!s5_package||!s5_package->value){
-		return 0;
-	}
+	return s5_package&&s5_package->value;
+}
+
+
+
+MODULE_INIT(){
 	shutdown_register_shutdown_function(_aml_shutdown_function,1);
-	return 1;
 }
 
 
 
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);
+MODULE_DECLARE_NEW(0);

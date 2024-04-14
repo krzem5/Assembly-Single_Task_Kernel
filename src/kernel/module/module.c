@@ -322,9 +322,12 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	handle_finish_setup(&(module->handle));
 	module->flags=module->descriptor->flags;
 	*(module->descriptor->module_self_ptr)=module;
-	if (module->descriptor->preinit_callback&&!module->descriptor->preinit_callback(module)){
-		module_unload(module);
-		return NULL;
+	for (u64 i=0;i+sizeof(void*)<=module->descriptor->preinit_end-module->descriptor->preinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(module->descriptor->preinit_start+i));
+		if (func&&!((_Bool (*)(void))func)()){
+			module_unload(module);
+			return NULL;
+		}
 	}
 	for (u64 i=0;i+sizeof(void*)<=module->descriptor->init_end-module->descriptor->init_start;i+=sizeof(void*)){
 		void* func=*((void*const*)(module->descriptor->init_start+i));

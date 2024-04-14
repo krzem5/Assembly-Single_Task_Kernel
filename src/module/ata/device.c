@@ -21,10 +21,8 @@
 
 
 
-static pmm_counter_descriptor_t* _ata_omm_pmm_counter=NULL;
-static omm_allocator_t* _ata_device_allocator=NULL;
-
-
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ata_omm_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ata_device_allocator=NULL;
 
 static u16 _ata_device_index=0;
 
@@ -139,6 +137,7 @@ static const drive_type_t _ata_drive_type_config={
 	DRIVE_TYPE_FLAG_READ_ONLY,
 	_ata_read_write
 };
+
 static const drive_type_t _atapi_drive_type_config={
 	"atapi",
 	DRIVE_TYPE_FLAG_READ_ONLY,
@@ -233,15 +232,15 @@ static _Bool _ata_init(ata_device_t* device,u8 index){
 
 
 
-static _Bool _ata_init_device(pci_device_t* device){
+static void _ata_init_device(pci_device_t* device){
 	if (device->class!=0x01||device->subclass!=0x01||device->progif!=0x80){
-		return 0;
+		return;
 	}
 	pci_device_enable_memory_access(device);
 	pci_device_enable_bus_mastering(device);
 	pci_bar_t pci_bar;
 	if (!pci_device_get_bar(device,4,&pci_bar)){
-		return 0;
+		return;
 	}
 	LOG("Attached ATA driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
 	for (u8 i=0;i<4;i++){
@@ -254,26 +253,28 @@ static _Bool _ata_init_device(pci_device_t* device){
 		}
 	}
 	_ata_device_index++;
-	return 1;
 }
 
 
 
-_Bool ata_locate_devices(void){
+MODULE_INIT(){
 	_ata_omm_pmm_counter=pmm_alloc_counter("omm_ata_device");
 	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,_ata_omm_pmm_counter);
 	spinlock_init(&(_ata_device_allocator->lock));
-	_Bool out=0;
-	HANDLE_FOREACH(pci_device_handle_type){
-		pci_device_t* device=handle->object;
-		out|=_ata_init_device(device);
-	}
-	return out;
 }
 
 
 
-void ata_deinit(void){
+MODULE_POSTINIT(){
+	HANDLE_FOREACH(pci_device_handle_type){
+		pci_device_t* device=handle->object;
+		_ata_init_device(device);
+	}
+}
+
+
+
+MODULE_DEINIT(){
 	omm_deinit(_ata_device_allocator);
 	pmm_dealloc_counter(_ata_omm_pmm_counter);
 }

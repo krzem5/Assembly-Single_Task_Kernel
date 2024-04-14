@@ -2,8 +2,4 @@
 
 
 
-MODULE_DECLARE(
-	NULL,
-	NULL,
-	0
-);
+MODULE_DECLARE_NEW(0);

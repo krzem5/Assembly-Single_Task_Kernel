@@ -7,6 +7,10 @@ SECTIONS{
 	.module_ur : {
 		*(.erdata .erdata.*)
 		. = ALIGN(8);
+		PROVIDE_HIDDEN(__module_preinit_start = .);
+		*(.module_preinit)
+		PROVIDE_HIDDEN(__module_preinit_end = .);
+		. = ALIGN(8);
 		PROVIDE_HIDDEN(__module_init_start = .);
 		*(.module_init)
 		PROVIDE_HIDDEN(__module_init_end = .);

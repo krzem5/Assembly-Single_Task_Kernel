@@ -7,6 +7,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #include <kernel/util/spinloop.h>
@@ -15,9 +16,9 @@
 
 
 
-static pmm_counter_descriptor_t* _ahci_driver_pmm_counter=NULL;
-static omm_allocator_t* _ahci_controller_allocator=NULL;
-static omm_allocator_t* _ahci_device_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ahci_driver_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ahci_controller_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ahci_device_allocator=NULL;
 
 
 
@@ -210,12 +211,17 @@ static void _ahci_init_device(pci_device_t* device){
 
 
 
-void ahci_locate_devices(void){
+MODULE_INIT(){
 	_ahci_driver_pmm_counter=pmm_alloc_counter("ahci");
 	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1,pmm_alloc_counter("omm_ahci_controller"));
 	spinlock_init(&(_ahci_controller_allocator->lock));
 	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1,pmm_alloc_counter("omm_ahci_device"));
 	spinlock_init(&(_ahci_device_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_ahci_init_device(device);
