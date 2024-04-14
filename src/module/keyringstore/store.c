@@ -2,6 +2,7 @@
 #include <kernel/keyring/keyring.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
+#include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -49,7 +50,7 @@ static void _keyring_update_callback(void* object,u32 type){
 
 
 
-void keyringstore_store_init(void){
+MODULE_INIT(){
 	LOG("Initializing keyringstore...");
 	vfs_node_t* dir=_get_store_directory();
 	if (!dir){

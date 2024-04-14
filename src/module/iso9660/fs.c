@@ -4,6 +4,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -233,7 +234,7 @@ static const filesystem_descriptor_config_t _iso9660_filesystem_descriptor_confi
 
 
 
-void iso9660_register_fs(void){
+MODULE_INIT(){
 	_iso9660_filesystem_descriptor=fs_register_descriptor(&_iso9660_filesystem_descriptor_config);
 	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,pmm_alloc_counter("omm_iso9660_node"));
 	spinlock_init(&(_iso9660_vfs_node_allocator->lock));

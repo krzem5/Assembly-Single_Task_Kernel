@@ -1,5 +1,6 @@
 #include <iso9660/structures.h>
 #include <kernel/drive/drive.h>
+#include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
@@ -43,6 +44,6 @@ static const partition_table_descriptor_config_t _iso9660_partition_table_descri
 
 
 
-void iso9660_register_partition_table(void){
+MODULE_POSTINIT(){
 	partition_register_table_descriptor(&_iso9660_partition_table_descriptor);
 }

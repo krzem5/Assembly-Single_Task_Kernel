@@ -1,5 +1,6 @@
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
@@ -55,12 +56,13 @@ static syscall_callback_t const _lockinfo_syscall_functions[]={
 
 
 
-_Bool lockinfo_syscall_init(void){
-	if (!lock_profiling_type_descriptors||!lock_profiling_data_descriptor_head){
-		WARN("No lock profiling data present");
-		return 0;
-	}
+MODULE_PREINIT(){
+	return lock_profiling_type_descriptors&&lock_profiling_data_descriptor_head;
+}
+
+
+
+MODULE_INIT(){
 	LOG("Initializing lockinfo syscalls...");
 	syscall_create_table("lockinfo",_lockinfo_syscall_functions,sizeof(_lockinfo_syscall_functions)/sizeof(syscall_callback_t));
-	return 1;
 }

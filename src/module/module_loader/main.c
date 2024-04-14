@@ -52,7 +52,7 @@ static void _load_modules_from_order_file(_Bool early){
 
 
 
-static _Bool _init(module_t* module){
+MODULE_PREINIT(){
 	LOG("Loading early modules...");
 	_load_modules_from_order_file(1);
 	LOG("Unloading initramfs...");
@@ -70,14 +70,4 @@ static _Bool _init(module_t* module){
 
 
 
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	MODULE_FLAG_PREVENT_LOADS
-);
+MODULE_DECLARE_NEW(MODULE_FLAG_PREVENT_LOADS);
