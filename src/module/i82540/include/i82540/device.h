@@ -21,8 +21,4 @@ typedef struct _I82540_DEVICE{
 
 
 
-void i82540_locate_devices(void);
-
-
-
 #endif

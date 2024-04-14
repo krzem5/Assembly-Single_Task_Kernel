@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/module/module.h>
 #include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
@@ -19,7 +20,7 @@ typedef struct _DYNAMICFS_VFS_NODE{
 
 
 
-static omm_allocator_t* _dynamicfs_vfs_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _dynamicfs_vfs_node_allocator=NULL;
 
 
 
@@ -90,11 +91,14 @@ static const vfs_functions_t _dynamicfs_functions={
 
 
 
+MODULE_INIT(){
+	_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,pmm_alloc_counter("omm_dynamicfs_node"));
+	spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
+}
+
+
+
 KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config){
-	if (!_dynamicfs_vfs_node_allocator){
-		_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2,pmm_alloc_counter("omm_dynamicfs_node"));
-		spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
-	}
 	filesystem_t* out=fs_create(fs_register_descriptor(fs_descriptor_config));
 	out->functions=&_dynamicfs_functions;
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);

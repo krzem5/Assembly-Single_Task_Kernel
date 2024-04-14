@@ -44,7 +44,7 @@ _check_next_fs:
 
 
 
-static _Bool _init(module_t* module){
+MODULE_INIT(){
 	LOG("Mounting filesystems...");
 	vfs_node_t* file=vfs_lookup(NULL,MODULE_ORDER_FILE,0,0,0);
 	if (!file){
@@ -102,19 +102,8 @@ static _Bool _init(module_t* module){
 		}
 	}
 	config_tag_delete(root_tag);
-	return 0;
 }
 
 
 
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);
+MODULE_DECLARE_NEW(0);

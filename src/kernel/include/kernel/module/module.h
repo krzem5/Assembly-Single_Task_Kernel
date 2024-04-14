@@ -61,7 +61,6 @@
 typedef struct _MODULE{
 	handle_t handle;
 	string_t* name;
-	const struct _MODULE_DESCRIPTOR* descriptor;
 	mmap_region_t* region;
 	u64 deinit_array_base;
 	u64 deinit_array_size;

@@ -26,15 +26,27 @@
 
 
 
+typedef struct _MODULE_REGION{
+	u64 base;
+	u64 size;
+} module_region_t;
+
+
+
 typedef struct _MODULE_LOADER_CONTEXT{
 	const char* name;
 	module_t* module;
+	const module_descriptor_t* module_descriptor;
 	void* data;
 	const elf_hdr_t* elf_header;
 	const char* elf_string_table;
 	elf_sym_t* elf_symbol_table;
 	u64 elf_symbol_table_size;
 	const char* elf_symbol_string_table;
+	module_region_t elf_region_ue;
+	module_region_t elf_region_ur;
+	module_region_t elf_region_uw;
+	module_region_t elf_region_iw;
 } module_loader_context_t;
 
 
@@ -111,6 +123,14 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 static _Bool _find_elf_sections(module_loader_context_t* ctx){
 	INFO("Locating ELF sections...");
 	ctx->elf_symbol_table=NULL;
+	ctx->elf_region_ue.base=0;
+	ctx->elf_region_ue.size=0;
+	ctx->elf_region_ur.base=0;
+	ctx->elf_region_ur.size=0;
+	ctx->elf_region_uw.base=0;
+	ctx->elf_region_uw.size=0;
+	ctx->elf_region_iw.base=0;
+	ctx->elf_region_iw.size=0;
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
 		if (section_header->sh_type==SHT_SYMTAB){
@@ -119,6 +139,22 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 			section_header=ctx->data+ctx->elf_header->e_shoff+section_header->sh_link*ctx->elf_header->e_shentsize;
 			ctx->elf_symbol_string_table=ctx->data+section_header->sh_offset;
 			break;
+		}
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module_ue")){
+			ctx->elf_region_ue.base=section_header->sh_addr;
+			ctx->elf_region_ue.size=section_header->sh_size;
+		}
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module_ur")){
+			ctx->elf_region_ur.base=section_header->sh_addr;
+			ctx->elf_region_ur.size=section_header->sh_size;
+		}
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module_uw")){
+			ctx->elf_region_uw.base=section_header->sh_addr;
+			ctx->elf_region_uw.size=section_header->sh_size;
+		}
+		else if (str_equal(ctx->elf_string_table+section_header->sh_name,".module_iw")){
+			ctx->elf_region_iw.base=section_header->sh_addr;
+			ctx->elf_region_iw.size=section_header->sh_size;
 		}
 	}
 	if (!ctx->elf_symbol_table){
@@ -149,14 +185,14 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 		else if (ret&&elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
 			u64 address=elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
 			if (str_equal(name,"__module_header")){
-				ctx->module->descriptor=(void*)address;
+				ctx->module_descriptor=(void*)address;
 			}
 			else if (!str_startswith(name,"__module")){
 				symbol_add(ctx->module->name->data,name,address,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 			}
 		}
 	}
-	if (ret&&!ctx->module->descriptor){
+	if (ret&&!ctx->module_descriptor){
 		ERROR("module header not present");
 		return 0;
 	}
@@ -272,13 +308,13 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	module=omm_alloc(_module_allocator);
 	handle_new(module,module_handle_type,&(module->handle));
 	module->name=smm_alloc(name,0);
-	module->descriptor=NULL;
 	module->region=NULL;
 	module->flags=0;
 	module->state=MODULE_STATE_LOADING;
 	module_loader_context_t ctx={
 		name,
 		module,
+		NULL,
 		(void*)(region->rb_node.key)
 	};
 	_find_static_elf_sections(&ctx);
@@ -305,11 +341,11 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
-	module->deinit_array_base=module->descriptor->deinit_start;
-	module->deinit_array_size=module->descriptor->deinit_end-module->descriptor->deinit_start;
+	module->deinit_array_base=ctx.module_descriptor->deinit_start;
+	module->deinit_array_size=ctx.module_descriptor->deinit_end-ctx.module_descriptor->deinit_start;
 #ifdef KERNEL_COVERAGE
-	module->gcov_info_base=module->descriptor->gcov_info_start;
-	module->gcov_info_size=module->descriptor->gcov_info_end-module->descriptor->gcov_info_start;
+	module->gcov_info_base=ctx.module_descriptor->gcov_info_start;
+	module->gcov_info_size=ctx.module_descriptor->gcov_info_end-ctx.module_descriptor->gcov_info_start;
 	if (module->gcov_info_size){
 		INFO("Found .gcov_info data at %p (%u file%s)",module->gcov_info_base,module->gcov_info_size/sizeof(void*),(module->gcov_info_size/sizeof(void*)==1?"":"s"));
 	}
@@ -320,23 +356,27 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	mmap_dealloc_region(process_kernel->mmap,region);
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
-	module->flags=module->descriptor->flags;
-	*(module->descriptor->module_self_ptr)=module;
-	for (u64 i=0;i+sizeof(void*)<=module->descriptor->preinit_end-module->descriptor->preinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(module->descriptor->preinit_start+i));
+	module->flags=ctx.module_descriptor->flags;
+	*(ctx.module_descriptor->module_self_ptr)=module;
+	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->preinit_end-ctx.module_descriptor->preinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx.module_descriptor->preinit_start+i));
 		if (func&&!((_Bool (*)(void))func)()){
 			module_unload(module);
 			return NULL;
 		}
 	}
-	for (u64 i=0;i+sizeof(void*)<=module->descriptor->init_end-module->descriptor->init_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(module->descriptor->init_start+i));
+	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->init_end-ctx.module_descriptor->init_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx.module_descriptor->init_start+i));
 		if (func){
 			((void (*)(void))func)();
 		}
 	}
-	for (u64 i=0;i+sizeof(void*)<=module->descriptor->postinit_end-module->descriptor->postinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(module->descriptor->postinit_start+i));
+	// _unmap_region(&(ctx->elf_region_ue));
+	// _unmap_region(&(ctx->elf_region_ur));
+	// _unmap_region(&(ctx->elf_region_uw));
+	// _adjust_region_flags(&(ctx->elf_region_iw));
+	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->postinit_end-ctx.module_descriptor->postinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx.module_descriptor->postinit_start+i));
 		if (func){
 			((void (*)(void))func)();
 		}

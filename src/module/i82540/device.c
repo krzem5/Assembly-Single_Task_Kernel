@@ -9,6 +9,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
@@ -26,8 +27,8 @@
 
 
 
-static pmm_counter_descriptor_t* _i82540_driver_pmm_counter=NULL;
-static omm_allocator_t* _i82540_device_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _i82540_driver_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _i82540_device_allocator=NULL;
 
 
 
@@ -193,10 +194,15 @@ static void _i82540_init_device(pci_device_t* device){
 
 
 
-void i82540_locate_devices(void){
+MODULE_INIT(){
 	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540");
 	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,pmm_alloc_counter("omm_i82540_device"));
 	spinlock_init(&(_i82540_device_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_i82540_init_device(device);

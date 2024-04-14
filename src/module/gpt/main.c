@@ -1,23 +1,5 @@
-#include <gpt/partition.h>
 #include <kernel/module/module.h>
 
 
 
-static _Bool _init(module_t* module){
-	gpt_register_partition_table();
-	return 1;
-}
-
-
-
-static void _deinit(module_t* module){
-	return;
-}
-
-
-
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);
+MODULE_DECLARE_NEW(0);

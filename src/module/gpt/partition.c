@@ -3,6 +3,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "gpt_partition"
@@ -63,7 +64,12 @@ static const partition_table_descriptor_config_t _gpt_partition_table_descriptor
 
 
 
-void gpt_register_partition_table(void){
+MODULE_INIT(){
 	_gpt_driver_pmm_counter=pmm_alloc_counter("gpt");
+}
+
+
+
+MODULE_POSTINIT(){
 	partition_register_table_descriptor(&_gpt_partition_table_descriptor);
 }
