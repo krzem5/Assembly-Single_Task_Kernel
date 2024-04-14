@@ -2,6 +2,7 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -44,7 +45,7 @@ static vfs_node_t* _create_pipe(vfs_node_t* parent,u8 port_index,const char* nam
 
 
 
-void devfs_serial_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating serial subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"serial",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u8 i=0;i<SERIAL_PORT_COUNT;i++){

@@ -1,6 +1,7 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/fs/fs.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #define KERNEL_LOG_NAME "devfs_fs"
 
 
@@ -17,7 +18,7 @@ static const filesystem_descriptor_config_t _devfs_filesystem_descriptor_config=
 
 
 
-void devfs_create_fs(void){
+MODULE_INIT(){
 	LOG("Creating devfs filesystem...");
 	devfs=dynamicfs_init("/dev",&_devfs_filesystem_descriptor_config);
 }

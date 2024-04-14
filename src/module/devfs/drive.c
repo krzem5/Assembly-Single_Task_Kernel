@@ -4,6 +4,7 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_drive"
@@ -37,7 +38,7 @@ static void _listener(void* object,u32 type){
 
 
 
-void devfs_drive_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating drive subsystem...");
 	_devfs_drive_root=dynamicfs_create_node(devfs->root,"drive",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	handle_register_notification_listener(drive_handle_type,_listener);

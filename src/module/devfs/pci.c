@@ -3,13 +3,14 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_pci"
 
 
 
-void devfs_pci_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating pci subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"pci",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	HANDLE_FOREACH(pci_device_handle_type){

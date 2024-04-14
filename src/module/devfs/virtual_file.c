@@ -1,6 +1,7 @@
 #include <devfs/fs.h>
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/random/random.h>
 #include <kernel/util/memory.h>
@@ -39,7 +40,7 @@ static u64 _random_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 
 
 
-void devfs_virtual_file_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating virtual file subsystem...");
 	dynamicfs_create_node(devfs->root,"zero",VFS_NODE_TYPE_FILE,NULL,_zero_read_callback,NULL);
 	dynamicfs_create_node(devfs->root,"one",VFS_NODE_TYPE_FILE,NULL,_one_read_callback,NULL);

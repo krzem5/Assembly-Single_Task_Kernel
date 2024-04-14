@@ -3,12 +3,13 @@
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_memory"
 
 
 
-void devfs_memory_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating memory subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"memory",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	for (u16 i=0;i<kernel_data.mmap_size;i++){

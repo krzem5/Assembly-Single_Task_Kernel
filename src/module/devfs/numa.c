@@ -2,13 +2,14 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/format/format.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/numa/numa.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_numa"
 
 
 
-void devfs_numa_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating numa subsystem...");
 	if (!numa_node_count){
 		WARN("Skipping numa subsystem initialization; no NUMA nodes found");

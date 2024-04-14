@@ -2,12 +2,13 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/bios/bios.h>
 #include <kernel/log/log.h>
+#include <kernel/module/module.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "devfs_bios"
 
 
 
-void devfs_bios_init(void){
+MODULE_POSTINIT(){
 	LOG("Creating bios subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"bios",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_create_node(root,"bios_vendor",VFS_NODE_TYPE_FILE,bios_data.bios_vendor,NULL,NULL);
