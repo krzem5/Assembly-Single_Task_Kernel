@@ -8,6 +8,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
@@ -32,8 +33,8 @@ typedef struct _FUSE_VFS_NODE{
 
 
 
-static omm_allocator_t* _fuse_vfs_node_allocator=NULL;
-static filesystem_descriptor_t* _fuse_filesystem_descriptor=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _fuse_vfs_node_allocator=NULL;
+static filesystem_descriptor_t* KERNEL_INIT_WRITE _fuse_filesystem_descriptor=NULL;
 
 
 
@@ -253,7 +254,7 @@ static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
 
 
 
-void fuse_init(void){
+MODULE_INIT(){
 	LOG("Initializing FUSE driver...");
 	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(fuse_vfs_node_t),8,4,pmm_alloc_counter("omm_fuse_vfs_node"));
 	spinlock_init(&(_fuse_vfs_node_allocator->lock));

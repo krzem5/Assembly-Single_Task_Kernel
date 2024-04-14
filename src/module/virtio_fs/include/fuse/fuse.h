@@ -6,10 +6,6 @@
 
 
 
-void fuse_init(void);
-
-
-
 filesystem_t* fuse_create_filesystem(virtio_fs_device_t* fs_device);
 
 

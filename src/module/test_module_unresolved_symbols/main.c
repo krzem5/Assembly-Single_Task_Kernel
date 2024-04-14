@@ -19,4 +19,4 @@ void zzz(void){
 
 
 
-MODULE_DECLARE_NEW(0);
+MODULE_DECLARE(0);

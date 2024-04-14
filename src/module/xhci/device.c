@@ -3,6 +3,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #include <kernel/usb/controller.h>
@@ -17,11 +18,11 @@
 
 
 
-static pmm_counter_descriptor_t* _xhci_driver_pmm_counter=NULL;
-static pmm_counter_descriptor_t* _xhci_input_context_pmm_counter=NULL;
-static omm_allocator_t* _xhci_device_allocator=NULL;
-static omm_allocator_t* _xhci_ring_allocator=NULL;
-static omm_allocator_t* _xhci_pipe_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _xhci_driver_pmm_counter=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _xhci_input_context_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _xhci_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _xhci_ring_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _xhci_pipe_allocator=NULL;
 
 
 
@@ -358,7 +359,7 @@ static void _xhci_init_device(pci_device_t* device){
 
 
 
-void xhci_locate_devices(void){
+MODULE_INIT(){
 	_xhci_driver_pmm_counter=pmm_alloc_counter("xhci");
 	_xhci_input_context_pmm_counter=pmm_alloc_counter("xhci_input_context");
 	_xhci_device_allocator=omm_init("xhci_device",sizeof(xhci_device_t),8,1,pmm_alloc_counter("omm_xhci_device"));
@@ -367,6 +368,11 @@ void xhci_locate_devices(void){
 	spinlock_init(&(_xhci_ring_allocator->lock));
 	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2,pmm_alloc_counter("omm_xhci_pipe"));
 	spinlock_init(&(_xhci_pipe_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		pci_device_t* device=handle->object;
 		_xhci_init_device(device);

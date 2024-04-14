@@ -6,6 +6,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <virtio/blk.h>
 #include <virtio/blk_registers.h>
@@ -19,7 +20,7 @@
 
 
 
-static omm_allocator_t* _virtio_blk_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_blk_device_allocator=NULL;
 
 
 
@@ -102,10 +103,15 @@ static const virtio_device_driver_t _virtio_blk_device_driver={
 
 
 
-void virtio_blk_init(void){
+MODULE_INIT(){
 	LOG("Initializing VirtIO block driver...");
 	_virtio_blk_device_allocator=omm_init("virtio_blk_device",sizeof(virtio_blk_device_t),8,1,pmm_alloc_counter("omm_virtio_blk_device"));
 	spinlock_init(&(_virtio_blk_device_allocator->lock));
+}
+
+
+
+MODULE_POSTINIT(){
 	if (!virtio_register_device_driver(&_virtio_blk_device_driver)){
 		ERROR("Unable to register VirtIO block driver");
 	}

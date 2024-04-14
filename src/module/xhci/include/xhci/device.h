@@ -47,8 +47,4 @@ typedef struct _XHCI_PIPE{
 
 
 
-void xhci_locate_devices(void);
-
-
-
 #endif

@@ -14,10 +14,6 @@ typedef struct _VIRTIO_FS_DEVICE{
 
 
 
-void virtio_fs_init(void);
-
-
-
 void virtio_fs_fuse_init(virtio_fs_device_t* fs_device);
 
 

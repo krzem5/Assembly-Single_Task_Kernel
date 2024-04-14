@@ -4,12 +4,13 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/resource/resource.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <ui/display.h>
-#include <virgl/virgl.h>
 #include <virgl/protocol.h>
+#include <virgl/virgl.h>
 #include <virtio/gpu.h>
 #include <virtio/gpu_registers.h>
 #include <virtio/registers.h>
@@ -22,7 +23,7 @@
 
 
 
-static omm_allocator_t* _virtio_gpu_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_gpu_device_allocator=NULL;
 
 
 
@@ -194,7 +195,7 @@ static const virtio_device_driver_t _virtio_gpu_device_driver={
 
 
 
-void virtio_gpu_init(void){
+MODULE_POSTINIT(){
 	LOG("Initializing VirtIO GPU driver...");
 	_virtio_gpu_device_allocator=omm_init("virtio_gpu_device",sizeof(virtio_gpu_device_t),8,1,pmm_alloc_counter("omm_virtio_gpu_device"));
 	spinlock_init(&(_virtio_gpu_device_allocator->lock));

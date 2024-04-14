@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -134,20 +135,20 @@ static const u32 _virgl_texture_format_map[]={
 
 
 
-static pmm_counter_descriptor_t* _virgl_opengl_context_command_buffer_pmm_counter=NULL;
-static pmm_counter_descriptor_t* _virgl_opengl_buffer_pmm_counter=NULL;
-static omm_allocator_t* _virgl_opengl_context_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_state_context_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_shader_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_vertex_array_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_buffer_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_texture_allocator=NULL;
-static omm_allocator_t* _virgl_opengl_sampler_allocator=NULL;
-static handle_type_t _virgl_opengl_shader_handle_type=0;
-static handle_type_t _virgl_opengl_vertex_array_handle_type=0;
-static handle_type_t _virgl_opengl_buffer_handle_type=0;
-static handle_type_t _virgl_opengl_texture_handle_type=0;
-static handle_type_t _virgl_opengl_sampler_handle_type=0;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _virgl_opengl_context_command_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _virgl_opengl_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_context_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_state_context_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_shader_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_vertex_array_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_buffer_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_texture_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virgl_opengl_sampler_allocator=NULL;
+static handle_type_t KERNEL_INIT_WRITE _virgl_opengl_shader_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _virgl_opengl_vertex_array_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _virgl_opengl_buffer_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _virgl_opengl_texture_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _virgl_opengl_sampler_handle_type=0;
 
 
 
@@ -1006,7 +1007,7 @@ static const opengl_driver_t _virgl_opengl_driver={
 
 
 
-void virgl_init(void){
+MODULE_INIT(){
 	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
 	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_buffer");
 	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_context"));

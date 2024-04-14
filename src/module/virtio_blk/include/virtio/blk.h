@@ -12,8 +12,4 @@ typedef struct _VIRTIO_BLK_DEVICE{
 
 
 
-void virtio_blk_init(void);
-
-
-
 #endif

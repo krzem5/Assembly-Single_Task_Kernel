@@ -12,24 +12,16 @@ static void _qemu_shutdown_function(void){
 
 
 
-static _Bool _init(module_t* module){
-	if (bios_data.manufacturer->length==4&&str_equal(bios_data.manufacturer->data,"QEMU")){
-		shutdown_register_shutdown_function(_qemu_shutdown_function,1);
-		return 1;
-	}
-	return 0;
+MODULE_PREINIT(){
+	return (bios_data.manufacturer->length==4&&str_equal(bios_data.manufacturer->data,"QEMU"));
 }
 
 
 
-static void _deinit(module_t* module){
-	return;
+MODULE_INIT(){
+	shutdown_register_shutdown_function(_qemu_shutdown_function,1);
 }
 
 
 
-MODULE_DECLARE(
-	_init,
-	_deinit,
-	0
-);
+MODULE_DECLARE(0);

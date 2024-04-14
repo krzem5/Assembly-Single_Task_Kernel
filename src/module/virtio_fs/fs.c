@@ -6,6 +6,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <virtio/fs.h>
 #include <virtio/fs_registers.h>
@@ -15,7 +16,7 @@
 
 
 
-static omm_allocator_t* _virtio_fs_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _virtio_fs_device_allocator=NULL;
 
 
 
@@ -59,7 +60,7 @@ static const virtio_device_driver_t _virtio_fs_device_driver={
 
 
 
-void virtio_fs_init(void){
+MODULE_POSTINIT(){
 	LOG("Initializing VirtIO FS driver...");
 	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1,pmm_alloc_counter("omm_virtio_fs_device"));
 	spinlock_init(&(_virtio_fs_device_allocator->lock));

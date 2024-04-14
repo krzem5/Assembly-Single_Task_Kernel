@@ -19,10 +19,6 @@ typedef struct _VIRTIO_GPU_DEVICE{
 
 
 
-void virtio_gpu_init(void);
-
-
-
 virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_info(virtio_gpu_device_t* gpu_device);
 
 

@@ -91,10 +91,6 @@ typedef struct _VIRGL_OPENGL_SAMPLER{
 
 
 
-void virgl_init(void);
-
-
-
 void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_v2,const void* data,u32 size);
 
 
