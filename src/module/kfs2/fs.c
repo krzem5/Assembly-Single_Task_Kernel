@@ -21,11 +21,11 @@
 
 
 
-static pmm_counter_descriptor_t* _kfs2_resize_buffer_pmm_counter=NULL;
-static pmm_counter_descriptor_t* _kfs2_root_block_buffer_pmm_counter=NULL;
-static omm_allocator_t* _kfs2_vfs_node_allocator=NULL;
-static omm_allocator_t* _kfs2_fs_extra_data_allocator=NULL;
-static filesystem_descriptor_t* _kfs2_filesystem_descriptor=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_resize_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_root_block_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _kfs2_vfs_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _kfs2_fs_extra_data_allocator=NULL;
+static filesystem_descriptor_t* KERNEL_INIT_WRITE _kfs2_filesystem_descriptor=NULL;
 
 
 

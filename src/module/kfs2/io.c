@@ -13,7 +13,7 @@
 
 
 
-static pmm_counter_descriptor_t* _kfs2_io_inode_buffer_pmm_counter=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_io_inode_buffer_pmm_counter=NULL;
 
 
 
