@@ -34,8 +34,6 @@ void test_module(void){
 	TEST_ASSERT(!module_load("/share/test/module/invalid_header_version"));
 	TEST_GROUP("no module section");
 	TEST_ASSERT(!module_load("test_module_no_module_section"));
-	TEST_GROUP("wrong module section size");
-	TEST_ASSERT(!module_load("test_module_wrong_module_section_size"));
 	TEST_GROUP("unresolved symbols");
 	TEST_ASSERT(!module_load("test_module_unresolved_symbols"));
 	TEST_GROUP("failed init");

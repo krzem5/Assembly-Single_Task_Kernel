@@ -13,7 +13,7 @@ static _Bool _init(module_t* module){
 
 
 
-static void _deinit(module_t* module){
+MODULE_DEINIT(){
 	test_module_mark_deinit_triggered();
 }
 
@@ -21,7 +21,6 @@ static void _deinit(module_t* module){
 
 MODULE_DECLARE(
 	_init,
-	_deinit,
+	NULL,
 	0
 );
-
