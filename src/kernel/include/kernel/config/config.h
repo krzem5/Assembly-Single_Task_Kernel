@@ -12,6 +12,9 @@
 #define CONFIG_TAG_TYPE_INT 3
 #define CONFIG_TAG_TYPE_INT_NEGATIVE 4
 
+#define CONFIG_SAVE_FLAG_COMPRESS 1
+#define CONFIG_SAVE_FLAG_TEXT 2
+
 
 
 typedef struct _CONFIG_TAG{
@@ -62,11 +65,11 @@ config_tag_t* config_load_from_file(vfs_node_t* file,const char* password);
 
 
 
-_Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password);
+_Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password,u32 flags);
 
 
 
-_Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
+_Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags);
 
 
 

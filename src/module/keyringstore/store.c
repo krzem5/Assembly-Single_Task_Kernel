@@ -178,7 +178,7 @@ static void _store_keyring(keyring_t* keyring){
 	node->gid=0;
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD);
+	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD,0);
 	config_tag_delete(root_tag);
 }
 

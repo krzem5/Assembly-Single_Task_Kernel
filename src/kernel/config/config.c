@@ -261,8 +261,26 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			}
 			continue;
 		}
-		if (data[0]=='-'||data[1]=='+'||CONFIG_TEXT_FILE_IS_NUMBER(data[0])){
-			panic("Number");
+		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])||((data[0]=='-'||data[0]=='+')&&CONFIG_TEXT_FILE_IS_NUMBER(data[1]))){
+			_Bool is_negative=0;
+			if (data[0]=='-'){
+				is_negative=1;
+				data++;
+			}
+			else if (data[0]=='+'){
+				data++;
+			}
+			s64 value=0;
+			do{
+				value=value*10+data[0]-48;
+				data++;
+			} while (CONFIG_TEXT_FILE_IS_NUMBER(data[0]));
+			config_tag_t* tag=omm_alloc(_config_tag_allocator);
+			tag->name=name;
+			tag->type=CONFIG_TAG_TYPE_INT;
+			tag->int_=(is_negative?-value:value);
+			config_tag_attach(out,tag);
+			continue;
 		}
 		if (data[0]=='\"'){
 			panic("Quoted string");
@@ -317,6 +335,81 @@ static void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
 		for (u32 i=0;i<tag_length;i++){
 			writer_append_u8(writer,value>>(i<<3));
 		}
+	}
+}
+
+
+
+static void _check_tag_name(const config_tag_t* tag){
+	if (!tag->name->length){
+		return;
+	}
+	if (!CONFIG_TEXT_FILE_IS_IDENTIFIER_START(tag->name->data[0])){
+		WARN("Invalid text identifier");
+		return;
+	}
+	for (u32 i=1;i<tag->name->length;i++){
+		if (!CONFIG_TEXT_FILE_IS_IDENTIFIER(tag->name->data[i])){
+			WARN("Invalid text identifier");
+			return;
+		}
+	}
+}
+
+
+
+static void _save_level(writer_t* writer,u32 level){
+	for (u32 i=0;i<level;i++){
+		writer_append_char(writer,'\t');
+	}
+}
+
+
+
+static void _save_text_tag(writer_t* writer,const config_tag_t* tag,u32 level){
+	_check_tag_name(tag);
+	_save_level(writer,level);
+	writer_append(writer,tag->name->data,tag->name->length);
+	if (tag->type==CONFIG_TAG_TYPE_NONE){
+		return;
+	}
+	if (tag->name->length){
+		writer_append_char(writer,'=');
+	}
+	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
+		writer_append_char(writer,'{');
+		if (!tag->array->length){
+			writer_append_char(writer,'}');
+			return;
+		}
+		writer_append_char(writer,'\n');
+		for (u32 i=0;i<tag->array->length;i++){
+			_save_text_tag(writer,tag->array->data[i],level+1);
+			writer_append_char(writer,'\n');
+		}
+		_save_level(writer,level);
+		writer_append_char(writer,'}');
+		return;
+	}
+	if (tag->type==CONFIG_TAG_TYPE_STRING){
+		panic("_save_text_tag: save string");
+		return;
+	}
+	if (tag->type==CONFIG_TAG_TYPE_INT){
+		s64 value=tag->int_;
+		if (value<0){
+			writer_append_char(writer,'-');
+			value=-value;
+		}
+		char buffer[20];
+		u32 i=20;
+		do{
+			i--;
+			buffer[i]=(value%10)+48;
+			value/=10;
+		} while (value);
+		writer_append(writer,buffer+i,20-i);
+		return;
 	}
 }
 
@@ -425,12 +518,32 @@ KERNEL_PUBLIC config_tag_t* config_load_from_file(vfs_node_t* file,const char* p
 
 
 
-KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password);
+KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password,u32 flags);
 
 
 
-KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password){
+KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
+	if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		WARN("Root tag is not an array; results may be undefined");
+	}
 	writer_t* writer=writer_init(file,NULL);
+	if (flags&CONFIG_SAVE_FLAG_TEXT){
+		if (password||(flags&(~CONFIG_SAVE_FLAG_TEXT))){
+			WARN("Saving in text mode; password encryption and other flags ignored");
+		}
+		if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+			_save_text_tag(writer,tag,0);
+			writer_append_char(writer,'\n');
+		}
+		else{
+			for (u32 i=0;i<tag->array->length;i++){
+				_save_text_tag(writer,tag->array->data[i],0);
+				writer_append_char(writer,'\n');
+			}
+		}
+		writer_deinit(writer);
+		return 1;
+	}
 	config_file_header_t header={
 		CONFIG_BINARY_FILE_SIGNATURE,
 		CONFIG_BINARY_FILE_VERSION,

@@ -140,7 +140,7 @@ static void _store_config(void){
 	config_tag_t* preferred_address_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"preferred_address");
 	config_tag_attach(root_tag,preferred_address_tag);
 	preferred_address_tag->int_=_net_dhcp_preferred_address;
-	config_save_to_file(root_tag,node,NULL);
+	config_save_to_file(root_tag,node,NULL,CONFIG_SAVE_FLAG_TEXT);
 	config_tag_delete(root_tag);
 }
 
