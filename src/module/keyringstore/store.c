@@ -15,6 +15,10 @@
 
 
 
+static vfs_node_t* _keyringstore_root_dir=NULL;
+
+
+
 static vfs_node_t* _get_store_directory(void){
 	vfs_node_t* parent;
 	const char* child_name;
@@ -42,6 +46,21 @@ static void _store_keyring(keyring_t* keyring){
 	smm_dealloc(name_tag->string);
 	name_tag->string=smm_duplicate(keyring->name);
 	config_tag_attach(root_tag,name_tag);
+	vfs_node_t* parent;
+	const char* child_name;
+	vfs_node_t* node=vfs_lookup_for_creation(_keyringstore_root_dir,keyring->name->data,0,0,0,&parent,&child_name);
+	if (!node){
+		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+		node=vfs_node_create(NULL,_keyringstore_root_dir,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		if (!node){
+			return;
+		}
+	}
+	node->uid=0;
+	node->gid=0;
+	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	vfs_node_flush(node);
+	config_save_to_file(root_tag,node,NULL);
 	WARN("Store keyring: %s",keyring->name->data);
 	config_tag_delete(root_tag);
 }
@@ -58,13 +77,14 @@ static void _keyring_update_callback(void* object,u32 type){
 
 
 
-MODULE_INIT(){
+MODULE_PREINIT(){
 	LOG("Initializing keyringstore...");
-	vfs_node_t* dir=_get_store_directory();
-	if (!dir){
+	_keyringstore_root_dir=_get_store_directory();
+	if (!_keyringstore_root_dir){
 		ERROR("Unable to create keyringstore directory");
-		return;
+		return 0;
 	}
 	INFO("Loading keyrings...");
 	keyring_register_notification_listener(_keyring_update_callback);
+	return 1;
 }

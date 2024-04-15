@@ -10,6 +10,7 @@
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kernel/writer/writer.h>
 #define KERNEL_LOG_NAME "config"
 
 
@@ -326,4 +327,9 @@ KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,
 
 
 
-KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password);
+KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password){
+	writer_t* writer=writer_init(file);
+	writer_append_u64(writer,0xaabbccdd11223344);
+	writer_deinit(writer);
+	return 1;
+}

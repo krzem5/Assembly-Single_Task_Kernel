@@ -37,7 +37,10 @@ static KERNEL_INLINE u8 _calculate_compressed_hash(const string_t* name){
 
 
 static void _node_resize_data_inline_inline(kfs2_vfs_node_t* node,u64 size){
-	panic("_node_resize_data_inline_inline");
+	if (size<node->kfs2_node.size){
+		return;
+	}
+	mem_fill(node->kfs2_node.data.inline_+node->kfs2_node.size,size-node->kfs2_node.size,0);
 }
 
 
@@ -103,7 +106,7 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 	kfs2_chunk_init(&chunk);
 	for (u64 offset=0;offset<parent->kfs2_node.size;){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(parent,offset,&chunk);
+			kfs2_chunk_read(parent,offset,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
 		if (entry->name_length||entry->size<new_entry_size){
@@ -127,7 +130,7 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 	}
 	kfs2_chunk_deinit(&chunk);
 	_node_resize(parent,(parent->kfs2_node.size==48?KFS2_BLOCK_SIZE:parent->kfs2_node.size+KFS2_BLOCK_SIZE));
-	kfs2_chunk_read(parent,parent->kfs2_node.size-KFS2_BLOCK_SIZE,&chunk);
+	kfs2_chunk_read(parent,parent->kfs2_node.size-KFS2_BLOCK_SIZE,1,&chunk);
 	if (parent->kfs2_node.size>KFS2_BLOCK_SIZE){
 		panic("_attach_child: update large parent");
 		kfs2_chunk_deinit(&chunk);
@@ -220,7 +223,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 	u8 compressed_hash=_calculate_compressed_hash(name);
 	while (offset<kfs2_node->kfs2_node.size){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,offset,&chunk);
+			kfs2_chunk_read(kfs2_node,offset,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
 		if (entry->name_length!=name->length||entry->name_compressed_hash!=compressed_hash){
@@ -252,7 +255,7 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	kfs2_chunk_init(&chunk);
 	while (pointer<kfs2_node->kfs2_node.size){
 		if (pointer-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,pointer,&chunk);
+			kfs2_chunk_read(kfs2_node,pointer,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
 		pointer+=entry->size;
@@ -297,7 +300,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 	size+=offset;
 	while (offset<size){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,offset,&chunk);
+			kfs2_chunk_read(kfs2_node,offset,1,&chunk);
 		}
 		u64 padding=offset-chunk.offset;
 		u64 read_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
@@ -312,7 +315,31 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 
 
 static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
-	panic("_kfs2_write");
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if (kfs2_node->kfs2_node._inode==0xffffffff||offset>=kfs2_node->kfs2_node.size){
+		return 0;
+	}
+	if (offset+size>=kfs2_node->kfs2_node.size){
+		size=kfs2_node->kfs2_node.size-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	u64 out=size;
+	kfs2_data_chunk_t chunk;
+	kfs2_chunk_init(&chunk);
+	size+=offset;
+	while (offset<size){
+		kfs2_chunk_read(kfs2_node,offset,0,&chunk);
+		u64 padding=offset-chunk.offset;
+		u64 write_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
+		mem_copy(chunk.data+padding,buffer,write_size);
+		buffer+=write_size;
+		offset+=write_size;
+		kfs2_chunk_write(kfs2_node,&chunk);
+	}
+	kfs2_chunk_deinit(&chunk);
+	return out;
 }
 
 

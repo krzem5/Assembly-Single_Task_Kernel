@@ -53,7 +53,7 @@ void kfs2_chunk_deinit(kfs2_data_chunk_t* chunk){
 
 
 
-void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
+void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,_Bool fetch_data,kfs2_data_chunk_t* out){
 	switch (node->kfs2_node.flags&KFS2_INODE_STORAGE_MASK){
 		case KFS2_INODE_STORAGE_TYPE_INLINE:
 			if (offset>=48){
@@ -63,7 +63,7 @@ void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 			out->data=node->kfs2_node.data.inline_;
 			out->length=48;
 			out->data_offset=0;
-			break;
+			return;
 		case KFS2_INODE_STORAGE_TYPE_SINGLE:
 			{
 				u64 index=offset/KFS2_BLOCK_SIZE;
@@ -76,7 +76,6 @@ void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				out->data_offset=node->kfs2_node.data.single[index];
 				out->length=KFS2_BLOCK_SIZE;
-				kfs2_io_data_block_read(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
@@ -95,7 +94,6 @@ void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 				out->offset=offset&(-KFS2_BLOCK_SIZE);
 				out->data_offset=out->double_cache[index];
 				out->length=KFS2_BLOCK_SIZE;
-				kfs2_io_data_block_read(node->node.fs,out->data_offset,out->data);
 				break;
 			}
 		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
@@ -104,6 +102,9 @@ void kfs2_chunk_read(kfs2_vfs_node_t* node,u64 offset,kfs2_data_chunk_t* out){
 		case KFS2_INODE_STORAGE_TYPE_QUADRUPLE:
 			panic("KFS2_INODE_STORAGE_TYPE_QUADRUPLE");
 			break;
+	}
+	if (fetch_data){
+		kfs2_io_data_block_read(node->node.fs,out->data_offset,out->data);
 	}
 }
 

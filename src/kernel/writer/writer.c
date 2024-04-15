@@ -88,7 +88,6 @@ KERNEL_PUBLIC void writer_append(writer_t* writer,const void* data,u64 length){
 	writer->offset=length;
 _skip_flush:
 	spinlock_release_exclusive(&(writer->lock));
-	panic("writer_append");
 }
 
 
