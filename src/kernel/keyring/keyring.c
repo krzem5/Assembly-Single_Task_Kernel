@@ -24,6 +24,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
 static handle_type_t KERNEL_INIT_WRITE _keyring_handle_type=0;
 static notification_dispatcher_t _keyring_notification_dispatcher;
+static spinlock_t _keyring_creation_lock;
 
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
@@ -45,6 +46,7 @@ KERNEL_INIT(){
 	spinlock_init(&(_keyring_key_allocator->lock));
 	_keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
 	notification_dispatcher_init(&_keyring_notification_dispatcher);
+	spinlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");
 	keyring_module_signature=keyring_create("module-signature");
 	keyring_key_t* key=keyring_key_create(keyring_module_signature,"builtin-module");
@@ -64,12 +66,23 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
+	string_t* name_string=smm_alloc(name,0);
+	spinlock_acquire_exclusive(&_keyring_creation_lock);
+	HANDLE_FOREACH(_keyring_handle_type){
+		keyring_t* keyring=handle->object;
+		if (smm_equal(keyring->name,name_string)){
+			spinlock_release_exclusive(&_keyring_creation_lock);
+			smm_dealloc(name_string);
+			return keyring;
+		}
+	}
 	keyring_t* out=omm_alloc(_keyring_allocator);
-	out->name=smm_alloc(name,0);
+	out->name=name_string;
 	handle_new(out,_keyring_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	spinlock_init(&(out->lock));
 	out->head=NULL;
+	spinlock_release_exclusive(&_keyring_creation_lock);
 	handle_finish_setup(&(out->handle));
 	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,out,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
@@ -82,10 +95,10 @@ KERNEL_PUBLIC void keyring_delete(keyring_t* keyring);
 
 
 KERNEL_PUBLIC keyring_key_t* keyring_search(keyring_t* keyring,const char* name,u32 flags){
-	SMM_TEMPORARY_STRING str=smm_alloc(name,0);
+	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
 	spinlock_acquire_shared(&(keyring->lock));
 	keyring_key_t* key=keyring->head;
-	for (;key&&!smm_equal(key->name,str);key=key->next);
+	for (;key&&!smm_equal(key->name,name_string);key=key->next);
 	spinlock_release_shared(&(keyring->lock));
 	return key;
 }
@@ -93,13 +106,21 @@ KERNEL_PUBLIC keyring_key_t* keyring_search(keyring_t* keyring,const char* name,
 
 
 KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* name){
+	string_t* name_string=smm_alloc(name,0);
+	spinlock_acquire_exclusive(&(keyring->lock));
+	for (keyring_key_t* key=keyring->head;key;key=key->next){
+		if (smm_equal(key->name,name_string)){
+			spinlock_release_exclusive(&(keyring->lock));
+			smm_dealloc(name_string);
+			return NULL;
+		}
+	}
 	keyring_key_t* out=omm_alloc(_keyring_key_allocator);
 	out->keyring=keyring;
-	out->name=smm_alloc(name,0);
+	out->name=name_string;
 	out->type=KEYRING_KEY_TYPE_NONE;
 	out->flags=0;
 	spinlock_init(&(out->lock));
-	spinlock_acquire_exclusive(&(keyring->lock));
 	out->prev=NULL;
 	out->next=keyring->head;
 	if (keyring->head){

@@ -49,7 +49,7 @@ static void _load_keyring(config_tag_t* root_tag){
 		return;
 	}
 	INFO("Loading keyring '%s'...",name_tag->string->data);
-	// get or create keyring with name 'name_tag->string->data'
+	keyring_t* keyring=keyring_create(name_tag->string->data);
 	config_tag_t* keys_tag;
 	if (!config_tag_find(root_tag,"keys",0,&keys_tag)||keys_tag->type!=CONFIG_TAG_TYPE_ARRAY){
 		return;
@@ -62,9 +62,14 @@ static void _load_keyring(config_tag_t* root_tag){
 		if (!config_tag_find(key_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
 			continue;
 		}
-		WARN("Key: %s",name_tag->string->data);
+		keyring_key_t* key=keyring_key_create(keyring,name_tag->string->data);
+		if (!key){
+			WARN("Skipping key '%s'...",name_tag->string->data);
+			continue;
+		}
+		ERROR("Load key");
+		for (;;);
 	}
-	for (;;);
 }
 
 
@@ -111,9 +116,9 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 	config_tag_t* keys_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"keys");
 	config_tag_attach(root_tag,keys_tag);
 	for (keyring_key_t* key=keyring->head;key;key=key->next){
-		// if (key->flags&KEYRING_KEY_FLAG_VIRTUAL){
-		// 	continue;
-		// }
+		if (key->flags&KEYRING_KEY_FLAG_VIRTUAL){
+			continue;
+		}
 		config_tag_t* key_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"key");
 		name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
 		config_tag_attach(key_tag,name_tag);
@@ -176,7 +181,7 @@ static void _store_keyring(keyring_t* keyring){
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD);
 	config_tag_delete(root_tag);
-	// _load_keyrings(); /*********************************************************/
+	_load_keyrings(); /*********************************************************/
 }
 
 
