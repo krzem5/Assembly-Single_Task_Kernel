@@ -292,7 +292,7 @@ static void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
 	}
 	else if (tag->type==CONFIG_TAG_TYPE_INT){
 		tag_type=(tag->int_<0?CONFIG_TAG_TYPE_INT_NEGATIVE:CONFIG_TAG_TYPE_INT);
-		tag_length=(tag->int_?(64-__builtin_ctzll((tag->int_<0?-tag->int_:tag->int_))+7)>>3:0);
+		tag_length=(tag->int_?(64-__builtin_clzll((tag->int_<0?-tag->int_:tag->int_))+7)>>3:0);
 	}
 	config_file_tag_header_t header={
 		tag_type,
@@ -315,7 +315,7 @@ static void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
 	else if (tag->type==CONFIG_TAG_TYPE_INT){
 		u64 value=(tag->int_<0?-tag->int_:tag->int_);
 		for (u32 i=0;i<tag_length;i++){
-			writer_append_u8(writer,value>>(i>>3));
+			writer_append_u8(writer,value>>(i<<3));
 		}
 	}
 }

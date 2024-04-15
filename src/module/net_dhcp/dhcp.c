@@ -1,3 +1,4 @@
+#include <kernel/config/config.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -13,6 +14,7 @@
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #include <net/dhcp.h>
 #include <net/info.h>
 #include <net/ip4.h>
@@ -93,6 +95,53 @@ static void _send_discover_request(void){
 		packet->options[3]=NET_DHCP_OPTION_END;
 		_send_packet(packet,4,0);
 	}
+}
+
+
+
+static void _load_config(void){
+	vfs_node_t* node=vfs_lookup(NULL,"/net_dhcp.config",0,0,0);
+	if (!node){
+		return;
+	}
+	config_tag_t* root_tag=config_load_from_file(node,NULL);
+	if (!root_tag){
+		return;
+	}
+	LOG("Loading DHCP config...");
+	config_tag_t* preferred_address_tag;
+	if (!config_tag_find(root_tag,"preferred_address",0,&preferred_address_tag)||preferred_address_tag->type!=CONFIG_TAG_TYPE_INT){
+		return;
+	}
+	_net_dhcp_preferred_address=preferred_address_tag->int_;
+	INFO("Preferred IPv4 address: %I",_net_dhcp_preferred_address);
+	config_tag_delete(root_tag);
+}
+
+
+
+static void _store_config(void){
+	INFO("Saving DHCP config...");
+	vfs_node_t* parent;
+	const char* child_name;
+	vfs_node_t* node=vfs_lookup_for_creation(NULL,"/net_dhcp.config",0,0,0,&parent,&child_name);
+	if (!node){
+		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+		node=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		if (!node){
+			return;
+		}
+	}
+	node->uid=0;
+	node->gid=0;
+	node->flags|=(0664<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	vfs_node_flush(node);
+	config_tag_t* root_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"");
+	config_tag_t* preferred_address_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"preferred_address");
+	config_tag_attach(root_tag,preferred_address_tag);
+	preferred_address_tag->int_=_net_dhcp_preferred_address;
+	config_save_to_file(root_tag,node,NULL);
+	config_tag_delete(root_tag);
 }
 
 
@@ -197,6 +246,7 @@ static void _rx_thread(void){
 				INFO("- %I",router->address);
 			}
 			INFO("Lease time: %us",lease_time);
+			_store_config();
 			timer_update(_net_dhcp_timeout_timer,lease_time*1000000000ull-DHCP_LEASE_EXPIRY_EARLY_TIME_NS,1,1);
 		}
 		else if (op==NET_DHCP_MESSAGE_TYPE_DHCPNAK){
@@ -229,7 +279,7 @@ MODULE_INIT(){
 
 
 MODULE_POSTINIT(){
-	// load _net_dhcp_preferred_address
+	_load_config();
 #ifndef KERNEL_COVERAGE
 	net_dhcp_negotiate_address();
 #endif
