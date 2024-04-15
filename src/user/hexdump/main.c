@@ -22,6 +22,7 @@ int main(int argc,const char** argv){
 			return 1;
 		}
 		char buffer[512];
+		u32 k=0;
 		while (1){
 			u64 length=sys_fd_read(fd,buffer,512,0);
 			if (SYS_IS_ERROR(length)){
@@ -32,7 +33,6 @@ int main(int argc,const char** argv){
 			if (!length){
 				break;
 			}
-			u32 k=0;
 			for (u32 j=0;j<length;j++){
 				if (k>=COLUMNS){
 					k=0;

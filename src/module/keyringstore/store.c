@@ -5,6 +5,7 @@
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
+#include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
@@ -41,6 +42,15 @@ static vfs_node_t* _get_store_directory(void){
 
 
 
+static void _generate_rsa_number_config(config_tag_t* root_tag,const rsa_number_t* number,const char* name){
+	config_tag_t* tag=config_tag_create(CONFIG_TAG_TYPE_STRING,name);
+	config_tag_attach(root_tag,tag);
+	smm_dealloc(tag->string);
+	tag->string=smm_alloc((void*)(number->data),number->length*sizeof(u32));
+}
+
+
+
 static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 	config_tag_t* root_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"");
 	config_tag_t* name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
@@ -64,6 +74,29 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 		config_tag_t* flags_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"flags");
 		config_tag_attach(key_tag,flags_tag);
 		flags_tag->int_=key->flags;
+		if (key->type==KEYRING_KEY_TYPE_NONE){
+			config_tag_attach(key_tag,config_tag_create(CONFIG_TAG_TYPE_NONE,"none"));
+		}
+		else if (key->type==KEYRING_KEY_TYPE_RAW){
+			config_tag_t* raw_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"raw");
+			config_tag_attach(key_tag,raw_tag);
+			smm_dealloc(raw_tag->string);
+			raw_tag->string=smm_alloc(key->data.raw.payload,key->data.raw.payload_length);
+		}
+		else if (key->type==KEYRING_KEY_TYPE_RSA){
+			config_tag_t* rsa_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"rsa");
+			config_tag_attach(key_tag,rsa_tag);
+			_generate_rsa_number_config(rsa_tag,key->data.rsa.state.modulus,"modulus");
+			if (key->data.rsa.state.private_key){
+				_generate_rsa_number_config(rsa_tag,key->data.rsa.state.private_key,"private");
+			}
+			if (key->data.rsa.state.public_key){
+				_generate_rsa_number_config(rsa_tag,key->data.rsa.state.public_key,"public");
+			}
+		}
+		else{
+			ERROR("_generate_keyring_config: unknown key type '%u'",key->type);
+		}
 		config_tag_attach(keys_tag,key_tag);
 	}
 	return root_tag;

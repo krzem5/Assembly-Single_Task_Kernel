@@ -36,7 +36,6 @@ typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_HEADER{
 	u8 version;
 	u8 flags;
 	u32 size;
-	u8 _padding[6];
 } config_file_header_t;
 
 
@@ -236,7 +235,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 
 
 
-static void _save_tag(writer_t* writer,const config_tag_t* tag){
+static void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
 	u32 tag_type=tag->type;
 	u32 tag_length=0;
 	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
@@ -261,7 +260,7 @@ static void _save_tag(writer_t* writer,const config_tag_t* tag){
 	}
 	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
 		for (u32 i=0;i<tag->array->length;i++){
-			_save_tag(writer,tag->array->data[i]);
+			_save_binary_tag(writer,tag->array->data[i]);
 		}
 	}
 	else if (tag->type==CONFIG_TAG_TYPE_STRING){
@@ -380,7 +379,7 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 	if (password){
 		panic("config_save_to_file: password encryption");
 	}
-	_save_tag(writer,tag);
+	_save_binary_tag(writer,tag);
 	header.size=writer_deinit(writer);
 	vfs_node_write(file,0,&header,sizeof(config_file_header_t),0);
 	return 1;
