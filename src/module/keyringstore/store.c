@@ -18,7 +18,7 @@
 
 
 
-static vfs_node_t* _keyringstore_root_dir=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _keyringstore_root_dir=NULL;
 
 
 
