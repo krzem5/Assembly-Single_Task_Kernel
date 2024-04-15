@@ -41,13 +41,30 @@ static vfs_node_t* _get_store_directory(void){
 
 
 
-static void _store_keyring(keyring_t* keyring){
-	INFO("Storing keyring '%s'...",keyring->name->data);
+static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 	config_tag_t* root_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"");
 	config_tag_t* name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
+	config_tag_attach(root_tag,name_tag);
 	smm_dealloc(name_tag->string);
 	name_tag->string=smm_duplicate(keyring->name);
-	config_tag_attach(root_tag,name_tag);
+	config_tag_t* keys_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"keys");
+	config_tag_attach(root_tag,keys_tag);
+	for (keyring_key_t* key=keyring->head;key;key=key->next){
+		config_tag_t* key_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"key");
+		name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
+		config_tag_attach(key_tag,name_tag);
+		smm_dealloc(name_tag->string);
+		name_tag->string=smm_duplicate(key->name);
+		config_tag_attach(keys_tag,key_tag);
+	}
+	return root_tag;
+}
+
+
+
+static void _store_keyring(keyring_t* keyring){
+	INFO("Storing keyring '%s'...",keyring->name->data);
+	config_tag_t* root_tag=_generate_keyring_config(keyring);
 	char buffer[32];
 	format_string(buffer,32,"%lu.config",HANDLE_ID_GET_INDEX(keyring->handle.rb_node.key));
 	vfs_node_t* parent;

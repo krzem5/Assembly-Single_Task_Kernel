@@ -330,7 +330,7 @@ static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u
 	kfs2_chunk_init(&chunk);
 	size+=offset;
 	while (offset<size){
-		kfs2_chunk_read(kfs2_node,offset,0,&chunk);
+		kfs2_chunk_read(kfs2_node,offset,(offset&(KFS2_BLOCK_SIZE-1))||(size-offset<KFS2_BLOCK_SIZE),&chunk);
 		u64 padding=offset-chunk.offset;
 		u64 write_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
 		mem_copy(chunk.data+padding,buffer,write_size);
