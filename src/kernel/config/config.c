@@ -34,6 +34,8 @@
 #define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.'||(c)=='$'||(c)==':')
 #define CONFIG_TEXT_FILE_IS_IDENTIFIER(c) (CONFIG_TEXT_FILE_IS_IDENTIFIER_START((c))||CONFIG_TEXT_FILE_IS_NUMBER((c))||(c)=='-')
 
+#define CONFIG_ENCRYPTION_PBKDF2_ITERATIONS 1024
+
 
 
 typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_HEADER{
@@ -137,19 +139,50 @@ _error:
 
 static config_tag_t* _parse_binary_config(const void* data,u64 length,const char* password){
 	const config_file_header_t* header=data;
-	data+=sizeof(config_file_header_t);
-	length-=sizeof(config_file_header_t);
-	if (header->signature!=CONFIG_BINARY_FILE_SIGNATURE||header->version!=CONFIG_BINARY_FILE_VERSION||header->size>length){
+	if (length<sizeof(config_file_header_t)||header->signature!=CONFIG_BINARY_FILE_SIGNATURE||header->version!=CONFIG_BINARY_FILE_VERSION||header->size>length){
 		return NULL;
 	}
+	data+=sizeof(config_file_header_t);
+	length=header->size-sizeof(config_file_header_t);
+	void* decoded_data=NULL;
 	if (header->flags&COFNIG_BINARY_FILE_FLAG_ENCRYPTED){
-		panic("Decrypt data");
+		if (length<sizeof(config_file_encryption_header_t)){
+			return NULL;
+		}
+		const config_file_encryption_header_t* encryption_header=data;
+		data+=sizeof(config_file_encryption_header_t);
+		length-=sizeof(config_file_encryption_header_t);
+		u8 aes_key_and_iv[48];
+		pbkdf2_compute(password,smm_length(password),encryption_header->salt,sizeof(encryption_header->salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
+		aes_state_t aes_state;
+		aes_init(aes_key_and_iv,32,AES_FLAG_DECRYPTION,&aes_state);
+		decoded_data=amm_alloc(length);
+		for (u32 i=0;i<length;i+=16){
+			aes_decrypt_block(&aes_state,data+i,decoded_data+i);
+			_xor_block(decoded_data+i,(i?data+(i-16):aes_key_and_iv+32));
+		}
+		mem_fill(aes_key_and_iv,sizeof(aes_key_and_iv),0);
+		aes_deinit(&aes_state);
+		data=decoded_data;
+		u8 hmac[32];
+		hmac_compute(encryption_header->salt,sizeof(encryption_header->salt),decoded_data,length,hmac_sha256_function,hmac);
+		u8 value=0;
+		for (u32 i=0;i<32;i++){
+			value|=hmac[i]^encryption_header->hmac[i];
+		}
+		if (value){
+			amm_dealloc(decoded_data);
+			return NULL;
+		}
 	}
 	if (header->flags&COFNIG_BINARY_FILE_FLAG_COMPRESSED){
 		panic("Decompress data");
 	}
 	config_tag_t* out;
 	data=_parse_binary_tag(data,data+length,&out);
+	if (decoded_data){
+		amm_dealloc(decoded_data);
+	}
 	return (data?out:NULL);
 }
 
@@ -404,13 +437,14 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 	hmac_compute(encryption_header.salt,sizeof(encryption_header.salt),buffer,buffer_size,hmac_sha256_function,encryption_header.hmac);
 	writer_append(writer,&encryption_header,sizeof(config_file_encryption_header_t));
 	u8 aes_key_and_iv[48];
-	pbkdf2_compute(password,smm_length(password),encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,1024,aes_key_and_iv,sizeof(aes_key_and_iv));
+	pbkdf2_compute(password,smm_length(password),encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
 	aes_state_t aes_state;
 	aes_init(aes_key_and_iv,32,AES_FLAG_ENCRYPTION,&aes_state);
 	for (u32 i=0;i<buffer_size;i+=16){
 		_xor_block(buffer+i,(i?buffer+(i-16):aes_key_and_iv+32));
 		aes_encrypt_block(&aes_state,buffer+i,buffer+i);
 	}
+	mem_fill(aes_key_and_iv,sizeof(aes_key_and_iv),0);
 	aes_deinit(&aes_state);
 	writer_append(writer,buffer,buffer_size);
 	amm_dealloc(buffer);

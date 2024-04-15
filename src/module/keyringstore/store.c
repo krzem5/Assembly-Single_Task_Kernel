@@ -14,6 +14,7 @@
 
 
 #define KEYRING_STORE_DIRECTORY "/keyringstore"
+#define KEYRING_ENCRYPTION_PASSWORD "password"
 
 
 
@@ -38,6 +39,29 @@ static vfs_node_t* _get_store_directory(void){
 	out->flags|=(0500<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(out);
 	return out;
+}
+
+
+
+static void _load_keyrings(void){
+	u64 pointer=0;
+	string_t* name;
+	while (1){
+		pointer=vfs_node_iterate(_keyringstore_root_dir,pointer,&name);
+		if (!pointer){
+			return;
+		}
+		vfs_node_t* node=vfs_lookup(_keyringstore_root_dir,name->data,0,0,0);
+		smm_dealloc(name);
+		if (!node){
+			continue;
+		}
+		config_tag_t* root_tag=config_load_from_file(node,KEYRING_ENCRYPTION_PASSWORD);
+		if (!root_tag){
+			continue;
+		}
+		config_tag_delete(root_tag);
+	}
 }
 
 
@@ -123,7 +147,7 @@ static void _store_keyring(keyring_t* keyring){
 	node->gid=0;
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_save_to_file(root_tag,node,"password");
+	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD);
 	config_tag_delete(root_tag);
 }
 
@@ -147,6 +171,7 @@ MODULE_PREINIT(){
 		return 0;
 	}
 	INFO("Loading keyrings...");
+	_load_keyrings();
 	keyring_register_notification_listener(_keyring_update_callback);
 	return 1;
 }
