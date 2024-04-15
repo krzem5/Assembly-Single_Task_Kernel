@@ -123,7 +123,7 @@ static void _store_keyring(keyring_t* keyring){
 	node->gid=0;
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_save_to_file(root_tag,node,NULL);
+	config_save_to_file(root_tag,node,"password");
 	config_tag_delete(root_tag);
 }
 

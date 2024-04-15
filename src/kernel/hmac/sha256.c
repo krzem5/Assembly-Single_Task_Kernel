@@ -11,7 +11,7 @@ static void _hmac_sha256_callback(const void* data1,u32 length1,const void* data
 	hash_sha256_process_chunk(&state,data1,length1);
 	hash_sha256_process_chunk(&state,data2,length2);
 	hash_sha256_finalize(&state);
-	mem_copy(state.result,buffer,32);
+	mem_copy(buffer,state.result,32);
 }
 
 
