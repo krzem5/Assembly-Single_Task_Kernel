@@ -1,6 +1,7 @@
 #include <kernel/hash/sha256.h>
 #include <kernel/hmac/hmac.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 
 
 
@@ -10,11 +11,7 @@ static void _hmac_sha256_callback(const void* data1,u32 length1,const void* data
 	hash_sha256_process_chunk(&state,data1,length1);
 	hash_sha256_process_chunk(&state,data2,length2);
 	hash_sha256_finalize(&state);
-	u32* out=buffer;
-	for (u32 i=0;i<8;i++){
-		out[i]=__builtin_bswap32(state.result[i]);
-		state.result[i]=0;
-	}
+	mem_copy(state.result,buffer,32);
 }
 
 
@@ -27,4 +24,4 @@ static const hmac_hash_function_t _hmac_sha256_function_data={
 
 
 
-const hmac_hash_function_t* hmac_sha256_function=&_hmac_sha256_function_data;
+KERNEL_PUBLIC const hmac_hash_function_t* hmac_sha256_function=&_hmac_sha256_function_data;

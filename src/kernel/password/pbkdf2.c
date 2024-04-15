@@ -1,9 +1,28 @@
+#include <kernel/hmac/hmac.h>
+#include <kernel/hmac/sha256.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/password/pbkdf2.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "pbkdf2"
+
+
+
+static void _pbkdf2_hmac_sha256_callback(const void* data1,u32 length1,const void* data2,u32 length2,void* buffer){
+	hmac_compute(data1,length1,data2,length2,hmac_sha256_function,buffer);
+}
+
+
+
+static const prf_t _pbkdf2_prf_hmac_sha256_data={
+	_pbkdf2_hmac_sha256_callback,
+	32
+};
+
+
+
+KERNEL_PUBLIC const prf_t* pbkdf2_prf_hmac_sha256=&_pbkdf2_prf_hmac_sha256_data;
 
 
 

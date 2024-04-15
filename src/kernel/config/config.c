@@ -1,4 +1,7 @@
+#include <kernel/aes/aes.h>
 #include <kernel/config/config.h>
+#include <kernel/hmac/hmac.h>
+#include <kernel/hmac/sha256.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -6,6 +9,8 @@
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/mp/process.h>
+#include <kernel/password/pbkdf2.h>
+#include <kernel/random/random.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
@@ -57,6 +62,14 @@ typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_TAG_HEADER{
 
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _config_buffer_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _config_tag_allocator=NULL;
+
+
+
+static void _xor_block(u8* dst,const u8* src){
+	for (u32 i=0;i<16;i++){
+		dst[i]^=src[i];
+	}
+}
 
 
 
@@ -372,16 +385,36 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 	config_file_header_t header={
 		CONFIG_BINARY_FILE_SIGNATURE,
 		CONFIG_BINARY_FILE_VERSION,
-		0,
+		(password?COFNIG_BINARY_FILE_FLAG_ENCRYPTED:0),
 		0xffffffff
 	};
 	writer_append(writer,&header,sizeof(config_file_header_t));
 	if (!password){
 		_save_binary_tag(writer,tag);
+		goto _skip_encryption;
 	}
-	else{
-		panic("config_save_to_file: password encryption");
+	void* buffer=NULL;
+	writer_t* memory_writer=writer_init(NULL,&buffer);
+	_save_binary_tag(memory_writer,tag);
+	writer_flush(memory_writer);
+	writer_append(memory_writer,"abcdefghijklmno",(-memory_writer->size)&15);
+	u64 buffer_size=writer_deinit(memory_writer);
+	config_file_encryption_header_t encryption_header;
+	random_generate(encryption_header.salt,sizeof(encryption_header.salt));
+	hmac_compute(encryption_header.salt,sizeof(encryption_header.salt),buffer,buffer_size,hmac_sha256_function,encryption_header.hmac);
+	writer_append(writer,&encryption_header,sizeof(config_file_encryption_header_t));
+	u8 aes_key_and_iv[48];
+	pbkdf2_compute(password,smm_length(password),encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,1024,aes_key_and_iv,sizeof(aes_key_and_iv));
+	aes_state_t aes_state;
+	aes_init(aes_key_and_iv,32,AES_FLAG_ENCRYPTION,&aes_state);
+	for (u32 i=0;i<buffer_size;i+=16){
+		_xor_block(buffer+i,(i?buffer+(i-16):aes_key_and_iv+32));
+		aes_encrypt_block(&aes_state,buffer+i,buffer+i);
 	}
+	aes_deinit(&aes_state);
+	writer_append(writer,buffer,buffer_size);
+	amm_dealloc(buffer);
+_skip_encryption:
 	header.size=writer_deinit(writer);
 	vfs_node_write(file,0,&header,sizeof(config_file_header_t),0);
 	return 1;

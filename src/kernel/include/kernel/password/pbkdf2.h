@@ -15,6 +15,10 @@ typedef struct _PRF{
 
 
 
+extern const prf_t* pbkdf2_prf_hmac_sha256;
+
+
+
 void pbkdf2_compute(const void* password,u32 password_length,const void* salt,u32 salt_length,const prf_t* prf,u32 iterations,void* out,u32 out_length);
 
 
