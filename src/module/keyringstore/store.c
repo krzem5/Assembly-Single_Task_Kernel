@@ -99,6 +99,9 @@ static void _load_keyrings(void){
 
 
 static void _generate_rsa_number_config(config_tag_t* root_tag,const rsa_number_t* number,const char* name){
+	if (!number){
+		return;
+	}
 	config_tag_t* tag=config_tag_create(CONFIG_TAG_TYPE_STRING,name);
 	config_tag_attach(root_tag,tag);
 	smm_dealloc(tag->string);
@@ -143,12 +146,8 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 			config_tag_t* rsa_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"rsa");
 			config_tag_attach(key_tag,rsa_tag);
 			_generate_rsa_number_config(rsa_tag,key->data.rsa.state.modulus,"modulus");
-			if (key->data.rsa.state.private_key){
-				_generate_rsa_number_config(rsa_tag,key->data.rsa.state.private_key,"private");
-			}
-			if (key->data.rsa.state.public_key){
-				_generate_rsa_number_config(rsa_tag,key->data.rsa.state.public_key,"public");
-			}
+			_generate_rsa_number_config(rsa_tag,key->data.rsa.state.private_key,"private");
+			_generate_rsa_number_config(rsa_tag,key->data.rsa.state.public_key,"public");
 		}
 		else{
 			ERROR("_generate_keyring_config: unknown key type '%u'",key->type);
