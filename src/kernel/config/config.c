@@ -55,8 +55,8 @@ typedef struct KERNEL_PACKED _CONFIG_BINARY_FILE_TAG_HEADER{
 
 
 
-static pmm_counter_descriptor_t* _config_buffer_pmm_counter=NULL;
-static omm_allocator_t* _config_tag_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _config_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _config_tag_allocator=NULL;
 
 
 
@@ -368,7 +368,7 @@ KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,
 
 
 KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password){
-	writer_t* writer=writer_init(file);
+	writer_t* writer=writer_init(file,NULL);
 	config_file_header_t header={
 		CONFIG_BINARY_FILE_SIGNATURE,
 		CONFIG_BINARY_FILE_VERSION,
@@ -376,10 +376,12 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 		0xffffffff
 	};
 	writer_append(writer,&header,sizeof(config_file_header_t));
-	if (password){
+	if (!password){
+		_save_binary_tag(writer,tag);
+	}
+	else{
 		panic("config_save_to_file: password encryption");
 	}
-	_save_binary_tag(writer,tag);
 	header.size=writer_deinit(writer);
 	vfs_node_write(file,0,&header,sizeof(config_file_header_t),0);
 	return 1;

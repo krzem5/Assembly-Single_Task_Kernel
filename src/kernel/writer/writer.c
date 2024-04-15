@@ -1,5 +1,6 @@
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mmap/mmap.h>
@@ -23,8 +24,14 @@ static omm_allocator_t* KERNEL_INIT_WRITE _writer_omm_allocator=NULL;
 
 static void _emit_data(writer_t* writer,const void* buffer,u64 size){
 	writer->size+=size;
-	vfs_node_resize(writer->node,writer->size,0);
-	vfs_node_write(writer->node,writer->size-size,buffer,size,0);
+	if (writer->is_file_backed){
+		vfs_node_resize(writer->backend.node,writer->size,0);
+		vfs_node_write(writer->backend.node,writer->size-size,buffer,size,0);
+	}
+	else{
+		*(writer->backend.buffer)=amm_realloc(*(writer->backend.buffer),writer->size);
+		mem_copy((*(writer->backend.buffer))+writer->size-size,buffer,size);
+	}
 }
 
 
@@ -37,10 +44,17 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node){
+KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node,void** buffer){
 	writer_t* out=omm_alloc(_writer_omm_allocator);
 	spinlock_init(&(out->lock));
-	out->node=node;
+	if (node){
+		out->is_file_backed=1;
+		out->backend.node=node;
+	}
+	else{
+		out->is_file_backed=0;
+		out->backend.buffer=buffer;
+	}
 	out->buffer_region=mmap_alloc(process_kernel->mmap,0,WRITER_BUFFER_SIZE,MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	out->buffer=(void*)(out->buffer_region->rb_node.key);
 	out->offset=0;

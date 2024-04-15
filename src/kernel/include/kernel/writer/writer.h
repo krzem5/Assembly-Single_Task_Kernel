@@ -9,7 +9,11 @@
 
 typedef struct _WRITER{
 	spinlock_t lock;
-	vfs_node_t* node;
+	_Bool is_file_backed;
+	union{
+		vfs_node_t* node;
+		void** buffer;
+	} backend;
 	mmap_region_t* buffer_region;
 	void* buffer;
 	u64 offset;
@@ -18,7 +22,7 @@ typedef struct _WRITER{
 
 
 
-writer_t* writer_init(vfs_node_t* node);
+writer_t* writer_init(vfs_node_t* node,void** buffer);
 
 
 
