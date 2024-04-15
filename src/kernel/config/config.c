@@ -523,8 +523,8 @@ KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,
 
 
 KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
-	if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
-		WARN("Root tag is not an array; results may be undefined");
+	if (tag->type!=CONFIG_TAG_TYPE_ARRAY||tag->name->length){
+		WARN("Root tag is not an unnamed array; results may be undefined");
 	}
 	writer_t* writer=writer_init(file,NULL);
 	if (flags&CONFIG_SAVE_FLAG_TEXT){
@@ -559,7 +559,7 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 	writer_t* memory_writer=writer_init(NULL,&buffer);
 	_save_binary_tag(memory_writer,tag);
 	writer_flush(memory_writer);
-	writer_append(memory_writer,"abcdefghijklmno",(-memory_writer->size)&15);
+	writer_append(memory_writer,"ABCDEFGHIJKLMNO",(-memory_writer->size)&15);
 	u64 buffer_size=writer_deinit(memory_writer);
 	config_file_encryption_header_t encryption_header;
 	random_generate(encryption_header.salt,sizeof(encryption_header.salt));
