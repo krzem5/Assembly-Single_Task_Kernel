@@ -10,7 +10,10 @@
 typedef struct _WRITER{
 	spinlock_t lock;
 	vfs_node_t* node;
-	mmap_region_t* buffer;
+	mmap_region_t* buffer_region;
+	void* buffer;
+	u64 offset;
+	u64 size;
 } writer_t;
 
 
