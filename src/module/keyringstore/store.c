@@ -67,7 +67,7 @@ static void _load_keyring(config_tag_t* root_tag){
 			WARN("Skipping key '%s'...",name_tag->string->data);
 			continue;
 		}
-		ERROR("Load key");
+		ERROR("Load key from config");
 		for (;;);
 	}
 }
@@ -181,7 +181,6 @@ static void _store_keyring(keyring_t* keyring){
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD);
 	config_tag_delete(root_tag);
-	_load_keyrings(); /*********************************************************/
 }
 
 
