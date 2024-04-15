@@ -236,6 +236,47 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 
 
 
+static void _save_tag(writer_t* writer,const config_tag_t* tag){
+	u32 tag_type=tag->type;
+	u32 tag_length=0;
+	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
+		tag_length=tag->array->length;
+	}
+	else if (tag->type==CONFIG_TAG_TYPE_STRING){
+		tag_length=tag->string->length;
+	}
+	else if (tag->type==CONFIG_TAG_TYPE_INT){
+		tag_type=(tag->int_<0?CONFIG_TAG_TYPE_INT_NEGATIVE:CONFIG_TAG_TYPE_INT);
+		tag_length=(tag->int_?(64-__builtin_ctzll((tag->int_<0?-tag->int_:tag->int_))+7)>>3:0);
+	}
+	config_file_tag_header_t header={
+		tag_type,
+		tag->name->length,
+		(tag_length<0xffff?tag_length:0xffff)
+	};
+	writer_append(writer,&header,sizeof(config_file_tag_header_t));
+	writer_append(writer,tag->name->data,tag->name->length);
+	if (tag_length>=0xffff){
+		writer_append_u32(writer,tag_length);
+	}
+	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
+		for (u32 i=0;i<tag->array->length;i++){
+			_save_tag(writer,tag->array->data[i]);
+		}
+	}
+	else if (tag->type==CONFIG_TAG_TYPE_STRING){
+		writer_append(writer,tag->string->data,tag->string->length);
+	}
+	else if (tag->type==CONFIG_TAG_TYPE_INT){
+		u64 value=(tag->int_<0?-tag->int_:tag->int_);
+		for (u32 i=0;i<tag_length;i++){
+			writer_append_u8(writer,value>>(i>>3));
+		}
+	}
+}
+
+
+
 KERNEL_INIT(){
 	LOG("Initializing config tags...");
 	_config_buffer_pmm_counter=pmm_alloc_counter("config_buffer");
@@ -329,7 +370,18 @@ KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,
 
 KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password){
 	writer_t* writer=writer_init(file);
-	writer_append_u64(writer,0xaabbccdd11223344);
-	writer_deinit(writer);
+	config_file_header_t header={
+		CONFIG_BINARY_FILE_SIGNATURE,
+		CONFIG_BINARY_FILE_VERSION,
+		0,
+		0xffffffff
+	};
+	writer_append(writer,&header,sizeof(config_file_header_t));
+	if (password){
+		panic("config_save_to_file: password encryption");
+	}
+	_save_tag(writer,tag);
+	header.size=writer_deinit(writer);
+	vfs_node_write(file,0,&header,sizeof(config_file_header_t),0);
 	return 1;
 }

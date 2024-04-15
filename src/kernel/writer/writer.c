@@ -50,12 +50,14 @@ KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node){
 
 
 
-KERNEL_PUBLIC void writer_deinit(writer_t* writer){
+KERNEL_PUBLIC u64 writer_deinit(writer_t* writer){
 	if (writer->offset){
 		_emit_data(writer,writer->buffer,writer->offset);
 	}
 	mmap_dealloc_region(process_kernel->mmap,writer->buffer_region);
+	u64 out=writer->size;
 	omm_dealloc(_writer_omm_allocator,writer);
+	return out;
 }
 
 

@@ -22,7 +22,7 @@ writer_t* writer_init(vfs_node_t* node);
 
 
 
-void writer_deinit(writer_t* writer);
+u64 writer_deinit(writer_t* writer);
 
 
 
