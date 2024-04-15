@@ -50,6 +50,10 @@ void config_tag_detach(config_tag_t* child);
 
 
 
+u64 config_tag_find(config_tag_t* tag,const char* name,u64 pointer,config_tag_t** out);
+
+
+
 config_tag_t* config_load(const void* data,u64 length,const char* password);
 
 

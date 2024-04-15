@@ -391,6 +391,22 @@ KERNEL_PUBLIC void config_tag_detach(config_tag_t* child){
 
 
 
+KERNEL_PUBLIC u64 config_tag_find(config_tag_t* tag,const char* name,u64 pointer,config_tag_t** out){
+	if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		return 0;
+	}
+	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
+	for (;pointer<tag->array->length;pointer++){
+		if (smm_equal(tag->array->data[pointer]->name,name_string)){
+			*out=tag->array->data[pointer];
+			return pointer+1;
+		}
+	}
+	return 0;
+}
+
+
+
 KERNEL_PUBLIC config_tag_t* config_load(const void* data,u64 length,const char* password){
 	if (length>=sizeof(u32)&&*((const u32*)data)==CONFIG_BINARY_FILE_SIGNATURE){
 		return _parse_binary_config(data,length,password);

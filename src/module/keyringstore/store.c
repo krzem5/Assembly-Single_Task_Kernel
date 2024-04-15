@@ -43,6 +43,32 @@ static vfs_node_t* _get_store_directory(void){
 
 
 
+static void _load_keyring(config_tag_t* root_tag){
+	config_tag_t* name_tag;
+	if (!config_tag_find(root_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
+		return;
+	}
+	INFO("Loading keyring '%s'...",name_tag->string->data);
+	// get or create keyring with name 'name_tag->string->data'
+	config_tag_t* keys_tag;
+	if (!config_tag_find(root_tag,"keys",0,&keys_tag)||keys_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		return;
+	}
+	config_tag_t* key_tag;
+	for (u64 pointer=config_tag_find(keys_tag,"key",0,&key_tag);pointer;pointer=config_tag_find(keys_tag,"key",pointer,&key_tag)){
+		if (key_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+			continue;
+		}
+		if (!config_tag_find(key_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
+			continue;
+		}
+		WARN("Key: %s",name_tag->string->data);
+	}
+	for (;;);
+}
+
+
+
 static void _load_keyrings(void){
 	u64 pointer=0;
 	string_t* name;
@@ -60,6 +86,7 @@ static void _load_keyrings(void){
 		if (!root_tag){
 			continue;
 		}
+		_load_keyring(root_tag);
 		config_tag_delete(root_tag);
 	}
 }
@@ -84,9 +111,9 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 	config_tag_t* keys_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"keys");
 	config_tag_attach(root_tag,keys_tag);
 	for (keyring_key_t* key=keyring->head;key;key=key->next){
-		if (key->flags&KEYRING_KEY_FLAG_VIRTUAL){
-			continue;
-		}
+		// if (key->flags&KEYRING_KEY_FLAG_VIRTUAL){
+		// 	continue;
+		// }
 		config_tag_t* key_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"key");
 		name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
 		config_tag_attach(key_tag,name_tag);
@@ -149,6 +176,7 @@ static void _store_keyring(keyring_t* keyring){
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD);
 	config_tag_delete(root_tag);
+	// _load_keyrings(); /*********************************************************/
 }
 
 
