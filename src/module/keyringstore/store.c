@@ -50,11 +50,20 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 	config_tag_t* keys_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"keys");
 	config_tag_attach(root_tag,keys_tag);
 	for (keyring_key_t* key=keyring->head;key;key=key->next){
+		if (key->flags&KEYRING_KEY_FLAG_VIRTUAL){
+			continue;
+		}
 		config_tag_t* key_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"key");
 		name_tag=config_tag_create(CONFIG_TAG_TYPE_STRING,"name");
 		config_tag_attach(key_tag,name_tag);
 		smm_dealloc(name_tag->string);
 		name_tag->string=smm_duplicate(key->name);
+		config_tag_t* type_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"type");
+		config_tag_attach(key_tag,type_tag);
+		type_tag->int_=key->type;
+		config_tag_t* flags_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"flags");
+		config_tag_attach(key_tag,flags_tag);
+		flags_tag->int_=key->flags;
 		config_tag_attach(keys_tag,key_tag);
 	}
 	return root_tag;
