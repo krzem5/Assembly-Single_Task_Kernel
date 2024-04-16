@@ -23,6 +23,18 @@ typedef struct _PARTITION{
 
 
 
+typedef struct _PARTITION_USER_DATA{
+	char name[64];
+	char type[64];
+	u64 drive;
+	u32 index;
+	u64 start_lba;
+	u64 end_lba;
+	u64 fs;
+} partition_user_data_t;
+
+
+
 extern handle_type_t partition_handle_type;
 extern handle_type_t partition_table_descriptor_handle_type;
 

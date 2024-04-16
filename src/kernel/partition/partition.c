@@ -8,7 +8,9 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/partition/partition.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/string.h>
 #define KERNEL_LOG_NAME "partition"
 
 
@@ -117,4 +119,37 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	}
 	handle_finish_setup(&(out->handle));
 	return out;
+}
+
+
+
+error_t syscall_partition_get_next(handle_id_t partition_handle_id){
+	handle_descriptor_t* partition_handle_descriptor=handle_get_descriptor(partition_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(partition_handle_descriptor->tree),(partition_handle_id?partition_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_partition_get_data(u64 partition_handle_id,KERNEL_USER_POINTER partition_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(partition_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* partition_handle=handle_lookup_and_acquire(partition_handle_id,partition_handle_type);
+	if (!partition_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	partition_t* partition=partition_handle->object;
+	str_copy(partition->name->data,(char*)(buffer->name),sizeof(buffer->name));
+	str_copy(partition->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
+	buffer->drive=partition->drive->handle.rb_node.key;
+	buffer->index=partition->index;
+	buffer->start_lba=partition->start_lba;
+	buffer->end_lba=partition->end_lba;
+	buffer->fs=(partition->fs?partition->fs->handle.rb_node.key:0);
+	handle_release(partition_handle);
+	return ERROR_OK;
 }

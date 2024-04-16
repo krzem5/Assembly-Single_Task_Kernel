@@ -65,3 +65,5 @@
 67,memory_get_size(void* address) -> u64
 68,fs_descriptor_get_next(u64 fs_descriptor) -> u64
 69,fs_descriptor_get_data(u64 fs_descriptor,void* buffer,u32 buffer_length) -> u64
+70,partition_get_next(u64 partition) -> u64
+71,partition_get_data(u64 partition,void* buffer,u32 buffer_length) -> u64

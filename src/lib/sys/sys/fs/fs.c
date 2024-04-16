@@ -44,4 +44,3 @@ SYS_PUBLIC sys_fs_descriptor_t sys_fs_descriptor_iter_next(sys_fs_descriptor_t f
 SYS_PUBLIC sys_error_t sys_fs_descriptor_get_data(sys_fs_descriptor_t fs_descriptor,sys_fs_descriptor_data_t* out){
 	return _sys_syscall_fs_descriptor_get_data(fs_descriptor,out,sizeof(sys_fs_descriptor_data_t));
 }
-

@@ -407,4 +407,16 @@ static inline u64 _sys_syscall_fs_descriptor_get_data(u64 fs_descriptor,void* bu
 
 
 
+static inline u64 _sys_syscall_partition_get_next(u64 partition){
+	return _sys_syscall1(0x100000046,partition);
+}
+
+
+
+static inline u64 _sys_syscall_partition_get_data(u64 partition,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000047,partition,(u64)buffer,buffer_length);
+}
+
+
+
 #endif
