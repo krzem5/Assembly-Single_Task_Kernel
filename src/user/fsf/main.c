@@ -33,7 +33,7 @@ int main(int argc,const char** argv){
 		if (SYS_IS_ERROR(sys_fs_descriptor_get_data(fs_descriptor,&data))){
 			continue;
 		}
-		sys_io_print("\x1b[1m%s\x1b[0m\t%s\n",data.name,((data.flags&SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT)?" (can format)":""));
+		sys_io_print("\x1b[1m%s\x1b[0m\t%s\n",data.name,((data.flags&SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT)?"(can format)":""));
 	}
 	return 0;
 }
