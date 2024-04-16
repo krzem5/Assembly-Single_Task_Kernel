@@ -43,6 +43,7 @@ BUILD_DIRECTORIES=[
 	"build/initramfs",
 	"build/initramfs/boot",
 	"build/initramfs/boot/module",
+	"build/initramfs/etc",
 	"build/kernel",
 	"build/keys",
 	"build/lib",
@@ -605,7 +606,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
 			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
-		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
+		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/etc/fs_list.config")
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
 		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
 		kfs2.format_partition(data_fs)
@@ -638,7 +639,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
 			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
 		with open(FS_LIST_FILE_PATH,"rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/fs_list.config",0o600),rf.read())
+			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/etc/fs_list.config",0o600),rf.read())
 		for module in os.listdir("build/module"):
 			with open(f"build/module/{module}","rb") as rf:
 				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o400),rf.read())

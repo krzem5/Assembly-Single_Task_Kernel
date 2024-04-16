@@ -12,7 +12,7 @@
 
 
 
-#define MODULE_ORDER_FILE "/boot/module/fs_list.config"
+#define MODULE_ORDER_FILE "/etc/fs_list.config"
 
 
 
