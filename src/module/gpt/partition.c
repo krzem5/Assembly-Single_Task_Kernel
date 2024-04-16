@@ -11,7 +11,7 @@
 
 
 
-static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _gpt_driver_pmm_counter;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _gpt_driver_pmm_counter=NULL;
 
 
 
@@ -27,6 +27,10 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 	if (header->signature!=GPT_TABLE_HEADER_SIGNATURE){
 		return 0;
 	}
+	if (header->entry_size<128){
+		ERROR("GPT entry size too small");
+		return 0;
+	}
 	u32 entry_buffer_size=header->entry_count*header->entry_size;
 	void* entry_buffer=(void*)(pmm_alloc(pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u32 aligned_entry_buffer_size=(entry_buffer_size+drive->block_size-1)>>drive->block_size_shift;
@@ -37,19 +41,18 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 	INFO("Found valid GPT partition table: %g",header->guid);
 	for (u32 i=0;i<entry_buffer_size;i+=header->entry_size){
 		const gpt_partition_entry_t* entry=entry_buffer+i;
+		u8 nonzero_guid=0;
 		for (u8 j=0;j<16;j++){
-			if (entry->type_guid[j]){
-				goto _valid_entry;
-			}
+			nonzero_guid|=entry->type_guid[j];
 		}
-		continue;
-_valid_entry:
-		char name_buffer[32];
-		u8 j=0;
-		for (;j<((header->entry_size-56)>>1)&&j<31;j++){
+		if (!nonzero_guid){
+			continue;
+		}
+		char name_buffer[37];
+		for (u8 j=0;j<36;j++){
 			name_buffer[j]=entry->name[j];
 		}
-		name_buffer[j]=0;
+		name_buffer[36]=0;
 		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba);
 	}
 	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
