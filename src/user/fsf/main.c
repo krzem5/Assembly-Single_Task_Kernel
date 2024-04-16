@@ -9,6 +9,14 @@
 
 
 int main(int argc,const char** argv){
+	sys_io_print("Unformatted drives:\n");
+	for (sys_drive_t drive=sys_drive_iter_start();drive;drive=sys_drive_iter_next(drive)){
+		sys_drive_data_t drive_data;
+		if (SYS_IS_ERROR(sys_drive_get_data(drive,&drive_data))||drive_data.partition_table_type[0]){
+			continue;
+		}
+		sys_io_print("\x1b[1m%s%ud%u\x1b[0m\t%p x %u\n",drive_data.type,drive_data.controller_index,drive_data.device_index,drive_data.block_count,drive_data.block_size);
+	}
 	sys_io_print("Partitions:\n");
 	for (sys_partition_t partition=sys_partition_iter_start();partition;partition=sys_partition_iter_next(partition)){
 		sys_partition_data_t partition_data;
