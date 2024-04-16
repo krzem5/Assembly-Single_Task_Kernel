@@ -216,7 +216,9 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 static const filesystem_descriptor_config_t _initramfs_filesystem_descriptor_config={
 	"initramfs",
 	NULL,
-	_initramfs_fs_load
+	_initramfs_fs_load,
+	NULL,
+	NULL
 };
 
 

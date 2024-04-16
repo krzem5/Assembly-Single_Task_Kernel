@@ -13,6 +13,8 @@ filesystem_t* KERNEL_INIT_WRITE sysfs;
 static const filesystem_descriptor_config_t _sysfs_filesystem_descriptor_config={
 	"sysfs",
 	NULL,
+	NULL,
+	NULL,
 	NULL
 };
 

@@ -63,3 +63,5 @@
 65,pipe_create(const char* path) -> u64
 66,signature_verify(const char* name,void* data,u64 size) -> void
 67,memory_get_size(void* address) -> u64
+68,fs_descriptor_get_next(u64 fs_descriptor) -> u64
+69,fs_descriptor_get_data(u64 fs_descriptor,void* buffer,u32 buffer_length) -> u64

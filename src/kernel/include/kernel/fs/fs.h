@@ -9,11 +9,16 @@
 
 
 
+#define FS_DESCRIPTOR_USER_FLAG_CAN_FORMAT 1
+
+
+
 typedef struct _FILESYSTEM_DESCRIPTOR_CONFIG{
 	const char* name;
 	void (*deinit_callback)(filesystem_t*);
 	filesystem_t* (*load_callback)(partition_t*);
 	void (*mount_callback)(filesystem_t*,const char*);
+	_Bool (*format_callback)(partition_t*);
 } filesystem_descriptor_config_t;
 
 
@@ -31,6 +36,13 @@ typedef struct _FILESYSTEM_USER_DATA{
 	u8 guid[16];
 	char mount_path[256];
 } filesystem_user_data_t;
+
+
+
+typedef struct _FILESYSTEM_DESCRIPTOR_USER_DATA{
+	char name[64];
+	u32 flags;
+} filesystem_descriptor_user_data_t;
 
 
 
@@ -52,6 +64,10 @@ filesystem_t* fs_create(filesystem_descriptor_t* descriptor);
 
 
 filesystem_t* fs_load(partition_t* partition);
+
+
+
+_Bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor);
 
 
 

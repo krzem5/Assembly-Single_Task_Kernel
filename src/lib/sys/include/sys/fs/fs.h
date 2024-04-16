@@ -5,7 +5,15 @@
 
 
 
+#define SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT 1
+
+
+
 typedef u64 sys_fs_t;
+
+
+
+typedef u64 sys_fs_descriptor_t;
 
 
 
@@ -15,6 +23,13 @@ typedef struct _SYS_FS_DATA{
 	u8 guid[16];
 	char mount_path[256];
 } sys_fs_data_t;
+
+
+
+typedef struct _SYS_FS_DESCRIPTOR_DATA{
+	char name[64];
+	u32 flags;
+} sys_fs_descriptor_data_t;
 
 
 
@@ -31,6 +46,18 @@ sys_error_t __attribute__((access(write_only,2),nonnull)) sys_fs_get_data(sys_fs
 
 
 sys_error_t __attribute__((access(read_only,2),nonnull)) sys_fs_mount(sys_fs_t fs,const char* path);
+
+
+
+sys_fs_descriptor_t sys_fs_descriptor_iter_start(void);
+
+
+
+sys_fs_descriptor_t sys_fs_descriptor_iter_next(sys_fs_descriptor_t fs_descriptor);
+
+
+
+sys_error_t __attribute__((access(write_only,2),nonnull)) sys_fs_descriptor_get_data(sys_fs_descriptor_t fs_descriptor,sys_fs_descriptor_data_t* out);
 
 
 

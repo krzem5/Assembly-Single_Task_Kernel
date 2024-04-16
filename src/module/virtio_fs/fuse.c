@@ -249,6 +249,8 @@ static void _fuse_fs_deinit(filesystem_t* fs){
 static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
 	"fuse",
 	_fuse_fs_deinit,
+	NULL,
+	NULL,
 	NULL
 };
 

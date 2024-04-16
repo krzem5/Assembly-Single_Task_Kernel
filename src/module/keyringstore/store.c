@@ -201,11 +201,6 @@ MODULE_PREINIT(){
 		ERROR("Unable to create keyringstore directory");
 		return 0;
 	}
-	// {
-	// 	keyring_t* keyring=keyring_create("tmp-keyring");
-	// 	keyring_key_t* key=keyring_key_create(keyring,"tmp-key");
-	// 	key->type=KEYRING_KEY_TYPE_NONE;
-	// }
 	INFO("Loading keyrings...");
 	_load_keyrings();
 	keyring_register_notification_listener(_keyring_update_callback);

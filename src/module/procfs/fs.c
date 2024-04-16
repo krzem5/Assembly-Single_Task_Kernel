@@ -13,6 +13,8 @@ filesystem_t* KERNEL_INIT_WRITE procfs;
 static const filesystem_descriptor_config_t _procfs_filesystem_descriptor_config={
 	"procfs",
 	NULL,
+	NULL,
+	NULL,
 	NULL
 };
 

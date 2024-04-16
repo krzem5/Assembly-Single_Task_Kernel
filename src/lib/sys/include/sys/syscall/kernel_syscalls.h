@@ -395,4 +395,16 @@ static inline u64 _sys_syscall_memory_get_size(void* address){
 
 
 
+static inline u64 _sys_syscall_fs_descriptor_get_next(u64 fs_descriptor){
+	return _sys_syscall1(0x100000044,fs_descriptor);
+}
+
+
+
+static inline u64 _sys_syscall_fs_descriptor_get_data(u64 fs_descriptor,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000045,fs_descriptor,(u64)buffer,buffer_length);
+}
+
+
+
 #endif

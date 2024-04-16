@@ -229,7 +229,9 @@ _directory_lba_found:
 static const filesystem_descriptor_config_t _iso9660_filesystem_descriptor_config={
 	"iso9660",
 	_iso9660_fs_deinit,
-	_iso9660_fs_load
+	_iso9660_fs_load,
+	NULL,
+	NULL
 };
 
 

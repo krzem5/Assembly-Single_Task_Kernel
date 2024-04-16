@@ -462,11 +462,18 @@ static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
 
 
 
+static _Bool _kfs2_fs_format(partition_t* partition){
+	panic("_kfs2_fs_format");
+}
+
+
+
 static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 	"kfs2",
 	_kfs2_fs_deinit,
 	_kfs2_fs_load,
-	_kfs2_fs_mount
+	_kfs2_fs_mount,
+	_kfs2_fs_format
 };
 
 

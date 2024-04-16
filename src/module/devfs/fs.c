@@ -13,6 +13,8 @@ filesystem_t* KERNEL_INIT_WRITE devfs;
 static const filesystem_descriptor_config_t _devfs_filesystem_descriptor_config={
 	"devfs",
 	NULL,
+	NULL,
+	NULL,
 	NULL
 };
 

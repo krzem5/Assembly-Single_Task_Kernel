@@ -2,6 +2,7 @@ alloc_test:sys
 cat:sys
 cpu:sys
 fs:sys
+fsf:sys
 glsltest:sys,glsl
 hexdump:sys
 lockinfo:sys

@@ -111,7 +111,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 
 KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 	HANDLE_FOREACH(fs_descriptor_handle_type){
-		filesystem_descriptor_t* descriptor=handle->object;
+		const filesystem_descriptor_t* descriptor=handle->object;
 		if (!descriptor->config->load_callback){
 			continue;
 		}
@@ -121,6 +121,12 @@ KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 		}
 	}
 	return NULL;
+}
+
+
+
+KERNEL_PUBLIC _Bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor){
+	return descriptor->config->format_callback(partition);
 }
 
 
@@ -172,4 +178,35 @@ error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER_POINTER const char* path){
 	error_t out=vfs_mount(fs_handle->object,buffer,1);
 	handle_release(fs_handle);
 	return out;
+}
+
+
+
+error_t syscall_fs_descriptor_get_next(handle_id_t fs_descriptor_handle_id){
+	handle_descriptor_t* fs_handle_descriptor=handle_get_descriptor(fs_descriptor_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(fs_handle_descriptor->tree),(fs_descriptor_handle_id?fs_descriptor_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_fs_descriptor_get_data(u64 fs_descriptor_handle_id,KERNEL_USER_POINTER filesystem_descriptor_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(filesystem_descriptor_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* fs_descriptor_handle=handle_lookup_and_acquire(fs_descriptor_handle_id,fs_descriptor_handle_type);
+	if (!fs_descriptor_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	filesystem_descriptor_t* fs_descriptor=fs_descriptor_handle->object;
+	str_copy(fs_descriptor->config->name,(char*)(buffer->name),sizeof(buffer->name));
+	buffer->flags=0;
+	if (fs_descriptor->config->format_callback){
+		buffer->flags|=FS_DESCRIPTOR_USER_FLAG_CAN_FORMAT;
+	}
+	handle_release(fs_descriptor_handle);
+	return ERROR_OK;
 }

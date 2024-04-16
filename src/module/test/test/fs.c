@@ -37,6 +37,8 @@ static void _deinit_callback(filesystem_t* fs){
 static const filesystem_descriptor_config_t _test_fs_filesystem_descriptor_config={
 	"test-fs-descriptor-config",
 	_deinit_callback,
+	NULL,
+	NULL,
 	NULL
 };
 
