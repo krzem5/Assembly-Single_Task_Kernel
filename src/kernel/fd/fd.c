@@ -368,7 +368,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 		return ERROR_DENIED;
 	}
 	string_t* current_name;
-	u64 pointer=vfs_node_iterate(data->node,0,&current_name);
+	u64 pointer=((vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_EXEC)?vfs_node_iterate(data->node,0,&current_name):0);
 	if (!pointer){
 		spinlock_release_exclusive(&(data->lock));
 		handle_release(fd_handle);
@@ -440,7 +440,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 	if (data->current_name){
 		smm_dealloc(data->current_name);
 		data->current_name=NULL;
-		data->pointer=vfs_node_iterate(data->node,data->pointer,&(data->current_name));
+		data->pointer=((vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_EXEC)?vfs_node_iterate(data->node,data->pointer,&(data->current_name)):0);
 		if (!data->pointer){
 			handle_release(fd_iterator_handle);
 		}

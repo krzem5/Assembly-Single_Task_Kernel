@@ -26,7 +26,7 @@ static _Bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gi
 	if (!(flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)){
 		return 1;
 	}
-	return !!(vfs_permissions_get(node,uid,gid)&VFS_PERMISSION_EXEC);
+	return !!(vfs_permissions_get(node,uid,gid)&VFS_PERMISSION_READ);
 }
 
 
