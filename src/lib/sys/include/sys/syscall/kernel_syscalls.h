@@ -431,4 +431,16 @@ static inline u64 _sys_syscall_drive_get_data(u64 drive,void* buffer,u32 buffer_
 
 
 
+static inline u64 _sys_syscall_partition_table_descriptor_get_next(u64 partition_table_descriptor){
+	return _sys_syscall1(0x10000004a,partition_table_descriptor);
+}
+
+
+
+static inline u64 _sys_syscall_partition_table_descriptor_get_data(u64 partition_table_descriptor,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x10000004b,partition_table_descriptor,(u64)buffer,buffer_length);
+}
+
+
+
 #endif

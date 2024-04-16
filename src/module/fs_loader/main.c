@@ -58,40 +58,30 @@ MODULE_INIT(){
 		panic("Invalid tag type");
 	}
 	for (u32 i=0;i<root_tag->array->length;i++){
-		config_tag_t* tag=root_tag->array->data[i];
-		if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
+		config_tag_t* fs_tag=root_tag->array->data[i];
+		if (fs_tag->type!=CONFIG_TAG_TYPE_ARRAY){
 			panic("Invalid tag type");
 		}
 		const char* path=NULL;
 		const char* guid=NULL;
 		const char* type=NULL;
 		_Bool required=1;
-		for (u32 j=0;j<tag->array->length;j++){
-			config_tag_t* subtag=tag->array->data[j];
-			if (str_equal(subtag->name->data,"path")){
-				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
-					panic("Invalid tag type");
-				}
-				path=subtag->string->data;
-			}
-			else if (str_equal(subtag->name->data,"guid")){
-				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
-					panic("Invalid tag type");
-				}
-				guid=subtag->string->data;
-			}
-			else if (str_equal(subtag->name->data,"type")){
-				if (subtag->type!=CONFIG_TAG_TYPE_STRING){
-					panic("Invalid tag type");
-				}
-				type=subtag->string->data;
-			}
-			else if (str_equal(subtag->name->data,"not-required")){
-				required=0;
-			}
+		config_tag_t* tag=NULL;
+		if (config_tag_find(fs_tag,"path",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
+			path=tag->string->data;
+		}
+		if (config_tag_find(fs_tag,"guid",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
+			guid=tag->string->data;
+		}
+		if (config_tag_find(fs_tag,"type",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
+			type=tag->string->data;
+		}
+		if (config_tag_find(fs_tag,"not-required",0,&tag)){
+			required=0;
 		}
 		if (!path){
-			panic("'path' tag missing");
+			ERROR("'path' tag missing");
+			continue;
 		}
 		filesystem_t* fs=_match_fs(guid,type);
 		if (!fs&&required){

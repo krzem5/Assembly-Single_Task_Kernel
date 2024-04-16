@@ -6,6 +6,7 @@
 #include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "gpt_partition"
 
 
@@ -57,9 +58,16 @@ _valid_entry:
 
 
 
+static _Bool _gpt_format_drive(drive_t* drive){
+	panic("_gpt_format_drive");
+}
+
+
+
 static const partition_table_descriptor_config_t _gpt_partition_table_descriptor={
 	"gpt",
-	_gpt_load_partitions
+	_gpt_load_partitions,
+	_gpt_format_drive
 };
 
 

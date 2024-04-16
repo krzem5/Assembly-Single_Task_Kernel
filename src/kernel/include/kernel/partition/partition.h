@@ -10,6 +10,10 @@
 
 
 
+#define PARTITION_TABLE_DESCRIPTOR_FLAG_CAN_FORMAT 1
+
+
+
 typedef struct _PARTITION{
 	handle_t handle;
 	partition_table_descriptor_t* descriptor;
@@ -32,6 +36,13 @@ typedef struct _PARTITION_USER_DATA{
 	u64 end_lba;
 	u64 fs;
 } partition_user_data_t;
+
+
+
+typedef struct _PARTITION_TABLE_DESCRIPTOR_USER_DATA{
+	char name[64];
+	u32 flags;
+} partition_table_descriptor_user_data_t;
 
 
 

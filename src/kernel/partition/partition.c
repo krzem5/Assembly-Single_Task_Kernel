@@ -153,3 +153,34 @@ error_t syscall_partition_get_data(u64 partition_handle_id,KERNEL_USER_POINTER p
 	handle_release(partition_handle);
 	return ERROR_OK;
 }
+
+
+
+error_t syscall_partition_table_descriptor_get_next(handle_id_t partition_table_descriptor_handle_id){
+	handle_descriptor_t* partition_table_descriptor_handle_descriptor=handle_get_descriptor(partition_table_descriptor_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(partition_table_descriptor_handle_descriptor->tree),(partition_table_descriptor_handle_id?partition_table_descriptor_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_partition_table_descriptor_get_data(u64 partition_table_descriptor_handle_id,KERNEL_USER_POINTER partition_table_descriptor_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(partition_table_descriptor_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* partition_table_descriptor_handle=handle_lookup_and_acquire(partition_table_descriptor_handle_id,partition_table_descriptor_handle_type);
+	if (!partition_table_descriptor_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	partition_table_descriptor_t* partition_table_descriptor=partition_table_descriptor_handle->object;
+	str_copy(partition_table_descriptor->config->name,(char*)(buffer->name),sizeof(buffer->name));
+	buffer->flags=0;
+	if (partition_table_descriptor->config->format_callback){
+		buffer->flags|=PARTITION_TABLE_DESCRIPTOR_FLAG_CAN_FORMAT;
+	}
+	handle_release(partition_table_descriptor_handle);
+	return ERROR_OK;
+}
