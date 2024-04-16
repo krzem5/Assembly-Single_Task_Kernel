@@ -593,6 +593,9 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
+		kfs2.format_partition(data_fs)
+		data_fs.close()
 	if (not os.path.exists("build/partitions/efi.img")):
 		rebuild_uefi_partition=True
 		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
@@ -608,7 +611,6 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/boot/module/fs_list.config")
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
 		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
-		kfs2.format_partition(data_fs)
 		kfs2.get_inode(data_fs,"/boot",0o500,True)
 		kfs2.get_inode(data_fs,"/boot/module",0o700,True)
 		kfs2.get_inode(data_fs,"/lib",0o755,True)
