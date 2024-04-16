@@ -102,6 +102,7 @@ static const drive_type_t _ahci_drive_type_config={
 
 
 static void _ahci_init(ahci_device_t* device,u8 port_index){
+	INFO("Initializing device at index %u...",port_index);
 	u64 command_list=pmm_alloc(1,_ahci_driver_pmm_counter,0);
 	device->command_list=(void*)(command_list+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	device->registers->clb=command_list;
