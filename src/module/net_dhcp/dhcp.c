@@ -100,7 +100,7 @@ static void _send_discover_request(void){
 
 
 static void _load_config(void){
-	vfs_node_t* node=vfs_lookup(NULL,"/net_dhcp.config",0,0,0);
+	vfs_node_t* node=vfs_lookup(NULL,"/etc/net_dhcp.config",0,0,0);
 	if (!node){
 		return;
 	}
@@ -124,7 +124,7 @@ static void _store_config(void){
 	INFO("Saving DHCP config...");
 	vfs_node_t* parent;
 	const char* child_name;
-	vfs_node_t* node=vfs_lookup_for_creation(NULL,"/net_dhcp.config",0,0,0,&parent,&child_name);
+	vfs_node_t* node=vfs_lookup_for_creation(NULL,"/etc/net_dhcp.config",0,0,0,&parent,&child_name);
 	if (!node){
 		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 		node=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);

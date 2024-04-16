@@ -13,7 +13,7 @@
 
 
 
-#define KEYRING_STORE_DIRECTORY "/keyringstore"
+#define KEYRING_STORE_DIRECTORY "/etc/keyringstore"
 #define KEYRING_ENCRYPTION_PASSWORD "password"
 
 
