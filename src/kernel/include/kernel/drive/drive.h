@@ -56,6 +56,19 @@ typedef struct _DRIVE{
 
 
 
+typedef struct _DRIVE_USER_DATA{
+	char type[64];
+	u16 controller_index;
+	u16 device_index;
+	char serial_number[256];
+	char model_number[256];
+	u64 block_count;
+	u64 block_size;
+	char partition_table_type[64];
+} drive_user_data_t;
+
+
+
 extern handle_type_t drive_handle_type;
 
 

@@ -419,4 +419,16 @@ static inline u64 _sys_syscall_partition_get_data(u64 partition,void* buffer,u32
 
 
 
+static inline u64 _sys_syscall_drive_get_next(u64 drive){
+	return _sys_syscall1(0x100000048,drive);
+}
+
+
+
+static inline u64 _sys_syscall_drive_get_data(u64 drive,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000049,drive,(u64)buffer,buffer_length);
+}
+
+
+
 #endif

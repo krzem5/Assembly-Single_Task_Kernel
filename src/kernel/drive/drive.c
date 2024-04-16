@@ -5,8 +5,10 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/partition/partition.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #define KERNEL_LOG_NAME "drive"
 
 
@@ -101,3 +103,38 @@ KERNEL_PUBLIC u64 drive_write(drive_t* drive,u64 offset,const void* buffer,u64 s
 	pmm_dealloc(aligned_buffer,pmm_align_up_address(size<<drive->block_size_shift)>>PAGE_SIZE_SHIFT,_drive_buffer_pmm_counter);
 	return out;
 }
+
+
+
+error_t syscall_drive_get_next(handle_id_t drive_handle_id){
+	handle_descriptor_t* drive_handle_descriptor=handle_get_descriptor(drive_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(drive_handle_descriptor->tree),(drive_handle_id?drive_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_drive_get_data(u64 drive_handle_id,KERNEL_USER_POINTER drive_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(drive_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* drive_handle=handle_lookup_and_acquire(drive_handle_id,drive_handle_type);
+	if (!drive_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	drive_t* drive=drive_handle->object;
+	str_copy(drive->type->name,(char*)(buffer->type),sizeof(buffer->type));
+	buffer->controller_index=drive->controller_index;
+	buffer->device_index=drive->device_index;
+	str_copy(drive->serial_number->data,(char*)(buffer->serial_number),sizeof(buffer->serial_number));
+	str_copy(drive->model_number->data,(char*)(buffer->model_number),sizeof(buffer->model_number));
+	buffer->block_count=drive->block_count;
+	buffer->block_size=drive->block_size;
+	str_copy((drive->partition_table_descriptor?drive->partition_table_descriptor->config->name:""),(char*)(buffer->partition_table_type),sizeof(buffer->partition_table_type));
+	handle_release(drive_handle);
+	return ERROR_OK;
+}
+

@@ -1,3 +1,4 @@
+#include <sys/drive/drive.h>
 #include <sys/error/error.h>
 #include <sys/fs/fs.h>
 #include <sys/io/io.h>
@@ -10,12 +11,13 @@
 int main(int argc,const char** argv){
 	sys_io_print("Partitions:\n");
 	for (sys_partition_t partition=sys_partition_iter_start();partition;partition=sys_partition_iter_next(partition)){
-		sys_partition_data_t data;
-		if (SYS_IS_ERROR(sys_partition_get_data(partition,&data))){
+		sys_partition_data_t partition_data;
+		sys_drive_data_t drive_data;
+		if (SYS_IS_ERROR(sys_partition_get_data(partition,&partition_data))||SYS_IS_ERROR(sys_drive_get_data(partition_data.drive,&drive_data))){
 			continue;
 		}
 		sys_fs_data_t fs_data;
-		sys_io_print("?d?p%u\t%s\t(%s)\t%p - %p\t%s\n",data.index,data.name,data.type,data.start_lba,data.end_lba,(SYS_IS_ERROR(sys_fs_get_data(data.fs,&fs_data))?"":fs_data.type));
+		sys_io_print("%s%ud%up%u\t%s\t(%s)\t%p - %p\t%s\n",drive_data.type,drive_data.controller_index,drive_data.device_index,partition_data.index,partition_data.name,partition_data.type,partition_data.start_lba,partition_data.end_lba,(SYS_IS_ERROR(sys_fs_get_data(partition_data.fs,&fs_data))?"":fs_data.type));
 	}
 	sys_io_print("Filesystems:\n");
 	for (sys_fs_descriptor_t fs_descriptor=sys_fs_descriptor_iter_start();fs_descriptor;fs_descriptor=sys_fs_descriptor_iter_next(fs_descriptor)){

@@ -67,3 +67,5 @@
 69,fs_descriptor_get_data(u64 fs_descriptor,void* buffer,u32 buffer_length) -> u64
 70,partition_get_next(u64 partition) -> u64
 71,partition_get_data(u64 partition,void* buffer,u32 buffer_length) -> u64
+72,drive_get_next(u64 drive) -> u64
+73,drive_get_data(u64 drive,void* buffer,u32 buffer_length) -> u64
