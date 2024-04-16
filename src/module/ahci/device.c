@@ -195,12 +195,12 @@ static void _ahci_init_device(pci_device_t* device){
 	controller->command_slot_count=(controller->registers->cap&CAP_NCS)>>CAP_NCS_SHIFT;
 	controller->index=_ahci_controller_index;
 	_ahci_controller_index++;
-	for (u8 i=0;i<controller->port_count;i++){
+	for (u32 i=0;i<=controller->port_count;i++){
 		if (!(controller->registers->pi&(1<<i))){
 			continue;
 		}
 		ahci_port_registers_t* port_registers=controller->registers->ports+i;
-		if (port_registers->sig!=0x00000101){
+		if ((port_registers->ssts&0x0000000f)!=0x00000003){
 			continue;
 		}
 		ahci_device_t* ahci_device=omm_alloc(_ahci_device_allocator);
