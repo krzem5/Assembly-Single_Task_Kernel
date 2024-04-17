@@ -75,7 +75,7 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 	u8 _padding[24];
 	union{
 		u32 crc;
-		u32 _inode;
+		u32 inode;
 	};
 } kfs2_node_t;
 

@@ -298,10 +298,10 @@ static _Bool _command_setboot(kfs2_filesystem_t* fs,int argc,const char** argv){
 		return 1;
 	}
 	if (!strcmp(argv[4],"kernel")){
-		fs->root_block.kernel_inode=node._inode;
+		fs->root_block.kernel_inode=node.inode;
 	}
 	else if (!strcmp(argv[4],"initramfs")){
-		fs->root_block.initramfs_inode=node._inode;
+		fs->root_block.initramfs_inode=node.inode;
 	}
 	else{
 		printf("Unknown boot file type '%s'\n",argv[4]);

@@ -71,7 +71,7 @@ static vfs_node_t* _create_node_from_kfs_node(filesystem_t* fs,const string_t* n
 static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flags){
 	if (!(flags&VFS_NODE_FLAG_CREATE)){
 		kfs2_vfs_node_t* out=omm_alloc(_kfs2_vfs_node_allocator);
-		out->kfs2_node._inode=0xffffffff;
+		out->kfs2_node.inode=0xffffffff;
 		return (vfs_node_t*)out;
 	}
 	u32 kfs2_flags=0;
@@ -147,7 +147,7 @@ static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u
 
 static u64 _kfs2_resize(vfs_node_t* node,s64 size,u32 flags){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
-	if (kfs2_node->kfs2_node._inode==0xffffffff){
+	if (kfs2_node->kfs2_node.inode==0xffffffff){
 		return 0;
 	}
 	if (flags&VFS_NODE_FLAG_RESIZE_RELATIVE){

@@ -119,7 +119,7 @@ static void _attach_child(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* 
 			offset+=entry->size;
 			continue;
 		}
-		entry->inode=child->_inode;
+		entry->inode=child->inode;
 		entry->name_length=name_length;
 		entry->name_compressed_hash=_calculate_compressed_hash(name,name_length);
 		mem_copy(entry->name,name,name_length);
@@ -156,7 +156,7 @@ static void _attach_child(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* 
 		entry=(kfs2_directory_entry_t*)(chunk.data+offset);
 		entry->size=KFS2_BLOCK_SIZE-offset;
 	}
-	entry->inode=child->_inode;
+	entry->inode=child->inode;
 	entry->name_length=name_length;
 	entry->name_compressed_hash=_calculate_compressed_hash(name,name_length);
 	mem_copy(entry->name,name,name_length);
@@ -242,7 +242,7 @@ _Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* nam
 	out->time_birth=0;
 	out->gid=0;
 	out->uid=0;
-	out->_inode=inode;
+	out->inode=inode;
 	_attach_child(fs,parent,name,name_length,out);
 	return 1;
 }
@@ -250,7 +250,7 @@ _Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* nam
 
 
 _Bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* out){
-	if (parent->_inode==0xffffffff||!parent->size||(parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
+	if (parent->inode==0xffffffff||!parent->size||(parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
 	}
 	kfs2_data_chunk_t chunk;
@@ -284,7 +284,7 @@ _Bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* nam
 
 
 u64 kfs2_node_iterate(kfs2_filesystem_t* fs,kfs2_node_t* parent,u64 pointer,char* buffer,u32* buffer_length){
-	if (parent->_inode==0xffffffff||pointer>=parent->size||(parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
+	if (parent->inode==0xffffffff||pointer>=parent->size||(parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
 	}
 	kfs2_data_chunk_t chunk;
@@ -320,7 +320,7 @@ _Bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* ch
 
 
 u64 kfs2_node_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,void* buffer,u64 size){
-	if (node->_inode==0xffffffff||offset>=node->size){
+	if (node->inode==0xffffffff||offset>=node->size){
 		return 0;
 	}
 	if (offset+size>=node->size){
@@ -350,7 +350,7 @@ u64 kfs2_node_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,void* buff
 
 
 u64 kfs2_node_write(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,const void* buffer,u64 size){
-	if (node->_inode==0xffffffff||offset>=node->size){
+	if (node->inode==0xffffffff||offset>=node->size){
 		return 0;
 	}
 	if (offset+size>=node->size){
