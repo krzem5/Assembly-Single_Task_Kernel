@@ -921,7 +921,7 @@ force_patch_kernel=False
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
 		if (int(rf.read())!=mode):
-			CLEAR_BUILD_DIRECTORIES.extend(["build/lib","build/module","build/user"])
+			CLEAR_BUILD_DIRECTORIES.extend(["build/lib","build/module","build/tool","build/user"])
 			force_patch_kernel=True
 for dir_ in BUILD_DIRECTORIES:
 	if (not os.path.exists(dir_)):
