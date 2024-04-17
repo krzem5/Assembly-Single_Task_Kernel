@@ -33,7 +33,20 @@ void kfs2_filesystem_deinit(kfs2_filesystem_t* fs);
 
 
 
-_Bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out);
+_Bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out){
+	kfs2_io_inode_read(fs,0,out);
+	return 1;
+}
+
+
+
+void kfs2_filesystem_flush_root_block(kfs2_filesystem_t* fs){
+	kfs2_insert_crc(&(fs->root_block),sizeof(kfs2_root_block_t));
+	kfs2_root_block_t* buffer=fs->config.alloc_callback(1);
+	*buffer=fs->root_block;
+	fs->config.write_callback(fs->config.ctx,fs->config.start_lba,buffer,1);
+	fs->config.dealloc_callback(buffer,1);
+}
 
 
 
@@ -69,8 +82,11 @@ u64 kfs2_node_write(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,const voi
 
 
 
-u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size,_Bool relative);
+u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size);
 
 
 
-_Bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node);
+_Bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node){
+	kfs2_io_inode_write(fs,node);
+	return 1;
+}

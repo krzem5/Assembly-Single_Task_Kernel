@@ -56,6 +56,10 @@ _Bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out);
 
 
 
+void kfs2_filesystem_flush_root_block(kfs2_filesystem_t* fs);
+
+
+
 _Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,u32 flags,kfs2_node_t* out);
 
 
@@ -88,7 +92,7 @@ u64 kfs2_node_write(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,const voi
 
 
 
-u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size,_Bool relative);
+u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size);
 
 
 
