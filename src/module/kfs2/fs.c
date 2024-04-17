@@ -451,8 +451,6 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
 	out->extra_data=extra_data;
-	kfs2_bitmap_init(out,&(extra_data->data_block_allocator),extra_data->root_block.data_block_allocation_bitmap_offsets,extra_data->root_block.data_block_allocation_bitmap_highest_level_length);
-	kfs2_bitmap_init(out,&(extra_data->inode_allocator),extra_data->root_block.inode_allocation_bitmap_offsets,extra_data->root_block.inode_allocation_bitmap_highest_level_length);
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=kfs2_io_inode_read(out,root_name,0);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;

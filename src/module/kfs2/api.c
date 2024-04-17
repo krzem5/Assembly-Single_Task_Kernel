@@ -22,6 +22,8 @@ _Bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesyste
 	}
 	out->root_block=*root_block;
 	out->config.dealloc_callback(buffer,1);
+	kfs2_bitmap_init_NEW(out,&(out->data_block_allocator),out->root_block.data_block_allocation_bitmap_offsets,out->root_block.data_block_allocation_bitmap_highest_level_length);
+	kfs2_bitmap_init_NEW(out,&(out->inode_allocator),out->root_block.inode_allocation_bitmap_offsets,out->root_block.inode_allocation_bitmap_highest_level_length);
 	return 1;
 }
 
