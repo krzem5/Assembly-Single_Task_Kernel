@@ -196,7 +196,7 @@ TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
 TOOL_EXTRA_LINKER_OPTIONS={
 	MODE_NORMAL: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","--gc-sections","-s"]
+	MODE_RELEASE: ["-O3","-Wl,--gc-sections","-Wl,-s"]
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
@@ -589,7 +589,7 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 		has_updates=True
 	if (os.path.exists(f"build/tool/{tool}") and not has_updates):
 		return False
-	pool.add(object_files,f"build/tool/{tool}",f"L build/tool/{tool}",["ld","-znoexecstack","-o",f"build/tool/{tool}"]+object_files+TOOL_EXTRA_LINKER_OPTIONS)
+	pool.add(object_files,f"build/tool/{tool}",f"L build/tool/{tool}",["gcc-12","-Wl,-znoexecstack","-o",f"build/tool/{tool}"]+object_files+TOOL_EXTRA_LINKER_OPTIONS)
 
 
 
@@ -609,7 +609,6 @@ def _compile_all_tools():
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
 		sys.exit(1)
-	# quit()
 
 
 
