@@ -572,9 +572,9 @@ def _compile_all_user_programs():
 
 def _compile_tool(tool,dependencies,changed_files,pool):
 	object_files=[]
-	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-I{COMMON_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
+	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-I{COMMON_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
 	has_updates=False
-	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]):
+	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]+[COMMON_FILE_DIRECTORY+"/"+dep for dep in dependencies]):
 		object_file=TOOL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -582,7 +582,7 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-Wno-address-of-packed-member"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])

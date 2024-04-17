@@ -13,7 +13,7 @@
 
 
 
-static KERNEL_INLINE u8 _calculate_compressed_hash(const char* name,u32 name_length){
+static u8 _calculate_compressed_hash(const char* name,u32 name_length){
 	u32 hash=FNV_OFFSET_BASIS;
 	for (u32 i=0;i<name_length;i++){
 		hash=(hash^name[i])*FNV_PRIME;
