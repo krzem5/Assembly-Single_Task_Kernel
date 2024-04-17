@@ -30,6 +30,10 @@ void kfs2_bitmap_init(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator,const
 
 
 
+void kfs2_bitmap_deinit(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator);
+
+
+
 u64 kfs2_bitmap_alloc(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator);
 
 

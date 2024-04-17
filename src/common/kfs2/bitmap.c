@@ -46,6 +46,14 @@ void kfs2_bitmap_init(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* 
 
 
 
+void kfs2_bitmap_deinit(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
+	for (u32 i=0;i<KFS2_BITMAP_LEVEL_COUNT;i++){
+		fs->config.dealloc_callback((allocator->cache+i)->data,1);
+	}
+}
+
+
+
 u64 kfs2_bitmap_alloc(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
 	if (allocator->highest_level_offset==allocator->highest_level_length){
 		return 0;

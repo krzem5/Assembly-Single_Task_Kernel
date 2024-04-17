@@ -45,6 +45,10 @@ typedef struct _KFS2_FILESYSTEM{
 
 
 
+_Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config);
+
+
+
 _Bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out);
 
 

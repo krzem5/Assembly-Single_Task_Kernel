@@ -7,7 +7,7 @@ import uuid
 
 
 KFS2_SIGNATURE=0x544f4f523253464b
-KFS2_BLOCKS_PER_INODE=64
+KFS2_BLOCKS_PER_INODE_BLOCK=64
 KFS2_INODE_SIZE=128
 KFS2_MAX_INODES=0xffffffff
 KFS2_BITMAP_LEVEL_COUNT=5
@@ -484,7 +484,7 @@ def _init_node_as_directory(backend,root_block,inode,permissions):
 
 
 def format_partition(backend):
-	inode_block_count=backend.block_count//KFS2_BLOCKS_PER_INODE
+	inode_block_count=backend.block_count//KFS2_BLOCKS_PER_INODE_BLOCK
 	inode_count=KFS2_BLOCK_SIZE//KFS2_INODE_SIZE*inode_block_count
 	if (inode_count>KFS2_MAX_INODES):
 		inode_count=KFS2_MAX_INODES
