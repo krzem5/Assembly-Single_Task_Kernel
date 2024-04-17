@@ -341,7 +341,7 @@ class KFS2DirectoryEntry(object):
 	@staticmethod
 	def decode(data):
 		inode,size,name_length,name_compressed_hash=struct.unpack("<IHBB",data[:8])
-		if (size&3 or name_compressed_hash!=KFS2DirectoryEntry.calculate_compressed_hash(data[8:8+name_length])):
+		if (size&3 or (name_length and name_compressed_hash!=KFS2DirectoryEntry.calculate_compressed_hash(data[8:8+name_length]))):
 			raise RuntimeError
 		return KFS2DirectoryEntry(inode,size,name_length,data[8:8+name_length])
 

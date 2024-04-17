@@ -2,9 +2,11 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 
@@ -29,7 +31,7 @@ static uint64_t _write_callback(void* ctx,uint64_t offset,const void* buffer,uin
 
 
 static void* _alloc_callback(uint64_t count){
-	return malloc(count<<12);
+	return calloc(1,count<<12);
 }
 
 
@@ -71,13 +73,21 @@ int main(int argc,const char** argv){
 		start_lba,
 		end_lba
 	};
-	if (!strcmp(argv[3],"format")){
-		if (!kfs2_filesystem_format(&fs_config)){
-			printf("Unable to format partition as KFS2\n");
-		}
-		goto _cleanup_without_fs;
-	}
 	kfs2_filesystem_t fs;
+	if (!strcmp(argv[3],"format")){
+		if (!kfs2_filesystem_format(&fs_config,&fs)){
+			printf("Unable to format partition as KFS2\n");
+			goto _cleanup_without_fs;
+		}
+		srand((uint32_t)time(NULL));
+		for (u32 i=0;i<16;i++){
+			fs.root_block.uuid[i]=rand();
+		}
+		fs.root_block.uuid[6]=(fs.root_block.uuid[6]&0x0f)|0x40;
+		fs.root_block.uuid[8]=(fs.root_block.uuid[8]&0x3f)|0x80;
+		kfs2_filesystem_flush_root_block(&fs);
+		goto _cleanup;
+	}
 	if (!kfs2_filesystem_init(&fs_config,&fs)){
 		printf("KFS2 corrupted\n");
 		goto _cleanup_without_fs;

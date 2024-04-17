@@ -150,22 +150,6 @@ static void _attach_child(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* 
 	kfs2_chunk_deinit(fs,&chunk);
 }
 
-// #include <stdio.h>
-
-_Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config){
-	if (config->block_size>4096){
-		return 0;
-	}
-	u64 block_count=(config->end_lba-config->start_lba)*config->block_size/KFS2_BLOCK_SIZE;
-	u64 inode_block_count=block_count/KFS2_BLOCKS_PER_INODE_BLOCK;
-	u64 inode_count=KFS2_BLOCK_SIZE/sizeof(kfs2_node_t)*inode_block_count;
-	if (inode_count>KFS2_MAX_INODES){
-		inode_count=KFS2_MAX_INODES;
-	}
-	// printf("%llu\n",inode_count);
-	return 1;
-}
-
 
 
 _Bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out){
