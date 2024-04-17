@@ -31,8 +31,8 @@ _Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out);
 #define WINDOW_SIZE ((1<<10)-1)
 #define MAX_PREPROCESSED_MATCH_LENGTH ((1<<10)-1)
 
-#define WINDOW_SIZE_FAST ((1<<3)-1)
-#define MAX_PREPROCESSED_MATCH_LENGTH_FAST ((1<<3)-1)
+#define WINDOW_SIZE_FAST ((1<<5)-1)
+#define MAX_PREPROCESSED_MATCH_LENGTH_FAST ((1<<5)-1)
 
 
 
@@ -105,8 +105,8 @@ _Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out){
 		}
 		uint32_t match_length=0;
 		uint32_t match_offset=0;
-		uint32_t i=0;
-		for (j=0;j<preprocessed_data_length&&i<=offset-window_offset+j-MATCH_ALIGNMENT;i++){
+		int32_t i=0;
+		for (j=0;j<preprocessed_data_length&&i<=((int32_t)(offset-window_offset+j))-MATCH_ALIGNMENT;i++){
 			if (data[offset+j]==data[window_offset+i]){
 				j++;
 				continue;
@@ -168,6 +168,7 @@ _cleanup:
 
 
 /***************************************/
+
 
 
 int main(int argc,const char** argv){

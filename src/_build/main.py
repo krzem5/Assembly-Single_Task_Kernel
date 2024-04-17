@@ -1,6 +1,5 @@
 import array
 import binascii
-import compression
 import hashlib
 import initramfs
 import kernel_linker
@@ -18,7 +17,7 @@ import time
 BYPASS_KVM_LOCK=True
 NO_DISPLAY=True
 NO_FILE_SERVER=False
-COMPRESSION_LEVEL=compression.COMPRESSION_LEVEL_NONE
+COMPRESSION_LEVEL="fast"
 
 
 
@@ -636,12 +635,12 @@ def _get_early_modules(file_path):
 
 
 def _execute_compressor_command(file_path):
-	subprocess.run(["build/tool/compressor",file_path,"none",file_path+".compressed"])
+	if (subprocess.run(["build/tool/compressor",file_path,COMPRESSION_LEVEL,file_path+".compressed"]).returncode!=0):
+		sys.exit(1)
 
 
 
 def _execute_kfs2_command(command):
-	print(command)
 	if (subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command).returncode!=0):
 		sys.exit(1)
 
