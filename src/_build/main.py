@@ -314,12 +314,6 @@ def _file_not_changed(changed_files,deps_file_path):
 
 
 
-def _compress(file_path):
-	with open(file_path,"rb") as rf,open(file_path+".compressed","wb") as wf:
-		compression.compress(rf.read(),COMPRESSION_LEVEL,wf)
-
-
-
 def _get_files(directories):
 	for directory in directories:
 		for root,_,files in os.walk(directory):
@@ -641,7 +635,13 @@ def _get_early_modules(file_path):
 
 
 
+def _execute_compressor_command(file_path):
+	subprocess.run(["build/tool/compressor",file_path,"none",file_path+".compressed"])
+
+
+
 def _execute_kfs2_command(command):
+	print(command)
 	if (subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command).returncode!=0):
 		sys.exit(1)
 
@@ -665,14 +665,14 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (rebuild_uefi_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
-	if (rebuild_data_partition):
+	if (rebuild_data_partition or True):
 		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
 			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
 		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/etc/fs_list.config")
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
-		_compress("build/kernel/kernel.bin")
-		_compress("build/partitions/initramfs.img")
+		_execute_compressor_command("build/kernel/kernel.bin")
+		_execute_compressor_command("build/partitions/initramfs.img")
 		_execute_kfs2_command(["mkdir","/bin","0755"])
 		_execute_kfs2_command(["mkdir","/boot","0400"])
 		_execute_kfs2_command(["mkdir","/boot/module","0700"])
