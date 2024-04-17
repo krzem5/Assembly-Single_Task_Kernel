@@ -58,6 +58,8 @@ BUILD_DIRECTORIES=[
 	"build/objects/module",
 	"build/objects/module_coverage",
 	"build/objects/module_debug",
+	"build/objects/tool",
+	"build/objects/tool_debug",
 	"build/objects/uefi",
 	"build/objects/user",
 	"build/objects/user_coverage",
@@ -67,6 +69,7 @@ BUILD_DIRECTORIES=[
 	"build/share/bin",
 	"build/share/lib",
 	"build/share/test",
+	"build/tool",
 	"build/uefi",
 	"build/user",
 	"build/vm",
@@ -170,6 +173,31 @@ USER_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
+TOOL_HASH_FILE_SUFFIX={
+	MODE_NORMAL: ".txt",
+	MODE_COVERAGE: ".txt",
+	MODE_RELEASE: ".release.txt"
+}[mode]
+TOOL_OBJECT_FILE_DIRECTORY={
+	MODE_NORMAL: "build/objects/tool_debug/",
+	MODE_COVERAGE: "build/objects/tool_debug/",
+	MODE_RELEASE: "build/objects/tool/"
+}[mode]
+TOOL_EXTRA_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
+}[mode]
+TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3"]
+}[mode]
+TOOL_EXTRA_LINKER_OPTIONS={
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
+	MODE_RELEASE: ["-O3","--gc-sections","-s"]
+}[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
@@ -177,6 +205,7 @@ COMMON_FILE_DIRECTORY="src/common"
 MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
+TOOL_FILE_DIRECTORY="src/tool"
 MODULE_ORDER_FILE_PATH="src/module/module_order.config"
 FS_LIST_FILE_PATH="src/module/fs_list.config"
 INSTALL_DISK_SIZE=262144
@@ -522,7 +551,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 
 
 def _compile_all_user_programs():
-	hash_file_path=f"build/hashes/user"+MODULE_HASH_FILE_SUFFIX
+	hash_file_path=f"build/hashes/user"+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
@@ -538,6 +567,49 @@ def _compile_all_user_programs():
 	if (error):
 		sys.exit(1)
 	return out
+
+
+
+def _compile_tool(tool,dependencies,changed_files,pool):
+	object_files=[]
+	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-I{COMMON_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
+	has_updates=False
+	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]):
+		object_file=TOOL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
+		else:
+			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		has_updates=True
+	if (os.path.exists(f"build/tool/{tool}") and not has_updates):
+		return False
+	pool.add(object_files,f"build/tool/{tool}",f"L build/tool/{tool}",["ld","-znoexecstack","-o",f"build/tool/{tool}"]+object_files+TOOL_EXTRA_LINKER_OPTIONS)
+
+
+
+def _compile_all_tools():
+	hash_file_path=f"build/hashes/tool"+TOOL_HASH_FILE_SUFFIX
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
+	pool=process_pool.ProcessPool(file_hash_list)
+	out=False
+	with open("src/tool/dependencies.txt","r") as rf:
+		for line in rf.read().split("\n"):
+			line=line.strip()
+			if (not line):
+				continue
+			name,dependencies=line.split(":")
+			_compile_tool(name,[dep for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	error=pool.wait()
+	_save_file_hash_list(file_hash_list,hash_file_path)
+	if (error):
+		sys.exit(1)
+	# quit()
 
 
 
@@ -873,6 +945,7 @@ rebuild_data_partition=_compile_kernel(force_patch_kernel)
 rebuild_data_partition|=_compile_all_modules()
 rebuild_data_partition|=_compile_all_libraries()
 rebuild_data_partition|=_compile_all_user_programs()
+_compile_all_tools()
 _generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
