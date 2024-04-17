@@ -22,7 +22,7 @@ void kfs2_io_inode_read(kfs2_filesystem_t* fs,u32 inode,kfs2_node_t* out){
 
 
 
-void kfs2_io_inode_write(kfs2_filesystem_t* fs,kfs2_node_t* node){
+void kfs2_io_inode_write(kfs2_filesystem_t* fs,const kfs2_node_t* node){
 	void* buffer=fs->config.alloc_callback(1);
 	if (fs->config.read_callback(fs->config.ctx,fs->config.start_lba+((fs->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->_inode))<<fs->block_size_shift),buffer,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
 		panic("kfs2_io_inode_write: I/O error");

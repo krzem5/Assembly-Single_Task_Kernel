@@ -35,13 +35,29 @@ static void _node_resize_data_inline_inline(kfs2_filesystem_t* fs,kfs2_node_t* n
 
 static void _node_resize_data_inline_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	kfs2_node_data_t old_data=node->data;
-	node->data.single[0]=kfs2_bitmap_alloc(fs,&(fs->data_block_allocator));
-	for (u32 i=1;i<6;i++){
-		node->data.single[i]=0;
+	for (u32 i=0;i<6;i++){
+		node->data.single[i]=(i*KFS2_BLOCK_SIZE<size?kfs2_bitmap_alloc(fs,&(fs->data_block_allocator)):0);
 	}
 	void* buffer=fs->config.alloc_callback(1);
 	mem_copy(buffer,old_data.inline_,node->size);
 	kfs2_io_data_block_write(fs,node->data.single[0],buffer);
+	fs->config.dealloc_callback(buffer,1);
+}
+
+
+
+static void _node_resize_data_inline_double(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	kfs2_node_data_t old_data=node->data;
+	node->data.double_=kfs2_bitmap_alloc(fs,&(fs->data_block_allocator));
+	u64* buffer=fs->config.alloc_callback(1);
+	for (u64 i=0;i<KFS2_BLOCK_SIZE/sizeof(u64);i++){
+		buffer[i]=(i*KFS2_BLOCK_SIZE<size?kfs2_bitmap_alloc(fs,&(fs->data_block_allocator)):0);
+	}
+	kfs2_io_data_block_write(fs,node->data.double_,buffer);
+	u64 first_block_address=buffer[0];
+	mem_fill(buffer,KFS2_BLOCK_SIZE,0);
+	mem_copy(buffer,old_data.inline_,node->size);
+	kfs2_io_data_block_write(fs,first_block_address,buffer);
 	fs->config.dealloc_callback(buffer,1);
 }
 
@@ -76,6 +92,9 @@ static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
 		_node_resize_data_inline_single(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
+		_node_resize_data_inline_double(fs,node,size);
 	}
 	else{
 		panic("_node_resize");

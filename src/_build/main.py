@@ -642,6 +642,11 @@ def _get_early_modules(file_path):
 
 
 
+def _execute_kfs2_command(command):
+	subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command)
+
+
+
 def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (not os.path.exists("build/install_disk.img")):
 		rebuild_uefi_partition=True
@@ -659,47 +664,36 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (rebuild_uefi_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
-	if (rebuild_data_partition):
+	if (rebuild_data_partition or True):
 		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
 			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
 		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/etc/fs_list.config")
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
-		subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}","format"])
-		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
-		kfs2.get_inode(data_fs,"/bin",0o755,True)
-		kfs2.get_inode(data_fs,"/boot",0o400,True)
-		kfs2.get_inode(data_fs,"/boot/module",0o700,True)
-		kfs2.get_inode(data_fs,"/etc",0o755,True)
-		kfs2.get_inode(data_fs,"/lib",0o755,True)
 		_compress("build/kernel/kernel.bin")
-		with open("build/kernel/kernel.bin.compressed","rb") as rf:
-			kernel_inode=kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400)
-			kfs2.set_file_content(data_fs,kernel_inode,rf.read())
-			kfs2.set_kernel_inode(data_fs,kernel_inode)
 		_compress("build/partitions/initramfs.img")
-		with open("build/partitions/initramfs.img.compressed","rb") as rf:
-			initramfs_inode=kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400)
-			kfs2.set_file_content(data_fs,initramfs_inode,rf.read())
-			kfs2.set_initramfs_inode(data_fs,initramfs_inode)
+		_execute_kfs2_command(["format"])
+		_execute_kfs2_command(["mkdir","/bin","0755"])
+		_execute_kfs2_command(["mkdir","/boot","0400"])
+		_execute_kfs2_command(["mkdir","/boot/module","0700"])
+		_execute_kfs2_command(["mkdir","/etc","0755"])
+		_execute_kfs2_command(["mkdir","/lib","0755"])
+		_execute_kfs2_command(["copy","/boot/kernel.compressed","0400","build/kernel/kernel.bin.compressed"])
+		_execute_kfs2_command(["copy","/boot/initramfs.compressed","0400","build/partitions/initramfs.img.compressed"])
+		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600",MODULE_ORDER_FILE_PATH])
+		_execute_kfs2_command(["copy","/etc/fs_list.config","0600",FS_LIST_FILE_PATH])
+		_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
+		for module in os.listdir("build/module"):
+			_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
 		for library in os.listdir("build/lib"):
 			if (not library.endswith(".so")):
 				continue
-			with open(f"build/lib/{library}","rb") as rf:
-				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/lib/{library}",0o755),rf.read())
-		dynamic_linker_inode=kfs2.get_inode(data_fs,"/lib/ld.so",0o755)
-		kfs2.convert_to_link(data_fs,dynamic_linker_inode)
-		kfs2.set_file_content(data_fs,dynamic_linker_inode,b"/lib/liblinker.so")
+			_execute_kfs2_command(["copy",f"/lib/{library}","0755",f"build/lib/{library}"])
 		for program in os.listdir("build/user"):
-			with open(f"build/user/{program}","rb") as rf:
-				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/bin/{program}",0o755),rf.read())
-		with open(MODULE_ORDER_FILE_PATH,"rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/boot/module/module_order.config",0o600),rf.read())
-		with open(FS_LIST_FILE_PATH,"rb") as rf:
-			kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,"/etc/fs_list.config",0o600),rf.read())
-		for module in os.listdir("build/module"):
-			with open(f"build/module/{module}","rb") as rf:
-				kfs2.set_file_content(data_fs,kfs2.get_inode(data_fs,f"/boot/module/{module}",0o400),rf.read())
+			_execute_kfs2_command(["copy",f"/bin/{program}","0755",f"build/user/{program}"])
+		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
+		kfs2.set_kernel_inode(data_fs,kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400))
+		kfs2.set_initramfs_inode(data_fs,kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400))
 		data_fs.close()
 
 

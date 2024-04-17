@@ -114,9 +114,9 @@ _Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesys
 	kfs2_node_t root_node;
 	mem_fill(&root_node,sizeof(kfs2_node_t),0);
 	root_node.size=48;
-	root_node.flags=KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE|(0755<<KFS2_INODE_PERMISSION_SHIFT);
+	root_node.flags=KFS2_INODE_TYPE_DIRECTORY|KFS2_INODE_STORAGE_TYPE_INLINE;
 	kfs2_directory_entry_t* entry=(void*)(root_node.data.inline_);
 	entry->size=48;
-	kfs2_io_inode_write(out,&root_node);//
+	kfs2_io_inode_write(out,&root_node);
 	return 1;
 }

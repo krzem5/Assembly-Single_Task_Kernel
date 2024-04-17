@@ -10,7 +10,7 @@ void kfs2_io_inode_read(kfs2_filesystem_t* fs,u32 inode,kfs2_node_t* out);
 
 
 
-void kfs2_io_inode_write(kfs2_filesystem_t* fs,kfs2_node_t* node);
+void kfs2_io_inode_write(kfs2_filesystem_t* fs,const kfs2_node_t* node);
 
 
 

@@ -90,6 +90,9 @@ void kfs2_chunk_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,_Bool fe
 			panic("KFS2_INODE_STORAGE_TYPE_QUADRUPLE");
 			break;
 	}
+	if (!out->data_offset){
+		panic("I/O out of bounds");
+	}
 	if (fetch_data){
 		kfs2_io_data_block_read(fs,out->data_offset,out->data);
 	}
