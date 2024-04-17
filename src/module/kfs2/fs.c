@@ -12,6 +12,7 @@
 #include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kfs2/api.h>
 #include <kfs2/bitmap.h>
 #include <kfs2/chunk.h>
 #include <kfs2/crc.h>
@@ -24,7 +25,7 @@
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_resize_buffer_pmm_counter=NULL;
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_root_block_buffer_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _kfs2_vfs_node_allocator=NULL;
-static omm_allocator_t* KERNEL_INIT_WRITE _kfs2_fs_extra_data_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _kfs2_filesystem_allocator=NULL;
 static filesystem_descriptor_t* KERNEL_INIT_WRITE _kfs2_filesystem_descriptor=NULL;
 
 
@@ -47,7 +48,7 @@ static void _node_resize_data_inline_inline(kfs2_vfs_node_t* node,u64 size){
 
 static void _node_resize_data_inline_single(kfs2_vfs_node_t* node,u64 size){
 	kfs2_node_data_t old_data=node->kfs2_node.data;
-	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
+	kfs2_filesystem_t* extra_data=node->node.fs->extra_data;
 	node->kfs2_node.data.single[0]=kfs2_bitmap_alloc(node->node.fs,&(extra_data->data_block_allocator));
 	for (u32 i=1;i<6;i++){
 		node->kfs2_node.data.single[i]=0;
@@ -176,7 +177,7 @@ static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flag
 		return NULL;
 	}
 	filesystem_t* fs=parent->fs;
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	out->kfs2_node._inode=kfs2_bitmap_alloc(fs,&(extra_data->inode_allocator));
 	if (!out->kfs2_node._inode){
 		omm_dealloc(_kfs2_vfs_node_allocator,out);
@@ -411,27 +412,41 @@ static const vfs_functions_t _kfs2_functions={
 
 
 static void _kfs2_fs_deinit(filesystem_t* fs){
-	omm_dealloc(_kfs2_fs_extra_data_allocator,fs->extra_data);
+	omm_dealloc(_kfs2_filesystem_allocator,fs->extra_data);
 	panic("_kfs2_deinit_callback");
+}
+
+
+
+static void* _alloc_page(u64 count){
+	return (void*)(pmm_alloc(count,_kfs2_root_block_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+}
+
+
+
+static void _dealloc_page(void* ptr,u64 count){
+	pmm_dealloc(((u64)ptr)-VMM_HIGHER_HALF_ADDRESS_OFFSET,count,_kfs2_root_block_buffer_pmm_counter);
 }
 
 
 
 static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	drive_t* drive=partition->drive;
-	if (drive->block_size>4096){
+	kfs2_filesystem_t* extra_data=omm_alloc(_kfs2_filesystem_allocator);
+	kfs2_filesystem_config_t config={
+		drive,
+		(kfs2_filesystem_block_read_callback_t)drive_read,
+		(kfs2_filesystem_block_write_callback_t)drive_write,
+		_alloc_page,
+		_dealloc_page,
+		drive->block_size,
+		partition->start_lba,
+		partition->end_lba,
+	};
+	if (!kfs2_filesystem_init(&config,extra_data)){
+		omm_dealloc(_kfs2_filesystem_allocator,extra_data);
 		return NULL;
 	}
-	void* buffer=(void*)(pmm_alloc(1,_kfs2_root_block_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	kfs2_root_block_t* root_block=(kfs2_root_block_t*)buffer;
-	if (drive_read(drive,partition->start_lba,buffer,1)!=1||root_block->signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_verify_crc(root_block,sizeof(kfs2_root_block_t))){
-		pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_root_block_buffer_pmm_counter);
-		return NULL;
-	}
-	kfs2_fs_extra_data_t* extra_data=omm_alloc(_kfs2_fs_extra_data_allocator);
-	extra_data->root_block=*root_block;
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_root_block_buffer_pmm_counter);
-	extra_data->block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/drive->block_size);
 	filesystem_t* out=fs_create(_kfs2_filesystem_descriptor);
 	out->functions=&_kfs2_functions;
 	out->partition=partition;
@@ -451,7 +466,7 @@ static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
 	if (!path||!str_equal(path,"/")){
 		return;
 	}
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	keyring_master_key_get_encrypted(extra_data->root_block.master_key,sizeof(extra_data->root_block.master_key));
 	kfs2_insert_crc(&(extra_data->root_block),sizeof(kfs2_root_block_t));
 	void* buffer=(void*)(pmm_alloc(1,_kfs2_root_block_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -483,8 +498,8 @@ MODULE_INIT(){
 	_kfs2_root_block_buffer_pmm_counter=pmm_alloc_counter("kfs2_root_block_buffer");
 	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4,pmm_alloc_counter("omm_kfs2_node"));
 	spinlock_init(&(_kfs2_vfs_node_allocator->lock));
-	_kfs2_fs_extra_data_allocator=omm_init("kfs2_extra_data",sizeof(kfs2_fs_extra_data_t),8,1,pmm_alloc_counter("omm_kfs2_extra_data"));
-	spinlock_init(&(_kfs2_fs_extra_data_allocator->lock));
+	_kfs2_filesystem_allocator=omm_init("kfs2_filesystem",sizeof(kfs2_filesystem_t),8,1,pmm_alloc_counter("omm_kfs2_filesystem"));
+	spinlock_init(&(_kfs2_filesystem_allocator->lock));
 }
 
 

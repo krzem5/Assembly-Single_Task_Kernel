@@ -5,6 +5,7 @@
 #include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#include <kfs2/api.h>
 #include <kfs2/crc.h>
 #include <kfs2/structures.h>
 
@@ -15,7 +16,7 @@ static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_bitmap_buffer_pmm_count
 
 
 static void _store_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level){
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
 	if (drive_write(drive,partition->start_lba+((allocator->cache+level)->block_index<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
@@ -28,7 +29,7 @@ static void _store_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level){
 static u64* _fetch_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level,u64 offset){
 	u64 block_index=(allocator->cache+level)->offset+offset*sizeof(u64)/KFS2_BLOCK_SIZE;
 	if ((allocator->cache+level)->block_index!=block_index){
-		kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+		kfs2_filesystem_t* extra_data=fs->extra_data;
 		partition_t* partition=fs->partition;
 		drive_t* drive=partition->drive;
 		if (drive_read(drive,partition->start_lba+(block_index<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){

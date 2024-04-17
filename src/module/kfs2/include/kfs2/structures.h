@@ -1,5 +1,7 @@
 #ifndef _KFS2_STRUCTURES_H_
 #define _KFS2_STRUCTURES_H_ 1
+#include <kernel/lock/spinlock.h>
+#include <kernel/vfs/node.h>
 #include <kernel/types.h>
 
 
@@ -115,15 +117,6 @@ typedef struct _KFS2_BITMAP{
 	u32 highest_level_offset;
 	kfs2_bitmap_cache_entry_t cache[KFS2_BITMAP_LEVEL_COUNT];
 } kfs2_bitmap_t;
-
-
-
-typedef struct _KFS2_FS_EXTRA_DATA{
-	kfs2_root_block_t root_block;
-	u32 block_size_shift;
-	kfs2_bitmap_t data_block_allocator;
-	kfs2_bitmap_t inode_allocator;
-} kfs2_fs_extra_data_t;
 
 
 

@@ -7,6 +7,7 @@
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
+#include <kfs2/api.h>
 #include <kfs2/crc.h>
 #include <kfs2/io.h>
 #include <kfs2/structures.h>
@@ -27,7 +28,7 @@ vfs_node_t* kfs2_io_inode_read(filesystem_t* fs,const string_t* name,u32 inode){
 	void* buffer=(void*)(pmm_alloc(1,_kfs2_io_inode_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	kfs2_vfs_node_t* out=NULL;
 	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
 		panic("kfs2_io_inode_read: I/O error");
@@ -65,7 +66,7 @@ void kfs2_io_inode_write(kfs2_vfs_node_t* node){
 	void* buffer=(void*)(pmm_alloc(1,_kfs2_io_inode_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	partition_t* partition=node->node.fs->partition;
 	drive_t* drive=partition->drive;
-	kfs2_fs_extra_data_t* extra_data=node->node.fs->extra_data;
+	kfs2_filesystem_t* extra_data=node->node.fs->extra_data;
 	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
 		panic("kfs2_io_inode_write: I/O error");
 	}
@@ -81,7 +82,7 @@ void kfs2_io_inode_write(kfs2_vfs_node_t* node){
 
 
 void kfs2_io_data_block_read(filesystem_t* fs,u64 block_index,void* buffer){
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
 	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
@@ -92,7 +93,7 @@ void kfs2_io_data_block_read(filesystem_t* fs,u64 block_index,void* buffer){
 
 
 void kfs2_io_data_block_write(filesystem_t* fs,u64 block_index,const void* buffer){
-	kfs2_fs_extra_data_t* extra_data=fs->extra_data;
+	kfs2_filesystem_t* extra_data=fs->extra_data;
 	partition_t* partition=fs->partition;
 	drive_t* drive=partition->drive;
 	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
