@@ -1,7 +1,7 @@
-#include <kfs2/chunk.h>
-#include <kfs2/io.h>
-#include <kfs2/structures.h>
-#include <kfs2/util.h>
+#include <common/kfs2/chunk.h>
+#include <common/kfs2/io.h>
+#include <common/kfs2/structures.h>
+#include <common/kfs2/util.h>
 
 
 

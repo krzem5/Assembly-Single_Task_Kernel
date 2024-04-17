@@ -1,5 +1,5 @@
-#ifndef _KFS2_UTIL_H_
-#define _KFS2_UTIL_H_ 1
+#ifndef _COMMON_KFS2_UTIL_H_
+#define _COMMON_KFS2_UTIL_H_ 1
 
 
 

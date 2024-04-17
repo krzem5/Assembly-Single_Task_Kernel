@@ -1,7 +1,7 @@
-#ifndef _KFS2_BITMAP_H_
-#define _KFS2_BITMAP_H_ 1
-#include <kfs2/structures.h>
-#include <kfs2/util.h>
+#ifndef _COMMON_KFS2_BITMAP_H_
+#define _COMMON_KFS2_BITMAP_H_ 1
+#include <common/kfs2/structures.h>
+#include <common/kfs2/util.h>
 
 
 

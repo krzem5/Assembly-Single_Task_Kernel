@@ -1,3 +1,5 @@
+#include <common/kfs2/api.h>
+#include <common/kfs2/structures.h>
 #include <kernel/drive/drive.h>
 #include <kernel/fs/fs.h>
 #include <kernel/keyring/master_key.h>
@@ -12,8 +14,6 @@
 #include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/node.h>
-#include <kfs2/api.h>
-#include <kfs2/structures.h>
 #define KERNEL_LOG_NAME "kfs2"
 
 
