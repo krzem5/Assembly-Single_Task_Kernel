@@ -1,8 +1,8 @@
-#include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <kfs2/api.h>
+#include <kfs2/bitmap.h>
 #include <kfs2/crc.h>
 #include <kfs2/structures.h>
+#include <kfs2/util.h>
 
 
 
@@ -34,7 +34,6 @@ static void _find_next_highest_level_offset(kfs2_filesystem_t* fs,kfs2_bitmap_t*
 
 
 void kfs2_bitmap_init(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* bitmap_offsets,u32 highest_level_length){
-	spinlock_init(&(allocator->lock));
 	allocator->highest_level_length=highest_level_length;
 	allocator->highest_level_offset=0;
 	for (u32 i=0;i<KFS2_BITMAP_LEVEL_COUNT;i++){
@@ -48,9 +47,7 @@ void kfs2_bitmap_init(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* 
 
 
 u64 kfs2_bitmap_alloc(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
-	spinlock_acquire_exclusive(&(allocator->lock));
 	if (allocator->highest_level_offset==allocator->highest_level_length){
-		spinlock_release_exclusive(&(allocator->lock));
 		return 0;
 	}
 	u64 out=allocator->highest_level_offset;
@@ -72,6 +69,5 @@ u64 kfs2_bitmap_alloc(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
 		allocator->highest_level_offset++;
 		_find_next_highest_level_offset(fs,allocator);
 	}
-	spinlock_release_exclusive(&(allocator->lock));
 	return out;
 }

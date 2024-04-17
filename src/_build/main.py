@@ -173,6 +173,7 @@ USER_EXTRA_LINKER_OPTIONS={
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
 KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
+COMMON_FILE_DIRECTORY="src/common"
 MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
@@ -291,29 +292,34 @@ def _compress(file_path):
 
 
 
+def _get_files(directories):
+	for directory in directories:
+		for root,_,files in os.walk(directory):
+			for file_name in files:
+				if (file_name[file_name.rindex("."):] not in SOURCE_FILE_SUFFIXES):
+					continue
+				yield os.path.join(root,file_name)
+
+
+
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY)
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
 	rebuild_uefi_partition=False
-	for root,_,files in os.walk(UEFI_FILE_DIRECTORY):
-		for file_name in files:
-			suffix=file_name[file_name.rindex("."):]
-			if (suffix not in SOURCE_FILE_SUFFIXES):
-				continue
-			file=os.path.join(root,file_name)
-			object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
-				pool.dispatch(object_file)
-				continue
-			rebuild_uefi_partition=True
-			command=None
-			if (suffix==".c"):
-				command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
-			else:
-				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	for file in _get_files([UEFI_FILE_DIRECTORY]):
+		object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		rebuild_uefi_partition=True
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+		else:
+			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 	if (not rebuild_uefi_partition):
 		return False
 	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",["ld","-nostdlib","-znocombreloc","-znoexecstack","-fshort-wchar","-T","/usr/lib/elf_x86_64_efi.lds","-shared","-Bsymbolic","-o","build/uefi/loader.efi","/usr/lib/gcc/x86_64-linux-gnu/12/libgcc.a"]+object_files)
@@ -335,25 +341,20 @@ def _compile_kernel(force_patch_kernel):
 		changed_files.append("src/kernel/_generated/build_info.c")
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
-	for root,_,files in os.walk(KERNEL_FILE_DIRECTORY):
-		for file_name in files:
-			suffix=file_name[file_name.rindex("."):]
-			if (suffix not in SOURCE_FILE_SUFFIXES):
-				continue
-			file=os.path.join(root,file_name)
-			object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
-				pool.dispatch(object_file)
-				continue
-			command=None
-			if (suffix==".c"):
-				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
-			else:
-				command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
-			if (os.path.exists(object_file+".gcno")):
-				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+	for file in _get_files([KERNEL_FILE_DIRECTORY]):
+		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+		else:
+			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
+		if (os.path.exists(object_file+".gcno")):
+			os.remove(os.path.exists(object_file+".gcno"))
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 	if (not changed_files and not force_patch_kernel):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
@@ -370,28 +371,23 @@ def _compile_module(module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return False
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{MODULE_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(MODULE_FILE_DIRECTORY if 'common/' not in dep else COMMON_FILE_DIRECTORY)}/{dep.split('/')[-1]}/include" for dep in dependencies]
 	has_updates=False
-	for root,_,files in os.walk(MODULE_FILE_DIRECTORY+"/"+module):
-		for file_name in files:
-			suffix=file_name[file_name.rindex("."):]
-			if (suffix not in SOURCE_FILE_SUFFIXES):
-				continue
-			file=os.path.join(root,file_name)
-			object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
-				pool.dispatch(object_file)
-				continue
-			command=None
-			if (suffix==".c"):
-				command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
-			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
-			if (os.path.exists(object_file+".gcno")):
-				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-			has_updates=True
+	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+dep.split("/")[-1] for dep in dependencies if "common/" in dep]):
+		object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
+		else:
+			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
+		if (os.path.exists(object_file+".gcno")):
+			os.remove(os.path.exists(object_file+".gcno"))
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		has_updates=True
 	if (os.path.exists(f"build/module/{module}.mod") and not has_updates):
 		return False
 	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
@@ -402,7 +398,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 
 def _compile_all_modules():
 	hash_file_path=f"build/hashes/module"+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
+	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	with open("src/module/dependencies.txt","r") as rf:
@@ -442,26 +438,21 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 	object_files=[]
 	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
 	has_updates=False
-	for root,_,files in os.walk(LIBRARY_FILE_DIRECTORY+"/"+library):
-		for file_name in files:
-			suffix=file_name[file_name.rindex("."):]
-			if (suffix not in SOURCE_FILE_SUFFIXES):
-				continue
-			file=os.path.join(root,file_name)
-			object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
-				pool.dispatch(object_file)
-				continue
-			command=None
-			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fpic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
-			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-			if (os.path.exists(object_file+".gcno")):
-				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-			has_updates=True
+	for file in _get_files([LIBRARY_FILE_DIRECTORY+"/"+library]):
+		object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fpic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
+		else:
+			command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+		if (os.path.exists(object_file+".gcno")):
+			os.remove(os.path.exists(object_file+".gcno"))
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		has_updates=True
 	if ("nodynamic" not in flags):
 		if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
 			pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
@@ -507,26 +498,21 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
 	has_updates=False
-	for root,_,files in os.walk(USER_FILE_DIRECTORY+"/"+program):
-		for file_name in files:
-			suffix=file_name[file_name.rindex("."):]
-			if (suffix not in SOURCE_FILE_SUFFIXES):
-				continue
-			file=os.path.join(root,file_name)
-			object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-			object_files.append(object_file)
-			if (_file_not_changed(changed_files,object_file+".deps")):
-				pool.dispatch(object_file)
-				continue
-			command=None
-			if (suffix==".c"):
-				command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+USER_EXTRA_COMPILER_OPTIONS
-			else:
-				command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-			if (os.path.exists(object_file+".gcno")):
-				os.remove(os.path.exists(object_file+".gcno"))
-			pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-			has_updates=True
+	for file in _get_files([USER_FILE_DIRECTORY+"/"+program]):
+		object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+		object_files.append(object_file)
+		if (_file_not_changed(changed_files,object_file+".deps")):
+			pool.dispatch(object_file)
+			continue
+		command=None
+		if (file.endswith(".c")):
+			command=["gcc-12","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+USER_EXTRA_COMPILER_OPTIONS
+		else:
+			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
+		if (os.path.exists(object_file+".gcno")):
+			os.remove(os.path.exists(object_file+".gcno"))
+		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		has_updates=True
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return False
 	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)

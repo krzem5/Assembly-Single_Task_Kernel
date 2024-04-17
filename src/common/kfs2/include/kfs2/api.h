@@ -1,7 +1,8 @@
 #ifndef _KFS2_API_H_
 #define _KFS2_API_H_ 1
-#include <kernel/types.h>
+#include <kfs2/bitmap.h>
 #include <kfs2/structures.h>
+#include <kfs2/util.h>
 
 
 
@@ -84,11 +85,11 @@ _Bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* ch
 
 
 
-u64 kfs2_node_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,void* buffer,u64 size,u32 flags);
+u64 kfs2_node_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,void* buffer,u64 size);
 
 
 
-u64 kfs2_node_write(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags);
+u64 kfs2_node_write(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,const void* buffer,u64 size);
 
 
 

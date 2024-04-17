@@ -8,7 +8,7 @@ gpt:
 i82540:
 iso9660:
 keyringstore:
-kfs2:
+kfs2:common/kfs2
 lockinfo:
 module_loader:
 net_arp:net_info,net_ip

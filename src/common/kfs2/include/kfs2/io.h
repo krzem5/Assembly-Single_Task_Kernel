@@ -1,10 +1,8 @@
 #ifndef _KFS2_IO_H_
 #define _KFS2_IO_H_ 1
-#include <kernel/fs/fs.h>
-#include <kernel/memory/smm.h>
-#include <kernel/types.h>
 #include <kfs2/api.h>
 #include <kfs2/structures.h>
+#include <kfs2/util.h>
 
 
 

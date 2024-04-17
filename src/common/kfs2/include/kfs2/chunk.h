@@ -1,8 +1,20 @@
 #ifndef _KFS2_CHUNK_H_
 #define _KFS2_CHUNK_H_ 1
-#include <kernel/types.h>
 #include <kfs2/api.h>
 #include <kfs2/structures.h>
+#include <kfs2/util.h>
+
+
+
+typedef struct _KFS2_DATA_CHUNK{
+	u64 offset;
+	u64* quadruple_cache;
+	u64* triple_cache;
+	u64* double_cache;
+	void* data;
+	u16 length;
+	u64 data_offset;
+} kfs2_data_chunk_t;
 
 
 

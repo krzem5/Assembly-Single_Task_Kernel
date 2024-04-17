@@ -1,8 +1,6 @@
 #ifndef _KFS2_STRUCTURES_H_
 #define _KFS2_STRUCTURES_H_ 1
-#include <kernel/lock/spinlock.h>
-#include <kernel/vfs/node.h>
-#include <kernel/types.h>
+#include <kfs2/util.h>
 
 
 
@@ -87,43 +85,6 @@ typedef struct KERNEL_PACKED _KFS2_DIRECTORY_ENTRY{
 	u8 name_compressed_hash;
 	char name[];
 } kfs2_directory_entry_t;
-
-
-
-typedef struct _KFS2_DATA_CHUNK{
-	u64 offset;
-	u64* quadruple_cache;
-	u64* triple_cache;
-	u64* double_cache;
-	void* data;
-	u16 length;
-	u64 data_offset;
-} kfs2_data_chunk_t;
-
-
-
-typedef struct _KFS2_BITMAP_CACHE_ENTRY{
-	u64 offset;
-	u64 block_index;
-	u64* data;
-} kfs2_bitmap_cache_entry_t;
-
-
-
-typedef struct _KFS2_BITMAP{
-	spinlock_t lock;
-	u64 bitmap_offset;
-	u32 highest_level_length;
-	u32 highest_level_offset;
-	kfs2_bitmap_cache_entry_t cache[KFS2_BITMAP_LEVEL_COUNT];
-} kfs2_bitmap_t;
-
-
-
-typedef struct _KFS2_VFS_NODE{
-	vfs_node_t node;
-	kfs2_node_t kfs2_node;
-} kfs2_vfs_node_t;
 
 
 

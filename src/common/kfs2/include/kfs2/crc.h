@@ -1,6 +1,6 @@
 #ifndef _KFS2_CRC_H_
 #define _KFS2_CRC_H_ 1
-#include <kernel/types.h>
+#include <kfs2/util.h>
 
 
 
