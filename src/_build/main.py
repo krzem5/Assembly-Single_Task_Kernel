@@ -664,7 +664,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (rebuild_uefi_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
-	if (rebuild_data_partition or True):
+	if (rebuild_data_partition):
 		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
 			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
