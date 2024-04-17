@@ -130,21 +130,22 @@ static _Bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
 	kfs2_node_t parent;
 	const char* child_name;
 	kfs2_node_t node;
-	if (_lookup_path(fs,argv[4],&parent,&child_name,&node)){
-		return 0;
-	}
-	if (!child_name){
-		printf("Path '%s' is not valid\n",argv[4]);
-		return 1;
-	}
-	if (!kfs2_node_create(fs,&parent,child_name,strlen(child_name),KFS2_INODE_TYPE_DIRECTORY,&node)){
-		printf("Unable to create directory '%s'\n",argv[4]);
+	if (!_lookup_path(fs,argv[4],&parent,&child_name,&node)){
+		if (!child_name){
+			printf("Path '%s' is not valid\n",argv[4]);
+			return 1;
+		}
+		if (!kfs2_node_create(fs,&parent,child_name,strlen(child_name),KFS2_INODE_TYPE_DIRECTORY,&node)){
+			printf("Unable to create directory '%s'\n",argv[4]);
+		}
+		node.time_access=_current_time();
+		node.time_modify=node.time_access;
+		node.time_change=node.time_access;
+		node.time_birth=node.time_access;
 	}
 	node.flags=(node.flags&(~KFS2_INODE_PERMISSION_MASK))|(permissions<<KFS2_INODE_PERMISSION_SHIFT);
-	node.time_access=_current_time();
-	node.time_modify=node.time_access;
-	node.time_change=node.time_access;
-	node.time_birth=node.time_access;
+	node.time_modify=_current_time();
+	node.time_change=node.time_modify;
 	kfs2_node_flush(fs,&node);
 	return 0;
 }

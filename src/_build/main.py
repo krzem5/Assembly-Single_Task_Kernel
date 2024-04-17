@@ -673,7 +673,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		_execute_compressor_command("build/kernel/kernel.bin")
 		_execute_compressor_command("build/partitions/initramfs.img")
 		_execute_kfs2_command(["mkdir","/bin","0755"])
-		_execute_kfs2_command(["mkdir","/boot","0400"])
+		_execute_kfs2_command(["mkdir","/boot","0500"])
 		_execute_kfs2_command(["mkdir","/boot/module","0700"])
 		_execute_kfs2_command(["mkdir","/etc","0755"])
 		_execute_kfs2_command(["mkdir","/lib","0755"])
