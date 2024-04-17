@@ -642,7 +642,8 @@ def _get_early_modules(file_path):
 
 
 def _execute_kfs2_command(command):
-	subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command)
+	if (subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command).returncode!=0):
+		sys.exit(1)
 
 
 
@@ -655,6 +656,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
+		_execute_kfs2_command(["format"])
 	if (not os.path.exists("build/partitions/efi.img")):
 		rebuild_uefi_partition=True
 		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
@@ -671,7 +673,6 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		initramfs.create("build/initramfs","build/partitions/initramfs.img")
 		_compress("build/kernel/kernel.bin")
 		_compress("build/partitions/initramfs.img")
-		_execute_kfs2_command(["format"])
 		_execute_kfs2_command(["mkdir","/bin","0755"])
 		_execute_kfs2_command(["mkdir","/boot","0400"])
 		_execute_kfs2_command(["mkdir","/boot/module","0700"])

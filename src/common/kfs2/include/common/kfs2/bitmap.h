@@ -38,4 +38,8 @@ u64 kfs2_bitmap_alloc(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator);
 
 
 
+void kfs2_bitmap_dealloc(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator,u64 index);
+
+
+
 #endif

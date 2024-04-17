@@ -131,8 +131,7 @@ static _Bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
 	const char* child_name;
 	kfs2_node_t node;
 	if (_lookup_path(fs,argv[4],&parent,&child_name,&node)){
-		printf("File '%s' already exists\n",argv[4]);
-		return 1;
+		return 0;
 	}
 	if (!child_name){
 		printf("Path '%s' is not valid\n",argv[4]);

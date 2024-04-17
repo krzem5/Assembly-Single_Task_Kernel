@@ -79,3 +79,21 @@ u64 kfs2_bitmap_alloc(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
 	}
 	return out;
 }
+
+
+
+void kfs2_bitmap_dealloc(struct _KFS2_FILESYSTEM* fs,kfs2_bitmap_t* allocator,u64 index){
+	for (u32 i=0;i<KFS2_BITMAP_LEVEL_COUNT;i++){
+		u64 mask=1ull<<(index&63);
+		index>>=6;
+		u64* ptr=_fetch_data(fs,allocator,i,index);
+		if ((*ptr)&mask){
+			break;
+		}
+		(*ptr)|=mask;
+		_store_data(fs,allocator,i);
+	}
+	if (index<allocator->highest_level_offset){
+		allocator->highest_level_offset=index;
+	}
+}
