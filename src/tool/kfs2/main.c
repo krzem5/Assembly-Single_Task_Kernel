@@ -284,6 +284,35 @@ static _Bool _command_link(kfs2_filesystem_t* fs,int argc,const char** argv){
 
 
 
+static _Bool _command_setboot(kfs2_filesystem_t* fs,int argc,const char** argv){
+	if (argc<6){
+		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> setboot <kernel|initramfs> <path>\n",(argc?argv[0]:"kfs2"));
+		return 1;
+	}
+	kfs2_node_t node;
+	if (!_lookup_path(fs,argv[5],NULL,NULL,&node)){
+		printf("Path '%s' is not valid\n",argv[5]);
+	}
+	if ((node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
+		printf("Path '%s' is not a file\n",argv[5]);
+		return 1;
+	}
+	if (!strcmp(argv[4],"kernel")){
+		fs->root_block.kernel_inode=node._inode;
+	}
+	else if (!strcmp(argv[4],"initramfs")){
+		fs->root_block.initramfs_inode=node._inode;
+	}
+	else{
+		printf("Unknown boot file type '%s'\n",argv[4]);
+		return 1;
+	}
+	kfs2_filesystem_flush_root_block(fs);
+	return 0;
+}
+
+
+
 int main(int argc,const char** argv){
 	if (argc<4){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> <command> [...arguments]\n",(argc?argv[0]:"kfs2"));
@@ -335,6 +364,9 @@ int main(int argc,const char** argv){
 	}
 	else if (!strcmp(argv[3],"link")){
 		ret=_command_link(&fs,argc,argv);
+	}
+	else if (!strcmp(argv[3],"setboot")){
+		ret=_command_setboot(&fs,argc,argv);
 	}
 	else{
 		printf("Unknown command '%s'\n",argv[3]);

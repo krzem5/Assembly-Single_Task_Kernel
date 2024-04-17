@@ -4,7 +4,6 @@ import compression
 import hashlib
 import initramfs
 import kernel_linker
-import kfs2
 import os
 import process_pool
 import signature
@@ -680,6 +679,8 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		_execute_kfs2_command(["mkdir","/lib","0755"])
 		_execute_kfs2_command(["copy","/boot/kernel.compressed","0400","build/kernel/kernel.bin.compressed"])
 		_execute_kfs2_command(["copy","/boot/initramfs.compressed","0400","build/partitions/initramfs.img.compressed"])
+		_execute_kfs2_command(["setboot","kernel","/boot/kernel.compressed"])
+		_execute_kfs2_command(["setboot","initramfs","/boot/initramfs.compressed"])
 		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600",MODULE_ORDER_FILE_PATH])
 		_execute_kfs2_command(["copy","/etc/fs_list.config","0600",FS_LIST_FILE_PATH])
 		_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
@@ -691,10 +692,6 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 			_execute_kfs2_command(["copy",f"/lib/{library}","0755",f"build/lib/{library}"])
 		for program in os.listdir("build/user"):
 			_execute_kfs2_command(["copy",f"/bin/{program}","0755",f"build/user/{program}"])
-		data_fs=kfs2.KFS2FileBackend("build/install_disk.img",INSTALL_DISK_BLOCK_SIZE,93720,INSTALL_DISK_SIZE-34)
-		kfs2.set_kernel_inode(data_fs,kfs2.get_inode(data_fs,"/boot/kernel.compressed",0o400))
-		kfs2.set_initramfs_inode(data_fs,kfs2.get_inode(data_fs,"/boot/initramfs.compressed",0o400))
-		data_fs.close()
 
 
 
