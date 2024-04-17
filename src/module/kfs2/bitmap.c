@@ -1,8 +1,3 @@
-#include <kernel/drive/drive.h>
-#include <kernel/fs/fs.h>
-#include <kernel/memory/pmm.h>
-#include <kernel/memory/vmm.h>
-#include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #include <kfs2/api.h>
@@ -11,29 +6,19 @@
 
 
 
-static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kfs2_bitmap_buffer_pmm_counter=NULL;
-
-
-
-static void _store_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level){
-	kfs2_filesystem_t* extra_data=fs->extra_data;
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	if (drive_write(drive,partition->start_lba+((allocator->cache+level)->block_index<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+static void _store_data(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level){
+	if (fs->config.write_callback(fs->config.ctx,fs->config.start_lba+((allocator->cache+level)->block_index<<fs->block_size_shift),(allocator->cache+level)->data,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
 		panic("_store_data: I/O error");
 	}
 }
 
 
 
-static u64* _fetch_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level,u64 offset){
+static u64* _fetch_data(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level,u64 offset){
 	u64 block_index=(allocator->cache+level)->offset+offset*sizeof(u64)/KFS2_BLOCK_SIZE;
 	if ((allocator->cache+level)->block_index!=block_index){
-		kfs2_filesystem_t* extra_data=fs->extra_data;
-		partition_t* partition=fs->partition;
-		drive_t* drive=partition->drive;
-		if (drive_read(drive,partition->start_lba+(block_index<<extra_data->block_size_shift),(allocator->cache+level)->data,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-			panic("_fetch_data: I/O error");
+		if (fs->config.read_callback(fs->config.ctx,fs->config.start_lba+(block_index<<fs->block_size_shift),(allocator->cache+level)->data,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
+			panic("_store_data: I/O error");
 		}
 		(allocator->cache+level)->block_index=block_index;
 	}
@@ -42,33 +27,27 @@ static u64* _fetch_data(filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level,u64 
 
 
 
-static void _find_next_highest_level_offset(filesystem_t* fs,kfs2_bitmap_t* allocator){
+static void _find_next_highest_level_offset(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
 	for (;allocator->highest_level_offset<allocator->highest_level_length&&!(*_fetch_data(fs,allocator,KFS2_BITMAP_LEVEL_COUNT-1,allocator->highest_level_offset));allocator->highest_level_offset++);
 }
 
 
 
-MODULE_INIT(){
-	_kfs2_bitmap_buffer_pmm_counter=pmm_alloc_counter("kfs2_bitmap_buffer");
-}
-
-
-
-void kfs2_bitmap_init(filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* bitmap_offsets,u32 highest_level_length){
+void kfs2_bitmap_init(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,const u64* bitmap_offsets,u32 highest_level_length){
 	spinlock_init(&(allocator->lock));
 	allocator->highest_level_length=highest_level_length;
 	allocator->highest_level_offset=0;
 	for (u32 i=0;i<KFS2_BITMAP_LEVEL_COUNT;i++){
 		(allocator->cache+i)->offset=bitmap_offsets[i];
 		(allocator->cache+i)->block_index=0xffffffffffffffffull;
-		(allocator->cache+i)->data=(void*)(pmm_alloc(1,_kfs2_bitmap_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		(allocator->cache+i)->data=fs->config.alloc_callback(1);
 	}
 	_find_next_highest_level_offset(fs,allocator);
 }
 
 
 
-u64 kfs2_bitmap_alloc(filesystem_t* fs,kfs2_bitmap_t* allocator){
+u64 kfs2_bitmap_alloc(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator){
 	spinlock_acquire_exclusive(&(allocator->lock));
 	if (allocator->highest_level_offset==allocator->highest_level_length){
 		spinlock_release_exclusive(&(allocator->lock));

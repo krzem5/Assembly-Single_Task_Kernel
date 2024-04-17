@@ -62,41 +62,32 @@ vfs_node_t* kfs2_io_inode_read(filesystem_t* fs,const string_t* name,u32 inode){
 
 
 
-void kfs2_io_inode_write(kfs2_vfs_node_t* node){
-	void* buffer=(void*)(pmm_alloc(1,_kfs2_io_inode_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	partition_t* partition=node->node.fs->partition;
-	drive_t* drive=partition->drive;
-	kfs2_filesystem_t* extra_data=node->node.fs->extra_data;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+void kfs2_io_inode_write(kfs2_filesystem_t* fs,kfs2_node_t* node){
+	void* buffer=fs->config.alloc_callback(1);
+	if (fs->config.read_callback(fs->config.ctx,fs->config.start_lba+((fs->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->_inode))<<fs->block_size_shift),buffer,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
 		panic("kfs2_io_inode_write: I/O error");
 	}
-	kfs2_node_t* tmp_node=(void*)(buffer+KFS2_INODE_GET_NODE_INDEX(node->kfs2_node._inode)*sizeof(kfs2_node_t));
-	*tmp_node=node->kfs2_node;
+	kfs2_node_t* tmp_node=buffer+KFS2_INODE_GET_NODE_INDEX(node->_inode)*sizeof(kfs2_node_t);
+	*tmp_node=*node;
 	kfs2_insert_crc(tmp_node,sizeof(kfs2_node_t));
-	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->kfs2_node._inode))<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+	if (fs->config.write_callback(fs->config.ctx,fs->config.start_lba+((fs->root_block.first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(node->_inode))<<fs->block_size_shift),buffer,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
 		panic("kfs2_io_inode_write: I/O error");
 	}
-	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_io_inode_buffer_pmm_counter);
+	fs->config.dealloc_callback(buffer,1);
 }
 
 
 
-void kfs2_io_data_block_read(filesystem_t* fs,u64 block_index,void* buffer){
-	kfs2_filesystem_t* extra_data=fs->extra_data;
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	if (drive_read(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
+void kfs2_io_data_block_read(kfs2_filesystem_t* fs,u64 block_index,void* buffer){
+	if (fs->config.read_callback(fs->config.ctx,fs->config.start_lba+((fs->root_block.first_data_block+block_index)<<fs->block_size_shift),buffer,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
 		panic("kfs2_io_data_block_read: I/O error");
 	}
 }
 
 
 
-void kfs2_io_data_block_write(filesystem_t* fs,u64 block_index,const void* buffer){
-	kfs2_filesystem_t* extra_data=fs->extra_data;
-	partition_t* partition=fs->partition;
-	drive_t* drive=partition->drive;
-	if (drive_write(drive,partition->start_lba+((extra_data->root_block.first_data_block+block_index)<<extra_data->block_size_shift),buffer,1<<extra_data->block_size_shift)!=(1<<extra_data->block_size_shift)){
-		panic("kfs2_io_data_block_write: I/O error");
+void kfs2_io_data_block_write(kfs2_filesystem_t* fs,u64 block_index,const void* buffer){
+	if (fs->config.write_callback(fs->config.ctx,fs->config.start_lba+((fs->root_block.first_data_block+block_index)<<fs->block_size_shift),buffer,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
+		panic("kfs2_io_data_block_read: I/O error");
 	}
 }

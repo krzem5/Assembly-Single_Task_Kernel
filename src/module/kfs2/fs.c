@@ -49,13 +49,13 @@ static void _node_resize_data_inline_inline(kfs2_vfs_node_t* node,u64 size){
 static void _node_resize_data_inline_single(kfs2_vfs_node_t* node,u64 size){
 	kfs2_node_data_t old_data=node->kfs2_node.data;
 	kfs2_filesystem_t* extra_data=node->node.fs->extra_data;
-	node->kfs2_node.data.single[0]=kfs2_bitmap_alloc(node->node.fs,&(extra_data->data_block_allocator));
+	node->kfs2_node.data.single[0]=kfs2_bitmap_alloc(node->node.fs->extra_data,&(extra_data->data_block_allocator));
 	for (u32 i=1;i<6;i++){
 		node->kfs2_node.data.single[i]=0;
 	}
 	void* buffer=(void*)(pmm_alloc(1,_kfs2_resize_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	mem_copy(buffer,old_data.inline_,node->kfs2_node.size);
-	kfs2_io_data_block_write(node->node.fs,node->kfs2_node.data.single[0],buffer);
+	kfs2_io_data_block_write(node->node.fs->extra_data,node->kfs2_node.data.single[0],buffer);
 	pmm_dealloc(((u64)buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,1,_kfs2_resize_buffer_pmm_counter);
 }
 
@@ -96,7 +96,7 @@ static void _node_resize(kfs2_vfs_node_t* node,u64 size){
 	}
 	node->kfs2_node.size=size;
 	node->kfs2_node.flags=(node->kfs2_node.flags&(~KFS2_INODE_STORAGE_MASK))|new_storage_type;
-	kfs2_io_inode_write(node);
+	kfs2_io_inode_write(node->node.fs->extra_data,&(node->kfs2_node));
 }
 
 
@@ -107,7 +107,7 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 	kfs2_chunk_init(&chunk);
 	for (u64 offset=0;offset<parent->kfs2_node.size;){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(parent,offset,1,&chunk);
+			kfs2_chunk_read(parent->node.fs->extra_data,&(parent->kfs2_node),offset,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
 		if (entry->name_length||entry->size<new_entry_size){
@@ -125,16 +125,16 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 			next_entry->name_length=0;
 			entry->size=new_entry_size;
 		}
-		kfs2_chunk_write(parent,&chunk);
-		kfs2_chunk_deinit(&chunk);
+		kfs2_chunk_write(parent->node.fs->extra_data,&(parent->kfs2_node),&chunk);
+		kfs2_chunk_deinit(parent->node.fs->extra_data,&chunk);
 		return;
 	}
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_deinit(parent->node.fs->extra_data,&chunk);
 	_node_resize(parent,(parent->kfs2_node.size==48?KFS2_BLOCK_SIZE:parent->kfs2_node.size+KFS2_BLOCK_SIZE));
-	kfs2_chunk_read(parent,parent->kfs2_node.size-KFS2_BLOCK_SIZE,1,&chunk);
+	kfs2_chunk_read(parent->node.fs->extra_data,&(parent->kfs2_node),parent->kfs2_node.size-KFS2_BLOCK_SIZE,1,&chunk);
 	if (parent->kfs2_node.size>KFS2_BLOCK_SIZE){
 		panic("_attach_child: update large parent");
-		kfs2_chunk_deinit(&chunk);
+		kfs2_chunk_deinit(parent->node.fs->extra_data,&chunk);
 		return;
 	}
 	kfs2_directory_entry_t* entry;
@@ -160,8 +160,8 @@ static void _attach_child(kfs2_vfs_node_t* parent,const string_t* name,kfs2_vfs_
 	next_entry->size=entry->size-new_entry_size;
 	next_entry->name_length=0;
 	entry->size=new_entry_size;
-	kfs2_chunk_write(parent,&chunk);
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_write(parent->node.fs->extra_data,&(parent->kfs2_node),&chunk);
+	kfs2_chunk_deinit(parent->node.fs->extra_data,&chunk);
 }
 
 
@@ -178,7 +178,7 @@ static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flag
 	}
 	filesystem_t* fs=parent->fs;
 	kfs2_filesystem_t* extra_data=fs->extra_data;
-	out->kfs2_node._inode=kfs2_bitmap_alloc(fs,&(extra_data->inode_allocator));
+	out->kfs2_node._inode=kfs2_bitmap_alloc(fs->extra_data,&(extra_data->inode_allocator));
 	if (!out->kfs2_node._inode){
 		omm_dealloc(_kfs2_vfs_node_allocator,out);
 		return NULL;
@@ -224,7 +224,7 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 	u8 compressed_hash=_calculate_compressed_hash(name);
 	while (offset<kfs2_node->kfs2_node.size){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,offset,1,&chunk);
+			kfs2_chunk_read(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node),offset,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+offset-chunk.offset);
 		if (entry->name_length!=name->length||entry->name_compressed_hash!=compressed_hash){
@@ -236,12 +236,12 @@ static vfs_node_t* _kfs2_lookup(vfs_node_t* node,const string_t* name){
 			}
 		}
 		u64 inode=entry->inode;
-		kfs2_chunk_deinit(&chunk);
+		kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 		return kfs2_io_inode_read(node->fs,name,inode);
 _skip_entry:
 		offset+=entry->size;
 	}
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 	return NULL;
 }
 
@@ -256,17 +256,17 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	kfs2_chunk_init(&chunk);
 	while (pointer<kfs2_node->kfs2_node.size){
 		if (pointer-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,pointer,1,&chunk);
+			kfs2_chunk_read(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node),pointer,1,&chunk);
 		}
 		kfs2_directory_entry_t* entry=(kfs2_directory_entry_t*)(chunk.data+pointer-chunk.offset);
 		pointer+=entry->size;
 		if (entry->name_length){
 			*out=smm_alloc(entry->name,entry->name_length);
-			kfs2_chunk_deinit(&chunk);
+			kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 			return pointer;
 		}
 	}
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 	return 0;
 }
 
@@ -301,7 +301,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 	size+=offset;
 	while (offset<size){
 		if (offset-chunk.offset>=chunk.length){
-			kfs2_chunk_read(kfs2_node,offset,1,&chunk);
+			kfs2_chunk_read(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node),offset,1,&chunk);
 		}
 		u64 padding=offset-chunk.offset;
 		u64 read_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
@@ -309,7 +309,7 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 		buffer+=read_size;
 		offset+=chunk.length-padding;
 	}
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 	return out;
 }
 
@@ -331,15 +331,15 @@ static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u
 	kfs2_chunk_init(&chunk);
 	size+=offset;
 	while (offset<size){
-		kfs2_chunk_read(kfs2_node,offset,(offset&(KFS2_BLOCK_SIZE-1))||(size-offset<KFS2_BLOCK_SIZE),&chunk);
+		kfs2_chunk_read(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node),offset,(offset&(KFS2_BLOCK_SIZE-1))||(size-offset<KFS2_BLOCK_SIZE),&chunk);
 		u64 padding=offset-chunk.offset;
 		u64 write_size=(chunk.length-padding>size-offset?size-offset:chunk.length-padding);
 		mem_copy(chunk.data+padding,buffer,write_size);
 		buffer+=write_size;
 		offset+=write_size;
-		kfs2_chunk_write(kfs2_node,&chunk);
+		kfs2_chunk_write(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node),&chunk);
 	}
-	kfs2_chunk_deinit(&chunk);
+	kfs2_chunk_deinit(kfs2_node->node.fs->extra_data,&chunk);
 	return out;
 }
 
@@ -390,7 +390,7 @@ static void _kfs2_flush(vfs_node_t* node){
 	kfs2_node->kfs2_node.time_birth=kfs2_node->node.time_birth;
 	kfs2_node->kfs2_node.gid=kfs2_node->node.gid;
 	kfs2_node->kfs2_node.uid=kfs2_node->node.uid;
-	kfs2_io_inode_write(kfs2_node);
+	kfs2_io_inode_write(kfs2_node->node.fs->extra_data,&(kfs2_node->kfs2_node));
 	node->flags&=~VFS_NODE_FLAG_DIRTY;
 }
 
