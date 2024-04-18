@@ -1,8 +1,0 @@
-dircolor:sys
-glsl:sys
-linker@nostatic:sys@static
-opengl@nostatic:sys,glsl,uidisplay
-runtime@nodynamic:sys@static
-sys:
-tgsiascii@nostatic:sys,glsl
-uidisplay:sys

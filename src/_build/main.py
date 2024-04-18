@@ -433,7 +433,7 @@ def _compile_all_modules():
 
 
 
-def _compile_library(library,flags,dependencies,changed_files,pool):
+def _compile_library(library,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and library.startswith("test")):
 		return False
 	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
@@ -453,7 +453,7 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 					wf.write("\n\t"+"".join([f"0x{e:02x}," for e in line]))
 				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
 	object_files=[]
-	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep.split('@')[0]}/include" for dep in dependencies]
+	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
 	for file in _get_files([LIBRARY_FILE_DIRECTORY+"/"+library]):
 		object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
@@ -470,19 +470,17 @@ def _compile_library(library,flags,dependencies,changed_files,pool):
 			os.remove(os.path.exists(object_file+".gcno"))
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 		has_updates=True
-	if ("nodynamic" not in flags):
-		if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
-			pool.add(object_files+[f"build/lib/lib{dep.split('@')[0]}.{('a' if '@static' in dep else 'so')}" for dep in dependencies],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{dep.split('@')[0]}.a" if "@static" in dep else f"-l{dep.split('@')[0]}") for dep in dependencies]+LIBRARY_EXTRA_LINKER_OPTIONS)
-			pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
-		else:
-			pool.dispatch(f"build/lib/lib{library}.so")
-	if ("nostatic" not in flags):
-		if (has_updates or not os.path.exists(f"build/lib/lib{library}.a")):
-			if (os.path.exists(f"build/lib/lib{library}.a")):
-				os.remove(f"build/lib/lib{library}.a")
-			pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
-		else:
-			pool.dispatch(f"build/lib/lib{library}.a")
+	if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
+		pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data==b'static' else 'so')}" for tag in dependencies.iter()],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data==b'static' else f"-l{tag.name}") for tag in dependencies.iter()]+LIBRARY_EXTRA_LINKER_OPTIONS)
+		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
+	else:
+		pool.dispatch(f"build/lib/lib{library}.so")
+	if (has_updates or not os.path.exists(f"build/lib/lib{library}.a")):
+		if (os.path.exists(f"build/lib/lib{library}.a")):
+			os.remove(f"build/lib/lib{library}.a")
+		pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
+	else:
+		pool.dispatch(f"build/lib/lib{library}.a")
 	return has_updates
 
 
@@ -492,14 +490,8 @@ def _compile_all_libraries():
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
-	with open("src/lib/dependencies.txt","r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			name,dependencies=line.split(":")
-			flags=([] if "@" not in name else [flag.strip() for flag in name.split("@")[1].split(",") if flag.strip()])
-			out|=_compile_library(name.split("@")[0],flags,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	for tag in config.parse("src/lib/dependencies.config").iter():
+		out|=_compile_library(tag.name,tag,changed_files,pool)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
