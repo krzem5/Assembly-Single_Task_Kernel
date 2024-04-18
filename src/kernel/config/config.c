@@ -222,6 +222,20 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			config_tag_attach(out,tag);
 			continue;
 		}
+		if (data[0]=='}'){
+			data++;
+			if (name->length){
+				config_tag_t* tag=omm_alloc(_config_tag_allocator);
+				tag->name=name;
+				tag->type=CONFIG_TAG_TYPE_NONE;
+				config_tag_attach(out,tag);
+			}
+			out=out->parent;
+			if (!out){
+				panic("Unbalanced brackets");
+			}
+			continue;
+		}
 		if (name->length||data[0]=='='){
 			if (data[0]!='='){
 				smm_dealloc(name);
@@ -251,14 +265,6 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			tag->array->length=0;
 			config_tag_attach(out,tag);
 			out=tag;
-			continue;
-		}
-		if (data[0]=='}'){
-			data++;
-			out=out->parent;
-			if (!out){
-				panic("Unbalanced brackets");
-			}
 			continue;
 		}
 		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])||((data[0]=='-'||data[0]=='+')&&CONFIG_TEXT_FILE_IS_NUMBER(data[1]))){

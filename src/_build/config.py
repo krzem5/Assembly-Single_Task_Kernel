@@ -19,12 +19,12 @@ __all__=["parse","CONFIG_TAG_TYPE_NONE","CONFIG_TAG_TYPE_INT","CONFIG_TAG_TYPE_S
 class ConfigTag(object):
 	def __init__(self,parent,name,type,data):
 		self.parent=parent
-		self.name=name
+		self.name=name.decode("utf-8")
 		self.type=type
 		self.data=data
 
 	def __repr__(self):
-		out=self.name.decode("utf-8")
+		out=self.name
 		if (self.name and self.type!=CONFIG_TAG_TYPE_NONE):
 			out+="="
 		if (self.type==CONFIG_TAG_TYPE_INT):
@@ -34,6 +34,17 @@ class ConfigTag(object):
 		elif (self.type==CONFIG_TAG_TYPE_ARRAY):
 			out+="{"+",".join(map(str,self.data))+"}"
 		return out
+
+	def iter(self):
+		if (self.type!=CONFIG_TAG_TYPE_ARRAY):
+			return
+		for tag in self.data:
+			yield tag
+
+	def find(self,name):
+		for tag in self.data:
+			if (tag.name==name):
+				yield tag
 
 
 
@@ -54,11 +65,13 @@ def parse(file_path):
 				name_length+=1
 			name=data[i:i+name_length]
 			i+=name_length
-		while (i<len(data) and data[i] in WHITESPACE):
+		while (i<len(data) and data[i] not in b"\n" and data[i] in WHITESPACE):
 			i+=1
 		if (i==len(data) or data[i] in b"," or data[i] in b"\n"):
 			if (not name):
 				continue
+			if (i<len(data)):
+				i+=1
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_NONE,None))
 			continue
 		if (data[i] in b"}"):
@@ -102,14 +115,23 @@ def parse(file_path):
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_INT,(-value if is_negative else value)))
 			continue
 		if (data[i] in b"\""):
-			raise RuntimeError("Parse quoted string")
+			buffer=b""
+			i+=1
+			while (i<len(data) and data[i] not in b"\""):
+				if (data[i] not in b"\\"):
+					buffer+=data[i:i+1]
+					i+=1
+					continue
+				i+=1
+				raise RuntimeError(f"Formatting character: {chr(data[i])}")
+			if (i==len(data)):
+				raise RuntimeError("Unbalanced quotes")
+			i+=1
+			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,buffer))
+			continue
 		string_length=0
-		while (i+string_length<len(data) and data[i+string_length] not in b"\n"):
+		while (i+string_length<len(data) and data[i+string_length] not in b"\n}"):
 			string_length+=1
 		out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,data[i:i+string_length]))
 		i+=string_length
 	return out
-
-
-
-print(parse("../module/fs_list.config"))

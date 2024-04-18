@@ -1,5 +1,6 @@
 import array
 import binascii
+import config
 import hashlib
 import initramfs
 import kernel_linker
@@ -392,9 +393,9 @@ def _compile_module(module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return False
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(MODULE_FILE_DIRECTORY if 'common/' not in dep else COMMON_FILE_DIRECTORY)}/{dep.split('/')[-1]}/include" for dep in dependencies]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data==b'common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+dep.split("/")[-1] for dep in dependencies if "common/" in dep]):
+	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter() if tag.data==b"common"]):
 		object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -422,13 +423,8 @@ def _compile_all_modules():
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
-	with open("src/module/dependencies.txt","r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			name,dependencies=line.split(":")
-			out|=_compile_module(name,[dep.strip() for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	for tag in config.parse("src/module/dependencies.config").iter():
+		out|=_compile_module(tag.name,tag,changed_files,pool)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
