@@ -2,11 +2,13 @@
 #include <kernel/format/format.h>
 #include <kernel/keyring/keyring.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "keyringstore"
@@ -62,12 +64,36 @@ static void _load_keyring(config_tag_t* root_tag){
 		if (!config_tag_find(key_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
 			continue;
 		}
+		config_tag_t* type_tag;
+		if (!config_tag_find(key_tag,"type",0,&type_tag)||type_tag->type!=CONFIG_TAG_TYPE_INT){
+			continue;
+		}
+		config_tag_t* flags_tag;
+		if (!config_tag_find(key_tag,"flags",0,&flags_tag)||flags_tag->type!=CONFIG_TAG_TYPE_INT){
+			continue;
+		}
 		keyring_key_t* key=keyring_key_create(keyring,name_tag->string->data);
 		if (!key){
 			WARN("Skipping key '%s'...",name_tag->string->data);
 			continue;
 		}
-		ERROR("Load key from config");
+		key->type=type_tag->int_;
+		key->flags=flags_tag->int_;
+		if (key->type==KEYRING_KEY_TYPE_NONE){
+			continue;
+		}
+		if (key->type==KEYRING_KEY_TYPE_RAW){
+			config_tag_t* raw_tag;
+			if (!config_tag_find(key_tag,"raw",0,&raw_tag)||raw_tag->type!=CONFIG_TAG_TYPE_STRING){
+				key->type=KEYRING_KEY_TYPE_NONE;
+				continue;
+			}
+			key->data.raw.payload=amm_alloc(raw_tag->string->length);
+			key->data.raw.payload_length=raw_tag->string->length;
+			mem_copy(key->data.raw.payload,raw_tag->string->data,raw_tag->string->length);
+			continue;
+		}
+		ERROR("Load key from config: RSA key");
 		for (;;);
 	}
 }
