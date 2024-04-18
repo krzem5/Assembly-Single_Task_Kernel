@@ -283,7 +283,53 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		if (data[0]=='\"'){
-			panic("Quoted string");
+			char* buffer=NULL;
+			u32 buffer_length=0;
+			data++;
+			for (;data<end&&data[0]!='\"';data++){
+				buffer_length++;
+				buffer=amm_realloc(buffer,buffer_length);
+				if (data[0]!='\\'){
+					buffer[buffer_length-1]=data[0];
+					continue;
+				}
+				data++;
+				if (data==end){
+					break;
+				}
+				if (data[0]=='t'){
+					buffer[buffer_length-1]='\t';
+					continue;
+				}
+				if (data[0]=='n'){
+					buffer[buffer_length-1]='\n';
+					continue;
+				}
+				if (data[0]=='r'){
+					buffer[buffer_length-1]='\r';
+					continue;
+				}
+				if (data[0]=='b'){
+					buffer[buffer_length-1]='\b';
+					continue;
+				}
+				if (data[0]=='v'){
+					buffer[buffer_length-1]='\v';
+					continue;
+				}
+				WARN("Escape: %c",data[0]);
+				panic("Quoted string escape character");
+			}
+			if (data==end){
+				panic("Unbalanced quotes");
+			}
+			config_tag_t* tag=omm_alloc(_config_tag_allocator);
+			tag->name=name;
+			tag->type=CONFIG_TAG_TYPE_STRING;
+			tag->string=smm_alloc(buffer,buffer_length);
+			config_tag_attach(out,tag);
+			amm_dealloc(buffer);
+			continue;
 		}
 		u32 string_length=0;
 		for (;data+string_length<end&&data[string_length]!='\n';string_length++);
