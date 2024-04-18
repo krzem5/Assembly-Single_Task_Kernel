@@ -511,9 +511,9 @@ def _compile_all_libraries():
 def _compile_user_program(program,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and program.startswith("test")):
 		return False
-	dependencies.append(["runtime","static"])
+	dependencies.data.append(config.ConfigTag(dependencies,b"runtime",config.CONFIG_TAG_TYPE_STRING,b"static"))
 	object_files=[]
-	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{dep[0]}/include" for dep in dependencies]
+	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
 	for file in _get_files([USER_FILE_DIRECTORY+"/"+program]):
 		object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
@@ -532,7 +532,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 		has_updates=True
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return False
-	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{dep[0]}" if len(dep)==1 or dep[1]!="static" else f"build/lib/lib{dep[0]}.a") for dep in dependencies]+object_files+USER_EXTRA_LINKER_OPTIONS)
+	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{tag.name}" if tag.data!=b"static" else f"build/lib/lib{tag.name}.a") for tag in dependencies.iter()]+object_files+USER_EXTRA_LINKER_OPTIONS)
 	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[kernel_linker.link_module_or_library,f"build/user/{program}","user"])
 	return True
 
@@ -543,13 +543,8 @@ def _compile_all_user_programs():
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
-	with open("src/user/dependencies.txt","r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			name,dependencies=line.split(":")
-			out|=_compile_user_program(name,[dep.strip().split("@") for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	for tag in config.parse("src/user/dependencies.config").iter():
+		out|=_compile_user_program(tag.name,tag,changed_files,pool)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):
@@ -560,9 +555,9 @@ def _compile_all_user_programs():
 
 def _compile_tool(tool,dependencies,changed_files,pool):
 	object_files=[]
-	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-I{COMMON_FILE_DIRECTORY}/{dep}/include" for dep in dependencies]
+	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-I{COMMON_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]+[COMMON_FILE_DIRECTORY+"/"+dep for dep in dependencies]):
+	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter()]):
 		object_file=TOOL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -585,14 +580,8 @@ def _compile_all_tools():
 	hash_file_path=f"build/hashes/tool"+TOOL_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
-	out=False
-	with open("src/tool/dependencies.txt","r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			name,dependencies=line.split(":")
-			_compile_tool(name,[dep for dep in dependencies.split(",") if dep.strip()],changed_files,pool)
+	for tag in config.parse("src/tool/dependencies.config").iter():
+		_compile_tool(tag.name,tag,changed_files,pool)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,hash_file_path)
 	if (error):

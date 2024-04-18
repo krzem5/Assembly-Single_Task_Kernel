@@ -1,2 +1,0 @@
-compressor:
-kfs2:kfs2
