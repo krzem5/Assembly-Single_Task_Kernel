@@ -598,16 +598,8 @@ def _generate_shared_directory():
 
 
 
-def _get_early_modules(file_path):
-	out=["module_loader"]
-	with open(file_path,"r") as rf:
-		for module in rf.read().split("\n"):
-			module=module.strip()
-			if (module and module[0]!="#" and module.count("=")==1):
-				name,type_=module.split("=")
-				if (type_=="early"):
-					out.append(name)
-	return out
+def _get_early_modules():
+	return ["module_loader"]+[tag.name for tag in config.parse(MODULE_ORDER_FILE_PATH).iter() if tag.data==b"early"]
 
 
 
@@ -642,7 +634,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 	if (rebuild_data_partition):
-		for module in _get_early_modules(MODULE_ORDER_FILE_PATH):
+		for module in _get_early_modules():
 			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
 		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
 		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/etc/fs_list.config")
