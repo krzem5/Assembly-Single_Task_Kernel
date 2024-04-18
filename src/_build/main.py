@@ -102,10 +102,10 @@ KERNEL_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
-MODULE_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".txt",
-	MODE_RELEASE: ".release.txt"
+MODULE_HASH_FILE={
+	MODE_NORMAL: "build/hashes/module.debug.txt",
+	MODE_COVERAGE: "build/hashes/module.coverage.txt",
+	MODE_RELEASE: "build/hashes/module.release.txt"
 }[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/module_debug/",
@@ -122,10 +122,10 @@ MODULE_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
-LIBRARY_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".txt",
-	MODE_RELEASE: ".release.txt"
+LIBRARY_HASH_FILE={
+	MODE_NORMAL: "build/hashes/lib.debug.txt",
+	MODE_COVERAGE: "build/hashes/lib.coverage.txt",
+	MODE_RELEASE: "build/hashes/lib.release.txt"
 }[mode]
 LIBRARY_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/lib_debug/",
@@ -147,10 +147,10 @@ LIBRARY_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-O1","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
-USER_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".txt",
-	MODE_RELEASE: ".release.txt"
+USER_HASH_FILE={
+	MODE_NORMAL: "build/hashes/user.debug.txt",
+	MODE_COVERAGE: "build/hashes/user.coverage.txt",
+	MODE_RELEASE: "build/hashes/user.release.txt"
 }[mode]
 USER_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/user_debug/",
@@ -172,10 +172,10 @@ USER_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
-TOOL_HASH_FILE_SUFFIX={
-	MODE_NORMAL: ".txt",
-	MODE_COVERAGE: ".txt",
-	MODE_RELEASE: ".release.txt"
+TOOL_HASH_FILE={
+	MODE_NORMAL: "build/hashes/tool.debug.txt",
+	MODE_COVERAGE: "build/hashes/tool.debug.txt",
+	MODE_RELEASE: "build/hashes/tool.release.txt"
 }[mode]
 TOOL_OBJECT_FILE_DIRECTORY={
 	MODE_NORMAL: "build/objects/tool_debug/",
@@ -419,14 +419,13 @@ def _compile_module(module,dependencies,changed_files,pool):
 
 
 def _compile_all_modules():
-	hash_file_path="build/hashes/module"+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
+	changed_files,file_hash_list=_load_changed_files(MODULE_HASH_FILE,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/module/dependencies.config").iter():
 		out|=_compile_module(tag.name,tag,changed_files,pool)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,hash_file_path)
+	_save_file_hash_list(file_hash_list,MODULE_HASH_FILE)
 	if (error):
 		sys.exit(1)
 	return out
@@ -486,14 +485,13 @@ def _compile_library(library,dependencies,changed_files,pool):
 
 
 def _compile_all_libraries():
-	hash_file_path="build/hashes/lib"+MODULE_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
+	changed_files,file_hash_list=_load_changed_files(LIBRARY_HASH_FILE,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		out|=_compile_library(tag.name,tag,changed_files,pool)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,hash_file_path)
+	_save_file_hash_list(file_hash_list,LIBRARY_HASH_FILE)
 	if (error):
 		sys.exit(1)
 	return out
@@ -531,14 +529,13 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 
 
 def _compile_all_user_programs():
-	hash_file_path="build/hashes/user"+USER_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
+	changed_files,file_hash_list=_load_changed_files(USER_HASH_FILE,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/user/dependencies.config").iter():
 		out|=_compile_user_program(tag.name,tag,changed_files,pool)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,hash_file_path)
+	_save_file_hash_list(file_hash_list,USER_HASH_FILE)
 	if (error):
 		sys.exit(1)
 	return out
@@ -569,13 +566,12 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 
 
 def _compile_all_tools():
-	hash_file_path="build/hashes/tool"+TOOL_HASH_FILE_SUFFIX
-	changed_files,file_hash_list=_load_changed_files(hash_file_path,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
+	changed_files,file_hash_list=_load_changed_files(TOOL_HASH_FILE,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	for tag in config.parse("src/tool/dependencies.config").iter():
 		_compile_tool(tag.name,tag,changed_files,pool)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,hash_file_path)
+	_save_file_hash_list(file_hash_list,TOOL_HASH_FILE)
 	if (error):
 		sys.exit(1)
 
