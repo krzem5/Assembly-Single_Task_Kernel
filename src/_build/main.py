@@ -224,38 +224,6 @@ def _clear_if_obsolete(path,src_file_path,prefix):
 
 
 
-def _generate_syscalls(table_name,table_index,src_file_path,kernel_file_path,user_header_file_path):
-	syscalls={}
-	with open(src_file_path,"r") as rf:
-		for line in rf.read().split("\n"):
-			line=line.strip()
-			if (not line):
-				continue
-			index,line=int(line[:line.index(",")]),line[line.index(",")+1:]
-			name=line.split("(")[0].strip()
-			args=tuple(line.split("(")[1].split(")")[0].strip().split(","))
-			if (args==("void",)):
-				args=tuple()
-			ret=line.split("->")[1].strip()
-			syscalls[index]=(name,args,ret)
-	if (user_header_file_path is not None):
-		with open(user_header_file_path,"w") as wf:
-			wf.write(f"#ifndef _SYS_SYSCALL_KERNEL_SYSCALLS_H_\n#define _SYS_SYSCALL_KERNEL_SYSCALLS_H_ 1\n#include <sys/syscall/syscall.h>\n#include <sys/types.h>\n\n\n\n")
-			for index,(name,args,ret) in syscalls.items():
-				wf.write(f"static inline {ret} _sys_syscall_{name}({','.join(args) if args else 'void'}){{\n\t{('return ' if ret!='void' else '')}{('(void*)' if '*' in ret else '')}_sys_syscall{len(args)}({hex(index|(table_index<<32))}{''.join([','+('(u64)' if '*' in arg else '')+arg.split(' ')[-1] for arg in args])});\n}}\n\n\n\n")
-			wf.write("#endif\n")
-	with open(kernel_file_path,"w") as wf:
-		wf.write("#include <kernel/types.h>\n\n\n\n")
-		for name,_,_ in syscalls.values():
-			wf.write(f"extern u64 syscall_{name}();\n")
-		size=max(syscalls.keys())+1
-		wf.write(f"\n\n\nconst u64 _syscalls_{table_name}_count={size};\n\n\n\nconst void*const _syscalls_{table_name}_functions[{size}]={{\n")
-		for index,(name,_,_) in syscalls.items():
-			wf.write(f"\t[{index}]=syscall_{name},\n")
-		wf.write("};\n")
-
-
-
 def _generate_kernel_build_info():
 	with open("src/kernel/_generated/build_info.c","w") as wf:
 		wf.write(f"#include <kernel/types.h>\n\n\n\nKERNEL_PUBLIC const u64 _version=0x{time.time_ns():016x};\nKERNEL_PUBLIC const char* _build_name=\"x86_64 { {MODE_NORMAL:'debug',MODE_COVERAGE:'coverage',MODE_RELEASE:'release'}[mode]}\";\n")
@@ -890,7 +858,6 @@ _clear_if_obsolete("build/module","src/module","")
 _clear_if_obsolete("build/user","src/user","")
 with open("build/last_mode","w") as wf:
 	wf.write(f"{mode}\n")
-_generate_syscalls("kernel",1,"src/kernel/syscalls-kernel.txt","src/kernel/_generated/syscalls_kernel.c","src/lib/sys/include/sys/syscall/kernel_syscalls.h")
 signature.load_key("module",mode==MODE_RELEASE)
 signature.load_key("user",mode==MODE_RELEASE)
 if (mode==MODE_COVERAGE):

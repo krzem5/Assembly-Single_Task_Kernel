@@ -18,6 +18,11 @@ typedef struct _SYSCALL_TABLE{
 
 
 
+extern const syscall_callback_t _syscall_kernel_functions[];
+extern const u64 _syscall_kernel_count;
+
+
+
 u32 syscall_create_table(const char* name,const syscall_callback_t* functions,u32 function_count);
 
 

@@ -5,7 +5,7 @@
 
 
 
-static SYS_NOCOVERAGE inline u64 _sys_syscall0(u64 rax){
+static inline u64 SYS_NOCOVERAGE _sys_syscall0(u64 rax){
 	u64 out;
 	asm volatile("syscall":"=a"(out):"a"(rax):"rcx","rdx","rdi","rsi","r8","r9","r10","r11","memory");
 	return out;

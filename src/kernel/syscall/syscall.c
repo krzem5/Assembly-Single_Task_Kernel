@@ -1,5 +1,4 @@
 #include <kernel/error/error.h>
-#include <kernel/kernel.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -46,7 +45,7 @@ KERNEL_INIT(){
 	_syscall_table_allocator=omm_init("syscall_table",sizeof(syscall_table_t),8,1,pmm_alloc_counter("omm_syscall_table"));
 	spinlock_init(&(_syscall_table_allocator->lock));
 	syscall_create_table("linux",NULL,0);
-	syscall_create_table("kernel",(const syscall_callback_t*)_syscalls_kernel_functions,_syscalls_kernel_count);
+	syscall_create_table("kernel",_syscall_kernel_functions,_syscall_kernel_count);
 }
 
 
