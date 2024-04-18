@@ -419,7 +419,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 
 
 def _compile_all_modules():
-	hash_file_path=f"build/hashes/module"+MODULE_HASH_FILE_SUFFIX
+	hash_file_path="build/hashes/module"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
@@ -486,7 +486,7 @@ def _compile_library(library,dependencies,changed_files,pool):
 
 
 def _compile_all_libraries():
-	hash_file_path=f"build/hashes/lib"+MODULE_HASH_FILE_SUFFIX
+	hash_file_path="build/hashes/lib"+MODULE_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
@@ -531,7 +531,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 
 
 def _compile_all_user_programs():
-	hash_file_path=f"build/hashes/user"+USER_HASH_FILE_SUFFIX
+	hash_file_path="build/hashes/user"+USER_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
@@ -569,7 +569,7 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 
 
 def _compile_all_tools():
-	hash_file_path=f"build/hashes/tool"+TOOL_HASH_FILE_SUFFIX
+	hash_file_path="build/hashes/tool"+TOOL_HASH_FILE_SUFFIX
 	changed_files,file_hash_list=_load_changed_files(hash_file_path,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	pool=process_pool.ProcessPool(file_hash_list)
 	for tag in config.parse("src/tool/dependencies.config").iter():
