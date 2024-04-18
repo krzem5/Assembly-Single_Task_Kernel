@@ -23,6 +23,18 @@ class ConfigTag(object):
 		self.type=type
 		self.data=data
 
+	def __repr__(self):
+		out=self.name.decode("utf-8")
+		if (self.name and self.type!=CONFIG_TAG_TYPE_NONE):
+			out+="="
+		if (self.type==CONFIG_TAG_TYPE_INT):
+			out+=str(self.data)
+		elif (self.type==CONFIG_TAG_TYPE_STRING):
+			out+=str(self.data)[1:]
+		elif (self.type==CONFIG_TAG_TYPE_ARRAY):
+			out+="{"+",".join(map(str,self.data))+"}"
+		return out
+
 
 
 def parse(file_path):
@@ -49,8 +61,15 @@ def parse(file_path):
 				continue
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_NONE,None))
 			continue
+		if (data[i] in b"}"):
+			i+=1
+			if (name):
+				out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_NONE,None))
+			out=out.parent
+			if (out is None):
+				raise RuntimeError("Unbalanced brackets")
+			continue
 		if (name or data[i] in b"="):
-			print(name,data[i])
 			if (data[i] not in b"="):
 				raise RuntimeError(f"Expected '=', got '{chr(data[i])}'")
 			i+=1
@@ -66,13 +85,8 @@ def parse(file_path):
 		if (data[i] in b"{"):
 			i+=1
 			tag=ConfigTag(out,name,CONFIG_TAG_TYPE_ARRAY,[])
+			out.data.append(tag)
 			out=tag
-			continue
-		if (data[i] in b"}"):
-			i+=1
-			out=out.parent
-			if (out is None):
-				raise RuntimeError("Unbalanced brackets")
 			continue
 		if (data[i] in DIGITS or (data[i] in b"-+" and data[i+1] in DIGITS)):
 			is_negative=False
