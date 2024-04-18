@@ -281,6 +281,16 @@ def _generate_signature_key(ctx,key):
 
 
 
+def _generate_build_info(ctx,build_version,build_name):
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_version"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+8]=struct.pack("<Q",build_version)
+	symbol=ctx.symbol_table.symbols_by_name["__kernel_build_name"]
+	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
+	ctx.out[address:address+32]=build_name.encode("utf-8").ljust(32,b"\x00")
+
+
+
 def _generate_signature(ctx):
 	data_hash=hashlib.sha256()
 	for section_name in KERNEL_HASH_SECTION_ORDER:
@@ -292,7 +302,7 @@ def _generate_signature(ctx):
 
 
 
-def link_kernel(src_file_path,dst_file_path):
+def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
@@ -304,6 +314,7 @@ def link_kernel(src_file_path,dst_file_path):
 	_apply_relocations(ctx)
 	_generate_signature_key(ctx,"module")
 	_generate_signature_key(ctx,"user")
+	_generate_build_info(ctx,build_version,build_name)
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)

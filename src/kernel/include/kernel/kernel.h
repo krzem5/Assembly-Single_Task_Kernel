@@ -47,22 +47,7 @@ typedef void (*kernel_initializer_t)(void);
 
 
 
-extern const u64 _version;
-extern const char* _build_name;
-
 extern kernel_data_t kernel_data;
-
-
-
-static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_get_version(void){
-	return _version;
-}
-
-
-
-static KERNEL_INLINE const char* KERNEL_NOCOVERAGE kernel_get_build_name(void){
-	return _build_name;
-}
 
 
 
@@ -110,6 +95,14 @@ void kernel_adjust_memory_flags_after_init(void);
 
 
 u64 kernel_gcov_info_data(u64* size);
+
+
+
+u64 kernel_get_version(void);
+
+
+
+const char* kernel_get_build_name(void);
 
 
 

@@ -28,6 +28,9 @@ static void _unmap_section(u64 start,u64 end){
 
 
 
+static volatile const u64 __kernel_version=0;
+static volatile const char __kernel_build_name[32]="";
+
 KERNEL_PUBLIC kernel_data_t KERNEL_INIT_WRITE kernel_data;
 
 
@@ -103,4 +106,16 @@ void kernel_adjust_memory_flags_after_init(void){
 KERNEL_PUBLIC u64 kernel_gcov_info_data(u64* size){
 	*size=kernel_section_gcov_info_end()-kernel_section_gcov_info_start();
 	return kernel_section_gcov_info_start();
+}
+
+
+
+KERNEL_PUBLIC u64 kernel_get_version(void){
+	return __kernel_version;
+}
+
+
+
+KERNEL_PUBLIC const char* kernel_get_build_name(void){
+	return (const char*)__kernel_build_name;
 }

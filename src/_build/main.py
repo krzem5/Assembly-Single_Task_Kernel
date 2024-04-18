@@ -72,8 +72,7 @@ BUILD_DIRECTORIES=[
 	"build/uefi",
 	"build/user",
 	"build/vm",
-	"build/vm/tpm",
-	"src/kernel/_generated"
+	"build/vm/tpm"
 ]
 CLEAR_BUILD_DIRECTORIES=[
 	"build/share/bin",
@@ -224,12 +223,6 @@ def _clear_if_obsolete(path,src_file_path,prefix):
 
 
 
-def _generate_kernel_build_info():
-	with open("src/kernel/_generated/build_info.c","w") as wf:
-		wf.write(f"#include <kernel/types.h>\n\n\n\nKERNEL_PUBLIC const u64 _version=0x{time.time_ns():016x};\nKERNEL_PUBLIC const char* _build_name=\"x86_64 { {MODE_NORMAL:'debug',MODE_COVERAGE:'coverage',MODE_RELEASE:'release'}[mode]}\";\n")
-
-
-
 def _copy_file(src,dst):
 	with open(src,"rb") as rf,open(dst,"wb") as wf:
 		wf.write(rf.read())
@@ -324,11 +317,6 @@ def _compile_uefi():
 
 def _compile_kernel(force_patch_kernel):
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY)
-	if ("src/kernel/_generated/build_info.c" in changed_files):
-		changed_files.remove("src/kernel/_generated/build_info.c")
-	if (changed_files):
-		_generate_kernel_build_info()
-		changed_files.append("src/kernel/_generated/build_info.c")
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
 	for file in _get_files([KERNEL_FILE_DIRECTORY]):
@@ -348,7 +336,7 @@ def _compile_kernel(force_patch_kernel):
 	if (not changed_files and not force_patch_kernel):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
-	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin"])
+	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),"x86_64 "+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]])
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
