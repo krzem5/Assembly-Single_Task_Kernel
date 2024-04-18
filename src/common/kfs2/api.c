@@ -63,6 +63,24 @@ static void _node_resize_data_inline_double(kfs2_filesystem_t* fs,kfs2_node_t* n
 
 
 
+static void _node_resize_data_inline_triple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_inline_triple");
+}
+
+
+
+static void _node_resize_data_inline_quadruple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_inline_quadruple");
+}
+
+
+
+static void _node_resize_data_single_inline(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_single_inline");
+}
+
+
+
 static void _node_resize_data_single_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	for (u64 i=0;i<6;i++){
 		if (i*KFS2_BLOCK_SIZE<size){
@@ -101,6 +119,24 @@ static void _node_resize_data_single_double(kfs2_filesystem_t* fs,kfs2_node_t* n
 	}
 	kfs2_io_data_block_write(fs,node->data.double_,buffer);
 	fs->config.dealloc_callback(buffer,1);
+}
+
+
+
+static void _node_resize_data_single_triple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_single_triple");
+}
+
+
+
+static void _node_resize_data_single_quadruple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_single_quadruple");
+}
+
+
+
+static void _node_resize_data_double_inline(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_double_inline");
 }
 
 
@@ -153,6 +189,78 @@ static void _node_resize_data_double_double(kfs2_filesystem_t* fs,kfs2_node_t* n
 
 
 
+static void _node_resize_data_double_triple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_double_triple");
+}
+
+
+
+static void _node_resize_data_double_quadruple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_double_quadruple");
+}
+
+
+
+static void _node_resize_data_triple_inline(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_triple_inline");
+}
+
+
+
+static void _node_resize_data_triple_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_triple_single");
+}
+
+
+
+static void _node_resize_data_triple_double(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_triple_double");
+}
+
+
+
+static void _node_resize_data_triple_triple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_triple_triple");
+}
+
+
+
+static void _node_resize_data_triple_quadruple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_triple_quadruple");
+}
+
+
+
+static void _node_resize_data_quadruple_inline(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_quadruple_inline");
+}
+
+
+
+static void _node_resize_data_quadruple_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_quadruple_single");
+}
+
+
+
+static void _node_resize_data_quadruple_double(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_quadruple_double");
+}
+
+
+
+static void _node_resize_data_quadruple_triple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_quadruple_triple");
+}
+
+
+
+static void _node_resize_data_quadruple_quadruple(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	panic("_node_resize_data_quadruple_quadruple");
+}
+
+
+
 static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	if (node->size==size){
 		return;
@@ -186,11 +294,29 @@ static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
 		_node_resize_data_inline_double(fs,node,size);
 	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE){
+		_node_resize_data_inline_triple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE){
+		_node_resize_data_inline_quadruple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE){
+		_node_resize_data_single_inline(fs,node,size);
+	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
 		_node_resize_data_single_single(fs,node,size);
 	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
 		_node_resize_data_single_double(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE){
+		_node_resize_data_single_triple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE){
+		_node_resize_data_single_quadruple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE){
+		_node_resize_data_double_inline(fs,node,size);
 	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
 		_node_resize_data_double_single(fs,node,size);
@@ -198,8 +324,44 @@ static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
 		_node_resize_data_double_double(fs,node,size);
 	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE){
+		_node_resize_data_double_triple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE){
+		_node_resize_data_double_quadruple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE){
+		_node_resize_data_triple_inline(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
+		_node_resize_data_triple_single(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
+		_node_resize_data_triple_double(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE){
+		_node_resize_data_triple_triple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE){
+		_node_resize_data_triple_quadruple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_INLINE){
+		_node_resize_data_quadruple_inline(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
+		_node_resize_data_quadruple_single(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
+		_node_resize_data_quadruple_double(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_TRIPLE){
+		_node_resize_data_quadruple_triple(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_QUADRUPLE){
+		_node_resize_data_quadruple_quadruple(fs,node,size);
+	}
 	else{
-		panic("_node_resize");
+		panic("_node_resize: invalid storage type");
 	}
 	node->size=size;
 	node->flags=(node->flags&(~KFS2_INODE_STORAGE_MASK))|new_storage_type;
