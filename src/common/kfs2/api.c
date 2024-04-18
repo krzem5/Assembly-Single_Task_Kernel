@@ -105,6 +105,27 @@ static void _node_resize_data_single_double(kfs2_filesystem_t* fs,kfs2_node_t* n
 
 
 
+static void _node_resize_data_double_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
+	u64* buffer=fs->config.alloc_callback(1);
+	kfs2_io_data_block_read(fs,node->data.double_,buffer);
+	kfs2_bitmap_dealloc(fs,&(fs->data_block_allocator),node->data.double_);
+	for (u64 i=(size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i<KFS2_BLOCK_SIZE/sizeof(u64);i++){
+		if (buffer[i]){
+			kfs2_bitmap_dealloc(fs,&(fs->data_block_allocator),buffer[i]);
+			buffer[i]=0;
+		}
+	}
+	mem_copy(node->data.single,buffer,6*sizeof(u64));
+	u64 block_address=node->data.single[size/KFS2_BLOCK_SIZE];
+	u64 offset=size&(KFS2_BLOCK_SIZE-1);
+	kfs2_io_data_block_read(fs,block_address,buffer);
+	mem_fill(((void*)buffer)+offset,KFS2_BLOCK_SIZE-offset,0);
+	kfs2_io_data_block_write(fs,block_address,buffer);
+	fs->config.dealloc_callback(buffer,1);
+}
+
+
+
 static void _node_resize_data_double_double(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	u64* buffer=fs->config.alloc_callback(1);
 	kfs2_io_data_block_read(fs,node->data.double_,buffer);
@@ -127,27 +148,6 @@ static void _node_resize_data_double_double(kfs2_filesystem_t* fs,kfs2_node_t* n
 		mem_fill(((void*)buffer)+offset,KFS2_BLOCK_SIZE-offset,0);
 		kfs2_io_data_block_write(fs,block_address,buffer);
 	}
-	fs->config.dealloc_callback(buffer,1);
-}
-
-
-
-static void _node_resize_data_double_single(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
-	u64* buffer=fs->config.alloc_callback(1);
-	kfs2_io_data_block_read(fs,node->data.double_,buffer);
-	kfs2_bitmap_dealloc(fs,&(fs->data_block_allocator),node->data.double_);
-	for (u64 i=(size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i<KFS2_BLOCK_SIZE/sizeof(u64);i++){
-		if (buffer[i]){
-			kfs2_bitmap_dealloc(fs,&(fs->data_block_allocator),buffer[i]);
-			buffer[i]=0;
-		}
-	}
-	mem_copy(node->data.single,buffer,6*sizeof(u64));
-	u64 block_address=node->data.single[size/KFS2_BLOCK_SIZE];
-	u64 offset=size&(KFS2_BLOCK_SIZE-1);
-	kfs2_io_data_block_read(fs,block_address,buffer);
-	mem_fill(((void*)buffer)+offset,KFS2_BLOCK_SIZE-offset,0);
-	kfs2_io_data_block_write(fs,block_address,buffer);
 	fs->config.dealloc_callback(buffer,1);
 }
 
@@ -192,11 +192,11 @@ static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
 		_node_resize_data_single_double(fs,node,size);
 	}
-	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
-		_node_resize_data_double_double(fs,node,size);
-	}
 	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_SINGLE){
 		_node_resize_data_double_single(fs,node,size);
+	}
+	else if (old_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE&&new_storage_type==KFS2_INODE_STORAGE_TYPE_DOUBLE){
+		_node_resize_data_double_double(fs,node,size);
 	}
 	else{
 		panic("_node_resize");
