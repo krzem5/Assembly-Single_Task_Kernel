@@ -56,4 +56,5 @@ void initramfs_drive_deinit(void){
 	}
 	handle_release(&(_initramfs_drive->handle));
 	_initramfs_drive=NULL;
+	mem_fill((void*)(kernel_data.initramfs_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),kernel_data.initramfs_size,0);
 }
