@@ -43,18 +43,15 @@ def load_key(key,use_release_key):
 	buffer=process.stdout.split(b"\n")
 	n=int.from_bytes(_decode_hex(buffer[2].split(b":")[-1]),"big")
 	e=int.from_bytes(_decode_hex(buffer[3].split(b":")[-1]),"big")
-	d=int.from_bytes(_decode_hex(buffer[4].split(b":")[-1]),"big")
-	if (d==e or d>=n or e>=n or pow(0x12345,d*e,n)!=0x12345):
-		print("Invalid RSA key")
-		sys.exit(1)
-	_signature_keys[key]=(d,e,n)
+	_signature_keys[key]=(file_path,(512 if use_release_key else 64),e,n)
 
 
 
 def get_public_key(key):
-	return (_signature_keys[key][1],_signature_keys[key][2])
+	return (_signature_keys[key][2],_signature_keys[key][3])
 
 
 
 def sign(digest,key):
-	return bytes(f"builtin-{key}","utf-8").ljust(SIGNATURE_KEY_NAME_LENGTH,b"\x00")+pow(int.from_bytes(digest,"little"),_signature_keys[key][0],_signature_keys[key][2]).to_bytes(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH,"little")
+	process=subprocess.run(["openssl","pkeyutl","-decrypt","-pkeyopt","rsa_padding_mode:none","-rev","-inkey",_signature_keys[key][0]],stdout=subprocess.PIPE,input=digest.ljust(_signature_keys[key][1],b"\x00"))
+	return bytes(f"builtin-{key}","utf-8").ljust(SIGNATURE_KEY_NAME_LENGTH,b"\x00")+process.stdout[::-1].ljust(SIGNATURE_SECTION_SIZE-SIGNATURE_KEY_NAME_LENGTH,b"\x00")
