@@ -16,6 +16,7 @@
 #define MMAP_REGION_FLAG_EXTERNAL 32
 #define MMAP_REGION_FLAG_NO_WRITEBACK 64
 #define MMAP_REGION_FLAG_STACK 128
+#define MMAP_REGION_FLAG_NO_ALLOC 256
 
 
 
@@ -87,6 +88,10 @@ mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 length);
 
 
 u64 mmap_handle_pf(mmap_t* mmap,u64 address);
+
+
+
+void mmap_unmap_address(mmap_t* mmap,u64 address);
 
 
 

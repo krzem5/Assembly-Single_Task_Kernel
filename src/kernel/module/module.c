@@ -111,10 +111,14 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 			continue;
 		}
 		section_header->sh_addr+=ctx->module->region->rb_node.key;
+		for (volatile u8* ptr=(void*)pmm_align_down_address(section_header->sh_addr);ptr<(volatile u8*)(section_header->sh_addr+section_header->sh_size);ptr+=PAGE_SIZE){
+			(void)(*ptr);
+		}
 		if (section_header->sh_type==SHT_PROGBITS){
 			mem_copy((void*)(section_header->sh_addr),ctx->data+section_header->sh_offset,section_header->sh_size);
 		}
 	}
+	ctx->module->region->flags|=MMAP_REGION_FLAG_NO_ALLOC;
 	return 1;
 }
 
@@ -247,7 +251,7 @@ static void _adjust_memory_flags(module_loader_context_t* ctx){
 		if (!(section_header->sh_flags&SHF_ALLOC)){
 			continue;
 		}
-		u64 addr=pmm_align_down_address(section_header->sh_addr);
+		u64 address=pmm_align_down_address(section_header->sh_addr);
 		u64 flags=0;
 		if (section_header->sh_flags&SHF_WRITE){
 			flags|=VMM_PAGE_FLAG_READWRITE;
@@ -255,8 +259,74 @@ static void _adjust_memory_flags(module_loader_context_t* ctx){
 		if (!(section_header->sh_flags&SHF_EXECINSTR)){
 			flags|=VMM_PAGE_FLAG_NOEXECUTE;
 		}
-		vmm_adjust_flags(&vmm_kernel_pagemap,addr,flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(section_header->sh_size+section_header->sh_addr-addr)>>PAGE_SIZE_SHIFT,1);
+		vmm_adjust_flags(&vmm_kernel_pagemap,address,flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(section_header->sh_size+section_header->sh_addr-address)>>PAGE_SIZE_SHIFT,1);
 	}
+}
+
+
+
+static void _process_module_header(module_loader_context_t* ctx){
+	INFO("Processing module header...");
+	ctx->module->flags=ctx->module_descriptor->flags;
+	*(ctx->module_descriptor->module_self_ptr)=ctx->module;
+	ctx->module->deinit_array_base=ctx->module_descriptor->deinit_start;
+	ctx->module->deinit_array_size=ctx->module_descriptor->deinit_end-ctx->module_descriptor->deinit_start;
+#ifdef KERNEL_COVERAGE
+	ctx->module->gcov_info_base=ctx->module_descriptor->gcov_info_start;
+	ctx->module->gcov_info_size=ctx->module_descriptor->gcov_info_end-ctx->module_descriptor->gcov_info_start;
+	if (ctx->module->gcov_info_size){
+		INFO("Found .gcov_info data at %p (%u file%s)",ctx->module->gcov_info_base,ctx->module->gcov_info_size/sizeof(void*),(ctx->module->gcov_info_size/sizeof(void*)==1?"":"s"));
+	}
+	else{
+		ctx->module->gcov_info_base=0;
+	}
+#endif
+}
+
+
+
+static _Bool _execute_initializers(module_loader_context_t* ctx){
+	INFO("Executing initializers...");
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->preinit_end-ctx->module_descriptor->preinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->preinit_start+i));
+		if (func&&!((_Bool (*)(void))func)()){
+			return 0;
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->init_end-ctx->module_descriptor->init_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->init_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postinit_end-ctx->module_descriptor->postinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->postinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postpostinit_end-ctx->module_descriptor->postpostinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->postpostinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+		}
+	}
+	return 1;
+}
+
+
+
+static void _unmap_region(module_loader_context_t* ctx,module_region_t* region){
+	for (u64 address=pmm_align_down_address(region->base);address<pmm_align_up_address(region->base+region->size);address+=PAGE_SIZE){
+		mmap_unmap_address(_module_image_mmap,address);
+	}
+}
+
+
+
+static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* region){
+	u64 address=pmm_align_down_address(region->base);
+	vmm_adjust_flags(&vmm_kernel_pagemap,address,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(region->base+region->size-address)>>PAGE_SIZE_SHIFT,1);
 }
 
 
@@ -341,53 +411,20 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
-	module->deinit_array_base=ctx.module_descriptor->deinit_start;
-	module->deinit_array_size=ctx.module_descriptor->deinit_end-ctx.module_descriptor->deinit_start;
-#ifdef KERNEL_COVERAGE
-	module->gcov_info_base=ctx.module_descriptor->gcov_info_start;
-	module->gcov_info_size=ctx.module_descriptor->gcov_info_end-ctx.module_descriptor->gcov_info_start;
-	if (module->gcov_info_size){
-		INFO("Found .gcov_info data at %p (%u file%s)",module->gcov_info_base,module->gcov_info_size/sizeof(void*),(module->gcov_info_size/sizeof(void*)==1?"":"s"));
-	}
-	else{
-		module->gcov_info_base=0;
-	}
-#endif
 	mmap_dealloc_region(process_kernel->mmap,region);
+	_process_module_header(&ctx);
+	if (!_execute_initializers(&ctx)){
+		module_unload(module);
+		return NULL;
+	}
+	INFO("Adjusting sections...");
+	_unmap_region(&ctx,&(ctx.elf_region_ue));
+	_unmap_region(&ctx,&(ctx.elf_region_ur));
+	_unmap_region(&ctx,&(ctx.elf_region_uw));
+	_adjust_region_flags(&ctx,&(ctx.elf_region_iw));
+	module->state=MODULE_STATE_LOADED;
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
 	handle_finish_setup(&(module->handle));
-	module->flags=ctx.module_descriptor->flags;
-	*(ctx.module_descriptor->module_self_ptr)=module;
-	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->preinit_end-ctx.module_descriptor->preinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx.module_descriptor->preinit_start+i));
-		if (func&&!((_Bool (*)(void))func)()){
-			module_unload(module);
-			return NULL;
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->init_end-ctx.module_descriptor->init_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx.module_descriptor->init_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->postinit_end-ctx.module_descriptor->postinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx.module_descriptor->postinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx.module_descriptor->postpostinit_end-ctx.module_descriptor->postpostinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx.module_descriptor->postpostinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	// _unmap_region(&(ctx->elf_region_ue));
-	// _unmap_region(&(ctx->elf_region_ur));
-	// _unmap_region(&(ctx->elf_region_uw));
-	// _adjust_region_flags(&(ctx->elf_region_iw));
-	module->state=MODULE_STATE_LOADED;
 	return module;
 _error:
 	symbol_remove(name);

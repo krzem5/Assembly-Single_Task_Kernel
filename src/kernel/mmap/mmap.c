@@ -95,20 +95,26 @@ static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
 
 
 
+static void _unmap_address(mmap_t* mmap,mmap_region_t* region,u64 address){
+	u64 entry=vmm_unmap_page(mmap->pagemap,address)&VMM_PAGE_ADDRESS_MASK;
+	if (entry){
+		pf_invalidate_tlb_entry(address);
+	}
+	if ((entry&VMM_PAGE_ADDRESS_MASK)&&(!region||!(region->flags&MMAP_REGION_FLAG_EXTERNAL))){
+		if (region&&region->file&&!(region->flags&MMAP_REGION_FLAG_NO_WRITEBACK)){
+			panic("mmap_dealloc: file-backed memory region writeback");
+		}
+		pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,_mmap_pmm_counter);
+	}
+}
+
+
+
 static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,_Bool push_free_region){
 	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
 	u64 guard_page_size=((region->flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	for (u64 address=0;address<region->length;address+=PAGE_SIZE){
-		u64 entry=vmm_unmap_page(mmap->pagemap,region->rb_node.key+address)&VMM_PAGE_ADDRESS_MASK;
-		if (entry){
-			pf_invalidate_tlb_entry(region->rb_node.key+address);
-		}
-		if ((entry&VMM_PAGE_ADDRESS_MASK)&&!(region->flags&MMAP_REGION_FLAG_EXTERNAL)){
-			if (region->file&&!(region->flags&MMAP_REGION_FLAG_NO_WRITEBACK)){
-				panic("mmap_dealloc: file-backed memory region writeback");
-			}
-			pmm_dealloc(entry&VMM_PAGE_ADDRESS_MASK,1,_mmap_pmm_counter);
-		}
+		_unmap_address(mmap,region,region->rb_node.key+address);
 	}
 	if (push_free_region){
 		_push_free_region(mmap,region->rb_node.key-guard_page_size,region->length+guard_page_size);
@@ -291,7 +297,7 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	}
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
-	if (!region||region->rb_node.key+region->length<=address){
+	if (!region||(region->flags&MMAP_REGION_FLAG_NO_ALLOC)||region->rb_node.key+region->length<=address){
 		spinlock_release_exclusive(&(mmap->lock));
 		return 0;
 	}
@@ -312,6 +318,22 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	vmm_map_page(mmap->pagemap,out,address,flags);
 	spinlock_release_exclusive(&(mmap->lock));
 	return out;
+}
+
+
+
+void mmap_unmap_address(mmap_t* mmap,u64 address){
+	spinlock_acquire_exclusive(&(mmap->lock));
+	u64 entry=vmm_unmap_page(mmap->pagemap,address)&VMM_PAGE_ADDRESS_MASK;
+	if (entry){
+		pf_invalidate_tlb_entry(address);
+	}
+	mmap_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
+	if (region&&region->rb_node.key+region->length<=address){
+		region=NULL;
+	}
+	_unmap_address(mmap,region,address);
+	spinlock_release_exclusive(&(mmap->lock));
 }
 
 
