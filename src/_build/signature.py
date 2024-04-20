@@ -43,7 +43,7 @@ def load_key(key,use_release_key):
 	buffer=process.stdout.split(b"\n")
 	n=int.from_bytes(_decode_hex(buffer[2].split(b":")[-1]),"big")
 	e=int.from_bytes(_decode_hex(buffer[3].split(b":")[-1]),"big")
-	_signature_keys[key]=(file_path,(512 if use_release_key else 64),e,n)
+	_signature_keys[key]=(file_path,n.bit_length()>>3,e,n)
 
 
 

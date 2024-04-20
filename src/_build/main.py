@@ -3,7 +3,7 @@ import binascii
 import config
 import hashlib
 import initramfs
-import kernel_linker
+import linker
 import os
 import process_pool
 import signature
@@ -336,7 +336,7 @@ def _compile_kernel(force_patch_kernel):
 	if (not changed_files and not force_patch_kernel):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
-	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[kernel_linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),"x86_64 "+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]])
+	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),"x86_64 "+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]])
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
@@ -369,7 +369,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 	if (os.path.exists(f"build/module/{module}.mod") and not has_updates):
 		return False
 	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
-	pool.add([f"build/module/{module}.mod"],f"build/module/{module}.mod",f"P build/module/{module}.mod",[kernel_linker.link_module_or_library,f"build/module/{module}.mod","module"])
+	pool.add([f"build/module/{module}.mod"],f"build/module/{module}.mod",f"P build/module/{module}.mod",[linker.link_module_or_library,f"build/module/{module}.mod","module"])
 	return True
 
 
@@ -427,7 +427,7 @@ def _compile_library(library,dependencies,changed_files,pool):
 		has_updates=True
 	if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
 		pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data==b'static' else 'so')}" for tag in dependencies.iter()],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data==b'static' else f"-l{tag.name}") for tag in dependencies.iter()]+LIBRARY_EXTRA_LINKER_OPTIONS)
-		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[kernel_linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
+		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
 	else:
 		pool.dispatch(f"build/lib/lib{library}.so")
 	if (has_updates or not os.path.exists(f"build/lib/lib{library}.a")):
@@ -479,7 +479,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return False
 	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{tag.name}" if tag.data!=b"static" else f"build/lib/lib{tag.name}.a") for tag in dependencies.iter()]+object_files+USER_EXTRA_LINKER_OPTIONS)
-	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[kernel_linker.link_module_or_library,f"build/user/{program}","user"])
+	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[linker.link_module_or_library,f"build/user/{program}","user"])
 	return True
 
 

@@ -1,7 +1,7 @@
-WHITESPACE=b" \t\n\r"
-DIGITS=b"0123456789"
-IDENTIFIER_START=b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.$:"
-IDENTIFIER=IDENTIFIER_START+DIGITS+b"-"
+CONFIG_WHITESPACE_CHARACTERS=b" \t\n\r"
+CONFIG_DIGIT_CHARACTERS=b"0123456789"
+CONFIG_IDENTIFIER_START_CHARACTERS=b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.$:"
+CONFIG_IDENTIFIER_CHARACTERS=CONFIG_IDENTIFIER_START_CHARACTERS+CONFIG_DIGIT_CHARACTERS+b"-"
 
 
 
@@ -54,18 +54,18 @@ def parse(file_path):
 	out=ConfigTag(None,b"",CONFIG_TAG_TYPE_ARRAY,[])
 	i=0
 	while (i<len(data)):
-		while (i<len(data) and data[i] in WHITESPACE):
+		while (i<len(data) and data[i] in CONFIG_WHITESPACE_CHARACTERS):
 			i+=1
 		if (i==len(data)):
 			break
 		name=b""
-		if (data[i] in IDENTIFIER_START):
+		if (data[i] in CONFIG_IDENTIFIER_START_CHARACTERS):
 			name_length=0
-			while (i+name_length<len(data) and data[i+name_length] in IDENTIFIER):
+			while (i+name_length<len(data) and data[i+name_length] in CONFIG_IDENTIFIER_CHARACTERS):
 				name_length+=1
 			name=data[i:i+name_length]
 			i+=name_length
-		while (i<len(data) and data[i] not in b"\n" and data[i] in WHITESPACE):
+		while (i<len(data) and data[i] not in b"\n" and data[i] in CONFIG_WHITESPACE_CHARACTERS):
 			i+=1
 		if (i==len(data) or data[i] in b"," or data[i] in b"\n"):
 			if (not name):
@@ -86,7 +86,7 @@ def parse(file_path):
 			if (data[i] not in b"="):
 				raise RuntimeError(f"Expected '=', got '{chr(data[i])}'")
 			i+=1
-			while (i<len(data) and data[i] not in b"\n" and data[i] in WHITESPACE):
+			while (i<len(data) and data[i] not in b"\n" and data[i] in CONFIG_WHITESPACE_CHARACTERS):
 				i+=1
 		if (i==len(data)):
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_NONE,None))
@@ -101,7 +101,7 @@ def parse(file_path):
 			out.data.append(tag)
 			out=tag
 			continue
-		if (data[i] in DIGITS or (data[i] in b"-+" and data[i+1] in DIGITS)):
+		if (data[i] in CONFIG_DIGIT_CHARACTERS or (data[i] in b"-+" and data[i+1] in CONFIG_DIGIT_CHARACTERS)):
 			is_negative=False
 			if (data[i] in b"-"):
 				is_negative=True
@@ -109,7 +109,7 @@ def parse(file_path):
 			elif (data[i] in b"+"):
 				i+=1
 			value=0
-			while (data[i] in DIGITS):
+			while (data[i] in CONFIG_DIGIT_CHARACTERS):
 				value=value*48+data[i]-48
 				i+=1
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_INT,(-value if is_negative else value)))
@@ -123,7 +123,7 @@ def parse(file_path):
 					i+=1
 					continue
 				i+=1
-				raise RuntimeError(f"Formatting character: {chr(data[i])}")
+				raise RuntimeError(f"Escaped character: {chr(data[i])}")
 			if (i==len(data)):
 				raise RuntimeError("Unbalanced quotes")
 			i+=1
