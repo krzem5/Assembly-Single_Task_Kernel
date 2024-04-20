@@ -7,21 +7,21 @@ SECTIONS{
 	.module_ur : {
 		*(.erdata .erdata.*)
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_preinit_start = .);
+		PROVIDE_HIDDEN(__module_section_preinit_start = .);
 		*(.module_preinit)
-		PROVIDE_HIDDEN(__module_preinit_end = .);
+		PROVIDE_HIDDEN(__module_section_preinit_end = .);
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_init_start = .);
+		PROVIDE_HIDDEN(__module_section_init_start = .);
 		*(.module_init)
-		PROVIDE_HIDDEN(__module_init_end = .);
+		PROVIDE_HIDDEN(__module_section_init_end = .);
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_postinit_start = .);
+		PROVIDE_HIDDEN(__module_section_postinit_start = .);
 		*(.module_postinit)
-		PROVIDE_HIDDEN(__module_postinit_end = .);
+		PROVIDE_HIDDEN(__module_section_postinit_end = .);
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_postpostinit_start = .);
+		PROVIDE_HIDDEN(__module_section_postpostinit_start = .);
 		*(.module_postpostinit)
-		PROVIDE_HIDDEN(__module_postpostinit_end = .);
+		PROVIDE_HIDDEN(__module_section_postpostinit_end = .);
 	}
 	. = ALIGN(4096);
 	.module_uw : {
@@ -35,13 +35,13 @@ SECTIONS{
 	.module_nx : {
 		*(.rodata .rodata.*)
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_deinit_start = .);
+		PROVIDE_HIDDEN(__module_section_deinit_start = .);
 		*(.module_deinit)
-		PROVIDE_HIDDEN(__module_deinit_end = .);
+		PROVIDE_HIDDEN(__module_section_deinit_end = .);
 		. = ALIGN(8);
-		PROVIDE_HIDDEN(__module_gcov_info_start = .);
+		PROVIDE_HIDDEN(__module_section_gcov_info_start = .);
 		*(.gcov_info)
-		PROVIDE_HIDDEN(__module_gcov_info_end = .);
+		PROVIDE_HIDDEN(__module_section_gcov_info_end = .);
 	}
 	. = ALIGN(4096);
 	.module_rw : {

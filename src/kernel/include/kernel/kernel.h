@@ -6,12 +6,12 @@
 
 #define _KERNEL_DECLARE_SECTION(name) \
 	static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_section_##name##_start(void){ \
-		extern u64 __KERNEL_SECTION_##name##_START__[1]; \
-		return (u64)(__KERNEL_SECTION_##name##_START__);  \
+		extern u64 __kernel_section_##name##_start[1]; \
+		return (u64)(__kernel_section_##name##_start);  \
 	} \
 	static KERNEL_INLINE u64 KERNEL_NOCOVERAGE kernel_section_##name##_end(void){ \
-		extern u64 __KERNEL_SECTION_##name##_END__[1]; \
-		return (u64)(__KERNEL_SECTION_##name##_END__);  \
+		extern u64 __kernel_section_##name##_end[1]; \
+		return (u64)(__kernel_section_##name##_end);  \
 	}
 
 

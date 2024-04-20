@@ -157,14 +157,14 @@ def _parse_symbol_table(ctx,allow_undefined=False):
 		name=ctx.data[st_name_offset+st_name:ctx.data.index(b"\x00",st_name_offset+st_name)].decode("utf-8")
 		if ((st_info&0x0f)==STT_FILE or ((st_info&0x0f)!=STT_SECTION and not name)):
 			continue
-		if (st_shndx==SHN_UNDEF and not name.startswith("__KERNEL_SECTION_")):
+		if (st_shndx==SHN_UNDEF and not name.startswith("__kernel_section_")):
 			if (not allow_undefined):
 				print(f"Undefined symbol: {name}")
 				error=True
 			continue
 		is_func=((st_info&0x0f)==STT_FUNC)
 		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
-		if (name.startswith("__KERNEL_SECTION_")):
+		if (name.startswith("__kernel_section_")):
 			is_func=False
 			is_public=False
 		ctx.symbol_table.add_symbol((i-ctx.symbol_table.offset)//24,Symbol(name,st_value,ctx.section_headers[st_shndx],is_public,is_func or is_public))
@@ -228,7 +228,7 @@ def _generate_relocation_table(ctx):
 
 
 def _place_sections(ctx):
-	symbol=ctx.symbol_table.symbols_by_name[f"__KERNEL_SECTION_kernel_START__"]
+	symbol=ctx.symbol_table.symbols_by_name[f"__kernel_section_kernel_start"]
 	symbol.section=ctx.section_headers_by_name[KERNEL_SECTION_ORDER[0]]
 	symbol.value=0
 	for section_name in KERNEL_SECTION_ORDER:
@@ -237,14 +237,14 @@ def _place_sections(ctx):
 		ctx.out+=ctx.data[section.offset:section.offset+section.size]+section.suffix_data
 		ctx.out+=b"\x00"*((-len(ctx.out))&4095)
 		section.size=(section.size+len(section.suffix_data)+4095)&(-4096)
-		symbol=ctx.symbol_table.symbols_by_name[f"__KERNEL_SECTION_{section.name[1:]}_START__"]
+		symbol=ctx.symbol_table.symbols_by_name[f"__kernel_section_{section.name[1:]}_start"]
 		symbol.section=section
 		symbol.value=0
-		symbol=ctx.symbol_table.symbols_by_name[f"__KERNEL_SECTION_{section.name[1:]}_END__"]
+		symbol=ctx.symbol_table.symbols_by_name[f"__kernel_section_{section.name[1:]}_end"]
 		symbol.section=section
 		symbol.value=section.size
 	section=ctx.section_headers_by_name[KERNEL_SECTION_ORDER[-1]]
-	symbol=ctx.symbol_table.symbols_by_name[f"__KERNEL_SECTION_kernel_END__"]
+	symbol=ctx.symbol_table.symbols_by_name[f"__kernel_section_kernel_end"]
 	symbol.section=section
 	symbol.value=section.size
 

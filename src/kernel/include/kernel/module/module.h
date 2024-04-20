@@ -19,34 +19,34 @@
 #define MODULE_FLAG_TAINTED 4
 
 #define MODULE_DECLARE(flags) \
-	extern u64 __module_preinit_start[1]; \
-	extern u64 __module_preinit_end[1]; \
-	extern u64 __module_init_start[1]; \
-	extern u64 __module_init_end[1]; \
-	extern u64 __module_postinit_start[1]; \
-	extern u64 __module_postinit_end[1]; \
-	extern u64 __module_postpostinit_start[1]; \
-	extern u64 __module_postpostinit_end[1]; \
-	extern u64 __module_deinit_start[1]; \
-	extern u64 __module_deinit_end[1]; \
-	extern u64 __module_gcov_info_start[1]; \
-	extern u64 __module_gcov_info_end[1]; \
+	extern u64 __module_section_preinit_start[1]; \
+	extern u64 __module_section_preinit_end[1]; \
+	extern u64 __module_section_init_start[1]; \
+	extern u64 __module_section_init_end[1]; \
+	extern u64 __module_section_postinit_start[1]; \
+	extern u64 __module_section_postinit_end[1]; \
+	extern u64 __module_section_postpostinit_start[1]; \
+	extern u64 __module_section_postpostinit_end[1]; \
+	extern u64 __module_section_deinit_start[1]; \
+	extern u64 __module_section_deinit_end[1]; \
+	extern u64 __module_section_gcov_info_start[1]; \
+	extern u64 __module_section_gcov_info_end[1]; \
 	module_t* module_self=NULL; \
 	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
 		(flags), \
 		&module_self, \
-		(u64)(__module_preinit_start), \
-		(u64)(__module_preinit_end), \
-		(u64)(__module_init_start), \
-		(u64)(__module_init_end), \
-		(u64)(__module_postinit_start), \
-		(u64)(__module_postinit_end), \
-		(u64)(__module_postpostinit_start), \
-		(u64)(__module_postpostinit_end), \
-		(u64)(__module_deinit_start), \
-		(u64)(__module_deinit_end), \
-		(u64)(__module_gcov_info_start), \
-		(u64)(__module_gcov_info_end) \
+		(u64)(__module_section_preinit_start), \
+		(u64)(__module_section_preinit_end), \
+		(u64)(__module_section_init_start), \
+		(u64)(__module_section_init_end), \
+		(u64)(__module_section_postinit_start), \
+		(u64)(__module_section_postinit_end), \
+		(u64)(__module_section_postpostinit_start), \
+		(u64)(__module_section_postpostinit_end), \
+		(u64)(__module_section_deinit_start), \
+		(u64)(__module_section_deinit_end), \
+		(u64)(__module_section_gcov_info_start), \
+		(u64)(__module_section_gcov_info_end) \
 	}; \
 	static const u8 __attribute__((used,section(".signature"))) _module_signature[(((flags)&MODULE_FLAG_NO_SIGNATURE)?0:4096)]
 
