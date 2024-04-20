@@ -19,6 +19,7 @@ static void _load_user_database(void){
 	}
 	node->uid=0;
 	node->gid=0;
+	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_tag_t* root_tag=config_load_from_file(node,NULL);

@@ -38,6 +38,7 @@ static vfs_node_t* _get_store_directory(void){
 	}
 	out->uid=0;
 	out->gid=0;
+	out->flags&=~VFS_NODE_PERMISSION_MASK;
 	out->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(out);
 	return out;
@@ -202,6 +203,7 @@ static void _store_keyring(keyring_t* keyring){
 	}
 	node->uid=0;
 	node->gid=0;
+	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD,0);
