@@ -25,7 +25,14 @@ typedef struct _ACCOUNT_MANAGER_DATABASE_USER_ENTRY{
 	rb_tree_node_t rb_node;
 	u32 flags;
 	u32 password_hash[8];
+	rb_tree_t group_tree;
 } account_manager_database_user_entry_t;
+
+
+
+typedef struct _ACCOUNT_MANAGER_DATABASE_USER_GROUP_ENTRY{
+	rb_tree_node_t rb_node;
+} account_manager_database_user_group_entry_t;
 
 
 

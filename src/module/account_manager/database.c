@@ -26,6 +26,7 @@
 
 static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_group_entry_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_user_entry_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_user_group_entry_allocator=NULL;
 static account_manager_database_t _account_manager_database;
 
 
@@ -83,6 +84,9 @@ static void KERNEL_EARLY_EXEC _load_database_config(config_tag_t* root_tag){
 				continue;
 			}
 		}
+		if (!config_tag_find(user_tag,"groups",0,&groups_tag)||groups_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+			continue;
+		}
 		if (uid_create(id_tag->int_,name_tag->string->data)!=ERROR_OK){
 			ERROR("Unable to create user '%u:%s'",id_tag->int_,name_tag->string->data);
 			continue;
@@ -93,6 +97,16 @@ static void KERNEL_EARLY_EXEC _load_database_config(config_tag_t* root_tag){
 		entry->flags=flags_tag->int_;
 		if (entry->flags&ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_HAS_PASSWORD){
 			mem_copy(entry->password_hash,password_hash_tag->string->data,8*sizeof(u32));
+		}
+		rb_tree_init(&(entry->group_tree));
+		for (u64 pointer=config_tag_find(groups_tag,"group",0,&group_tag);pointer;pointer=config_tag_find(groups_tag,"group",pointer,&group_tag)){
+			if (group_tag->type!=CONFIG_TAG_TYPE_INT){
+				continue;
+			}
+			account_manager_database_user_group_entry_t* group_entry=omm_alloc(_account_manager_database_user_group_entry_allocator);
+			group_entry->rb_node.key=group_tag->int_;
+			rb_tree_insert_node(&(entry->group_tree),&(group_entry->rb_node));
+			uid_add_group(entry->rb_node.key,group_entry->rb_node.key);
 		}
 		rb_tree_insert_node(&(_account_manager_database.user_tree),&(entry->rb_node));
 	}
@@ -140,7 +154,7 @@ static config_tag_t* _generate_database_config(void){
 	}
 	config_tag_t* users_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"users");
 	config_tag_attach(root_tag,users_tag);
-	for (const account_manager_database_user_entry_t* entry=(void*)rb_tree_iter_start(&(_account_manager_database.user_tree));entry;entry=(void*)rb_tree_iter_next(&(_account_manager_database.user_tree),(void*)entry)){
+	for (account_manager_database_user_entry_t* entry=(void*)rb_tree_iter_start(&(_account_manager_database.user_tree));entry;entry=(void*)rb_tree_iter_next(&(_account_manager_database.user_tree),(void*)entry)){
 		config_tag_t* user_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"user");
 		config_tag_attach(users_tag,user_tag);
 		config_tag_t* id_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"id");
@@ -160,6 +174,13 @@ static config_tag_t* _generate_database_config(void){
 			config_tag_attach(user_tag,password_hash_tag);
 			smm_dealloc(password_hash_tag->string);
 			password_hash_tag->string=smm_alloc((void*)(entry->password_hash),8*sizeof(u32));
+		}
+		groups_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"groups");
+		config_tag_attach(user_tag,groups_tag);
+		for (const account_manager_database_user_group_entry_t* group_entry=(void*)rb_tree_iter_start(&(entry->group_tree));group_entry;group_entry=(void*)rb_tree_iter_next(&(entry->group_tree),(void*)group_entry)){
+			config_tag_t* group_tag=config_tag_create(CONFIG_TAG_TYPE_INT,"group");
+			config_tag_attach(groups_tag,group_tag);
+			group_tag->int_=group_entry->rb_node.key;
 		}
 	}
 	return root_tag;
@@ -197,6 +218,8 @@ MODULE_INIT(){
 	spinlock_init(&(_account_manager_database_group_entry_allocator->lock));
 	_account_manager_database_user_entry_allocator=omm_init("account_manager_database_user_entry",sizeof(account_manager_database_user_entry_t),8,1);
 	spinlock_init(&(_account_manager_database_user_entry_allocator->lock));
+	_account_manager_database_user_group_entry_allocator=omm_init("account_manager_database_user_group_entry",sizeof(account_manager_database_user_group_entry_t),8,1);
+	spinlock_init(&(_account_manager_database_user_group_entry_allocator->lock));
 	spinlock_init(&(_account_manager_database.lock));
 	rb_tree_init(&(_account_manager_database.group_tree));
 	rb_tree_init(&(_account_manager_database.user_tree));
@@ -206,6 +229,7 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	_load_account_manager_database();
+	// account_manager_database_create_user(0,"user2","abc",3);
 }
 
 
@@ -289,6 +313,10 @@ _invalid_uid:
 		user_entry->flags|=ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_HAS_PASSWORD;
 		mem_copy(user_entry->password_hash,state.result,8*sizeof(u32));
 	}
+	rb_tree_init(&(user_entry->group_tree));
+	account_manager_database_user_group_entry_t* user_group_entry=omm_alloc(_account_manager_database_user_group_entry_allocator);
+	user_group_entry->rb_node.key=uid;
+	rb_tree_insert_node(&(user_entry->group_tree),&(user_group_entry->rb_node));
 	rb_tree_insert_node(&(_account_manager_database.user_tree),&(user_entry->rb_node));
 	_save_account_manager_database();
 	spinlock_release_exclusive(&(_account_manager_database.lock));
@@ -347,6 +375,14 @@ KERNEL_PUBLIC error_t account_manager_database_iter_next_user(uid_t uid){
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_user_subgroup(uid_t uid,gid_t gid){
-	ERROR("account_manager_database_iter_next_user_subgroup");
-	return 0;
+	spinlock_acquire_shared(&(_account_manager_database.lock));
+	account_manager_database_user_entry_t* entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
+	if (!entry){
+		spinlock_release_shared(&(_account_manager_database.lock));
+		return 0;
+	}
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(entry->group_tree),(gid?gid+1:0));
+	gid=(rb_node?rb_node->key:0);
+	spinlock_release_shared(&(_account_manager_database.lock));
+	return gid;
 }
