@@ -67,9 +67,9 @@ static const network_layer2_protocol_descriptor_t _net_ip4_protocol_descriptor={
 MODULE_INIT(){
 	spinlock_init(&_net_ip4_protocol_lock);
 	rb_tree_init(&_net_ip4_protocol_type_tree);
-	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1,pmm_alloc_counter("omm_net_ip4_protocol"));
+	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1);
 	spinlock_init(&(_net_ip4_protocol_allocator->lock));
-	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4,pmm_alloc_counter("omm_net_ip4_packet"));
+	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4);
 	spinlock_init(&(_net_ip4_packet_allocator->lock));
 }
 

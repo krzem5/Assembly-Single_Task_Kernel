@@ -44,7 +44,7 @@ void KERNEL_EARLY_EXEC amm_init(void){
 		}
 		const char* name=allocator_names;
 		allocator_names+=format_string(allocator_names,20,"amm_allocator_%u",_index_to_size(i))+1;
-		_amm_allocators[i]=omm_init(name,_index_to_size(i)+sizeof(amm_header_t),8,4,_amm_pmm_counter);
+		_amm_allocators[i]=omm_init(name,_index_to_size(i)+sizeof(amm_header_t),8,4);
 		spinlock_init(&(_amm_allocators[i]->lock));
 	}
 }

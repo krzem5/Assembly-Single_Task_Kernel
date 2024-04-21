@@ -11,14 +11,14 @@
 
 
 
-static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm");
+static pmm_counter_descriptor_t _omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm");
 static omm_allocator_t* _omm_self_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t omm_handle_type=0;
 
 
 
-static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter,omm_allocator_t* out){
+static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 page_count,omm_allocator_t* out){
 	if (object_size<sizeof(omm_object_t)){
 		object_size=sizeof(omm_object_t);
 	}
@@ -34,7 +34,6 @@ static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 p
 	out->alignment=alignment;
 	out->page_count=page_count;
 	out->max_used_count=((page_count<<PAGE_SIZE_SHIFT)-((sizeof(omm_page_header_t)+alignment-1)&(-alignment)))/out->object_size;
-	out->pmm_counter=pmm_counter;
 	out->page_free_head=NULL;
 	out->page_used_head=NULL;
 	out->page_full_head=NULL;
@@ -71,7 +70,7 @@ static void _allocator_remove_page(omm_page_header_t** list_head,omm_page_header
 
 void KERNEL_EARLY_EXEC omm_init_self(void){
 	omm_allocator_t _tmp_allocator;
-	_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_omm_pmm_counter,&_tmp_allocator);
+	_init_allocator("omm",sizeof(omm_allocator_t),8,2,&_tmp_allocator);
 	_omm_self_allocator=omm_alloc(&_tmp_allocator);
 	*_omm_self_allocator=_tmp_allocator;
 }
@@ -88,19 +87,12 @@ void KERNEL_EARLY_EXEC omm_init_handle_type(omm_allocator_t* handle_allocator){
 
 
 
-void KERNEL_EARLY_EXEC omm_alloc_counter(void){
-	_omm_self_allocator->pmm_counter=pmm_alloc_counter("omm");
-	_omm_self_allocator->pmm_counter->count=_omm_pmm_counter.count;
-}
-
-
-
-KERNEL_PUBLIC omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter){
+KERNEL_PUBLIC omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count){
 	if (!_omm_self_allocator){
 		panic("omm allocator not initialized yet");
 	}
 	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
-	_init_allocator(name,object_size,alignment,page_count,pmm_counter,out);
+	_init_allocator(name,object_size,alignment,page_count,out);
 	if (omm_handle_type){
 		handle_new(out,omm_handle_type,&(out->handle));
 		handle_finish_setup(&(out->handle));
@@ -122,7 +114,7 @@ KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 	spinlock_acquire_exclusive(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
-		u64 page_address=pmm_alloc(allocator->page_count,allocator->pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		u64 page_address=pmm_alloc(allocator->page_count,&_omm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 		omm_object_t* head=NULL;
 		for (u64 i=(sizeof(omm_page_header_t)+allocator->alignment-1)&(-((u64)(allocator->alignment)));i+allocator->object_size<=(allocator->page_count<<PAGE_SIZE_SHIFT);i+=allocator->object_size){
 			omm_object_t* object=(void*)(page_address+i);
@@ -175,7 +167,7 @@ KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 	page->used_count--;
 	if (!page->used_count){
 		_allocator_remove_page(&(allocator->page_free_head),page);
-		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,allocator->pmm_counter);
+		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,&_omm_pmm_counter);
 	}
 	allocator->deallocation_count++;
 	spinlock_release_exclusive(&(allocator->lock));

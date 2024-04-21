@@ -118,11 +118,11 @@ KERNEL_INIT(){
 	LOG("Initializing sockets...");
 	spinlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
-	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1,pmm_alloc_counter("omm_socket_dtp_handler"));
+	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1);
 	spinlock_init(&(_socket_dtp_handler_allocator->lock));
-	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4,pmm_alloc_counter("omm_socket_node"));
+	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4);
 	spinlock_init(&(_socket_vfs_node_allocator->lock));
-	_socket_packet_allocator=omm_init("socket_packet",sizeof(socket_packet_t),8,4,pmm_alloc_counter("omm_socket_packet"));
+	_socket_packet_allocator=omm_init("socket_packet",sizeof(socket_packet_t),8,4);
 	spinlock_init(&(_socket_packet_allocator->lock));
 }
 

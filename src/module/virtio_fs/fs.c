@@ -62,7 +62,7 @@ static const virtio_device_driver_t _virtio_fs_device_driver={
 
 MODULE_POSTINIT(){
 	LOG("Initializing VirtIO FS driver...");
-	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1,pmm_alloc_counter("omm_virtio_fs_device"));
+	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1);
 	spinlock_init(&(_virtio_fs_device_allocator->lock));
 	if (!virtio_register_device_driver(&_virtio_fs_device_driver)){
 		ERROR("Unable to register VirtIO FS driver");

@@ -61,9 +61,9 @@ static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
 
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing event allocator...");
-	_event_allocator=omm_init("event",sizeof(event_t),8,4,pmm_alloc_counter("omm_event"));
+	_event_allocator=omm_init("event",sizeof(event_t),8,4);
 	spinlock_init(&(_event_allocator->lock));
-	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4,pmm_alloc_counter("omm_event_thread_container"));
+	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4);
 	spinlock_init(&(_event_thread_container_allocator->lock));
 	_event_handle_type=handle_alloc("event",_event_handle_destructor);
 }

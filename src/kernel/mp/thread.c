@@ -65,7 +65,7 @@ static void _thread_handle_destructor(handle_t* handle){
 
 static thread_t* _thread_alloc(process_t* process){
 	if (!_thread_fpu_state_allocator){
-		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4,pmm_alloc_counter("omm_thread_fpu_state"));
+		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4);
 		spinlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	thread_t* out=omm_alloc(_thread_allocator);
@@ -106,7 +106,7 @@ static thread_t* _thread_alloc(process_t* process){
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
-	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4,pmm_alloc_counter("omm_thread"));
+	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4);
 	spinlock_init(&(_thread_allocator->lock));
 	thread_handle_type=handle_alloc("thread",_thread_handle_destructor);
 }

@@ -23,9 +23,9 @@ static KERNEL_ATOMIC acl_request_callback_t _acl_request_callback=NULL;
 
 void KERNEL_EARLY_EXEC acl_init(void){
 	LOG("Initializing access control lists...");
-	_acl_allocator=omm_init("acl",sizeof(acl_t),8,4,pmm_alloc_counter("omm_acl"));
+	_acl_allocator=omm_init("acl",sizeof(acl_t),8,4);
 	spinlock_init(&(_acl_allocator->lock));
-	_acl_tree_node_allocator=omm_init("acl_tree_node",sizeof(acl_tree_node_t),8,4,pmm_alloc_counter("omm_acl_tree_node"));
+	_acl_tree_node_allocator=omm_init("acl_tree_node",sizeof(acl_tree_node_t),8,4);
 	spinlock_init(&(_acl_tree_node_allocator->lock));
 }
 

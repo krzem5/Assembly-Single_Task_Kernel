@@ -127,13 +127,13 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,_Bool push_free_r
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing mmap allocator...");
 	_mmap_pmm_counter=pmm_alloc_counter("mmap");
-	_mmap_allocator=omm_init("mmap",sizeof(mmap_t),8,4,pmm_alloc_counter("omm_mmap"));
+	_mmap_allocator=omm_init("mmap",sizeof(mmap_t),8,4);
 	spinlock_init(&(_mmap_allocator->lock));
-	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4,pmm_alloc_counter("omm_mmap_region"));
+	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4);
 	spinlock_init(&(_mmap_region_allocator->lock));
-	_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4,pmm_alloc_counter("omm_mmap_length_group"));
+	_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4);
 	spinlock_init(&(_mmap_length_group_allocator->lock));
-	_mmap_free_region_allocator=omm_init("mmap_free_region",sizeof(mmap_free_region_t),8,4,pmm_alloc_counter("omm_mmap_free_region"));
+	_mmap_free_region_allocator=omm_init("mmap_free_region",sizeof(mmap_free_region_t),8,4);
 	spinlock_init(&(_mmap_free_region_allocator->lock));
 }
 

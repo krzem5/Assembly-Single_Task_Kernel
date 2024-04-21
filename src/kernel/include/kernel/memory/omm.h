@@ -2,7 +2,6 @@
 #define _KERNEL_MEMORY_OMM_H_ 1
 #include <kernel/handle/handle.h>
 #include <kernel/lock/spinlock.h>
-#include <kernel/memory/pmm.h>
 #include <kernel/types.h>
 
 
@@ -31,7 +30,6 @@ typedef struct _OMM_ALLOCATOR{
 	u32 alignment;
 	u32 page_count;
 	u32 max_used_count;
-	pmm_counter_descriptor_t* pmm_counter;
 	omm_page_header_t* page_free_head;
 	omm_page_header_t* page_used_head;
 	omm_page_header_t* page_full_head;
@@ -53,11 +51,7 @@ void omm_init_handle_type(omm_allocator_t* handle_allocator);
 
 
 
-void omm_alloc_counter(void);
-
-
-
-omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count,pmm_counter_descriptor_t* pmm_counter);
+omm_allocator_t* omm_init(const char* name,u64 object_size,u64 alignment,u64 page_count);
 
 
 

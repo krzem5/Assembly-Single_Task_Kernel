@@ -33,7 +33,7 @@ static spinlock_t _gid_global_lock;
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing group tree...");
-	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1,pmm_alloc_counter("omm_gid_data"));
+	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1);
 	spinlock_init(&(_gid_data_allocator->lock));
 	spinlock_init(&_gid_global_lock);
 	rb_tree_init(&_gid_tree);

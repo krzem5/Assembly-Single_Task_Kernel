@@ -40,9 +40,9 @@ static void _keyring_handle_destructor(handle_t* handle){
 
 KERNEL_INIT(){
 	LOG("Initializing keyrings...");
-	_keyring_allocator=omm_init("keyring",sizeof(keyring_t),8,2,pmm_alloc_counter("omm_keyring"));
+	_keyring_allocator=omm_init("keyring",sizeof(keyring_t),8,2);
 	spinlock_init(&(_keyring_allocator->lock));
-	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2,pmm_alloc_counter("omm_keyring_key"));
+	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2);
 	spinlock_init(&(_keyring_key_allocator->lock));
 	_keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
 	notification_dispatcher_init(&_keyring_notification_dispatcher);

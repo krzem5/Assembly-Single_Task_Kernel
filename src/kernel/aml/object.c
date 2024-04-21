@@ -19,7 +19,7 @@ static omm_allocator_t* _aml_object_allocator=NULL;
 
 static aml_object_t* _alloc_object(u8 type){
 	if (!_aml_object_allocator){
-		_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,4,pmm_alloc_counter("omm_aml_object"));
+		_aml_object_allocator=omm_init("aml_object",sizeof(aml_object_t),8,4);
 		spinlock_init(&(_aml_object_allocator->lock));
 	}
 	aml_object_t* out=omm_alloc(_aml_object_allocator);

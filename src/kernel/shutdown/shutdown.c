@@ -25,7 +25,7 @@ static spinlock_t _shutdown_function_lock;
 KERNEL_INIT(){
 	LOG("Initializing shutdown list...");
 	notification_dispatcher_init(&_shutdown_notification_dispatcher);
-	_shutdown_function_allocator=omm_init("shutdown_function",sizeof(shutdown_function_t),8,1,pmm_alloc_counter("omm_shutdown_function"));
+	_shutdown_function_allocator=omm_init("shutdown_function",sizeof(shutdown_function_t),8,1);
 	spinlock_init(&_shutdown_function_lock);
 }
 

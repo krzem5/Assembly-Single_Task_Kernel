@@ -38,7 +38,7 @@ static void _emit_data(writer_t* writer,const void* buffer,u64 size){
 
 KERNEL_INIT(){
 	LOG("Initializing file writer...");
-	_writer_omm_allocator=omm_init("writer",sizeof(writer_t),8,4,pmm_alloc_counter("omm_writer"));
+	_writer_omm_allocator=omm_init("writer",sizeof(writer_t),8,4);
 	spinlock_init(&(_writer_omm_allocator->lock));
 }
 

@@ -1010,19 +1010,19 @@ static const opengl_driver_t _virgl_opengl_driver={
 MODULE_INIT(){
 	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
 	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_buffer");
-	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_context"));
+	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4);
 	spinlock_init(&(_virgl_opengl_context_allocator->lock));
-	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4,pmm_alloc_counter("omm_virgl_opengl_state_context"));
+	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4);
 	spinlock_init(&(_virgl_opengl_state_context_allocator->lock));
-	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4,pmm_alloc_counter("omm_virgl_opengl_shader"));
+	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4);
 	spinlock_init(&(_virgl_opengl_shader_allocator->lock));
-	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4,pmm_alloc_counter("omm_virgl_opengl_vertex_array"));
+	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4);
 	spinlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
-	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4,pmm_alloc_counter("omm_virgl_opengl_buffer"));
+	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4);
 	spinlock_init(&(_virgl_opengl_buffer_allocator->lock));
-	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4,pmm_alloc_counter("omm_virgl_opengl_texture"));
+	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4);
 	spinlock_init(&(_virgl_opengl_texture_allocator->lock));
-	_virgl_opengl_sampler_allocator=omm_init("virgl_opengl_sampler",sizeof(virgl_opengl_sampler_t),8,4,pmm_alloc_counter("omm_virgl_opengl_sampler"));
+	_virgl_opengl_sampler_allocator=omm_init("virgl_opengl_sampler",sizeof(virgl_opengl_sampler_t),8,4);
 	spinlock_init(&(_virgl_opengl_sampler_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);

@@ -30,7 +30,6 @@ static u32 KERNEL_INIT_WRITE _pmm_allocator_count;
 static pmm_allocator_t* KERNEL_INIT_WRITE _pmm_allocators;
 static pmm_block_descriptor_t* KERNEL_INIT_WRITE _pmm_block_descriptors;
 static pmm_load_balancer_t _pmm_load_balancer;
-static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _pmm_counter_omm_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
 static u64 KERNEL_EARLY_WRITE _pmm_self_counter_value;
 
@@ -220,17 +219,8 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 	}
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
-	pmm_counter_descriptor_t tmp_counter={
-		.count=0
-	};
-	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1,&tmp_counter);
+	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1);
 	spinlock_init(&(_pmm_counter_allocator->lock));
-	_pmm_counter_omm_pmm_counter=omm_alloc(_pmm_counter_allocator);
-	_pmm_counter_omm_pmm_counter->name="pmm_counter";
-	_pmm_counter_omm_pmm_counter->count=tmp_counter.count;
-	handle_new(_pmm_counter_omm_pmm_counter,pmm_counter_handle_type,&(_pmm_counter_omm_pmm_counter->handle));
-	handle_finish_setup(&(_pmm_counter_omm_pmm_counter->handle));
-	_pmm_counter_allocator->pmm_counter=_pmm_counter_omm_pmm_counter;
 	pmm_alloc_counter("pmm")->count=_pmm_self_counter_value;
 	pmm_alloc_counter("kernel_image")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_alloc_counter("total")->count=total_memory;

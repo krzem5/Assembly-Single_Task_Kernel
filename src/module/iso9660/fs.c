@@ -237,7 +237,7 @@ static const filesystem_descriptor_config_t _iso9660_filesystem_descriptor_confi
 
 
 MODULE_INIT(){
-	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4,pmm_alloc_counter("omm_iso9660_node"));
+	_iso9660_vfs_node_allocator=omm_init("iso9660_node",sizeof(iso9660_vfs_node_t),8,4);
 	spinlock_init(&(_iso9660_vfs_node_allocator->lock));
 }
 

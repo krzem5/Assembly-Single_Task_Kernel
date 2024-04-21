@@ -258,7 +258,7 @@ static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
 
 MODULE_INIT(){
 	LOG("Initializing FUSE driver...");
-	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(fuse_vfs_node_t),8,4,pmm_alloc_counter("omm_fuse_vfs_node"));
+	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(fuse_vfs_node_t),8,4);
 	spinlock_init(&(_fuse_vfs_node_allocator->lock));
 	_fuse_filesystem_descriptor=fs_register_descriptor(&_fuse_filesystem_descriptor_config);
 }

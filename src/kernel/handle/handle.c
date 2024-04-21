@@ -15,7 +15,6 @@
 
 
 
-static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _handle_descriptor_omm_pmm_counter=_PMM_COUNTER_INIT_STRUCT("omm_handle_descriptor");
 static omm_allocator_t* _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
 static KERNEL_ATOMIC handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
@@ -24,18 +23,11 @@ KERNEL_PUBLIC handle_type_t handle_handle_type=0;
 
 
 
-void KERNEL_EARLY_EXEC handle_alloc_counter(void){
-	_handle_descriptor_allocator->pmm_counter=pmm_alloc_counter("omm_handle_descriptor");
-	_handle_descriptor_allocator->pmm_counter->count=_handle_descriptor_omm_pmm_counter.count;
-}
-
-
-
 KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
 	if (!_handle_descriptor_allocator){
 		omm_init_self();
 		rb_tree_init(&_handle_type_tree);
-		_handle_descriptor_allocator=omm_init("handle_descriptor",sizeof(handle_descriptor_t),8,2,&_handle_descriptor_omm_pmm_counter);
+		_handle_descriptor_allocator=omm_init("handle_descriptor",sizeof(handle_descriptor_t),8,2);
 		omm_init_handle_type(_handle_descriptor_allocator);
 		handle_handle_type=handle_alloc("handle",NULL);
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){

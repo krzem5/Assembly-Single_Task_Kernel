@@ -67,7 +67,7 @@ _clock_source_found:
 void clock_add_source(const clock_source_t* source){
 	LOG("Registering clock source '%s'...",source->name);
 	if (!_clock_source_wrapper_allocator){
-		_clock_source_wrapper_allocator=omm_init("clock_source_wrapper",sizeof(clock_source_wrapper_t),8,1,pmm_alloc_counter("clock_source_wrapper"));
+		_clock_source_wrapper_allocator=omm_init("clock_source_wrapper",sizeof(clock_source_wrapper_t),8,1);
 		spinlock_init(&(_clock_source_wrapper_allocator->lock));
 	}
 	clock_source_wrapper_t* wrapper=omm_alloc(_clock_source_wrapper_allocator);

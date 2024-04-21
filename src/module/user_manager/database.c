@@ -206,7 +206,7 @@ _regenerate_uid:
 
 
 MODULE_INIT(){
-	_user_database_entry_allocator=omm_init("user_database_entry",sizeof(user_database_entry_t),8,1,pmm_alloc_counter("omm_user_database_entry"));
+	_user_database_entry_allocator=omm_init("user_database_entry",sizeof(user_database_entry_t),8,1);
 	spinlock_init(&(_user_database.lock));
 	rb_tree_init(&(_user_database.tree));
 }

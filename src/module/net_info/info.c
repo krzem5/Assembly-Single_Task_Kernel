@@ -56,7 +56,7 @@ static void _extend_address_list(net_info_address_list_t* address_list,net_ip4_a
 
 
 MODULE_INIT(){
-	_net_info_address_list_entry_allocator=omm_init("net_info_address_list_entry",sizeof(net_info_address_list_entry_t),8,1,pmm_alloc_counter("omm_net_info_address_list_entry"));
+	_net_info_address_list_entry_allocator=omm_init("net_info_address_list_entry",sizeof(net_info_address_list_entry_t),8,1);
 	spinlock_init(&(_net_info_address_list_entry_allocator->lock));
 	_init_address_list(&_net_info_dns_address_list);
 	_init_address_list(&_net_info_router_address_list);

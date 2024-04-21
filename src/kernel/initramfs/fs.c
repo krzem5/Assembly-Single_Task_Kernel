@@ -225,7 +225,7 @@ static const filesystem_descriptor_config_t _initramfs_filesystem_descriptor_con
 
 void KERNEL_EARLY_EXEC initramfs_fs_init(void){
 	INFO("Registering initramfs filesystem descriptor...");
-	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2,pmm_alloc_counter("omm_initramfs_node"));
+	_initramfs_vfs_node_allocator=omm_init("initramfs_node",sizeof(initramfs_vfs_node_t),8,2);
 	spinlock_init(&(_initramfs_vfs_node_allocator->lock));
 	_initramfs_filesystem_descriptor=fs_register_descriptor(&_initramfs_filesystem_descriptor_config);
 }

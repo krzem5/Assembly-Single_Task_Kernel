@@ -31,7 +31,7 @@ KERNEL_PUBLIC void notification_dispatcher_deinit(notification_dispatcher_t* dis
 
 KERNEL_PUBLIC void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback){
 	if (!_notification_listener_allocator){
-		_notification_listener_allocator=omm_init("notification_listener",sizeof(notification_listener_t),8,4,pmm_alloc_counter("notification_listener"));
+		_notification_listener_allocator=omm_init("notification_listener",sizeof(notification_listener_t),8,4);
 		spinlock_init(&(_notification_listener_allocator->lock));
 	}
 	notification_listener_t* listener=omm_alloc(_notification_listener_allocator);

@@ -55,7 +55,7 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 		fs_descriptor_handle_type=handle_alloc("fs_descriptor",NULL);
 	}
 	if (!_fs_descriptor_allocator){
-		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2,pmm_alloc_counter("omm_fs_descriptor"));
+		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2);
 		spinlock_init(&(_fs_descriptor_allocator->lock));
 	}
 	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
@@ -88,7 +88,7 @@ KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor)
 KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	if (!_fs_allocator){
-		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4,pmm_alloc_counter("omm_fs"));
+		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4);
 		spinlock_init(&(_fs_allocator->lock));
 	}
 	if (!fs_handle_type){

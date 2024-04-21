@@ -19,7 +19,7 @@ KERNEL_INIT(){
 	LOG("Initializing network layer2...");
 	spinlock_init(&_network_layer2_lock);
 	rb_tree_init(&_network_layer2_ether_type_tree);
-	_network_layer2_protocol_allocator=omm_init("network_layer2_protocol",sizeof(network_layer2_protocol_t),8,1,pmm_alloc_counter("omm_network_layer2_protocol"));
+	_network_layer2_protocol_allocator=omm_init("network_layer2_protocol",sizeof(network_layer2_protocol_t),8,1);
 }
 
 

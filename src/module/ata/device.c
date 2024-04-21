@@ -21,7 +21,6 @@
 
 
 
-static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ata_omm_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _ata_device_allocator=NULL;
 
 static u16 _ata_device_index=0;
@@ -258,8 +257,7 @@ static void _ata_init_device(pci_device_t* device){
 
 
 MODULE_INIT(){
-	_ata_omm_pmm_counter=pmm_alloc_counter("omm_ata_device");
-	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1,_ata_omm_pmm_counter);
+	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1);
 	spinlock_init(&(_ata_device_allocator->lock));
 }
 
@@ -276,5 +274,4 @@ MODULE_POSTINIT(){
 
 MODULE_DEINIT(){
 	omm_deinit(_ata_device_allocator);
-	pmm_dealloc_counter(_ata_omm_pmm_counter);
 }

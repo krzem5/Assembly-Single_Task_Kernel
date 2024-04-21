@@ -56,7 +56,7 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 		return NULL;
 	}
 	if (!_ring_allocator){
-		_ring_allocator=omm_init("ring",sizeof(ring_t),8,4,pmm_alloc_counter("omm_ring"));
+		_ring_allocator=omm_init("ring",sizeof(ring_t),8,4);
 		spinlock_init(&(_ring_allocator->lock));
 	}
 	if (!_ring_buffer_pmm_counter){

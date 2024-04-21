@@ -35,7 +35,7 @@ static void _drive_handle_destructor(handle_t* handle){
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing drive allocator...");
 	_drive_buffer_pmm_counter=pmm_alloc_counter("drive_buffer");
-	_drive_allocator=omm_init("drive",sizeof(drive_t),8,4,pmm_alloc_counter("omm_drive"));
+	_drive_allocator=omm_init("drive",sizeof(drive_t),8,4);
 	spinlock_init(&(_drive_allocator->lock));
 	drive_handle_type=handle_alloc("drive",_drive_handle_destructor);
 }

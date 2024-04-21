@@ -43,9 +43,9 @@ static spinlock_t _uid_global_lock;
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing user tree...");
-	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1,pmm_alloc_counter("omm_uid_data"));
+	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1);
 	spinlock_init(&(_uid_data_allocator->lock));
-	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1,pmm_alloc_counter("omm_uid_group"));
+	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1);
 	spinlock_init(&(_uid_group_allocator->lock));
 	spinlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);

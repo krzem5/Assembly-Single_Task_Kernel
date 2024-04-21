@@ -196,7 +196,7 @@ static void _i82540_init_device(pci_device_t* device){
 
 MODULE_INIT(){
 	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540");
-	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1,pmm_alloc_counter("omm_i82540_device"));
+	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1);
 	spinlock_init(&(_i82540_device_allocator->lock));
 }
 

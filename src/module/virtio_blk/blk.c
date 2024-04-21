@@ -105,7 +105,7 @@ static const virtio_device_driver_t _virtio_blk_device_driver={
 
 MODULE_INIT(){
 	LOG("Initializing VirtIO block driver...");
-	_virtio_blk_device_allocator=omm_init("virtio_blk_device",sizeof(virtio_blk_device_t),8,1,pmm_alloc_counter("omm_virtio_blk_device"));
+	_virtio_blk_device_allocator=omm_init("virtio_blk_device",sizeof(virtio_blk_device_t),8,1);
 	spinlock_init(&(_virtio_blk_device_allocator->lock));
 }
 
