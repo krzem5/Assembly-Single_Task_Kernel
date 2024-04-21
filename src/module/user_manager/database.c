@@ -9,6 +9,7 @@
 
 
 #define USER_DATABASE_FILE "/etc/users.config"
+#define USER_DATABASE_PASSWORD "password"
 
 
 
@@ -22,7 +23,7 @@ static void _load_user_database(void){
 	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_tag_t* root_tag=config_load_from_file(node,NULL);
+	config_tag_t* root_tag=config_load_from_file(node,USER_DATABASE_PASSWORD);
 	if (!root_tag){
 		return;
 	}
