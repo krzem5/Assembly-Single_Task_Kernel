@@ -1,3 +1,4 @@
+#include <account_manager/database.h>
 #include <kernel/config/config.h>
 #include <kernel/error/error.h>
 #include <kernel/hash/sha256.h>
@@ -20,32 +21,6 @@
 
 #define ACCOUNT_DATABASE_FILE "/etc/accounts.config"
 #define ACCOUNT_DATABASE_PASSWORD NULL//"password"
-
-#define ACCOUNT_DATABASE_FIRST_USER_ID 1000
-
-#define ACCOUNT_DATABASE_USER_ENTRY_FLAG_HAS_PASSWORD 1
-
-
-
-typedef struct _ACCOUNT_DATABASE_GROUP_ENTRY{
-	rb_tree_node_t rb_node;
-} account_database_group_entry_t;
-
-
-
-typedef struct _ACCOUNT_DATABASE_USER_ENTRY{
-	rb_tree_node_t rb_node;
-	u32 flags;
-	u32 password_hash[8];
-} account_database_user_entry_t;
-
-
-
-typedef struct _USER_DATABASE{
-	spinlock_t lock;
-	rb_tree_t group_tree;
-	rb_tree_t user_tree;
-} account_database_t;
 
 
 
@@ -216,6 +191,49 @@ static void _save_account_database(void){
 
 
 
+MODULE_INIT(){
+	_account_database_group_entry_allocator=omm_init("account_database_group_entry",sizeof(account_database_group_entry_t),8,1);
+	spinlock_init(&(_account_database_group_entry_allocator->lock));
+	_account_database_user_entry_allocator=omm_init("account_database_user_entry",sizeof(account_database_user_entry_t),8,1);
+	spinlock_init(&(_account_database_user_entry_allocator->lock));
+	spinlock_init(&(_account_database.lock));
+	rb_tree_init(&(_account_database.group_tree));
+	rb_tree_init(&(_account_database.user_tree));
+}
+
+
+
+MODULE_POSTINIT(){
+	_load_account_database();
+}
+
+
+
+KERNEL_PUBLIC error_t account_database_create_group(gid_t gid,const char* name){
+	spinlock_acquire_exclusive(&(_account_database.lock));
+	if (rb_tree_lookup_node(&(_account_database.group_tree),gid)){
+		spinlock_release_exclusive(&(_account_database.lock));
+		return ERROR_ALREADY_PRESENT;
+	}
+	error_t err=gid_create(gid,name);
+	if (err==ERROR_ALREADY_PRESENT){
+		spinlock_release_exclusive(&(_account_database.lock));
+		return ERROR_ALREADY_PRESENT;
+	}
+	if (err!=ERROR_OK){
+		spinlock_release_exclusive(&(_account_database.lock));
+		return err;
+	}
+	account_database_group_entry_t* group_entry=omm_alloc(_account_database_group_entry_allocator);
+	group_entry->rb_node.key=gid;
+	rb_tree_insert_node(&(_account_database.group_tree),&(group_entry->rb_node));
+	_save_account_database();
+	spinlock_release_exclusive(&(_account_database.lock));
+	return gid;
+}
+
+
+
 KERNEL_PUBLIC error_t account_database_create_user(uid_t uid,const char* name,const char* password,u32 password_length){
 	spinlock_acquire_exclusive(&(_account_database.lock));
 	_Bool generate_uid=!uid;
@@ -255,7 +273,7 @@ _invalid_uid:
 		spinlock_release_exclusive(&(_account_database.lock));
 		return err;
 	}
-	account_database_user_entry_t* group_entry=omm_alloc(_account_database_group_entry_allocator);
+	account_database_group_entry_t* group_entry=omm_alloc(_account_database_group_entry_allocator);
 	group_entry->rb_node.key=uid;
 	rb_tree_insert_node(&(_account_database.group_tree),&(group_entry->rb_node));
 	account_database_user_entry_t* user_entry=omm_alloc(_account_database_user_entry_allocator);
@@ -273,23 +291,4 @@ _invalid_uid:
 	_save_account_database();
 	spinlock_release_exclusive(&(_account_database.lock));
 	return uid;
-}
-
-
-
-MODULE_INIT(){
-	_account_database_group_entry_allocator=omm_init("account_database_group_entry",sizeof(account_database_group_entry_t),8,1);
-	spinlock_init(&(_account_database_group_entry_allocator->lock));
-	_account_database_user_entry_allocator=omm_init("account_database_user_entry",sizeof(account_database_user_entry_t),8,1);
-	spinlock_init(&(_account_database_user_entry_allocator->lock));
-	spinlock_init(&(_account_database.lock));
-	rb_tree_init(&(_account_database.group_tree));
-	rb_tree_init(&(_account_database.user_tree));
-}
-
-
-
-MODULE_POSTINIT(){
-	_load_account_database();
-	// WARN("UID=%u",account_database_create_user(0,"user","abc",3));
 }
