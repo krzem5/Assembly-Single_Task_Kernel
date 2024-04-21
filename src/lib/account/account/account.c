@@ -62,3 +62,15 @@ SYS_PUBLIC sys_error_t account_get_group_data(sys_gid_t gid,account_group_t* out
 SYS_PUBLIC sys_error_t account_get_user_data(sys_uid_t uid,account_user_t* out){
 	return _sys_syscall3(_account_syscall_offset|0x00000005,uid,(u64)out,sizeof(account_user_t));
 }
+
+
+
+SYS_PUBLIC sys_error_t account_create_group(sys_gid_t gid,const char* name){
+	return _sys_syscall2(_account_syscall_offset|0x00000006,gid,(u64)name);
+}
+
+
+
+SYS_PUBLIC sys_error_t account_create_user(sys_uid_t uid,const char* name,const void* password,u32 password_length){
+	return _sys_syscall4(_account_syscall_offset|0x00000007,uid,(u64)name,(u64)password,password_length);
+}

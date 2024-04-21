@@ -56,4 +56,12 @@ sys_error_t account_get_user_data(sys_uid_t uid,account_user_t* out);
 
 
 
+sys_error_t account_create_group(sys_gid_t gid,const char* name);
+
+
+
+sys_error_t account_create_user(sys_uid_t uid,const char* name,const void* password,u32 password_length);
+
+
+
 #endif

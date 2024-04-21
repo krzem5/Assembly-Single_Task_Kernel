@@ -63,12 +63,28 @@ static error_t _syscall_get_user_data(u32 uid,KERNEL_USER_POINTER account_manage
 
 
 
+static error_t _syscall_create_group(u32 gid,KERNEL_USER_POINTER const char* name){
+	ERROR("_syscall_create_group: unimplemented");
+	return ERROR_DENIED;
+}
+
+
+
+static error_t _syscall_create_user(u32 gid,KERNEL_USER_POINTER const char* name,KERNEL_USER_POINTER const void* password,u32 password_length){
+	ERROR("_syscall_create_user: unimplemented");
+	return ERROR_DENIED;
+}
+
+
+
 static syscall_callback_t const _account_manager_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_iter_group,
 	[2]=(syscall_callback_t)_syscall_iter_user,
 	[3]=(syscall_callback_t)_syscall_iter_user_group,
 	[4]=(syscall_callback_t)_syscall_get_group_data,
 	[5]=(syscall_callback_t)_syscall_get_user_data,
+	[6]=(syscall_callback_t)_syscall_create_group,
+	[7]=(syscall_callback_t)_syscall_create_user,
 };
 
 
