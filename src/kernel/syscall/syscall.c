@@ -70,6 +70,22 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 
 
 
+KERNEL_PUBLIC _Bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count){
+	spinlock_acquire_exclusive(&_syscall_table_list_lock);
+	if (index>=_syscall_table_list_length){
+		spinlock_release_exclusive(&_syscall_table_list_lock);
+		return 0;
+	}
+	syscall_table_t* table=_syscall_table_list[index];
+	table->function_count=0;
+	table->functions=functions;
+	table->function_count=function_count;
+	spinlock_release_exclusive(&_syscall_table_list_lock);
+	return 1;
+}
+
+
+
 KERNEL_PUBLIC u64 syscall_get_user_pointer_max_length(const void* address){
 	mmap_region_t* region=mmap_lookup(THREAD_DATA->process->mmap,(u64)address);
 	if (!region||!(region->flags&MMAP_REGION_FLAG_VMM_USER)){
