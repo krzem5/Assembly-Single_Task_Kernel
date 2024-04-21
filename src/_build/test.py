@@ -64,7 +64,7 @@ def generate_test_resource_files():
 		wf.write(_generate_header(0x464c457f,2,1,1,3,ET_EXEC,0x3e,1,0,0))
 	os.chmod("build/share/test/elf/invalid_header_abi",0o755)
 	with open("build/share/test/elf/invalid_header_type","wb") as wf:
-		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_DYN,0x3e,1,0,0))
+		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_REL,0x3e,1,0,0))
 	os.chmod("build/share/test/elf/invalid_header_type",0o755)
 	with open("build/share/test/elf/invalid_header_type_interpreter","wb") as wf:
 		wf.write(_generate_header(0x464c457f,2,1,1,0,ET_EXEC,0x3e,1,0,0))
