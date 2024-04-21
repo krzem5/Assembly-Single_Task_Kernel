@@ -58,7 +58,7 @@ error_t account_manager_database_create_user(uid_t uid,const char* name,const ch
 
 
 
-error_t account_manager_database_get_group_data(uid_t uid,account_manager_database_group_data_t* out);
+error_t account_manager_database_get_group_data(gid_t gid,account_manager_database_group_data_t* out);
 
 
 

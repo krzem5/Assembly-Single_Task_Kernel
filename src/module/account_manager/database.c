@@ -297,35 +297,56 @@ _invalid_uid:
 
 
 
-KERNEL_PUBLIC error_t account_manager_database_get_group_data(uid_t uid,account_manager_database_group_data_t* out){
-	ERROR("account_manager_database_get_group_data");
-	return ERROR_ALREADY_PRESENT;
+KERNEL_PUBLIC error_t account_manager_database_get_group_data(gid_t gid,account_manager_database_group_data_t* out){
+	spinlock_acquire_shared(&(_account_manager_database.lock));
+	account_manager_database_group_entry_t* group_entry=(void*)rb_tree_lookup_node(&(_account_manager_database.group_tree),gid);
+	if (!group_entry){
+		spinlock_release_shared(&(_account_manager_database.lock));
+		return ERROR_NOT_FOUND;
+	}
+	out->gid=gid;
+	spinlock_release_shared(&(_account_manager_database.lock));
+	return ERROR_OK;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_get_user_data(uid_t uid,account_manager_database_user_data_t* out){
-	ERROR("account_manager_database_get_user_data");
-	return ERROR_ALREADY_PRESENT;
+	spinlock_acquire_shared(&(_account_manager_database.lock));
+	account_manager_database_user_entry_t* user_entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
+	if (!user_entry){
+		spinlock_release_shared(&(_account_manager_database.lock));
+		return ERROR_NOT_FOUND;
+	}
+	out->uid=uid;
+	out->flags=user_entry->flags;
+	spinlock_release_shared(&(_account_manager_database.lock));
+	return ERROR_OK;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_group(gid_t gid){
-	ERROR("account_manager_database_iter_next_group");
-	return ERROR_ALREADY_PRESENT;
+	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(_account_manager_database.group_tree),(gid?gid+1:0));
+	gid=(rb_node?rb_node->key:0);
+	spinlock_release_shared(&(_account_manager_database.lock));
+	return gid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_user(uid_t uid){
-	ERROR("account_manager_database_iter_next_user");
-	return ERROR_ALREADY_PRESENT;
+	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(_account_manager_database.user_tree),(uid?uid+1:0));
+	uid=(rb_node?rb_node->key:0);
+	spinlock_release_shared(&(_account_manager_database.lock));
+	return uid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_user_subgroup(uid_t uid,gid_t gid){
 	ERROR("account_manager_database_iter_next_user_subgroup");
-	return ERROR_ALREADY_PRESENT;
+	return 0;
 }
