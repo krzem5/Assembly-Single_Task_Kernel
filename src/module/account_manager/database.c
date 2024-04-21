@@ -87,6 +87,7 @@ static void KERNEL_EARLY_EXEC _load_database_config(config_tag_t* root_tag){
 			ERROR("Unable to create user '%u:%s'",id_tag->int_,name_tag->string->data);
 			continue;
 		}
+		uid_add_group(id_tag->int_,id_tag->int_);
 		account_database_user_entry_t* entry=omm_alloc(_account_database_user_entry_allocator);
 		entry->rb_node.key=id_tag->int_;
 		entry->flags=flags_tag->int_;
@@ -273,6 +274,7 @@ _invalid_uid:
 		spinlock_release_exclusive(&(_account_database.lock));
 		return err;
 	}
+	uid_add_group(uid,uid);
 	account_database_group_entry_t* group_entry=omm_alloc(_account_database_group_entry_allocator);
 	group_entry->rb_node.key=uid;
 	rb_tree_insert_node(&(_account_database.group_tree),&(group_entry->rb_node));
