@@ -46,6 +46,67 @@ static user_database_t _user_database;
 
 
 
+static void KERNEL_EARLY_EXEC _load_database_config(config_tag_t* root_tag){
+	config_tag_t* user_tag;
+	for (u64 pointer=config_tag_find(root_tag,"user",0,&user_tag);pointer;pointer=config_tag_find(root_tag,"user",pointer,&user_tag)){
+		if (user_tag->type!=CONFIG_TAG_TYPE_ARRAY){
+			continue;
+		}
+		config_tag_t* id_tag;
+		if (!config_tag_find(user_tag,"id",0,&id_tag)||id_tag->type!=CONFIG_TAG_TYPE_INT){
+			continue;
+		}
+		config_tag_t* flags_tag;
+		if (!config_tag_find(user_tag,"flags",0,&flags_tag)||flags_tag->type!=CONFIG_TAG_TYPE_INT){
+			continue;
+		}
+		config_tag_t* name_tag;
+		if (!config_tag_find(user_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
+			continue;
+		}
+		config_tag_t* password_hash_tag=NULL;
+		if (flags_tag->int_&USER_DATABASE_ENTRY_FLAG_HAS_PASSWORD){
+			if (!config_tag_find(user_tag,"password_hash",0,&password_hash_tag)||password_hash_tag->type!=CONFIG_TAG_TYPE_STRING||password_hash_tag->string->length!=8*sizeof(u32)){
+				continue;
+			}
+		}
+		if (uid_create(id_tag->int_,name_tag->string->data)!=ERROR_OK){
+			ERROR("Unable to create user '%u:%s'",id_tag->int_,name_tag->string->data);
+			continue;
+		}
+		user_database_entry_t* entry=omm_alloc(_user_database_entry_allocator);
+		entry->rb_node.key=id_tag->int_;
+		entry->flags=flags_tag->int_;
+		if (entry->flags&USER_DATABASE_ENTRY_FLAG_HAS_PASSWORD){
+			mem_copy(entry->password_hash,password_hash_tag->string->data,8*sizeof(u32));
+		}
+		rb_tree_insert_node(&(_user_database.tree),&(entry->rb_node));
+	}
+}
+
+
+
+static void KERNEL_EARLY_EXEC _load_user_database(void){
+	LOG("Loading user database...");
+	vfs_node_t* node=vfs_lookup(NULL,USER_DATABASE_FILE,0,0,0);
+	if (!node){
+		return;
+	}
+	node->uid=0;
+	node->gid=0;
+	node->flags&=~VFS_NODE_PERMISSION_MASK;
+	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	vfs_node_flush(node);
+	config_tag_t* root_tag=config_load_from_file(node,USER_DATABASE_PASSWORD);
+	if (!root_tag){
+		return;
+	}
+	_load_database_config(root_tag);
+	config_tag_delete(root_tag);
+}
+
+
+
 static config_tag_t* _generate_database_config(void){
 	config_tag_t* root_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"");
 	for (const user_database_entry_t* entry=(void*)rb_tree_iter_start(&(_user_database.tree));entry;entry=(void*)rb_tree_iter_next(&(_user_database.tree),(void*)entry)){
@@ -75,27 +136,6 @@ static config_tag_t* _generate_database_config(void){
 
 
 
-static void _load_user_database(void){
-	LOG("Loading user database...");
-	vfs_node_t* node=vfs_lookup(NULL,USER_DATABASE_FILE,0,0,0);
-	if (!node){
-		return;
-	}
-	node->uid=0;
-	node->gid=0;
-	node->flags&=~VFS_NODE_PERMISSION_MASK;
-	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
-	vfs_node_flush(node);
-	config_tag_t* root_tag=config_load_from_file(node,USER_DATABASE_PASSWORD);
-	if (!root_tag){
-		return;
-	}
-	ERROR("_load_user_database: Unimplemented");
-	config_tag_delete(root_tag);
-}
-
-
-
 static void _save_user_database(void){
 	LOG("Saving user database...");
 	config_tag_t* root_tag=_generate_database_config();
@@ -113,7 +153,7 @@ static void _save_user_database(void){
 	node->uid=0;
 	node->gid=0;
 	node->flags&=~VFS_NODE_PERMISSION_MASK;
-	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,USER_DATABASE_PASSWORD,0);
 	config_tag_delete(root_tag);
@@ -121,7 +161,7 @@ static void _save_user_database(void){
 
 
 
-error_t user_database_create_user(uid_t uid,const char* name,const char* password,u32 password_length){
+KERNEL_PUBLIC error_t user_database_create_user(uid_t uid,const char* name,const char* password,u32 password_length){
 	spinlock_acquire_exclusive(&(_user_database.lock));
 	_Bool generate_uid=!uid;
 	if (generate_uid){
