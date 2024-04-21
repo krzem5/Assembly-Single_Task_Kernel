@@ -168,7 +168,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		mem_copy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
 		mmap_dealloc_region(process_kernel->mmap,kernel_region);
 	}
-	if (!dyn){
+	if (ctx->elf_header->e_type!=ET_DYN||!dyn){
 		return ERROR_OK;
 	}
 	void* symbol_table=NULL;
