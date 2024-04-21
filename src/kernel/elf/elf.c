@@ -35,6 +35,8 @@
 
 #define ELF_STACK_ALIGNMENT 16
 
+#define ELF_DYN_LOAD_ADDRESS 0x400000
+
 #define PUSH_DATA_VALUE(value) *(data_ptr++)=(u64)(value)
 #define PUSH_AUXV_VALUE(type,value) PUSH_DATA_VALUE((type));PUSH_DATA_VALUE((value))
 #define PUSH_STRING(string) \
@@ -86,7 +88,7 @@ static vfs_node_t* _get_executable_file(const char* path){
 
 
 static error_t _check_elf_header(elf_loader_context_t* ctx){
-	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_EXEC||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
+	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||(ctx->elf_header->e_type!=ET_EXEC&&ctx->elf_header->e_type!=ET_DYN)||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
 		return ERROR_INVALID_FORMAT;
 	}
 	return ERROR_OK;
@@ -118,8 +120,16 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 
 static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 	INFO("Mapping and locating sections...");
+	const elf_dyn_t* dyn=NULL;
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
-		const elf_phdr_t* program_header=ctx->data+ctx->elf_header->e_phoff+i*ctx->elf_header->e_phentsize;
+		elf_phdr_t* program_header=ctx->data+ctx->elf_header->e_phoff+i*ctx->elf_header->e_phentsize;
+		if (ctx->elf_header->e_type==ET_DYN){
+			program_header->p_vaddr+=ELF_DYN_LOAD_ADDRESS;
+		}
+		if (program_header->p_type==PT_DYNAMIC){
+			dyn=ctx->data+program_header->p_offset;
+			continue;
+		}
 		if (program_header->p_type==PT_PHDR){
 			ctx->user_phdr_address=program_header->p_vaddr;
 			continue;
@@ -158,7 +168,42 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 		mem_copy((void*)(kernel_region->rb_node.key+padding),ctx->data+program_header->p_offset,program_header->p_filesz);
 		mmap_dealloc_region(process_kernel->mmap,kernel_region);
 	}
-	return ERROR_OK;
+	if (!dyn){
+		return ERROR_OK;
+	}
+	void* symbol_table=NULL;
+	u64 symbol_table_entry_size=0;
+	const elf_rela_t* relocations=NULL;
+	u64 relocation_size=0;
+	u64 relocation_entry_size=0;
+	for (;dyn->d_tag!=DT_NULL;dyn++){
+		switch (dyn->d_tag){
+			case DT_SYMTAB:
+				symbol_table=ctx->data+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_SYMENT:
+				symbol_table_entry_size=dyn->d_un.d_val;
+				break;
+			case DT_RELA:
+				relocations=ctx->data+((u64)(dyn->d_un.d_ptr));
+				break;
+			case DT_RELASZ:
+				relocation_size=dyn->d_un.d_val;
+				break;
+			case DT_RELAENT:
+				relocation_entry_size=dyn->d_un.d_val;
+				break;
+		}
+	}
+	if (!relocations){
+		return ERROR_OK;
+	}
+	(void)symbol_table;
+	(void)symbol_table_entry_size;
+	(void)relocation_size;
+	(void)relocation_entry_size;
+	ERROR("_map_and_locate_sections: apply relocations");
+	return ERROR_INVALID_SYSCALL;
 }
 
 
