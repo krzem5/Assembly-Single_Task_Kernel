@@ -1,4 +1,4 @@
-# Assembly - Single User Kernel
+# Operating System
 
 ## DNS setup
 
