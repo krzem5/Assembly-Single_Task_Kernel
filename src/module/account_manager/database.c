@@ -256,6 +256,7 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	_load_account_manager_database();
+	// account_manager_database_create_user(0,"user","abc1234",7);
 }
 
 
