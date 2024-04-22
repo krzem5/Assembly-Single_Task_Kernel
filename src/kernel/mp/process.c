@@ -72,7 +72,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->mmap=mmap_init(&vmm_kernel_pagemap,KERNELSPACE_LOWEST_ADDRESS+mmap_top-ASLR_KERNEL_MMAP_TOP_MIN,mmap_top);
 	thread_list_init(&(process_kernel->thread_list));
 	process_kernel->name=smm_alloc("kernel",0);
-	process_kernel->image=smm_alloc("/boot/kernel.compressed",0);
+	process_kernel->image=smm_alloc("/boot/kernel",0);
 	process_kernel->uid=0;
 	process_kernel->gid=0;
 	process_kernel->event=event_create();

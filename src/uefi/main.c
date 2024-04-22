@@ -206,7 +206,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		}
 		kfs2_node_t kernel_kfs2_node;
 		kfs2_node_t initramfs_kfs2_node;
-		if (!_kfs2_lookup_path(&fs,"/boot/kernel.compressed",&kernel_kfs2_node)||!_kfs2_lookup_path(&fs,"/boot/initramfs.compressed",&initramfs_kfs2_node)){
+		if (!_kfs2_lookup_path(&fs,"/boot/kernel",&kernel_kfs2_node)||!_kfs2_lookup_path(&fs,"/boot/initramfs",&initramfs_kfs2_node)){
 			kfs2_filesystem_deinit(&fs);
 			continue;
 		}

@@ -371,6 +371,8 @@ static void _node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 
 
 static void _attach_child(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* child){
+	child->rc++;
+	kfs2_node_flush(fs,child);
 	u16 new_entry_size=(sizeof(kfs2_directory_entry_t)+name_length+3)&0xfffc;
 	kfs2_data_chunk_t chunk;
 	kfs2_chunk_init(&chunk);
@@ -506,6 +508,7 @@ _Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* nam
 	out->time_birth=0;
 	out->gid=0;
 	out->uid=0;
+	out->rc=0;
 	out->inode=inode;
 	_attach_child(fs,parent,name,name_length,out);
 	return 1;

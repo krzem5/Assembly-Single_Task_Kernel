@@ -70,7 +70,8 @@ typedef struct __attribute__((packed)) _KFS2_NODE{
 	u64 time_birth;
 	u32 gid;
 	u32 uid;
-	u8 _padding[24];
+	u64 rc;
+	u8 _padding[16];
 	union{
 		u32 crc;
 		u32 inode;
