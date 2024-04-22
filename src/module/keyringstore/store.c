@@ -7,6 +7,7 @@
 #include <kernel/module/module.h>
 #include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
+#include <kernel/shutdown/shutdown.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/vfs/node.h>
@@ -212,6 +213,15 @@ static void _store_keyring(keyring_t* keyring){
 
 
 
+static void _store_keyrings(void* object,u32 type){
+	LOG("Storing all keyrings...");
+	HANDLE_FOREACH(keyring_handle_type){
+		_store_keyring(handle->object);
+	}
+}
+
+
+
 static void _keyring_update_callback(void* object,u32 type){
 	keyring_t* keyring=object;
 	if (type==NOTIFICATION_TYPE_KEYRING_UPDATE){
@@ -232,5 +242,6 @@ MODULE_PREINIT(){
 	INFO("Loading keyrings...");
 	_load_keyrings();
 	keyring_register_notification_listener(_keyring_update_callback);
+	shutdown_register_notification_listener(_store_keyrings);
 	return 1;
 }

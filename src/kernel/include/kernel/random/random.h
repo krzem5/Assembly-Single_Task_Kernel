@@ -12,6 +12,10 @@ void random_generate(void* buffer,u64 length);
 
 
 
+void random_generate_password(char* buffer,u64 length);
+
+
+
 void _random_init_entropy_pool(void);
 
 

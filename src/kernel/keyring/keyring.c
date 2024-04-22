@@ -22,10 +22,10 @@ static volatile u32 KERNEL_EARLY_READ __kernel_user_key_modulus_bit_length;
 
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
-static handle_type_t KERNEL_INIT_WRITE _keyring_handle_type=0;
 static notification_dispatcher_t _keyring_notification_dispatcher;
 static spinlock_t _keyring_creation_lock;
 
+KERNEL_PUBLIC handle_type_t keyring_handle_type=0;
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
 
@@ -44,7 +44,7 @@ KERNEL_INIT(){
 	spinlock_init(&(_keyring_allocator->lock));
 	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2);
 	spinlock_init(&(_keyring_key_allocator->lock));
-	_keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
+	keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
 	notification_dispatcher_init(&_keyring_notification_dispatcher);
 	spinlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");
@@ -68,7 +68,7 @@ KERNEL_INIT(){
 KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	string_t* name_string=smm_alloc(name,0);
 	spinlock_acquire_exclusive(&_keyring_creation_lock);
-	HANDLE_FOREACH(_keyring_handle_type){
+	HANDLE_FOREACH(keyring_handle_type){
 		keyring_t* keyring=handle->object;
 		if (smm_equal(keyring->name,name_string)){
 			spinlock_release_exclusive(&_keyring_creation_lock);
@@ -78,7 +78,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	}
 	keyring_t* out=omm_alloc(_keyring_allocator);
 	out->name=name_string;
-	handle_new(out,_keyring_handle_type,&(out->handle));
+	handle_new(out,keyring_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	spinlock_init(&(out->lock));
 	out->head=NULL;
@@ -155,7 +155,7 @@ KERNEL_PUBLIC _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,
 
 KERNEL_PUBLIC void keyring_register_notification_listener(notification_listener_callback_t listener_callback){
 	notification_dispatcher_add_listener(&_keyring_notification_dispatcher,listener_callback);
-	HANDLE_FOREACH(_keyring_handle_type){
+	HANDLE_FOREACH(keyring_handle_type){
 		listener_callback(handle->object,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	}
 }

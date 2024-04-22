@@ -49,6 +49,7 @@ typedef struct _KEYRING{
 
 
 
+extern handle_type_t keyring_handle_type;
 extern keyring_t* keyring_module_signature;
 extern keyring_t* keyring_user_signature;
 

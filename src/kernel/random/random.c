@@ -7,6 +7,16 @@
 
 
 
+static const char* _random_password_characters="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+
+
+static spinlock_t _random_chacha_lock;
+static u32 _random_chacha_state[16];
+static u32 _random_chacha_buffer[16];
+
+
+
 static KERNEL_INLINE u32 _rotate_bits(u32 a,u8 b){
 	asm("rol %1,%0":"+r"(a):"c"(b));
 	return a;
@@ -48,12 +58,6 @@ static KERNEL_INLINE void _chacha_block(u32* state,u32* out){
 
 
 
-static spinlock_t _random_chacha_lock;
-static u32 _random_chacha_state[16];
-static u32 _random_chacha_buffer[16];
-
-
-
 void KERNEL_EARLY_EXEC random_init(void){
 	LOG("Initializing PRNG...");
 	spinlock_init(&_random_chacha_lock);
@@ -75,4 +79,14 @@ KERNEL_PUBLIC void random_generate(void* buffer,u64 length){
 		buffer_ptr+=chunk_size;
 	}
 	spinlock_release_exclusive(&_random_chacha_lock);
+}
+
+
+
+KERNEL_PUBLIC void random_generate_password(char* buffer,u64 length){
+	random_generate(buffer,length-1);
+	for (u64 i=0;i<length;i++){
+		buffer[i]=_random_password_characters[buffer[i]&0x3f];
+	}
+	buffer[length]=0;
 }

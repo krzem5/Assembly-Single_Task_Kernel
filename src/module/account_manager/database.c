@@ -4,12 +4,15 @@
 #include <kernel/hash/sha256.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
+#include <kernel/keyring/keyring.h>
 #include <kernel/lock/spinlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
+#include <kernel/random/random.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -21,6 +24,7 @@
 
 #define ACCOUNT_MANAGER_DATABASE_FILE "/etc/accounts.config"
 #define ACCOUNT_MANAGER_DATABASE_PASSWORD "password"
+#define ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH 16
 
 
 
@@ -28,6 +32,29 @@ static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_group_entry_
 static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_user_entry_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _account_manager_database_user_group_entry_allocator=NULL;
 static account_manager_database_t _account_manager_database;
+
+
+
+static const char* _get_database_password(void){
+	keyring_t* keyring=keyring_create("config-keys");
+	keyring_key_t* key=keyring_search(keyring,"account-manager-database",KEYRING_SEARCH_FLAG_BYPASS_ACL);
+	if (key&&key->type==KEYRING_KEY_TYPE_RAW){
+		return key->data.raw.payload;
+	}
+	if (key){
+		// keyring_key_delete(key);
+	}
+	key=keyring_key_create(keyring,"account-manager-database");
+	if (!key){
+		ERROR("Unable to create database password");
+		return NULL;
+	}
+	key->type=KEYRING_KEY_TYPE_RAW;
+	key->data.raw.payload=amm_alloc(ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1);
+	random_generate_password(key->data.raw.payload,ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1);
+	key->data.raw.payload_length=ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1;
+	return key->data.raw.payload;
+}
 
 
 
@@ -125,7 +152,7 @@ static void KERNEL_EARLY_EXEC _load_account_manager_database(void){
 	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_tag_t* root_tag=config_load_from_file(node,ACCOUNT_MANAGER_DATABASE_PASSWORD);
+	config_tag_t* root_tag=config_load_from_file(node,_get_database_password());
 	if (!root_tag){
 		return;
 	}
@@ -207,7 +234,7 @@ static void _save_account_manager_database(void){
 	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_save_to_file(root_tag,node,ACCOUNT_MANAGER_DATABASE_PASSWORD,0);
+	config_save_to_file(root_tag,node,_get_database_password(),0);
 	config_tag_delete(root_tag);
 }
 
