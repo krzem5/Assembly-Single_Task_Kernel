@@ -122,13 +122,19 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 static _Bool _kfs2_link(vfs_node_t* node,vfs_node_t* parent){
-	panic("_kfs2_link");
+	if (node->fs->extra_data!=parent->fs->extra_data){
+		panic("Cross-filesystem file linking is not supported");
+	}
+	return kfs2_node_link(node->fs->extra_data,&(((kfs2_vfs_node_t*)parent)->kfs2_node),&(((kfs2_vfs_node_t*)node)->kfs2_node),node->name->data,node->name->length);
 }
 
 
 
-static _Bool _kfs2_unlink(vfs_node_t* node){
-	panic("_kfs2_unlink");
+static _Bool _kfs2_unlink(vfs_node_t* node,vfs_node_t* parent){
+	if (node->fs->extra_data!=parent->fs->extra_data){
+		return 0;
+	}
+	return kfs2_node_unlink(node->fs->extra_data,&(((kfs2_vfs_node_t*)parent)->kfs2_node),&(((kfs2_vfs_node_t*)node)->kfs2_node),node->name->data,node->name->length);
 }
 
 

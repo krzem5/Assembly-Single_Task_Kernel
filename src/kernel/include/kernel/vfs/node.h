@@ -35,7 +35,7 @@ typedef struct _VFS_FUNCTIONS{
 	struct _VFS_NODE* (*lookup)(struct _VFS_NODE*,const string_t*);
 	u64 (*iterate)(struct _VFS_NODE*,u64,string_t**);
 	_Bool (*link)(struct _VFS_NODE*,struct _VFS_NODE*);
-	_Bool (*unlink)(struct _VFS_NODE*);
+	_Bool (*unlink)(struct _VFS_NODE*,struct _VFS_NODE*);
 	u64 (*read)(struct _VFS_NODE*,u64,void*,u64,u32);
 	u64 (*write)(struct _VFS_NODE*,u64,const void*,u64,u32);
 	u64 (*resize)(struct _VFS_NODE*,s64,u32);
@@ -95,7 +95,7 @@ _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent);
 
 
 
-_Bool vfs_node_unlink(vfs_node_t* node);
+_Bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent);
 
 
 

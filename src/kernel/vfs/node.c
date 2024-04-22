@@ -190,11 +190,11 @@ KERNEL_PUBLIC _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 
 
 
-KERNEL_PUBLIC _Bool vfs_node_unlink(vfs_node_t* node){
+KERNEL_PUBLIC _Bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent){
 	if (!node->functions->unlink){
 		return 0;
 	}
-	return node->functions->unlink(node);
+	return node->functions->unlink(node,parent);
 }
 
 
