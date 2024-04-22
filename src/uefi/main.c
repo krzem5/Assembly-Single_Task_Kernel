@@ -1,7 +1,8 @@
+#include <common/kfs2/api.h>
+#include <common/kfs2/structures.h>
 #include <efi.h>
 #include <uefi/compression.h>
 #include <uefi/kernel_data.h>
-#include <uefi/kfs2.h>
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
 
@@ -14,65 +15,11 @@
 
 
 
-_Static_assert(sizeof(kfs2_node_t)==128);
-
-
-
-static const uint32_t _kfs2_crc_table[256]={
-	0x00000000,0x77073096,0xee0e612c,0x990951ba,0x076dc419,0x706af48f,0xe963a535,0x9e6495a3,
-	0x0edb8832,0x79dcb8a4,0xe0d5e91e,0x97d2d988,0x09b64c2b,0x7eb17cbd,0xe7b82d07,0x90bf1d91,
-	0x1db71064,0x6ab020f2,0xf3b97148,0x84be41de,0x1adad47d,0x6ddde4eb,0xf4d4b551,0x83d385c7,
-	0x136c9856,0x646ba8c0,0xfd62f97a,0x8a65c9ec,0x14015c4f,0x63066cd9,0xfa0f3d63,0x8d080df5,
-	0x3b6e20c8,0x4c69105e,0xd56041e4,0xa2677172,0x3c03e4d1,0x4b04d447,0xd20d85fd,0xa50ab56b,
-	0x35b5a8fa,0x42b2986c,0xdbbbc9d6,0xacbcf940,0x32d86ce3,0x45df5c75,0xdcd60dcf,0xabd13d59,
-	0x26d930ac,0x51de003a,0xc8d75180,0xbfd06116,0x21b4f4b5,0x56b3c423,0xcfba9599,0xb8bda50f,
-	0x2802b89e,0x5f058808,0xc60cd9b2,0xb10be924,0x2f6f7c87,0x58684c11,0xc1611dab,0xb6662d3d,
-	0x76dc4190,0x01db7106,0x98d220bc,0xefd5102a,0x71b18589,0x06b6b51f,0x9fbfe4a5,0xe8b8d433,
-	0x7807c9a2,0x0f00f934,0x9609a88e,0xe10e9818,0x7f6a0dbb,0x086d3d2d,0x91646c97,0xe6635c01,
-	0x6b6b51f4,0x1c6c6162,0x856530d8,0xf262004e,0x6c0695ed,0x1b01a57b,0x8208f4c1,0xf50fc457,
-	0x65b0d9c6,0x12b7e950,0x8bbeb8ea,0xfcb9887c,0x62dd1ddf,0x15da2d49,0x8cd37cf3,0xfbd44c65,
-	0x4db26158,0x3ab551ce,0xa3bc0074,0xd4bb30e2,0x4adfa541,0x3dd895d7,0xa4d1c46d,0xd3d6f4fb,
-	0x4369e96a,0x346ed9fc,0xad678846,0xda60b8d0,0x44042d73,0x33031de5,0xaa0a4c5f,0xdd0d7cc9,
-	0x5005713c,0x270241aa,0xbe0b1010,0xc90c2086,0x5768b525,0x206f85b3,0xb966d409,0xce61e49f,
-	0x5edef90e,0x29d9c998,0xb0d09822,0xc7d7a8b4,0x59b33d17,0x2eb40d81,0xb7bd5c3b,0xc0ba6cad,
-	0xedb88320,0x9abfb3b6,0x03b6e20c,0x74b1d29a,0xead54739,0x9dd277af,0x04db2615,0x73dc1683,
-	0xe3630b12,0x94643b84,0x0d6d6a3e,0x7a6a5aa8,0xe40ecf0b,0x9309ff9d,0x0a00ae27,0x7d079eb1,
-	0xf00f9344,0x8708a3d2,0x1e01f268,0x6906c2fe,0xf762575d,0x806567cb,0x196c3671,0x6e6b06e7,
-	0xfed41b76,0x89d32be0,0x10da7a5a,0x67dd4acc,0xf9b9df6f,0x8ebeeff9,0x17b7be43,0x60b08ed5,
-	0xd6d6a3e8,0xa1d1937e,0x38d8c2c4,0x4fdff252,0xd1bb67f1,0xa6bc5767,0x3fb506dd,0x48b2364b,
-	0xd80d2bda,0xaf0a1b4c,0x36034af6,0x41047a60,0xdf60efc3,0xa867df55,0x316e8eef,0x4669be79,
-	0xcb61b38c,0xbc66831a,0x256fd2a0,0x5268e236,0xcc0c7795,0xbb0b4703,0x220216b9,0x5505262f,
-	0xc5ba3bbe,0xb2bd0b28,0x2bb45a92,0x5cb36a04,0xc2d7ffa7,0xb5d0cf31,0x2cd99e8b,0x5bdeae1d,
-	0x9b64c2b0,0xec63f226,0x756aa39c,0x026d930a,0x9c0906a9,0xeb0e363f,0x72076785,0x05005713,
-	0x95bf4a82,0xe2b87a14,0x7bb12bae,0x0cb61b38,0x92d28e9b,0xe5d5be0d,0x7cdcefb7,0x0bdbdf21,
-	0x86d3d2d4,0xf1d4e242,0x68ddb3f8,0x1fda836e,0x81be16cd,0xf6b9265b,0x6fb077e1,0x18b74777,
-	0x88085ae6,0xff0f6a70,0x66063bca,0x11010b5c,0x8f659eff,0xf862ae69,0x616bffd3,0x166ccf45,
-	0xa00ae278,0xd70dd2ee,0x4e048354,0x3903b3c2,0xa7672661,0xd06016f7,0x4969474d,0x3e6e77db,
-	0xaed16a4a,0xd9d65adc,0x40df0b66,0x37d83bf0,0xa9bcae53,0xdebb9ec5,0x47b2cf7f,0x30b5ffe9,
-	0xbdbdf21c,0xcabac28a,0x53b39330,0x24b4a3a6,0xbad03605,0xcdd70693,0x54de5729,0x23d967bf,
-	0xb3667a2e,0xc4614ab8,0x5d681b02,0x2a6f2b94,0xb40bbe37,0xc30c8ea1,0x5a05df1b,0x2d02ef8d,
-};
-
 static EFI_GUID efi_block_io_protocol_guid=EFI_BLOCK_IO_PROTOCOL_GUID;
 static EFI_GUID efi_acpi_20_table_guid=ACPI_20_TABLE_GUID;
 static EFI_GUID efi_smbios_table_guid=SMBIOS_TABLE_GUID;
 
-
-
-static uint32_t _calculate_crc(const void* data,uint32_t length){
-	const uint8_t* ptr=data;
-	uint32_t out=0xffffffff;
-	for (uint32_t i=0;i<length;i++){
-		out=_kfs2_crc_table[(out&0xff)^ptr[i]]^(out>>8);
-	}
-	return ~out;
-}
-
-
-
-static _Bool kfs_verify_crc(const void* data,uint32_t length){
-	return _calculate_crc(data,length-4)==*((uint32_t*)(data+length-4));
-}
+EFI_SYSTEM_TABLE* uefi_global_system_table=NULL;
 
 
 
@@ -90,11 +37,11 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* data,uint32_t data_length,uint64_t address){
+static uint64_t _decompress_data(const uint8_t* data,uint32_t data_length,uint64_t address){
 	uint32_t out_length=*((const uint32_t*)data);
 	data+=sizeof(uint32_t);
 	data_length-=sizeof(uint32_t);
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
+	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
 	_decompress_raw(data,data_length,(uint8_t*)address);
@@ -103,19 +50,19 @@ static uint64_t _decompress_data(EFI_SYSTEM_TABLE* system_table,const uint8_t* d
 
 
 
-static void _extend_tpm2_event(EFI_SYSTEM_TABLE* system_table,uint64_t data,uint64_t data_end){
+static void _extend_tpm2_event(uint64_t data,uint64_t data_end){
 	EFI_GUID efi_tpm2_guid=EFI_TCG2_PROTOCOL_GUID;
 	UINTN buffer_size=0;
-	system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,NULL);
+	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,NULL);
 	if (!buffer_size){
 		return;
 	}
 	EFI_HANDLE* buffer;
-	system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
-	system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,buffer);
+	uefi_global_system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
+	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,buffer);
 	EFI_TCG2* tcg2;
-	_Bool is_error=EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&tcg2)));
-	system_table->BootServices->FreePool(buffer);
+	_Bool is_error=EFI_ERROR(uefi_global_system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&tcg2)));
+	uefi_global_system_table->BootServices->FreePool(buffer);
 	if (is_error){
 		return;
 	}
@@ -125,69 +72,100 @@ static void _extend_tpm2_event(EFI_SYSTEM_TABLE* system_table,uint64_t data,uint
 		return;
 	}
 	EFI_TCG2_EVENT* tcg2_event;
-	system_table->BootServices->AllocatePool(0x80000000,sizeof(EFI_TCG2_EVENT),(void**)(&tcg2_event));
-	system_table->BootServices->SetMem(tcg2_event,sizeof(EFI_TCG2_EVENT),0);
+	uefi_global_system_table->BootServices->AllocatePool(0x80000000,sizeof(EFI_TCG2_EVENT),(void**)(&tcg2_event));
+	uefi_global_system_table->BootServices->SetMem(tcg2_event,sizeof(EFI_TCG2_EVENT),0);
 	tcg2_event->Size=sizeof(EFI_TCG2_EVENT);
 	tcg2_event->Header.HeaderSize=sizeof(EFI_TCG2_EVENT_HEADER);
 	tcg2_event->Header.HeaderVersion=EFI_TCG2_EVENT_HEADER_VERSION;
 	tcg2_event->Header.PCRIndex=8;
 	tcg2_event->Header.EventType=13;
 	tcg2->HashLogExtendEvent(tcg2,0,data,data_end-data,tcg2_event);
-	system_table->BootServices->FreePool(tcg2_event);
+	uefi_global_system_table->BootServices->FreePool(tcg2_event);
 }
 
 
 
-static uint64_t _kfs2_load_node_into_memory(EFI_SYSTEM_TABLE* system_table,EFI_BLOCK_IO_PROTOCOL* block_io_protocol,const kfs2_root_block_t* kfs2_root_block,uint32_t block_size_shift,uint32_t inode,uint64_t address){
-	uint8_t disk_buffer[KFS2_BLOCK_SIZE];
-	if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_inode_block+KFS2_INODE_GET_BLOCK_INDEX(inode))<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
+static uint64_t _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,uint64_t address){
+	if (!node->size||(node->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 		return 0;
 	}
-	kfs2_node_t node=*((const kfs2_node_t*)(disk_buffer+KFS2_INODE_GET_NODE_INDEX(inode)*sizeof(kfs2_node_t)));
-	if (!node.size||!kfs_verify_crc(&node,sizeof(kfs2_node_t))||(node.flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
-		return 0;
-	}
-	uint64_t buffer_page_count=(node.size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
+	uint64_t buffer_page_count=(node->size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
 	void* buffer=NULL;
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,buffer_page_count,(EFI_PHYSICAL_ADDRESS*)(&buffer)))){
+	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,buffer_page_count,(EFI_PHYSICAL_ADDRESS*)(&buffer)))){
 		return 0;
 	}
-	switch (node.flags&KFS2_INODE_STORAGE_MASK){
-		case KFS2_INODE_STORAGE_TYPE_INLINE:
-			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_INLINE\r\n");
-			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-			break;
-		case KFS2_INODE_STORAGE_TYPE_SINGLE:
-			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_SINGLE\r\n");
-			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-			break;
-		case KFS2_INODE_STORAGE_TYPE_DOUBLE:
-			if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+node.data.double_)<<block_size_shift,KFS2_BLOCK_SIZE,disk_buffer))){
-				goto _cleanup;
-			}
-			void* buffer_ptr=buffer;
-			for (uint16_t i=0;i<(node.size+KFS2_BLOCK_SIZE-1)/KFS2_BLOCK_SIZE;i++){
-				if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,(kfs2_root_block->first_data_block+(*((const uint64_t*)(disk_buffer+i*sizeof(uint64_t)))))<<block_size_shift,KFS2_BLOCK_SIZE,buffer_ptr))){
-					goto _cleanup;
-				}
-				buffer_ptr+=KFS2_BLOCK_SIZE;
-			}
-			break;
-		case KFS2_INODE_STORAGE_TYPE_TRIPLE:
-			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_TRIPLE\r\n");
-			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-			break;
-		case KFS2_INODE_STORAGE_TYPE_QUADRUPLE:
-			system_table->ConOut->OutputString(system_table->ConOut,L"Unimplemented: KFS2_INODE_STORAGE_TYPE_QUADRUPLE\r\n");
-			system_table->RuntimeServices->ResetSystem(EfiResetShutdown,EFI_SUCCESS,0,NULL);
-			break;
+	if (kfs2_node_read(fs,node,0,buffer,node->size)!=node->size){
+		goto _cleanup;
 	}
-	uint64_t out=_decompress_data(system_table,(const uint8_t*)buffer,node.size,address);
-	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
-	_extend_tpm2_event(system_table,address,out);
+	uint64_t out=_decompress_data((const uint8_t*)buffer,node->size,address);
+	uefi_global_system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	_extend_tpm2_event(address,out);
 	return out;
 _cleanup:
-	system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	uefi_global_system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	return 0;
+}
+
+
+
+static _Bool _kfs2_lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* out){
+	kfs2_filesystem_get_root(fs,out);
+	while (path[0]){
+		if (path[0]=='/'){
+			path++;
+			continue;
+		}
+		uint64_t i=0;
+		for (;path[i]&&path[i]!='/';i++){
+			if (i>255){
+				return 0;
+			}
+		}
+		if (i==1&&path[0]=='.'){
+			path+=1;
+			continue;
+		}
+		if (i==2&&path[0]=='.'&&path[1]=='.'){
+			uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,L"Backtracking is not supported\r\n");
+			return 0;
+		}
+		kfs2_node_t child;
+		if (!kfs2_node_lookup(fs,out,path,i,&child)){
+			return 0;
+		}
+		*out=child;
+		path+=i;
+	}
+	return 1;
+}
+
+
+
+static void* _alloc_callback(uint64_t count){
+	void* out=NULL;
+	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,count,(EFI_PHYSICAL_ADDRESS*)(&out)))){
+		return 0;
+	}
+	return out;
+}
+
+
+
+static void _dealloc_callback(void* ptr,uint64_t count){
+	uefi_global_system_table->BootServices->FreePages((uint64_t)ptr,count);
+}
+
+
+
+static uint64_t _read_callback(void* ctx,uint64_t offset,void* buffer,uint64_t count){
+	EFI_BLOCK_IO_PROTOCOL* block_io_protocol=ctx;
+	uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,L"\r\n");
+	return (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,offset,count*block_io_protocol->Media->BlockSize,buffer))?0:count);
+}
+
+
+
+static uint64_t _write_callback(void* ctx,uint64_t offset,const void* buffer,uint64_t count){
 	return 0;
 }
 
@@ -195,6 +173,7 @@ _cleanup:
 
 EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	relocate_executable();
+	uefi_global_system_table=system_table;
 	system_table->ConOut->Reset(system_table->ConOut,0);
 	UINTN buffer_size=0;
 	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_guid,NULL,&buffer_size,NULL);
@@ -208,34 +187,48 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	uint8_t master_key[64];
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
-		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize>KFS2_BLOCK_SIZE||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
+		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
 			continue;
 		}
-		uint8_t disk_buffer[KFS2_BLOCK_SIZE];
-		if (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,0,KFS2_BLOCK_SIZE,disk_buffer))){
+		const kfs2_filesystem_config_t fs_config={
+			block_io_protocol,
+			(kfs2_filesystem_block_read_callback_t)_read_callback,
+			(kfs2_filesystem_block_write_callback_t)_write_callback,
+			(kfs2_filesystem_page_alloc_callback_t)_alloc_callback,
+			(kfs2_filesystem_page_dealloc_callback_t)_dealloc_callback,
+			block_io_protocol->Media->BlockSize,
+			0,
+			block_io_protocol->Media->LastBlock
+		};
+		kfs2_filesystem_t fs;
+		if (!kfs2_filesystem_init(&fs_config,&fs)){
 			continue;
 		}
-		kfs2_root_block_t kfs2_root_block=*((const kfs2_root_block_t*)disk_buffer);
-		if (kfs2_root_block.signature!=KFS2_ROOT_BLOCK_SIGNATURE||!kfs2_root_block.kernel_inode||!kfs2_root_block.initramfs_inode||!kfs_verify_crc(&kfs2_root_block,sizeof(kfs2_root_block_t))){
+		kfs2_node_t kernel_kfs2_node;
+		kfs2_node_t initramfs_kfs2_node;
+		if (!_kfs2_lookup_path(&fs,"/boot/kernel.compressed",&kernel_kfs2_node)||!_kfs2_lookup_path(&fs,"/boot/initramfs.compressed",&initramfs_kfs2_node)){
+			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
-		for (uint8_t j=0;j<16;j++){
-			boot_fs_guid[j]=kfs2_root_block.uuid[j];
-		}
-		for (uint8_t j=0;j<64;j++){
-			master_key[j]=kfs2_root_block.master_key[j];
-		}
-		uint32_t block_size_shift=63-__builtin_clzll(KFS2_BLOCK_SIZE/block_io_protocol->Media->BlockSize);
-		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.kernel_inode,KERNEL_MEMORY_ADDRESS);
+		first_free_address=_kfs2_decompress_node(&fs,&kernel_kfs2_node,KERNEL_MEMORY_ADDRESS);
 		if (!first_free_address){
+			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
 		initramfs_address=first_free_address;
-		first_free_address=_kfs2_load_node_into_memory(system_table,block_io_protocol,&kfs2_root_block,block_size_shift,kfs2_root_block.initramfs_inode,first_free_address);
+		first_free_address=_kfs2_decompress_node(&fs,&initramfs_kfs2_node,first_free_address);
 		if (!first_free_address){
+			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
 		initramfs_size=first_free_address-initramfs_address;
+		for (uint8_t j=0;j<16;j++){
+			boot_fs_guid[j]=fs.root_block.uuid[j];
+		}
+		for (uint8_t j=0;j<64;j++){
+			master_key[j]=fs.root_block.master_key[j];
+		}
+		kfs2_filesystem_deinit(&fs);
 		break;
 	}
 	system_table->BootServices->FreePool(buffer);

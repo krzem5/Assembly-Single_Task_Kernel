@@ -18,7 +18,7 @@ static u64* _fetch_data(kfs2_filesystem_t* fs,kfs2_bitmap_t* allocator,u32 level
 	u64 block_index=(allocator->cache+level)->offset+offset*sizeof(u64)/KFS2_BLOCK_SIZE;
 	if ((allocator->cache+level)->block_index!=block_index){
 		if (fs->config.read_callback(fs->config.ctx,fs->config.start_lba+(block_index<<fs->block_size_shift),(allocator->cache+level)->data,1<<fs->block_size_shift)!=(1<<fs->block_size_shift)){
-			panic("_store_data: I/O error");
+			panic("_fetch_data: I/O error");
 		}
 		(allocator->cache+level)->block_index=block_index;
 	}
