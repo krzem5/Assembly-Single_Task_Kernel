@@ -75,6 +75,10 @@ void keyring_key_delete(keyring_key_t* key);
 
 
 
+void keyring_key_update(keyring_key_t* key);
+
+
+
 _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out);
 
 

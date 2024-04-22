@@ -42,7 +42,7 @@ static const char* _get_database_password(void){
 		return key->data.raw.payload;
 	}
 	if (key){
-		// keyring_key_delete(key);
+		keyring_key_delete(key);
 	}
 	key=keyring_key_create(keyring,"account-manager-database");
 	if (!key){
@@ -53,6 +53,7 @@ static const char* _get_database_password(void){
 	key->data.raw.payload=amm_alloc(ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1);
 	random_generate_password(key->data.raw.payload,ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1);
 	key->data.raw.payload_length=ACCOUNT_MANAGER_DATABASE_PASSWORD_LENGTH+1;
+	keyring_key_update(key);
 	return key->data.raw.payload;
 }
 

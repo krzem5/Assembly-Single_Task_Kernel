@@ -136,7 +136,15 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 
 
 
-KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key);
+KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key){
+	ERROR("keyring_key_delete");
+}
+
+
+
+KERNEL_PUBLIC void keyring_key_update(keyring_key_t* key){
+	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,key->keyring,NOTIFICATION_TYPE_KEYRING_UPDATE);
+}
 
 
 
