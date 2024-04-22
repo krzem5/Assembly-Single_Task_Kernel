@@ -2,6 +2,7 @@
 #include <kernel/config/config.h>
 #include <kernel/hmac/hmac.h>
 #include <kernel/hmac/sha256.h>
+#include <kernel/keyring/master_key.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -153,7 +154,15 @@ static config_tag_t* _parse_binary_config(const void* data,u64 length,const char
 		data+=sizeof(config_file_encryption_header_t);
 		length-=sizeof(config_file_encryption_header_t);
 		u8 aes_key_and_iv[48];
-		pbkdf2_compute(password,smm_length(password),encryption_header->salt,sizeof(encryption_header->salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
+		u32 password_length=0;
+		if (password==CONFIG_PASSWORD_MASTER_KEY){
+			password=(void*)keyring_master_key;
+			password_length=32;
+		}
+		else{
+			password_length=smm_length(password);
+		}
+		pbkdf2_compute(password,password_length,encryption_header->salt,sizeof(encryption_header->salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
 		aes_state_t aes_state;
 		aes_init(aes_key_and_iv,32,AES_FLAG_DECRYPTION,&aes_state);
 		decoded_data=amm_alloc(length);
@@ -618,7 +627,15 @@ KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file
 	hmac_compute(encryption_header.salt,sizeof(encryption_header.salt),buffer,buffer_size,hmac_sha256_function,encryption_header.hmac);
 	writer_append(writer,&encryption_header,sizeof(config_file_encryption_header_t));
 	u8 aes_key_and_iv[48];
-	pbkdf2_compute(password,smm_length(password),encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
+	u32 password_length=0;
+	if (password==CONFIG_PASSWORD_MASTER_KEY){
+		password=(void*)keyring_master_key;
+		password_length=32;
+	}
+	else{
+		password_length=smm_length(password);
+	}
+	pbkdf2_compute(password,password_length,encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
 	aes_state_t aes_state;
 	aes_init(aes_key_and_iv,32,AES_FLAG_ENCRYPTION,&aes_state);
 	for (u32 i=0;i<buffer_size;i+=16){

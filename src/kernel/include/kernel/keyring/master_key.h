@@ -4,6 +4,10 @@
 
 
 
+extern u8 keyring_master_key[32];
+
+
+
 void keyring_master_key_get_encrypted(u8* buffer,u32 buffer_size);
 
 

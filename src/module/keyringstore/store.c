@@ -16,7 +16,6 @@
 
 
 #define KEYRING_STORE_DIRECTORY "/etc/keyringstore"
-#define KEYRING_ENCRYPTION_PASSWORD "password"
 
 
 
@@ -114,7 +113,7 @@ static void KERNEL_EARLY_EXEC _load_keyrings(void){
 		if (!node){
 			continue;
 		}
-		config_tag_t* root_tag=config_load_from_file(node,KEYRING_ENCRYPTION_PASSWORD);
+		config_tag_t* root_tag=config_load_from_file(node,CONFIG_PASSWORD_MASTER_KEY);
 		if (!root_tag){
 			continue;
 		}
@@ -206,7 +205,7 @@ static void _store_keyring(keyring_t* keyring){
 	node->flags&=~VFS_NODE_PERMISSION_MASK;
 	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
-	config_save_to_file(root_tag,node,KEYRING_ENCRYPTION_PASSWORD,0);
+	config_save_to_file(root_tag,node,CONFIG_PASSWORD_MASTER_KEY,0);
 	config_tag_delete(root_tag);
 }
 

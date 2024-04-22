@@ -15,6 +15,8 @@
 #define CONFIG_SAVE_FLAG_COMPRESS 1
 #define CONFIG_SAVE_FLAG_TEXT 2
 
+#define CONFIG_PASSWORD_MASTER_KEY ((void*)0xffffffffffffffffull)
+
 
 
 typedef struct _CONFIG_TAG{
