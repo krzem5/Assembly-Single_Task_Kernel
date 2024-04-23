@@ -1,4 +1,5 @@
 #include <common/compressor/compressor.h>
+#include <common/types.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@ int main(int argc,const char** argv){
 		printf("Usage:\n\n%s <file> <compression_level> <output_file>\n",(argc?argv[0]:"compressor"));
 		return 1;
 	}
-	uint32_t compression_level;
+	u32 compression_level;
 	if (!strcmp(argv[2],"none")){
 		compression_level=COMPRESSOR_COMPRESSION_LEVEL_NONE;
 	}
@@ -37,14 +38,14 @@ int main(int argc,const char** argv){
 		return 1;
 	}
 	fseek(in,0,SEEK_END);
-	uint32_t in_length=ftell(in);
+	u32 in_length=ftell(in);
 	fseek(in,0,SEEK_SET);
 	void* in_data=malloc(in_length);
 	void* out_data=malloc(compressor_get_max_compressed_size(in_length));
-	if (fread(in_data,1,in_length,in)!=in_length||fwrite(&in_length,1,sizeof(uint32_t),out)!=sizeof(uint32_t)){
+	if (fread(in_data,1,in_length,in)!=in_length||fwrite(&in_length,1,sizeof(u32),out)!=sizeof(u32)){
 		goto _error;
 	}
-	uint32_t out_length=compressor_compress(in_data,in_length,compression_level,out_data);
+	u32 out_length=compressor_compress(in_data,in_length,compression_level,out_data);
 	if (fwrite(out_data,1,out_length,out)!=out_length){
 		goto _error;
 	}

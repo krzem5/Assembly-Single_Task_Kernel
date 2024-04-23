@@ -1,14 +1,19 @@
 #include <common/compressor/compressor.h>
+#include <common/kernel_data/kernel_data.h>
 #include <common/kfs2/api.h>
 #include <common/kfs2/structures.h>
+#include <common/types.h>
 #include <efi.h>
-#include <uefi/kernel_data.h>
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
 
 
 
-#define VMM_HIGHER_HALF_ADDRESS_OFFSET 0xffff800000000000ull
+#define KERNEL_LOAD_ADDRESS 0x100000
+
+#define STACK_PAGE_COUNT 3
+
+#define VIRTUAL_IDENTITY_MAP_OFFSET 0xffff800000000000ull
 
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_SHIFT 12
@@ -27,7 +32,7 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 	if (a->Data1!=b->Data1||a->Data2!=b->Data2||a->Data3!=b->Data3){
 		return 0;
 	}
-	for (uint8_t i=0;i<8;i++){
+	for (u32 i=0;i<8;i++){
 		if (a->Data4[i]!=b->Data4[i]){
 			return 0;
 		}
@@ -37,20 +42,20 @@ static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 
 
 
-static uint64_t _decompress_data(const uint8_t* data,uint32_t data_length,uint64_t address){
-	uint32_t out_length=*((const uint32_t*)data);
-	data+=sizeof(uint32_t);
-	data_length-=sizeof(uint32_t);
-	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
+static u64 _decompress_data(const u8* data,u32 data_length,u64 address){
+	u32 out_length=*((const u32*)data);
+	data+=sizeof(u32);
+	data_length-=sizeof(u32);
+	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,(EFI_PHYSICAL_ADDRESS*)(&address)))){
 		return 0;
 	}
-	compressor_decompress(data,data_length,(uint8_t*)address);
+	compressor_decompress(data,data_length,(void*)address);
 	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
 }
 
 
 
-static void _extend_tpm2_event(uint64_t data,uint64_t data_end){
+static void _extend_tpm2_event(u64 data,u64 data_end){
 	EFI_GUID efi_tpm2_guid=EFI_TCG2_PROTOCOL_GUID;
 	UINTN buffer_size=0;
 	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,NULL);
@@ -85,11 +90,11 @@ static void _extend_tpm2_event(uint64_t data,uint64_t data_end){
 
 
 
-static uint64_t _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,uint64_t address){
+static u64 _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 address){
 	if (!node->size||(node->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 		return 0;
 	}
-	uint64_t buffer_page_count=(node->size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
+	u64 buffer_page_count=(node->size+PAGE_SIZE-1)>>PAGE_SIZE_SHIFT;
 	void* buffer=NULL;
 	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,buffer_page_count,(EFI_PHYSICAL_ADDRESS*)(&buffer)))){
 		return 0;
@@ -97,12 +102,12 @@ static uint64_t _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,ui
 	if (kfs2_node_read(fs,node,0,buffer,node->size)!=node->size){
 		goto _cleanup;
 	}
-	uint64_t out=_decompress_data((const uint8_t*)buffer,node->size,address);
-	uefi_global_system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	u64 out=_decompress_data((const void*)buffer,node->size,address);
+	uefi_global_system_table->BootServices->FreePages((u64)buffer,buffer_page_count);
 	_extend_tpm2_event(address,out);
 	return out;
 _cleanup:
-	uefi_global_system_table->BootServices->FreePages((uint64_t)buffer,buffer_page_count);
+	uefi_global_system_table->BootServices->FreePages((u64)buffer,buffer_page_count);
 	return 0;
 }
 
@@ -115,7 +120,7 @@ static _Bool _kfs2_lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_
 			path++;
 			continue;
 		}
-		uint64_t i=0;
+		u64 i=0;
 		for (;path[i]&&path[i]!='/';i++){
 			if (i>255){
 				return 0;
@@ -141,7 +146,7 @@ static _Bool _kfs2_lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_
 
 
 
-static void* _alloc_callback(uint64_t count){
+static void* _alloc_callback(u64 count){
 	void* out=NULL;
 	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,count,(EFI_PHYSICAL_ADDRESS*)(&out)))){
 		return 0;
@@ -151,13 +156,13 @@ static void* _alloc_callback(uint64_t count){
 
 
 
-static void _dealloc_callback(void* ptr,uint64_t count){
-	uefi_global_system_table->BootServices->FreePages((uint64_t)ptr,count);
+static void _dealloc_callback(void* ptr,u64 count){
+	uefi_global_system_table->BootServices->FreePages((u64)ptr,count);
 }
 
 
 
-static uint64_t _read_callback(void* ctx,uint64_t offset,void* buffer,uint64_t count){
+static u64 _read_callback(void* ctx,u64 offset,void* buffer,u64 count){
 	EFI_BLOCK_IO_PROTOCOL* block_io_protocol=ctx;
 	uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,L"\r\n");
 	return (EFI_ERROR(block_io_protocol->ReadBlocks(block_io_protocol,block_io_protocol->Media->MediaId,offset,count*block_io_protocol->Media->BlockSize,buffer))?0:count);
@@ -165,7 +170,7 @@ static uint64_t _read_callback(void* ctx,uint64_t offset,void* buffer,uint64_t c
 
 
 
-static uint64_t _write_callback(void* ctx,uint64_t offset,const void* buffer,uint64_t count){
+static u64 _write_callback(void* ctx,u64 offset,const void* buffer,u64 count){
 	return 0;
 }
 
@@ -180,11 +185,11 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	EFI_HANDLE* buffer;
 	system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
 	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_guid,NULL,&buffer_size,buffer);
-	uint64_t first_free_address=0;
-	uint64_t initramfs_address=0;
-	uint64_t initramfs_size=0;
-	uint8_t boot_fs_guid[16];
-	uint8_t master_key[64];
+	u64 first_free_address=0;
+	u64 initramfs_address=0;
+	u64 initramfs_size=0;
+	u8 boot_fs_guid[16];
+	u8 master_key[64];
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
 		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
@@ -210,7 +215,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
-		first_free_address=_kfs2_decompress_node(&fs,&kernel_kfs2_node,KERNEL_MEMORY_ADDRESS);
+		first_free_address=_kfs2_decompress_node(&fs,&kernel_kfs2_node,KERNEL_LOAD_ADDRESS);
 		if (!first_free_address){
 			kfs2_filesystem_deinit(&fs);
 			continue;
@@ -222,10 +227,10 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 			continue;
 		}
 		initramfs_size=first_free_address-initramfs_address;
-		for (uint8_t j=0;j<16;j++){
+		for (u32 j=0;j<16;j++){
 			boot_fs_guid[j]=fs.root_block.uuid[j];
 		}
-		for (uint8_t j=0;j<64;j++){
+		for (u32 j=0;j<64;j++){
 			master_key[j]=fs.root_block.master_key[j];
 		}
 		kfs2_filesystem_deinit(&fs);
@@ -242,39 +247,39 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	}
 	first_free_address+=PAGE_SIZE;
 	EFI_PHYSICAL_ADDRESS kernel_stack=first_free_address;
-	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,KERNEL_STACK_PAGE_COUNT,&kernel_stack))){
+	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,STACK_PAGE_COUNT,&kernel_stack))){
 		return EFI_SUCCESS;
 	}
-	first_free_address+=KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
+	first_free_address+=STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT;
 	EFI_PHYSICAL_ADDRESS kernel_pagemap=first_free_address;
 	if (EFI_ERROR(system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,4,&kernel_pagemap))){
 		return EFI_SUCCESS;
 	}
 	first_free_address+=4*PAGE_SIZE;
-	*((uint64_t*)(kernel_pagemap+0x0000))=0x00000003|(kernel_pagemap+0x1000);
-	*((uint64_t*)(kernel_pagemap+0x0800))=0x00000003|(kernel_pagemap+0x2000);
-	*((uint64_t*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x3000);
-	*((uint64_t*)(kernel_pagemap+0x1000))=0x00000083;
-	*((uint64_t*)(kernel_pagemap+0x2000))=0x00000083;
-	*((uint64_t*)(kernel_pagemap+0x3ff8))=0x00000083;
+	*((u64*)(kernel_pagemap+0x0000))=0x00000003|(kernel_pagemap+0x1000);
+	*((u64*)(kernel_pagemap+0x0800))=0x00000003|(kernel_pagemap+0x2000);
+	*((u64*)(kernel_pagemap+0x0ff8))=0x00000003|(kernel_pagemap+0x3000);
+	*((u64*)(kernel_pagemap+0x1000))=0x00000083;
+	*((u64*)(kernel_pagemap+0x2000))=0x00000083;
+	*((u64*)(kernel_pagemap+0x3ff8))=0x00000083;
 	kernel_data->mmap_size=0;
 	kernel_data->first_free_address=first_free_address;
 	kernel_data->rsdp_address=0;
 	kernel_data->smbios_address=0;
-	for (uint64_t i=0;i<system_table->NumberOfTableEntries;i++){
+	for (u64 i=0;i<system_table->NumberOfTableEntries;i++){
 		if (!kernel_data->rsdp_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_acpi_20_table_guid)){
-			kernel_data->rsdp_address=(uint64_t)((system_table->ConfigurationTable+i)->VendorTable);
+			kernel_data->rsdp_address=(u64)((system_table->ConfigurationTable+i)->VendorTable);
 		}
 		else if (!kernel_data->smbios_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_smbios_table_guid)){
-			kernel_data->smbios_address=(uint64_t)((system_table->ConfigurationTable+i)->VendorTable);
+			kernel_data->smbios_address=(u64)((system_table->ConfigurationTable+i)->VendorTable);
 		}
 	}
 	kernel_data->initramfs_address=initramfs_address;
 	kernel_data->initramfs_size=initramfs_size;
-	for (uint8_t i=0;i<16;i++){
+	for (u32 i=0;i<16;i++){
 		kernel_data->boot_fs_guid[i]=boot_fs_guid[i];
 	}
-	for (uint8_t i=0;i<64;i++){
+	for (u32 i=0;i<64;i++){
 		kernel_data->master_key[i]=master_key[i];
 	}
 	EFI_TIME time;
@@ -291,7 +296,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	kernel_data->date.minute=time.Minute;
 	kernel_data->date.second=time.Second;
 	kernel_data->date.nanosecond=time.Nanosecond;
-	kernel_data->date.measurement_offset=(((uint64_t)measurement_offset_high)<<32)|measurement_offset_low;
+	kernel_data->date.measurement_offset=(((u64)measurement_offset_high)<<32)|measurement_offset_low;
 	UINTN memory_map_size=0;
 	void* memory_map=NULL;
 	UINTN memory_map_key=0;
@@ -306,20 +311,20 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	}
 	for (UINTN i=0;i<memory_map_size;i+=memory_descriptor_size){
 		EFI_MEMORY_DESCRIPTOR* entry=(EFI_MEMORY_DESCRIPTOR*)(memory_map+i);
-		entry->VirtualStart=entry->PhysicalStart+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		entry->VirtualStart=entry->PhysicalStart+VIRTUAL_IDENTITY_MAP_OFFSET;
 		if (entry->Type!=EfiLoaderCode&&entry->Type!=EfiLoaderData&&entry->Type!=EfiBootServicesCode&&entry->Type!=EfiBootServicesData&&entry->Type!=EfiConventionalMemory){
 			continue;
 		}
-		uint64_t entry_start=entry->PhysicalStart;
-		uint64_t entry_end=entry->PhysicalStart+(entry->NumberOfPages<<PAGE_SIZE_SHIFT);
-		if (entry_start<KERNEL_MEMORY_ADDRESS){
-			entry_start=KERNEL_MEMORY_ADDRESS;
+		u64 entry_start=entry->PhysicalStart;
+		u64 entry_end=entry->PhysicalStart+(entry->NumberOfPages<<PAGE_SIZE_SHIFT);
+		if (entry_start<KERNEL_LOAD_ADDRESS){
+			entry_start=KERNEL_LOAD_ADDRESS;
 		}
 		if (entry_start>=entry_end){
 			continue;
 		}
-		for (uint16_t j=0;j<kernel_data->mmap_size;j++){
-			uint64_t end=kernel_data->mmap[j].base+kernel_data->mmap[j].length;
+		for (u32 j=0;j<kernel_data->mmap_size;j++){
+			u64 end=kernel_data->mmap[j].base+kernel_data->mmap[j].length;
 			if (end<entry_start||entry_end<kernel_data->mmap[j].base){
 				continue;
 			}
@@ -341,6 +346,6 @@ _entry_added:
 		system_table->BootServices->GetMemoryMap(&memory_map_size,memory_map,&memory_map_key,&memory_descriptor_size,&memory_descriptor_version);
 	}
 	system_table->RuntimeServices->SetVirtualAddressMap(memory_map_size,memory_descriptor_size,memory_descriptor_version,memory_map);
-	((void (*)(void*,void*,void*))KERNEL_MEMORY_ADDRESS)(kernel_data,(void*)kernel_pagemap,(void*)(kernel_stack+(KERNEL_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT)));
+	((void (*)(void*,void*,void*))KERNEL_LOAD_ADDRESS)(kernel_data,(void*)kernel_pagemap,(void*)(kernel_stack+(STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT)));
 	for (;;);
 }

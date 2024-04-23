@@ -1,4 +1,6 @@
 #include <common/kfs2/api.h>
+#include <common/kfs2/structures.h>
+#include <common/types.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,11 +14,11 @@
 
 
 static void* _drive_data=NULL;
-static uint64_t _drive_block_size=0;
+static u64 _drive_block_size=0;
 
 
 
-static uint64_t _current_time(void){
+static u64 _current_time(void){
 	struct timespec tm;
 	clock_gettime(CLOCK_REALTIME,&tm);
 	return tm.tv_sec*1000000000+tm.tv_nsec;
@@ -24,27 +26,27 @@ static uint64_t _current_time(void){
 
 
 
-static uint64_t _read_callback(void* ctx,uint64_t offset,void* buffer,uint64_t size){
+static u64 _read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	memcpy(buffer,_drive_data+offset*_drive_block_size,size*_drive_block_size);
 	return size;
 }
 
 
 
-static uint64_t _write_callback(void* ctx,uint64_t offset,const void* buffer,uint64_t size){
+static u64 _write_callback(void* ctx,u64 offset,const void* buffer,u64 size){
 	memcpy(_drive_data+offset*_drive_block_size,buffer,size*_drive_block_size);
 	return size;
 }
 
 
 
-static void* _alloc_callback(uint64_t count){
+static void* _alloc_callback(u64 count){
 	return calloc(1,count<<12);
 }
 
 
 
-static void _dealloc_callback(void* ptr,uint64_t count){
+static void _dealloc_callback(void* ptr,u64 count){
 	free(ptr);
 }
 
@@ -60,7 +62,7 @@ static _Bool _lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* pa
 			path++;
 			continue;
 		}
-		uint64_t i=0;
+		u64 i=0;
 		for (;path[i]&&path[i]!='/';i++){
 			if (i>255){
 				return 0;
@@ -96,7 +98,7 @@ static _Bool _command_format(const kfs2_filesystem_config_t* fs_config){
 		printf("Unable to format partition as KFS2\n");
 		return 1;
 	}
-	srand((uint32_t)time(NULL));
+	srand((u32)time(NULL));
 	for (u32 i=0;i<16;i++){
 		fs.root_block.uuid[i]=rand();
 	}
@@ -122,7 +124,7 @@ static _Bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> mkdir <path> <permissions>\n",(argc?argv[0]:"kfs2"));
 		return 1;
 	}
-	uint32_t permissions;
+	u32 permissions;
 	if (sscanf(argv[5],"%i",&permissions)<0||(permissions>>9)){
 		printf("Invalid permissions flags '%s'\n",argv[5]);
 		return 1;
@@ -187,7 +189,7 @@ static _Bool _command_copy(kfs2_filesystem_t* fs,int argc,const char** argv){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> copy <path> <permissions> <host_path>\n",(argc?argv[0]:"kfs2"));
 		return 1;
 	}
-	uint32_t permissions;
+	u32 permissions;
 	if (sscanf(argv[5],"%i",&permissions)<0||(permissions>>9)){
 		printf("Invalid permissions flags '%s'\n",argv[5]);
 		return 1;
@@ -222,7 +224,7 @@ static _Bool _command_copy(kfs2_filesystem_t* fs,int argc,const char** argv){
 		printf("Unable to open host file '%s'\n",argv[6]);
 		return 1;
 	}
-	uint64_t file_size=lseek(fd,0,SEEK_END);
+	u64 file_size=lseek(fd,0,SEEK_END);
 	lseek(fd,0,SEEK_SET);
 	kfs2_node_resize(fs,&node,file_size);
 	void* file_data=mmap(0,file_size,PROT_READ,MAP_SHARED,fd,0);
@@ -243,7 +245,7 @@ static _Bool _command_link(kfs2_filesystem_t* fs,int argc,const char** argv){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> link <path> <permissions> <target>\n",(argc?argv[0]:"kfs2"));
 		return 1;
 	}
-	uint32_t permissions;
+	u32 permissions;
 	if (sscanf(argv[5],"%i",&permissions)<0||(permissions>>9)){
 		printf("Invalid permissions flags '%s'\n",argv[5]);
 		return 1;
@@ -273,7 +275,7 @@ static _Bool _command_link(kfs2_filesystem_t* fs,int argc,const char** argv){
 	node.time_modify=_current_time();
 	node.time_change=node.time_modify;
 	kfs2_node_flush(fs,&node);
-	uint64_t target_length=strlen(argv[6]);
+	u64 target_length=strlen(argv[6]);
 	kfs2_node_resize(fs,&node,target_length);
 	if (kfs2_node_write(fs,&node,0,argv[6],target_length)!=target_length){
 		printf("Unable to write data to link\n");
@@ -294,11 +296,11 @@ int main(int argc,const char** argv){
 		printf("Unable to open drive file '%s'\n",argv[1]);
 		return 1;
 	}
-	uint64_t drive_size=lseek(fd,0,SEEK_END);
+	u64 drive_size=lseek(fd,0,SEEK_END);
 	lseek(fd,0,SEEK_SET);
-	uint64_t start_lba;
-	uint64_t end_lba;
-	if (sscanf(argv[2],"%lu:%lu:%lu",&_drive_block_size,&start_lba,&end_lba)<0||(_drive_block_size&(_drive_block_size-1))||end_lba<=start_lba||end_lba*_drive_block_size>drive_size){
+	u64 start_lba;
+	u64 end_lba;
+	if (sscanf(argv[2],"%llu:%llu:%llu",&_drive_block_size,&start_lba,&end_lba)<0||(_drive_block_size&(_drive_block_size-1))||end_lba<=start_lba||end_lba*_drive_block_size>drive_size){
 		printf("Invalid partition description '%s'\n",argv[2]);
 		return 1;
 	}

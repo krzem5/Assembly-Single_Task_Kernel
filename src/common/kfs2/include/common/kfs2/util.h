@@ -1,5 +1,6 @@
 #ifndef _COMMON_KFS2_UTIL_H_
 #define _COMMON_KFS2_UTIL_H_ 1
+#include <common/types.h>
 #if BUILD_MODULE
 #include <common/kfs2/platform/module.h>
 #elif BUILD_UEFI

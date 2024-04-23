@@ -1,5 +1,6 @@
 #ifndef _COMMON_COMPRESSOR_COMPRESSOR_H_
 #define _COMMON_COMPRESSOR_COMPRESSOR_H_ 1
+#include <common/types.h>
 
 
 
@@ -9,15 +10,15 @@
 
 
 
-unsigned int compressor_get_max_compressed_size(unsigned int data_length);
+u32 compressor_get_max_compressed_size(u32 data_length);
 
 
 
-unsigned int compressor_compress(const unsigned char* data,unsigned int data_length,unsigned int compression_level,unsigned char* out);
+u32 compressor_compress(const u8* data,u32 data_length,u32 compression_level,u8* out);
 
 
 
-void compressor_decompress(const void* data,unsigned int data_length,void* out);
+void compressor_decompress(const void* data,u32 data_length,void* out);
 
 
 

@@ -1,5 +1,6 @@
 #ifndef _SYS_TYPES_H_
 #define _SYS_TYPES_H_ 1
+#include <common/types.h>
 
 
 
@@ -10,18 +11,6 @@
 #define SYS_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define SYS_NORETURN __attribute__((noreturn))
 #define __SYS_SIGNATURE static const u8 __attribute__((used,section(".signature"))) _user_signature[4096]
-
-
-
-typedef unsigned char u8;
-typedef unsigned short int u16;
-typedef unsigned int u32;
-typedef unsigned long long int u64;
-
-typedef signed char s8;
-typedef signed short int s16;
-typedef signed int s32;
-typedef signed long long int s64;
 
 
 

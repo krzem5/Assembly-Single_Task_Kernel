@@ -1,9 +1,9 @@
-#include <efi.h>
+#include <common/types.h>
 #include <elf.h>
 
 
 
-extern uint64_t ImageBase;
+extern u64 ImageBase;
 extern Elf64_Dyn* _DYNAMIC;
 
 
@@ -30,12 +30,12 @@ void relocate_executable(void){
 	}
 	while (1){
 		if (ELF64_R_TYPE(relocations->r_info)==R_X86_64_RELATIVE){
-			*((uint64_t*)(ImageBase+relocations->r_offset))+=ImageBase;
+			*((u64*)(ImageBase+relocations->r_offset))+=ImageBase;
 		}
 		if (relocation_size<=relocation_entry_size){
 			return;
 		}
-		relocations=(Elf64_Rel*)(((uint64_t)relocations)+relocation_entry_size);
+		relocations=(Elf64_Rel*)(((u64)relocations)+relocation_entry_size);
 		relocation_size-=relocation_entry_size;
 	}
 }
