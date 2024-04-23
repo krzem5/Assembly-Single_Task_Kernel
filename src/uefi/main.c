@@ -1,7 +1,7 @@
+#include <common/compressor/compressor.h>
 #include <common/kfs2/api.h>
 #include <common/kfs2/structures.h>
 #include <efi.h>
-#include <uefi/compression.h>
 #include <uefi/kernel_data.h>
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
@@ -44,7 +44,7 @@ static uint64_t _decompress_data(const uint8_t* data,uint32_t data_length,uint64
 	if (EFI_ERROR(uefi_global_system_table->BootServices->AllocatePages(AllocateAddress,0x80000000,(out_length+PAGE_SIZE)>>PAGE_SIZE_SHIFT,&address))){
 		return 0;
 	}
-	_decompress_raw(data,data_length,(uint8_t*)address);
+	compressor_decompress(data,data_length,(uint8_t*)address);
 	return address+((out_length+PAGE_SIZE)&(-PAGE_SIZE));
 }
 

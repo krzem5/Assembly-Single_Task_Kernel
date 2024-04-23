@@ -1,4 +1,4 @@
-#include <compressor/compressor.h>
+#include <common/compressor/compressor.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

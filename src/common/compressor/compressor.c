@@ -1,6 +1,4 @@
-#include <compressor/compressor.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <common/compressor/compressor.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,7 +17,7 @@
 
 
 
-static uint32_t _encode_non_match(uint32_t non_match_length,uint8_t* out){
+static unsigned int _encode_non_match(unsigned int non_match_length,unsigned char* out){
 	out[0]=((non_match_length&0x3f)<<2)|((non_match_length>63)<<1);
 	if (non_match_length>63){
 		out[1]=non_match_length>>6;
@@ -30,17 +28,17 @@ static uint32_t _encode_non_match(uint32_t non_match_length,uint8_t* out){
 
 
 
-uint32_t compressor_get_max_compressed_size(uint32_t data_length){
+unsigned int compressor_get_max_compressed_size(unsigned int data_length){
 	return (data_length+MAX_NON_MATCH_LENGTH-1)/MAX_NON_MATCH_LENGTH*(MAX_NON_MATCH_LENGTH+2);
 }
 
 
 
-uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t compression_level,uint8_t* out){
-	uint32_t out_length=0;
+unsigned int compressor_compress(const unsigned char* data,unsigned int data_length,unsigned int compression_level,unsigned char* out){
+	unsigned int out_length=0;
 	if (compression_level==COMPRESSOR_COMPRESSION_LEVEL_NONE){
-		for (uint32_t offset=0;offset<data_length;){
-			uint32_t chunk=data_length-offset;
+		for (unsigned int offset=0;offset<data_length;){
+			unsigned int chunk=data_length-offset;
 			if (chunk>MAX_NON_MATCH_LENGTH){
 				chunk=MAX_NON_MATCH_LENGTH;
 			}
@@ -51,28 +49,28 @@ uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t c
 		}
 		return out_length;
 	}
-	uint32_t window_size=WINDOW_SIZE;
-	uint32_t max_preprocessed_match_length=MAX_PREPROCESSED_MATCH_LENGTH;
+	unsigned int window_size=WINDOW_SIZE;
+	unsigned int max_preprocessed_match_length=MAX_PREPROCESSED_MATCH_LENGTH;
 	if (compression_level==COMPRESSOR_COMPRESSION_LEVEL_FAST){
 		window_size=WINDOW_SIZE_FAST;
 		max_preprocessed_match_length=MAX_PREPROCESSED_MATCH_LENGTH_FAST;
 	}
-	uint16_t* kmp_search_table=calloc(max_preprocessed_match_length,sizeof(uint16_t));
-	uint32_t non_match_length=0;
-	uint32_t offset=0;
+	unsigned short int* kmp_search_table=calloc(max_preprocessed_match_length,sizeof(unsigned short int));
+	unsigned int non_match_length=0;
+	unsigned int offset=0;
 	while (offset<data_length){
-		uint32_t capped_data_length=data_length-offset;
+		unsigned int capped_data_length=data_length-offset;
 		if (capped_data_length>MAX_MATCH_LENGTH){
 			capped_data_length=MAX_MATCH_LENGTH;
 		}
-		uint32_t preprocessed_data_length=capped_data_length;
+		unsigned int preprocessed_data_length=capped_data_length;
 		if (preprocessed_data_length>max_preprocessed_match_length){
 			preprocessed_data_length=max_preprocessed_match_length;
 		}
-		uint32_t window_offset=(offset<window_size?0:offset-window_size);
+		unsigned int window_offset=(offset<window_size?0:offset-window_size);
 		kmp_search_table[0]=0xffff;
-		uint32_t j=0;
-		for (uint32_t i=1;i<preprocessed_data_length;i++){
+		unsigned int j=0;
+		for (unsigned int i=1;i<preprocessed_data_length;i++){
 			if (data[offset+i]==data[offset+j]){
 				kmp_search_table[i]=kmp_search_table[j];
 			}
@@ -82,10 +80,10 @@ uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t c
 			}
 			j=(j+1)&0xffff;
 		}
-		uint32_t match_length=0;
-		uint32_t match_offset=0;
-		int32_t i=0;
-		for (j=0;j<preprocessed_data_length&&i<=((int32_t)(offset-window_offset+j))-MATCH_ALIGNMENT;i++){
+		unsigned int match_length=0;
+		unsigned int match_offset=0;
+		int i=0;
+		for (j=0;j<preprocessed_data_length&&i<=((int)(offset-window_offset+j))-MATCH_ALIGNMENT;i++){
 			if (data[offset+j]==data[window_offset+i]){
 				j++;
 				continue;

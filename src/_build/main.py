@@ -286,11 +286,11 @@ def _get_files(directories):
 
 
 def _compile_uefi():
-	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY,COMMON_FILE_DIRECTORY+"/kfs2")
+	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
 	rebuild_uefi_partition=False
-	for file in _get_files([UEFI_FILE_DIRECTORY,COMMON_FILE_DIRECTORY+"/kfs2"]):
+	for file in _get_files([UEFI_FILE_DIRECTORY,COMMON_FILE_DIRECTORY+"/compressor",COMMON_FILE_DIRECTORY+"/kfs2"]):
 		object_file=UEFI_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -299,7 +299,7 @@ def _compile_uefi():
 		rebuild_uefi_partition=True
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/kfs2/include","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DBUILD_UEFI=1","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/compressor/include",f"-I{COMMON_FILE_DIRECTORY}/kfs2/include","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DBUILD_UEFI=1","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
