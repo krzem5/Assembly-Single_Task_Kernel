@@ -327,7 +327,7 @@ def _compile_kernel(force_patch_kernel):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-DBUILD_KERNEL=1","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include",f"-I{COMMON_FILE_DIRECTORY}/kernel_data/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-DBUILD_KERNEL=1","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
@@ -359,7 +359,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include",f"-I{COMMON_FILE_DIRECTORY}/kernel_data/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
