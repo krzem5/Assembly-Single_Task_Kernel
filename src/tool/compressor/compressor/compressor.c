@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 
@@ -18,41 +19,38 @@
 
 
 
-static _Bool _encode_non_match(uint32_t non_match_length,FILE* out){
+static uint32_t _encode_non_match(uint32_t non_match_length,uint8_t* out){
 	uint8_t buffer[2]={
 		((non_match_length&0x3f)<<2)|((non_match_length>63)<<1),
 		non_match_length>>6
 	};
 	uint32_t count=(non_match_length>63?2:1);
-	return fwrite(buffer,1,count,out)==count;
+	memcpy(out,buffer,count);
+	return count;
 }
 
 
 
-_Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out){
-	fseek(in,0,SEEK_END);
-	uint32_t length=ftell(in);
-	fseek(in,0,SEEK_SET);
-	uint8_t header[4]={length,length>>8,length>>16,length>>24};
-	if (fwrite(header,1,4,out)!=4){
-		return 0;
-	}
-	uint8_t* data=malloc(length);
-	if (fread(data,1,length,in)!=length){
-		return 0;
-	}
+uint32_t compressor_get_max_compressed_size(uint32_t data_length){
+	return (data_length+MAX_NON_MATCH_LENGTH-1)/MAX_NON_MATCH_LENGTH*(MAX_NON_MATCH_LENGTH+2);
+}
+
+
+
+uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t compression_level,uint8_t* out){
+	uint32_t out_length=0;
 	if (compression_level==COMPRESSOR_COMPRESSION_LEVEL_NONE){
-		for (uint32_t offset=0;offset<length;){
-			uint32_t chunk=length-offset;
+		for (uint32_t offset=0;offset<data_length;){
+			uint32_t chunk=data_length-offset;
 			if (chunk>MAX_NON_MATCH_LENGTH){
 				chunk=MAX_NON_MATCH_LENGTH;
 			}
-			if (!_encode_non_match(chunk,out)||fwrite(data+offset,1,chunk,out)!=chunk){
-				return 0;
-			}
+			out_length+=_encode_non_match(chunk,out+out_length);
+			memcpy(out+out_length,data+offset,chunk);
+			out_length+=chunk;
 			offset+=chunk;
 		}
-		goto _cleanup;
+		return out_length;
 	}
 	uint32_t window_size=WINDOW_SIZE;
 	uint32_t max_preprocessed_match_length=MAX_PREPROCESSED_MATCH_LENGTH;
@@ -63,8 +61,8 @@ _Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out){
 	uint16_t* kmp_search_table=calloc(max_preprocessed_match_length,sizeof(uint16_t));
 	uint32_t non_match_length=0;
 	uint32_t offset=0;
-	while (offset<length){
-		uint32_t capped_data_length=length-offset;
+	while (offset<data_length){
+		uint32_t capped_data_length=data_length-offset;
 		if (capped_data_length>MAX_MATCH_LENGTH){
 			capped_data_length=MAX_MATCH_LENGTH;
 		}
@@ -115,9 +113,9 @@ _Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out){
 			}
 		}
 		if (non_match_length==MAX_NON_MATCH_LENGTH||(non_match_length&&match_length>=MIN_MATCH_LENGTH)){
-			if (!_encode_non_match(non_match_length,out)||fwrite(data+offset-non_match_length,1,non_match_length,out)!=non_match_length){
-				return 0;
-			}
+			out_length+=_encode_non_match(non_match_length,out+out_length);
+			memcpy(out+out_length,data+offset-non_match_length,non_match_length);
+			out_length+=non_match_length;
 			non_match_length=0;
 		}
 		if (match_length<MIN_MATCH_LENGTH){
@@ -130,19 +128,16 @@ _Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out){
 				((match_offset&3)<<6)|(match_length>>7),
 				match_offset>>2
 			};
-			if (fwrite(buffer,1,3,out)!=3){
-				return 0;
-			}
+			memcpy(out+out_length,buffer,3);
+			out_length+=3;
 			offset+=match_length;
 		}
 	}
 	if (non_match_length){
-		if (!_encode_non_match(non_match_length,out)||fwrite(data+offset-non_match_length,1,non_match_length,out)!=non_match_length){
-			return 0;
-		}
+		out_length+=_encode_non_match(non_match_length,out+out_length);
+		memcpy(out+out_length,data+offset-non_match_length,non_match_length);
+		out_length+=non_match_length;
 	}
 	free(kmp_search_table);
-_cleanup:
-	free(data);
-	return 1;
+	return out_length;
 }

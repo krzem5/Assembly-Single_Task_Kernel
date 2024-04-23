@@ -1,6 +1,7 @@
 #include <compressor/compressor.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -35,13 +36,28 @@ int main(int argc,const char** argv){
 		printf("Unable to open output file '%s'\n",argv[3]);
 		return 1;
 	}
-	if (!compressor_compress(in,compression_level,out)){
-		fclose(in);
-		fclose(out);
-		printf("Unable to compress file\n");
-		return 1;
+	fseek(in,0,SEEK_END);
+	uint32_t in_length=ftell(in);
+	fseek(in,0,SEEK_SET);
+	void* in_data=malloc(in_length);
+	void* out_data=malloc(compressor_get_max_compressed_size(in_length));
+	if (fread(in_data,1,in_length,in)!=in_length||fwrite(&in_length,1,sizeof(uint32_t),out)!=sizeof(uint32_t)){
+		goto _error;
 	}
+	uint32_t out_length=compressor_compress(in_data,in_length,compression_level,out_data);
+	if (!out_length||fwrite(out_data,1,out_length,out)!=out_length){
+		goto _error;
+	}
+	free(in_data);
+	free(out_data);
 	fclose(in);
 	fclose(out);
 	return 0;
+_error:
+	free(in_data);
+	free(out_data);
+	fclose(in);
+	fclose(out);
+	printf("Unable to compress file\n");
+	return 1;
 }

@@ -1,7 +1,6 @@
 #ifndef _COMPRESSOR_COMPRESSOR_H_
 #define _COMPRESSOR_COMPRESSOR_H_ 1
 #include <stdint.h>
-#include <stdio.h>
 
 
 
@@ -11,7 +10,15 @@
 
 
 
-_Bool compressor_compress(FILE* in,uint32_t compression_level,FILE* out);
+uint32_t compressor_get_max_compressed_size(uint32_t data_length);
+
+
+
+uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t compression_level,uint8_t* out);
+
+
+
+void compressor_decompress(const void* data,uint32_t data_length,void* out);
 
 
 
