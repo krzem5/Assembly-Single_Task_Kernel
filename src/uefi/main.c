@@ -7,7 +7,7 @@
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
 
-
+//
 
 #define KERNEL_LOAD_ADDRESS 0x100000
 
