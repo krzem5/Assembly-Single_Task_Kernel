@@ -20,13 +20,12 @@
 
 
 static uint32_t _encode_non_match(uint32_t non_match_length,uint8_t* out){
-	uint8_t buffer[2]={
-		((non_match_length&0x3f)<<2)|((non_match_length>63)<<1),
-		non_match_length>>6
-	};
-	uint32_t count=(non_match_length>63?2:1);
-	memcpy(out,buffer,count);
-	return count;
+	out[0]=((non_match_length&0x3f)<<2)|((non_match_length>63)<<1);
+	if (non_match_length>63){
+		out[1]=non_match_length>>6;
+		return 2;
+	}
+	return 1;
 }
 
 
@@ -123,12 +122,9 @@ uint32_t compressor_compress(const uint8_t* data,uint32_t data_length,uint32_t c
 			offset++;
 		}
 		else{
-			uint8_t buffer[3]={
-				((match_length&0x7f)<<1)|1,
-				((match_offset&3)<<6)|(match_length>>7),
-				match_offset>>2
-			};
-			memcpy(out+out_length,buffer,3);
+			out[out_length]=((match_length&0x7f)<<1)|1;
+			out[out_length+1]=((match_offset&3)<<6)|(match_length>>7);
+			out[out_length+2]=match_offset>>2;
 			out_length+=3;
 			offset+=match_length;
 		}

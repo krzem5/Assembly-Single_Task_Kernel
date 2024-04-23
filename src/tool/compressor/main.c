@@ -45,7 +45,7 @@ int main(int argc,const char** argv){
 		goto _error;
 	}
 	uint32_t out_length=compressor_compress(in_data,in_length,compression_level,out_data);
-	if (!out_length||fwrite(out_data,1,out_length,out)!=out_length){
+	if (fwrite(out_data,1,out_length,out)!=out_length){
 		goto _error;
 	}
 	free(in_data);
