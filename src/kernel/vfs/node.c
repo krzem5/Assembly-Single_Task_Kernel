@@ -236,7 +236,12 @@ KERNEL_PUBLIC void vfs_node_flush(vfs_node_t* node){
 
 KERNEL_PUBLIC void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child){
 	spinlock_acquire_exclusive(&(node->lock));
-	child->relatives.parent=node;
+	if (child->relatives.parent){
+		WARN("vfs_node_attach_child: Multiple parents");
+	}
+	else{
+		child->relatives.parent=node;
+	}
 	child->relatives.next_sibling=node->relatives.child;
 	if (node->relatives.child){
 		spinlock_acquire_exclusive(&(node->relatives.child->lock));

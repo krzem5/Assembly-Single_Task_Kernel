@@ -344,7 +344,7 @@ KERNEL_INIT(){
  * 4.  restart
  * (boot loader)
  * 5.  if no encrypted hash is found, return to normal boot
- * 6.  store a copy of the PCR hash before the registerd are extended
+ * 6.  store a copy of the PCR hash before the registers are extended
  * 7.  extend the PCR registers
  * 8.  decrypt the encrypted hash
  * 9.  if the hash does not match the kernel+initramfs hash, return to normal boot
