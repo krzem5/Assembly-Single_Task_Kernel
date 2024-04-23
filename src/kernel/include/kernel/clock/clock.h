@@ -11,7 +11,7 @@ typedef u64 (*clock_source_calibration_callback_t)(void);
 typedef struct _CLOCK_SOURCE{
 	const char* name;
 	clock_source_calibration_callback_t calibration_callback;
-	const _Bool* is_stable;
+	const bool* is_stable;
 } clock_source_t;
 
 

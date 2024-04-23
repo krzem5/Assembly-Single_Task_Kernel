@@ -93,11 +93,11 @@ void _handle_delete_internal(handle_t* handle);
 
 
 
-_Bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
+bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
 
 
 
-_Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
+bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
 
 
 
@@ -107,7 +107,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE handle_acquire(handle_t* handle){
 
 
 
-static KERNEL_INLINE _Bool KERNEL_NOCOVERAGE handle_release(handle_t* handle){
+static KERNEL_INLINE bool KERNEL_NOCOVERAGE handle_release(handle_t* handle){
 	handle->rc--;
 	if (handle->rc){
 		return 1;

@@ -101,7 +101,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 		glsl_compilation_output_var_t* var=output->vars+i;
 		const char* storage=NULL;
 		const char* suffix="";
-		_Bool has_generic_specifier=0;
+		bool has_generic_specifier=0;
 		switch (var->type){
 			case GLSL_COMPILATION_OUTPUT_VAR_TYPE_INPUT:
 				storage="IN";
@@ -177,7 +177,7 @@ static glsl_error_t _glsl_shader_link_callback(const glsl_compilation_output_t* 
 			const glsl_instruction_arg_t* arg=instruction->args+(order[j]&7);
 			const char* storage=NULL;
 			u32 slot=arg->index;
-			_Bool has_swizzle=1;
+			bool has_swizzle=1;
 			if (arg->pattern_length_and_flags&GLSL_INSTRUCTION_ARG_FLAG_CONST){
 				storage="IMM";
 			}

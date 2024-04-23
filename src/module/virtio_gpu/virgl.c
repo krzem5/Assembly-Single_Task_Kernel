@@ -282,7 +282,7 @@ static KERNEL_INLINE u32 _decode_sampler_compare_func(u32 flags){
 
 
 
-static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,_Bool flush){
+static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,bool flush){
 	spinlock_acquire_exclusive(&(ctx->command_buffer.lock));
 	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE){
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
@@ -301,7 +301,7 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 
 
 
-static _Bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* state){
+static bool _init_state(opengl_driver_instance_t* instance,opengl_state_t* state){
 	if (HANDLE_ID_GET_INDEX(state->handle.rb_node.key)>>32){
 		ERROR("Too many OpenGL states created over lifetime");
 		return 0;
@@ -1033,7 +1033,7 @@ MODULE_INIT(){
 
 
 
-void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_v2,const void* data,u32 size){
+void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,bool is_v2,const void* data,u32 size){
 	LOG("Initializing OpenGL with virgl%s backend...",(is_v2?"2":""));
 	if (!is_v2){
 		panic("virgl_load_from_virtio_gpu_capset: virgl v1 capset is unimplemented");

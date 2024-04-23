@@ -36,7 +36,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE _delay_400ns(const ata_device_t* dev
 
 
 
-static _Bool KERNEL_NOCOVERAGE _wait_for_device(const ata_device_t* device,u8 mask,u8 value){
+static bool KERNEL_NOCOVERAGE _wait_for_device(const ata_device_t* device,u8 mask,u8 value){
 	u32 timeout=OPERATION_TIMEOUT;
 	for (;timeout&&(io_port_in8(device->port+ATA_REG_STATUS)&mask)!=value;timeout--){
 		if (io_port_in8(device->port+ATA_REG_STATUS)&STATUS_ERR){
@@ -145,7 +145,7 @@ static const drive_type_t _atapi_drive_type_config={
 
 
 
-static _Bool _ata_init(ata_device_t* device,u8 index){
+static bool _ata_init(ata_device_t* device,u8 index){
 	io_port_out8(device->port+ATA_REG_DEV_CTL,DEV_CTL_SRST);
 	_delay_400ns(device);
 	io_port_out8(device->port+ATA_REG_DEV_CTL,0);

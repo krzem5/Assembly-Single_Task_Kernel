@@ -10,8 +10,8 @@ struct _DRIVE;
 
 typedef struct _PARTITION_TABLE_DESCRIPTOR_CONFIG{
 	const char* name;
-	_Bool (*load_callback)(struct _DRIVE*);
-	_Bool (*format_callback)(struct _DRIVE*);
+	bool (*load_callback)(struct _DRIVE*);
+	bool (*format_callback)(struct _DRIVE*);
 } partition_table_descriptor_config_t;
 
 

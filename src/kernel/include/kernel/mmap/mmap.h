@@ -71,7 +71,7 @@ mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 flags,vfs_node
 
 
 
-_Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
+bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length);
 
 
 

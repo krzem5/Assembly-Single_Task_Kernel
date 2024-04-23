@@ -55,7 +55,7 @@ static void _init_bitmap(const kfs2_filesystem_config_t* config,const bitmap_dat
 
 
 
-_Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out){
+bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out){
 	if (config->block_size>4096){
 		return 0;
 	}
@@ -85,7 +85,7 @@ _Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesys
 	root_block->inode_allocation_bitmap_highest_level_length=inode_bitmap.lengths[KFS2_BITMAP_LEVEL_COUNT-1];
 	root_block->data_block_allocation_bitmap_highest_level_length=data_block_bitmap.lengths[KFS2_BITMAP_LEVEL_COUNT-1];
 	kfs2_insert_crc(root_block,sizeof(kfs2_root_block_t));
-	_Bool ret=config->write_callback(config->ctx,config->start_lba,root_block,1);
+	bool ret=config->write_callback(config->ctx,config->start_lba,root_block,1);
 	config->dealloc_callback(root_block,1);
 	if (ret!=1){
 		return 0;

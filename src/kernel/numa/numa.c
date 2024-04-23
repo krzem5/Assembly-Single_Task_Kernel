@@ -73,7 +73,7 @@ void KERNEL_EARLY_EXEC numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid){
 
 
 
-void KERNEL_EARLY_EXEC numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_pluggable){
+void KERNEL_EARLY_EXEC numa_add_memory_range(u32 node_index,u64 base_address,u64 length,bool hot_pluggable){
 	if (node_index>=numa_node_count||!_numa_remaining_memory_ranges){
 		panic("NUMA index out-of-range");
 	}

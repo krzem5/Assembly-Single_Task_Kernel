@@ -145,7 +145,7 @@ KERNEL_PUBLIC vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const ch
 
 
 
-KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string){
+KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,bool delete_string){
 	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
 	string_t* string=dynamicfs_node->data;
 	dynamicfs_node->data=NULL;

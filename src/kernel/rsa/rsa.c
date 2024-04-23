@@ -30,7 +30,7 @@ static void _normalize(rsa_number_t* a){
 
 
 
-static _Bool _is_less_than(const rsa_number_t* a,const rsa_number_t* b){
+static bool _is_less_than(const rsa_number_t* a,const rsa_number_t* b){
 	if (a->length<b->length){
 		return 1;
 	}
@@ -322,7 +322,7 @@ KERNEL_PUBLIC void rsa_state_process(const rsa_state_t* state,rsa_number_t* valu
 	u32 mask=0;
 	u32 mask_length=0;
 	rsa_number_t* tmp[2]={rsa_number_create(state),rsa_number_create(state)};
-	_Bool j=0;
+	bool j=0;
 	tmp[j]->data[0]=1;
 	tmp[j]->length=1;
 	for (u32 i=(exponent->length<<5);i;){

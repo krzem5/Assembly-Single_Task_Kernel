@@ -30,7 +30,7 @@ static KERNEL_INLINE vmm_pagemap_table_t* _get_table(u64* entry){
 
 
 
-static KERNEL_INLINE _Bool _decrease_length(u64* table){
+static KERNEL_INLINE bool _decrease_length(u64* table){
 	if (!((*table)&VMM_PAGE_FLAG_PRESENT)){
 		return 0;
 	}
@@ -77,7 +77,7 @@ static void _delete_pagemap_recursive(u64* table,u8 level,u16 limit){
 
 
 
-static u64* _get_child_table(u64* table,u64 index,_Bool allocate_if_not_present){
+static u64* _get_child_table(u64* table,u64 index,bool allocate_if_not_present){
 	u64* entry=_get_table(table)->entries+index;
 	if (*entry){
 		return entry;
@@ -369,7 +369,7 @@ _cleanup:
 
 
 
-KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,_Bool invalidate_tlb){
+KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,bool invalidate_tlb){
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(pagemap->lock));
 	for (;count;count--){
@@ -388,10 +388,10 @@ KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u
 
 
 
-KERNEL_PUBLIC _Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
+KERNEL_PUBLIC bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
 	scheduler_pause();
 	spinlock_acquire_shared(&(pagemap->lock));
-	_Bool out=1;
+	bool out=1;
 	for (;count;count--){
 		u64* entry=_lookup_virtual_address(pagemap,virtual_address);
 		out&=(entry&&*entry&&((*entry)&VMM_PAGE_FLAG_USER));

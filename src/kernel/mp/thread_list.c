@@ -26,7 +26,7 @@ void thread_list_add(thread_list_t* thread_list,thread_t* thread){
 
 
 
-_Bool thread_list_remove(thread_list_t* thread_list,thread_t* thread){
+bool thread_list_remove(thread_list_t* thread_list,thread_t* thread){
 	spinlock_acquire_exclusive(&(thread_list->lock));
 	if (thread->thread_list_prev){
 		thread->thread_list_prev->thread_list_next=thread->thread_list_next;

@@ -276,7 +276,7 @@ glsl_error_t _glsl_error_create_linker_missing_shader(glsl_shader_type_t shader_
 
 
 
-glsl_error_t _glsl_error_create_linker_unlinked_var(const char* name,_Bool is_output){
+glsl_error_t _glsl_error_create_linker_unlinked_var(const char* name,bool is_output){
 	char buffer[ERROR_BUFFER_SIZE];
 	return _create_error(buffer,sys_format_string(buffer,ERROR_BUFFER_SIZE,"%s variable '%s' is not declared in %s shader stage",(is_output?"Output":"Input"),name,(is_output?"next":"previous")));
 }

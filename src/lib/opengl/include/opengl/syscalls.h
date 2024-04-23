@@ -7,7 +7,7 @@
 
 
 
-_Bool opengl_syscalls_init(void);
+bool opengl_syscalls_init(void);
 
 
 
@@ -15,7 +15,7 @@ opengl_driver_instance_t opengl_syscall_get_driver_instance(u16 min_version);
 
 
 
-_Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out);
+bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out);
 
 
 
@@ -23,15 +23,15 @@ opengl_state_id_t opengl_syscall_create_state(opengl_driver_instance_t instance)
 
 
 
-_Bool opengl_syscall_delete_state(opengl_state_id_t state);
+bool opengl_syscall_delete_state(opengl_state_id_t state);
 
 
 
-_Bool opengl_syscall_set_state(opengl_state_id_t state);
+bool opengl_syscall_set_state(opengl_state_id_t state);
 
 
 
-_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer);
+bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer);
 
 
 

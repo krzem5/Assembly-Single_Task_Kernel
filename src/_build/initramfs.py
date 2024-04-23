@@ -25,20 +25,31 @@ class Node(object):
 		self.file_path=file_path
 
 	def add_child(self,child):
-		self.size+=child.size
 		self.children.append(child)
 
 
 
-def _generate_tree(directory,node):
-	for name in sorted(os.listdir(directory)):
-		path=os.path.join(directory,name)
-		if (os.path.isfile(path)):
-			node.add_child(Node(name,0,path))
+def _create_node(node,path,file):
+	if (path[0]!="/"):
+		raise RuntimeError
+	path=path[1:].split("/")
+	for name in path[:-1]:
+		for child in node.children:
+			if (child.name.decode("utf-8")==name):
+				node=child
+				break
 		else:
-			child_node=Node(name,FLAG_DIRECTORY,None)
-			_generate_tree(path,child_node)
-			node.add_child(child_node)
+			child=Node(name,FLAG_DIRECTORY,None)
+			node.add_child(child)
+			node=child
+	node.add_child(Node(path[-1],0,file))
+
+
+
+def _calculate_node_size(node):
+	for child in node.children:
+		node.size+=_calculate_node_size(child)
+	return node.size
 
 
 
@@ -60,9 +71,11 @@ def _write_node(node,wf):
 
 
 
-def create(base_directory,file_path):
+def create(file_path,files):
 	root=Node("",FLAG_DIRECTORY,None)
-	_generate_tree(base_directory,root)
+	for path,file in files.items():
+		_create_node(root,path,file)
+	_calculate_node_size(root)
 	with open(file_path,"wb") as wf:
 		wf.write(struct.pack("<Q16B",HEADER_SIGNATURE,*uuid.uuid4().bytes))
 		_write_node(root,wf)

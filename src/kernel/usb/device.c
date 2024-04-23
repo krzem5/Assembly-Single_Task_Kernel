@@ -207,7 +207,7 @@ KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_de
 
 
 
-KERNEL_PUBLIC _Bool usb_device_set_configuration(usb_device_t* device,u8 value){
+KERNEL_PUBLIC bool usb_device_set_configuration(usb_device_t* device,u8 value){
 	usb_configuration_descriptor_t* configuration_descriptor=device->configuration_descriptor;
 	for (;configuration_descriptor&&configuration_descriptor->value!=value;configuration_descriptor=configuration_descriptor->next);
 	if (!configuration_descriptor){

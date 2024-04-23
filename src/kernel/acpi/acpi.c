@@ -17,7 +17,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	LOG("Loading ACPI RSDP...");
 	const acpi_rsdp_t* rsdp=(void*)vmm_identity_map(kernel_data.rsdp_address,sizeof(acpi_rsdt_t));
 	INFO("Found RSDP at %p (revision %u)",((u64)rsdp)-VMM_HIGHER_HALF_ADDRESS_OFFSET,rsdp->revision);
-	_Bool is_xsdt=0;
+	bool is_xsdt=0;
 	const acpi_rsdt_t* rsdt;
 	if (!rsdp->revision||!rsdp->xsdt_address){
 		INFO("Found RSDT at %p",rsdp->rsdt_address);

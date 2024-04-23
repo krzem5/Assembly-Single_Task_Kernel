@@ -23,7 +23,7 @@
 
 
 
-static _Bool KERNEL_INIT_WRITE _scheduler_enabled=0;
+static bool KERNEL_INIT_WRITE _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
 
 

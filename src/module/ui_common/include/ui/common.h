@@ -9,7 +9,7 @@ handle_id_t ui_common_get_process(void);
 
 
 
-_Bool ui_common_set_process(handle_id_t process_handle);
+bool ui_common_set_process(handle_id_t process_handle);
 
 
 

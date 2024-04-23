@@ -58,7 +58,7 @@ static void* _alloc_handle(opengl_handle_type_t type,u32 size){
 
 
 
-static void* _get_handle(GLuint handle,opengl_handle_type_t type,_Bool always_invalid_operation,_Bool alwats_invalid_value){
+static void* _get_handle(GLuint handle,opengl_handle_type_t type,bool always_invalid_operation,bool alwats_invalid_value){
 	if (handle>=_gl_internal_state->handle_count||!_gl_internal_state->handles[handle]){
 		_gl_internal_state->gl_error=(always_invalid_operation?GL_INVALID_OPERATION:GL_INVALID_VALUE);
 		return NULL;
@@ -862,7 +862,7 @@ _skip_vertex_array_sync:
 		.uniform_buffer_size=0,
 		.vertex_buffer_count=0
 	};
-	_Bool update_buffers=0;
+	bool update_buffers=0;
 	if (_gl_internal_state->gl_bound_index_buffer!=_gl_internal_state->gl_used_index_buffer||_gl_internal_state->gl_bound_index_offset!=_gl_internal_state->gl_used_index_offset||_gl_internal_state->gl_bound_index_width!=_gl_internal_state->gl_used_index_width){
 		opengl_buffer_state_t* index_buffer_state=_get_handle(_gl_internal_state->gl_used_index_buffer,OPENGL_HANDLE_TYPE_BUFFER,1,0);
 		set_buffers_command.index_buffer_driver_handle=(index_buffer_state?index_buffer_state->driver_handle:0);
@@ -1117,7 +1117,7 @@ _skip_sampler_sync:
 
 
 
-static _Bool _process_draw_index_size(GLenum type){
+static bool _process_draw_index_size(GLenum type){
 	switch (type){
 		case GL_UNSIGNED_BYTE:
 			_gl_internal_state->gl_used_index_width=1;
@@ -1136,7 +1136,7 @@ static _Bool _process_draw_index_size(GLenum type){
 
 
 
-static void _process_draw_command(GLenum mode,GLint start,GLsizei count,_Bool indexed,GLsizei instance_count,GLint index_bias,GLuint min_index,GLuint max_index){
+static void _process_draw_command(GLenum mode,GLint start,GLsizei count,bool indexed,GLsizei instance_count,GLint index_bias,GLuint min_index,GLuint max_index){
 	_sync_state();
 	if (count<0||index_bias<0||max_index<min_index){
 		_gl_internal_state->gl_error=GL_INVALID_VALUE;
@@ -1370,7 +1370,7 @@ static void _set_vertex_attrib(GLuint index,GLint size,GLenum type,GLboolean nor
 
 
 
-static void _update_texture_parameter(GLenum target,GLenum pname,const void* ptr,_Bool is_float,_Bool was_ptr){
+static void _update_texture_parameter(GLenum target,GLenum pname,const void* ptr,bool is_float,bool was_ptr){
 	GLuint texture=0;
 	switch (target){
 		case GL_TEXTURE_2D:
@@ -1530,7 +1530,7 @@ static void _update_texture(GLint dim,GLenum target,GLint level,GLint internalfo
 			_gl_internal_state->gl_error=GL_INVALID_ENUM;
 			return;
 	}
-	_Bool is_update=0;
+	bool is_update=0;
 	if (dim<0){
 		is_update=1;
 		dim=-dim;

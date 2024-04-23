@@ -28,7 +28,7 @@ aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ctx);
 
 
 
-_Bool aml_runtime_execute(aml_runtime_context_t* ctx);
+bool aml_runtime_execute(aml_runtime_context_t* ctx);
 
 
 

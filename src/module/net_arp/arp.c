@@ -98,7 +98,7 @@ MODULE_POSTINIT(){
 
 
 
-KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking){
+KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,bool nonblocking){
 	if (!address){
 		mem_fill(out,sizeof(mac_address_t),0);
 		return 1;
@@ -118,7 +118,7 @@ KERNEL_PUBLIC _Bool net_arp_resolve_address(net_ip4_address_t address,mac_addres
 		spinlock_release_exclusive(&_net_arp_cache_lock);
 		return 0;
 	}
-	_Bool send_request_packed=0;
+	bool send_request_packed=0;
 	if (!cache_entry){
 		send_request_packed=1;
 		cache_entry=omm_alloc(_net_arp_cache_entry_allocator);

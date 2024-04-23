@@ -6,7 +6,7 @@
 
 
 
-static _Bool _check_line(const glsl_preprocessor_state_t* state,char marker,u32 expected_line,u32 expected_file){
+static bool _check_line(const glsl_preprocessor_state_t* state,char marker,u32 expected_line,u32 expected_file){
 	u32 offset=0;
 	for (;state->data[offset]!=marker;offset++);
 	u32 file;

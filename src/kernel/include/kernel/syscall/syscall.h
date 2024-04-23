@@ -27,7 +27,7 @@ u32 syscall_create_table(const char* name,const syscall_callback_t* functions,u3
 
 
 
-_Bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count);
+bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count);
 
 
 

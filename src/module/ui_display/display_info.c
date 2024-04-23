@@ -302,7 +302,7 @@ KERNEL_PUBLIC ui_display_info_t* ui_display_info_parse_edid(const u8* edid,u32 e
 		}
 		for (u32 j=4;j<edid[i+2];j+=edid[j]&0x1f){
 			u8 type=edid[i+j]>>5;
-			_Bool is_extended=(type==7);
+			bool is_extended=(type==7);
 			const u8* data=edid+i+j+is_extended+1;
 			if (is_extended){
 				type=edid[i+j+1];

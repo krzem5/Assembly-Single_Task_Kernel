@@ -48,14 +48,14 @@ static glsl_lexer_token_t* _emit_token(glsl_lexer_token_list_t* token_list,glsl_
 
 
 
-static _Bool _check_possible_identifier(const char* src,const char* word){
+static bool _check_possible_identifier(const char* src,const char* word){
 	u32 length=sys_string_length(word);
 	return (!sys_memory_compare(src,word,length)&&!LEXER_IS_IDENTIFIER(src[length]));
 }
 
 
 
-static glsl_lexer_token_t* _consume_possible_identifier(glsl_lexer_token_list_t* token_list,const char** src,const char* word,_Bool is_identifier,u32 glsl_lexer_token_type){
+static glsl_lexer_token_t* _consume_possible_identifier(glsl_lexer_token_list_t* token_list,const char** src,const char* word,bool is_identifier,u32 glsl_lexer_token_type){
 	u32 length=sys_string_length(word);
 	if (sys_memory_compare(*src,word,length)||(is_identifier&&LEXER_IS_IDENTIFIER((*src)[length]))){
 		return NULL;
@@ -383,7 +383,7 @@ SYS_PUBLIC glsl_error_t glsl_lexer_extract_tokens(const char* src,glsl_lexer_tok
 			}
 			if (src[0]=='e'||src[0]=='E'){
 				src++;
-				_Bool is_negative=0;
+				bool is_negative=0;
 				if (src[0]=='+'){
 					src++;
 				}

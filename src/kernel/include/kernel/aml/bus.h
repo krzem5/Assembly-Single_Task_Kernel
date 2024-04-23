@@ -42,7 +42,7 @@ typedef struct _AML_BUS_DEVICE_RESOURCE{
 		struct{
 			u32 base;
 			u32 size;
-			_Bool writable;
+			bool writable;
 		} memory_region;
 		struct{
 			u32 pin;
@@ -53,7 +53,7 @@ typedef struct _AML_BUS_DEVICE_RESOURCE{
 			u16 base_max;
 			u8 base_alignment;
 			u8 length;
-			_Bool decode_all_address_bits;
+			bool decode_all_address_bits;
 		} io_port;
 		struct{
 			u8 type;
@@ -102,7 +102,7 @@ typedef struct _AML_BUS_DEVICE_DRIVER{
 		u64 hid;
 		const char* hid_str;
 	} address;
-	_Bool (*init)(aml_bus_device_t*);
+	bool (*init)(aml_bus_device_t*);
 	void (*deinit)(aml_bus_device_t*);
 } aml_bus_device_driver_t;
 

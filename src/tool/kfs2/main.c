@@ -52,7 +52,7 @@ static void _dealloc_callback(void* ptr,u64 count){
 
 
 
-static _Bool _lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* parent,const char** child_name,kfs2_node_t* out){
+static bool _lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* parent,const char** child_name,kfs2_node_t* out){
 	kfs2_filesystem_get_root(fs,out);
 	if (child_name){
 		*child_name=NULL;
@@ -92,7 +92,7 @@ static _Bool _lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* pa
 
 
 
-static _Bool _command_format(const kfs2_filesystem_config_t* fs_config){
+static bool _command_format(const kfs2_filesystem_config_t* fs_config){
 	kfs2_filesystem_t fs;
 	if (!kfs2_filesystem_format(fs_config,&fs)){
 		printf("Unable to format partition as KFS2\n");
@@ -119,7 +119,7 @@ static _Bool _command_format(const kfs2_filesystem_config_t* fs_config){
 
 
 
-static _Bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
+static bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
 	if (argc<6){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> mkdir <path> <permissions>\n",(argc?argv[0]:"kfs2"));
 		return 1;
@@ -154,7 +154,7 @@ static _Bool _command_mkdir(kfs2_filesystem_t* fs,int argc,const char** argv){
 
 
 
-static _Bool _command_ls(kfs2_filesystem_t* fs,int argc,const char** argv){
+static bool _command_ls(kfs2_filesystem_t* fs,int argc,const char** argv){
 	if (argc<5){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> ls <path>\n",(argc?argv[0]:"kfs2"));
 		return 1;
@@ -184,7 +184,7 @@ static _Bool _command_ls(kfs2_filesystem_t* fs,int argc,const char** argv){
 
 
 
-static _Bool _command_copy(kfs2_filesystem_t* fs,int argc,const char** argv){
+static bool _command_copy(kfs2_filesystem_t* fs,int argc,const char** argv){
 	if (argc<7){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> copy <path> <permissions> <host_path>\n",(argc?argv[0]:"kfs2"));
 		return 1;
@@ -240,7 +240,7 @@ static _Bool _command_copy(kfs2_filesystem_t* fs,int argc,const char** argv){
 
 
 
-static _Bool _command_link(kfs2_filesystem_t* fs,int argc,const char** argv){
+static bool _command_link(kfs2_filesystem_t* fs,int argc,const char** argv){
 	if (argc<7){
 		printf("Usage:\n\n%s <drive file> <block_size>:<start_lba>:<end_lba> link <path> <permissions> <target>\n",(argc?argv[0]:"kfs2"));
 		return 1;

@@ -26,7 +26,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _virtio_blk_device_allocator=NULL;
 
 static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	virtio_blk_device_t* blk_device=drive->extra_data;
-	_Bool is_write=!!(offset&DRIVE_OFFSET_FLAG_WRITE);
+	bool is_write=!!(offset&DRIVE_OFFSET_FLAG_WRITE);
 	offset&=DRIVE_OFFSET_MASK;
 	virtio_blk_request_header_t* header=amm_alloc(sizeof(virtio_blk_request_header_t));
 	header->type=(is_write?VIRTIO_BLK_T_OUT:VIRTIO_BLK_T_IN);
@@ -64,7 +64,7 @@ static const drive_type_t _virtio_blk_drive_type_config={
 
 
 
-static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
+static bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	if (!(features&(1ull<<VIRTIO_F_VERSION_1))){
 		ERROR("Wrong device version");
 		return 0;

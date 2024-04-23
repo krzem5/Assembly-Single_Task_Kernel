@@ -58,7 +58,7 @@ KERNEL_PUBLIC u32 smm_length(const char* data){
 
 
 
-KERNEL_PUBLIC _Bool smm_equal(const string_t* a,const string_t* b){
+KERNEL_PUBLIC bool smm_equal(const string_t* a,const string_t* b){
 	if (a->length!=b->length||a->hash!=b->hash){
 		return 0;
 	}

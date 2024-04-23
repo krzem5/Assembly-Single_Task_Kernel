@@ -42,7 +42,7 @@ static void _list_files(sys_fd_t fd,u32 level,frame_t* frame){
 			continue;
 		}
 		iter=sys_fd_iter_next(iter);
-		_Bool has_next_sibling=!SYS_IS_ERROR(iter);
+		bool has_next_sibling=!SYS_IS_ERROR(iter);
 		for (u32 i=0;i<level;i++){
 			sys_io_print("%s   ",((frame->bitmap[i>>6]&(1ull<<(i&63)))?"│":" "));
 		}

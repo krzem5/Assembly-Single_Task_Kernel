@@ -23,7 +23,7 @@ process_t* process_create(const char* image,const char* name,u64 mmap_bottom_add
 
 
 
-_Bool process_is_root(void);
+bool process_is_root(void);
 
 
 

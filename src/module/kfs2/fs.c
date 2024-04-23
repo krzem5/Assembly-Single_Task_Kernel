@@ -121,7 +121,7 @@ static u64 _kfs2_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 
-static _Bool _kfs2_link(vfs_node_t* node,vfs_node_t* parent){
+static bool _kfs2_link(vfs_node_t* node,vfs_node_t* parent){
 	if (node->fs->extra_data!=parent->fs->extra_data){
 		panic("Cross-filesystem file linking is not supported");
 	}
@@ -130,7 +130,7 @@ static _Bool _kfs2_link(vfs_node_t* node,vfs_node_t* parent){
 
 
 
-static _Bool _kfs2_unlink(vfs_node_t* node,vfs_node_t* parent){
+static bool _kfs2_unlink(vfs_node_t* node,vfs_node_t* parent){
 	if (node->fs->extra_data!=parent->fs->extra_data){
 		return 0;
 	}
@@ -263,7 +263,7 @@ static void _kfs2_fs_mount(filesystem_t* fs,const char* path){
 
 
 
-static _Bool _kfs2_fs_format(partition_t* partition){
+static bool _kfs2_fs_format(partition_t* partition){
 	panic("_kfs2_fs_format");
 }
 

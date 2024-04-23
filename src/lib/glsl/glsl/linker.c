@@ -21,7 +21,7 @@ static glsl_error_t _allocate_slots(glsl_compilation_output_t* output,glsl_compi
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(max_slots,&allocator);
-	_Bool has_slot=1;
+	bool has_slot=1;
 _second_pass:
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* var=output->vars+i;
@@ -49,7 +49,7 @@ static glsl_error_t _check_compatibility(glsl_compilation_output_t* output,glsl_
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(max_slots,&allocator);
-	_Bool has_slot=1;
+	bool has_slot=1;
 _second_pass:
 	for (u32 i=0;i<output->var_count;i++){
 		glsl_compilation_output_var_t* output_var=output->vars+i;
@@ -114,7 +114,7 @@ static glsl_error_t _allocate_global_slots(glsl_linker_program_t* program,glsl_l
 	glsl_error_t error=GLSL_NO_ERROR;
 	glsl_interface_allocator_t allocator;
 	_glsl_interface_allocator_init(gl_MaxVertexUniformComponents,&allocator);
-	_Bool has_slot=1;
+	bool has_slot=1;
 	linked_program->uniform_slot_count=0;
 _second_pass:
 	for (glsl_shader_type_t i=0;i<=GLSL_SHADER_MAX_TYPE;i++){

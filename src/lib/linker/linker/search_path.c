@@ -8,7 +8,7 @@
 
 
 static const char* _library_default_search_directories="/lib:/:.";
-static _Bool _library_search_directories_was_allocated=0;
+static bool _library_search_directories_was_allocated=0;
 static char* _library_search_directories=NULL;
 
 

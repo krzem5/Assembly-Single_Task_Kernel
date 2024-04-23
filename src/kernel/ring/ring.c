@@ -16,7 +16,7 @@ static pmm_counter_descriptor_t* _ring_buffer_pmm_counter=NULL;
 
 
 
-static void* _get_item(ring_t* ring,_Bool wait,_Bool pop){
+static void* _get_item(ring_t* ring,bool wait,bool pop){
 _retry_pop:
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(ring->read_lock));
@@ -88,7 +88,7 @@ KERNEL_PUBLIC void ring_deinit(ring_t* ring){
 
 
 
-KERNEL_PUBLIC _Bool ring_push(ring_t* ring,void* item,_Bool wait){
+KERNEL_PUBLIC bool ring_push(ring_t* ring,void* item,bool wait){
 _retry_push:
 	scheduler_pause();
 	spinlock_acquire_exclusive(&(ring->write_lock));
@@ -116,12 +116,12 @@ _retry_push:
 
 
 
-KERNEL_PUBLIC void* ring_pop(ring_t* ring,_Bool wait){
+KERNEL_PUBLIC void* ring_pop(ring_t* ring,bool wait){
 	return _get_item(ring,wait,1);
 }
 
 
 
-KERNEL_PUBLIC void* ring_peek(ring_t* ring,_Bool wait){
+KERNEL_PUBLIC void* ring_peek(ring_t* ring,bool wait){
 	return _get_item(ring,wait,0);
 }

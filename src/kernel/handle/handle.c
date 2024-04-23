@@ -150,7 +150,7 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 
 
 
-KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
+KERNEL_PUBLIC bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;
@@ -166,7 +166,7 @@ KERNEL_PUBLIC _Bool handle_register_notification_listener(handle_type_t type,not
 
 
 
-KERNEL_PUBLIC _Bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
+KERNEL_PUBLIC bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		return 0;

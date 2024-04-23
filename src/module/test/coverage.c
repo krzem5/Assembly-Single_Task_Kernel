@@ -51,7 +51,7 @@ typedef struct _GCOV_INFO{
 
 
 static spinlock_t _coverage_lock;
-static _Bool _coverage_failed=0;
+static bool _coverage_failed=0;
 
 
 

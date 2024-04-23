@@ -92,7 +92,7 @@ static u32 _get_uint32(aml_runtime_context_t* ctx){
 
 
 
-static _Bool _store_value(aml_object_t* value,aml_runtime_context_t* ctx){
+static bool _store_value(aml_object_t* value,aml_runtime_context_t* ctx){
 	u8 type=ctx->data[ctx->offset];
 	if (!type){
 		ctx->offset++;
@@ -1082,7 +1082,7 @@ static aml_object_t* _exec_opcode_l_equal(aml_runtime_context_t* ctx){
 		aml_object_dealloc(left);
 		return NULL;
 	}
-	_Bool out=0;
+	bool out=0;
 	if (left->type==AML_OBJECT_TYPE_INTEGER&&right->type==AML_OBJECT_TYPE_INTEGER){
 		out=(left->integer==right->integer);
 	}
@@ -1120,7 +1120,7 @@ static aml_object_t* _exec_opcode_l_greater(aml_runtime_context_t* ctx){
 		aml_object_dealloc(left);
 		return NULL;
 	}
-	_Bool out=0;
+	bool out=0;
 	if (left->type==AML_OBJECT_TYPE_INTEGER&&right->type==AML_OBJECT_TYPE_INTEGER){
 		out=(left->integer>right->integer);
 	}
@@ -1145,7 +1145,7 @@ static aml_object_t* _exec_opcode_l_less(aml_runtime_context_t* ctx){
 		aml_object_dealloc(left);
 		return NULL;
 	}
-	_Bool out=0;
+	bool out=0;
 	if (left->type==AML_OBJECT_TYPE_INTEGER&&right->type==AML_OBJECT_TYPE_INTEGER){
 		out=(left->integer<right->integer);
 	}
@@ -1270,7 +1270,7 @@ static aml_object_t* _exec_opcode_if(aml_runtime_context_t* ctx){
 		ERROR("_exec_opcode_if: predicate is not an integer");
 		return NULL;
 	}
-	_Bool execute_branch=!!predicate->integer;
+	bool execute_branch=!!predicate->integer;
 	aml_object_dealloc(predicate);
 	if (execute_branch){
 		aml_runtime_context_t child_ctx={
@@ -1325,7 +1325,7 @@ static aml_object_t* _exec_opcode_while(aml_runtime_context_t* ctx){
 			ERROR("_exec_opcode_while: predicate is not an integer");
 			return NULL;
 		}
-		_Bool execute_loop=!!predicate->integer;
+		bool execute_loop=!!predicate->integer;
 		aml_object_dealloc(predicate);
 		if (!execute_loop){
 			break;
@@ -1897,7 +1897,7 @@ KERNEL_PUBLIC aml_object_t* aml_runtime_execute_single(aml_runtime_context_t* ct
 
 
 
-KERNEL_PUBLIC _Bool aml_runtime_execute(aml_runtime_context_t* ctx){
+KERNEL_PUBLIC bool aml_runtime_execute(aml_runtime_context_t* ctx){
 	ctx->offset=0;
 	while (ctx->offset<ctx->length){
 		aml_object_t* value=aml_runtime_execute_single(ctx);
@@ -1941,7 +1941,7 @@ KERNEL_PUBLIC aml_object_t* aml_runtime_execute_method(aml_object_t* method,u8 a
 		method->method.namespace,
 		&vars
 	};
-	_Bool ret=aml_runtime_execute(&ctx);
+	bool ret=aml_runtime_execute(&ctx);
 	for (u8 i=0;i<8;i++){
 		if (i<7){
 			aml_object_dealloc(vars.args[i]);

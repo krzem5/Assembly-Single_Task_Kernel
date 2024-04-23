@@ -73,7 +73,7 @@ typedef struct _USB_DEVICE_DESCRIPTOR{
 
 typedef struct _USB_DRIVER_DESCRIPTOR{
 	const char* name;
-	_Bool (*load_callback)(struct _USB_DEVICE*,usb_interface_descriptor_t*);
+	bool (*load_callback)(struct _USB_DEVICE*,usb_interface_descriptor_t*);
 	handle_t handle;
 } usb_driver_descriptor_t;
 

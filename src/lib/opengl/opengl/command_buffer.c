@@ -19,7 +19,7 @@ void opengl_command_buffer_init(void){
 
 
 
-void opengl_command_buffer_set_lock(_Bool lock){
+void opengl_command_buffer_set_lock(bool lock){
 	// unimplemented
 }
 

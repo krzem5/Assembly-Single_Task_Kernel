@@ -12,7 +12,7 @@ void thread_list_add(thread_list_t* thread_list,thread_t* thread);
 
 
 
-_Bool thread_list_remove(thread_list_t* thread_list,thread_t* thread);
+bool thread_list_remove(thread_list_t* thread_list,thread_t* thread);
 
 
 

@@ -21,8 +21,8 @@ static glsl_error_t _execute_parser(const char* src,glsl_shader_type_t shader_ty
 
 
 
-static _Bool _compare_storage(const glsl_ast_var_storage_t* storage,u8 type,u8 flags,u16 layout_location,const glsl_ast_block_t* block){
-	_Bool out=1;
+static bool _compare_storage(const glsl_ast_var_storage_t* storage,u8 type,u8 flags,u16 layout_location,const glsl_ast_block_t* block){
+	bool out=1;
 	out&=(storage->type==type);
 	out&=(storage->flags==flags);
 	out&=(storage->block==block);
@@ -45,7 +45,7 @@ static const glsl_ast_block_t* _check_block(const glsl_ast_t* ast,const char* na
 
 
 
-static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storage_type,u8 storage_flags,u16 storage_layout_location,const glsl_ast_block_t* storage_block){
+static bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storage_type,u8 storage_flags,u16 storage_layout_location,const glsl_ast_block_t* storage_block){
 	const glsl_ast_var_t* var=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		if (!sys_string_compare(ast->vars[i]->name,name)){
@@ -58,7 +58,7 @@ static _Bool _check_var_storage(const glsl_ast_t* ast,const char* name,u8 storag
 
 
 
-static _Bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl_builtin_type_t builtin_type){
+static bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl_builtin_type_t builtin_type){
 	const glsl_ast_var_t* var=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		if (!sys_string_compare(ast->vars[i]->name,name)){
@@ -66,7 +66,7 @@ static _Bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl
 			break;
 		}
 	}
-	_Bool out=0;
+	bool out=0;
 	if (var){
 		out=(var->type->type==GLSL_AST_TYPE_TYPE_BUILTIN);
 		out&=(var->type->builtin_type==builtin_type);
@@ -76,7 +76,7 @@ static _Bool _check_var_type_builtin(const glsl_ast_t* ast,const char* name,glsl
 
 
 
-static _Bool _check_var_type_array_length(const glsl_ast_t* ast,const char* name,u32 array_length){
+static bool _check_var_type_array_length(const glsl_ast_t* ast,const char* name,u32 array_length){
 	const glsl_ast_var_t* var=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		if (!sys_string_compare(ast->vars[i]->name,name)){
@@ -89,7 +89,7 @@ static _Bool _check_var_type_array_length(const glsl_ast_t* ast,const char* name
 
 
 
-static _Bool _check_var_value_const_int(const glsl_ast_t* ast,const char* name,s32 value){
+static bool _check_var_value_const_int(const glsl_ast_t* ast,const char* name,s32 value){
 	const glsl_ast_var_t* var=NULL;
 	for (u32 i=0;i<ast->var_count;i++){
 		if (!sys_string_compare(ast->vars[i]->name,name)){
@@ -97,7 +97,7 @@ static _Bool _check_var_value_const_int(const glsl_ast_t* ast,const char* name,s
 			break;
 		}
 	}
-	_Bool out=0;
+	bool out=0;
 	if (var&&var->value){
 		out=1;
 		out&=(var->value->type==GLSL_AST_NODE_TYPE_VAR_CONST);

@@ -33,7 +33,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 typedef struct _EVENT{
 	handle_t handle;
 	spinlock_t lock;
-	_Bool is_active;
+	bool is_active;
 	event_thread_container_t* head;
 	event_thread_container_t* tail;
 } event_t;
@@ -83,7 +83,7 @@ typedef struct _THREAD{
 	mmap_region_t* kernel_stack_region;
 	mmap_region_t* pf_stack_region;
 	struct{
-		_Bool reg_state_not_present;
+		bool reg_state_not_present;
 		isr_state_t gpr_state;
 		thread_fs_gs_state_t fs_gs_state;
 		void* fpu_state;
@@ -96,8 +96,8 @@ typedef struct _THREAD{
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;
 	u32 scheduler_load_balancer_queue_index;
-	_Bool scheduler_early_yield;
-	_Bool scheduler_io_yield;
+	bool scheduler_early_yield;
+	bool scheduler_io_yield;
 #ifndef KERNEL_RELEASE
 	lock_profiling_thread_data_t __lock_profiling_data;
 #endif

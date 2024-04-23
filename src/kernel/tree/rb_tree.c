@@ -19,19 +19,19 @@ static KERNEL_INLINE void _set_parent(rb_tree_node_t* node,rb_tree_node_t* paren
 
 
 
-static KERNEL_INLINE _Bool _get_color(rb_tree_node_t* node){
+static KERNEL_INLINE bool _get_color(rb_tree_node_t* node){
 	return node->rb_parent_and_color&1;
 }
 
 
 
-static KERNEL_INLINE void _set_color(rb_tree_node_t* node,_Bool color){
+static KERNEL_INLINE void _set_color(rb_tree_node_t* node,bool color){
 	node->rb_parent_and_color=(node->rb_parent_and_color&0xfffffffffffffffeull)|color;
 }
 
 
 
-static void _rotate_subtree(rb_tree_t* tree,rb_tree_node_t* x,_Bool dir){
+static void _rotate_subtree(rb_tree_t* tree,rb_tree_node_t* x,bool dir){
 	rb_tree_node_t* y=_get_parent(x);
 	rb_tree_node_t* z=x->rb_nodes[dir^1];
 	x->rb_nodes[dir^1]=z->rb_nodes[dir];
@@ -86,7 +86,7 @@ KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 			_set_color(y,0);
 			break;
 		}
-		_Bool dir=(y==z->rb_right);
+		bool dir=(y==z->rb_right);
 		rb_tree_node_t* w=z->rb_nodes[dir^1];
 		if (!w||!_get_color(w)){
 			if (x==y->rb_nodes[dir^1]){
@@ -214,7 +214,7 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 		}
 		_set_parent(z,y);
 		y=_get_parent(x);
-		_Bool tmp=_get_color(z);
+		bool tmp=_get_color(z);
 		_set_color(z,_get_color(x));
 		_set_color(x,tmp);
 	}
@@ -234,7 +234,7 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 		tree->root=NULL;
 		goto _cleanup;
 	}
-	_Bool dir=(x==y->rb_right);
+	bool dir=(x==y->rb_right);
 	y->rb_nodes[dir]=NULL;
 	if (_get_color(x)){
 		goto _cleanup;

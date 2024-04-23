@@ -27,7 +27,7 @@ typedef struct _PIPE_VFS_NODE{
 	void* buffer;
 	u32 write_offset;
 	u32 read_offset;
-	_Bool is_full;
+	bool is_full;
 	event_t* read_event;
 	event_t* write_event;
 } pipe_vfs_node_t;

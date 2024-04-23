@@ -30,7 +30,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-void symbol_add(const char* module,const char* name,u64 address,_Bool is_public){
+void symbol_add(const char* module,const char* name,u64 address,bool is_public){
 	symbol_t* symbol=(symbol_t*)rb_tree_lookup_node(&_symbol_tree,address);
 	if (symbol){
 		ERROR("Conflicting symbols: '%s' and '%s'",name,symbol->name->data);

@@ -211,7 +211,7 @@ MODULE_INIT(){
 
 
 
-KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking){
+KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblocking){
 	string_t* name_string=smm_alloc(name,0);
 	u64 key=(((u64)(name_string->length))<<32)|name_string->hash;
 	spinlock_acquire_exclusive(&_net_dns_cache_lock);

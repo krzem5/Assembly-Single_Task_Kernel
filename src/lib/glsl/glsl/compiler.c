@@ -27,7 +27,7 @@ typedef struct _COMPILER_STATE{
 
 
 typedef struct _REGISTER_STATE{
-	_Bool is_initialized;
+	bool is_initialized;
 	glsl_builtin_type_t builtin_type;
 	u16 base;
 	u16 offset;
@@ -114,7 +114,7 @@ static void _generate_instruction_arg(const register_state_t* reg,glsl_instructi
 
 
 
-static _Bool _is_var_used(const glsl_ast_var_t* var){
+static bool _is_var_used(const glsl_ast_var_t* var){
 	return ((var->storage.type==GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags==(GLSL_AST_VAR_USAGE_FLAG_READ|GLSL_AST_VAR_USAGE_FLAG_WRITE))
 		||(var->storage.type!=GLSL_AST_VAR_STORAGE_TYPE_DEFAULT&&var->usage_flags))&&var->type->type!=GLSL_AST_TYPE_TYPE_FUNC;
 }
@@ -310,7 +310,7 @@ static glsl_error_t _visit_node(const glsl_ast_node_t* node,compiler_state_t* st
 					sys_io_print("GLSL_AST_NODE_TYPE_CONSTRUCTOR: nested constructor // copy not implemented\n");
 					return GLSL_NO_ERROR;
 				}
-				_Bool base_type_is_float=glsl_builtin_type_to_vector_base_type(node->value_type->builtin_type)==GLSL_BUILTIN_TYPE_FLOAT;
+				bool base_type_is_float=glsl_builtin_type_to_vector_base_type(node->value_type->builtin_type)==GLSL_BUILTIN_TYPE_FLOAT;
 				register_state_t tmp=*output_register;
 				u16 mask=0;
 				float const_values[16];
@@ -447,7 +447,7 @@ _continue_const:
 			return error;
 		}
 	}
-	// _Bool is_output_used_before_last_arg=0;
+	// bool is_output_used_before_last_arg=0;
 	if (!output_register->is_initialized){
 		_calculate_output_target(state,NULL,node->value_type->builtin_type,output_register);
 	}

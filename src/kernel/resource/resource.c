@@ -101,7 +101,7 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 
 
 
-KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
+KERNEL_PUBLIC bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource){
 	if (!resource||resource>resource_manager->max){
 		return 0;
 	}
@@ -175,10 +175,10 @@ KERNEL_PUBLIC _Bool resource_dealloc(resource_manager_t* resource_manager,resour
 
 
 
-KERNEL_PUBLIC _Bool resource_is_used(resource_manager_t* resource_manager,resource_t resource){
+KERNEL_PUBLIC bool resource_is_used(resource_manager_t* resource_manager,resource_t resource){
 	spinlock_acquire_shared(&(resource_manager->lock));
 	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
-	_Bool out=(region&&region->is_used);
+	bool out=(region&&region->is_used);
 	spinlock_release_shared(&(resource_manager->lock));
 	return out;
 }

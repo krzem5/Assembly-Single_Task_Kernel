@@ -111,7 +111,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 
 
 
-KERNEL_PUBLIC _Bool process_is_root(void){
+KERNEL_PUBLIC bool process_is_root(void){
 	return !THREAD_DATA->process->uid||!THREAD_DATA->process->gid||uid_has_group(THREAD_DATA->process->uid,0)==1;
 }
 

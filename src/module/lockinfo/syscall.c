@@ -22,7 +22,7 @@ typedef struct _LOCKINFO_USER_DATA_DESCRIPTOR{
 
 
 
-static _Bool _syscall_lockinfo_get_data_descriptor(u32 index,u32 type_index,KERNEL_USER_POINTER lockinfo_user_data_descriptor_t* out){
+static bool _syscall_lockinfo_get_data_descriptor(u32 index,u32 type_index,KERNEL_USER_POINTER lockinfo_user_data_descriptor_t* out){
 	if (type_index>=LOCK_PROFILING_MAX_LOCK_TYPES||!(lock_profiling_type_descriptors+type_index)->func||syscall_get_user_pointer_max_length((void*)out)<sizeof(lockinfo_user_data_descriptor_t)){
 		return 0;
 	}

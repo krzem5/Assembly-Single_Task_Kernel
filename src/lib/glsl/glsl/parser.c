@@ -20,7 +20,7 @@
 
 typedef struct _OPERATOR_STACK_ELEMENT{
 	const glsl_operator_t* operator;
-	_Bool is_binary;
+	bool is_binary;
 	u32 precedence;
 } operator_stack_element_t;
 
@@ -119,7 +119,7 @@ static glsl_error_t _check_constructor_type(glsl_ast_node_t* node){
 
 
 
-static glsl_ast_type_t* _parse_type(glsl_parser_state_t* parser,_Bool allow_array,glsl_error_t* error){
+static glsl_ast_type_t* _parse_type(glsl_parser_state_t* parser,bool allow_array,glsl_error_t* error){
 	if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_BUILTIN_TYPE){
 		glsl_ast_type_t* out=glsl_ast_type_create(GLSL_AST_TYPE_TYPE_BUILTIN);
 		out->builtin_type=parser->tokens[parser->index].builtin_type;
@@ -173,12 +173,12 @@ _binary_error:
 
 
 
-static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_glsl_lexer_token_type,_Bool end_on_comma,glsl_error_t* error){
+static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_glsl_lexer_token_type,bool end_on_comma,glsl_error_t* error){
 	operator_stack_element_t operator_stack[PARSER_EXPRESSION_STACK_SIZE];
 	u32 operator_stack_size=0;
 	glsl_ast_node_t* value_stack[PARSER_EXPRESSION_STACK_SIZE];
 	u32 value_stack_size=0;
-	_Bool last_token_was_value=0;
+	bool last_token_was_value=0;
 	while (1){
 		if (parser->index==parser->length){
 			*error=_glsl_error_create_parser_expected((last_token_was_value?"operator":"expression"));
@@ -307,7 +307,7 @@ static glsl_ast_node_t* _parse_expression(glsl_parser_state_t* parser,u32 end_gl
 			continue;
 		}
 		if (parser->tokens[parser->index].type==GLSL_LEXER_TOKEN_TYPE_CONST_BOOL){
-			_Bool value=parser->tokens[parser->index].bool_;
+			bool value=parser->tokens[parser->index].bool_;
 			parser->index++;
 			if (value_stack_size==PARSER_EXPRESSION_STACK_SIZE){
 				*error=_glsl_error_create_parser_expression_stack_overflow();

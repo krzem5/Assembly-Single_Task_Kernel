@@ -19,7 +19,7 @@ void cwd_init(void){
 
 
 
-_Bool cwd_change(const char* path){
+bool cwd_change(const char* path){
 	sys_fd_t new_cwd_fd=sys_fd_open(cwd_fd,path,0);
 	if (SYS_IS_ERROR(new_cwd_fd)||SYS_IS_ERROR(sys_process_set_cwd(0,new_cwd_fd))){
 		return 0;
@@ -32,7 +32,7 @@ _Bool cwd_change(const char* path){
 
 
 
-_Bool cwd_change_root(const char* path){
+bool cwd_change_root(const char* path){
 	if (!cwd_change(path)){
 		return 0;
 	}

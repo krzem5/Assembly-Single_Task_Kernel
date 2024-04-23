@@ -17,11 +17,11 @@ opengl_state_t opengl_create_state(u16 min_version);
 
 
 
-_Bool opengl_set_state(opengl_state_t state);
+bool opengl_set_state(opengl_state_t state);
 
 
 
-_Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
+bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer);
 
 
 

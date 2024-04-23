@@ -108,7 +108,7 @@ typedef struct _NET_DNS_REQUEST{
 
 
 
-net_ip4_address_t net_dns_lookup_name(const char* name,_Bool nonblocking);
+net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblocking);
 
 
 

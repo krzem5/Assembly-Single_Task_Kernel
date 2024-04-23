@@ -70,7 +70,7 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 
 
 
-KERNEL_PUBLIC _Bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count){
+KERNEL_PUBLIC bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count){
 	spinlock_acquire_exclusive(&_syscall_table_list_lock);
 	if (index>=_syscall_table_list_length){
 		spinlock_release_exclusive(&_syscall_table_list_lock);

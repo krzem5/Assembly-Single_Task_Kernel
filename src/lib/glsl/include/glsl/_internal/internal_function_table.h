@@ -4,7 +4,7 @@
 
 
 
-_Bool _glsl_internal_function_table_find(const char* name,glsl_ast_node_t* node);
+bool _glsl_internal_function_table_find(const char* name,glsl_ast_node_t* node);
 
 
 

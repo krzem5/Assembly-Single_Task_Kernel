@@ -8,15 +8,15 @@ void signature_verify_kernel(void);
 
 
 
-_Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool* is_tainted);
+bool signature_verify_module(const char* name,const mmap_region_t* region,bool* is_tainted);
 
 
 
-_Bool signature_verify_user(const char* name,const mmap_region_t* region);
+bool signature_verify_user(const char* name,const mmap_region_t* region);
 
 
 
-_Bool signature_is_kernel_tainted(void);
+bool signature_is_kernel_tainted(void);
 
 
 

@@ -6,7 +6,7 @@
 
 
 
-static _Bool _test_module_deinit_triggered=0;
+static bool _test_module_deinit_triggered=0;
 
 
 

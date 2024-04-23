@@ -10,7 +10,7 @@
 
 
 
-_Bool pf_handle_fault(isr_state_t* isr_state){
+bool pf_handle_fault(isr_state_t* isr_state){
 	u64 address=pf_get_fault_address()&(-PAGE_SIZE);
 	if (!address||(isr_state->error&1)||!CPU_HEADER_DATA->current_thread){
 		return 0;

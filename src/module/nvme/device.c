@@ -86,7 +86,7 @@ static void _submission_queue_send_entry(nvme_submission_queue_t* queue){
 
 
 
-static _Bool _request_identify_data(nvme_device_t* device,u64 buffer,u8 cns,u32 namespace_id){
+static bool _request_identify_data(nvme_device_t* device,u64 buffer,u8 cns,u32 namespace_id){
 	nvme_submission_queue_entry_t* entry=_submission_queue_init_entry(&(device->admin_submission_queue),OPC_ADMIN_IDENTIFY);
 	entry->dptr_prp1=buffer;
 	entry->nsid=namespace_id;

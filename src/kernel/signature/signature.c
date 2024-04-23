@@ -26,8 +26,8 @@
 
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
-static _Bool _signature_is_kernel_tainted=0;
-static _Bool _signature_require_signatures=0;
+static bool _signature_is_kernel_tainted=0;
+static bool _signature_require_signatures=0;
 
 
 
@@ -53,7 +53,7 @@ void KERNEL_EARLY_EXEC signature_verify_kernel(void){
 
 
 
-_Bool signature_verify_module(const char* name,const mmap_region_t* region,_Bool* is_tainted){
+bool signature_verify_module(const char* name,const mmap_region_t* region,bool* is_tainted){
 	*is_tainted=1;
 	INFO("Verifying signature of '%s'...",name);
 	void* file_base=(void*)(region->rb_node.key);
@@ -109,7 +109,7 @@ _signature_error:
 
 
 
-_Bool signature_verify_user(const char* name,const mmap_region_t* region){
+bool signature_verify_user(const char* name,const mmap_region_t* region){
 	INFO("Verifying signature of '%s'...",name);
 	void* file_base=(void*)(region->rb_node.key);
 	const elf_hdr_t* elf_header=file_base;
@@ -159,7 +159,7 @@ _invalid_signature:
 
 
 
-KERNEL_PUBLIC _Bool signature_is_kernel_tainted(void){
+KERNEL_PUBLIC bool signature_is_kernel_tainted(void){
 	return _signature_is_kernel_tainted;
 }
 

@@ -26,7 +26,7 @@ void kfs2_chunk_deinit(kfs2_filesystem_t* fs,kfs2_data_chunk_t* chunk);
 
 
 
-void kfs2_chunk_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,_Bool fetch_data,kfs2_data_chunk_t* out);
+void kfs2_chunk_read(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 offset,bool fetch_data,kfs2_data_chunk_t* out);
 
 
 

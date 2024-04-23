@@ -77,7 +77,7 @@ KERNEL_PUBLIC u64 timer_get_deadline(timer_t* timer){
 
 
 
-KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypass_acl){
+KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypass_acl){
 	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
 		return;
 	}

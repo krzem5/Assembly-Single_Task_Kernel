@@ -5,7 +5,7 @@
 
 
 
-SYS_PUBLIC sys_event_t sys_event_create(_Bool is_active){
+SYS_PUBLIC sys_event_t sys_event_create(bool is_active){
 	return _sys_syscall_event_create(is_active);
 }
 
@@ -23,6 +23,6 @@ SYS_PUBLIC sys_error_t sys_event_dispatch(sys_event_t event,u32 dispatch_flags){
 
 
 
-SYS_PUBLIC sys_error_t sys_event_set_active(sys_event_t event,_Bool is_active){
+SYS_PUBLIC sys_error_t sys_event_set_active(sys_event_t event,bool is_active){
 	return _sys_syscall_event_set_active(event,is_active);
 }

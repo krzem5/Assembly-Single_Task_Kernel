@@ -60,7 +60,7 @@ typedef volatile struct KERNEL_PACKED _KVM_WALL_CLOCK{
 
 
 
-_Bool _kvm_get_flags(u32* features,u32* feature_hints);
+bool _kvm_get_flags(u32* features,u32* feature_hints);
 
 
 

@@ -17,7 +17,7 @@ typedef struct _NVME_COMPLETION_QUEUE{
 	nvme_queue_t queue;
 	nvme_completion_queue_entry_t* entries;
 	u16 head;
-	_Bool phase;
+	bool phase;
 } nvme_completion_queue_t;
 
 

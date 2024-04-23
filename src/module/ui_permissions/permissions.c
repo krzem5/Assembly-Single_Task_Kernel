@@ -25,7 +25,7 @@ typedef struct _UI_PERMISSION_REQUEST{
 	char handle[64];
 	u64 flags;
 	event_t* event;
-	_Bool accepted;
+	bool accepted;
 } ui_permission_request_t;
 
 
@@ -99,7 +99,7 @@ static error_t _syscall_get_permission_request(KERNEL_USER_POINTER ui_permission
 
 
 
-static error_t _syscall_set_permission_request(u64 id,_Bool accepted){
+static error_t _syscall_set_permission_request(u64 id,bool accepted){
 	if (THREAD_DATA->process->handle.rb_node.key!=ui_common_get_process()){
 		return ERROR_DENIED;
 	}

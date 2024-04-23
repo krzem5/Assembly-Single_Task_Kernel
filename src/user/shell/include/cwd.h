@@ -15,11 +15,11 @@ void cwd_init(void);
 
 
 
-_Bool cwd_change(const char* path);
+bool cwd_change(const char* path);
 
 
 
-_Bool cwd_change_root(const char* path);
+bool cwd_change_root(const char* path);
 
 
 

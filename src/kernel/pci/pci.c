@@ -82,7 +82,7 @@ _skip_msix_discovery:
 
 
 
-KERNEL_PUBLIC _Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out){
+KERNEL_PUBLIC bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out){
 	u8 register_index=(bar_index<<2)+16;
 	u32 bar=pci_device_read_data(device,register_index);
 	if (!bar){

@@ -24,11 +24,11 @@ typedef struct _MSIX_TABLE{
 
 
 
-_Bool pci_msix_load(const pci_device_t* device,msix_table_t* out);
+bool pci_msix_load(const pci_device_t* device,msix_table_t* out);
 
 
 
-_Bool pci_msix_redirect_entry(const msix_table_t* table,u16 vector,u8 irq);
+bool pci_msix_redirect_entry(const msix_table_t* table,u16 vector,u8 irq);
 
 
 

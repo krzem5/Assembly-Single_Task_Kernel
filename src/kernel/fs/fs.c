@@ -125,7 +125,7 @@ KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 
 
 
-KERNEL_PUBLIC _Bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor){
+KERNEL_PUBLIC bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor){
 	return descriptor->config->format_callback(partition);
 }
 

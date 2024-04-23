@@ -7,8 +7,8 @@
 
 
 int main(int argc,const char** argv){
-	_Bool raw=0;
-	_Bool uptime=0;
+	bool raw=0;
+	bool uptime=0;
 	sys_option_t options[]={
 		{
 			.short_name='r',
@@ -46,7 +46,7 @@ int main(int argc,const char** argv){
 		split_time.months=0;
 		split_time.days=time/86400000000000ull;
 	}
-	_Bool force_print=0;
+	bool force_print=0;
 	if (split_time.years){
 		sys_io_print("\x1b[1m%lu\x1b[0my ",split_time.years);
 		force_print=1;

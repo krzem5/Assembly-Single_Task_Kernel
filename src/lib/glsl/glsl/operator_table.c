@@ -41,7 +41,7 @@ static glsl_ast_node_t* _build_return_type(glsl_ast_node_t* left,glsl_ast_node_t
 
 
 
-static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* error){
+static bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* error){
 	switch (node->type){
 		case GLSL_AST_NODE_TYPE_NONE:
 		case GLSL_AST_NODE_TYPE_VAR_CONST:
@@ -89,7 +89,7 @@ static _Bool _mark_read_usage_recursive(glsl_ast_node_t* node,glsl_error_t* erro
 
 
 
-static _Bool _check_lvalue_recursive(glsl_ast_node_t* value,glsl_error_t* error){
+static bool _check_lvalue_recursive(glsl_ast_node_t* value,glsl_error_t* error){
 	if (value->type==GLSL_AST_NODE_TYPE_VAR){
 		if (!(value->var->possible_usage_flags&GLSL_AST_VAR_USAGE_FLAG_WRITE)){
 			*error=_glsl_error_create_parser_disallowed_operation(&(value->var->storage),GLSL_AST_VAR_USAGE_FLAG_WRITE);
@@ -116,7 +116,7 @@ static _Bool _check_lvalue_recursive(glsl_ast_node_t* value,glsl_error_t* error)
 
 
 
-static _Bool _check_lvalue(glsl_ast_node_t* value,glsl_error_t* error){
+static bool _check_lvalue(glsl_ast_node_t* value,glsl_error_t* error){
 	if (_check_lvalue_recursive(value,error)){
 		return 1;
 	}

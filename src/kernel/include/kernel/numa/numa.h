@@ -20,7 +20,7 @@ typedef struct _NUMA_MEMORY_RANGE{
 	struct _NUMA_MEMORY_RANGE* next;
 	u64 base_address;
 	u64 length;
-	_Bool hot_pluggable;
+	bool hot_pluggable;
 } numa_memory_range_t;
 
 
@@ -53,7 +53,7 @@ void numa_add_cpu(u32 node_index,u8 apic_id,u32 sapic_eid);
 
 
 
-void numa_add_memory_range(u32 node_index,u64 base_address,u64 length,_Bool hot_pluggable);
+void numa_add_memory_range(u32 node_index,u64 base_address,u64 length,bool hot_pluggable);
 
 
 

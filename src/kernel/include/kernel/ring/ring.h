@@ -29,15 +29,15 @@ void ring_deinit(ring_t* ring);
 
 
 
-_Bool ring_push(ring_t* ring,void* item,_Bool wait);
+bool ring_push(ring_t* ring,void* item,bool wait);
 
 
 
-void* ring_pop(ring_t* ring,_Bool wait);
+void* ring_pop(ring_t* ring,bool wait);
 
 
 
-void* ring_peek(ring_t* ring,_Bool wait);
+void* ring_peek(ring_t* ring,bool wait);
 
 
 

@@ -74,11 +74,11 @@ u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address);
 
 
 
-void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,_Bool invalidate_tlb);
+void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,bool invalidate_tlb);
 
 
 
-_Bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
+bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count);
 
 
 

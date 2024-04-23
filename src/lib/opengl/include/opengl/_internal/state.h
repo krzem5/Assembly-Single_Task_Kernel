@@ -113,7 +113,7 @@ typedef struct _OPENGL_BUFFER_STATE{
 	opengl_handle_header_t header;
 	u64 driver_handle;
 	GLuint type;
-	_Bool is_mapped;
+	bool is_mapped;
 	GLuint64 size;
 } opengl_buffer_state_t;
 
@@ -175,7 +175,7 @@ typedef struct _OPENGL_INTERNAL_STATE{
 	GLfloat gl_clear_color_value[4];
 	GLdouble gl_clear_depth_value;
 	GLint gl_clear_stencil_value;
-	_Bool gl_constant_buffer_needs_update;
+	bool gl_constant_buffer_needs_update;
 	GLuint gl_primitive_restart_index;
 	GLuint gl_used_array_buffer;
 	GLuint gl_used_index_buffer;

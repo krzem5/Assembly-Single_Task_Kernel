@@ -45,11 +45,11 @@ typedef struct _KFS2_FILESYSTEM{
 
 
 
-_Bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out);
+bool kfs2_filesystem_format(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out);
 
 
 
-_Bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out);
+bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out);
 
 
 
@@ -57,7 +57,7 @@ void kfs2_filesystem_deinit(kfs2_filesystem_t* fs);
 
 
 
-_Bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out);
+bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out);
 
 
 
@@ -65,15 +65,15 @@ void kfs2_filesystem_flush_root_block(kfs2_filesystem_t* fs);
 
 
 
-_Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,u32 flags,kfs2_node_t* out);
+bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,u32 flags,kfs2_node_t* out);
 
 
 
-_Bool kfs2_node_delete(kfs2_filesystem_t* fs,kfs2_node_t* node);
+bool kfs2_node_delete(kfs2_filesystem_t* fs,kfs2_node_t* node);
 
 
 
-_Bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* out);
+bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* out);
 
 
 
@@ -81,11 +81,11 @@ u64 kfs2_node_iterate(kfs2_filesystem_t* fs,kfs2_node_t* parent,u64 pointer,char
 
 
 
-_Bool kfs2_node_link(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length);
+bool kfs2_node_link(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length);
 
 
 
-_Bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length);
+bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length);
 
 
 
@@ -101,7 +101,7 @@ u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size);
 
 
 
-_Bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node);
+bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node);
 
 
 

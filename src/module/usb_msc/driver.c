@@ -125,7 +125,7 @@ static u16 _usb_msc_index=0;
 
 
 
-static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
+static bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
 	mem_fill(context->cbw.CBWCB._data,16,0);
@@ -143,14 +143,14 @@ static _Bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_resp
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_inquiry_responce_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&(context->csw),sizeof(usb_msc_csw_t));
 	spinlock_release_exclusive(&(driver->lock));
-	_Bool ret=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus);
+	bool ret=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus);
 	spinlock_release_exclusive(&(context->lock));
 	return ret;
 }
 
 
 
-static _Bool _wait_for_device(usb_msc_lun_context_t* context){
+static bool _wait_for_device(usb_msc_lun_context_t* context){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
 	while (1){
@@ -179,7 +179,7 @@ static _Bool _wait_for_device(usb_msc_lun_context_t* context){
 
 
 
-static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
+static bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	spinlock_acquire_exclusive(&(context->lock));
 	mem_fill(context->cbw.CBWCB._data,16,0);
@@ -196,7 +196,7 @@ static _Bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_rea
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,out,sizeof(usb_scsi_read_capacity_10_responce_t));
 	usb_pipe_transfer_normal(driver->device,driver->input_pipe,&(context->csw),sizeof(usb_msc_csw_t));
 	spinlock_release_exclusive(&(driver->lock));
-	_Bool ret=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus);
+	bool ret=(context->csw.dCSWSignature==USB_MSC_CSW_SIGNATURE&&context->csw.dCSWTag==context->cbw.dCBWTag&&!context->csw.bCSWStatus);
 	spinlock_release_exclusive(&(context->lock));
 	return ret;
 }
@@ -276,7 +276,7 @@ _cleanup:
 
 
 
-static _Bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* interface_descriptor){
+static bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* interface_descriptor){
 	if (interface_descriptor->class!=0x08||interface_descriptor->subclass!=0x06||interface_descriptor->protocol!=0x50){
 		return 0;
 	}

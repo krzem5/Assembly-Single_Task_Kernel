@@ -27,7 +27,7 @@ void event_dispatch(event_t* event,u32 flags);
 
 
 
-void event_await(event_t* event,_Bool is_io_wait);
+void event_await(event_t* event,bool is_io_wait);
 
 
 
@@ -39,7 +39,7 @@ u32 event_await_multiple_handles(const handle_id_t* handles,u32 count);
 
 
 
-void event_set_active(event_t* event,_Bool is_active,_Bool bypass_acl);
+void event_set_active(event_t* event,bool is_active,bool bypass_acl);
 
 
 

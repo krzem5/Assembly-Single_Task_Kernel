@@ -16,7 +16,7 @@ static void _check_one_token_builtin_type(glsl_lexer_token_list_t* token_list,gl
 
 
 
-static void _check_one_token_bool(glsl_lexer_token_list_t* token_list,_Bool value){
+static void _check_one_token_bool(glsl_lexer_token_list_t* token_list,bool value){
 	TEST_ASSERT(token_list->length==1);
 	TEST_ASSERT(token_list->data->type==GLSL_LEXER_TOKEN_TYPE_CONST_BOOL);
 	TEST_ASSERT(token_list->data->bool_==value);

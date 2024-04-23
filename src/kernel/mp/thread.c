@@ -135,7 +135,7 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
-	_Bool start_thread=!process;
+	bool start_thread=!process;
 	thread_t* out=_thread_alloc((process?process:process_kernel));
 	if (name){
 		smm_dealloc(out->name);

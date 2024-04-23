@@ -5,8 +5,8 @@
 
 
 
-_Bool test_glsl_check_and_cleanup_error(glsl_error_t error,const char* expected){
-	_Bool out=0;
+bool test_glsl_check_and_cleanup_error(glsl_error_t error,const char* expected){
+	bool out=0;
 	if (error){
 		out=!sys_string_compare(expected,error);
 		glsl_error_delete(error);

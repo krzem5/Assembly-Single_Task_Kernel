@@ -208,7 +208,6 @@ MODULE_ORDER_FILE_PATH="src/module/module_order.config"
 FS_LIST_FILE_PATH="src/module/fs_list.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
-INITRAMFS_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 COVERAGE_FILE_FAILURE_MARKER=0xb9beb6b34c494146
 KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
@@ -567,7 +566,9 @@ def _execute_kfs2_command(command):
 
 
 
-def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
+def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_libraries,rebuild_user_programs):
+	rebuild_uefi_partition=rebuild_uefi
+	rebuild_data_partition=rebuild_kernel|rebuild_modules|rebuild_libraries|rebuild_user_programs
 	if (not os.path.exists("build/install_disk.img")):
 		rebuild_uefi_partition=True
 		rebuild_data_partition=True
@@ -586,11 +587,12 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
 		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
 	if (rebuild_data_partition):
+		files={}
 		for module in _get_early_modules():
-			_copy_file(f"build/module/{module}.mod",f"build/initramfs/boot/module/{module}.mod")
-		_copy_file(MODULE_ORDER_FILE_PATH,"build/initramfs/boot/module/module_order.config")
-		_copy_file(FS_LIST_FILE_PATH,"build/initramfs/etc/fs_list.config")
-		initramfs.create("build/initramfs","build/partitions/initramfs.img")
+			files[f"/boot/module/{module}.mod"]=f"build/module/{module}.mod"
+		files["/boot/module/module_order.config"]=MODULE_ORDER_FILE_PATH
+		files["/etc/fs_list.config"]=FS_LIST_FILE_PATH
+		initramfs.create("build/partitions/initramfs.img",files)
 		_execute_compressor_command("build/kernel/kernel.bin")
 		_execute_compressor_command("build/partitions/initramfs.img")
 		_execute_kfs2_command(["mkdir","/bin","0755"])
@@ -848,16 +850,16 @@ signature.load_key("module",mode==MODE_RELEASE)
 signature.load_key("user",mode==MODE_RELEASE)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
-rebuild_uefi_partition=_compile_uefi()
-rebuild_data_partition=_compile_kernel(force_patch_kernel)
-rebuild_data_partition|=_compile_all_modules()
-rebuild_data_partition|=_compile_all_libraries()
-rebuild_data_partition|=_compile_all_user_programs()
+rebuild_uefi=_compile_uefi()
+rebuild_kernel=_compile_kernel(force_patch_kernel)
+rebuild_modules=_compile_all_modules()
+rebuild_libraries=_compile_all_libraries()
+rebuild_user_programs=_compile_all_user_programs()
 _compile_all_tools()
 _generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
-_generate_install_disk(rebuild_uefi_partition,rebuild_data_partition)
+_generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_libraries,rebuild_user_programs)
 if ("--run" not in sys.argv):
 	sys.exit(0)
 _execute_vm()

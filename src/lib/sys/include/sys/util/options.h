@@ -21,11 +21,11 @@ typedef struct _SYS_OPTION{
 	u8 var_type;
 	u8 flags;
 	union{
-		_Bool* var_switch;
+		bool* var_switch;
 		const char** var_string;
 		s64* var_int;
-		_Bool (*var_string_callback)(const char*);
-		_Bool (*var_int_callback)(s64);
+		bool (*var_string_callback)(const char*);
+		bool (*var_int_callback)(s64);
 	};
 } sys_option_t;
 

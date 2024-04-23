@@ -20,7 +20,7 @@ static void SYS_CONSTRUCTOR _init(void){
 
 
 
-_Bool opengl_syscalls_init(void){
+bool opengl_syscalls_init(void){
 	if (_opengl_syscall_offset==0xffffffffffffffffull){
 		_init();
 	}
@@ -35,7 +35,7 @@ opengl_driver_instance_t opengl_syscall_get_driver_instance(u16 min_version){
 
 
 
-_Bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out){
+bool opengl_syscall_get_driver_instance_data(opengl_driver_instance_t instance,opengl_driver_instance_data_t* out){
 	return _sys_syscall3(_opengl_syscall_offset|0x00000002,instance,(u64)out,sizeof(opengl_driver_instance_data_t))==SYS_ERROR_OK;
 }
 
@@ -48,13 +48,13 @@ opengl_state_id_t opengl_syscall_create_state(opengl_driver_instance_t instance)
 
 
 
-_Bool opengl_syscall_delete_state(opengl_state_id_t state){
+bool opengl_syscall_delete_state(opengl_state_id_t state){
 	return _sys_syscall1(_opengl_syscall_offset|0x00000004,state)==SYS_ERROR_OK;
 }
 
 
 
-_Bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer){
+bool opengl_syscall_set_state_framebuffer(opengl_state_id_t state,ui_framebuffer_handle_t framebuffer){
 	return _sys_syscall2(_opengl_syscall_offset|0x00000005,state,framebuffer)==SYS_ERROR_OK;
 }
 

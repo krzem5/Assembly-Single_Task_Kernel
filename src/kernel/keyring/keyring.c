@@ -148,9 +148,9 @@ KERNEL_PUBLIC void keyring_key_update(keyring_key_t* key){
 
 
 
-KERNEL_PUBLIC _Bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out){
+KERNEL_PUBLIC bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out){
 	spinlock_acquire_exclusive(&(key->lock));
-	_Bool ret=0;
+	bool ret=0;
 	if (key->type==KEYRING_KEY_TYPE_RSA){
 		rsa_state_process(&(key->data.rsa.state),in,RSA_PUBLIC_KEY,out);
 		ret=1;

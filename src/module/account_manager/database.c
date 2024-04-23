@@ -288,7 +288,7 @@ KERNEL_PUBLIC error_t account_manager_database_create_group(gid_t gid,const char
 
 KERNEL_PUBLIC error_t account_manager_database_create_user(uid_t uid,const char* name,const char* password,u32 password_length){
 	spinlock_acquire_exclusive(&(_account_manager_database.lock));
-	_Bool generate_uid=!uid;
+	bool generate_uid=!uid;
 	if (generate_uid){
 		uid=ACCOUNT_MANAGER_DATABASE_FIRST_USER_ID;
 _regenerate_uid:

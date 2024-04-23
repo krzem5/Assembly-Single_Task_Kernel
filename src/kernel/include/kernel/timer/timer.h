@@ -44,7 +44,7 @@ u64 timer_get_deadline(timer_t* timer);
 
 
 
-void timer_update(timer_t* timer,u64 interval,u64 count,_Bool bypass_acl);
+void timer_update(timer_t* timer,u64 interval,u64 count,bool bypass_acl);
 
 
 

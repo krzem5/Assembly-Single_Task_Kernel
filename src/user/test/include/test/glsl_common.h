@@ -4,7 +4,7 @@
 
 
 
-_Bool test_glsl_check_and_cleanup_error(glsl_error_t error,const char* expected);
+bool test_glsl_check_and_cleanup_error(glsl_error_t error,const char* expected);
 
 
 

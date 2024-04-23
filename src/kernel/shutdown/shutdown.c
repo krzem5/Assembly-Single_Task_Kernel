@@ -66,7 +66,7 @@ KERNEL_PUBLIC void shutdown_unregister_notification_listener(notification_listen
 
 
 
-KERNEL_PUBLIC void shutdown_register_shutdown_function(shutdown_function_callback_t callback,_Bool is_high_priority){
+KERNEL_PUBLIC void shutdown_register_shutdown_function(shutdown_function_callback_t callback,bool is_high_priority){
 	spinlock_acquire_exclusive(&_shutdown_function_lock);
 	shutdown_function_t* function=omm_alloc(_shutdown_function_allocator);
 	function->next=_shutdown_root_function;

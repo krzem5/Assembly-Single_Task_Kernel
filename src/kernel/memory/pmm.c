@@ -247,7 +247,7 @@ KERNEL_PUBLIC void pmm_dealloc_counter(pmm_counter_descriptor_t* counter){
 
 
 
-KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint){
+KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,bool memory_hint){
 	if (!(_pmm_initialization_flags&PMM_FLAG_PARTIALLY_INITIALIZED)){
 		return 0;
 	}
@@ -320,7 +320,7 @@ _retry_allocator:
 	spinlock_release_exclusive(&(allocator->lock));
 #ifndef KERNEL_RELEASE
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	_Bool error=0;
+	bool error=0;
 	for (u64 k=0;k<_get_block_size(i)/sizeof(u64);k++){
 		if (_get_block_descriptor(out+k)->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE){
 			k+=PAGE_SIZE/sizeof(u64);

@@ -19,7 +19,7 @@ SYS_PUBLIC u32 sys_options_parse(u32 argc,const char** argv,const sys_option_t* 
 		i++;
 		opt++;
 		const sys_option_t* option=NULL;
-		_Bool is_long_opt=0;
+		bool is_long_opt=0;
 		if (opt[0]=='-'){
 			is_long_opt=1;
 			opt++;
@@ -107,7 +107,7 @@ _check_next_option:
 
 
 SYS_PUBLIC s64 sys_options_atoi(const char* str){
-	_Bool negative=0;
+	bool negative=0;
 	u32 i=0;
 	for (;str[i]=='+'||str[i]=='-';i++){
 		negative=(str[i]=='-');

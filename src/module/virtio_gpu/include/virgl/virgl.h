@@ -60,7 +60,7 @@ typedef struct _VIRGL_OPENGL_VERTEX_ARRAY_ELEMENT_TYPE{
 	u32 virgl_type;
 	u8 size;
 	u8 type;
-	_Bool require_normalization;
+	bool require_normalization;
 } virgl_opengl_vertex_array_element_type_t;
 
 
@@ -91,7 +91,7 @@ typedef struct _VIRGL_OPENGL_SAMPLER{
 
 
 
-void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,_Bool is_v2,const void* data,u32 size);
+void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,bool is_v2,const void* data,u32 size);
 
 
 

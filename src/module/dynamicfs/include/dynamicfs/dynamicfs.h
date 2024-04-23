@@ -33,7 +33,7 @@ vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const char* name,const
 
 
 
-void dynamicfs_delete_node(vfs_node_t* node,_Bool delete_string);
+void dynamicfs_delete_node(vfs_node_t* node,bool delete_string);
 
 
 

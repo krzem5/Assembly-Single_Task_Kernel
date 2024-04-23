@@ -8,7 +8,7 @@
 
 
 
-static _Bool KERNEL_INIT_WRITE _tsc_pit_clock_source_is_stable=0;
+static bool KERNEL_INIT_WRITE _tsc_pit_clock_source_is_stable=0;
 
 
 

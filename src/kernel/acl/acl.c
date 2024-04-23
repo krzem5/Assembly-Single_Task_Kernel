@@ -113,7 +113,7 @@ KERNEL_PUBLIC void acl_set(acl_t* acl,struct _PROCESS* process,u64 clear,u64 set
 
 
 
-KERNEL_PUBLIC _Bool acl_register_request_callback(acl_request_callback_t callback){
+KERNEL_PUBLIC bool acl_register_request_callback(acl_request_callback_t callback){
 	if (callback&&_acl_request_callback){
 		ERROR("ACL request callback already registered");
 		return 0;

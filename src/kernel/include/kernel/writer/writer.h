@@ -9,7 +9,7 @@
 
 typedef struct _WRITER{
 	spinlock_t lock;
-	_Bool is_file_backed;
+	bool is_file_backed;
 	union{
 		vfs_node_t* node;
 		void** buffer;

@@ -46,7 +46,7 @@ KERNEL_PUBLIC ui_display_t* ui_display_create(const ui_display_driver_t* driver,
 
 
 
-KERNEL_PUBLIC _Bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode){
+KERNEL_PUBLIC bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode){
 	display->mode=mode;
 	return display->driver->resize_framebuffer(display);
 }

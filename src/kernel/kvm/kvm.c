@@ -13,7 +13,7 @@
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _kvm_pmm_counter=NULL;
 static u32 KERNEL_INIT_WRITE _kvm_features=0;
 static u32 KERNEL_INIT_WRITE _kvm_feature_hints=0;
-static _Bool KERNEL_INIT_WRITE _kvm_clock_source_is_stable=0;
+static bool KERNEL_INIT_WRITE _kvm_clock_source_is_stable=0;
 
 
 

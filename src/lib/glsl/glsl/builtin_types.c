@@ -388,7 +388,7 @@ static const glsl_builtin_type_t _glsl_builtin_type_vector_from_base_type_and_le
 
 
 
-SYS_PUBLIC _Bool glsl_builtin_type_is_compatible(glsl_builtin_type_t src,glsl_builtin_type_t dst){
+SYS_PUBLIC bool glsl_builtin_type_is_compatible(glsl_builtin_type_t src,glsl_builtin_type_t dst){
 	if (src==dst){
 		return 1;
 	}

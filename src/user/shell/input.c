@@ -198,7 +198,7 @@ static void _delete_char(void){
 
 
 
-static void _move_cursor(_Bool is_right,_Bool whole_word){
+static void _move_cursor(bool is_right,bool whole_word){
 	history_entry_t* entry=_input_history+_input_history_index;
 	if (is_right){
 		if (_input_cursor+1>=entry->length){
@@ -209,7 +209,7 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 		if (!whole_word){
 			return;
 		}
-		_Bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
+		bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
 		while (_input_cursor<entry->length){
 			_input_cursor++;
 			if (inside_identifier){
@@ -233,7 +233,7 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 		if (!whole_word){
 			return;
 		}
-		_Bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
+		bool inside_identifier=IS_IDENTIFIER(entry->data[_input_cursor]);
 		while (_input_cursor){
 			_input_cursor--;
 			if (inside_identifier){
@@ -254,7 +254,7 @@ static void _move_cursor(_Bool is_right,_Bool whole_word){
 
 
 
-static void _scroll_history(_Bool is_up){
+static void _scroll_history(bool is_up){
 	if (is_up){
 		if (!_input_history_index){
 			return;
@@ -272,7 +272,7 @@ static void _scroll_history(_Bool is_up){
 
 
 
-static _Bool _shift_history(void){
+static bool _shift_history(void){
 	if (_input_history_length<INPUT_REWIND_BUFFER_SIZE){
 		_input_history_length++;
 		return 0;
@@ -285,7 +285,7 @@ static _Bool _shift_history(void){
 
 
 
-static void _ensure_top_of_history(_Bool duplicate_entry){
+static void _ensure_top_of_history(bool duplicate_entry){
 	if (_input_history_index==_input_history_length-1){
 		return;
 	}

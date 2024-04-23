@@ -174,7 +174,7 @@ KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t typ
 
 
 
-KERNEL_PUBLIC _Bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
+KERNEL_PUBLIC bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
 	spinlock_acquire_shared(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	spinlock_release_shared(&_socket_dtp_lock);
@@ -194,7 +194,7 @@ KERNEL_PUBLIC _Bool socket_create_pair(socket_domain_t domain,socket_type_t type
 
 
 
-KERNEL_PUBLIC _Bool socket_shutdown(vfs_node_t* node,u8 flags){
+KERNEL_PUBLIC bool socket_shutdown(vfs_node_t* node,u8 flags){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -205,7 +205,7 @@ KERNEL_PUBLIC _Bool socket_shutdown(vfs_node_t* node,u8 flags){
 
 
 
-KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length){
+KERNEL_PUBLIC bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!local_address||!local_address_length){
 		return 0;
 	}
@@ -222,7 +222,7 @@ KERNEL_PUBLIC _Bool socket_bind(vfs_node_t* node,const void* local_address,u32 l
 
 
 
-KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length){
+KERNEL_PUBLIC bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!remote_address||!remote_address_length){
 		return 0;
 	}
@@ -239,7 +239,7 @@ KERNEL_PUBLIC _Bool socket_connect(vfs_node_t* node,const void* remote_address,u
 
 
 
-KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,_Bool nonblocking){
+KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblocking){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
@@ -252,7 +252,7 @@ KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,_Bool nonbloc
 
 
 
-KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,_Bool nonblocking){
+KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocking){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
@@ -265,7 +265,7 @@ KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,_Bool nonblock
 
 
 
-KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size){
+KERNEL_PUBLIC bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -274,14 +274,14 @@ KERNEL_PUBLIC _Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 s
 		return 0;
 	}
 	spinlock_acquire_exclusive(&(socket_node->write_lock));
-	_Bool out=socket_node->descriptor->write_packet(socket_node,packet,size);
+	bool out=socket_node->descriptor->write_packet(socket_node,packet,size);
 	spinlock_release_exclusive(&(socket_node->write_lock));
 	return out;
 }
 
 
 
-KERNEL_PUBLIC _Bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
+KERNEL_PUBLIC bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -314,7 +314,7 @@ KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 
 
 
-KERNEL_PUBLIC _Bool socket_move(vfs_node_t* node,const char* path){
+KERNEL_PUBLIC bool socket_move(vfs_node_t* node,const char* path){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}

@@ -95,7 +95,7 @@ typedef u32 glsl_lexer_token_type_t;
 typedef struct _GLSL_LEXER_TOKEN{
 	glsl_lexer_token_type_t type;
 	union{
-		_Bool bool_;
+		bool bool_;
 		u64 int_;
 		double float_;
 		char* string;

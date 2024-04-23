@@ -36,12 +36,12 @@ typedef struct KERNEL_PACKED _NET_ARP_PACKET{
 typedef struct _NET_ARP_CACHE_ENTRY{
 	rb_tree_node_t rb_node;
 	mac_address_t address;
-	_Bool resolved;
+	bool resolved;
 } net_arp_cache_entry_t;
 
 
 
-_Bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,_Bool nonblocking);
+bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,bool nonblocking);
 
 
 

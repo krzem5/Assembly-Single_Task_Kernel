@@ -12,8 +12,8 @@ extern void __sys_linker_execute_fini(void) __attribute__((weak));
 
 
 
-static _Bool _sys_initialized=0;
-static _Bool _sys_deinitialized=0;
+static bool _sys_initialized=0;
+static bool _sys_deinitialized=0;
 
 
 

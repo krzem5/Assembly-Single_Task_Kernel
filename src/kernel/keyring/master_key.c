@@ -44,7 +44,7 @@ KERNEL_PUBLIC void keyring_master_key_get_encrypted(u8* buffer,u32 buffer_size){
 
 void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	LOG("Decrypting master key...");
-	_Bool master_key_present=0;
+	bool master_key_present=0;
 	for (u32 i=0;i<64;i++){
 		master_key_present|=_keyring_master_key_encrypted[i];
 	}

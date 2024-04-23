@@ -18,7 +18,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC _Bool pci_msix_load(const pci_device_t* device,msix_table_t* out){
+KERNEL_PUBLIC bool pci_msix_load(const pci_device_t* device,msix_table_t* out){
 	u8 offset=pci_device_get_cap(device,PCI_CAP_ID_MSIX,0);
 	if (!offset){
 		return 0;
@@ -37,7 +37,7 @@ KERNEL_PUBLIC _Bool pci_msix_load(const pci_device_t* device,msix_table_t* out){
 
 
 
-KERNEL_PUBLIC _Bool pci_msix_redirect_entry(const msix_table_t* table,u16 vector,u8 irq){
+KERNEL_PUBLIC bool pci_msix_redirect_entry(const msix_table_t* table,u16 vector,u8 irq){
 	if (vector>=table->length||!((table->data+vector)->control&MSIX_TABLE_ENTRY_CONTROL_FLAG_MASKED)){
 		return 0;
 	}

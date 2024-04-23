@@ -10,12 +10,12 @@ typedef struct _SYMBOL{
 	rb_tree_node_t rb_node;
 	const char* module;
 	string_t* name;
-	_Bool is_public;
+	bool is_public;
 } symbol_t;
 
 
 
-void symbol_add(const char* module,const char* name,u64 address,_Bool is_public);
+void symbol_add(const char* module,const char* name,u64 address,bool is_public);
 
 
 

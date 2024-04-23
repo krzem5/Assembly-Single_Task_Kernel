@@ -21,9 +21,9 @@ typedef struct _UI_DISPLAY{
 
 typedef struct _UI_DISPLAY_DRIVER{
 	const char* name;
-	_Bool (*create_framebuffer)(ui_framebuffer_t*);
+	bool (*create_framebuffer)(ui_framebuffer_t*);
 	void (*delete_framebuffer)(ui_framebuffer_t*);
-	_Bool (*resize_framebuffer)(ui_display_t*);
+	bool (*resize_framebuffer)(ui_display_t*);
 	void (*flush_framebuffer)(ui_display_t*);
 } ui_display_driver_t;
 
@@ -37,7 +37,7 @@ ui_display_t* ui_display_create(const ui_display_driver_t* driver,void* ctx,u32 
 
 
 
-_Bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode);
+bool ui_display_set_mode(ui_display_t* display,const ui_display_info_mode_t* mode);
 
 
 

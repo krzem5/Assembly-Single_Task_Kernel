@@ -132,11 +132,11 @@ typedef struct _GLSL_AST_NODE{
 		} swizzle;
 		union{
 			struct _GLSL_AST_VAR* var;
-			_Bool var_bool;
+			bool var_bool;
 			float var_float;
 			s32 var_int;
 			float var_vector[4];
-			_Bool var_vector_bool[4];
+			bool var_vector_bool[4];
 			s32 var_vector_int[4];
 			u32 var_vector_uint[4];
 			float var_matrix[16];
@@ -224,7 +224,7 @@ char* glsl_ast_type_to_string(const glsl_ast_type_t* type);
 
 
 
-_Bool glsl_ast_type_is_equal(const glsl_ast_type_t* a,const glsl_ast_type_t* b);
+bool glsl_ast_type_is_equal(const glsl_ast_type_t* a,const glsl_ast_type_t* b);
 
 
 

@@ -82,7 +82,7 @@ aml_object_t* aml_field_read(aml_object_t* object){
 
 
 
-_Bool aml_field_write(aml_object_t* object,aml_object_t* value){
+bool aml_field_write(aml_object_t* object,aml_object_t* value){
 	if (object->type!=AML_OBJECT_TYPE_FIELD_UNIT){
 		return 0;
 	}

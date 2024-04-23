@@ -37,7 +37,7 @@ static aml_bus_device_resource_t* _create_device_resource(aml_bus_device_t* devi
 
 
 
-static _Bool _get_device_crs(aml_bus_device_t* device){
+static bool _get_device_crs(aml_bus_device_t* device){
 	device->resource_head=NULL;
 	device->resource_tail=NULL;
 	aml_namespace_t* crs_object=aml_namespace_lookup(device->device,"_CRS",AML_NAMESPACE_LOOKUP_FLAG_LOCAL);
@@ -326,7 +326,7 @@ static aml_bus_device_t* _parse_full_device_descriptor(aml_namespace_t* device){
 
 
 
-static _Bool _match_device(const aml_bus_device_driver_t* driver,aml_bus_device_t* device){
+static bool _match_device(const aml_bus_device_driver_t* driver,aml_bus_device_t* device){
 	if (driver->address_type!=device->address_type){
 		return 0;
 	}

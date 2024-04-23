@@ -32,7 +32,7 @@ static void _event_handle_destructor(handle_t* handle){
 
 
 
-static _Bool _await_event(thread_t* thread,event_t* event,u32 index){
+static bool _await_event(thread_t* thread,event_t* event,u32 index){
 	spinlock_acquire_exclusive(&(event->lock));
 	if (event->is_active){
 		spinlock_release_exclusive(&(event->lock));
@@ -144,7 +144,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 
 
 
-KERNEL_PUBLIC void event_await(event_t* event,_Bool is_io_wait){
+KERNEL_PUBLIC void event_await(event_t* event,bool is_io_wait){
 	THREAD_DATA->scheduler_io_yield=is_io_wait;
 	event_await_multiple(&event,1);
 	THREAD_DATA->scheduler_io_yield=0;
@@ -194,7 +194,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		if (!handle_event){
 			continue;
 		}
-		_Bool is_active=_await_event(thread,handle_event->object,i);
+		bool is_active=_await_event(thread,handle_event->object,i);
 		handle_release(handle_event);
 		if (is_active){
 			spinlock_acquire_exclusive(&(thread->lock));
@@ -211,7 +211,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 
 
 
-KERNEL_PUBLIC void event_set_active(event_t* event,_Bool is_active,_Bool bypass_acl){
+KERNEL_PUBLIC void event_set_active(event_t* event,bool is_active,bool bypass_acl){
 	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		return;
 	}

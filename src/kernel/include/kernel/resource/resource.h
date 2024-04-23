@@ -13,7 +13,7 @@ typedef u64 resource_t;
 typedef struct _RESOURCE_REGION{
 	rb_tree_node_t rb_node;
 	u64 length;
-	_Bool is_used;
+	bool is_used;
 } resource_region_t;
 
 
@@ -38,11 +38,11 @@ resource_t resource_alloc(resource_manager_t* resource_manager);
 
 
 
-_Bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource);
+bool resource_dealloc(resource_manager_t* resource_manager,resource_t resource);
 
 
 
-_Bool resource_is_used(resource_manager_t* resource_manager,resource_t resource);
+bool resource_is_used(resource_manager_t* resource_manager,resource_t resource);
 
 
 

@@ -34,7 +34,7 @@ typedef struct _XHCI_DEVICE{
 	u8 ports;
 	u16 interrupts;
 	u8 slots;
-	_Bool is_context_64_bytes;
+	bool is_context_64_bytes;
 } xhci_device_t;
 
 

@@ -18,7 +18,7 @@ u32 __attribute__((access(read_only,1),nonnull(1))) sys_io_print(const char* tem
 
 
 
-s32 sys_io_input(_Bool blocking);
+s32 sys_io_input(bool blocking);
 
 
 

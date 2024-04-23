@@ -10,7 +10,7 @@
 
 
 typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
-	_Bool has_needed_libraries;
+	bool has_needed_libraries;
 	u64 plt_relocation_size;
 	u64* plt_got;
 	const elf_hash_t* hash_table;

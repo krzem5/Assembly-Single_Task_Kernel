@@ -8,7 +8,7 @@
 
 
 
-static _Bool _iso9660_load_partitions(drive_t* drive){
+static bool _iso9660_load_partitions(drive_t* drive){
 	if (drive->block_size!=2048||(!str_equal(drive->type->name,"ATA")&&!str_equal(drive->type->name,"ATAPI"))){
 		return 0;
 	}

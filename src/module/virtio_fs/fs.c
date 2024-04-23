@@ -20,7 +20,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _virtio_fs_device_allocator=NULL;
 
 
 
-static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
+static bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	virtio_fs_config_t config;
 	for (u32 i=0;i<sizeof(config.raw_data)/sizeof(u32);i++){
 		config.raw_data[i]=virtio_read(device->device_field+i*sizeof(u32),4);

@@ -27,7 +27,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _virtio_gpu_device_allocator=NULL;
 
 
 
-static _Bool _display_create_framebuffer(ui_framebuffer_t* fb){
+static bool _display_create_framebuffer(ui_framebuffer_t* fb){
 	if (fb->format!=UI_FRAMEBUFFER_FORMAT_BGRX){
 		ERROR("virtio_gpu driver requires UI_FRAMEBUFFER_FORMAT_BGRX framebuffers");
 		return 0;
@@ -44,7 +44,7 @@ static void _display_delete_framebuffer(ui_framebuffer_t* fb){
 
 
 
-static _Bool _display_resize_framebuffer(ui_display_t* display){
+static bool _display_resize_framebuffer(ui_display_t* display){
 	LOG("Resizing display #%u framebuffer...",display->index);
 	virtio_gpu_device_t* gpu_device=display->ctx;
 	if (display->framebuffer){
@@ -153,7 +153,7 @@ static void _fetch_display_info(virtio_gpu_device_t* gpu_device){
 
 
 
-static _Bool _virtio_driver_init(virtio_device_t* device,u64 features){
+static bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	if (features!=((1<<VIRTIO_GPU_F_VIRGL)|(1<<VIRTIO_GPU_F_EDID))){
 		return 0;
 	}

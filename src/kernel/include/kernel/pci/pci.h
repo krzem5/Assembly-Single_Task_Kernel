@@ -160,7 +160,7 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_bus_mastering(cons
 
 
 
-_Bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
+bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
 
 
 

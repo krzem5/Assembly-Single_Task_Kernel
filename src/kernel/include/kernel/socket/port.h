@@ -17,7 +17,7 @@ socket_vfs_node_t* socket_port_get(socket_port_t port);
 
 
 
-_Bool socket_port_reserve(socket_vfs_node_t* socket,socket_port_t port);
+bool socket_port_reserve(socket_vfs_node_t* socket,socket_port_t port);
 
 
 

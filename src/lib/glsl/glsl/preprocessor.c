@@ -45,7 +45,7 @@ static void _emit_line(glsl_preprocessor_state_t* state,u32 line,u32 file){
 
 
 
-static _Bool _begins_with_word(const char** src,const char* word){
+static bool _begins_with_word(const char** src,const char* word){
 	u32 length=sys_string_length(word);
 	if (!sys_memory_compare(*src,word,length)&&(!(*src)[length]||LEXER_IS_WHITESPACE((*src)[length]))){
 		(*src)+=length;
@@ -169,7 +169,7 @@ SYS_PUBLIC void glsl_preprocessor_state_deinit(glsl_preprocessor_state_t* state)
 
 SYS_PUBLIC glsl_error_t glsl_preprocessor_add_file(glsl_preprocessor_state_t* state,const char* src,u32 index){
 	_emit_line(state,1,index);
-	_Bool is_first=1;
+	bool is_first=1;
 	while (1){
 		const char* line_start=src;
 		for (;LEXER_IS_WHITESPACE(src[0]);src++);
@@ -337,7 +337,7 @@ _emit_missing_newlines:
 
 
 
-SYS_PUBLIC _Bool glsl_preprocessor_get_location(const glsl_preprocessor_state_t* state,u32 offset,u32* file,u32* line){
+SYS_PUBLIC bool glsl_preprocessor_get_location(const glsl_preprocessor_state_t* state,u32 offset,u32* file,u32* line){
 	if (!state->line_count||offset>=state->length){
 		return 0;
 	}

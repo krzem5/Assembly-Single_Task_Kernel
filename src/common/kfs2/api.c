@@ -437,7 +437,7 @@ static void _attach_child(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* 
 
 
 
-_Bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out){
+bool kfs2_filesystem_init(const kfs2_filesystem_config_t* config,kfs2_filesystem_t* out){
 	if (config->block_size>4096){
 		return 0;
 	}
@@ -465,7 +465,7 @@ void kfs2_filesystem_deinit(kfs2_filesystem_t* fs){
 
 
 
-_Bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out){
+bool kfs2_filesystem_get_root(kfs2_filesystem_t* fs,kfs2_node_t* out){
 	kfs2_io_inode_read(fs,0,out);
 	return 1;
 }
@@ -482,7 +482,7 @@ void kfs2_filesystem_flush_root_block(kfs2_filesystem_t* fs){
 
 
 
-_Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,u32 flags,kfs2_node_t* out){
+bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,u32 flags,kfs2_node_t* out){
 	if ((parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY||name_length>255){
 		return 0;
 	}
@@ -516,7 +516,7 @@ _Bool kfs2_node_create(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* nam
 
 
 
-_Bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* out){
+bool kfs2_node_lookup(kfs2_filesystem_t* fs,kfs2_node_t* parent,const char* name,u32 name_length,kfs2_node_t* out){
 	if (parent->inode==0xffffffff||!parent->size||(parent->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_DIRECTORY){
 		return 0;
 	}
@@ -578,14 +578,14 @@ u64 kfs2_node_iterate(kfs2_filesystem_t* fs,kfs2_node_t* parent,u64 pointer,char
 
 
 
-_Bool kfs2_node_link(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length){
+bool kfs2_node_link(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length){
 	panic("kfs2_node_link");
 	return 0;
 }
 
 
 
-_Bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length){
+bool kfs2_node_unlink(kfs2_filesystem_t* fs,kfs2_node_t* parent,kfs2_node_t* child,const char* name,u32 name_length){
 	panic("kfs2_node_unlink");
 	return 0;
 }
@@ -658,7 +658,7 @@ u64 kfs2_node_resize(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
 
 
 
-_Bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node){
+bool kfs2_node_flush(kfs2_filesystem_t* fs,kfs2_node_t* node){
 	kfs2_io_inode_write(fs,node);
 	return 1;
 }

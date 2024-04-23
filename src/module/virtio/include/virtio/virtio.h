@@ -28,8 +28,8 @@ typedef struct _VIRTIO_DEVICE{
 	handle_t handle;
 	virtio_device_type_t type;
 	u16 index;
-	_Bool is_legacy;
-	_Bool events_negotiated;
+	bool is_legacy;
+	bool events_negotiated;
 	u8 irq;
 	u16 queue_msix_vector;
 	spinlock_t lock;
@@ -64,9 +64,9 @@ typedef struct _VIRTIO_QUEUE{
 typedef struct _VIRTIO_DEVICE_DRIVER{
 	const char* name;
 	virtio_device_type_t type;
-	_Bool is_legacy;
+	bool is_legacy;
 	u64 features;
-	_Bool (*init)(virtio_device_t*,u64);
+	bool (*init)(virtio_device_t*,u64);
 } virtio_device_driver_t;
 
 
@@ -78,11 +78,11 @@ typedef struct _VIRTIO_DEVICE_DRIVER_NODE{
 
 
 
-_Bool virtio_register_device_driver(const virtio_device_driver_t* driver);
+bool virtio_register_device_driver(const virtio_device_driver_t* driver);
 
 
 
-_Bool virtio_unregister_device_driver(const virtio_device_driver_t* driver);
+bool virtio_unregister_device_driver(const virtio_device_driver_t* driver);
 
 
 

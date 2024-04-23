@@ -15,7 +15,7 @@
 
 
 
-static _Bool _opengl_initialized=0;
+static bool _opengl_initialized=0;
 
 opengl_state_id_t opengl_current_state_id=0;
 
@@ -90,7 +90,7 @@ SYS_PUBLIC opengl_state_t opengl_create_state(u16 min_version){
 
 
 
-SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
+SYS_PUBLIC bool opengl_set_state(opengl_state_t state){
 	if (!_opengl_initialized){
 		return 0;
 	}
@@ -103,7 +103,7 @@ SYS_PUBLIC _Bool opengl_set_state(opengl_state_t state){
 
 
 
-SYS_PUBLIC _Bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
+SYS_PUBLIC bool opengl_set_state_framebuffer(opengl_state_t state,ui_framebuffer_handle_t framebuffer){
 	if (!_opengl_initialized){
 		return 0;
 	}

@@ -23,14 +23,14 @@
 
 
 
-static _Bool _match_texture(glsl_ast_node_t* node,const glsl_builtin_type_t* arg_types){
+static bool _match_texture(glsl_ast_node_t* node,const glsl_builtin_type_t* arg_types){
 	MATCH_FUNC_ARGS2(TEXTURE,VEC4,SAMPLER_2D,VEC2);
 	return 0;
 }
 
 
 
-_Bool _glsl_internal_function_table_find(const char* name,glsl_ast_node_t* node){
+bool _glsl_internal_function_table_find(const char* name,glsl_ast_node_t* node){
 	glsl_builtin_type_t arg_types[GLSL_AST_NODE_MAX_ARG_COUNT];
 	for (u32 i=0;i<node->args.count;i++){
 		if (node->args.data[i]->value_type->type!=GLSL_AST_TYPE_TYPE_BUILTIN){

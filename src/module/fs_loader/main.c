@@ -65,7 +65,7 @@ MODULE_INIT(){
 		const char* path=NULL;
 		const char* guid=NULL;
 		const char* type=NULL;
-		_Bool required=1;
+		bool required=1;
 		config_tag_t* tag=NULL;
 		if (config_tag_find(fs_tag,"path",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
 			path=tag->string->data;

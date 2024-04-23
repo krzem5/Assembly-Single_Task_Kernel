@@ -18,7 +18,7 @@ typedef struct _FILESYSTEM_DESCRIPTOR_CONFIG{
 	void (*deinit_callback)(filesystem_t*);
 	filesystem_t* (*load_callback)(partition_t*);
 	void (*mount_callback)(filesystem_t*,const char*);
-	_Bool (*format_callback)(partition_t*);
+	bool (*format_callback)(partition_t*);
 } filesystem_descriptor_config_t;
 
 
@@ -67,7 +67,7 @@ filesystem_t* fs_load(partition_t* partition);
 
 
 
-_Bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor);
+bool fs_format(partition_t* partition,const filesystem_descriptor_t* descriptor);
 
 
 

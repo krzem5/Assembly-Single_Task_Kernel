@@ -15,7 +15,7 @@ static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _gpt_driver_pmm_counter=NULL;
 
 
 
-static _Bool _gpt_load_partitions(drive_t* drive){
+static bool _gpt_load_partitions(drive_t* drive){
 	if (drive->block_size>=4096){
 		return 0;
 	}
@@ -61,7 +61,7 @@ static _Bool _gpt_load_partitions(drive_t* drive){
 
 
 
-static _Bool _gpt_format_drive(drive_t* drive){
+static bool _gpt_format_drive(drive_t* drive){
 	panic("_gpt_format_drive");
 }
 

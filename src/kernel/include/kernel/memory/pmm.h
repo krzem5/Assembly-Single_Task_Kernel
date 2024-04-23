@@ -143,7 +143,7 @@ void pmm_dealloc_counter(pmm_counter_descriptor_t* counter);
 
 
 
-u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,_Bool memory_hint);
+u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,bool memory_hint);
 
 
 

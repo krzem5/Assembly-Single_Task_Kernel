@@ -175,7 +175,7 @@ typedef struct SYS_PACKED _OPENGL_PROTOCOL_VERTEX_ARRAY_ELEMENT{
 	u8 stride;
 	u8 divisor;
 	u8 offset;
-	_Bool require_normalization;
+	bool require_normalization;
 	u8 _padding;
 } opengl_protocol_vertex_array_element_t;
 

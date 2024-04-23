@@ -277,7 +277,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])||((data[0]=='-'||data[0]=='+')&&CONFIG_TEXT_FILE_IS_NUMBER(data[1]))){
-			_Bool is_negative=0;
+			bool is_negative=0;
 			if (data[0]=='-'){
 				is_negative=1;
 				data++;
@@ -579,11 +579,11 @@ KERNEL_PUBLIC config_tag_t* config_load_from_file(vfs_node_t* file,const char* p
 
 
 
-KERNEL_PUBLIC _Bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password,u32 flags);
+KERNEL_PUBLIC bool config_save(const config_tag_t* tag,void** data,u64* length,const char* password,u32 flags);
 
 
 
-KERNEL_PUBLIC _Bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
+KERNEL_PUBLIC bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
 	if (tag->type!=CONFIG_TAG_TYPE_ARRAY||tag->name->length){
 		WARN("Root tag is not an unnamed array; results may be undefined");
 	}

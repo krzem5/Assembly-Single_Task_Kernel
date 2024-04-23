@@ -5,7 +5,7 @@
 
 
 
-_Bool pf_handle_fault(isr_state_t* isr_state);
+bool pf_handle_fault(isr_state_t* isr_state);
 
 
 

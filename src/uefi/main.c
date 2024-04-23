@@ -28,7 +28,7 @@ EFI_SYSTEM_TABLE* uefi_global_system_table=NULL;
 
 
 
-static _Bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
+static bool _equal_guid(EFI_GUID* a,EFI_GUID* b){
 	if (a->Data1!=b->Data1||a->Data2!=b->Data2||a->Data3!=b->Data3){
 		return 0;
 	}
@@ -66,7 +66,7 @@ static void _extend_tpm2_event(u64 data,u64 data_end){
 	uefi_global_system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
 	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,buffer);
 	EFI_TCG2* tcg2;
-	_Bool is_error=EFI_ERROR(uefi_global_system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&tcg2)));
+	bool is_error=EFI_ERROR(uefi_global_system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&tcg2)));
 	uefi_global_system_table->BootServices->FreePool(buffer);
 	if (is_error){
 		return;
@@ -113,7 +113,7 @@ _cleanup:
 
 
 
-static _Bool _kfs2_lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* out){
+static bool _kfs2_lookup_path(kfs2_filesystem_t* fs,const char* path,kfs2_node_t* out){
 	kfs2_filesystem_get_root(fs,out);
 	while (path[0]){
 		if (path[0]=='/'){
@@ -171,7 +171,9 @@ static u64 _read_callback(void* ctx,u64 offset,void* buffer,u64 count){
 
 
 static u64 _write_callback(void* ctx,u64 offset,const void* buffer,u64 count){
-	return 0;
+	EFI_BLOCK_IO_PROTOCOL* block_io_protocol=ctx;
+	uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,L"\r\n");
+	return (EFI_ERROR(block_io_protocol->WriteBlocks(block_io_protocol,block_io_protocol->Media->MediaId,offset,count*block_io_protocol->Media->BlockSize,(void*)buffer))?0:count);
 }
 
 

@@ -166,7 +166,7 @@ SYS_PUBLIC char* glsl_ast_type_to_string(const glsl_ast_type_t* type){
 
 
 
-SYS_PUBLIC _Bool glsl_ast_type_is_equal(const glsl_ast_type_t* a,const glsl_ast_type_t* b){
+SYS_PUBLIC bool glsl_ast_type_is_equal(const glsl_ast_type_t* a,const glsl_ast_type_t* b){
 	if (a->type!=b->type){
 		return 0;
 	}

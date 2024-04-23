@@ -14,7 +14,7 @@ static inline __attribute__((always_inline)) void kfs2_insert_crc(void* data,u32
 
 
 
-static inline __attribute__((always_inline)) _Bool kfs2_verify_crc(const void* data,u32 size){
+static inline __attribute__((always_inline)) bool kfs2_verify_crc(const void* data,u32 size){
 	return kfs2_calculate_crc(data,size-4)==*((const u32*)(data+size-4));
 }
 

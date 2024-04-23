@@ -110,7 +110,7 @@ static void _unmap_address(mmap_t* mmap,mmap_region_t* region,u64 address){
 
 
 
-static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,_Bool push_free_region){
+static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,bool push_free_region){
 	rb_tree_remove_node(&(mmap->address_tree),&(region->rb_node));
 	u64 guard_page_size=((region->flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	for (u64 address=0;address<region->length;address+=PAGE_SIZE){
@@ -231,7 +231,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 
 
 
-KERNEL_PUBLIC _Bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
+KERNEL_PUBLIC bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 	spinlock_acquire_exclusive(&(mmap->lock));
 	mmap_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (!region||region->rb_node.key+region->length<=address){

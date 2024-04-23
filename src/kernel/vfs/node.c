@@ -181,7 +181,7 @@ KERNEL_PUBLIC u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 
-KERNEL_PUBLIC _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
+KERNEL_PUBLIC bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 	if (!node->functions->link){
 		return 0;
 	}
@@ -190,7 +190,7 @@ KERNEL_PUBLIC _Bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 
 
 
-KERNEL_PUBLIC _Bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent){
+KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent){
 	if (!node->functions->unlink){
 		return 0;
 	}

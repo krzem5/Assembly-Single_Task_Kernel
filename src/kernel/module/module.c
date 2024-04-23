@@ -75,7 +75,7 @@ static void _find_static_elf_sections(module_loader_context_t* ctx){
 
 
 
-static _Bool _check_elf_header(module_loader_context_t* ctx){
+static bool _check_elf_header(module_loader_context_t* ctx){
 	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_REL||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
 		ERROR("Invalid ELF header");
 		return 0;
@@ -85,7 +85,7 @@ static _Bool _check_elf_header(module_loader_context_t* ctx){
 
 
 
-static _Bool _map_sections(module_loader_context_t* ctx){
+static bool _map_sections(module_loader_context_t* ctx){
 	INFO("Mapping sections...");
 	u64 region_size=0;
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
@@ -124,7 +124,7 @@ static _Bool _map_sections(module_loader_context_t* ctx){
 
 
 
-static _Bool _find_elf_sections(module_loader_context_t* ctx){
+static bool _find_elf_sections(module_loader_context_t* ctx){
 	INFO("Locating ELF sections...");
 	ctx->elf_symbol_table=NULL;
 	ctx->elf_region_ue.base=0;
@@ -170,9 +170,9 @@ static _Bool _find_elf_sections(module_loader_context_t* ctx){
 
 
 
-static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
+static bool _resolve_symbol_table(module_loader_context_t* ctx){
 	INFO("Resolving symbol table...");
-	_Bool ret=1;
+	bool ret=1;
 	for (u64 i=1;i<ctx->elf_symbol_table_size/sizeof(elf_sym_t);i++){
 		elf_sym_t* elf_symbol=ctx->elf_symbol_table+i;
 		const char* name=ctx->elf_symbol_string_table+elf_symbol->st_name;
@@ -205,7 +205,7 @@ static _Bool _resolve_symbol_table(module_loader_context_t* ctx){
 
 
 
-static _Bool _apply_relocations(module_loader_context_t* ctx){
+static bool _apply_relocations(module_loader_context_t* ctx){
 	INFO("Applying relocations...");
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
@@ -285,11 +285,11 @@ static void _process_module_header(module_loader_context_t* ctx){
 
 
 
-static _Bool _execute_initializers(module_loader_context_t* ctx){
+static bool _execute_initializers(module_loader_context_t* ctx){
 	INFO("Executing initializers...");
 	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->preinit_end-ctx->module_descriptor->preinit_start;i+=sizeof(void*)){
 		void* func=*((void*const*)(ctx->module_descriptor->preinit_start+i));
-		if (func&&!((_Bool (*)(void))func)()){
+		if (func&&!((bool (*)(void))func)()){
 			return 0;
 		}
 	}
@@ -391,7 +391,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	if (!_check_elf_header(&ctx)){
 		goto _error;
 	}
-	_Bool is_tainted=1;
+	bool is_tainted=1;
 	if (!(module->flags&MODULE_FLAG_NO_SIGNATURE)&&!signature_verify_module(name,region,&is_tainted)){
 		goto _error;
 	}
@@ -438,7 +438,7 @@ _error:
 
 
 
-KERNEL_PUBLIC _Bool module_unload(module_t* module){
+KERNEL_PUBLIC bool module_unload(module_t* module){
 	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
 		return 0;
 	}

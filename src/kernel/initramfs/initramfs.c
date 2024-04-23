@@ -9,7 +9,7 @@
 
 
 
-static _Bool _initramfs_is_loaded=0;
+static bool _initramfs_is_loaded=0;
 
 
 

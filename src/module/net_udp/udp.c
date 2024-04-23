@@ -23,7 +23,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _net_udp_address_allocator=NULL;
 
 
 
-static _Bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
+static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	const net_udp_address_t* udp_address=(const net_udp_address_t*)address;
 	if (address_length!=sizeof(net_udp_address_t)||!socket_port_reserve(socket_node,udp_address->port)){
 		return 0;
@@ -42,7 +42,7 @@ static void _socket_debind_callback(socket_vfs_node_t* socket_node){
 
 
 
-static _Bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
+static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	const net_udp_address_t* udp_address=(const net_udp_address_t*)address;
 	if (address_length!=sizeof(net_udp_address_t)||!socket_port_reserve(socket_node,udp_address->port)){
 		return 0;
@@ -110,7 +110,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 
 
 
-static _Bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
+static bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
 	if (length<sizeof(net_udp_socket_packet_t)){
 		return 0;
 	}

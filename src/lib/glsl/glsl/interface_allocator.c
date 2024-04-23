@@ -22,7 +22,7 @@ void _glsl_interface_allocator_deinit(glsl_interface_allocator_t* allocator){
 
 
 
-_Bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size,u32 align){
+bool _glsl_interface_allocator_reserve(glsl_interface_allocator_t* allocator,u32* offset,u32 size,u32 align){
 	if (*offset!=0xffffffff){
 		u32 i=*offset;
 		if (i>=allocator->size||i+size>=allocator->size){

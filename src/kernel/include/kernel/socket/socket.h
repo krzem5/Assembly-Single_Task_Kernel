@@ -67,13 +67,13 @@ typedef struct _SOCKET_DTP_DESCRIPTOR{
 	socket_type_t type;
 	socket_protocol_t protocol;
 	void (*create_pair)(socket_pair_t*);
-	_Bool (*bind)(socket_vfs_node_t*,const void*,u32);
+	bool (*bind)(socket_vfs_node_t*,const void*,u32);
 	void (*debind)(socket_vfs_node_t*);
-	_Bool (*connect)(socket_vfs_node_t*,const void*,u32);
+	bool (*connect)(socket_vfs_node_t*,const void*,u32);
 	void (*deconnect)(socket_vfs_node_t*);
 	u64 (*read)(socket_vfs_node_t*,void*,u64,u32);
 	u64 (*write)(socket_vfs_node_t*,const void*,u64);
-	_Bool (*write_packet)(socket_vfs_node_t*,const void*,u32);
+	bool (*write_packet)(socket_vfs_node_t*,const void*,u32);
 } socket_dtp_descriptor_t;
 
 
@@ -104,35 +104,35 @@ vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_proto
 
 
 
-_Bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out);
+bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out);
 
 
 
-_Bool socket_shutdown(vfs_node_t* node,u8 flags);
+bool socket_shutdown(vfs_node_t* node,u8 flags);
 
 
 
-_Bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length);
+bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length);
 
 
 
-_Bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length);
+bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length);
 
 
 
-socket_packet_t* socket_peek_packet(vfs_node_t* node,_Bool nonblocking);
+socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblocking);
 
 
 
-socket_packet_t* socket_pop_packet(vfs_node_t* node,_Bool nonblocking);
+socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocking);
 
 
 
-_Bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size);
+bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size);
 
 
 
-_Bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size);
+bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size);
 
 
 
@@ -144,7 +144,7 @@ event_t* socket_get_event(vfs_node_t* node);
 
 
 
-_Bool socket_move(vfs_node_t* node,const char* path);
+bool socket_move(vfs_node_t* node,const char* path);
 
 
 

@@ -97,7 +97,7 @@ KERNEL_INIT(){
 	INFO("SMBIOS table: %p - %p",smbios->table_address,smbios->table_address+smbios->table_length);
 	u64 table_start=vmm_identity_map(smbios->table_address,smbios->table_length);
 	u64 table_end=table_start+smbios->table_length;
-	_Bool serial_number_found=0;
+	bool serial_number_found=0;
 	bios_data.wakeup_type=BIOS_DATA_WAKEUP_TYPE_UNKNOWN;
 	for (u64 offset=table_start;offset<table_end;){
 		const smbios_header_t* header=(void*)offset;

@@ -131,8 +131,8 @@ static void _probe_tpm2(tpm_t* tpm){
 
 
 
-static _Bool _self_test_tpm2(tpm_t* tpm){
-	_Bool full_self_test=0;
+static bool _self_test_tpm2(tpm_t* tpm){
+	bool full_self_test=0;
 _retry_self_test:
 	tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
 	tpm->command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(tpm->command->self_test));
@@ -151,8 +151,8 @@ _retry_self_test:
 
 
 
-static _Bool _get_pcr_hash(tpm_t* tpm,hash_sha256_state_t* out){
-	_Bool ret=1;
+static bool _get_pcr_hash(tpm_t* tpm,hash_sha256_state_t* out){
+	bool ret=1;
 	hash_sha256_init(out);
 	for (u32 pcr_index=TPM_KEY_PCR_MIN;pcr_index<=TPM_KEY_PCR_MAX;pcr_index++){
 		tpm->command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
@@ -197,7 +197,7 @@ static _Bool _get_pcr_hash(tpm_t* tpm,hash_sha256_state_t* out){
 
 
 
-static _Bool _init_aml_device(aml_bus_device_t* device){
+static bool _init_aml_device(aml_bus_device_t* device){
 	if (!acpi_tpm2||acpi_tpm2->start_method!=ACPI_TPM2_START_METHOD_MEMORY_MAPPED){
 		return 0;
 	}
@@ -224,7 +224,7 @@ static _Bool _init_aml_device(aml_bus_device_t* device){
 		ERROR("Found legacy TPM device");
 		panic("Legacy TPM device");
 	}
-	_Bool require_initialization=_self_test_tpm2(tpm);
+	bool require_initialization=_self_test_tpm2(tpm);
 	if (require_initialization){
 		panic("TPM2 requires initialization");
 	}

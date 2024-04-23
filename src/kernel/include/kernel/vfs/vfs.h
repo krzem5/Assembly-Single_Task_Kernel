@@ -13,7 +13,7 @@
 
 
 
-error_t vfs_mount(filesystem_t* fs,const char* path,_Bool user_mode);
+error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode);
 
 
 
