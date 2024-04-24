@@ -1,6 +1,12 @@
-#ifndef _KERNEL_TPM_COMMANDS_H_
-#define _KERNEL_TPM_COMMANDS_H_ 1
-#include <kernel/types.h>
+#ifndef _COMMON_TPM_COMMANDS_H_
+#define _COMMON_TPM_COMMANDS_H_ 1
+#include <common/types.h>
+
+
+
+#define TPM_KEY_PCR_MIN 0
+#define TPM_KEY_PCR_MAX 8
+#define TPM_KEY_PCR_HASH TPM_ALG_SHA256
 
 
 
@@ -37,7 +43,7 @@
 
 
 
-typedef struct KERNEL_PACKED _TPM_COMMAND_HEADER{
+typedef struct __attribute__((packed)) _TPM_COMMAND_HEADER{
 	u16 tag;
 	u32 length;
 	union{
@@ -48,44 +54,44 @@ typedef struct KERNEL_PACKED _TPM_COMMAND_HEADER{
 
 
 
-typedef struct KERNEL_PACKED _TPM_COMMAND{
+typedef struct __attribute__((packed)) _TPM_COMMAND{
 	tpm_command_header_t header;
 	union{
 		u8 _raw_data[0];
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u8 full_test;
 		} self_test;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u32 capability;
 			u32 property;
 			u32 property_count;
 		} get_capability;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u8 more_data;
 			u32 property;
 			u32 command_count;
 			u32 commands[];
 		} get_capability_resp_commands;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u8 more_data;
 			u32 property;
 			u32 bank_count;
 			u8 data[];
 		} get_capability_resp_pcrs;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u8 more_data;
 			u32 capability;
 			u32 property_count;
 			u32 property;
 			u32 value;
 		} get_capability_resp_tpm_properties;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u32 selection_count;
 			u16 selection_hash_alg;
 			u8 selection_size;
 			u8 selection_data[(TPM2_PLATFORM_PCR_COUNT+7)>>3];
 		} pcr_read;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u32 update_counter_value;
 			u32 selection_count;
 			u16 selection_hash_alg;
@@ -95,7 +101,7 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 			u16 digest_size;
 			u8 data[];
 		} pcr_read_resp;
-		struct KERNEL_PACKED{
+		struct __attribute__((packed)){
 			u32 pcr_index;
 			u32 auth_size;
 			u32 auth_handle;
@@ -107,7 +113,6 @@ typedef struct KERNEL_PACKED _TPM_COMMAND{
 		} pcr_extend;
 	};
 } tpm_command_t;
-
 
 
 #endif

@@ -1,6 +1,11 @@
-#include <kernel/hash/sha256.h>
+#include <common/hash/sha256.h>
+#include <common/types.h>
+#if BUILD_KERNEL
 #include <kernel/types.h>
-#include <kernel/util/memory.h>
+#define EXPORT KERNEL_PUBLIC
+#else
+#define EXPORT
+#endif
 
 
 
@@ -11,7 +16,7 @@
 
 
 
-static KERNEL_INLINE u32 _rotate_bits_right(u32 a,u8 b){
+static inline u32 _rotate_bits_right(u32 a,u8 b){
 	asm("ror %1,%0":"+r"(a):"c"(b));
 	return a;
 }
@@ -111,7 +116,7 @@ static void _process_chunk(hash_sha256_state_t* state,const u32* chunk){
 
 
 
-KERNEL_PUBLIC void hash_sha256_init(hash_sha256_state_t* out){
+EXPORT void hash_sha256_init(hash_sha256_state_t* out){
 	out->a=0x6a09e667;
 	out->b=0xbb67ae85;
 	out->c=0x3c6ef372;
@@ -125,14 +130,16 @@ KERNEL_PUBLIC void hash_sha256_init(hash_sha256_state_t* out){
 
 
 
-KERNEL_PUBLIC void hash_sha256_process_chunk(hash_sha256_state_t* state,const void* chunk,u64 length){
+EXPORT void hash_sha256_process_chunk(hash_sha256_state_t* state,const void* chunk,u64 length){
 	if (!length){
 		return;
 	}
 	u64 padding=state->length&63;
 	if (padding){
 		u64 fragment=(length>64-padding?64-padding:length);
-		mem_copy(state->buffer+padding,chunk,fragment);
+		for (u32 i=0;i<fragment;i++){
+			state->buffer[i+padding]=((const u8*)chunk)[i];
+		}
 		chunk+=fragment;
 		length-=fragment;
 		state->length+=fragment;
@@ -146,18 +153,20 @@ KERNEL_PUBLIC void hash_sha256_process_chunk(hash_sha256_state_t* state,const vo
 		_process_chunk(state,(const u32*)chunk);
 		chunk+=64;
 	}
-	if (length){
-		mem_copy(state->buffer,chunk,length);
+	for (u32 i=0;i<length;i++){
+		state->buffer[i]=((const u8*)chunk)[i];
 	}
 }
 
 
 
-KERNEL_PUBLIC void hash_sha256_finalize(hash_sha256_state_t* state){
+EXPORT void hash_sha256_finalize(hash_sha256_state_t* state){
 	u8 buffer[128];
 	buffer[0]=0x80;
 	u64 padding=(-state->length-9)&63;
-	mem_fill(buffer+1,padding,0);
+	for (u32 i=1;i<=padding;i++){
+		buffer[i]=0;
+	}
 	*((u64*)(buffer+1+padding))=__builtin_bswap64(state->length<<3);
 	hash_sha256_process_chunk(state,buffer,padding+9);
 	for (u32 i=0;i<8;i++){

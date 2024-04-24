@@ -70,11 +70,15 @@ typedef EFI_STATUS (EFIAPI* EFI_TCG2_HASH_LOG_EXTEND_EVENT)(IN EFI_TCG2_PROTOCOL
 
 
 
+typedef EFI_STATUS (EFIAPI* EFI_TCG2_SUBMIT_COMMAND)(IN EFI_TCG2_PROTOCOL* This,IN UINT32 InputParameterBlockSize,IN UINT8* InputParameterBlock,IN UINT32 OutputParameterBlockSize,IN UINT8* OutputParameterBlock);
+
+
+
 typedef struct tdEFI_TCG2_PROTOCOL{
 	EFI_TCG2_GET_CAPABILITY GetCapability;
 	void* GetEventLog;
 	EFI_TCG2_HASH_LOG_EXTEND_EVENT HashLogExtendEvent;
-	void* SubmitCommand;
+	EFI_TCG2_SUBMIT_COMMAND SubmitCommand;
 	void* GetActivePcrBanks;
 	void* SetActivePcrBanks;
 	void* GetResultOfSetActivePcrBanks;
