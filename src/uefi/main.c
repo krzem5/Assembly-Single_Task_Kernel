@@ -273,7 +273,6 @@ _cleanup:
 
 
 
-
 static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_state_t* platform_key_state){
 	hash_sha256_state_t new_combined_hash=platform_key_state->combined_hash;
 	hash_sha256_finalize(&(platform_key_state->kernel_and_initramfs_hash));
