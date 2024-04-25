@@ -25,9 +25,6 @@ COMPRESSION_LEVEL="fast"
 MODE_NORMAL=0
 MODE_COVERAGE=1
 MODE_RELEASE=2
-
-
-
 mode=MODE_NORMAL
 if ("--release" in sys.argv):
 	mode=MODE_RELEASE
@@ -198,7 +195,6 @@ TOOL_EXTRA_LINKER_OPTIONS={
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
 KERNEL_FILE_DIRECTORY="src/kernel"
-KERNEL_SYMBOL_FILE_PATH="build/kernel_symbols.c"
 COMMON_FILE_DIRECTORY="src/common"
 MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
