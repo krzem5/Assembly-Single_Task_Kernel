@@ -354,6 +354,14 @@ static void _generate_decryption_key(aes_state_t* state){
 
 
 
+static void _xor_cbc_block(const u8* a,const u8* b,u8* dst){
+	for (u32 i=0;i<16;i++){
+		dst[i]=a[i]^b[i];
+	}
+}
+
+
+
 KERNEL_PUBLIC void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
 	if (!flags||(flags&(~(AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION)))){
 		panic("Invalid AES flags");
@@ -437,4 +445,39 @@ KERNEL_PUBLIC void aes_decrypt_block(const aes_state_t* state,const void* data,v
 		}
 		*((u32*)(out+(i<<2)))=__builtin_bswap32(value);
 	}
+}
+
+
+
+KERNEL_PUBLIC void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out){
+	if (!data_length){
+		return;
+	}
+	if (iv_length!=16){
+		panic("Invalid AES CBC IV length");
+	}
+	if ((flags&(AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION))!=AES_FLAG_ENCRYPTION&&(flags&(AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION))!=AES_FLAG_DECRYPTION){
+		panic("Invalid AES CBC flags");
+	}
+	if (data_length&15){
+		panic("AES CBC requires padded input");
+	}
+	if ((flags&AES_FLAG_DECRYPTION)&&data==out){
+		panic("AES CBC decryption requires different input and output buffers");
+	}
+	aes_state_t state;
+	aes_init(key,key_length,flags,&state);
+	if (flags&AES_FLAG_ENCRYPTION){
+		for (u32 i=0;i<data_length;i+=16){
+			_xor_cbc_block(data+i,(i?out+(i-16):iv),out+i);
+			aes_encrypt_block(&state,out+i,out+i);
+		}
+	}
+	else{
+		for (u32 i=0;i<data_length;i+=16){
+			aes_decrypt_block(&state,data+i,out+i);
+			_xor_cbc_block(out+i,(i?data+(i-16):iv),out+i);
+		}
+	}
+	aes_deinit(&state);
 }

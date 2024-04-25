@@ -15,14 +15,6 @@ u8 keyring_master_key[32];
 
 
 
-static void _xor_block(u8* dst,const u8* src){
-	for (u32 i=0;i<16;i++){
-		dst[i]^=src[i];
-	}
-}
-
-
-
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Loading master key...");
 	for (u32 i=0;i<64;i++){
@@ -48,14 +40,13 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	for (u32 i=0;i<64;i++){
 		master_key_present|=_keyring_master_key_encrypted[i];
 	}
-	aes_state_t state;
-	aes_init(platform_key,32,AES_FLAG_ENCRYPTION|(master_key_present?AES_FLAG_DECRYPTION:0),&state);
+	u8 iv[16];
 	if (master_key_present){
-		for (u32 i=48;i>=32;i-=16){
-			aes_decrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
-			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
-		}
-		mem_copy(keyring_master_key,_keyring_master_key_encrypted+32,32);
+		u8 buffer[64];
+		random_generate(iv,sizeof(iv));
+		aes_cbc_process(platform_key,32,iv,sizeof(iv),AES_FLAG_DECRYPTION,_keyring_master_key_encrypted,64,buffer);
+		mem_copy(keyring_master_key,buffer+32,32);
+		mem_fill(buffer,sizeof(buffer),0);
 	}
 	else if (master_key){
 		INFO("Generating master key (external RNG)...");
@@ -68,15 +59,10 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 #ifndef KERNEL_RELEASE
 	mem_copy(keyring_master_key,"non-release-constant-master-key\x7f",32);
 #endif
+	random_generate(iv,sizeof(iv));
 	random_generate(_keyring_master_key_encrypted,32);
 	mem_copy(_keyring_master_key_encrypted+32,keyring_master_key,32);
-	for (u32 i=0;i<64;i+=16){
-		if (i){
-			_xor_block(_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+(i-16));
-		}
-		aes_encrypt_block(&state,_keyring_master_key_encrypted+i,_keyring_master_key_encrypted+i);
-	}
-	aes_deinit(&state);
+	aes_cbc_process(platform_key,32,iv,sizeof(iv),AES_FLAG_ENCRYPTION,_keyring_master_key_encrypted,64,_keyring_master_key_encrypted);
 	mem_fill(platform_key,32,0);
 	if (master_key){
 		mem_fill(master_key,32,0);

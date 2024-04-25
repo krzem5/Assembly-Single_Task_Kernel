@@ -33,4 +33,8 @@ void aes_decrypt_block(const aes_state_t* state,const void* data,void* out);
 
 
 
+void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out);
+
+
+
 #endif

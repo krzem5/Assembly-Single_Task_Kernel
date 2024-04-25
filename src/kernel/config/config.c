@@ -68,14 +68,6 @@ static omm_allocator_t* KERNEL_INIT_WRITE _config_tag_allocator=NULL;
 
 
 
-static void _xor_block(u8* dst,const u8* src){
-	for (u32 i=0;i<16;i++){
-		dst[i]^=src[i];
-	}
-}
-
-
-
 static const void* _parse_binary_tag(const void* data,const void* end,config_tag_t** out){
 	if (data+sizeof(config_file_tag_header_t)>end){
 		return NULL;
@@ -163,15 +155,9 @@ static config_tag_t* _parse_binary_config(const void* data,u64 length,const char
 			password_length=smm_length(password);
 		}
 		pbkdf2_compute(password,password_length,encryption_header->salt,sizeof(encryption_header->salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
-		aes_state_t aes_state;
-		aes_init(aes_key_and_iv,32,AES_FLAG_DECRYPTION,&aes_state);
 		decoded_data=amm_alloc(length);
-		for (u32 i=0;i<length;i+=16){
-			aes_decrypt_block(&aes_state,data+i,decoded_data+i);
-			_xor_block(decoded_data+i,(i?data+(i-16):aes_key_and_iv+32));
-		}
+		aes_cbc_process(aes_key_and_iv,32,aes_key_and_iv+32,16,AES_FLAG_DECRYPTION,data,length,decoded_data);
 		mem_fill(aes_key_and_iv,sizeof(aes_key_and_iv),0);
-		aes_deinit(&aes_state);
 		data=decoded_data;
 		u8 hmac[32];
 		hmac_compute(encryption_header->salt,sizeof(encryption_header->salt),decoded_data,length,hmac_sha256_function,hmac);
@@ -636,14 +622,8 @@ KERNEL_PUBLIC bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,
 		password_length=smm_length(password);
 	}
 	pbkdf2_compute(password,password_length,encryption_header.salt,sizeof(encryption_header.salt),pbkdf2_prf_hmac_sha256,CONFIG_ENCRYPTION_PBKDF2_ITERATIONS,aes_key_and_iv,sizeof(aes_key_and_iv));
-	aes_state_t aes_state;
-	aes_init(aes_key_and_iv,32,AES_FLAG_ENCRYPTION,&aes_state);
-	for (u32 i=0;i<buffer_size;i+=16){
-		_xor_block(buffer+i,(i?buffer+(i-16):aes_key_and_iv+32));
-		aes_encrypt_block(&aes_state,buffer+i,buffer+i);
-	}
+	aes_cbc_process(aes_key_and_iv,32,aes_key_and_iv+32,16,AES_FLAG_ENCRYPTION,buffer,buffer_size,buffer);
 	mem_fill(aes_key_and_iv,sizeof(aes_key_and_iv),0);
-	aes_deinit(&aes_state);
 	writer_append(writer,buffer,buffer_size);
 	amm_dealloc(buffer);
 _skip_encryption:
