@@ -1,3 +1,8 @@
+#ifndef _COMMON_UEFI_H_
+#define _COMMON_UEFI_H_ 1
+#ifndef BUILD_UEFI
+#error Wrong build mode
+#endif
 #include <efi.h>
 
 
@@ -30,3 +35,7 @@ static inline __attribute__((always_inline,noreturn)) void panic(const char* msg
 	uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,buffer);
 	for (;;);
 }
+
+
+
+#endif

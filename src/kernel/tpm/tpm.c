@@ -328,26 +328,3 @@ KERNEL_INIT(){
 	_tpm_command_buffer_pmm_counter=pmm_alloc_counter("tpm_command_buffer");
 	aml_bus_register_device_driver(&_tmp_aml_bus_device_driver);
 }
-
-
-
-/*
- * Update sequence:
- * (kernel)
- * 1.  use AES with master key to encrypt current kernel+initramfs hash, new kernel hash, and new initramfs hash
- * 2.  kernel and initramfs are stored in a new file on the drive, alongside their old counterparts
- * 3.  store the encrypted hash on the boot drive
- * 4.  restart
- * (boot loader)
- * 5.  if no encrypted hash is found, return to normal boot
- * 6.  store a copy of the PCR hash before the registers are extended
- * 7.  extend the PCR registers
- * 8.  decrypt the encrypted hash
- * 9.  if the hash does not match the kernel+initramfs hash, return to normal boot
- * 10. compute the new PCR values based on new kernel and initramfs hashes
- * 11. return to normal boot, and pass new PCR platform key to the old kernel
- * (kernel)
- * 12. decrypt the master key and re-encrypt it with the new platform key
- * 13. update files on drive and delete old kernel and old initramfs
- * 14. restart
- */

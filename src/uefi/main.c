@@ -1,3 +1,4 @@
+#include <common/aes/aes.h>
 #include <common/compressor/compressor.h>
 #include <common/hash/sha256.h>
 #include <common/kernel/kernel_data.h>
@@ -23,7 +24,6 @@
 
 
 typedef struct _TPM_PLATFORM_KEY_STATE{
-	hash_sha256_state_t kernel_and_initramfs_hash;
 	hash_sha256_state_t combined_hash;
 	u8 last_hash[32];
 	u8 new_last_hash[32];
@@ -130,7 +130,6 @@ static u64 _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 add
 	hash_sha256_init(&hash_state);
 	hash_sha256_process_chunk(&hash_state,(void*)address,out-address);
 	hash_sha256_finalize(&hash_state);
-	hash_sha256_process_chunk(&(platform_key_state->kernel_and_initramfs_hash),hash_state.result,32);
 	hash_sha256_state_t last_pcr_hash_state;
 	hash_sha256_init(&last_pcr_hash_state);
 	hash_sha256_process_chunk(&last_pcr_hash_state,platform_key_state->last_hash,32);
@@ -234,7 +233,6 @@ static inline void _output_int_hex(uint64_t value){
 
 
 static void _fetch_platform_key(tpm_platform_key_state_t* out){
-	hash_sha256_init(&(out->kernel_and_initramfs_hash));
 	EFI_TCG2* tcg2=_get_tpm2_handle();
 	if (!tcg2){
 		return;
@@ -274,17 +272,17 @@ _cleanup:
 
 
 static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_state_t* platform_key_state){
+	kfs2_node_t update_ticket_kfs2_node;
+	if (!_kfs2_lookup_path(fs,"/boot/update_ticket",&update_ticket_kfs2_node)){
+		goto _cleanup;
+	}
 	hash_sha256_state_t new_combined_hash=platform_key_state->combined_hash;
-	hash_sha256_finalize(&(platform_key_state->kernel_and_initramfs_hash));
 	hash_sha256_process_chunk(&(platform_key_state->combined_hash),platform_key_state->last_hash,sizeof(platform_key_state->last_hash));
 	hash_sha256_finalize(&(platform_key_state->combined_hash));
 	/*
 	 * current platform key: platform_key_state->combined_hash.result (256 bits)
-	 * current kernel and initramfs hash: platform_key_state->kernel_and_initramfs_hash.result (256 bits)
 	 * new platform key: new_combined_hash.result (needs to be updated with the decrypted hash of new kernel and initramfs) (256 bits)
 	 */
-	uefi_global_system_table->BootServices->SetMem(&new_combined_hash,sizeof(new_combined_hash),0);
-	uefi_global_system_table->BootServices->SetMem(platform_key_state,sizeof(*platform_key_state),0);
 	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result)));
 	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+8)));
 	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+16)));
@@ -298,6 +296,29 @@ static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_st
 	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+16)));
 	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+24)));
 	// for (;;);
+_cleanup:
+	uefi_global_system_table->BootServices->SetMem(&new_combined_hash,sizeof(new_combined_hash),0);
+	uefi_global_system_table->BootServices->SetMem(platform_key_state,sizeof(*platform_key_state),0);
+	/*
+	 * Update sequence:
+	 * (kernel)
+	 * 1.  [ ] use AES with platform key to encrypt new kernel hash, and new initramfs hash
+	 * 2.  [ ] kernel and initramfs are stored in a new file on the drive, alongside their old counterparts
+	 * 3.  [ ] store the update ticket on the boot drive
+	 * 4.  [ ] restart
+	 * (boot loader)
+	 * 5.  [x] if no update ticket is found, return to normal boot
+	 * 6.  [x] store a copy of the PCR hash before the registers are extended
+	 * 7.  [x] extend the PCR registers
+	 * 8.  [x] decrypt the encrypted hash
+	 * 9.  [ ] if the hmac of decrypted data does not match, return to normal boot
+	 * 10. [ ] compute the new PCR values based on new kernel and initramfs hashes
+	 * 11. [ ] return to normal boot, and pass new PCR platform key to the old kernel
+	 * (kernel)
+	 * 12. [ ] decrypt the master key and re-encrypt it with the new platform key
+	 * 13. [ ] update files on drive and delete old kernel and old initramfs
+	 * 14. [ ] restart
+	 */
 }
 
 

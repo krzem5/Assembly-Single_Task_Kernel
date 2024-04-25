@@ -2,10 +2,11 @@
 #define _COMMON_KFS2_UTIL_H_ 1
 #include <common/types.h>
 #if BUILD_MODULE
-#include <common/kfs2/platform/module.h>
+#include <kernel/util/memory.h>
+#include <kernel/util/util.h>
 #elif BUILD_UEFI
-#include <common/kfs2/platform/uefi.h>
+#include <common/platform/uefi.h>
 #else
-#include <common/kfs2/platform/tool.h>
+#include <common/platform/tool.h>
 #endif
 #endif

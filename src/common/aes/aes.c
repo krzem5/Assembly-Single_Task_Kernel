@@ -1,10 +1,14 @@
-#include <kernel/aes/aes.h>
-#include <kernel/kernel.h>
-#include <kernel/log/log.h>
-#include <kernel/memory/amm.h>
-#include <kernel/types.h>
+#include <common/aes/aes.h>
+#include <common/types.h>
+#if BUILD_KERNEL
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
-#define KERNEL_LOG_NAME "aes"
+#include <kernel/types.h>
+#define EXPORT KERNEL_PUBLIC
+#else
+#include <common/platform/uefi.h>
+#define EXPORT
+#endif
 
 
 
@@ -303,7 +307,6 @@ static const u8 _aes_single_decryption_table[256]={
 
 
 static void _generate_encryption_key(aes_state_t* state,const void* key,u32 key_length){
-	state->encryption_key=amm_alloc((state->rounds+1)<<4);
 	for (u32 i=0;i<key_length/sizeof(u32);i++){
 		state->encryption_key[i]=__builtin_bswap32(*((const u32*)(key+(i<<2))));
 	}
@@ -337,7 +340,6 @@ static void _generate_encryption_key(aes_state_t* state,const void* key,u32 key_
 
 
 static void _generate_decryption_key(aes_state_t* state){
-	state->decryption_key=amm_alloc((state->rounds+1)<<4);
 	for (u32 i=0;i<((state->rounds+1)<<2);i+=4){
 		for (u32 j=0;j<4;j++){
 			state->decryption_key[i+j]=state->encryption_key[(state->rounds<<2)-i+j];
@@ -362,7 +364,7 @@ static void _xor_cbc_block(const u8* a,const u8* b,u8* dst){
 
 
 
-KERNEL_PUBLIC void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
+EXPORT void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
 	if (!flags||(flags&(~(AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION)))){
 		panic("Invalid AES flags");
 	}
@@ -374,28 +376,20 @@ KERNEL_PUBLIC void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t
 	if (flags&AES_FLAG_DECRYPTION){
 		_generate_decryption_key(out);
 	}
-	else{
-		out->decryption_key=NULL;
-	}
 	if (!(flags&AES_FLAG_ENCRYPTION)){
-		amm_dealloc(out->encryption_key);
-		out->encryption_key=NULL;
+		mem_fill(out->encryption_key,sizeof(out->encryption_key),0);
 	}
 }
 
 
 
-KERNEL_PUBLIC void aes_deinit(aes_state_t* state){
-	amm_dealloc(state->encryption_key);
-	amm_dealloc(state->decryption_key);
-	state->encryption_key=NULL;
-	state->decryption_key=NULL;
-	state->rounds=0;
+EXPORT void aes_deinit(aes_state_t* state){
+	mem_fill(state,sizeof(aes_state_t),0);
 }
 
 
 
-KERNEL_PUBLIC void aes_encrypt_block(const aes_state_t* state,const void* data,void* out){
+EXPORT void aes_encrypt_block(const aes_state_t* state,const void* data,void* out){
 	u32 s[8];
 	for (u32 i=0;i<4;i++){
 		s[i]=state->encryption_key[i]^__builtin_bswap32(*((const u32*)(data+(i<<2))));
@@ -422,7 +416,7 @@ KERNEL_PUBLIC void aes_encrypt_block(const aes_state_t* state,const void* data,v
 
 
 
-KERNEL_PUBLIC void aes_decrypt_block(const aes_state_t* state,const void* data,void* out){
+EXPORT void aes_decrypt_block(const aes_state_t* state,const void* data,void* out){
 	u32 s[8];
 	for (u32 i=0;i<4;i++){
 		s[i]=state->decryption_key[i]^__builtin_bswap32(*((const u32*)(data+(i<<2))));
@@ -449,7 +443,7 @@ KERNEL_PUBLIC void aes_decrypt_block(const aes_state_t* state,const void* data,v
 
 
 
-KERNEL_PUBLIC void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out){
+EXPORT void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out){
 	if (!data_length){
 		return;
 	}

@@ -1,6 +1,6 @@
-#ifndef _KERNEL_AES_AES_H_
-#define _KERNEL_AES_AES_H_ 1
-#include <kernel/types.h>
+#ifndef _COMMON_AES_AES_H_
+#define _COMMON_AES_AES_H_ 1
+#include <common/types.h>
 
 
 
@@ -10,8 +10,8 @@
 
 
 typedef struct _AES_STATE{
-	u32* encryption_key;
-	u32* decryption_key;
+	u32 encryption_key[60];
+	u32 decryption_key[60];
 	u32 rounds;
 } aes_state_t;
 
