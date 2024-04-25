@@ -80,4 +80,8 @@ const char* kernel_get_build_name(void);
 
 
 
+const u8* kernel_get_boot_guid(void);
+
+
+
 #endif

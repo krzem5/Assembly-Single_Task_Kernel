@@ -9,6 +9,8 @@
 
 
 
+static void* _initramfs_drive_address=NULL;
+static u64 _initramfs_drive_size=0;
 static drive_t* _initramfs_drive=NULL;
 
 
@@ -17,7 +19,7 @@ static u64 _initramfs_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count)
 	if (offset&DRIVE_OFFSET_FLAG_WRITE){
 		return 0;
 	}
-	mem_copy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(void*)(kernel_data.initramfs_address+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET),count);
+	mem_copy((void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),_initramfs_drive_address+offset,count);
 	return count;
 }
 
@@ -33,14 +35,16 @@ static const drive_type_t _initramfs_drive_type_config={
 
 void KERNEL_EARLY_EXEC initramfs_drive_init(void){
 	INFO("Creating virtual initramfs drive...");
-	INFO("Address: %p, Size: %v",kernel_data.initramfs_address,kernel_data.initramfs_size);
+	_initramfs_drive_address=(void*)(kernel_data.initramfs_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_initramfs_drive_size=kernel_data.initramfs_size;
+	INFO("Address: %p, Size: %v",_initramfs_drive_address,_initramfs_drive_size);
 	drive_config_t config={
 		&_initramfs_drive_type_config,
 		0,
 		0,
 		smm_alloc("initramfs",0),
 		smm_alloc("initramfs",0),
-		pmm_align_up_address(kernel_data.initramfs_size),
+		pmm_align_up_address(_initramfs_drive_size),
 		1,
 		NULL
 	};
@@ -56,5 +60,5 @@ void initramfs_drive_deinit(void){
 	}
 	handle_release(&(_initramfs_drive->handle));
 	_initramfs_drive=NULL;
-	mem_fill((void*)(kernel_data.initramfs_address+VMM_HIGHER_HALF_ADDRESS_OFFSET),kernel_data.initramfs_size,0);
+	mem_fill(_initramfs_drive_address,_initramfs_drive_size,0);
 }
