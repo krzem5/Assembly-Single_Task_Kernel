@@ -1,11 +1,5 @@
-#include <common/hash/sha256.h>
-#include <common/types.h>
-#if BUILD_KERNEL
+#include <kernel/hash/sha256.h>
 #include <kernel/types.h>
-#define EXPORT KERNEL_PUBLIC
-#else
-#define EXPORT
-#endif
 
 
 
@@ -16,7 +10,7 @@
 
 
 
-static inline u32 _rotate_bits_right(u32 a,u8 b){
+static KERNEL_INLINE u32 _rotate_bits_right(u32 a,u8 b){
 	asm("ror %1,%0":"+r"(a):"c"(b));
 	return a;
 }
@@ -116,7 +110,7 @@ static void _process_chunk(hash_sha256_state_t* state,const u32* chunk){
 
 
 
-EXPORT void hash_sha256_init(hash_sha256_state_t* out){
+KERNEL_PUBLIC void hash_sha256_init(hash_sha256_state_t* out){
 	out->a=0x6a09e667;
 	out->b=0xbb67ae85;
 	out->c=0x3c6ef372;
@@ -130,7 +124,7 @@ EXPORT void hash_sha256_init(hash_sha256_state_t* out){
 
 
 
-EXPORT void hash_sha256_process_chunk(hash_sha256_state_t* state,const void* chunk,u64 length){
+KERNEL_PUBLIC void hash_sha256_process_chunk(hash_sha256_state_t* state,const void* chunk,u64 length){
 	if (!length){
 		return;
 	}
@@ -160,7 +154,7 @@ EXPORT void hash_sha256_process_chunk(hash_sha256_state_t* state,const void* chu
 
 
 
-EXPORT void hash_sha256_finalize(hash_sha256_state_t* state){
+KERNEL_PUBLIC void hash_sha256_finalize(hash_sha256_state_t* state){
 	u8 buffer[128];
 	buffer[0]=0x80;
 	u64 padding=(-state->length-9)&63;

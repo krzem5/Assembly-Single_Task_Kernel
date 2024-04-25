@@ -1,12 +1,6 @@
-#ifndef _COMMON_TPM_COMMANDS_H_
-#define _COMMON_TPM_COMMANDS_H_ 1
-#include <common/types.h>
-
-
-
-#define TPM_KEY_PCR_MIN 0
-#define TPM_KEY_PCR_MAX 8
-#define TPM_KEY_PCR_HASH TPM_ALG_SHA256
+#ifndef _KERNEL_TPM_COMMANDS_H_
+#define _KERNEL_TPM_COMMANDS_H_ 1
+#include <kernel/types.h>
 
 
 

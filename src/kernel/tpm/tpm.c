@@ -1,4 +1,3 @@
-#include <common/tpm/commands.h>
 #include <kernel/acpi/structures.h>
 #include <kernel/acpi/tpm2.h>
 #include <kernel/aml/bus.h>
@@ -10,6 +9,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/rsa/rsa.h>
+#include <kernel/tpm/commands.h>
 #include <kernel/tpm/registers.h>
 #include <kernel/tpm/tpm.h>
 #include <kernel/types.h>
@@ -21,6 +21,10 @@
 
 
 #define TPM_COMMAND_BUFFER_SIZE PAGE_SIZE
+
+#define TPM_KEY_PCR_MIN 0
+#define TPM_KEY_PCR_MAX 8
+#define TPM_KEY_PCR_HASH TPM_ALG_SHA256
 
 
 

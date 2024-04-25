@@ -1,12 +1,7 @@
-#include <common/aes/aes.h>
 #include <common/compressor/compressor.h>
-#include <common/hash/sha256.h>
-#include <common/kernel/kernel_data.h>
+#include <common/kernel/kernel.h>
 #include <common/kfs2/api.h>
-#include <common/kfs2/structures.h>
-#include <common/tpm/commands.h>
 #include <common/types.h>
-#include <common/update/update.h>
 #include <efi.h>
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
@@ -21,14 +16,6 @@
 
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_SHIFT 12
-
-
-
-typedef struct _TPM_PLATFORM_KEY_STATE{
-	hash_sha256_state_t combined_hash;
-	u8 last_hash[32];
-	u8 new_last_hash[32];
-} tpm_platform_key_state_t;
 
 
 
@@ -112,7 +99,7 @@ static void _extend_tpm2_event(u64 data,u64 data_end){
 
 
 
-static u64 _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 address,tpm_platform_key_state_t* platform_key_state){
+static u64 _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 address){
 	if (!node->size||(node->flags&KFS2_INODE_TYPE_MASK)!=KFS2_INODE_TYPE_FILE){
 		return 0;
 	}
@@ -127,20 +114,6 @@ static u64 _kfs2_decompress_node(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 add
 	u64 out=_decompress_data((const void*)buffer,node->size,address);
 	uefi_global_system_table->BootServices->FreePages((u64)buffer,buffer_page_count);
 	_extend_tpm2_event(address,out);
-	hash_sha256_state_t hash_state;
-	hash_sha256_init(&hash_state);
-	hash_sha256_process_chunk(&hash_state,(void*)address,out-address);
-	hash_sha256_finalize(&hash_state);
-	hash_sha256_state_t last_pcr_hash_state;
-	hash_sha256_init(&last_pcr_hash_state);
-	hash_sha256_process_chunk(&last_pcr_hash_state,platform_key_state->last_hash,32);
-	hash_sha256_process_chunk(&last_pcr_hash_state,hash_state.result,32);
-	hash_sha256_finalize(&last_pcr_hash_state);
-	for (u32 i=0;i<32;i++){
-		platform_key_state->last_hash[i]=last_pcr_hash_state.result[i];
-	}
-	uefi_global_system_table->BootServices->SetMem(&hash_state,sizeof(hash_state),0);
-	uefi_global_system_table->BootServices->SetMem(&last_pcr_hash_state,sizeof(last_pcr_hash_state),0);
 	return out;
 _cleanup:
 	uefi_global_system_table->BootServices->FreePages((u64)buffer,buffer_page_count);
@@ -214,118 +187,6 @@ static u64 _write_callback(void* ctx,u64 offset,const void* buffer,u64 count){
 
 
 
-static inline char _int_to_hex(uint8_t v){
-	v&=15;
-	return v+(v>9?87:48);
-}
-
-
-
-static inline void _output_int_hex(uint64_t value){
-	uint16_t buffer[17];
-	for (uint8_t i=0;i<16;i++){
-		uint8_t j=(value>>((15-i)<<2))&0xf;
-		buffer[i]=j+(j>9?87:48);
-	}
-	buffer[16]=0;
-	uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,buffer);
-}
-
-
-
-static void _fetch_platform_key(tpm_platform_key_state_t* out){
-	EFI_TCG2* tcg2=_get_tpm2_handle();
-	if (!tcg2){
-		return;
-	}
-	hash_sha256_init(&(out->combined_hash));
-	tpm_command_t* command;
-	uefi_global_system_table->BootServices->AllocatePages(AllocateAnyPages,0x80000000,1,(EFI_PHYSICAL_ADDRESS*)(&command));
-	for (u32 pcr_index=TPM_KEY_PCR_MIN;pcr_index<=TPM_KEY_PCR_MAX;pcr_index++){
-		command->header.tag=__builtin_bswap16(TPM2_ST_NO_SESSIONS);
-		command->header.length=__builtin_bswap32(sizeof(tpm_command_header_t)+sizeof(command->pcr_read));
-		command->header.command_code=__builtin_bswap32(TPM2_CC_PCR_READ);
-		command->pcr_read.selection_count=__builtin_bswap32(1);
-		command->pcr_read.selection_hash_alg=__builtin_bswap16(TPM_KEY_PCR_HASH);
-		command->pcr_read.selection_size=sizeof(command->pcr_read.selection_data);
-		for (u32 i=0;i<command->pcr_read.selection_size;i++){
-			command->pcr_read.selection_data[i]=0;
-		}
-		command->pcr_read.selection_data[pcr_index>>3]|=1<<(pcr_index&7);
-		if (EFI_ERROR(tcg2->SubmitCommand(tcg2,sizeof(tpm_command_header_t)+sizeof(command->pcr_read),(void*)command,PAGE_SIZE,(void*)command))||__builtin_bswap32(command->header.return_code)!=TPM2_RC_SUCCESS||__builtin_bswap32(command->pcr_read_resp.digest_count)!=1||__builtin_bswap16(command->pcr_read_resp.digest_size)!=sizeof(out->last_hash)){
-			goto _cleanup;
-		}
-		if (pcr_index<TPM_KEY_PCR_MAX){
-			hash_sha256_process_chunk(&(out->combined_hash),command->pcr_read_resp.data,sizeof(out->last_hash));
-		}
-		else{
-			for (u32 i=0;i<sizeof(out->last_hash);i++){
-				out->last_hash[i]=command->pcr_read_resp.data[i];
-				out->new_last_hash[i]=command->pcr_read_resp.data[i];
-			}
-		}
-	}
-_cleanup:
-	uefi_global_system_table->BootServices->SetMem(command,PAGE_SIZE,0);
-	uefi_global_system_table->BootServices->FreePages((u64)command,1);
-}
-
-
-
-static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_state_t* platform_key_state){
-	kfs2_node_t update_ticket_kfs2_node;
-	update_ticket_t update_ticket;
-	if (!_kfs2_lookup_path(fs,"/boot/update_ticket",&update_ticket_kfs2_node)||update_ticket_kfs2_node.size!=sizeof(update_ticket_t)||kfs2_node_read(fs,&update_ticket_kfs2_node,0,&update_ticket,sizeof(update_ticket_t))!=sizeof(update_ticket_t)){
-		goto _cleanup;
-	}
-	hash_sha256_state_t new_combined_hash=platform_key_state->combined_hash;
-	hash_sha256_process_chunk(&(platform_key_state->combined_hash),platform_key_state->last_hash,sizeof(platform_key_state->last_hash));
-	hash_sha256_finalize(&(platform_key_state->combined_hash));
-	/*
-	 * current platform key: platform_key_state->combined_hash.result (256 bits)
-	 * new platform key: new_combined_hash.result (needs to be updated with the decrypted hash of new kernel and initramfs) (256 bits)
-	 */
-	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result)));
-	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+8)));
-	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+16)));
-	// _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+24)));
-	// uefi_global_system_table->ConOut->OutputString(uefi_global_system_table->ConOut,L"\r\n");
-	// // _fetch_platform_key(platform_key_state);
-	// // hash_sha256_process_chunk(&(platform_key_state->combined_hash),platform_key_state->last_hash,sizeof(platform_key_state->last_hash));
-	// // hash_sha256_finalize(&(platform_key_state->combined_hash));
-	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result)));
-	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+8)));
-	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+16)));
-	// // _output_int_hex(*((const u64*)(platform_key_state->combined_hash.result+24)));
-	// for (;;);
-_cleanup:
-	uefi_global_system_table->BootServices->SetMem(&new_combined_hash,sizeof(new_combined_hash),0);
-	uefi_global_system_table->BootServices->SetMem(platform_key_state,sizeof(*platform_key_state),0);
-	uefi_global_system_table->BootServices->SetMem(&update_ticket,sizeof(update_ticket),0);
-	/*
-	 * Update sequence:
-	 * (kernel)
-	 * 1.  [ ] use AES with platform key to encrypt new kernel hash, and new initramfs hash
-	 * 2.  [ ] kernel and initramfs are stored in a new file on the drive, alongside their old counterparts
-	 * 3.  [ ] store the update ticket on the boot drive
-	 * 4.  [ ] restart
-	 * (boot loader)
-	 * 5.  [x] if no update ticket is found, return to normal boot
-	 * 6.  [x] store a copy of the PCR hash before the registers are extended
-	 * 7.  [x] extend the PCR registers
-	 * 8.  [x] decrypt the encrypted hash
-	 * 9.  [ ] if the hmac of decrypted data does not match, return to normal boot
-	 * 10. [ ] compute the new PCR values based on new kernel and initramfs hashes
-	 * 11. [ ] return to normal boot, and pass new PCR platform key to the old kernel
-	 * (kernel)
-	 * 12. [ ] decrypt the master key and re-encrypt it with the new platform key
-	 * 13. [ ] update files on drive and delete old kernel and old initramfs
-	 * 14. [ ] restart
-	 */
-}
-
-
-
 EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	relocate_executable();
 	uefi_global_system_table=system_table;
@@ -340,8 +201,6 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	u64 initramfs_size=0;
 	u8 boot_fs_guid[16];
 	u8 master_key[64];
-	tpm_platform_key_state_t platform_key_state;
-	_fetch_platform_key(&platform_key_state);
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
 		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
@@ -367,19 +226,18 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
-		first_free_address=_kfs2_decompress_node(&fs,&kernel_kfs2_node,KERNEL_LOAD_ADDRESS,&platform_key_state);
+		first_free_address=_kfs2_decompress_node(&fs,&kernel_kfs2_node,KERNEL_LOAD_ADDRESS);
 		if (!first_free_address){
 			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
 		initramfs_address=first_free_address;
-		first_free_address=_kfs2_decompress_node(&fs,&initramfs_kfs2_node,first_free_address,&platform_key_state);
+		first_free_address=_kfs2_decompress_node(&fs,&initramfs_kfs2_node,first_free_address);
 		if (!first_free_address){
 			kfs2_filesystem_deinit(&fs);
 			continue;
 		}
 		initramfs_size=first_free_address-initramfs_address;
-		_generate_new_platform_key(&fs,&platform_key_state);
 		for (u32 j=0;j<16;j++){
 			boot_fs_guid[j]=fs.root_block.uuid[j];
 		}

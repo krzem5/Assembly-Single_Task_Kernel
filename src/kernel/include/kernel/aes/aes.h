@@ -1,6 +1,6 @@
-#ifndef _COMMON_AES_AES_H_
-#define _COMMON_AES_AES_H_ 1
-#include <common/types.h>
+#ifndef _KERNEL_AES_AES_H_
+#define _KERNEL_AES_AES_H_ 1
+#include <kernel/types.h>
 
 
 

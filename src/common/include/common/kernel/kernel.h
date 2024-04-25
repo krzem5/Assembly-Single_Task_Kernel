@@ -1,5 +1,5 @@
-#ifndef _COMMON_KERNEL_DATA_KERNEL_DATA_H_
-#define _COMMON_KERNEL_DATA_KERNEL_DATA_H_ 1
+#ifndef _COMMON_KERNEL_KERNEL_H_
+#define _COMMON_KERNEL_KERNEL_H_ 1
 #include <common/types.h>
 
 

@@ -1,6 +1,6 @@
 #ifndef _KERNEL_TPM_TPM_H_
 #define _KERNEL_TPM_TPM_H_ 1
-#include <common/tpm/commands.h>
+#include <kernel/tpm/commands.h>
 #include <kernel/types.h>
 
 

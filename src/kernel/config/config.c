@@ -1,4 +1,4 @@
-#include <common/aes/aes.h>
+#include <kernel/aes/aes.h>
 #include <kernel/config/config.h>
 #include <kernel/hmac/hmac.h>
 #include <kernel/hmac/sha256.h>

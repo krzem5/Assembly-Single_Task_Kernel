@@ -1,14 +1,7 @@
-#include <common/aes/aes.h>
-#include <common/types.h>
-#if BUILD_KERNEL
+#include <kernel/aes/aes.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #include <kernel/types.h>
-#define EXPORT KERNEL_PUBLIC
-#else
-#include <common/platform/uefi.h>
-#define EXPORT
-#endif
 
 
 
@@ -364,7 +357,7 @@ static void _xor_cbc_block(const u8* a,const u8* b,u8* dst){
 
 
 
-EXPORT void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
+KERNEL_PUBLIC void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
 	if (!flags||(flags&(~(AES_FLAG_ENCRYPTION|AES_FLAG_DECRYPTION)))){
 		panic("Invalid AES flags");
 	}
@@ -383,13 +376,13 @@ EXPORT void aes_init(const void* key,u32 key_length,u32 flags,aes_state_t* out){
 
 
 
-EXPORT void aes_deinit(aes_state_t* state){
+KERNEL_PUBLIC void aes_deinit(aes_state_t* state){
 	mem_fill(state,sizeof(aes_state_t),0);
 }
 
 
 
-EXPORT void aes_encrypt_block(const aes_state_t* state,const void* data,void* out){
+KERNEL_PUBLIC void aes_encrypt_block(const aes_state_t* state,const void* data,void* out){
 	u32 s[8];
 	for (u32 i=0;i<4;i++){
 		s[i]=state->encryption_key[i]^__builtin_bswap32(*((const u32*)(data+(i<<2))));
@@ -416,7 +409,7 @@ EXPORT void aes_encrypt_block(const aes_state_t* state,const void* data,void* ou
 
 
 
-EXPORT void aes_decrypt_block(const aes_state_t* state,const void* data,void* out){
+KERNEL_PUBLIC void aes_decrypt_block(const aes_state_t* state,const void* data,void* out){
 	u32 s[8];
 	for (u32 i=0;i<4;i++){
 		s[i]=state->decryption_key[i]^__builtin_bswap32(*((const u32*)(data+(i<<2))));
@@ -443,7 +436,7 @@ EXPORT void aes_decrypt_block(const aes_state_t* state,const void* data,void* ou
 
 
 
-EXPORT void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out){
+KERNEL_PUBLIC void aes_cbc_process(const void* key,u32 key_length,const void* iv,u32 iv_length,u32 flags,const void* data,u32 data_length,void* out){
 	if (!data_length){
 		return;
 	}
