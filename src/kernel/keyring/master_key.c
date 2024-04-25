@@ -1,10 +1,13 @@
 #include <common/aes/aes.h>
+#include <common/update/update.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "keyring_master_key"
 
 
@@ -72,4 +75,40 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key){
 	if (master_key){
 		mem_fill(master_key,32,0);
 	}
+}
+
+
+
+KERNEL_PUBLIC void keyring_master_key_generate_update_ticket(u8* new_kernel_hash,u8* new_initramfs_hash){
+	LOG("Generating update ticket...");
+	vfs_node_t* parent;
+	const char* child_name;
+	vfs_node_t* node=vfs_lookup_for_creation(NULL,"/boot/update_ticket",0,0,0,&parent,&child_name);
+	if (!node){
+		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+		node=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		if (!node){
+			return;
+		}
+	}
+	node->uid=0;
+	node->gid=0;
+	node->flags&=~VFS_NODE_PERMISSION_MASK;
+	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
+	vfs_node_flush(node);
+	if (vfs_node_resize(node,sizeof(update_ticket_t),0)!=sizeof(update_ticket_t)){
+		return;
+	}
+	u8 buffer[64];
+	mem_copy(buffer,new_kernel_hash,32);
+	mem_copy(buffer+32,new_initramfs_hash,32);
+	mem_fill(new_kernel_hash,32,0);
+	mem_fill(new_initramfs_hash,32,0);
+	update_ticket_t update_ticket;
+	mem_fill(buffer,64,0);
+	mem_fill(&update_ticket,sizeof(update_ticket_t),0);
+	if (vfs_node_write(node,0,&update_ticket,sizeof(update_ticket_t),0)!=sizeof(update_ticket_t)){
+		return;
+	}
+	// panic("keyring_master_key_generate_update_ticket");
 }

@@ -6,6 +6,7 @@
 #include <common/kfs2/structures.h>
 #include <common/tpm/commands.h>
 #include <common/types.h>
+#include <common/update/update.h>
 #include <efi.h>
 #include <uefi/relocator.h>
 #include <uefi/tpm2.h>
@@ -273,7 +274,8 @@ _cleanup:
 
 static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_state_t* platform_key_state){
 	kfs2_node_t update_ticket_kfs2_node;
-	if (!_kfs2_lookup_path(fs,"/boot/update_ticket",&update_ticket_kfs2_node)){
+	update_ticket_t update_ticket;
+	if (!_kfs2_lookup_path(fs,"/boot/update_ticket",&update_ticket_kfs2_node)||update_ticket_kfs2_node.size!=sizeof(update_ticket_t)||kfs2_node_read(fs,&update_ticket_kfs2_node,0,&update_ticket,sizeof(update_ticket_t))!=sizeof(update_ticket_t)){
 		goto _cleanup;
 	}
 	hash_sha256_state_t new_combined_hash=platform_key_state->combined_hash;
@@ -299,6 +301,7 @@ static void _generate_new_platform_key(kfs2_filesystem_t* fs,tpm_platform_key_st
 _cleanup:
 	uefi_global_system_table->BootServices->SetMem(&new_combined_hash,sizeof(new_combined_hash),0);
 	uefi_global_system_table->BootServices->SetMem(platform_key_state,sizeof(*platform_key_state),0);
+	uefi_global_system_table->BootServices->SetMem(&update_ticket,sizeof(update_ticket),0);
 	/*
 	 * Update sequence:
 	 * (kernel)

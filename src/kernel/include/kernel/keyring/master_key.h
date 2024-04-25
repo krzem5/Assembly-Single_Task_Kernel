@@ -16,4 +16,8 @@ void keyring_master_key_set_platform_key(u8* platform_key,u8* master_key);
 
 
 
+void keyring_master_key_generate_update_ticket(u8* new_kernel_hash,u8* new_initramfs_hash);
+
+
+
 #endif

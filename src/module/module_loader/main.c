@@ -59,6 +59,12 @@ MODULE_PREINIT(){
 	initramfs_unload();
 	LOG("Loading modules...");
 	_load_modules_from_order_file(0);
+	/**************************************/{
+		u8 new_kernel_hash[32]="kernel-hash-kernel-hash-kernel\x7f\x00";
+		u8 new_initramfs_hash[32]="initramfs-hash-initramfs-hash-\x7f\x00";
+		extern void keyring_master_key_generate_update_ticket(u8* new_kernel_hash,u8* new_initramfs_hash);
+		keyring_master_key_generate_update_ticket(new_kernel_hash,new_initramfs_hash);
+	}/**************************************/
 	LOG("Loading user shell...");
 #ifndef KERNEL_COVERAGE
 	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,0))){
