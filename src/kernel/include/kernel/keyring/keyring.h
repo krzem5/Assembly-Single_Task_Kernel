@@ -1,7 +1,7 @@
 #ifndef _KERNEL_KEYRING_KEYRING_H_
 #define _KERNEL_KEYRING_KEYRING_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/memory/smm.h>
 #include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
@@ -26,7 +26,7 @@ typedef struct _KEYRING_KEY{
 	string_t* name;
 	u16 type;
 	u16 flags;
-	spinlock_t lock;
+	rwlock_t lock;
 	union{
 		struct{
 			void* payload;
@@ -43,7 +43,7 @@ typedef struct _KEYRING_KEY{
 typedef struct _KEYRING{
 	string_t* name;
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	keyring_key_t* head;
 } keyring_t;
 

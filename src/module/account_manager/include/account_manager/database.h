@@ -3,7 +3,7 @@
 #include <kernel/error/error.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -37,7 +37,7 @@ typedef struct _ACCOUNT_MANAGER_DATABASE_USER_GROUP_ENTRY{
 
 
 typedef struct _ACCOUNT_MANAGER_DATABASE{
-	spinlock_t lock;
+	rwlock_t lock;
 	rb_tree_t group_tree;
 	rb_tree_t user_tree;
 } account_manager_database_t;

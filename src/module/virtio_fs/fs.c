@@ -1,6 +1,6 @@
 #include <fuse/fuse.h>
 #include <fuse/fuse_registers.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -63,7 +63,7 @@ static const virtio_device_driver_t _virtio_fs_device_driver={
 MODULE_POSTINIT(){
 	LOG("Initializing VirtIO FS driver...");
 	_virtio_fs_device_allocator=omm_init("virtio_fs_device",sizeof(virtio_fs_device_t),8,1);
-	spinlock_init(&(_virtio_fs_device_allocator->lock));
+	rwlock_init(&(_virtio_fs_device_allocator->lock));
 	if (!virtio_register_device_driver(&_virtio_fs_device_driver)){
 		ERROR("Unable to register VirtIO FS driver");
 	}

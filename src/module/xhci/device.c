@@ -44,7 +44,7 @@ static u32 _get_total_memory_size(const xhci_device_t* device){
 static xhci_ring_t* _alloc_ring(bool cs){
 	xhci_ring_t* out=omm_alloc(_xhci_ring_allocator);
 	mem_fill(out,sizeof(xhci_ring_t),0);
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->cs=cs;
 	return out;
 }
@@ -163,11 +163,11 @@ static u8 _wait_for_all_events(xhci_device_t* xhci_device,xhci_ring_t* ring){
 
 
 static void _command_submit(xhci_device_t* xhci_device,xhci_input_context_t* input_context,u32 flags){
-	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_acquire_write(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_device->command_ring,(void*)input_context,0,flags);
 	xhci_device->doorbell_registers->value=0;
 	_wait_for_all_events(xhci_device,xhci_device->command_ring);
-	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_release_write(&(xhci_device->command_ring->lock));
 }
 
 
@@ -249,7 +249,7 @@ static void _xhci_pipe_resize(void* ctx,usb_device_t* device,usb_pipe_t* pipe,u1
 static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t* pipe,const usb_raw_control_request_t* request,void* data){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
-	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_acquire_write(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_pipe->ring,request,sizeof(usb_raw_control_request_t),((request->wLength?((!!(request->bRequestType&USB_DIR_IN))+2)<<16:0))|TRB_IDT|TRB_TYPE_TR_SETUP);
 	if (request->wLength){
 		_enqueue_event(xhci_pipe->ring,data,request->wLength,((!!(request->bRequestType&USB_DIR_IN))<<16)|TRB_TYPE_TR_DATA);
@@ -257,7 +257,7 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 	_enqueue_event(xhci_pipe->ring,NULL,0,((!(request->bRequestType&USB_DIR_IN))<<16)|TRB_IOC|TRB_TYPE_TR_STATUS);
 	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
 	_wait_for_all_events(xhci_device,xhci_pipe->ring);
-	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_release_write(&(xhci_device->command_ring->lock));
 }
 
 
@@ -265,11 +265,11 @@ static void _xhci_pipe_transfer_setup(void* ctx,usb_device_t* device,usb_pipe_t*
 static void _xhci_pipe_transfer_normal(void* ctx,usb_device_t* device,usb_pipe_t* pipe,void* data,u16 length){
 	xhci_device_t* xhci_device=ctx;
 	xhci_pipe_t* xhci_pipe=pipe;
-	spinlock_acquire_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_acquire_write(&(xhci_device->command_ring->lock));
 	_enqueue_event(xhci_pipe->ring,data,length,TRB_IOC|TRB_TYPE_TR_NORMAL);
 	(xhci_device->doorbell_registers+xhci_pipe->slot)->value=xhci_pipe->endpoint_id;
 	_wait_for_all_events(xhci_device,xhci_pipe->ring);
-	spinlock_release_exclusive(&(xhci_device->command_ring->lock));
+	rwlock_release_write(&(xhci_device->command_ring->lock));
 }
 
 
@@ -363,11 +363,11 @@ MODULE_INIT(){
 	_xhci_driver_pmm_counter=pmm_alloc_counter("xhci");
 	_xhci_input_context_pmm_counter=pmm_alloc_counter("xhci_input_context");
 	_xhci_device_allocator=omm_init("xhci_device",sizeof(xhci_device_t),8,1);
-	spinlock_init(&(_xhci_device_allocator->lock));
+	rwlock_init(&(_xhci_device_allocator->lock));
 	_xhci_ring_allocator=omm_init("xhci_ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4);
-	spinlock_init(&(_xhci_ring_allocator->lock));
+	rwlock_init(&(_xhci_ring_allocator->lock));
 	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2);
-	spinlock_init(&(_xhci_pipe_allocator->lock));
+	rwlock_init(&(_xhci_pipe_allocator->lock));
 }
 
 

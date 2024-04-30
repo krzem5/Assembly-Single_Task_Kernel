@@ -1,13 +1,13 @@
 #ifndef _KERNEL_HANDLE_HANDLE_LIST_H_
 #define _KERNEL_HANDLE_HANDLE_LIST_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
 
 typedef struct _HANDLE_LIST{
-	spinlock_t lock;
+	rwlock_t lock;
 	handle_t* head;
 	handle_t* tail;
 } handle_list_t;

@@ -5,47 +5,47 @@
 
 
 
-global spinlock_init:function default
-global spinlock_acquire_exclusive:function default
-global spinlock_release_exclusive:function default
-global spinlock_acquire_shared:function default
-global spinlock_release_shared:function default
-global spinlock_is_held:function default
+global rwlock_init:function default
+global rwlock_acquire_write:function default
+global rwlock_release_write:function default
+global rwlock_acquire_read:function default
+global rwlock_release_read:function default
+global rwlock_is_held:function default
 section .text exec nowrite
 
 
 
 [bits 64]
-spinlock_init:
+rwlock_init:
 	mov dword [rdi], 0
 	ret
 
 
 
-_spinlock_acquire_exclusive_global_wait:
+_rwlock_acquire_write_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz _spinlock_acquire_exclusive_global_wait
-spinlock_acquire_exclusive:
+	jnz _rwlock_acquire_write_global_wait
+rwlock_acquire_write:
 	lock bts dword [rdi], 0
-	jc _spinlock_acquire_exclusive_global_wait
+	jc _rwlock_acquire_write_global_wait
 	ret
 
 
 
-spinlock_release_exclusive:
+rwlock_release_write:
 	lock btr dword [rdi], 0
 	ret
 
 
 
-_spinlock_acquire_shared_multiaccess_wait:
+_rwlock_acquire_read_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _spinlock_acquire_shared_multiaccess_wait
-spinlock_acquire_shared:
+	jnz _rwlock_acquire_read_multiaccess_wait
+rwlock_acquire_read:
 	lock bts dword [rdi], 1
-	jc _spinlock_acquire_shared_multiaccess_wait
+	jc _rwlock_acquire_read_multiaccess_wait
 	test dword [rdi], 4
 	jnz ._multiaccess_active
 	jmp ._global_test
@@ -64,13 +64,13 @@ spinlock_acquire_shared:
 
 
 
-_spinlock_release_shared_multiaccess_wait:
+_rwlock_release_read_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz _spinlock_release_shared_multiaccess_wait
-spinlock_release_shared:
+	jnz _rwlock_release_read_multiaccess_wait
+rwlock_release_read:
 	lock bts dword [rdi], 1
-	jc _spinlock_release_shared_multiaccess_wait
+	jc _rwlock_release_read_multiaccess_wait
 	sub word [rdi], 8
 	cmp word [rdi], 8
 	jge ._still_used
@@ -82,7 +82,7 @@ spinlock_release_shared:
 
 
 
-spinlock_is_held:
+rwlock_is_held:
 	test dword [rdi], 3
 	setne al
 	ret

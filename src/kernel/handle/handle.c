@@ -2,7 +2,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -49,7 +49,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	else{
 		descriptor->handle.rb_node.key=0;
 	}
-	spinlock_init(&(descriptor->lock));
+	rwlock_init(&(descriptor->lock));
 	rb_tree_init(&(descriptor->tree));
 	descriptor->count=0;
 	descriptor->active_count=0;
@@ -80,12 +80,12 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	out->rc=1;
 	out->acl=NULL;
 	out->handle_list=NULL;
-	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	rwlock_acquire_write(&(handle_descriptor->lock));
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;
 	handle_descriptor->active_count++;
 	rb_tree_insert_node(&(handle_descriptor->tree),&(out->rb_node));
-	spinlock_release_exclusive(&(handle_descriptor->lock));
+	rwlock_release_write(&(handle_descriptor->lock));
 }
 
 
@@ -104,12 +104,12 @@ KERNEL_PUBLIC handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t t
 	if (!handle_descriptor||(type!=HANDLE_TYPE_ANY&&type!=HANDLE_ID_GET_TYPE(id))){
 		return NULL;
 	}
-	spinlock_acquire_shared(&(handle_descriptor->lock));
+	rwlock_acquire_read(&(handle_descriptor->lock));
 	handle_t* out=(handle_t*)rb_tree_lookup_node(&(handle_descriptor->tree),id);
 	if (out){
 		handle_acquire(out);
 	}
-	spinlock_release_shared(&(handle_descriptor->lock));
+	rwlock_release_read(&(handle_descriptor->lock));
 	return out;
 }
 
@@ -132,9 +132,9 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
 	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_DELETE);
-	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	rwlock_acquire_write(&(handle_descriptor->lock));
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
-	spinlock_release_exclusive(&(handle_descriptor->lock));
+	rwlock_release_write(&(handle_descriptor->lock));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 	handle_descriptor->active_count--;
@@ -155,12 +155,12 @@ KERNEL_PUBLIC bool handle_register_notification_listener(handle_type_t type,noti
 	if (!handle_descriptor){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	rwlock_acquire_write(&(handle_descriptor->lock));
 	notification_dispatcher_add_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
 	for (handle_t* handle=HANDLE_ITER_START(handle_descriptor);handle;handle=HANDLE_ITER_NEXT(handle_descriptor,handle)){
 		listener_callback(handle,NOTIFICATION_TYPE_HANDLE_CREATE);
 	}
-	spinlock_release_exclusive(&(handle_descriptor->lock));
+	rwlock_release_write(&(handle_descriptor->lock));
 	return 1;
 }
 
@@ -171,8 +171,8 @@ KERNEL_PUBLIC bool handle_unregister_notification_listener(handle_type_t type,no
 	if (!handle_descriptor){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(handle_descriptor->lock));
+	rwlock_acquire_write(&(handle_descriptor->lock));
 	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
-	spinlock_release_exclusive(&(handle_descriptor->lock));
+	rwlock_release_write(&(handle_descriptor->lock));
 	return 1;
 }

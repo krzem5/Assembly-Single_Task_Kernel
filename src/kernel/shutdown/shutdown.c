@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -18,7 +18,7 @@
 static notification_dispatcher_t _shutdown_notification_dispatcher;
 static omm_allocator_t* _shutdown_function_allocator=NULL;
 static shutdown_function_t* _shutdown_root_function=NULL;
-static spinlock_t _shutdown_function_lock;
+static rwlock_t _shutdown_function_lock;
 
 
 
@@ -26,7 +26,7 @@ KERNEL_INIT(){
 	LOG("Initializing shutdown list...");
 	notification_dispatcher_init(&_shutdown_notification_dispatcher);
 	_shutdown_function_allocator=omm_init("shutdown_function",sizeof(shutdown_function_t),8,1);
-	spinlock_init(&_shutdown_function_lock);
+	rwlock_init(&_shutdown_function_lock);
 }
 
 
@@ -67,13 +67,13 @@ KERNEL_PUBLIC void shutdown_unregister_notification_listener(notification_listen
 
 
 KERNEL_PUBLIC void shutdown_register_shutdown_function(shutdown_function_callback_t callback,bool is_high_priority){
-	spinlock_acquire_exclusive(&_shutdown_function_lock);
+	rwlock_acquire_write(&_shutdown_function_lock);
 	shutdown_function_t* function=omm_alloc(_shutdown_function_allocator);
 	function->next=_shutdown_root_function;
 	function->callback=callback;
 	function->is_high_priority=is_high_priority;
 	_shutdown_root_function=function;
-	spinlock_release_exclusive(&_shutdown_function_lock);
+	rwlock_release_write(&_shutdown_function_lock);
 }
 
 

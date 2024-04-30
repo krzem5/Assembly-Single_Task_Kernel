@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -53,13 +53,13 @@ static void _rotate_subtree(rb_tree_t* tree,rb_tree_node_t* x,bool dir){
 
 KERNEL_PUBLIC void rb_tree_init(rb_tree_t* tree){
 	tree->root=NULL;
-	spinlock_init(&(tree->lock));
+	rwlock_init(&(tree->lock));
 }
 
 
 
 KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
-	spinlock_acquire_exclusive(&(tree->lock));
+	rwlock_acquire_write(&(tree->lock));
 	x->rb_left=NULL;
 	x->rb_right=NULL;
 	if (!tree->root){
@@ -105,27 +105,27 @@ KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 		y=_get_parent(x);
 	}
 _cleanup:
-	spinlock_release_exclusive(&(tree->lock));
+	rwlock_release_write(&(tree->lock));
 }
 
 
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_node(rb_tree_t* tree,u64 key){
-	spinlock_acquire_shared(&(tree->lock));
+	rwlock_acquire_read(&(tree->lock));
 	for (rb_tree_node_t* x=tree->root;x;x=x->rb_nodes[x->key<key]){
 		if (x->key==key){
-			spinlock_release_shared(&(tree->lock));
+			rwlock_release_read(&(tree->lock));
 			return x;
 		}
 	}
-	spinlock_release_shared(&(tree->lock));
+	rwlock_release_read(&(tree->lock));
 	return NULL;
 }
 
 
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64 key){
-	spinlock_acquire_shared(&(tree->lock));
+	rwlock_acquire_read(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	while (x&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
@@ -146,14 +146,14 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_decreasing_node(rb_tree_t* tree,u64
 		} while (x&&y==x->rb_left);
 		break;
 	}
-	spinlock_release_shared(&(tree->lock));
+	rwlock_release_read(&(tree->lock));
 	return x;
 }
 
 
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64 key){
-	spinlock_acquire_shared(&(tree->lock));
+	rwlock_acquire_read(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	while (x&&x->key!=key){
 		rb_tree_node_t* y=x->rb_nodes[x->key<key];
@@ -174,14 +174,14 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_increasing_node(rb_tree_t* tree,u64
 		} while (x&&y==x->rb_right);
 		break;
 	}
-	spinlock_release_shared(&(tree->lock));
+	rwlock_release_read(&(tree->lock));
 	return x;
 }
 
 
 
 KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
-	spinlock_acquire_exclusive(&(tree->lock));
+	rwlock_acquire_write(&(tree->lock));
 	rb_tree_node_t* y=_get_parent(x);
 	if (x->rb_left&&x->rb_right){
 		rb_tree_node_t* z=x->rb_right;
@@ -279,7 +279,7 @@ KERNEL_PUBLIC void rb_tree_remove_node(rb_tree_t* tree,rb_tree_node_t* x){
 		dir=(x==y->rb_right);
 	}
 _cleanup:
-	spinlock_release_exclusive(&(tree->lock));
+	rwlock_release_write(&(tree->lock));
 }
 
 
@@ -288,17 +288,17 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_start(rb_tree_t* tree){
 	if (!tree->root){
 		return NULL;
 	}
-	spinlock_acquire_shared(&(tree->lock));
+	rwlock_acquire_read(&(tree->lock));
 	rb_tree_node_t* x=tree->root;
 	for (;x->rb_left;x=x->rb_left);
-	spinlock_release_shared(&(tree->lock));
+	rwlock_release_read(&(tree->lock));
 	return x;
 }
 
 
 
 KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* x){
-	spinlock_acquire_shared(&(tree->lock));
+	rwlock_acquire_read(&(tree->lock));
 	if (x->rb_right){
 		for (x=x->rb_right;x->rb_left;x=x->rb_left);
 	}
@@ -309,6 +309,6 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_iter_next(rb_tree_t* tree,rb_tree_node_t* 
 			x=_get_parent(x);
 		} while (x&&y==x->rb_right);
 	}
-	spinlock_release_shared(&(tree->lock));
+	rwlock_release_read(&(tree->lock));
 	return x;
 }

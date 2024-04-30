@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ACL_ACL_H_
 #define _KERNEL_ACL_ACL_H_ 1
 #include <kernel/error/error.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 
@@ -33,7 +33,7 @@ typedef struct _ACL_TREE_NODE{
 
 
 typedef struct _ACL{
-	spinlock_t lock;
+	rwlock_t lock;
 	acl_cache_entry_t cache[ACL_PROCESS_CACHE_SIZE];
 	rb_tree_t tree;
 } acl_t;

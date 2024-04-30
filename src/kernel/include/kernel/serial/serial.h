@@ -1,6 +1,6 @@
 #ifndef _KERNEL_SERIAL_SERIAL_H_
 #define _KERNEL_SERIAL_SERIAL_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
@@ -10,8 +10,8 @@
 
 
 typedef struct _SERIAL_PORT{
-	spinlock_t read_lock;
-	spinlock_t write_lock;
+	rwlock_t read_lock;
+	rwlock_t write_lock;
 	u16 io_port;
 } serial_port_t;
 

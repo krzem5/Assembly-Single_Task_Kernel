@@ -5,7 +5,7 @@
 #include <kernel/error/error.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/isr/isr.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/thread.h>
@@ -99,18 +99,18 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler->current_thread=NULL;
 	if (current_thread){
 		msr_set_gs_base((u64)CPU_LOCAL(cpu_extra_data),0);
-		spinlock_acquire_exclusive(&(current_thread->lock));
+		rwlock_acquire_write(&(current_thread->lock));
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=(u64)(CPU_LOCAL(cpu_extra_data)->pf_stack+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT));
 		if (current_thread->state==THREAD_STATE_TYPE_TERMINATED){
 			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
-			spinlock_release_exclusive(&(current_thread->lock));
+			rwlock_release_write(&(current_thread->lock));
 			thread_delete(current_thread);
 		}
 		else{
 			current_thread->reg_state.gpr_state=*state;
 			fpu_save(current_thread->reg_state.fpu_state);
 			current_thread->reg_state.reg_state_not_present=0;
-			spinlock_release_exclusive(&(current_thread->lock));
+			rwlock_release_write(&(current_thread->lock));
 			if (current_thread->state==THREAD_STATE_TYPE_RUNNING){
 				scheduler_enqueue_thread(current_thread);
 			}
@@ -129,7 +129,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		time_us=SCHEDULER_MIN_TIME_QUANTUM_US;
 	}
 	if (current_thread){
-		spinlock_acquire_exclusive(&(current_thread->lock));
+		rwlock_acquire_write(&(current_thread->lock));
 		current_thread->header.index=CPU_HEADER_DATA->index;
 		*state=current_thread->reg_state.gpr_state;
 		CPU_LOCAL(cpu_extra_data)->tss.ist1=current_thread->pf_stack_region->rb_node.key+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT);
@@ -138,7 +138,7 @@ void scheduler_isr_handler(isr_state_t* state){
 		fpu_restore(current_thread->reg_state.fpu_state);
 		vmm_switch_to_pagemap(&(current_thread->process->pagemap));
 		current_thread->state=THREAD_STATE_TYPE_RUNNING;
-		spinlock_release_exclusive(&(current_thread->lock));
+		rwlock_release_write(&(current_thread->lock));
 	}
 	else{
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
@@ -158,13 +158,13 @@ void scheduler_isr_handler(isr_state_t* state){
 
 KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(thread->lock));
+	rwlock_acquire_write(&(thread->lock));
 	if (thread->state==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
 	}
 	scheduler_load_balancer_add(thread);
 	thread->state=THREAD_STATE_TYPE_QUEUED;
-	spinlock_release_exclusive(&(thread->lock));
+	rwlock_release_write(&(thread->lock));
 	scheduler_resume();
 }
 

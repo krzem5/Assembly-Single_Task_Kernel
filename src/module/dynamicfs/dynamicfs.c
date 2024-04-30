@@ -93,7 +93,7 @@ static const vfs_functions_t _dynamicfs_functions={
 
 MODULE_INIT(){
 	_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2);
-	spinlock_init(&(_dynamicfs_vfs_node_allocator->lock));
+	rwlock_init(&(_dynamicfs_vfs_node_allocator->lock));
 }
 
 

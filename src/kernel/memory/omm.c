@@ -1,5 +1,5 @@
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -29,7 +29,7 @@ static void _init_allocator(const char* name,u64 object_size,u64 alignment,u64 p
 		panic("omm_init: page_count must be a power of 2");
 	}
 	out->name=name;
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->object_size=(object_size+alignment-1)&(-alignment);
 	out->alignment=alignment;
 	out->page_count=page_count;
@@ -111,7 +111,7 @@ KERNEL_PUBLIC void omm_deinit(omm_allocator_t* allocator){
 
 KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(allocator->lock));
+	rwlock_acquire_write(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
 		u64 page_address=pmm_alloc(allocator->page_count,&_omm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
@@ -139,7 +139,7 @@ KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 		_allocator_add_page(&(allocator->page_full_head),page);
 	}
 	allocator->allocation_count++;
-	spinlock_release_exclusive(&(allocator->lock));
+	rwlock_release_write(&(allocator->lock));
 	scheduler_resume();
 	return out;
 }
@@ -148,7 +148,7 @@ KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 
 KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(allocator->lock));
+	rwlock_acquire_write(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));
 	if (page->object_size!=allocator->object_size){
 		panic("omm_dealloc: wrong allocator");
@@ -170,6 +170,6 @@ KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,&_omm_pmm_counter);
 	}
 	allocator->deallocation_count++;
-	spinlock_release_exclusive(&(allocator->lock));
+	rwlock_release_write(&(allocator->lock));
 	scheduler_resume();
 }

@@ -2,7 +2,7 @@
 #include <fuse/fuse_registers.h>
 #include <kernel/clock/clock.h>
 #include <kernel/fs/fs.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -259,7 +259,7 @@ static const filesystem_descriptor_config_t _fuse_filesystem_descriptor_config={
 MODULE_INIT(){
 	LOG("Initializing FUSE driver...");
 	_fuse_vfs_node_allocator=omm_init("fuse_vfs_node",sizeof(fuse_vfs_node_t),8,4);
-	spinlock_init(&(_fuse_vfs_node_allocator->lock));
+	rwlock_init(&(_fuse_vfs_node_allocator->lock));
 	_fuse_filesystem_descriptor=fs_register_descriptor(&_fuse_filesystem_descriptor_config);
 }
 

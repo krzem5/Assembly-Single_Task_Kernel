@@ -10,7 +10,7 @@
 #include <kernel/id/flags.h>
 #include <kernel/id/user.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -59,13 +59,13 @@ static void _process_handle_destructor(handle_t* handle){
 KERNEL_EARLY_INIT(){
 	LOG("Creating kernel process...");
 	_process_allocator=omm_init("process",sizeof(process_t),8,2);
-	spinlock_init(&(_process_allocator->lock));
+	rwlock_init(&(_process_allocator->lock));
 	process_handle_type=handle_alloc("process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
 	process_kernel->handle.acl=acl_create();
 	handle_acquire(&(process_kernel->handle));
-	spinlock_init(&(process_kernel->lock));
+	rwlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	u64 mmap_top=aslr_generate_address(ASLR_KERNEL_MMAP_TOP_MIN,ASLR_KERNEL_MMAP_TOP_MAX);
 	INFO("Kernel memory map range: %p - %p",KERNELSPACE_LOWEST_ADDRESS+mmap_top-ASLR_KERNEL_MMAP_TOP_MIN,mmap_top);
@@ -92,7 +92,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(process_kernel->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
 	}
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	out->mmap=mmap_init(&(out->pagemap),mmap_bottom_address,mmap_top_address);
 	thread_list_init(&(out->thread_list));

@@ -1,7 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -26,9 +26,9 @@ handle_type_t KERNEL_INIT_WRITE opengl_state_handle_type=0;
 MODULE_INIT(){
 	LOG("Initializing OpenGL...");
 	_opengl_driver_instance_allocator=omm_init("opengl_driver_instance",sizeof(opengl_driver_instance_t),8,2);
-	spinlock_init(&(_opengl_driver_instance_allocator->lock));
+	rwlock_init(&(_opengl_driver_instance_allocator->lock));
 	_opengl_state_allocator=omm_init("opengl_state",sizeof(opengl_state_t),8,2);
-	spinlock_init(&(_opengl_state_allocator->lock));
+	rwlock_init(&(_opengl_state_allocator->lock));
 	opengl_driver_instance_handle_type=handle_alloc("opengl_driver_instance",NULL);
 	opengl_state_handle_type=handle_alloc("opengl_state",NULL);
 }

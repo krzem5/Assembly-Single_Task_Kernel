@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -17,9 +17,9 @@ static omm_allocator_t* _resource_region_allocator=NULL;
 KERNEL_INIT(){
 	LOG("Initializing resources...");
 	_resource_manager_allocator=omm_init("resource_manager",sizeof(resource_manager_t),8,1);
-	spinlock_init(&(_resource_manager_allocator->lock));
+	rwlock_init(&(_resource_manager_allocator->lock));
 	_resource_region_allocator=omm_init("resource_region",sizeof(resource_region_t),8,1);
-	spinlock_init(&(_resource_region_allocator->lock));
+	rwlock_init(&(_resource_region_allocator->lock));
 }
 
 
@@ -34,7 +34,7 @@ KERNEL_PUBLIC resource_manager_t* resource_manager_create(resource_t min,resourc
 	}
 	resource_manager_t* out=omm_alloc(_resource_manager_allocator);
 	rb_tree_init(&(out->tree));
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->max=max;
 	resource_region_t* region=omm_alloc(_resource_region_allocator);
 	region->rb_node.key=min;
@@ -59,14 +59,14 @@ KERNEL_PUBLIC void resource_manager_delete(resource_manager_t* resource_manager)
 
 
 KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
-	spinlock_acquire_exclusive(&(resource_manager->lock));
+	rwlock_acquire_write(&(resource_manager->lock));
 	resource_region_t* prev_region=NULL;
 	resource_region_t* region=(void*)rb_tree_lookup_increasing_node(&(resource_manager->tree),1);
 	if (region->is_used){
 		prev_region=region;
 		region=(void*)rb_tree_lookup_node(&(resource_manager->tree),region->rb_node.key+region->length);
 		if (!region){
-			spinlock_release_exclusive(&(resource_manager->lock));
+			rwlock_release_write(&(resource_manager->lock));
 			return 0;
 		}
 		KERNEL_ASSERT(!region->is_used);
@@ -95,7 +95,7 @@ KERNEL_PUBLIC resource_t resource_alloc(resource_manager_t* resource_manager){
 			omm_dealloc(_resource_region_allocator,next_region);
 		}
 	}
-	spinlock_release_exclusive(&(resource_manager->lock));
+	rwlock_release_write(&(resource_manager->lock));
 	return out;
 }
 
@@ -105,10 +105,10 @@ KERNEL_PUBLIC bool resource_dealloc(resource_manager_t* resource_manager,resourc
 	if (!resource||resource>resource_manager->max){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(resource_manager->lock));
+	rwlock_acquire_write(&(resource_manager->lock));
 	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
 	if (!region||!region->is_used){
-		spinlock_release_exclusive(&(resource_manager->lock));
+		rwlock_release_write(&(resource_manager->lock));
 		return 0;
 	}
 	KERNEL_ASSERT(region->rb_node.key+region->length>resource);
@@ -169,16 +169,16 @@ KERNEL_PUBLIC bool resource_dealloc(resource_manager_t* resource_manager,resourc
 		rb_tree_insert_node(&(resource_manager->tree),&(new_used_region->rb_node));
 		region->length=resource-region->rb_node.key;
 	}
-	spinlock_release_exclusive(&(resource_manager->lock));
+	rwlock_release_write(&(resource_manager->lock));
 	return 1;
 }
 
 
 
 KERNEL_PUBLIC bool resource_is_used(resource_manager_t* resource_manager,resource_t resource){
-	spinlock_acquire_shared(&(resource_manager->lock));
+	rwlock_acquire_read(&(resource_manager->lock));
 	resource_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(resource_manager->tree),resource);
 	bool out=(region&&region->is_used);
-	spinlock_release_shared(&(resource_manager->lock));
+	rwlock_release_read(&(resource_manager->lock));
 	return out;
 }

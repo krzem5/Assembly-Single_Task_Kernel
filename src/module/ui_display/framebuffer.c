@@ -1,6 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -25,7 +25,7 @@ MODULE_INIT(){
 	LOG("Initializing UI framebuffers...");
 	_ui_framebuffer_pmm_counter=pmm_alloc_counter("ui_framebuffer");
 	_ui_framebuffer_allocator=omm_init("ui_framebuffer",sizeof(ui_framebuffer_t),8,2);
-	spinlock_init(&(_ui_framebuffer_allocator->lock));
+	rwlock_init(&(_ui_framebuffer_allocator->lock));
 	ui_framebuffer_handle_type=handle_alloc("ui_framebuffer",NULL);
 }
 

@@ -5,7 +5,7 @@
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/keyring/keyring.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -242,12 +242,12 @@ static void _save_account_manager_database(void){
 
 MODULE_INIT(){
 	_account_manager_database_group_entry_allocator=omm_init("account_manager_database_group_entry",sizeof(account_manager_database_group_entry_t),8,1);
-	spinlock_init(&(_account_manager_database_group_entry_allocator->lock));
+	rwlock_init(&(_account_manager_database_group_entry_allocator->lock));
 	_account_manager_database_user_entry_allocator=omm_init("account_manager_database_user_entry",sizeof(account_manager_database_user_entry_t),8,1);
-	spinlock_init(&(_account_manager_database_user_entry_allocator->lock));
+	rwlock_init(&(_account_manager_database_user_entry_allocator->lock));
 	_account_manager_database_user_group_entry_allocator=omm_init("account_manager_database_user_group_entry",sizeof(account_manager_database_user_group_entry_t),8,1);
-	spinlock_init(&(_account_manager_database_user_group_entry_allocator->lock));
-	spinlock_init(&(_account_manager_database.lock));
+	rwlock_init(&(_account_manager_database_user_group_entry_allocator->lock));
+	rwlock_init(&(_account_manager_database.lock));
 	rb_tree_init(&(_account_manager_database.group_tree));
 	rb_tree_init(&(_account_manager_database.user_tree));
 }
@@ -262,32 +262,32 @@ MODULE_POSTINIT(){
 
 
 KERNEL_PUBLIC error_t account_manager_database_create_group(gid_t gid,const char* name){
-	spinlock_acquire_exclusive(&(_account_manager_database.lock));
+	rwlock_acquire_write(&(_account_manager_database.lock));
 	if (rb_tree_lookup_node(&(_account_manager_database.group_tree),gid)){
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return ERROR_ALREADY_PRESENT;
 	}
 	error_t err=gid_create(gid,name);
 	if (err==ERROR_ALREADY_PRESENT){
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return ERROR_ALREADY_PRESENT;
 	}
 	if (err!=ERROR_OK){
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return err;
 	}
 	account_manager_database_group_entry_t* group_entry=omm_alloc(_account_manager_database_group_entry_allocator);
 	group_entry->rb_node.key=gid;
 	rb_tree_insert_node(&(_account_manager_database.group_tree),&(group_entry->rb_node));
 	_save_account_manager_database();
-	spinlock_release_exclusive(&(_account_manager_database.lock));
+	rwlock_release_write(&(_account_manager_database.lock));
 	return gid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_create_user(uid_t uid,const char* name,const char* password,u32 password_length){
-	spinlock_acquire_exclusive(&(_account_manager_database.lock));
+	rwlock_acquire_write(&(_account_manager_database.lock));
 	bool generate_uid=!uid;
 	if (generate_uid){
 		uid=ACCOUNT_MANAGER_DATABASE_FIRST_USER_ID;
@@ -296,7 +296,7 @@ _regenerate_uid:
 	}
 	else if (rb_tree_lookup_node(&(_account_manager_database.group_tree),uid)||rb_tree_lookup_node(&(_account_manager_database.user_tree),uid)){
 _invalid_uid:
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return ERROR_ALREADY_PRESENT;
 	}
 	error_t err=gid_create(uid,name);
@@ -308,7 +308,7 @@ _invalid_uid:
 		goto _invalid_uid;
 	}
 	if (err!=ERROR_OK){
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return err;
 	}
 	err=uid_create(uid,name);
@@ -322,7 +322,7 @@ _invalid_uid:
 	}
 	if (err!=ERROR_OK){
 		gid_delete(uid);
-		spinlock_release_exclusive(&(_account_manager_database.lock));
+		rwlock_release_write(&(_account_manager_database.lock));
 		return err;
 	}
 	uid_add_group(uid,uid);
@@ -346,70 +346,70 @@ _invalid_uid:
 	rb_tree_insert_node(&(user_entry->group_tree),&(user_group_entry->rb_node));
 	rb_tree_insert_node(&(_account_manager_database.user_tree),&(user_entry->rb_node));
 	_save_account_manager_database();
-	spinlock_release_exclusive(&(_account_manager_database.lock));
+	rwlock_release_write(&(_account_manager_database.lock));
 	return uid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_get_group_data(gid_t gid,account_manager_database_group_data_t* out){
-	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	account_manager_database_group_entry_t* group_entry=(void*)rb_tree_lookup_node(&(_account_manager_database.group_tree),gid);
 	if (!group_entry){
-		spinlock_release_shared(&(_account_manager_database.lock));
+		rwlock_release_read(&(_account_manager_database.lock));
 		return ERROR_NOT_FOUND;
 	}
 	out->gid=gid;
-	spinlock_release_shared(&(_account_manager_database.lock));
+	rwlock_release_read(&(_account_manager_database.lock));
 	return ERROR_OK;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_get_user_data(uid_t uid,account_manager_database_user_data_t* out){
-	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	account_manager_database_user_entry_t* user_entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
 	if (!user_entry){
-		spinlock_release_shared(&(_account_manager_database.lock));
+		rwlock_release_read(&(_account_manager_database.lock));
 		return ERROR_NOT_FOUND;
 	}
 	out->uid=uid;
 	out->flags=user_entry->flags;
-	spinlock_release_shared(&(_account_manager_database.lock));
+	rwlock_release_read(&(_account_manager_database.lock));
 	return ERROR_OK;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_group(gid_t gid){
-	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(_account_manager_database.group_tree),(gid?gid+1:0));
 	gid=(rb_node?rb_node->key:0);
-	spinlock_release_shared(&(_account_manager_database.lock));
+	rwlock_release_read(&(_account_manager_database.lock));
 	return gid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_user(uid_t uid){
-	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(_account_manager_database.user_tree),(uid?uid+1:0));
 	uid=(rb_node?rb_node->key:0);
-	spinlock_release_shared(&(_account_manager_database.lock));
+	rwlock_release_read(&(_account_manager_database.lock));
 	return uid;
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_iter_next_user_subgroup(uid_t uid,gid_t gid){
-	spinlock_acquire_shared(&(_account_manager_database.lock));
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	account_manager_database_user_entry_t* entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
 	if (!entry){
-		spinlock_release_shared(&(_account_manager_database.lock));
+		rwlock_release_read(&(_account_manager_database.lock));
 		return 0;
 	}
 	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(entry->group_tree),(gid?gid+1:0));
 	gid=(rb_node?rb_node->key:0);
-	spinlock_release_shared(&(_account_manager_database.lock));
+	rwlock_release_read(&(_account_manager_database.lock));
 	return gid;
 }

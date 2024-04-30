@@ -1,5 +1,5 @@
 #include <kernel/drive/drive.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -106,7 +106,7 @@ static const virtio_device_driver_t _virtio_blk_device_driver={
 MODULE_INIT(){
 	LOG("Initializing VirtIO block driver...");
 	_virtio_blk_device_allocator=omm_init("virtio_blk_device",sizeof(virtio_blk_device_t),8,1);
-	spinlock_init(&(_virtio_blk_device_allocator->lock));
+	rwlock_init(&(_virtio_blk_device_allocator->lock));
 }
 
 

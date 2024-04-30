@@ -37,7 +37,7 @@
 
 typedef struct _FD{
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	vfs_node_t* node;
 	u64 offset;
 	u8 flags;
@@ -65,7 +65,7 @@ typedef struct _FD_STAT{
 
 typedef struct _FD_ITERATOR{
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	vfs_node_t* node;
 	u64 pointer;
 	string_t* current_name;

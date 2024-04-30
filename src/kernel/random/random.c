@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>
@@ -11,7 +11,7 @@ static const char* _random_password_characters="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef
 
 
 
-static spinlock_t _random_chacha_lock;
+static rwlock_t _random_chacha_lock;
 static u32 _random_chacha_state[16];
 static u32 _random_chacha_buffer[16];
 
@@ -60,7 +60,7 @@ static KERNEL_INLINE void _chacha_block(u32* state,u32* out){
 
 void KERNEL_EARLY_EXEC random_init(void){
 	LOG("Initializing PRNG...");
-	spinlock_init(&_random_chacha_lock);
+	rwlock_init(&_random_chacha_lock);
 	_random_init_entropy_pool();
 	_random_get_entropy(_random_chacha_state);
 }
@@ -68,7 +68,7 @@ void KERNEL_EARLY_EXEC random_init(void){
 
 
 KERNEL_PUBLIC void random_generate(void* buffer,u64 length){
-	spinlock_acquire_exclusive(&_random_chacha_lock);
+	rwlock_acquire_write(&_random_chacha_lock);
 	_random_get_entropy(_random_chacha_state);
 	u8* buffer_ptr=buffer;
 	while (length){
@@ -78,7 +78,7 @@ KERNEL_PUBLIC void random_generate(void* buffer,u64 length){
 		length-=chunk_size;
 		buffer_ptr+=chunk_size;
 	}
-	spinlock_release_exclusive(&_random_chacha_lock);
+	rwlock_release_write(&_random_chacha_lock);
 }
 
 

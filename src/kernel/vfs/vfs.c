@@ -3,7 +3,7 @@
 #include <kernel/id/flags.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mp/thread.h>
@@ -49,9 +49,9 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 			}
 		}
 		_vfs_root_node=fs->root;
-		spinlock_acquire_exclusive(&(_vfs_root_node->lock));
+		rwlock_acquire_write(&(_vfs_root_node->lock));
 		_vfs_root_node->relatives.parent=NULL;
-		spinlock_release_exclusive(&(_vfs_root_node->lock));
+		rwlock_release_write(&(_vfs_root_node->lock));
 		process_kernel->vfs_root=_vfs_root_node;
 		process_kernel->vfs_cwd=_vfs_root_node;
 		fs->is_mounted=1;
@@ -68,10 +68,10 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 		}
 		panic("vfs_mount: node already exists");
 	}
-	spinlock_acquire_exclusive(&(fs->root->lock));
+	rwlock_acquire_write(&(fs->root->lock));
 	smm_dealloc(fs->root->name);
 	fs->root->name=smm_alloc(child_name,0);
-	spinlock_release_exclusive(&(fs->root->lock));
+	rwlock_release_write(&(fs->root->lock));
 	vfs_node_attach_child(parent,fs->root);
 	fs->is_mounted=1;
 	if (fs->descriptor->config->mount_callback){

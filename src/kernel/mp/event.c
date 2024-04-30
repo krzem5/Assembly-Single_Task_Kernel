@@ -2,7 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -33,12 +33,12 @@ static void _event_handle_destructor(handle_t* handle){
 
 
 static bool _await_event(thread_t* thread,event_t* event,u32 index){
-	spinlock_acquire_exclusive(&(event->lock));
+	rwlock_acquire_write(&(event->lock));
 	if (event->is_active){
-		spinlock_release_exclusive(&(event->lock));
+		rwlock_release_write(&(event->lock));
 		return 1;
 	}
-	spinlock_acquire_exclusive(&(thread->lock));
+	rwlock_acquire_write(&(thread->lock));
 	event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
 	container->thread=thread;
 	container->prev=event->tail;
@@ -52,8 +52,8 @@ static bool _await_event(thread_t* thread,event_t* event,u32 index){
 		event->head=container;
 	}
 	event->tail=container;
-	spinlock_release_exclusive(&(thread->lock));
-	spinlock_release_exclusive(&(event->lock));
+	rwlock_release_write(&(thread->lock));
+	rwlock_release_write(&(event->lock));
 	return 0;
 }
 
@@ -62,9 +62,9 @@ static bool _await_event(thread_t* thread,event_t* event,u32 index){
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing event allocator...");
 	_event_allocator=omm_init("event",sizeof(event_t),8,4);
-	spinlock_init(&(_event_allocator->lock));
+	rwlock_init(&(_event_allocator->lock));
 	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4);
-	spinlock_init(&(_event_thread_container_allocator->lock));
+	rwlock_init(&(_event_thread_container_allocator->lock));
 	_event_handle_type=handle_alloc("event",_event_handle_destructor);
 }
 
@@ -77,7 +77,7 @@ KERNEL_PUBLIC event_t* event_create(void){
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
 	}
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->is_active=0;
 	out->head=NULL;
 	out->tail=NULL;
@@ -92,14 +92,14 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 		return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(event->lock));
+	rwlock_acquire_write(&(event->lock));
 	handle_destroy(&(event->handle));
 	while (event->head){
 		event_thread_container_t* container=event->head;
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
-	spinlock_release_exclusive(&(event->lock));
+	rwlock_release_write(&(event->lock));
 	scheduler_resume();
 }
 
@@ -110,7 +110,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(event->lock));
+	rwlock_acquire_write(&(event->lock));
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){
 		event->is_active=1;
 	}
@@ -124,11 +124,11 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT||thread->event_sequence_id!=sequence_id){
 			continue;
 		}
-		spinlock_acquire_exclusive(&(thread->lock));
+		rwlock_acquire_write(&(thread->lock));
 		thread->state=THREAD_STATE_TYPE_NONE;
 		thread->event_sequence_id++;
 		thread->event_wakeup_index=index;
-		spinlock_release_exclusive(&(thread->lock));
+		rwlock_release_write(&(thread->lock));
 		SPINLOOP(thread->reg_state.reg_state_not_present);
 		scheduler_enqueue_thread(thread);
 		if (!(flags&EVENT_DISPATCH_FLAG_DISPATCH_ALL)){
@@ -138,7 +138,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 	if (!event->head){
 		event->tail=NULL;
 	}
-	spinlock_release_exclusive(&(event->lock));
+	rwlock_release_write(&(event->lock));
 	scheduler_resume();
 }
 
@@ -158,18 +158,18 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(thread->lock));
+	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
-	spinlock_release_exclusive(&(thread->lock));
+	rwlock_release_write(&(thread->lock));
 	for (u32 i=0;i<count;i++){
 		if (!_await_event(thread,events[i],i)){
 			continue;
 		}
-		spinlock_acquire_exclusive(&(thread->lock));
+		rwlock_acquire_write(&(thread->lock));
 		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
-		spinlock_release_exclusive(&(thread->lock));
+		rwlock_release_write(&(thread->lock));
 		scheduler_resume();
 		return i;
 	}
@@ -185,10 +185,10 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(thread->lock));
+	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
-	spinlock_release_exclusive(&(thread->lock));
+	rwlock_release_write(&(thread->lock));
 	for (u32 i=0;i<count;i++){
 		handle_t* handle_event=handle_lookup_and_acquire(handles[i],_event_handle_type);
 		if (!handle_event){
@@ -197,10 +197,10 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		bool is_active=_await_event(thread,handle_event->object,i);
 		handle_release(handle_event);
 		if (is_active){
-			spinlock_acquire_exclusive(&(thread->lock));
+			rwlock_acquire_write(&(thread->lock));
 			thread->state=THREAD_STATE_TYPE_RUNNING;
 			thread->event_wakeup_index=i;
-			spinlock_release_exclusive(&(thread->lock));
+			rwlock_release_write(&(thread->lock));
 			scheduler_resume();
 			return i;
 		}
@@ -216,9 +216,9 @@ KERNEL_PUBLIC void event_set_active(event_t* event,bool is_active,bool bypass_ac
 		return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(event->lock));
+	rwlock_acquire_write(&(event->lock));
 	event->is_active=is_active;
-	spinlock_release_exclusive(&(event->lock));
+	rwlock_release_write(&(event->lock));
 	scheduler_resume();
 }
 

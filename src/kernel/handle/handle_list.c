@@ -1,6 +1,6 @@
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -30,7 +30,7 @@ static void _pop_handle(handle_list_t* list,handle_t* handle){
 
 
 KERNEL_PUBLIC void handle_list_init(handle_list_t* out){
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
 }
@@ -40,14 +40,14 @@ KERNEL_PUBLIC void handle_list_init(handle_list_t* out){
 KERNEL_PUBLIC void handle_list_destroy(handle_list_t* list){
 	return; // null pointer dereference (racing condition) is triggered during handle releases below
 	while (1){
-		spinlock_acquire_exclusive(&(list->lock));
+		rwlock_acquire_write(&(list->lock));
 		handle_t* handle=list->head;
 		if (!handle){
-			spinlock_release_exclusive(&(list->lock));
+			rwlock_release_write(&(list->lock));
 			return;
 		}
 		_pop_handle(list,handle);
-		spinlock_release_exclusive(&(list->lock));
+		rwlock_release_write(&(list->lock));
 		handle_release(handle);
 	}
 }
@@ -58,7 +58,7 @@ KERNEL_PUBLIC void handle_list_push(handle_list_t* list,handle_t* handle){
 	if (handle->handle_list==list){
 		return;
 	}
-	spinlock_acquire_exclusive(&(list->lock));
+	rwlock_acquire_write(&(list->lock));
 	if (handle->handle_list){
 		panic("Handle already in a list");
 	}
@@ -72,7 +72,7 @@ KERNEL_PUBLIC void handle_list_push(handle_list_t* list,handle_t* handle){
 	handle->handle_list_prev=list->tail;
 	handle->handle_list_next=NULL;
 	list->tail=handle;
-	spinlock_release_exclusive(&(list->lock));
+	rwlock_release_write(&(list->lock));
 }
 
 
@@ -82,7 +82,7 @@ KERNEL_PUBLIC void handle_list_pop(handle_t* handle){
 	if (!list){
 		return;
 	}
-	spinlock_acquire_exclusive(&(list->lock));
+	rwlock_acquire_write(&(list->lock));
 	_pop_handle(list,handle);
-	spinlock_release_exclusive(&(list->lock));
+	rwlock_release_write(&(list->lock));
 }

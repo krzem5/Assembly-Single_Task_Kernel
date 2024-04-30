@@ -3,7 +3,7 @@
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -56,7 +56,7 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 	}
 	if (!_fs_descriptor_allocator){
 		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2);
-		spinlock_init(&(_fs_descriptor_allocator->lock));
+		rwlock_init(&(_fs_descriptor_allocator->lock));
 	}
 	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
 	out->config=config;
@@ -89,7 +89,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	if (!_fs_allocator){
 		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4);
-		spinlock_init(&(_fs_allocator->lock));
+		rwlock_init(&(_fs_allocator->lock));
 	}
 	if (!fs_handle_type){
 		fs_handle_type=handle_alloc("fs",_fs_handle_destructor);

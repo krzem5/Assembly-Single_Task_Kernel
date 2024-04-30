@@ -23,7 +23,7 @@
 
 typedef struct _PIPE_VFS_NODE{
 	vfs_node_t node;
-	spinlock_t lock;
+	rwlock_t lock;
 	void* buffer;
 	u32 write_offset;
 	u32 read_offset;
@@ -45,7 +45,7 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 		return NULL;
 	}
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,PIPE_BUFFER_SIZE,MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!region){
 		panic("Unable to allocate pipe buffer");
@@ -75,9 +75,9 @@ static u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_read:
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(pipe->lock));
+	rwlock_acquire_write(&(pipe->lock));
 	if (!pipe->is_full&&pipe->write_offset==pipe->read_offset){
-		spinlock_release_exclusive(&(pipe->lock));
+		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
 			scheduler_resume();
 			return 0;
@@ -105,7 +105,7 @@ _retry_read:
 		pipe->is_full=0;
 		event_dispatch(pipe->write_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
-	spinlock_release_exclusive(&(pipe->lock));
+	rwlock_release_write(&(pipe->lock));
 	scheduler_resume();
 	return size;
 }
@@ -116,9 +116,9 @@ static u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_write:
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(pipe->lock));
+	rwlock_acquire_write(&(pipe->lock));
 	if (pipe->is_full){
-		spinlock_release_exclusive(&(pipe->lock));
+		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
 			scheduler_resume();
 			return 0;
@@ -144,7 +144,7 @@ _retry_write:
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
 	event_dispatch(pipe->read_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	spinlock_release_exclusive(&(pipe->lock));
+	rwlock_release_write(&(pipe->lock));
 	scheduler_resume();
 	return size;
 }
@@ -169,7 +169,7 @@ static const vfs_functions_t _pipe_vfs_functions={
 KERNEL_INIT(){
 	LOG("Initializing pipes...");
 	_pipe_vfs_node_allocator=omm_init("pipe_node",sizeof(pipe_vfs_node_t),8,4);
-	spinlock_init(&(_pipe_vfs_node_allocator->lock));
+	rwlock_init(&(_pipe_vfs_node_allocator->lock));
 }
 
 

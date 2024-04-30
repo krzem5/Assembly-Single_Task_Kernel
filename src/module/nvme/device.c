@@ -1,7 +1,7 @@
 #include <kernel/drive/drive.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -42,7 +42,7 @@ static void _completion_queue_init(nvme_device_t* device,u16 queue_index,u16 que
 
 
 static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_queue_t* queue){
-	spinlock_acquire_exclusive(&(queue->lock));
+	rwlock_acquire_write(&(queue->lock));
 	nvme_completion_queue_t* completion_queue=queue->completion_queue;
 	nvme_completion_queue_entry_t* out=completion_queue->entries+completion_queue->head;
 	SPINLOOP((out->status&1)!=completion_queue->phase);
@@ -50,7 +50,7 @@ static nvme_completion_queue_entry_t* _completion_queue_wait(nvme_submission_que
 	completion_queue->phase^=!completion_queue->head;
 	queue->head=out->sq_head;
 	*(completion_queue->queue.doorbell)=completion_queue->head;
-	spinlock_release_exclusive(&(queue->lock));
+	rwlock_release_write(&(queue->lock));
 	return out;
 }
 
@@ -60,7 +60,7 @@ static void _submission_queue_init(nvme_device_t* device,nvme_completion_queue_t
 	_init_queue(device,queue_index,queue_length,&(out->queue));
 	out->entries=(void*)(pmm_alloc(pmm_align_up_address(queue_length*sizeof(nvme_submission_queue_entry_t))>>PAGE_SIZE_SHIFT,_nvme_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->completion_queue=completion_queue;
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->head=0;
 	out->tail=0;
 }
@@ -68,7 +68,7 @@ static void _submission_queue_init(nvme_device_t* device,nvme_completion_queue_t
 
 
 static nvme_submission_queue_entry_t* _submission_queue_init_entry(nvme_submission_queue_t* queue,u8 opc){
-	spinlock_acquire_exclusive(&(queue->lock));
+	rwlock_acquire_write(&(queue->lock));
 	SPINLOOP(((queue->head+1)&queue->queue.mask)==queue->tail);
 	nvme_submission_queue_entry_t* out=queue->entries+queue->tail;
 	mem_fill((void*)out,sizeof(nvme_submission_queue_entry_t),0);
@@ -81,7 +81,7 @@ static nvme_submission_queue_entry_t* _submission_queue_init_entry(nvme_submissi
 static void _submission_queue_send_entry(nvme_submission_queue_t* queue){
 	queue->tail=(queue->tail+1)&queue->queue.mask;
 	*(queue->queue.doorbell)=queue->tail;
-	spinlock_release_exclusive(&(queue->lock));
+	rwlock_release_write(&(queue->lock));
 }
 
 
@@ -221,7 +221,7 @@ static void _nvme_init_device(pci_device_t* device){
 MODULE_INIT(){
 	_nvme_driver_pmm_counter=pmm_alloc_counter("nvme");
 	_nvme_device_allocator=omm_init("nvme_device",sizeof(nvme_device_t),8,1);
-	spinlock_init(&(_nvme_device_allocator->lock));
+	rwlock_init(&(_nvme_device_allocator->lock));
 }
 
 

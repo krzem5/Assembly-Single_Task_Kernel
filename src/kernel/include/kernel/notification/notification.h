@@ -1,6 +1,6 @@
 #ifndef _KERNEL_NOTIFICATION_NOTIFICATION_H_
 #define _KERNEL_NOTIFICATION_NOTIFICATION_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
@@ -28,7 +28,7 @@ typedef struct _NOTIFICATION_LISTENER{
 
 
 typedef struct _NOTIFICATION_DISPATCHER{
-	spinlock_t lock;
+	rwlock_t lock;
 	notification_listener_t* head;
 } notification_dispatcher_t;
 

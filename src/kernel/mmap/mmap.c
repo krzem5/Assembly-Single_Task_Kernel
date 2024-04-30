@@ -1,7 +1,7 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/isr/pf.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -128,20 +128,20 @@ KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing mmap allocator...");
 	_mmap_pmm_counter=pmm_alloc_counter("mmap");
 	_mmap_allocator=omm_init("mmap",sizeof(mmap_t),8,4);
-	spinlock_init(&(_mmap_allocator->lock));
+	rwlock_init(&(_mmap_allocator->lock));
 	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4);
-	spinlock_init(&(_mmap_region_allocator->lock));
+	rwlock_init(&(_mmap_region_allocator->lock));
 	_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4);
-	spinlock_init(&(_mmap_length_group_allocator->lock));
+	rwlock_init(&(_mmap_length_group_allocator->lock));
 	_mmap_free_region_allocator=omm_init("mmap_free_region",sizeof(mmap_free_region_t),8,4);
-	spinlock_init(&(_mmap_free_region_allocator->lock));
+	rwlock_init(&(_mmap_free_region_allocator->lock));
 }
 
 
 
 mmap_t* mmap_init(vmm_pagemap_t* pagemap,u64 bottom_address,u64 top_address){
 	mmap_t* out=omm_alloc(_mmap_allocator);
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->pagemap=pagemap;
 	out->bottom_address=bottom_address;
 	out->break_address=bottom_address;
@@ -193,7 +193,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	}
 	u64 guard_page_size=((flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	length+=guard_page_size;
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	if (!address){
 		mmap_length_group_t* group=(void*)rb_tree_lookup_increasing_node(&(mmap->length_tree),length);
 		if (group){
@@ -207,7 +207,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 		}
 		else{
 			if (mmap->break_address+length>mmap->heap_address){
-				spinlock_release_exclusive(&(mmap->lock));
+				rwlock_release_write(&(mmap->lock));
 				return NULL;
 			}
 			mmap->heap_address-=length;
@@ -220,7 +220,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	out->flags=flags;
 	out->file=file;
 	rb_tree_insert_node(&(mmap->address_tree),&(out->rb_node));
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
 		for (u64 offset=address+guard_page_size;offset<address+length;offset+=PAGE_SIZE){
 			mmap_handle_pf(mmap,offset);
@@ -232,10 +232,10 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 
 
 KERNEL_PUBLIC bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	mmap_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (!region||region->rb_node.key+region->length<=address){
-		spinlock_release_exclusive(&(mmap->lock));
+		rwlock_release_write(&(mmap->lock));
 		return 0;
 	}
 	if (!length){
@@ -245,16 +245,16 @@ KERNEL_PUBLIC bool mmap_dealloc(mmap_t* mmap,u64 address,u64 length){
 		panic("mmap_dealloc: partial dealloc");
 	}
 	_dealloc_region(mmap,region,1);
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 	return 1;
 }
 
 
 
 KERNEL_PUBLIC void mmap_dealloc_region(mmap_t* mmap,mmap_region_t* region){
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	_dealloc_region(mmap,region,1);
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 }
 
 
@@ -263,12 +263,12 @@ KERNEL_PUBLIC mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 	if (!mmap){
 		return NULL;
 	}
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	mmap_region_t* out=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (out&&out->rb_node.key+out->length<=address){
 		out=NULL;
 	}
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 	return out;
 }
 
@@ -295,10 +295,10 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	if (!mmap){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	mmap_region_t* region=(void*)rb_tree_lookup_decreasing_node(&(mmap->address_tree),address);
 	if (!region||(region->flags&MMAP_REGION_FLAG_NO_ALLOC)||region->rb_node.key+region->length<=address){
-		spinlock_release_exclusive(&(mmap->lock));
+		rwlock_release_write(&(mmap->lock));
 		return 0;
 	}
 	u64 out=pmm_alloc(1,_mmap_pmm_counter,0);
@@ -316,14 +316,14 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 		flags|=VMM_PAGE_FLAG_NOEXECUTE;
 	}
 	vmm_map_page(mmap->pagemap,out,address,flags);
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 	return out;
 }
 
 
 
 void mmap_unmap_address(mmap_t* mmap,u64 address){
-	spinlock_acquire_exclusive(&(mmap->lock));
+	rwlock_acquire_write(&(mmap->lock));
 	u64 entry=vmm_unmap_page(mmap->pagemap,address)&VMM_PAGE_ADDRESS_MASK;
 	if (entry){
 		pf_invalidate_tlb_entry(address);
@@ -333,7 +333,7 @@ void mmap_unmap_address(mmap_t* mmap,u64 address){
 		region=NULL;
 	}
 	_unmap_address(mmap,region,address);
-	spinlock_release_exclusive(&(mmap->lock));
+	rwlock_release_write(&(mmap->lock));
 }
 
 

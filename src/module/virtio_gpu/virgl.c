@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -283,7 +283,7 @@ static KERNEL_INLINE u32 _decode_sampler_compare_func(u32 flags){
 
 
 static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* command,u16 command_size,bool flush){
-	spinlock_acquire_exclusive(&(ctx->command_buffer.lock));
+	rwlock_acquire_write(&(ctx->command_buffer.lock));
 	if (ctx->command_buffer.size+command_size>VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE){
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
@@ -296,7 +296,7 @@ static void _command_buffer_extend(virgl_opengl_context_t* ctx,const u32* comman
 		virtio_gpu_command_submit_3d(ctx->gpu_device,CONTEXT_ID,ctx->command_buffer.buffer_address,ctx->command_buffer.size*sizeof(u32));
 		ctx->command_buffer.size=0;
 	}
-	spinlock_release_exclusive(&(ctx->command_buffer.lock));
+	rwlock_release_write(&(ctx->command_buffer.lock));
 }
 
 
@@ -1011,19 +1011,19 @@ MODULE_INIT(){
 	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
 	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_buffer");
 	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4);
-	spinlock_init(&(_virgl_opengl_context_allocator->lock));
+	rwlock_init(&(_virgl_opengl_context_allocator->lock));
 	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4);
-	spinlock_init(&(_virgl_opengl_state_context_allocator->lock));
+	rwlock_init(&(_virgl_opengl_state_context_allocator->lock));
 	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4);
-	spinlock_init(&(_virgl_opengl_shader_allocator->lock));
+	rwlock_init(&(_virgl_opengl_shader_allocator->lock));
 	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4);
-	spinlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
+	rwlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
 	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4);
-	spinlock_init(&(_virgl_opengl_buffer_allocator->lock));
+	rwlock_init(&(_virgl_opengl_buffer_allocator->lock));
 	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4);
-	spinlock_init(&(_virgl_opengl_texture_allocator->lock));
+	rwlock_init(&(_virgl_opengl_texture_allocator->lock));
 	_virgl_opengl_sampler_allocator=omm_init("virgl_opengl_sampler",sizeof(virgl_opengl_sampler_t),8,4);
-	spinlock_init(&(_virgl_opengl_sampler_allocator->lock));
+	rwlock_init(&(_virgl_opengl_sampler_allocator->lock));
 	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
 	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
 	_virgl_opengl_buffer_handle_type=handle_alloc("virgl_opengl_buffer",NULL);
@@ -1048,7 +1048,7 @@ void virgl_load_from_virtio_gpu_capset(virtio_gpu_device_t* gpu_device,bool is_v
 	virgl_opengl_context_t* ctx=omm_alloc(_virgl_opengl_context_allocator);
 	ctx->gpu_device=gpu_device;
 	ctx->caps=*caps;
-	spinlock_init(&(ctx->command_buffer.lock));
+	rwlock_init(&(ctx->command_buffer.lock));
 	INFO("Allocating command buffer..");
 	ctx->command_buffer.buffer_address=pmm_alloc(pmm_align_up_address(VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER_SIZE*sizeof(u32))>>PAGE_SIZE_SHIFT,_virgl_opengl_context_command_buffer_pmm_counter,0);
 	ctx->command_buffer.buffer=(void*)(ctx->command_buffer.buffer_address+VMM_HIGHER_HALF_ADDRESS_OFFSET);

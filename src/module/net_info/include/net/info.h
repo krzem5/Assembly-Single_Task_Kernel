@@ -1,6 +1,6 @@
 #ifndef _NET_INFO_H_
 #define _NET_INFO_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 #include <net/ip4.h>
 
@@ -14,7 +14,7 @@ typedef struct _NET_INFO_ADDRESS_LIST_ENTRY{
 
 
 typedef struct _NET_INFO_ADDRESS_LIST{
-	spinlock_t lock;
+	rwlock_t lock;
 	net_info_address_list_entry_t* head;
 	net_info_address_list_entry_t* tail;
 } net_info_address_list_t;

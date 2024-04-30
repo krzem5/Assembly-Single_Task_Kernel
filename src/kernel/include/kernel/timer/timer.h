@@ -2,7 +2,7 @@
 #define _KERNEL_TIMER_TIMER_H_ 1
 #include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -20,7 +20,7 @@
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	event_t* event;
 	u64 interval;
 	u64 count;

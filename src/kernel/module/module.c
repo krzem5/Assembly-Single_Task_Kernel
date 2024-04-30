@@ -2,7 +2,7 @@
 #include <kernel/elf/structures.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -334,7 +334,7 @@ static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* r
 KERNEL_EARLY_INIT(){
 	LOG("Initializing module loader...");
 	_module_allocator=omm_init("module",sizeof(module_t),8,4);
-	spinlock_init(&(_module_allocator->lock));
+	rwlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("module",_module_handle_destructor);
 	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
 	aslr_module_base=0;

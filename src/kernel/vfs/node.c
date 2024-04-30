@@ -1,6 +1,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/fs/fs.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -56,7 +56,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	if (!out){
 		return NULL;
 	}
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	u64 time=clock_get_time()+time_boot_offset;
 	out->flags=0;
 	out->rc=0;
@@ -86,7 +86,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 KERNEL_INIT(){
 	LOG("Initializing VFS nodes...");
 	_vfs_node_empty_node_allocator=omm_init("vfs_empty_node",sizeof(vfs_node_t),8,1);
-	spinlock_init(&(_vfs_node_empty_node_allocator->lock));
+	rwlock_init(&(_vfs_node_empty_node_allocator->lock));
 }
 
 
@@ -143,16 +143,16 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name)
 	if (!out){
 		return NULL;
 	}
-	spinlock_acquire_exclusive(&(node->lock));
+	rwlock_acquire_write(&(node->lock));
 	out->relatives.parent=node;
 	out->relatives.next_sibling=node->relatives.child;
 	if (node->relatives.child){
-		spinlock_acquire_exclusive(&(node->relatives.child->lock));
+		rwlock_acquire_write(&(node->relatives.child->lock));
 		node->relatives.child->relatives.prev_sibling=out;
-		spinlock_release_exclusive(&(node->relatives.child->lock));
+		rwlock_release_write(&(node->relatives.child->lock));
 	}
 	node->relatives.child=out;
-	spinlock_release_exclusive(&(node->lock));
+	rwlock_release_write(&(node->lock));
 	return out;
 }
 
@@ -235,7 +235,7 @@ KERNEL_PUBLIC void vfs_node_flush(vfs_node_t* node){
 
 
 KERNEL_PUBLIC void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child){
-	spinlock_acquire_exclusive(&(node->lock));
+	rwlock_acquire_write(&(node->lock));
 	if (child->relatives.parent){
 		WARN("vfs_node_attach_child: Multiple parents");
 	}
@@ -244,35 +244,35 @@ KERNEL_PUBLIC void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child){
 	}
 	child->relatives.next_sibling=node->relatives.child;
 	if (node->relatives.child){
-		spinlock_acquire_exclusive(&(node->relatives.child->lock));
+		rwlock_acquire_write(&(node->relatives.child->lock));
 		node->relatives.child->relatives.prev_sibling=child;
-		spinlock_release_exclusive(&(node->relatives.child->lock));
+		rwlock_release_write(&(node->relatives.child->lock));
 	}
 	node->relatives.child=child;
-	spinlock_release_exclusive(&(node->lock));
+	rwlock_release_write(&(node->lock));
 }
 
 
 
 KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
-	spinlock_acquire_exclusive(&(node->lock));
+	rwlock_acquire_write(&(node->lock));
 	if (node->relatives.parent){
 		if (node->relatives.prev_sibling){
-			spinlock_acquire_exclusive(&(node->relatives.prev_sibling->lock));
+			rwlock_acquire_write(&(node->relatives.prev_sibling->lock));
 			node->relatives.prev_sibling->relatives.next_sibling=node->relatives.next_sibling;
-			spinlock_release_exclusive(&(node->relatives.prev_sibling->lock));
+			rwlock_release_write(&(node->relatives.prev_sibling->lock));
 		}
 		else{
-			spinlock_acquire_exclusive(&(node->relatives.parent->lock));
+			rwlock_acquire_write(&(node->relatives.parent->lock));
 			node->relatives.parent->relatives.child=node->relatives.next_sibling;
-			spinlock_release_exclusive(&(node->relatives.parent->lock));
+			rwlock_release_write(&(node->relatives.parent->lock));
 		}
 		if (node->relatives.next_sibling){
-			spinlock_acquire_exclusive(&(node->relatives.next_sibling->lock));
+			rwlock_acquire_write(&(node->relatives.next_sibling->lock));
 			node->relatives.next_sibling->relatives.prev_sibling=node->relatives.prev_sibling;
-			spinlock_release_exclusive(&(node->relatives.next_sibling->lock));
+			rwlock_release_write(&(node->relatives.next_sibling->lock));
 		}
 		node->relatives.parent=NULL;
 	}
-	spinlock_release_exclusive(&(node->lock));
+	rwlock_release_write(&(node->lock));
 }

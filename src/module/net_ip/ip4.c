@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -18,7 +18,7 @@
 
 
 
-static spinlock_t _net_ip4_protocol_lock;
+static rwlock_t _net_ip4_protocol_lock;
 static rb_tree_t _net_ip4_protocol_type_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _net_ip4_protocol_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _net_ip4_packet_allocator=NULL;
@@ -38,7 +38,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		ERROR("Fragmented IPv4 packed");
 		return;
 	}
-	spinlock_acquire_shared(&_net_ip4_protocol_lock);
+	rwlock_acquire_read(&_net_ip4_protocol_lock);
 	const net_ip4_protocol_t* protocol=(const net_ip4_protocol_t*)rb_tree_lookup_node(&_net_ip4_protocol_type_tree,header->protocol);
 	if (protocol){
 		net_ip4_packet_t ip4_packet={
@@ -51,7 +51,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	else{
 		WARN("Unhandled IPv4 packet '%u'",header->protocol);
 	}
-	spinlock_release_shared(&_net_ip4_protocol_lock);
+	rwlock_release_read(&_net_ip4_protocol_lock);
 }
 
 
@@ -65,12 +65,12 @@ static const network_layer2_protocol_descriptor_t _net_ip4_protocol_descriptor={
 
 
 MODULE_INIT(){
-	spinlock_init(&_net_ip4_protocol_lock);
+	rwlock_init(&_net_ip4_protocol_lock);
 	rb_tree_init(&_net_ip4_protocol_type_tree);
 	_net_ip4_protocol_allocator=omm_init("net_ip4_protocol",sizeof(net_ip4_protocol_t),8,1);
-	spinlock_init(&(_net_ip4_protocol_allocator->lock));
+	rwlock_init(&(_net_ip4_protocol_allocator->lock));
 	_net_ip4_packet_allocator=omm_init("net_ip4_packet",sizeof(net_ip4_packet_t),8,4);
-	spinlock_init(&(_net_ip4_packet_allocator->lock));
+	rwlock_init(&(_net_ip4_packet_allocator->lock));
 }
 
 
@@ -83,32 +83,32 @@ MODULE_POSTINIT(){
 
 
 KERNEL_PUBLIC void net_ip4_register_protocol_descriptor(const net_ip4_protocol_descriptor_t* descriptor){
-	spinlock_acquire_exclusive(&_net_ip4_protocol_lock);
+	rwlock_acquire_write(&_net_ip4_protocol_lock);
 	LOG("Registering network IPv4 protocol '%s/%X%X'...",descriptor->name,descriptor->protocol_type>>8,descriptor->protocol_type);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip4_protocol_type_tree,descriptor->protocol_type);
 	if (node){
 		ERROR("IPv4 protocol %X%X is already allocated by '%s'",descriptor->protocol_type>>8,descriptor->protocol_type,((net_ip4_protocol_t*)node)->descriptor->name);
-		spinlock_release_exclusive(&_net_ip4_protocol_lock);
+		rwlock_release_write(&_net_ip4_protocol_lock);
 		return;
 	}
 	net_ip4_protocol_t* protocol=omm_alloc(_net_ip4_protocol_allocator);
 	protocol->rb_node.key=descriptor->protocol_type;
 	protocol->descriptor=descriptor;
 	rb_tree_insert_node(&_net_ip4_protocol_type_tree,&(protocol->rb_node));
-	spinlock_release_exclusive(&_net_ip4_protocol_lock);
+	rwlock_release_write(&_net_ip4_protocol_lock);
 }
 
 
 
 KERNEL_PUBLIC void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol_descriptor_t* descriptor){
-	spinlock_acquire_exclusive(&_net_ip4_protocol_lock);
+	rwlock_acquire_write(&_net_ip4_protocol_lock);
 	LOG("Unregistering network IPv4 protocol '%s/%X%X'...",descriptor->name,descriptor->protocol_type>>8,descriptor->protocol_type);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip4_protocol_type_tree,descriptor->protocol_type);
 	if (node){
 		rb_tree_remove_node(&_net_ip4_protocol_type_tree,node);
 		omm_dealloc(_net_ip4_protocol_allocator,node);
 	}
-	spinlock_release_exclusive(&_net_ip4_protocol_lock);
+	rwlock_release_write(&_net_ip4_protocol_lock);
 }
 
 

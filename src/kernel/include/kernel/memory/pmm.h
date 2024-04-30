@@ -1,7 +1,7 @@
 #ifndef _KERNEL_MEMORY_PMM_H_
 #define _KERNEL_MEMORY_PMM_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
@@ -50,7 +50,7 @@ typedef struct _PMM_ALLOCATOR_BUCKET{
 typedef struct _PMM_ALLOCATOR{
 	pmm_allocator_bucket_t buckets[PMM_ALLOCATOR_BUCKET_COUNT];
 	u16 bucket_bitmap;
-	spinlock_t lock;
+	rwlock_t lock;
 } pmm_allocator_t;
 
 
@@ -64,7 +64,7 @@ typedef struct _PMM_LOAD_BALANCER_STATS{
 
 
 typedef struct _PMM_LOAD_BALANCER{
-	spinlock_t lock;
+	rwlock_t lock;
 	u32 index;
 	pmm_load_balancer_stats_t stats;
 } pmm_load_balancer_t;

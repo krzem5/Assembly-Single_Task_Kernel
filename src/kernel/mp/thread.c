@@ -5,7 +5,7 @@
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/profiling.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -66,7 +66,7 @@ static void _thread_handle_destructor(handle_t* handle){
 static thread_t* _thread_alloc(process_t* process){
 	if (!_thread_fpu_state_allocator){
 		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4);
-		spinlock_init(&(_thread_fpu_state_allocator->lock));
+		rwlock_init(&(_thread_fpu_state_allocator->lock));
 	}
 	thread_t* out=omm_alloc(_thread_allocator);
 	mem_fill(out,sizeof(thread_t),0);
@@ -74,7 +74,7 @@ static thread_t* _thread_alloc(process_t* process){
 	handle_new(out,thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,process,0,THREAD_STATE_TYPE_TERMINATED);
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->process=process;
 	char buffer[128];
 	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
@@ -107,7 +107,7 @@ static thread_t* _thread_alloc(process_t* process){
 KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
 	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4);
-	spinlock_init(&(_thread_allocator->lock));
+	rwlock_init(&(_thread_allocator->lock));
 	thread_handle_type=handle_alloc("thread",_thread_handle_destructor);
 }
 
@@ -171,9 +171,9 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 
 KERNEL_PUBLIC void thread_delete(thread_t* thread){
 	handle_release(&(thread->handle));
-	// spinlock_acquire_exclusive(&(thread->lock));
+	// rwlock_acquire_write(&(thread->lock));
 	// if (handle_release(&(thread->handle))){
-	// 	spinlock_release_exclusive(&(thread->lock));
+	// 	rwlock_release_write(&(thread->lock));
 	// }
 }
 
@@ -182,9 +182,9 @@ KERNEL_PUBLIC void thread_delete(thread_t* thread){
 KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	spinlock_acquire_exclusive(&(thread->lock));
+	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
-	spinlock_release_exclusive(&(thread->lock));
+	rwlock_release_write(&(thread->lock));
 	scheduler_yield();
 	for (;;);
 }

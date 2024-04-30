@@ -1,6 +1,6 @@
 #ifndef _KERNEL_WRITER_WRITER_H_
 #define _KERNEL_WRITER_WRITER_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -8,7 +8,7 @@
 
 
 typedef struct _WRITER{
-	spinlock_t lock;
+	rwlock_t lock;
 	bool is_file_backed;
 	union{
 		vfs_node_t* node;

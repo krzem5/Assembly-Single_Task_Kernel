@@ -100,7 +100,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	if (!_partition_allocator){
 		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4);
-		spinlock_init(&(_partition_allocator->lock));
+		rwlock_init(&(_partition_allocator->lock));
 	}
 	if (!partition_handle_type){
 		partition_handle_type=handle_alloc("partition",_partition_handle_destructor);

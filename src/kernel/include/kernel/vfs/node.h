@@ -2,7 +2,7 @@
 #define _KERNEL_VFS_NODE_H_ 1
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
 
@@ -54,7 +54,7 @@ typedef struct _VFS_NODE_RELATIVES{
 
 
 typedef struct _VFS_NODE{
-	spinlock_t lock;
+	rwlock_t lock;
 	u32 flags;
 	KERNEL_ATOMIC u64 rc;
 	string_t* name;

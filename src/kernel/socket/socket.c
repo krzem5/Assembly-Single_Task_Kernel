@@ -24,7 +24,7 @@
 
 
 
-static spinlock_t _socket_dtp_lock;
+static rwlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_vfs_node_allocator=NULL;
@@ -39,8 +39,8 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 		return NULL;
 	}
 	socket_vfs_node_t* out=omm_alloc(_socket_vfs_node_allocator);
-	spinlock_init(&(out->read_lock));
-	spinlock_init(&(out->write_lock));
+	rwlock_init(&(out->read_lock));
+	rwlock_init(&(out->write_lock));
 	out->domain=SOCKET_DOMAIN_NONE;
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;
@@ -55,9 +55,9 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 
 static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
-	spinlock_acquire_exclusive(&(socket->read_lock));
+	rwlock_acquire_write(&(socket->read_lock));
 	u64 out=(socket->local_ctx?socket->descriptor->read(socket,buffer,size,flags):0);
-	spinlock_release_exclusive(&(socket->read_lock));
+	rwlock_release_write(&(socket->read_lock));
 	return out;
 }
 
@@ -65,9 +65,9 @@ static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fl
 
 static u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
-	spinlock_acquire_exclusive(&(socket->write_lock));
+	rwlock_acquire_write(&(socket->write_lock));
 	u64 out=(socket->remote_ctx?socket->descriptor->write(socket,buffer,size):0);
-	spinlock_release_exclusive(&(socket->write_lock));
+	rwlock_release_write(&(socket->write_lock));
 	return out;
 }
 
@@ -116,39 +116,39 @@ static vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type
 
 KERNEL_INIT(){
 	LOG("Initializing sockets...");
-	spinlock_init(&_socket_dtp_lock);
+	rwlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
 	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1);
-	spinlock_init(&(_socket_dtp_handler_allocator->lock));
+	rwlock_init(&(_socket_dtp_handler_allocator->lock));
 	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4);
-	spinlock_init(&(_socket_vfs_node_allocator->lock));
+	rwlock_init(&(_socket_vfs_node_allocator->lock));
 	_socket_packet_allocator=omm_init("socket_packet",sizeof(socket_packet_t),8,4);
-	spinlock_init(&(_socket_packet_allocator->lock));
+	rwlock_init(&(_socket_packet_allocator->lock));
 }
 
 
 
 KERNEL_PUBLIC void socket_register_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
-	spinlock_acquire_exclusive(&_socket_dtp_lock);
+	rwlock_acquire_write(&_socket_dtp_lock);
 	LOG("Registering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
 	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
 	if (node){
 		ERROR("Socket D:T:P %u:%u:%u is already allocated by '%s'",descriptor->domain,descriptor->type,descriptor->protocol,((socket_dtp_handler_t*)node)->descriptor->name);
-		spinlock_release_exclusive(&_socket_dtp_lock);
+		rwlock_release_write(&_socket_dtp_lock);
 		return;
 	}
 	socket_dtp_handler_t* handler=omm_alloc(_socket_dtp_handler_allocator);
 	handler->rb_node.key=key;
 	handler->descriptor=descriptor;
 	rb_tree_insert_node(&_socket_dtp_tree,&(handler->rb_node));
-	spinlock_release_exclusive(&_socket_dtp_lock);
+	rwlock_release_write(&_socket_dtp_lock);
 }
 
 
 
 KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_t* descriptor){
-	spinlock_acquire_exclusive(&_socket_dtp_lock);
+	rwlock_acquire_write(&_socket_dtp_lock);
 	LOG("Unregistering socket D:T:P handler '%s/%u:%u:%u'...",descriptor->name,descriptor->domain,descriptor->type,descriptor->protocol);
 	u32 key=CREATE_DTP_KEY(descriptor->domain,descriptor->type,descriptor->protocol);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_socket_dtp_tree,key);
@@ -156,15 +156,15 @@ KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_
 		rb_tree_remove_node(&_socket_dtp_tree,node);
 		omm_dealloc(_socket_dtp_handler_allocator,node);
 	}
-	spinlock_release_exclusive(&_socket_dtp_lock);
+	rwlock_release_write(&_socket_dtp_lock);
 }
 
 
 
 KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
-	spinlock_acquire_shared(&_socket_dtp_lock);
+	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
-	spinlock_release_shared(&_socket_dtp_lock);
+	rwlock_release_read(&_socket_dtp_lock);
 	if (!handler){
 		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
 		return NULL;
@@ -175,9 +175,9 @@ KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t typ
 
 
 KERNEL_PUBLIC bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
-	spinlock_acquire_shared(&_socket_dtp_lock);
+	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
-	spinlock_release_shared(&_socket_dtp_lock);
+	rwlock_release_read(&_socket_dtp_lock);
 	if (!handler){
 		ERROR("Invalid socket D:T:P combination: %u:%u:%u",domain,type,protocol);
 		return 0;
@@ -244,9 +244,9 @@ KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblock
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	spinlock_acquire_exclusive(&(socket_node->read_lock));
+	rwlock_acquire_write(&(socket_node->read_lock));
 	socket_packet_t* out=ring_peek(socket_node->rx_ring,!nonblocking);
-	spinlock_release_exclusive(&(socket_node->read_lock));
+	rwlock_release_write(&(socket_node->read_lock));
 	return out;
 }
 
@@ -257,9 +257,9 @@ KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocki
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	spinlock_acquire_exclusive(&(socket_node->read_lock));
+	rwlock_acquire_write(&(socket_node->read_lock));
 	socket_packet_t* out=ring_pop(socket_node->rx_ring,!nonblocking);
-	spinlock_release_exclusive(&(socket_node->read_lock));
+	rwlock_release_write(&(socket_node->read_lock));
 	return out;
 }
 
@@ -273,9 +273,9 @@ KERNEL_PUBLIC bool socket_push_packet(vfs_node_t* node,const void* packet,u32 si
 	if (!(socket_node->flags&SOCKET_FLAG_WRITE)){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(socket_node->write_lock));
+	rwlock_acquire_write(&(socket_node->write_lock));
 	bool out=socket_node->descriptor->write_packet(socket_node,packet,size);
-	spinlock_release_exclusive(&(socket_node->write_lock));
+	rwlock_release_write(&(socket_node->write_lock));
 	return out;
 }
 
@@ -320,10 +320,10 @@ KERNEL_PUBLIC bool socket_move(vfs_node_t* node,const char* path){
 	}
 	vfs_node_dettach_child(node);
 	if (!path){
-		spinlock_acquire_exclusive(&(node->lock));
+		rwlock_acquire_write(&(node->lock));
 		smm_dealloc(node->name);
 		node->name=_get_unique_id();
-		spinlock_release_exclusive(&(node->lock));
+		rwlock_release_write(&(node->lock));
 		vfs_node_attach_child(_socket_root,node);
 		return 1;
 	}
@@ -333,10 +333,10 @@ KERNEL_PUBLIC bool socket_move(vfs_node_t* node,const char* path){
 		ERROR("socket_move: node already exists");
 		return 0;
 	}
-	spinlock_acquire_exclusive(&(node->lock));
+	rwlock_acquire_write(&(node->lock));
 	smm_dealloc(node->name);
 	node->name=smm_alloc(child_name,0);
-	spinlock_release_exclusive(&(node->lock));
+	rwlock_release_write(&(node->lock));
 	vfs_node_attach_child(parent,node);
 	return 1;
 }

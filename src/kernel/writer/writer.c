@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -39,14 +39,14 @@ static void _emit_data(writer_t* writer,const void* buffer,u64 size){
 KERNEL_INIT(){
 	LOG("Initializing file writer...");
 	_writer_omm_allocator=omm_init("writer",sizeof(writer_t),8,4);
-	spinlock_init(&(_writer_omm_allocator->lock));
+	rwlock_init(&(_writer_omm_allocator->lock));
 }
 
 
 
 KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node,void** buffer){
 	writer_t* out=omm_alloc(_writer_omm_allocator);
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	if (node){
 		out->is_file_backed=1;
 		out->backend.node=node;
@@ -80,7 +80,7 @@ KERNEL_PUBLIC void writer_append(writer_t* writer,const void* data,u64 length){
 	if (!length){
 		return;
 	}
-	spinlock_acquire_exclusive(&(writer->lock));
+	rwlock_acquire_write(&(writer->lock));
 	u64 space=WRITER_BUFFER_SIZE-writer->offset;
 	if (space>length){
 		space=length;
@@ -103,16 +103,16 @@ KERNEL_PUBLIC void writer_append(writer_t* writer,const void* data,u64 length){
 	mem_copy(writer->buffer,data,length);
 	writer->offset=length;
 _skip_flush:
-	spinlock_release_exclusive(&(writer->lock));
+	rwlock_release_write(&(writer->lock));
 }
 
 
 
 KERNEL_PUBLIC void writer_flush(writer_t* writer){
-	spinlock_acquire_exclusive(&(writer->lock));
+	rwlock_acquire_write(&(writer->lock));
 	if (writer->offset){
 		_emit_data(writer,writer->buffer,writer->offset);
 		writer->offset=0;
 	}
-	spinlock_release_exclusive(&(writer->lock));
+	rwlock_release_write(&(writer->lock));
 }

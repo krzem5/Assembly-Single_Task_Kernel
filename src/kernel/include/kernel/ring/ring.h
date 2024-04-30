@@ -1,6 +1,6 @@
 #ifndef _KERNEL_RING_RING_H_
 #define _KERNEL_RING_RING_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/types.h>
 
@@ -13,8 +13,8 @@ typedef struct _RING{
 	KERNEL_ATOMIC u32 read_count;
 	u32 write_index;
 	KERNEL_ATOMIC u32 write_count;
-	spinlock_t read_lock;
-	spinlock_t write_lock;
+	rwlock_t read_lock;
+	rwlock_t write_lock;
 	event_t* read_event;
 	event_t* write_event;
 } ring_t;

@@ -1,4 +1,4 @@
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/module/module.h>
@@ -17,7 +17,7 @@ static net_info_address_list_t _net_info_router_address_list;
 
 
 static void _init_address_list(net_info_address_list_t* out){
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->head=NULL;
 	out->tail=NULL;
 }
@@ -25,7 +25,7 @@ static void _init_address_list(net_info_address_list_t* out){
 
 
 static void _clear_address_list(net_info_address_list_t* address_list){
-	spinlock_acquire_exclusive(&(address_list->lock));
+	rwlock_acquire_write(&(address_list->lock));
 	for (net_info_address_list_entry_t* entry=address_list->head;entry;){
 		net_info_address_list_entry_t* next_entry=entry->next;
 		omm_dealloc(_net_info_address_list_entry_allocator,entry);
@@ -33,13 +33,13 @@ static void _clear_address_list(net_info_address_list_t* address_list){
 	}
 	address_list->head=NULL;
 	address_list->tail=NULL;
-	spinlock_release_exclusive(&(address_list->lock));
+	rwlock_release_write(&(address_list->lock));
 }
 
 
 
 static void _extend_address_list(net_info_address_list_t* address_list,net_ip4_address_t address){
-	spinlock_acquire_exclusive(&(address_list->lock));
+	rwlock_acquire_write(&(address_list->lock));
 	net_info_address_list_entry_t* entry=omm_alloc(_net_info_address_list_entry_allocator);
 	entry->next=NULL;
 	entry->address=address;
@@ -50,14 +50,14 @@ static void _extend_address_list(net_info_address_list_t* address_list,net_ip4_a
 		address_list->head=entry;
 	}
 	address_list->tail=entry;
-	spinlock_release_exclusive(&(address_list->lock));
+	rwlock_release_write(&(address_list->lock));
 }
 
 
 
 MODULE_INIT(){
 	_net_info_address_list_entry_allocator=omm_init("net_info_address_list_entry",sizeof(net_info_address_list_entry_t),8,1);
-	spinlock_init(&(_net_info_address_list_entry_allocator->lock));
+	rwlock_init(&(_net_info_address_list_entry_allocator->lock));
 	_init_address_list(&_net_info_dns_address_list);
 	_init_address_list(&_net_info_router_address_list);
 }

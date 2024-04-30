@@ -1,6 +1,6 @@
 #include <kernel/clock/clock.h>
 #include <kernel/error/error.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -68,7 +68,7 @@ void clock_add_source(const clock_source_t* source){
 	LOG("Registering clock source '%s'...",source->name);
 	if (!_clock_source_wrapper_allocator){
 		_clock_source_wrapper_allocator=omm_init("clock_source_wrapper",sizeof(clock_source_wrapper_t),8,1);
-		spinlock_init(&(_clock_source_wrapper_allocator->lock));
+		rwlock_init(&(_clock_source_wrapper_allocator->lock));
 	}
 	clock_source_wrapper_t* wrapper=omm_alloc(_clock_source_wrapper_allocator);
 	wrapper->source=source;

@@ -1,5 +1,5 @@
 #include <kernel/clock/clock.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/smm.h>
@@ -28,9 +28,9 @@
 static omm_allocator_t* KERNEL_INIT_WRITE _net_dns_cache_entry_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _net_dns_request_allocator=NULL;
 static event_t* KERNEL_INIT_WRITE _net_dns_cache_resolution_event=NULL;
-static spinlock_t _net_dns_cache_lock;
+static rwlock_t _net_dns_cache_lock;
 static rb_tree_t _net_dns_cache_address_tree;
-static spinlock_t _net_dns_request_tree_lock;
+static rwlock_t _net_dns_request_tree_lock;
 static rb_tree_t _net_dns_request_tree;
 static KERNEL_ATOMIC u16 _net_dns_request_id=0;
 static vfs_node_t* _net_dns_socket=NULL;
@@ -122,7 +122,7 @@ static void _rx_thread(void){
 		if (!(flags&NET_DNS_FLAG_QR)||!dns_packet->ancount||(flags&NET_DNS_RCODE_MASK)!=NET_DNS_RCODE_NO_ERROR){
 			goto _cleanup;
 		}
-		spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+		rwlock_acquire_write(&_net_dns_request_tree_lock);
 		net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,__builtin_bswap16(dns_packet->id));
 		if (!request){
 			goto _cleanup_and_release_lock;
@@ -153,7 +153,7 @@ static void _rx_thread(void){
 		INFO("DNS resolution: %s -> %I",buffer,request->address);
 		event_dispatch(_net_dns_cache_resolution_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 _cleanup_and_release_lock:
-		spinlock_release_exclusive(&_net_dns_request_tree_lock);
+		rwlock_release_write(&_net_dns_request_tree_lock);
 _cleanup:
 		socket_dealloc_packet(socket_packet);
 	}
@@ -166,7 +166,7 @@ static void _cache_cleanup_thread(void){
 	while (1){
 		event_await(timer->event,0);
 		INFO("Cleaning-up expired cache...");
-		spinlock_acquire_exclusive(&_net_dns_cache_lock);
+		rwlock_acquire_write(&_net_dns_cache_lock);
 		u64 time=clock_get_time();
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_net_dns_cache_address_tree);rb_node;){
 			net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_node;
@@ -179,7 +179,7 @@ static void _cache_cleanup_thread(void){
 			smm_dealloc(cache_entry->name);
 			omm_dealloc(_net_dns_cache_entry_allocator,cache_entry);
 		}
-		spinlock_release_exclusive(&_net_dns_cache_lock);
+		rwlock_release_write(&_net_dns_cache_lock);
 	}
 }
 
@@ -188,13 +188,13 @@ static void _cache_cleanup_thread(void){
 MODULE_INIT(){
 	LOG("Initializing DNS resolver...");
 	_net_dns_cache_entry_allocator=omm_init("net_dns_cache_entry",sizeof(net_dns_cache_entry_t),8,4);
-	spinlock_init(&(_net_dns_cache_entry_allocator->lock));
+	rwlock_init(&(_net_dns_cache_entry_allocator->lock));
 	_net_dns_request_allocator=omm_init("net_dns_request",sizeof(net_dns_request_t),8,4);
-	spinlock_init(&(_net_dns_request_allocator->lock));
+	rwlock_init(&(_net_dns_request_allocator->lock));
 	_net_dns_cache_resolution_event=event_create();
-	spinlock_init(&_net_dns_cache_lock);
+	rwlock_init(&_net_dns_cache_lock);
 	rb_tree_init(&_net_dns_cache_address_tree);
-	spinlock_init(&_net_dns_request_tree_lock);
+	rwlock_init(&_net_dns_request_tree_lock);
 	rb_tree_init(&_net_dns_request_tree);
 	_net_dns_socket=socket_create(SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
@@ -214,7 +214,7 @@ MODULE_INIT(){
 KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblocking){
 	string_t* name_string=smm_alloc(name,0);
 	u64 key=(((u64)(name_string->length))<<32)|name_string->hash;
-	spinlock_acquire_exclusive(&_net_dns_cache_lock);
+	rwlock_acquire_write(&_net_dns_cache_lock);
 	net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_tree_lookup_node(&_net_dns_cache_address_tree,key);
 	if (cache_entry){
 		if (cache_entry->last_valid_time<clock_get_time()){
@@ -226,25 +226,25 @@ KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblo
 			}
 		}
 		net_ip4_address_t out=cache_entry->address;
-		spinlock_release_exclusive(&_net_dns_cache_lock);
+		rwlock_release_write(&_net_dns_cache_lock);
 		return out;
 _invalid_cache_entry:
 		rb_tree_remove_node(&_net_dns_cache_address_tree,&(cache_entry->rb_node));
 		smm_dealloc(cache_entry->name);
 		omm_dealloc(_net_dns_cache_entry_allocator,cache_entry);
 	}
-	spinlock_release_exclusive(&_net_dns_cache_lock);
+	rwlock_release_write(&_net_dns_cache_lock);
 	const net_info_address_list_entry_t* dns_entry=net_info_get_dns_entries();
 	if (nonblocking||!dns_entry){
 		return 0;
 	}
-	spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+	rwlock_acquire_write(&_net_dns_request_tree_lock);
 	u16 request_id=_net_dns_request_id;
 	_net_dns_request_id++;
 	net_dns_request_t* request=(net_dns_request_t*)rb_tree_lookup_node(&_net_dns_request_tree,request_id);
 	if (request){
 		_net_dns_request_id--;
-		spinlock_release_exclusive(&_net_dns_request_tree_lock);
+		rwlock_release_write(&_net_dns_request_tree_lock);
 		return 0;
 	}
 	request=omm_alloc(_net_dns_request_allocator);
@@ -252,7 +252,7 @@ _invalid_cache_entry:
 	request->name=name_string;
 	request->address=0;
 	rb_tree_insert_node(&_net_dns_request_tree,&(request->rb_node));
-	spinlock_release_exclusive(&_net_dns_request_tree_lock);
+	rwlock_release_write(&_net_dns_request_tree_lock);
 	INFO("DNS request: %s",name);
 	u8 buffer[sizeof(net_udp_socket_packet_t)+512];
 	net_udp_socket_packet_t* udp_packet=(net_udp_socket_packet_t*)buffer;
@@ -284,15 +284,15 @@ _invalid_cache_entry:
 	};
 	while (event_await_multiple(events,2)&&!request->address);
 	timer_delete(timer);
-	spinlock_acquire_exclusive(&_net_dns_request_tree_lock);
+	rwlock_acquire_write(&_net_dns_request_tree_lock);
 	rb_tree_remove_node(&_net_dns_request_tree,&(request->rb_node));
-	spinlock_release_exclusive(&_net_dns_request_tree_lock);
+	rwlock_release_write(&_net_dns_request_tree_lock);
 	net_ip4_address_t out=request->address;
 	if (!out||!request->cache_duration){
 		smm_dealloc(request->name);
 	}
 	else{
-		spinlock_acquire_exclusive(&_net_dns_cache_lock);
+		rwlock_acquire_write(&_net_dns_cache_lock);
 		net_dns_cache_entry_t* cache_entry=(net_dns_cache_entry_t*)rb_tree_lookup_node(&_net_dns_cache_address_tree,key);
 		if (cache_entry){
 			smm_dealloc(cache_entry->name);
@@ -305,7 +305,7 @@ _invalid_cache_entry:
 		cache_entry->name=request->name;
 		cache_entry->last_valid_time=clock_get_time()+request->cache_duration*1000000000ull;
 		cache_entry->address=request->address;
-		spinlock_release_exclusive(&_net_dns_cache_lock);
+		rwlock_release_write(&_net_dns_cache_lock);
 	}
 	omm_dealloc(_net_dns_request_allocator,request);
 	return out;

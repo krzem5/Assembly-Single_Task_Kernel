@@ -1,6 +1,6 @@
 #ifndef _XHCI_DEVICE_H_
 #define _XHCI_DEVICE_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 #include <xhci/registers.h>
 
@@ -13,7 +13,7 @@
 typedef struct _XHCI_RING{
 	xhci_transfer_block_t ring[XHCI_RING_SIZE];
 	xhci_transfer_block_t event;
-	spinlock_t lock;
+	rwlock_t lock;
 	u32 eidx;
 	u32 nidx;
 	u32 cs;

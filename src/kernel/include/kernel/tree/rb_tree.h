@@ -1,6 +1,6 @@
 #ifndef _KERNEL_RB_TREE_H_
 #define _KERNEL_RB_TREE_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
@@ -21,7 +21,7 @@ typedef struct _RB_TREE_NODE{
 
 typedef struct _RB_TREE{
 	rb_tree_node_t* root;
-	spinlock_t lock;
+	rwlock_t lock;
 } rb_tree_t;
 
 

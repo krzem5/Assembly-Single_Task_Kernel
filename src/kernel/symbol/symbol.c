@@ -21,7 +21,7 @@ volatile const u64* KERNEL_EARLY_READ __kernel_symbol_data=NULL;
 KERNEL_EARLY_INIT(){
 	LOG("Initializing symbol tree...");
 	_symbol_allocator=omm_init("symbol",sizeof(symbol_t),8,2);
-	spinlock_init(&(_symbol_allocator->lock));
+	rwlock_init(&(_symbol_allocator->lock));
 	rb_tree_init(&_symbol_tree);
 	for (u32 i=0;__kernel_symbol_data[i];i+=2){
 		symbol_add("kernel",(const char*)(__kernel_symbol_data[i+1]),__kernel_symbol_data[i]|0x8000000000000000ull,__kernel_symbol_data[i]>>63);

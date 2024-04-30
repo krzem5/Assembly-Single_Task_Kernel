@@ -1,7 +1,7 @@
 #ifndef _KERNEL_FS__FS_TYPES_H_
 #define _KERNEL_FS__FS_TYPES_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 

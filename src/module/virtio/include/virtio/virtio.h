@@ -1,7 +1,7 @@
 #ifndef _VIRTIO_VIRTIO_H_
 #define _VIRTIO_VIRTIO_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -32,7 +32,7 @@ typedef struct _VIRTIO_DEVICE{
 	bool events_negotiated;
 	u8 irq;
 	u16 queue_msix_vector;
-	spinlock_t lock;
+	rwlock_t lock;
 	virtio_field_t common_field;
 	virtio_field_t notify_field;
 	virtio_field_t isr_field;

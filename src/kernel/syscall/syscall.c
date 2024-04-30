@@ -1,5 +1,5 @@
 #include <kernel/error/error.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -16,7 +16,7 @@
 
 
 
-static spinlock_t _syscall_table_list_lock;
+static rwlock_t _syscall_table_list_lock;
 static omm_allocator_t* KERNEL_INIT_WRITE _syscall_table_allocator=NULL;
 
 syscall_table_t*volatile* _syscall_table_list=NULL;
@@ -41,9 +41,9 @@ error_t syscall_syscall_table_get_offset(KERNEL_USER_POINTER const char* table_n
 
 KERNEL_INIT(){
 	LOG("Initializing syscall tables...");
-	spinlock_init(&_syscall_table_list_lock);
+	rwlock_init(&_syscall_table_list_lock);
 	_syscall_table_allocator=omm_init("syscall_table",sizeof(syscall_table_t),8,1);
-	spinlock_init(&(_syscall_table_allocator->lock));
+	rwlock_init(&(_syscall_table_allocator->lock));
 	syscall_create_table("linux",NULL,0);
 	syscall_create_table("kernel",_syscall_kernel_functions,_syscall_kernel_count);
 }
@@ -51,7 +51,7 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t* functions,u32 function_count){
-	spinlock_acquire_exclusive(&_syscall_table_list_lock);
+	rwlock_acquire_write(&_syscall_table_list_lock);
 	syscall_table_t* table=omm_alloc(_syscall_table_allocator);
 	table->name=name;
 	table->functions=functions;
@@ -64,23 +64,23 @@ KERNEL_PUBLIC u32 syscall_create_table(const char* name,const syscall_callback_t
 	_syscall_table_list=new_syscall_table_list;
 	_syscall_table_list_length++;
 	amm_dealloc(old_syscall_table_list);
-	spinlock_release_exclusive(&_syscall_table_list_lock);
+	rwlock_release_write(&_syscall_table_list_lock);
 	return table->index;
 }
 
 
 
 KERNEL_PUBLIC bool syscall_update_table(u32 index,const syscall_callback_t* functions,u32 function_count){
-	spinlock_acquire_exclusive(&_syscall_table_list_lock);
+	rwlock_acquire_write(&_syscall_table_list_lock);
 	if (index>=_syscall_table_list_length){
-		spinlock_release_exclusive(&_syscall_table_list_lock);
+		rwlock_release_write(&_syscall_table_list_lock);
 		return 0;
 	}
 	syscall_table_t* table=_syscall_table_list[index];
 	table->function_count=0;
 	table->functions=functions;
 	table->function_count=function_count;
-	spinlock_release_exclusive(&_syscall_table_list_lock);
+	rwlock_release_write(&_syscall_table_list_lock);
 	return 1;
 }
 

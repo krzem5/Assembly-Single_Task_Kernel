@@ -1,5 +1,5 @@
 #include <kernel/config/config.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
@@ -30,7 +30,7 @@
 
 static vfs_node_t* KERNEL_INIT_WRITE _net_dhcp_socket=NULL;
 static timer_t* KERNEL_INIT_WRITE _net_dhcp_timeout_timer=NULL;
-static spinlock_t _net_dhcp_lock;
+static rwlock_t _net_dhcp_lock;
 static u32 _net_dhcp_current_xid=0;
 static net_ip4_address_t _net_dhcp_offer_address=0;
 static net_ip4_address_t _net_dhcp_offer_server_address=0;
@@ -167,7 +167,7 @@ static void _rx_thread(void){
 			continue;
 		}
 		net_udp_socket_packet_t* packet=socket_packet->data;
-		spinlock_acquire_exclusive(&_net_dhcp_lock);
+		rwlock_acquire_write(&_net_dhcp_lock);
 		if (packet->length<sizeof(net_dhcp_packet_t)){
 			goto _cleanup;
 		}
@@ -253,7 +253,7 @@ static void _rx_thread(void){
 			_send_discover_request();
 		}
 _cleanup:
-		spinlock_release_exclusive(&_net_dhcp_lock);
+		rwlock_release_write(&_net_dhcp_lock);
 		socket_dealloc_packet(socket_packet);
 	}
 }
@@ -272,7 +272,7 @@ MODULE_INIT(){
 		return;
 	}
 	_net_dhcp_timeout_timer=timer_create(0,0);
-	spinlock_init(&_net_dhcp_lock);
+	rwlock_init(&_net_dhcp_lock);
 	thread_create_kernel_thread(NULL,"net-dhcp-rx-thread",_rx_thread,0);
 }
 
@@ -294,7 +294,7 @@ KERNEL_PUBLIC void net_dhcp_negotiate_address(void){
 		ERROR("Unable to negotiate IPv4 address, no network adapter found");
 		return;
 	}
-	spinlock_acquire_exclusive(&_net_dhcp_lock);
+	rwlock_acquire_write(&_net_dhcp_lock);
 	_send_discover_request();
-	spinlock_release_exclusive(&_net_dhcp_lock);
+	rwlock_release_write(&_net_dhcp_lock);
 }

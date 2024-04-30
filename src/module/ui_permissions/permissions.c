@@ -1,7 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -43,7 +43,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _ui_permission_request_allocator=NULL;
 static ui_permission_request_t* KERNEL_INIT_WRITE _ui_permission_request_list_head=NULL;
 static ui_permission_request_t* KERNEL_INIT_WRITE _ui_permission_request_list_tail=NULL;
 static u64 _ui_permission_request_list_id=0;
-static spinlock_t _ui_permission_request_list_lock;
+static rwlock_t _ui_permission_request_list_lock;
 static event_t* KERNEL_INIT_WRITE _ui_permission_request_list_event=NULL;
 
 
@@ -57,7 +57,7 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 	request->flags=flags;
 	request->event=event_create();
 	request->accepted=0;
-	spinlock_acquire_exclusive(&_ui_permission_request_list_lock);
+	rwlock_acquire_write(&_ui_permission_request_list_lock);
 	request->id=_ui_permission_request_list_id;
 	_ui_permission_request_list_id++;
 	if (_ui_permission_request_list_tail){
@@ -67,7 +67,7 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 		_ui_permission_request_list_head=request;
 	}
 	_ui_permission_request_list_tail=request;
-	spinlock_release_exclusive(&_ui_permission_request_list_lock);
+	rwlock_release_write(&_ui_permission_request_list_lock);
 	event_dispatch(_ui_permission_request_list_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	event_await(request->event,0);
 	event_delete(request->event);
@@ -103,9 +103,9 @@ static error_t _syscall_set_permission_request(u64 id,bool accepted){
 	if (THREAD_DATA->process->handle.rb_node.key!=ui_common_get_process()){
 		return ERROR_DENIED;
 	}
-	spinlock_acquire_exclusive(&_ui_permission_request_list_lock);
+	rwlock_acquire_write(&_ui_permission_request_list_lock);
 	if (!_ui_permission_request_list_head||_ui_permission_request_list_head->id!=id){
-		spinlock_release_exclusive(&_ui_permission_request_list_lock);
+		rwlock_release_write(&_ui_permission_request_list_lock);
 		return ERROR_DENIED;
 	}
 	event_t* event=_ui_permission_request_list_head->event;
@@ -115,7 +115,7 @@ static error_t _syscall_set_permission_request(u64 id,bool accepted){
 		_ui_permission_request_list_tail=NULL;
 		event_set_active(_ui_permission_request_list_event,0,1);
 	}
-	spinlock_release_exclusive(&_ui_permission_request_list_lock);
+	rwlock_release_write(&_ui_permission_request_list_lock);
 	event_dispatch(event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	return ERROR_OK;
 }
@@ -132,8 +132,8 @@ static syscall_callback_t const _ui_permission_request_syscall_functions[]={
 MODULE_INIT(){
 	LOG("Initializing UI permission backend...");
 	_ui_permission_request_allocator=omm_init("ui_permission_request",sizeof(ui_permission_request_t),8,1);
-	spinlock_init(&(_ui_permission_request_allocator->lock));
-	spinlock_init(&_ui_permission_request_list_lock);
+	rwlock_init(&(_ui_permission_request_allocator->lock));
+	rwlock_init(&_ui_permission_request_list_lock);
 	_ui_permission_request_list_event=event_create();
 }
 

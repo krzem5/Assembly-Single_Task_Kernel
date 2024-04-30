@@ -1,6 +1,6 @@
 #ifndef _KERNEL_MMAP_MMAP_H_
 #define _KERNEL_MMAP_MMAP_H_ 1
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -46,7 +46,7 @@ typedef struct _MMAP_REGION{
 
 
 typedef struct _MMAP{
-	spinlock_t lock;
+	rwlock_t lock;
 	vmm_pagemap_t* pagemap;
 	u64 bottom_address;
 	u64 break_address;

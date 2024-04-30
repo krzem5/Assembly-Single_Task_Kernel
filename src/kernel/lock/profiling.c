@@ -4,7 +4,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/profiling.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -19,7 +19,7 @@
 
 static pmm_counter_descriptor_t _lock_profiling_early_pmm_counter=_PMM_COUNTER_INIT_STRUCT("lock_profiling");
 static pmm_counter_descriptor_t* _lock_profiling_pmm_counter=&_lock_profiling_early_pmm_counter;
-static spinlock_t _lock_profiling_data_lock=SPINLOCK_INIT_STRUCT;
+static rwlock_t _lock_profiling_data_lock=RWLOCK_INIT_STRUCT;
 static KERNEL_ATOMIC u16 _lock_next_type_id=0;
 static lock_profiling_type_descriptor_t* _lock_profiling_type_descriptors=NULL;
 static lock_profiling_type_descriptor_t KERNEL_EARLY_WRITE _lock_profiling_early_types[LOCK_PROFILING_EARLY_LOCK_TYPES]={
@@ -103,10 +103,10 @@ KERNEL_PUBLIC lock_local_profiling_data_t* KERNEL_NOCOVERAGE __lock_profiling_al
 		descriptor->func=func;
 		descriptor->line=line;
 		descriptor->arg=arg;
-		(spinlock_acquire_exclusive)(&_lock_profiling_data_lock);
+		(rwlock_acquire_write)(&_lock_profiling_data_lock);
 		descriptor->next=lock_profiling_data_descriptor_head;
 		lock_profiling_data_descriptor_head=descriptor;
-		(spinlock_release_exclusive)(&_lock_profiling_data_lock);
+		(rwlock_release_write)(&_lock_profiling_data_lock);
 		*ptr=data+sizeof(lock_profiling_data_descriptor_t);
 	}
 	if (*ptr<2){

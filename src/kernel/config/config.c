@@ -466,7 +466,7 @@ KERNEL_INIT(){
 	LOG("Initializing config tags...");
 	_config_buffer_pmm_counter=pmm_alloc_counter("config_buffer");
 	_config_tag_allocator=omm_init("config_tag",sizeof(config_tag_t),8,4);
-	spinlock_init(&(_config_tag_allocator->lock));
+	rwlock_init(&(_config_tag_allocator->lock));
 }
 
 

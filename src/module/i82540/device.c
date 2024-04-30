@@ -4,7 +4,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
 #include <kernel/kernel.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -42,7 +42,7 @@ static void _irq_handler(void* ctx){
 static void _rx_thread(i82540_device_t* device){
 	while (1){
 		scheduler_pause();
-		spinlock_acquire_exclusive(&(device->lock));
+		rwlock_acquire_write(&(device->lock));
 		u16 tail=device->mmio[REG_RDT];
 		tail++;
 		if (tail==RX_DESCRIPTOR_COUNT){
@@ -50,10 +50,10 @@ static void _rx_thread(i82540_device_t* device){
 		}
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 		while (!(desc->status&RDESC_DD)){
-			spinlock_release_exclusive(&(device->lock));
+			rwlock_release_write(&(device->lock));
 			event_await(device->irq_event,1);
 			scheduler_pause();
-			spinlock_acquire_exclusive(&(device->lock));
+			rwlock_acquire_write(&(device->lock));
 			event_set_active(device->irq_event,0,0);
 			u32 icr=device->mmio[REG_ICR];
 			if (icr&0x0004){
@@ -73,7 +73,7 @@ static void _rx_thread(i82540_device_t* device){
 		if (device->mmio[REG_RDH]!=device->mmio[REG_RDT]){
 			device->mmio[REG_RDT]=tail;
 		}
-		spinlock_release_exclusive(&(device->lock));
+		rwlock_release_write(&(device->lock));
 		scheduler_resume();
 	}
 }
@@ -85,7 +85,7 @@ static void _tx_thread(i82540_device_t* device){
 		network_layer1_packet_t* packet=network_layer1_pop_packet();
 		u16 length=(packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE>PAGE_SIZE?PAGE_SIZE:packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE);
 		scheduler_pause();
-		spinlock_acquire_exclusive(&(device->lock));
+		rwlock_acquire_write(&(device->lock));
 		u16 tail=device->mmio[REG_TDT];
 		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
 		mem_copy((void*)(desc->address+VMM_HIGHER_HALF_ADDRESS_OFFSET),packet->raw_data,length);
@@ -98,7 +98,7 @@ static void _tx_thread(i82540_device_t* device){
 		}
 		device->mmio[REG_TDT]=tail;
 		SPINLOOP(!(desc->status&0x0f));
-		spinlock_release_exclusive(&(device->lock));
+		rwlock_release_write(&(device->lock));
 		scheduler_resume();
 	}
 }
@@ -123,7 +123,7 @@ static void _i82540_init_device(pci_device_t* device){
 		return;
 	}
 	i82540_device_t* i82540_device=omm_alloc(_i82540_device_allocator);
-	spinlock_init(&(i82540_device->lock));
+	rwlock_init(&(i82540_device->lock));
 	i82540_device->mmio=(void*)vmm_identity_map(pci_bar.address,(REG_MAX+1)*sizeof(u32));
 	i82540_device->mmio[REG_IMC]=0xffffffff;
 	i82540_device->mmio[REG_CTRL]=CTRL_RST;
@@ -197,7 +197,7 @@ static void _i82540_init_device(pci_device_t* device){
 MODULE_INIT(){
 	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540");
 	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1);
-	spinlock_init(&(_i82540_device_allocator->lock));
+	rwlock_init(&(_i82540_device_allocator->lock));
 }
 
 

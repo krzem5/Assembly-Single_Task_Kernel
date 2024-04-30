@@ -4,7 +4,7 @@
 
 
 
-#define SPINLOCK_INIT_STRUCT (0)
+#define RWLOCK_INIT_STRUCT (0)
 
 
 
@@ -12,15 +12,15 @@ void bitlock_init(u32* field,u32 bit);
 
 
 
-void bitlock_acquire_exclusive(u32* field,u32 bit);
+void bitlock_acquire(u32* field,u32 bit);
 
 
 
-bool bitlock_try_acquire_exclusive(u32* field,u32 bit);
+bool bitlock_try_acquire(u32* field,u32 bit);
 
 
 
-void bitlock_release_exclusive(u32* field,u32 bit);
+void bitlock_release(u32* field,u32 bit);
 
 
 

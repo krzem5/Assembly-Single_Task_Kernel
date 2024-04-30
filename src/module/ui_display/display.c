@@ -1,5 +1,5 @@
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -21,7 +21,7 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE ui_display_handle_type=0;
 MODULE_INIT(){
 	LOG("Initializing UI displays...");
 	_ui_display_allocator=omm_init("ui_display",sizeof(ui_display_t),8,2);
-	spinlock_init(&(_ui_display_allocator->lock));
+	rwlock_init(&(_ui_display_allocator->lock));
 	ui_display_handle_type=handle_alloc("ui_display",NULL);
 }
 

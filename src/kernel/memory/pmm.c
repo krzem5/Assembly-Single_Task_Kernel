@@ -2,7 +2,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/bitlock.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -166,7 +166,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	first_free_address+=allocator_array_size;
 	mem_fill(_pmm_allocators,allocator_array_size,0);
 	for (u32 i=0;i<_pmm_allocator_count;i++){
-		spinlock_init(&((_pmm_allocators+i)->lock));
+		rwlock_init(&((_pmm_allocators+i)->lock));
 	}
 	u64 block_descriptor_array_size=pmm_align_up_address(((max_address>>PAGE_SIZE_SHIFT)+1)*sizeof(pmm_block_descriptor_t));
 	INFO("Block descriptor array size: %v",block_descriptor_array_size);
@@ -178,7 +178,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 		(_pmm_block_descriptors+i)->cookie=0;
 		bitlock_init((u32*)(&((_pmm_block_descriptors+i)->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 	}
-	spinlock_init(&(_pmm_load_balancer.lock));
+	rwlock_init(&(_pmm_load_balancer.lock));
 	_pmm_load_balancer.index=0;
 	_pmm_load_balancer.stats.hit_count=0;
 	_pmm_load_balancer.stats.miss_count=0;
@@ -220,7 +220,7 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 	INFO("Registering counters...");
 	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
 	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1);
-	spinlock_init(&(_pmm_counter_allocator->lock));
+	rwlock_init(&(_pmm_counter_allocator->lock));
 	pmm_alloc_counter("pmm")->count=_pmm_self_counter_value;
 	pmm_alloc_counter("kernel_image")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_alloc_counter("total")->count=total_memory;
@@ -259,7 +259,7 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,bool mem
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(_pmm_load_balancer.lock));
+	rwlock_acquire_write(&(_pmm_load_balancer.lock));
 	u32 index;
 	_pmm_load_balancer.stats.miss_count--;
 	do{
@@ -270,15 +270,15 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,bool mem
 			_pmm_load_balancer.index-=_pmm_allocator_count;
 		}
 	} while (!((_pmm_allocators+index)->bucket_bitmap>>i));
-	spinlock_release_exclusive(&(_pmm_load_balancer.lock));
+	rwlock_release_write(&(_pmm_load_balancer.lock));
 	u32 wrap=(memory_hint==PMM_MEMORY_HINT_LOW_MEMORY?PMM_LOW_ALLOCATOR_LIMIT/PMM_ALLOCATOR_MAX_REGION_SIZE-1:0xffffffff);
 	index&=wrap;
 	u32 base_index=index;
 _retry_allocator:
 	pmm_allocator_t* allocator=_pmm_allocators+index;
-	spinlock_acquire_exclusive(&(allocator->lock));
+	rwlock_acquire_write(&(allocator->lock));
 	if (!(allocator->bucket_bitmap>>i)){
-		spinlock_release_exclusive(&(allocator->lock));
+		rwlock_release_write(&(allocator->lock));
 		_pmm_load_balancer.stats.miss_locked_count++;
 		index=(index+1)&wrap;
 		if (index==_pmm_allocator_count){
@@ -317,7 +317,7 @@ _retry_allocator:
 		(allocator->buckets+j)->tail=split_block;
 		allocator->bucket_bitmap|=1<<j;
 	}
-	spinlock_release_exclusive(&(allocator->lock));
+	rwlock_release_write(&(allocator->lock));
 #ifndef KERNEL_RELEASE
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	bool error=0;
@@ -338,7 +338,7 @@ _retry_allocator:
 #endif
 	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(out);
 	for (u64 offset=0;offset<_get_block_size(i);offset+=PAGE_SIZE){
-		bitlock_acquire_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		bitlock_acquire((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE;
 			WARN("Flush cache @ %p [cookie: %p]",out+offset,block_descriptor->cookie);
@@ -348,7 +348,7 @@ _retry_allocator:
 		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 			ptr[k]=0;
 		}
-		bitlock_release_exclusive((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
 	}
 	scheduler_resume();
@@ -376,7 +376,7 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	scheduler_pause();
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
-	spinlock_acquire_exclusive(&(allocator->lock));
+	rwlock_acquire_write(&(allocator->lock));
 	while (i<PMM_ALLOCATOR_BUCKET_COUNT-1){
 		if ((address&_get_block_size(i))&&_block_descriptor_get_prev_idx(address)!=i){
 			break;
@@ -416,6 +416,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	}
 	(allocator->buckets+i)->tail=address;
 	allocator->bucket_bitmap|=1<<i;
-	spinlock_release_exclusive(&(allocator->lock));
+	rwlock_release_write(&(allocator->lock));
 	scheduler_resume();
 }

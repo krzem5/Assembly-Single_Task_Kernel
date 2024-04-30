@@ -7,7 +7,7 @@
 #include <kernel/id/user.h>
 #include <kernel/isr/_isr_types.h>
 #include <kernel/lock/profiling.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/scheduler/_scheduler_types.h>
@@ -32,7 +32,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 
 typedef struct _EVENT{
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	bool is_active;
 	event_thread_container_t* head;
 	event_thread_container_t* tail;
@@ -41,7 +41,7 @@ typedef struct _EVENT{
 
 
 typedef struct _THREAD_LIST{
-	spinlock_t lock;
+	rwlock_t lock;
 	struct _THREAD* head;
 } thread_list_t;
 
@@ -49,7 +49,7 @@ typedef struct _THREAD_LIST{
 
 typedef struct _PROCESS{
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	vmm_pagemap_t pagemap;
 	mmap_t* mmap;
 	thread_list_t thread_list;
@@ -76,7 +76,7 @@ typedef struct _THREAD_FS_GS_STATE{
 typedef struct _THREAD{
 	cpu_header_t header;
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	process_t* process;
 	string_t* name;
 	vmm_pagemap_t* pagemap;

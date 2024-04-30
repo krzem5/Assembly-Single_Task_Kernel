@@ -4,7 +4,7 @@
 #include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -28,7 +28,7 @@ handle_type_t timer_handle_type=0;
 KERNEL_EARLY_INIT(){
 	LOG("Initializing timers...");
 	_timer_allocator=omm_init("timer",sizeof(timer_t),8,4);
-	spinlock_init(&(_timer_allocator->lock));
+	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
 	timer_handle_type=handle_alloc("timer",NULL);
 }
@@ -43,7 +43,7 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,TIMER_ACL_FLAG_UPDATE|TIMER_ACL_FLAG_DELETE);
 	}
-	spinlock_init(&(out->lock));
+	rwlock_init(&(out->lock));
 	out->event=event_create();
 	out->interval=0;
 	out->count=0;
@@ -59,7 +59,7 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer){
 		return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(timer->lock));
+	rwlock_acquire_write(&(timer->lock));
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	}
@@ -82,7 +82,7 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 		return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(timer->lock));
+	rwlock_acquire_write(&(timer->lock));
 	event_set_active(timer->event,0,0);
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
@@ -99,7 +99,7 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 	if (timer->rb_node.key){
 		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
 	}
-	spinlock_release_exclusive(&(timer->lock));
+	rwlock_release_write(&(timer->lock));
 	scheduler_resume();
 }
 
@@ -112,7 +112,7 @@ u32 timer_dispatch_timers(void){
 		goto _return;
 	}
 	scheduler_pause();
-	spinlock_acquire_exclusive(&(timer->lock));
+	rwlock_acquire_write(&(timer->lock));
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	if (timer->count<=1){
@@ -125,7 +125,7 @@ u32 timer_dispatch_timers(void){
 		timer->rb_node.key=time+timer->interval;
 		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
 	}
-	spinlock_release_exclusive(&(timer->lock));
+	rwlock_release_write(&(timer->lock));
 	scheduler_resume();
 _return:
 	timer=(timer_t*)rb_tree_iter_start(&_timer_tree);

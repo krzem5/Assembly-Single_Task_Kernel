@@ -1,6 +1,6 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/cpu/local.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -47,7 +47,7 @@ KERNEL_EARLY_INIT(){
 	LOG("Initializing scheduler load balancer...");
 	_scheduler_load_balancer_queues=(void*)(pmm_alloc(pmm_align_up_address(SCHEDULER_LOAD_BALANCER_QUEUE_COUNT*sizeof(scheduler_load_balancer_thread_queue_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("scheduler_load_balancer"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u32 i=0;i<SCHEDULER_LOAD_BALANCER_QUEUE_COUNT;i++){
-		spinlock_init(&((_scheduler_load_balancer_queues+i)->lock));
+		rwlock_init(&((_scheduler_load_balancer_queues+i)->lock));
 		(_scheduler_load_balancer_queues+i)->head=NULL;
 		(_scheduler_load_balancer_queues+i)->tail=NULL;
 	}
@@ -59,9 +59,9 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 	while (_scheduler_load_balancer_bitmap){
 		u32 i=__builtin_ffsll(_scheduler_load_balancer_bitmap)-1;
 		scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+i;
-		spinlock_acquire_exclusive(&(queue->lock));
+		rwlock_acquire_write(&(queue->lock));
 		if (!queue->head){
-			spinlock_release_exclusive(&(queue->lock));
+			rwlock_release_write(&(queue->lock));
 			continue;
 		}
 		thread_t* out=queue->head;
@@ -70,7 +70,7 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 			queue->tail=NULL;
 			_scheduler_load_balancer_bitmap&=~(1ull<<i);
 		}
-		spinlock_release_exclusive(&(queue->lock));
+		rwlock_release_write(&(queue->lock));
 		((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->used_slot_count++;
 		*time_us=_get_queue_time_us(i);
 		return out;
@@ -100,7 +100,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 		thread->scheduler_load_balancer_queue_index=max;
 	}
 	scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+thread->scheduler_load_balancer_queue_index;
-	spinlock_acquire_exclusive(&(queue->lock));
+	rwlock_acquire_write(&(queue->lock));
 	thread->scheduler_load_balancer_thread_queue_next=NULL;
 	if (queue->tail){
 		queue->tail->scheduler_load_balancer_thread_queue_next=thread;
@@ -109,7 +109,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 		queue->head=thread;
 	}
 	queue->tail=thread;
-	spinlock_release_exclusive(&(queue->lock));
+	rwlock_release_write(&(queue->lock));
 	_scheduler_load_balancer_bitmap|=1ull<<thread->scheduler_load_balancer_queue_index;
 }
 

@@ -1,7 +1,7 @@
 #ifndef _VIRGL_VIRGL_H_
 #define _VIRGL_VIRGL_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/resource/resource.h>
 #include <kernel/types.h>
 #include <virgl/registers.h>
@@ -19,7 +19,7 @@ typedef u32 virgl_resource_t;
 
 
 typedef struct _VIRGL_OPENGL_CONTEXT_COMMAND_BUFFER{
-	spinlock_t lock;
+	rwlock_t lock;
 	u32* buffer;
 	u64 buffer_address;
 	u32 size;

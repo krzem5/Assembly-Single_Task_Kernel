@@ -24,7 +24,7 @@
 
 static omm_allocator_t* KERNEL_INIT_WRITE _net_arp_cache_entry_allocator=NULL;
 static event_t* _net_arp_cache_resolution_event=NULL;
-static spinlock_t _net_arp_cache_lock;
+static rwlock_t _net_arp_cache_lock;
 static rb_tree_t _net_arp_cache_address_tree;
 
 
@@ -56,7 +56,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 	if (arp_packet->oper!=__builtin_bswap16(NET_ARP_OPER_REPLY)){
 		return;
 	}
-	spinlock_acquire_exclusive(&_net_arp_cache_lock);
+	rwlock_acquire_write(&_net_arp_cache_lock);
 	net_arp_cache_entry_t* cache_entry=(net_arp_cache_entry_t*)rb_tree_lookup_node(&_net_arp_cache_address_tree,__builtin_bswap32(arp_packet->spa));
 	if (cache_entry){
 		INFO("APR response: %I -> %M",__builtin_bswap32(arp_packet->spa),arp_packet->sha);
@@ -68,7 +68,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		cache_entry->resolved=1;
 		event_dispatch(_net_arp_cache_resolution_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL);
 	}
-	spinlock_release_exclusive(&_net_arp_cache_lock);
+	rwlock_release_write(&_net_arp_cache_lock);
 }
 
 
@@ -84,9 +84,9 @@ static const network_layer2_protocol_descriptor_t _net_arp_protocol_descriptor={
 MODULE_INIT(){
 	LOG("Initializing ARP resolver...");
 	_net_arp_cache_entry_allocator=omm_init("net_arp_cache_entry",sizeof(net_arp_cache_entry_t),8,4);
-	spinlock_init(&(_net_arp_cache_entry_allocator->lock));
+	rwlock_init(&(_net_arp_cache_entry_allocator->lock));
 	_net_arp_cache_resolution_event=event_create();
-	spinlock_init(&_net_arp_cache_lock);
+	rwlock_init(&_net_arp_cache_lock);
 	rb_tree_init(&_net_arp_cache_address_tree);
 }
 
@@ -107,15 +107,15 @@ KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address
 		mem_fill(out,sizeof(mac_address_t),0xff);
 		return 1;
 	}
-	spinlock_acquire_exclusive(&_net_arp_cache_lock);
+	rwlock_acquire_write(&_net_arp_cache_lock);
 	net_arp_cache_entry_t* cache_entry=(net_arp_cache_entry_t*)rb_tree_lookup_node(&_net_arp_cache_address_tree,address);
 	if (cache_entry&&cache_entry->resolved){
 		mem_copy(out,cache_entry->address,sizeof(mac_address_t));
-		spinlock_release_exclusive(&_net_arp_cache_lock);
+		rwlock_release_write(&_net_arp_cache_lock);
 		return 1;
 	}
 	if (!network_layer1_device||nonblocking){
-		spinlock_release_exclusive(&_net_arp_cache_lock);
+		rwlock_release_write(&_net_arp_cache_lock);
 		return 0;
 	}
 	bool send_request_packed=0;
@@ -126,7 +126,7 @@ KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address
 		cache_entry->resolved=0;
 		rb_tree_insert_node(&_net_arp_cache_address_tree,&(cache_entry->rb_node));
 	}
-	spinlock_release_exclusive(&_net_arp_cache_lock);
+	rwlock_release_write(&_net_arp_cache_lock);
 	if (send_request_packed){
 		INFO("Sending ARP request for address %I...",address);
 		mac_address_t dst_mac_address={0xff,0xff,0xff,0xff,0xff,0xff};

@@ -1,7 +1,7 @@
 #ifndef _KERNEL_MEMORY_OMM_H_
 #define _KERNEL_MEMORY_OMM_H_ 1
 #include <kernel/handle/handle.h>
-#include <kernel/lock/spinlock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
 
@@ -25,7 +25,7 @@ typedef struct _OMM_PAGE_HEADER{
 typedef struct _OMM_ALLOCATOR{
 	const char* name;
 	handle_t handle;
-	spinlock_t lock;
+	rwlock_t lock;
 	u32 object_size;
 	u32 alignment;
 	u32 page_count;
