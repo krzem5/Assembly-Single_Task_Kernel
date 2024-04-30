@@ -97,7 +97,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		root=base_root_node;
 	}
 	else if (!root){
-		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:_vfs_root_node);
+		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:base_root_node);
 	}
 	if (parent){
 		*parent=NULL;
@@ -150,6 +150,9 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 				*parent=root;
 				*child_name=path-i;
 			}
+			return NULL;
+		}
+		if (child==base_root_node){ // parent is its own descendant
 			return NULL;
 		}
 		root=child;
