@@ -1,4 +1,5 @@
 #include <kernel/aslr/aslr.h>
+#include <kernel/cpu/cpu.h>
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
@@ -24,6 +25,7 @@ u64 KERNEL_EARLY_WRITE aslr_module_size=0;
 
 
 static void KERNEL_EARLY_EXEC KERNEL_NORETURN _finish_relocation(void (*KERNEL_NORETURN next_stage_callback)(void)){
+	cpu_init_early_header();
 	INFO("Unmapping default kernel location...");
 	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){
 		vmm_unmap_page(&vmm_kernel_pagemap,i-_aslr_offset);
@@ -69,7 +71,7 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 		vmm_map_page(&vmm_kernel_pagemap,i-kernel_get_offset(),i+_aslr_offset,VMM_PAGE_FLAG_READWRITE|VMM_PAGE_FLAG_PRESENT);
 	}
 	for (u64 i=0;__kernel_relocation_data[i];i++){
-		*((u32*)(__kernel_relocation_data[i]))+=_aslr_offset;
+		*((volatile u32*)(__kernel_relocation_data[i]))+=_aslr_offset;
 	}
 	_aslr_adjust_rip(next_stage_callback+_aslr_offset,_finish_relocation);
 #endif

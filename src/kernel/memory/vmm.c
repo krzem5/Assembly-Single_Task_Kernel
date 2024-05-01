@@ -200,6 +200,7 @@ void KERNEL_EARLY_EXEC vmm_init(void){
 	}
 	LOG("Switching to kernel pagemap...");
 	vmm_switch_to_pagemap(&vmm_kernel_pagemap);
+	cpu_init_early_header();
 }
 
 

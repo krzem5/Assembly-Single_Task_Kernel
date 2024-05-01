@@ -83,7 +83,6 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 
 
 void KERNEL_EARLY_EXEC cpu_init_early_header(void){
-	LOG("Initializing early CPU header...");
 	msr_set_gs_base((u64)(&_cpu_early_header),0);
 	msr_set_gs_base((u64)(&_cpu_early_header),1);
 }

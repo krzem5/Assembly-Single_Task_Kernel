@@ -28,6 +28,7 @@ typedef struct _SCHEDULER{
 	scheduler_timers_t timers;
 	u64 current_timer_start;
 	u8 current_timer;
+	_Bool preemption_disabled;
 } scheduler_t;
 
 
@@ -65,6 +66,14 @@ void scheduler_yield(void);
 
 
 void KERNEL_NORETURN scheduler_task_wait_loop(void);
+
+
+
+void scheduler_disable_preemption(void);
+
+
+
+void scheduler_enable_preemption(void);
 
 
 

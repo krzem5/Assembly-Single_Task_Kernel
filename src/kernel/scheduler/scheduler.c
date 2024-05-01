@@ -20,11 +20,16 @@
 
 
 #define SCHEDULER_MIN_TIME_QUANTUM_US 5
+#define SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US 250
 
 
 
 static bool KERNEL_INIT_WRITE _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
+static KERNEL_EARLY_WRITE u32 _scheduler_early_preemption_diabled_flag=0;
+
+CPU_LOCAL_DATA(u32,_scheduler_preemption_disabled);
+u32* _scheduler_preemption_disabled=&_scheduler_early_preemption_diabled_flag;
 
 
 
@@ -94,6 +99,13 @@ void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+	// if (*CPU_LOCAL(_scheduler_preemption_disabled)){
+	// 	if (scheduler->current_thread&&scheduler->current_thread->state==THREAD_STATE_TYPE_TERMINATED){
+	// 		panic("Thread terminated whilst holding locks");
+	// 	}
+	// 	lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
+	// 	return;
+	// }
 	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
