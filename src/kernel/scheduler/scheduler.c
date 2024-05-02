@@ -101,6 +101,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	// if (*CPU_LOCAL(_scheduler_preemption_disabled)){
 	// 	if (scheduler->current_thread&&scheduler->current_thread->state==THREAD_STATE_TYPE_TERMINATED){
+	// 		*CPU_LOCAL(_scheduler_preemption_disabled)=0;
 	// 		panic("Thread terminated whilst holding locks");
 	// 	}
 	// 	lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
