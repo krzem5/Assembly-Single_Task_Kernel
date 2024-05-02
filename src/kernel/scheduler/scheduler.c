@@ -99,14 +99,14 @@ void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	// if (*CPU_LOCAL(_scheduler_preemption_disabled)){
-	// 	if (scheduler->current_thread&&scheduler->current_thread->state==THREAD_STATE_TYPE_TERMINATED){
-	// 		*CPU_LOCAL(_scheduler_preemption_disabled)=0;
-	// 		panic("Thread terminated whilst holding locks");
-	// 	}
-	// 	lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
-	// 	return;
-	// }
+	if (*CPU_LOCAL(_scheduler_preemption_disabled)){
+		// if (scheduler->current_thread&&scheduler->current_thread->state==THREAD_STATE_TYPE_TERMINATED){
+		// 	*CPU_LOCAL(_scheduler_preemption_disabled)=0;
+		// 	panic("Thread terminated whilst holding locks");
+		// }
+		// lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
+		// return;
+	}
 	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
