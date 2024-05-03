@@ -28,6 +28,7 @@ syscall_enable:
 
 extern _random_entropy_pool
 extern _random_entropy_pool_length
+extern _scheduler_ensure_no_locks
 extern _syscall_invalid
 extern _syscall_table_list
 extern _syscall_table_list_length
@@ -92,6 +93,7 @@ _syscall_handler:
 	call rax
 	cli
 	mov r15, rax
+	call _scheduler_ensure_no_locks
 ._syscall_return:
 	xor edi, edi ; SCHEDULER_TIMER_USER
 	call scheduler_set_timer

@@ -12,6 +12,7 @@
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/symbol/symbol.h>
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
@@ -39,6 +40,42 @@ KERNEL_EARLY_INIT(){
 		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
 		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;
 	}
+}
+
+
+
+void _scheduler_ensure_no_locks(void){
+	if (!(*CPU_LOCAL(_scheduler_preemption_disabled))){
+		return;
+	}
+	return;
+	asm volatile("cli":::"memory");
+	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+	if (!scheduler->current_thread){
+		panic("Locks held while returning to usermode from scheduler");
+	}
+	WARN("%s: %u lock%s held",scheduler->current_thread->name->data,*CPU_LOCAL(_scheduler_preemption_disabled),(*CPU_LOCAL(_scheduler_preemption_disabled)==1?"":"s"));
+	u64 rip=(u64)_scheduler_ensure_no_locks;
+	u64 rbp=(u64)__builtin_frame_address(0);
+	while (1){
+		const symbol_t* symbol=symbol_lookup(rip);
+		if (symbol){
+			LOG("[%u] %s:%s+%u",CPU_HEADER_DATA->index,symbol->module,symbol->name->data,rip-symbol->rb_node.key);
+		}
+		else{
+			LOG("[%u] %p",CPU_HEADER_DATA->index,rip);
+		}
+		if (!rbp){
+			break;
+		}
+		if (!vmm_virtual_to_physical(&vmm_kernel_pagemap,rbp)||!vmm_virtual_to_physical(&vmm_kernel_pagemap,rbp+8)){
+			LOG("[%u] <rbp: %p>",CPU_HEADER_DATA->index,rbp);
+			break;
+		}
+		rip=*((u64*)(rbp+8));
+		rbp=*((u64*)rbp);
+	}
+	panic("Locks held while returning to usermode from kernel thread");
 }
 
 
@@ -100,10 +137,6 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	if (*CPU_LOCAL(_scheduler_preemption_disabled)){
-		// if (scheduler->current_thread&&scheduler->current_thread->state==THREAD_STATE_TYPE_TERMINATED){
-		// 	*CPU_LOCAL(_scheduler_preemption_disabled)=0;
-		// 	panic("Thread terminated whilst holding locks");
-		// }
 		// lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
 		// return;
 	}

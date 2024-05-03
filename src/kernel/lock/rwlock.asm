@@ -46,26 +46,29 @@ rwlock_release_write:
 
 rwlock_acquire_read:
 	call scheduler_disable_preemption
-	jmp _rwlock_acquire_read_internal
+	lock bts dword [rdi], 1
+	jc _rwlock_acquire_read_multiaccess_wait
+	test dword [rdi], 4
+	jnz _rwlock_acquire_read_multiaccess_active
+	jmp _rwlock_acquire_read_global_test
 _rwlock_acquire_read_multiaccess_wait:
 	pause
 	test dword [rdi], 2
 	jnz _rwlock_acquire_read_multiaccess_wait
-_rwlock_acquire_read_internal:
 	lock bts dword [rdi], 1
 	jc _rwlock_acquire_read_multiaccess_wait
 	test dword [rdi], 4
-	jnz ._multiaccess_active
-	jmp ._global_test
-._global_wait:
+	jnz _rwlock_acquire_read_multiaccess_active
+	jmp _rwlock_acquire_read_global_test
+_rwlock_acquire_read_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz ._global_wait
-._global_test:
+	jnz _rwlock_acquire_read_global_wait
+_rwlock_acquire_read_global_test:
 	lock bts dword [rdi], 0
-	jc ._global_wait
+	jc _rwlock_acquire_read_global_wait
 	bts dword [rdi], 2
-._multiaccess_active:
+_rwlock_acquire_read_multiaccess_active:
 	add word [rdi], 8
 	btr dword [rdi], 1
 	ret
