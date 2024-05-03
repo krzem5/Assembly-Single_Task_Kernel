@@ -2,6 +2,7 @@
 #define _KERNEL_FD_FD_H_ 1
 #include <kernel/acl/acl.h>
 #include <kernel/handle/handle.h>
+#include <kernel/lock/preemptivelock.h>
 #include <kernel/memory/smm.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -37,7 +38,7 @@
 
 typedef struct _FD{
 	handle_t handle;
-	rwlock_t lock;
+	preemptivelock_t* lock;
 	vfs_node_t* node;
 	u64 offset;
 	u8 flags;
@@ -65,7 +66,7 @@ typedef struct _FD_STAT{
 
 typedef struct _FD_ITERATOR{
 	handle_t handle;
-	rwlock_t lock;
+	preemptivelock_t* lock;
 	vfs_node_t* node;
 	u64 pointer;
 	string_t* current_name;

@@ -3,6 +3,7 @@
 #include <kernel/fd/fd.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
+#include <kernel/lock/preemptivelock.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -32,6 +33,7 @@ static void _fd_handle_destructor(handle_t* handle){
 	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
 		panic("FD_FLAG_DELETE_ON_EXIT");
 	}
+	preemptivelock_deinit(data->lock);
 	omm_dealloc(_fd_allocator,data);
 }
 
@@ -42,6 +44,7 @@ static void _fd_iterator_handle_destructor(handle_t* handle){
 	if (data->current_name){
 		smm_dealloc(data->current_name);
 	}
+	preemptivelock_deinit(data->lock);
 	omm_dealloc(_fd_iterator_allocator,data);
 }
 
@@ -66,7 +69,7 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
-	rwlock_init(&(out->lock));
+	out->lock=preemptivelock_init();
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
@@ -187,10 +190,10 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 coun
 		handle_release(fd_handle);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	count=vfs_node_read(data->node,data->offset,(void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return count;
 }
@@ -217,10 +220,10 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 		handle_release(fd_handle);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0));
 	data->offset+=count;
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return count;
 }
@@ -237,7 +240,7 @@ error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	switch (type){
 		case FD_SEEK_SET:
 			data->offset=offset;
@@ -249,12 +252,12 @@ error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE)-offset;
 			break;
 		default:
-			rwlock_release_write(&(data->lock));
+			preemptivelock_release(data->lock);
 			handle_release(fd_handle);
 			return ERROR_INVALID_ARGUMENT(2);
 	}
 	u64 out=data->offset;
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return out;
 }
@@ -271,12 +274,12 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	error_t out=(vfs_node_resize(data->node,size,0)?0:ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return out;
 }
@@ -299,7 +302,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->flags=((data->node->flags&VFS_NODE_FLAG_VIRTUAL)?FD_STAT_FLAG_VIRTUAL:0);
 	out->permissions=(data->node->flags&VFS_NODE_PERMISSION_MASK)>>VFS_NODE_PERMISSION_SHIFT;
@@ -313,7 +316,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 	out->gid=data->node->gid;
 	out->uid=data->node->uid;
 	mem_copy((char*)(out->name),data->node->name->data,data->node->name->length+1);
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return ERROR_OK;
 }
@@ -342,9 +345,9 @@ error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buff
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	u32 out=vfs_path(data->node,(char*)buffer,buffer_length);
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return (!out&&buffer_length?ERROR_NO_SPACE:out);
 }
@@ -361,16 +364,16 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	if (!(vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_READ)){
-		rwlock_release_write(&(data->lock));
+		preemptivelock_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
 	string_t* current_name;
 	u64 pointer=((vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_EXEC)?vfs_node_iterate(data->node,0,&current_name):0);
 	if (!pointer){
-		rwlock_release_write(&(data->lock));
+		preemptivelock_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_NO_DATA;
 	}
@@ -379,12 +382,12 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ITERATOR_ACL_FLAG_ACCESS);
-	rwlock_init(&(out->lock));
+	out->lock=preemptivelock_init();
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;
 	handle_finish_setup(&(out->handle));
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
 }
@@ -404,7 +407,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffe
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_read(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	if (data->current_name){
 		if (buffer_length>data->current_name->length+1){
 			buffer_length=data->current_name->length+1;
@@ -418,7 +421,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffe
 	else{
 		buffer_length=0;
 	}
-	rwlock_release_read(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_iterator_handle);
 	return buffer_length;
 }
@@ -435,7 +438,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
 	}
-	rwlock_acquire_write(&(data->lock));
+	preemptivelock_acquire(data->lock);
 	s64 out=ERROR_NO_DATA;
 	if (data->current_name){
 		smm_dealloc(data->current_name);
@@ -448,7 +451,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 			out=fd_iterator_handle->rb_node.key;
 		}
 	}
-	rwlock_release_write(&(data->lock));
+	preemptivelock_release(data->lock);
 	handle_release(fd_iterator_handle);
 	return out;
 }
