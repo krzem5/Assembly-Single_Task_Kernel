@@ -331,7 +331,7 @@ KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 			queue->event,
 			timer->event
 		};
-		event_await_multiple(events,2);
+		event_await_multiple(events,1/*2*/);
 		event_set_active(queue->event,0,1);
 	}
 	timer_delete(timer);
