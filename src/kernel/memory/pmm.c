@@ -9,8 +9,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
-#include <kernel/scheduler/load_balancer.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
@@ -258,7 +256,6 @@ KERNEL_PUBLIC u64 pmm_alloc(u64 count,pmm_counter_descriptor_t* counter,bool mem
 	if (i>=PMM_ALLOCATOR_BUCKET_COUNT){
 		panic("pmm_alloc: trying to allocate too many pages at once");
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(_pmm_load_balancer.lock));
 	u32 index;
 	_pmm_load_balancer.stats.miss_count--;
@@ -351,7 +348,6 @@ _retry_allocator:
 		bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
 	}
-	scheduler_resume();
 	if ((_pmm_initialization_flags&PMM_FLAG_FULLY_INITIALIZED)&&!counter->handle.rb_node.key){
 		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
 		handle_finish_setup(&(counter->handle));
@@ -373,7 +369,6 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	if (i>=PMM_ALLOCATOR_BUCKET_COUNT){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
 	}
-	scheduler_pause();
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	pmm_allocator_t* allocator=_get_allocator_from_address(address);
 	rwlock_acquire_write(&(allocator->lock));
@@ -417,5 +412,4 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	(allocator->buckets+i)->tail=address;
 	allocator->bucket_bitmap|=1<<i;
 	rwlock_release_write(&(allocator->lock));
-	scheduler_resume();
 }

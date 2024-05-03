@@ -10,7 +10,6 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -74,12 +73,10 @@ static void _pipe_delete(vfs_node_t* node){
 static u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_read:
-	scheduler_pause();
 	rwlock_acquire_write(&(pipe->lock));
 	if (!pipe->is_full&&pipe->write_offset==pipe->read_offset){
 		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
-			scheduler_resume();
 			return 0;
 		}
 		event_await(pipe->read_event,1);
@@ -106,7 +103,6 @@ _retry_read:
 		event_dispatch(pipe->write_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 	rwlock_release_write(&(pipe->lock));
-	scheduler_resume();
 	return size;
 }
 
@@ -115,12 +111,10 @@ _retry_read:
 static u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_write:
-	scheduler_pause();
 	rwlock_acquire_write(&(pipe->lock));
 	if (pipe->is_full){
 		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
-			scheduler_resume();
 			return 0;
 		}
 		event_await(pipe->write_event,1);
@@ -145,7 +139,6 @@ _retry_write:
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
 	event_dispatch(pipe->read_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	rwlock_release_write(&(pipe->lock));
-	scheduler_resume();
 	return size;
 }
 

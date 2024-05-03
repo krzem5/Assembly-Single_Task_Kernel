@@ -32,10 +32,10 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC void KERNEL_NORETURN shutdown(u32 flags){
-	scheduler_pause();
 	if (!(flags&SHUTDOWN_FLAG_NO_CLEANUP)){
 		notification_dispatcher_dispatch(&_shutdown_notification_dispatcher,NULL,((flags&SHUTDOWN_FLAG_RESTART)?NOTIFICATION_TYPE_SHUTDOWN_RESTART:NOTIFICATION_TYPE_SHUTDOWN_POWEROFF));
 	}
+	scheduler_pause();
 	if (flags&SHUTDOWN_FLAG_RESTART){
 		_shutdown_restart();
 	}

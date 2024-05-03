@@ -10,7 +10,6 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/timer/timer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -58,7 +57,6 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer){
 	if (CPU_HEADER_DATA->current_thread&&!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_DELETE)){
 		return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(timer->lock));
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
@@ -66,7 +64,6 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer){
 	handle_destroy(&(timer->handle));
 	event_delete(timer->event);
 	omm_dealloc(_timer_allocator,timer);
-	scheduler_resume();
 }
 
 
@@ -81,7 +78,6 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
 		return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(timer->lock));
 	event_set_active(timer->event,0,0);
 	if (timer->rb_node.key){
@@ -100,7 +96,6 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
 	}
 	rwlock_release_write(&(timer->lock));
-	scheduler_resume();
 }
 
 
@@ -111,7 +106,6 @@ u32 timer_dispatch_timers(void){
 	if (!timer){
 		goto _return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(timer->lock));
 	rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	event_dispatch(timer->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_BYPASS_ACL);
@@ -126,7 +120,6 @@ u32 timer_dispatch_timers(void){
 		rb_tree_insert_node(&_timer_tree,&(timer->rb_node));
 	}
 	rwlock_release_write(&(timer->lock));
-	scheduler_resume();
 _return:
 	timer=(timer_t*)rb_tree_iter_start(&_timer_tree);
 	return (timer?(timer->rb_node.key>time?(timer->rb_node.key-time)/1000:0):0xffffffff);

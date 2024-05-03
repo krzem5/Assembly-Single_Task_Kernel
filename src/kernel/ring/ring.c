@@ -5,7 +5,6 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/event.h>
 #include <kernel/ring/ring.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "ring"
 
@@ -18,12 +17,10 @@ static pmm_counter_descriptor_t* _ring_buffer_pmm_counter=NULL;
 
 static void* _get_item(ring_t* ring,bool wait,bool pop){
 _retry_pop:
-	scheduler_pause();
 	rwlock_acquire_write(&(ring->read_lock));
 	if (!ring->read_count){
 		rwlock_release_write(&(ring->read_lock));
 		if (!wait){
-			scheduler_resume();
 			return NULL;
 		}
 		event_await(ring->read_event,0);
@@ -40,7 +37,6 @@ _retry_pop:
 		event_dispatch(ring->write_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 	rwlock_release_write(&(ring->read_lock));
-	scheduler_resume();
 	return out;
 }
 
@@ -90,12 +86,10 @@ KERNEL_PUBLIC void ring_deinit(ring_t* ring){
 
 KERNEL_PUBLIC bool ring_push(ring_t* ring,void* item,bool wait){
 _retry_push:
-	scheduler_pause();
 	rwlock_acquire_write(&(ring->write_lock));
 	if (!ring->write_count){
 		rwlock_release_write(&(ring->write_lock));
 		if (!wait){
-			scheduler_resume();
 			return 0;
 		}
 		event_await(ring->write_event,0);
@@ -110,7 +104,6 @@ _retry_push:
 	}
 	event_dispatch(ring->read_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	rwlock_release_write(&(ring->write_lock));
-	scheduler_resume();
 	return 1;
 }
 

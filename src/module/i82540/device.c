@@ -14,7 +14,6 @@
 #include <kernel/network/layer1.h>
 #include <kernel/pci/pci.h>
 #include <kernel/scheduler/load_balancer.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/spinloop.h>
@@ -41,7 +40,6 @@ static void _irq_handler(void* ctx){
 
 static void _rx_thread(i82540_device_t* device){
 	while (1){
-		scheduler_pause();
 		rwlock_acquire_write(&(device->lock));
 		u16 tail=device->mmio[REG_RDT];
 		tail++;
@@ -52,7 +50,6 @@ static void _rx_thread(i82540_device_t* device){
 		while (!(desc->status&RDESC_DD)){
 			rwlock_release_write(&(device->lock));
 			event_await(device->irq_event,1);
-			scheduler_pause();
 			rwlock_acquire_write(&(device->lock));
 			event_set_active(device->irq_event,0,0);
 			u32 icr=device->mmio[REG_ICR];
@@ -74,7 +71,6 @@ static void _rx_thread(i82540_device_t* device){
 			device->mmio[REG_RDT]=tail;
 		}
 		rwlock_release_write(&(device->lock));
-		scheduler_resume();
 	}
 }
 
@@ -84,7 +80,6 @@ static void _tx_thread(i82540_device_t* device){
 	while (1){
 		network_layer1_packet_t* packet=network_layer1_pop_packet();
 		u16 length=(packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE>PAGE_SIZE?PAGE_SIZE:packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE);
-		scheduler_pause();
 		rwlock_acquire_write(&(device->lock));
 		u16 tail=device->mmio[REG_TDT];
 		i82540_tx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,tx,tail);
@@ -99,7 +94,6 @@ static void _tx_thread(i82540_device_t* device){
 		device->mmio[REG_TDT]=tail;
 		SPINLOOP(!(desc->status&0x0f));
 		rwlock_release_write(&(device->lock));
-		scheduler_resume();
 	}
 }
 

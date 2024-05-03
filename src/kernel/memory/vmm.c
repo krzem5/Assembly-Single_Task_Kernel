@@ -1,10 +1,10 @@
+#include <kernel/cpu/cpu.h>
 #include <kernel/isr/pf.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "vmm"
@@ -229,7 +229,6 @@ void vmm_pagemap_deinit(vmm_pagemap_t* pagemap){
 
 
 KERNEL_PUBLIC void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 virtual_address,u64 flags){
-	scheduler_pause();
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
 	u64 k=(virtual_address>>21)&0x1ff;
@@ -272,7 +271,6 @@ KERNEL_PUBLIC void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 
 	_get_table(pml1)->entries[l]=(physical_address&VMM_PAGE_ADDRESS_MASK)|(flags&(~VMM_PAGE_FLAG_EXTRA_LARGE));
 _cleanup:
 	rwlock_release_write(&(pagemap->lock));
-	scheduler_resume();
 }
 
 
@@ -302,11 +300,9 @@ KERNEL_PUBLIC u64 vmm_unmap_page(vmm_pagemap_t* pagemap,u64 virtual_address){
 	if (virtual_address&(PAGE_SIZE-1)){
 		return 0;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(pagemap->lock));
 	u64 out=_unmap_page(pagemap,virtual_address);
 	rwlock_release_write(&(pagemap->lock));
-	scheduler_resume();
 	return out;
 }
 
@@ -331,7 +327,6 @@ KERNEL_PUBLIC u64 vmm_identity_map(u64 physical_address,u64 size){
 
 KERNEL_PUBLIC u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_address){
 	u64 out=0;
-	scheduler_pause();
 	rwlock_acquire_read(&(pagemap->lock));
 	u64 i=(virtual_address>>39)&0x1ff;
 	u64 j=(virtual_address>>30)&0x1ff;
@@ -364,14 +359,12 @@ KERNEL_PUBLIC u64 vmm_virtual_to_physical(vmm_pagemap_t* pagemap,u64 virtual_add
 	out=(entry?(entry&VMM_PAGE_ADDRESS_MASK)|(virtual_address&(PAGE_SIZE-1)):0);
 _cleanup:
 	rwlock_release_read(&(pagemap->lock));
-	scheduler_resume();
 	return out;
 }
 
 
 
 KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u64 set_flags,u64 clear_flags,u64 count,bool invalidate_tlb){
-	scheduler_pause();
 	rwlock_acquire_write(&(pagemap->lock));
 	for (;count;count--){
 		u64* entry=_lookup_virtual_address(pagemap,virtual_address);
@@ -384,13 +377,11 @@ KERNEL_PUBLIC void vmm_adjust_flags(vmm_pagemap_t* pagemap,u64 virtual_address,u
 		virtual_address+=PAGE_SIZE;
 	}
 	rwlock_release_write(&(pagemap->lock));
-	scheduler_resume();
 }
 
 
 
 KERNEL_PUBLIC bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_address,u64 count){
-	scheduler_pause();
 	rwlock_acquire_read(&(pagemap->lock));
 	bool out=1;
 	for (;count;count--){
@@ -399,6 +390,5 @@ KERNEL_PUBLIC bool vmm_is_user_accessible(vmm_pagemap_t* pagemap,u64 virtual_add
 		virtual_address+=PAGE_SIZE;
 	}
 	rwlock_release_read(&(pagemap->lock));
-	scheduler_resume();
 	return out;
 }

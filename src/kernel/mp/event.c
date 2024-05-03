@@ -91,7 +91,6 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
 		return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(event->lock));
 	handle_destroy(&(event->handle));
 	while (event->head){
@@ -100,7 +99,6 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
 	rwlock_release_write(&(event->lock));
-	scheduler_resume();
 }
 
 
@@ -109,7 +107,6 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 	if (!(flags&EVENT_DISPATCH_FLAG_BYPASS_ACL)&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(event->lock));
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){
 		event->is_active=1;
@@ -139,7 +136,6 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		event->tail=NULL;
 	}
 	rwlock_release_write(&(event->lock));
-	scheduler_resume();
 }
 
 
@@ -157,7 +153,6 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	scheduler_pause();
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
@@ -170,7 +165,6 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
 		rwlock_release_write(&(thread->lock));
-		scheduler_resume();
 		return i;
 	}
 	scheduler_yield();
@@ -184,7 +178,6 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
-	scheduler_pause();
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
@@ -201,7 +194,6 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 			thread->state=THREAD_STATE_TYPE_RUNNING;
 			thread->event_wakeup_index=i;
 			rwlock_release_write(&(thread->lock));
-			scheduler_resume();
 			return i;
 		}
 	}
@@ -215,11 +207,9 @@ KERNEL_PUBLIC void event_set_active(event_t* event,bool is_active,bool bypass_ac
 	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		return;
 	}
-	scheduler_pause();
 	rwlock_acquire_write(&(event->lock));
 	event->is_active=is_active;
 	rwlock_release_write(&(event->lock));
-	scheduler_resume();
 }
 
 
