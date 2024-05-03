@@ -4,7 +4,6 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "omm"
@@ -110,7 +109,6 @@ KERNEL_PUBLIC void omm_deinit(omm_allocator_t* allocator){
 
 
 KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
-	scheduler_pause();
 	rwlock_acquire_write(&(allocator->lock));
 	omm_page_header_t* page=(allocator->page_used_head?allocator->page_used_head:allocator->page_free_head);
 	if (!page){
@@ -140,14 +138,12 @@ KERNEL_PUBLIC void* omm_alloc(omm_allocator_t* allocator){
 	}
 	allocator->allocation_count++;
 	rwlock_release_write(&(allocator->lock));
-	scheduler_resume();
 	return out;
 }
 
 
 
 KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
-	scheduler_pause();
 	rwlock_acquire_write(&(allocator->lock));
 	omm_page_header_t* page=(void*)(((u64)object)&(-(((u64)(allocator->page_count))<<PAGE_SIZE_SHIFT)));
 	if (page->object_size!=allocator->object_size){
@@ -171,5 +167,4 @@ KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 	}
 	allocator->deallocation_count++;
 	rwlock_release_write(&(allocator->lock));
-	scheduler_resume();
 }
