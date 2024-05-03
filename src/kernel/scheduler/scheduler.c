@@ -48,7 +48,7 @@ void _scheduler_ensure_no_locks(void){
 	if (!(*CPU_LOCAL(_scheduler_preemption_disabled))){
 		return;
 	}
-	// return;
+	return;
 	asm volatile("cli":::"memory");
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	if (!scheduler->current_thread){
@@ -137,8 +137,8 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	if (*CPU_LOCAL(_scheduler_preemption_disabled)){
-		lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
-		return;
+		// lapic_timer_start(SCHEDULER_PREEMPTION_DISABLED_QUANTUM_US);
+		// return;
 	}
 	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
