@@ -19,7 +19,7 @@
 
 
 
-static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count;
+static KERNEL_ATOMIC u16 KERNEL_EARLY_WRITE _cpu_online_count=0;
 static u16 KERNEL_EARLY_WRITE _cpu_bootstrap_core_apic_id;
 static cpu_header_t KERNEL_EARLY_WRITE _cpu_early_header={
 	.index=0,

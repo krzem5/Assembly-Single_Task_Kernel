@@ -27,7 +27,7 @@ static handle_type_t _event_handle_type=0;
 
 
 static void _event_handle_destructor(handle_t* handle){
-	ERROR("Delete EVENT %p",handle);
+	// ERROR("Delete EVENT %p",handle);
 }
 
 
