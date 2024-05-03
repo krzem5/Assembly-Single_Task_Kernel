@@ -1,6 +1,8 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
+#include <kernel/lock/preemptivelock.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
@@ -39,8 +41,8 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 		return NULL;
 	}
 	socket_vfs_node_t* out=omm_alloc(_socket_vfs_node_allocator);
-	rwlock_init(&(out->read_lock));
-	rwlock_init(&(out->write_lock));
+	out->read_lock=preemptivelock_init();
+	out->write_lock=preemptivelock_init();
 	out->domain=SOCKET_DOMAIN_NONE;
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;
@@ -55,9 +57,9 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 
 static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
-	rwlock_acquire_write(&(socket->read_lock));
+	preemptivelock_acquire(socket->read_lock);
 	u64 out=(socket->local_ctx?socket->descriptor->read(socket,buffer,size,flags):0);
-	rwlock_release_write(&(socket->read_lock));
+	preemptivelock_release(socket->read_lock);
 	return out;
 }
 
@@ -65,9 +67,9 @@ static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fl
 
 static u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
-	rwlock_acquire_write(&(socket->write_lock));
+	preemptivelock_acquire(socket->write_lock);
 	u64 out=(socket->remote_ctx?socket->descriptor->write(socket,buffer,size):0);
-	rwlock_release_write(&(socket->write_lock));
+	preemptivelock_release(socket->write_lock);
 	return out;
 }
 
@@ -244,9 +246,9 @@ KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblock
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	rwlock_acquire_write(&(socket_node->read_lock));
+	preemptivelock_acquire(socket_node->read_lock);
 	socket_packet_t* out=ring_peek(socket_node->rx_ring,!nonblocking);
-	rwlock_release_write(&(socket_node->read_lock));
+	preemptivelock_release(socket_node->read_lock);
 	return out;
 }
 
@@ -257,9 +259,9 @@ KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocki
 		return NULL;
 	}
 	socket_vfs_node_t* socket_node=(socket_vfs_node_t*)node;
-	rwlock_acquire_write(&(socket_node->read_lock));
+	preemptivelock_acquire(socket_node->read_lock);
 	socket_packet_t* out=ring_pop(socket_node->rx_ring,!nonblocking);
-	rwlock_release_write(&(socket_node->read_lock));
+	preemptivelock_release(socket_node->read_lock);
 	return out;
 }
 
@@ -273,9 +275,9 @@ KERNEL_PUBLIC bool socket_push_packet(vfs_node_t* node,const void* packet,u32 si
 	if (!(socket_node->flags&SOCKET_FLAG_WRITE)){
 		return 0;
 	}
-	rwlock_acquire_write(&(socket_node->write_lock));
+	preemptivelock_acquire(socket_node->write_lock);
 	bool out=socket_node->descriptor->write_packet(socket_node,packet,size);
-	rwlock_release_write(&(socket_node->write_lock));
+	preemptivelock_release(socket_node->write_lock);
 	return out;
 }
 

@@ -1,6 +1,6 @@
 #ifndef _KERNEL_SOCKET_SOCKET_H_
 #define _KERNEL_SOCKET_SOCKET_H_ 1
-#include <kernel/lock/rwlock.h>
+#include <kernel/lock/preemptivelock.h>
 #include <kernel/memory/smm.h>
 #include <kernel/ring/ring.h>
 #include <kernel/tree/rb_tree.h>
@@ -41,8 +41,8 @@ typedef u8 socket_protocol_t;
 
 typedef struct _SOCKET_VFS_NODE{
 	vfs_node_t node;
-	rwlock_t read_lock;
-	rwlock_t write_lock;
+	preemptivelock_t* read_lock;
+	preemptivelock_t* write_lock;
 	socket_domain_t domain;
 	socket_type_t type;
 	socket_protocol_t protocol;
