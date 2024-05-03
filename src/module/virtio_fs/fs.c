@@ -139,6 +139,7 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 	virtio_queue_wait(fs_device->loprioq);
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_getattr_in);
+	INFO("virtio_fs_fuse_getattr: done");
 	return fuse_getattr_out;
 }
 
