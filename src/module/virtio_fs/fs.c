@@ -112,6 +112,7 @@ void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 
 
 fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle){
+	INFO("virtio_fs_fuse_getattr");
 	fuse_getattr_in_t* fuse_getattr_in=amm_alloc(sizeof(fuse_getattr_in_t));
 	fuse_getattr_in->header.len=sizeof(fuse_getattr_in_t);
 	fuse_getattr_in->header.opcode=FUSE_OPCODE_GETATTR;
@@ -144,6 +145,7 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 
 
 fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
+	INFO("virtio_fs_fuse_open");
 	fuse_open_in_t* fuse_open_in=amm_alloc(sizeof(fuse_open_in_t));
 	fuse_open_in->header.len=sizeof(fuse_open_in_t);
 	fuse_open_in->header.opcode=FUSE_OPCODE_OPEN;
