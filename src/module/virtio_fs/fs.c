@@ -43,7 +43,9 @@ static bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	INFO("Creating File System device...");
 	INFO("Filesystem name: %s",config.tag);
 	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
+	INFO("Initializing connection...");
 	virtio_fs_fuse_init(fs_device);
+	INFO("Initializing filesystem driver...");
 	fuse_create_filesystem(fs_device);
 	return 1;
 }
