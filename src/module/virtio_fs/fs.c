@@ -43,9 +43,7 @@ static bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	INFO("Creating File System device...");
 	INFO("Filesystem name: %s",config.tag);
 	virtio_write(device->common_field+VIRTIO_REG_DEVICE_STATUS,1,VIRTIO_DEVICE_STATUS_FLAG_ACKNOWLEDGE|VIRTIO_DEVICE_STATUS_FLAG_DRIVER|VIRTIO_DEVICE_STATUS_FLAG_DRIVER_OK|VIRTIO_DEVICE_STATUS_FLAG_FEATURES_OK);
-	INFO("Initializing connection...");
 	virtio_fs_fuse_init(fs_device);
-	INFO("Initializing filesystem driver...");
 	fuse_create_filesystem(fs_device);
 	return 1;
 }
@@ -112,7 +110,6 @@ void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 
 
 fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle){
-	INFO("virtio_fs_fuse_getattr");
 	fuse_getattr_in_t* fuse_getattr_in=amm_alloc(sizeof(fuse_getattr_in_t));
 	fuse_getattr_in->header.len=sizeof(fuse_getattr_in_t);
 	fuse_getattr_in->header.opcode=FUSE_OPCODE_GETATTR;
@@ -139,14 +136,12 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 	virtio_queue_wait(fs_device->loprioq);
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_getattr_in);
-	INFO("virtio_fs_fuse_getattr: done");
 	return fuse_getattr_out;
 }
 
 
 
 fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
-	INFO("virtio_fs_fuse_open");
 	fuse_open_in_t* fuse_open_in=amm_alloc(sizeof(fuse_open_in_t));
 	fuse_open_in->header.len=sizeof(fuse_open_in_t);
 	fuse_open_in->header.opcode=FUSE_OPCODE_OPEN;
