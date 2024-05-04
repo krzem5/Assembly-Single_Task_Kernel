@@ -37,6 +37,7 @@ static handle_type_t _virtio_device_handle_type=0;
 static void _virtio_irq_handler(void* ctx){
 	virtio_device_t* device=ctx;
 	for (virtio_queue_t* queue=device->queues;queue;queue=queue->next){
+		LOG("virtio_queue_wait: irq");
 		event_dispatch(queue->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 }
@@ -326,14 +327,16 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 
 KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
 	// timer_t* timer=timer_create(1000000000,TIMER_COUNT_INFINITE);
+	// LOG("virtio_queue_wait: start");
 	while (queue->last_used_index==queue->used->index){
-		event_t* events[2]={
-			queue->event,
-			// timer->event
-		};
-		event_await_multiple(events,1/*2*/);
-		event_set_active(queue->event,0,1);
+		// event_t* events[2]={
+		// 	queue->event,
+		// 	// timer->event
+		// };
+		// event_await_multiple(events,1/*2*/);
+		// event_set_active(queue->event,0,1);
 	}
+	// LOG("virtio_queue_wait: end");
 	// timer_delete(timer);
 }
 
