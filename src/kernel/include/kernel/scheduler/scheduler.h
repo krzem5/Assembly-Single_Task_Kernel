@@ -69,12 +69,4 @@ void KERNEL_NORETURN scheduler_task_wait_loop(void);
 
 
 
-void scheduler_disable_preemption(void);
-
-
-
-void scheduler_enable_preemption(void);
-
-
-
 #endif

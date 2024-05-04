@@ -11,8 +11,8 @@ global rwlock_release_write:function default
 global rwlock_acquire_read:function default
 global rwlock_release_read:function default
 global rwlock_is_held:function default
-extern scheduler_disable_preemption
-extern scheduler_enable_preemption
+extern scheduler_pause
+extern scheduler_resume
 section .text exec nowrite
 
 
@@ -23,8 +23,11 @@ rwlock_init:
 	ret
 
 
+
 rwlock_acquire_write:
-	call scheduler_disable_preemption
+	push rdi
+	call scheduler_pause
+	pop rdi
 	lock bts dword [rdi], 0
 	jc _rwlock_acquire_write_global_wait
 	ret
@@ -40,12 +43,14 @@ _rwlock_acquire_write_global_wait:
 
 rwlock_release_write:
 	lock btr dword [rdi], 0
-	jmp scheduler_enable_preemption
+	jmp scheduler_resume
 
 
 
 rwlock_acquire_read:
-	call scheduler_disable_preemption
+	push rdi
+	call scheduler_pause
+	pop rdi
 	lock bts dword [rdi], 1
 	jc _rwlock_acquire_read_multiaccess_wait
 	test dword [rdi], 4
@@ -86,10 +91,10 @@ rwlock_release_read:
 	cmp word [rdi], 8
 	jge ._still_used
 	mov word [rdi], 0
-	jmp scheduler_enable_preemption
+	jmp scheduler_resume
 ._still_used:
 	btr dword [rdi], 1
-	jmp scheduler_enable_preemption
+	jmp scheduler_resume
 
 
 
