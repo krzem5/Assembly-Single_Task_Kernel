@@ -4,10 +4,6 @@
 
 
 
-#define RWLOCK_INIT_STRUCT (0)
-
-
-
 void bitlock_init(u32* field,u32 bit);
 
 

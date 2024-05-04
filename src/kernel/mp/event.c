@@ -153,6 +153,7 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	scheduler_pause();
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
@@ -165,6 +166,7 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
 		rwlock_release_write(&(thread->lock));
+		scheduler_resume();
 		return i;
 	}
 	scheduler_yield();
@@ -178,6 +180,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	scheduler_pause();
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
@@ -194,6 +197,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 			thread->state=THREAD_STATE_TYPE_RUNNING;
 			thread->event_wakeup_index=i;
 			rwlock_release_write(&(thread->lock));
+			scheduler_resume();
 			return i;
 		}
 	}

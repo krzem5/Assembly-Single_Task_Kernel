@@ -1,4 +1,4 @@
-#include <kernel/lock/preemptivelock.h>
+#include <kernel/lock/mutex.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/memory/omm.h>
 #include <kernel/mp/event.h>
@@ -7,18 +7,18 @@
 
 
 
-static omm_allocator_t* KERNEL_INIT_WRITE _preemptivelock_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _mutex_allocator=NULL;
 
 
 
 KERNEL_EARLY_INIT(){
-	_preemptivelock_allocator=omm_init("preemptivelock",sizeof(preemptivelock_t),8,4);
+	_mutex_allocator=omm_init("mutex",sizeof(mutex_t),8,4);
 }
 
 
 
-preemptivelock_t* preemptivelock_init(void){
-	preemptivelock_t* out=omm_alloc(_preemptivelock_allocator);
+mutex_t* mutex_init(void){
+	mutex_t* out=omm_alloc(_mutex_allocator);
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
 	out->event=event_create();
@@ -27,17 +27,17 @@ preemptivelock_t* preemptivelock_init(void){
 
 
 
-void preemptivelock_deinit(preemptivelock_t* lock){
+void mutex_deinit(mutex_t* lock){
 	if (lock->holder){
-		panic("preemptivelock_deinit: lock is held");
+		panic("mutex_deinit: lock is held");
 	}
 	event_delete(lock->event);
-	omm_dealloc(_preemptivelock_allocator,lock);
+	omm_dealloc(_mutex_allocator,lock);
 }
 
 
 
-void preemptivelock_acquire(preemptivelock_t* lock){
+void mutex_acquire(mutex_t* lock){
 	rwlock_acquire_write(&(lock->lock));
 	while (lock->holder){
 		rwlock_release_write(&(lock->lock));
@@ -50,10 +50,10 @@ void preemptivelock_acquire(preemptivelock_t* lock){
 
 
 
-void preemptivelock_release(preemptivelock_t* lock){
+void mutex_release(mutex_t* lock){
 	rwlock_acquire_write(&(lock->lock));
 	if (lock->holder!=THREAD_DATA->header.current_thread){
-		panic("preemptivelock_release: lock released by wrong thread");
+		panic("mutex_release: lock released by wrong thread");
 	}
 	lock->holder=NULL;
 	rwlock_release_write(&(lock->lock));
@@ -61,6 +61,6 @@ void preemptivelock_release(preemptivelock_t* lock){
 
 
 
-bool preemptivelock_is_held(preemptivelock_t* lock){
+bool mutex_is_held(mutex_t* lock){
 	return !!lock->holder;
 }
