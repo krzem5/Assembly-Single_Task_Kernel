@@ -1,14 +1,20 @@
 #ifndef _KERNEL_LOCK_RWLOCK_H_
 #define _KERNEL_LOCK_RWLOCK_H_ 1
+#include <kernel/lock/profiling.h>
 #include <kernel/types.h>
 
 
 
-#define RWLOCK_INIT_STRUCT (0)
+#define RWLOCK_INIT_STRUCT {0}
 
 
 
-typedef u32 rwlock_t;
+typedef struct _RWLOCK{
+	KERNEL_ATOMIC u32 value;
+#ifndef KERNEL_RELEASE
+	lock_profiling_data_t __profiling_data;
+#endif
+} rwlock_t;
 
 
 
@@ -37,7 +43,6 @@ bool rwlock_is_held(rwlock_t* lock);
 
 
 #ifndef KERNEL_RELEASE
-#include <kernel/lock/profiling.h>
 #define rwlock_init(lock) __lock_overload_type_function(rwlock_init,lock)
 #define rwlock_acquire_write(lock) __lock_overload_acquire_function(rwlock_acquire_write,lock)
 #define rwlock_acquire_read(lock) __lock_overload_acquire_function(rwlock_acquire_read,lock)

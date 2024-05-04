@@ -16,14 +16,14 @@
 	do{ \
 		static u16 __lock_id=0; \
 		(func)(lock,##__VA_ARGS__); \
-		(*(lock))|=__lock_profiling_alloc_type(__func__,__LINE__,#lock,&__lock_id)<<16; \
+		(lock)->__profiling_data.idx=__lock_profiling_alloc_type(__func__,__LINE__,#lock,&__lock_id); \
 	} while (0)
 #define __lock_overload_acquire_function(func,lock,...) \
 	do{ \
 		extern u64 clock_get_ticks(void); \
 		static u64 __lock_profiling_data=0; \
-		lock_local_profiling_data_t* __local_profiling_data=__lock_profiling_alloc_data(__func__,__LINE__,#lock,(*(lock))>>16,&__lock_profiling_data); \
-		__lock_profiling_push_lock((lock),(*(lock))>>16,__func__,__LINE__); \
+		lock_local_profiling_data_t* __local_profiling_data=__lock_profiling_alloc_data(__func__,__LINE__,#lock,(lock)->__profiling_data.idx,&__lock_profiling_data); \
+		__lock_profiling_push_lock((lock),(lock)->__profiling_data.idx,__func__,__LINE__); \
 		u64 __start_ticks=clock_get_ticks(); \
 		(func)(lock,##__VA_ARGS__); \
 		u64 __end_ticks=clock_get_ticks(); \
@@ -38,9 +38,15 @@
 	} while (0)
 #define __lock_overload_release_function(func,lock,...) \
 	do{ \
-		__lock_profiling_pop_lock((lock),(*(lock))>>16,__func__,__LINE__); \
+		__lock_profiling_pop_lock((lock),(lock)->__profiling_data.idx,__func__,__LINE__); \
 		(func)(lock,##__VA_ARGS__); \
 	} while (0)
+
+
+
+typedef struct _LOCK_PROFILING_DATA{
+	u16 idx;
+} lock_profiling_data_t;
 
 
 
