@@ -744,9 +744,9 @@ def _execute_vm():
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","trace:tpm*",
-		# "-d","int,cpu_reset",
 		# "--no-reboot",
 		# "-d","guest_errors",
+		# "-d","int,cpu_reset",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
@@ -808,7 +808,7 @@ def _execute_vm():
 		"-tpmdev","emulator,id=tpm0,chardev=tpm",
 		"-device","tpm-tis,tpmdev=tpm0",
 		# Debugging
-		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"])
+		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"]),
 	]+_kvm_flags())
 	if (os.path.exists("build/vm/virtiofsd.sock")):
 		os.remove("build/vm/virtiofsd.sock")

@@ -37,7 +37,6 @@ static handle_type_t _virtio_device_handle_type=0;
 static void _virtio_irq_handler(void* ctx){
 	virtio_device_t* device=ctx;
 	for (virtio_queue_t* queue=device->queues;queue;queue=queue->next){
-		LOG("virtio_queue_wait: irq");
 		event_dispatch(queue->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 }

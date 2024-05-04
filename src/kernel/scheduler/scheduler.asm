@@ -31,16 +31,31 @@ scheduler_task_wait_loop:
 
 
 
+extern scheduler_pause
 scheduler_disable_preemption:
-	mov rax, qword [_scheduler_preemption_disabled]
-	mov rcx, qword [gs:0]
-	add dword [rax+rcx*4], 1
+	push rdi
+	call scheduler_pause
+	pop rdi
 	ret
+	; cli
+	; mov rax, qword [_scheduler_preemption_disabled]
+	; mov rcx, qword [gs:0]
+	; add dword [rax+rcx*4], 1
+	; ret
 
 
 
+extern scheduler_resume
 scheduler_enable_preemption:
-	mov rax, qword [_scheduler_preemption_disabled]
-	mov rcx, qword [gs:0]
-	sub dword [rax+rcx*4], 1
+	push rdi
+	call scheduler_resume
+	pop rdi
 	ret
+; 	mov rax, qword [_scheduler_preemption_disabled]
+; 	mov rcx, qword [gs:0]
+; 	sub dword [rax+rcx*4], 1
+; 	cmp dword [rax+rcx*4], 0
+; 	jnz ._skip_enable_interrupts
+; 	sti
+; ._skip_enable_interrupts:
+; 	ret
