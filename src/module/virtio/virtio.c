@@ -325,16 +325,16 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 
 
 KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
-	timer_t* timer=timer_create(1000000000,TIMER_COUNT_INFINITE);
+	// timer_t* timer=timer_create(1000000000,TIMER_COUNT_INFINITE);
 	while (queue->last_used_index==queue->used->index){
 		event_t* events[2]={
 			queue->event,
-			timer->event
+			// timer->event
 		};
 		event_await_multiple(events,1/*2*/);
 		event_set_active(queue->event,0,1);
 	}
-	timer_delete(timer);
+	// timer_delete(timer);
 }
 
 
