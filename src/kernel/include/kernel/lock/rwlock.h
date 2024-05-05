@@ -42,31 +42,31 @@ bool rwlock_is_held(rwlock_t* lock);
 
 
 
-static KERNEL_INLINE void (rwlock_init)(rwlock_t* out){
+static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_init)(rwlock_t* out){
 	__rwlock_init(out);
 }
 
 
 
-static KERNEL_INLINE void (rwlock_acquire_write)(rwlock_t* lock){
+static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_acquire_write)(rwlock_t* lock){
 	__rwlock_acquire_write(lock);
 }
 
 
 
-static KERNEL_INLINE void (rwlock_release_write)(rwlock_t* lock){
+static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_release_write)(rwlock_t* lock){
 	__rwlock_release_write(lock);
 }
 
 
 
-static KERNEL_INLINE void (rwlock_acquire_read)(rwlock_t* lock){
+static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_acquire_read)(rwlock_t* lock){
 	__rwlock_acquire_read(lock);
 }
 
 
 
-static KERNEL_INLINE void (rwlock_release_read)(rwlock_t* lock){
+static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_release_read)(rwlock_t* lock){
 	__rwlock_release_read(lock);
 }
 
