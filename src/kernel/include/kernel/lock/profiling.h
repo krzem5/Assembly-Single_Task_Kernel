@@ -113,4 +113,12 @@ void __lock_profiling_pop_lock(void* lock,u16 id,const char* func,u32 line);
 
 
 
+static KERNEL_INLINE void __lock_profiling_init(lock_profiling_data_t* data){
+	static u16 __lock_id=0; \
+	(func)(lock,##__VA_ARGS__); \
+	(lock)->__profiling_data.idx=__lock_profiling_alloc_type(__func__,__LINE__,#lock,&__lock_id); \
+}
+
+
+
 #endif
