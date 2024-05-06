@@ -18,57 +18,27 @@ typedef struct _RWLOCK{
 
 
 
-void __rwlock_init(rwlock_t* out);
+void (rwlock_init)(rwlock_t* out);
 
 
 
-void __rwlock_acquire_write(rwlock_t* lock);
+void (rwlock_acquire_write)(rwlock_t* lock);
 
 
 
-void __rwlock_release_write(rwlock_t* lock);
+void (rwlock_release_write)(rwlock_t* lock);
 
 
 
-void __rwlock_acquire_read(rwlock_t* lock);
+void (rwlock_acquire_read)(rwlock_t* lock);
 
 
 
-void __rwlock_release_read(rwlock_t* lock);
+void (rwlock_release_read)(rwlock_t* lock);
 
 
 
 bool rwlock_is_held(rwlock_t* lock);
-
-
-
-static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_init)(rwlock_t* out){
-	__rwlock_init(out);
-}
-
-
-
-static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_acquire_write)(rwlock_t* lock){
-	__rwlock_acquire_write(lock);
-}
-
-
-
-static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_release_write)(rwlock_t* lock){
-	__rwlock_release_write(lock);
-}
-
-
-
-static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_acquire_read)(rwlock_t* lock){
-	__rwlock_acquire_read(lock);
-}
-
-
-
-static KERNEL_INLINE KERNEL_NOCOVERAGE void (rwlock_release_read)(rwlock_t* lock){
-	__rwlock_release_read(lock);
-}
 
 
 

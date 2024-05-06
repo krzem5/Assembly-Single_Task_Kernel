@@ -5,11 +5,11 @@
 
 
 
-global __rwlock_init:function default
-global __rwlock_acquire_write:function default
-global __rwlock_release_write:function default
-global __rwlock_acquire_read:function default
-global __rwlock_release_read:function default
+global rwlock_init:function default
+global rwlock_acquire_write:function default
+global rwlock_release_write:function default
+global rwlock_acquire_read:function default
+global rwlock_release_read:function default
 global rwlock_is_held:function default
 extern scheduler_pause
 extern scheduler_resume
@@ -18,75 +18,75 @@ section .text exec nowrite
 
 
 [bits 64]
-__rwlock_init:
+rwlock_init:
 	mov dword [rdi], 0
 	ret
 
 
 
-__rwlock_acquire_write:
+rwlock_acquire_write:
 	push rdi
 	call scheduler_pause
 	pop rdi
 	lock bts dword [rdi], 0
-	jc ___rwlock_acquire_write_global_wait
+	jc _rwlock_acquire_write_global_wait
 	ret
-___rwlock_acquire_write_global_wait:
+_rwlock_acquire_write_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz ___rwlock_acquire_write_global_wait
+	jnz _rwlock_acquire_write_global_wait
 	lock bts dword [rdi], 0
-	jc ___rwlock_acquire_write_global_wait
+	jc _rwlock_acquire_write_global_wait
 	ret
 
 
 
-__rwlock_release_write:
+rwlock_release_write:
 	lock btr dword [rdi], 0
 	jmp scheduler_resume
 
 
 
-__rwlock_acquire_read:
+rwlock_acquire_read:
 	push rdi
 	call scheduler_pause
 	pop rdi
 	lock bts dword [rdi], 1
-	jc ___rwlock_acquire_read_multiaccess_wait
+	jc _rwlock_acquire_read_multiaccess_wait
 	test dword [rdi], 4
-	jnz ___rwlock_acquire_read_multiaccess_active
-	jmp ___rwlock_acquire_read_global_test
-___rwlock_acquire_read_multiaccess_wait:
+	jnz _rwlock_acquire_read_multiaccess_active
+	jmp _rwlock_acquire_read_global_test
+_rwlock_acquire_read_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz ___rwlock_acquire_read_multiaccess_wait
+	jnz _rwlock_acquire_read_multiaccess_wait
 	lock bts dword [rdi], 1
-	jc ___rwlock_acquire_read_multiaccess_wait
+	jc _rwlock_acquire_read_multiaccess_wait
 	test dword [rdi], 4
-	jnz ___rwlock_acquire_read_multiaccess_active
-	jmp ___rwlock_acquire_read_global_test
-___rwlock_acquire_read_global_wait:
+	jnz _rwlock_acquire_read_multiaccess_active
+	jmp _rwlock_acquire_read_global_test
+_rwlock_acquire_read_global_wait:
 	pause
 	test dword [rdi], 1
-	jnz ___rwlock_acquire_read_global_wait
-___rwlock_acquire_read_global_test:
+	jnz _rwlock_acquire_read_global_wait
+_rwlock_acquire_read_global_test:
 	lock bts dword [rdi], 0
-	jc ___rwlock_acquire_read_global_wait
+	jc _rwlock_acquire_read_global_wait
 	bts dword [rdi], 2
-___rwlock_acquire_read_multiaccess_active:
+_rwlock_acquire_read_multiaccess_active:
 	add word [rdi], 8
 	btr dword [rdi], 1
 	ret
 
 
 
-___rwlock_release_read_multiaccess_wait:
+_rwlock_release_read_multiaccess_wait:
 	pause
 	test dword [rdi], 2
-	jnz ___rwlock_release_read_multiaccess_wait
-__rwlock_release_read:
+	jnz _rwlock_release_read_multiaccess_wait
+rwlock_release_read:
 	lock bts dword [rdi], 1
-	jc ___rwlock_release_read_multiaccess_wait
+	jc _rwlock_release_read_multiaccess_wait
 	sub word [rdi], 8
 	cmp word [rdi], 8
 	jge ._still_used
