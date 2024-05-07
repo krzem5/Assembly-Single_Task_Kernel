@@ -95,9 +95,7 @@ static thread_t* _thread_alloc(process_t* process){
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
-#ifndef KERNEL_RELEASE
-	__lock_profiling_init_thread_data(&(out->__lock_profiling_data));
-#endif
+	lock_profiling_init_lock_stack(out);
 	thread_list_add(&(process->thread_list),out);
 	return out;
 }

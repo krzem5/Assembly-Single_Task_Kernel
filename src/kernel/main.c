@@ -40,7 +40,7 @@ static void KERNEL_NORETURN KERNEL_EARLY_EXEC _main_relocated(void){
 	kernel_early_execute_initializers();
 	scheduler_enable();
 	cpu_start_all_cores();
-	__lock_profiling_enable_dependency_graph();
+	lock_profiling_enable_dependency_graph();
 	thread_create_kernel_thread(NULL,"main",_main_thread,0);
 	scheduler_yield();
 	scheduler_task_wait_loop();

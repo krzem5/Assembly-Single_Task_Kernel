@@ -1,5 +1,6 @@
 #ifndef _KERNEL_LOCK_MUTEX_H_
 #define _KERNEL_LOCK_MUTEX_H_ 1
+#include <kernel/lock/profiling.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
@@ -11,6 +12,7 @@ typedef struct _MUTEX{
 	rwlock_t lock;
 	thread_t* holder;
 	event_t* event;
+	LOCK_PROFILING_DATA
 } mutex_t;
 
 

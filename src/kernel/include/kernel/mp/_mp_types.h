@@ -98,9 +98,7 @@ typedef struct _THREAD{
 	u32 scheduler_load_balancer_queue_index;
 	bool scheduler_early_yield;
 	bool scheduler_io_yield;
-#ifndef KERNEL_RELEASE
-	lock_profiling_thread_data_t __lock_profiling_data;
-#endif
+	LOCK_PROFILING_LOCK_STACK
 } thread_t;
 
 

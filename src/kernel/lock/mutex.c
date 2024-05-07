@@ -1,4 +1,5 @@
 #include <kernel/lock/mutex.h>
+#include <kernel/lock/profiling.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/memory/omm.h>
 #include <kernel/mp/event.h>
@@ -22,6 +23,7 @@ mutex_t* mutex_init(void){
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
 	out->event=event_create();
+	lock_profiling_init(out);
 	return out;
 }
 
@@ -38,6 +40,7 @@ void mutex_deinit(mutex_t* lock){
 
 
 void mutex_acquire(mutex_t* lock){
+	lock_profiling_acquire_start(lock);
 	rwlock_acquire_write(&(lock->lock));
 	while (lock->holder){
 		rwlock_release_write(&(lock->lock));
@@ -46,6 +49,7 @@ void mutex_acquire(mutex_t* lock){
 	}
 	lock->holder=THREAD_DATA->header.current_thread;
 	rwlock_release_write(&(lock->lock));
+	lock_profiling_acquire_end(lock);
 }
 
 
@@ -57,6 +61,7 @@ void mutex_release(mutex_t* lock){
 	}
 	lock->holder=NULL;
 	rwlock_release_write(&(lock->lock));
+	lock_profiling_release(lock);
 }
 
 
