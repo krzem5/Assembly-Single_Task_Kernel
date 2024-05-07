@@ -66,7 +66,7 @@ KERNEL_PUBLIC error_t gid_delete(gid_t gid){
 	rwlock_acquire_write(&_gid_global_lock);
 	gid_data_t* gid_data=(gid_data_t*)rb_tree_lookup_node(&_gid_tree,gid);
 	if (!gid_data){
-		rwlock_release_read(&_gid_global_lock);
+		rwlock_release_write(&_gid_global_lock);
 		return ERROR_NOT_FOUND;
 	}
 	smm_dealloc(gid_data->name);

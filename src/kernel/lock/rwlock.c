@@ -1,3 +1,4 @@
+#include <kernel/lock/profiling.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
@@ -13,6 +14,7 @@
 
 KERNEL_PUBLIC void rwlock_init(rwlock_t* out){
 	__atomic_store_n(&(out->value),0,__ATOMIC_SEQ_CST);
+	lock_profiling_init(out);
 }
 
 

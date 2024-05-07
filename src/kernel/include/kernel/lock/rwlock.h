@@ -11,9 +11,7 @@
 
 typedef struct _RWLOCK{
 	KERNEL_ATOMIC u32 value;
-#ifndef KERNEL_RELEASE
-	lock_profiling_data_t __profiling_data;
-#endif
+	LOCK_PROFILING_DATA;
 } rwlock_t;
 
 

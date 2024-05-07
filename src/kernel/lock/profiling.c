@@ -17,6 +17,12 @@
 
 
 
+KERNEL_PUBLIC void KERNEL_NOINLINE __lock_profiling_init(__lock_profiling_data_t* out){
+	out->alloc_address=(u64)__builtin_return_address(1);
+}
+
+
+
 static pmm_counter_descriptor_t _lock_profiling_early_pmm_counter=_PMM_COUNTER_INIT_STRUCT("lock_profiling");
 static pmm_counter_descriptor_t* _lock_profiling_pmm_counter=&_lock_profiling_early_pmm_counter;
 static rwlock_t _lock_profiling_data_lock=RWLOCK_INIT_STRUCT;

@@ -4,49 +4,39 @@
 
 
 
+/****************************************************************************/
+
+
+
+#ifdef KERNEL_RELEASE
+#define LOCK_PROFILING_DATA
+#define lock_profiling_init(lock)
+#else
+#define LOCK_PROFILING_DATA __lock_profiling_data_t __lock_profiling_data;
+#define lock_profiling_init(lock) __lock_profiling_init(&((lock)->__lock_profiling_data));
+#endif
+
+
+
+typedef struct ___LOCK_PROFILING_DATA{
+	u64 alloc_address;
+} __lock_profiling_data_t;
+
+
+
+void __lock_profiling_init(__lock_profiling_data_t* out);
+
+
+
+/****************************************************************************/
+
+
+
 #define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12
 #define LOCK_PROFILING_MAX_LOCK_TYPES (1<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)
 #define LOCK_PROFILING_EARLY_LOCK_TYPES 5
 
 #define LOCK_PROFILING_MAX_NESTED_LOCKS 16
-
-
-
-#define __lock_overload_type_function(func,lock,...) \
-	do{ \
-		static u16 __lock_id=0; \
-		(func)(lock,##__VA_ARGS__); \
-		(lock)->__profiling_data.idx=__lock_profiling_alloc_type(__func__,__LINE__,#lock,&__lock_id); \
-	} while (0)
-#define __lock_overload_acquire_function(func,lock,...) \
-	do{ \
-		extern u64 clock_get_ticks(void); \
-		static u64 __lock_profiling_data=0; \
-		lock_local_profiling_data_t* __local_profiling_data=__lock_profiling_alloc_data(__func__,__LINE__,#lock,(lock)->__profiling_data.idx,&__lock_profiling_data); \
-		__lock_profiling_push_lock((lock),(lock)->__profiling_data.idx,__func__,__LINE__); \
-		u64 __start_ticks=clock_get_ticks(); \
-		(func)(lock,##__VA_ARGS__); \
-		u64 __end_ticks=clock_get_ticks(); \
-		if (__local_profiling_data){ \
-			u64 __ticks=__end_ticks-__start_ticks; \
-			__local_profiling_data->ticks+=__ticks; \
-			__local_profiling_data->count++; \
-			if (__ticks>__local_profiling_data->max_ticks){ \
-				__local_profiling_data->max_ticks=__ticks; \
-			} \
-		} \
-	} while (0)
-#define __lock_overload_release_function(func,lock,...) \
-	do{ \
-		__lock_profiling_pop_lock((lock),(lock)->__profiling_data.idx,__func__,__LINE__); \
-		(func)(lock,##__VA_ARGS__); \
-	} while (0)
-
-
-
-typedef struct _LOCK_PROFILING_DATA{
-	u16 idx;
-} lock_profiling_data_t;
 
 
 

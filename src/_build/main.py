@@ -294,7 +294,7 @@ def _compile_uefi():
 		rebuild_uefi_partition=True
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include",f"-I{COMMON_FILE_DIRECTORY}/compressor/include",f"-I{COMMON_FILE_DIRECTORY}/kfs2/include","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DBUILD_UEFI=1","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include",f"-I{COMMON_FILE_DIRECTORY}/compressor/include",f"-I{COMMON_FILE_DIRECTORY}/kfs2/include","-I/usr/include/efi","-I/usr/include/efi/x86_64","-fno-stack-protector","-ffreestanding","-O3","-fpic","-fshort-wchar","-mno-red-zone","-maccumulate-outgoing-args","-fdiagnostics-color=always","-DBUILD_UEFI=1","-DGNU_EFI_USE_MS_ABI","-Dx86_64","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-Wno-frame-address","-DNULL=((void*)0)","-o",object_file,"-c",file,f"-I{UEFI_FILE_DIRECTORY}/include"]
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
@@ -322,7 +322,7 @@ def _compile_kernel(force_patch_kernel):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-DBUILD_KERNEL=1","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-Wno-frame-address","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-DBUILD_KERNEL=1","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include"]+KERNEL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
@@ -354,7 +354,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-Wno-frame-address","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1"]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
@@ -505,7 +505,7 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 			continue
 		command=None
 		if (file.endswith(".c")):
-			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DBUILD_TOOL=1","-DNULL=((void*)0)","-Wno-address-of-packed-member"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
+			command=["gcc-12",f"-I{COMMON_FILE_DIRECTORY}/include","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DBUILD_TOOL=1","-DNULL=((void*)0)","-Wno-address-of-packed-member","-Wno-frame-address"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
 		else:
 			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
