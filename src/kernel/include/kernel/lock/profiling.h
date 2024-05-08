@@ -4,7 +4,7 @@
 
 
 
-#define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12
+#define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12 // >=3
 #define LOCK_PROFILING_MAX_LOCK_TYPES (1<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)
 #define LOCK_PROFILING_EARLY_LOCK_TYPES 5
 
@@ -46,9 +46,10 @@ typedef struct ___LOCK_PROFILING_ACQUISITION_CONTEXT{
 
 
 typedef struct ___LOCK_PROFILING_LOCK_STACK{
-	void* stack[LOCK_PROFILING_MAX_NESTED_LOCKS];
-	u16 id_stack[LOCK_PROFILING_MAX_NESTED_LOCKS];
-	u64 stack_size;
+	__lock_profiling_data_t* data[LOCK_PROFILING_MAX_NESTED_LOCKS];
+	u16 size;
+	u16 start;
+	u16 end;
 } __lock_profiling_lock_stack_t;
 
 
