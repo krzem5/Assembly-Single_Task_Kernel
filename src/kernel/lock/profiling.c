@@ -14,7 +14,7 @@ static u32 _lock_profiling_lock_types[LOCK_PROFILING_MAX_LOCK_TYPES];
 static KERNEL_ATOMIC u32 _lock_profiling_lock_type_count=0;
 static u32 _lock_profiling_lock_type_lock=0;
 static u64* KERNEL_INIT_WRITE _lock_profiling_dependency_matrix=NULL;
-static __lock_profiling_lock_stack_t KERNEL_INIT_WRITE _lock_profiling_global_lock_stack={
+static __lock_profiling_lock_stack_t KERNEL_EARLY_WRITE _lock_profiling_global_lock_stack={
 	.size=0
 };
 static CPU_LOCAL_DATA(__lock_profiling_lock_stack_t,_lock_profiling_cpu_local_data);
