@@ -10,6 +10,9 @@
 
 
 
+static u32 _lock_profiling_lock_types[LOCK_PROFILING_MAX_LOCK_TYPES];
+static KERNEL_ATOMIC u32 _lock_profiling_lock_type_count=0;
+static u32 _lock_profiling_lock_type_lock=0;
 static u64* KERNEL_INIT_WRITE _lock_profiling_dependency_matrix=NULL;
 static __lock_profiling_lock_stack_t KERNEL_INIT_WRITE _lock_profiling_global_lock_stack={
 	.size=0
@@ -33,7 +36,19 @@ static KERNEL_INLINE __lock_profiling_lock_stack_t* KERNEL_NOCOVERAGE _get_lock_
 
 
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(__lock_profiling_data_t* out){
-	out->alloc_address=(u64)__builtin_return_address(1);
+	out->alloc_address=(u32)(u64)__builtin_return_address(1);
+	u32 type_count=_lock_profiling_lock_type_count;
+	for (u32 i=0;i<type_count;i++){
+		if (_lock_profiling_lock_types[i]==out->alloc_address){
+			out->type=i;
+			return;
+		}
+	}
+	bitlock_acquire(&_lock_profiling_lock_type_lock,0);
+	out->type=_lock_profiling_lock_type_count;
+	_lock_profiling_lock_types[_lock_profiling_lock_type_count]=out->alloc_address;
+	_lock_profiling_lock_type_count++;
+	bitlock_release(&_lock_profiling_lock_type_lock,0);
 }
 
 
@@ -52,7 +67,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 	ctx->start_time=clock_get_time();
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
 	if (stack->size>=LOCK_PROFILING_MAX_NESTED_LOCKS){
-		log("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
+		_log_untraced("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
 		panic("Lock profiling error");
 	}
 	stack->data[stack->size]=lock;
@@ -75,7 +90,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 	u64 i=0;
 	for (;i<stack->size&&stack->data[i]!=lock;i++);
 	if (i==stack->size){
-		log("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
+		_log_untraced("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
 		panic("Lock profiling error");
 	}
 	stack->size--;

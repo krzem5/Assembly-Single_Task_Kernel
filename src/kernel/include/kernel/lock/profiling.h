@@ -33,7 +33,8 @@
 
 
 typedef struct ___LOCK_PROFILING_DATA{
-	u64 alloc_address;
+	u32 alloc_address;
+	u32 type;
 } __lock_profiling_data_t;
 
 

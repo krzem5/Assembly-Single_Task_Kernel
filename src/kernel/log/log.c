@@ -8,6 +8,17 @@
 
 
 
+KERNEL_PUBLIC void _log_untraced(const char* template,...){
+	char buffer[BUFFER_SIZE];
+	__builtin_va_list va;
+	__builtin_va_start(va,template);
+	u32 offset=format_string_va(buffer,BUFFER_SIZE,template,&va);
+	__builtin_va_end(va);
+	_serial_send_untraced(serial_default_port,buffer,offset);
+}
+
+
+
 KERNEL_PUBLIC void log(const char* template,...){
 	char buffer[BUFFER_SIZE];
 	__builtin_va_list va;

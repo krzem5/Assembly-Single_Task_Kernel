@@ -12,6 +12,10 @@
 
 
 
+void _log_untraced(const char* template,...);
+
+
+
 void log(const char* template,...);
 
 

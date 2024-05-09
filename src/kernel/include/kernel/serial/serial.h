@@ -12,6 +12,7 @@
 typedef struct _SERIAL_PORT{
 	rwlock_t read_lock;
 	rwlock_t write_lock;
+	u32 write_bitlock;
 	u16 io_port;
 } serial_port_t;
 
@@ -23,6 +24,10 @@ extern serial_port_t* serial_default_port;
 
 
 void serial_init(void);
+
+
+
+void _serial_send_untraced(serial_port_t* port,const void* buffer,u32 length);
 
 
 
