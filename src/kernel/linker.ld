@@ -4,7 +4,7 @@ SECTIONS{
 	.kernel_ue : {
 		*(.entry)
 		*(.etext .etext*)
-		. = ALIGN(8);
+		. = ALIGN(4096);
 	}
 	.kernel_ur : {
 		*(.ap_startup)
@@ -27,14 +27,15 @@ SECTIONS{
 		*(.initializer)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__kernel_section_initializers_end = .);
+		. = ALIGN(4096);
 	}
 	.kernel_uw : {
 		*(.edata .edata*)
-		. = ALIGN(8);
+		. = ALIGN(4096);
 	}
 	.kernel_ex : {
 		*(.text .text*)
-		. = ALIGN(8);
+		. = ALIGN(4096);
 	}
 	.kernel_nx : {
 		*(.rodata .rodata* .rdata .rdata*)
@@ -43,14 +44,15 @@ SECTIONS{
 		*(.gcov_info)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__kernel_section_gcov_info_end = .);
+		. = ALIGN(4096);
 	}
 	.kernel_rw : {
 		*(.data .data* .bss .bss*)
-		. = ALIGN(8);
+		. = ALIGN(4096);
 	}
 	.kernel_iw : {
 		*(.idata .idata*)
-		. = ALIGN(8);
+		. = ALIGN(4096);
 	}
 	.kernel_early_pointer : {
 		*(.epointer)

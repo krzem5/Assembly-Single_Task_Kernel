@@ -4,6 +4,7 @@
 #include <kernel/isr/isr.h>
 #include <kernel/isr/pf.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
@@ -24,6 +25,7 @@
 
 
 
+static rwlock_t _isr_next_irq_lock=RWLOCK_INIT_STRUCT;
 static u8 _isr_next_irq_index=33;
 static CPU_LOCAL_DATA(u32,_isr_nested_interrupt);
 
@@ -38,16 +40,19 @@ KERNEL_EARLY_INIT(){
 		irq_handlers[i]=NULL;
 		irq_handler_contexts[i]=NULL;
 	}
+	rwlock_init(&_isr_next_irq_lock);
 }
 
 
 
 KERNEL_PUBLIC u8 isr_allocate(void){
+	rwlock_acquire_write(&_isr_next_irq_lock);
 	if (_isr_next_irq_index>=0xfe){
 		panic("Not enough IRQs");
 	}
 	u8 out=_isr_next_irq_index;
 	_isr_next_irq_index++;
+	rwlock_release_write(&_isr_next_irq_lock);
 	return out;
 }
 

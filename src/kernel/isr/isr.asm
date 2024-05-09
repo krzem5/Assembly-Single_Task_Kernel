@@ -39,13 +39,7 @@ _isr_trampoline:
 	xor rbp, rbp
 	mov rdi, rsp
 	cld
-	cli
 	call _isr_handler
-	mov rax, qword [rsp+176] ; rflags
-	test rax, 0x200
-	jz ._skip_interrupts
-	sti
-._skip_interrupts:
 	rdtsc
 	xor eax, dword [rsp+160] ; rip
 	xor eax, dword [rsp+184] ; rsp
