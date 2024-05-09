@@ -28,7 +28,8 @@ typedef struct _SCHEDULER{
 	scheduler_timers_t timers;
 	u64 current_timer_start;
 	u8 current_timer;
-	_Bool preemption_disabled;
+	bool preemption_disabled;
+	bool is_irq_context;
 } scheduler_t;
 
 
@@ -41,7 +42,11 @@ void scheduler_pause(void);
 
 
 
-void scheduler_resume(void);
+void scheduler_resume(bool yield_if_possible);
+
+
+
+void scheduler_set_irq_context(bool is_irq_context);
 
 
 

@@ -317,6 +317,7 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	if (region->file){
 		vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
 	}
+	pf_invalidate_tlb_entry(address);
 	return out;
 }
 

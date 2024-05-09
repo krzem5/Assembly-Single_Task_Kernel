@@ -317,7 +317,7 @@ _retry_allocator:
 		allocator->bucket_bitmap|=1<<j;
 	}
 	rwlock_release_write(&(allocator->lock));
-	scheduler_resume();
+	scheduler_resume(1);
 #ifndef KERNEL_RELEASE
 	const u64* ptr=(const u64*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	bool error=0;
@@ -416,5 +416,5 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	(allocator->buckets+i)->tail=address;
 	allocator->bucket_bitmap|=1<<i;
 	rwlock_release_write(&(allocator->lock));
-	scheduler_resume();
+	scheduler_resume(1);
 }

@@ -34,7 +34,7 @@ KERNEL_PUBLIC void rwlock_acquire_write(rwlock_t* lock){
 KERNEL_PUBLIC void rwlock_release_write(rwlock_t* lock){
 	__atomic_store_n(&(lock->value),0,__ATOMIC_SEQ_CST);
 	lock_profiling_release(lock);
-	scheduler_resume();
+	scheduler_resume(1);
 }
 
 
@@ -64,7 +64,7 @@ KERNEL_PUBLIC void rwlock_release_read(rwlock_t* lock){
 		__atomic_store_n(&(lock->value),0,__ATOMIC_SEQ_CST);
 	}
 	lock_profiling_release(lock);
-	scheduler_resume();
+	scheduler_resume(1);
 }
 
 

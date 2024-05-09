@@ -67,7 +67,7 @@ KERNEL_PUBLIC void scheduler_pause(void){
 
 
 
-KERNEL_PUBLIC void scheduler_resume(void){
+KERNEL_PUBLIC void scheduler_resume(bool yield_if_possible){
 	if (!_scheduler_enabled){
 		return;
 	}
@@ -80,13 +80,26 @@ KERNEL_PUBLIC void scheduler_resume(void){
 		return;
 	}
 	u64 elapsed_us=(clock_ticks_to_time(clock_get_ticks()-scheduler->pause_start_ticks)+500)/1000;
-	asm volatile("sti":::"memory");
+	if (yield_if_possible){
+		asm volatile("sti":::"memory");
+	}
 	if (elapsed_us>=scheduler->pause_remaining_us){
-		scheduler_yield();
+		if (yield_if_possible){
+			scheduler_yield();
+			return;
+		}
+		scheduler->pause_remaining_us=elapsed_us+SCHEDULER_MIN_TIME_QUANTUM_US;
 	}
-	else{
-		lapic_timer_start(scheduler->pause_remaining_us-elapsed_us);
+	lapic_timer_start(scheduler->pause_remaining_us-elapsed_us);
+}
+
+
+
+void scheduler_set_irq_context(bool is_irq_context){
+	if (!_scheduler_enabled){
+		return;
 	}
+	CPU_LOCAL(_scheduler_data)->is_irq_context=is_irq_context;
 }
 
 
@@ -95,6 +108,11 @@ void scheduler_isr_handler(isr_state_t* state){
 	lapic_timer_stop();
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
+	if (scheduler->is_irq_context){
+		WARN("A %s",scheduler->current_thread->name->data);
+		panic("Scheduler called in an interrupt context");
+	}
+	scheduler->is_irq_context=1;
 	scheduler->pause_nested_count=0;
 	thread_t* current_thread=scheduler->current_thread;
 	scheduler->current_thread=NULL;
@@ -144,6 +162,7 @@ void scheduler_isr_handler(isr_state_t* state){
 	else{
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
+	scheduler->is_irq_context=0;
 	if (!current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
 		lapic_timer_start(time_us);
@@ -166,7 +185,7 @@ KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_load_balancer_add(thread);
 	thread->state=THREAD_STATE_TYPE_QUEUED;
 	rwlock_release_write(&(thread->lock));
-	scheduler_resume();
+	scheduler_resume(1);
 }
 
 
@@ -187,7 +206,7 @@ void scheduler_set_timer(u8 timer){
 	scheduler->timers.data[scheduler->current_timer]+=ticks-scheduler->current_timer_start;
 	scheduler->current_timer_start=ticks;
 	scheduler->current_timer=timer;
-	scheduler_resume();
+	scheduler_resume(1);
 }
 
 

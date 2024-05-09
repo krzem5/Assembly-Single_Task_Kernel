@@ -25,6 +25,7 @@
 
 
 static u8 _isr_next_irq_index=33;
+static CPU_LOCAL_DATA(u32,_isr_nested_interrupt);
 
 KERNEL_PUBLIC KERNEL_ATOMIC irq_handler_t irq_handlers[223];
 KERNEL_PUBLIC void* KERNEL_ATOMIC irq_handler_contexts[223];
@@ -57,9 +58,18 @@ void _isr_handler(isr_state_t* isr_state){
 		scheduler_isr_handler(isr_state);
 		return;
 	}
+	scheduler_set_irq_context(1);
 	scheduler_pause();
+	u32 mask=1<<(isr_state->isr==14);
+	if ((*CPU_LOCAL(_isr_nested_interrupt))&mask){
+		ERROR("Nested %s",(isr_state->isr==14?"page fault":"interrupt"));
+		goto _crash;
+	}
+	*CPU_LOCAL(_isr_nested_interrupt)|=mask;
 	if (isr_state->isr==14&&pf_handle_fault(isr_state)){
-		scheduler_resume();
+		*CPU_LOCAL(_isr_nested_interrupt)&=~mask;
+		scheduler_resume(0);
+		scheduler_set_irq_context(0);
 		return;
 	}
 	if (isr_state->isr>32){
@@ -68,9 +78,12 @@ void _isr_handler(isr_state_t* isr_state){
 		if (handler){
 			handler(IRQ_HANDLER_CTX(isr_state->isr));
 		}
-		scheduler_resume();
+		*CPU_LOCAL(_isr_nested_interrupt)&=~mask;
+		scheduler_resume(0);
+		scheduler_set_irq_context(0);
 		return;
 	}
+_crash:
 	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
 		ERROR("Page fault stack not present");
 	}
@@ -130,6 +143,7 @@ void _isr_handler(isr_state_t* isr_state){
 			rbp=*((u64*)rbp);
 		}
 	}
+	scheduler_set_irq_context(0);
 	if (CPU_HEADER_DATA->current_thread){
 		thread_terminate();
 	}

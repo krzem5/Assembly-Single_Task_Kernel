@@ -166,7 +166,7 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
 		rwlock_release_write(&(thread->lock));
-		scheduler_resume();
+		scheduler_resume(1);
 		return i;
 	}
 	scheduler_yield();
@@ -197,7 +197,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 			thread->state=THREAD_STATE_TYPE_RUNNING;
 			thread->event_wakeup_index=i;
 			rwlock_release_write(&(thread->lock));
-			scheduler_resume();
+			scheduler_resume(1);
 			return i;
 		}
 	}

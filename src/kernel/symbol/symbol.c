@@ -77,10 +77,10 @@ KERNEL_PUBLIC const symbol_t* symbol_lookup_by_name(const char* name){
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
 		const symbol_t* symbol=(const symbol_t*)rb_node;
 		if (smm_equal(symbol->name,str)){
-			scheduler_resume();
+			scheduler_resume(1);
 			return symbol;
 		}
 	}
-	scheduler_resume();
+	scheduler_resume(1);
 	return NULL;
 }
