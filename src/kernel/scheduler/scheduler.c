@@ -109,7 +109,6 @@ void scheduler_isr_handler(isr_state_t* state){
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	if (scheduler->is_irq_context){
-		WARN("A %s",scheduler->current_thread->name->data);
 		panic("Scheduler called in an interrupt context");
 	}
 	scheduler->is_irq_context=1;
