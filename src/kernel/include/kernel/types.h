@@ -11,7 +11,11 @@
 #define KERNEL_NORETURN __attribute__((noreturn))
 #define KERNEL_NOCOVERAGE __attribute__((no_instrument_function,no_profile_instrument_function))
 #define KERNEL_NOINLINE __attribute__((noinline))
+#ifdef KERNEL_RELEASE
 #define KERNEL_INLINE inline __attribute__((always_inline))
+#else
+#define KERNEL_INLINE inline
+#endif
 #define KERNEL_PUBLIC __attribute__((visibility("default")))
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
