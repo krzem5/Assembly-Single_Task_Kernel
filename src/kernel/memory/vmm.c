@@ -264,7 +264,6 @@ KERNEL_PUBLIC void vmm_map_page(vmm_pagemap_t* pagemap,u64 physical_address,u64 
 	}
 	u64* pml1=_get_child_table(pml2,k,1);
 	if (_get_table(pml1)->entries[l]&VMM_PAGE_FLAG_PRESENT){
-		WARN("%p",_get_table(pml1)->entries[l]);
 		panic("vmm_map_page: memory mapping already present (pml1)");
 	}
 	_increase_length_if_entry_empty(pml1,l);
