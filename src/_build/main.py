@@ -89,8 +89,8 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DEBUG=1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O1","-DKERNEL_COVERAGE=1"],
+	MODE_NORMAL: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
@@ -109,8 +109,8 @@ MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/module/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O1","-DKERNEL_DEBUG=1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O1","-DKERNEL_COVERAGE=1"],
+	MODE_NORMAL: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
+	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
@@ -129,18 +129,18 @@ LIBRARY_OBJECT_FILE_DIRECTORY={
 	MODE_RELEASE: "build/objects/lib/"
 }[mode]
 LIBRARY_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O1","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O1","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
+	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O1","-g"],
-	MODE_COVERAGE: ["-O1","-g"],
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
 LIBRARY_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-O1","-g"],
-	MODE_COVERAGE: ["-O1","-g"],
+	MODE_NORMAL: ["-O0","-g"],
+	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 USER_HASH_FILE={
@@ -328,7 +328,7 @@ def _compile_kernel(force_patch_kernel):
 		if (os.path.exists(object_file+".gcno")):
 			os.remove(os.path.exists(object_file+".gcno"))
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-	if (not changed_files and not force_patch_kernel):
+	if (not changed_files and not force_patch_kernel and os.path.exists("build/kernel/kernel.elf")):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),"x86_64 "+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]])

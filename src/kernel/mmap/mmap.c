@@ -191,7 +191,11 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	if (!length||(length>>47)){
 		return NULL;
 	}
-	if (!(flags&MMAP_REGION_FLAG_EXTERNAL))flags|=MMAP_REGION_FLAG_COMMIT;/*****/
+	/* keep until nested (deferred) interrupts are implemented */
+	if (!(flags&MMAP_REGION_FLAG_EXTERNAL)){
+		flags|=MMAP_REGION_FLAG_COMMIT;
+	}
+	/* keep until nested (deferred) interrupts are implemented */
 	u64 guard_page_size=((flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	length+=guard_page_size;
 	rwlock_acquire_write(&(mmap->lock));

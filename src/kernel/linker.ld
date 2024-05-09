@@ -50,6 +50,9 @@ SECTIONS{
 	.kernel_early_pointer : {
 		*(.epointer)
 	}
+	.text : { /* to prevent GDB crashes */
+		. += 1;
+	}
 	/DISCARD/ : {
 		*(.comment .gnu .gnu.* .note .note.*)
 	}

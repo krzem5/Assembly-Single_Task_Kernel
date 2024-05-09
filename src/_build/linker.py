@@ -1,5 +1,6 @@
 import array
 import hashlib
+import json
 import signature
 import struct
 import sys
@@ -68,8 +69,8 @@ class LinkerContext(object):
 	def add_relocation_table(self,relocation_table):
 		self.relocation_tables.append(relocation_table)
 
-	def add_relocation_entry(self,type,section,offset,symbol,addend):
-		self.relocation_entries.append(RelocationEntry(type,section,offset,symbol,addend))
+	def add_relocation_entry(self,type,section,offset,symbol,addend,is_debug):
+		self.relocation_entries.append(RelocationEntry(type,section,offset,symbol,addend,is_debug))
 
 
 
@@ -120,12 +121,13 @@ class RelocationTable(object):
 
 
 class RelocationEntry(object):
-	def __init__(self,type,section,offset,symbol,addend):
+	def __init__(self,type,section,offset,symbol,addend,is_debug):
 		self.type=type
 		self.section=section
 		self.offset=offset
 		self.symbol=symbol
 		self.addend=addend
+		self.is_debug=is_debug
 
 
 
@@ -176,11 +178,9 @@ def _parse_symbol_table(ctx,allow_undefined=False):
 def _parse_relocation_tables(ctx):
 	for relocation_table in ctx.relocation_tables:
 		section=ctx.section_headers_by_name[relocation_table.target_section]
-		if (section.name not in KERNEL_SECTION_ORDER):
-			continue
 		for i in range(relocation_table.offset,relocation_table.offset+relocation_table.size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
-			ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,ctx.symbol_table.symbols[r_info>>32],r_addend)
+			ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,ctx.symbol_table.symbols[r_info>>32],r_addend,(section.name not in KERNEL_SECTION_ORDER))
 
 
 
@@ -196,12 +196,12 @@ def _generate_symbol_table(ctx):
 	for symbol in sorted(ctx.symbol_table.symbols.values(),key=lambda e:e.name):
 		if (not symbol.add_to_generated_table):
 			continue
-		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),symbol,(not symbol.is_public)<<63)
-		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data)+8,Symbol("",symbol.name_relocation_offset,output_section,0,0),0)
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),symbol,(not symbol.is_public)<<63,False)
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data)+8,Symbol("",symbol.name_relocation_offset,output_section,0,0),0,False)
 		output_section.suffix_data+=struct.pack("<QQ",0,0)
 	output_section.suffix_data+=struct.pack("<QQ",0,0)
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_symbol_data"]
-	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",symbol_table_relocation_offset,output_section,0,0),0)
+	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",symbol_table_relocation_offset,output_section,0,0),0,False)
 
 
 
@@ -210,20 +210,20 @@ def _generate_relocation_table(ctx):
 	output_section.suffix_data+=b"\x00"*((-len(output_section.suffix_data))&7)
 	relocation_table_relocation_offset=output_section.size+len(output_section.suffix_data)
 	for relocation in ctx.relocation_entries[:]:
-		if (relocation.type!=R_X86_64_64 and relocation.type!=R_X86_64_32 and relocation.type!=R_X86_64_32S):
+		if (relocation.is_debug or (relocation.type!=R_X86_64_64 and relocation.type!=R_X86_64_32 and relocation.type!=R_X86_64_32S)):
 			continue
-		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),0)
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),Symbol("",relocation.offset,relocation.section,0,0),0,False)
 		output_section.suffix_data+=struct.pack("<Q",0)
 	early_pointer_relocation_section=ctx.section_headers_by_name[".rela.kernel_early_pointer"]
 	for i in range(early_pointer_relocation_section.offset,early_pointer_relocation_section.offset+early_pointer_relocation_section.size,24):
 		r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
 		if ((r_info&0xffffffff)!=R_X86_64_64):
 			continue
-		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),ctx.symbol_table.symbols[r_info>>32],r_addend)
+		ctx.add_relocation_entry(R_X86_64_64,output_section,output_section.size+len(output_section.suffix_data),ctx.symbol_table.symbols[r_info>>32],r_addend,False)
 		output_section.suffix_data+=struct.pack("<Q",0)
 	output_section.suffix_data+=struct.pack("<Q",0)
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_relocation_data"]
-	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",relocation_table_relocation_offset,output_section,0,0),0)
+	ctx.add_relocation_entry(R_X86_64_64,symbol.section,symbol.value,Symbol("",relocation_table_relocation_offset,output_section,0,0),0,False)
 
 
 
@@ -252,6 +252,8 @@ def _place_sections(ctx):
 
 def _apply_relocations(ctx):
 	for relocation in ctx.relocation_entries:
+		if (relocation.is_debug):
+			continue
 		relocation_address=relocation.section.address+relocation.offset
 		relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
 		output_offset=relocation_address-KERNEL_START_ADDRESS
@@ -312,12 +314,28 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
+	with open(src_file_path,"r+b") as wf:
+		for relocation in ctx.relocation_entries:
+			relocation_address=relocation.section.address+relocation.offset
+			relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
+			wf.seek(relocation.section.offset+relocation.offset)
+			if (relocation.type==R_X86_64_64):
+				wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
+			elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
+				wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
+			elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
+				wf.write(struct.pack("<I",relocation_value&0xffffffff))
+			else:
+				print(f"Unknown relocation type '{relocation.type}'")
+				sys.exit(1)
 	_generate_signature_key(ctx,"module")
 	_generate_signature_key(ctx,"user")
 	_generate_build_info(ctx,build_version,build_name)
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
+	with open(dst_file_path.replace(".bin",".json"),"w") as wf:
+		wf.write(json.dumps({section_name:ctx.section_headers_by_name[section_name].address for section_name in KERNEL_SECTION_ORDER},separators=(",",":")))
 
 
 
