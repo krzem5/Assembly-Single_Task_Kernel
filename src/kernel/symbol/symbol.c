@@ -6,6 +6,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "symbol"
 
@@ -71,11 +72,14 @@ KERNEL_PUBLIC const symbol_t* symbol_lookup(u64 address){
 
 KERNEL_PUBLIC const symbol_t* symbol_lookup_by_name(const char* name){
 	SMM_TEMPORARY_STRING str=smm_alloc(name,0);
+	scheduler_pause();
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
 		const symbol_t* symbol=(const symbol_t*)rb_node;
 		if (smm_equal(symbol->name,str)){
+			scheduler_resume();
 			return symbol;
 		}
 	}
+	scheduler_resume();
 	return NULL;
 }
