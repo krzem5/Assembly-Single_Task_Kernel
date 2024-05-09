@@ -18,7 +18,7 @@ static CPU_LOCAL_DATA(__lock_profiling_lock_stack_t,_lock_profiling_cpu_local_da
 
 
 
-static __lock_profiling_lock_stack_t* _get_lock_stack(void){
+static KERNEL_INLINE __lock_profiling_lock_stack_t* KERNEL_NOCOVERAGE _get_lock_stack(void){
 	if (!_lock_profiling_cpu_local_data){
 		return &_lock_profiling_global_lock_stack;
 	}
