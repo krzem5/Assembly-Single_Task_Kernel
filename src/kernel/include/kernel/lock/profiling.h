@@ -47,9 +47,7 @@ typedef struct ___LOCK_PROFILING_ACQUISITION_CONTEXT{
 
 typedef struct ___LOCK_PROFILING_LOCK_STACK{
 	__lock_profiling_data_t* data[LOCK_PROFILING_MAX_NESTED_LOCKS];
-	u16 size;
-	u16 start;
-	u16 end;
+	u64 size;
 } __lock_profiling_lock_stack_t;
 
 

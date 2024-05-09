@@ -12,9 +12,7 @@
 
 static u64* KERNEL_INIT_WRITE _lock_profiling_dependency_matrix=NULL;
 static __lock_profiling_lock_stack_t KERNEL_INIT_WRITE _lock_profiling_global_lock_stack={
-	.size=0,
-	.start=0,
-	.end=0
+	.size=0
 };
 static CPU_LOCAL_DATA(__lock_profiling_lock_stack_t,_lock_profiling_cpu_local_data);
 
@@ -42,8 +40,6 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(__loc
 
 void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init_lock_stack(__lock_profiling_lock_stack_t* out){
 	out->size=0;
-	out->start=0;
-	out->end=0;
 }
 
 
@@ -59,9 +55,8 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 		log("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
 		panic("Lock profiling error");
 	}
-	// stack->data[stack->end]=lock;
-	// stack->size++;
-	// stack->end=(stack->end+1)&(LOCK_PROFILING_MAX_NESTED_LOCKS-1);
+	stack->data[stack->size]=lock;
+	stack->size++;
 }
 
 
@@ -77,11 +72,18 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 		return;
 	}
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
-	(void)stack;
+	u64 i=0;
+	for (;i<stack->size&&stack->data[i]!=lock;i++);
+	if (i==stack->size){
+		log("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
+		panic("Lock profiling error");
+	}
+	stack->size--;
+	stack->data[i]=stack->data[stack->size];
 }
 
 
 
 void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(void){
-	return;
+	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<(LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("lock_profiling"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
