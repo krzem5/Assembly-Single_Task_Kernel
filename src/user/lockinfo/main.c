@@ -11,7 +11,7 @@
 
 #define LOCKINFO_FLAG_PREEMPTIBLE 1
 
-#define SKIP_FAST_LOCKS 1
+#define SKIP_FAST_LOCKS 0
 
 
 

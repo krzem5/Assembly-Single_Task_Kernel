@@ -18,7 +18,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-mutex_t* mutex_init(void){
+KERNEL_PUBLIC mutex_t* mutex_init(void){
 	mutex_t* out=omm_alloc(_mutex_allocator);
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
@@ -29,7 +29,7 @@ mutex_t* mutex_init(void){
 
 
 
-void mutex_deinit(mutex_t* lock){
+KERNEL_PUBLIC void mutex_deinit(mutex_t* lock){
 	if (lock->holder){
 		panic("mutex_deinit: lock is held");
 	}
@@ -39,7 +39,7 @@ void mutex_deinit(mutex_t* lock){
 
 
 
-void mutex_acquire(mutex_t* lock){
+KERNEL_PUBLIC void mutex_acquire(mutex_t* lock){
 	lock_profiling_acquire_start(lock);
 	rwlock_acquire_write(&(lock->lock));
 	while (lock->holder){
@@ -54,7 +54,7 @@ void mutex_acquire(mutex_t* lock){
 
 
 
-void mutex_release(mutex_t* lock){
+KERNEL_PUBLIC void mutex_release(mutex_t* lock){
 	rwlock_acquire_write(&(lock->lock));
 	if (lock->holder!=THREAD_DATA->header.current_thread){
 		panic("mutex_release: lock released by wrong thread");
@@ -66,6 +66,6 @@ void mutex_release(mutex_t* lock){
 
 
 
-bool mutex_is_held(mutex_t* lock){
+KERNEL_PUBLIC bool mutex_is_held(mutex_t* lock){
 	return !!lock->holder;
 }
