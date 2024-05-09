@@ -700,6 +700,8 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			if ("%" in code_line):
 				continue
 			if (not code_line or code_line=="0"):
+				if (len(line)<4):
+					continue
 				if (line[2]=="Source"):
 					wf.write(f"SF:{line[3]}\n")
 				continue
