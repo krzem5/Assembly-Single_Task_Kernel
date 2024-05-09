@@ -155,6 +155,27 @@ void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(
 
 
 
+KERNEL_PUBLIC bool lock_profiling_get_descriptor(u32 index,lock_profiling_descriptor_t* out){
+	if (index>=_lock_profiling_lock_type_count){
+		return 0;
+	}
+	out->id=index;
+	out->address=_lock_profiling_lock_types[index];
+	return 1;
+}
+
+
+
+KERNEL_PUBLIC bool lock_profiling_get_stats(u32 index,lock_profiling_stats_t* out){
+	if (index>=_lock_profiling_lock_stat_count){
+		return 0;
+	}
+	*out=*(_lock_profiling_lock_stats+index);
+	return 0;
+}
+
+
+
 #else
 #include <kernel/lock/profiling.h>
 #include <kernel/types.h>
@@ -193,6 +214,18 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 
 void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(void){
 	return;
+}
+
+
+
+KERNEL_PUBLIC bool lock_profiling_get_descriptor(u32 index,lock_profiling_descriptor_t* out){
+	return 0;
+}
+
+
+
+KERNEL_PUBLIC bool lock_profiling_get_stats(u32 index,lock_profiling_stats_t* out){
+	return 0;
 }
 
 

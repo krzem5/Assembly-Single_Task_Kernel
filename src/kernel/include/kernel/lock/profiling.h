@@ -54,6 +54,13 @@ typedef struct ___LOCK_PROFILING_LOCK_STACK{
 
 
 
+typedef struct _LOCK_PROFILING_DESCRIPTOR{
+	u32 id;
+	u32 address;
+} lock_profiling_descriptor_t;
+
+
+
 typedef struct _LOCK_PROFILING_STATS{
 	u32 id;
 	u32 address;
@@ -61,13 +68,6 @@ typedef struct _LOCK_PROFILING_STATS{
 	u64 ticks;
 	u64 max_ticks;
 } lock_profiling_stats_t;
-
-
-
-typedef struct _LOCK_PROFILING_DESCRIPTOR{
-	u32 id;
-	u32 address;
-} lock_profiling_descriptor_t;
 
 
 
@@ -92,6 +92,14 @@ void __lock_profiling_release(__lock_profiling_data_t* lock);
 
 
 void lock_profiling_enable_dependency_graph(void);
+
+
+
+bool lock_profiling_get_descriptor(u32 index,lock_profiling_descriptor_t* out);
+
+
+
+bool lock_profiling_get_stats(u32 index,lock_profiling_stats_t* out);
 
 
 
