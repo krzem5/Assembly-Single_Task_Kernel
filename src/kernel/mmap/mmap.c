@@ -302,9 +302,6 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 		return 0;
 	}
 	u64 out=pmm_alloc(1,_mmap_pmm_counter,0);
-	if (region->file){
-		vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
-	}
 	u64 flags=VMM_PAGE_FLAG_PRESENT;
 	if (region->flags&MMAP_REGION_FLAG_VMM_USER){
 		flags|=VMM_PAGE_FLAG_USER;
@@ -317,6 +314,9 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	}
 	vmm_map_page(mmap->pagemap,out,address,flags);
 	rwlock_release_write(&(mmap->lock));
+	if (region->file){
+		vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+	}
 	return out;
 }
 

@@ -87,21 +87,13 @@ void KERNEL_EARLY_EXEC serial_init(void){
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE _serial_send_untraced(serial_port_t* port,const void* buffer,u32 length){
-	bitlock_acquire(&(port->write_bitlock),0);
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE serial_send(serial_port_t* port,const void* buffer,u32 length){
+	rwlock_acquire_write(&(port->write_lock));
 	for (;length;length--){
 		SPINLOOP(!(io_port_in8(port->io_port+5)&0x20));
 		io_port_out8(port->io_port,*((const u8*)buffer));
 		buffer++;
 	}
-	bitlock_release(&(port->write_bitlock),0);
-}
-
-
-
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE serial_send(serial_port_t* port,const void* buffer,u32 length){
-	rwlock_acquire_write(&(port->write_lock));
-	_serial_send_untraced(port,buffer,length);
 	rwlock_release_write(&(port->write_lock));
 }
 

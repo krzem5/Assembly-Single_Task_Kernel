@@ -5,6 +5,7 @@
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/mp/thread.h>
+#include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 
@@ -48,6 +49,20 @@ static KERNEL_INLINE u32 KERNEL_NOCOVERAGE _get_edge_index(u32 from,u32 to){
 
 
 
+static void KERNEL_NOCOVERAGE _print_error(u32 address,u32 a,u32 b,const char* message){
+	const symbol_t* current_symbol=symbol_lookup(address|0xffffffff00000000ull);
+	const symbol_t* first_lock_symbol=symbol_lookup((_lock_profiling_lock_types+a)->address|0xffffffff00000000ull);
+	const symbol_t* second_lock_symbol=symbol_lookup((_lock_profiling_lock_types+b)->address|0xffffffff00000000ull);
+	log("\x1b[1m\x1b[38;2;41;137;255m%s:%s+%u: %s:%s+%u and %s:%s+%u: %s\x1b[0m\n",
+		current_symbol->module,current_symbol->name->data,(address|0xffffffff00000000ull)-current_symbol->rb_node.key,
+		first_lock_symbol->module,first_lock_symbol->name->data,((_lock_profiling_lock_types+a)->address|0xffffffff00000000ull)-first_lock_symbol->rb_node.key,
+		second_lock_symbol->module,second_lock_symbol->name->data,((_lock_profiling_lock_types+b)->address|0xffffffff00000000ull)-second_lock_symbol->rb_node.key,
+		message
+	);
+}
+
+
+
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(u32 flags,__lock_profiling_data_t* out){
 	out->alloc_address=(u32)(u64)__builtin_return_address(1);
 	u32 type_count=_lock_profiling_lock_type_count;
@@ -78,6 +93,11 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 	if (!_lock_profiling_dependency_matrix||!_lock_profiling_lock_stats){
 		return;
 	}
+	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
+	if (stack->disabled){
+		return;
+	}
+	stack->disabled=1;
 	u32 address=(u64)__builtin_return_address(1);
 	u32 stat_count=_lock_profiling_lock_stat_count;
 	for (u32 i=0;i<stat_count;i++){
@@ -93,25 +113,28 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 	_lock_profiling_lock_stat_count++;
 	bitlock_release(&_lock_profiling_global_locks,GLOBAL_LOCK_STAT_BIT);
 _skip_stat_alloc:
-	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
 	if (stack->size>=LOCK_PROFILING_MAX_NESTED_LOCKS){
-		_log_untraced("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
+		log("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
 		for (;;);
 	}
 	for (u64 i=0;i<stack->size;i++){
 		if (stack->data[i]->id==lock->id&&stack->data[i]!=lock){
 			continue;
 		}
+		if (((_lock_profiling_lock_types+lock->id)->flags&LOCK_PROFILING_FLAG_PREEMPTIBLE)&&!((_lock_profiling_lock_types+stack->data[i]->id)->flags&LOCK_PROFILING_FLAG_PREEMPTIBLE)){
+			_print_error(address,lock->id,stack->data[i]->id,"Priority inversion");
+		}
 		u32 edge=_get_edge_index(stack->data[i]->id,lock->id);
 		_lock_profiling_dependency_matrix[edge>>6]|=1ull<<(edge&63);
 		u32 inverse_edge=_get_edge_index(lock->id,stack->data[i]->id);
 		if (_lock_profiling_dependency_matrix[inverse_edge>>6]&(1ull<<(inverse_edge&63))){
-			_log_untraced("\x1b[1m\x1b[38;2;41;137;255mLock '%p' deadlocked by '%p'\x1b[0m\n",lock->alloc_address|0xffffffff00000000ull,stack->data[i]->alloc_address|0xffffffff00000000ull);
+			_print_error(address,lock->id,stack->data[i]->id,"Deadlock");
 		}
 	}
 	stack->data[stack->size]=lock;
 	stack->size++;
 	ctx->start_ticks=clock_get_ticks();
+	stack->disabled=0;
 }
 
 
@@ -119,6 +142,9 @@ _skip_stat_alloc:
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_end(__lock_profiling_data_t* lock,__lock_profiling_acquisition_context_t* ctx){
 	u64 end_ticks=clock_get_ticks();
 	if (!_lock_profiling_dependency_matrix||!_lock_profiling_lock_stats){
+		return;
+	}
+	if (_get_lock_stack()->disabled){
 		return;
 	}
 	u64 ticks=end_ticks-ctx->start_ticks;
@@ -137,14 +163,19 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 		return;
 	}
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
+	if (stack->disabled){
+		return;
+	}
+	stack->disabled=1;
 	u64 i=0;
 	for (;i<stack->size&&stack->data[i]!=lock;i++);
 	if (i==stack->size){
-		_log_untraced("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
+		log("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
 		for (;;);
 	}
 	stack->size--;
 	stack->data[i]=stack->data[stack->size];
+	stack->disabled=0;
 }
 
 

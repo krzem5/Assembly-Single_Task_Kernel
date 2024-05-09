@@ -50,6 +50,7 @@ typedef struct ___LOCK_PROFILING_ACQUISITION_CONTEXT{
 
 
 typedef struct ___LOCK_PROFILING_LOCK_STACK{
+	KERNEL_ATOMIC bool disabled;
 	__lock_profiling_data_t* data[LOCK_PROFILING_MAX_NESTED_LOCKS];
 	u64 size;
 } __lock_profiling_lock_stack_t;
