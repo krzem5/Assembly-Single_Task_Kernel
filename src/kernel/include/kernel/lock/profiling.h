@@ -4,9 +4,10 @@
 
 
 
-#define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12 // >=3
+#define LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT 12
 #define LOCK_PROFILING_MAX_LOCK_TYPES (1<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)
-#define LOCK_PROFILING_EARLY_LOCK_TYPES 5
+
+#define LOCK_PROFILING_MAX_LOCK_USES (1<<16)
 
 #define LOCK_PROFILING_MAX_NESTED_LOCKS 16
 
@@ -34,14 +35,14 @@
 
 typedef struct ___LOCK_PROFILING_DATA{
 	u32 alloc_address;
-	u32 type;
+	u32 id;
 } __lock_profiling_data_t;
 
 
 
 typedef struct ___LOCK_PROFILING_ACQUISITION_CONTEXT{
-	u64 address;
-	u64 start_time;
+	u32 stat_id;
+	u64 start_ticks;
 } __lock_profiling_acquisition_context_t;
 
 
@@ -50,6 +51,23 @@ typedef struct ___LOCK_PROFILING_LOCK_STACK{
 	__lock_profiling_data_t* data[LOCK_PROFILING_MAX_NESTED_LOCKS];
 	u64 size;
 } __lock_profiling_lock_stack_t;
+
+
+
+typedef struct _LOCK_PROFILING_STATS{
+	u32 id;
+	u32 address;
+	u64 count;
+	u64 ticks;
+	u64 max_ticks;
+} lock_profiling_stats_t;
+
+
+
+typedef struct _LOCK_PROFILING_DESCRIPTOR{
+	u32 id;
+	u32 address;
+} lock_profiling_descriptor_t;
 
 
 
