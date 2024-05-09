@@ -79,7 +79,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 	u32 address=(u64)__builtin_return_address(1);
 	u32 stat_count=_lock_profiling_lock_stat_count;
 	for (u32 i=0;i<stat_count;i++){
-		if ((_lock_profiling_lock_stats+i)->address==address){
+		if ((_lock_profiling_lock_stats+i)->id==lock->id&&(_lock_profiling_lock_stats+i)->address==address){
 			ctx->stat_id=i;
 			goto _skip_stat_alloc;
 		}
@@ -171,7 +171,7 @@ KERNEL_PUBLIC bool lock_profiling_get_stats(u32 index,lock_profiling_stats_t* ou
 		return 0;
 	}
 	*out=*(_lock_profiling_lock_stats+index);
-	return 0;
+	return 1;
 }
 
 

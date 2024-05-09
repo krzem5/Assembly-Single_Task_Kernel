@@ -63,13 +63,13 @@ void symbol_remove(const char* module){
 
 
 
-const symbol_t* symbol_lookup(u64 address){
+KERNEL_PUBLIC const symbol_t* symbol_lookup(u64 address){
 	return (const symbol_t*)rb_tree_lookup_decreasing_node(&_symbol_tree,address);
 }
 
 
 
-const symbol_t* symbol_lookup_by_name(const char* name){
+KERNEL_PUBLIC const symbol_t* symbol_lookup_by_name(const char* name){
 	SMM_TEMPORARY_STRING str=smm_alloc(name,0);
 	for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_symbol_tree);rb_node;rb_node=rb_tree_iter_next(&_symbol_tree,rb_node)){
 		const symbol_t* symbol=(const symbol_t*)rb_node;

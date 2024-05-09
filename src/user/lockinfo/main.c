@@ -7,17 +7,24 @@
 
 
 
-typedef struct _LOCKINFO_DATA_DESCRIPTOR{
-	u32 type_line;
-	u32 line;
-	char func[64];
-	char type_func[64];
-	char name[128];
-	char type_name[128];
+typedef struct _LOCKINFO_DESCRIPTOR{
+	u32 id;
+	char module[64];
+	char func[128];
+	u64 offset;
+} lockinfo_descriptor_t;
+
+
+
+typedef struct _LOCKINFO_STATS{
+	u32 id;
+	char module[64];
+	char func[128];
+	u64 offset;
 	u64 count;
 	u64 ticks;
 	u64 max_ticks;
-} lockinfo_data_descriptor_t;
+} lockinfo_stats_t;
 
 
 
@@ -30,21 +37,22 @@ int main(int argc,const char** argv){
 		sys_io_print("lockinfo: unable to access lockinfo kernel module\n");
 		return 1;
 	}
-	lockinfo_data_descriptor_t data;
+	lockinfo_descriptor_t descriptor;
 	for (u32 i=0;;i++){
-		if (!_sys_syscall3(offset|0x00000001,i,0,(u64)(&data))){
+		if (!_sys_syscall2(offset|0x00000001,i,(u64)(&descriptor))){
 			break;
 		}
-		sys_io_print("%s:%u \x1b[2;3m%s\x1b[0m\n",data.func,data.line,data.name);
-		for (u32 j=0;;j++){
-			if (!_sys_syscall3(offset|0x00000001,i,j,(u64)(&data))){
-				break;
-			}
-			if (!data.count){
-				continue;
-			}
-			sys_io_print("    %s:%u \x1b[2;3m%s\x1b[0m\n        cnt: \x1b[1m%lu\x1b[0m\n        avg: \x1b[1m%lu\x1b[0m ns\n        max: \x1b[1m%lu\x1b[0m ns\n",data.type_func,data.type_line,data.type_name,data.count,sys_clock_convert_ticks_to_time_ns(data.ticks/data.count),sys_clock_convert_ticks_to_time_ns(data.max_ticks));
+		sys_io_print("%u: %s:%s+%u\n",descriptor.id,descriptor.module,descriptor.func,descriptor.offset);
+	}
+	lockinfo_stats_t stats;
+	for (u32 i=0;;i++){
+		if (!_sys_syscall2(offset|0x00000002,i,(u64)(&stats))){
+			break;
 		}
+		if (!stats.count){
+			continue;
+		}
+		sys_io_print("~ %u: %s:%s+%u: %lu, %lu, %lu\n",stats.id,stats.module,stats.func,stats.offset,stats.count,sys_clock_convert_ticks_to_time_ns(stats.ticks/stats.count),sys_clock_convert_ticks_to_time_ns(stats.max_ticks));
 	}
 	return 0;
 }
