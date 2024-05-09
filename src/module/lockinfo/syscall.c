@@ -11,6 +11,7 @@
 
 typedef struct _LOCKINFO_USER_DESCRIPTOR{
 	u32 id;
+	u32 flags;
 	char module[64];
 	char func[128];
 	u64 offset;
@@ -44,6 +45,7 @@ static bool _syscall_lockinfo_get_descriptor(u32 index,KERNEL_USER_POINTER locki
 		return 0;
 	}
 	out->id=descriptor.id;
+	out->flags=descriptor.flags;
 	str_copy(symbol->module,(char*)(out->module),sizeof(out->module));
 	str_copy(symbol->name->data,(char*)(out->func),sizeof(out->func));
 	out->offset=full_address-symbol->rb_node.key;

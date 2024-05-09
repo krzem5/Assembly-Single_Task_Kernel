@@ -15,7 +15,7 @@
 
 
 
-static u32 _lock_profiling_lock_types[LOCK_PROFILING_MAX_LOCK_TYPES];
+static lock_profiling_descriptor_t _lock_profiling_lock_types[LOCK_PROFILING_MAX_LOCK_TYPES];
 static KERNEL_ATOMIC u32 _lock_profiling_lock_type_count=0;
 static u32 _lock_profiling_global_locks=0;
 static u64* KERNEL_INIT_WRITE _lock_profiling_dependency_matrix=NULL;
@@ -48,18 +48,20 @@ static KERNEL_INLINE u32 KERNEL_NOCOVERAGE _get_edge_index(u32 from,u32 to){
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(__lock_profiling_data_t* out){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(u32 flags,__lock_profiling_data_t* out){
 	out->alloc_address=(u32)(u64)__builtin_return_address(1);
 	u32 type_count=_lock_profiling_lock_type_count;
 	for (u32 i=0;i<type_count;i++){
-		if (_lock_profiling_lock_types[i]==out->alloc_address){
+		if ((_lock_profiling_lock_types+i)->address==out->alloc_address){
 			out->id=i;
 			return;
 		}
 	}
 	bitlock_acquire(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
 	out->id=_lock_profiling_lock_type_count;
-	_lock_profiling_lock_types[_lock_profiling_lock_type_count]=out->alloc_address;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->id=_lock_profiling_lock_type_count;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->address=out->alloc_address;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->flags=flags;
 	_lock_profiling_lock_type_count++;
 	bitlock_release(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
 }
@@ -159,8 +161,7 @@ KERNEL_PUBLIC bool lock_profiling_get_descriptor(u32 index,lock_profiling_descri
 	if (index>=_lock_profiling_lock_type_count){
 		return 0;
 	}
-	out->id=index;
-	out->address=_lock_profiling_lock_types[index];
+	*out=*(_lock_profiling_lock_types+index);
 	return 1;
 }
 
@@ -182,7 +183,7 @@ KERNEL_PUBLIC bool lock_profiling_get_stats(u32 index,lock_profiling_stats_t* ou
 
 
 
-KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(__lock_profiling_data_t* out){
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(u32 flags,__lock_profiling_data_t* out){
 	return;
 }
 

@@ -11,12 +11,14 @@
 
 #define LOCK_PROFILING_MAX_NESTED_LOCKS 16
 
+#define LOCK_PROFILING_FLAG_PREEMPTIBLE 1
+
 
 
 #ifdef KERNEL_RELEASE
 #define LOCK_PROFILING_LOCK_STACK
 #define LOCK_PROFILING_DATA
-#define lock_profiling_init(lock)
+#define lock_profiling_init(flags,lock)
 #define lock_profiling_init_lock_stack(thread)
 #define lock_profiling_acquire_start(lock)
 #define lock_profiling_acquire_end(lock)
@@ -24,7 +26,7 @@
 #else
 #define LOCK_PROFILING_LOCK_STACK __lock_profiling_lock_stack_t __lock_profiling_lock_stack;
 #define LOCK_PROFILING_DATA __lock_profiling_data_t __lock_profiling_data;
-#define lock_profiling_init(lock) __lock_profiling_init(&((lock)->__lock_profiling_data));
+#define lock_profiling_init(flags,lock) __lock_profiling_init((flags),&((lock)->__lock_profiling_data));
 #define lock_profiling_init_lock_stack(thread) __lock_profiling_init_lock_stack(&((thread)->__lock_profiling_lock_stack));
 #define lock_profiling_acquire_start(lock) {__lock_profiling_acquisition_context_t __lock_profiling_acquisition_context;__lock_profiling_acquire_start(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);
 #define lock_profiling_acquire_end(lock) __lock_profiling_acquire_end(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);}
@@ -57,6 +59,7 @@ typedef struct ___LOCK_PROFILING_LOCK_STACK{
 typedef struct _LOCK_PROFILING_DESCRIPTOR{
 	u32 id;
 	u32 address;
+	u32 flags;
 } lock_profiling_descriptor_t;
 
 
@@ -71,7 +74,7 @@ typedef struct _LOCK_PROFILING_STATS{
 
 
 
-void __lock_profiling_init(__lock_profiling_data_t* out);
+void __lock_profiling_init(u32 flags,__lock_profiling_data_t* out);
 
 
 

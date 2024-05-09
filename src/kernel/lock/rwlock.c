@@ -14,7 +14,7 @@
 
 KERNEL_PUBLIC void rwlock_init(rwlock_t* out){
 	__atomic_store_n(&(out->value),0,__ATOMIC_SEQ_CST);
-	lock_profiling_init(out);
+	lock_profiling_init(0,out);
 }
 
 

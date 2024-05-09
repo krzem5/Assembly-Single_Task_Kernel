@@ -23,7 +23,7 @@ mutex_t* mutex_init(void){
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
 	out->event=event_create();
-	lock_profiling_init(out);
+	lock_profiling_init(LOCK_PROFILING_FLAG_PREEMPTIBLE,out);
 	return out;
 }
 
