@@ -1,3 +1,4 @@
+#ifndef KERNEL_RELEASE
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/local.h>
 #include <kernel/lock/bitlock.h>
@@ -6,7 +7,6 @@
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#define KERNEL_LOG_NAME "lock_profiling"
 
 
 
@@ -31,6 +31,12 @@ static KERNEL_INLINE __lock_profiling_lock_stack_t* KERNEL_NOCOVERAGE _get_lock_
 	}
 #endif
 	return CPU_LOCAL(_lock_profiling_cpu_local_data);
+}
+
+
+
+static KERNEL_INLINE u32 KERNEL_NOCOVERAGE _get_edge_index(u32 from,u32 to){
+	return (from<<LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT)|to;
 }
 
 
@@ -68,7 +74,18 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
 	if (stack->size>=LOCK_PROFILING_MAX_NESTED_LOCKS){
 		_log_untraced("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
-		panic("Lock profiling error");
+		for (;;);
+	}
+	for (u64 i=0;i<stack->size;i++){
+		if (stack->data[i]->type==lock->type&&stack->data[i]!=lock){
+			continue;
+		}
+		u32 edge=_get_edge_index(stack->data[i]->type,lock->type);
+		_lock_profiling_dependency_matrix[edge>>6]|=1ull<<(edge&63);
+		u32 inverse_edge=_get_edge_index(lock->type,stack->data[i]->type);
+		if (_lock_profiling_dependency_matrix[inverse_edge>>6]&(1ull<<(inverse_edge&63))){
+			_log_untraced("\x1b[1m\x1b[38;2;41;137;255mLock '%p' deadlocked by '%p'\x1b[0m\n",lock->alloc_address|0xffffffff00000000ull,stack->data[i]->alloc_address|0xffffffff00000000ull);
+		}
 	}
 	stack->data[stack->size]=lock;
 	stack->size++;
@@ -91,7 +108,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 	for (;i<stack->size&&stack->data[i]!=lock;i++);
 	if (i==stack->size){
 		_log_untraced("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
-		panic("Lock profiling error");
+		for (;;);
 	}
 	stack->size--;
 	stack->data[i]=stack->data[stack->size];
@@ -102,3 +119,49 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(void){
 	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<(LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("lock_profiling"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }
+
+
+
+#else
+#include <kernel/lock/profiling.h>
+#include <kernel/types.h>
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(__lock_profiling_data_t* out){
+	return;
+}
+
+
+
+void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init_lock_stack(__lock_profiling_lock_stack_t* out){
+	return;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_start(__lock_profiling_data_t* lock,__lock_profiling_acquisition_context_t* ctx){
+	return;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_end(__lock_profiling_data_t* lock,__lock_profiling_acquisition_context_t* ctx){
+	return;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__lock_profiling_data_t* lock){
+	return;
+}
+
+
+
+void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(void){
+	return;
+}
+
+
+
+#endif
