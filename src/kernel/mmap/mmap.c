@@ -323,7 +323,7 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address,bool is_irq_context){
 		if (is_irq_context){
 			thread_t* thread=thread_create_kernel_thread(NULL,"pf-file-backend",vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
 			if (!CPU_HEADER_DATA->current_thread){
-				panic("mmap_handle_pf: async pf");
+				panic("mmap_handle_pf: sync file-backed memory fault");
 			}
 			event_await(thread->termination_event,0);
 		}
