@@ -228,7 +228,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	rwlock_release_write(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
 		for (u64 offset=address+guard_page_size;offset<address+length;offset+=PAGE_SIZE){
-			mmap_handle_pf(mmap,offset);
+			mmap_handle_pf(mmap,offset,0);
 		}
 	}
 	return out;
@@ -284,7 +284,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 	for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,offset);
 		if (!physical_address){
-			physical_address=mmap_handle_pf(mmap,offset);
+			physical_address=mmap_handle_pf(mmap,offset,0);
 			if (!physical_address){
 				panic("mmap_map_to_kernel: invalid address");
 			}
@@ -296,7 +296,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 
 
 
-u64 mmap_handle_pf(mmap_t* mmap,u64 address){
+u64 mmap_handle_pf(mmap_t* mmap,u64 address,bool is_irq_context){
 	if (!mmap){
 		return 0;
 	}
@@ -320,7 +320,16 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address){
 	vmm_map_page(mmap->pagemap,out,address,flags);
 	rwlock_release_write(&(mmap->lock));
 	if (region->file){
-		vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+		if (is_irq_context){
+			thread_t* thread=thread_create_kernel_thread(NULL,"pf-file-backend",vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+			if (!CPU_HEADER_DATA->current_thread){
+				panic("mmap_handle_pf: async pf");
+			}
+			event_await(thread->termination_event,0);
+		}
+		else{
+			vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+		}
 	}
 	pf_invalidate_tlb_entry(address);
 	return out;
@@ -383,7 +392,7 @@ error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	address=pmm_align_down_address(address);
 	mmap_t* mmap=THREAD_DATA->process->mmap;
 	for (u64 offset=address;offset<address+size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(mmap->pagemap,offset)&&!mmap_handle_pf(mmap,offset)){
+		if (!vmm_virtual_to_physical(mmap->pagemap,offset)&&!mmap_handle_pf(mmap,offset,0)){
 			return ERROR_INVALID_ARGUMENT(0);
 		}
 		vmm_adjust_flags(mmap->pagemap,offset,vmm_set_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,1,1);

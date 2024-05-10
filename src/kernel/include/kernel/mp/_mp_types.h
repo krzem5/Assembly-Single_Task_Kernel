@@ -92,6 +92,7 @@ typedef struct _THREAD{
 	thread_state_t state;
 	u64 event_sequence_id;
 	u64 event_wakeup_index;
+	event_t* termination_event;
 	struct _THREAD* thread_list_prev;
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;

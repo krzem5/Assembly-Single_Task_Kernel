@@ -8,6 +8,7 @@
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/msr/msr.h>
 #include <kernel/scheduler/load_balancer.h>
@@ -51,7 +52,7 @@ KERNEL_PUBLIC void scheduler_pause(void){
 		return;
 	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	if (!scheduler->current_thread){
+	if (!scheduler->current_thread||scheduler->is_irq_context){
 		return;
 	}
 	scheduler->pause_nested_count++;
@@ -72,7 +73,7 @@ KERNEL_PUBLIC void scheduler_resume(bool yield_if_possible){
 		return;
 	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
-	if (!scheduler->current_thread){
+	if (!scheduler->current_thread||scheduler->is_irq_context){
 		return;
 	}
 	scheduler->pause_nested_count--;

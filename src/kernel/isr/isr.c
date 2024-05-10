@@ -148,6 +148,7 @@ _crash:
 			rbp=*((u64*)rbp);
 		}
 	}
+	*CPU_LOCAL(_isr_nested_interrupt)&=~mask;
 	scheduler_set_irq_context(0);
 	if (CPU_HEADER_DATA->current_thread){
 		thread_terminate();

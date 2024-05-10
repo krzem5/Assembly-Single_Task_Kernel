@@ -55,6 +55,7 @@ static void _thread_handle_destructor(handle_t* handle){
 	mmap_dealloc_region(process_kernel->mmap,thread->pf_stack_region);
 	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (thread_list_remove(&(process->thread_list),thread)){
+	event_delete(thread->termination_event);
 		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		handle_release(&(process->handle));
 	}
@@ -92,6 +93,7 @@ static thread_t* _thread_alloc(process_t* process){
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
 	out->event_sequence_id=0;
+	out->termination_event=event_create();
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
@@ -183,6 +185,7 @@ KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
 	rwlock_release_write(&(thread->lock));
+	event_dispatch(thread->termination_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE);
 	scheduler_yield();
 	for (;;);
 }

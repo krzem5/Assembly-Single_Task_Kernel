@@ -314,20 +314,20 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
-	with open(src_file_path,"r+b") as wf:
-		for relocation in ctx.relocation_entries:
-			relocation_address=relocation.section.address+relocation.offset
-			relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
-			wf.seek(relocation.section.offset+relocation.offset)
-			if (relocation.type==R_X86_64_64):
-				wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
-			elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
-				wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
-			elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
-				wf.write(struct.pack("<I",relocation_value&0xffffffff))
-			else:
-				print(f"Unknown relocation type '{relocation.type}'")
-				sys.exit(1)
+	# with open(src_file_path,"r+b") as wf:
+	# 	for relocation in ctx.relocation_entries:
+	# 		relocation_address=relocation.section.address+relocation.offset
+	# 		relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
+	# 		wf.seek(relocation.section.offset+relocation.offset)
+	# 		if (relocation.type==R_X86_64_64):
+	# 			wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
+	# 		elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
+	# 			wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
+	# 		elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
+	# 			wf.write(struct.pack("<I",relocation_value&0xffffffff))
+	# 		else:
+	# 			print(f"Unknown relocation type '{relocation.type}'")
+	# 			sys.exit(1)
 	_generate_signature_key(ctx,"module")
 	_generate_signature_key(ctx,"user")
 	_generate_build_info(ctx,build_version,build_name)
