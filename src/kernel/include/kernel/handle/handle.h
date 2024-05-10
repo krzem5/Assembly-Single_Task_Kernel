@@ -18,7 +18,10 @@
 
 #define HANDLE_ITER_START(descriptor) ((handle_t*)rb_tree_iter_start(&((descriptor)->tree)))
 #define HANDLE_ITER_NEXT(descriptor,handle) ((handle_t*)rb_tree_iter_next(&((descriptor)->tree),&((handle)->rb_node)))
-#define HANDLE_FOREACH(type) handle_descriptor_t* __descriptor=handle_get_descriptor((type));if (__descriptor)for (handle_t* handle=HANDLE_ITER_START(__descriptor);handle;handle=HANDLE_ITER_NEXT(__descriptor,handle))
+
+#define _HANDLE_TEMPORARY_DESCRIPTOR_NAME_(a,b) a##b
+#define _HANDLE_TEMPORARY_DESCRIPTOR_NAME(a,b) _HANDLE_TEMPORARY_DESCRIPTOR_NAME_(a,b)
+#define HANDLE_FOREACH(type) handle_descriptor_t* _HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__)=handle_get_descriptor((type));if (_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__))for (handle_t* handle=HANDLE_ITER_START(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__));handle;handle=HANDLE_ITER_NEXT(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__),handle))
 
 
 

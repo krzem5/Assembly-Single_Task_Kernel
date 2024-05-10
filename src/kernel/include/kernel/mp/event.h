@@ -15,6 +15,10 @@
 
 
 
+extern handle_type_t event_handle_type;
+
+
+
 event_t* event_create(void);
 
 

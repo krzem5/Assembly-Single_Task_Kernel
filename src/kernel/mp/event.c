@@ -22,7 +22,8 @@
 
 static omm_allocator_t* _event_allocator=NULL;
 static omm_allocator_t* _event_thread_container_allocator=NULL;
-static handle_type_t _event_handle_type=0;
+
+KERNEL_PUBLIC handle_type_t event_handle_type=0;
 
 
 
@@ -65,14 +66,14 @@ KERNEL_EARLY_EARLY_INIT(){
 	rwlock_init(&(_event_allocator->lock));
 	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4);
 	rwlock_init(&(_event_thread_container_allocator->lock));
-	_event_handle_type=handle_alloc("event",_event_handle_destructor);
+	event_handle_type=handle_alloc("event",_event_handle_destructor);
 }
 
 
 
 KERNEL_PUBLIC event_t* event_create(void){
 	event_t* out=omm_alloc(_event_allocator);
-	handle_new(out,_event_handle_type,&(out->handle));
+	handle_new(out,event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
@@ -186,7 +187,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 	thread->reg_state.reg_state_not_present=1;
 	rwlock_release_write(&(thread->lock));
 	for (u32 i=0;i<count;i++){
-		handle_t* handle_event=handle_lookup_and_acquire(handles[i],_event_handle_type);
+		handle_t* handle_event=handle_lookup_and_acquire(handles[i],event_handle_type);
 		if (!handle_event){
 			continue;
 		}
@@ -230,7 +231,7 @@ error_t syscall_event_create(u32 is_active){
 
 
 error_t syscall_event_delete(handle_id_t event_handle){
-	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	handle_t* handle=handle_lookup_and_acquire(event_handle,event_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
@@ -247,7 +248,7 @@ error_t syscall_event_delete(handle_id_t event_handle){
 
 
 error_t syscall_event_dispatch(handle_id_t event_handle,u32 dispatch_flags){
-	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	handle_t* handle=handle_lookup_and_acquire(event_handle,event_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
@@ -271,7 +272,7 @@ error_t syscall_event_dispatch(handle_id_t event_handle,u32 dispatch_flags){
 
 
 error_t syscall_event_set_active(handle_id_t event_handle,u32 is_active){
-	handle_t* handle=handle_lookup_and_acquire(event_handle,_event_handle_type);
+	handle_t* handle=handle_lookup_and_acquire(event_handle,event_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}

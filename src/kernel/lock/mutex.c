@@ -1,10 +1,12 @@
 #include <kernel/lock/mutex.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/lock/rwlock.h>
+#include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/mp/event.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
+#define KERNEL_LOG_NAME "mutex"
 
 
 
@@ -62,6 +64,7 @@ KERNEL_PUBLIC void mutex_release(mutex_t* lock){
 	lock->holder=NULL;
 	rwlock_release_write(&(lock->lock));
 	lock_profiling_release(lock);
+	event_dispatch(lock->event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
 }
 
 
