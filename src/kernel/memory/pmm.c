@@ -20,7 +20,6 @@
 #define PMM_DEBUG_VALUE 0xde
 
 #define PMM_FLAG_PARTIALLY_INITIALIZED 1
-#define PMM_FLAG_FULLY_INITIALIZED 2
 
 
 
@@ -217,13 +216,12 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
 	INFO("Registering counters...");
-	pmm_counter_handle_type=handle_alloc("pmm_counter",NULL);
-	_pmm_counter_allocator=omm_init("pmm_counter",sizeof(pmm_counter_descriptor_t),8,1);
+	pmm_counter_handle_type=handle_alloc("kernel.pmm.counter",NULL);
+	_pmm_counter_allocator=omm_init("kernel.pmm.counter",sizeof(pmm_counter_descriptor_t),8,1);
 	rwlock_init(&(_pmm_counter_allocator->lock));
-	pmm_alloc_counter("pmm")->count=_pmm_self_counter_value;
-	pmm_alloc_counter("kernel_image")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 	pmm_alloc_counter("total")->count=total_memory;
-	_pmm_initialization_flags|=PMM_FLAG_FULLY_INITIALIZED;
+	pmm_alloc_counter("kernel.pmm")->count=_pmm_self_counter_value;
+	pmm_alloc_counter("kernel.image.kernel")->count=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start())>>PAGE_SIZE_SHIFT;
 }
 
 
@@ -350,10 +348,6 @@ _retry_allocator:
 		}
 		bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
-	}
-	if ((_pmm_initialization_flags&PMM_FLAG_FULLY_INITIALIZED)&&!counter->handle.rb_node.key){
-		handle_new(counter,pmm_counter_handle_type,&(counter->handle));
-		handle_finish_setup(&(counter->handle));
 	}
 	counter->count+=_get_block_size(i)>>PAGE_SIZE_SHIFT;
 	return out;

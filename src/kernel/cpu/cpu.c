@@ -60,6 +60,7 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	msr_set_fs_base(0);
 	msr_set_gs_base((u64)(cpu_extra_data+index),0);
 	msr_set_gs_base((u64)(cpu_extra_data+index),1);
+	topology_compute(index,&((cpu_extra_data+index)->topology));
 	LOG("Initializing core #%u (%u:%u:%u:%u)...",index,(cpu_extra_data+index)->topology.domain,(cpu_extra_data+index)->topology.chip,(cpu_extra_data+index)->topology.core,(cpu_extra_data+index)->topology.thread);
 	INFO("Enabling FPU...");
 	fpu_enable();
@@ -69,8 +70,6 @@ void KERNEL_EARLY_EXEC _cpu_init_core(void){
 	msr_enable_rdtsc();
 	INFO("Enabling lAPIC...");
 	lapic_enable();
-	INFO("Calculating topology...");
-	topology_compute(index,&((cpu_extra_data+index)->topology));
 	_cpu_online_count++;
 	LOG("Core #%u initialized",index);
 	_wakeup_cpu((index<<1)+1);
@@ -94,10 +93,12 @@ void KERNEL_EARLY_EXEC cpu_init(u16 count){
 	INFO("CPU count: %u",count);
 	cpu_count=count;
 	cpu_local_init();
+	pmm_counter_descriptor_t* pmm_counter=pmm_alloc_counter("kernel.cpu.stack");
 	for (u16 i=0;i<count;i++){
 		(cpu_extra_data+i)->header.index=i;
-		(cpu_extra_data+i)->header.kernel_rsp=((u64)((cpu_extra_data+i)->scheduler_stack))+CPU_SCHEDULER_STACK_SIZE;
-		(cpu_extra_data+i)->tss.rsp0=((u64)((cpu_extra_data+i)->interrupt_stack))+CPU_INTERRUPT_STACK_SIZE;
+		(cpu_extra_data+i)->header.kernel_rsp=pmm_alloc(CPU_SCHEDULER_STACK_PAGE_COUNT,pmm_counter,0)+(CPU_SCHEDULER_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		(cpu_extra_data+i)->tss.rsp0=pmm_alloc(CPU_INTERRUPT_STACK_PAGE_COUNT,pmm_counter,0)+(CPU_INTERRUPT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
+		(cpu_extra_data+i)->tss.ist1=pmm_alloc(CPU_PAGE_FAULT_STACK_PAGE_COUNT,pmm_counter,0)+(CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT)+VMM_HIGHER_HALF_ADDRESS_OFFSET;
 		(cpu_extra_data+i)->tss.ist2=(cpu_extra_data+i)->header.kernel_rsp;
 	}
 	_cpu_bootstrap_core_apic_id=msr_get_apic_id();
@@ -108,7 +109,7 @@ void KERNEL_EARLY_EXEC cpu_init(u16 count){
 
 void KERNEL_EARLY_EXEC cpu_start_all_cores(void){
 	LOG("Starting all cpu cores...");
-	pmm_counter_descriptor_t* cpu_pmm_counter=pmm_alloc_counter("cpu");
+	pmm_counter_descriptor_t* cpu_pmm_counter=pmm_alloc_counter("kernel.cpu");
 	u64* cpu_stack_list=(u64*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(u64))>>PAGE_SIZE_SHIFT,cpu_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u16 i=0;i<cpu_count;i++){
 		cpu_stack_list[i]=(cpu_extra_data+i)->header.kernel_rsp;

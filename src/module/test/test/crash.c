@@ -85,19 +85,19 @@ void test_crash(void){
 	TEST_GROUP("no kernel crash");
 	_test_crash_state=0x00;
 	process_t* process=process_create("test-process","test-process",0x1000,0x3000);
-	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test-crash-kernel-no-crash",_thread_no_crash,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_no_crash",_thread_no_crash,0));
 	event_await(process->event,0);
 	TEST_ASSERT(_test_crash_state==0x01);
 	TEST_GROUP("invalid kernel read");
 	_test_crash_state=0x00;
 	process=process_create("test-process","test-process",0x1000,0x3000);
-	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test-crash-kernel-invalid-read",_thread_crash_invalid_read,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_invalid_read",_thread_crash_invalid_read,0));
 	event_await(process->event,0);
 	TEST_ASSERT(_test_crash_state==0x00);
 	TEST_GROUP("invalid kernel write");
 	_test_crash_state=0x00;
 	process=process_create("test-process","test-process",0x1000,0x3000);
-	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test-crash-kernel-invalid-write",_thread_crash_invalid_write,0));
+	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_invalid_write",_thread_crash_invalid_write,0));
 	event_await(process->event,0);
 	TEST_ASSERT(_test_crash_state==0x00);
 }

@@ -354,16 +354,16 @@ KERNEL_PUBLIC u32 virtio_queue_pop(virtio_queue_t* queue,u32* length){
 
 MODULE_INIT(){
 	LOG("Initializing VirtIO driver...");
-	_virtio_device_allocator=omm_init("virtio_device",sizeof(virtio_device_t),8,1);
+	_virtio_device_allocator=omm_init("virtio.device",sizeof(virtio_device_t),8,1);
 	rwlock_init(&(_virtio_device_allocator->lock));
-	_virtio_device_driver_node_allocator=omm_init("virtio_device_driver_node",sizeof(virtio_device_driver_node_t),8,1);
+	_virtio_device_driver_node_allocator=omm_init("virtio.device_driver_node",sizeof(virtio_device_driver_node_t),8,1);
 	rwlock_init(&(_virtio_device_driver_node_allocator->lock));
-	_virtio_device_handle_type=handle_alloc("virtio_device",NULL);
+	_virtio_device_handle_type=handle_alloc("virtio.device",NULL);
 	rb_tree_init(&_virtio_device_driver_tree);
 	rwlock_init(&_virtio_device_driver_tree_lock);
-	_virtio_queue_allocator=omm_init("virtio_queue",sizeof(virtio_queue_t),8,1);
+	_virtio_queue_allocator=omm_init("virtio.queue",sizeof(virtio_queue_t),8,1);
 	rwlock_init(&(_virtio_queue_allocator->lock));
-	_virtio_queue_pmm_counter=pmm_alloc_counter("virtio_queue");
+	_virtio_queue_pmm_counter=pmm_alloc_counter("virtio.queue");
 }
 
 

@@ -332,10 +332,10 @@ static usb_driver_descriptor_t _usb_msc_driver_descriptor={
 
 
 MODULE_INIT(){
-	_usb_msc_driver_pmm_counter=pmm_alloc_counter("usb_msc");
-	_usb_msc_driver_allocator=omm_init("usb_msc_driver",sizeof(usb_msc_driver_t),8,1);
+	_usb_msc_driver_pmm_counter=pmm_alloc_counter("usb.msc.driver");
+	_usb_msc_driver_allocator=omm_init("usb.msc.driver",sizeof(usb_msc_driver_t),8,1);
 	rwlock_init(&(_usb_msc_driver_allocator->lock));
-	_usb_msc_lun_context_allocator=omm_init("usb_msc_lun_context",sizeof(usb_msc_lun_context_t),8,1);
+	_usb_msc_lun_context_allocator=omm_init("usb.msc.lun_context",sizeof(usb_msc_lun_context_t),8,1);
 	rwlock_init(&(_usb_msc_lun_context_allocator->lock));
 }
 

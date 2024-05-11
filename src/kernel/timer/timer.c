@@ -26,10 +26,10 @@ handle_type_t timer_handle_type=0;
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing timers...");
-	_timer_allocator=omm_init("timer",sizeof(timer_t),8,4);
+	_timer_allocator=omm_init("kernel.timer",sizeof(timer_t),8,4);
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
-	timer_handle_type=handle_alloc("timer",NULL);
+	timer_handle_type=handle_alloc("kernel.timer",NULL);
 }
 
 

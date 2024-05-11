@@ -89,10 +89,7 @@ void _isr_handler(isr_state_t* isr_state){
 		return;
 	}
 _crash:
-	if (isr_state->isr==8&&!CPU_LOCAL(cpu_extra_data)->tss.ist1){
-		ERROR("Page fault stack not present");
-	}
-	else if (isr_state->isr==14){
+	if (isr_state->isr==14){
 		ERROR("Page fault");
 		ERROR("Address: %p, Error: %p",pf_get_fault_address(),isr_state->error);
 	}

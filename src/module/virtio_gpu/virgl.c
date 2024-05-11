@@ -1008,27 +1008,27 @@ static const opengl_driver_t _virgl_opengl_driver={
 
 
 MODULE_INIT(){
-	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_context_command_buffer");
-	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl_opengl_buffer");
-	_virgl_opengl_context_allocator=omm_init("virgl_opengl_context",sizeof(virgl_opengl_context_t),8,4);
+	_virgl_opengl_context_command_buffer_pmm_counter=pmm_alloc_counter("virgl.opengl.context.command_buffer");
+	_virgl_opengl_buffer_pmm_counter=pmm_alloc_counter("virgl.opengl.buffer");
+	_virgl_opengl_context_allocator=omm_init("virgl.opengl.context",sizeof(virgl_opengl_context_t),8,4);
 	rwlock_init(&(_virgl_opengl_context_allocator->lock));
-	_virgl_opengl_state_context_allocator=omm_init("virgl_opengl_state_context",sizeof(virgl_opengl_state_context_t),8,4);
+	_virgl_opengl_state_context_allocator=omm_init("virgl.opengl.state_context",sizeof(virgl_opengl_state_context_t),8,4);
 	rwlock_init(&(_virgl_opengl_state_context_allocator->lock));
-	_virgl_opengl_shader_allocator=omm_init("virgl_opengl_shader",sizeof(virgl_opengl_shader_t),8,4);
+	_virgl_opengl_shader_allocator=omm_init("virgl.opengl.shader",sizeof(virgl_opengl_shader_t),8,4);
 	rwlock_init(&(_virgl_opengl_shader_allocator->lock));
-	_virgl_opengl_vertex_array_allocator=omm_init("virgl_opengl_vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4);
+	_virgl_opengl_vertex_array_allocator=omm_init("virgl.opengl.vertex_array",sizeof(virgl_opengl_vertex_array_t),8,4);
 	rwlock_init(&(_virgl_opengl_vertex_array_allocator->lock));
-	_virgl_opengl_buffer_allocator=omm_init("virgl_opengl_buffer",sizeof(virgl_opengl_buffer_t),8,4);
+	_virgl_opengl_buffer_allocator=omm_init("virgl.opengl.buffer",sizeof(virgl_opengl_buffer_t),8,4);
 	rwlock_init(&(_virgl_opengl_buffer_allocator->lock));
-	_virgl_opengl_texture_allocator=omm_init("virgl_opengl_texture",sizeof(virgl_opengl_texture_t),8,4);
+	_virgl_opengl_texture_allocator=omm_init("virgl.opengl.texture",sizeof(virgl_opengl_texture_t),8,4);
 	rwlock_init(&(_virgl_opengl_texture_allocator->lock));
-	_virgl_opengl_sampler_allocator=omm_init("virgl_opengl_sampler",sizeof(virgl_opengl_sampler_t),8,4);
+	_virgl_opengl_sampler_allocator=omm_init("virgl.opengl.sampler",sizeof(virgl_opengl_sampler_t),8,4);
 	rwlock_init(&(_virgl_opengl_sampler_allocator->lock));
-	_virgl_opengl_shader_handle_type=handle_alloc("virgl_opengl_shader",NULL);
-	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl_opengl_vertex_array",NULL);
-	_virgl_opengl_buffer_handle_type=handle_alloc("virgl_opengl_buffer",NULL);
-	_virgl_opengl_texture_handle_type=handle_alloc("virgl_opengl_texture",NULL);
-	_virgl_opengl_sampler_handle_type=handle_alloc("virgl_opengl_sampler",NULL);
+	_virgl_opengl_shader_handle_type=handle_alloc("virgl.opengl.shader",NULL);
+	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl.opengl.vertex_array",NULL);
+	_virgl_opengl_buffer_handle_type=handle_alloc("virgl.opengl.buffer",NULL);
+	_virgl_opengl_texture_handle_type=handle_alloc("virgl.opengl.texture",NULL);
+	_virgl_opengl_sampler_handle_type=handle_alloc("virgl.opengl.sampler",NULL);
 }
 
 

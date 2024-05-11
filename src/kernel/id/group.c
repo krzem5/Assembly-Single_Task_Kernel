@@ -33,7 +33,7 @@ static rwlock_t _gid_global_lock;
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing group tree...");
-	_gid_data_allocator=omm_init("gid_data",sizeof(gid_data_t),8,1);
+	_gid_data_allocator=omm_init("kernel.gid.data",sizeof(gid_data_t),8,1);
 	rwlock_init(&(_gid_data_allocator->lock));
 	rwlock_init(&_gid_global_lock);
 	rb_tree_init(&_gid_tree);

@@ -9,9 +9,8 @@
 
 #define CPU_KERNEL_STACK_PAGE_COUNT 8
 #define CPU_PAGE_FAULT_STACK_PAGE_COUNT 16
-
-#define CPU_INTERRUPT_STACK_SIZE 8192
-#define CPU_SCHEDULER_STACK_SIZE 512
+#define CPU_INTERRUPT_STACK_PAGE_COUNT 2
+#define CPU_SCHEDULER_STACK_PAGE_COUNT 1
 
 #define CPU_HEADER_DATA ((volatile __seg_gs cpu_header_t*)NULL)
 
@@ -30,9 +29,6 @@ typedef struct _CPU_EXTRA_DATA{
 	cpu_header_t header;
 	topology_t topology;
 	tss_t tss;
-	u8 interrupt_stack[CPU_INTERRUPT_STACK_SIZE];
-	u8 scheduler_stack[CPU_SCHEDULER_STACK_SIZE];
-	u8 pf_stack[CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT];
 } cpu_extra_data_t;
 
 

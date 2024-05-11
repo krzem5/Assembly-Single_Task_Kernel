@@ -10,8 +10,8 @@
 
 
 
-static omm_allocator_t* _ring_allocator=NULL;
-static pmm_counter_descriptor_t* _ring_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _ring_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ring_buffer_pmm_counter=NULL;
 
 
 
@@ -42,6 +42,14 @@ _retry_pop:
 
 
 
+KERNEL_EARLY_INIT(){
+	_ring_allocator=omm_init("kernel.ring",sizeof(ring_t),8,4);
+	rwlock_init(&(_ring_allocator->lock));
+	_ring_buffer_pmm_counter=pmm_alloc_counter("kernel.ring.buffer");
+}
+
+
+
 KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	if (!capacity){
 		ERROR("Empty ring");
@@ -50,13 +58,6 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	if (capacity&(capacity-1)){
 		ERROR("Ring capacity must be a power of 2");
 		return NULL;
-	}
-	if (!_ring_allocator){
-		_ring_allocator=omm_init("ring",sizeof(ring_t),8,4);
-		rwlock_init(&(_ring_allocator->lock));
-	}
-	if (!_ring_buffer_pmm_counter){
-		_ring_buffer_pmm_counter=pmm_alloc_counter("ring_buffer");
 	}
 	ring_t* out=omm_alloc(_ring_allocator);
 	out->buffer=(void*)(pmm_alloc(pmm_align_up_address(capacity*sizeof(void*))>>PAGE_SIZE_SHIFT,_ring_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);

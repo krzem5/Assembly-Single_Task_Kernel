@@ -59,7 +59,7 @@ void KERNEL_EARLY_EXEC ioapic_init(u16 count,u16 override_count){
 	if (!count){
 		panic("No IOAPIC controllers found");
 	}
-	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("ioapic"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(count*sizeof(ioapic_t)+override_count*sizeof(ioapic_override_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("kernel.ioapic"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_ioapic_data=buffer;
 	_ioapic_count=count;
 	_ioapic_index=0;

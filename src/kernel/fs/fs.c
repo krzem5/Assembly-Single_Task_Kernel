@@ -52,10 +52,10 @@ static void _fs_handle_destructor(handle_t* handle){
 KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config){
 	LOG("Registering filesystem descriptor '%s'...",config->name);
 	if (!fs_descriptor_handle_type){
-		fs_descriptor_handle_type=handle_alloc("fs_descriptor",NULL);
+		fs_descriptor_handle_type=handle_alloc("kernel.fs.descriptor",NULL);
 	}
 	if (!_fs_descriptor_allocator){
-		_fs_descriptor_allocator=omm_init("fs_descriptor",sizeof(filesystem_descriptor_t),8,2);
+		_fs_descriptor_allocator=omm_init("kernel.fs.descriptor",sizeof(filesystem_descriptor_t),8,2);
 		rwlock_init(&(_fs_descriptor_allocator->lock));
 	}
 	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
@@ -88,11 +88,11 @@ KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor)
 KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
 	if (!_fs_allocator){
-		_fs_allocator=omm_init("fs",sizeof(filesystem_t),8,4);
+		_fs_allocator=omm_init("kernel.fs",sizeof(filesystem_t),8,4);
 		rwlock_init(&(_fs_allocator->lock));
 	}
 	if (!fs_handle_type){
-		fs_handle_type=handle_alloc("fs",_fs_handle_destructor);
+		fs_handle_type=handle_alloc("kernel.fs",_fs_handle_destructor);
 	}
 	filesystem_t* out=omm_alloc(_fs_allocator);
 	handle_new(out,fs_handle_type,&(out->handle));

@@ -155,9 +155,9 @@ static void _add_mode(u32 width,u32 height,u32 freq,ui_display_info_t* out){
 
 MODULE_INIT(){
 	LOG("Initializing UI display information...");
-	_ui_display_info_allocator=omm_init("ui_display_info",sizeof(ui_display_info_t),8,2);
+	_ui_display_info_allocator=omm_init("ui.display_info",sizeof(ui_display_info_t),8,2);
 	rwlock_init(&(_ui_display_info_allocator->lock));
-	_ui_display_info_mode_allocator=omm_init("ui_display_info_mode",sizeof(ui_display_info_mode_t),8,4);
+	_ui_display_info_mode_allocator=omm_init("ui.display_info_mode",sizeof(ui_display_info_mode_t),8,4);
 	rwlock_init(&(_ui_display_info_mode_allocator->lock));
 }
 

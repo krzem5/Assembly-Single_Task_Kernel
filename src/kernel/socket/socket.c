@@ -120,11 +120,11 @@ KERNEL_INIT(){
 	LOG("Initializing sockets...");
 	rwlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
-	_socket_dtp_handler_allocator=omm_init("socket_dtp_handler",sizeof(socket_dtp_handler_t),8,1);
+	_socket_dtp_handler_allocator=omm_init("kernel.socket.dtp_handler",sizeof(socket_dtp_handler_t),8,1);
 	rwlock_init(&(_socket_dtp_handler_allocator->lock));
-	_socket_vfs_node_allocator=omm_init("socket_node",sizeof(socket_vfs_node_t),8,4);
+	_socket_vfs_node_allocator=omm_init("kernel.socket.vfs_node",sizeof(socket_vfs_node_t),8,4);
 	rwlock_init(&(_socket_vfs_node_allocator->lock));
-	_socket_packet_allocator=omm_init("socket_packet",sizeof(socket_packet_t),8,4);
+	_socket_packet_allocator=omm_init("kernel.socket.packet",sizeof(socket_packet_t),8,4);
 	rwlock_init(&(_socket_packet_allocator->lock));
 }
 

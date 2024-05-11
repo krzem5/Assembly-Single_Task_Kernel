@@ -19,7 +19,7 @@ typedef struct KERNEL_PACKED _IDT_ENTRY{
 
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing IDT...");
-	u64 addr=pmm_alloc(pmm_align_up_address(256*sizeof(idt_entry_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("idt"),0);
+	u64 addr=pmm_alloc(pmm_align_up_address(256*sizeof(idt_entry_t))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("kernel.idt"),0);
 	idt_entry_t* entries=(void*)(addr+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u32 i=0;i<256;i++){
 		u64 handler=_isr_handler_list[i];

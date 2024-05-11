@@ -280,10 +280,10 @@ static const filesystem_descriptor_config_t _kfs2_filesystem_descriptor_config={
 
 
 MODULE_INIT(){
-	_kfs2_buffer_pmm_counter=pmm_alloc_counter("kfs2_buffer");
-	_kfs2_vfs_node_allocator=omm_init("kfs2_node",sizeof(kfs2_vfs_node_t),8,4);
+	_kfs2_buffer_pmm_counter=pmm_alloc_counter("kfs2.buffer");
+	_kfs2_vfs_node_allocator=omm_init("kfs2.node",sizeof(kfs2_vfs_node_t),8,4);
 	rwlock_init(&(_kfs2_vfs_node_allocator->lock));
-	_kfs2_filesystem_allocator=omm_init("kfs2_filesystem",sizeof(kfs2_filesystem_t),8,1);
+	_kfs2_filesystem_allocator=omm_init("kfs2.filesystem",sizeof(kfs2_filesystem_t),8,1);
 	rwlock_init(&(_kfs2_filesystem_allocator->lock));
 }
 

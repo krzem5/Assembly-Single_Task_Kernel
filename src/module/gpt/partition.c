@@ -76,7 +76,7 @@ static const partition_table_descriptor_config_t _gpt_partition_table_descriptor
 
 
 MODULE_INIT(){
-	_gpt_driver_pmm_counter=pmm_alloc_counter("gpt");
+	_gpt_driver_pmm_counter=pmm_alloc_counter("gpt.buffer");
 }
 
 

@@ -92,7 +92,7 @@ static const vfs_functions_t _dynamicfs_functions={
 
 
 MODULE_INIT(){
-	_dynamicfs_vfs_node_allocator=omm_init("dynamicfs_node",sizeof(dynamicfs_vfs_node_t),8,2);
+	_dynamicfs_vfs_node_allocator=omm_init("dynamicfs.vfs_node",sizeof(dynamicfs_vfs_node_t),8,2);
 	rwlock_init(&(_dynamicfs_vfs_node_allocator->lock));
 }
 
@@ -146,6 +146,9 @@ KERNEL_PUBLIC vfs_node_t* dynamicfs_create_link_node(vfs_node_t* parent,const ch
 
 
 KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,bool delete_string){
+	if (!node){
+		return;
+	}
 	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
 	string_t* string=dynamicfs_node->data;
 	dynamicfs_node->data=NULL;

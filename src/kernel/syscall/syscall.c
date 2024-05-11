@@ -42,7 +42,7 @@ error_t syscall_syscall_table_get_offset(KERNEL_USER_POINTER const char* table_n
 KERNEL_INIT(){
 	LOG("Initializing syscall tables...");
 	rwlock_init(&_syscall_table_list_lock);
-	_syscall_table_allocator=omm_init("syscall_table",sizeof(syscall_table_t),8,1);
+	_syscall_table_allocator=omm_init("kernel.syscall_table",sizeof(syscall_table_t),8,1);
 	rwlock_init(&(_syscall_table_allocator->lock));
 	syscall_create_table("linux",NULL,0);
 	syscall_create_table("kernel",_syscall_kernel_functions,_syscall_kernel_count);

@@ -38,7 +38,7 @@ static vfs_node_t* _create_pipe(vfs_node_t* parent,u8 port_index,const char* nam
 	SMM_TEMPORARY_STRING name_string=smm_alloc(name,0);
 	vfs_node_t* node=pipe_create(parent,name_string);
 	char buffer[64];
-	format_string(buffer,64,"devfs-serial-pipe-ser%u%s",port_index,name);
+	format_string(buffer,64,"devfs.serial.pipe.ser%u%s",port_index,name);
 	thread_create_kernel_thread(NULL,buffer,callback,2,node,port)->priority=SCHEDULER_PRIORITY_REALTIME;
 	return node;
 }

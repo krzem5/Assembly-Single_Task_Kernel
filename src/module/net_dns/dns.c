@@ -187,9 +187,9 @@ static void _cache_cleanup_thread(void){
 
 MODULE_INIT(){
 	LOG("Initializing DNS resolver...");
-	_net_dns_cache_entry_allocator=omm_init("net_dns_cache_entry",sizeof(net_dns_cache_entry_t),8,4);
+	_net_dns_cache_entry_allocator=omm_init("net.dns.cache_entry",sizeof(net_dns_cache_entry_t),8,4);
 	rwlock_init(&(_net_dns_cache_entry_allocator->lock));
-	_net_dns_request_allocator=omm_init("net_dns_request",sizeof(net_dns_request_t),8,4);
+	_net_dns_request_allocator=omm_init("net.dns.request",sizeof(net_dns_request_t),8,4);
 	rwlock_init(&(_net_dns_request_allocator->lock));
 	_net_dns_cache_resolution_event=event_create();
 	rwlock_init(&_net_dns_cache_lock);
@@ -205,8 +205,8 @@ MODULE_INIT(){
 		ERROR("Failed to bind DNS client socket");
 		return;
 	}
-	thread_create_kernel_thread(NULL,"net-dns-rx-thread",_rx_thread,0);
-	thread_create_kernel_thread(NULL,"net-dns-cache-cleanup-thread",_cache_cleanup_thread,0);
+	thread_create_kernel_thread(NULL,"net.dns.rx",_rx_thread,0);
+	thread_create_kernel_thread(NULL,"net.dns.cache_cleanup",_cache_cleanup_thread,0);
 }
 
 

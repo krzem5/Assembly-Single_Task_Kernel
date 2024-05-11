@@ -241,11 +241,11 @@ static void _save_account_manager_database(void){
 
 
 MODULE_INIT(){
-	_account_manager_database_group_entry_allocator=omm_init("account_manager_database_group_entry",sizeof(account_manager_database_group_entry_t),8,1);
+	_account_manager_database_group_entry_allocator=omm_init("account_manager.database.group_entry",sizeof(account_manager_database_group_entry_t),8,1);
 	rwlock_init(&(_account_manager_database_group_entry_allocator->lock));
-	_account_manager_database_user_entry_allocator=omm_init("account_manager_database_user_entry",sizeof(account_manager_database_user_entry_t),8,1);
+	_account_manager_database_user_entry_allocator=omm_init("account_manager.database.user_entry",sizeof(account_manager_database_user_entry_t),8,1);
 	rwlock_init(&(_account_manager_database_user_entry_allocator->lock));
-	_account_manager_database_user_group_entry_allocator=omm_init("account_manager_database_user_group_entry",sizeof(account_manager_database_user_group_entry_t),8,1);
+	_account_manager_database_user_group_entry_allocator=omm_init("account_manager.database.user_group_entry",sizeof(account_manager_database_user_group_entry_t),8,1);
 	rwlock_init(&(_account_manager_database_user_group_entry_allocator->lock));
 	rwlock_init(&(_account_manager_database.lock));
 	rb_tree_init(&(_account_manager_database.group_tree));

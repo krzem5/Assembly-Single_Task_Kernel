@@ -327,8 +327,8 @@ static const aml_bus_device_driver_t _tmp_aml_bus_device_driver={
 
 KERNEL_INIT(){
 	LOG("Initializing TPM driver...");
-	_tpm_allocator=omm_init("tpm",sizeof(tpm_t),8,1);
+	_tpm_allocator=omm_init("kernel.tpm",sizeof(tpm_t),8,1);
 	rwlock_init(&(_tpm_allocator->lock));
-	_tpm_command_buffer_pmm_counter=pmm_alloc_counter("tpm_command_buffer");
+	_tpm_command_buffer_pmm_counter=pmm_alloc_counter("kernel.tpm.command_buffer");
 	aml_bus_register_device_driver(&_tmp_aml_bus_device_driver);
 }

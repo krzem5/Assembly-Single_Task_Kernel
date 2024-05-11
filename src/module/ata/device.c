@@ -257,7 +257,7 @@ static void _ata_init_device(pci_device_t* device){
 
 
 MODULE_INIT(){
-	_ata_device_allocator=omm_init("ata_device",sizeof(ata_device_t),8,1);
+	_ata_device_allocator=omm_init("ata.device",sizeof(ata_device_t),8,1);
 	rwlock_init(&(_ata_device_allocator->lock));
 }
 

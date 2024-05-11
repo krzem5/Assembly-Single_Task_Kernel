@@ -214,7 +214,7 @@ static const net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
 
 
 MODULE_INIT(){
-	_net_udp_address_allocator=omm_init("net_udp_address",sizeof(net_udp_address_t),8,4);
+	_net_udp_address_allocator=omm_init("net.udp.address",sizeof(net_udp_address_t),8,4);
 	rwlock_init(&(_net_udp_address_allocator->lock));
 }
 

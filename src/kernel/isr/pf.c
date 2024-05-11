@@ -15,5 +15,5 @@ bool pf_handle_fault(isr_state_t* isr_state){
 	if (!address||(isr_state->error&1)||!CPU_HEADER_DATA->current_thread){
 		return 0;
 	}
-	return mmap_handle_pf((isr_state->cs==0x8&&(address>>63)?process_kernel:THREAD_DATA->process)->mmap,address,1);
+	return mmap_handle_pf((isr_state->cs==0x8&&(address>>63)?process_kernel:THREAD_DATA->process)->mmap,address,isr_state);
 }

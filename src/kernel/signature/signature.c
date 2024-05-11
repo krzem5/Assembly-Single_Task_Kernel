@@ -26,7 +26,7 @@
 
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
-static bool _signature_is_kernel_tainted=0;
+static u32 _signature_taint_flags=0;
 static bool _signature_require_signatures=0;
 
 
@@ -70,9 +70,9 @@ bool signature_verify_module(const char* name,const mmap_region_t* region,bool* 
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
 _signature_error:
 		ERROR("Module '%s' is not signed",name);
-		if (!_signature_is_kernel_tainted){
-			ERROR("Kernel tainted");
-			_signature_is_kernel_tainted=1;
+		if (!(_signature_taint_flags&SIGNATURE_TAINT_FLAG_KERNEL)){
+			ERROR("Kernelspace tainted");
+			_signature_taint_flags|=SIGNATURE_TAINT_FLAG_KERNEL;
 		}
 		return 1;
 	}
@@ -128,6 +128,10 @@ _signature_error:
 			goto _invalid_signature;
 		}
 		WARN("Executable '%s' is not signed",name);
+		if (!(_signature_taint_flags&SIGNATURE_TAINT_FLAG_USER)){
+			ERROR("Userspace tainted");
+			_signature_taint_flags|=SIGNATURE_TAINT_FLAG_USER;
+		}
 		return 1;
 	}
 	keyring_key_t* key=keyring_search(keyring_user_signature,file_base+section_header->sh_offset,KEYRING_SEARCH_FLAG_BYPASS_ACL);
@@ -150,17 +154,18 @@ _signature_error:
 		state.result[i]=0;
 	}
 	rsa_number_delete(value);
-	if (mask){
-_invalid_signature:
-		ERROR("Executable '%s' has an invalid signature",name);
+	if (!mask){
+		return 1;
 	}
-	return !mask;
+_invalid_signature:
+	ERROR("Executable '%s' has an invalid signature",name);
+	return 0;
 }
 
 
 
-KERNEL_PUBLIC bool signature_is_kernel_tainted(void){
-	return _signature_is_kernel_tainted;
+KERNEL_PUBLIC u32 signature_get_taint_flags(void){
+	return _signature_taint_flags;
 }
 
 

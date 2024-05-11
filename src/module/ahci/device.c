@@ -213,10 +213,10 @@ static void _ahci_init_device(pci_device_t* device){
 
 
 MODULE_INIT(){
-	_ahci_driver_pmm_counter=pmm_alloc_counter("ahci");
-	_ahci_controller_allocator=omm_init("ahci_controller",sizeof(ahci_controller_t),8,1);
+	_ahci_driver_pmm_counter=pmm_alloc_counter("ahci.driver");
+	_ahci_controller_allocator=omm_init("ahci.controller",sizeof(ahci_controller_t),8,1);
 	rwlock_init(&(_ahci_controller_allocator->lock));
-	_ahci_device_allocator=omm_init("ahci_device",sizeof(ahci_device_t),8,1);
+	_ahci_device_allocator=omm_init("ahci.device",sizeof(ahci_device_t),8,1);
 	rwlock_init(&(_ahci_device_allocator->lock));
 }
 

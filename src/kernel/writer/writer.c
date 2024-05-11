@@ -38,7 +38,7 @@ static void _emit_data(writer_t* writer,const void* buffer,u64 size){
 
 KERNEL_INIT(){
 	LOG("Initializing file writer...");
-	_writer_omm_allocator=omm_init("writer",sizeof(writer_t),8,4);
+	_writer_omm_allocator=omm_init("kernel.writer",sizeof(writer_t),8,4);
 	rwlock_init(&(_writer_omm_allocator->lock));
 }
 

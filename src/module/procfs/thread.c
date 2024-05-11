@@ -41,6 +41,7 @@ static void _listener(void* object,u32 type){
 		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0,0,0);
 		dynamicfs_delete_node(vfs_lookup(node,"name",0,0,0),0);
 		dynamicfs_delete_node(node,0);
+		return;
 	}
 }
 

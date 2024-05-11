@@ -36,14 +36,14 @@ static KERNEL_INLINE u64 _index_to_size(u64 index){
 
 void KERNEL_EARLY_EXEC amm_init(void){
 	LOG("Initializing arbitrary memory manager...");
-	_amm_pmm_counter=pmm_alloc_counter("amm");
-	char* allocator_names=(void*)(pmm_alloc(pmm_align_up_address(20*ALLOCATOR_COUNT)>>PAGE_SIZE_SHIFT,_amm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	_amm_pmm_counter=pmm_alloc_counter("kernel.amm");
+	char* allocator_names=(void*)(pmm_alloc(pmm_align_up_address(32*ALLOCATOR_COUNT)>>PAGE_SIZE_SHIFT,_amm_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	for (u64 i=0;i<ALLOCATOR_COUNT;i++){
 		if (i==1){ // allocator of size 12 is impossible (qword alignment requirement)
 			continue;
 		}
 		const char* name=allocator_names;
-		allocator_names+=format_string(allocator_names,20,"amm_allocator_%u",_index_to_size(i))+1;
+		allocator_names+=format_string(allocator_names,32,"kernel.amm.allocator.%u",_index_to_size(i))+1;
 		_amm_allocators[i]=omm_init(name,_index_to_size(i)+sizeof(amm_header_t),8,4);
 		rwlock_init(&(_amm_allocators[i]->lock));
 	}

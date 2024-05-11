@@ -23,7 +23,7 @@ KERNEL_PUBLIC u8* KERNEL_INIT_WRITE numa_node_locality_matrix;
 void KERNEL_EARLY_EXEC numa_init(u32 proximity_domain_count,u32 cpu_count,u32 memory_range_count){
 	LOG("Initializing NUMA...");
 	INFO("Proximity domain count: %u",proximity_domain_count);
-	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(numa_cpu_t)+memory_range_count*sizeof(numa_memory_range_t)+numa_node_count*sizeof(numa_node_t)+numa_node_count*numa_node_count*sizeof(u8))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("numa"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(cpu_count*sizeof(numa_cpu_t)+memory_range_count*sizeof(numa_memory_range_t)+numa_node_count*sizeof(numa_node_t)+numa_node_count*numa_node_count*sizeof(u8))>>PAGE_SIZE_SHIFT,pmm_alloc_counter("kernel.numa"),0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_numa_cpus=buffer;
 	buffer+=cpu_count*sizeof(numa_cpu_t);
 	_numa_memory_ranges=buffer;

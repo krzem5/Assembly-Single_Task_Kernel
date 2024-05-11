@@ -9,6 +9,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
@@ -126,14 +127,14 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,bool push_free_re
 
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing mmap allocator...");
-	_mmap_pmm_counter=pmm_alloc_counter("mmap");
-	_mmap_allocator=omm_init("mmap",sizeof(mmap_t),8,4);
+	_mmap_pmm_counter=pmm_alloc_counter("kernel.mmap");
+	_mmap_allocator=omm_init("kernel.mmap",sizeof(mmap_t),8,4);
 	rwlock_init(&(_mmap_allocator->lock));
-	_mmap_region_allocator=omm_init("mmap_region",sizeof(mmap_region_t),8,4);
+	_mmap_region_allocator=omm_init("kernel.mmap.region",sizeof(mmap_region_t),8,4);
 	rwlock_init(&(_mmap_region_allocator->lock));
-	_mmap_length_group_allocator=omm_init("mmap_length_group",sizeof(mmap_length_group_t),8,4);
+	_mmap_length_group_allocator=omm_init("kernel.mmap.length_group",sizeof(mmap_length_group_t),8,4);
 	rwlock_init(&(_mmap_length_group_allocator->lock));
-	_mmap_free_region_allocator=omm_init("mmap_free_region",sizeof(mmap_free_region_t),8,4);
+	_mmap_free_region_allocator=omm_init("kernel.mmap.free_region",sizeof(mmap_free_region_t),8,4);
 	rwlock_init(&(_mmap_free_region_allocator->lock));
 }
 
@@ -191,11 +192,6 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	if (!length||(length>>47)){
 		return NULL;
 	}
-	/* keep until nested (deferred) interrupts are implemented */
-	if (!(flags&MMAP_REGION_FLAG_EXTERNAL)){
-		flags|=MMAP_REGION_FLAG_COMMIT;
-	}
-	/* keep until nested (deferred) interrupts are implemented */
 	u64 guard_page_size=((flags&MMAP_REGION_FLAG_STACK)?MMAP_STACK_GUARD_PAGE_COUNT<<PAGE_SIZE_SHIFT:0);
 	length+=guard_page_size;
 	rwlock_acquire_write(&(mmap->lock));
@@ -228,7 +224,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 	rwlock_release_write(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
 		for (u64 offset=address+guard_page_size;offset<address+length;offset+=PAGE_SIZE){
-			mmap_handle_pf(mmap,offset,0);
+			mmap_handle_pf(mmap,offset,NULL);
 		}
 	}
 	return out;
@@ -284,7 +280,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 	for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,offset);
 		if (!physical_address){
-			physical_address=mmap_handle_pf(mmap,offset,0);
+			physical_address=mmap_handle_pf(mmap,offset,NULL);
 			if (!physical_address){
 				panic("mmap_map_to_kernel: invalid address");
 			}
@@ -296,7 +292,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 
 
 
-u64 mmap_handle_pf(mmap_t* mmap,u64 address,bool is_irq_context){
+u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state){
 	if (!mmap){
 		return 0;
 	}
@@ -318,20 +314,19 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address,bool is_irq_context){
 		flags|=VMM_PAGE_FLAG_NOEXECUTE;
 	}
 	vmm_map_page(mmap->pagemap,out,address,flags);
-	rwlock_release_write(&(mmap->lock));
-	if (region->file){
-		if (is_irq_context){
-			thread_t* thread=thread_create_kernel_thread(NULL,"pf-file-backend",vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
-			if (!CPU_HEADER_DATA->current_thread){
-				panic("mmap_handle_pf: sync file-backed memory fault");
-			}
-			event_await(thread->termination_event,0);
-		}
-		else{
-			vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
-		}
-	}
 	pf_invalidate_tlb_entry(address);
+	rwlock_release_write(&(mmap->lock));
+	if (!region->file){
+		return out;
+	}
+	if (!isr_state){
+		vfs_node_read(region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+		return out;
+	}
+	if (!CPU_HEADER_DATA->current_thread){
+		panic("mmap_handle_pf: scheduler file-backed memory page fault");
+	}
+	scheduler_irq_return_after_thread(isr_state,thread_create_kernel_thread(process_kernel,"kernel.pf.file_backend",vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0));
 	return out;
 }
 
@@ -392,7 +387,7 @@ error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	address=pmm_align_down_address(address);
 	mmap_t* mmap=THREAD_DATA->process->mmap;
 	for (u64 offset=address;offset<address+size;offset+=PAGE_SIZE){
-		if (!vmm_virtual_to_physical(mmap->pagemap,offset)&&!mmap_handle_pf(mmap,offset,0)){
+		if (!vmm_virtual_to_physical(mmap->pagemap,offset)&&!mmap_handle_pf(mmap,offset,NULL)){
 			return ERROR_INVALID_ARGUMENT(0);
 		}
 		vmm_adjust_flags(mmap->pagemap,offset,vmm_set_flags,VMM_PAGE_FLAG_NOEXECUTE|VMM_PAGE_FLAG_READWRITE,1,1);

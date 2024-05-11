@@ -37,10 +37,10 @@ static void _partition_handle_destructor(handle_t* handle){
 KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(const partition_table_descriptor_config_t* config){
 	LOG("Registering partition table descriptor '%s'...",config->name);
 	if (!partition_table_descriptor_handle_type){
-		partition_table_descriptor_handle_type=handle_alloc("partition_table_descriptor",0);
+		partition_table_descriptor_handle_type=handle_alloc("kernel.partition.table_descriptor",0);
 	}
 	if (!_partition_table_descriptor_allocator){
-		_partition_table_descriptor_allocator=omm_init("partition_table_descriptor",sizeof(partition_table_descriptor_t),8,1);
+		_partition_table_descriptor_allocator=omm_init("kernel.partition.table_descriptor",sizeof(partition_table_descriptor_t),8,1);
 	}
 	partition_table_descriptor_t* out=omm_alloc(_partition_table_descriptor_allocator);
 	out->config=config;
@@ -99,11 +99,11 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	if (!_partition_allocator){
-		_partition_allocator=omm_init("partition",sizeof(partition_t),8,4);
+		_partition_allocator=omm_init("kernel.partition",sizeof(partition_t),8,4);
 		rwlock_init(&(_partition_allocator->lock));
 	}
 	if (!partition_handle_type){
-		partition_handle_type=handle_alloc("partition",_partition_handle_destructor);
+		partition_handle_type=handle_alloc("kernel.partition",_partition_handle_destructor);
 	}
 	partition_t* out=omm_alloc(_partition_allocator);
 	handle_new(out,partition_handle_type,&(out->handle));

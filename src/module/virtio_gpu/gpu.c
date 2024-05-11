@@ -197,7 +197,7 @@ static const virtio_device_driver_t _virtio_gpu_device_driver={
 
 MODULE_POSTINIT(){
 	LOG("Initializing VirtIO GPU driver...");
-	_virtio_gpu_device_allocator=omm_init("virtio_gpu_device",sizeof(virtio_gpu_device_t),8,1);
+	_virtio_gpu_device_allocator=omm_init("virtio.gpu.device",sizeof(virtio_gpu_device_t),8,1);
 	rwlock_init(&(_virtio_gpu_device_allocator->lock));
 	if (!virtio_register_device_driver(&_virtio_gpu_device_driver)){
 		ERROR("Unable to register VirtIO GPU driver");

@@ -206,7 +206,7 @@ void KERNEL_EARLY_EXEC vmm_init(void){
 
 
 void KERNEL_EARLY_EXEC vmm_alloc_counter(void){
-	_vmm_pmm_counter=pmm_alloc_counter("vmm");
+	_vmm_pmm_counter=pmm_alloc_counter("kernel.vmm");
 	_vmm_pmm_counter->count=_vmm_early_pmm_counter.count;
 }
 

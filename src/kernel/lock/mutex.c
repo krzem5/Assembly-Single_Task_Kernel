@@ -15,7 +15,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _mutex_allocator=NULL;
 
 
 KERNEL_EARLY_INIT(){
-	_mutex_allocator=omm_init("mutex",sizeof(mutex_t),8,4);
+	_mutex_allocator=omm_init("kernel.mutex",sizeof(mutex_t),8,4);
 }
 
 

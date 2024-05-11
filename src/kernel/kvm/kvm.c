@@ -54,7 +54,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	if (!_kvm_get_flags(&_kvm_features,&_kvm_feature_hints)){
 		return;
 	}
-	_kvm_pmm_counter=pmm_alloc_counter("kvm");
+	_kvm_pmm_counter=pmm_alloc_counter("kernel.kvm");
 	LOG("KVM hypervisor detected");
 	if (_kvm_features&(1<<KVM_FEATURE_CLOCKSOURCE_STABLE_BIT)){
 		_kvm_clock_source_is_stable=1;

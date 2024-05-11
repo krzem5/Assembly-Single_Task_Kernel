@@ -85,7 +85,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 
 KERNEL_INIT(){
 	LOG("Initializing VFS nodes...");
-	_vfs_node_empty_node_allocator=omm_init("vfs_empty_node",sizeof(vfs_node_t),8,1);
+	_vfs_node_empty_node_allocator=omm_init("kernel.vfs.empty_node",sizeof(vfs_node_t),8,1);
 	rwlock_init(&(_vfs_node_empty_node_allocator->lock));
 }
 

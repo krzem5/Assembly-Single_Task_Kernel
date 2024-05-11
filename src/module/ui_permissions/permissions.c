@@ -131,7 +131,7 @@ static syscall_callback_t const _ui_permission_request_syscall_functions[]={
 
 MODULE_INIT(){
 	LOG("Initializing UI permission backend...");
-	_ui_permission_request_allocator=omm_init("ui_permission_request",sizeof(ui_permission_request_t),8,1);
+	_ui_permission_request_allocator=omm_init("ui.permission.request",sizeof(ui_permission_request_t),8,1);
 	rwlock_init(&(_ui_permission_request_allocator->lock));
 	rwlock_init(&_ui_permission_request_list_lock);
 	_ui_permission_request_list_event=event_create();

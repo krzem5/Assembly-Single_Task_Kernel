@@ -58,9 +58,9 @@ static void _process_handle_destructor(handle_t* handle){
 
 KERNEL_EARLY_INIT(){
 	LOG("Creating kernel process...");
-	_process_allocator=omm_init("process",sizeof(process_t),8,2);
+	_process_allocator=omm_init("kernel.process",sizeof(process_t),8,2);
 	rwlock_init(&(_process_allocator->lock));
-	process_handle_type=handle_alloc("process",_process_handle_destructor);
+	process_handle_type=handle_alloc("kernel.process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
 	process_kernel->handle.acl=acl_create();

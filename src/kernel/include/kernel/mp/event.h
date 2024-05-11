@@ -47,4 +47,8 @@ void event_set_active(event_t* event,bool is_active,bool bypass_acl);
 
 
 
+void event_await_thread_irq(thread_t* thread,event_t* event);
+
+
+
 #endif

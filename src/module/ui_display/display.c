@@ -20,9 +20,9 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE ui_display_handle_type=0;
 
 MODULE_INIT(){
 	LOG("Initializing UI displays...");
-	_ui_display_allocator=omm_init("ui_display",sizeof(ui_display_t),8,2);
+	_ui_display_allocator=omm_init("ui.display",sizeof(ui_display_t),8,2);
 	rwlock_init(&(_ui_display_allocator->lock));
-	ui_display_handle_type=handle_alloc("ui_display",NULL);
+	ui_display_handle_type=handle_alloc("ui.display",NULL);
 }
 
 

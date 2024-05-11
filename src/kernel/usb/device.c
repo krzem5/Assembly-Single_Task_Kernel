@@ -163,18 +163,18 @@ static void _configure_device(usb_device_t* device){
 
 KERNEL_INIT(){
 	LOG("Initializing USB devices...");
-	_usb_buffer_pmm_counter=pmm_alloc_counter("usb_buffer");
-	_usb_device_allocator=omm_init("usb_device",sizeof(usb_device_t),8,2);
+	_usb_buffer_pmm_counter=pmm_alloc_counter("kernel.usb.buffer");
+	_usb_device_allocator=omm_init("kernel.usb.device",sizeof(usb_device_t),8,2);
 	rwlock_init(&(_usb_device_allocator->lock));
-	_usb_device_descriptor_allocator=omm_init("usb_device_descriptor",sizeof(usb_device_descriptor_t),8,2);
+	_usb_device_descriptor_allocator=omm_init("kernel.usb.device_descriptor",sizeof(usb_device_descriptor_t),8,2);
 	rwlock_init(&(_usb_device_descriptor_allocator->lock));
-	_usb_configuration_descriptor_allocator=omm_init("usb_configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4);
+	_usb_configuration_descriptor_allocator=omm_init("kernel.usb.configuration_descriptor",sizeof(usb_configuration_descriptor_t),8,4);
 	rwlock_init(&(_usb_configuration_descriptor_allocator->lock));
-	_usb_interface_descriptor_allocator=omm_init("usb_interface_descriptor",sizeof(usb_interface_descriptor_t),8,4);
+	_usb_interface_descriptor_allocator=omm_init("kernel.usb.interface_descriptor",sizeof(usb_interface_descriptor_t),8,4);
 	rwlock_init(&(_usb_interface_descriptor_allocator->lock));
-	_usb_endpoint_descriptor_allocator=omm_init("usb_endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4);
+	_usb_endpoint_descriptor_allocator=omm_init("kernel.usb.endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4);
 	rwlock_init(&(_usb_endpoint_descriptor_allocator->lock));
-	usb_device_handle_type=handle_alloc("usb_device",NULL);
+	usb_device_handle_type=handle_alloc("kernel.usb.device",NULL);
 }
 
 

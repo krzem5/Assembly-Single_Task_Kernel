@@ -25,12 +25,12 @@ handle_type_t KERNEL_INIT_WRITE opengl_state_handle_type=0;
 
 MODULE_INIT(){
 	LOG("Initializing OpenGL...");
-	_opengl_driver_instance_allocator=omm_init("opengl_driver_instance",sizeof(opengl_driver_instance_t),8,2);
+	_opengl_driver_instance_allocator=omm_init("opengl.driver_instance",sizeof(opengl_driver_instance_t),8,2);
 	rwlock_init(&(_opengl_driver_instance_allocator->lock));
-	_opengl_state_allocator=omm_init("opengl_state",sizeof(opengl_state_t),8,2);
+	_opengl_state_allocator=omm_init("opengl.state",sizeof(opengl_state_t),8,2);
 	rwlock_init(&(_opengl_state_allocator->lock));
-	opengl_driver_instance_handle_type=handle_alloc("opengl_driver_instance",NULL);
-	opengl_state_handle_type=handle_alloc("opengl_state",NULL);
+	opengl_driver_instance_handle_type=handle_alloc("opengl.driver_instance",NULL);
+	opengl_state_handle_type=handle_alloc("opengl.state",NULL);
 }
 
 

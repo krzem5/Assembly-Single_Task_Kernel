@@ -360,13 +360,13 @@ static void _xhci_init_device(pci_device_t* device){
 
 
 MODULE_INIT(){
-	_xhci_driver_pmm_counter=pmm_alloc_counter("xhci");
-	_xhci_input_context_pmm_counter=pmm_alloc_counter("xhci_input_context");
-	_xhci_device_allocator=omm_init("xhci_device",sizeof(xhci_device_t),8,1);
+	_xhci_driver_pmm_counter=pmm_alloc_counter("xhci.driver");
+	_xhci_input_context_pmm_counter=pmm_alloc_counter("xhci.input_context");
+	_xhci_device_allocator=omm_init("xhci.device",sizeof(xhci_device_t),8,1);
 	rwlock_init(&(_xhci_device_allocator->lock));
-	_xhci_ring_allocator=omm_init("xhci_ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4);
+	_xhci_ring_allocator=omm_init("xhci.ring",sizeof(xhci_ring_t),XHCI_RING_SIZE*sizeof(xhci_transfer_block_t),4);
 	rwlock_init(&(_xhci_ring_allocator->lock));
-	_xhci_pipe_allocator=omm_init("xhci_pipe",sizeof(xhci_pipe_t),8,2);
+	_xhci_pipe_allocator=omm_init("xhci.pipe",sizeof(xhci_pipe_t),8,2);
 	rwlock_init(&(_xhci_pipe_allocator->lock));
 }
 

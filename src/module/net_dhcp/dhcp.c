@@ -273,7 +273,7 @@ MODULE_INIT(){
 	}
 	_net_dhcp_timeout_timer=timer_create(0,0);
 	_net_dhcp_lock=mutex_init();
-	thread_create_kernel_thread(NULL,"net-dhcp-rx-thread",_rx_thread,0);
+	thread_create_kernel_thread(NULL,"net.dhcp.rx",_rx_thread,0);
 }
 
 

@@ -87,7 +87,7 @@ mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 length);
 
 
 
-u64 mmap_handle_pf(mmap_t* mmap,u64 address,bool is_irq_context);
+u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state);
 
 
 

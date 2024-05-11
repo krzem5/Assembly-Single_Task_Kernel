@@ -60,7 +60,7 @@ void KERNEL_EARLY_EXEC kernel_init(const kernel_data_t* bootloader_kernel_data){
 	INFO("Total: %v (%lu B)",total,total);
 	INFO("First free address: %p",kernel_data.first_free_address);
 	mem_copy(_kernel_boot_guid,kernel_data.boot_fs_guid,16);
-	INFO("Boot UUID: %g",_kernel_boot_guid);
+	INFO("Boot filesystem UUID: %g",_kernel_boot_guid);
 }
 
 

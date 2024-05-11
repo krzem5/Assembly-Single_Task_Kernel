@@ -40,11 +40,11 @@ static void _keyring_handle_destructor(handle_t* handle){
 
 KERNEL_INIT(){
 	LOG("Initializing keyrings...");
-	_keyring_allocator=omm_init("keyring",sizeof(keyring_t),8,2);
+	_keyring_allocator=omm_init("kernel.keyring",sizeof(keyring_t),8,2);
 	rwlock_init(&(_keyring_allocator->lock));
-	_keyring_key_allocator=omm_init("keyring_key",sizeof(keyring_key_t),8,2);
+	_keyring_key_allocator=omm_init("kernel.keyring.key",sizeof(keyring_key_t),8,2);
 	rwlock_init(&(_keyring_key_allocator->lock));
-	keyring_handle_type=handle_alloc("keyring",_keyring_handle_destructor);
+	keyring_handle_type=handle_alloc("kernel.keyring",_keyring_handle_destructor);
 	notification_dispatcher_init(&_keyring_notification_dispatcher);
 	rwlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");

@@ -16,8 +16,8 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pci_device_handle_type=0;
 
 KERNEL_INIT(){
 	LOG("Scanning PCI devices...");
-	pci_device_handle_type=handle_alloc("pci_device",NULL);
-	_pci_device_allocator=omm_init("pci_device",sizeof(pci_device_t),8,1);
+	pci_device_handle_type=handle_alloc("kernel.pci.device",NULL);
+	_pci_device_allocator=omm_init("kernel.pci.device",sizeof(pci_device_t),8,1);
 	rwlock_init(&(_pci_device_allocator->lock));
 	pci_device_address_t device_address={
 		0,

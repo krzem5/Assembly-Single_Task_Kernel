@@ -11,6 +11,7 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/spinloop.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "event"
 
 
@@ -62,11 +63,11 @@ static bool _await_event(thread_t* thread,event_t* event,u32 index){
 
 KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing event allocator...");
-	_event_allocator=omm_init("event",sizeof(event_t),8,4);
+	_event_allocator=omm_init("kernel.event",sizeof(event_t),8,4);
 	rwlock_init(&(_event_allocator->lock));
-	_event_thread_container_allocator=omm_init("event_thread_container",sizeof(event_thread_container_t),8,4);
+	_event_thread_container_allocator=omm_init("kernel.event.thread_container",sizeof(event_thread_container_t),8,4);
 	rwlock_init(&(_event_thread_container_allocator->lock));
-	event_handle_type=handle_alloc("event",_event_handle_destructor);
+	event_handle_type=handle_alloc("kernel.event",_event_handle_destructor);
 }
 
 
@@ -215,6 +216,18 @@ KERNEL_PUBLIC void event_set_active(event_t* event,bool is_active,bool bypass_ac
 	rwlock_acquire_write(&(event->lock));
 	event->is_active=is_active;
 	rwlock_release_write(&(event->lock));
+}
+
+
+
+void event_await_thread_irq(thread_t* thread,event_t* event){
+	rwlock_acquire_write(&(thread->lock));
+	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
+	thread->reg_state.reg_state_not_present=1;
+	rwlock_release_write(&(thread->lock));
+	if (_await_event(thread,event,0)){
+		panic("event_await_thread_irq: event already active");
+	}
 }
 
 

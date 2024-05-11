@@ -9,7 +9,7 @@
 
 void test_handle_list(void){
 	TEST_MODULE("handle_list");
-	handle_type_t handle_type=handle_alloc("test-handle-list-handle",NULL);
+	handle_type_t handle_type=handle_alloc("test.handle_list",NULL);
 	handle_t handle;
 	handle_new(&handle,handle_type,&handle);
 	handle_finish_setup(&handle);

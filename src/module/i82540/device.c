@@ -182,15 +182,15 @@ static void _i82540_init_device(pci_device_t* device){
 		rah>>8
 	};
 	network_layer1_create_device(&_i82540_network_layer1_device_descriptor,&mac_address,i82540_device);
-	thread_create_kernel_thread(NULL,"i82540-rx-thread",_rx_thread,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
-	thread_create_kernel_thread(NULL,"i82540-tx-thread",_tx_thread,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
+	thread_create_kernel_thread(NULL,"i82540.rx",_rx_thread,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
+	thread_create_kernel_thread(NULL,"i82540.tx",_tx_thread,1,i82540_device)->priority=SCHEDULER_PRIORITY_HIGH;
 }
 
 
 
 MODULE_INIT(){
-	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540");
-	_i82540_device_allocator=omm_init("i82540_device",sizeof(i82540_device_t),8,1);
+	_i82540_driver_pmm_counter=pmm_alloc_counter("i82540.driver");
+	_i82540_device_allocator=omm_init("i82540.device",sizeof(i82540_device_t),8,1);
 	rwlock_init(&(_i82540_device_allocator->lock));
 }
 

@@ -219,8 +219,8 @@ static void _nvme_init_device(pci_device_t* device){
 
 
 MODULE_INIT(){
-	_nvme_driver_pmm_counter=pmm_alloc_counter("nvme");
-	_nvme_device_allocator=omm_init("nvme_device",sizeof(nvme_device_t),8,1);
+	_nvme_driver_pmm_counter=pmm_alloc_counter("nvme.driver");
+	_nvme_device_allocator=omm_init("nvme.device",sizeof(nvme_device_t),8,1);
 	rwlock_init(&(_nvme_device_allocator->lock));
 }
 

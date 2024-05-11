@@ -81,7 +81,6 @@ typedef struct _THREAD{
 	string_t* name;
 	vmm_pagemap_t* pagemap;
 	mmap_region_t* kernel_stack_region;
-	mmap_region_t* pf_stack_region;
 	struct{
 		bool reg_state_not_present;
 		isr_state_t gpr_state;

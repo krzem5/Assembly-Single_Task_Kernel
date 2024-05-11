@@ -26,6 +26,7 @@ static __lock_profiling_lock_stack_t KERNEL_EARLY_WRITE _lock_profiling_global_l
 static CPU_LOCAL_DATA(__lock_profiling_lock_stack_t,_lock_profiling_cpu_local_data);
 static lock_profiling_stats_t* KERNEL_INIT_WRITE _lock_profiling_lock_stats=NULL;
 static u32 _lock_profiling_lock_stat_count=0;
+static bool _lock_profiling_address_of_static_lock=0;
 
 
 
@@ -33,11 +34,10 @@ static KERNEL_INLINE __lock_profiling_lock_stack_t* KERNEL_NOCOVERAGE _get_lock_
 	if (!_lock_profiling_cpu_local_data){
 		return &_lock_profiling_global_lock_stack;
 	}
-#ifndef KERNEL_RELEASE
 	if (CPU_HEADER_DATA->current_thread){
 		return &(CPU_HEADER_DATA->current_thread->__lock_profiling_lock_stack);
 	}
-#endif
+	return NULL; // no profiling in the scheduler
 	return CPU_LOCAL(_lock_profiling_cpu_local_data);
 }
 
@@ -63,6 +63,18 @@ static void KERNEL_NOCOVERAGE _print_error(u32 address,u32 a,u32 b,const char* m
 
 
 
+static void KERNEL_NOCOVERAGE _alloc_lock_type(u32 flags,__lock_profiling_data_t* out){
+	bitlock_acquire(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
+	out->id=_lock_profiling_lock_type_count;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->id=_lock_profiling_lock_type_count;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->address=out->alloc_address;
+	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->flags=flags;
+	_lock_profiling_lock_type_count++;
+	bitlock_release(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
+}
+
+
+
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(u32 flags,__lock_profiling_data_t* out){
 	out->alloc_address=(u32)(u64)__builtin_return_address(1);
 	u32 type_count=_lock_profiling_lock_type_count;
@@ -72,13 +84,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_init(u32 f
 			return;
 		}
 	}
-	bitlock_acquire(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
-	out->id=_lock_profiling_lock_type_count;
-	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->id=_lock_profiling_lock_type_count;
-	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->address=out->alloc_address;
-	(_lock_profiling_lock_types+_lock_profiling_lock_type_count)->flags=flags;
-	_lock_profiling_lock_type_count++;
-	bitlock_release(&_lock_profiling_global_locks,GLOBAL_LOCK_TYPE_BIT);
+	_alloc_lock_type(flags,out);
 }
 
 
@@ -94,8 +100,12 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 		return;
 	}
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
-	if (stack->disabled){
+	if (!stack||stack->disabled){
 		return;
+	}
+	if (lock->id>=_lock_profiling_lock_type_count||lock->alloc_address!=(_lock_profiling_lock_types+lock->id)->address){
+		lock->alloc_address=(u32)(u64)(&_lock_profiling_address_of_static_lock);
+		_alloc_lock_type(0,lock);
 	}
 	stack->disabled=1;
 	u32 address=(u64)__builtin_return_address(1);
@@ -144,7 +154,8 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_en
 	if (!_lock_profiling_dependency_matrix||!_lock_profiling_lock_stats){
 		return;
 	}
-	if (_get_lock_stack()->disabled){
+	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
+	if (!stack||stack->disabled){
 		return;
 	}
 	u64 ticks=end_ticks-ctx->start_ticks;
@@ -163,7 +174,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 		return;
 	}
 	__lock_profiling_lock_stack_t* stack=_get_lock_stack();
-	if (stack->disabled){
+	if (!stack||stack->disabled){
 		return;
 	}
 	stack->disabled=1;
@@ -181,7 +192,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 
 
 void KERNEL_NOCOVERAGE KERNEL_EARLY_EXEC lock_profiling_enable_dependency_graph(void){
-	pmm_counter_descriptor_t* counter=pmm_alloc_counter("lock_profiling");
+	pmm_counter_descriptor_t* counter=pmm_alloc_counter("kernel.lock_profiling");
 	_lock_profiling_dependency_matrix=(void*)(pmm_alloc(pmm_align_up_address(1<<(LOCK_PROFILING_MAX_LOCK_TYPES_SHIFT<<1))>>PAGE_SIZE_SHIFT,counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	_lock_profiling_lock_stats=(void*)(pmm_alloc(pmm_align_up_address(LOCK_PROFILING_MAX_LOCK_USES*sizeof(lock_profiling_stats_t))>>PAGE_SIZE_SHIFT,counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 }

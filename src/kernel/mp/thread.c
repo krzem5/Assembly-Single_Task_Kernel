@@ -26,6 +26,8 @@
 
 
 
+#define MAX_THREAD_CACHE_SIZE 32
+
 #define KERNEL_THREAD_STACK_SIZE 0x200000
 
 #define SET_KERNEL_THREAD_ARG(register) \
@@ -36,6 +38,9 @@
 
 
 
+static thread_t* _thread_cache_data[MAX_THREAD_CACHE_SIZE];
+static u32 _thread_cache_size=0;
+static rwlock_t _thread_cache_lock;
 static omm_allocator_t* _thread_allocator=NULL;
 static omm_allocator_t* _thread_fpu_state_allocator=NULL;
 
@@ -51,44 +56,65 @@ static void _thread_handle_destructor(handle_t* handle){
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
-	mmap_dealloc_region(process_kernel->mmap,thread->kernel_stack_region);
-	mmap_dealloc_region(process_kernel->mmap,thread->pf_stack_region);
-	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	if (thread_list_remove(&(process->thread_list),thread)){
-	event_delete(thread->termination_event);
+		event_delete(thread->termination_event);
 		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		handle_release(&(process->handle));
 	}
+	rwlock_acquire_write(&_thread_cache_lock);
+	if (_thread_cache_size<MAX_THREAD_CACHE_SIZE){
+		_thread_cache_data[_thread_cache_size]=thread;
+		_thread_cache_size++;
+		rwlock_release_write(&_thread_cache_lock);
+		return;
+	}
+	rwlock_release_write(&_thread_cache_lock);
+	mmap_dealloc_region(process_kernel->mmap,thread->kernel_stack_region);
+	omm_dealloc(_thread_fpu_state_allocator,thread->reg_state.fpu_state);
 	omm_dealloc(_thread_allocator,thread);
 }
 
 
 
-static thread_t* _thread_alloc(process_t* process){
-	if (!_thread_fpu_state_allocator){
-		_thread_fpu_state_allocator=omm_init("fpu_state",fpu_state_size,64,4);
-		rwlock_init(&(_thread_fpu_state_allocator->lock));
+static thread_t* _thread_alloc(void){
+	rwlock_acquire_write(&_thread_cache_lock);
+	if (_thread_cache_size){
+		_thread_cache_size--;
+		thread_t* out=_thread_cache_data[_thread_cache_size];
+		rwlock_release_write(&_thread_cache_lock);
+		return out;
 	}
+	rwlock_release_write(&_thread_cache_lock);
 	thread_t* out=omm_alloc(_thread_allocator);
-	mem_fill(out,sizeof(thread_t),0);
 	out->header.current_thread=out;
-	handle_new(out,thread_handle_type,&(out->handle));
-	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,process,0,THREAD_STATE_TYPE_TERMINATED);
 	rwlock_init(&(out->lock));
-	out->process=process;
-	char buffer[128];
-	out->name=smm_alloc(buffer,format_string(buffer,128,"%s-thread-%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
+	out->name=NULL;
 	out->kernel_stack_region=mmap_alloc(process_kernel->mmap,0,KERNEL_THREAD_STACK_SIZE,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	if (!out->kernel_stack_region){
 		panic("Unable to reserve thread stack");
 	}
-	out->pf_stack_region=mmap_alloc(process_kernel->mmap,0,CPU_PAGE_FAULT_STACK_PAGE_COUNT<<PAGE_SIZE_SHIFT,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_COMMIT|MMAP_REGION_FLAG_VMM_WRITE,NULL);
-	if (!out->pf_stack_region){
-		panic("Unable to reserve thread stack");
-	}
-	out->reg_state.reg_state_not_present=0;
 	out->reg_state.fpu_state=omm_alloc(_thread_fpu_state_allocator);
+	return out;
+}
+
+
+
+static thread_t* _thread_create(process_t* process){
+	if (!_thread_fpu_state_allocator){
+		_thread_fpu_state_allocator=omm_init("kernel.thread.fpu_state",fpu_state_size,64,4);
+		rwlock_init(&(_thread_fpu_state_allocator->lock));
+		rwlock_init(&_thread_cache_lock);
+	}
+	thread_t* out=_thread_alloc();
+	handle_new(out,thread_handle_type,&(out->handle));
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE);
+	rwlock_init(&(out->lock));
+	out->process=process;
+	char buffer[128];
+	out->name=smm_alloc(buffer,format_string(buffer,128,"%s.%u",process->name->data,HANDLE_ID_GET_INDEX(out->handle.rb_node.key)));
+	out->reg_state.reg_state_not_present=0;
+	mem_fill(&(out->reg_state.gpr_state),sizeof(isr_state_t),0);
 	fpu_init(out->reg_state.fpu_state);
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
@@ -106,15 +132,15 @@ static thread_t* _thread_alloc(process_t* process){
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
-	_thread_allocator=omm_init("thread",sizeof(thread_t),8,4);
+	_thread_allocator=omm_init("kernel.thread",sizeof(thread_t),8,4);
 	rwlock_init(&(_thread_allocator->lock));
-	thread_handle_type=handle_alloc("thread",_thread_handle_destructor);
+	thread_handle_type=handle_alloc("kernel.thread",_thread_handle_destructor);
 }
 
 
 
 KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64 rsp){
-	thread_t* out=_thread_alloc(process);
+	thread_t* out=_thread_create(process);
 	out->header.kernel_rsp=out->kernel_stack_region->rb_node.key+KERNEL_THREAD_STACK_SIZE;
 	out->reg_state.gpr_state.rip=rip;
 	out->reg_state.gpr_state.rsp=rsp;
@@ -136,7 +162,7 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 		panic("Too many kernel thread arguments");
 	}
 	bool start_thread=!process;
-	thread_t* out=_thread_alloc((process?process:process_kernel));
+	thread_t* out=_thread_create((process?process:process_kernel));
 	if (name){
 		smm_dealloc(out->name);
 		out->name=smm_alloc(name,0);

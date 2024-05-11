@@ -43,9 +43,9 @@ static rwlock_t _uid_global_lock;
 
 KERNEL_EARLY_INIT(){
 	LOG("Initializing user tree...");
-	_uid_data_allocator=omm_init("uid_data",sizeof(uid_data_t),8,1);
+	_uid_data_allocator=omm_init("kernel.uid.data",sizeof(uid_data_t),8,1);
 	rwlock_init(&(_uid_data_allocator->lock));
-	_uid_group_allocator=omm_init("uid_group",sizeof(uid_group_t),8,1);
+	_uid_group_allocator=omm_init("kernel.uid.group",sizeof(uid_group_t),8,1);
 	rwlock_init(&(_uid_group_allocator->lock));
 	rwlock_init(&_uid_global_lock);
 	rb_tree_init(&_uid_tree);

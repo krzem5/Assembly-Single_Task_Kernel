@@ -116,7 +116,7 @@ static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
 
 
 static KERNEL_NOCOVERAGE void _syscall_export_coverage_data(u64 base,u64 size){
-	LOG("Exporting user/library coverage data...");
+	LOG("Exporting user coverage data...");
 	_process_gcov_info_section(base,size);
 }
 

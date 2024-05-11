@@ -50,7 +50,7 @@ SECTIONS{
 	.kernel_early_pointer : {
 		*(.epointer)
 	}
-	.text : { /* to prevent GDB crashes */
+	.text : { /* prevent GDB from crashing */
 		. += 1;
 	}
 	/DISCARD/ : {
