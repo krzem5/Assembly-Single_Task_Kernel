@@ -13,10 +13,10 @@
 
 
 
-static pmm_counter_descriptor_t* _drive_buffer_pmm_counter=NULL;
-static omm_allocator_t* _drive_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _drive_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _drive_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t drive_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE drive_handle_type=0;
 
 
 

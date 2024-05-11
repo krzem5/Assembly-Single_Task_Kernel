@@ -67,7 +67,7 @@ typedef struct _ELF_LOADER_CONTEXT{
 
 
 
-static pmm_counter_descriptor_t* _user_image_pmm_counter=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _user_image_pmm_counter=NULL;
 static u32 _elf_hwcap=0;
 
 
