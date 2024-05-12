@@ -61,10 +61,10 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	LOG("Generating ASLR addresses...");
 	u64 kernel_size=pmm_align_up_address(kernel_section_kernel_end()-kernel_section_kernel_start());
 	random_generate(&_aslr_offset,sizeof(u64));
-	_aslr_offset=pmm_align_down_address(_aslr_offset%(KERNEL_ASLR_KERNEL_END-kernel_size-kernel_section_kernel_end()-1));
+	_aslr_offset=pmm_align_down_address(_aslr_offset%(KERNEL_ASLR_KERNEL_END-kernel_size-kernel_section_kernel_end()-1))+kernel_size;
 	aslr_module_base=aslr_generate_address(KERNEL_ASLR_KERNEL_END,KERNEL_ASLR_MODULE_START);
 	aslr_module_size=-PAGE_SIZE*2-KERNEL_ASLR_MODULE_START;
-	INFO("Kernel range: %p - %p",kernel_section_kernel_end()+_aslr_offset,kernel_section_kernel_end()+_aslr_offset+kernel_size);
+	INFO("Kernel range: %p - %p",kernel_section_kernel_start()+_aslr_offset,kernel_section_kernel_end()+_aslr_offset);
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
 	LOG("Relocating kernel...");
 	for (u64 i=kernel_section_kernel_start();i<kernel_section_kernel_end();i+=PAGE_SIZE){

@@ -80,6 +80,8 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 	out->rc=1;
 	out->acl=NULL;
 	out->handle_list=NULL;
+	out->handle_list_prev=NULL;
+	out->handle_list_next=NULL;
 	rwlock_acquire_write(&(handle_descriptor->lock));
 	out->rb_node.key=HANDLE_ID_CREATE(type,handle_descriptor->count);
 	handle_descriptor->count++;
