@@ -282,6 +282,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 		if (!physical_address){
 			physical_address=mmap_handle_pf(mmap,offset,NULL);
 			if (!physical_address){
+				ERROR("mmap_map_to_kernel: address '%p' is not mapped in the process address space",offset);
 				panic("mmap_map_to_kernel: invalid address");
 			}
 		}
