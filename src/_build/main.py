@@ -749,6 +749,7 @@ def _execute_vm():
 		# "--no-reboot",
 		# "-d","guest_errors",
 		# "-d","int,cpu_reset",
+		# "-d","trace:memory_region_ops_write",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
