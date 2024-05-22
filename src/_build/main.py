@@ -733,11 +733,19 @@ def _execute_vm():
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/ssd.qcow2","8G"]).returncode!=0):
 			sys.exit(1)
 	if (not os.path.exists("build/vm/OVMF_CODE.fd")):
-		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
-			sys.exit(1)
+		if (os.path.exists("/usr/share/OVMF/OVMF_CODE.fd")):
+			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+				sys.exit(1)
+		else:
+			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_CODE_4M.fd","build/vm/OVMF_CODE.fd"]).returncode!=0):
+				sys.exit(1)
 	if (not os.path.exists("build/vm/OVMF_VARS.fd")):
-		if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
-			sys.exit(1)
+		if (os.path.exists("/usr/share/OVMF/OVMF_VARS.fd")):
+			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+				sys.exit(1)
+		else:
+			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS_4M.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
+				sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
