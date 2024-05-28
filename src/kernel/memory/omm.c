@@ -169,10 +169,14 @@ KERNEL_PUBLIC void omm_dealloc(omm_allocator_t* allocator,void* object){
 		_allocator_add_page(&(allocator->page_free_head),page);
 	}
 	page->used_count--;
+	u64 delete_page_count=0;
 	if (!page->used_count){
 		_allocator_remove_page(&(allocator->page_free_head),page);
-		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,allocator->page_count,_omm_pmm_counter);
+		delete_page_count=allocator->page_count;
 	}
 	allocator->deallocation_count++;
 	rwlock_release_write(&(allocator->lock));
+	if (delete_page_count){
+		pmm_dealloc(((u64)page)-VMM_HIGHER_HALF_ADDRESS_OFFSET,delete_page_count,_omm_pmm_counter);
+	}
 }

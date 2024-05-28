@@ -142,8 +142,9 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		if (!_has_read_permissions(root,flags,uid,gid)){
 			return NULL;
 		}
-		SMM_TEMPORARY_STRING name=smm_alloc(path,i);
+		string_t* name=smm_alloc(path,i);
 		vfs_node_t* child=vfs_node_lookup(root,name);
+		smm_dealloc(name);
 		path+=i;
 		if (!child&&parent){
 			if (!path[0]){
