@@ -748,6 +748,7 @@ def _execute_vm():
 				sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
+		# "/tmp/qemu/build/qemu-system-x86_64","--trace","enable=memory_region_ops_write",
 		# "-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
@@ -757,7 +758,7 @@ def _execute_vm():
 		# "--no-reboot",
 		# "-d","guest_errors",
 		# "-d","int,cpu_reset",
-		# "-d","trace:memory_region_ops_write",
+		# "-d","trace:memory_region_ram_device_write",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
