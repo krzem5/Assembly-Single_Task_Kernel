@@ -109,5 +109,5 @@ for k in rb_tree_iter(handle_get_descriptor(module_handle_type)["tree"]):
 	name=module["name"].cast(string_t.pointer())[0]["data"].cast(char_t.pointer()).string()
 	base_address=int(module["region"].cast(mmap_region_t.pointer())[0]["rb_node"]["key"])
 	print(name,hex(base_address))
-	link_patched_gdb_module(f"build/module/{name}.mod",f"build/gdb/{name}.mod",base_address)
+	patch_module_for_gdb(f"build/module/{name}.mod",f"build/gdb/{name}.mod",base_address)
 	gdb.execute(f"add-symbol-file build/gdb/{name}.mod -readnow {base_address}",to_string=True)

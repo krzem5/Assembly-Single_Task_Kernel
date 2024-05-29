@@ -334,6 +334,11 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_place_sections(ctx)
 	_apply_relocations(ctx)
 	with open(src_file_path,"r+b") as wf:
+		wf.seek(16)
+		wf.write(struct.pack("<H",ET_EXEC))
+		for symbol in ctx.symbol_table.symbols_by_name.values():
+			wf.seek(ctx.symbol_table.offset+symbol.index*24+8)
+			wf.write(struct.pack("<Q",symbol.value+symbol.section.address))
 		for section in ctx.section_headers.values():
 			if (section.type==SHT_RELA):
 				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize)
@@ -402,7 +407,7 @@ def link_module_or_library(file_path,key_name):
 
 
 
-def link_patched_gdb_module(src_file_path,dst_file_path,address):
+def patch_module_for_gdb(src_file_path,dst_file_path,address):
 	with open(src_file_path,"rb") as rf,open(dst_file_path,"wb") as wf:
 		data=bytearray(rf.read())
 		wf.write(data)
