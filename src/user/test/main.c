@@ -45,5 +45,5 @@ void SYS_NOCOVERAGE main(void){
 	_sys_syscall2(sys_syscall_get_table_offset("coverage")|0x00000002,test_pass_count,test_fail_count);
 	__sys_linker_set_root_object_gcov_info((u64)__gcov_info_start,((u64)__gcov_info_end)-((u64)__gcov_info_start));
 	__sys_linker_dump_coverage();
-	sys_system_shutdown(0);
+	_sys_syscall0(sys_syscall_get_table_offset("coverage")|0x00000003);
 }

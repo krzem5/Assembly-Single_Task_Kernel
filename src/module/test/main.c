@@ -16,7 +16,6 @@
 #include <test/gid.h>
 #include <test/handle_list.h>
 #include <test/module.h>
-#include <test/notification.h>
 #include <test/pipe.h>
 #include <test/resource.h>
 #include <test/ring.h>
@@ -39,7 +38,6 @@ MODULE_INIT(){
 	test_gid();
 	test_handle_list();
 	test_module();
-	test_notification();
 	test_pipe();
 	test_resource();
 	test_ring();

@@ -96,25 +96,6 @@ static void KERNEL_NOCOVERAGE _process_gcov_info_section(u64 base,u64 size){
 
 
 
-static KERNEL_NOCOVERAGE void _listener(void* object,u32 type){
-	if (_coverage_failed){
-		return;
-	}
-	LOG("Exporting kernel coverage data...");
-	u64 size;
-	u64 base=kernel_gcov_info_data(&size);
-	_process_gcov_info_section(base,size);
-	LOG("Exporting module coverage data...");
-	HANDLE_FOREACH(module_handle_type){
-		module_t* module=handle->object;
-		if (module->state==MODULE_STATE_LOADED&&module->gcov_info_base&&module->gcov_info_size){
-			_process_gcov_info_section(module->gcov_info_base,module->gcov_info_size);
-		}
-	}
-}
-
-
-
 static KERNEL_NOCOVERAGE void _syscall_export_coverage_data(u64 base,u64 size){
 	LOG("Exporting user coverage data...");
 	_process_gcov_info_section(base,size);
@@ -131,9 +112,30 @@ static KERNEL_NOCOVERAGE void _syscall_process_test_results(u64 pass,u64 fail){
 
 
 
+static KERNEL_NOCOVERAGE void _syscall_shutdown(void){
+	if (_coverage_failed){
+		return;
+	}
+	LOG("Exporting kernel coverage data...");
+	u64 size;
+	u64 base=kernel_gcov_info_data(&size);
+	_process_gcov_info_section(base,size);
+	LOG("Exporting module coverage data...");
+	HANDLE_FOREACH(module_handle_type){
+		module_t* module=handle->object;
+		if (module->state==MODULE_STATE_LOADED&&module->gcov_info_base&&module->gcov_info_size){
+			_process_gcov_info_section(module->gcov_info_base,module->gcov_info_size);
+		}
+	}
+	shutdown(0);
+}
+
+
+
 static syscall_callback_t const _coverage_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_export_coverage_data,
-	[2]=(syscall_callback_t)_syscall_process_test_results
+	[2]=(syscall_callback_t)_syscall_process_test_results,
+	[3]=(syscall_callback_t)_syscall_shutdown,
 };
 
 
@@ -145,7 +147,6 @@ MODULE_PREINIT(){
 		panic("Coverage serial port not present");
 	}
 	rwlock_init(&_coverage_lock);
-	shutdown_register_notification_listener(_listener);
 	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
 	return 1;
 }
