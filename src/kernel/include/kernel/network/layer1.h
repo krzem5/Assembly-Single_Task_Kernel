@@ -5,7 +5,7 @@
 
 
 
-#define NETWORK_LAYER1_PACKET_HEADER_SIZE (__builtin_offsetof(network_layer1_packet_t,data)-__builtin_offsetof(network_layer1_packet_t,raw_data))
+#define NETWORK_LAYER1_PACKET_HEADER_SIZE (KERNEL_OFFSETOF(network_layer1_packet_t,data)-KERNEL_OFFSETOF(network_layer1_packet_t,raw_data))
 
 
 

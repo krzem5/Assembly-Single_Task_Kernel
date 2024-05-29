@@ -68,7 +68,7 @@ KERNEL_PUBLIC void amm_dealloc(void* ptr){
 	if (!ptr){
 		return;
 	}
-	amm_header_t* header=(amm_header_t*)(((u64)ptr)-__builtin_offsetof(amm_header_t,data));
+	amm_header_t* header=KERNEL_CONTAINEROF(ptr,amm_header_t,data);
 	u64 index=header->index;
 	mem_fill(header,_index_to_size(index),0);
 	if (index>=PAGE_SIZE){
@@ -89,7 +89,7 @@ KERNEL_PUBLIC void* amm_realloc(void* ptr,u32 length){
 		amm_dealloc(ptr);
 		return NULL;
 	}
-	amm_header_t* header=(amm_header_t*)(((u64)ptr)-__builtin_offsetof(amm_header_t,data));
+	amm_header_t* header=KERNEL_CONTAINEROF(ptr,amm_header_t,data);
 	u64 index=_size_to_index(((u64)length)+sizeof(amm_header_t));
 	if (index==header->index){
 		return ptr;

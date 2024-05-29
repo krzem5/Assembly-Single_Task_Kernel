@@ -31,7 +31,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 		omm_init_handle_type(_handle_descriptor_allocator);
 		handle_handle_type=handle_alloc("kernel.handle",NULL);
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){
-			handle_descriptor_t* descriptor=(handle_descriptor_t*)(((u64)rb_node)-__builtin_offsetof(handle_descriptor_t,rb_node));
+			handle_descriptor_t* descriptor=KERNEL_CONTAINEROF(rb_node,handle_descriptor_t,rb_node);
 			if (!descriptor->handle.rb_node.key){
 				handle_new(descriptor,handle_handle_type,&(descriptor->handle));
 				handle_finish_setup(&(descriptor->handle));
@@ -65,7 +65,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 
 KERNEL_PUBLIC handle_descriptor_t* handle_get_descriptor(handle_type_t type){
 	u64 out=(u64)rb_tree_lookup_node(&_handle_type_tree,type);
-	return (out?(handle_descriptor_t*)(out-__builtin_offsetof(handle_descriptor_t,rb_node)):NULL);
+	return (out?KERNEL_CONTAINEROF(out,handle_descriptor_t,rb_node):NULL);
 }
 
 

@@ -39,4 +39,9 @@
 
 
 
+#define KERNEL_OFFSETOF(type,field) __builtin_offsetof(type,field)
+#define KERNEL_CONTAINEROF(object,type,field) ((type*)(((u64)(void*)(object))-KERNEL_OFFSETOF(type,field)))
+
+
+
 #endif
