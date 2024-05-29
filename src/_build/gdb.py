@@ -5,7 +5,7 @@ import json
 
 with open("build/kernel/kernel.json","r") as rf:
 	sections=json.loads(rf.read())
-gdb.execute(f"add-symbol-file build/kernel/kernel.elf 0x{min(sections.values()):x}"+"".join([f" -s {name} 0x{address:x}" for name,address in sections.items()]))
+gdb.execute(f"add-symbol-file build/kernel/kernel.elf 0x{min(sections.values()):x}"+"".join([f" -s {name} 0x{address:x}" for name,address in sections.items()]),to_string=True)
 
 
 

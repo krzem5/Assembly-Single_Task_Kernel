@@ -2,6 +2,7 @@ extern _isr_handler
 extern _random_entropy_pool
 extern _random_entropy_pool_length
 global _isr_handler_list:data hidden
+global _isr_trampoline:function hidden
 section .text exec nowrite
 
 
