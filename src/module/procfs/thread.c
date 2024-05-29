@@ -81,5 +81,6 @@ MODULE_POSTPOSTINIT(){
 	LOG("Creating thread subsystem...");
 	_procfs_thread_root=dynamicfs_create_node(procfs->root,"thread",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	dynamicfs_create_node(_procfs_thread_root,"self",VFS_NODE_TYPE_LINK,NULL,_thread_self_read_callback,NULL);
-	thread_create_kernel_thread(NULL,"procfs.thread.update.notification",_update_notification_thread,0);
+	// thread_create_kernel_thread(NULL,"procfs.thread.update.notification",_update_notification_thread,0);
+	(void)_update_notification_thread;
 }

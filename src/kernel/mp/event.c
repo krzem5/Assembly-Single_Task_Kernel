@@ -93,8 +93,8 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
 		return;
 	}
-	rwlock_acquire_write(&(event->lock));
 	handle_destroy(&(event->handle));
+	rwlock_acquire_write(&(event->lock));
 	while (event->head){
 		event_thread_container_t* container=event->head;
 		event->head=container->next;

@@ -203,7 +203,6 @@ void scheduler_irq_return_after_thread(isr_state_t* state,thread_t* thread){
 
 
 KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
-	scheduler_pause();
 	rwlock_acquire_write(&(thread->lock));
 	if (thread->state==THREAD_STATE_TYPE_QUEUED){
 		panic("Thread already queued");
@@ -211,7 +210,6 @@ KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 	scheduler_load_balancer_add(thread);
 	thread->state=THREAD_STATE_TYPE_QUEUED;
 	rwlock_release_write(&(thread->lock));
-	scheduler_resume(1);
 }
 
 
