@@ -22,12 +22,12 @@ static volatile u32 KERNEL_EARLY_READ __kernel_user_key_modulus_bit_length;
 
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
-static notification_dispatcher_t _keyring_notification_dispatcher;
 static rwlock_t _keyring_creation_lock;
 
 KERNEL_PUBLIC handle_type_t keyring_handle_type=0;
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
+KERNEL_PUBLIC notification2_dispatcher_t keyring_notification_dispatcher;
 
 
 
@@ -45,7 +45,7 @@ KERNEL_INIT(){
 	_keyring_key_allocator=omm_init("kernel.keyring.key",sizeof(keyring_key_t),8,2);
 	rwlock_init(&(_keyring_key_allocator->lock));
 	keyring_handle_type=handle_alloc("kernel.keyring",_keyring_handle_destructor);
-	notification_dispatcher_init(&_keyring_notification_dispatcher);
+	notification2_dispatcher_init(&keyring_notification_dispatcher);
 	rwlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");
 	keyring_module_signature=keyring_create("module-signature");
@@ -84,7 +84,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	out->head=NULL;
 	rwlock_release_write(&_keyring_creation_lock);
 	handle_finish_setup(&(out->handle));
-	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,out,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,out->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -130,7 +130,7 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 		keyring->head=out;
 	}
 	rwlock_release_write(&(keyring->lock));
-	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,keyring,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -143,7 +143,7 @@ KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key){
 
 
 KERNEL_PUBLIC void keyring_key_update(keyring_key_t* key){
-	notification_dispatcher_dispatch(&_keyring_notification_dispatcher,key->keyring,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,key->keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 }
 
 
@@ -157,19 +157,4 @@ KERNEL_PUBLIC bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,r
 	}
 	rwlock_release_write(&(key->lock));
 	return ret;
-}
-
-
-
-KERNEL_PUBLIC void keyring_register_notification_listener(notification_listener_callback_t listener_callback){
-	notification_dispatcher_add_listener(&_keyring_notification_dispatcher,listener_callback);
-	HANDLE_FOREACH(keyring_handle_type){
-		listener_callback(handle->object,NOTIFICATION_TYPE_KEYRING_UPDATE);
-	}
-}
-
-
-
-KERNEL_PUBLIC void keyring_unregister_notification_listener(notification_listener_callback_t listener_callback){
-	notification_dispatcher_add_listener(&_keyring_notification_dispatcher,listener_callback);
 }

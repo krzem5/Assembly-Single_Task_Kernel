@@ -22,15 +22,11 @@ typedef struct _SHUTDOWN_FUNCTION{
 
 
 
+extern notification2_dispatcher_t shutdown_notification_dispatcher;
+
+
+
 void KERNEL_NORETURN shutdown(u32 flags);
-
-
-
-void shutdown_register_notification_listener(notification_listener_callback_t listener_callback);
-
-
-
-void shutdown_unregister_notification_listener(notification_listener_callback_t listener_callback);
 
 
 

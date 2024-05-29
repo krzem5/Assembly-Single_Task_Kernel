@@ -1,80 +1,110 @@
 #include <kernel/lock/rwlock.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/notification/notification.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 
 
 
-static omm_allocator_t* _notification_listener_allocator=NULL;
+static omm_allocator_t* _notification_consumer_allocator=NULL;
+static omm_allocator_t* _notification_container_allocator=NULL;
 
 
 
-KERNEL_PUBLIC void notification_dispatcher_init(notification_dispatcher_t* dispatcher){
-	rwlock_init(&(dispatcher->lock));
+KERNEL_EARLY_INIT(){
+	_notification_consumer_allocator=omm_init("kernel.notification.consumer",sizeof(notification2_consumer_t),8,4);
+	_notification_container_allocator=omm_init("kernel.notification.container",sizeof(notification2_container_t),8,4);
+}
+
+
+
+KERNEL_PUBLIC void notification2_dispatcher_init(notification2_dispatcher_t* dispatcher){
 	dispatcher->head=NULL;
+	rwlock_init(&(dispatcher->lock));
 }
 
 
 
-KERNEL_PUBLIC void notification_dispatcher_deinit(notification_dispatcher_t* dispatcher){
-	rwlock_acquire_write(&(dispatcher->lock));
-	while (dispatcher->head){
-		notification_listener_t* listener=dispatcher->head;
-		dispatcher->head=listener->next;
-		omm_dealloc(_notification_listener_allocator,listener);
-	}
-	rwlock_release_write(&(dispatcher->lock));
+KERNEL_PUBLIC void notification2_dispatcher_deinit(notification2_dispatcher_t* dispatcher){
+	panic("notification2_dispatcher_deinit");
 }
 
 
 
-KERNEL_PUBLIC void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback){
-	if (!_notification_listener_allocator){
-		_notification_listener_allocator=omm_init("kernel.notification.listener",sizeof(notification_listener_t),8,4);
-		rwlock_init(&(_notification_listener_allocator->lock));
+KERNEL_PUBLIC void notification2_dispatcher_dispatch(notification2_dispatcher_t* dispatcher,u64 object,u32 type){
+	if (!_notification_container_allocator){
+		return;
 	}
-	notification_listener_t* listener=omm_alloc(_notification_listener_allocator);
-	listener->callback=callback;
-	listener->prev=NULL;
 	rwlock_acquire_write(&(dispatcher->lock));
-	listener->next=dispatcher->head;
-	if (dispatcher->head){
-		dispatcher->head->prev=listener;
-	}
-	dispatcher->head=listener;
-	rwlock_release_write(&(dispatcher->lock));
-}
-
-
-
-KERNEL_PUBLIC void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback){
-	rwlock_acquire_write(&(dispatcher->lock));
-	for (notification_listener_t* listener=dispatcher->head;listener;listener=listener->next){
-		if (listener->callback!=callback){
-			continue;
-		}
-		if (listener->prev){
-			listener->prev->next=listener->next;
+	for (notification2_consumer_t* consumer=dispatcher->head;consumer;consumer=consumer->next){
+		notification2_container_t* container=omm_alloc(_notification_container_allocator);
+		container->next=NULL;
+		container->data.object=object;
+		container->data.type=type;
+		rwlock_acquire_write(&(consumer->lock));
+		if (consumer->tail){
+			consumer->tail->next=container;
 		}
 		else{
-			dispatcher->head=listener->next;
+			consumer->head=container;
 		}
-		if (listener->next){
-			listener->next->prev=listener->prev;
-		}
-		omm_dealloc(_notification_listener_allocator,listener);
-		break;
+		consumer->tail=container;
+		event_dispatch(consumer->event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		rwlock_release_write(&(consumer->lock));
 	}
 	rwlock_release_write(&(dispatcher->lock));
 }
 
 
 
-KERNEL_PUBLIC void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,void* object,u32 type){
-	rwlock_acquire_read(&(dispatcher->lock));
-	for (const notification_listener_t* listener=dispatcher->head;listener;listener=listener->next){
-		listener->callback(object,type);
+KERNEL_PUBLIC notification2_consumer_t* notification2_consumer_create(notification2_dispatcher_t* dispatcher){
+	notification2_consumer_t* out=omm_alloc(_notification_consumer_allocator);
+	out->dispatcher=dispatcher;
+	out->prev=NULL;
+	rwlock_init(&(out->lock));
+	out->event=event_create();
+	out->head=NULL;
+	out->tail=NULL;
+	rwlock_acquire_write(&(dispatcher->lock));
+	out->next=dispatcher->head;
+	if (dispatcher->head){
+		dispatcher->head->prev=out;
 	}
-	rwlock_release_read(&(dispatcher->lock));
+	dispatcher->head=out;
+	rwlock_release_write(&(dispatcher->lock));
+	return out;
+}
+
+
+
+KERNEL_PUBLIC void notification2_consumer_delete(notification2_consumer_t* consumer){
+	panic("notification2_consumer_delete");
+}
+
+
+
+KERNEL_PUBLIC bool notification2_consumer_get(notification2_consumer_t* consumer,bool wait,notification2_t* out){
+	rwlock_acquire_write(&(consumer->lock));
+	while (!consumer->head){
+		rwlock_release_write(&(consumer->lock));
+		if (!wait){
+			return 0;
+		}
+		event_await(consumer->event,0);
+		rwlock_acquire_write(&(consumer->lock));
+	}
+	notification2_container_t* container=consumer->head;
+	consumer->head=container->next;
+	if (!consumer->head){
+		consumer->tail=NULL;
+		event_set_active(consumer->event,0,1);
+	}
+	rwlock_release_write(&(consumer->lock));
+	*out=container->data;
+	omm_dealloc(_notification_container_allocator,container);
+	return 1;
 }

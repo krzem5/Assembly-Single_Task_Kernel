@@ -13,8 +13,11 @@
 
 
 
-static void _listener(void* object,u32 type){
-	handle_t* handle=object;
+static void _listener(u64 object,u32 type){
+	handle_t* handle=handle_lookup_and_acquire(object,process_handle_type);
+	if (!handle){
+		return;
+	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
 		const process_t* process=handle->object;
 		char buffer[32];
@@ -26,9 +29,8 @@ static void _listener(void* object,u32 type){
 		dynamicfs_create_link_node(node,"stdout","/dev/ser/out");
 		dynamicfs_create_link_node(node,"stderr","/dev/ser/out");
 		dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		return;
 	}
-	if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
+	else if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
 		const process_t* process=handle->object;
 		char buffer[32];
 		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
@@ -41,6 +43,7 @@ static void _listener(void* object,u32 type){
 		dynamicfs_delete_node(vfs_lookup(node,"threads",0,0,0),1);
 		dynamicfs_delete_node(node,0);
 	}
+	handle_release(handle);
 }
 
 
@@ -52,8 +55,29 @@ static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 siz
 
 
 
+static void _update_notification_thread(void){
+	notification2_consumer_t* consumer=notification2_consumer_create(&(handle_get_descriptor(process_handle_type)->notification_dispatcher));
+	HANDLE_FOREACH(process_handle_type){
+		_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
+	}
+	while (1){
+		notification2_t notification;
+		if (!notification2_consumer_get(consumer,1,&notification)){
+			continue;
+		}
+		handle_t* handle=handle_lookup_and_acquire(notification.object,process_handle_type);
+		if (!handle){
+			continue;
+		}
+		_listener(handle->rb_node.key,notification.type);
+		handle_release(handle);
+	}
+}
+
+
+
 MODULE_POSTINIT(){
 	LOG("Creating process subsystem...");
 	dynamicfs_create_node(procfs->root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL);
-	handle_register_notification_listener(process_handle_type,_listener);
+	thread_create_kernel_thread(NULL,"procfs.process.update.notification",_update_notification_thread,0);
 }

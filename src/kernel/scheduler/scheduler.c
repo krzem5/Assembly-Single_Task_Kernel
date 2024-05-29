@@ -26,8 +26,9 @@
 
 
 
-static bool KERNEL_INIT_WRITE _scheduler_enabled=0;
 static CPU_LOCAL_DATA(scheduler_t,_scheduler_data);
+
+bool KERNEL_INIT_WRITE scheduler_enabled=0;
 
 
 
@@ -108,13 +109,13 @@ KERNEL_EARLY_INIT(){
 
 void KERNEL_EARLY_EXEC scheduler_enable(void){
 	LOG("Enabling scheduler...");
-	_scheduler_enabled=1;
+	scheduler_enabled=1;
 }
 
 
 
 KERNEL_PUBLIC void scheduler_pause(void){
-	if (!_scheduler_enabled){
+	if (!scheduler_enabled){
 		return;
 	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
@@ -135,7 +136,7 @@ KERNEL_PUBLIC void scheduler_pause(void){
 
 
 KERNEL_PUBLIC void scheduler_resume(bool yield_if_possible){
-	if (!_scheduler_enabled){
+	if (!scheduler_enabled){
 		return;
 	}
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
@@ -163,7 +164,7 @@ KERNEL_PUBLIC void scheduler_resume(bool yield_if_possible){
 
 
 void scheduler_set_irq_context(bool is_irq_context){
-	if (!_scheduler_enabled){
+	if (!scheduler_enabled){
 		return;
 	}
 	CPU_LOCAL(_scheduler_data)->is_irq_context=is_irq_context;

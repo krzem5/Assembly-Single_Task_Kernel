@@ -59,7 +59,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;
 	rb_tree_node_t rb_node;
-	notification_dispatcher_t notification_dispatcher;
+	notification2_dispatcher_t notification_dispatcher;
 } handle_descriptor_t;
 
 
@@ -93,14 +93,6 @@ void handle_destroy(handle_t* handle);
 
 
 void _handle_delete_internal(handle_t* handle);
-
-
-
-bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
-
-
-
-bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback);
 
 
 

@@ -34,6 +34,10 @@ typedef struct _SCHEDULER{
 
 
 
+extern bool scheduler_enabled;
+
+
+
 void scheduler_enable(void);
 
 

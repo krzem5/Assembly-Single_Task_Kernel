@@ -15,42 +15,60 @@
 
 
 
-typedef void (*notification_listener_callback_t)(void*,u32);
+typedef struct _NOTIFICATION2{
+	u64 object;
+	u32 type;
+} notification2_t;
 
 
 
-typedef struct _NOTIFICATION_LISTENER{
-	notification_listener_callback_t callback;
-	struct _NOTIFICATION_LISTENER* prev;
-	struct _NOTIFICATION_LISTENER* next;
-} notification_listener_t;
+typedef struct _NOTIFICATION2_CONTAINER{
+	struct _NOTIFICATION2_CONTAINER* next;
+	notification2_t data;
+} notification2_container_t;
 
 
 
-typedef struct _NOTIFICATION_DISPATCHER{
+typedef struct _NOTIFICATION2_CONSUMER{
+	struct _NOTIFICATION2_DISPATCHER* dispatcher;
+	struct _NOTIFICATION2_CONSUMER* prev;
+	struct _NOTIFICATION2_CONSUMER* next;
 	rwlock_t lock;
-	notification_listener_t* head;
-} notification_dispatcher_t;
+	struct _EVENT* event;
+	notification2_container_t* head;
+	notification2_container_t* tail;
+} notification2_consumer_t;
 
 
 
-void notification_dispatcher_init(notification_dispatcher_t* dispatcher);
+typedef struct _NOTIFICATION2_DISPATCHER{
+	notification2_consumer_t* head;
+	rwlock_t lock;
+} notification2_dispatcher_t;
 
 
 
-void notification_dispatcher_deinit(notification_dispatcher_t* dispatcher);
+void notification2_dispatcher_init(notification2_dispatcher_t* dispatcher);
 
 
 
-void notification_dispatcher_add_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback);
+void notification2_dispatcher_deinit(notification2_dispatcher_t* dispatcher);
 
 
 
-void notification_dispatcher_remove_listener(notification_dispatcher_t* dispatcher,notification_listener_callback_t callback);
+void notification2_dispatcher_dispatch(notification2_dispatcher_t* dispatcher,u64 object,u32 type);
 
 
 
-void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,void* object,u32 type);
+notification2_consumer_t* notification2_consumer_create(notification2_dispatcher_t* dispatcher);
+
+
+
+void notification2_consumer_delete(notification2_consumer_t* consumer);
+
+
+
+bool notification2_consumer_get(notification2_consumer_t* consumer,bool wait,notification2_t* out);
 
 
 

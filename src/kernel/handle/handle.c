@@ -54,7 +54,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	descriptor->count=0;
 	descriptor->active_count=0;
 	descriptor->rb_node.key=out;
-	notification_dispatcher_init(&(descriptor->notification_dispatcher));
+	notification2_dispatcher_init(&(descriptor->notification_dispatcher));
 	rb_tree_insert_node(&_handle_type_tree,&(descriptor->rb_node));
 	if (handle_handle_type){
 		handle_finish_setup(&(descriptor->handle));
@@ -95,7 +95,7 @@ KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
 KERNEL_PUBLIC void handle_finish_setup(handle_t* handle){
 	handle_acquire(handle);
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
-	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_CREATE);
+	notification2_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
 	handle_release(handle);
 }
 
@@ -133,7 +133,6 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 		handle_list_pop(handle);
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
-	notification_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle,NOTIFICATION_TYPE_HANDLE_DELETE);
 	rwlock_acquire_write(&(handle_descriptor->lock));
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
 	rwlock_release_write(&(handle_descriptor->lock));
@@ -148,33 +147,5 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	if (handle_descriptor->delete_callback){
 		handle_descriptor->delete_callback(handle);
 	}
-}
-
-
-
-KERNEL_PUBLIC bool handle_register_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
-	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
-	if (!handle_descriptor){
-		return 0;
-	}
-	rwlock_acquire_write(&(handle_descriptor->lock));
-	notification_dispatcher_add_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
-	for (handle_t* handle=HANDLE_ITER_START(handle_descriptor);handle;handle=HANDLE_ITER_NEXT(handle_descriptor,handle)){
-		listener_callback(handle,NOTIFICATION_TYPE_HANDLE_CREATE);
-	}
-	rwlock_release_write(&(handle_descriptor->lock));
-	return 1;
-}
-
-
-
-KERNEL_PUBLIC bool handle_unregister_notification_listener(handle_type_t type,notification_listener_callback_t listener_callback){
-	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
-	if (!handle_descriptor){
-		return 0;
-	}
-	rwlock_acquire_write(&(handle_descriptor->lock));
-	notification_dispatcher_remove_listener(&(handle_descriptor->notification_dispatcher),listener_callback);
-	rwlock_release_write(&(handle_descriptor->lock));
-	return 1;
+	notification2_dispatcher_dispatch(&(handle_descriptor->notification_dispatcher),handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_DELETE);
 }

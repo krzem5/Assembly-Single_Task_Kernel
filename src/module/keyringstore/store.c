@@ -5,6 +5,7 @@
 #include <kernel/memory/amm.h>
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/thread.h>
 #include <kernel/notification/notification.h>
 #include <kernel/rsa/rsa.h>
 #include <kernel/types.h>
@@ -211,11 +212,25 @@ static void _store_keyring(keyring_t* keyring){
 
 
 
-static void _keyring_update_callback(void* object,u32 type){
-	keyring_t* keyring=object;
-	if (type==NOTIFICATION_TYPE_KEYRING_UPDATE){
-		_store_keyring(keyring);
-		return;
+static void _keyring_update_notification_thread(void){
+	notification2_consumer_t* consumer=notification2_consumer_create(&keyring_notification_dispatcher);
+	HANDLE_FOREACH(keyring_handle_type){
+		_store_keyring(handle->object);
+	}
+	while (1){
+		notification2_t notification;
+		if (!notification2_consumer_get(consumer,1,&notification)){
+			continue;
+		}
+		handle_t* handle=handle_lookup_and_acquire(notification.object,keyring_handle_type);
+		if (!handle){
+			continue;
+		}
+		keyring_t* keyring=handle->object;
+		if (notification.type==NOTIFICATION_TYPE_KEYRING_UPDATE){
+			_store_keyring(keyring);
+		}
+		handle_release(handle);
 	}
 }
 
@@ -230,6 +245,6 @@ MODULE_PREINIT(){
 	}
 	INFO("Loading keyrings...");
 	_load_keyrings();
-	keyring_register_notification_listener(_keyring_update_callback);
+	thread_create_kernel_thread(NULL,"keyringstore.update.notification",_keyring_update_notification_thread,0);
 	return 1;
 }

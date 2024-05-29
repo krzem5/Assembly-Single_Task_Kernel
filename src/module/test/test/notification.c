@@ -6,21 +6,21 @@
 
 
 
-static void* _test_notification_object=NULL;
-static void* _test_notification_object2=NULL;
+static u64 _test_notification_object=NULL;
+static u64 _test_notification_object2=NULL;
 static u32 _test_notification_type=0;
 static u32 _test_notification_type2=0;
 
 
 
-static void _callback(void* object,u32 type){
+static void _callback(u64 object,u32 type){
 	_test_notification_object=object;
 	_test_notification_type=type;
 }
 
 
 
-static void _callback2(void* object,u32 type){
+static void _callback2(u64 object,u32 type){
 	_test_notification_object2=object;
 	_test_notification_type2=type;
 }
@@ -39,9 +39,9 @@ void test_notification(void){
 	_test_notification_object2=NULL;
 	_test_notification_type=0;
 	_test_notification_type2=0;
-	notification_dispatcher_dispatch(&dispatcher,(void*)1234,5678);
-	TEST_ASSERT(_test_notification_object==(void*)1234);
-	TEST_ASSERT(_test_notification_object2==(void*)1234);
+	notification_dispatcher_dispatch(&dispatcher,1234,5678);
+	TEST_ASSERT(_test_notification_object==1234);
+	TEST_ASSERT(_test_notification_object2==1234);
 	TEST_ASSERT(_test_notification_type==5678);
 	TEST_ASSERT(_test_notification_type2==5678);
 	TEST_GROUP("remove");
@@ -50,8 +50,8 @@ void test_notification(void){
 	_test_notification_object2=NULL;
 	_test_notification_type=0;
 	_test_notification_type2=0;
-	notification_dispatcher_dispatch(&dispatcher,(void*)0xabcd,0x1234);
-	TEST_ASSERT(_test_notification_object==(void*)0xabcd);
+	notification_dispatcher_dispatch(&dispatcher,0xabcd,0x1234);
+	TEST_ASSERT(_test_notification_object==0xabcd);
 	TEST_ASSERT(!_test_notification_object2);
 	TEST_ASSERT(_test_notification_type==0x1234);
 	TEST_ASSERT(!_test_notification_type2);

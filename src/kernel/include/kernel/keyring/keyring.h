@@ -52,6 +52,7 @@ typedef struct _KEYRING{
 extern handle_type_t keyring_handle_type;
 extern keyring_t* keyring_module_signature;
 extern keyring_t* keyring_user_signature;
+extern notification2_dispatcher_t keyring_notification_dispatcher;
 
 
 
@@ -80,14 +81,6 @@ void keyring_key_update(keyring_key_t* key);
 
 
 bool keyring_key_process_rsa(keyring_key_t* key,rsa_number_t* in,rsa_number_t* out);
-
-
-
-void keyring_register_notification_listener(notification_listener_callback_t listener_callback);
-
-
-
-void keyring_unregister_notification_listener(notification_listener_callback_t listener_callback);
 
 
 

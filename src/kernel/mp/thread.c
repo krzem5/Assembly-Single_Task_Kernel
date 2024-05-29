@@ -161,6 +161,9 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 	if (arg_count>6){
 		panic("Too many kernel thread arguments");
 	}
+	if (!scheduler_enabled){
+		return NULL;
+	}
 	bool start_thread=!process;
 	thread_t* out=_thread_create((process?process:process_kernel));
 	if (name){
