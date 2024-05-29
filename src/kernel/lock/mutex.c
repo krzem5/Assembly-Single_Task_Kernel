@@ -24,7 +24,7 @@ KERNEL_PUBLIC mutex_t* mutex_init(void){
 	mutex_t* out=omm_alloc(_mutex_allocator);
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
-	out->event=event_create();
+	out->event=event_create("kernel.mutex");
 	lock_profiling_init(LOCK_PROFILING_FLAG_PREEMPTIBLE,out);
 	return out;
 }

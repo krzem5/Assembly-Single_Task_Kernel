@@ -43,7 +43,7 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,TIMER_ACL_FLAG_UPDATE|TIMER_ACL_FLAG_DELETE);
 	}
 	rwlock_init(&(out->lock));
-	out->event=event_create();
+	out->event=event_create("kernel.timer");
 	out->interval=0;
 	out->count=0;
 	handle_finish_setup(&(out->handle));

@@ -61,7 +61,7 @@ KERNEL_INIT(){
 	LOG("Enabling serial IRQs...");
 	_serial_irq=isr_allocate();
 	INFO("Serial IRQ: %u",_serial_irq);
-	_serial_irq_event=event_create();
+	_serial_irq_event=event_create("kernel.serial");
 	ioapic_redirect_irq(COM1_3_IRQ,_serial_irq);
 	ioapic_redirect_irq(COM2_4_IRQ,_serial_irq);
 	IRQ_HANDLER_CTX(_serial_irq)=NULL;

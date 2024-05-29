@@ -31,6 +31,7 @@ typedef struct _EVENT_THREAD_CONTAINER{
 
 
 typedef struct _EVENT{
+	const char* name;
 	handle_t handle;
 	rwlock_t lock;
 	bool is_active;

@@ -53,8 +53,8 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 	out->write_offset=0;
 	out->read_offset=0;
 	out->is_full=0;
-	out->read_event=event_create();
-	out->write_event=event_create();
+	out->read_event=event_create("kernel.pipe.read");
+	out->write_event=event_create("kernel.thread.write");
 	return (vfs_node_t*)out;
 }
 

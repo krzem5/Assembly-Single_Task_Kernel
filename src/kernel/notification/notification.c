@@ -66,7 +66,7 @@ KERNEL_PUBLIC notification2_consumer_t* notification2_consumer_create(notificati
 	out->dispatcher=dispatcher;
 	out->prev=NULL;
 	rwlock_init(&(out->lock));
-	out->event=event_create();
+	out->event=event_create("kernel.notification.consumer");
 	out->head=NULL;
 	out->tail=NULL;
 	rwlock_acquire_write(&(dispatcher->lock));

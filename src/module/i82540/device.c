@@ -165,7 +165,7 @@ static void _i82540_init_device(pci_device_t* device){
 	i82540_device->mmio[REG_TCTL]=TCTL_EN|TCTL_PSP;
 	i82540_device->irq=isr_allocate();
 	ioapic_redirect_irq(device->interrupt_line,i82540_device->irq);
-	i82540_device->irq_event=event_create();
+	i82540_device->irq_event=event_create("i82540.irq");
 	IRQ_HANDLER_CTX(i82540_device->irq)=i82540_device;
 	IRQ_HANDLER(i82540_device->irq)=_irq_handler;
 	i82540_device->mmio[REG_ITR]=0x0000;

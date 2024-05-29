@@ -282,7 +282,7 @@ KERNEL_PUBLIC virtio_queue_t* virtio_init_queue(virtio_device_t* device,u16 inde
 	out->available_used_event=(void*)(queue_available_used_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used=(void*)(queue_used+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->used_available_event=(void*)(queue_used_available_event+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-	out->event=event_create();
+	out->event=event_create("virtio.queue");
 	for (u16 i=0;i<size-1;i++){ // last entry is zero-initialized by pmm_alloc
 		(out->descriptors+i)->next=i+1;
 	}

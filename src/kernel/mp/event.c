@@ -72,8 +72,9 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC event_t* event_create(void){
+KERNEL_PUBLIC event_t* event_create(const char* name){
 	event_t* out=omm_alloc(_event_allocator);
+	out->name=name;
 	handle_new(out,event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
@@ -233,7 +234,7 @@ void event_await_thread_irq(thread_t* thread,event_t* event){
 
 
 error_t syscall_event_create(u32 is_active){
-	event_t* event=event_create();
+	event_t* event=event_create("user");
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(event->handle));
 	if (is_active){
 		event_set_active(event,is_active,0);

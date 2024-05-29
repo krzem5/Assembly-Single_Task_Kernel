@@ -19,7 +19,7 @@ extern handle_type_t event_handle_type;
 
 
 
-event_t* event_create(void);
+event_t* event_create(const char* name);
 
 
 
