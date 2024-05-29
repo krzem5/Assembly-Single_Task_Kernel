@@ -35,6 +35,7 @@ if ("--coverage" in sys.argv):
 
 BUILD_DIRECTORIES=[
 	"build",
+	"build/gdb",
 	"build/hashes",
 	"build/initramfs",
 	"build/initramfs/boot",

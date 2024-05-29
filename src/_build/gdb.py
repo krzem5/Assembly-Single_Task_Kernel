@@ -1,17 +1,27 @@
 import gdb
 import json
+import struct
 
 
 
-gdb.execute(f"add-symbol-file build/kernel/kernel.elf 0xffffffffc0100000",to_string=True)
+gdb.execute("source src/_build/linker.py")
+gdb.execute("add-symbol-file build/kernel/kernel.elf -readnow 0xffffffffc0100000",to_string=True)
 
 
 
-char_ptr_t=gdb.lookup_type("char").pointer()
+MODULE_STATE_LOADED=2
+
+char_t=gdb.lookup_type("char")
 handle_descriptor_t=gdb.lookup_type("handle_descriptor_t")
+mmap_region_t=gdb.lookup_type("mmap_region_t")
+module_t=gdb.lookup_type("module_t")
 rb_tree_node_t=gdb.lookup_type("rb_tree_node_t")
 string_t=gdb.lookup_type("string_t")
 thread_t=gdb.lookup_type("thread_t")
+
+_handle_type_tree=gdb.lookup_symbol("_handle_type_tree")[0].value()
+module_handle_type=int(gdb.lookup_symbol("module_handle_type")[0].value())
+thread_handle_type=int(gdb.lookup_symbol("thread_handle_type")[0].value())
 
 
 
@@ -71,19 +81,33 @@ def rb_tree_iter(tree):
 
 
 
+def handle_get_descriptor(type):
+	return gdb.Value(int(rb_tree_lookup_node(_handle_type_tree,type).address)-offsetof(handle_descriptor_t,"rb_node")).cast(handle_descriptor_t.pointer())[0]
+
+
+
 class KernelListThreads(gdb.Command):
 	def __init__(self):
 		super(KernelListThreads,self).__init__("kernel-list-threads",gdb.COMMAND_USER)
 
 	def invoke(self,arg,from_tty):
-		_handle_type_tree=gdb.lookup_symbol("_handle_type_tree")[0].value()
-		thread_handle_type=int(gdb.lookup_symbol("thread_handle_type")[0].value())
-		thread_handle_descriptor=gdb.Value(int(rb_tree_lookup_node(_handle_type_tree,thread_handle_type).address)-offsetof(handle_descriptor_t,"rb_node")).cast(handle_descriptor_t.pointer())[0]
+		thread_handle_descriptor=handle_get_descriptor(thread_handle_type)
 		for k in rb_tree_iter(thread_handle_descriptor["tree"]):
 			thread=gdb.Value(int(k.address)-offsetof(thread_t,"handle")).cast(thread_t.pointer())[0]
-			print(thread["name"].cast(string_t.pointer())[0]["data"].cast(char_ptr_t).string())
+			print(thread["name"].cast(string_t.pointer())[0]["data"].cast(char_t.pointer()).string())
 
 
 
 KernelListThreads()
 
+
+
+for k in rb_tree_iter(handle_get_descriptor(module_handle_type)["tree"]):
+	module=gdb.Value(int(k.address)-offsetof(module_t,"handle")).cast(module_t.pointer())[0]
+	if (module["state"]!=MODULE_STATE_LOADED):
+		continue
+	name=module["name"].cast(string_t.pointer())[0]["data"].cast(char_t.pointer()).string()
+	base_address=int(module["region"].cast(mmap_region_t.pointer())[0]["rb_node"]["key"])
+	print(name,hex(base_address))
+	link_patched_gdb_module(f"build/module/{name}.mod",f"build/gdb/{name}.mod",base_address)
+	gdb.execute(f"add-symbol-file build/gdb/{name}.mod -readnow {base_address}",to_string=True)

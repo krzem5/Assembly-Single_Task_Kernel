@@ -1,5 +1,8 @@
 SECTIONS{
 	. = 0;
+	.text : { /* prevent GDB from crashing */
+		. += 1;
+	}
 	.module_ue : {
 		*(.etext .etext.*)
 	}

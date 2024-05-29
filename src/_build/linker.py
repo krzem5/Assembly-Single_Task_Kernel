@@ -1,11 +1,15 @@
 import array
 import hashlib
-import json
-import signature
 import struct
 import sys
+try:
+	import signature
+except ImportError:
+	pass
 
 
+
+ET_EXEC=2
 
 SHT_NULL=0
 SHT_PROGBITS=1
@@ -39,6 +43,7 @@ KERNEL_START_ADDRESS=0xffffffffc0100000
 KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kernel_nx",".kernel_rw",".kernel_iw"]
 KERNEL_HASH_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_ex",".kernel_nx"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
+MODULE_SECTION_ORDER=[".module_ue",".module_ur",".module_uw",".module_ex",".module_nx",".module_rw",".module_iw",".module_zw"]
 SIGNATURE_SECTION_NAME=".signature"
 SIGNATURE_SECTION_SIZE=4096
 
@@ -76,11 +81,11 @@ class LinkerContext(object):
 
 
 class SectionHeader(object):
-	def __init__(self,index,name,type,offset,size):
+	def __init__(self,index,name,type,address,offset,size):
 		self.index=index
 		self.name=name
 		self.type=type
-		self.address=0
+		self.address=address
 		self.offset=offset
 		self.file_size=size
 		self.size=size
@@ -141,9 +146,9 @@ def _parse_headers(data):
 	out.e_shentsize=e_shentsize
 	sh_name_offset=struct.unpack("<24xQ32x",data[e_shoff+e_shstrndx*e_shentsize:e_shoff+(e_shstrndx+1)*e_shentsize])[0]
 	for i in range(0,e_shnum):
-		sh_name,sh_type,sh_flags,sh_offset,sh_size,sh_link=struct.unpack("<IIQ8xQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
+		sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link=struct.unpack("<IIQQQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
 		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
-		out.add_section_header(SectionHeader(i,name,sh_type,sh_offset,sh_size))
+		out.add_section_header(SectionHeader(i,name,sh_type,sh_addr,sh_offset,sh_size))
 		if (sh_type==SHT_RELA):
 			out.add_relocation_table(RelocationTable(sh_offset,sh_size,name.replace(".rela","")))
 		elif (sh_type==SHT_SYMTAB):
@@ -183,6 +188,8 @@ def _parse_relocation_tables(ctx):
 		section=ctx.section_headers_by_name[relocation_table.target_section]
 		for i in range(relocation_table.offset,relocation_table.offset+relocation_table.size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
+			if ((r_info>>32) not in ctx.symbol_table.symbols):
+				continue
 			ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,ctx.symbol_table.symbols[r_info>>32],r_addend,(section.name not in KERNEL_SECTION_ORDER))
 
 
@@ -253,6 +260,15 @@ def _place_sections(ctx):
 
 
 
+def _place_sections_at_address(ctx,address):
+	for section_name in MODULE_SECTION_ORDER:
+		if (section_name not in ctx.section_headers_by_name):
+			continue
+		section=ctx.section_headers_by_name[section_name]
+		section.address+=address
+
+
+
 def _apply_relocations(ctx):
 	for relocation in ctx.relocation_entries:
 		if (relocation.is_debug):
@@ -318,10 +334,6 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_place_sections(ctx)
 	_apply_relocations(ctx)
 	with open(src_file_path,"r+b") as wf:
-		for section_name in KERNEL_SECTION_ORDER:
-			section=ctx.section_headers_by_name[section_name]
-			wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
-			wf.write(struct.pack("<Q",section.address))
 		for section in ctx.section_headers.values():
 			if (section.type==SHT_RELA):
 				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize)
@@ -387,3 +399,45 @@ def link_module_or_library(file_path,key_name):
 			raise RuntimeError
 		wf.seek(section.offset)
 		wf.write(signed_digest)
+
+
+
+def link_patched_gdb_module(src_file_path,dst_file_path,address):
+	with open(src_file_path,"rb") as rf,open(dst_file_path,"wb") as wf:
+		data=bytearray(rf.read())
+		wf.write(data)
+	ctx=_parse_headers(data)
+	_parse_symbol_table(ctx,allow_undefined=True)
+	_parse_relocation_tables(ctx)
+	_place_sections_at_address(ctx,address)
+	with open(dst_file_path,"r+b") as wf:
+		wf.seek(16)
+		wf.write(struct.pack("<H",ET_EXEC))
+		for symbol in ctx.symbol_table.symbols_by_name.values():
+			wf.seek(ctx.symbol_table.offset+symbol.index*24+8)
+			wf.write(struct.pack("<Q",symbol.value+symbol.section.address))
+		for section in ctx.section_headers.values():
+			if (section.type==SHT_RELA):
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize)
+				wf.write(struct.pack("<II",0,SHT_NULL))
+			elif (section.name in MODULE_SECTION_ORDER):
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+				wf.write(struct.pack("<Q",section.address))
+			else:
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+				wf.write(struct.pack("<Q",section.address+address))
+		for relocation in ctx.relocation_entries:
+			if (relocation.offset>=relocation.section.file_size):
+				continue
+			relocation_address=relocation.section.address+relocation.offset
+			relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
+			wf.seek(relocation.section.offset+relocation.offset)
+			if (relocation.type==R_X86_64_64):
+				wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
+			elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
+				wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
+			elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
+				wf.write(struct.pack("<I",relocation_value&0xffffffff))
+			else:
+				print(f"Unknown relocation type '{relocation.type}'")
+				sys.exit(1)
