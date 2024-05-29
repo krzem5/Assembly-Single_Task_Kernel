@@ -41,7 +41,6 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	handle_type_t out=__atomic_add_fetch(&_handle_max_type,1,__ATOMIC_SEQ_CST);
 	handle_descriptor_t* descriptor=omm_alloc(_handle_descriptor_allocator);
 	descriptor->name=name;
-	descriptor->var=NULL;
 	descriptor->delete_callback=delete_callback;
 	if (handle_handle_type){
 		handle_new(descriptor,handle_handle_type,&(descriptor->handle));

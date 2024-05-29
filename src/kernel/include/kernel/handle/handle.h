@@ -51,7 +51,6 @@ typedef void (*handle_type_delete_callback_t)(handle_t*);
 
 typedef struct _HANDLE_DESCRIPTOR{
 	const char* name;
-	handle_type_t* var;
 	handle_type_delete_callback_t delete_callback;
 	handle_t handle;
 	rwlock_t lock;

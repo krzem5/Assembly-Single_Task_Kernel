@@ -7,6 +7,7 @@ import sys
 
 
 
+SHT_NULL=0
 SHT_PROGBITS=1
 SHT_SYMTAB=2
 SHT_RELA=4
@@ -75,11 +76,13 @@ class LinkerContext(object):
 
 
 class SectionHeader(object):
-	def __init__(self,index,name,offset,size):
+	def __init__(self,index,name,type,offset,size):
 		self.index=index
 		self.name=name
+		self.type=type
 		self.address=0
 		self.offset=offset
+		self.file_size=size
 		self.size=size
 		self.suffix_data=bytearray()
 
@@ -140,7 +143,7 @@ def _parse_headers(data):
 	for i in range(0,e_shnum):
 		sh_name,sh_type,sh_flags,sh_offset,sh_size,sh_link=struct.unpack("<IIQ8xQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
 		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
-		out.add_section_header(SectionHeader(i,name,sh_offset,sh_size))
+		out.add_section_header(SectionHeader(i,name,sh_type,sh_offset,sh_size))
 		if (sh_type==SHT_RELA):
 			out.add_relocation_table(RelocationTable(sh_offset,sh_size,name.replace(".rela","")))
 		elif (sh_type==SHT_SYMTAB):
@@ -314,30 +317,42 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_generate_relocation_table(ctx)
 	_place_sections(ctx)
 	_apply_relocations(ctx)
-	# with open(src_file_path,"r+b") as wf:
-	# 	for relocation in ctx.relocation_entries:
-	# 		if (relocation.offset+8>=relocation.section.size):
-	# 			continue
-	# 		relocation_address=relocation.section.address+relocation.offset
-	# 		relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
-	# 		wf.seek(relocation.section.offset+relocation.offset)
-	# 		if (relocation.type==R_X86_64_64):
-	# 			wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
-	# 		elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
-	# 			wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
-	# 		elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
-	# 			wf.write(struct.pack("<I",relocation_value&0xffffffff))
-	# 		else:
-	# 			print(f"Unknown relocation type '{relocation.type}'")
-	# 			sys.exit(1)
+	with open(src_file_path,"r+b") as wf:
+		for section_name in KERNEL_SECTION_ORDER:
+			section=ctx.section_headers_by_name[section_name]
+			wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+			wf.write(struct.pack("<Q",section.address))
+		for section in ctx.section_headers.values():
+			if (section.type==SHT_RELA):
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize)
+				wf.write(struct.pack("<II",0,SHT_NULL))
+			elif (section.name in KERNEL_SECTION_ORDER):
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+				wf.write(struct.pack("<Q",section.address))
+			else:
+				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+				wf.write(struct.pack("<Q",section.address+KERNEL_START_ADDRESS))
+		for relocation in ctx.relocation_entries:
+			if (relocation.offset>=relocation.section.file_size):
+				continue
+			relocation_address=relocation.section.address+relocation.offset
+			relocation_value=relocation.symbol.section.address+relocation.symbol.value+relocation.addend
+			wf.seek(relocation.section.offset+relocation.offset)
+			if (relocation.type==R_X86_64_64):
+				wf.write(struct.pack("<Q",relocation_value&0xffffffffffffffff))
+			elif (relocation.type==R_X86_64_PC32 or relocation.type==R_X86_64_PLT32):
+				wf.write(struct.pack("<I",(relocation_value-relocation_address)&0xffffffff))
+			elif (relocation.type==R_X86_64_32 or relocation.type==R_X86_64_32S):
+				wf.write(struct.pack("<I",relocation_value&0xffffffff))
+			else:
+				print(f"Unknown relocation type '{relocation.type}'")
+				sys.exit(1)
 	_generate_signature_key(ctx,"module")
 	_generate_signature_key(ctx,"user")
 	_generate_build_info(ctx,build_version,build_name)
 	_generate_signature(ctx)
 	with open(dst_file_path,"wb") as wf:
 		wf.write(ctx.out)
-	with open(dst_file_path.replace(".bin",".json"),"w") as wf:
-		wf.write(json.dumps({section_name:ctx.section_headers_by_name[section_name].address for section_name in KERNEL_SECTION_ORDER},separators=(",",":")))
 
 
 
