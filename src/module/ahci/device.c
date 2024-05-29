@@ -224,7 +224,6 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
-		pci_device_t* device=handle->object;
-		_ahci_init_device(device);
+		_ahci_init_device(KERNEL_CONTAINEROF(handle,pci_device_t,handle));
 	}
 }

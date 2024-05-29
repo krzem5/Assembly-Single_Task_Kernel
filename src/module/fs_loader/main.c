@@ -19,7 +19,7 @@
 static filesystem_t* _match_fs(const char* guid,const char* type){
 	HANDLE_FOREACH(fs_handle_type){
 		handle_acquire(handle);
-		filesystem_t* fs=handle->object;
+		filesystem_t* fs=KERNEL_CONTAINEROF(handle,filesystem_t,handle);
 		if (guid){
 			if (str_equal(guid,"boot")){
 				for (u8 i=0;i<16;i++){

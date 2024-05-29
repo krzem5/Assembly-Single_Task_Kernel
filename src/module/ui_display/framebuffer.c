@@ -37,7 +37,7 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(ui_display_t* display,u32 
 		return NULL;
 	}
 	ui_framebuffer_t* out=omm_alloc(_ui_framebuffer_allocator);
-	handle_new(out,ui_framebuffer_handle_type,&(out->handle));
+	handle_new(ui_framebuffer_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,UI_FRAMEBUFFER_ACL_FLAG_USE);
 	out->display=display;

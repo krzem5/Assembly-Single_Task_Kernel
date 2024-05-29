@@ -24,7 +24,7 @@ static void _listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const partition_t* partition=handle->object;
+		const partition_t* partition=KERNEL_CONTAINEROF(handle,const partition_t,handle);
 		const drive_t* drive=partition->drive;
 		char buffer[32];
 		format_string(buffer,32,"%s%ud%up%u",drive->type->name,drive->controller_index,drive->device_index,partition->index);

@@ -24,7 +24,7 @@ KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
 
 
 static void _partition_handle_destructor(handle_t* handle){
-	partition_t* partition=handle->object;
+	partition_t* partition=KERNEL_CONTAINEROF(handle,partition_t,handle);
 	if (partition->descriptor){
 		handle_release(&(partition->descriptor->handle));
 	}
@@ -44,10 +44,10 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 	}
 	partition_table_descriptor_t* out=omm_alloc(_partition_table_descriptor_allocator);
 	out->config=config;
-	handle_new(out,partition_table_descriptor_handle_type,&(out->handle));
+	handle_new(partition_table_descriptor_handle_type,&(out->handle));
 	handle_finish_setup(&(out->handle));
 	HANDLE_FOREACH(drive_handle_type){
-		drive_t* drive=handle->object;
+		drive_t* drive=KERNEL_CONTAINEROF(handle,drive_t,handle);
 		if (drive->partition_table_descriptor){
 			continue;
 		}
@@ -77,7 +77,7 @@ KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descrip
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
 	HANDLE_FOREACH(partition_table_descriptor_handle_type){
-		partition_table_descriptor_t* descriptor=handle->object;
+		partition_table_descriptor_t* descriptor=KERNEL_CONTAINEROF(handle,partition_table_descriptor_t,handle);
 		if (!descriptor->config->load_callback){
 			continue;
 		}
@@ -106,7 +106,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 		partition_handle_type=handle_alloc("kernel.partition",_partition_handle_destructor);
 	}
 	partition_t* out=omm_alloc(_partition_allocator);
-	handle_new(out,partition_handle_type,&(out->handle));
+	handle_new(partition_handle_type,&(out->handle));
 	out->descriptor=drive->partition_table_descriptor;
 	out->drive=drive;
 	out->index=index;
@@ -142,7 +142,7 @@ error_t syscall_partition_get_data(u64 partition_handle_id,KERNEL_USER_POINTER p
 	if (!partition_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	partition_t* partition=partition_handle->object;
+	partition_t* partition=KERNEL_CONTAINEROF(partition_handle,partition_t,handle);
 	str_copy(partition->name->data,(char*)(buffer->name),sizeof(buffer->name));
 	str_copy(partition->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
 	buffer->drive=partition->drive->handle.rb_node.key;
@@ -175,7 +175,7 @@ error_t syscall_partition_table_descriptor_get_data(u64 partition_table_descript
 	if (!partition_table_descriptor_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	partition_table_descriptor_t* partition_table_descriptor=partition_table_descriptor_handle->object;
+	partition_table_descriptor_t* partition_table_descriptor=KERNEL_CONTAINEROF(partition_table_descriptor_handle,partition_table_descriptor_t,handle);
 	str_copy(partition_table_descriptor->config->name,(char*)(buffer->name),sizeof(buffer->name));
 	buffer->flags=0;
 	if (partition_table_descriptor->config->format_callback){

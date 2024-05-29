@@ -75,7 +75,7 @@ KERNEL_EARLY_EARLY_INIT(){
 KERNEL_PUBLIC event_t* event_create(const char* name){
 	event_t* out=omm_alloc(_event_allocator);
 	out->name=name;
-	handle_new(out,event_handle_type,&(out->handle));
+	handle_new(event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
@@ -193,7 +193,7 @@ KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 co
 		if (!handle_event){
 			continue;
 		}
-		bool is_active=_await_event(thread,handle_event->object,i);
+		bool is_active=_await_event(thread,KERNEL_CONTAINEROF(handle_event,event_t,handle),i);
 		handle_release(handle_event);
 		if (is_active){
 			rwlock_acquire_write(&(thread->lock));
@@ -249,7 +249,7 @@ error_t syscall_event_delete(handle_id_t event_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	event_t* event=handle->object;
+	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
 	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
 		handle_release(handle);
 		return ERROR_DENIED;
@@ -266,7 +266,7 @@ error_t syscall_event_dispatch(handle_id_t event_handle,u32 dispatch_flags){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	event_t* event=handle->object;
+	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
 	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		handle_release(handle);
 		return ERROR_DENIED;
@@ -290,7 +290,7 @@ error_t syscall_event_set_active(handle_id_t event_handle,u32 is_active){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	event_t* event=handle->object;
+	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
 	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DISPATCH)){
 		handle_release(handle);
 		return ERROR_DENIED;

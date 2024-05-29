@@ -52,7 +52,7 @@ static u64 _syscall_get_test_handle(void){
 
 static void _syscall_set_test_handle_flags(u64 process,u64 clear,u64 set){
 	handle_t* handle=handle_lookup_and_acquire(process,process_handle_type);
-	acl_set(_test_acl_handle.acl,(handle?handle->object:THREAD_DATA->process),clear,set);
+	acl_set(_test_acl_handle.acl,(handle?KERNEL_CONTAINEROF(handle,process_t,handle):THREAD_DATA->process),clear,set);
 	if (handle){
 		handle_release(handle);
 	}
@@ -234,9 +234,9 @@ void test_acl(void){
 	TEST_ASSERT(!acl_register_request_callback(_permission_request_callback));
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
 	handle_type_t handle_type=handle_alloc("test.acl_handle",NULL);
-	handle_new(&_test_acl_handle_without_acl,handle_type,&_test_acl_handle_without_acl);
+	handle_new(handle_type,&_test_acl_handle_without_acl);
 	handle_finish_setup(&_test_acl_handle_without_acl);
-	handle_new(&_test_acl_handle,handle_type,&_test_acl_handle);
+	handle_new(handle_type,&_test_acl_handle);
 	handle_finish_setup(&_test_acl_handle);
 	_test_acl_handle.acl=acl_create();
 	handle_acquire(&(test_process->handle));

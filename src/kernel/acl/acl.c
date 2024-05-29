@@ -140,7 +140,7 @@ error_t syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_ha
 			return ERROR_INVALID_HANDLE;
 		}
 	}
-	u64 out=acl_get(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process));
+	u64 out=acl_get(handle->acl,(process_handle?KERNEL_CONTAINEROF(process_handle,process_t,handle):THREAD_DATA->process));
 	if (process_handle){
 		handle_release(process_handle);
 	}
@@ -175,7 +175,7 @@ error_t syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_ha
 	if (!(process_get_id_flags()&ID_FLAG_ROOT_ACL)){
 		set&=acl_get(handle->acl,THREAD_DATA->process);
 	}
-	acl_set(handle->acl,(process_handle?process_handle->object:THREAD_DATA->process),clear,set);
+	acl_set(handle->acl,(process_handle?KERNEL_CONTAINEROF(process_handle,process_t,handle):THREAD_DATA->process),clear,set);
 	if (process_handle){
 		handle_release(process_handle);
 	}
@@ -204,7 +204,7 @@ error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t proces
 			return ERROR_INVALID_HANDLE;
 		}
 	}
-	process_t* process=(process_handle?process_handle->object:THREAD_DATA->process);
+	process_t* process=(process_handle?KERNEL_CONTAINEROF(process_handle,process_t,handle):THREAD_DATA->process);
 	LOG("'%s' requested permissions '%x' for handle '%s'",process->name->data,flags,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name);
 	acl_request_callback_t callback=_acl_request_callback;
 	u64 out=(callback?callback(handle,process,flags):ERROR_DENIED);

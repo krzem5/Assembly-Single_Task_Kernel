@@ -230,7 +230,7 @@ KERNEL_PUBLIC pmm_counter_descriptor_t* pmm_alloc_counter(const char* name){
 	pmm_counter_descriptor_t* out=omm_alloc(_pmm_counter_allocator);
 	out->name=name;
 	out->count=0;
-	handle_new(out,pmm_counter_handle_type,&(out->handle));
+	handle_new(pmm_counter_handle_type,&(out->handle));
 	handle_finish_setup(&(out->handle));
 	return out;
 }

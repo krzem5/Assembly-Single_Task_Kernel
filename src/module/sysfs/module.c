@@ -45,13 +45,13 @@ static void _listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const module_t* module=handle->object;
+		const module_t* module=KERNEL_CONTAINEROF(handle,const module_t,handle);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_module_type_root,module->name->data,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_create_link_node(node,"exe","/boot/module/%s.mod",module->name->data);
 		dynamicfs_create_node(node,"state",VFS_NODE_TYPE_FILE,NULL,_sysfs_module_state_read_callback,(void*)module);
 	}
 	else if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
-		const module_t* module=handle->object;
+		const module_t* module=KERNEL_CONTAINEROF(handle,const module_t,handle);
 		vfs_node_t* node=vfs_lookup(_sysfs_module_type_root,module->name->data,0,0,0);
 		if (node){
 			dynamicfs_delete_node(vfs_lookup(node,"exe",0,0,0),1);

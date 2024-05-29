@@ -81,7 +81,7 @@ static void _virtio_init_device(pci_device_t* device){
 		}
 		INFO("VirtIO PCI structure: type=%u, address=%p, length=%u",type,field,pci_device_read_data(device,offset+12));
 	}
-	handle_new(virtio_device,_virtio_device_handle_type,&(virtio_device->handle));
+	handle_new(_virtio_device_handle_type,&(virtio_device->handle));
 	virtio_device->type=device->device_id-(device->device_id>=0x1040?0x1040:0x1000);
 	virtio_device->index=_virtio_device_next_index;
 	virtio_device->queues=NULL;
@@ -132,7 +132,7 @@ KERNEL_PUBLIC bool virtio_register_device_driver(const virtio_device_driver_t* d
 	rb_tree_insert_node(&_virtio_device_driver_tree,&(node->rb_node));
 	rwlock_release_write(&_virtio_device_driver_tree_lock);
 	HANDLE_FOREACH(_virtio_device_handle_type){
-		virtio_device_t* device=handle->object;
+		virtio_device_t* device=KERNEL_CONTAINEROF(handle,virtio_device_t,handle);
 		if (device->type!=driver->type||device->is_legacy!=driver->is_legacy){
 			continue;
 		}
@@ -370,7 +370,6 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
-		pci_device_t* device=handle->object;
-		_virtio_init_device(device);
+		_virtio_init_device(KERNEL_CONTAINEROF(handle,pci_device_t,handle));
 	}
 }

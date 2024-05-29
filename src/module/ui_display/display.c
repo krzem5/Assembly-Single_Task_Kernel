@@ -33,7 +33,7 @@ KERNEL_PUBLIC ui_display_t* ui_display_create(const ui_display_driver_t* driver,
 		return NULL;
 	}
 	ui_display_t* out=omm_alloc(_ui_display_allocator);
-	handle_new(out,ui_display_handle_type,&(out->handle));
+	handle_new(ui_display_handle_type,&(out->handle));
 	out->driver=driver;
 	out->ctx=ctx;
 	out->index=index;

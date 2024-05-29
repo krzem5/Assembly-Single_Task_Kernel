@@ -59,7 +59,7 @@ KERNEL_PUBLIC handle_type_t module_handle_type=0;
 
 
 static void _module_handle_destructor(handle_t* handle){
-	module_t* module=handle->object;
+	module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 	smm_dealloc(module->name);
 	omm_dealloc(_module_allocator,module);
 }
@@ -376,7 +376,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
-	handle_new(module,module_handle_type,&(module->handle));
+	handle_new(module_handle_type,&(module->handle));
 	module->name=smm_alloc(name,0);
 	module->region=NULL;
 	module->flags=0;
@@ -468,7 +468,7 @@ KERNEL_PUBLIC bool module_unload(module_t* module){
 KERNEL_PUBLIC module_t* module_lookup(const char* name){
 	HANDLE_FOREACH(module_handle_type){
 		handle_acquire(handle);
-		module_t* module=handle->object;
+		module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 		if (str_equal(module->name->data,name)){
 			handle_release(handle);
 			return module;

@@ -276,7 +276,7 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 		}
 		aml_object_dealloc(value);
 	}
-	handle_new(out,aml_bus_device_handle_type,&(out->handle));
+	handle_new(aml_bus_device_handle_type,&(out->handle));
 	handle_finish_setup(&(out->handle));
 	_get_device_crs(out);
 	return out;
@@ -437,10 +437,11 @@ KERNEL_PUBLIC void aml_bus_register_device_driver(const aml_bus_device_driver_t*
 	node->driver=driver;
 	_aml_bus_device_driver_head=node;
 	HANDLE_FOREACH(aml_bus_device_handle_type){
-		if (!_match_device(driver,handle->object)){
+		aml_bus_device_t* device=KERNEL_CONTAINEROF(handle,aml_bus_device_t,handle);
+		if (!_match_device(driver,device)){
 			continue;
 		}
-		driver->init(handle->object);
+		driver->init(device);
 	}
 }
 

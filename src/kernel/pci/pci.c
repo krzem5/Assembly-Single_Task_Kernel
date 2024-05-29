@@ -48,7 +48,7 @@ KERNEL_INIT(){
 					continue;
 				}
 				pci_device_t* device=omm_alloc(_pci_device_allocator);
-				handle_new(device,pci_device_handle_type,&(device->handle));
+				handle_new(pci_device_handle_type,&(device->handle));
 				device->address=device_address;
 				device->device_id=data[0]>>16;
 				device->vendor_id=data[0];

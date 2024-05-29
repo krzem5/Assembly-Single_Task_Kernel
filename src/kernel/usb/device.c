@@ -181,7 +181,7 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_device_t* parent,u16 port,u8 speed){
 	usb_device_t* out=omm_alloc(_usb_device_allocator);
-	handle_new(out,usb_device_handle_type,&(out->handle));
+	handle_new(usb_device_handle_type,&(out->handle));
 	out->controller=controller;
 	out->parent=parent;
 	out->prev=NULL;
@@ -228,7 +228,7 @@ KERNEL_PUBLIC bool usb_device_set_configuration(usb_device_t* device,u8 value){
 	for (usb_interface_descriptor_t* interface_descriptor=configuration_descriptor->interface;interface_descriptor;interface_descriptor=interface_descriptor->next){
 		HANDLE_FOREACH(usb_driver_descriptor_handle_type){
 			handle_acquire(handle);
-			usb_driver_descriptor_t* descriptor=handle->object;
+			usb_driver_descriptor_t* descriptor=KERNEL_CONTAINEROF(handle,usb_driver_descriptor_t,handle);
 			if (!descriptor->load_callback(device,interface_descriptor)){
 				handle_release(handle);
 				continue;

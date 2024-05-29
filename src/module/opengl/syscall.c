@@ -17,7 +17,7 @@
 static error_t _syscall_get_driver_instance(u16 min_version){
 	opengl_driver_instance_t* best=NULL;
 	HANDLE_FOREACH(opengl_driver_instance_handle_type){
-		opengl_driver_instance_t* instance=handle->object;
+		opengl_driver_instance_t* instance=KERNEL_CONTAINEROF(handle,opengl_driver_instance_t,handle);
 		if (instance->driver->opengl_version>=min_version){
 			best=instance;
 			min_version=instance->driver->opengl_version;
@@ -39,7 +39,7 @@ static error_t _syscall_get_driver_instance_data(opengl_user_driver_instance_t i
 	if (!driver_instance_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	opengl_driver_instance_t* driver_instance=driver_instance_handle->object;
+	opengl_driver_instance_t* driver_instance=KERNEL_CONTAINEROF(driver_instance_handle,opengl_driver_instance_t,handle);
 	buffer->opengl_version=driver_instance->driver->opengl_version;
 	str_copy(driver_instance->driver->name,(char*)(buffer->driver_name),32);
 	str_copy(driver_instance->renderer,(char*)(buffer->renderer_name),64);
@@ -55,7 +55,7 @@ static error_t _syscall_create_state(opengl_user_driver_instance_t instance){
 	if (!driver_instance_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	opengl_driver_instance_t* driver_instance=driver_instance_handle->object;
+	opengl_driver_instance_t* driver_instance=KERNEL_CONTAINEROF(driver_instance_handle,opengl_driver_instance_t,handle);
 	opengl_state_t* state=opengl_create_state(driver_instance);
 	handle_release(driver_instance_handle);
 	return (state?state->handle.rb_node.key:ERROR_NO_MEMORY);
@@ -69,7 +69,7 @@ static error_t _syscall_delete_state(opengl_user_state_t state){
 		return ERROR_INVALID_HANDLE;
 	}
 	handle_release(state_handle);
-	opengl_delete_state(state_handle->object);
+	opengl_delete_state(KERNEL_CONTAINEROF(state_handle,opengl_state_t,handle));
 	return ERROR_OK;
 }
 
@@ -91,9 +91,9 @@ static error_t _syscall_set_state_framebuffer(opengl_user_state_t state_handle_i
 			handle_release(framebuffer_handle);
 			return ERROR_DENIED;
 		}
-		framebuffer=framebuffer_handle->object;
+		framebuffer=KERNEL_CONTAINEROF(framebuffer_handle,ui_framebuffer_t,handle);
 	}
-	opengl_state_t* state=state_handle->object;
+	opengl_state_t* state=KERNEL_CONTAINEROF(state_handle,opengl_state_t,handle);
 	ui_framebuffer_t* old_framebuffer=state->framebuffer;
 	state->framebuffer=framebuffer;
 	state->driver_instance->driver->update_render_target(state->driver_instance,state);
@@ -117,7 +117,7 @@ static error_t _syscall_flush_command_buffer(opengl_user_state_t state_handle_id
 	if (!state_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	opengl_state_t* state=state_handle->object;
+	opengl_state_t* state=KERNEL_CONTAINEROF(state_handle,opengl_state_t,handle);
 	if (!(acl_get(state->handle.acl,THREAD_DATA->process)&OPENGL_STATE_ACL_FLAG_SEND_COMMANDS)){
 		handle_release(state_handle);
 		return ERROR_DENIED;

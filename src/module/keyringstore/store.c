@@ -215,7 +215,7 @@ static void _store_keyring(keyring_t* keyring){
 static void _keyring_update_notification_thread(void){
 	notification2_consumer_t* consumer=notification2_consumer_create(&keyring_notification_dispatcher);
 	HANDLE_FOREACH(keyring_handle_type){
-		_store_keyring(handle->object);
+		_store_keyring(KERNEL_CONTAINEROF(handle,keyring_t,handle));
 	}
 	while (1){
 		notification2_t notification;
@@ -226,7 +226,7 @@ static void _keyring_update_notification_thread(void){
 		if (!handle){
 			continue;
 		}
-		keyring_t* keyring=handle->object;
+		keyring_t* keyring=KERNEL_CONTAINEROF(handle,keyring_t,handle);
 		if (notification.type==NOTIFICATION_TYPE_KEYRING_UPDATE){
 			_store_keyring(keyring);
 		}

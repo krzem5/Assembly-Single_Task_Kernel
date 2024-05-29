@@ -33,7 +33,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){
 			handle_descriptor_t* descriptor=KERNEL_CONTAINEROF(rb_node,handle_descriptor_t,rb_node);
 			if (!descriptor->handle.rb_node.key){
-				handle_new(descriptor,handle_handle_type,&(descriptor->handle));
+				handle_new(handle_handle_type,&(descriptor->handle));
 				handle_finish_setup(&(descriptor->handle));
 			}
 		}
@@ -43,7 +43,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	descriptor->name=name;
 	descriptor->delete_callback=delete_callback;
 	if (handle_handle_type){
-		handle_new(descriptor,handle_handle_type,&(descriptor->handle));
+		handle_new(handle_handle_type,&(descriptor->handle));
 	}
 	else{
 		descriptor->handle.rb_node.key=0;
@@ -70,12 +70,11 @@ KERNEL_PUBLIC handle_descriptor_t* handle_get_descriptor(handle_type_t type){
 
 
 
-KERNEL_PUBLIC void handle_new(void* object,handle_type_t type,handle_t* out){
+KERNEL_PUBLIC void handle_new(handle_type_t type,handle_t* out){
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(type);
 	if (!handle_descriptor){
 		panic("Invalid handle type");
 	}
-	out->object=object;
 	out->rc=1;
 	out->acl=NULL;
 	out->handle_list=NULL;

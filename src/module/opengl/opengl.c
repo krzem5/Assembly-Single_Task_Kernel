@@ -38,7 +38,7 @@ MODULE_INIT(){
 KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const opengl_driver_t* driver,const char* renderer,void* ctx){
 	LOG("Creating new OpenGL driver instance '%s/%s'...",driver->name,renderer);
 	opengl_driver_instance_t* out=omm_alloc(_opengl_driver_instance_allocator);
-	handle_new(out,opengl_driver_instance_handle_type,&(out->handle));
+	handle_new(opengl_driver_instance_handle_type,&(out->handle));
 	str_copy(renderer,out->renderer,64);
 	out->driver=driver;
 	out->ctx=ctx;
@@ -50,7 +50,7 @@ KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const open
 
 opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
 	opengl_state_t* out=omm_alloc(_opengl_state_allocator);
-	handle_new(out,opengl_state_handle_type,&(out->handle));
+	handle_new(opengl_state_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,OPENGL_STATE_ACL_FLAG_SEND_COMMANDS);

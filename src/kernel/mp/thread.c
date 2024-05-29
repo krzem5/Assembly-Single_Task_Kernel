@@ -49,7 +49,7 @@ KERNEL_PUBLIC handle_type_t thread_handle_type=0;
 
 
 static void _thread_handle_destructor(handle_t* handle){
-	thread_t* thread=handle->object;
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
 	if (thread->state!=THREAD_STATE_TYPE_TERMINATED){
 		panic("Unterminated thread not referenced");
 	}
@@ -106,7 +106,7 @@ static thread_t* _thread_create(process_t* process){
 		rwlock_init(&_thread_cache_lock);
 	}
 	thread_t* out=_thread_alloc();
-	handle_new(out,thread_handle_type,&(out->handle));
+	handle_new(thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE);
 	rwlock_init(&(out->lock));
@@ -255,7 +255,7 @@ error_t syscall_thread_get_priority(handle_id_t thread_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	u64 out=((thread_t*)(handle->object))->priority;
+	u64 out=KERNEL_CONTAINEROF(handle,thread_t,handle)->priority;
 	handle_release(handle);
 	return out;
 }
@@ -270,7 +270,7 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	thread_t* thread=handle->object;
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
 	if (thread->state==THREAD_STATE_TYPE_TERMINATED){
 		handle_release(handle);
 		return ERROR_UNSUPPORTED_OPERATION;

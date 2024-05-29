@@ -22,7 +22,7 @@ static void _listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const drive_t* drive=handle->object;
+		const drive_t* drive=KERNEL_CONTAINEROF(handle,const drive_t,handle);
 		char buffer[32];
 		format_string(buffer,32,"%s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
 		vfs_node_t* node=dynamicfs_create_node(_devfs_drive_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);

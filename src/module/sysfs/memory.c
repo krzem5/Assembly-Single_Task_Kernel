@@ -35,7 +35,7 @@ static void _pmm_counter_listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const pmm_counter_descriptor_t* descriptor=handle->object;
+		const pmm_counter_descriptor_t* descriptor=KERNEL_CONTAINEROF(handle,const pmm_counter_descriptor_t,handle);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_memory_pmm_counter_root,descriptor->name,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_set_root_only(node);
 		dynamicfs_set_root_only(dynamicfs_create_node(node,"count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(descriptor->count))));
@@ -54,7 +54,7 @@ static void _omm_allocator_listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const omm_allocator_t* allocator=handle->object;
+		const omm_allocator_t* allocator=KERNEL_CONTAINEROF(handle,const omm_allocator_t,handle);
 		vfs_node_t* node=dynamicfs_create_node(_sysfs_memory_object_counter_root,allocator->name,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		dynamicfs_set_root_only(node);
 		dynamicfs_set_root_only(dynamicfs_create_node(node,"alloc_count",VFS_NODE_TYPE_FILE,NULL,dynamicfs_integer_read_callback,(void*)(&(allocator->allocation_count))));

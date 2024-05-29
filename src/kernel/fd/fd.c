@@ -29,7 +29,7 @@ static handle_type_t _fd_iterator_handle_type=0;
 
 
 static void _fd_handle_destructor(handle_t* handle){
-	fd_t* data=handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(handle,fd_t,handle);
 	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
 		panic("FD_FLAG_DELETE_ON_EXIT");
 	}
@@ -40,7 +40,7 @@ static void _fd_handle_destructor(handle_t* handle){
 
 
 static void _fd_iterator_handle_destructor(handle_t* handle){
-	fd_iterator_t* data=handle->object;
+	fd_iterator_t* data=KERNEL_CONTAINEROF(handle,fd_iterator_t,handle);
 	if (data->current_name){
 		smm_dealloc(data->current_name);
 	}
@@ -65,7 +65,7 @@ KERNEL_INIT(){
 KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	node->rc++;
 	fd_t* out=omm_alloc(_fd_allocator);
-	handle_new(out,_fd_handle_type,&(out->handle));
+	handle_new(_fd_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
@@ -91,7 +91,7 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 	if (!fd_handle){
 		return NULL;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	return data->node;
 }
 
@@ -118,7 +118,7 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		if (!root_handle){
 			return ERROR_INVALID_HANDLE;
 		}
-		root_node=((fd_t*)(root_handle->object))->node;
+		root_node=KERNEL_CONTAINEROF(root_handle,fd_t,handle)->node;
 	}
 	error_t error=ERROR_NOT_FOUND;
 	vfs_node_t* node;
@@ -157,7 +157,7 @@ error_t syscall_fd_close(handle_id_t fd){
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_CLOSE)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -181,7 +181,7 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 coun
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -211,7 +211,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -235,7 +235,7 @@ error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -269,7 +269,7 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -297,7 +297,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -340,7 +340,7 @@ error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buff
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -359,7 +359,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_t* data=fd_handle->object;
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -378,7 +378,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 		return ERROR_NO_DATA;
 	}
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
-	handle_new(out,_fd_iterator_handle_type,&(out->handle));
+	handle_new(_fd_iterator_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ITERATOR_ACL_FLAG_ACCESS);
@@ -402,7 +402,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffe
 	if (!fd_iterator_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_iterator_t* data=fd_iterator_handle->object;
+	fd_iterator_t* data=KERNEL_CONTAINEROF(fd_iterator_handle,fd_iterator_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
@@ -433,7 +433,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 	if (!fd_iterator_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_iterator_t* data=fd_iterator_handle->object;
+	fd_iterator_t* data=KERNEL_CONTAINEROF(fd_iterator_handle,fd_iterator_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
@@ -463,7 +463,7 @@ error_t syscall_fd_iter_stop(handle_id_t iterator){
 	if (!fd_iterator_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	fd_iterator_t* data=fd_iterator_handle->object;
+	fd_iterator_t* data=KERNEL_CONTAINEROF(fd_iterator_handle,fd_iterator_t,handle);
 	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ITERATOR_ACL_FLAG_ACCESS)){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;

@@ -32,7 +32,7 @@ KERNEL_PUBLIC notification2_dispatcher_t keyring_notification_dispatcher;
 
 
 static void _keyring_handle_destructor(handle_t* handle){
-	keyring_t* keyring=handle->object;
+	keyring_t* keyring=KERNEL_CONTAINEROF(handle,keyring_t,handle);
 	ERROR("Delete keyring '%s'",keyring->name->data);
 }
 
@@ -69,7 +69,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	string_t* name_string=smm_alloc(name,0);
 	rwlock_acquire_write(&_keyring_creation_lock);
 	HANDLE_FOREACH(keyring_handle_type){
-		keyring_t* keyring=handle->object;
+		keyring_t* keyring=KERNEL_CONTAINEROF(handle,keyring_t,handle);
 		if (smm_equal(keyring->name,name_string)){
 			rwlock_release_write(&_keyring_creation_lock);
 			smm_dealloc(name_string);
@@ -78,7 +78,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	}
 	keyring_t* out=omm_alloc(_keyring_allocator);
 	out->name=name_string;
-	handle_new(out,keyring_handle_type,&(out->handle));
+	handle_new(keyring_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	rwlock_init(&(out->lock));
 	out->head=NULL;

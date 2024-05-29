@@ -86,9 +86,9 @@ void KERNEL_EARLY_EXEC omm_init_self(void){
 
 void KERNEL_EARLY_EXEC omm_init_handle_type(omm_allocator_t* handle_allocator){
 	omm_handle_type=handle_alloc("kernel.omm.allocator",NULL);
-	handle_new(_omm_self_allocator,omm_handle_type,&(_omm_self_allocator->handle));
+	handle_new(omm_handle_type,&(_omm_self_allocator->handle));
 	handle_finish_setup(&(_omm_self_allocator->handle));
-	handle_new(handle_allocator,omm_handle_type,&(handle_allocator->handle));
+	handle_new(omm_handle_type,&(handle_allocator->handle));
 	handle_finish_setup(&(handle_allocator->handle));
 }
 
@@ -101,7 +101,7 @@ KERNEL_PUBLIC omm_allocator_t* omm_init(const char* name,u64 object_size,u64 ali
 	omm_allocator_t* out=omm_alloc(_omm_self_allocator);
 	_init_allocator(name,object_size,alignment,page_count,out);
 	if (omm_handle_type){
-		handle_new(out,omm_handle_type,&(out->handle));
+		handle_new(omm_handle_type,&(out->handle));
 		handle_finish_setup(&(out->handle));
 	}
 	return out;

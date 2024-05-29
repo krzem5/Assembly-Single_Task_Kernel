@@ -122,7 +122,7 @@ static KERNEL_NOCOVERAGE void _syscall_shutdown(void){
 	_process_gcov_info_section(base,size);
 	LOG("Exporting module coverage data...");
 	HANDLE_FOREACH(module_handle_type){
-		module_t* module=handle->object;
+		module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 		if (module->state==MODULE_STATE_LOADED&&module->gcov_info_base&&module->gcov_info_size){
 			_process_gcov_info_section(module->gcov_info_base,module->gcov_info_size);
 		}

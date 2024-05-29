@@ -19,7 +19,7 @@ static void _listener(u64 object,u32 type){
 		return;
 	}
 	if (type==NOTIFICATION_TYPE_HANDLE_CREATE){
-		const process_t* process=handle->object;
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
 		char buffer[32];
 		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
 		vfs_node_t* node=dynamicfs_create_node(procfs->root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
@@ -31,7 +31,7 @@ static void _listener(u64 object,u32 type){
 		dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	}
 	else if (type==NOTIFICATION_TYPE_HANDLE_DELETE){
-		const process_t* process=handle->object;
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
 		char buffer[32];
 		format_string(buffer,32,"%lu",HANDLE_ID_GET_INDEX(process->handle.rb_node.key));
 		vfs_node_t* node=vfs_lookup(procfs->root,buffer,0,0,0);

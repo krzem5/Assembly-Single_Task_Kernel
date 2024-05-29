@@ -20,7 +20,7 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC void usb_register_driver(usb_driver_descriptor_t* driver){
 	LOG("Registering USB driver '%s'...",driver->name);
-	handle_new(driver,usb_driver_descriptor_handle_type,&(driver->handle));
+	handle_new(usb_driver_descriptor_handle_type,&(driver->handle));
 	handle_finish_setup(&(driver->handle));
 }
 

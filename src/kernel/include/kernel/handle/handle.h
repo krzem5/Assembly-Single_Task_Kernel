@@ -35,7 +35,6 @@ typedef u64 handle_id_t;
 
 typedef struct _HANDLE{
 	rb_tree_node_t rb_node;
-	void* object;
 	KERNEL_ATOMIC u64 rc;
 	acl_t* acl;
 	struct _HANDLE_LIST* handle_list;
@@ -75,7 +74,7 @@ handle_descriptor_t* handle_get_descriptor(handle_type_t type);
 
 
 
-void handle_new(void* object,handle_type_t type,handle_t* out);
+void handle_new(handle_type_t type,handle_t* out);
 
 
 

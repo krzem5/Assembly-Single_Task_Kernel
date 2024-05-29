@@ -494,7 +494,7 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 				goto _skip_create_shader_command;
 			}
 			virgl_opengl_shader_t* shader=omm_alloc(_virgl_opengl_shader_allocator);
-			handle_new(shader,_virgl_opengl_shader_handle_type,&(shader->handle));
+			handle_new(_virgl_opengl_shader_handle_type,&(shader->handle));
 			shader->vertex_shader=resource_alloc(state_ctx->resource_manager);
 			shader->fragment_shader=resource_alloc(state_ctx->resource_manager);
 			u32 virgl_create_vertex_shader_command[6]={
@@ -528,7 +528,7 @@ _skip_create_shader_command:
 				ERROR("_process_commands: invalid shader handle: %p");
 				goto _skip_use_shader;
 			}
-			const virgl_opengl_shader_t* shader=handle->object;
+			const virgl_opengl_shader_t* shader=KERNEL_CONTAINEROF(handle,const virgl_opengl_shader_t,handle);
 			u32 virgl_bind_shader_command[13]={
 				VIRGL_PROTOCOL_COMMAND_BIND_SHADER,
 				shader->vertex_shader,
@@ -615,7 +615,7 @@ _skip_draw_command:
 					ERROR("_process_commands: invalid vertex array handle: %p",command->driver_handle);
 					goto _skip_update_vertex_array_command;
 				}
-				virgl_opengl_vertex_array_t* vertex_array=vertex_array_handle->object;
+				virgl_opengl_vertex_array_t* vertex_array=KERNEL_CONTAINEROF(vertex_array_handle,virgl_opengl_vertex_array_t,handle);
 				u32 virgl_bind_vertex_elements_command[2]={
 					VIRGL_PROTOCOL_COMMAND_BIND_OBJECT_VERTEX_ELEMENTS,
 					vertex_array->resource_handle
@@ -632,7 +632,7 @@ _skip_draw_command:
 						goto _skip_update_vertex_array_command;
 					}
 					vertex_array=omm_alloc(_virgl_opengl_vertex_array_allocator);
-					handle_new(vertex_array,_virgl_opengl_vertex_array_handle_type,&(vertex_array->handle));
+					handle_new(_virgl_opengl_vertex_array_handle_type,&(vertex_array->handle));
 					vertex_array->resource_handle=resource_alloc(state_ctx->resource_manager);
 					handle_finish_setup(&(vertex_array->handle));
 					handle_acquire(&(vertex_array->handle));
@@ -640,7 +640,7 @@ _skip_draw_command:
 					command->driver_handle=vertex_array->handle.rb_node.key;
 				}
 				else{
-					vertex_array=vertex_array_handle->object;
+					vertex_array=KERNEL_CONTAINEROF(vertex_array_handle,virgl_opengl_vertex_array_t,handle);
 					u32 virgl_destroy_vertex_elements_command[2]={
 						VIRGL_PROTOCOL_COMMAND_DESTROY_OBJECT_VERTEX_ELEMENTS,
 						vertex_array->resource_handle
@@ -686,7 +686,7 @@ _skip_update_vertex_array_command:
 			}
 			if (!command->driver_handle){
 				virgl_opengl_buffer_t* buffer=omm_alloc(_virgl_opengl_buffer_allocator);
-				handle_new(buffer,_virgl_opengl_buffer_handle_type,&(buffer->handle));
+				handle_new(_virgl_opengl_buffer_handle_type,&(buffer->handle));
 				buffer->resource_handle=resource_alloc(state_ctx->resource_manager);
 				buffer->storage_type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_DYNAMIC;
 				buffer->address=0;
@@ -699,7 +699,7 @@ _skip_update_vertex_array_command:
 				ERROR("_process_commands: invalid buffer handle: %p",command->driver_handle);
 				goto _skip_update_buffer_command;
 			}
-			virgl_opengl_buffer_t* buffer=buffer_handle->object;
+			virgl_opengl_buffer_t* buffer=KERNEL_CONTAINEROF(buffer_handle,virgl_opengl_buffer_t,handle);
 			u32 size=command->size;
 			if (command->storage_type!=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_NO_CHANGE){
 				buffer->storage_type=command->storage_type;
@@ -800,7 +800,7 @@ _skip_update_buffer_command:
 					}
 					virgl_set_vertex_buffers_command[i*3+1]=(command->vertex_buffers+i)->stride;
 					virgl_set_vertex_buffers_command[i*3+2]=(command->vertex_buffers+i)->offset;
-					virgl_set_vertex_buffers_command[i*3+3]=(handle?((const virgl_opengl_buffer_t*)(handle->object))->resource_handle:0);
+					virgl_set_vertex_buffers_command[i*3+3]=(handle?KERNEL_CONTAINEROF(handle,const virgl_opengl_buffer_t,handle)->resource_handle:0);
 					if (handle){
 						handle_release(handle);
 					}
@@ -814,7 +814,7 @@ _skip_set_vertex_buffer:
 					ERROR("_process_commands: invalid index buffer handle: %p",command->index_buffer_driver_handle);
 					goto _skip_set_index_buffer;
 				}
-				virgl_opengl_buffer_t* buffer=handle->object;
+				virgl_opengl_buffer_t* buffer=KERNEL_CONTAINEROF(handle,virgl_opengl_buffer_t,handle);
 				u32 virgl_set_index_buffer_command[4]={
 					VIRGL_PROTOCOL_COMMAND_SET_INDEX_BUFFER,
 					buffer->resource_handle,
@@ -852,7 +852,7 @@ _skip_set_index_buffer:
 			}
 			if (!command->driver_handle){
 				virgl_opengl_texture_t* texture=omm_alloc(_virgl_opengl_texture_allocator);
-				handle_new(texture,_virgl_opengl_texture_handle_type,&(texture->handle));
+				handle_new(_virgl_opengl_texture_handle_type,&(texture->handle));
 				texture->resource_handle=0;
 				texture->format=0;
 				handle_finish_setup(&(texture->handle));
@@ -863,7 +863,7 @@ _skip_set_index_buffer:
 				ERROR("_process_commands: invalid texture handle: %p",command->driver_handle);
 				goto _skip_update_texture_command;
 			}
-			virgl_opengl_texture_t* texture=texture_handle->object;
+			virgl_opengl_texture_t* texture=KERNEL_CONTAINEROF(texture_handle,virgl_opengl_texture_t,handle);
 			if (command->format!=OPENGL_PROTOCOL_TEXTURE_FORMAT_NONE){
 				if (texture->resource_handle){
 					virtio_gpu_command_ctx_detach_resource(ctx->gpu_device,CONTEXT_ID,texture->resource_handle);
@@ -907,7 +907,7 @@ _skip_update_texture_command:
 			KERNEL_USER_POINTER opengl_protocol_update_sampler_t* command=(void*)header;
 			if (!command->driver_handle){
 				virgl_opengl_sampler_t* sampler=omm_alloc(_virgl_opengl_sampler_allocator);
-				handle_new(sampler,_virgl_opengl_sampler_handle_type,&(sampler->handle));
+				handle_new(_virgl_opengl_sampler_handle_type,&(sampler->handle));
 				sampler->view_resource_handle=0;
 				sampler->state_resource_handle=0;
 				handle_finish_setup(&(sampler->handle));
@@ -924,8 +924,8 @@ _skip_update_texture_command:
 				ERROR("_process_commands: invalid texture handle: %p",command->texture_driver_handle);
 				goto _skip_update_sampler_command;
 			}
-			virgl_opengl_sampler_t* sampler=sampler_handle->object;
-			virgl_opengl_texture_t* texture=texture_handle->object;
+			virgl_opengl_sampler_t* sampler=KERNEL_CONTAINEROF(sampler_handle,virgl_opengl_sampler_t,handle);
+			virgl_opengl_texture_t* texture=KERNEL_CONTAINEROF(texture_handle,virgl_opengl_texture_t,handle);
 			if (sampler->view_resource_handle){
 				u32 virgl_desrtoy_sampler_view_command[2]={
 					VIRGL_PROTOCOL_COMMAND_DESTROY_OBJECT_SAMPLER_VIEW,

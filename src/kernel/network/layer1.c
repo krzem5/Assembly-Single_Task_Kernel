@@ -49,7 +49,7 @@ KERNEL_INIT(){
 KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_descriptor_t* descriptor,const mac_address_t* mac_address,void* extra_data){
 	LOG("Creating network layer1 device '%s/%M'...",descriptor->name,*mac_address);
 	network_layer1_device_t* out=omm_alloc(_network_layer1_device_allocator);
-	handle_new(out,network_layer1_device_handle_type,&(out->handle));
+	handle_new(network_layer1_device_handle_type,&(out->handle));
 	out->descriptor=descriptor;
 	mem_copy(out->mac_address,*mac_address,sizeof(mac_address_t));
 	out->extra_data=extra_data;

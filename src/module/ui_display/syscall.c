@@ -35,7 +35,7 @@ static error_t _syscall_get_display_data(handle_id_t display_handle_id,KERNEL_US
 	if (!display_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_display_t* display=display_handle->object;
+	ui_display_t* display=KERNEL_CONTAINEROF(display_handle,ui_display_t,handle);
 	buffer->index=display->index;
 	if (display->mode){
 		buffer->mode.width=display->mode->width;
@@ -64,7 +64,7 @@ static error_t _syscall_get_display_info(handle_id_t display_handle_id,KERNEL_US
 	if (!display_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_display_t* display=display_handle->object;
+	ui_display_t* display=KERNEL_CONTAINEROF(display_handle,ui_display_t,handle);
 	const ui_display_info_t* display_info=display->display_info;
 	mem_copy((char*)(buffer->manufacturer),display_info->manufacturer,sizeof(buffer->manufacturer));
 	buffer->manufacturer_product_code=display_info->manufacturer_product_code;
@@ -95,7 +95,7 @@ static error_t _syscall_get_display_framebuffer(handle_id_t display_handle_id){
 	if (!display_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_display_t* display=display_handle->object;
+	ui_display_t* display=KERNEL_CONTAINEROF(display_handle,ui_display_t,handle);
 	u64 out=(display->framebuffer?display->framebuffer->handle.rb_node.key:0);
 	handle_release(display_handle);
 	return out;
@@ -114,7 +114,7 @@ static error_t _syscall_get_framebuffer_config(handle_id_t framebuffer_handle_id
 	if (!framebuffer_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_framebuffer_t* framebuffer=framebuffer_handle->object;
+	ui_framebuffer_t* framebuffer=KERNEL_CONTAINEROF(framebuffer_handle,ui_framebuffer_t,handle);
 	buffer->width=framebuffer->width;
 	buffer->height=framebuffer->height;
 	buffer->format=framebuffer->format;
@@ -132,7 +132,7 @@ static error_t _syscall_flush_display_framebuffer(handle_id_t display_handle_id)
 	if (!display_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	ui_display_t* display=display_handle->object;
+	ui_display_t* display=KERNEL_CONTAINEROF(display_handle,ui_display_t,handle);
 	if (display->framebuffer){
 		display->driver->flush_framebuffer(display);
 	}

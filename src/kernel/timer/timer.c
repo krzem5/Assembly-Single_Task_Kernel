@@ -37,7 +37,7 @@ KERNEL_EARLY_INIT(){
 KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	timer_t* out=omm_alloc(_timer_allocator);
 	out->rb_node.key=0;
-	handle_new(out,timer_handle_type,&(out->handle));
+	handle_new(timer_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,TIMER_ACL_FLAG_UPDATE|TIMER_ACL_FLAG_DELETE);
@@ -140,7 +140,7 @@ error_t syscall_timer_delete(handle_id_t timer_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	timer_t* timer=handle->object;
+	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
 	if (!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_DELETE)){
 		handle_release(handle);
 		return ERROR_DENIED;
@@ -157,7 +157,7 @@ error_t syscall_timer_get_deadline(handle_id_t timer_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	timer_t* timer=handle->object;
+	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
 	u64 out=timer_get_deadline(timer);
 	handle_release(handle);
 	return out;
@@ -170,7 +170,7 @@ error_t syscall_timer_update(handle_id_t timer_handle,u64 interval,u64 count){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	timer_t* timer=handle->object;
+	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
 	if (!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
 		handle_release(handle);
 		return ERROR_DENIED;
@@ -188,7 +188,7 @@ error_t syscall_timer_get_event(handle_id_t timer_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	timer_t* timer=handle->object;
+	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
 	u64 out=timer->event->handle.rb_node.key;
 	handle_release(handle);
 	return out;

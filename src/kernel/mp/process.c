@@ -44,7 +44,7 @@ KERNEL_PUBLIC process_t* KERNEL_INIT_WRITE process_kernel;
 
 
 static void _process_handle_destructor(handle_t* handle){
-	process_t* process=handle->object;
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
@@ -62,7 +62,7 @@ KERNEL_EARLY_INIT(){
 	rwlock_init(&(_process_allocator->lock));
 	process_handle_type=handle_alloc("kernel.process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
-	handle_new(process_kernel,process_handle_type,&(process_kernel->handle));
+	handle_new(process_handle_type,&(process_kernel->handle));
 	process_kernel->handle.acl=acl_create();
 	handle_acquire(&(process_kernel->handle));
 	rwlock_init(&(process_kernel->lock));
@@ -87,7 +87,7 @@ KERNEL_EARLY_INIT(){
 
 KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 mmap_bottom_address,u64 mmap_top_address){
 	process_t* out=omm_alloc(_process_allocator);
-	handle_new(out,process_handle_type,&(out->handle));
+	handle_new(process_handle_type,&(out->handle));
 	process_kernel->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(process_kernel->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
@@ -192,7 +192,7 @@ error_t syscall_process_get_event(handle_id_t process_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	process_t* process=handle->object;
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	u64 out=process->event->handle.rb_node.key;
 	handle_release(handle);
 	return out;
@@ -208,7 +208,7 @@ error_t syscall_process_set_cwd(handle_id_t process_handle,handle_id_t fd){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	process_t* process=handle->object;
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	vfs_node_t* new_cwd=fd_get_node(fd);
 	if (!new_cwd){
 		handle_release(handle);
@@ -229,7 +229,7 @@ error_t syscall_process_get_parent(handle_id_t process_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	process_t* process=handle->object;
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	u64 out=(process->parent?process->parent->handle.rb_node.key:0);
 	handle_release(handle);
 	return out;
@@ -245,7 +245,7 @@ error_t syscall_process_set_root(handle_id_t process_handle,handle_id_t fd){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	process_t* process=handle->object;
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	vfs_node_t* new_root=fd_get_node(fd);
 	if (!new_root){
 		handle_release(handle);

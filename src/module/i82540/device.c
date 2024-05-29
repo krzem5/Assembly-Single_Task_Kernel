@@ -198,7 +198,6 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
-		pci_device_t* device=handle->object;
-		_i82540_init_device(device);
+		_i82540_init_device(KERNEL_CONTAINEROF(handle,pci_device_t,handle));
 	}
 }

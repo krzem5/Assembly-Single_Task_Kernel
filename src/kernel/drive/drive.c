@@ -21,7 +21,7 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE drive_handle_type=0;
 
 
 static void _drive_handle_destructor(handle_t* handle){
-	drive_t* drive=handle->object;
+	drive_t* drive=KERNEL_CONTAINEROF(handle,drive_t,handle);
 	if (drive->partition_table_descriptor){
 		handle_release(&(drive->partition_table_descriptor->handle));
 	}
@@ -49,7 +49,7 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 		return NULL;
 	}
 	drive_t* out=omm_alloc(_drive_allocator);
-	handle_new(out,drive_handle_type,&(out->handle));
+	handle_new(drive_handle_type,&(out->handle));
 	out->type=config->type;
 	out->block_size_shift=__builtin_ctzll(config->block_size);
 	out->controller_index=config->controller_index;
@@ -125,7 +125,7 @@ error_t syscall_drive_get_data(u64 drive_handle_id,KERNEL_USER_POINTER drive_use
 	if (!drive_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	drive_t* drive=drive_handle->object;
+	drive_t* drive=KERNEL_CONTAINEROF(drive_handle,drive_t,handle);
 	str_copy(drive->type->name,(char*)(buffer->type),sizeof(buffer->type));
 	buffer->controller_index=drive->controller_index;
 	buffer->device_index=drive->device_index;
