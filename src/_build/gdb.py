@@ -5,11 +5,14 @@ import struct
 
 
 gdb.execute("source src/_build/linker.py")
-gdb.execute("add-symbol-file build/kernel/kernel.elf -readnow 0xffffffffc0100000",to_string=True)
+gdb.execute("add-symbol-file build/kernel/kernel.elf 0xffffffffc0100000",to_string=True)
 
 
 
+MODULE_STATE_LOADING=1
 MODULE_STATE_LOADED=2
+MODULE_STATE_UNLOADING=3
+MODULE_STATE_UNLOADED=4
 
 char_t=gdb.lookup_type("char")
 handle_descriptor_t=gdb.lookup_type("handle_descriptor_t")
@@ -98,7 +101,30 @@ class KernelListThreads(gdb.Command):
 
 
 
+class KernelListModues(gdb.Command):
+	def __init__(self):
+		super(KernelListModues,self).__init__("kernel-list-modules",gdb.COMMAND_USER)
+
+	def invoke(self,arg,from_tty):
+		module_handle_descriptor=handle_get_descriptor(module_handle_type)
+		for k in rb_tree_iter(module_handle_descriptor["tree"]):
+			module=gdb.Value(int(k.address)-offsetof(module_t,"handle")).cast(module_t.pointer())[0]
+			name=module["name"].cast(string_t.pointer())[0]["data"].cast(char_t.pointer()).string()
+			state=None
+			if (module["state"]==MODULE_STATE_LOADING):
+				state="loading"
+			elif (module["state"]==MODULE_STATE_LOADED):
+				state="loaded @ "+hex(int(module["region"].cast(mmap_region_t.pointer())[0]["rb_node"]["key"]))
+			elif (module["state"]==MODULE_STATE_UNLOADING):
+				state="unloading"
+			elif (module["state"]==MODULE_STATE_UNLOADED):
+				state="unloaded"
+			print(f"{name}: {state}")
+
+
+
 KernelListThreads()
+KernelListModues()
 
 
 

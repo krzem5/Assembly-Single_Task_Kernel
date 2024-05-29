@@ -139,7 +139,7 @@ class RelocationEntry(object):
 
 
 
-def _parse_headers(data):
+def _parse_headers(data,read_section_address=False):
 	out=LinkerContext(data)
 	e_shoff,e_shentsize,e_shnum,e_shstrndx=struct.unpack("<40xQ10xHHH",data[:64])
 	out.e_shoff=e_shoff
@@ -148,7 +148,7 @@ def _parse_headers(data):
 	for i in range(0,e_shnum):
 		sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link=struct.unpack("<IIQQQQI20x",data[e_shoff+i*e_shentsize:e_shoff+(i+1)*e_shentsize])
 		name=data[sh_name_offset+sh_name:data.index(b"\x00",sh_name_offset+sh_name)].decode("utf-8")
-		out.add_section_header(SectionHeader(i,name,sh_type,sh_addr,sh_offset,sh_size))
+		out.add_section_header(SectionHeader(i,name,sh_type,(sh_addr if read_section_address else 0),sh_offset,sh_size))
 		if (sh_type==SHT_RELA):
 			out.add_relocation_table(RelocationTable(sh_offset,sh_size,name.replace(".rela","")))
 		elif (sh_type==SHT_SYMTAB):
@@ -334,11 +334,10 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 	_place_sections(ctx)
 	_apply_relocations(ctx)
 	with open(src_file_path,"r+b") as wf:
-		wf.seek(16)
-		wf.write(struct.pack("<H",ET_EXEC))
-		for symbol in ctx.symbol_table.symbols_by_name.values():
-			wf.seek(ctx.symbol_table.offset+symbol.index*24+8)
-			wf.write(struct.pack("<Q",symbol.value+symbol.section.address))
+		for section_name in KERNEL_SECTION_ORDER:
+			section=ctx.section_headers_by_name[section_name]
+			wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+16)
+			wf.write(struct.pack("<Q",section.address))
 		for section in ctx.section_headers.values():
 			if (section.type==SHT_RELA):
 				wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize)
@@ -411,7 +410,7 @@ def patch_module_for_gdb(src_file_path,dst_file_path,address):
 	with open(src_file_path,"rb") as rf,open(dst_file_path,"wb") as wf:
 		data=bytearray(rf.read())
 		wf.write(data)
-	ctx=_parse_headers(data)
+	ctx=_parse_headers(data,read_section_address=True)
 	_parse_symbol_table(ctx,allow_undefined=True)
 	_parse_relocation_tables(ctx)
 	_place_sections_at_address(ctx,address)
