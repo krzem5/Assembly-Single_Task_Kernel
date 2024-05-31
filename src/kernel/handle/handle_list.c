@@ -48,6 +48,7 @@ KERNEL_PUBLIC void handle_list_destroy(handle_list_t* list){
 
 
 KERNEL_PUBLIC void handle_list_push(handle_list_t* list,handle_t* handle){
+	handle_acquire(handle);
 	rwlock_acquire_write(&(list->lock));
 	rb_tree_node_t* rb_node=omm_alloc(_handle_list_entry_allocator);
 	rb_node->key=handle->rb_node.key;

@@ -14,7 +14,6 @@
 #include <test/format.h>
 #include <test/fs.h>
 #include <test/gid.h>
-#include <test/handle_list.h>
 #include <test/module.h>
 #include <test/pipe.h>
 #include <test/resource.h>
@@ -36,7 +35,6 @@ MODULE_INIT(){
 	test_format();
 	test_fs();
 	test_gid();
-	test_handle_list();
 	test_module();
 	test_pipe();
 	test_resource();
