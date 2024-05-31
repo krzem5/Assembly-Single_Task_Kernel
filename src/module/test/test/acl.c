@@ -235,9 +235,7 @@ void test_acl(void){
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
 	handle_type_t handle_type=handle_alloc("test.acl_handle",NULL);
 	handle_new(handle_type,&_test_acl_handle_without_acl);
-	handle_finish_setup(&_test_acl_handle_without_acl);
 	handle_new(handle_type,&_test_acl_handle);
-	handle_finish_setup(&_test_acl_handle);
 	_test_acl_handle.acl=acl_create();
 	handle_acquire(&(test_process->handle));
 	scheduler_enqueue_thread(thread_create_kernel_thread(test_process,"test.acl",_thread,0));

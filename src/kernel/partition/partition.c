@@ -45,7 +45,6 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 	partition_table_descriptor_t* out=omm_alloc(_partition_table_descriptor_allocator);
 	out->config=config;
 	handle_new(partition_table_descriptor_handle_type,&(out->handle));
-	handle_finish_setup(&(out->handle));
 	HANDLE_FOREACH(drive_handle_type){
 		drive_t* drive=KERNEL_CONTAINEROF(handle,drive_t,handle);
 		if (drive->partition_table_descriptor){
@@ -117,7 +116,6 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	if (!out->fs){
 		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,index,name);
 	}
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

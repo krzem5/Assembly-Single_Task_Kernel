@@ -42,7 +42,6 @@ KERNEL_PUBLIC opengl_driver_instance_t* opengl_create_driver_instance(const open
 	str_copy(renderer,out->renderer,64);
 	out->driver=driver;
 	out->ctx=ctx;
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 
@@ -58,7 +57,6 @@ opengl_state_t* opengl_create_state(opengl_driver_instance_t* driver_instance){
 	out->ctx=NULL;
 	out->framebuffer=NULL;
 	bool ret=driver_instance->driver->init_state(driver_instance,out);
-	handle_finish_setup(&(out->handle));
 	if (ret){
 		return out;
 	}

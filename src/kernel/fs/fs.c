@@ -61,7 +61,6 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
 	out->config=config;
 	handle_new(fs_descriptor_handle_type,&(out->handle));
-	handle_finish_setup(&(out->handle));
 	if (!config->load_callback){
 		return out;
 	}
@@ -103,7 +102,6 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->root=NULL;
 	mem_fill(out->guid,16,0);
 	out->is_mounted=0;
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

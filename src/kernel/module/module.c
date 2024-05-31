@@ -424,7 +424,6 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	_adjust_region_flags(&ctx,&(ctx.elf_region_iw));
 	module->state=MODULE_STATE_LOADED;
 	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
-	handle_finish_setup(&(module->handle));
 	return module;
 _error:
 	symbol_remove(name);

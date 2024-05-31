@@ -80,7 +80,6 @@ KERNEL_EARLY_INIT(){
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=process_kernel->vfs_root;
 	process_kernel->parent=process_kernel;
-	handle_finish_setup(&(process_kernel->handle));
 }
 
 
@@ -105,7 +104,6 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	out->uid=out->parent->uid;
 	out->gid=out->parent->gid;
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

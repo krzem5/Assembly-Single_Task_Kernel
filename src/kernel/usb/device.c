@@ -201,7 +201,6 @@ KERNEL_PUBLIC usb_device_t* usb_device_alloc(usb_controller_t* controller,usb_de
 	_set_device_address(out);
 	LOG("Port: %u, Speed: %u, Address: %X",out->port,out->speed,out->address);
 	_configure_device(out);
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

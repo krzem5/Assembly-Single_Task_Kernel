@@ -46,7 +46,6 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	out->event=event_create("kernel.timer");
 	out->interval=0;
 	out->count=0;
-	handle_finish_setup(&(out->handle));
 	timer_update(out,interval,count,1);
 	return out;
 }

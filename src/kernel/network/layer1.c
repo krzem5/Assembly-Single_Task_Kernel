@@ -53,7 +53,6 @@ KERNEL_PUBLIC void network_layer1_create_device(const network_layer1_device_desc
 	out->descriptor=descriptor;
 	mem_copy(out->mac_address,*mac_address,sizeof(mac_address_t));
 	out->extra_data=extra_data;
-	handle_finish_setup(&(out->handle));
 	if (!network_layer1_device){
 		network_layer1_device=out;
 	}

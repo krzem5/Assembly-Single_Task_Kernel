@@ -84,7 +84,6 @@ KERNEL_PUBLIC event_t* event_create(const char* name){
 	out->is_active=0;
 	out->head=NULL;
 	out->tail=NULL;
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

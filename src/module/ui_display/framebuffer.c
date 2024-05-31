@@ -46,11 +46,9 @@ KERNEL_PUBLIC ui_framebuffer_t* ui_framebuffer_create(ui_display_t* display,u32 
 	out->height=height;
 	out->format=format;
 	if (display->driver->create_framebuffer(out)){
-		handle_finish_setup(&(out->handle));
 		return out;
 	}
 	ERROR("Unable to create framebuffer");
-	handle_finish_setup(&(out->handle));
 	handle_release(&(out->handle));
 	omm_dealloc(_ui_framebuffer_allocator,out);
 	return NULL;

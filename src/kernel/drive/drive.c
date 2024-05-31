@@ -62,7 +62,6 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	out->partition_table_descriptor=NULL;
 	INFO("Drive size: %v (%lu * %lu)",out->block_count*out->block_size,out->block_count,out->block_size);
 	partition_load_from_drive(out);
-	handle_finish_setup(&(out->handle));
 	return out;
 }
 

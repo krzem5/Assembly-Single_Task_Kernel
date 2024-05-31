@@ -517,7 +517,6 @@ static void _process_commands(opengl_driver_instance_t* instance,opengl_state_t*
 			};
 			_command_buffer_extend(instance->ctx,virgl_create_fragment_shader_command,6,0);
 			_command_buffer_extend(instance->ctx,(const u32*)(command->fragment_shader_data),command->fragment_shader_size>>2,0);
-			handle_finish_setup(&(shader->handle));
 			command->driver_handle=shader->handle.rb_node.key;
 _skip_create_shader_command:
 		}
@@ -634,7 +633,6 @@ _skip_draw_command:
 					vertex_array=omm_alloc(_virgl_opengl_vertex_array_allocator);
 					handle_new(_virgl_opengl_vertex_array_handle_type,&(vertex_array->handle));
 					vertex_array->resource_handle=resource_alloc(state_ctx->resource_manager);
-					handle_finish_setup(&(vertex_array->handle));
 					handle_acquire(&(vertex_array->handle));
 					vertex_array_handle=&(vertex_array->handle);
 					command->driver_handle=vertex_array->handle.rb_node.key;
@@ -691,7 +689,6 @@ _skip_update_vertex_array_command:
 				buffer->storage_type=OPENGL_PROTOCOL_BUFFER_STORAGE_TYPE_DYNAMIC;
 				buffer->address=0;
 				buffer->size=0;
-				handle_finish_setup(&(buffer->handle));
 				command->driver_handle=buffer->handle.rb_node.key;
 			}
 			handle_t* buffer_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_buffer_handle_type);
@@ -855,7 +852,6 @@ _skip_set_index_buffer:
 				handle_new(_virgl_opengl_texture_handle_type,&(texture->handle));
 				texture->resource_handle=0;
 				texture->format=0;
-				handle_finish_setup(&(texture->handle));
 				command->driver_handle=texture->handle.rb_node.key;
 			}
 			handle_t* texture_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_texture_handle_type);
@@ -910,7 +906,6 @@ _skip_update_texture_command:
 				handle_new(_virgl_opengl_sampler_handle_type,&(sampler->handle));
 				sampler->view_resource_handle=0;
 				sampler->state_resource_handle=0;
-				handle_finish_setup(&(sampler->handle));
 				command->driver_handle=sampler->handle.rb_node.key;
 			}
 			handle_t* sampler_handle=handle_lookup_and_acquire(command->driver_handle,_virgl_opengl_sampler_handle_type);

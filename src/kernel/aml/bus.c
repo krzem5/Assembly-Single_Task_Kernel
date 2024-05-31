@@ -277,7 +277,6 @@ static aml_bus_device_t* _parse_device_descriptor(aml_namespace_t* device,aml_bu
 		aml_object_dealloc(value);
 	}
 	handle_new(aml_bus_device_handle_type,&(out->handle));
-	handle_finish_setup(&(out->handle));
 	_get_device_crs(out);
 	return out;
 _cleanup:

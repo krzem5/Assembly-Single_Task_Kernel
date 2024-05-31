@@ -83,7 +83,6 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	rwlock_init(&(out->lock));
 	out->head=NULL;
 	rwlock_release_write(&_keyring_creation_lock);
-	handle_finish_setup(&(out->handle));
 	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,out->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }

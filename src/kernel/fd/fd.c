@@ -80,7 +80,6 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_WRITE;
 	}
-	handle_finish_setup(&(out->handle));
 	return out->handle.rb_node.key;
 }
 
@@ -386,7 +385,6 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;
-	handle_finish_setup(&(out->handle));
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;

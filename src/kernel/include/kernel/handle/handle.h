@@ -78,10 +78,6 @@ void handle_new(handle_type_t type,handle_t* out);
 
 
 
-void handle_finish_setup(handle_t* handle);
-
-
-
 handle_t* handle_lookup_and_acquire(handle_id_t id,handle_type_t type);
 
 
