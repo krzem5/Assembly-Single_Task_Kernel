@@ -475,13 +475,15 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(ctx.thread);
 	}
-	return ctx.process->handle.rb_node.key;
+	out=ctx.process->handle.rb_node.key;
+	handle_release(&(ctx.process->handle));
+	return out;
 _error:
 	if (ctx.thread){
 		ctx.thread->state=THREAD_STATE_TYPE_TERMINATED;
 		thread_delete(ctx.thread);
 	}
-	if (ctx.process){
+	if (ctx.process&&handle_release(&(ctx.process->handle))){
 		handle_release(&(ctx.process->handle));
 	}
 	mmap_dealloc_region(process_kernel->mmap,region);

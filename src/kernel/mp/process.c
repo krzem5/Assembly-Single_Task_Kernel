@@ -63,8 +63,8 @@ KERNEL_EARLY_INIT(){
 	process_handle_type=handle_alloc("kernel.process",_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_handle_type,&(process_kernel->handle));
-	process_kernel->handle.acl=acl_create();
 	handle_acquire(&(process_kernel->handle));
+	process_kernel->handle.acl=acl_create();
 	rwlock_init(&(process_kernel->lock));
 	vmm_pagemap_init(&(process_kernel->pagemap));
 	u64 mmap_top=aslr_generate_address(ASLR_KERNEL_MMAP_TOP_MIN,ASLR_KERNEL_MMAP_TOP_MAX);
@@ -87,6 +87,7 @@ KERNEL_EARLY_INIT(){
 KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 mmap_bottom_address,u64 mmap_top_address){
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(process_handle_type,&(out->handle));
+	handle_acquire(&(out->handle));
 	process_kernel->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
 		acl_set(process_kernel->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);

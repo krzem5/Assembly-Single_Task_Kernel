@@ -51,13 +51,13 @@ KERNEL_PUBLIC handle_type_t thread_handle_type=0;
 static void _thread_handle_destructor(handle_t* handle){
 	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
 	if (thread->state!=THREAD_STATE_TYPE_TERMINATED){
-		panic("Unterminated thread not referenced");
+		panic("_thread_handle_destructor: Unterminated thread not referenced");
 	}
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
+	event_delete(thread->termination_event);
 	if (thread_list_remove(&(process->thread_list),thread)){
-		event_delete(thread->termination_event);
 		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		handle_release(&(process->handle));
 	}
@@ -198,10 +198,6 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 
 KERNEL_PUBLIC void thread_delete(thread_t* thread){
 	handle_release(&(thread->handle));
-	// rwlock_acquire_write(&(thread->lock));
-	// if (handle_release(&(thread->handle))){
-	// 	rwlock_release_write(&(thread->lock));
-	// }
 }
 
 
