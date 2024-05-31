@@ -8,7 +8,7 @@
 
 
 
-void cpu_ap_startup_init(void* cpu_stack_list);
+void cpu_ap_startup_init(void* cpu_stack_list,void* cpu_extra_data_list);
 
 
 

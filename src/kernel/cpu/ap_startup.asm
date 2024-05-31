@@ -87,6 +87,20 @@ _start64:
 	mov rdx, qword [cpu_stack_list+OFFSET]
 	mov rsp, qword [rdx+rbx*8]
 	xor rbp, rbp
+	;;; Setup FS
+	xor eax, eax
+	mov ecx, 0xc0000100
+	xor edx, edx
+	wrmsr
+	;;; Setup GS
+	mov rdx, qword [cpu_extra_data_list+OFFSET]
+	mov rdx, qword [rdx+rbx*8]
+	mov eax, edx
+	add ecx, 1
+	shr rdx, 32
+	wrmsr
+	add ecx, 1
+	wrmsr
 	;;; Start the kernel
 	lea rax, _cpu_init_core
 	jmp rax
@@ -98,6 +112,8 @@ kernel_toplevel_pagemap:
 	dd 0
 align 8
 cpu_stack_list:
+	dq 0
+cpu_extra_data_list:
 	dq 0
 align 16
 gdt32_start:
@@ -130,6 +146,7 @@ section .etext exec nowrite
 [bits 64]
 cpu_ap_startup_init:
 	mov r8, rdi
+	mov r9, rsi
 	mov rdi, CPU_AP_STARTUP_MEMORY_ADDRESS
 	mov rsi, __AP_STARTUP_START__
 	mov rcx, 512
@@ -137,4 +154,5 @@ cpu_ap_startup_init:
 	mov rax, qword [vmm_kernel_pagemap]
 	mov dword [kernel_toplevel_pagemap+OFFSET], eax
 	mov qword [cpu_stack_list+OFFSET], r8
+	mov qword [cpu_extra_data_list+OFFSET], r9
 	ret
