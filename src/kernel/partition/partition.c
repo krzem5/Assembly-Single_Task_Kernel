@@ -25,6 +25,9 @@ KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
 
 static void _partition_handle_destructor(handle_t* handle){
 	partition_t* partition=KERNEL_CONTAINEROF(handle,partition_t,handle);
+	if (partition->drive){
+		handle_release(&(partition->drive->handle));
+	}
 	if (partition->descriptor){
 		handle_release(&(partition->descriptor->handle));
 	}
@@ -50,6 +53,7 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		if (drive->partition_table_descriptor){
 			continue;
 		}
+		handle_acquire(handle);
 		handle_acquire(&(out->handle));
 		drive->partition_table_descriptor=out;
 		if (config->load_callback(drive)){
@@ -57,6 +61,7 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
+			handle_release(handle);
 			handle_release(&(out->handle));
 		}
 	}
@@ -75,6 +80,7 @@ KERNEL_PUBLIC void partition_unregister_table_descriptor(partition_table_descrip
 
 void partition_load_from_drive(drive_t* drive){
 	LOG("Loading partitions from drive '%s'...",drive->model_number->data);
+	handle_acquire(&(drive->handle));
 	HANDLE_FOREACH(partition_table_descriptor_handle_type){
 		partition_table_descriptor_t* descriptor=KERNEL_CONTAINEROF(handle,partition_table_descriptor_t,handle);
 		if (!descriptor->config->load_callback){
@@ -88,6 +94,7 @@ void partition_load_from_drive(drive_t* drive){
 		}
 		handle_release(&(descriptor->handle));
 	}
+	handle_release(&(drive->handle));
 	drive->partition_table_descriptor=NULL;
 	WARN("Unable to detect partition type of drive '%s'",drive->model_number->data);
 }

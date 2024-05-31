@@ -24,12 +24,25 @@ handle_type_t timer_handle_type=0;
 
 
 
+static void _timer_handle_destructor(handle_t* handle){
+	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
+	if (!timer->is_deleted){
+		if (timer->rb_node.key){
+			rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
+		}
+		event_delete(timer->event);
+	}
+	omm_dealloc(_timer_allocator,timer);
+}
+
+
+
 KERNEL_EARLY_INIT(){
 	LOG("Initializing timers...");
 	_timer_allocator=omm_init("kernel.timer",sizeof(timer_t),8,4);
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
-	timer_handle_type=handle_alloc("kernel.timer",NULL);
+	timer_handle_type=handle_alloc("kernel.timer",_timer_handle_destructor);
 }
 
 
@@ -46,6 +59,7 @@ KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
 	out->event=event_create("kernel.timer");
 	out->interval=0;
 	out->count=0;
+	out->is_deleted=0;
 	timer_update(out,interval,count,1);
 	return out;
 }
@@ -57,12 +71,18 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer){
 		return;
 	}
 	rwlock_acquire_write(&(timer->lock));
+	if (timer->is_deleted){
+		rwlock_release_write(&(timer->lock));
+		return;
+	}
+	timer->is_deleted=1;
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
+		timer->rb_node.key=0;
 	}
-	handle_destroy(&(timer->handle));
 	event_delete(timer->event);
-	omm_dealloc(_timer_allocator,timer);
+	rwlock_release_write(&(timer->lock));
+	handle_release(&(timer->handle));
 }
 
 
@@ -78,6 +98,10 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 		return;
 	}
 	rwlock_acquire_write(&(timer->lock));
+	if (timer->is_deleted){
+		rwlock_release_write(&(timer->lock));
+		return;
+	}
 	event_set_active(timer->event,0,0);
 	if (timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
@@ -144,8 +168,9 @@ error_t syscall_timer_delete(handle_id_t timer_handle){
 		handle_release(handle);
 		return ERROR_DENIED;
 	}
-	handle_release(handle);
+	handle_list_pop(&(THREAD_DATA->process->handle_list),handle);
 	timer_delete(timer);
+	handle_release(handle);
 	return ERROR_OK;
 }
 

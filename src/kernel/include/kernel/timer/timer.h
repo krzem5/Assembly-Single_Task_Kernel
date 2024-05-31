@@ -24,6 +24,7 @@ typedef struct _TIMER{
 	event_t* event;
 	u64 interval;
 	u64 count;
+	bool is_deleted;
 } timer_t;
 
 
