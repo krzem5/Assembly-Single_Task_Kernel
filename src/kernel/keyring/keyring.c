@@ -27,7 +27,7 @@ static rwlock_t _keyring_creation_lock;
 KERNEL_PUBLIC handle_type_t keyring_handle_type=0;
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
-KERNEL_PUBLIC notification2_dispatcher_t keyring_notification_dispatcher;
+KERNEL_PUBLIC notification_dispatcher_t keyring_notification_dispatcher;
 
 
 
@@ -45,7 +45,7 @@ KERNEL_INIT(){
 	_keyring_key_allocator=omm_init("kernel.keyring.key",sizeof(keyring_key_t),8,2);
 	rwlock_init(&(_keyring_key_allocator->lock));
 	keyring_handle_type=handle_alloc("kernel.keyring",_keyring_handle_destructor);
-	notification2_dispatcher_init(&keyring_notification_dispatcher);
+	notification_dispatcher_init(&keyring_notification_dispatcher);
 	rwlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");
 	keyring_module_signature=keyring_create("module-signature");
@@ -83,7 +83,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	rwlock_init(&(out->lock));
 	out->head=NULL;
 	rwlock_release_write(&_keyring_creation_lock);
-	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,out->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification_dispatcher_dispatch(&keyring_notification_dispatcher,out->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -129,7 +129,7 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 		keyring->head=out;
 	}
 	rwlock_release_write(&(keyring->lock));
-	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification_dispatcher_dispatch(&keyring_notification_dispatcher,keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 	return out;
 }
 
@@ -142,7 +142,7 @@ KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key){
 
 
 KERNEL_PUBLIC void keyring_key_update(keyring_key_t* key){
-	notification2_dispatcher_dispatch(&keyring_notification_dispatcher,key->keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	notification_dispatcher_dispatch(&keyring_notification_dispatcher,key->keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
 }
 
 

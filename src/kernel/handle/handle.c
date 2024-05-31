@@ -6,7 +6,6 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/notification/notification.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/spinloop.h>
@@ -52,7 +51,6 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 	descriptor->count=0;
 	descriptor->active_count=0;
 	descriptor->rb_node.key=out;
-	notification2_dispatcher_init(&(descriptor->notification_dispatcher));
 	rb_tree_insert_node(&_handle_type_tree,&(descriptor->rb_node));
 	return out;
 }

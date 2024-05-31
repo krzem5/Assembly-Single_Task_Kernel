@@ -57,22 +57,23 @@ static u64 _thread_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size
 
 
 static void _update_notification_thread(void){
-	notification2_consumer_t* consumer=notification2_consumer_create(&(handle_get_descriptor(thread_handle_type)->notification_dispatcher));
-	HANDLE_FOREACH(thread_handle_type){
-		_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
-	}
-	while (1){
-		notification2_t notification;
-		if (!notification2_consumer_get(consumer,1,&notification)){
-			continue;
-		}
-		handle_t* handle=handle_lookup_and_acquire(notification.object,thread_handle_type);
-		if (!handle){
-			continue;
-		}
-		_listener(handle->rb_node.key,notification.type);
-		handle_release(handle);
-	}
+	(void)_listener;
+	// notification_consumer_t* consumer=notification_consumer_create(&(handle_get_descriptor(thread_handle_type)->notification_dispatcher));
+	// HANDLE_FOREACH(thread_handle_type){
+	// 	_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
+	// }
+	// while (1){
+	// 	notification_t notification;
+	// 	if (!notification_consumer_get(consumer,1,&notification)){
+	// 		continue;
+	// 	}
+	// 	handle_t* handle=handle_lookup_and_acquire(notification.object,thread_handle_type);
+	// 	if (!handle){
+	// 		continue;
+	// 	}
+	// 	_listener(handle->rb_node.key,notification.type);
+	// 	handle_release(handle);
+	// }
 }
 
 

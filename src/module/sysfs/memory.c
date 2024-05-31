@@ -69,43 +69,45 @@ static void _omm_allocator_listener(u64 object,u32 type){
 
 
 static void _pmm_counter_update_notification_thread(void){
-	notification2_consumer_t* consumer=notification2_consumer_create(&(handle_get_descriptor(pmm_counter_handle_type)->notification_dispatcher));
-	HANDLE_FOREACH(pmm_counter_handle_type){
-		_pmm_counter_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
-	}
-	while (1){
-		notification2_t notification;
-		if (!notification2_consumer_get(consumer,1,&notification)){
-			continue;
-		}
-		handle_t* handle=handle_lookup_and_acquire(notification.object,pmm_counter_handle_type);
-		if (!handle){
-			continue;
-		}
-		_pmm_counter_listener(handle->rb_node.key,notification.type);
-		handle_release(handle);
-	}
+	(void)_pmm_counter_listener;
+	// notification_consumer_t* consumer=notification_consumer_create(&(handle_get_descriptor(pmm_counter_handle_type)->notification_dispatcher));
+	// HANDLE_FOREACH(pmm_counter_handle_type){
+	// 	_pmm_counter_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
+	// }
+	// while (1){
+	// 	notification_t notification;
+	// 	if (!notification_consumer_get(consumer,1,&notification)){
+	// 		continue;
+	// 	}
+	// 	handle_t* handle=handle_lookup_and_acquire(notification.object,pmm_counter_handle_type);
+	// 	if (!handle){
+	// 		continue;
+	// 	}
+	// 	_pmm_counter_listener(handle->rb_node.key,notification.type);
+	// 	handle_release(handle);
+	// }
 }
 
 
 
 static void _omm_allocator_update_notification_thread(void){
-	notification2_consumer_t* consumer=notification2_consumer_create(&(handle_get_descriptor(omm_handle_type)->notification_dispatcher));
-	HANDLE_FOREACH(omm_handle_type){
-		_omm_allocator_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
-	}
-	while (1){
-		notification2_t notification;
-		if (!notification2_consumer_get(consumer,1,&notification)){
-			continue;
-		}
-		handle_t* handle=handle_lookup_and_acquire(notification.object,omm_handle_type);
-		if (!handle){
-			continue;
-		}
-		_omm_allocator_listener(handle->rb_node.key,notification.type);
-		handle_release(handle);
-	}
+	(void)_omm_allocator_listener;
+	// notification_consumer_t* consumer=notification_consumer_create(&(handle_get_descriptor(omm_handle_type)->notification_dispatcher));
+	// HANDLE_FOREACH(omm_handle_type){
+	// 	_omm_allocator_listener(handle->rb_node.key,NOTIFICATION_TYPE_HANDLE_CREATE);
+	// }
+	// while (1){
+	// 	notification_t notification;
+	// 	if (!notification_consumer_get(consumer,1,&notification)){
+	// 		continue;
+	// 	}
+	// 	handle_t* handle=handle_lookup_and_acquire(notification.object,omm_handle_type);
+	// 	if (!handle){
+	// 		continue;
+	// 	}
+	// 	_omm_allocator_listener(handle->rb_node.key,notification.type);
+	// 	handle_release(handle);
+	// }
 }
 
 

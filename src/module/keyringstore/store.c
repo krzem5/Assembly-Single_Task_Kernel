@@ -213,13 +213,13 @@ static void _store_keyring(keyring_t* keyring){
 
 
 static void _keyring_update_notification_thread(void){
-	notification2_consumer_t* consumer=notification2_consumer_create(&keyring_notification_dispatcher);
+	notification_consumer_t* consumer=notification_consumer_create(&keyring_notification_dispatcher);
 	HANDLE_FOREACH(keyring_handle_type){
 		_store_keyring(KERNEL_CONTAINEROF(handle,keyring_t,handle));
 	}
 	while (1){
-		notification2_t notification;
-		if (!notification2_consumer_get(consumer,1,&notification)){
+		notification_t notification;
+		if (!notification_consumer_get(consumer,1,&notification)){
 			continue;
 		}
 		handle_t* handle=handle_lookup_and_acquire(notification.object,keyring_handle_type);

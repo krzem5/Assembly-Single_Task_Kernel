@@ -52,7 +52,7 @@ typedef struct _KEYRING{
 extern handle_type_t keyring_handle_type;
 extern keyring_t* keyring_module_signature;
 extern keyring_t* keyring_user_signature;
-extern notification2_dispatcher_t keyring_notification_dispatcher;
+extern notification_dispatcher_t keyring_notification_dispatcher;
 
 
 
