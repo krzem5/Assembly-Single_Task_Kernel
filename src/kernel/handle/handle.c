@@ -128,3 +128,28 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 		handle_descriptor->delete_callback(handle);
 	}
 }
+
+
+
+KERNEL_PUBLIC handle_t* handle_iter_start(handle_descriptor_t* handle_descriptor){
+	rwlock_acquire_read(&(handle_descriptor->lock));
+	handle_t* out=(handle_t*)rb_tree_iter_start(&(handle_descriptor->tree));
+	if (out){
+		handle_acquire(out);
+	}
+	rwlock_release_read(&(handle_descriptor->lock));
+	return out;
+}
+
+
+
+KERNEL_PUBLIC handle_t* handle_iter_next(handle_descriptor_t* handle_descriptor,handle_t* handle){
+	rwlock_acquire_read(&(handle_descriptor->lock));
+	handle_t* out=(handle_t*)rb_tree_iter_next(&(handle_descriptor->tree),&(handle->rb_node));
+	handle_release(handle);
+	if (out){
+		handle_acquire(out);
+	}
+	rwlock_release_read(&(handle_descriptor->lock));
+	return out;
+}

@@ -116,6 +116,7 @@ KERNEL_PUBLIC filesystem_t* fs_load(partition_t* partition){
 		}
 		filesystem_t* out=descriptor->config->load_callback(partition);
 		if (out){
+			handle_release(handle);
 			return out;
 		}
 	}

@@ -226,13 +226,12 @@ KERNEL_PUBLIC bool usb_device_set_configuration(usb_device_t* device,u8 value){
 	usb_pipe_transfer_setup(device,device->default_pipe,&request,NULL);
 	for (usb_interface_descriptor_t* interface_descriptor=configuration_descriptor->interface;interface_descriptor;interface_descriptor=interface_descriptor->next){
 		HANDLE_FOREACH(usb_driver_descriptor_handle_type){
-			handle_acquire(handle);
 			usb_driver_descriptor_t* descriptor=KERNEL_CONTAINEROF(handle,usb_driver_descriptor_t,handle);
 			if (!descriptor->load_callback(device,interface_descriptor)){
-				handle_release(handle);
 				continue;
 			}
 			INFO("Attached driver '%s' to interface of type %X:%X:%X",descriptor->name,interface_descriptor->class,interface_descriptor->subclass,interface_descriptor->protocol);
+			// do not release handle
 			break;
 		}
 	}

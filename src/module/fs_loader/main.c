@@ -18,7 +18,6 @@
 
 static filesystem_t* _match_fs(const char* guid,const char* type){
 	HANDLE_FOREACH(fs_handle_type){
-		handle_acquire(handle);
 		filesystem_t* fs=KERNEL_CONTAINEROF(handle,filesystem_t,handle);
 		if (guid){
 			if (str_equal(guid,"boot")){
@@ -37,7 +36,6 @@ static filesystem_t* _match_fs(const char* guid,const char* type){
 		}
 		return fs;
 _check_next_fs:
-		handle_release(handle);
 	}
 	return NULL;
 }
@@ -89,6 +87,9 @@ MODULE_INIT(){
 		}
 		else if (fs){
 			vfs_mount(fs,(str_equal(path,"/")?NULL:path),0);
+		}
+		if (fs){
+			handle_release(&(fs->handle));
 		}
 	}
 	config_tag_delete(root_tag);

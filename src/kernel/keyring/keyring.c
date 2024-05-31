@@ -73,6 +73,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 		if (smm_equal(keyring->name,name_string)){
 			rwlock_release_write(&_keyring_creation_lock);
 			smm_dealloc(name_string);
+			handle_release(handle);
 			return keyring;
 		}
 	}

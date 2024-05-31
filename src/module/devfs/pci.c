@@ -14,7 +14,6 @@ MODULE_POSTINIT(){
 	LOG("Creating pci subsystem...");
 	vfs_node_t* root=dynamicfs_create_node(devfs->root,"pci",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	HANDLE_FOREACH(pci_device_handle_type){
-		handle_acquire(handle);
 		const pci_device_t* device=KERNEL_CONTAINEROF(handle,const pci_device_t,handle);
 		char buffer[32];
 		format_string(buffer,32,"pci%us%uf%u",device->address.bus,device->address.slot,device->address.func);
@@ -27,6 +26,5 @@ MODULE_POSTINIT(){
 		dynamicfs_create_data_node(node,"progif","%X",device->progif);
 		dynamicfs_create_data_node(node,"revision_id","%X",device->revision_id);
 		dynamicfs_create_link_node(devfs->root,buffer,"pci/%s",buffer);
-		handle_release(handle);
 	}
 }

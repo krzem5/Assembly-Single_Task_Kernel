@@ -20,7 +20,7 @@
 
 #define _HANDLE_TEMPORARY_DESCRIPTOR_NAME_(a,b) a##b
 #define _HANDLE_TEMPORARY_DESCRIPTOR_NAME(a,b) _HANDLE_TEMPORARY_DESCRIPTOR_NAME_(a,b)
-#define HANDLE_FOREACH(type) handle_descriptor_t* _HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__)=handle_get_descriptor((type));if (_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__))for (handle_t* handle=HANDLE_ITER_START(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__));handle;handle=HANDLE_ITER_NEXT(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__),handle))
+#define HANDLE_FOREACH(type) handle_descriptor_t* _HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__)=handle_get_descriptor((type));if (_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__))for (handle_t* handle=handle_iter_start(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__));handle;handle=handle_iter_next(_HANDLE_TEMPORARY_DESCRIPTOR_NAME(__descriptor,__LINE__),handle))
 
 
 
@@ -82,6 +82,14 @@ void handle_destroy(handle_t* handle);
 
 
 void _handle_delete_internal(handle_t* handle);
+
+
+
+handle_t* handle_iter_start(handle_descriptor_t* handle_descriptor);
+
+
+
+handle_t* handle_iter_next(handle_descriptor_t* handle_descriptor,handle_t* handle);
 
 
 

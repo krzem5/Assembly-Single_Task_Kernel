@@ -53,7 +53,6 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		if (drive->partition_table_descriptor){
 			continue;
 		}
-		handle_acquire(handle);
 		handle_acquire(&(out->handle));
 		drive->partition_table_descriptor=out;
 		if (config->load_callback(drive)){
@@ -61,7 +60,6 @@ KERNEL_PUBLIC partition_table_descriptor_t* partition_register_table_descriptor(
 		}
 		else{
 			drive->partition_table_descriptor=NULL;
-			handle_release(handle);
 			handle_release(&(out->handle));
 		}
 	}
@@ -86,13 +84,12 @@ void partition_load_from_drive(drive_t* drive){
 		if (!descriptor->config->load_callback){
 			continue;
 		}
-		handle_acquire(&(descriptor->handle));
 		drive->partition_table_descriptor=descriptor;
 		if (descriptor->config->load_callback(drive)){
 			INFO("Detected drive partitioning as '%s'",descriptor->config->name);
+			// do not release handle; a reference to partition_table_descriptor is stored in the drive structure
 			return;
 		}
-		handle_release(&(descriptor->handle));
 	}
 	handle_release(&(drive->handle));
 	drive->partition_table_descriptor=NULL;

@@ -469,12 +469,11 @@ KERNEL_PUBLIC bool module_unload(module_t* module){
 
 KERNEL_PUBLIC module_t* module_lookup(const char* name){
 	HANDLE_FOREACH(module_handle_type){
-		handle_acquire(handle);
 		module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 		if (str_equal(module->name->data,name)){
+			handle_release(handle);
 			return module;
 		}
-		handle_release(handle);
 	}
 	return NULL;
 }
