@@ -51,7 +51,6 @@ typedef struct _GCOV_INFO{
 
 
 static rwlock_t _coverage_lock;
-static bool _coverage_failed=0;
 
 
 
@@ -113,9 +112,6 @@ static KERNEL_NOCOVERAGE void _syscall_process_test_results(u64 pass,u64 fail){
 
 
 static KERNEL_NOCOVERAGE void _syscall_shutdown(void){
-	if (_coverage_failed){
-		return;
-	}
 	LOG("Exporting kernel coverage data...");
 	u64 size;
 	u64 base=kernel_gcov_info_data(&size);
@@ -157,6 +153,5 @@ MODULE_PREINIT(){
 
 void KERNEL_NOCOVERAGE coverage_mark_failure(void){
 	ERROR("Marking coverage as failed");
-	_coverage_failed=1;
 	shutdown(0);
 }
