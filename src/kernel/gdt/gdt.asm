@@ -1,3 +1,5 @@
+extern bitlock_acquire
+extern bitlock_release
 global gdt_enable:function hidden
 section .etext exec nowrite
 
@@ -5,6 +7,11 @@ section .etext exec nowrite
 
 [bits 64]
 gdt_enable:
+	push rdi
+	lea rdi, gdt_lock
+	xor esi, esi
+	call bitlock_acquire
+	pop rdi
 	mov rax, 0x0000890000000067
 	mov rcx, rdi
 	and rcx, 0xffffff
@@ -32,7 +39,19 @@ gdt_enable:
 	mov gs, ax
 	mov ax, (gdt.tss-gdt)
 	ltr ax
-	ret
+	lea rdi, gdt_lock
+	xor esi, esi
+	jmp bitlock_release
+
+
+
+section .edata noexec nowrite
+
+
+
+align 4
+gdt_lock:
+	dd 0
 
 
 
