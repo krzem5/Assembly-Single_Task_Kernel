@@ -4,7 +4,7 @@
 #include <common/kfs2/structures.h>
 #include <common/kfs2/util.h>
 
-#include <stdio.h>
+
 
 typedef struct _BITMAP_DATA{
 	u64 lengths[KFS2_BITMAP_LEVEL_COUNT];

@@ -21,7 +21,7 @@ typedef u8 thread_state_t;
 
 
 typedef struct _EVENT_THREAD_CONTAINER{
-	struct _THREAD* thread;
+	handle_id_t thread;
 	struct _EVENT_THREAD_CONTAINER* prev;
 	struct _EVENT_THREAD_CONTAINER* next;
 	u64 sequence_id;

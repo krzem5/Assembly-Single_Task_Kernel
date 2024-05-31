@@ -51,7 +51,7 @@ static bool _await_event(thread_t* thread,event_t* event,u32 index){
 	}
 	rwlock_acquire_write(&(thread->lock));
 	event_thread_container_t* container=omm_alloc(_event_thread_container_allocator);
-	container->thread=thread;
+	container->thread=thread->handle.rb_node.key;
 	container->prev=event->tail;
 	container->next=NULL;
 	container->sequence_id=thread->event_sequence_id;
@@ -136,11 +136,16 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 	while (event->head){
 		event_thread_container_t* container=event->head;
 		event->head=container->next;
-		thread_t* thread=container->thread;
 		u64 sequence_id=container->sequence_id;
 		u64 index=container->index;
+		handle_t* thread_handle=handle_lookup_and_acquire(container->thread,thread_handle_type);
 		omm_dealloc(_event_thread_container_allocator,container);
+		if (!thread_handle){
+			continue;
+		}
+		thread_t* thread=KERNEL_CONTAINEROF(thread_handle,thread_t,handle);
 		if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT||thread->event_sequence_id!=sequence_id){
+			handle_release(thread_handle);
 			continue;
 		}
 		rwlock_acquire_write(&(thread->lock));
@@ -150,6 +155,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		rwlock_release_write(&(thread->lock));
 		SPINLOOP(thread->reg_state.reg_state_not_present);
 		scheduler_enqueue_thread(thread);
+		handle_release(thread_handle);
 		if (!(flags&EVENT_DISPATCH_FLAG_DISPATCH_ALL)){
 			break;
 		}

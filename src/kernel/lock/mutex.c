@@ -50,6 +50,7 @@ KERNEL_PUBLIC void mutex_acquire(mutex_t* lock){
 		rwlock_acquire_write(&(lock->lock));
 	}
 	lock->holder=THREAD_DATA->header.current_thread;
+	handle_acquire(&(lock->holder->handle));
 	rwlock_release_write(&(lock->lock));
 	lock_profiling_acquire_end(lock);
 }
@@ -61,6 +62,7 @@ KERNEL_PUBLIC void mutex_release(mutex_t* lock){
 	if (lock->holder!=THREAD_DATA->header.current_thread){
 		panic("mutex_release: lock released by wrong thread");
 	}
+	handle_release(&(lock->holder->handle));
 	lock->holder=NULL;
 	rwlock_release_write(&(lock->lock));
 	lock_profiling_release(lock);
