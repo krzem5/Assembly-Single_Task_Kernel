@@ -212,24 +212,22 @@ static void _store_keyring(keyring_t* keyring){
 
 
 
-static void _keyring_update_notification_thread(void){
-	notification_consumer_t* consumer=notification_consumer_create(&keyring_notification_dispatcher);
+static void _keyring_update_thread(void){
+	notification_consumer_t* consumer=notification_consumer_create(keyring_notification_dispatcher);
 	HANDLE_FOREACH(keyring_handle_type){
 		_store_keyring(KERNEL_CONTAINEROF(handle,keyring_t,handle));
 	}
 	while (1){
 		notification_t notification;
-		if (!notification_consumer_get(consumer,1,&notification)){
+		if (!notification_consumer_get(consumer,1,&notification)||notification.type!=KEYRING_UPDATE_NOTIFICATION||notification.length!=sizeof(keyring_update_notification_data_t)){
 			continue;
 		}
-		handle_t* handle=handle_lookup_and_acquire(notification.object,keyring_handle_type);
+		const keyring_update_notification_data_t* data=notification.data;
+		handle_t* handle=handle_lookup_and_acquire(data->keyring_handle,keyring_handle_type);
 		if (!handle){
 			continue;
 		}
-		keyring_t* keyring=KERNEL_CONTAINEROF(handle,keyring_t,handle);
-		if (notification.type==NOTIFICATION_TYPE_KEYRING_UPDATE){
-			_store_keyring(keyring);
-		}
+		_store_keyring(KERNEL_CONTAINEROF(handle,keyring_t,handle));
 		handle_release(handle);
 	}
 }
@@ -245,6 +243,6 @@ MODULE_PREINIT(){
 	}
 	INFO("Loading keyrings...");
 	_load_keyrings();
-	thread_create_kernel_thread(NULL,"keyringstore.update.notification",_keyring_update_notification_thread,0);
+	thread_create_kernel_thread(NULL,"keyringstore.update",_keyring_update_thread,0);
 	return 1;
 }

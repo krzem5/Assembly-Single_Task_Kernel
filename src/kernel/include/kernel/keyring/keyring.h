@@ -17,6 +17,8 @@
 
 #define KEYRING_SEARCH_FLAG_BYPASS_ACL 1
 
+#define KEYRING_UPDATE_NOTIFICATION 0x00000001
+
 
 
 typedef struct _KEYRING_KEY{
@@ -49,10 +51,16 @@ typedef struct _KEYRING{
 
 
 
+typedef struct _KEYRING_UPDATE_NOTIFICATION_DATA{
+	handle_id_t keyring_handle;
+} keyring_update_notification_data_t;
+
+
+
 extern handle_type_t keyring_handle_type;
 extern keyring_t* keyring_module_signature;
 extern keyring_t* keyring_user_signature;
-extern notification_dispatcher_t keyring_notification_dispatcher;
+extern notification_dispatcher_t* keyring_notification_dispatcher;
 
 
 

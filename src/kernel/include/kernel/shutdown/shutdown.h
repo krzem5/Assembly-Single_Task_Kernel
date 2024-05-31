@@ -22,10 +22,6 @@ typedef struct _SHUTDOWN_FUNCTION{
 
 
 
-extern notification_dispatcher_t shutdown_notification_dispatcher;
-
-
-
 void KERNEL_NORETURN shutdown(u32 flags);
 
 

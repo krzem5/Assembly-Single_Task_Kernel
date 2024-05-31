@@ -27,13 +27,22 @@ static rwlock_t _keyring_creation_lock;
 KERNEL_PUBLIC handle_type_t keyring_handle_type=0;
 KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
 KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
-KERNEL_PUBLIC notification_dispatcher_t keyring_notification_dispatcher;
+KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE keyring_notification_dispatcher=NULL;
 
 
 
 static void _keyring_handle_destructor(handle_t* handle){
 	keyring_t* keyring=KERNEL_CONTAINEROF(handle,keyring_t,handle);
 	ERROR("Delete keyring '%s'",keyring->name->data);
+}
+
+
+
+static void _dispatch_update_notification(keyring_t* keyring){
+	keyring_update_notification_data_t data={
+		keyring->handle.rb_node.key
+	};
+	notification_dispatcher_dispatch(keyring_notification_dispatcher,KEYRING_UPDATE_NOTIFICATION,&data,sizeof(keyring_update_notification_data_t));
 }
 
 
@@ -45,7 +54,7 @@ KERNEL_INIT(){
 	_keyring_key_allocator=omm_init("kernel.keyring.key",sizeof(keyring_key_t),8,2);
 	rwlock_init(&(_keyring_key_allocator->lock));
 	keyring_handle_type=handle_alloc("kernel.keyring",_keyring_handle_destructor);
-	notification_dispatcher_init(&keyring_notification_dispatcher);
+	keyring_notification_dispatcher=notification_dispatcher_create();
 	rwlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");
 	keyring_module_signature=keyring_create("module-signature");
@@ -84,7 +93,7 @@ KERNEL_PUBLIC keyring_t* keyring_create(const char* name){
 	rwlock_init(&(out->lock));
 	out->head=NULL;
 	rwlock_release_write(&_keyring_creation_lock);
-	notification_dispatcher_dispatch(&keyring_notification_dispatcher,out->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	_dispatch_update_notification(out);
 	return out;
 }
 
@@ -130,7 +139,7 @@ KERNEL_PUBLIC keyring_key_t* keyring_key_create(keyring_t* keyring,const char* n
 		keyring->head=out;
 	}
 	rwlock_release_write(&(keyring->lock));
-	notification_dispatcher_dispatch(&keyring_notification_dispatcher,keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	_dispatch_update_notification(keyring);
 	return out;
 }
 
@@ -143,7 +152,7 @@ KERNEL_PUBLIC void keyring_key_delete(keyring_key_t* key){
 
 
 KERNEL_PUBLIC void keyring_key_update(keyring_key_t* key){
-	notification_dispatcher_dispatch(&keyring_notification_dispatcher,key->keyring->handle.rb_node.key,NOTIFICATION_TYPE_KEYRING_UPDATE);
+	_dispatch_update_notification(key->keyring);
 }
 
 

@@ -1,6 +1,7 @@
 #ifndef _KERNEL_NOTIFICATION_NOTIFICATION_H_
 #define _KERNEL_NOTIFICATION_NOTIFICATION_H_ 1
 #include <kernel/lock/rwlock.h>
+#include <kernel/mp/event.h>
 #include <kernel/types.h>
 
 
@@ -8,16 +9,12 @@
 #define NOTIFICATION_TYPE_HANDLE_CREATE 1
 #define NOTIFICATION_TYPE_HANDLE_DELETE 2
 
-#define NOTIFICATION_TYPE_SHUTDOWN_POWEROFF 3
-#define NOTIFICATION_TYPE_SHUTDOWN_RESTART 4
-
-#define NOTIFICATION_TYPE_KEYRING_UPDATE 5
-
 
 
 typedef struct _NOTIFICATION{
-	u64 object;
 	u32 type;
+	u32 length;
+	void* data;
 } notification_t;
 
 
@@ -25,38 +22,40 @@ typedef struct _NOTIFICATION{
 typedef struct _NOTIFICATION_CONTAINER{
 	struct _NOTIFICATION_CONTAINER* next;
 	notification_t data;
+	KERNEL_ATOMIC u64 rc;
 } notification_container_t;
 
 
 
 typedef struct _NOTIFICATION_CONSUMER{
+	rwlock_t lock;
 	struct _NOTIFICATION_DISPATCHER* dispatcher;
 	struct _NOTIFICATION_CONSUMER* prev;
 	struct _NOTIFICATION_CONSUMER* next;
-	rwlock_t lock;
-	struct _EVENT* event;
-	notification_container_t* head;
-	notification_container_t* tail;
+	notification_container_t* last;
+	event_t* event;
 } notification_consumer_t;
 
 
 
 typedef struct _NOTIFICATION_DISPATCHER{
-	notification_consumer_t* head;
 	rwlock_t lock;
+	notification_container_t* head;
+	notification_container_t* tail;
+	notification_consumer_t* consumer_head;
 } notification_dispatcher_t;
 
 
 
-void notification_dispatcher_init(notification_dispatcher_t* dispatcher);
+notification_dispatcher_t* notification_dispatcher_create(void);
 
 
 
-void notification_dispatcher_deinit(notification_dispatcher_t* dispatcher);
+void notification_dispatcher_delete(notification_dispatcher_t* dispatcher);
 
 
 
-void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,u64 object,u32 type);
+void notification_dispatcher_dispatch(notification_dispatcher_t* dispatcher,u32 type,const void* data,u32 length);
 
 
 

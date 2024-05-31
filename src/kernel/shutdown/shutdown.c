@@ -2,7 +2,6 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
-#include <kernel/notification/notification.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/shutdown/shutdown.h>
 #include <kernel/syscall/syscall.h>
@@ -19,13 +18,10 @@ static omm_allocator_t* _shutdown_function_allocator=NULL;
 static shutdown_function_t* _shutdown_root_function=NULL;
 static rwlock_t _shutdown_function_lock;
 
-notification_dispatcher_t shutdown_notification_dispatcher;
-
 
 
 KERNEL_INIT(){
 	LOG("Initializing shutdown list...");
-	notification_dispatcher_init(&shutdown_notification_dispatcher);
 	_shutdown_function_allocator=omm_init("kernel.shutdown.function",sizeof(shutdown_function_t),8,1);
 	rwlock_init(&_shutdown_function_lock);
 }
@@ -34,7 +30,7 @@ KERNEL_INIT(){
 
 KERNEL_PUBLIC void KERNEL_NORETURN shutdown(u32 flags){
 	if (!(flags&SHUTDOWN_FLAG_NO_CLEANUP)){
-		notification_dispatcher_dispatch(&shutdown_notification_dispatcher,0,((flags&SHUTDOWN_FLAG_RESTART)?NOTIFICATION_TYPE_SHUTDOWN_RESTART:NOTIFICATION_TYPE_SHUTDOWN_POWEROFF));
+		// dispatch cleanup callbacks
 	}
 	scheduler_pause();
 	if (flags&SHUTDOWN_FLAG_RESTART){
