@@ -152,6 +152,6 @@ MODULE_PREINIT(){
 
 
 void KERNEL_NOCOVERAGE coverage_mark_failure(void){
-	ERROR("Marking coverage as failed");
+	ERROR("Coverage failed");
 	shutdown(0);
 }
