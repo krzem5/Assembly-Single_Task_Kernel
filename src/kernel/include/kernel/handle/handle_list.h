@@ -26,4 +26,8 @@ void handle_list_push(handle_list_t* list,handle_t* handle);
 
 
 
+void handle_list_pop(handle_list_t* list,handle_t* handle);
+
+
+
 #endif

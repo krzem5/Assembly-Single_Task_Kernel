@@ -125,7 +125,7 @@ KERNEL_PUBLIC bool acl_register_request_callback(acl_request_callback_t callback
 
 
 error_t syscall_acl_get_permissions(handle_id_t handle_id,handle_id_t process_handle_id){
-	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_TYPE_ANY);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
@@ -157,7 +157,7 @@ error_t syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_ha
 	if (set&(~ACL_PERMISSION_MASK)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
-	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_TYPE_ANY);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
@@ -189,7 +189,7 @@ error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t proces
 	if (flags&(~ACL_PERMISSION_MASK)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_ID_GET_TYPE(handle_id));
+	handle_t* handle=handle_lookup_and_acquire(handle_id,HANDLE_TYPE_ANY);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}

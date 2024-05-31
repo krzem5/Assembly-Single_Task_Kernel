@@ -91,6 +91,7 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 		return NULL;
 	}
 	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	handle_release(fd_handle);
 	return data->node;
 }
 
@@ -162,6 +163,7 @@ error_t syscall_fd_close(handle_id_t fd){
 		return ERROR_DENIED;
 	}
 	data->node->rc--;
+	handle_list_pop(&(THREAD_DATA->process->handle_list),fd_handle);
 	handle_release(fd_handle);
 	handle_release(fd_handle);
 	return ERROR_OK;
@@ -443,6 +445,7 @@ error_t syscall_fd_iter_next(handle_id_t iterator){
 		data->current_name=NULL;
 		data->pointer=((vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_EXEC)?vfs_node_iterate(data->node,data->pointer,&(data->current_name)):0);
 		if (!data->pointer){
+			handle_list_pop(&(THREAD_DATA->process->handle_list),fd_iterator_handle);
 			handle_release(fd_iterator_handle);
 		}
 		else{
@@ -466,6 +469,7 @@ error_t syscall_fd_iter_stop(handle_id_t iterator){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
 	}
+	handle_list_pop(&(THREAD_DATA->process->handle_list),fd_iterator_handle);
 	handle_release(fd_iterator_handle);
 	handle_release(fd_iterator_handle);
 	return ERROR_OK;

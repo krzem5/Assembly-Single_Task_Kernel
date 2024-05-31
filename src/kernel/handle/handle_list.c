@@ -48,10 +48,22 @@ KERNEL_PUBLIC void handle_list_destroy(handle_list_t* list){
 
 
 KERNEL_PUBLIC void handle_list_push(handle_list_t* list,handle_t* handle){
-	handle_acquire(handle);
 	rwlock_acquire_write(&(list->lock));
 	rb_tree_node_t* rb_node=omm_alloc(_handle_list_entry_allocator);
 	rb_node->key=handle->rb_node.key;
 	rb_tree_insert_node(&(list->tree),rb_node);
 	rwlock_release_write(&(list->lock));
 }
+
+
+
+KERNEL_PUBLIC void handle_list_pop(handle_list_t* list,handle_t* handle){
+	rwlock_acquire_write(&(list->lock));
+	rb_tree_node_t* rb_node=rb_tree_lookup_node(&(list->tree),handle->rb_node.key);
+	if (rb_node){
+		rb_tree_remove_node(&(list->tree),rb_node);
+		omm_dealloc(_handle_list_entry_allocator,rb_node);
+	}
+	rwlock_release_write(&(list->lock));
+}
+
