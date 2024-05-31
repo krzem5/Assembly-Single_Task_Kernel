@@ -37,8 +37,6 @@ typedef struct _HANDLE{
 	KERNEL_ATOMIC u64 rc;
 	acl_t* acl;
 	struct _HANDLE_LIST* handle_list;
-	struct _HANDLE* handle_list_prev;
-	struct _HANDLE* handle_list_next;
 } handle_t;
 
 

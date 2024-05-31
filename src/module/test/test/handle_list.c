@@ -24,13 +24,6 @@ void test_handle_list(void){
 	TEST_GROUP("handle already in list");
 	handle_list_push(&list,&handle);
 	TEST_ASSERT(handle.handle_list==&list);
-	TEST_FUNC("handle_list_pop");
-	TEST_GROUP("correct args");
-	handle_list_pop(&handle);
-	TEST_ASSERT(!handle.handle_list);
-	TEST_GROUP("handle not in list");
-	handle_list_pop(&handle);
-	TEST_ASSERT(!handle.handle_list);
 	TEST_FUNC("handle_list_destroy");
 	TEST_GROUP("release handles in list");
 	handle_acquire(&handle);
