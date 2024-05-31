@@ -17,8 +17,8 @@
 
 
 
-static omm_allocator_t* _fs_allocator=NULL;
-static omm_allocator_t* _fs_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _fs_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _fs_descriptor_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t fs_handle_type=0;
 KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
@@ -45,6 +45,14 @@ static void _fs_handle_destructor(handle_t* handle){
 	}
 	handle_release(&(fs->descriptor->handle));
 	omm_dealloc(_fs_allocator,fs);
+}
+
+
+
+KERNEL_EARLY_EARLY_INIT(){
+	_fs_allocator=omm_init("kernel.fs",sizeof(filesystem_t),8,4);
+	rwlock_init(&(_fs_allocator->lock));
+	fs_handle_type=handle_alloc("kernel.fs",_fs_handle_destructor);
 }
 
 
@@ -86,13 +94,6 @@ KERNEL_PUBLIC void fs_unregister_descriptor(filesystem_descriptor_t* descriptor)
 
 KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	handle_acquire(&(descriptor->handle));
-	if (!_fs_allocator){
-		_fs_allocator=omm_init("kernel.fs",sizeof(filesystem_t),8,4);
-		rwlock_init(&(_fs_allocator->lock));
-	}
-	if (!fs_handle_type){
-		fs_handle_type=handle_alloc("kernel.fs",_fs_handle_destructor);
-	}
 	filesystem_t* out=omm_alloc(_fs_allocator);
 	handle_new(fs_handle_type,&(out->handle));
 	out->descriptor=descriptor;

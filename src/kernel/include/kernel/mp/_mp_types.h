@@ -35,6 +35,7 @@ typedef struct _EVENT{
 	handle_t handle;
 	rwlock_t lock;
 	bool is_active;
+	bool is_deleted;
 	event_thread_container_t* head;
 	event_thread_container_t* tail;
 } event_t;

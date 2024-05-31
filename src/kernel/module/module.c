@@ -377,6 +377,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
 	handle_new(module_handle_type,&(module->handle));
+	handle_acquire(&(module->handle));
 	module->name=smm_alloc(name,0);
 	module->region=NULL;
 	module->flags=0;
@@ -430,7 +431,9 @@ _error:
 	if (module->region){
 		mmap_dealloc_region(_module_image_mmap,module->region);
 	}
-	handle_release(&(module->handle));
+	if (handle_release(&(module->handle))){
+		handle_release(&(module->handle));
+	}
 	mmap_dealloc_region(process_kernel->mmap,region);
 	return NULL;
 }
@@ -469,7 +472,6 @@ KERNEL_PUBLIC module_t* module_lookup(const char* name){
 		handle_acquire(handle);
 		module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 		if (str_equal(module->name->data,name)){
-			handle_release(handle);
 			return module;
 		}
 		handle_release(handle);

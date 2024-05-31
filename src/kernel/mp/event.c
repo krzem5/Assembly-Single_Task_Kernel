@@ -29,13 +29,22 @@ KERNEL_PUBLIC handle_type_t event_handle_type=0;
 
 
 static void _event_handle_destructor(handle_t* handle){
-	// ERROR("Delete EVENT %p",handle);
+	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
+	if (!event->is_deleted){
+		panic("_event_handle_destructor: unreferenced event not deleted");
+	}
+	omm_dealloc(_event_allocator,event);
 }
 
 
 
 static bool _await_event(thread_t* thread,event_t* event,u32 index){
 	rwlock_acquire_write(&(event->lock));
+	if (event->is_deleted){
+		WARN("Awaiting deleted event; possibly wake up thread");
+		rwlock_release_write(&(event->lock));
+		return 0;
+	}
 	if (event->is_active){
 		rwlock_release_write(&(event->lock));
 		return 1;
@@ -82,6 +91,7 @@ KERNEL_PUBLIC event_t* event_create(const char* name){
 	}
 	rwlock_init(&(out->lock));
 	out->is_active=0;
+	out->is_deleted=0;
 	out->head=NULL;
 	out->tail=NULL;
 	return out;
@@ -93,14 +103,20 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 	if (CPU_HEADER_DATA->current_thread&&!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_DELETE)){
 		return;
 	}
-	handle_destroy(&(event->handle));
 	rwlock_acquire_write(&(event->lock));
+	if (event->is_deleted){
+		rwlock_release_write(&(event->lock));
+		return;
+	}
+	event->is_deleted=1;
 	while (event->head){
+		WARN("Event deleted; update thread and possibly wake it up with event_wakeup_index=EVENT_INDEX_CANCELLED");
 		event_thread_container_t* container=event->head;
 		event->head=container->next;
 		omm_dealloc(_event_thread_container_allocator,container);
 	}
 	rwlock_release_write(&(event->lock));
+	handle_release(&(event->handle));
 }
 
 
@@ -110,6 +126,10 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 		return;
 	}
 	rwlock_acquire_write(&(event->lock));
+	if (event->is_deleted){
+		rwlock_release_write(&(event->lock));
+		return;
+	}
 	if (flags&EVENT_DISPATCH_FLAG_SET_ACTIVE){
 		event->is_active=1;
 	}
@@ -214,7 +234,9 @@ KERNEL_PUBLIC void event_set_active(event_t* event,bool is_active,bool bypass_ac
 		return;
 	}
 	rwlock_acquire_write(&(event->lock));
-	event->is_active=is_active;
+	if (!event->is_deleted){
+		event->is_active=is_active;
+	}
 	rwlock_release_write(&(event->lock));
 }
 
@@ -253,8 +275,9 @@ error_t syscall_event_delete(handle_id_t event_handle){
 		handle_release(handle);
 		return ERROR_DENIED;
 	}
-	handle_release(handle);
+	handle_list_pop(&(THREAD_DATA->process->handle_list),&(event->handle));
 	event_delete(event);
+	handle_release(handle);
 	return ERROR_OK;
 }
 

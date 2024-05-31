@@ -110,6 +110,10 @@ KERNEL_PUBLIC KERNEL_NOINLINE void _handle_delete_internal(handle_t* handle){
 	}
 	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key));
 	rwlock_acquire_write(&(handle_descriptor->lock));
+	if (handle->rc){
+		rwlock_release_write(&(handle_descriptor->lock));
+		return;
+	}
 	rb_tree_remove_node(&(handle_descriptor->tree),&(handle->rb_node));
 	rwlock_release_write(&(handle_descriptor->lock));
 #pragma GCC diagnostic push
