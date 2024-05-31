@@ -206,7 +206,7 @@ FS_LIST_FILE_PATH="src/module/fs_list.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
-COVERAGE_FILE_FAILURE_MARKER=0xb9beb6b34c494146
+COVERAGE_FILE_SUCCESS_MARKER=0xb0b4b0b44b4f4b4f
 KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
@@ -641,14 +641,16 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 		if (file.endswith(".gcda")):
 			os.remove(os.path.join(USER_OBJECT_FILE_DIRECTORY,file))
 	file_list=set()
+	success=False
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(8)
 			if (len(buffer)<8):
 				break
 			marker=struct.unpack("<Q",buffer)[0]
-			if (marker==COVERAGE_FILE_FAILURE_MARKER):
-				sys.exit(1)
+			if (marker==COVERAGE_FILE_SUCCESS_MARKER):
+				success=True
+				continue
 			if (marker!=COVERAGE_FILE_REPORT_MARKER):
 				rf.seek(rf.tell()-7)
 				continue
@@ -687,6 +689,8 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 							dst[i]+=src[i]
 						counters=dst.tobytes()
 					wf.write(counters)
+	if (not success):
+		sys.exit(1)
 	with open(output_file_path,"w") as wf:
 		wf.write("TN:\n")
 		function_stats=None

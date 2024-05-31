@@ -17,7 +17,7 @@
 #define COVERAGE_SERIAL_PORT (serial_ports+1)
 
 #define COVERAGE_FILE_REPORT_MARKER 0xb8bcbbbe41444347
-#define COVERAGE_FILE_FAILURE_MARKER 0xb9beb6b34c494146
+#define COVERAGE_FILE_SUCCESS_MARKER 0xb0b4b0b44b4f4b4f
 
 
 
@@ -127,6 +127,8 @@ static KERNEL_NOCOVERAGE void _syscall_shutdown(void){
 			_process_gcov_info_section(module->gcov_info_base,module->gcov_info_size);
 		}
 	}
+	u64 marker=COVERAGE_FILE_SUCCESS_MARKER;
+	serial_send(COVERAGE_SERIAL_PORT,&marker,sizeof(u64));
 	shutdown(0);
 }
 
@@ -155,10 +157,6 @@ MODULE_PREINIT(){
 
 void KERNEL_NOCOVERAGE coverage_mark_failure(void){
 	ERROR("Marking coverage as failed");
-	rwlock_acquire_write(&_coverage_lock);
 	_coverage_failed=1;
-	u64 marker=COVERAGE_FILE_FAILURE_MARKER;
-	serial_send(COVERAGE_SERIAL_PORT,&marker,sizeof(u64));
-	rwlock_release_write(&_coverage_lock);
 	shutdown(0);
 }
