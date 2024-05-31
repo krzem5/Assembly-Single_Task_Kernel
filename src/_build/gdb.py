@@ -122,7 +122,12 @@ class KernelListThreads(gdb.Command):
 		for k in rb_tree_iter(event_handle_descriptor["tree"]):
 			event=gdb.Value(int(k.address)-offsetof(event_t,"handle")).cast(event_t.pointer())[0]
 			for e in iter_linked_list(event,event_thread_container_t):
-				thread_to_event[int(e["thread"])]=event
+				if (e["sequence_id"]!=e["thread"].cast(thread_t.pointer())[0]["event_sequence_id"]):
+					continue
+				key=int(e["thread"])
+				if (key not in thread_to_event):
+					thread_to_event[key]=[]
+				thread_to_event[key].append(event["name"].string())
 		thread_handle_descriptor=handle_get_descriptor(thread_handle_type)
 		for k in rb_tree_iter(thread_handle_descriptor["tree"]):
 			thread=gdb.Value(int(k.address)-offsetof(thread_t,"handle")).cast(thread_t.pointer())[0]
@@ -135,7 +140,7 @@ class KernelListThreads(gdb.Command):
 				THREAD_STATE_TYPE_TERMINATED: "terminated"
 			}[int(thread["state"])]
 			if (thread["state"]==THREAD_STATE_TYPE_AWAITING_EVENT):
-				line+=" ("+thread_to_event[int(thread.address)]["name"].string()+")"
+				line+=" ("+", ".join(thread_to_event[int(thread.address)])+")"
 			print(line)
 
 
