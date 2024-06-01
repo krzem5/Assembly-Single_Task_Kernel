@@ -85,4 +85,8 @@ sys_error_t account_switch_user(sys_process_t process,sys_uid_t uid,const void* 
 
 
 
+sys_error_t account_set_administrator(sys_uid_t uid,bool enable);
+
+
+
 #endif

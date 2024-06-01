@@ -21,6 +21,8 @@
 // 11. delete group <group>
 // 12. join <user> <group>
 // 13. leave <user> <group>
+// 14. administrator enable <user>
+// 15. administrator disable <user>
 
 
 
@@ -194,6 +196,21 @@ _error:
 
 
 
+static int _set_administrator(const char* name,bool enable){
+	sys_error_t uid=_user_to_uid(name);
+	if (SYS_IS_ERROR(uid)){
+		goto _error;
+	}
+	if (!SYS_IS_ERROR(account_set_administrator(uid,enable))){
+		return 0;
+	}
+_error:
+	sys_io_print("Error changing administrator status\n");
+	return 1;
+}
+
+
+
 int main(int argc,const char** argv){
 	if (argc<=1||!sys_string_compare(argv[1],"list")){
 		return _list_users_and_groups();
@@ -260,6 +277,18 @@ int main(int argc,const char** argv){
 			goto _invalid_arguments;
 		}
 		return _leave_group(argv[2],argv[3]);
+	}
+	if (!sys_string_compare(argv[1],"administrator")){
+		if (argc!=4){
+			goto _invalid_arguments;
+		}
+		if (!sys_string_compare(argv[2],"enable")){
+			return _set_administrator(argv[3],1);
+		}
+		if (!sys_string_compare(argv[2],"disable")){
+			return _set_administrator(argv[3],0);
+		}
+		goto _invalid_arguments;
 	}
 _invalid_arguments:
 	sys_io_print("Invalid arguments\n");

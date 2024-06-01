@@ -184,6 +184,16 @@ static error_t _syscall_switch_user(handle_id_t process_handle,u32 uid,KERNEL_US
 
 
 
+static error_t _syscall_set_administrator(u32 uid,u32 enable){
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_set_administrator");
+	return ERROR_DENIED;
+}
+
+
+
 static syscall_callback_t const _account_manager_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_iter_group,
 	[2]=(syscall_callback_t)_syscall_iter_user,
@@ -197,6 +207,7 @@ static syscall_callback_t const _account_manager_syscall_functions[]={
 	[10]=(syscall_callback_t)_syscall_join_group,
 	[11]=(syscall_callback_t)_syscall_leave_group,
 	[12]=(syscall_callback_t)_syscall_switch_user,
+	[13]=(syscall_callback_t)_syscall_set_administrator,
 };
 
 
