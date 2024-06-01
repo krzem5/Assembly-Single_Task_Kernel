@@ -1,4 +1,5 @@
 #include <kernel/drive/drive.h>
+#include <kernel/event/device.h>
 #include <kernel/format/format.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
@@ -25,6 +26,7 @@ KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
 
 static void _partition_handle_destructor(handle_t* handle){
 	partition_t* partition=KERNEL_CONTAINEROF(handle,partition_t,handle);
+	event_dispatch_partition_delete_notification(partition);
 	if (partition->drive){
 		handle_release(&(partition->drive->handle));
 	}
@@ -120,6 +122,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	if (!out->fs){
 		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,index,name);
 	}
+	event_dispatch_partition_create_notification(out);
 	return out;
 }
 

@@ -1,6 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/error/error.h>
+#include <kernel/event/process.h>
 #include <kernel/format/format.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
@@ -53,11 +54,13 @@ static void _thread_handle_destructor(handle_t* handle){
 	if (thread->state!=THREAD_STATE_TYPE_TERMINATED){
 		panic("_thread_handle_destructor: Unterminated thread not referenced");
 	}
+	event_dispatch_thread_delete_notification(thread);
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;
 	event_delete(thread->termination_event);
 	if (thread_list_remove(&(process->thread_list),thread)){
+		event_dispatch_process_terminate_notification(process);
 		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 		handle_release(&(process->handle));
 	}
@@ -151,6 +154,7 @@ KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64
 	out->reg_state.gpr_state.rflags=0x0000000202;
 	out->reg_state.fs_gs_state.fs=0;
 	out->reg_state.fs_gs_state.gs=0;
+	event_dispatch_thread_create_notification(out);
 	return out;
 }
 
@@ -188,6 +192,7 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 	out->reg_state.gpr_state.rflags=0x0000000202;
 	out->reg_state.fs_gs_state.fs=0;
 	out->reg_state.fs_gs_state.gs=(u64)out;
+	event_dispatch_thread_create_notification(out);
 	if (start_thread){
 		scheduler_enqueue_thread(out);
 	}
@@ -208,6 +213,7 @@ KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
 	rwlock_release_write(&(thread->lock));
+	event_dispatch_thread_terminate_notification(thread);
 	event_dispatch(thread->termination_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE);
 	scheduler_yield();
 	for (;;);

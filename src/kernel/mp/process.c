@@ -3,6 +3,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
+#include <kernel/event/process.h>
 #include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
@@ -48,6 +49,7 @@ static void _process_handle_destructor(handle_t* handle){
 	if (process->thread_list.head){
 		panic("Unterminated process not referenced");
 	}
+	event_dispatch_process_delete_notification(process);
 	handle_list_destroy(&(process->handle_list));
 	mmap_deinit(process->mmap);
 	vmm_pagemap_deinit(&(process->pagemap));
@@ -105,6 +107,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	out->uid=out->parent->uid;
 	out->gid=out->parent->gid;
+	event_dispatch_process_create_notification(out);
 	return out;
 }
 

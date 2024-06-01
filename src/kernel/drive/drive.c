@@ -1,4 +1,5 @@
 #include <kernel/drive/drive.h>
+#include <kernel/event/device.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -22,6 +23,7 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE drive_handle_type=0;
 
 static void _drive_handle_destructor(handle_t* handle){
 	drive_t* drive=KERNEL_CONTAINEROF(handle,drive_t,handle);
+	event_dispatch_drive_delete_notification(drive);
 	if (drive->partition_table_descriptor){
 		handle_release(&(drive->partition_table_descriptor->handle));
 	}
@@ -61,6 +63,7 @@ KERNEL_PUBLIC drive_t* drive_create(const drive_config_t* config){
 	out->extra_data=config->extra_data;
 	out->partition_table_descriptor=NULL;
 	INFO("Drive size: %v (%lu * %lu)",out->block_count*out->block_size,out->block_count,out->block_size);
+	event_dispatch_drive_create_notification(out);
 	partition_load_from_drive(out);
 	return out;
 }
