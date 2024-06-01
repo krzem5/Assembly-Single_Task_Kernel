@@ -19,7 +19,7 @@ static omm_allocator_t* _notification_container_allocator=NULL;
 
 
 
-KERNEL_EARLY_INIT(){
+KERNEL_EARLY_EARLY_INIT(){
 	_notification_dispatcher_allocator=omm_init("kernel.notification.dispatcher",sizeof(notification_dispatcher_t),8,1);
 	rwlock_init(&(_notification_dispatcher_allocator->lock));
 	_notification_consumer_allocator=omm_init("kernel.notification.consumer",sizeof(notification_consumer_t),8,2);
