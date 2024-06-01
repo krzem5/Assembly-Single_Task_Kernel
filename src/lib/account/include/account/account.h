@@ -3,6 +3,7 @@
 #include <sys/error/error.h>
 #include <sys/id/group.h>
 #include <sys/id/user.h>
+#include <sys/mp/process.h>
 #include <sys/types.h>
 
 
@@ -77,6 +78,10 @@ sys_error_t account_join_group(sys_uid_t uid,sys_gid_t gid);
 
 
 sys_error_t account_leave_group(sys_uid_t uid,sys_gid_t gid);
+
+
+
+sys_error_t account_switch_user(sys_process_t process,sys_uid_t uid,const void* password,u32 password_length);
 
 
 

@@ -45,6 +45,7 @@ extern u64 syscall_partition_table_descriptor_get_data();
 extern u64 syscall_partition_table_descriptor_get_next();
 extern u64 syscall_pipe_create();
 extern u64 syscall_process_get_event();
+extern u64 syscall_process_get_main_thread();
 extern u64 syscall_process_get_parent();
 extern u64 syscall_process_get_pid();
 extern u64 syscall_process_set_cwd();
@@ -66,6 +67,7 @@ extern u64 syscall_thread_create();
 extern u64 syscall_thread_get_priority();
 extern u64 syscall_thread_get_tid();
 extern u64 syscall_thread_set_priority();
+extern u64 syscall_thread_start();
 extern u64 syscall_thread_stop();
 extern u64 syscall_time_get_boot_offset();
 extern u64 syscall_timer_create();
@@ -153,5 +155,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[73]=syscall_drive_get_data,
 	[74]=syscall_partition_table_descriptor_get_next,
 	[75]=syscall_partition_table_descriptor_get_data,
+	[76]=syscall_process_get_main_thread,
+	[77]=syscall_thread_start,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

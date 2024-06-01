@@ -98,3 +98,9 @@ SYS_PUBLIC sys_error_t account_join_group(sys_uid_t uid,sys_gid_t gid){
 SYS_PUBLIC sys_error_t account_leave_group(sys_uid_t uid,sys_gid_t gid){
 	return _sys_syscall2(_account_syscall_offset|0x0000000b,uid,gid);
 }
+
+
+
+SYS_PUBLIC sys_error_t account_switch_user(sys_process_t process,sys_uid_t uid,const void* password,u32 password_length){
+	return _sys_syscall4(_account_syscall_offset|0x0000000c,process,uid,(u64)password,password_length);
+}

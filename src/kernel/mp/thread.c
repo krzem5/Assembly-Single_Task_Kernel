@@ -295,3 +295,25 @@ error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 e
 	amm_dealloc(buffer);
 	return out;
 }
+
+
+
+error_t syscall_thread_start(handle_id_t thread_handle){
+	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	rwlock_acquire_write(&(thread->lock));
+	error_t out=ERROR_UNSUPPORTED_OPERATION;
+	if (thread->state==THREAD_STATE_TYPE_NONE){
+		out=ERROR_OK;
+		rwlock_release_write(&(thread->lock));
+		scheduler_enqueue_thread(thread);
+	}
+	else{
+		rwlock_release_write(&(thread->lock));
+	}
+	handle_release(handle);
+	return out;
+}

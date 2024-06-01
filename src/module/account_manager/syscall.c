@@ -1,9 +1,11 @@
 #include <account_manager/database.h>
 #include <kernel/error/error.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -149,6 +151,26 @@ static error_t _syscall_leave_group(u32 uid,u32 gid){
 
 
 
+static error_t _syscall_switch_user(handle_id_t process_handle,u32 uid,KERNEL_USER_POINTER const void* password,u32 password_length){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!handle->acl||!(acl_get(handle->acl,THREAD_DATA->process)&PROCESS_ACL_FLAG_SWITCH_USER)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
+	ERROR("_syscall_switch_user");(void)process;
+	handle_release(handle);
+	return ERROR_DENIED;
+}
+
+
+
 static syscall_callback_t const _account_manager_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_iter_group,
 	[2]=(syscall_callback_t)_syscall_iter_user,
@@ -161,6 +183,7 @@ static syscall_callback_t const _account_manager_syscall_functions[]={
 	[9]=(syscall_callback_t)_syscall_delete_user,
 	[10]=(syscall_callback_t)_syscall_join_group,
 	[11]=(syscall_callback_t)_syscall_leave_group,
+	[12]=(syscall_callback_t)_syscall_switch_user,
 };
 
 

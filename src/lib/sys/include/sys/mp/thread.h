@@ -47,6 +47,10 @@ sys_error_t sys_thread_set_priority(sys_thread_t thread,sys_thread_priority_t pr
 
 
 
+sys_error_t sys_thread_start(sys_thread_t thread);
+
+
+
 sys_error_t sys_thread_stop(sys_thread_t thread);
 
 

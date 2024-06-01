@@ -51,3 +51,9 @@ SYS_PUBLIC sys_process_t sys_process_get_parent(sys_process_t process){
 SYS_PUBLIC sys_error_t sys_process_set_root(sys_process_t process,sys_fd_t fd){
 	return _sys_syscall_process_set_root(process,fd);
 }
+
+
+
+SYS_PUBLIC sys_error_t sys_process_get_main_thread(sys_process_t process){
+	return _sys_syscall_process_get_main_thread(process);
+}

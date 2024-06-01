@@ -443,4 +443,16 @@ static inline u64 _sys_syscall_partition_table_descriptor_get_data(u64 partition
 
 
 
+static inline u64 _sys_syscall_process_get_main_thread(u64 process){
+	return _sys_syscall1(0x10000004c,process);
+}
+
+
+
+static inline u64 _sys_syscall_thread_start(u64 thread){
+	return _sys_syscall1(0x10000004d,thread);
+}
+
+
+
 #endif

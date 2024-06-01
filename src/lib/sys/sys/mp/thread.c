@@ -69,6 +69,13 @@ SYS_PUBLIC sys_error_t sys_thread_set_priority(sys_thread_t thread,sys_thread_pr
 
 
 
+SYS_PUBLIC sys_error_t sys_thread_start(sys_thread_t thread){
+	return _sys_syscall_thread_start(thread);
+}
+
+
+
 SYS_PUBLIC sys_error_t sys_thread_stop(sys_thread_t thread){
 	return _sys_syscall_thread_stop(thread);
 }
+

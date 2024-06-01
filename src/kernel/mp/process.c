@@ -102,10 +102,11 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	process_t* out=omm_alloc(_process_allocator);
 	handle_new(process_handle_type,&(out->handle));
 	handle_acquire(&(out->handle));
-	process_kernel->handle.acl=acl_create();
+	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
-		acl_set(process_kernel->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE);
+		acl_set(out->handle.acl,THREAD_DATA->process,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE|PROCESS_ACL_FLAG_SWITCH_USER);
 	}
+	acl_set(out->handle.acl,out,0,PROCESS_ACL_FLAG_CREATE_THREAD|PROCESS_ACL_FLAG_TERMINATE|PROCESS_ACL_FLAG_SWITCH_USER);
 	rwlock_init(&(out->lock));
 	vmm_pagemap_init(&(out->pagemap));
 	out->mmap=mmap_init(&(out->pagemap),mmap_bottom_address,mmap_top_address);
@@ -317,4 +318,21 @@ error_t syscall_process_set_root(handle_id_t process_handle,handle_id_t fd){
 	process->vfs_root=new_root;
 	handle_release(handle);
 	return ERROR_OK;
+}
+
+
+
+error_t syscall_process_get_main_thread(handle_id_t process_handle){
+	if (!process_handle){
+		process_handle=THREAD_DATA->process->handle.rb_node.key;
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
+	thread_t* thread=process->thread_list.head;
+	error_t out=(thread?thread->handle.rb_node.key:0);
+	handle_release(handle);
+	return out;
 }

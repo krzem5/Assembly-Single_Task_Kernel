@@ -9,6 +9,10 @@
 #define SYS_PROCESS_START_FLAG_PAUSE_THREAD 1
 #define SYS_PROCESS_START_FLAG_DEFAULT_IO 2
 
+#define SYS_PROCESS_ACL_FLAG_CREATE_THREAD 1
+#define SYS_PROCESS_ACL_FLAG_TERMINATE 2
+#define SYS_PROCESS_ACL_FLAG_SWITCH_USER 4
+
 
 
 typedef u64 sys_process_t;
@@ -36,6 +40,10 @@ sys_process_t sys_process_get_parent(sys_process_t process);
 
 
 sys_error_t sys_process_set_root(sys_process_t process,sys_fd_t fd);
+
+
+
+sys_error_t sys_process_get_main_thread(sys_process_t process);
 
 
 

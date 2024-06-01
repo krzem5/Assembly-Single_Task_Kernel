@@ -2,6 +2,7 @@
 #include <cwd.h>
 #include <input.h>
 #include <string.h>
+#include <sys/acl/acl.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
@@ -95,10 +96,12 @@ void command_execute(const char* command){
 		char path[4096];
 		sys_fd_path(fd,path,4096);
 		sys_fd_close(fd);
-		sys_process_t process=sys_process_start(path,argc,argv,NULL,0,sys_io_input_fd,sys_io_output_fd,sys_io_error_fd);
+		sys_process_t process=sys_process_start(path,argc,argv,NULL,SYS_PROCESS_START_FLAG_PAUSE_THREAD,sys_io_input_fd,sys_io_output_fd,sys_io_error_fd);
 		if (SYS_IS_ERROR(process)){
 			break;
 		}
+		sys_acl_set_permissions(sys_process_get_handle(),process,0,SYS_PROCESS_ACL_FLAG_SWITCH_USER);
+		sys_thread_start(sys_process_get_main_thread(process));
 		sys_thread_await_event(sys_process_get_termination_event(process));
 		return;
 	}
