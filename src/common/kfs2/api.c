@@ -76,7 +76,21 @@ static void _node_resize_data_inline_quadruple(kfs2_filesystem_t* fs,kfs2_node_t
 
 
 static void _node_resize_data_single_inline(kfs2_filesystem_t* fs,kfs2_node_t* node,u64 size){
-	panic("_node_resize_data_single_inline");
+	u8 inline_buffer[48];
+	if (!size){
+		goto _skip_data_copy;
+	}
+	void* buffer=fs->config.alloc_callback(1);
+	kfs2_io_data_block_read(fs,node->data.single[0],buffer);
+	mem_copy(inline_buffer,buffer,size);
+	fs->config.dealloc_callback(buffer,1);
+_skip_data_copy:
+	for (u64 i=0;i<6;i++){
+		if (node->data.single[i]){
+			kfs2_bitmap_dealloc(fs,&(fs->data_block_allocator),node->data.single[i]);
+		}
+	}
+	mem_copy(node->data.inline_,inline_buffer,size);
 }
 
 

@@ -19,10 +19,19 @@
 #define COMMAND_PARSER_IS_VALID_CHARACTER(c) ((c)&&!COMMAND_PARSER_IS_WHITESPACE(c)&&(c)!='>'&&(c)!='<'&&(c)!='|'&&(c)!='&'&&(c)!=';')
 
 #define COMMAND_PARSER_STATE_ARGUMENTS 0
+#define COMMAND_PARSER_STATE_OPERATOR 1
+#define COMMAND_PARSER_STATE_READ 2
+#define COMMAND_PARSER_STATE_WRITE 3
+#define COMMAND_PARSER_STATE_APPEND 4
+
+#define COMMAND_CONTEXT_FLAG_CLOSE_STDIN 1
+#define COMMAND_CONTEXT_FLAG_CLOSE_STDOUT 2
+#define COMMAND_CONTEXT_FLAG_CLOSE_STDERR 4
 
 
 
 typedef struct _COMMAND_CONTEXT{
+	u32 flags;
 	u32 argc;
 	char** argv;
 	sys_fd_t stdin;
@@ -102,6 +111,7 @@ static const void* _internal_commands[]={
 
 static command_context_t* _create_command_context(void){
 	command_context_t* out=sys_heap_alloc(NULL,sizeof(command_context_t));
+	out->flags=0;
 	out->argc=0;
 	out->argv=NULL;
 	out->stdin=sys_io_input_fd;
@@ -113,14 +123,25 @@ static command_context_t* _create_command_context(void){
 
 
 
+static void _cleanup_command_context(command_context_t* ctx){
+	for (u32 i=0;i<ctx->argc;i++){
+		sys_heap_dealloc(NULL,ctx->argv[i]);
+	}
+	sys_heap_dealloc(NULL,ctx->argv);
+	ctx->argc=0;
+	ctx->argv=NULL;
+}
+
+
+
 static void _dispatch_command_context(command_context_t* ctx){
 	if (!ctx->argc){
-		return;
+		goto _cleanup;
 	}
 	for (u32 i=0;_internal_commands[i];i+=2){
 		if (!sys_string_compare(_internal_commands[i],ctx->argv[0])){
 			((void (*)(command_context_t*))(_internal_commands[i+1]))(ctx);
-			goto _delete_arguments;
+			goto _cleanup;
 		}
 	}
 	for (u32 i=0;_search_path[i];i++){
@@ -141,23 +162,18 @@ static void _dispatch_command_context(command_context_t* ctx){
 		if (SYS_IS_ERROR(ctx->process)){
 			sys_io_print("error: unable to execute file '%s': %ld\n",path,ctx->process);
 			ctx->process=0;
-			goto _delete_arguments;
+			goto _cleanup;
 		}
 		sys_acl_set_permissions(sys_process_get_handle(),ctx->process,0,SYS_PROCESS_ACL_FLAG_SWITCH_USER);
 		sys_acl_set_permissions(ctx->stdin,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stdout,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stderr,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_thread_start(sys_process_get_main_thread(ctx->process));
-		goto _delete_arguments;
+		goto _cleanup;
 	}
 	sys_io_print("error: unable to find command '%s'\n",ctx->argv[0]);
-_delete_arguments:
-	for (u32 i=0;i<ctx->argc;i++){
-		sys_heap_dealloc(NULL,ctx->argv[i]);
-	}
-	sys_heap_dealloc(NULL,ctx->argv);
-	ctx->argc=0;
-	ctx->argv=NULL;
+_cleanup:
+	_cleanup_command_context(ctx);
 }
 
 
@@ -172,10 +188,22 @@ static void _await_command_context(command_context_t* ctx){
 
 
 static void _delete_command_context(command_context_t* ctx){
-	for (u32 i=0;i<ctx->argc;i++){
-		sys_heap_dealloc(NULL,ctx->argv[i]);
+	_cleanup_command_context(ctx);
+	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDIN){
+		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
+		sys_fd_close(ctx->stdin);
+		ctx->stdin=0;
 	}
-	sys_heap_dealloc(NULL,ctx->argv);
+	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+		sys_fd_close(ctx->stdout);
+		ctx->stdout=0;
+	}
+	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDERR){
+		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDERR;
+		sys_fd_close(ctx->stderr);
+		ctx->stderr=0;
+	}
 	sys_heap_dealloc(NULL,ctx);
 }
 
@@ -190,18 +218,30 @@ void command_execute(const char* command){
 			continue;
 		}
 		if (*command=='>'&&*(command+1)=='>'){
-			sys_io_print("error: '>>'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command+=2;
+			state=COMMAND_PARSER_STATE_APPEND;
 			continue;
 		}
 		else if (*command=='>'){
-			sys_io_print("error: '>'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command++;
+			state=COMMAND_PARSER_STATE_WRITE;
 			continue;
 		}
 		else if (*command=='<'){
-			sys_io_print("error: '<'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command++;
+			state=COMMAND_PARSER_STATE_READ;
 			continue;
 		}
 		else if (*command=='|'&&*(command+1)=='|'){
@@ -220,18 +260,28 @@ void command_execute(const char* command){
 			continue;
 		}
 		else if (*command=='&'){
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command++;
 			_dispatch_command_context(ctx);
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
+			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			continue;
 		}
 		else if (*command==';'){
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command++;
 			_dispatch_command_context(ctx);
 			_await_command_context(ctx);
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
+			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			continue;
 		}
 		char* str=NULL;
@@ -308,8 +358,60 @@ _skip_control_sequence:
 			ctx->argv=sys_heap_realloc(NULL,ctx->argv,ctx->argc*sizeof(char*));
 			ctx->argv[ctx->argc-1]=str;
 		}
+		else if (state==COMMAND_PARSER_STATE_READ){
+			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_READ);
+			if (SYS_IS_ERROR(fd)){
+				sys_io_print("error: unable to open input file '%s': %ld\n",str,fd);
+				sys_heap_dealloc(NULL,str);
+				goto _cleanup;
+			}
+			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDIN){
+				sys_fd_close(ctx->stdin);
+			}
+			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
+			ctx->stdin=fd;
+			sys_heap_dealloc(NULL,str);
+			state=COMMAND_PARSER_STATE_OPERATOR;
+		}
+		else if (state==COMMAND_PARSER_STATE_WRITE){
+			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CREATE);
+			if (SYS_IS_ERROR(fd)){
+				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
+				sys_heap_dealloc(NULL,str);
+				goto _cleanup;
+			}
+			if (SYS_IS_ERROR(sys_fd_resize(fd,0,0))){
+				sys_io_print("error: unable clear output file '%s'\n",str);
+				sys_heap_dealloc(NULL,str);
+				goto _cleanup;
+			}
+			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+				sys_fd_close(ctx->stdout);
+			}
+			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+			ctx->stdout=fd;
+			sys_heap_dealloc(NULL,str);
+			state=COMMAND_PARSER_STATE_OPERATOR;
+		}
+		else if (state==COMMAND_PARSER_STATE_APPEND){
+			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
+			if (SYS_IS_ERROR(fd)){
+				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
+				sys_heap_dealloc(NULL,str);
+				goto _cleanup;
+			}
+			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+				sys_fd_close(ctx->stdout);
+			}
+			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+			ctx->stdout=fd;
+			sys_heap_dealloc(NULL,str);
+			state=COMMAND_PARSER_STATE_OPERATOR;
+		}
 		else{
-			sys_io_print("error: unexpected character\n");
+			sys_heap_dealloc(NULL,str);
+			sys_io_print("error: invalid parser state\n");
+			goto _cleanup;
 		}
 	}
 	_dispatch_command_context(ctx);

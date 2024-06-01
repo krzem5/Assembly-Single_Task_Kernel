@@ -235,7 +235,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	mutex_acquire(data->lock);
-	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0));
+	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|VFS_NODE_FLAG_GROW);
 	data->offset+=count;
 	mutex_release(data->lock);
 	handle_release(fd_handle);
@@ -289,7 +289,7 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return ERROR_DENIED;
 	}
 	mutex_acquire(data->lock);
-	error_t out=(vfs_node_resize(data->node,size,0)?0:ERROR_NO_SPACE);
+	error_t out=(vfs_node_resize(data->node,size,0)||!size?0:ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
@@ -338,7 +338,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 
 
 error_t syscall_fd_dup(handle_id_t fd,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->fd_stdin){

@@ -146,7 +146,11 @@ static u64 _kfs2_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 
 
 static u64 _kfs2_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
-	return kfs2_node_write(node->fs->extra_data,&(((kfs2_vfs_node_t*)node)->kfs2_node),offset,buffer,size);
+	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
+	if ((flags&VFS_NODE_FLAG_GROW)&&offset+size>kfs2_node->kfs2_node.size){
+		kfs2_node_resize(node->fs->extra_data,&(kfs2_node->kfs2_node),offset+size);
+	}
+	return kfs2_node_write(node->fs->extra_data,&(kfs2_node->kfs2_node),offset,buffer,size);
 }
 
 
