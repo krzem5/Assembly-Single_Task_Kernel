@@ -30,7 +30,7 @@ void SYS_NOCOVERAGE main(void){
 		"/bin/tree",
 		"/share/test"
 	};
-	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0)));
+	sys_thread_await_event(sys_process_get_termination_event(sys_process_start("/bin/tree",2,argv,NULL,0,0,0,0)));
 	test_glsl_lexer();
 	test_glsl_parser();
 	test_glsl_preprocessor();
