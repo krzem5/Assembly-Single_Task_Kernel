@@ -122,10 +122,7 @@ KERNEL_PUBLIC void vfs_node_delete(vfs_node_t* node){
 	if (node->relatives.child){
 		panic("vfs_node_delete: delete children");
 	}
-	if (node->rc>1){
-		ERROR("node.rc too large: %u",node->rc);
-	}
-	// SPINLOOP(node->rc>1);
+	SPINLOOP(node->rc>1);
 	smm_dealloc(node->name);
 	node->functions->delete(node);
 }

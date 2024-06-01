@@ -203,6 +203,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		vfs_node_unref(root);
 		root=new_root;
 	}
+	vfs_node_unref(base_root_node);
 	return root;
 _cleanup:
 	vfs_node_unref(base_root_node);
