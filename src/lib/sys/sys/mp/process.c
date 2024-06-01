@@ -5,6 +5,14 @@
 
 
 
+typedef struct _SYSCALL_PROCESS_START_EXTRA_DATA{
+	u64 fd_in;
+	u64 fd_out;
+	u64 fd_err;
+} syscall_process_start_extra_data_t;
+
+
+
 SYS_PUBLIC sys_event_t sys_process_get_termination_event(sys_process_t process){
 	return _sys_syscall_process_get_event(process);
 }
@@ -17,8 +25,13 @@ SYS_PUBLIC sys_process_t sys_process_get_handle(void){
 
 
 
-SYS_PUBLIC sys_process_t sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
-	return _sys_syscall_process_start(path,argc,argv,environ,flags);
+SYS_PUBLIC sys_process_t sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags,sys_fd_t fd_in,sys_fd_t fd_out,sys_fd_t fd_err){
+	syscall_process_start_extra_data_t extra_data={
+		fd_in,
+		fd_out,
+		fd_err
+	};
+	return _sys_syscall_process_start(path,argc,argv,environ,flags,&extra_data);
 }
 
 

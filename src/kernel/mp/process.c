@@ -21,6 +21,7 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -34,6 +35,14 @@
 
 #define ASLR_KERNEL_MMAP_TOP_MIN 0xffffffff80000000ull // -2 GB
 #define ASLR_KERNEL_MMAP_TOP_MAX 0xffffffffc0000000ull // -1 GB
+
+
+
+typedef struct _SYSCALL_PROCESS_START_EXTRA_DATA{
+	u64 fd_in;
+	u64 fd_out;
+	u64 fd_err;
+} syscall_process_start_extra_data_t;
 
 
 
@@ -137,12 +146,23 @@ error_t syscall_process_get_pid(void){
 
 
 
-error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERNEL_USER_POINTER const char*const* argv,KERNEL_USER_POINTER const char*const* environ,u32 flags){
+error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERNEL_USER_POINTER const char*const* argv,KERNEL_USER_POINTER const char*const* environ,u32 flags,KERNEL_USER_POINTER const syscall_process_start_extra_data_t* user_extra_data){
 	if (!syscall_get_string_length((const char*)path)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}
 	if (argc*sizeof(const char*)>syscall_get_user_pointer_max_length((const char*const*)argv)){
 		return ERROR_INVALID_ARGUMENT(1);
+	}
+	if (user_extra_data&&syscall_get_user_pointer_max_length((const void*)user_extra_data)<sizeof(syscall_process_start_extra_data_t)){
+		return ERROR_INVALID_ARGUMENT(5);
+	}
+	syscall_process_start_extra_data_t extra_data={
+		0,
+		0,
+		0
+	};
+	if (user_extra_data){
+		extra_data=*user_extra_data;
 	}
 	char** kernel_argv=amm_alloc(argc*sizeof(char*));
 	char** kernel_environ=NULL;
@@ -177,7 +197,38 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 			goto _cleanup;
 		}
 	}
-	out=elf_load((const char*)path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,flags);
+	out=elf_load((const char*)path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,ELF_LOAD_FLAG_PAUSE_THREAD);
+	if (IS_ERROR(out)){
+		goto _cleanup;
+	}
+	handle_t* handle=handle_lookup_and_acquire(out,process_handle_type);
+	if (!handle){
+		out=ERROR_INVALID_HANDLE;
+		goto _cleanup;
+	}
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
+	if (extra_data.fd_in){
+		process->vfs_stdin=fd_get_node(extra_data.fd_in);
+	}
+	if (!process->vfs_stdin){
+		process->vfs_stdin=THREAD_DATA->process->vfs_stdin;
+	}
+	if (extra_data.fd_out){
+		process->vfs_stdout=fd_get_node(extra_data.fd_out);
+	}
+	if (!process->vfs_stdout){
+		process->vfs_stdout=THREAD_DATA->process->vfs_stdout;
+	}
+	if (extra_data.fd_err){
+		process->vfs_stderr=fd_get_node(extra_data.fd_err);
+	}
+	if (!process->vfs_stderr){
+		process->vfs_stderr=THREAD_DATA->process->vfs_stderr;
+	}
+	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
+		scheduler_enqueue_thread(process->thread_list.head);
+	}
+	handle_release(handle);
 _cleanup:
 	for (u64 i=0;i<argc;i++){
 		amm_dealloc(kernel_argv[i]);

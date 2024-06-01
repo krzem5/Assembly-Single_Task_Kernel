@@ -90,9 +90,9 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 	if (!fd_handle){
 		return NULL;
 	}
-	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	vfs_node_t* out=KERNEL_CONTAINEROF(fd_handle,fd_t,handle)->node;
 	handle_release(fd_handle);
-	return data->node;
+	return out;
 }
 
 

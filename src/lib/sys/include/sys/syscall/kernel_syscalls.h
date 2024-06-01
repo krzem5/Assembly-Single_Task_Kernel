@@ -197,8 +197,8 @@ static inline u64 _sys_syscall_thread_get_tid(void){
 
 
 
-static inline u64 _sys_syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags){
-	return _sys_syscall5(0x100000023,(u64)path,argc,(u64)argv,(u64)environ,flags);
+static inline u64 _sys_syscall_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags,void* extra_data){
+	return _sys_syscall6(0x100000023,(u64)path,argc,(u64)argv,(u64)environ,flags,(u64)extra_data);
 }
 
 

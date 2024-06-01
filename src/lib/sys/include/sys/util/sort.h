@@ -4,7 +4,7 @@
 
 
 
-void sys_sort(void* data,u64 size,u64 count,bool (*switch_callback)(const void*,const void*));
+void __attribute__((access(read_write,1))) sys_sort(void* data,u64 size,u64 count,bool (*switch_callback)(const void*,const void*));
 
 
 

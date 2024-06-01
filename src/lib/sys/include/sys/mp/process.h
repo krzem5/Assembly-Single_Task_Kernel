@@ -22,7 +22,7 @@ sys_process_t sys_process_get_handle(void);
 
 
 
-sys_process_t __attribute__((access(read_only,1),access(read_only,3,2),access(read_only,4))) sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags);
+sys_process_t __attribute__((access(read_only,1),access(read_only,3,2),access(read_only,4))) sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags,sys_fd_t fd_in,sys_fd_t fd_out,sys_fd_t fd_err);
 
 
 

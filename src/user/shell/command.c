@@ -95,7 +95,7 @@ void command_execute(const char* command){
 		char path[4096];
 		sys_fd_path(fd,path,4096);
 		sys_fd_close(fd);
-		sys_process_t process=sys_process_start(path,argc,argv,NULL,0);
+		sys_process_t process=sys_process_start(path,argc,argv,NULL,0,sys_io_input_fd,sys_io_output_fd,sys_io_error_fd);
 		if (SYS_IS_ERROR(process)){
 			break;
 		}

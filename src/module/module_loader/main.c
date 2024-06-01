@@ -1,9 +1,12 @@
 #include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
+#include <kernel/handle/handle.h>
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/process.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
 #include <kernel/util/util.h>
@@ -61,9 +64,23 @@ MODULE_PREINIT(){
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
 #ifndef KERNEL_COVERAGE
-	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,0))){
-		panic("Unable to load user shell");
+	error_t handle_id=elf_load("/bin/shell",0,NULL,0,NULL,ELF_LOAD_FLAG_PAUSE_THREAD);
+	if (IS_ERROR(handle_id)){
+		goto _error;
 	}
+	handle_t* handle=handle_lookup_and_acquire(handle_id,process_handle_type);
+	if (!handle){
+		goto _error;
+	}
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
+	process->vfs_stdin=vfs_lookup(NULL,"/dev/ser/in",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+	process->vfs_stdout=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+	process->vfs_stderr=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+	scheduler_enqueue_thread(process->thread_list.head);
+	handle_release(handle);
+	return 0;
+_error:
+	panic("Unable to load user shell");
 #endif
 	return 0;
 }
