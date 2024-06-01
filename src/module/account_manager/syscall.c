@@ -1,9 +1,12 @@
 #include <account_manager/database.h>
 #include <kernel/error/error.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/process.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #define KERNEL_LOG_NAME "account_manager_syscall"
 
 
@@ -64,15 +67,44 @@ static error_t _syscall_get_user_data(u32 uid,KERNEL_USER_POINTER account_manage
 
 
 static error_t _syscall_create_group(u32 gid,KERNEL_USER_POINTER const char* name){
-	ERROR("_syscall_create_group: unimplemented");
-	return ERROR_DENIED;
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	u32 name_length=syscall_get_string_length((const void*)name);
+	if (!name_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	char* name_buffer=amm_alloc(name_length+1);
+	mem_copy(name_buffer,(const void*)name,name_length);
+	name_buffer[name_length]=0;
+	error_t out=account_manager_database_create_group(gid,name_buffer);
+	amm_dealloc(name_buffer);
+	return out;
 }
 
 
 
 static error_t _syscall_create_user(u32 uid,KERNEL_USER_POINTER const char* name,KERNEL_USER_POINTER const void* password,u32 password_length){
-	ERROR("_syscall_create_user: unimplemented");
-	return ERROR_DENIED;
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	u32 name_length=syscall_get_string_length((const void*)name);
+	if (!name_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	if (syscall_get_user_pointer_max_length((const void*)password)<password_length){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	char* name_buffer=amm_alloc(name_length+1);
+	mem_copy(name_buffer,(const void*)name,name_length);
+	name_buffer[name_length]=0;
+	char* password_buffer=amm_alloc(password_length+1);
+	mem_copy(password_buffer,(const void*)password,password_length);
+	password_buffer[password_length]=0;
+	error_t out=account_manager_database_create_user(uid,name_buffer,password_buffer,password_length);
+	amm_dealloc(name_buffer);
+	amm_dealloc(password_buffer);
+	return out;
 }
 
 

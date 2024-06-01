@@ -163,6 +163,7 @@ static void KERNEL_EARLY_EXEC _load_account_manager_database(void){
 
 
 static config_tag_t* _generate_database_config(void){
+	rwlock_acquire_read(&(_account_manager_database.lock));
 	config_tag_t* root_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"");
 	config_tag_t* groups_tag=config_tag_create(CONFIG_TAG_TYPE_ARRAY,"groups");
 	config_tag_attach(root_tag,groups_tag);
@@ -210,6 +211,7 @@ static config_tag_t* _generate_database_config(void){
 			group_tag->int_=group_entry->rb_node.key;
 		}
 	}
+	rwlock_release_read(&(_account_manager_database.lock));
 	return root_tag;
 }
 
@@ -256,21 +258,30 @@ MODULE_INIT(){
 
 MODULE_POSTINIT(){
 	_load_account_manager_database();
-	// account_manager_database_create_user(0,"user","abc1234",7);
 }
 
 
 
 KERNEL_PUBLIC error_t account_manager_database_create_group(gid_t gid,const char* name){
 	rwlock_acquire_write(&(_account_manager_database.lock));
-	if (rb_tree_lookup_node(&(_account_manager_database.group_tree),gid)){
+	bool generate_gid=!gid;
+	if (generate_gid){
+		gid=ACCOUNT_MANAGER_DATABASE_FIRST_GROUP_ID;
+_regenerate_gid:
+		for (;rb_tree_lookup_node(&(_account_manager_database.group_tree),gid);gid++);
+	}
+	else if (rb_tree_lookup_node(&(_account_manager_database.group_tree),gid)){
+_invalid_gid:
 		rwlock_release_write(&(_account_manager_database.lock));
 		return ERROR_ALREADY_PRESENT;
 	}
 	error_t err=gid_create(gid,name);
 	if (err==ERROR_ALREADY_PRESENT){
-		rwlock_release_write(&(_account_manager_database.lock));
-		return ERROR_ALREADY_PRESENT;
+		if (generate_gid){
+			gid++;
+			goto _regenerate_gid;
+		}
+		goto _invalid_gid;
 	}
 	if (err!=ERROR_OK){
 		rwlock_release_write(&(_account_manager_database.lock));
@@ -279,8 +290,8 @@ KERNEL_PUBLIC error_t account_manager_database_create_group(gid_t gid,const char
 	account_manager_database_group_entry_t* group_entry=omm_alloc(_account_manager_database_group_entry_allocator);
 	group_entry->rb_node.key=gid;
 	rb_tree_insert_node(&(_account_manager_database.group_tree),&(group_entry->rb_node));
-	_save_account_manager_database();
 	rwlock_release_write(&(_account_manager_database.lock));
+	_save_account_manager_database();
 	return gid;
 }
 
@@ -345,8 +356,8 @@ _invalid_uid:
 	user_group_entry->rb_node.key=uid;
 	rb_tree_insert_node(&(user_entry->group_tree),&(user_group_entry->rb_node));
 	rb_tree_insert_node(&(_account_manager_database.user_tree),&(user_entry->rb_node));
-	_save_account_manager_database();
 	rwlock_release_write(&(_account_manager_database.lock));
+	_save_account_manager_database();
 	return uid;
 }
 
