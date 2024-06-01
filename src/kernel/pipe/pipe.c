@@ -204,13 +204,22 @@ error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 			return ERROR_ALREADY_PRESENT;
 		}
 		if (!parent||!name){
+			if (parent){
+				vfs_node_unref(parent);
+			}
 			return ERROR_NOT_FOUND;
 		}
 		name_string=smm_alloc(name,0);
 	}
 	vfs_node_t* node=pipe_create(parent,name_string);
+	if (parent){
+		vfs_node_unref(parent);
+	}
 	node->flags|=0660<<VFS_NODE_PERMISSION_SHIFT;
 	node->uid=THREAD_DATA->process->uid;
 	node->gid=THREAD_DATA->process->gid;
+	if (!path){
+		node->flags|=VFS_NODE_FLAG_TEMPORARY;
+	}
 	return fd_from_node(node,FD_FLAG_READ|FD_FLAG_WRITE);
 }

@@ -56,12 +56,14 @@ MODULE_POSTINIT(){
 		char buffer[8];
 		format_string(buffer,8,"ser%u",i);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-		dynamicfs_create_data_node(node,"id","%u",i);
+		vfs_node_unref(dynamicfs_create_data_node(node,"id","%u",i));
 		_create_pipe(node,i,"in",_stdin_callback,port)->flags|=0444<<VFS_NODE_PERMISSION_SHIFT;
 		_create_pipe(node,i,"out",_stdout_callback,port)->flags|=0222<<VFS_NODE_PERMISSION_SHIFT;
-		dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer);
+		vfs_node_unref(node);
+		vfs_node_unref(dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer));
 	}
+	vfs_node_unref(root);
 	if (serial_default_port){
-		dynamicfs_create_link_node(devfs->root,"ser","ser%u",serial_default_port-serial_ports);
+		vfs_node_unref(dynamicfs_create_link_node(devfs->root,"ser","ser%u",serial_default_port-serial_ports));
 	}
 }

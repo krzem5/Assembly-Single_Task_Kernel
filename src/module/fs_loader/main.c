@@ -49,6 +49,7 @@ MODULE_INIT(){
 		panic("Unable to locate filesystem list file");
 	}
 	config_tag_t* root_tag=config_load_from_file(file,NULL);
+	vfs_node_unref(file);
 	if (!root_tag){
 		panic("Unable to parse filesystem list file");
 	}

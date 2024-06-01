@@ -105,6 +105,7 @@ static void _load_config(void){
 		return;
 	}
 	config_tag_t* root_tag=config_load_from_file(node,NULL);
+	vfs_node_unref(node);
 	if (!root_tag){
 		return;
 	}
@@ -128,6 +129,7 @@ static void _store_config(void){
 	if (!node){
 		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 		node=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		vfs_node_unref(parent);
 		if (!node){
 			return;
 		}
@@ -141,6 +143,7 @@ static void _store_config(void){
 	config_tag_attach(root_tag,preferred_address_tag);
 	preferred_address_tag->int_=_net_dhcp_preferred_address;
 	config_save_to_file(root_tag,node,NULL,CONFIG_SAVE_FLAG_TEXT);
+	vfs_node_unref(node);
 	config_tag_delete(root_tag);
 }
 

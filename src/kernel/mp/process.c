@@ -59,6 +59,8 @@ static void _process_handle_destructor(handle_t* handle){
 		panic("Unterminated process not referenced");
 	}
 	event_dispatch_process_delete_notification(process);
+	vfs_node_unref(process->vfs_root);
+	vfs_node_unref(process->vfs_cwd);
 	handle_list_destroy(&(process->handle_list));
 	mmap_deinit(process->mmap);
 	vmm_pagemap_deinit(&(process->pagemap));
@@ -89,7 +91,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->event=event_create("kernel.process.termination");
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
-	process_kernel->vfs_cwd=process_kernel->vfs_root;
+	process_kernel->vfs_cwd=vfs_get_root_node();
 	process_kernel->fd_stdin=0;
 	process_kernel->fd_stdout=0;
 	process_kernel->fd_stderr=0;
@@ -115,8 +117,16 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	out->image=smm_alloc(image,0);
 	out->event=event_create("kernel.process.termination");
 	handle_list_init(&(out->handle_list));
-	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
-	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
+	if (THREAD_DATA->header.current_thread){
+		out->vfs_root=THREAD_DATA->process->vfs_root;
+		out->vfs_cwd=THREAD_DATA->process->vfs_cwd;
+		vfs_node_ref(THREAD_DATA->process->vfs_root);
+		vfs_node_ref(THREAD_DATA->process->vfs_cwd);
+	}
+	else{
+		process_kernel->vfs_root=vfs_get_root_node();
+		process_kernel->vfs_cwd=vfs_get_root_node();
+	}
 	out->fd_stdin=0;
 	out->fd_stdout=0;
 	out->fd_stderr=0;
@@ -263,7 +273,9 @@ error_t syscall_process_set_cwd(handle_id_t process_handle,handle_id_t fd){
 		handle_release(handle);
 		return ERROR_INVALID_HANDLE;
 	}
+	vfs_node_t* old_cwd=process->vfs_cwd;
 	process->vfs_cwd=new_cwd;
+	vfs_node_unref(old_cwd);
 	handle_release(handle);
 	return ERROR_OK;
 }
@@ -300,7 +312,9 @@ error_t syscall_process_set_root(handle_id_t process_handle,handle_id_t fd){
 		handle_release(handle);
 		return ERROR_INVALID_HANDLE;
 	}
+	vfs_node_t* old_root=process->vfs_root;
 	process->vfs_root=new_root;
+	vfs_node_unref(old_root);
 	handle_release(handle);
 	return ERROR_OK;
 }

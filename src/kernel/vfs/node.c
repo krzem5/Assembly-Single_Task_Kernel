@@ -59,7 +59,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	rwlock_init(&(out->lock));
 	u64 time=clock_get_time()+time_boot_offset;
 	out->flags=0;
-	out->rc=0;
+	out->rc=1;
 	out->name=smm_duplicate(name);
 	out->relatives.parent=NULL;
 	out->relatives.prev_sibling=NULL;
@@ -122,7 +122,10 @@ KERNEL_PUBLIC void vfs_node_delete(vfs_node_t* node){
 	if (node->relatives.child){
 		panic("vfs_node_delete: delete children");
 	}
-	SPINLOOP(node->rc);
+	if (node->rc>1){
+		ERROR("node.rc too large: %u",node->rc);
+	}
+	// SPINLOOP(node->rc>1);
 	smm_dealloc(node->name);
 	node->functions->delete(node);
 }
@@ -133,6 +136,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name)
 	vfs_node_t* out=node->relatives.child;
 	for (;out;out=out->relatives.next_sibling){
 		if (smm_equal(out->name,name)){
+			vfs_node_ref(out);
 			return out;
 		}
 	}
@@ -144,6 +148,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_node_lookup(vfs_node_t* node,const string_t* name)
 		return NULL;
 	}
 	rwlock_acquire_write(&(node->lock));
+	vfs_node_ref(node);
 	out->relatives.parent=node;
 	out->relatives.next_sibling=node->relatives.child;
 	if (node->relatives.child){
@@ -240,6 +245,7 @@ KERNEL_PUBLIC void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child){
 		WARN("vfs_node_attach_child: Multiple parents");
 	}
 	else{
+		vfs_node_ref(node);
 		child->relatives.parent=node;
 	}
 	child->relatives.next_sibling=node->relatives.child;
@@ -272,6 +278,7 @@ KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
 			node->relatives.next_sibling->relatives.prev_sibling=node->relatives.prev_sibling;
 			rwlock_release_write(&(node->relatives.next_sibling->lock));
 		}
+		vfs_node_unref(node->relatives.parent);
 		node->relatives.parent=NULL;
 	}
 	rwlock_release_write(&(node->lock));

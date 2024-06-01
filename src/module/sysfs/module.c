@@ -13,7 +13,7 @@
 
 
 
-static vfs_node_t* KERNEL_INIT_WRITE _sysfs_module_type_root;
+static vfs_node_t* KERNEL_INIT_WRITE _sysfs_module_type_root=NULL;
 
 
 
@@ -58,8 +58,9 @@ static void _update_notification_thread(void){
 			}
 			const module_t* module=KERNEL_CONTAINEROF(handle,const module_t,handle);
 			vfs_node_t* node=dynamicfs_create_node(_sysfs_module_type_root,module->name->data,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-			dynamicfs_create_link_node(node,"exe","/boot/module/%s.mod",module->name->data);
-			dynamicfs_create_node(node,"state",VFS_NODE_TYPE_FILE,NULL,_sysfs_module_state_read_callback,(void*)(data->module_handle));
+			vfs_node_unref(dynamicfs_create_link_node(node,"exe","/boot/module/%s.mod",module->name->data));
+			vfs_node_unref(dynamicfs_create_node(node,"state",VFS_NODE_TYPE_FILE,NULL,_sysfs_module_state_read_callback,(void*)(data->module_handle)));
+			vfs_node_unref(node);
 			handle_release(handle);
 		}
 		else if (notification.type==MODULE_UNLOAD_NOTIFICATION&&notification.length>=sizeof(module_unload_notification_data_t)){

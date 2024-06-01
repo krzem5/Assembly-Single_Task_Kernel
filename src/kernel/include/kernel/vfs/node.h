@@ -24,6 +24,7 @@
 #define VFS_NODE_FLAG_PIPE_PEEK 256
 #define VFS_NODE_FLAG_CREATE 512
 #define VFS_NODE_FLAG_GROW 1024
+#define VFS_NODE_FLAG_TEMPORARY 2048
 
 #define VFS_NODE_PERMISSION_MASK 0x3fe00
 #define VFS_NODE_PERMISSION_SHIFT 9
@@ -121,6 +122,21 @@ void vfs_node_attach_child(vfs_node_t* node,vfs_node_t* child);
 
 
 void vfs_node_dettach_child(vfs_node_t* node);
+
+
+
+static KERNEL_INLINE void vfs_node_ref(vfs_node_t* node){
+	node->rc++;
+}
+
+
+
+static KERNEL_INLINE void vfs_node_unref(vfs_node_t* node){
+	node->rc--;
+	if (!node->rc&&(node->flags&VFS_NODE_FLAG_TEMPORARY)){
+		// vfs_node_delete(node);
+	}
+}
 
 
 

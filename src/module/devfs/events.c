@@ -37,13 +37,14 @@ static void _update_notification_thread(void){
 			char buffer[32];
 			format_string(buffer,32,"%s%ud%u",drive->type->name,drive->controller_index,drive->device_index);
 			vfs_node_t* node=dynamicfs_create_node(_devfs_drive_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-			dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key));
-			dynamicfs_create_node(node,"serial_number",VFS_NODE_TYPE_FILE,smm_duplicate(drive->serial_number),NULL,NULL);
-			dynamicfs_create_node(node,"model_number",VFS_NODE_TYPE_FILE,smm_duplicate(drive->model_number),NULL,NULL);
-			dynamicfs_create_data_node(node,"block_count","%lu",drive->block_count);
-			dynamicfs_create_data_node(node,"block_size","%lu",drive->block_size);
-			dynamicfs_create_node(node,"partitions",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-			dynamicfs_create_link_node(devfs->root,buffer,"drive/%s",buffer);
+			vfs_node_unref(dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key)));
+			vfs_node_unref(dynamicfs_create_node(node,"serial_number",VFS_NODE_TYPE_FILE,smm_duplicate(drive->serial_number),NULL,NULL));
+			vfs_node_unref(dynamicfs_create_node(node,"model_number",VFS_NODE_TYPE_FILE,smm_duplicate(drive->model_number),NULL,NULL));
+			vfs_node_unref(dynamicfs_create_data_node(node,"block_count","%lu",drive->block_count));
+			vfs_node_unref(dynamicfs_create_data_node(node,"block_size","%lu",drive->block_size));
+			vfs_node_unref(dynamicfs_create_node(node,"partitions",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL));
+			vfs_node_unref(node);
+			vfs_node_unref(dynamicfs_create_link_node(devfs->root,buffer,"drive/%s",buffer));
 			handle_release(handle);
 		}
 		else if (notification.type==EVENT_DRIVE_DELETE_NOTIFICATION&&notification.length==sizeof(event_drive_delete_notification_data_t)){
@@ -60,14 +61,15 @@ static void _update_notification_thread(void){
 			char buffer[32];
 			format_string(buffer,32,"%s%ud%up%u",drive->type->name,drive->controller_index,drive->device_index,partition->index);
 			vfs_node_t* node=dynamicfs_create_node(_devfs_partition_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
-			dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key));
-			dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,smm_duplicate(partition->name),NULL,NULL);
-			dynamicfs_create_data_node(node,"start_lba","%lu",partition->start_lba);
-			dynamicfs_create_data_node(node,"end_lba","%lu",partition->end_lba);
+			vfs_node_unref(dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key)));
+			vfs_node_unref(dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,smm_duplicate(partition->name),NULL,NULL));
+			vfs_node_unref(dynamicfs_create_data_node(node,"start_lba","%lu",partition->start_lba));
+			vfs_node_unref(dynamicfs_create_data_node(node,"end_lba","%lu",partition->end_lba));
+			vfs_node_unref(node);
 			char path[64];
 			format_string(path,64,"drive/%s%ud%u/partitions",drive->type->name,drive->controller_index,drive->device_index);
-			dynamicfs_create_link_node(vfs_lookup(devfs->root,path,VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0),buffer,"../../../partition/%s",buffer);
-			dynamicfs_create_link_node(devfs->root,buffer,"partition/%s",buffer);
+			vfs_node_unref(dynamicfs_create_link_node(vfs_lookup(devfs->root,path,VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0),buffer,"../../../partition/%s",buffer));
+			vfs_node_unref(dynamicfs_create_link_node(devfs->root,buffer,"partition/%s",buffer));
 			handle_release(handle);
 		}
 		else if (notification.type==EVENT_PARTITION_DELETE_NOTIFICATION&&notification.length==sizeof(event_partition_delete_notification_data_t)){

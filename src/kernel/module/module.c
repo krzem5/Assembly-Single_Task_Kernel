@@ -382,6 +382,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	char buffer[256];
 	SMM_TEMPORARY_STRING name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
+	vfs_node_unref(directory);
 #ifdef KERNEL_COVERAGE
 	if (!module_file&&name[0]=='/'){
 		module_file=vfs_lookup(NULL,name,0,0,0);
@@ -397,6 +398,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 		return NULL;
 	}
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file);
+	vfs_node_unref(module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
 	handle_new(module_handle_type,&(module->handle));

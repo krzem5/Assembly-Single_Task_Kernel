@@ -36,7 +36,7 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 		if (user_mode){
 			return ERROR_ALREADY_MOUNTED;
 		}
-		panic("Filesystem is already mounted");
+		panic("vfs_mount: filesystem is already mounted");
 	}
 	if (!path){
 		if (user_mode){
@@ -47,13 +47,25 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 			if (_vfs_root_node->fs->descriptor->config->mount_callback){
 				_vfs_root_node->fs->descriptor->config->mount_callback(_vfs_root_node->fs,NULL);
 			}
+			vfs_node_unref(_vfs_root_node);
 		}
+		vfs_node_ref(fs->root);
 		_vfs_root_node=fs->root;
 		rwlock_acquire_write(&(_vfs_root_node->lock));
 		_vfs_root_node->relatives.parent=NULL;
 		rwlock_release_write(&(_vfs_root_node->lock));
+		vfs_node_t* old_root=process_kernel->vfs_root;
+		vfs_node_t* old_cwd=process_kernel->vfs_cwd;
+		vfs_node_ref(_vfs_root_node);
+		vfs_node_ref(_vfs_root_node);
 		process_kernel->vfs_root=_vfs_root_node;
 		process_kernel->vfs_cwd=_vfs_root_node;
+		if (old_root){
+			vfs_node_unref(old_root);
+		}
+		if (old_cwd){
+			vfs_node_unref(old_cwd);
+		}
 		fs->is_mounted=1;
 		if (fs->descriptor->config->mount_callback){
 			fs->descriptor->config->mount_callback(fs,"/");
@@ -68,11 +80,20 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 		}
 		panic("vfs_mount: node already exists");
 	}
+	if (!parent||!child_name){
+		if (user_mode){
+			return ERROR_NOT_FOUND;
+		}
+		panic("vfs_mount: path does not exist");
+	}
 	rwlock_acquire_write(&(fs->root->lock));
 	smm_dealloc(fs->root->name);
 	fs->root->name=smm_alloc(child_name,0);
 	rwlock_release_write(&(fs->root->lock));
 	vfs_node_attach_child(parent,fs->root);
+	if (parent){
+		vfs_node_unref(parent);
+	}
 	fs->is_mounted=1;
 	if (fs->descriptor->config->mount_callback){
 		fs->descriptor->config->mount_callback(fs,path);
@@ -90,6 +111,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags
 
 KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
 	vfs_node_t* base_root_node=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:_vfs_root_node);
+	vfs_node_ref(base_root_node);
 	if ((flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)&&((uid_get_flags(uid)|gid_get_flags(gid))&ID_FLAG_BYPASS_VFS_PERMISSIONS)){
 		flags&=~VFS_LOOKUP_FLAG_CHECK_PERMISSIONS;
 	}
@@ -99,6 +121,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 	else if (!root){
 		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:base_root_node);
 	}
+	vfs_node_ref(root);
 	if (parent){
 		*parent=NULL;
 		*child_name=NULL;
@@ -106,17 +129,19 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 	while (root&&path[0]){
 		if ((flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
 			if (!_has_read_permissions(root,flags,uid,gid)){
-				return NULL;
+				goto _cleanup;
 			}
 			char buffer[4096];
 			buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
 			if (!buffer[0]){
-				return NULL;
+				goto _cleanup;
 			}
-			root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
-			if (!root){
-				return NULL;
+			vfs_node_t* new_root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
+			if (!new_root){
+				goto _cleanup;
 			}
+			vfs_node_unref(root);
+			root=new_root;
 		}
 		if (path[0]=='/'){
 			path++;
@@ -125,7 +150,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		u64 i=0;
 		for (;path[i]&&path[i]!='/';i++){
 			if (i>=SMM_MAX_LENGTH){
-				return NULL;
+				goto _cleanup;
 			}
 		}
 		if (i==1&&path[0]=='.'){
@@ -134,13 +159,16 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		}
 		if (i==2&&path[0]=='.'&&path[1]=='.'){
 			if (root!=base_root_node&&root->relatives.parent){
-				root=root->relatives.parent;
+				vfs_node_t* new_root=root->relatives.parent;
+				vfs_node_ref(new_root);
+				vfs_node_unref(root);
+				root=new_root;
 			}
 			path+=2;
 			continue;
 		}
 		if (!_has_read_permissions(root,flags,uid,gid)){
-			return NULL;
+			goto _cleanup;
 		}
 		string_t* name=smm_alloc(path,i);
 		vfs_node_t* child=vfs_node_lookup(root,name);
@@ -151,28 +179,35 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 				*parent=root;
 				*child_name=path-i;
 			}
-			return NULL;
+			goto _cleanup;
 		}
 		if (child==base_root_node){ // parent is its own descendant
-			return NULL;
+			goto _cleanup;
 		}
+		vfs_node_unref(root);
 		root=child;
 	}
 	if (root&&(flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
 		if (!_has_read_permissions(root,flags,uid,gid)){
-			return NULL;
+			goto _cleanup;
 		}
 		char buffer[4096];
 		buffer[vfs_node_read(root,0,buffer,4095,0)]=0;
 		if (!buffer[0]){
-			return NULL;
+			goto _cleanup;
 		}
-		root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
-		if (!root){
-			return NULL;
+		vfs_node_t* new_root=vfs_lookup_for_creation(root->relatives.parent,buffer,flags,uid,gid,NULL,NULL);
+		if (!new_root){
+			goto _cleanup;
 		}
+		vfs_node_unref(root);
+		root=new_root;
 	}
 	return root;
+_cleanup:
+	vfs_node_unref(base_root_node);
+	vfs_node_unref(root);
+	return NULL;
 }
 
 
@@ -205,5 +240,8 @@ KERNEL_PUBLIC u32 vfs_path(vfs_node_t* node,char* buffer,u32 buffer_length){
 
 
 KERNEL_PUBLIC vfs_node_t* vfs_get_root_node(void){
+	if (_vfs_root_node){
+		vfs_node_ref(_vfs_root_node);
+	}
 	return _vfs_root_node;
 }

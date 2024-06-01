@@ -385,6 +385,8 @@ static void _thread(void){
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_OK);
 	TEST_ASSERT(syscall_fd_iter_stop(fd_iter)==ERROR_INVALID_HANDLE);
 	mmap_dealloc_region(THREAD_DATA->process->mmap,temp_mmap_region);
+	vfs_node_unref(root);
+	vfs_node_unref(test_node);
 }
 
 

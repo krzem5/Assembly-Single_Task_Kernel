@@ -117,6 +117,9 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,bool push_free_re
 	for (u64 address=0;address<region->length;address+=PAGE_SIZE){
 		_unmap_address(mmap,region,region->rb_node.key+address);
 	}
+	if (region->file){
+		vfs_node_unref(region->file);
+	}
 	if (push_free_region){
 		_push_free_region(mmap,region->rb_node.key-guard_page_size,region->length+guard_page_size);
 	}
@@ -214,6 +217,9 @@ KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 
 			mmap->heap_address-=length;
 			address=mmap->heap_address;
 		}
+	}
+	if (file){
+		vfs_node_ref(file);
 	}
 	mmap_region_t* out=omm_alloc(_mmap_region_allocator);
 	out->rb_node.key=address+guard_page_size;
@@ -371,6 +377,9 @@ error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 		mmap_flags|=MMAP_REGION_FLAG_STACK;
 	}
 	mmap_region_t* out=mmap_alloc(THREAD_DATA->process->mmap,0,pmm_align_up_address(size),mmap_flags,file);
+	if (file){
+		vfs_node_unref(file);
+	}
 	return (out?out->rb_node.key:ERROR_NO_MEMORY);
 }
 

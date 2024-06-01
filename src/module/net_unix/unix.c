@@ -46,15 +46,22 @@ static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* 
 	fixed_address.path[255]=0;
 	vfs_node_t* other_node=vfs_lookup(NULL,fixed_address.path,0,0,0);
 	if (!other_node||(other_node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		if (other_node){
+			vfs_node_unref(other_node);
+		}
 		return 0;
 	}
 	socket_vfs_node_t* other_socket_node=(socket_vfs_node_t*)other_node;
 	if (other_socket_node->descriptor!=&_net_unix_socket_dtp_descriptor){
 		ERROR("Not a UNIX datagram socket");
+		vfs_node_unref(other_node);
 		return 0;
 	}
-	other_node->rc++;
+	vfs_node_t* old_remote=socket_node->remote_ctx;
 	socket_node->remote_ctx=other_node;
+	if (old_remote){
+		vfs_node_unref(old_remote);
+	}
 	return 1;
 }
 

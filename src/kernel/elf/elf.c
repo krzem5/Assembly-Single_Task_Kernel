@@ -84,6 +84,7 @@ static vfs_node_t* _get_executable_file(const char* path){
 	}
 	if ((vfs_permissions_get(out,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&(VFS_PERMISSION_READ|VFS_PERMISSION_EXEC))!=(VFS_PERMISSION_READ|VFS_PERMISSION_EXEC)){
 		ERROR("File '%s' is not readable or executable",path);
+		vfs_node_unref(out);
 		return NULL;
 	}
 	return out;
@@ -239,6 +240,7 @@ static error_t _load_interpreter(elf_loader_context_t* ctx){
 		return ERROR_NOT_FOUND;
 	}
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,file);
+	vfs_node_unref(file);
 	mmap_region_t* kernel_program_region=NULL;
 	void* file_data=(void*)(region->rb_node.key);
 	elf_hdr_t header=*((elf_hdr_t*)file_data);
@@ -452,6 +454,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 		return ERROR_NOT_FOUND;
 	}
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,file);
+	vfs_node_unref(file);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
 		flags,

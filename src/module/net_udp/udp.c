@@ -188,6 +188,9 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	socket_vfs_node_t* socket=socket_port_get(port);
 	if (!socket||socket->descriptor!=&_net_udp_socket_dtp_descriptor){
 		ERROR("No UDP socket on port %u",port);
+		if (socket){
+			vfs_node_unref(&(socket->node));
+		}
 		return;
 	}
 	net_udp_socket_packet_t* socket_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t));
@@ -201,6 +204,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 		amm_dealloc(packet);
 		ERROR("UDP packet dropped, socket rx ring full");
 	}
+	vfs_node_unref(&(socket->node));
 }
 
 

@@ -42,7 +42,7 @@ static u64 _random_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 
 MODULE_POSTINIT(){
 	LOG("Creating virtual file subsystem...");
-	dynamicfs_create_node(devfs->root,"zero",VFS_NODE_TYPE_FILE,NULL,_zero_read_callback,NULL);
-	dynamicfs_create_node(devfs->root,"one",VFS_NODE_TYPE_FILE,NULL,_one_read_callback,NULL);
-	dynamicfs_create_node(devfs->root,"random",VFS_NODE_TYPE_FILE,NULL,_random_read_callback,NULL);
+	vfs_node_unref(dynamicfs_create_node(devfs->root,"zero",VFS_NODE_TYPE_FILE,NULL,_zero_read_callback,NULL));
+	vfs_node_unref(dynamicfs_create_node(devfs->root,"one",VFS_NODE_TYPE_FILE,NULL,_one_read_callback,NULL));
+	vfs_node_unref(dynamicfs_create_node(devfs->root,"random",VFS_NODE_TYPE_FILE,NULL,_random_read_callback,NULL));
 }

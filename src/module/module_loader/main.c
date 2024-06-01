@@ -22,6 +22,7 @@ static void _load_modules_from_order_file(bool early){
 		panic("Unable to locate module order file");
 	}
 	config_tag_t* root_tag=config_load_from_file(file,NULL);
+	vfs_node_unref(file);
 	if (!root_tag){
 		panic("Unable to parse module order file");
 	}

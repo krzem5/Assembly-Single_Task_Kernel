@@ -23,7 +23,13 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC socket_vfs_node_t* socket_port_get(socket_port_t port){
-	return _socket_ports[port];
+	rwlock_acquire_read(&_socket_port_lock);
+	socket_vfs_node_t* out=_socket_ports[port];
+	if (out){
+		vfs_node_ref(&(out->node));
+	}
+	rwlock_release_read(&_socket_port_lock);
+	return out;
 }
 
 
@@ -32,6 +38,7 @@ KERNEL_PUBLIC bool socket_port_reserve(socket_vfs_node_t* socket,socket_port_t p
 	rwlock_acquire_write(&_socket_port_lock);
 	bool out=!_socket_ports[port];
 	if (!_socket_ports[port]){
+		vfs_node_ref(&(socket->node));
 		_socket_ports[port]=socket;
 	}
 	rwlock_release_write(&_socket_port_lock);

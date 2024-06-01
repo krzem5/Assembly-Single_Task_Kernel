@@ -32,6 +32,7 @@ static vfs_node_t* KERNEL_EARLY_EXEC _get_store_directory(void){
 		INFO("Generating keyringstore directory...");
 		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 		out=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_CREATE);
+		vfs_node_unref(parent);
 		if (!out){
 			return NULL;
 		}
@@ -115,6 +116,7 @@ static void KERNEL_EARLY_EXEC _load_keyrings(void){
 			continue;
 		}
 		config_tag_t* root_tag=config_load_from_file(node,CONFIG_PASSWORD_MASTER_KEY);
+		vfs_node_unref(node);
 		if (!root_tag){
 			continue;
 		}
@@ -197,6 +199,7 @@ static void _store_keyring(keyring_t* keyring){
 	if (!node){
 		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 		node=vfs_node_create(NULL,_keyringstore_root_dir,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		vfs_node_unref(parent);
 		if (!node){
 			return;
 		}
@@ -207,6 +210,7 @@ static void _store_keyring(keyring_t* keyring){
 	node->flags|=(0000<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,CONFIG_PASSWORD_MASTER_KEY,0);
+	vfs_node_unref(node);
 	config_tag_delete(root_tag);
 }
 

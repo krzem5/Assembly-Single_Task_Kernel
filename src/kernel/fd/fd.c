@@ -30,9 +30,7 @@ static handle_type_t _fd_iterator_handle_type=0;
 
 static void _fd_handle_destructor(handle_t* handle){
 	fd_t* data=KERNEL_CONTAINEROF(handle,fd_t,handle);
-	if (!data->node->rc&&(data->flags&FD_FLAG_DELETE_ON_EXIT)){
-		panic("FD_FLAG_DELETE_ON_EXIT");
-	}
+	vfs_node_unref(data->node);
 	mutex_deinit(data->lock);
 	omm_dealloc(_fd_allocator,data);
 }
@@ -44,6 +42,7 @@ static void _fd_iterator_handle_destructor(handle_t* handle){
 	if (data->current_name){
 		smm_dealloc(data->current_name);
 	}
+	vfs_node_unref(data->node);
 	mutex_deinit(data->lock);
 	omm_dealloc(_fd_iterator_allocator,data);
 }
@@ -63,7 +62,7 @@ KERNEL_INIT(){
 
 
 KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
-	node->rc++;
+	vfs_node_ref(node);
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(_fd_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
@@ -72,13 +71,16 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	out->lock=mutex_init();
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
-	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_DELETE_ON_EXIT);
+	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
 	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
 	if (!(permissions&VFS_PERMISSION_READ)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_READ;
 	}
 	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_WRITE;
+	}
+	if (flags&FD_FLAG_DELETE_ON_EXIT){
+		node->flags|=VFS_NODE_FLAG_TEMPORARY;
 	}
 	return out->handle.rb_node.key;
 }
@@ -91,6 +93,7 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 		return NULL;
 	}
 	vfs_node_t* out=KERNEL_CONTAINEROF(fd_handle,fd_t,handle)->node;
+	vfs_node_ref(out);
 	handle_release(fd_handle);
 	return out;
 }
@@ -134,7 +137,7 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		root_node=KERNEL_CONTAINEROF(root_handle,fd_t,handle)->node;
 	}
 	error_t error=ERROR_NOT_FOUND;
-	vfs_node_t* node;
+	vfs_node_t* node=NULL;
 	if (flags&FD_FLAG_CREATE){
 		vfs_node_t* parent;
 		const char* child_name;
@@ -153,6 +156,9 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 			node=NULL;
 			error=ERROR_ALREADY_PRESENT;
 		}
+		if (parent){
+			vfs_node_unref(parent);
+		}
 	}
 	else{
 		node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
@@ -160,7 +166,12 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 	if (root_handle){
 		handle_release(root_handle);
 	}
-	return (node?fd_from_node(node,flags):error);
+	if (!node){
+		return error;
+	}
+	error_t out=fd_from_node(node,flags);
+	vfs_node_unref(node);
+	return out;
 }
 
 
@@ -175,7 +186,6 @@ error_t syscall_fd_close(handle_id_t fd){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
-	data->node->rc--;
 	handle_list_pop(&(THREAD_DATA->process->handle_list),fd_handle);
 	handle_release(fd_handle);
 	handle_release(fd_handle);
@@ -360,7 +370,7 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 		return ERROR_DENIED;
 	}
 	mutex_acquire(data->lock);
-	data->node->rc++;
+	vfs_node_ref(data->node);
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(_fd_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
@@ -425,6 +435,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 		handle_release(fd_handle);
 		return ERROR_NO_DATA;
 	}
+	vfs_node_ref(data->node);
 	fd_iterator_t* out=omm_alloc(_fd_iterator_allocator);
 	handle_new(_fd_iterator_handle_type,&(out->handle));
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));

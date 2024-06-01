@@ -153,6 +153,7 @@ static void KERNEL_EARLY_EXEC _load_account_manager_database(void){
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_tag_t* root_tag=config_load_from_file(node,_get_database_password());
+	vfs_node_unref(node);
 	if (!root_tag){
 		return;
 	}
@@ -226,6 +227,7 @@ static void _save_account_manager_database(void){
 	if (!node){
 		SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 		node=vfs_node_create(NULL,parent,child_name_string,VFS_NODE_TYPE_FILE|VFS_NODE_FLAG_CREATE);
+		vfs_node_unref(parent);
 		if (!node){
 			ERROR("Unable to create account database file");
 			return;
@@ -237,6 +239,7 @@ static void _save_account_manager_database(void){
 	node->flags|=(0400<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_DIRTY;
 	vfs_node_flush(node);
 	config_save_to_file(root_tag,node,_get_database_password(),0);
+	vfs_node_unref(node);
 	config_tag_delete(root_tag);
 }
 
