@@ -163,10 +163,23 @@ static error_t _syscall_switch_user(handle_id_t process_handle,u32 uid,KERNEL_US
 		handle_release(handle);
 		return ERROR_DENIED;
 	}
+	if (syscall_get_user_pointer_max_length((const void*)password)<password_length){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	char* password_buffer=amm_alloc(password_length+1);
+	mem_copy(password_buffer,(const void*)password,password_length);
+	password_buffer[password_length]=0;
+	bool success=(process_is_root()||account_manager_database_authenticate((uid?uid:THREAD_DATA->process->uid),password_buffer,password_length,!uid));
+	amm_dealloc(password_buffer);
+	if (!success){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	ERROR("_syscall_switch_user");(void)process;
+	process->uid=uid;
+	process->gid=uid;
 	handle_release(handle);
-	return ERROR_DENIED;
+	return ERROR_OK;
 }
 
 

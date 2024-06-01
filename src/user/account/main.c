@@ -109,9 +109,12 @@ static int _create_group(const char* name,sys_gid_t gid){
 
 
 static int _switch_user(const char* name,const char* password){
-	sys_error_t uid=_user_to_uid(name);
-	if (SYS_IS_ERROR(uid)){
-		goto _error;
+	sys_error_t uid=0;
+	if (sys_string_compare(name,"root")){
+		uid=_user_to_uid(name);
+		if (SYS_IS_ERROR(uid)){
+			goto _error;
+		}
 	}
 	if (!SYS_IS_ERROR(account_switch_user(sys_process_get_parent(0),uid,password,sys_string_length(password)))){
 		return 0;

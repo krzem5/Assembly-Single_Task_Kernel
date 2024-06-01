@@ -424,3 +424,38 @@ KERNEL_PUBLIC error_t account_manager_database_iter_next_user_subgroup(uid_t uid
 	rwlock_release_read(&(_account_manager_database.lock));
 	return gid;
 }
+
+
+
+KERNEL_PUBLIC bool account_manager_database_authenticate(uid_t uid,const char* password,u32 password_length,bool require_administrator){
+	rwlock_acquire_read(&(_account_manager_database.lock));
+	account_manager_database_user_entry_t* entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
+	if (!entry){
+		goto _fail;
+	}
+	if (entry->flags&ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_HAS_PASSWORD){
+		if (!password_length){
+			goto _fail;
+		}
+		hash_sha256_state_t state;
+		hash_sha256_init(&state);
+		hash_sha256_process_chunk(&state,password,password_length);
+		hash_sha256_finalize(&state);
+		u32 mask=0;
+		for (u32 i=0;i<8;i++){
+			mask|=entry->password_hash[i]^state.result[i];
+		}
+		if (mask){
+			goto _fail;
+		}
+	}
+	else if (password_length){
+		goto _fail;
+	}
+	bool out=(!require_administrator||!!(entry->flags&ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_IS_ADMINISTRATOR));
+	rwlock_release_read(&(_account_manager_database.lock));
+	return out;
+_fail:
+	rwlock_release_read(&(_account_manager_database.lock));
+	return 0;
+}

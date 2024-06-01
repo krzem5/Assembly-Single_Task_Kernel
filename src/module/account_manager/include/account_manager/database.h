@@ -13,6 +13,7 @@
 #define ACCOUNT_MANAGER_DATABASE_FIRST_GROUP_ID 1
 
 #define ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_HAS_PASSWORD 1
+#define ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_IS_ADMINISTRATOR 2
 
 
 
@@ -83,6 +84,10 @@ error_t account_manager_database_iter_next_user(uid_t uid);
 
 
 error_t account_manager_database_iter_next_user_subgroup(uid_t uid,gid_t gid);
+
+
+
+bool account_manager_database_authenticate(uid_t uid,const char* password,u32 password_length,bool require_administrator);
 
 
 
