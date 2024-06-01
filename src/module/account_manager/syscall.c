@@ -70,7 +70,7 @@ static error_t _syscall_create_group(u32 gid,KERNEL_USER_POINTER const char* nam
 
 
 
-static error_t _syscall_create_user(u32 gid,KERNEL_USER_POINTER const char* name,KERNEL_USER_POINTER const void* password,u32 password_length){
+static error_t _syscall_create_user(u32 uid,KERNEL_USER_POINTER const char* name,KERNEL_USER_POINTER const void* password,u32 password_length){
 	ERROR("_syscall_create_user: unimplemented");
 	return ERROR_DENIED;
 }
