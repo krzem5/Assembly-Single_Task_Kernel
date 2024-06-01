@@ -188,8 +188,7 @@ static error_t _syscall_set_administrator(u32 uid,u32 enable){
 	if (!process_is_root()){
 		return ERROR_DENIED;
 	}
-	ERROR("_syscall_set_administrator");
-	return ERROR_DENIED;
+	return account_manager_database_set_administrator(uid,enable);
 }
 
 

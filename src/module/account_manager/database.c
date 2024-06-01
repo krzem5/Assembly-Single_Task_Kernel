@@ -443,7 +443,7 @@ KERNEL_PUBLIC bool account_manager_database_authenticate(uid_t uid,const char* p
 		hash_sha256_finalize(&state);
 		u32 mask=0;
 		for (u32 i=0;i<8;i++){
-			mask|=entry->password_hash[i]^state.result[i];
+			mask|=entry->password_hash[i]^state.result32[i];
 		}
 		if (mask){
 			goto _fail;
@@ -458,4 +458,28 @@ KERNEL_PUBLIC bool account_manager_database_authenticate(uid_t uid,const char* p
 _fail:
 	rwlock_release_read(&(_account_manager_database.lock));
 	return 0;
+}
+
+
+
+KERNEL_PUBLIC error_t account_manager_database_set_administrator(uid_t uid,bool enable){
+	rwlock_acquire_write(&(_account_manager_database.lock));
+	account_manager_database_user_entry_t* entry=(void*)rb_tree_lookup_node(&(_account_manager_database.user_tree),uid);
+	if (!entry){
+		rwlock_release_write(&(_account_manager_database.lock));
+		return ERROR_NOT_FOUND;
+	}
+	u32 old_flags=entry->flags;
+	if (enable){
+		entry->flags|=ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_IS_ADMINISTRATOR;
+	}
+	else{
+		entry->flags&=~ACCOUNT_MANAGER_DATABASE_USER_ENTRY_FLAG_IS_ADMINISTRATOR;
+	}
+	bool update=!!(entry->flags^old_flags);
+	rwlock_release_write(&(_account_manager_database.lock));
+	if (update){
+		_save_account_manager_database();
+	}
+	return ERROR_OK;
 }

@@ -56,6 +56,44 @@ static sys_error_t _group_to_gid(const char* name){
 
 
 
+static int _get_current_data(void){
+	sys_uid_t uid=sys_uid_get();
+	char buffer[256];
+	sys_uid_get_name(uid,buffer,sizeof(buffer));
+	sys_io_print("Uid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\n",buffer,uid);
+	sys_gid_t gid=sys_gid_get();
+	sys_gid_get_name(gid,buffer,sizeof(buffer));
+	sys_io_print("Gid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\n",buffer,gid);
+	account_user_t data;
+	if (uid){
+		account_get_user_data(uid,&data);
+	}
+	else{
+		data.uid=0;
+		data.flags=ACCOUNT_USER_FLAG_IS_ADMINISTRATOR;
+	}
+	sys_io_print("Flags: ");
+	bool first=1;
+	if (data.flags&ACCOUNT_USER_FLAG_HAS_PASSWORD){
+		if (!first){
+			sys_io_print(", ");
+		}
+		first=0;
+		sys_io_print("\x1b[1mpassword\x1b[0m");
+	}
+	if (data.flags&ACCOUNT_USER_FLAG_IS_ADMINISTRATOR){
+		if (!first){
+			sys_io_print(", ");
+		}
+		first=0;
+		sys_io_print("\x1b[1madministrator\x1b[0m");
+	}
+	sys_io_print("\n");
+	return 0;
+}
+
+
+
 static int _list_users_and_groups(void){
 	sys_io_print("Users:\n");
 	for (sys_uid_t uid=account_iter_user_start();uid;uid=account_iter_user_next(uid)){
@@ -64,7 +102,27 @@ static int _list_users_and_groups(void){
 		if (SYS_IS_ERROR(account_get_user_data(uid,&data))||SYS_IS_ERROR(sys_uid_get_name(uid,buffer,sizeof(buffer)))){
 			continue;
 		}
-		sys_io_print("\x1b[1m%u(%s)\x1b[0m:\t%s\n",uid,buffer,((data.flags&ACCOUNT_USER_FLAG_HAS_PASSWORD)?"(has password)":""));
+		sys_io_print("\x1b[1m%u(%s)\x1b[0m:",uid,buffer);
+		if (data.flags){
+			sys_io_print(" (");
+			bool first=1;
+			if (data.flags&ACCOUNT_USER_FLAG_HAS_PASSWORD){
+				if (!first){
+					sys_io_print(", ");
+				}
+				first=0;
+				sys_io_print("password");
+			}
+			if (data.flags&ACCOUNT_USER_FLAG_IS_ADMINISTRATOR){
+				if (!first){
+					sys_io_print(", ");
+				}
+				first=0;
+				sys_io_print("administrator");
+			}
+			sys_io_print(")");
+		}
+		sys_io_print("\n");
 		for (sys_gid_t gid=account_iter_user_group_start(uid);gid;gid=account_iter_user_group_next(uid,gid)){
 			if (SYS_IS_ERROR(sys_gid_get_name(gid,buffer,sizeof(buffer)))){
 				continue;
@@ -212,7 +270,10 @@ _error:
 
 
 int main(int argc,const char** argv){
-	if (argc<=1||!sys_string_compare(argv[1],"list")){
+	if (argc<=1){
+		return _get_current_data();
+	}
+	if (!sys_string_compare(argv[1],"list")){
 		return _list_users_and_groups();
 	}
 	if (!sys_string_compare(argv[1],"create")){

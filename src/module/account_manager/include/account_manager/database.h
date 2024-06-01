@@ -91,4 +91,8 @@ bool account_manager_database_authenticate(uid_t uid,const char* password,u32 pa
 
 
 
+error_t account_manager_database_set_administrator(uid_t uid,bool enable);
+
+
+
 #endif
