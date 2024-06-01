@@ -13,6 +13,11 @@
 
 
 
+#define NOTIFICATION_TYPE_HANDLE_CREATE 1
+#define NOTIFICATION_TYPE_HANDLE_DELETE 2
+
+
+
 static vfs_node_t* KERNEL_INIT_WRITE _sysfs_module_type_root;
 
 

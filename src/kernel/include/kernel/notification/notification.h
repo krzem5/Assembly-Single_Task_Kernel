@@ -6,11 +6,6 @@
 
 
 
-#define NOTIFICATION_TYPE_HANDLE_CREATE 1
-#define NOTIFICATION_TYPE_HANDLE_DELETE 2
-
-
-
 typedef struct _NOTIFICATION{
 	u32 type;
 	u32 length;
