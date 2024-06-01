@@ -1,13 +1,9 @@
 #include <coverage/coverage.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
-#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
-#include <kernel/mp/process.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/util/util.h>
-#include <kernel/vfs/vfs.h>
 #include <test/acl.h>
 #include <test/amm.h>
 #include <test/cpu.h>
@@ -49,23 +45,9 @@ MODULE_INIT(){
 		coverage_mark_failure();
 		return;
 	}
-	error_t handle_id=elf_load("/bin/test",0,NULL,0,NULL,ELF_LOAD_FLAG_PAUSE_THREAD);
-	if (IS_ERROR(handle_id)){
-		goto _error;
+	if (IS_ERROR(elf_load("/bin/test",0,NULL,0,NULL,ELF_LOAD_FLAG_DEFAULT_IO))){
+		panic("Unable to load test program");
 	}
-	handle_t* handle=handle_lookup_and_acquire(handle_id,process_handle_type);
-	if (!handle){
-		goto _error;
-	}
-	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	process->vfs_stdin=vfs_lookup(NULL,"/dev/ser/in",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
-	process->vfs_stdout=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
-	process->vfs_stderr=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
-	scheduler_enqueue_thread(process->thread_list.head);
-	handle_release(handle);
-	return;
-_error:
-	panic("Unable to load test program");
 	return;
 }
 

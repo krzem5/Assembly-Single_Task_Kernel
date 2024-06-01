@@ -49,6 +49,7 @@
 
 
 typedef struct _ELF_LOADER_CONTEXT{
+	u32 flags;
 	const char* path;
 	u32 argc;
 	const char*const* argv;
@@ -110,6 +111,11 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 		}
 	}
 	ctx->process=process_create(image,name,pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),aslr_generate_address(ELF_ASLR_MMAP_TOP_MIN,ELF_ASLR_MMAP_TOP_MAX));
+	if (ctx->flags&ELF_LOAD_FLAG_DEFAULT_IO){
+		ctx->process->vfs_stdin=vfs_lookup(NULL,"/dev/ser/in",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+		ctx->process->vfs_stdout=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+		ctx->process->vfs_stderr=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+	}
 	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
 	if (!mmap_alloc(ctx->process->mmap,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_FORCE,NULL)){
 		panic("Unable to allocate stack");
@@ -433,6 +439,7 @@ KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,file);
 	INFO("Executable file size: %v",region->length);
 	elf_loader_context_t ctx={
+		flags,
 		path,
 		argc,
 		argv,
