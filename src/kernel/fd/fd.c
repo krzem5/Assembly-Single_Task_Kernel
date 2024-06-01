@@ -97,6 +97,19 @@ KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
 
 
 
+void fd_allow_dup(handle_id_t fd,process_t* process){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return;
+	}
+	if (fd_handle->acl){
+		acl_set(fd_handle->acl,process,0,FD_ACL_FLAG_DUP);
+	}
+	handle_release(fd_handle);
+}
+
+
+
 error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK))){
 		return ERROR_INVALID_ARGUMENT(2);
@@ -328,14 +341,14 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->vfs_stdin){
-		return fd_from_node(THREAD_DATA->process->vfs_stdin,flags&FD_FLAG_READ);
+	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->fd_stdin){
+		fd=THREAD_DATA->process->fd_stdin;
 	}
-	if (fd==FD_DUP_STDOUT&&THREAD_DATA->process->vfs_stdout){
-		return fd_from_node(THREAD_DATA->process->vfs_stdout,flags&(FD_FLAG_WRITE|FD_FLAG_APPEND));
+	else if (fd==FD_DUP_STDOUT&&THREAD_DATA->process->fd_stdout){
+		fd=THREAD_DATA->process->fd_stdout;
 	}
-	if (fd==FD_DUP_STDERR&&THREAD_DATA->process->vfs_stderr){
-		return fd_from_node(THREAD_DATA->process->vfs_stderr,flags&(FD_FLAG_WRITE|FD_FLAG_APPEND));
+	else if (fd==FD_DUP_STDERR&&THREAD_DATA->process->fd_stderr){
+		fd=THREAD_DATA->process->fd_stderr;
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){

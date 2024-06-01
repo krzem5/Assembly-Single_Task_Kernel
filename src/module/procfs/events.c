@@ -1,5 +1,6 @@
 #include <dynamicfs/dynamicfs.h>
 #include <kernel/event/process.h>
+#include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
@@ -24,8 +25,8 @@ static u64 _process_read_stdin_callback(void* ctx,u64 offset,void* buffer,u64 si
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		if (process->vfs_stdin){
-			link_buffer_length=vfs_path(process->vfs_stdin,link_buffer,sizeof(link_buffer));
+		if (process->fd_stdin){
+			link_buffer_length=vfs_path(fd_get_node(process->fd_stdin),link_buffer,sizeof(link_buffer));
 		}
 		handle_release(handle);
 	}
@@ -40,8 +41,8 @@ static u64 _process_read_stdout_callback(void* ctx,u64 offset,void* buffer,u64 s
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		if (process->vfs_stdout){
-			link_buffer_length=vfs_path(process->vfs_stdout,link_buffer,sizeof(link_buffer));
+		if (process->fd_stdout){
+			link_buffer_length=vfs_path(fd_get_node(process->fd_stdout),link_buffer,sizeof(link_buffer));
 		}
 		handle_release(handle);
 	}
@@ -56,8 +57,8 @@ static u64 _process_read_stderr_callback(void* ctx,u64 offset,void* buffer,u64 s
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		if (process->vfs_stderr){
-			link_buffer_length=vfs_path(process->vfs_stderr,link_buffer,sizeof(link_buffer));
+		if (process->fd_stderr){
+			link_buffer_length=vfs_path(fd_get_node(process->fd_stderr),link_buffer,sizeof(link_buffer));
 		}
 		handle_release(handle);
 	}

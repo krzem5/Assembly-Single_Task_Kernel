@@ -39,9 +39,9 @@
 
 
 typedef struct _SYSCALL_PROCESS_START_EXTRA_DATA{
-	u64 fd_in;
-	u64 fd_out;
-	u64 fd_err;
+	u64 stdin;
+	u64 stdout;
+	u64 stderr;
 } syscall_process_start_extra_data_t;
 
 
@@ -90,9 +90,9 @@ KERNEL_EARLY_INIT(){
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=process_kernel->vfs_root;
-	process_kernel->vfs_stdin=NULL;
-	process_kernel->vfs_stdout=NULL;
-	process_kernel->vfs_stderr=NULL;
+	process_kernel->fd_stdin=0;
+	process_kernel->fd_stdout=0;
+	process_kernel->fd_stderr=0;
 	process_kernel->parent=process_kernel;
 }
 
@@ -117,9 +117,9 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	handle_list_init(&(out->handle_list));
 	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
 	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
-	out->vfs_stdin=NULL;
-	out->vfs_stdout=NULL;
-	out->vfs_stderr=NULL;
+	out->fd_stdin=0;
+	out->fd_stdout=0;
+	out->fd_stderr=0;
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	out->uid=out->parent->uid;
 	out->gid=out->parent->gid;
@@ -212,24 +212,9 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 		goto _cleanup;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	if (extra_data.fd_in){
-		process->vfs_stdin=fd_get_node(extra_data.fd_in);
-	}
-	if (!process->vfs_stdin){
-		process->vfs_stdin=THREAD_DATA->process->vfs_stdin;
-	}
-	if (extra_data.fd_out){
-		process->vfs_stdout=fd_get_node(extra_data.fd_out);
-	}
-	if (!process->vfs_stdout){
-		process->vfs_stdout=THREAD_DATA->process->vfs_stdout;
-	}
-	if (extra_data.fd_err){
-		process->vfs_stderr=fd_get_node(extra_data.fd_err);
-	}
-	if (!process->vfs_stderr){
-		process->vfs_stderr=THREAD_DATA->process->vfs_stderr;
-	}
+	process->fd_stdin=(extra_data.stdin?extra_data.stdin:THREAD_DATA->process->fd_stdin);
+	process->fd_stdout=(extra_data.stdout?extra_data.stdout:THREAD_DATA->process->fd_stdout);
+	process->fd_stderr=(extra_data.stderr?extra_data.stderr:THREAD_DATA->process->fd_stderr);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(process->thread_list.head);
 	}

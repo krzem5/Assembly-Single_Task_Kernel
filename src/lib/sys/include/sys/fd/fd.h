@@ -45,6 +45,13 @@
 #define SYS_FD_DUP_STDOUT 0x7ffffffffffffffeull
 #define SYS_FD_DUP_STDERR 0x7fffffffffffffffull
 
+#define SYS_FD_ACL_FLAG_STAT 1
+#define SYS_FD_ACL_FLAG_DUP 2
+#define SYS_FD_ACL_FLAG_IO 4
+#define SYS_FD_ACL_FLAG_CLOSE 8
+
+#define SYS_FD_ITERATOR_ACL_FLAG_ACCESS 1
+
 
 
 typedef u64 sys_fd_t;

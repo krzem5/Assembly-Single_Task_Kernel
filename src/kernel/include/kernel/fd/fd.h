@@ -4,6 +4,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/lock/mutex.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/process.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
@@ -83,6 +84,10 @@ error_t fd_from_node(vfs_node_t* node,u32 flags);
 
 
 vfs_node_t* fd_get_node(handle_id_t fd);
+
+
+
+void fd_allow_dup(handle_id_t fd,process_t* process);
 
 
 

@@ -70,6 +70,9 @@ typedef struct _ELF_LOADER_CONTEXT{
 
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _user_image_pmm_counter=NULL;
 static u32 _elf_hwcap=0;
+static handle_id_t _elf_default_io_stdin=0;
+static handle_id_t _elf_default_io_stdout=0;
+static handle_id_t _elf_default_io_stderr=0;
 
 
 
@@ -112,9 +115,21 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 	}
 	ctx->process=process_create(image,name,pmm_align_up_address(highest_address)+aslr_generate_address(ELF_ASLR_MMAP_BOTTOM_OFFSET_MIN,ELF_ASLR_MMAP_BOTTOM_OFFSET_MAX),aslr_generate_address(ELF_ASLR_MMAP_TOP_MIN,ELF_ASLR_MMAP_TOP_MAX));
 	if (ctx->flags&ELF_LOAD_FLAG_DEFAULT_IO){
-		ctx->process->vfs_stdin=vfs_lookup(NULL,"/dev/ser/in",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
-		ctx->process->vfs_stdout=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
-		ctx->process->vfs_stderr=vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0);
+		if (!_elf_default_io_stdin){
+			_elf_default_io_stdin=fd_from_node(vfs_lookup(NULL,"/dev/ser/in",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0),FD_FLAG_READ);
+		}
+		if (!_elf_default_io_stdout){
+			_elf_default_io_stdout=fd_from_node(vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0),FD_FLAG_WRITE|FD_FLAG_APPEND);
+		}
+		if (!_elf_default_io_stderr){
+			_elf_default_io_stderr=fd_from_node(vfs_lookup(NULL,"/dev/ser/out",VFS_LOOKUP_FLAG_FOLLOW_LINKS,0,0),FD_FLAG_WRITE|FD_FLAG_APPEND);
+		}
+		fd_allow_dup(_elf_default_io_stdin,ctx->process);
+		fd_allow_dup(_elf_default_io_stdout,ctx->process);
+		fd_allow_dup(_elf_default_io_stderr,ctx->process);
+		ctx->process->fd_stdin=_elf_default_io_stdin;
+		ctx->process->fd_stdout=_elf_default_io_stdout;
+		ctx->process->fd_stderr=_elf_default_io_stderr;
 	}
 	ctx->stack_top=aslr_generate_address(ELF_ASLR_STACK_TOP_MIN,ELF_ASLR_STACK_TOP_MAX);
 	if (!mmap_alloc(ctx->process->mmap,ctx->stack_top-ELF_STACK_SIZE,ELF_STACK_SIZE,MMAP_REGION_FLAG_STACK|MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER|MMAP_REGION_FLAG_FORCE,NULL)){

@@ -6,9 +6,9 @@
 
 
 typedef struct _SYSCALL_PROCESS_START_EXTRA_DATA{
-	u64 fd_in;
-	u64 fd_out;
-	u64 fd_err;
+	u64 stdin;
+	u64 stdout;
+	u64 stderr;
 } syscall_process_start_extra_data_t;
 
 
@@ -25,11 +25,11 @@ SYS_PUBLIC sys_process_t sys_process_get_handle(void){
 
 
 
-SYS_PUBLIC sys_process_t sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags,sys_fd_t fd_in,sys_fd_t fd_out,sys_fd_t fd_err){
+SYS_PUBLIC sys_process_t sys_process_start(const char* path,u32 argc,const char*const* argv,const char*const* environ,u32 flags,sys_fd_t stdin,sys_fd_t stdout,sys_fd_t stderr){
 	syscall_process_start_extra_data_t extra_data={
-		fd_in,
-		fd_out,
-		fd_err
+		stdin,
+		stdout,
+		stderr
 	};
 	return _sys_syscall_process_start(path,argc,argv,environ,flags,&extra_data);
 }
