@@ -21,9 +21,12 @@
 #define KERNEL_ATOMIC _Atomic
 #define KERNEL_USER_POINTER volatile
 
-#define KERNEL_INIT() static KERNEL_EARLY_EXEC void __initializer(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=__initializer;static KERNEL_EARLY_EXEC void __initializer(void)
-#define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void __einitializer(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=__einitializer;static KERNEL_EARLY_EXEC void __einitializer(void)
-#define KERNEL_EARLY_EARLY_INIT() static KERNEL_EARLY_EXEC void __eeinitializer(void);static void* __attribute__((section(".eeinitializer"),used)) __eeinitializer_ptr=__eeinitializer;static KERNEL_EARLY_EXEC void __eeinitializer(void)
+#define _KERNEL_INITIALIZER_NAME__(a,b) a##b
+#define _KERNEL_INITIALIZER_NAME_(a,b) _KERNEL_INITIALIZER_NAME__(a,b)
+#define _KERNEL_INITIALIZER_NAME(type) _KERNEL_INITIALIZER_NAME_(type,__UNIQUE_FILE_NAME__)
+#define KERNEL_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__initializer_)(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=_KERNEL_INITIALIZER_NAME(__initializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__initializer_)(void)
+#define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__einitializer_)(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=_KERNEL_INITIALIZER_NAME(__einitializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__einitializer_)(void)
+#define KERNEL_EARLY_EARLY_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__eeinitializer_)(void);static void* __attribute__((section(".eeinitializer"),used)) __eeinitializer_ptr=_KERNEL_INITIALIZER_NAME(__eeinitializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__eeinitializer_)(void)
 #define KERNEL_EARLY_POINTER(name) static void* __attribute__((section(".epointer"),used)) __epointer_##name=&(name)
 
 #ifdef KERNEL_RELEASE

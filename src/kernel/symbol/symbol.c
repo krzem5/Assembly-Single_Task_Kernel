@@ -19,7 +19,7 @@ volatile const u64* KERNEL_EARLY_READ __kernel_symbol_data=NULL;
 
 
 
-KERNEL_EARLY_INIT(){
+KERNEL_EARLY_EARLY_INIT(){
 	LOG("Initializing symbol tree...");
 	_symbol_allocator=omm_init("kernel.symbol",sizeof(symbol_t),8,2);
 	rwlock_init(&(_symbol_allocator->lock));
