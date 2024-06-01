@@ -4,6 +4,7 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -55,6 +56,7 @@ static omm_allocator_t* _module_allocator=NULL;
 static mmap_t* _module_image_mmap=NULL;
 
 KERNEL_PUBLIC handle_type_t module_handle_type=0;
+KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE module_notification_dispatcher=NULL;
 
 
 
@@ -331,6 +333,26 @@ static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* r
 
 
 
+static void _send_load_notification(module_t* module){
+	module_load_notification_data_t* data=amm_alloc(sizeof(module_load_notification_data_t)+module->name->length+1);
+	data->module_handle=module->handle.rb_node.key;
+	mem_copy(data->name,module->name->data,module->name->length+1);
+	notification_dispatcher_dispatch(module_notification_dispatcher,MODULE_LOAD_NOTIFICATION,data,sizeof(module_load_notification_data_t)+module->name->length+1);
+	amm_dealloc(data);
+}
+
+
+
+static void _send_unload_notification(module_t* module){
+	module_unload_notification_data_t* data=amm_alloc(sizeof(module_unload_notification_data_t)+module->name->length+1);
+	data->module_handle=module->handle.rb_node.key;
+	mem_copy(data->name,module->name->data,module->name->length+1);
+	notification_dispatcher_dispatch(module_notification_dispatcher,MODULE_UNLOAD_NOTIFICATION,data,sizeof(module_unload_notification_data_t)+module->name->length+1);
+	amm_dealloc(data);
+}
+
+
+
 KERNEL_EARLY_INIT(){
 	LOG("Initializing module loader...");
 	_module_allocator=omm_init("kernel.module",sizeof(module_t),8,4);
@@ -338,6 +360,7 @@ KERNEL_EARLY_INIT(){
 	module_handle_type=handle_alloc("kernel.module",_module_handle_destructor);
 	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
 	aslr_module_base=0;
+	module_notification_dispatcher=notification_dispatcher_create();
 }
 
 
@@ -414,6 +437,7 @@ KERNEL_PUBLIC module_t* module_load(const char* name){
 	_adjust_memory_flags(&ctx);
 	mmap_dealloc_region(process_kernel->mmap,region);
 	_process_module_header(&ctx);
+	_send_load_notification(module);
 	if (!_execute_initializers(&ctx)){
 		module_unload(module);
 		return NULL;
@@ -445,6 +469,7 @@ KERNEL_PUBLIC bool module_unload(module_t* module){
 		return 0;
 	}
 	LOG("Unloading module '%s'...",module->name->data);
+	_send_unload_notification(module);
 	module->state=MODULE_STATE_UNLOADING;
 	for (u64 i=0;i+sizeof(void*)<=module->deinit_array_size;i+=sizeof(void*)){
 		void* func=*((void*const*)(module->deinit_array_base+i));

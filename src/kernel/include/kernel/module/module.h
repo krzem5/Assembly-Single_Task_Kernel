@@ -3,6 +3,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
+#include <kernel/notification/notification.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
@@ -58,6 +59,11 @@
 
 
 
+#define MODULE_LOAD_NOTIFICATION 0x00000001
+#define MODULE_UNLOAD_NOTIFICATION 0x00000002
+
+
+
 typedef struct _MODULE{
 	handle_t handle;
 	string_t* name;
@@ -93,8 +99,23 @@ typedef struct _MODULE_DESCRIPTOR{
 
 
 
+typedef struct _MODULE_LOAD_NOTIFICATION_DATA{
+	handle_id_t module_handle;
+	char name[];
+} module_load_notification_data_t;
+
+
+
+typedef struct _MODULE_UNLOAD_NOTIFICATION_DATA{
+	handle_id_t module_handle;
+	char name[];
+} module_unload_notification_data_t;
+
+
+
 extern handle_type_t module_handle_type;
 extern module_t* module_self;
+extern notification_dispatcher_t* module_notification_dispatcher;
 
 
 
