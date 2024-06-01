@@ -40,6 +40,18 @@ SYS_PUBLIC void sys_memory_copy(const void* src,void* dst,u64 length){
 
 
 
+SYS_PUBLIC void sys_memory_exchange(void* a,void* b,u64 length){
+	u8* a_ptr=a;
+	u8* b_ptr=b;
+	for (u64 i=0;i<length;i++){
+		u8 tmp=a_ptr[i];
+		a_ptr[i]=b_ptr[i];
+		b_ptr[i]=tmp;
+	}
+}
+
+
+
 SYS_PUBLIC s32 sys_memory_compare(const void* a,const void* b,u64 length){
 	const u8* ptr_a=a;
 	const u8* ptr_b=b;

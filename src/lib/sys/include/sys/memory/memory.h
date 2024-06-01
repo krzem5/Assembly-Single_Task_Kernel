@@ -49,6 +49,10 @@ void __attribute__((access(read_only,1,3),access(write_only,2,3))) sys_memory_co
 
 
 
+void __attribute__((access(read_write,1,3),access(read_write,2,3))) sys_memory_exchange(void* a,void* b,u64 length);
+
+
+
 s32 __attribute__((access(read_only,1,3),access(read_only,2,3))) sys_memory_compare(const void* a,const void* b,u64 length);
 
 

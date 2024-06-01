@@ -325,17 +325,17 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 
 
 error_t syscall_fd_dup(handle_id_t fd,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->vfs_stdin){
 		return fd_from_node(THREAD_DATA->process->vfs_stdin,flags&FD_FLAG_READ);
 	}
 	if (fd==FD_DUP_STDOUT&&THREAD_DATA->process->vfs_stdout){
-		return fd_from_node(THREAD_DATA->process->vfs_stdout,flags&FD_FLAG_WRITE);
+		return fd_from_node(THREAD_DATA->process->vfs_stdout,flags&(FD_FLAG_WRITE|FD_FLAG_APPEND));
 	}
 	if (fd==FD_DUP_STDERR&&THREAD_DATA->process->vfs_stderr){
-		return fd_from_node(THREAD_DATA->process->vfs_stderr,flags&FD_FLAG_WRITE);
+		return fd_from_node(THREAD_DATA->process->vfs_stderr,flags&(FD_FLAG_WRITE|FD_FLAG_APPEND));
 	}
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){

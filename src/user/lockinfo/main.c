@@ -6,6 +6,7 @@
 #include <sys/syscall/syscall.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
+#include <sys/util/sort.h>
 
 
 
@@ -63,26 +64,14 @@ typedef struct _DESCRIPTOR{
 
 
 
-static void _quicksort_usage_data(usage_descriptor_t* data,u32 length){
-	u32 i=0;
-	for (u32 j=0;j<length;j++){
-		if ((data+j)->avg_time>(data+length)->avg_time){
-			usage_descriptor_t tmp=*(data+i);
-			*(data+i)=*(data+j);
-			*(data+j)=tmp;
-			i++;
-		}
-	}
-	usage_descriptor_t tmp=*(data+i);
-	*(data+i)=*(data+length);
-	*(data+length)=tmp;
-	if (i>1){
-		_quicksort_usage_data(data,i-1);
-	}
-	i++;
-	if (i<length){
-		_quicksort_usage_data(data+i,length-i);
-	}
+static bool _switch_callback(const void* a,const void* b){
+	return ((const usage_descriptor_t*)a)->avg_time>((const usage_descriptor_t*)b)->avg_time;
+}
+
+
+
+static bool _descriptor_switch_callback(const void* a,const void* b){
+	return ((const descriptor_t*)a)->data->avg_time>((const descriptor_t*)b)->data->avg_time;
 }
 
 
@@ -137,9 +126,10 @@ int main(int argc,const char** argv){
 			*(data+i)=*(data+data_length);
 			continue;
 		}
-		_quicksort_usage_data((data+i)->data,(data+i)->length-1);
+		sys_sort((data+i)->data,sizeof(usage_descriptor_t),(data+i)->length,_switch_callback);
 		i++;
 	}
+	sys_sort(data,sizeof(descriptor_t),data_length,_descriptor_switch_callback);
 	for (u32 i=0;i<data_length;i++){
 		descriptor_t* desc=data+i;
 		sys_io_print("\x1b[3m%s:%s+%lu\x1b[0m%s\n",desc->symbol.module,desc->symbol.func,desc->symbol.offset,((desc->flags&LOCKINFO_FLAG_PREEMPTIBLE)?" (preemptible)":""));

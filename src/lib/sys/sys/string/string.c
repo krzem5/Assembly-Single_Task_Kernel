@@ -39,7 +39,7 @@ SYS_PUBLIC s32 sys_string_compare_up_to(const char* a,const char* b,u64 length){
 	if (!length){
 		return 0;
 	}
-	return _string_compare(a,b,0);
+	return _string_compare(a,b,length);
 }
 
 
