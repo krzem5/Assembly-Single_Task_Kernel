@@ -74,3 +74,27 @@ SYS_PUBLIC sys_error_t account_create_group(sys_gid_t gid,const char* name){
 SYS_PUBLIC sys_error_t account_create_user(sys_uid_t uid,const char* name,const void* password,u32 password_length){
 	return _sys_syscall4(_account_syscall_offset|0x00000007,uid,(u64)name,(u64)password,password_length);
 }
+
+
+
+SYS_PUBLIC sys_error_t account_delete_group(sys_gid_t gid){
+	return _sys_syscall1(_account_syscall_offset|0x00000008,gid);
+}
+
+
+
+SYS_PUBLIC sys_error_t account_delete_user(sys_uid_t uid){
+	return _sys_syscall1(_account_syscall_offset|0x00000009,uid);
+}
+
+
+
+SYS_PUBLIC sys_error_t account_join_group(sys_uid_t uid,sys_gid_t gid){
+	return _sys_syscall2(_account_syscall_offset|0x0000000a,uid,gid);
+}
+
+
+
+SYS_PUBLIC sys_error_t account_leave_group(sys_uid_t uid,sys_gid_t gid){
+	return _sys_syscall2(_account_syscall_offset|0x0000000b,uid,gid);
+}

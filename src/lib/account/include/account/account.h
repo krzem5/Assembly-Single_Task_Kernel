@@ -64,4 +64,20 @@ sys_error_t account_create_user(sys_uid_t uid,const char* name,const void* passw
 
 
 
+sys_error_t account_delete_group(sys_gid_t gid);
+
+
+
+sys_error_t account_delete_user(sys_uid_t uid);
+
+
+
+sys_error_t account_join_group(sys_uid_t uid,sys_gid_t gid);
+
+
+
+sys_error_t account_leave_group(sys_uid_t uid,sys_gid_t gid);
+
+
+
 #endif

@@ -109,6 +109,46 @@ static error_t _syscall_create_user(u32 uid,KERNEL_USER_POINTER const char* name
 
 
 
+static error_t _syscall_delete_group(u32 gid){
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_delete_group");
+	return ERROR_DENIED;
+}
+
+
+
+static error_t _syscall_delete_user(u32 uid){
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_delete_user");
+	return ERROR_DENIED;
+}
+
+
+
+static error_t _syscall_join_group(u32 uid,u32 gid){
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_join_group");
+	return ERROR_DENIED;
+}
+
+
+
+static error_t _syscall_leave_group(u32 uid,u32 gid){
+	if (!process_is_root()){
+		return ERROR_DENIED;
+	}
+	ERROR("_syscall_leave_group");
+	return ERROR_DENIED;
+}
+
+
+
 static syscall_callback_t const _account_manager_syscall_functions[]={
 	[1]=(syscall_callback_t)_syscall_iter_group,
 	[2]=(syscall_callback_t)_syscall_iter_user,
@@ -117,6 +157,10 @@ static syscall_callback_t const _account_manager_syscall_functions[]={
 	[5]=(syscall_callback_t)_syscall_get_user_data,
 	[6]=(syscall_callback_t)_syscall_create_group,
 	[7]=(syscall_callback_t)_syscall_create_user,
+	[8]=(syscall_callback_t)_syscall_delete_group,
+	[9]=(syscall_callback_t)_syscall_delete_user,
+	[10]=(syscall_callback_t)_syscall_join_group,
+	[11]=(syscall_callback_t)_syscall_leave_group,
 };
 
 

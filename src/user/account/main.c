@@ -9,14 +9,48 @@
 
 
 // 1.
-// 2. list
-// 3. create user <name>
-// 4. create user <name> <password>
-// 5. create user <name> <password> <uid>
-// 6. create group <name>
-// 7. create group <name> <gid>
-// 8. switch <name>
-// 9. switch <name> <password>
+// 2.  list
+// 3.  create user <user>
+// 4.  create user <user> <password>
+// 5.  create user <user> <password> <uid>
+// 6.  create group <group>
+// 7.  create group <group> <gid>
+// 8.  switch <user>
+// 9.  switch <user> <password>
+// 10. delete user <user>
+// 11. delete group <group>
+// 12. join <user> <group>
+// 13. leave <user> <group>
+
+
+
+static sys_error_t _user_to_uid(const char* name){
+	for (sys_uid_t uid=account_iter_user_start();uid;uid=account_iter_user_next(uid)){
+		char buffer[256];
+		if (SYS_IS_ERROR(sys_uid_get_name(uid,buffer,sizeof(buffer)))){
+			continue;
+		}
+		if (!sys_string_compare(buffer,name)){
+			return uid;
+		}
+	}
+	return SYS_ERROR_NOT_FOUND;
+}
+
+
+
+static sys_error_t _group_to_gid(const char* name){
+	for (sys_gid_t gid=account_iter_group_start();gid;gid=account_iter_group_next(gid)){
+		char buffer[256];
+		if (SYS_IS_ERROR(sys_gid_get_name(gid,buffer,sizeof(buffer)))){
+			continue;
+		}
+		if (!sys_string_compare(buffer,name)){
+			return gid;
+		}
+	}
+	return SYS_ERROR_NOT_FOUND;
+}
 
 
 
@@ -75,6 +109,75 @@ static int _create_group(const char* name,sys_gid_t gid){
 
 
 static int _switch_user(const char* name,const char* password){
+	sys_io_print("Error switching user\n");
+	return 1;
+}
+
+
+
+static int _delete_user(const char* name){
+	sys_error_t uid=_user_to_uid(name);
+	if (SYS_IS_ERROR(uid)){
+		goto _error;
+	}
+	if (!SYS_IS_ERROR(account_delete_user(uid))){
+		return 0;
+	}
+_error:
+	sys_io_print("Error deleting user\n");
+	return 1;
+}
+
+
+
+static int _delete_group(const char* name){
+	sys_error_t gid=_group_to_gid(name);
+	if (SYS_IS_ERROR(gid)){
+		goto _error;
+	}
+	if (!SYS_IS_ERROR(account_delete_group(gid))){
+		return 0;
+	}
+_error:
+	sys_io_print("Error deleting group\n");
+	return 1;
+}
+
+
+
+static int _join_group(const char* user,const char* group){
+	sys_error_t uid=_user_to_uid(user);
+	if (SYS_IS_ERROR(uid)){
+		goto _error;
+	}
+	sys_error_t gid=_group_to_gid(group);
+	if (SYS_IS_ERROR(gid)){
+		goto _error;
+	}
+	if (!SYS_IS_ERROR(account_join_group(uid,gid))){
+		return 0;
+	}
+_error:
+	sys_io_print("Error joining group\n");
+	return 1;
+}
+
+
+
+static int _leave_group(const char* user,const char* group){
+	sys_error_t uid=_user_to_uid(user);
+	if (SYS_IS_ERROR(uid)){
+		goto _error;
+	}
+	sys_error_t gid=_group_to_gid(group);
+	if (SYS_IS_ERROR(gid)){
+		goto _error;
+	}
+	if (!SYS_IS_ERROR(account_leave_group(uid,gid))){
+		return 0;
+	}
+_error:
+	sys_io_print("Error leaving group\n");
 	return 1;
 }
 
@@ -122,6 +225,30 @@ int main(int argc,const char** argv){
 			return _switch_user(argv[2],argv[3]);
 		}
 		goto _invalid_arguments;
+	}
+	if (!sys_string_compare(argv[1],"delete")){
+		if (argc!=4){
+			goto _invalid_arguments;
+		}
+		if (!sys_string_compare(argv[2],"user")){
+			return _delete_user(argv[3]);
+		}
+		if (!sys_string_compare(argv[2],"group")){
+			return _delete_group(argv[3]);
+		}
+		goto _invalid_arguments;
+	}
+	if (!sys_string_compare(argv[1],"join")){
+		if (argc!=4){
+			goto _invalid_arguments;
+		}
+		return _join_group(argv[2],argv[3]);
+	}
+	if (!sys_string_compare(argv[1],"leave")){
+		if (argc!=4){
+			goto _invalid_arguments;
+		}
+		return _leave_group(argv[2],argv[3]);
 	}
 _invalid_arguments:
 	sys_io_print("Invalid arguments\n");
