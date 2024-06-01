@@ -206,6 +206,7 @@ static bool _init_aml_device(aml_bus_device_t* device){
 		return 0;
 	}
 	LOG("Found TMP device: %s (SystemBus)",device->device->name);
+	handle_acquire(&(device->handle));
 	tpm_t* tpm=omm_alloc(_tpm_allocator);
 	tpm->flags=0;
 	tpm->regs=(void*)vmm_identity_map(res->memory_region.base,res->memory_region.size);

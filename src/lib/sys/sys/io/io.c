@@ -12,9 +12,9 @@ SYS_PUBLIC sys_fd_t sys_io_error_fd=0;
 
 
 void __sys_io_init(void){
-	sys_io_input_fd=sys_fd_open(0,"/dev/ser/in",SYS_FD_FLAG_READ);
-	sys_io_output_fd=sys_fd_open(0,"/dev/ser/out",SYS_FD_FLAG_WRITE);
-	sys_io_error_fd=sys_fd_open(0,"/dev/ser/out",SYS_FD_FLAG_WRITE);
+	sys_io_input_fd=sys_fd_dup(SYS_FD_DUP_STDIN,SYS_FD_FLAG_READ);
+	sys_io_output_fd=sys_fd_dup(SYS_FD_DUP_STDOUT,SYS_FD_FLAG_WRITE);
+	sys_io_error_fd=sys_fd_dup(SYS_FD_DUP_STDERR,SYS_FD_FLAG_WRITE);
 }
 
 

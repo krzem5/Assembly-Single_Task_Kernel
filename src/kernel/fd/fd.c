@@ -325,7 +325,41 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 
 
 error_t syscall_fd_dup(handle_id_t fd,u32 flags){
-	panic("fd_dup");
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE))){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->vfs_stdin){
+		return fd_from_node(THREAD_DATA->process->vfs_stdin,flags&FD_FLAG_READ);
+	}
+	if (fd==FD_DUP_STDOUT&&THREAD_DATA->process->vfs_stdout){
+		return fd_from_node(THREAD_DATA->process->vfs_stdout,flags&FD_FLAG_WRITE);
+	}
+	if (fd==FD_DUP_STDERR&&THREAD_DATA->process->vfs_stderr){
+		return fd_from_node(THREAD_DATA->process->vfs_stderr,flags&FD_FLAG_WRITE);
+	}
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_DUP)){
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
+	mutex_acquire(data->lock);
+	data->node->rc++;
+	fd_t* out=omm_alloc(_fd_allocator);
+	handle_new(_fd_handle_type,&(out->handle));
+	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
+	out->handle.acl=acl_create();
+	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
+	out->lock=mutex_init();
+	out->node=data->node;
+	out->offset=data->offset;
+	out->flags=data->flags&flags;
+	mutex_release(data->lock);
+	handle_release(fd_handle);
+	return out->handle.rb_node.key;
 }
 
 

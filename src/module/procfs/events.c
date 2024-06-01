@@ -18,6 +18,54 @@ static vfs_node_t* KERNEL_INIT_WRITE _procfs_thread_root=NULL;
 
 
 
+static u64 _process_read_stdin_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	handle_t* handle=handle_lookup_and_acquire((u64)ctx,process_handle_type);
+	char link_buffer[4096]="";
+	u32 link_buffer_length=0;
+	if (handle){
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
+		if (process->vfs_stdin){
+			link_buffer_length=vfs_path(process->vfs_stdin,link_buffer,sizeof(link_buffer));
+		}
+		handle_release(handle);
+	}
+	return dynamicfs_process_simple_read(link_buffer,link_buffer_length,offset,buffer,size);
+}
+
+
+
+static u64 _process_read_stdout_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	handle_t* handle=handle_lookup_and_acquire((u64)ctx,process_handle_type);
+	char link_buffer[4096]="";
+	u32 link_buffer_length=0;
+	if (handle){
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
+		if (process->vfs_stdout){
+			link_buffer_length=vfs_path(process->vfs_stdout,link_buffer,sizeof(link_buffer));
+		}
+		handle_release(handle);
+	}
+	return dynamicfs_process_simple_read(link_buffer,link_buffer_length,offset,buffer,size);
+}
+
+
+
+static u64 _process_read_stderr_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	handle_t* handle=handle_lookup_and_acquire((u64)ctx,process_handle_type);
+	char link_buffer[4096]="";
+	u32 link_buffer_length=0;
+	if (handle){
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
+		if (process->vfs_stderr){
+			link_buffer_length=vfs_path(process->vfs_stderr,link_buffer,sizeof(link_buffer));
+		}
+		handle_release(handle);
+	}
+	return dynamicfs_process_simple_read(link_buffer,link_buffer_length,offset,buffer,size);
+}
+
+
+
 static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char link[32];
 	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",(THREAD_DATA->header.current_thread?HANDLE_ID_GET_INDEX(THREAD_DATA->process->handle.rb_node.key):0)),offset,buffer,size);
@@ -51,9 +99,9 @@ static void _update_notification_thread(void){
 			vfs_node_t* node=dynamicfs_create_node(procfs->root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 			dynamicfs_create_node(node,"name",VFS_NODE_TYPE_FILE,NULL,dynamicfs_string_read_callback,(void*)(&(process->name)));
 			dynamicfs_create_node(node,"exe",VFS_NODE_TYPE_LINK,process->image,NULL,NULL);
-			dynamicfs_create_link_node(node,"stdin","/dev/ser/in");
-			dynamicfs_create_link_node(node,"stdout","/dev/ser/out");
-			dynamicfs_create_link_node(node,"stderr","/dev/ser/out");
+			dynamicfs_create_node(node,"stdin",VFS_NODE_TYPE_LINK,NULL,_process_read_stdin_callback,(void*)(data->process_handle));
+			dynamicfs_create_node(node,"stdout",VFS_NODE_TYPE_LINK,NULL,_process_read_stdout_callback,(void*)(data->process_handle));
+			dynamicfs_create_node(node,"stderr",VFS_NODE_TYPE_LINK,NULL,_process_read_stderr_callback,(void*)(data->process_handle));
 			dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 			handle_release(handle);
 		}

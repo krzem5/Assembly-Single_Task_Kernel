@@ -81,6 +81,9 @@ KERNEL_EARLY_INIT(){
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=process_kernel->vfs_root;
+	process_kernel->vfs_stdin=NULL;
+	process_kernel->vfs_stdout=NULL;
+	process_kernel->vfs_stderr=NULL;
 	process_kernel->parent=process_kernel;
 }
 
@@ -104,6 +107,9 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	handle_list_init(&(out->handle_list));
 	out->vfs_root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:vfs_get_root_node());
 	out->vfs_cwd=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:out->vfs_root);
+	out->vfs_stdin=NULL;
+	out->vfs_stdout=NULL;
+	out->vfs_stderr=NULL;
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	out->uid=out->parent->uid;
 	out->gid=out->parent->gid;
