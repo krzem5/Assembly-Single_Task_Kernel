@@ -64,7 +64,7 @@ typedef struct _DESCRIPTOR{
 
 
 
-static bool _switch_callback(const void* a,const void* b){
+static bool _usage_descriptor_switch_callback(const void* a,const void* b){
 	return ((const usage_descriptor_t*)a)->avg_time>((const usage_descriptor_t*)b)->avg_time;
 }
 
@@ -126,7 +126,7 @@ int main(int argc,const char** argv){
 			*(data+i)=*(data+data_length);
 			continue;
 		}
-		sys_sort((data+i)->data,sizeof(usage_descriptor_t),(data+i)->length,_switch_callback);
+		sys_sort((data+i)->data,sizeof(usage_descriptor_t),(data+i)->length,_usage_descriptor_switch_callback);
 		i++;
 	}
 	sys_sort(data,sizeof(descriptor_t),data_length,_descriptor_switch_callback);
