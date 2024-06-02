@@ -32,108 +32,108 @@ static aml_object_t* _alloc_object(u8 type){
 
 static void _print_object(aml_object_t* object,u32 indent){
 	if (!object){
-		log("(null)");
+		log_direct("(null)");
 		return;
 	}
 	for (u32 i=0;i<indent;i++){
-		log(" ");
+		log_direct(" ");
 	}
 	switch (object->type){
 		case AML_OBJECT_TYPE_NONE:
-			log("<none>");
+			log_direct("<none>");
 			break;
 		case AML_OBJECT_TYPE_BUFFER:
 			if (!object->buffer.size){
-				log("[0]{}");
+				log_direct("[0]{}");
 				break;
 			}
-			log("[%u]{",object->buffer.size);
+			log_direct("[%u]{",object->buffer.size);
 			if (object->buffer.size<=PRINT_BUFFER_BYTES_PER_LINE){
 				for (u32 i=0;i<object->buffer.size;i++){
-					log("%s%X",(i?" ":""),object->buffer.data[i]);
+					log_direct("%s%X",(i?" ":""),object->buffer.data[i]);
 				}
-				log("}");
+				log_direct("}");
 				break;
 			}
 			for (u8 i=0;i<object->buffer.size;i++){
 				if (!(i&(PRINT_BUFFER_BYTES_PER_LINE-1))){
-					log("\n   ");
+					log_direct("\n   ");
 					for (u32 i=0;i<indent;i++){
-						log(" ");
+						log_direct(" ");
 					}
 				}
-				log(" %X",object->buffer.data[i]);
+				log_direct(" %X",object->buffer.data[i]);
 			}
-			log("\n");
+			log_direct("\n");
 			for (u32 i=0;i<indent;i++){
-				log(" ");
+				log_direct(" ");
 			}
-			log("}");
+			log_direct("}");
 			break;
 		case AML_OBJECT_TYPE_BUFFER_FIELD:
-			log("buffer_field");
+			log_direct("buffer_field");
 			break;
 		case AML_OBJECT_TYPE_DEBUG:
-			log("debug");
+			log_direct("debug");
 			break;
 		case AML_OBJECT_TYPE_DEVICE:
-			log("device");
+			log_direct("device");
 			break;
 		case AML_OBJECT_TYPE_EVENT:
-			log("event");
+			log_direct("event");
 			break;
 		case AML_OBJECT_TYPE_FIELD_UNIT:
-			log("field_unit");
+			log_direct("field_unit");
 			break;
 		case AML_OBJECT_TYPE_INTEGER:
-			log("0x%lx",object->integer);
+			log_direct("0x%lx",object->integer);
 			break;
 		case AML_OBJECT_TYPE_METHOD:
-			log("method");
+			log_direct("method");
 			break;
 		case AML_OBJECT_TYPE_MUTEX:
-			log("mutex");
+			log_direct("mutex");
 			break;
 		case AML_OBJECT_TYPE_PACKAGE:
 			if (!object->package.length){
-				log("{}");
+				log_direct("{}");
 				break;
 			}
-			log("{\n");
+			log_direct("{\n");
 			for (u8 i=0;i<object->package.length;i++){
 				_print_object(object->package.data[i],indent+4);
 				if (i<object->package.length-1){
-					log(",\n");
+					log_direct(",\n");
 				}
 				else{
-					log("\n");
+					log_direct("\n");
 				}
 			}
 			for (u32 i=0;i<indent;i++){
-				log(" ");
+				log_direct(" ");
 			}
-			log("}");
+			log_direct("}");
 			break;
 		case AML_OBJECT_TYPE_POWER_RESOURCE:
-			log("power_resource");
+			log_direct("power_resource");
 			break;
 		case AML_OBJECT_TYPE_PROCESSOR:
-			log("processor");
+			log_direct("processor");
 			break;
 		case AML_OBJECT_TYPE_REFERENCE:
-			log("reference");
+			log_direct("reference");
 			break;
 		case AML_OBJECT_TYPE_REGION:
-			log("region");
+			log_direct("region");
 			break;
 		case AML_OBJECT_TYPE_STRING:
-			log("\"%s\"",object->string->data);
+			log_direct("\"%s\"",object->string->data);
 			break;
 		case AML_OBJECT_TYPE_THERMAL_ZONE:
-			log("thermal_zone");
+			log_direct("thermal_zone");
 			break;
 		case AML_OBJECT_TYPE_DYNAMIC:
-			log("dynamic");
+			log_direct("dynamic");
 			break;
 	}
 }
@@ -316,5 +316,5 @@ KERNEL_PUBLIC void aml_object_dealloc(aml_object_t* object){
 
 KERNEL_PUBLIC void aml_object_print(aml_object_t* object){
 	_print_object(object,0);
-	log("\n");
+	log_direct("\n");
 }

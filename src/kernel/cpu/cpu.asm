@@ -1,4 +1,4 @@
-extern log
+extern log_direct
 global cpu_check_features:function hidden
 section .etext exec nowrite
 
@@ -14,7 +14,7 @@ section .etext exec nowrite
 	push r8
 	lea rdi, _feature_not_present_str
 	lea rsi, ._%3%+_str
-	call log
+	call log_direct
 	pop r8
 	pop rdx
 	pop rcx
@@ -35,7 +35,7 @@ section .etext exec nowrite
 	push r8
 	lea rdi, _feature_not_present_warn_str
 	lea rsi, ._%3%+_str
-	call log
+	call log_direct
 	pop r8
 	pop rdx
 	pop rcx

@@ -1,18 +1,26 @@
 #ifndef _KERNEL_LOG_LOG_H_
 #define _KERNEL_LOG_LOG_H_ 1
+#include <kernel/types.h>
 
 
 
-#define INFO(template,...) _LOG("\x1b[37m",template,##__VA_ARGS__)
-#define LOG(template,...) _LOG("\x1b[1;97m",template,##__VA_ARGS__)
-#define WARN(template,...) _LOG("\x1b[93m",template,##__VA_ARGS__)
-#define ERROR(template,...) _LOG("\x1b[1;91m",template,##__VA_ARGS__)
+#define LOG_TYPE_INFO 0
+#define LOG_TYPE_LOG 1
+#define LOG_TYPE_WARN 2
+#define LOG_TYPE_ERROR 3
 
-#define _LOG(color,template,...) log("\x1b[90m["KERNEL_LOG_NAME"] "color template"\x1b[0m\n",##__VA_ARGS__)
+#define INFO(template,...) log(LOG_TYPE_INFO,KERNEL_LOG_NAME,template,##__VA_ARGS__)
+#define LOG(template,...) log(LOG_TYPE_LOG,KERNEL_LOG_NAME,template,##__VA_ARGS__)
+#define WARN(template,...) log(LOG_TYPE_WARN,KERNEL_LOG_NAME,template,##__VA_ARGS__)
+#define ERROR(template,...) log(LOG_TYPE_ERROR,KERNEL_LOG_NAME,template,##__VA_ARGS__)
 
 
 
-void log(const char* template,...);
+void log(u32 type,const char* name,const char* template,...);
+
+
+
+void log_direct(const char* template,...);
 
 
 
