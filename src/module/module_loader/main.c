@@ -65,6 +65,11 @@ MODULE_PREINIT(){
 	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,ELF_LOAD_FLAG_DEFAULT_IO))){
 		panic("Unable to load user shell");
 	}
+#ifdef KERNEL_RELEASE
+	LOG("Masking log types...");
+	log_mask_type(LOG_TYPE_INFO);
+	log_mask_type(LOG_TYPE_LOG);
+#endif
 #endif
 	return 0;
 }
