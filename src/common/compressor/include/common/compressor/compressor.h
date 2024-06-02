@@ -1,6 +1,11 @@
 #ifndef _COMMON_COMPRESSOR_COMPRESSOR_H_
 #define _COMMON_COMPRESSOR_COMPRESSOR_H_ 1
 #include <common/types.h>
+#if BUILD_MODULE
+#include <kernel/writer/writer.h>
+#else
+#include <stdio.h>
+#endif
 
 
 
@@ -10,11 +15,17 @@
 
 
 
-u32 compressor_get_max_compressed_size(u32 data_length);
+typedef struct _COMPRESSOR_OUTPUT{
+#if BUILD_MODULE
+	writer_t* writer;
+#else
+	FILE* file;
+#endif
+} compressor_output_t;
 
 
 
-u32 compressor_compress(const u8* data,u32 data_length,u32 compression_level,u8* out);
+void compressor_compress(const u8* data,u32 data_length,u32 compression_level,compressor_output_t* out);
 
 
 

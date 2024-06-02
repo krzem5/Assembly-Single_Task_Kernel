@@ -41,22 +41,19 @@ int main(int argc,const char** argv){
 	u32 in_length=ftell(in);
 	fseek(in,0,SEEK_SET);
 	void* in_data=malloc(in_length);
-	void* out_data=malloc(compressor_get_max_compressed_size(in_length));
 	if (fread(in_data,1,in_length,in)!=in_length||fwrite(&in_length,1,sizeof(u32),out)!=sizeof(u32)){
 		goto _error;
 	}
-	u32 out_length=compressor_compress(in_data,in_length,compression_level,out_data);
-	if (fwrite(out_data,1,out_length,out)!=out_length){
-		goto _error;
-	}
+	compressor_output_t output={
+		out
+	};
+	compressor_compress(in_data,in_length,compression_level,&output);
 	free(in_data);
-	free(out_data);
 	fclose(in);
 	fclose(out);
 	return 0;
 _error:
 	free(in_data);
-	free(out_data);
 	fclose(in);
 	fclose(out);
 	printf("Unable to compress file\n");
