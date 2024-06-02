@@ -24,9 +24,9 @@ static omm_allocator_t* KERNEL_INIT_WRITE _keyring_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _keyring_key_allocator=NULL;
 static rwlock_t _keyring_creation_lock;
 
-KERNEL_PUBLIC handle_type_t keyring_handle_type=0;
-KERNEL_PUBLIC keyring_t* keyring_module_signature=NULL;
-KERNEL_PUBLIC keyring_t* keyring_user_signature=NULL;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE keyring_handle_type=0;
+KERNEL_PUBLIC keyring_t* KERNEL_INIT_WRITE keyring_module_signature=NULL;
+KERNEL_PUBLIC keyring_t* KERNEL_INIT_WRITE keyring_user_signature=NULL;
 KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE keyring_notification_dispatcher=NULL;
 
 

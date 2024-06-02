@@ -13,7 +13,7 @@
 
 
 
-static omm_allocator_t* _aml_object_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _aml_object_allocator=NULL;
 
 
 

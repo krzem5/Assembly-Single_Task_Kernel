@@ -28,12 +28,12 @@ static void _unmap_section(u64 start,u64 end){
 
 
 
-static volatile const u64 __kernel_version=0;
-static volatile const char __kernel_build_name[32]="";
+static volatile const u64 KERNEL_INIT_WRITE __kernel_version=0;
+static volatile const char KERNEL_INIT_WRITE __kernel_build_name[32]="";
 
-static u8 _kernel_boot_guid[16];
+static u8 KERNEL_INIT_WRITE _kernel_boot_guid[16];
 
-KERNEL_PUBLIC kernel_data_t KERNEL_EARLY_WRITE kernel_data;
+kernel_data_t KERNEL_EARLY_WRITE kernel_data;
 
 
 

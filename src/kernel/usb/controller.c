@@ -8,8 +8,8 @@
 
 
 
-static omm_allocator_t* _usb_root_controller_allocator=NULL;
-static omm_allocator_t* _usb_controller_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_root_controller_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_controller_allocator=NULL;
 
 
 

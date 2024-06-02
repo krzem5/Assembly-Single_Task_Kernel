@@ -15,8 +15,8 @@
 
 
 
-static omm_allocator_t* _acl_allocator=NULL;
-static omm_allocator_t* _acl_tree_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _acl_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _acl_tree_node_allocator=NULL;
 static KERNEL_ATOMIC acl_request_callback_t _acl_request_callback=NULL;
 
 

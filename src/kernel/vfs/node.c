@@ -14,7 +14,7 @@
 
 
 
-static omm_allocator_t* _vfs_node_empty_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _vfs_node_empty_node_allocator=NULL;
 
 
 

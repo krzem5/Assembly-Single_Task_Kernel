@@ -6,8 +6,8 @@
 
 
 
-static omm_allocator_t* _aml_namespace_allocator=NULL;
-static aml_namespace_t* _aml_namespace_root=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _aml_namespace_allocator=NULL;
+static aml_namespace_t* KERNEL_INIT_WRITE _aml_namespace_root=NULL;
 
 
 

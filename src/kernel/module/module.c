@@ -52,10 +52,10 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 
 
-static omm_allocator_t* _module_allocator=NULL;
-static mmap_t* _module_image_mmap=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _module_allocator=NULL;
+static mmap_t* KERNEL_INIT_WRITE _module_image_mmap=NULL;
 
-KERNEL_PUBLIC handle_type_t module_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE module_handle_type=0;
 KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE module_notification_dispatcher=NULL;
 
 

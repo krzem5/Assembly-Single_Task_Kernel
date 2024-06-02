@@ -48,7 +48,7 @@ typedef struct _SYSCALL_PROCESS_START_EXTRA_DATA{
 
 static omm_allocator_t* KERNEL_INIT_WRITE _process_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t process_handle_type;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE process_handle_type;
 KERNEL_PUBLIC process_t* KERNEL_INIT_WRITE process_kernel;
 
 

@@ -27,7 +27,7 @@
 
 static volatile u32 KERNEL_EARLY_WRITE __kernel_signature[8];
 static u32 _signature_taint_flags=0;
-static bool _signature_require_signatures=0;
+static bool KERNEL_INIT_WRITE _signature_require_signatures=0;
 
 
 
@@ -69,6 +69,9 @@ bool signature_verify_module(const char* name,const mmap_region_t* region,bool* 
 	}
 	if (!section_header||section_header->sh_size!=SIGNATURE_SECTION_SIZE||*((const u8*)(file_base+section_header->sh_offset+SIGNATURE_KEY_NAME_LENGTH-1))){
 _signature_error:
+		if (_signature_require_signatures){
+			goto _invalid_signature;
+		}
 		ERROR("Module '%s' is not signed",name);
 		if (!(_signature_taint_flags&SIGNATURE_TAINT_FLAG_KERNEL)){
 			ERROR("Kernelspace tainted");
@@ -98,13 +101,13 @@ _signature_error:
 		state.result[i]=0;
 	}
 	rsa_number_delete(value);
-	if (mask){
-		ERROR("Module '%s' has an invalid signature",name);
-	}
-	else{
+	if (!mask){
 		*is_tainted=0;
+		return 1;
 	}
-	return !mask;
+_invalid_signature:
+	ERROR("Module '%s' has an invalid signature",name);
+	return 0;
 }
 
 

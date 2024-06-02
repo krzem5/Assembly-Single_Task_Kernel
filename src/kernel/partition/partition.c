@@ -16,11 +16,11 @@
 
 
 
-static omm_allocator_t* _partition_allocator=NULL;
-static omm_allocator_t* _partition_table_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _partition_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _partition_table_descriptor_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t partition_handle_type=0;
-KERNEL_PUBLIC handle_type_t partition_table_descriptor_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE partition_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE partition_table_descriptor_handle_type=0;
 
 
 

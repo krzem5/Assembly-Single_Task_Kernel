@@ -11,6 +11,7 @@
 static u32 KERNEL_INIT_WRITE _pci_msix_address;
 
 
+
 KERNEL_INIT(){
 	LOG("Initializing MSI-x...");
 	_pci_msix_address=0xfee00000|(msr_get_apic_id()<<12);

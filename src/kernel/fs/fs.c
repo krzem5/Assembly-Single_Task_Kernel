@@ -20,8 +20,8 @@
 static omm_allocator_t* KERNEL_INIT_WRITE _fs_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fs_descriptor_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t fs_handle_type=0;
-KERNEL_PUBLIC handle_type_t fs_descriptor_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE fs_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE fs_descriptor_handle_type=0;
 
 
 

@@ -15,14 +15,14 @@
 
 
 
-static pmm_counter_descriptor_t* _usb_buffer_pmm_counter=NULL;
-static omm_allocator_t* _usb_device_allocator=NULL;
-static omm_allocator_t* _usb_device_descriptor_allocator=NULL;
-static omm_allocator_t* _usb_configuration_descriptor_allocator=NULL;
-static omm_allocator_t* _usb_interface_descriptor_allocator=NULL;
-static omm_allocator_t* _usb_endpoint_descriptor_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _usb_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_device_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_device_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_configuration_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_interface_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _usb_endpoint_descriptor_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t usb_device_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE usb_device_handle_type=0;
 
 
 

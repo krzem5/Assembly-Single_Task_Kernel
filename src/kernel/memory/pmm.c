@@ -31,7 +31,7 @@ static pmm_load_balancer_t _pmm_load_balancer;
 static omm_allocator_t* KERNEL_INIT_WRITE _pmm_counter_allocator=NULL;
 static u64 KERNEL_EARLY_WRITE _pmm_self_counter_value;
 
-KERNEL_PUBLIC handle_type_t pmm_counter_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pmm_counter_handle_type=0;
 KERNEL_PUBLIC const pmm_load_balancer_stats_t* KERNEL_INIT_WRITE pmm_load_balancer_stats;
 KERNEL_EARLY_POINTER(pmm_load_balancer_stats);
 

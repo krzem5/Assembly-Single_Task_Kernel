@@ -23,7 +23,7 @@
 
 
 static omm_allocator_t* KERNEL_INIT_WRITE _net_arp_cache_entry_allocator=NULL;
-static event_t* _net_arp_cache_resolution_event=NULL;
+static event_t* KERNEL_INIT_WRITE _net_arp_cache_resolution_event=NULL;
 static rwlock_t _net_arp_cache_lock;
 static rb_tree_t _net_arp_cache_address_tree;
 

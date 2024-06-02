@@ -21,10 +21,10 @@
 
 
 
-static omm_allocator_t* _fd_allocator=NULL;
-static omm_allocator_t* _fd_iterator_allocator=NULL;
-static handle_type_t _fd_handle_type=0;
-static handle_type_t _fd_iterator_handle_type=0;
+static omm_allocator_t* KERNEL_INIT_WRITE _fd_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _fd_iterator_allocator=NULL;
+static handle_type_t KERNEL_INIT_WRITE _fd_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _fd_iterator_handle_type=0;
 
 
 

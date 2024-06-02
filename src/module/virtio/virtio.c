@@ -30,7 +30,7 @@ static rb_tree_t _virtio_device_driver_tree;
 static rwlock_t _virtio_device_driver_tree_lock;
 static omm_allocator_t* KERNEL_INIT_WRITE _virtio_queue_allocator=NULL;
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _virtio_queue_pmm_counter=NULL;
-static handle_type_t _virtio_device_handle_type=0;
+static handle_type_t KERNEL_INIT_WRITE _virtio_device_handle_type=0;
 
 
 

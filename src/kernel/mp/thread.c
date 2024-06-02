@@ -42,10 +42,10 @@
 static thread_t* _thread_cache_data[MAX_THREAD_CACHE_SIZE];
 static u32 _thread_cache_size=0;
 static rwlock_t _thread_cache_lock;
-static omm_allocator_t* _thread_allocator=NULL;
-static omm_allocator_t* _thread_fpu_state_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _thread_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _thread_fpu_state_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t thread_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE thread_handle_type=0;
 
 
 

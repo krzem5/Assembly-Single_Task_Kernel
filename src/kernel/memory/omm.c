@@ -11,10 +11,10 @@
 
 
 static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _omm_pmm_counter_static=_PMM_COUNTER_INIT_STRUCT("kernel.omm");
-static pmm_counter_descriptor_t* _omm_pmm_counter=&_omm_pmm_counter_static;
-static omm_allocator_t* _omm_self_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _omm_pmm_counter=&_omm_pmm_counter_static;
+static omm_allocator_t* KERNEL_INIT_WRITE _omm_self_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t omm_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE omm_handle_type=0;
 
 
 

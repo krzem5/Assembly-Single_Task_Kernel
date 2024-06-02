@@ -16,11 +16,11 @@
 
 
 
-static omm_allocator_t* _network_layer1_device_allocator=NULL;
-static ring_t* _network_layer1_packet_rx_ring=NULL;
-static ring_t* _network_layer1_packet_tx_ring=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _network_layer1_device_allocator=NULL;
+static ring_t* KERNEL_INIT_WRITE _network_layer1_packet_rx_ring=NULL;
+static ring_t* KERNEL_INIT_WRITE _network_layer1_packet_tx_ring=NULL;
 
-KERNEL_PUBLIC handle_type_t network_layer1_device_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE network_layer1_device_handle_type=0;
 KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
 
 

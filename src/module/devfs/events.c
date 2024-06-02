@@ -15,8 +15,8 @@
 
 
 
-static vfs_node_t* _devfs_drive_root=NULL;
-static vfs_node_t* _devfs_partition_root=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _devfs_drive_root=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _devfs_partition_root=NULL;
 
 
 

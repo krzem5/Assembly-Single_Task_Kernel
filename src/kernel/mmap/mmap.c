@@ -30,11 +30,11 @@
 
 
 
-static pmm_counter_descriptor_t* _mmap_pmm_counter=NULL;
-static omm_allocator_t* _mmap_allocator=NULL;
-static omm_allocator_t* _mmap_region_allocator=NULL;
-static omm_allocator_t* _mmap_length_group_allocator=NULL;
-static omm_allocator_t* _mmap_free_region_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _mmap_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _mmap_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _mmap_region_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _mmap_length_group_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _mmap_free_region_allocator=NULL;
 
 
 

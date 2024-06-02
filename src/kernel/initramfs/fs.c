@@ -49,7 +49,7 @@ typedef struct _INITRAMFS_VFS_NODE{
 
 
 
-static omm_allocator_t* _initramfs_vfs_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _initramfs_vfs_node_allocator=NULL;
 static filesystem_descriptor_t* _initramfs_filesystem_descriptor=NULL;
 static filesystem_t* _initramfs_fs=NULL;
 

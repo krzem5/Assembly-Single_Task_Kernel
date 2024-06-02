@@ -5,7 +5,7 @@
 
 
 
-extern const hmac_hash_function_t* hmac_sha256_function;
+extern const hmac_hash_function_t*const hmac_sha256_function;
 
 
 

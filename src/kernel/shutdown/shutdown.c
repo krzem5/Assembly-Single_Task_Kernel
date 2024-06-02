@@ -14,7 +14,7 @@
 
 
 
-static omm_allocator_t* _shutdown_function_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _shutdown_function_allocator=NULL;
 static shutdown_function_t* _shutdown_root_function=NULL;
 static rwlock_t _shutdown_function_lock;
 

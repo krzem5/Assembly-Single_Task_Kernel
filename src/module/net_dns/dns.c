@@ -33,7 +33,7 @@ static rb_tree_t _net_dns_cache_address_tree;
 static rwlock_t _net_dns_request_tree_lock;
 static rb_tree_t _net_dns_request_tree;
 static KERNEL_ATOMIC u16 _net_dns_request_id=0;
-static vfs_node_t* _net_dns_socket=NULL;
+static vfs_node_t* KERNEL_INIT_WRITE _net_dns_socket=NULL;
 
 
 

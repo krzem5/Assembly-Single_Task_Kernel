@@ -16,9 +16,7 @@
 
 
 static pmm_counter_descriptor_t KERNEL_EARLY_WRITE _vmm_early_pmm_counter=_PMM_COUNTER_INIT_STRUCT("vmm");
-static pmm_counter_descriptor_t* _vmm_pmm_counter=&_vmm_early_pmm_counter;
-
-
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _vmm_pmm_counter=&_vmm_early_pmm_counter;
 
 KERNEL_PUBLIC vmm_pagemap_t vmm_kernel_pagemap;
 

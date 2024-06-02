@@ -9,8 +9,8 @@
 
 
 
-static void* _initramfs_drive_address=NULL;
-static u64 _initramfs_drive_size=0;
+static void* KERNEL_INIT_WRITE _initramfs_drive_address=NULL;
+static u64 KERNEL_INIT_WRITE _initramfs_drive_size=0;
 static drive_t* _initramfs_drive=NULL;
 
 

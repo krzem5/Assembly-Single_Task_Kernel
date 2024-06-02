@@ -13,9 +13,9 @@
 
 
 
-static omm_allocator_t* _notification_dispatcher_allocator=NULL;
-static omm_allocator_t* _notification_consumer_allocator=NULL;
-static omm_allocator_t* _notification_container_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _notification_dispatcher_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _notification_consumer_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _notification_container_allocator=NULL;
 
 
 

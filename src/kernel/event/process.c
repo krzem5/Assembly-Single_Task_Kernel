@@ -8,7 +8,7 @@
 
 
 
-static bool _event_kernel_process_dispatched=0;
+static bool KERNEL_INIT_WRITE _event_kernel_process_dispatched=0;
 
 KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE event_process_notification_dispatcher=NULL;
 

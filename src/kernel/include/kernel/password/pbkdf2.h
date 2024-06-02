@@ -15,7 +15,7 @@ typedef struct _PRF{
 
 
 
-extern const prf_t* pbkdf2_prf_hmac_sha256;
+extern const prf_t*const pbkdf2_prf_hmac_sha256;
 
 
 

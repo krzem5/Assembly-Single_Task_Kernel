@@ -9,10 +9,10 @@
 
 
 
-static u8 _keyring_master_key_encrypted[64];
-static u8 _keyring_platform_key_encrypted[64];
+static u8 KERNEL_INIT_WRITE _keyring_master_key_encrypted[64];
+static u8 KERNEL_INIT_WRITE _keyring_platform_key_encrypted[64];
 
-u8 keyring_master_key[32];
+u8 KERNEL_INIT_WRITE keyring_master_key[32];
 
 
 

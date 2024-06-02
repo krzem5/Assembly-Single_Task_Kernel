@@ -28,8 +28,8 @@
 
 
 
-static omm_allocator_t* _tpm_allocator=NULL;
-static pmm_counter_descriptor_t* _tpm_command_buffer_pmm_counter=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _tpm_allocator=NULL;
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _tpm_command_buffer_pmm_counter=NULL;
 
 
 

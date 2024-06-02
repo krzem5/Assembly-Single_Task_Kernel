@@ -11,7 +11,7 @@
 
 static rwlock_t _network_layer2_lock;
 static rb_tree_t _network_layer2_ether_type_tree;
-static KERNEL_INIT_WRITE omm_allocator_t* _network_layer2_protocol_allocator=NULL;
+static KERNEL_INIT_WRITE omm_allocator_t* KERNEL_INIT_WRITE _network_layer2_protocol_allocator=NULL;
 
 
 
@@ -20,6 +20,7 @@ KERNEL_INIT(){
 	rwlock_init(&_network_layer2_lock);
 	rb_tree_init(&_network_layer2_ether_type_tree);
 	_network_layer2_protocol_allocator=omm_init("kernel.network.layer2.protocol",sizeof(network_layer2_protocol_t),8,1);
+	rwlock_init(&(_network_layer2_protocol_allocator->lock));
 }
 
 

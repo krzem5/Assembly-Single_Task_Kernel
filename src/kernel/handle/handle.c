@@ -13,11 +13,11 @@
 
 
 
-static omm_allocator_t* _handle_descriptor_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _handle_descriptor_allocator=NULL;
 static rb_tree_t _handle_type_tree;
 static KERNEL_ATOMIC handle_type_t _handle_max_type=HANDLE_TYPE_ANY;
 
-KERNEL_PUBLIC handle_type_t handle_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE handle_handle_type=0;
 
 
 

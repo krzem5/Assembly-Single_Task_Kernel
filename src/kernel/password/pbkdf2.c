@@ -22,7 +22,7 @@ static const prf_t _pbkdf2_prf_hmac_sha256_data={
 
 
 
-KERNEL_PUBLIC const prf_t* pbkdf2_prf_hmac_sha256=&_pbkdf2_prf_hmac_sha256_data;
+KERNEL_PUBLIC const prf_t*const pbkdf2_prf_hmac_sha256=&_pbkdf2_prf_hmac_sha256_data;
 
 
 

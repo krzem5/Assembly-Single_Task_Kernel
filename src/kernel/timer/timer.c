@@ -20,7 +20,7 @@
 static omm_allocator_t* KERNEL_INIT_WRITE _timer_allocator=NULL;
 static rb_tree_t _timer_tree;
 
-handle_type_t timer_handle_type=0;
+handle_type_t KERNEL_INIT_WRITE timer_handle_type=0;
 
 
 

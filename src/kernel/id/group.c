@@ -25,7 +25,7 @@ typedef struct _GID_DATA{
 
 
 
-static omm_allocator_t* _gid_data_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _gid_data_allocator=NULL;
 static rb_tree_t _gid_tree;
 static rwlock_t _gid_global_lock;
 

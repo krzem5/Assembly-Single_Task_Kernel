@@ -9,8 +9,8 @@
 
 
 
-static omm_allocator_t* _resource_manager_allocator=NULL;
-static omm_allocator_t* _resource_region_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _resource_manager_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _resource_region_allocator=NULL;
 
 
 

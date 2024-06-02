@@ -33,7 +33,7 @@ typedef struct _PIPE_VFS_NODE{
 
 
 
-static omm_allocator_t* _pipe_vfs_node_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _pipe_vfs_node_allocator=NULL;
 static vfs_node_t* _pipe_root=NULL;
 static KERNEL_ATOMIC u64 _pipe_next_id=0;
 

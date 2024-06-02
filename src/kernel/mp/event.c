@@ -21,10 +21,10 @@
 
 
 
-static omm_allocator_t* _event_allocator=NULL;
-static omm_allocator_t* _event_thread_container_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _event_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _event_thread_container_allocator=NULL;
 
-KERNEL_PUBLIC handle_type_t event_handle_type=0;
+KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE event_handle_type=0;
 
 
 

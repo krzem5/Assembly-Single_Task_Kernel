@@ -17,7 +17,7 @@ typedef struct _CLOCK_SOURCE_WRAPPER{
 
 
 
-static omm_allocator_t* _clock_source_wrapper_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _clock_source_wrapper_allocator=NULL;
 static clock_source_wrapper_t* _clock_source_head=NULL;
 static clock_source_wrapper_t* _clock_source_tail=NULL;
 

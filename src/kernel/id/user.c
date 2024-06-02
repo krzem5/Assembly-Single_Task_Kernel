@@ -34,8 +34,8 @@ typedef struct _UID_DATA{
 
 
 
-static omm_allocator_t* _uid_data_allocator=NULL;
-static omm_allocator_t* _uid_group_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _uid_data_allocator=NULL;
+static omm_allocator_t* KERNEL_INIT_WRITE _uid_group_allocator=NULL;
 static rb_tree_t _uid_tree;
 static rwlock_t _uid_global_lock;
 
