@@ -53,6 +53,7 @@ static void _thread(void){
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
+	vfs_node_unref(pipe);
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);
 	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
@@ -75,10 +76,13 @@ void test_pipe(void){
 	TEST_FUNC("pipe_create");
 	TEST_GROUP("create named");
 	SMM_TEMPORARY_STRING name=smm_alloc("test-pipe",0);
-	vfs_node_t* pipe=pipe_create(vfs_lookup(NULL,"/",0,0,0),name);
+	vfs_node_t* parent=vfs_lookup(NULL,"/",0,0,0);
+	vfs_node_t* pipe=pipe_create(parent,name);
+	vfs_node_unref(parent);
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
+	vfs_node_unref(pipe);
 	vfs_node_dettach_child(pipe);
 	vfs_node_delete(pipe);
 	TEST_GROUP("create unnamed");

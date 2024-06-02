@@ -221,5 +221,7 @@ error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 	if (!path){
 		node->flags|=VFS_NODE_FLAG_TEMPORARY;
 	}
-	return fd_from_node(node,FD_FLAG_READ|FD_FLAG_WRITE);
+	error_t out=fd_from_node(node,FD_FLAG_READ|FD_FLAG_WRITE);
+	vfs_node_unref(node);
+	return out;
 }
