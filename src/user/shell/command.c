@@ -29,6 +29,10 @@
 #define COMMAND_CONTEXT_FLAG_CLOSE_STDOUT 2
 #define COMMAND_CONTEXT_FLAG_CLOSE_STDERR 4
 
+#define COMMAND_EXECUTE_MODIFIER_ALWAYS 0
+#define COMMAND_EXECUTE_MODIFIER_AND 1
+#define COMMAND_EXECUTE_MODIFIER_OR 2
+
 
 
 typedef struct _COMMAND_CONTEXT{
@@ -219,8 +223,25 @@ static void _delete_command_context(command_context_t* ctx){
 
 
 
+static bool _check_execute(u32 execute_modifier,s64 last_command_return_value){
+	if (execute_modifier==COMMAND_EXECUTE_MODIFIER_ALWAYS){
+		return 1;
+	}
+	if (execute_modifier==COMMAND_EXECUTE_MODIFIER_AND){
+		return !last_command_return_value;
+	}
+	if (execute_modifier==COMMAND_EXECUTE_MODIFIER_OR){
+		return !!last_command_return_value;
+	}
+	return 0;
+}
+
+
+
 void command_execute(const char* command){
 	u32 state=COMMAND_PARSER_STATE_ARGUMENTS;
+	u32 execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
+	s64 last_command_return_value=0;
 	command_context_t* ctx=_create_command_context();
 	while (*command){
 		if (COMMAND_PARSER_IS_WHITESPACE(*command)){
@@ -255,18 +276,44 @@ void command_execute(const char* command){
 			continue;
 		}
 		else if (*command=='|'&&*(command+1)=='|'){
-			sys_io_print("error: '||'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command+=2;
+			if (_check_execute(execute_modifier,last_command_return_value)){
+				_dispatch_command_context(ctx,1);
+				last_command_return_value=ctx->return_value;
+			}
+			_delete_command_context(ctx);
+			ctx=_create_command_context();
+			state=COMMAND_PARSER_STATE_ARGUMENTS;
+			execute_modifier=COMMAND_EXECUTE_MODIFIER_OR;
 			continue;
 		}
 		else if (*command=='|'){
-			sys_io_print("error: '|'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command++;
+			sys_io_print("error: pipe\n");goto _cleanup;
 			continue;
 		}
 		else if (*command=='&'&&*(command+1)=='&'){
-			sys_io_print("error: '&&'\n");goto _cleanup;
+			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
+				sys_io_print("error: invalid parser state\n");
+				goto _cleanup;
+			}
 			command+=2;
+			if (_check_execute(execute_modifier,last_command_return_value)){
+				_dispatch_command_context(ctx,1);
+				last_command_return_value=ctx->return_value;
+			}
+			_delete_command_context(ctx);
+			ctx=_create_command_context();
+			state=COMMAND_PARSER_STATE_ARGUMENTS;
+			execute_modifier=COMMAND_EXECUTE_MODIFIER_AND;
 			continue;
 		}
 		else if (*command=='&'){
@@ -275,10 +322,14 @@ void command_execute(const char* command){
 				goto _cleanup;
 			}
 			command++;
-			_dispatch_command_context(ctx,0);
+			if (_check_execute(execute_modifier,last_command_return_value)){
+				_dispatch_command_context(ctx,0);
+			}
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
+			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
+			last_command_return_value=0;
 			continue;
 		}
 		else if (*command==';'){
@@ -287,10 +338,14 @@ void command_execute(const char* command){
 				goto _cleanup;
 			}
 			command++;
-			_dispatch_command_context(ctx,1);
+			if (_check_execute(execute_modifier,last_command_return_value)){
+				_dispatch_command_context(ctx,1);
+			}
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
+			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
+			last_command_return_value=0;
 			continue;
 		}
 		char* str=NULL;
@@ -423,8 +478,11 @@ _skip_control_sequence:
 			goto _cleanup;
 		}
 	}
-	_dispatch_command_context(ctx,1);
-	sys_io_print("Return value: %p\n",ctx->return_value);
+	if (_check_execute(execute_modifier,last_command_return_value)){
+		_dispatch_command_context(ctx,1);
+		last_command_return_value=ctx->return_value;
+	}
+	sys_io_print("Return value: %p\n",last_command_return_value);
 _cleanup:
 	_delete_command_context(ctx);
 }
