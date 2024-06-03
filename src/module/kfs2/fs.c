@@ -95,8 +95,8 @@ static vfs_node_t* _kfs2_create(vfs_node_t* parent,const string_t* name,u32 flag
 
 static void _kfs2_delete(vfs_node_t* node){
 	kfs2_vfs_node_t* kfs2_node=(kfs2_vfs_node_t*)node;
-	if (!kfs2_node->kfs2_node.rc&&!(node->flags&VFS_NODE_FLAG_VIRTUAL)){
-		kfs2_node_delete(node->fs->extra_data,&(kfs2_node->kfs2_node));
+	if (!kfs2_node->kfs2_node.rc&&!(node->flags&VFS_NODE_FLAG_VIRTUAL)&&!kfs2_node_delete(node->fs->extra_data,&(kfs2_node->kfs2_node))){
+		panic("_kfs2_delete: failed to delete node");
 	}
 	omm_dealloc(_kfs2_vfs_node_allocator,node);
 }
