@@ -92,6 +92,18 @@ static int _handle_chroot(command_context_t* ctx){
 
 
 
+static int _handle_echo(command_context_t* ctx){
+	for (u32 i=1;i<ctx->argc;i++){
+		if (SYS_IS_ERROR(sys_fd_write(sys_io_output_fd,ctx->argv[i],sys_string_length(ctx->argv[i]),0))){
+			return 1;
+		}
+	}
+	sys_io_print("\n");
+	return 0;
+}
+
+
+
 static int _handle_exit(command_context_t* ctx){
 	if (sys_process_get_parent(0)>>16){
 		sys_thread_stop(0,NULL);
@@ -112,6 +124,7 @@ static int _handle_pwd(command_context_t* ctx){
 static const void* _internal_commands[]={
 	"cd",_handle_cd,
 	"chroot",_handle_chroot,
+	"echo",_handle_echo,
 	"exit",_handle_exit,
 	"pwd",_handle_pwd,
 	NULL,
