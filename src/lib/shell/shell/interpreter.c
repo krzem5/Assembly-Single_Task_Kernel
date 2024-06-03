@@ -84,6 +84,9 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			if (_check_execute(execute_modifier,last_command_return_value)){
 				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
+				if (env->close_current_session){
+					goto _cleanup;
+				}
 			}
 			shell_command_context_delete(ctx);
 			ctx=shell_command_context_create();
@@ -97,7 +100,8 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 				goto _cleanup;
 			}
 			command++;
-			sys_io_print("error: pipe\n");goto _cleanup;
+			sys_io_print("error: pipe (unimplemented)\n");
+			goto _cleanup;
 			continue;
 		}
 		else if (*command=='&'&&*(command+1)=='&'){
@@ -109,6 +113,9 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			if (_check_execute(execute_modifier,last_command_return_value)){
 				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
+				if (env->close_current_session){
+					goto _cleanup;
+				}
 			}
 			shell_command_context_delete(ctx);
 			ctx=shell_command_context_create();
@@ -141,6 +148,9 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			if (_check_execute(execute_modifier,last_command_return_value)){
 				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
+				if (env->close_current_session){
+					goto _cleanup;
+				}
 			}
 			shell_command_context_delete(ctx);
 			ctx=shell_command_context_create();
@@ -160,7 +170,12 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 					goto _cleanup;
 				}
 				char c=*command;
-				if (c!='\\'){
+				if (c=='$'){
+					sys_heap_dealloc(NULL,str);
+					sys_io_print("error: string variable expansion (unimplemented)\n");
+					goto _cleanup;
+				}
+				else if (c!='\\'){
 					goto _skip_string_control_sequence;
 				}
 				command++;
