@@ -6,8 +6,10 @@
 #include <sys/container/container.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
+#include <sys/format/format.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
+#include <sys/memory/memory.h>
 #include <sys/mp/process.h>
 #include <sys/mp/thread.h>
 #include <sys/string/string.h>
@@ -16,7 +18,7 @@
 
 
 
-#define COMMAND_PARSER_IS_WHITESPACE(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\r')
+#define COMMAND_PARSER_IS_WHITESPACE(c) ((c)==' '||(c)=='\t'||(c)=='\r')
 #define COMMAND_PARSER_IS_VALID_CHARACTER(c) ((c)&&!COMMAND_PARSER_IS_WHITESPACE(c)&&(c)!='>'&&(c)!='<'&&(c)!='|'&&(c)!='&'&&(c)!=';')
 
 #define COMMAND_PARSER_STATE_ARGUMENTS 0
@@ -35,6 +37,12 @@
 
 
 
+typedef struct _SHELL_CONTEXT{
+	s64 last_command_return_value;
+} shell_context_t;
+
+
+
 typedef struct _COMMAND_CONTEXT{
 	u32 flags;
 	u32 argc;
@@ -48,10 +56,21 @@ typedef struct _COMMAND_CONTEXT{
 
 
 
+typedef struct _SHELL_VARIABLE{
+	char* value;
+	u64 length;
+} shell_variable_t;
+
+
+
 static const char* _search_path[]={
 	".",
 	"/bin",
 	NULL
+};
+
+static shell_context_t _shell_ctx={
+	0,
 };
 
 
@@ -251,6 +270,22 @@ static bool _check_execute(u32 execute_modifier,s64 last_command_return_value){
 
 
 
+static void _get_shell_variable(const char* name,u32 name_length,shell_variable_t* out){
+	if (name_length==1&&*name=='?'){
+		char buffer[32];
+		out->length=sys_format_string(buffer,sizeof(buffer),"%ld",_shell_ctx.last_command_return_value);
+		out->value=sys_heap_alloc(NULL,out->length+1);
+		sys_memory_copy(buffer,out->value,out->length);
+		out->value[out->length]=0;
+		return;
+	}
+	out->value=sys_heap_alloc(NULL,1);
+	out->value[0]=0;
+	out->length=0;
+}
+
+
+
 void command_execute(const char* command){
 	u32 state=COMMAND_PARSER_STATE_ARGUMENTS;
 	u32 execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
@@ -345,7 +380,7 @@ void command_execute(const char* command){
 			last_command_return_value=0;
 			continue;
 		}
-		else if (*command==';'){
+		else if (*command==';'||*command=='\n'){
 			if (state!=COMMAND_PARSER_STATE_ARGUMENTS&&state!=COMMAND_PARSER_STATE_OPERATOR){
 				sys_io_print("error: invalid parser state\n");
 				goto _cleanup;
@@ -353,9 +388,11 @@ void command_execute(const char* command){
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
 				_dispatch_command_context(ctx,1);
+				last_command_return_value=ctx->return_value;
 			}
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
+			_shell_ctx.last_command_return_value=last_command_return_value;
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 			last_command_return_value=0;
@@ -375,7 +412,7 @@ void command_execute(const char* command){
 					goto _skip_string_control_sequence;
 				}
 				command++;
-				if (*command=='\\'||*command=='\''||*command=='\"'){
+				if (*command=='\\'||*command=='\''||*command=='\"'||*command=='$'){
 					c=*command;
 				}
 				else if (*command=='e'){
@@ -401,6 +438,8 @@ _skip_string_control_sequence:
 				str[str_length-1]=c;
 			}
 			command++;
+			str=sys_heap_realloc(NULL,str,str_length+1);
+			str[str_length]=0;
 		}
 		else if (COMMAND_PARSER_IS_VALID_CHARACTER(*command)){
 			do{
@@ -423,13 +462,21 @@ _skip_control_sequence:
 				str[str_length-1]=c;
 				command++;
 			} while (COMMAND_PARSER_IS_VALID_CHARACTER(*command));
+			if (str[0]=='$'){
+				shell_variable_t var;
+				_get_shell_variable(str+1,str_length-1,&var);
+				sys_heap_dealloc(NULL,str);
+				str=var.value;
+			}
+			else{
+				str=sys_heap_realloc(NULL,str,str_length+1);
+				str[str_length]=0;
+			}
 		}
 		else{
 			sys_io_print("error: unexpected character\n");
 			goto _cleanup;
 		}
-		str=sys_heap_realloc(NULL,str,str_length+1);
-		str[str_length]=0;
 		if (state==COMMAND_PARSER_STATE_ARGUMENTS){
 			ctx->argc++;
 			ctx->argv=sys_heap_realloc(NULL,ctx->argv,ctx->argc*sizeof(char*));
@@ -495,7 +542,7 @@ _skip_control_sequence:
 		_dispatch_command_context(ctx,1);
 		last_command_return_value=ctx->return_value;
 	}
-	sys_io_print("Return value: %p\n",last_command_return_value);
 _cleanup:
 	_delete_command_context(ctx);
+	_shell_ctx.last_command_return_value=last_command_return_value;
 }
