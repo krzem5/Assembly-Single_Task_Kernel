@@ -1,6 +1,5 @@
 #include <shell/command.h>
 #include <shell/environment.h>
-#include <sys/acl/acl.h>
 #include <sys/container/container.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
@@ -69,9 +68,6 @@ SYS_PUBLIC void shell_command_context_dispatch(shell_command_context_t* ctx,shel
 			ctx->process=0;
 			goto _cleanup;
 		}
-		sys_acl_set_permissions(ctx->stdin,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
-		sys_acl_set_permissions(ctx->stdout,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
-		sys_acl_set_permissions(ctx->stderr,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		if (env->execute_callback){
 			env->execute_callback(env,ctx);
 		}

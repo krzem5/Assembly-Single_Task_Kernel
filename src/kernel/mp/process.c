@@ -230,11 +230,14 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	process->fd_stdin=(extra_data.stdin?extra_data.stdin:THREAD_DATA->process->fd_stdin);
-	fd_ref(process->fd_stdin);
 	process->fd_stdout=(extra_data.stdout?extra_data.stdout:THREAD_DATA->process->fd_stdout);
-	fd_ref(process->fd_stdout);
 	process->fd_stderr=(extra_data.stderr?extra_data.stderr:THREAD_DATA->process->fd_stderr);
+	fd_ref(process->fd_stdin);
+	fd_ref(process->fd_stdout);
 	fd_ref(process->fd_stderr);
+	fd_allow_dup(process->fd_stdin,process);
+	fd_allow_dup(process->fd_stdout,process);
+	fd_allow_dup(process->fd_stderr,process);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(process->main_thread);
 	}
