@@ -1,7 +1,5 @@
 #include <command.h>
-#include <cwd.h>
 #include <input.h>
-#include <string.h>
 #include <sys/acl/acl.h>
 #include <sys/container/container.h>
 #include <sys/error/error.h>
@@ -39,7 +37,15 @@
 
 typedef struct _SHELL_CONTEXT{
 	s64 last_command_return_value;
+	sys_fd_t cwd_fd;
 } shell_context_t;
+
+
+
+typedef struct _SHELL_VARIABLE{
+	char* value;
+	u64 length;
+} shell_variable_t;
 
 
 
@@ -56,13 +62,6 @@ typedef struct _COMMAND_CONTEXT{
 
 
 
-typedef struct _SHELL_VARIABLE{
-	char* value;
-	u64 length;
-} shell_variable_t;
-
-
-
 static const char* _search_path[]={
 	".",
 	"/bin",
@@ -71,6 +70,7 @@ static const char* _search_path[]={
 
 static shell_context_t _shell_ctx={
 	0,
+	0
 };
 
 
@@ -84,10 +84,18 @@ static int _handle_cd(command_context_t* ctx){
 		sys_io_print("cd: too many arguments\n");
 		return 1;
 	}
-	if (!cwd_change(ctx->argv[1])){
+	sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,ctx->argv[1],0);
+	if (SYS_IS_ERROR(fd)){
 		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
 		return 1;
 	}
+	if (SYS_IS_ERROR(sys_process_set_cwd(0,fd))){
+		sys_fd_close(fd);
+		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
+		return 1;
+	}
+	sys_fd_close(_shell_ctx.cwd_fd);
+	_shell_ctx.cwd_fd=fd;
 	return 0;
 }
 
@@ -102,10 +110,17 @@ static int _handle_chroot(command_context_t* ctx){
 		sys_io_print("chroot: too many arguments\n");
 		return 1;
 	}
-	if (!cwd_change_root(ctx->argv[1])){
+	sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,ctx->argv[1],0);
+	if (SYS_IS_ERROR(fd)){
 		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
 		return 1;
 	}
+	if (SYS_IS_ERROR(sys_process_set_root(0,fd))){
+		sys_fd_close(fd);
+		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
+		return 1;
+	}
+	sys_fd_close(fd);
 	return 0;
 }
 
@@ -134,10 +149,8 @@ static int _handle_exit(command_context_t* ctx){
 
 
 static int _handle_pwd(command_context_t* ctx){
-	sys_fd_t fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
 	char buffer[4096];
-	sys_fd_path(fd,buffer,sizeof(buffer));
-	sys_fd_close(fd);
+	sys_fd_path(_shell_ctx.cwd_fd,buffer,sizeof(buffer));
 	sys_io_print("%s\n",buffer);
 	return 0;
 }
@@ -192,7 +205,7 @@ static void _dispatch_command_context(command_context_t* ctx,bool wait_for_resul
 		}
 	}
 	for (u32 i=0;_search_path[i];i++){
-		sys_fd_t parent_fd=sys_fd_open(cwd_fd,_search_path[i],0);
+		sys_fd_t parent_fd=sys_fd_open(_shell_ctx.cwd_fd,_search_path[i],0);
 		if (SYS_IS_ERROR(parent_fd)){
 			continue;
 		}
@@ -291,6 +304,9 @@ static void _get_shell_variable(const char* name,u32 name_length,shell_variable_
 
 
 void command_execute(const char* command){
+	if (!_shell_ctx.cwd_fd){
+		_shell_ctx.cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	}
 	u32 state=COMMAND_PARSER_STATE_ARGUMENTS;
 	u32 execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 	s64 last_command_return_value=0;
@@ -487,7 +503,7 @@ _skip_control_sequence:
 			ctx->argv[ctx->argc-1]=str;
 		}
 		else if (state==COMMAND_PARSER_STATE_READ){
-			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_READ);
+			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_READ);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open input file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);
@@ -502,7 +518,7 @@ _skip_control_sequence:
 			state=COMMAND_PARSER_STATE_OPERATOR;
 		}
 		else if (state==COMMAND_PARSER_STATE_WRITE){
-			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CREATE);
+			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CREATE);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);
@@ -522,7 +538,7 @@ _skip_control_sequence:
 			state=COMMAND_PARSER_STATE_OPERATOR;
 		}
 		else if (state==COMMAND_PARSER_STATE_APPEND){
-			sys_fd_t fd=sys_fd_open(cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
+			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);

@@ -1,4 +1,3 @@
-#include <cwd.h>
 #include <input.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
@@ -318,6 +317,10 @@ void input_get(void){
 	_input_history[_input_history_index].data[0]=0;
 	_input_history[_input_history_index].length=0;
 	_input_cursor=0;
+	sys_fd_t cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	char cwd[4096]="???";
+	u32 cwd_length=sys_fd_path(cwd_fd,cwd,sizeof(cwd));
+	sys_fd_close(cwd_fd);
 	char uid_name_buffer[256]="???";
 	sys_uid_get_name(sys_uid_get(),uid_name_buffer,256);
 	while (1){
