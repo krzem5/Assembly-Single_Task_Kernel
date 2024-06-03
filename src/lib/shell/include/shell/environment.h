@@ -70,10 +70,6 @@ void shell_environment_add_command(shell_environment_t* env,const char* name,she
 
 
 
-void shell_environment_add_builtin_commands(shell_environment_t* env);
-
-
-
 void shell_environment_add_static_variable(shell_environment_t* env,const char* name,const char* value);
 
 
@@ -83,6 +79,10 @@ void shell_environment_add_dynamic_variable(shell_environment_t* env,const char*
 
 
 char* shell_environment_get_variable(shell_environment_t* env,const char* name,u32 name_length);
+
+
+
+void shell_environment_add_builtin_commands_and_variables(shell_environment_t* env);
 
 
 
