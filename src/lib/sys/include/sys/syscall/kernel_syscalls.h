@@ -455,4 +455,16 @@ static inline u64 _sys_syscall_thread_start(u64 thread){
 
 
 
+static inline u64 _sys_syscall_fd_link(u64 parent,u64 fd){
+	return _sys_syscall2(0x10000004e,parent,fd);
+}
+
+
+
+static inline u64 _sys_syscall_fd_unlink(u64 fd){
+	return _sys_syscall1(0x10000004f,fd);
+}
+
+
+
 #endif

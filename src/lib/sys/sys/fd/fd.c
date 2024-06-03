@@ -53,6 +53,18 @@ SYS_PUBLIC sys_fd_t sys_fd_dup(sys_fd_t fd,u32 flags){
 
 
 
+SYS_PUBLIC sys_error_t sys_fd_link(sys_fd_t parent,sys_fd_t fd){
+	return _sys_syscall_fd_link(parent,fd);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_fd_unlink(sys_fd_t fd){
+	return _sys_syscall_fd_unlink(fd);
+}
+
+
+
 SYS_PUBLIC sys_error_t sys_fd_path(sys_fd_t fd,char* path,u32 size){
 	return _sys_syscall_fd_path(fd,path,size);
 }

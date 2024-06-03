@@ -387,6 +387,18 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 
 
 
+error_t syscall_fd_link(handle_id_t parent,handle_id_t fd){
+	panic("syscall_fd_link");
+}
+
+
+
+error_t syscall_fd_unlink(handle_id_t fd){
+	panic("syscall_fd_unlink");
+}
+
+
+
 error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);

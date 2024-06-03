@@ -112,6 +112,14 @@ sys_fd_t sys_fd_dup(sys_fd_t fd,u32 flags);
 
 
 
+sys_error_t sys_fd_link(sys_fd_t parent,sys_fd_t fd);
+
+
+
+sys_error_t sys_fd_unlink(sys_fd_t fd);
+
+
+
 sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_fd_path(sys_fd_t fd,char* path,u32 size);
 
 

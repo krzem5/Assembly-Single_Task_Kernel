@@ -20,12 +20,14 @@ extern u64 syscall_fd_iter_get();
 extern u64 syscall_fd_iter_next();
 extern u64 syscall_fd_iter_start();
 extern u64 syscall_fd_iter_stop();
+extern u64 syscall_fd_link();
 extern u64 syscall_fd_open();
 extern u64 syscall_fd_path();
 extern u64 syscall_fd_read();
 extern u64 syscall_fd_resize();
 extern u64 syscall_fd_seek();
 extern u64 syscall_fd_stat();
+extern u64 syscall_fd_unlink();
 extern u64 syscall_fd_write();
 extern u64 syscall_fs_descriptor_get_data();
 extern u64 syscall_fs_descriptor_get_next();
@@ -157,5 +159,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[75]=syscall_partition_table_descriptor_get_data,
 	[76]=syscall_process_get_main_thread,
 	[77]=syscall_thread_start,
+	[78]=syscall_fd_link,
+	[79]=syscall_fd_unlink,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);
