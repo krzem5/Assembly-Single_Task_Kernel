@@ -190,6 +190,7 @@ static void _dispatch_command_context(command_context_t* ctx,bool wait_for_resul
 		return;
 	}
 	sys_io_print("error: unable to find command '%s'\n",ctx->argv[0]);
+	ctx->return_value=-1;
 _cleanup:
 	_cleanup_command_context(ctx);
 }

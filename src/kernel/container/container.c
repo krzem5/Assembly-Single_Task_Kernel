@@ -21,16 +21,18 @@ static handle_type_t KERNEL_INIT_WRITE _container_handle_type=0;
 
 static void _container_handle_destructor(handle_t* handle){
 	container_t* data=KERNEL_CONTAINEROF(handle,container_t,handle);
-	ERROR("_container_handle_destructor");
-	// while (1){
-	// 	container_entry_t* entry=(container_entry_t*)rb_tree_iter_start(&(data->tree));
-	// 	rb_tree_remove_node(&(data->tree),&(entry->rb_node));
-	// 	handle_t* handle=handle_lookup_and_acquire(entry->rb_node.key,HANDLE_TYPE_ANY);
-	// 	if (handle&&handle_release(handle)){
-	// 		handle_release(handle);
-	// 	}
-	// 	omm_dealloc(_container_entry_allocator,entry);
-	// }
+	while (1){
+		container_entry_t* entry=(container_entry_t*)rb_tree_iter_start(&(data->tree));
+		if (!entry){
+			break;
+		}
+		rb_tree_remove_node(&(data->tree),&(entry->rb_node));
+		handle_t* handle=handle_lookup_and_acquire(entry->rb_node.key,HANDLE_TYPE_ANY);
+		if (handle&&handle_release(handle)){
+			handle_release(handle);
+		}
+		omm_dealloc(_container_entry_allocator,entry);
+	}
 	mutex_deinit(data->lock);
 	omm_dealloc(_container_allocator,data);
 }
