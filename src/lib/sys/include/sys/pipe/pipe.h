@@ -10,4 +10,8 @@ sys_error_t __attribute__((access(read_only,1))) sys_pipe_create(const void* pat
 
 
 
+sys_error_t sys_pipe_close(sys_fd_t pipe);
+
+
+
 #endif

@@ -497,4 +497,10 @@ static inline u64 _sys_syscall_thread_get_return_value(u64 thread){
 
 
 
+static inline u64 _sys_syscall_pipe_close(u64 pipe){
+	return _sys_syscall1(0x100000055,pipe);
+}
+
+
+
 #endif
