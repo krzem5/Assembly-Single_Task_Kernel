@@ -1,5 +1,3 @@
-#include <command.h>
-#include <input.h>
 #include <sys/acl/acl.h>
 #include <sys/container/container.h>
 #include <sys/error/error.h>
@@ -303,7 +301,7 @@ static void _get_shell_variable(const char* name,u32 name_length,shell_variable_
 
 
 
-void command_execute(const char* command){
+void interpreter_execute(const char* command){
 	if (!_shell_ctx.cwd_fd){
 		_shell_ctx.cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
 	}

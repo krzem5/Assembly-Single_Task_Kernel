@@ -1,5 +1,5 @@
-#ifndef _INPUT_H_
-#define _INPUT_H_ 1
+#ifndef _SHELL_INPUT_H_
+#define _SHELL_INPUT_H_ 1
 #include <sys/types.h>
 
 

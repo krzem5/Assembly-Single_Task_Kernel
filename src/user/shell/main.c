@@ -1,10 +1,10 @@
-#include <command.h>
-#include <input.h>
+#include <shell/input.h>
+#include <shell/interpreter.h>
 
 
 
 void main(void){
 	while (1){
-		command_execute(input_get());
+		interpreter_execute(input_get());
 	}
 }
