@@ -85,7 +85,7 @@ void KERNEL_EARLY_EXEC omm_init_self(void){
 
 
 void KERNEL_EARLY_EXEC omm_init_handle_type(omm_allocator_t* handle_allocator){
-	omm_handle_type=handle_alloc("kernel.omm.allocator",NULL);
+	omm_handle_type=handle_alloc("kernel.omm.allocator",0,NULL);
 	handle_new(omm_handle_type,&(_omm_self_allocator->handle));
 	handle_new(omm_handle_type,&(handle_allocator->handle));
 }

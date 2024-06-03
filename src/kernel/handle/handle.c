@@ -21,13 +21,13 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE handle_handle_type=0;
 
 
 
-KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback){
+KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,u32 flags,handle_type_delete_callback_t delete_callback){
 	if (!_handle_descriptor_allocator){
 		omm_init_self();
 		rb_tree_init(&_handle_type_tree);
 		_handle_descriptor_allocator=omm_init("kernel.handle.descriptor",sizeof(handle_descriptor_t),8,2);
 		omm_init_handle_type(_handle_descriptor_allocator);
-		handle_handle_type=handle_alloc("kernel.handle",NULL);
+		handle_handle_type=handle_alloc("kernel.handle",0,NULL);
 		for (rb_tree_node_t* rb_node=rb_tree_iter_start(&_handle_type_tree);rb_node;rb_node=rb_tree_iter_next(&_handle_type_tree,rb_node)){
 			handle_descriptor_t* descriptor=KERNEL_CONTAINEROF(rb_node,handle_descriptor_t,rb_node);
 			if (!descriptor->handle.rb_node.key){
@@ -46,6 +46,7 @@ KERNEL_PUBLIC handle_type_t handle_alloc(const char* name,handle_type_delete_cal
 		descriptor->handle.rb_node.key=0;
 	}
 	rwlock_init(&(descriptor->lock));
+	descriptor->flags=flags;
 	rb_tree_init(&(descriptor->tree));
 	descriptor->count=0;
 	descriptor->active_count=0;

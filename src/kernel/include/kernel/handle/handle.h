@@ -13,6 +13,8 @@
 #define HANDLE_ID_GET_TYPE(handle_id) ((handle_id)&0xffff)
 #define HANDLE_ID_GET_INDEX(handle_id) ((handle_id)>>16)
 
+#define HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER 1
+
 #define HANDLE_INIT_STRUCT {.rb_node={.key=0}}
 
 #define HANDLE_ITER_START(descriptor) ((handle_t*)rb_tree_iter_start(&((descriptor)->tree)))
@@ -49,6 +51,7 @@ typedef struct _HANDLE_DESCRIPTOR{
 	handle_type_delete_callback_t delete_callback;
 	handle_t handle;
 	rwlock_t lock;
+	u32 flags;
 	rb_tree_t tree;
 	KERNEL_ATOMIC handle_id_t count;
 	KERNEL_ATOMIC handle_id_t active_count;
@@ -61,7 +64,7 @@ extern handle_type_t handle_handle_type;
 
 
 
-handle_type_t handle_alloc(const char* name,handle_type_delete_callback_t delete_callback);
+handle_type_t handle_alloc(const char* name,u32 flags,handle_type_delete_callback_t delete_callback);
 
 
 

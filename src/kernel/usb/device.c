@@ -174,7 +174,7 @@ KERNEL_INIT(){
 	rwlock_init(&(_usb_interface_descriptor_allocator->lock));
 	_usb_endpoint_descriptor_allocator=omm_init("kernel.usb.endpoint_descriptor",sizeof(usb_endpoint_descriptor_t),8,4);
 	rwlock_init(&(_usb_endpoint_descriptor_allocator->lock));
-	usb_device_handle_type=handle_alloc("kernel.usb.device",NULL);
+	usb_device_handle_type=handle_alloc("kernel.usb.device",0,NULL);
 }
 
 

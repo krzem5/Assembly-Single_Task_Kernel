@@ -39,7 +39,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	_drive_buffer_pmm_counter=pmm_alloc_counter("kernel.drive.buffer");
 	_drive_allocator=omm_init("kernel.drive",sizeof(drive_t),8,4);
 	rwlock_init(&(_drive_allocator->lock));
-	drive_handle_type=handle_alloc("kernel.drive",_drive_handle_destructor);
+	drive_handle_type=handle_alloc("kernel.drive",0,_drive_handle_destructor);
 }
 
 

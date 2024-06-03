@@ -55,8 +55,8 @@ KERNEL_INIT(){
 	rwlock_init(&(_fd_allocator->lock));
 	_fd_iterator_allocator=omm_init("kernel.fd.iterator",sizeof(fd_iterator_t),8,4);
 	rwlock_init(&(_fd_iterator_allocator->lock));
-	_fd_handle_type=handle_alloc("kernel.fd",_fd_handle_destructor);
-	_fd_iterator_handle_type=handle_alloc("kernel.fd.iterator",_fd_iterator_handle_destructor);
+	_fd_handle_type=handle_alloc("kernel.fd",0,_fd_handle_destructor);
+	_fd_iterator_handle_type=handle_alloc("kernel.fd.iterator",0,_fd_iterator_handle_destructor);
 }
 
 

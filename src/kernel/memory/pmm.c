@@ -216,7 +216,7 @@ void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
 		_add_memory_range((address<PMM_LOW_ALLOCATOR_LIMIT?PMM_LOW_ALLOCATOR_LIMIT:address),end);
 	}
 	INFO("Registering counters...");
-	pmm_counter_handle_type=handle_alloc("kernel.pmm.counter",NULL);
+	pmm_counter_handle_type=handle_alloc("kernel.pmm.counter",0,NULL);
 	_pmm_counter_allocator=omm_init("kernel.pmm.counter",sizeof(pmm_counter_descriptor_t),8,1);
 	rwlock_init(&(_pmm_counter_allocator->lock));
 	pmm_alloc_counter("total")->count=total_memory;

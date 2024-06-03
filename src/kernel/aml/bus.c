@@ -400,7 +400,7 @@ KERNEL_EARLY_INIT(){
 	rwlock_init(&(_aml_bus_device_resource_allocator->lock));
 	_aml_bus_device_driver_node_allocator=omm_init("kernel.aml.bus.device_driver_node",sizeof(aml_bus_device_driver_node_t),8,2);
 	rwlock_init(&(_aml_bus_device_driver_node_allocator->lock));
-	aml_bus_device_handle_type=handle_alloc("kernel.aml.bus.device",NULL);
+	aml_bus_device_handle_type=handle_alloc("kernel.aml.bus.device",0,NULL);
 }
 
 

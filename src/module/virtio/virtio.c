@@ -356,7 +356,7 @@ MODULE_INIT(){
 	rwlock_init(&(_virtio_device_allocator->lock));
 	_virtio_device_driver_node_allocator=omm_init("virtio.device_driver_node",sizeof(virtio_device_driver_node_t),8,1);
 	rwlock_init(&(_virtio_device_driver_node_allocator->lock));
-	_virtio_device_handle_type=handle_alloc("virtio.device",NULL);
+	_virtio_device_handle_type=handle_alloc("virtio.device",0,NULL);
 	rb_tree_init(&_virtio_device_driver_tree);
 	rwlock_init(&_virtio_device_driver_tree_lock);
 	_virtio_queue_allocator=omm_init("virtio.queue",sizeof(virtio_queue_t),8,1);

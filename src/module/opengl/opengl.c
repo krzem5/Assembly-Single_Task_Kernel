@@ -29,8 +29,8 @@ MODULE_INIT(){
 	rwlock_init(&(_opengl_driver_instance_allocator->lock));
 	_opengl_state_allocator=omm_init("opengl.state",sizeof(opengl_state_t),8,2);
 	rwlock_init(&(_opengl_state_allocator->lock));
-	opengl_driver_instance_handle_type=handle_alloc("opengl.driver_instance",NULL);
-	opengl_state_handle_type=handle_alloc("opengl.state",NULL);
+	opengl_driver_instance_handle_type=handle_alloc("opengl.driver_instance",0,NULL);
+	opengl_state_handle_type=handle_alloc("opengl.state",0,NULL);
 }
 
 

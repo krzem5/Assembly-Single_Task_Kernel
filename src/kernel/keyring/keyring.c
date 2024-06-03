@@ -53,7 +53,7 @@ KERNEL_INIT(){
 	rwlock_init(&(_keyring_allocator->lock));
 	_keyring_key_allocator=omm_init("kernel.keyring.key",sizeof(keyring_key_t),8,2);
 	rwlock_init(&(_keyring_key_allocator->lock));
-	keyring_handle_type=handle_alloc("kernel.keyring",_keyring_handle_destructor);
+	keyring_handle_type=handle_alloc("kernel.keyring",0,_keyring_handle_destructor);
 	keyring_notification_dispatcher=notification_dispatcher_create();
 	rwlock_init(&_keyring_creation_lock);
 	INFO("Creating module signature keyring...");

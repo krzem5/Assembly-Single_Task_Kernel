@@ -26,7 +26,7 @@ MODULE_INIT(){
 	_ui_framebuffer_pmm_counter=pmm_alloc_counter("ui.framebuffer");
 	_ui_framebuffer_allocator=omm_init("ui.framebuffer",sizeof(ui_framebuffer_t),8,2);
 	rwlock_init(&(_ui_framebuffer_allocator->lock));
-	ui_framebuffer_handle_type=handle_alloc("ui.framebuffer",NULL);
+	ui_framebuffer_handle_type=handle_alloc("ui.framebuffer",0,NULL);
 }
 
 

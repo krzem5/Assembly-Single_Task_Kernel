@@ -52,7 +52,7 @@ static void _fs_handle_destructor(handle_t* handle){
 KERNEL_EARLY_EARLY_INIT(){
 	_fs_allocator=omm_init("kernel.fs",sizeof(filesystem_t),8,4);
 	rwlock_init(&(_fs_allocator->lock));
-	fs_handle_type=handle_alloc("kernel.fs",_fs_handle_destructor);
+	fs_handle_type=handle_alloc("kernel.fs",0,_fs_handle_destructor);
 }
 
 
@@ -60,7 +60,7 @@ KERNEL_EARLY_EARLY_INIT(){
 KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config){
 	LOG("Registering filesystem descriptor '%s'...",config->name);
 	if (!fs_descriptor_handle_type){
-		fs_descriptor_handle_type=handle_alloc("kernel.fs.descriptor",NULL);
+		fs_descriptor_handle_type=handle_alloc("kernel.fs.descriptor",0,NULL);
 	}
 	if (!_fs_descriptor_allocator){
 		_fs_descriptor_allocator=omm_init("kernel.fs.descriptor",sizeof(filesystem_descriptor_t),8,2);

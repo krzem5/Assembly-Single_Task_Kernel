@@ -138,7 +138,7 @@ KERNEL_EARLY_INIT(){
 	LOG("Initializing thread allocator...");
 	_thread_allocator=omm_init("kernel.thread",sizeof(thread_t),8,4);
 	rwlock_init(&(_thread_allocator->lock));
-	thread_handle_type=handle_alloc("kernel.thread",_thread_handle_destructor);
+	thread_handle_type=handle_alloc("kernel.thread",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_thread_handle_destructor);
 }
 
 
@@ -319,6 +319,18 @@ error_t syscall_thread_start(handle_id_t thread_handle){
 	else{
 		rwlock_release_write(&(thread->lock));
 	}
+	handle_release(handle);
+	return out;
+}
+
+
+
+error_t syscall_thread_get_return_value(handle_id_t thread_handle){
+	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	u64 out=(u64)(KERNEL_CONTAINEROF(handle,thread_t,handle)->return_value);
 	handle_release(handle);
 	return out;
 }

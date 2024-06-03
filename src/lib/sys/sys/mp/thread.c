@@ -79,3 +79,8 @@ SYS_PUBLIC sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value){
 	return _sys_syscall_thread_stop(thread,return_value);
 }
 
+
+
+SYS_PUBLIC void* sys_thread_get_return_value(sys_thread_t thread){
+	return (void*)_sys_syscall_thread_get_return_value(thread);
+}

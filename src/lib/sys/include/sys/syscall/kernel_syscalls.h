@@ -467,4 +467,34 @@ static inline u64 _sys_syscall_fd_unlink(u64 fd){
 
 
 
+static inline u64 _sys_syscall_container_create(void){
+	return _sys_syscall0(0x100000050);
+}
+
+
+
+static inline u64 _sys_syscall_container_delete(u64 container){
+	return _sys_syscall1(0x100000051,container);
+}
+
+
+
+static inline u64 _sys_syscall_container_add(u64 container,const void* handles,u64 handle_count){
+	return _sys_syscall3(0x100000052,container,(u64)handles,handle_count);
+}
+
+
+
+static inline u64 _sys_syscall_process_get_return_value(u64 process){
+	return _sys_syscall1(0x100000053,process);
+}
+
+
+
+static inline u64 _sys_syscall_thread_get_return_value(u64 thread){
+	return _sys_syscall1(0x100000054,thread);
+}
+
+
+
 #endif

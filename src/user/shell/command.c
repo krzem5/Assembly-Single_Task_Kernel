@@ -3,6 +3,7 @@
 #include <input.h>
 #include <string.h>
 #include <sys/acl/acl.h>
+#include <sys/container/container.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/heap/heap.h>
@@ -38,6 +39,7 @@ typedef struct _COMMAND_CONTEXT{
 	sys_fd_t stdout;
 	sys_fd_t stderr;
 	sys_process_t process;
+	s64 return_value;
 } command_context_t;
 
 
@@ -50,51 +52,55 @@ static const char* _search_path[]={
 
 
 
-static void _handle_cd(command_context_t* ctx){
+static int _handle_cd(command_context_t* ctx){
 	if (ctx->argc<2){
 		sys_io_print("cd: not enough arguments\n");
-		return;
+		return 1;
 	}
 	else if (ctx->argc>2){
 		sys_io_print("cd: too many arguments\n");
-		return;
+		return 1;
 	}
 	if (!cwd_change(ctx->argv[1])){
 		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return;
+		return 1;
 	}
+	return 0;
 }
 
 
 
-static void _handle_chroot(command_context_t* ctx){
+static int _handle_chroot(command_context_t* ctx){
 	if (ctx->argc<2){
 		sys_io_print("chroot: not enough arguments\n");
-		return;
+		return 1;
 	}
 	else if (ctx->argc>2){
 		sys_io_print("chroot: too many arguments\n");
-		return;
+		return 1;
 	}
 	if (!cwd_change_root(ctx->argv[1])){
 		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return;
+		return 1;
 	}
+	return 0;
 }
 
 
 
-static void _handle_exit(command_context_t* ctx){
+static int _handle_exit(command_context_t* ctx){
 	if (sys_process_get_parent(0)>>16){
 		sys_thread_stop(0,NULL);
 	}
 	sys_system_shutdown(0);
+	return 0;
 }
 
 
 
-static void _handle_pwd(command_context_t* ctx){
+static int _handle_pwd(command_context_t* ctx){
 	sys_io_print("%s\n",cwd);
+	return 0;
 }
 
 
@@ -118,6 +124,7 @@ static command_context_t* _create_command_context(void){
 	out->stdout=sys_io_output_fd;
 	out->stderr=sys_io_error_fd;
 	out->process=0;
+	out->return_value=0;
 	return out;
 }
 
@@ -134,13 +141,13 @@ static void _cleanup_command_context(command_context_t* ctx){
 
 
 
-static void _dispatch_command_context(command_context_t* ctx){
+static void _dispatch_command_context(command_context_t* ctx,bool wait_for_result){
 	if (!ctx->argc){
 		goto _cleanup;
 	}
 	for (u32 i=0;_internal_commands[i];i+=2){
 		if (!sys_string_compare(_internal_commands[i],ctx->argv[0])){
-			((void (*)(command_context_t*))(_internal_commands[i+1]))(ctx);
+			ctx->return_value=((int (*)(command_context_t*))(_internal_commands[i+1]))(ctx);
 			goto _cleanup;
 		}
 	}
@@ -168,21 +175,23 @@ static void _dispatch_command_context(command_context_t* ctx){
 		sys_acl_set_permissions(ctx->stdin,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stdout,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stderr,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
+		if (!wait_for_result){
+			sys_thread_start(sys_process_get_main_thread(ctx->process));
+			_cleanup_command_context(ctx);
+			return;
+		}
+		sys_container_t container=sys_container_create();
+		sys_container_add(container,&(ctx->process),1);
 		sys_thread_start(sys_process_get_main_thread(ctx->process));
-		goto _cleanup;
+		_cleanup_command_context(ctx);
+		sys_thread_await_event(sys_process_get_termination_event(ctx->process));
+		ctx->return_value=(s64)(u64)sys_process_get_return_value(ctx->process);
+		sys_container_delete(container);
+		return;
 	}
 	sys_io_print("error: unable to find command '%s'\n",ctx->argv[0]);
 _cleanup:
 	_cleanup_command_context(ctx);
-}
-
-
-
-static void _await_command_context(command_context_t* ctx){
-	if (ctx->process){
-		sys_thread_await_event(sys_process_get_termination_event(ctx->process));
-		ctx->process=0;
-	}
 }
 
 
@@ -265,7 +274,7 @@ void command_execute(const char* command){
 				goto _cleanup;
 			}
 			command++;
-			_dispatch_command_context(ctx);
+			_dispatch_command_context(ctx,0);
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
@@ -277,8 +286,7 @@ void command_execute(const char* command){
 				goto _cleanup;
 			}
 			command++;
-			_dispatch_command_context(ctx);
-			_await_command_context(ctx);
+			_dispatch_command_context(ctx,1);
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
@@ -414,8 +422,8 @@ _skip_control_sequence:
 			goto _cleanup;
 		}
 	}
-	_dispatch_command_context(ctx);
-	_await_command_context(ctx);
+	_dispatch_command_context(ctx,1);
+	sys_io_print("Return value: %p\n",ctx->return_value);
 _cleanup:
 	_delete_command_context(ctx);
 }

@@ -73,7 +73,7 @@ KERNEL_EARLY_INIT(){
 	LOG("Creating kernel process...");
 	_process_allocator=omm_init("kernel.process",sizeof(process_t),8,2);
 	rwlock_init(&(_process_allocator->lock));
-	process_handle_type=handle_alloc("kernel.process",_process_handle_destructor);
+	process_handle_type=handle_alloc("kernel.process",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_process_handle_destructor);
 	process_kernel=omm_alloc(_process_allocator);
 	handle_new(process_handle_type,&(process_kernel->handle));
 	handle_acquire(&(process_kernel->handle));
@@ -335,6 +335,18 @@ error_t syscall_process_get_main_thread(handle_id_t process_handle){
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	error_t out=(process->main_thread?process->main_thread->handle.rb_node.key:0);
+	handle_release(handle);
+	return out;
+}
+
+
+
+error_t syscall_process_get_return_value(handle_id_t process_handle){
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	u64 out=(u64)(KERNEL_CONTAINEROF(handle,process_t,handle)->return_value);
 	handle_release(handle);
 	return out;
 }

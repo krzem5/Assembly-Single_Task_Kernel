@@ -47,4 +47,8 @@ sys_error_t sys_process_get_main_thread(sys_process_t process);
 
 
 
+void* sys_process_get_return_value(sys_process_t process);
+
+
+
 #endif

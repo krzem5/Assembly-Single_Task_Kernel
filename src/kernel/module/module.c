@@ -357,7 +357,7 @@ KERNEL_EARLY_INIT(){
 	LOG("Initializing module loader...");
 	_module_allocator=omm_init("kernel.module",sizeof(module_t),8,4);
 	rwlock_init(&(_module_allocator->lock));
-	module_handle_type=handle_alloc("kernel.module",_module_handle_destructor);
+	module_handle_type=handle_alloc("kernel.module",0,_module_handle_destructor);
 	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
 	aslr_module_base=0;
 	module_notification_dispatcher=notification_dispatcher_create();

@@ -7,6 +7,9 @@ extern u64 syscall_acl_get_permissions();
 extern u64 syscall_acl_request_permissions();
 extern u64 syscall_acl_set_permissions();
 extern u64 syscall_clock_get_converion();
+extern u64 syscall_container_add();
+extern u64 syscall_container_create();
+extern u64 syscall_container_delete();
 extern u64 syscall_cpu_get_count();
 extern u64 syscall_drive_get_data();
 extern u64 syscall_drive_get_next();
@@ -50,6 +53,7 @@ extern u64 syscall_process_get_event();
 extern u64 syscall_process_get_main_thread();
 extern u64 syscall_process_get_parent();
 extern u64 syscall_process_get_pid();
+extern u64 syscall_process_get_return_value();
 extern u64 syscall_process_set_cwd();
 extern u64 syscall_process_set_root();
 extern u64 syscall_process_start();
@@ -67,6 +71,7 @@ extern u64 syscall_system_shutdown();
 extern u64 syscall_thread_await_events();
 extern u64 syscall_thread_create();
 extern u64 syscall_thread_get_priority();
+extern u64 syscall_thread_get_return_value();
 extern u64 syscall_thread_get_tid();
 extern u64 syscall_thread_set_priority();
 extern u64 syscall_thread_start();
@@ -161,5 +166,10 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[77]=syscall_thread_start,
 	[78]=syscall_fd_link,
 	[79]=syscall_fd_unlink,
+	[80]=syscall_container_create,
+	[81]=syscall_container_delete,
+	[82]=syscall_container_add,
+	[83]=syscall_process_get_return_value,
+	[84]=syscall_thread_get_return_value,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

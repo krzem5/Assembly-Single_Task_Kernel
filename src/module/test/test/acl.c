@@ -233,7 +233,7 @@ void test_acl(void){
 	TEST_GROUP("callback already registered");
 	TEST_ASSERT(!acl_register_request_callback(_permission_request_callback));
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
-	handle_type_t handle_type=handle_alloc("test.acl_handle",NULL);
+	handle_type_t handle_type=handle_alloc("test.acl_handle",0,NULL);
 	handle_new(handle_type,&_test_acl_handle_without_acl);
 	handle_new(handle_type,&_test_acl_handle);
 	_test_acl_handle.acl=acl_create();

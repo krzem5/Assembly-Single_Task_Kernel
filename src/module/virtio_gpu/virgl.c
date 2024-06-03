@@ -1019,11 +1019,11 @@ MODULE_INIT(){
 	rwlock_init(&(_virgl_opengl_texture_allocator->lock));
 	_virgl_opengl_sampler_allocator=omm_init("virgl.opengl.sampler",sizeof(virgl_opengl_sampler_t),8,4);
 	rwlock_init(&(_virgl_opengl_sampler_allocator->lock));
-	_virgl_opengl_shader_handle_type=handle_alloc("virgl.opengl.shader",NULL);
-	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl.opengl.vertex_array",NULL);
-	_virgl_opengl_buffer_handle_type=handle_alloc("virgl.opengl.buffer",NULL);
-	_virgl_opengl_texture_handle_type=handle_alloc("virgl.opengl.texture",NULL);
-	_virgl_opengl_sampler_handle_type=handle_alloc("virgl.opengl.sampler",NULL);
+	_virgl_opengl_shader_handle_type=handle_alloc("virgl.opengl.shader",0,NULL);
+	_virgl_opengl_vertex_array_handle_type=handle_alloc("virgl.opengl.vertex_array",0,NULL);
+	_virgl_opengl_buffer_handle_type=handle_alloc("virgl.opengl.buffer",0,NULL);
+	_virgl_opengl_texture_handle_type=handle_alloc("virgl.opengl.texture",0,NULL);
+	_virgl_opengl_sampler_handle_type=handle_alloc("virgl.opengl.sampler",0,NULL);
 }
 
 

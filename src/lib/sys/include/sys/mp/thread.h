@@ -55,4 +55,8 @@ sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value);
 
 
 
+void* sys_thread_get_return_value(sys_thread_t thread);
+
+
+
 #endif

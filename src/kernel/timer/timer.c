@@ -42,7 +42,7 @@ KERNEL_EARLY_INIT(){
 	_timer_allocator=omm_init("kernel.timer",sizeof(timer_t),8,4);
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
-	timer_handle_type=handle_alloc("kernel.timer",_timer_handle_destructor);
+	timer_handle_type=handle_alloc("kernel.timer",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_timer_handle_destructor);
 }
 
 

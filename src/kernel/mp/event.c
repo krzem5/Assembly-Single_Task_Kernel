@@ -76,7 +76,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	rwlock_init(&(_event_allocator->lock));
 	_event_thread_container_allocator=omm_init("kernel.event.thread_container",sizeof(event_thread_container_t),8,4);
 	rwlock_init(&(_event_thread_container_allocator->lock));
-	event_handle_type=handle_alloc("kernel.event",_event_handle_destructor);
+	event_handle_type=handle_alloc("kernel.event",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_event_handle_destructor);
 }
 
 
