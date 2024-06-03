@@ -1,4 +1,4 @@
-#include <shell/input.h>
+#include <input.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
 #include <sys/types.h>

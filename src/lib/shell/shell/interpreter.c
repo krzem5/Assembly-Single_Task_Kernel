@@ -301,7 +301,7 @@ static void _get_shell_variable(const char* name,u32 name_length,shell_variable_
 
 
 
-void interpreter_execute(const char* command){
+SYS_PUBLIC void shell_interpreter_execute(const char* command){
 	if (!_shell_ctx.cwd_fd){
 		_shell_ctx.cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
 	}
