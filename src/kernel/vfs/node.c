@@ -192,11 +192,11 @@ KERNEL_PUBLIC bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent){
 
 
 
-KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent){
-	if (!node->functions->unlink){
+KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node){
+	if (!node->functions->unlink||!node->relatives.parent){
 		return 0;
 	}
-	return node->functions->unlink(node,parent);
+	return node->functions->unlink(node,node->relatives.parent);
 }
 
 
@@ -279,4 +279,15 @@ KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
 		node->relatives.parent=NULL;
 	}
 	rwlock_release_write(&(node->lock));
+}
+
+
+
+KERNEL_PUBLIC void _vfs_node_process_unref(vfs_node_t* node){
+	if (node->flags&VFS_NODE_FLAG_TEMPORARY){
+		vfs_node_delete(node);
+	}
+	else if (!node->relatives.parent&&!(node->flags&VFS_NODE_FLAG_VIRTUAL)){
+		panic("_vfs_node_process_unref: orphan node");
+	}
 }

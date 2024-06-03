@@ -97,7 +97,7 @@ bool vfs_node_link(vfs_node_t* node,vfs_node_t* parent);
 
 
 
-bool vfs_node_unlink(vfs_node_t* node,vfs_node_t* parent);
+bool vfs_node_unlink(vfs_node_t* node);
 
 
 
@@ -125,6 +125,10 @@ void vfs_node_dettach_child(vfs_node_t* node);
 
 
 
+void _vfs_node_process_unref(vfs_node_t* node);
+
+
+
 static KERNEL_INLINE void vfs_node_ref(vfs_node_t* node){
 	node->rc++;
 }
@@ -133,8 +137,8 @@ static KERNEL_INLINE void vfs_node_ref(vfs_node_t* node){
 
 static KERNEL_INLINE void vfs_node_unref(vfs_node_t* node){
 	node->rc--;
-	if (!node->rc&&(node->flags&VFS_NODE_FLAG_TEMPORARY)){
-		vfs_node_delete(node);
+	if (!node->rc){
+		_vfs_node_process_unref(node);
 	}
 }
 

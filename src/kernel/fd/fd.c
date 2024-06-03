@@ -394,7 +394,20 @@ error_t syscall_fd_link(handle_id_t parent,handle_id_t fd){
 
 
 error_t syscall_fd_unlink(handle_id_t fd){
-	panic("syscall_fd_unlink");
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_STAT)){
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
+	mutex_acquire(data->lock);
+	bool out=vfs_node_unlink(data->node);
+	mutex_release(data->lock);
+	handle_release(fd_handle);
+	return (out?ERROR_OK:ERROR_FAILED);
 }
 
 
