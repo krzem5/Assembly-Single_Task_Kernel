@@ -1,6 +1,7 @@
 #include <input.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 
 
@@ -321,7 +322,7 @@ const char* input_get(void){
 	char uid_name_buffer[256]="???";
 	sys_uid_get_name(sys_uid_get(),uid_name_buffer,256);
 	while (1){
-		sys_io_print("\x1b[G\x1b[2K\x1b[1m\x1b[32m%s\x1b[0m:\x1b[1m\x1b[34m%s\x1b[0m$ %s\x1b[%uG",uid_name_buffer,cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+8);
+		sys_io_print("\x1b[G\x1b[2K\x1b[1m\x1b[32m%s\x1b[0m:\x1b[1m\x1b[34m%s\x1b[0m$ %s\x1b[%uG",uid_name_buffer,cwd,_input_history[_input_history_index].data,_input_cursor+cwd_length+sys_string_length(uid_name_buffer)+4);
 		int key=_get_key();
 		if ((key&KEY_MASK)>31&&(key&KEY_MASK)<127){
 			_ensure_top_of_history(1);
