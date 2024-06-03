@@ -1,3 +1,4 @@
+#include <shell/environment.h>
 #include <sys/acl/acl.h>
 #include <sys/container/container.h>
 #include <sys/error/error.h>
@@ -33,13 +34,6 @@
 
 
 
-typedef struct _SHELL_CONTEXT{
-	s64 last_command_return_value;
-	sys_fd_t cwd_fd;
-} shell_context_t;
-
-
-
 typedef struct _SHELL_VARIABLE{
 	char* value;
 	u64 length;
@@ -60,20 +54,7 @@ typedef struct _COMMAND_CONTEXT{
 
 
 
-static const char* _search_path[]={
-	".",
-	"/bin",
-	NULL,
-};
-
-static shell_context_t _shell_ctx={
-	0,
-	0
-};
-
-
-
-static int _handle_cd(command_context_t* ctx){
+static int _handle_cd(shell_environment_t* env,command_context_t* ctx){
 	if (ctx->argc<2){
 		sys_io_print("cd: not enough arguments\n");
 		return 1;
@@ -82,7 +63,7 @@ static int _handle_cd(command_context_t* ctx){
 		sys_io_print("cd: too many arguments\n");
 		return 1;
 	}
-	sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,ctx->argv[1],0);
+	sys_fd_t fd=sys_fd_open(env->cwd_fd,ctx->argv[1],0);
 	if (SYS_IS_ERROR(fd)){
 		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
 		return 1;
@@ -92,14 +73,14 @@ static int _handle_cd(command_context_t* ctx){
 		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
 		return 1;
 	}
-	sys_fd_close(_shell_ctx.cwd_fd);
-	_shell_ctx.cwd_fd=fd;
+	sys_fd_close(env->cwd_fd);
+	env->cwd_fd=fd;
 	return 0;
 }
 
 
 
-static int _handle_chroot(command_context_t* ctx){
+static int _handle_chroot(shell_environment_t* env,command_context_t* ctx){
 	if (ctx->argc<2){
 		sys_io_print("chroot: not enough arguments\n");
 		return 1;
@@ -108,7 +89,7 @@ static int _handle_chroot(command_context_t* ctx){
 		sys_io_print("chroot: too many arguments\n");
 		return 1;
 	}
-	sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,ctx->argv[1],0);
+	sys_fd_t fd=sys_fd_open(env->cwd_fd,ctx->argv[1],0);
 	if (SYS_IS_ERROR(fd)){
 		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
 		return 1;
@@ -124,7 +105,7 @@ static int _handle_chroot(command_context_t* ctx){
 
 
 
-static int _handle_echo(command_context_t* ctx){
+static int _handle_echo(shell_environment_t* env,command_context_t* ctx){
 	for (u32 i=1;i<ctx->argc;i++){
 		if (SYS_IS_ERROR(sys_fd_write(sys_io_output_fd,ctx->argv[i],sys_string_length(ctx->argv[i]),0))){
 			return 1;
@@ -136,7 +117,7 @@ static int _handle_echo(command_context_t* ctx){
 
 
 
-static int _handle_exit(command_context_t* ctx){
+static int _handle_exit(shell_environment_t* env,command_context_t* ctx){
 	if (sys_process_get_parent(0)>>16){
 		sys_thread_stop(0,NULL);
 	}
@@ -146,9 +127,9 @@ static int _handle_exit(command_context_t* ctx){
 
 
 
-static int _handle_pwd(command_context_t* ctx){
+static int _handle_pwd(shell_environment_t* env,command_context_t* ctx){
 	char buffer[4096];
-	sys_fd_path(_shell_ctx.cwd_fd,buffer,sizeof(buffer));
+	sys_fd_path(env->cwd_fd,buffer,sizeof(buffer));
 	sys_io_print("%s\n",buffer);
 	return 0;
 }
@@ -192,18 +173,18 @@ static void _cleanup_command_context(command_context_t* ctx){
 
 
 
-static void _dispatch_command_context(command_context_t* ctx,bool wait_for_result){
+static void _dispatch_command_context(command_context_t* ctx,shell_environment_t* env,bool wait_for_result){
 	if (!ctx->argc){
 		goto _cleanup;
 	}
 	for (u32 i=0;_internal_commands[i];i+=2){
 		if (!sys_string_compare(_internal_commands[i],ctx->argv[0])){
-			ctx->return_value=((int (*)(command_context_t*))(_internal_commands[i+1]))(ctx);
+			ctx->return_value=((int (*)(shell_environment_t*,command_context_t*))(_internal_commands[i+1]))(env,ctx);
 			goto _cleanup;
 		}
 	}
-	for (u32 i=0;_search_path[i];i++){
-		sys_fd_t parent_fd=sys_fd_open(_shell_ctx.cwd_fd,_search_path[i],0);
+	for (u32 i=0;env->path[i];i++){
+		sys_fd_t parent_fd=sys_fd_open(env->cwd_fd,env->path[i],0);
 		if (SYS_IS_ERROR(parent_fd)){
 			continue;
 		}
@@ -285,10 +266,10 @@ static bool _check_execute(u32 execute_modifier,s64 last_command_return_value){
 
 
 
-static void _get_shell_variable(const char* name,u32 name_length,shell_variable_t* out){
+static void _get_shell_variable(shell_environment_t* env,const char* name,u32 name_length,shell_variable_t* out){
 	if (name_length==1&&*name=='?'){
 		char buffer[32];
-		out->length=sys_format_string(buffer,sizeof(buffer),"%ld",_shell_ctx.last_command_return_value);
+		out->length=sys_format_string(buffer,sizeof(buffer),"%ld",env->last_return_value);
 		out->value=sys_heap_alloc(NULL,out->length+1);
 		sys_memory_copy(buffer,out->value,out->length);
 		out->value[out->length]=0;
@@ -301,10 +282,7 @@ static void _get_shell_variable(const char* name,u32 name_length,shell_variable_
 
 
 
-SYS_PUBLIC void shell_interpreter_execute(const char* command){
-	if (!_shell_ctx.cwd_fd){
-		_shell_ctx.cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
-	}
+SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* command){
 	u32 state=COMMAND_PARSER_STATE_ARGUMENTS;
 	u32 execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 	s64 last_command_return_value=0;
@@ -348,7 +326,7 @@ SYS_PUBLIC void shell_interpreter_execute(const char* command){
 			}
 			command+=2;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,1);
+				_dispatch_command_context(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
 			_delete_command_context(ctx);
@@ -373,7 +351,7 @@ SYS_PUBLIC void shell_interpreter_execute(const char* command){
 			}
 			command+=2;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,1);
+				_dispatch_command_context(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
 			_delete_command_context(ctx);
@@ -389,7 +367,7 @@ SYS_PUBLIC void shell_interpreter_execute(const char* command){
 			}
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,0);
+				_dispatch_command_context(ctx,env,0);
 			}
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
@@ -405,12 +383,12 @@ SYS_PUBLIC void shell_interpreter_execute(const char* command){
 			}
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,1);
+				_dispatch_command_context(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
 			_delete_command_context(ctx);
 			ctx=_create_command_context();
-			_shell_ctx.last_command_return_value=last_command_return_value;
+			env->last_return_value=last_command_return_value;
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 			last_command_return_value=0;
@@ -482,7 +460,7 @@ _skip_control_sequence:
 			} while (COMMAND_PARSER_IS_VALID_CHARACTER(*command));
 			if (str[0]=='$'){
 				shell_variable_t var;
-				_get_shell_variable(str+1,str_length-1,&var);
+				_get_shell_variable(env,str+1,str_length-1,&var);
 				sys_heap_dealloc(NULL,str);
 				str=var.value;
 			}
@@ -501,7 +479,7 @@ _skip_control_sequence:
 			ctx->argv[ctx->argc-1]=str;
 		}
 		else if (state==COMMAND_PARSER_STATE_READ){
-			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_READ);
+			sys_fd_t fd=sys_fd_open(env->cwd_fd,str,SYS_FD_FLAG_READ);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open input file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);
@@ -516,7 +494,7 @@ _skip_control_sequence:
 			state=COMMAND_PARSER_STATE_OPERATOR;
 		}
 		else if (state==COMMAND_PARSER_STATE_WRITE){
-			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CREATE);
+			sys_fd_t fd=sys_fd_open(env->cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CREATE);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);
@@ -536,7 +514,7 @@ _skip_control_sequence:
 			state=COMMAND_PARSER_STATE_OPERATOR;
 		}
 		else if (state==COMMAND_PARSER_STATE_APPEND){
-			sys_fd_t fd=sys_fd_open(_shell_ctx.cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
+			sys_fd_t fd=sys_fd_open(env->cwd_fd,str,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
 			if (SYS_IS_ERROR(fd)){
 				sys_io_print("error: unable to open output file '%s': %ld\n",str,fd);
 				sys_heap_dealloc(NULL,str);
@@ -557,10 +535,10 @@ _skip_control_sequence:
 		}
 	}
 	if (_check_execute(execute_modifier,last_command_return_value)){
-		_dispatch_command_context(ctx,1);
+		_dispatch_command_context(ctx,env,1);
 		last_command_return_value=ctx->return_value;
 	}
 _cleanup:
 	_delete_command_context(ctx);
-	_shell_ctx.last_command_return_value=last_command_return_value;
+	env->last_return_value=last_command_return_value;
 }
