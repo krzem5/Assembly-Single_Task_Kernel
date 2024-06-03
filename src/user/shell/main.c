@@ -13,6 +13,7 @@ static const char*const _default_search_path[]={
 
 void main(u32 argc,const char*const* argv){
 	shell_environment_t* env=shell_environment_init(argc,argv,NULL,_default_search_path);
+	shell_environment_add_builtin_commands(env);
 	while (1){
 		shell_interpreter_execute(env,input_get());
 	}

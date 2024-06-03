@@ -1,16 +1,9 @@
+#include <shell/command.h>
 #include <shell/environment.h>
-#include <sys/acl/acl.h>
-#include <sys/container/container.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
-#include <sys/format/format.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
-#include <sys/memory/memory.h>
-#include <sys/mp/process.h>
-#include <sys/mp/thread.h>
-#include <sys/string/string.h>
-#include <sys/system/system.h>
 #include <sys/types.h>
 
 
@@ -24,230 +17,9 @@
 #define COMMAND_PARSER_STATE_WRITE 3
 #define COMMAND_PARSER_STATE_APPEND 4
 
-#define COMMAND_CONTEXT_FLAG_CLOSE_STDIN 1
-#define COMMAND_CONTEXT_FLAG_CLOSE_STDOUT 2
-#define COMMAND_CONTEXT_FLAG_CLOSE_STDERR 4
-
 #define COMMAND_EXECUTE_MODIFIER_ALWAYS 0
 #define COMMAND_EXECUTE_MODIFIER_AND 1
 #define COMMAND_EXECUTE_MODIFIER_OR 2
-
-
-
-typedef struct _SHELL_VARIABLE{
-	char* value;
-	u64 length;
-} shell_variable_t;
-
-
-
-typedef struct _COMMAND_CONTEXT{
-	u32 flags;
-	u32 argc;
-	char** argv;
-	sys_fd_t stdin;
-	sys_fd_t stdout;
-	sys_fd_t stderr;
-	sys_process_t process;
-	s64 return_value;
-} command_context_t;
-
-
-
-static int _handle_cd(shell_environment_t* env,command_context_t* ctx){
-	if (ctx->argc<2){
-		sys_io_print("cd: not enough arguments\n");
-		return 1;
-	}
-	else if (ctx->argc>2){
-		sys_io_print("cd: too many arguments\n");
-		return 1;
-	}
-	sys_fd_t fd=sys_fd_open(env->cwd_fd,ctx->argv[1],0);
-	if (SYS_IS_ERROR(fd)){
-		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return 1;
-	}
-	if (SYS_IS_ERROR(sys_process_set_cwd(0,fd))){
-		sys_fd_close(fd);
-		sys_io_print("cd: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return 1;
-	}
-	sys_fd_close(env->cwd_fd);
-	env->cwd_fd=fd;
-	return 0;
-}
-
-
-
-static int _handle_chroot(shell_environment_t* env,command_context_t* ctx){
-	if (ctx->argc<2){
-		sys_io_print("chroot: not enough arguments\n");
-		return 1;
-	}
-	else if (ctx->argc>2){
-		sys_io_print("chroot: too many arguments\n");
-		return 1;
-	}
-	sys_fd_t fd=sys_fd_open(env->cwd_fd,ctx->argv[1],0);
-	if (SYS_IS_ERROR(fd)){
-		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return 1;
-	}
-	if (SYS_IS_ERROR(sys_process_set_root(0,fd))){
-		sys_fd_close(fd);
-		sys_io_print("chroot: unable to change current directory to '%s'\n",ctx->argv[1]);
-		return 1;
-	}
-	sys_fd_close(fd);
-	return 0;
-}
-
-
-
-static int _handle_echo(shell_environment_t* env,command_context_t* ctx){
-	for (u32 i=1;i<ctx->argc;i++){
-		if (SYS_IS_ERROR(sys_fd_write(sys_io_output_fd,ctx->argv[i],sys_string_length(ctx->argv[i]),0))){
-			return 1;
-		}
-	}
-	sys_io_print("\n");
-	return 0;
-}
-
-
-
-static int _handle_exit(shell_environment_t* env,command_context_t* ctx){
-	if (sys_process_get_parent(0)>>16){
-		sys_thread_stop(0,NULL);
-	}
-	sys_system_shutdown(0);
-	return 0;
-}
-
-
-
-static int _handle_pwd(shell_environment_t* env,command_context_t* ctx){
-	char buffer[4096];
-	sys_fd_path(env->cwd_fd,buffer,sizeof(buffer));
-	sys_io_print("%s\n",buffer);
-	return 0;
-}
-
-
-
-static const void* _internal_commands[]={
-	"cd",_handle_cd,
-	"chroot",_handle_chroot,
-	"echo",_handle_echo,
-	"exit",_handle_exit,
-	"pwd",_handle_pwd,
-	NULL,
-};
-
-
-
-static command_context_t* _create_command_context(void){
-	command_context_t* out=sys_heap_alloc(NULL,sizeof(command_context_t));
-	out->flags=0;
-	out->argc=0;
-	out->argv=NULL;
-	out->stdin=sys_io_input_fd;
-	out->stdout=sys_io_output_fd;
-	out->stderr=sys_io_error_fd;
-	out->process=0;
-	out->return_value=0;
-	return out;
-}
-
-
-
-static void _cleanup_command_context(command_context_t* ctx){
-	for (u32 i=0;i<ctx->argc;i++){
-		sys_heap_dealloc(NULL,ctx->argv[i]);
-	}
-	sys_heap_dealloc(NULL,ctx->argv);
-	ctx->argc=0;
-	ctx->argv=NULL;
-}
-
-
-
-static void _dispatch_command_context(command_context_t* ctx,shell_environment_t* env,bool wait_for_result){
-	if (!ctx->argc){
-		goto _cleanup;
-	}
-	for (u32 i=0;_internal_commands[i];i+=2){
-		if (!sys_string_compare(_internal_commands[i],ctx->argv[0])){
-			ctx->return_value=((int (*)(shell_environment_t*,command_context_t*))(_internal_commands[i+1]))(env,ctx);
-			goto _cleanup;
-		}
-	}
-	for (u32 i=0;env->path[i];i++){
-		sys_fd_t parent_fd=sys_fd_open(env->cwd_fd,env->path[i],0);
-		if (SYS_IS_ERROR(parent_fd)){
-			continue;
-		}
-		sys_fd_t fd=sys_fd_open(parent_fd,ctx->argv[0],0);
-		sys_fd_close(parent_fd);
-		sys_fd_stat_t stat;
-		if (SYS_IS_ERROR(fd)||SYS_IS_ERROR(sys_fd_stat(fd,&stat))||stat.type!=SYS_FD_STAT_TYPE_FILE){
-			continue;
-		}
-		char path[4096];
-		sys_fd_path(fd,path,4096);
-		sys_fd_close(fd);
-		ctx->process=sys_process_start(path,ctx->argc,(const char*const*)(ctx->argv),NULL,SYS_PROCESS_START_FLAG_PAUSE_THREAD,ctx->stdin,ctx->stdout,ctx->stderr);
-		if (SYS_IS_ERROR(ctx->process)){
-			sys_io_print("error: unable to execute file '%s': %ld\n",path,ctx->process);
-			ctx->process=0;
-			goto _cleanup;
-		}
-		sys_acl_set_permissions(sys_process_get_handle(),ctx->process,0,SYS_PROCESS_ACL_FLAG_SWITCH_USER);
-		sys_acl_set_permissions(ctx->stdin,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
-		sys_acl_set_permissions(ctx->stdout,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
-		sys_acl_set_permissions(ctx->stderr,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
-		if (!wait_for_result){
-			sys_thread_start(sys_process_get_main_thread(ctx->process));
-			_cleanup_command_context(ctx);
-			return;
-		}
-		sys_container_t container=sys_container_create();
-		sys_container_add(container,&(ctx->process),1);
-		sys_thread_start(sys_process_get_main_thread(ctx->process));
-		_cleanup_command_context(ctx);
-		sys_thread_await_event(sys_process_get_termination_event(ctx->process));
-		ctx->return_value=(s64)(u64)sys_process_get_return_value(ctx->process);
-		sys_container_delete(container);
-		return;
-	}
-	sys_io_print("error: unable to find command '%s'\n",ctx->argv[0]);
-	ctx->return_value=-1;
-_cleanup:
-	_cleanup_command_context(ctx);
-}
-
-
-
-static void _delete_command_context(command_context_t* ctx){
-	_cleanup_command_context(ctx);
-	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDIN){
-		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
-		sys_fd_close(ctx->stdin);
-		ctx->stdin=0;
-	}
-	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
-		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
-		sys_fd_close(ctx->stdout);
-		ctx->stdout=0;
-	}
-	if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDERR){
-		ctx->flags&=~COMMAND_CONTEXT_FLAG_CLOSE_STDERR;
-		sys_fd_close(ctx->stderr);
-		ctx->stderr=0;
-	}
-	sys_heap_dealloc(NULL,ctx);
-}
 
 
 
@@ -266,27 +38,11 @@ static bool _check_execute(u32 execute_modifier,s64 last_command_return_value){
 
 
 
-static void _get_shell_variable(shell_environment_t* env,const char* name,u32 name_length,shell_variable_t* out){
-	if (name_length==1&&*name=='?'){
-		char buffer[32];
-		out->length=sys_format_string(buffer,sizeof(buffer),"%ld",env->last_return_value);
-		out->value=sys_heap_alloc(NULL,out->length+1);
-		sys_memory_copy(buffer,out->value,out->length);
-		out->value[out->length]=0;
-		return;
-	}
-	out->value=sys_heap_alloc(NULL,1);
-	out->value[0]=0;
-	out->length=0;
-}
-
-
-
 SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* command){
 	u32 state=COMMAND_PARSER_STATE_ARGUMENTS;
 	u32 execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 	s64 last_command_return_value=0;
-	command_context_t* ctx=_create_command_context();
+	shell_command_context_t* ctx=shell_command_context_create();
 	while (*command){
 		if (COMMAND_PARSER_IS_WHITESPACE(*command)){
 			for (;COMMAND_PARSER_IS_WHITESPACE(*command);command++);
@@ -326,11 +82,11 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			}
 			command+=2;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,env,1);
+				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
-			_delete_command_context(ctx);
-			ctx=_create_command_context();
+			shell_command_context_delete(ctx);
+			ctx=shell_command_context_create();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_OR;
 			continue;
@@ -351,11 +107,11 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			}
 			command+=2;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,env,1);
+				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
-			_delete_command_context(ctx);
-			ctx=_create_command_context();
+			shell_command_context_delete(ctx);
+			ctx=shell_command_context_create();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_AND;
 			continue;
@@ -367,10 +123,10 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			}
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,env,0);
+				shell_command_context_dispatch(ctx,env,0);
 			}
-			_delete_command_context(ctx);
-			ctx=_create_command_context();
+			shell_command_context_delete(ctx);
+			ctx=shell_command_context_create();
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 			last_command_return_value=0;
@@ -383,11 +139,11 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			}
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
-				_dispatch_command_context(ctx,env,1);
+				shell_command_context_dispatch(ctx,env,1);
 				last_command_return_value=ctx->return_value;
 			}
-			_delete_command_context(ctx);
-			ctx=_create_command_context();
+			shell_command_context_delete(ctx);
+			ctx=shell_command_context_create();
 			env->last_return_value=last_command_return_value;
 			state=COMMAND_PARSER_STATE_ARGUMENTS;
 			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
@@ -459,10 +215,15 @@ _skip_control_sequence:
 				command++;
 			} while (COMMAND_PARSER_IS_VALID_CHARACTER(*command));
 			if (str[0]=='$'){
-				shell_variable_t var;
-				_get_shell_variable(env,str+1,str_length-1,&var);
+				char* value=shell_environment_get_variable(env,str+1,str_length-1);
 				sys_heap_dealloc(NULL,str);
-				str=var.value;
+				if (value){
+					str=value;
+				}
+				else{
+					str=sys_heap_alloc(NULL,1);
+					str[0]=0;
+				}
 			}
 			else{
 				str=sys_heap_realloc(NULL,str,str_length+1);
@@ -485,10 +246,10 @@ _skip_control_sequence:
 				sys_heap_dealloc(NULL,str);
 				goto _cleanup;
 			}
-			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDIN){
+			if (ctx->flags&SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDIN){
 				sys_fd_close(ctx->stdin);
 			}
-			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
+			ctx->flags|=SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
 			ctx->stdin=fd;
 			sys_heap_dealloc(NULL,str);
 			state=COMMAND_PARSER_STATE_OPERATOR;
@@ -505,10 +266,10 @@ _skip_control_sequence:
 				sys_heap_dealloc(NULL,str);
 				goto _cleanup;
 			}
-			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+			if (ctx->flags&SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
 				sys_fd_close(ctx->stdout);
 			}
-			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+			ctx->flags|=SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
 			ctx->stdout=fd;
 			sys_heap_dealloc(NULL,str);
 			state=COMMAND_PARSER_STATE_OPERATOR;
@@ -520,10 +281,10 @@ _skip_control_sequence:
 				sys_heap_dealloc(NULL,str);
 				goto _cleanup;
 			}
-			if (ctx->flags&COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+			if (ctx->flags&SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
 				sys_fd_close(ctx->stdout);
 			}
-			ctx->flags|=COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+			ctx->flags|=SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
 			ctx->stdout=fd;
 			sys_heap_dealloc(NULL,str);
 			state=COMMAND_PARSER_STATE_OPERATOR;
@@ -535,10 +296,10 @@ _skip_control_sequence:
 		}
 	}
 	if (_check_execute(execute_modifier,last_command_return_value)){
-		_dispatch_command_context(ctx,env,1);
+		shell_command_context_dispatch(ctx,env,1);
 		last_command_return_value=ctx->return_value;
 	}
 _cleanup:
-	_delete_command_context(ctx);
+	shell_command_context_delete(ctx);
 	env->last_return_value=last_command_return_value;
 }

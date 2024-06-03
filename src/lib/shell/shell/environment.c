@@ -1,8 +1,29 @@
+#include <shell/builtin/cd.h>
+#include <shell/builtin/chroot.h>
+#include <shell/builtin/echo.h>
+#include <shell/builtin/exit.h>
+#include <shell/builtin/pwd.h>
 #include <shell/environment.h>
 #include <sys/fd/fd.h>
+#include <sys/format/format.h>
 #include <sys/heap/heap.h>
+#include <sys/memory/memory.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
+
+
+
+static char* _last_return_code_callback(shell_environment_t* env,void* ctx){
+	char buffer[32];
+	sys_format_string(buffer,sizeof(buffer),"%ld",env->last_return_value);
+	return sys_string_duplicate(buffer);
+}
+
+
+
+static char* _argv_callback(shell_environment_t* env,void* ctx){
+	return sys_string_duplicate(env->argv[(u64)ctx]);
+}
 
 
 
@@ -21,8 +42,18 @@ SYS_PUBLIC shell_environment_t* shell_environment_init(u32 argc,const char*const
 		out->path[i]=sys_string_duplicate(path[i]);
 	}
 	out->path[path_length]=NULL;
+	out->command_count=0;
+	out->commands=NULL;
+	out->variable_count=0;
+	out->variables=NULL;
 	out->last_return_value=0;
 	out->cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	shell_environment_add_dynamic_variable(out,"?",_last_return_code_callback,NULL);
+	for (u32 i=0;i<argc;i++){
+		char buffer[32];
+		sys_format_string(buffer,sizeof(buffer),"%u",i);
+		shell_environment_add_dynamic_variable(out,buffer,_argv_callback,(void*)(u64)i);
+	}
 	return out;
 }
 
@@ -37,5 +68,73 @@ SYS_PUBLIC void shell_environment_deinit(shell_environment_t* env){
 		sys_heap_dealloc(NULL,env->path[i]);
 	}
 	sys_heap_dealloc(NULL,env->path);
+	for (u32 i=0;i<env->command_count;i++){
+		sys_heap_dealloc(NULL,(env->commands+i)->name);
+	}
+	sys_heap_dealloc(NULL,env->commands);
+	for (u32 i=0;i<env->variable_count;i++){
+		sys_heap_dealloc(NULL,(env->variables+i)->name);
+		if (!(env->variables+i)->is_dynamic){
+			sys_heap_dealloc(NULL,(env->variables+i)->static_.value);
+		}
+	}
+	sys_heap_dealloc(NULL,env->variables);
 	sys_heap_dealloc(NULL,env);
+}
+
+
+
+
+SYS_PUBLIC void shell_environment_add_command(shell_environment_t* env,const char* name,shell_command_t command){
+	env->command_count++;
+	env->commands=sys_heap_realloc(NULL,env->commands,env->command_count*sizeof(shell_environment_command_t));
+	(env->commands+env->command_count-1)->name=sys_string_duplicate(name);
+	(env->commands+env->command_count-1)->command=command;
+}
+
+
+
+SYS_PUBLIC void shell_environment_add_builtin_commands(shell_environment_t* env){
+	shell_environment_add_command(env,"cd",shell_builtin_command_cd);
+	shell_environment_add_command(env,"chroot",shell_builtin_command_chroot);
+	shell_environment_add_command(env,"echo",shell_builtin_command_echo);
+	shell_environment_add_command(env,"exit",shell_builtin_command_exit);
+	shell_environment_add_command(env,"pwd",shell_builtin_command_pwd);
+}
+
+
+
+SYS_PUBLIC void shell_environment_add_static_variable(shell_environment_t* env,const char* name,const char* value);
+
+
+
+SYS_PUBLIC void shell_environment_add_dynamic_variable(shell_environment_t* env,const char* name,shell_environment_dynamic_variable_callback_t callback,void* ctx){
+	env->variable_count++;
+	env->variables=sys_heap_realloc(NULL,env->variables,env->variable_count*sizeof(shell_environment_variable_t));
+	(env->variables+env->variable_count-1)->name=sys_string_duplicate(name);
+	(env->variables+env->variable_count-1)->name_length=sys_string_length(name);
+	(env->variables+env->variable_count-1)->is_dynamic=1;
+	(env->variables+env->variable_count-1)->dynamic.callback=callback;
+	(env->variables+env->variable_count-1)->dynamic.ctx=ctx;
+}
+
+
+
+SYS_PUBLIC char* shell_environment_get_variable(shell_environment_t* env,const char* name,u32 name_length){
+	if (!name_length){
+		name_length=sys_string_length(name);
+	}
+	for (u32 i=0;i<env->variable_count;i++){
+		if ((env->variables+i)->name_length!=name_length||sys_memory_compare((env->variables+i)->name,name,name_length)){
+			continue;
+		}
+		if ((env->variables+i)->is_dynamic){
+			return (env->variables+i)->dynamic.callback(env,(env->variables+i)->dynamic.ctx);
+		}
+		char* out=sys_heap_alloc(NULL,(env->variables+i)->static_.value_length);
+		sys_memory_copy((env->variables+i)->static_.value,out,(env->variables+i)->static_.value_length);
+		out[(env->variables+i)->static_.value_length]=0;
+		return out;
+	}
+	return NULL;
 }
