@@ -41,9 +41,6 @@ static history_entry_t _input_history[INPUT_REWIND_BUFFER_SIZE];
 static u32 _input_history_index=0;
 static u32 _input_history_length=0;
 
-char input[INPUT_BUFFER_SIZE+1];
-u32 input_length;
-
 
 
 static int _get_key(void){
@@ -311,7 +308,7 @@ static void _ensure_top_of_history(bool duplicate_entry){
 
 
 
-void input_get(void){
+const char* input_get(void){
 	_shift_history();
 	_input_history_index=_input_history_length-1;
 	_input_history[_input_history_index].data[0]=0;
@@ -342,13 +339,8 @@ void input_get(void){
 				case 10:
 				case 13:
 					_ensure_top_of_history(0);
-					sys_io_print("\x1b[%uG\n",input_length+cwd_length+8);
-					history_entry_t* entry=_input_history+_input_history_index;
-					input_length=entry->length;
-					for (u32 i=0;i<=input_length;i++){
-						input[i]=entry->data[i];
-					}
-					return;
+					sys_io_print("\n");
+					return (_input_history+_input_history_index)->data;
 				case 127:
 					if (_input_cursor){
 						_ensure_top_of_history(1);

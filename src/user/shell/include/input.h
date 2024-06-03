@@ -9,12 +9,7 @@
 
 
 
-extern char input[];
-extern u32 input_length;
-
-
-
-void input_get(void);
+const char* input_get(void);
 
 
 

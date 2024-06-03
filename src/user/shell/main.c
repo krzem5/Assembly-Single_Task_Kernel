@@ -5,7 +5,6 @@
 
 void main(void){
 	while (1){
-		input_get();
-		command_execute(input);
+		command_execute(input_get());
 	}
 }

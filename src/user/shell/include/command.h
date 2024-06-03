@@ -3,10 +3,6 @@
 
 
 
-#define MAX_ARG_COUNT 64
-
-
-
 void command_execute(const char* command);
 
 
