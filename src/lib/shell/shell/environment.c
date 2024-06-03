@@ -27,13 +27,14 @@ static char* _argv_callback(shell_environment_t* env,void* ctx){
 
 
 
-SYS_PUBLIC shell_environment_t* shell_environment_init(u32 argc,const char*const* argv,shell_environment_exit_callback_t exit_callback,const char*const* path){
+SYS_PUBLIC shell_environment_t* shell_environment_init(u32 argc,const char*const* argv,shell_environment_execute_callback_t execute_callback,shell_environment_exit_callback_t exit_callback,const char*const* path){
 	shell_environment_t* out=sys_heap_alloc(NULL,sizeof(shell_environment_t));
 	out->argc=argc;
 	out->argv=sys_heap_alloc(NULL,argc*sizeof(char*));
 	for (u32 i=0;i<argc;i++){
 		out->argv[i]=sys_string_duplicate(argv[i]);
 	}
+	out->execute_callback=execute_callback;
 	out->exit_callback=exit_callback;
 	u32 path_length=0;
 	for (;path[path_length];path_length++);

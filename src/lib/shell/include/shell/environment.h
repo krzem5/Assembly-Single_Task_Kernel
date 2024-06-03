@@ -14,6 +14,10 @@ typedef char* (*shell_environment_dynamic_variable_callback_t)(struct _SHELL_ENV
 
 
 
+typedef void (*shell_environment_execute_callback_t)(struct _SHELL_ENVIRONMENT*,shell_command_context_t*);
+
+
+
 typedef s64 (*shell_environment_exit_callback_t)(s64);
 
 
@@ -46,6 +50,7 @@ typedef struct _SHELL_ENVIRONMENT_VARIABLE{
 typedef struct _SHELL_ENVIRONMENT{
 	u32 argc;
 	char** argv;
+	shell_environment_execute_callback_t execute_callback;
 	shell_environment_exit_callback_t exit_callback;
 	char** path;
 	u32 command_count;
@@ -59,7 +64,7 @@ typedef struct _SHELL_ENVIRONMENT{
 
 
 
-shell_environment_t* shell_environment_init(u32 argc,const char*const* argv,shell_environment_exit_callback_t exit_callback,const char*const* path);
+shell_environment_t* shell_environment_init(u32 argc,const char*const* argv,shell_environment_execute_callback_t execute_callback,shell_environment_exit_callback_t exit_callback,const char*const* path);
 
 
 

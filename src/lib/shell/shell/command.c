@@ -69,10 +69,12 @@ SYS_PUBLIC void shell_command_context_dispatch(shell_command_context_t* ctx,shel
 			ctx->process=0;
 			goto _cleanup;
 		}
-		sys_acl_set_permissions(sys_process_get_handle(),ctx->process,0,SYS_PROCESS_ACL_FLAG_SWITCH_USER);
 		sys_acl_set_permissions(ctx->stdin,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stdout,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
 		sys_acl_set_permissions(ctx->stderr,ctx->process,0,SYS_FD_ACL_FLAG_DUP);
+		if (env->execute_callback){
+			env->execute_callback(env,ctx);
+		}
 		if (!wait_for_result){
 			sys_thread_start(sys_process_get_main_thread(ctx->process));
 			shell_command_context_delete_args(ctx);
