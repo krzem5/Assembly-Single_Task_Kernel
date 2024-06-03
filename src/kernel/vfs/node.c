@@ -196,7 +196,11 @@ KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node){
 	if (!node->functions->unlink||!node->relatives.parent){
 		return 0;
 	}
-	return node->functions->unlink(node,node->relatives.parent);
+	if (!node->functions->unlink(node,node->relatives.parent)){
+		return 0;
+	}
+	vfs_node_dettach_child(node);
+	return 1;
 }
 
 
@@ -284,10 +288,7 @@ KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
 
 
 KERNEL_PUBLIC void _vfs_node_process_unref(vfs_node_t* node){
-	if (node->flags&VFS_NODE_FLAG_TEMPORARY){
+	if ((node->flags&VFS_NODE_FLAG_TEMPORARY)||(!node->relatives.parent&&!(node->flags&VFS_NODE_FLAG_VIRTUAL))){
 		vfs_node_delete(node);
-	}
-	else if (!node->relatives.parent&&!(node->flags&VFS_NODE_FLAG_VIRTUAL)){
-		panic("_vfs_node_process_unref: orphan node");
 	}
 }
