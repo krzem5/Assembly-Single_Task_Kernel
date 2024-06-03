@@ -25,4 +25,5 @@ _start:
 ._empty_environ:
 	add rcx, 8
 	call [REF(main)]
+	mov rax, rdi
 	jmp _execute_fini

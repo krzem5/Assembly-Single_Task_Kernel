@@ -126,6 +126,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
+	out->return_value=NULL;
 	lock_profiling_init_lock_stack(out);
 	thread_list_add(&(process->thread_list),out);
 	return out;
@@ -207,11 +208,15 @@ KERNEL_PUBLIC void thread_delete(thread_t* thread){
 
 
 
-KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void){
+KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void* return_value){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
+	thread->return_value=return_value;
+	if (thread->process->main_thread==thread){
+		thread->process->return_value=return_value;
+	}
 	rwlock_release_write(&(thread->lock));
 	event_dispatch_thread_terminate_notification(thread);
 	event_dispatch(thread->termination_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE);
@@ -241,11 +246,11 @@ error_t syscall_thread_create(u64 rip,u64 rdi,u64 rsi,u64 rdx,u64 rsp){
 
 
 
-error_t syscall_thread_stop(handle_id_t thread_handle){
+error_t syscall_thread_stop(handle_id_t thread_handle,KERNEL_USER_POINTER void* return_value){
 	if (thread_handle){
 		panic("syscall_thread_stop: stop other thread");
 	}
-	thread_terminate();
+	thread_terminate((void*)return_value);
 }
 
 

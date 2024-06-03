@@ -51,7 +51,7 @@ sys_error_t sys_thread_start(sys_thread_t thread);
 
 
 
-sys_error_t sys_thread_stop(sys_thread_t thread);
+sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value);
 
 
 

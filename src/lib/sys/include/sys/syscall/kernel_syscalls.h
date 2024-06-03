@@ -137,8 +137,8 @@ static inline u64 _sys_syscall_thread_set_priority(u64 thread,u32 priority){
 
 
 
-static inline u64 _sys_syscall_thread_stop(u64 thread){
-	return _sys_syscall1(0x100000019,thread);
+static inline u64 _sys_syscall_thread_stop(u64 thread,void* return_value){
+	return _sys_syscall2(0x100000019,thread,(u64)return_value);
 }
 
 

@@ -86,7 +86,7 @@ static void _handle_chroot(command_context_t* ctx){
 
 static void _handle_exit(command_context_t* ctx){
 	if (sys_process_get_parent(0)>>16){
-		sys_thread_stop(0);
+		sys_thread_stop(0,NULL);
 	}
 	sys_system_shutdown(0);
 }

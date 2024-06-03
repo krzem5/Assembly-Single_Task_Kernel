@@ -12,11 +12,11 @@
 
 
 static void _thread_bootstrap(u64 func_and_flags,void* arg,u64 stack_top){
-	((void (*)(void*))(func_and_flags&0x7fffffffffffffffull))(arg);
+	void* ret=((void* (*)(void*))(func_and_flags&0x7fffffffffffffffull))(arg);
 	if (func_and_flags>>63){
 		sys_memory_unmap((void*)(stack_top-DEFAULT_STACK_SIZE),DEFAULT_STACK_SIZE);
 	}
-	_sys_syscall_thread_stop(0);
+	_sys_syscall_thread_stop(0,ret);
 }
 
 
@@ -75,7 +75,7 @@ SYS_PUBLIC sys_error_t sys_thread_start(sys_thread_t thread){
 
 
 
-SYS_PUBLIC sys_error_t sys_thread_stop(sys_thread_t thread){
-	return _sys_syscall_thread_stop(thread);
+SYS_PUBLIC sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value){
+	return _sys_syscall_thread_stop(thread,return_value);
 }
 

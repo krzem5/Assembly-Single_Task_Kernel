@@ -67,6 +67,8 @@ typedef struct _PROCESS{
 	handle_id_t fd_stdout;
 	handle_id_t fd_stderr;
 	struct _PROCESS* parent;
+	struct _THREAD* main_thread;
+	KERNEL_USER_POINTER void* return_value;
 } process_t;
 
 
@@ -103,6 +105,7 @@ typedef struct _THREAD{
 	u32 scheduler_load_balancer_queue_index;
 	bool scheduler_early_yield;
 	bool scheduler_io_yield;
+	KERNEL_USER_POINTER void* return_value;
 	LOCK_PROFILING_LOCK_STACK
 } thread_t;
 

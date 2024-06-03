@@ -77,7 +77,7 @@ u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
 		sys_io_print("Wrong plt relocation type '%u' in shared object '%s'\n",(u32)(relocation->r_info),so->path);
-		sys_thread_stop(0);
+		sys_thread_stop(0,NULL);
 		return 0;
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
@@ -85,7 +85,7 @@ u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
 	u64 resolved_symbol=symbol_lookup_by_name(symbol_name);
 	if (!resolved_symbol){
 		sys_io_print("Unable to resolve symbol '%s' in shared object '%s'\n",symbol_name,so->path);
-		sys_thread_stop(0);
+		sys_thread_stop(0,NULL);
 		return 0;
 	}
 	if (so->dynamic_section.plt_relocation_entry_size==sizeof(elf_rela_t)){

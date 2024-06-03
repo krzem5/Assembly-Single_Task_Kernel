@@ -33,7 +33,7 @@ void thread_delete(thread_t* thread);
 
 
 
-void KERNEL_NORETURN thread_terminate(void);
+void KERNEL_NORETURN thread_terminate(void* return_value);
 
 
 

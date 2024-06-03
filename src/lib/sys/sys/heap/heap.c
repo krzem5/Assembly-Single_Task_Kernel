@@ -166,7 +166,7 @@ SYS_PUBLIC void* sys_heap_realloc(sys_heap_t* heap,void* ptr,u64 size){
 			return ptr;
 		}
 		if (size<_heap_block_header_get_size(header)){
-			sys_io_print("sys_heap_realloc: shrink dedicated block\n");sys_thread_stop(0);
+			sys_io_print("sys_heap_realloc: shrink dedicated block\n");sys_thread_stop(0,NULL);
 		}
 		sys_heap_block_header_t* new_header=(sys_heap_block_header_t*)sys_memory_map(size,SYS_MEMORY_FLAG_READ|SYS_MEMORY_FLAG_WRITE,0);
 		_heap_block_header_init(size,0,SYS_HEAP_BLOCK_HEADER_FLAG_USED|SYS_HEAP_BLOCK_HEADER_FLAG_DEDICATED,new_header);
@@ -209,7 +209,7 @@ SYS_PUBLIC void* sys_heap_realloc(sys_heap_t* heap,void* ptr,u64 size){
 		sys_heap_dealloc(heap,ptr);
 		return out;
 	}
-	sys_io_print("sys_heap_realloc: merge with next block\n");sys_thread_stop(0);
+	sys_io_print("sys_heap_realloc: merge with next block\n");sys_thread_stop(0,NULL);
 	return NULL;
 }
 

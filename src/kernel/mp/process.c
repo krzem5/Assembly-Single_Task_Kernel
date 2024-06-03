@@ -96,6 +96,8 @@ KERNEL_EARLY_INIT(){
 	process_kernel->fd_stdout=0;
 	process_kernel->fd_stderr=0;
 	process_kernel->parent=process_kernel;
+	process_kernel->main_thread=NULL;
+	process_kernel->return_value=NULL;
 }
 
 
@@ -133,6 +135,8 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	out->parent=(THREAD_DATA->header.current_thread?THREAD_DATA->process:process_kernel);
 	out->uid=out->parent->uid;
 	out->gid=out->parent->gid;
+	out->main_thread=NULL;
+	out->return_value=NULL;
 	event_dispatch_process_create_notification(out);
 	return out;
 }
