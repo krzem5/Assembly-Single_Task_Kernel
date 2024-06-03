@@ -230,7 +230,7 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 	process->fd_stdout=(extra_data.stdout?extra_data.stdout:THREAD_DATA->process->fd_stdout);
 	process->fd_stderr=(extra_data.stderr?extra_data.stderr:THREAD_DATA->process->fd_stderr);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
-		scheduler_enqueue_thread(process->thread_list.head);
+		scheduler_enqueue_thread(process->main_thread);
 	}
 	handle_release(handle);
 _cleanup:
@@ -334,8 +334,7 @@ error_t syscall_process_get_main_thread(handle_id_t process_handle){
 		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	thread_t* thread=process->thread_list.head;
-	error_t out=(thread?thread->handle.rb_node.key:0);
+	error_t out=(process->main_thread?process->main_thread->handle.rb_node.key:0);
 	handle_release(handle);
 	return out;
 }

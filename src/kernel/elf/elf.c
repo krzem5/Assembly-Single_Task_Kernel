@@ -367,6 +367,7 @@ _error:
 static void _create_executable_thread(elf_loader_context_t* ctx){
 	INFO("Creating main thread...");
 	ctx->thread=thread_create_user_thread(ctx->process,ctx->entry_address,ctx->stack_top);
+	ctx->process->main_thread=ctx->thread;
 }
 
 
