@@ -35,6 +35,7 @@
 
 #define FD_ITERATOR_ACL_FLAG_ACCESS 1
 
+#define FD_DUP_CWD 0x7ffffffffffffffcull
 #define FD_DUP_STDIN 0x7ffffffffffffffdull
 #define FD_DUP_STDOUT 0x7ffffffffffffffeull
 #define FD_DUP_STDERR 0x7fffffffffffffffull

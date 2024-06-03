@@ -66,7 +66,7 @@ typedef struct _SHELL_VARIABLE{
 static const char* _search_path[]={
 	".",
 	"/bin",
-	NULL
+	NULL,
 };
 
 static shell_context_t _shell_ctx={
@@ -134,7 +134,11 @@ static int _handle_exit(command_context_t* ctx){
 
 
 static int _handle_pwd(command_context_t* ctx){
-	sys_io_print("%s\n",cwd);
+	sys_fd_t fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	char buffer[4096];
+	sys_fd_path(fd,buffer,sizeof(buffer));
+	sys_fd_close(fd);
+	sys_io_print("%s\n",buffer);
 	return 0;
 }
 

@@ -11,10 +11,8 @@ sys_fd_t cwd_fd;
 
 
 void cwd_init(void){
-	cwd[0]='/';
-	cwd[1]=0;
-	cwd_length=1;
-	cwd_fd=sys_fd_open(0,"/",0);
+	cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	cwd_length=sys_fd_path(cwd_fd,cwd,4096);
 }
 
 

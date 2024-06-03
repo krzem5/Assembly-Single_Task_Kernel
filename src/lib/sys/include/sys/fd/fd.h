@@ -41,6 +41,7 @@
 
 #define SYS_FD_STAT_FLAG_VIRTUAL 1
 
+#define SYS_FD_DUP_CWD 0x7ffffffffffffffcull
 #define SYS_FD_DUP_STDIN 0x7ffffffffffffffdull
 #define SYS_FD_DUP_STDOUT 0x7ffffffffffffffeull
 #define SYS_FD_DUP_STDERR 0x7fffffffffffffffull

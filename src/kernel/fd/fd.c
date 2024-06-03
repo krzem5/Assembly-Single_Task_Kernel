@@ -351,7 +351,10 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
-	if (fd==FD_DUP_STDIN&&THREAD_DATA->process->fd_stdin){
+	if (fd==FD_DUP_CWD){
+		return fd_from_node(THREAD_DATA->process->vfs_cwd,flags);
+	}
+	else if (fd==FD_DUP_STDIN&&THREAD_DATA->process->fd_stdin){
 		fd=THREAD_DATA->process->fd_stdin;
 	}
 	else if (fd==FD_DUP_STDOUT&&THREAD_DATA->process->fd_stdout){
