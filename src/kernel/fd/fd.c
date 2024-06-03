@@ -404,10 +404,13 @@ error_t syscall_fd_unlink(handle_id_t fd){
 		return ERROR_DENIED;
 	}
 	mutex_acquire(data->lock);
-	bool out=vfs_node_unlink(data->node);
+	error_t out=ERROR_DENIED;
+	if (vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_WRITE){
+		out=(vfs_node_unlink(data->node)?ERROR_OK:ERROR_FAILED);
+	}
 	mutex_release(data->lock);
 	handle_release(fd_handle);
-	return (out?ERROR_OK:ERROR_FAILED);
+	return out;
 }
 
 
