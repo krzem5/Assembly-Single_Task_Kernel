@@ -25,7 +25,7 @@ static u64 _process_read_stdin_callback(void* ctx,u64 offset,void* buffer,u64 si
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		vfs_node_t* node=fd_get_node(process->fd_stdin);
+		vfs_node_t* node=fd_get_node(process->fd_stdin,NULL);
 		if (node){
 			link_buffer_length=vfs_path(node,link_buffer,sizeof(link_buffer));
 			vfs_node_unref(node);
@@ -43,7 +43,7 @@ static u64 _process_read_stdout_callback(void* ctx,u64 offset,void* buffer,u64 s
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		vfs_node_t* node=fd_get_node(process->fd_stdout);
+		vfs_node_t* node=fd_get_node(process->fd_stdout,NULL);
 		if (node){
 			link_buffer_length=vfs_path(node,link_buffer,sizeof(link_buffer));
 			vfs_node_unref(node);
@@ -61,7 +61,7 @@ static u64 _process_read_stderr_callback(void* ctx,u64 offset,void* buffer,u64 s
 	u32 link_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
-		vfs_node_t* node=fd_get_node(process->fd_stderr);
+		vfs_node_t* node=fd_get_node(process->fd_stderr,NULL);
 		if (node){
 			link_buffer_length=vfs_path(node,link_buffer,sizeof(link_buffer));
 			vfs_node_unref(node);

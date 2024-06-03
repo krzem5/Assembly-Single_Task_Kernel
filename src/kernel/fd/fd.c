@@ -10,6 +10,7 @@
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/mp/thread.h>
+#include <kernel/pipe/pipe.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -30,6 +31,9 @@ static handle_type_t KERNEL_INIT_WRITE _fd_iterator_handle_type=0;
 
 static void _fd_handle_destructor(handle_t* handle){
 	fd_t* data=KERNEL_CONTAINEROF(handle,fd_t,handle);
+	if (data->flags&FD_FLAG_CLOSE_PIPE){
+		pipe_close(data->node);
+	}
 	vfs_node_unref(data->node);
 	mutex_deinit(data->lock);
 	omm_dealloc(_fd_allocator,data);
@@ -71,13 +75,13 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	out->lock=mutex_init();
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
-	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE);
+	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_CLOSE_PIPE);
 	u8 permissions=vfs_permissions_get(node,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
 	if (!(permissions&VFS_PERMISSION_READ)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
 		out->flags&=~FD_FLAG_READ;
 	}
 	if (!(permissions&VFS_PERMISSION_WRITE)||(node->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_DIRECTORY){
-		out->flags&=~FD_FLAG_WRITE;
+		out->flags&=~(FD_FLAG_WRITE|FD_FLAG_CLOSE_PIPE);
 	}
 	if (flags&FD_FLAG_DELETE_ON_EXIT){
 		node->flags|=VFS_NODE_FLAG_TEMPORARY;
@@ -87,10 +91,13 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 
 
 
-KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd){
+KERNEL_PUBLIC vfs_node_t* fd_get_node(handle_id_t fd,u64* acl){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return NULL;
+	}
+	if (acl){
+		*acl=acl_get(fd_handle->acl,THREAD_DATA->process);
 	}
 	vfs_node_t* out=KERNEL_CONTAINEROF(fd_handle,fd_t,handle)->node;
 	vfs_node_ref(out);
@@ -113,8 +120,25 @@ void fd_allow_dup(handle_id_t fd,process_t* process){
 
 
 
+void fd_ref(handle_id_t fd){
+	handle_lookup_and_acquire(fd,_fd_handle_type);
+}
+
+
+
+void fd_unref(handle_id_t fd){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return;
+	}
+	handle_release(fd_handle);
+	handle_release(fd_handle);
+}
+
+
+
 error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK|FD_FLAG_CLOSE_PIPE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	if ((flags&(FD_FLAG_DIRECTORY|FD_FLAG_LINK))==(FD_FLAG_DIRECTORY|FD_FLAG_LINK)){
@@ -348,7 +372,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 
 
 error_t syscall_fd_dup(handle_id_t fd,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_CLOSE_PIPE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	if (fd==FD_DUP_CWD){
@@ -382,7 +406,7 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	out->lock=mutex_init();
 	out->node=data->node;
 	out->offset=data->offset;
-	out->flags=data->flags&flags;
+	out->flags=(data->flags|FD_FLAG_CLOSE_PIPE)&flags;
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;

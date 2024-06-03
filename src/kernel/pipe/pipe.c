@@ -1,6 +1,7 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
+#include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
@@ -27,6 +28,7 @@ typedef struct _PIPE_VFS_NODE{
 	u32 write_offset;
 	u32 read_offset;
 	bool is_full;
+	bool is_closed;
 	event_t* read_event;
 	event_t* write_event;
 } pipe_vfs_node_t;
@@ -53,6 +55,7 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 	out->write_offset=0;
 	out->read_offset=0;
 	out->is_full=0;
+	out->is_closed=0;
 	out->read_event=event_create("kernel.pipe.read");
 	out->write_event=event_create("kernel.thread.write");
 	return (vfs_node_t*)out;
@@ -75,6 +78,10 @@ static u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flag
 _retry_read:
 	rwlock_acquire_write(&(pipe->lock));
 	if (!pipe->is_full&&pipe->write_offset==pipe->read_offset){
+		if (pipe->is_closed){
+			rwlock_release_write(&(pipe->lock));
+			return 0;
+		}
 		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
 			return 0;
@@ -112,6 +119,10 @@ static u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_write:
 	rwlock_acquire_write(&(pipe->lock));
+	if (pipe->is_closed){
+		rwlock_release_write(&(pipe->lock));
+		return 0;
+	}
 	if (pipe->is_full){
 		rwlock_release_write(&(pipe->lock));
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
@@ -188,6 +199,22 @@ KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 
 
 
+KERNEL_PUBLIC error_t pipe_close(vfs_node_t* node){
+	if (node->functions!=&_pipe_vfs_functions){
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
+	rwlock_acquire_write(&(pipe->lock));
+	bool out=!pipe->is_closed;
+	pipe->is_closed=1;
+	event_set_active(pipe->read_event,1,1);
+	event_set_active(pipe->write_event,1,1);
+	rwlock_release_write(&(pipe->lock));
+	return (out?ERROR_OK:ERROR_FAILED);
+}
+
+
+
 error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 	vfs_node_t* parent=NULL;
 	SMM_TEMPORARY_STRING name_string=NULL;
@@ -223,5 +250,22 @@ error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 	}
 	error_t out=fd_from_node(node,FD_FLAG_READ|FD_FLAG_WRITE);
 	vfs_node_unref(node);
+	return out;
+}
+
+
+
+error_t syscall_pipe_close(handle_id_t fd){
+	u64 acl;
+	vfs_node_t* pipe=fd_get_node(fd,&acl);
+	if (!pipe){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl&FD_ACL_FLAG_CLOSE)){
+		vfs_node_unref(pipe);
+		return ERROR_DENIED;
+	}
+	error_t out=pipe_close(pipe);
+	vfs_node_unref(pipe);
 	return out;
 }

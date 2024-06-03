@@ -21,6 +21,7 @@
 #define FD_FLAG_DELETE_ON_EXIT 256
 #define FD_FLAG_EXCLUSIVE_CREATE 512
 #define FD_FLAG_LINK 1024
+#define FD_FLAG_CLOSE_PIPE 2048
 
 #define FD_SEEK_SET 0
 #define FD_SEEK_ADD 1
@@ -47,7 +48,7 @@ typedef struct _FD{
 	mutex_t* lock;
 	vfs_node_t* node;
 	u64 offset;
-	u8 flags;
+	u32 flags;
 } fd_t;
 
 
@@ -84,11 +85,19 @@ error_t fd_from_node(vfs_node_t* node,u32 flags);
 
 
 
-vfs_node_t* fd_get_node(handle_id_t fd);
+vfs_node_t* fd_get_node(handle_id_t fd,u64* acl);
 
 
 
 void fd_allow_dup(handle_id_t fd,process_t* process);
+
+
+
+void fd_ref(handle_id_t fd);
+
+
+
+void fd_unref(handle_id_t fd);
 
 
 

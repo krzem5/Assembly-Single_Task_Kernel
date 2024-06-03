@@ -88,11 +88,11 @@ static void _thread(void){
 	// fd_from_node: delete on exit => UNIMPLEMENTED
 	TEST_FUNC("fd_get_node");
 	TEST_GROUP("invalid handle");
-	TEST_ASSERT(!fd_get_node(0xaabbccdd));
+	TEST_ASSERT(!fd_get_node(0xaabbccdd,NULL));
 	TEST_GROUP("correct handle");
 	fd=fd_from_node(root,0);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(fd_get_node(fd)==root);
+	TEST_ASSERT(fd_get_node(fd,NULL)==root);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	TEST_FUNC("syscall_fd_open");
 	TEST_GROUP("invalid flags");
@@ -117,7 +117,7 @@ static void _thread(void){
 	str_copy("/",buffer,PAGE_SIZE);
 	fd=syscall_fd_open(0,buffer,0);
 	TEST_ASSERT(!IS_ERROR(fd));
-	TEST_ASSERT(fd_get_node(fd)==root);
+	TEST_ASSERT(fd_get_node(fd,NULL)==root);
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
 	// syscall_fd_open: parent, not found => ERROR_NOT_FOUND
 	// syscall_fd_open: parent, found => !IS_ERROR(...)
@@ -135,7 +135,7 @@ static void _thread(void){
 	fd=fd_from_node(root,0);
 	TEST_ASSERT(!IS_ERROR(fd));
 	TEST_ASSERT(syscall_fd_close(fd)==ERROR_OK);
-	TEST_ASSERT(!fd_get_node(fd));
+	TEST_ASSERT(!fd_get_node(fd,NULL));
 	TEST_FUNC("syscall_fd_read");
 	TEST_GROUP("invalid buffer pointer");
 	TEST_ASSERT(syscall_fd_read(0,NULL,1,0)==ERROR_INVALID_ARGUMENT(1));

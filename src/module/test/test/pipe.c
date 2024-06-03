@@ -49,7 +49,7 @@ static void _thread(void){
 	str_copy("/test-pipe",buffer,2*PAGE_SIZE);
 	error_t pipe_fd=syscall_pipe_create(buffer);
 	TEST_ASSERT(!IS_ERROR(pipe_fd));
-	vfs_node_t* pipe=fd_get_node(pipe_fd);
+	vfs_node_t* pipe=fd_get_node(pipe_fd,NULL);
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(vfs_lookup(NULL,"/test-pipe",0,0,0)==pipe);
@@ -60,7 +60,7 @@ static void _thread(void){
 	TEST_GROUP("create unnamed");
 	pipe_fd=syscall_pipe_create(NULL);
 	TEST_ASSERT(!IS_ERROR(pipe_fd));
-	pipe=fd_get_node(pipe_fd);
+	pipe=fd_get_node(pipe_fd,NULL);
 	TEST_ASSERT(pipe);
 	TEST_ASSERT((pipe->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_PIPE);
 	TEST_ASSERT(syscall_fd_close(pipe_fd)==ERROR_OK);

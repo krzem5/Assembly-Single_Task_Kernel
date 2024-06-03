@@ -61,6 +61,9 @@ static void _process_handle_destructor(handle_t* handle){
 	event_dispatch_process_delete_notification(process);
 	vfs_node_unref(process->vfs_root);
 	vfs_node_unref(process->vfs_cwd);
+	fd_unref(process->fd_stdin);
+	fd_unref(process->fd_stdout);
+	fd_unref(process->fd_stderr);
 	handle_list_destroy(&(process->handle_list));
 	mmap_deinit(process->mmap);
 	vmm_pagemap_deinit(&(process->pagemap));
@@ -227,8 +230,11 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
 	process->fd_stdin=(extra_data.stdin?extra_data.stdin:THREAD_DATA->process->fd_stdin);
+	fd_ref(process->fd_stdin);
 	process->fd_stdout=(extra_data.stdout?extra_data.stdout:THREAD_DATA->process->fd_stdout);
+	fd_ref(process->fd_stdout);
 	process->fd_stderr=(extra_data.stderr?extra_data.stderr:THREAD_DATA->process->fd_stderr);
+	fd_ref(process->fd_stderr);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(process->main_thread);
 	}
@@ -272,10 +278,16 @@ error_t syscall_process_set_cwd(handle_id_t process_handle,handle_id_t fd){
 		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	vfs_node_t* new_cwd=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* new_cwd=fd_get_node(fd,&acl);
 	if (!new_cwd){
 		handle_release(handle);
 		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl&FD_ACL_FLAG_STAT)){
+		vfs_node_unref(new_cwd);
+		handle_release(handle);
+		return ERROR_DENIED;
 	}
 	vfs_node_t* old_cwd=process->vfs_cwd;
 	process->vfs_cwd=new_cwd;
@@ -311,10 +323,16 @@ error_t syscall_process_set_root(handle_id_t process_handle,handle_id_t fd){
 		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	vfs_node_t* new_root=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* new_root=fd_get_node(fd,&acl);
 	if (!new_root){
 		handle_release(handle);
 		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl&FD_ACL_FLAG_STAT)){
+		vfs_node_unref(new_root);
+		handle_release(handle);
+		return ERROR_DENIED;
 	}
 	vfs_node_t* old_root=process->vfs_root;
 	process->vfs_root=new_root;

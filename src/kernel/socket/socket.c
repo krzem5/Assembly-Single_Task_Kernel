@@ -26,6 +26,10 @@
 
 
 
+extern void syscall_fd_close();
+
+
+
 static rwlock_t _socket_dtp_lock;
 static rb_tree_t _socket_dtp_tree;
 static omm_allocator_t* KERNEL_INIT_WRITE _socket_dtp_handler_allocator=NULL;
@@ -365,7 +369,11 @@ error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,soc
 		return out[0];
 	}
 	out[1]=fd_from_node((vfs_node_t*)(pair.sockets[1]),FD_FLAG_READ|FD_FLAG_WRITE);
-	return (IS_ERROR(out[1])?out[1]:ERROR_OK);
+	if (IS_ERROR(out[1])){
+		syscall_fd_close(out[0]);
+		return out[1];
+	}
+	return ERROR_OK;
 }
 
 
@@ -374,11 +382,18 @@ error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 	if (flags&(~(SOCKET_FLAG_READ|SOCKET_FLAG_WRITE))){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	vfs_node_t* node=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* node=fd_get_node(fd,&acl);
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
-	return (socket_shutdown(node,flags)?ERROR_OK:ERROR_UNSUPPORTED_OPERATION);
+	if (!(acl&FD_ACL_FLAG_CLOSE)){
+		vfs_node_unref(node);
+		return ERROR_DENIED;
+	}
+	bool out=socket_shutdown(node,flags);
+	vfs_node_unref(node);
+	return (out?ERROR_OK:ERROR_UNSUPPORTED_OPERATION);
 }
 
 
@@ -387,14 +402,22 @@ error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER_POINTER const void* addre
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	vfs_node_t* node=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* node=fd_get_node(fd,&acl);
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
+	if (!(acl&FD_ACL_FLAG_IO)){
+		vfs_node_unref(node);
+		return ERROR_DENIED;
+	}
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		vfs_node_unref(node);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	return (socket_bind(node,(const void*)address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+	bool out=socket_bind(node,(const void*)address,address_length);
+	vfs_node_unref(node);
+	return (out?ERROR_OK:ERROR_INVALID_ADDRESS);
 }
 
 
@@ -403,14 +426,22 @@ error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER_POINTER const void* ad
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	vfs_node_t* node=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* node=fd_get_node(fd,&acl);
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
+	if (!(acl&FD_ACL_FLAG_IO)){
+		vfs_node_unref(node);
+		return ERROR_DENIED;
+	}
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		vfs_node_unref(node);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	return (socket_connect(node,(const void*)address,address_length)?ERROR_OK:ERROR_INVALID_ADDRESS);
+	bool out=socket_connect(node,(const void*)address,address_length);
+	vfs_node_unref(node);
+	return (out?ERROR_OK:ERROR_INVALID_ADDRESS);
 }
 
 
@@ -422,21 +453,29 @@ error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 
 	if (buffer_length>syscall_get_user_pointer_max_length((void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	vfs_node_t* node=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* node=fd_get_node(fd,&acl);
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
+	if (!(acl&FD_ACL_FLAG_IO)){
+		vfs_node_unref(node);
+		return ERROR_DENIED;
+	}
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		vfs_node_unref(node);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	if (!buffer){
 		socket_packet_t* packet=socket_peek_packet(node,!!(flags&FD_FLAG_NONBLOCKING));
+		vfs_node_unref(node);
 		if (!packet){
 			return ERROR_NO_DATA;
 		}
 		return packet->size;
 	}
 	socket_packet_t* packet=socket_pop_packet(node,!!(flags&FD_FLAG_NONBLOCKING));
+	vfs_node_unref(node);
 	if (!packet){
 		return ERROR_NO_DATA;
 	}
@@ -457,15 +496,24 @@ error_t syscall_socket_send(handle_id_t fd,KERNEL_USER_POINTER const void* buffe
 	if (buffer_length>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
-	vfs_node_t* node=fd_get_node(fd);
+	u64 acl;
+	vfs_node_t* node=fd_get_node(fd,&acl);
 	if (!node){
 		return ERROR_INVALID_HANDLE;
 	}
+	if (!(acl&FD_ACL_FLAG_IO)){
+		vfs_node_unref(node);
+		return ERROR_DENIED;
+	}
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		vfs_node_unref(node);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	if (!(((socket_vfs_node_t*)node)->flags&SOCKET_FLAG_WRITE)){
+		vfs_node_unref(node);
 		return ERROR_DISABLED_OPERATION;
 	}
-	return (socket_push_packet(node,(const void*)buffer,buffer_length)?ERROR_OK:ERROR_NO_SPACE);
+	bool out=socket_push_packet(node,(const void*)buffer,buffer_length);
+	vfs_node_unref(node);
+	return (out?ERROR_OK:ERROR_NO_SPACE);
 }

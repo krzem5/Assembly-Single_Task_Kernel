@@ -288,7 +288,11 @@ KERNEL_PUBLIC void vfs_node_dettach_child(vfs_node_t* node){
 
 
 KERNEL_PUBLIC void _vfs_node_process_unref(vfs_node_t* node){
-	if ((node->flags&VFS_NODE_FLAG_TEMPORARY)||(!node->relatives.parent&&!(node->flags&VFS_NODE_FLAG_VIRTUAL))){
+	if (!node->relatives.parent&&!(node->flags&VFS_NODE_FLAG_VIRTUAL)){
+		vfs_node_delete(node);
+	}
+	else if (node->flags&VFS_NODE_FLAG_TEMPORARY){
+		vfs_node_dettach_child(node);
 		vfs_node_delete(node);
 	}
 }

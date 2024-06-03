@@ -16,7 +16,7 @@ int main(int argc,const char** argv){
 		return 1;
 	}
 	for (;i<argc;i++){
-		sys_fd_t fd=sys_fd_open(0,(argv[i][0]=='-'&&!argv[i][1]?"/proc/self/stdin":argv[i]),SYS_FD_FLAG_READ);
+		sys_fd_t fd=(argv[i][0]=='-'&&!argv[i][1]?sys_fd_dup(SYS_FD_DUP_STDIN,SYS_FD_FLAG_READ):sys_fd_open(0,argv[i],SYS_FD_FLAG_READ));
 		if (SYS_IS_ERROR(fd)){
 			sys_io_print("hexdump: unable to open file '%s': error %d\n",argv[i],fd);
 			return 1;

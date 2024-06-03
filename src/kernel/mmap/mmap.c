@@ -365,9 +365,13 @@ error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 		mmap_flags|=MMAP_REGION_FLAG_VMM_EXEC;
 	}
 	if (flags&USER_MEMORY_FLAG_FILE){
-		file=fd_get_node(fd);
+		u64 acl;
+		file=fd_get_node(fd,&acl);
 		if (!file){
 			return ERROR_INVALID_HANDLE;
+		}
+		if (!(acl&FD_ACL_FLAG_IO)){
+			return ERROR_DENIED;
 		}
 	}
 	if (flags&USER_MEMORY_FLAG_NOWRITEBACK){

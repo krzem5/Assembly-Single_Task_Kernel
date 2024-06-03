@@ -4,6 +4,7 @@
 #include <sys/fd/fd.h>
 #include <sys/heap/heap.h>
 #include <sys/io/io.h>
+#include <sys/pipe/pipe.h>
 #include <sys/types.h>
 
 
@@ -100,8 +101,26 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 				goto _cleanup;
 			}
 			command++;
-			sys_io_print("error: pipe (unimplemented)\n");
-			goto _cleanup;
+			sys_fd_t pipe_fd=sys_pipe_create(NULL);
+			if (SYS_IS_ERROR(pipe_fd)){
+				sys_io_print("error: unable to create pipe\n");
+				goto _cleanup;
+			}
+			if (ctx->flags&SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT){
+				sys_fd_close(ctx->stdout);
+			}
+			ctx->flags|=SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDOUT;
+			ctx->stdout=sys_fd_dup(pipe_fd,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_CLOSE_PIPE);
+			if (_check_execute(execute_modifier,last_command_return_value)){
+				shell_command_context_dispatch(ctx,env,0);
+			}
+			shell_command_context_delete(ctx);
+			ctx=shell_command_context_create();
+			ctx->flags|=SHELL_COMMAND_CONTEXT_FLAG_CLOSE_STDIN;
+			ctx->stdin=sys_fd_dup(pipe_fd,SYS_FD_FLAG_READ);
+			sys_fd_close(pipe_fd);
+			state=COMMAND_PARSER_STATE_ARGUMENTS;
+			execute_modifier=COMMAND_EXECUTE_MODIFIER_ALWAYS;
 			continue;
 		}
 		else if (*command=='&'&&*(command+1)=='&'){
