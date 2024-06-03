@@ -812,9 +812,7 @@ def _execute_vm():
 		# Shared directory
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
 		# Serial
-		"-chardev","stdio,id=console,mux=on",
-		"-mon","chardev=console,mode=readline",
-		"-serial","chardev:console",
+		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
 		"-machine","q35,hmat=on",
