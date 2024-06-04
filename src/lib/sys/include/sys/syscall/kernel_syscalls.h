@@ -503,4 +503,16 @@ static inline u64 _sys_syscall_pipe_close(u64 pipe){
 
 
 
+static inline u64 _sys_syscall_process_group_get(u64 process){
+	return _sys_syscall1(0x100000056,process);
+}
+
+
+
+static inline u64 _sys_syscall_process_group_set(u64 process,u64 process_group){
+	return _sys_syscall2(0x100000057,process,process_group);
+}
+
+
+
 #endif

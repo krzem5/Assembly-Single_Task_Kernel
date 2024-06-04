@@ -55,6 +55,8 @@ extern u64 syscall_process_get_main_thread();
 extern u64 syscall_process_get_parent();
 extern u64 syscall_process_get_pid();
 extern u64 syscall_process_get_return_value();
+extern u64 syscall_process_group_get();
+extern u64 syscall_process_group_set();
 extern u64 syscall_process_set_cwd();
 extern u64 syscall_process_set_root();
 extern u64 syscall_process_start();
@@ -173,5 +175,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[83]=syscall_process_get_return_value,
 	[84]=syscall_thread_get_return_value,
 	[85]=syscall_pipe_close,
+	[86]=syscall_process_group_get,
+	[87]=syscall_process_group_set,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

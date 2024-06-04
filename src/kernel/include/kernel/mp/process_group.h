@@ -9,7 +9,7 @@ extern handle_type_t process_group_handle_type;
 
 
 
-process_group_t* process_group_create(void);
+process_group_t* process_group_create(process_t* process);
 
 
 
