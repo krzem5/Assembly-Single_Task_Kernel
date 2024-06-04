@@ -2,6 +2,8 @@
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/mp/event.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/process_group.h>
 #include <kernel/mp/thread.h>
 #include <kernel/signal/signal.h>
 #include <kernel/types.h>
@@ -29,6 +31,16 @@ void signal_thread_state_init(signal_thread_state_t* state){
 void signal_thread_state_deinit(signal_thread_state_t* state){
 	event_delete(state->event);
 	state->event=NULL;
+}
+
+
+
+KERNEL_PUBLIC error_t signal_dispatch(handle_id_t handle,signal_t signal){
+	if (signal>SIGNAL_MAX){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	ERROR("signal_dispatch(%p,%u)",handle,signal);
+	return ERROR_INVALID_HANDLE;
 }
 
 
@@ -87,4 +99,10 @@ error_t syscall_signal_set_mask(u64 mask,u32 is_process_mask){
 		rwlock_release_write(&(THREAD_DATA->header.current_thread->signal_state.lock));
 	}
 	return ERROR_OK;
+}
+
+
+
+error_t syscall_signal_dispatch(handle_id_t handle,signal_t signal){
+	return signal_dispatch(handle,signal);
 }

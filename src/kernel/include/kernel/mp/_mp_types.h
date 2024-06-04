@@ -86,7 +86,6 @@ typedef struct _PROCESS{
 	KERNEL_USER_POINTER void* return_value;
 	process_group_t* process_group;
 	signal_process_state_t signal_state;
-
 } process_t;
 
 

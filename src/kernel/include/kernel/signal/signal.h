@@ -1,5 +1,6 @@
 #ifndef _KERNEL_SIGNAL_SIGNAL_H_
 #define _KERNEL_SIGNAL_SIGNAL_H_ 1
+#include <kernel/error/error.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
 
@@ -7,10 +8,15 @@
 
 #define SIGNAL_KILL 0
 #define SIGNAL_INTERRUPT 1
+#define SIGNAL_MAX 63
 
 
 
 struct _EVENT;
+
+
+
+typedef u32 signal_t;
 
 
 
@@ -40,6 +46,10 @@ void signal_thread_state_init(signal_thread_state_t* state);
 
 
 void signal_thread_state_deinit(signal_thread_state_t* state);
+
+
+
+error_t signal_dispatch(handle_id_t handle,signal_t signal);
 
 
 
