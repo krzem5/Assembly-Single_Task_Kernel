@@ -109,8 +109,7 @@ error_t syscall_process_group_set(handle_id_t process_handle,handle_id_t process
 		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	panic("syscall_process_group_set");
-	(void)process;
+	panic("syscall_process_group_set");(void)process;
 	handle_release(handle);
 	return ERROR_OK;
 }
