@@ -5,6 +5,7 @@
 #include <sys/mp/thread.h>
 #include <sys/pipe/pipe.h>
 #include <sys/string/string.h>
+#include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
 
@@ -104,14 +105,18 @@ s64 main(u32 argc,const char*const* argv){
 	if (SYS_IS_ERROR(in_fd)||SYS_IS_ERROR(out_fd)){
 		goto _error;
 	}
-	sys_fd_t pipe=sys_pipe_create("/shell_input_pipe");
-	child_in_fd=sys_fd_dup(pipe,SYS_FD_FLAG_WRITE);
-	sys_fd_t stdin=sys_fd_dup(pipe,SYS_FD_FLAG_READ);
-	sys_fd_close(pipe);
-	pipe=sys_pipe_create("/shell_output_pipe");
-	child_out_fd=sys_fd_dup(pipe,SYS_FD_FLAG_READ);
-	sys_fd_t stdout_stderr=sys_fd_dup(pipe,SYS_FD_FLAG_WRITE);
-	sys_fd_close(pipe);
+	sys_fd_t child_pipes[2];
+	u64 devfs_syscall_table_offset=sys_syscall_get_table_offset("devfs");
+	if (SYS_IS_ERROR(devfs_syscall_table_offset)||SYS_IS_ERROR(_sys_syscall1(devfs_syscall_table_offset|0x00000001,(u64)child_pipes))){
+		child_pipes[0]=sys_pipe_create(NULL);
+		child_pipes[1]=sys_pipe_create(NULL);
+	}
+	child_in_fd=sys_fd_dup(child_pipes[0],SYS_FD_FLAG_WRITE);
+	sys_fd_t stdin=sys_fd_dup(child_pipes[0],SYS_FD_FLAG_READ);
+	child_out_fd=sys_fd_dup(child_pipes[1],SYS_FD_FLAG_READ);
+	sys_fd_t stdout_stderr=sys_fd_dup(child_pipes[1],SYS_FD_FLAG_WRITE);
+	sys_fd_close(child_pipes[0]);
+	sys_fd_close(child_pipes[1]);
 	sys_thread_create(_input_thread,NULL,NULL);
 	sys_thread_create(_output_thread,NULL,NULL);
 	sys_process_t process=sys_process_start(argv[first_argument_index],argc-first_argument_index,argv+first_argument_index,NULL,0,stdin,stdout_stderr,stdout_stderr);
