@@ -23,6 +23,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/signal/signal.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -105,6 +106,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->return_value=NULL;
 	process_kernel->process_group=NULL;
 	process_group_create(process_kernel);
+	signal_process_state_init(&(process_kernel->signal_state));
 }
 
 
@@ -151,6 +153,7 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	else{
 		handle_release(&(process_group_create(out)->handle));
 	}
+	signal_process_state_init(&(process_kernel->signal_state));
 	event_dispatch_process_create_notification(out);
 	return out;
 }

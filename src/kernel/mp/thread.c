@@ -19,6 +19,7 @@
 #include <kernel/mp/thread_list.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/signal/signal.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -59,6 +60,7 @@ static void _thread_handle_destructor(handle_t* handle){
 	smm_dealloc(thread->name);
 	thread->name=NULL;
 	event_delete(thread->termination_event);
+	signal_thread_state_deinit(&(thread->signal_state));
 	if (thread_list_remove(&(process->thread_list),thread)){
 		event_dispatch_process_terminate_notification(process);
 		event_dispatch(process->event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
@@ -127,6 +129,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
 	out->return_value=NULL;
+	signal_thread_state_init(&(out->signal_state));
 	lock_profiling_init_lock_stack(out);
 	thread_list_add(&(process->thread_list),out);
 	return out;

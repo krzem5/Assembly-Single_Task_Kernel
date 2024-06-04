@@ -11,6 +11,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/scheduler/_scheduler_types.h>
+#include <kernel/signal/signal.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
 
@@ -84,6 +85,8 @@ typedef struct _PROCESS{
 	struct _THREAD* main_thread;
 	KERNEL_USER_POINTER void* return_value;
 	process_group_t* process_group;
+	signal_process_state_t signal_state;
+
 } process_t;
 
 
@@ -121,6 +124,7 @@ typedef struct _THREAD{
 	bool scheduler_early_yield;
 	bool scheduler_io_yield;
 	KERNEL_USER_POINTER void* return_value;
+	signal_thread_state_t signal_state;
 	LOCK_PROFILING_LOCK_STACK
 } thread_t;
 
