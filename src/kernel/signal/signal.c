@@ -9,6 +9,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/signal/signal.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "signal"
 
 
@@ -57,6 +58,23 @@ _signal_dispatched:
 
 
 
+static bool _dispatch_signal_to_process_group(process_group_t* process_group,signal_t signal){
+	bool out=0;
+	rwlock_acquire_read(&(process_group->lock));
+	for (process_group_entry_t* entry=(process_group_entry_t*)rb_tree_iter_start(&(process_group->tree));entry;entry=(process_group_entry_t*)rb_tree_iter_next(&(process_group->tree),&(entry->rb_node))){
+		handle_t* process_handle=handle_lookup_and_acquire(entry->rb_node.key,process_handle_type);
+		if (!process_handle){
+			continue;
+		}
+		out|=_dispatch_signal_to_process(KERNEL_CONTAINEROF(process_handle,process_t,handle),signal);
+		handle_release(process_handle);
+	}
+	rwlock_release_read(&(process_group->lock));
+	return out;
+}
+
+
+
 u64 _signal_return_from_syscall(u64 rax,u64* rip_and_rflags){
 	if (!THREAD_DATA->signal_state.pending||THREAD_DATA->signal_state.handler==SIGNAL_HANDLER_SYNC){
 		return rax;
@@ -101,6 +119,9 @@ void signal_thread_state_deinit(signal_thread_state_t* state){
 
 
 KERNEL_PUBLIC error_t signal_dispatch(handle_id_t handle,signal_t signal){
+	if (signal==SIGNAL_KILL){
+		panic("signal_dispatch: SIGNAL_KILL");
+	}
 	if (signal>SIGNAL_MAX){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -127,19 +148,9 @@ KERNEL_PUBLIC error_t signal_dispatch(handle_id_t handle,signal_t signal){
 		if (!process_group_handle){
 			return ERROR_INVALID_HANDLE;
 		}
-		process_group_t* process_group=KERNEL_CONTAINEROF(process_group_handle,process_group_t,handle);
-		rwlock_acquire_read(&(process_group->lock));
-		for (process_group_entry_t* entry=(process_group_entry_t*)rb_tree_iter_start(&(process_group->tree));entry;entry=(process_group_entry_t*)rb_tree_iter_next(&(process_group->tree),&(entry->rb_node))){
-			handle_t* process_handle=handle_lookup_and_acquire(entry->rb_node.key,process_handle_type);
-			if (!process_handle){
-				continue;
-			}
-			_dispatch_signal_to_process(KERNEL_CONTAINEROF(process_handle,process_t,handle),signal);
-			handle_release(process_handle);
-		}
-		rwlock_release_read(&(process_group->lock));
+		error_t out=(_dispatch_signal_to_process_group(KERNEL_CONTAINEROF(process_group_handle,process_group_t,handle),signal)?ERROR_OK:ERROR_MASKED);
 		handle_release(process_group_handle);
-		return ERROR_OK;
+		return out;
 	}
 	return ERROR_INVALID_HANDLE;
 }
