@@ -73,6 +73,20 @@ static u64 _process_read_stderr_callback(void* ctx,u64 offset,void* buffer,u64 s
 
 
 
+static u64 _process_read_group_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	handle_t* handle=handle_lookup_and_acquire((u64)ctx,process_handle_type);
+	char group_buffer[4096]="";
+	u32 group_buffer_length=0;
+	if (handle){
+		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
+		group_buffer_length=format_string(group_buffer,sizeof(group_buffer),"%lu",(process->process_group?HANDLE_ID_GET_INDEX(process->process_group->handle.rb_node.key):0));
+		handle_release(handle);
+	}
+	return dynamicfs_process_simple_read(group_buffer,group_buffer_length,offset,buffer,size);
+}
+
+
+
 static u64 _process_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	char link[32];
 	return dynamicfs_process_simple_read(link,format_string(link,32,"%lu",(THREAD_DATA->header.current_thread?HANDLE_ID_GET_INDEX(THREAD_DATA->process->handle.rb_node.key):0)),offset,buffer,size);
@@ -110,6 +124,7 @@ static void _update_notification_thread(void){
 			vfs_node_unref(dynamicfs_create_node(node,"stdout",VFS_NODE_TYPE_LINK,NULL,_process_read_stdout_callback,(void*)(data->process_handle)));
 			vfs_node_unref(dynamicfs_create_node(node,"stderr",VFS_NODE_TYPE_LINK,NULL,_process_read_stderr_callback,(void*)(data->process_handle)));
 			vfs_node_unref(dynamicfs_create_node(node,"threads",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL));
+			vfs_node_unref(dynamicfs_create_node(node,"group",VFS_NODE_TYPE_FILE,NULL,_process_read_group_callback,(void*)(data->process_handle)));
 			vfs_node_unref(node);
 			handle_release(handle);
 		}
@@ -121,12 +136,13 @@ static void _update_notification_thread(void){
 			if (!node){
 				continue;
 			}
-			dynamicfs_delete_node(vfs_lookup(node,"name",0,0,0),1);
 			dynamicfs_delete_node(vfs_lookup(node,"exe",0,0,0),0);
+			dynamicfs_delete_node(vfs_lookup(node,"name",0,0,0),1);
+			dynamicfs_delete_node(vfs_lookup(node,"stderr",0,0,0),1);
 			dynamicfs_delete_node(vfs_lookup(node,"stdin",0,0,0),1);
 			dynamicfs_delete_node(vfs_lookup(node,"stdout",0,0,0),1);
-			dynamicfs_delete_node(vfs_lookup(node,"stderr",0,0,0),1);
 			dynamicfs_delete_node(vfs_lookup(node,"threads",0,0,0),1);
+			dynamicfs_delete_node(vfs_lookup(node,"group",0,0,0),1);
 			dynamicfs_delete_node(node,0);
 		}
 		else if (notification.type==EVENT_THREAD_CREATE_NOTIFICATION&&notification.length==sizeof(event_thread_create_notification_data_t)){

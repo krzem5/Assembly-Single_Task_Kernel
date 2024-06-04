@@ -45,8 +45,16 @@ MODULE_INIT(){
 		coverage_mark_failure();
 		return;
 	}
-	if (IS_ERROR(elf_load("/bin/test",0,NULL,0,NULL,ELF_LOAD_FLAG_DEFAULT_IO))){
-		panic("Unable to load test program");
+	const char*const argv[]={
+		"/bin/serial_terminal",
+		"-i","/dev/ser/in",
+		"-o","/dev/ser/out",
+		"-s",
+		"-",
+		"/bin/test"
+	};
+	if (IS_ERROR(elf_load("/bin/serial_terminal",sizeof(argv)/sizeof(const char*),argv,0,NULL,0))){
+		panic("Unable to load user shell");
 	}
 	return;
 }

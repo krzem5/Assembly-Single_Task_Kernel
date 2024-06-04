@@ -229,12 +229,8 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 			goto _cleanup;
 		}
 	}
-	u32 elf_flags=ELF_LOAD_FLAG_PAUSE_THREAD;
-	if (flags&ELF_LOAD_FLAG_DEFAULT_IO){
-		elf_flags=flags;
-	}
-	out=elf_load((const char*)path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,elf_flags);
-	if (IS_ERROR(out)||(flags&ELF_LOAD_FLAG_DEFAULT_IO)){
+	out=elf_load((const char*)path,argc,(const char*const*)kernel_argv,kernel_environ_length,(const char*const*)kernel_environ,ELF_LOAD_FLAG_PAUSE_THREAD);
+	if (IS_ERROR(out)){
 		goto _cleanup;
 	}
 	handle_t* handle=handle_lookup_and_acquire(out,process_handle_type);

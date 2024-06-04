@@ -104,11 +104,11 @@ s64 main(u32 argc,const char*const* argv){
 	if (SYS_IS_ERROR(in_fd)||SYS_IS_ERROR(out_fd)){
 		goto _error;
 	}
-	sys_fd_t pipe=sys_pipe_create(NULL);
+	sys_fd_t pipe=sys_pipe_create("/shell_input_pipe");
 	child_in_fd=sys_fd_dup(pipe,SYS_FD_FLAG_WRITE);
 	sys_fd_t stdin=sys_fd_dup(pipe,SYS_FD_FLAG_READ);
 	sys_fd_close(pipe);
-	pipe=sys_pipe_create(NULL);
+	pipe=sys_pipe_create("/shell_output_pipe");
 	child_out_fd=sys_fd_dup(pipe,SYS_FD_FLAG_READ);
 	sys_fd_t stdout_stderr=sys_fd_dup(pipe,SYS_FD_FLAG_WRITE);
 	sys_fd_close(pipe);

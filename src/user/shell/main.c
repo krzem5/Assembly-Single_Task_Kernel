@@ -4,7 +4,6 @@
 #include <shell/interpreter.h>
 #include <sys/acl/acl.h>
 #include <sys/mp/process.h>
-#include <sys/system/system.h>
 #include <sys/types.h>
 
 
@@ -39,8 +38,5 @@ s64 main(u32 argc,const char*const* argv){
 		shell_interpreter_execute(env,input_get());
 	}
 	shell_environment_deinit(env);
-	if (!(sys_process_get_parent(0)>>16)){
-		sys_system_shutdown(0);
-	}
 	return _exit_return_value;
 }
