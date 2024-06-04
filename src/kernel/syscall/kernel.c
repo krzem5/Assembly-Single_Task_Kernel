@@ -63,6 +63,13 @@ extern u64 syscall_process_set_cwd();
 extern u64 syscall_process_set_root();
 extern u64 syscall_process_start();
 extern u64 syscall_scheduler_yield();
+extern u64 syscall_signal_dispatch();
+extern u64 syscall_signal_get_event();
+extern u64 syscall_signal_get_mask();
+extern u64 syscall_signal_get_pending_signals();
+extern u64 syscall_signal_get_signal();
+extern u64 syscall_signal_set_handler();
+extern u64 syscall_signal_set_mask();
 extern u64 syscall_signature_verify();
 extern u64 syscall_socket_bind();
 extern u64 syscall_socket_connect();
@@ -181,5 +188,12 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[87]=syscall_process_group_set,
 	[88]=syscall_process_group_get_next,
 	[89]=syscall_process_group_iter,
+	[90]=syscall_signal_get_event,
+	[91]=syscall_signal_get_signal,
+	[92]=syscall_signal_get_pending_signals,
+	[93]=syscall_signal_get_mask,
+	[94]=syscall_signal_set_mask,
+	[95]=syscall_signal_set_handler,
+	[96]=syscall_signal_dispatch,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

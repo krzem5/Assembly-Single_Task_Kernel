@@ -3,6 +3,7 @@
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/heap/heap.h>
+#include <sys/signal/signal.h>
 #include <sys/io/io.h>
 #include <sys/pipe/pipe.h>
 #include <sys/types.h>
@@ -150,6 +151,7 @@ SYS_PUBLIC void shell_interpreter_execute(shell_environment_t* env,const char* c
 			command++;
 			if (_check_execute(execute_modifier,last_command_return_value)){
 				shell_command_context_dispatch(ctx,env,0);
+				sys_signal_dispatch(ctx->process,SYS_SIGNAL_INTERRUPT);
 			}
 			shell_command_context_delete(ctx);
 			ctx=shell_command_context_create();

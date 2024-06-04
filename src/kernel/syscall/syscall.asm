@@ -28,6 +28,7 @@ syscall_enable:
 
 extern _random_entropy_pool
 extern _random_entropy_pool_length
+extern _signal_return_from_syscall
 extern _syscall_invalid
 extern _syscall_table_list
 extern _syscall_table_list_length
@@ -46,8 +47,8 @@ _syscall_handler:
 	push r13
 	push r12
 	push r11
-	push rbp
 	push rcx
+	push rbp
 	push rbx
 	push r9
 	push r8
@@ -91,6 +92,9 @@ _syscall_handler:
 	sti
 	call rax
 	cli
+	mov rdi, rax
+	lea rsi, [rsp+16]
+	call _signal_return_from_syscall
 	mov r15, rax
 ._syscall_return:
 	xor edi, edi ; SCHEDULER_TIMER_USER
@@ -110,8 +114,8 @@ _syscall_handler:
 	xor r9, r9
 	xor r10, r10
 	pop rbx
-	pop rcx
 	pop rbp
+	pop rcx
 	pop r11
 	pop r12
 	pop r13

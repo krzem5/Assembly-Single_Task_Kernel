@@ -10,6 +10,9 @@
 #define SIGNAL_INTERRUPT 1
 #define SIGNAL_MAX 63
 
+#define SIGNAL_HANDLER_NONE NULL
+#define SIGNAL_HANDLER_SYNC ((void*)1)
+
 
 
 struct _EVENT;
@@ -33,6 +36,7 @@ typedef struct _SIGNAL_THREAD_STATE{
 	u64 mask;
 	u64 pending;
 	struct _EVENT* event;
+	KERNEL_USER_POINTER void* handler;
 } signal_thread_state_t;
 
 
