@@ -14,7 +14,8 @@
 static void _thread_bootstrap(u64 func_and_flags,void* arg,u64 stack_top){
 	void* ret=((void* (*)(void*))(func_and_flags&0x7fffffffffffffffull))(arg);
 	if (func_and_flags>>63){
-		sys_memory_unmap((void*)(stack_top-DEFAULT_STACK_SIZE),DEFAULT_STACK_SIZE);
+		// cannot be executed; it deletes the stack of the current function
+		// sys_memory_unmap((void*)(stack_top-DEFAULT_STACK_SIZE),DEFAULT_STACK_SIZE);
 	}
 	_sys_syscall_thread_stop(0,ret);
 }

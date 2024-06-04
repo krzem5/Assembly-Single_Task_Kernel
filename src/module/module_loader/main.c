@@ -62,7 +62,15 @@ MODULE_PREINIT(){
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
 #ifndef KERNEL_COVERAGE
-	if (IS_ERROR(elf_load("/bin/shell",0,NULL,0,NULL,ELF_LOAD_FLAG_DEFAULT_IO))){
+	const char*const argv[]={
+		"/bin/serial_terminal",
+		"-i","/dev/ser/in",
+		"-o","/dev/ser/out",
+		"-s",
+		"-",
+		"/bin/shell"
+	};
+	if (IS_ERROR(elf_load("/bin/serial_terminal",sizeof(argv)/sizeof(const char*),argv,0,NULL,0))){
 		panic("Unable to load user shell");
 	}
 #ifdef KERNEL_RELEASE
