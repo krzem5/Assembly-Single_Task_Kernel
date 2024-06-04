@@ -114,3 +114,27 @@ error_t syscall_process_group_set(handle_id_t process_handle,handle_id_t process
 	handle_release(handle);
 	return ERROR_OK;
 }
+
+
+
+error_t syscall_process_group_get_next(handle_id_t process_group){
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(process_group_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(handle_descriptor->tree),(process_group?process_group+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_process_group_iter(handle_id_t process_group_handle,handle_id_t process){
+	handle_t* handle=handle_lookup_and_acquire(process_group_handle,process_group_handle_type);
+	if (!handle){
+		return 0;
+	}
+	process_group_t* process_group=KERNEL_CONTAINEROF(handle,process_group_t,handle);
+	rwlock_acquire_read(&(process_group->lock));
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(process_group->tree),(process?process+1:0));
+	error_t out=(rb_node?rb_node->key:0);
+	rwlock_release_read(&(process_group->lock));
+	handle_release(handle);
+	return out;
+}

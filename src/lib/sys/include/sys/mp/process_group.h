@@ -17,4 +17,20 @@ sys_process_group_t sys_process_group_set(sys_process_t process,sys_process_grou
 
 
 
+sys_process_group_t sys_process_group_iter_start(void);
+
+
+
+sys_process_group_t sys_process_group_iter_next(sys_process_group_t process_group);
+
+
+
+sys_process_t sys_process_group_iter_group_start(sys_process_group_t process_group);
+
+
+
+sys_process_t sys_process_group_iter_group_next(sys_process_group_t process_group,sys_process_t process);
+
+
+
 #endif

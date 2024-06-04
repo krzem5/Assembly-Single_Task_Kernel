@@ -515,4 +515,16 @@ static inline u64 _sys_syscall_process_group_set(u64 process,u64 process_group){
 
 
 
+static inline u64 _sys_syscall_process_group_get_next(u64 process_group){
+	return _sys_syscall1(0x100000058,process_group);
+}
+
+
+
+static inline u64 _sys_syscall_process_group_iter(u64 process_group,u64 process){
+	return _sys_syscall2(0x100000059,process_group,process);
+}
+
+
+
 #endif
