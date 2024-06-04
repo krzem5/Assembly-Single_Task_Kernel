@@ -5,11 +5,13 @@
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/vfs/node.h>
+#include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "devfs_terminal"
 
 
@@ -19,22 +21,49 @@ static u64 _devfs_terminal_next_id=0;
 
 
 
+static u64 _link_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
+	if (!ctx){
+		return 0;
+	}
+	vfs_node_t* node=ctx;
+	vfs_node_t* target=vfs_lookup(_devfs_terminal_root,node->name->data,0,0,0);
+	if (!target){
+		node->flags|=VFS_NODE_FLAG_TEMPORARY;
+		return 0;
+	}
+	vfs_node_unref(target);
+	char link[64];
+	return dynamicfs_process_simple_read(link,format_string(link,64,"terminal/%s",node->name->data),offset,buffer,size);
+}
+
+
+
 static error_t _syscall_create_terminal(KERNEL_USER_POINTER handle_id_t* pipes){
-	(void)_devfs_terminal_next_id;
-	// /dev/terminal/ter0/{in,out} [temporary]
-	// /dev/ter0 -> /dev/terminal/ter0 [returned via callback; marked as temporary if terminal was deleted]
-	vfs_node_t* pipe0=pipe_create(NULL,NULL);
-	pipe0->flags|=0660<<VFS_NODE_PERMISSION_SHIFT;
-	pipe0->uid=THREAD_DATA->process->uid;
-	pipe0->gid=THREAD_DATA->process->gid;
-	vfs_node_t* pipe1=pipe_create(NULL,NULL);
-	pipe1->flags|=0660<<VFS_NODE_PERMISSION_SHIFT;
-	pipe1->uid=THREAD_DATA->process->uid;
-	pipe1->gid=THREAD_DATA->process->gid;
-	pipes[0]=fd_from_node(pipe0,FD_FLAG_READ|FD_FLAG_WRITE);
-	pipes[1]=fd_from_node(pipe1,FD_FLAG_READ|FD_FLAG_WRITE);
-	vfs_node_unref(pipe0);
-	vfs_node_unref(pipe1);
+	u64 id=__atomic_fetch_add(&_devfs_terminal_next_id,1,__ATOMIC_SEQ_CST);
+	char buffer[64];
+	format_string(buffer,sizeof(buffer),"ter%lu",id);
+	vfs_node_t* node=dynamicfs_create_node(_devfs_terminal_root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
+	node->flags|=VFS_NODE_FLAG_TEMPORARY;
+	string_t* name_string=smm_alloc("in",0);
+	vfs_node_t* input_pipe=pipe_create(node,name_string);
+	smm_dealloc(name_string);
+	input_pipe->flags|=(0660<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_TEMPORARY;
+	input_pipe->uid=THREAD_DATA->process->uid;
+	input_pipe->gid=THREAD_DATA->process->gid;
+	pipes[0]=fd_from_node(input_pipe,FD_FLAG_READ|FD_FLAG_WRITE);
+	vfs_node_unref(input_pipe);
+	name_string=smm_alloc("out",0);
+	vfs_node_t* output_pipe=pipe_create(node,name_string);
+	smm_dealloc(name_string);
+	output_pipe->flags|=(0660<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_TEMPORARY;
+	output_pipe->uid=THREAD_DATA->process->uid;
+	output_pipe->gid=THREAD_DATA->process->gid;
+	pipes[1]=fd_from_node(output_pipe,FD_FLAG_READ|FD_FLAG_WRITE);
+	vfs_node_unref(output_pipe);
+	vfs_node_unref(node);
+	vfs_node_t* link_node=dynamicfs_create_node(devfs->root,buffer,VFS_NODE_TYPE_LINK,NULL,_link_read_callback,NULL);
+	dynamicfs_change_ctx(link_node,link_node);
+	vfs_node_unref(link_node);
 	return ERROR_OK;
 }
 

@@ -163,6 +163,16 @@ KERNEL_PUBLIC void dynamicfs_delete_node(vfs_node_t* node,bool delete_string){
 
 
 
+KERNEL_PUBLIC void dynamicfs_change_ctx(vfs_node_t* node,void* ctx){
+	if (!node){
+		return;
+	}
+	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
+	dynamicfs_node->read_callback_ctx=ctx;
+}
+
+
+
 KERNEL_PUBLIC u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* buffer,u64 size){
 	if (!buffer){
 		return length;

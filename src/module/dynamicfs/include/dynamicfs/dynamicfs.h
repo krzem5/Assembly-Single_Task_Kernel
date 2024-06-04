@@ -38,6 +38,10 @@ void dynamicfs_delete_node(vfs_node_t* node,bool delete_string);
 
 
 
+void dynamicfs_change_ctx(vfs_node_t* node,void* ctx);
+
+
+
 u64 dynamicfs_process_simple_read(const void* data,u64 length,u64 offset,void* buffer,u64 size);
 
 
