@@ -49,6 +49,20 @@ typedef struct _THREAD_LIST{
 
 
 
+typedef struct _PROCESS_GROUP{
+	handle_t handle;
+	rwlock_t lock;
+	rb_tree_t tree;
+} process_group_t;
+
+
+
+typedef struct _PROCESS_GROUP_ENTRY{
+	rb_tree_node_t rb_node;
+} process_group_entry_t;
+
+
+
 typedef struct _PROCESS{
 	handle_t handle;
 	rwlock_t lock;
@@ -69,6 +83,7 @@ typedef struct _PROCESS{
 	struct _PROCESS* parent;
 	struct _THREAD* main_thread;
 	KERNEL_USER_POINTER void* return_value;
+	process_group_t* process_group;
 } process_t;
 
 

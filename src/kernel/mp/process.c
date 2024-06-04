@@ -19,6 +19,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/process_group.h>
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread_list.h>
 #include <kernel/scheduler/scheduler.h>
@@ -64,6 +65,8 @@ static void _process_handle_destructor(handle_t* handle){
 	fd_unref(process->fd_stdin);
 	fd_unref(process->fd_stdout);
 	fd_unref(process->fd_stderr);
+	process_group_leave(process->process_group,process);
+	handle_release(&(process->process_group->handle));
 	handle_list_destroy(&(process->handle_list));
 	mmap_deinit(process->mmap);
 	vmm_pagemap_deinit(&(process->pagemap));
@@ -101,6 +104,8 @@ KERNEL_EARLY_INIT(){
 	process_kernel->parent=process_kernel;
 	process_kernel->main_thread=NULL;
 	process_kernel->return_value=NULL;
+	process_kernel->process_group=process_group_create();
+	process_group_join(process_kernel->process_group,process_kernel);
 }
 
 
@@ -140,6 +145,14 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	out->gid=out->parent->gid;
 	out->main_thread=NULL;
 	out->return_value=NULL;
+	if (THREAD_DATA->header.current_thread&&THREAD_DATA->process!=process_kernel){
+		out->process_group=THREAD_DATA->process->process_group;
+		handle_acquire(&(out->process_group->handle));
+	}
+	else{
+		out->process_group=process_group_create();
+	}
+	process_group_join(out->process_group,out);
 	event_dispatch_process_create_notification(out);
 	return out;
 }
