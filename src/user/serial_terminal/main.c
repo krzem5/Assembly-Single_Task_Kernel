@@ -24,7 +24,6 @@ static sys_fd_t child_out_fd=0;
 static void _input_thread(void* ctx){
 	char* line=NULL;
 	u32 line_length=0;
-	u32 cursor=0;
 	while (1){
 		u8 buffer[4096];
 		sys_error_t count=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
