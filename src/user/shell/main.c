@@ -4,6 +4,7 @@
 #include <shell/interpreter.h>
 #include <sys/acl/acl.h>
 #include <sys/mp/process.h>
+#include <sys/signal/signal.h>
 #include <sys/types.h>
 
 
@@ -32,6 +33,7 @@ static s64 _exit_callback(s64 return_value){
 
 
 s64 main(u32 argc,const char*const* argv){
+	sys_signal_set_mask(1<<SYS_SIGNAL_INTERRUPT,1);
 	shell_environment_t* env=shell_environment_init(argc,argv,_execute_callback,_exit_callback,_default_search_path);
 	shell_environment_add_builtin_commands_and_variables(env);
 	while (!env->close_current_session){

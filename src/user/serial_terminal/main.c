@@ -2,8 +2,10 @@
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
 #include <sys/mp/process.h>
+#include <sys/mp/process_group.h>
 #include <sys/mp/thread.h>
 #include <sys/pipe/pipe.h>
+#include <sys/signal/signal.h>
 #include <sys/string/string.h>
 #include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
@@ -20,22 +22,20 @@ static sys_fd_t child_out_fd=0;
 
 static void _input_thread(void* ctx){
 	while (1){
-		u8 buffer[4096];
-		sys_error_t ret=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
+		char c;
+		sys_error_t ret=sys_fd_read(in_fd,&c,sizeof(char),0);
 		if (!ret||SYS_IS_ERROR(ret)){
 			sys_pipe_close(child_in_fd);
 			return;
 		}
-		u64 offset=0;
-		u64 remaining=ret;
-		while (remaining){
-			ret=sys_fd_write(child_in_fd,buffer+offset,remaining,0);
-			if (!ret||SYS_IS_ERROR(ret)){
-				sys_pipe_close(child_in_fd);
-				return;
-			}
-			offset+=ret;
-			remaining-=ret;
+		if (c==0x03){
+			sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
+			continue;
+		}
+		ret=sys_fd_write(child_in_fd,&c,sizeof(char),0);
+		if (!ret||SYS_IS_ERROR(ret)){
+			sys_pipe_close(child_in_fd);
+			return;
 		}
 	}
 }
@@ -119,6 +119,7 @@ s64 main(u32 argc,const char*const* argv){
 	sys_fd_close(child_pipes[1]);
 	sys_thread_create(_input_thread,NULL,NULL);
 	sys_thread_create(_output_thread,NULL,NULL);
+	sys_signal_set_mask(1<<SYS_SIGNAL_INTERRUPT,1);
 	sys_process_t process=sys_process_start(argv[first_argument_index],argc-first_argument_index,argv+first_argument_index,NULL,0,stdin,stdout_stderr,stdout_stderr);
 	sys_thread_await_event(sys_process_get_termination_event(process));
 	sys_fd_close(in_fd);
