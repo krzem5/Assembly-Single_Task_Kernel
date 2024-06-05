@@ -1,5 +1,6 @@
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
+#include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/mp/process.h>
 #include <sys/mp/process_group.h>
@@ -21,21 +22,42 @@ static sys_fd_t child_out_fd=0;
 
 
 static void _input_thread(void* ctx){
+	char* line=NULL;
+	u32 line_length=0;
+	u32 cursor=0;
 	while (1){
-		char c;
-		sys_error_t ret=sys_fd_read(in_fd,&c,sizeof(char),0);
-		if (!ret||SYS_IS_ERROR(ret)){
+		u8 buffer[4096];
+		sys_error_t count=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
+		if (!count||SYS_IS_ERROR(count)){
 			sys_pipe_close(child_in_fd);
 			return;
 		}
-		if (c==0x03){
-			sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
-			continue;
-		}
-		ret=sys_fd_write(child_in_fd,&c,sizeof(char),0);
-		if (!ret||SYS_IS_ERROR(ret)){
-			sys_pipe_close(child_in_fd);
-			return;
+		for (u32 i=0;i<count;i++){
+			if (buffer[i]==0x03){
+				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
+				sys_heap_dealloc(NULL,line);
+				line=NULL;
+				line_length=0;
+				continue;
+			}
+			line_length++;
+			line=sys_heap_realloc(NULL,line,line_length);
+			line[line_length-1]=buffer[i];
+			sys_error_t ret=sys_fd_write(out_fd,buffer+i,1,0);
+			if (!ret||SYS_IS_ERROR(ret)){
+				sys_pipe_close(child_in_fd);
+				return;
+			}
+			if (buffer[i]=='\r'||buffer[i]=='\n'){
+				ret=sys_fd_write(child_in_fd,line,line_length,0);
+				sys_heap_dealloc(NULL,line);
+				line=NULL;
+				line_length=0;
+				if (!ret||SYS_IS_ERROR(ret)){
+					sys_pipe_close(child_in_fd);
+					return;
+				}
+			}
 		}
 	}
 }

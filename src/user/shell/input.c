@@ -1,10 +1,12 @@
-#include <input.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
 
 
+
+#define INPUT_REWIND_BUFFER_SIZE 64
+#define INPUT_BUFFER_SIZE 256
 
 #define KEY_UP 256
 #define KEY_DOWN 257
@@ -44,9 +46,9 @@ static u32 _input_history_length=0;
 
 
 
-static int _get_key(void){
+static s32 _get_key(void){
 _retry:
-	int c=sys_io_input(1);
+	s32 c=sys_io_input(1);
 	if (c!=27){
 		return c;
 	}
