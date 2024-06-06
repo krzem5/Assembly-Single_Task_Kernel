@@ -10,7 +10,7 @@
 
 
 #define COMMAND_PARSER_IS_WHITESPACE(c) ((c)==' '||(c)=='\t'||(c)=='\r')
-#define COMMAND_PARSER_IS_VALID_CHARACTER(c) ((c)&&!COMMAND_PARSER_IS_WHITESPACE(c)&&(c)!='>'&&(c)!='<'&&(c)!='|'&&(c)!='&'&&(c)!=';')
+#define COMMAND_PARSER_IS_VALID_CHARACTER(c) ((c)&&!COMMAND_PARSER_IS_WHITESPACE(c)&&(c)!='\n'&&(c)!='>'&&(c)!='<'&&(c)!='|'&&(c)!='&'&&(c)!=';')
 
 #define COMMAND_PARSER_STATE_ARGUMENTS 0
 #define COMMAND_PARSER_STATE_OPERATOR 1

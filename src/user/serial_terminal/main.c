@@ -39,15 +39,23 @@ static void _input_thread(void* ctx){
 				line_length=0;
 				continue;
 			}
-			line_length++;
-			line=sys_heap_realloc(NULL,line,line_length);
-			line[line_length-1]=buffer[i];
-			sys_error_t ret=sys_fd_write(out_fd,buffer+i,1,0);
-			if (!ret||SYS_IS_ERROR(ret)){
-				sys_pipe_close(child_in_fd);
-				return;
+			if (buffer[i]==0x08){
+				// backspace
+				continue;
 			}
-			if (buffer[i]=='\r'||buffer[i]=='\n'){
+			if (buffer[i]==0x09){
+				// tab
+				continue;
+			}
+			if (buffer[i]==0x0a||buffer[i]==0x0d){
+				line_length++;
+				line=sys_heap_realloc(NULL,line,line_length);
+				line[line_length-1]='\n';
+				sys_error_t ret=sys_fd_write(out_fd,line+line_length-1,1,0);
+				if (!ret||SYS_IS_ERROR(ret)){
+					sys_pipe_close(child_in_fd);
+					return;
+				}
 				ret=sys_fd_write(child_in_fd,line,line_length,0);
 				sys_heap_dealloc(NULL,line);
 				line=NULL;
@@ -56,6 +64,23 @@ static void _input_thread(void* ctx){
 					sys_pipe_close(child_in_fd);
 					return;
 				}
+				continue;
+			}
+			if (buffer[i]==0x1b){
+				// escape sequence
+				continue;
+			}
+			if (buffer[i]==0x7f){
+				// delete
+				continue;
+			}
+			line_length++;
+			line=sys_heap_realloc(NULL,line,line_length);
+			line[line_length-1]=buffer[i];
+			sys_error_t ret=sys_fd_write(out_fd,buffer+i,1,0);
+			if (!ret||SYS_IS_ERROR(ret)){
+				sys_pipe_close(child_in_fd);
+				return;
 			}
 		}
 	}
