@@ -31,6 +31,14 @@ typedef struct _ESCAPE_SEQUENCE_STATE{
 
 
 
+typedef struct _INPUT_STATE{
+	char* line;
+	u32 line_length;
+	u32 cursor;
+} input_state_t;
+
+
+
 static sys_fd_t in_fd=0;
 static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
@@ -38,9 +46,89 @@ static sys_fd_t child_out_fd=0;
 
 
 
+static void _input_redraw_until_end_of_line(const input_state_t* input_state){
+	sys_io_print_to_fd(out_fd,"\x1b[J%s\x1b[%uD\x1b[C",input_state->line+input_state->cursor-1,input_state->line_length-input_state->cursor+1);
+}
+
+
+
+static void _input_add_character(input_state_t* input_state,char c){
+	input_state->line_length++;
+	input_state->line=sys_heap_realloc(NULL,input_state->line,input_state->line_length+1);
+	for (u32 i=input_state->line_length-1;i>input_state->cursor;i--){
+		input_state->line[i]=input_state->line[i-1];
+	}
+	input_state->line[input_state->cursor]=c;
+	input_state->line[input_state->line_length]=0;
+	input_state->cursor++;
+	_input_redraw_until_end_of_line(input_state);
+}
+
+
+
+static void _input_delete_character(input_state_t* input_state,bool is_backspace){
+	if (is_backspace){
+		input_state->cursor--;
+	}
+	if (input_state->cursor>=input_state->line_length){
+		return;
+	}
+	for (u32 i=input_state->cursor;i<input_state->line_length;i++){
+		input_state->line[i]=input_state->line[i+1];
+	}
+	input_state->line_length--;
+	input_state->line=sys_heap_realloc(NULL,input_state->line,input_state->line_length+1);
+	input_state->line[input_state->line_length]=0;
+	sys_io_print_to_fd(out_fd,"\x1b[%uD",(is_backspace?2:1));
+	_input_redraw_until_end_of_line(input_state);
+}
+
+
+
+static void _input_process_csi_sequence(input_state_t* input_state,const char* sequence,u32 length){
+	if (!sys_string_compare(sequence,"C")){
+		if (input_state->cursor<input_state->line_length){
+			input_state->cursor++;
+			sys_io_print_to_fd(out_fd,"\x1b[C");
+		}
+		return;
+	}
+	if (!sys_string_compare(sequence,"D")){
+		if (input_state->cursor){
+			input_state->cursor--;
+			sys_io_print_to_fd(out_fd,"\x1b[D");
+		}
+		return;
+	}
+	if (!sys_string_compare(sequence,"H")||!sys_string_compare(sequence,"1~")||!sys_string_compare(sequence,"7~")){
+		if (input_state->cursor){
+			sys_io_print_to_fd(out_fd,"\x1b[%uD",input_state->cursor);
+			input_state->cursor=0;
+		}
+		return;
+	}
+	if (!sys_string_compare(sequence,"F")||!sys_string_compare(sequence,"4~")||!sys_string_compare(sequence,"8~")){
+		if (input_state->cursor<input_state->line_length){
+			sys_io_print_to_fd(out_fd,"\x1b[%uC",input_state->line_length-input_state->cursor);
+			input_state->cursor=input_state->line_length;
+		}
+		return;
+	}
+	if (!sys_string_compare(sequence,"3~")){
+		_input_delete_character(input_state,0);
+		return;
+	}
+	sys_io_print_to_fd(out_fd,"<sequence: '%s'>",sequence);
+}
+
+
+
 static void _input_thread(void* ctx){
-	char* line=NULL;
-	u32 line_length=0;
+	input_state_t input_state={
+		NULL,
+		0,
+		0
+	};
 	escape_sequence_state_t escape_sequence_state={
 		ESCAPE_SEQUENCE_STATE_NONE,
 	};
@@ -77,7 +165,7 @@ static void _input_thread(void* ctx){
 					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
 					escape_sequence_state.length++;
 					escape_sequence_state.data[escape_sequence_state.length]=0;
-					sys_io_print_to_fd(out_fd,"<CSI control sequence: '%s'>",escape_sequence_state.data);
+					_input_process_csi_sequence(&input_state,escape_sequence_state.data,escape_sequence_state.length);
 					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
 					continue;
 				}
@@ -85,14 +173,17 @@ static void _input_thread(void* ctx){
 			}
 			if (buffer[i]==0x03){
 				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
-				sys_heap_dealloc(NULL,line);
-				line=NULL;
-				line_length=0;
+				sys_heap_dealloc(NULL,input_state.line);
+				input_state.line=NULL;
+				input_state.line_length=0;
+				input_state.cursor=0;
 				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
 				continue;
 			}
-			if (buffer[i]==0x08){
-				sys_io_print_to_fd(out_fd,"<backspace>");
+			if (buffer[i]==0x08||buffer[i]==0x7f){
+				if (input_state.cursor){
+					_input_delete_character(&input_state,1);
+				}
 				continue;
 			}
 			if (buffer[i]==0x09){
@@ -100,18 +191,15 @@ static void _input_thread(void* ctx){
 				continue;
 			}
 			if (buffer[i]==0x0a||buffer[i]==0x0d){
-				line_length++;
-				line=sys_heap_realloc(NULL,line,line_length);
-				line[line_length-1]='\n';
-				sys_error_t ret=sys_fd_write(out_fd,line+line_length-1,1,0);
-				if (!ret||SYS_IS_ERROR(ret)){
-					sys_pipe_close(child_in_fd);
-					return;
-				}
-				ret=sys_fd_write(child_in_fd,line,line_length,0);
-				sys_heap_dealloc(NULL,line);
-				line=NULL;
-				line_length=0;
+				sys_io_print_to_fd(out_fd,"\x1b[E\n");
+				input_state.line_length++;
+				input_state.line=sys_heap_realloc(NULL,input_state.line,input_state.line_length);
+				input_state.line[input_state.line_length-1]='\n';
+				sys_error_t ret=sys_fd_write(child_in_fd,input_state.line,input_state.line_length,0);
+				sys_heap_dealloc(NULL,input_state.line);
+				input_state.line=NULL;
+				input_state.line_length=0;
+				input_state.cursor=0;
 				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
 				if (!ret||SYS_IS_ERROR(ret)){
 					sys_pipe_close(child_in_fd);
@@ -123,18 +211,7 @@ static void _input_thread(void* ctx){
 				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_INIT;
 				continue;
 			}
-			if (buffer[i]==0x7f){
-				sys_io_print_to_fd(out_fd,"<delete>");
-				continue;
-			}
-			line_length++;
-			line=sys_heap_realloc(NULL,line,line_length);
-			line[line_length-1]=buffer[i];
-			sys_error_t ret=sys_fd_write(out_fd,buffer+i,1,0);
-			if (!ret||SYS_IS_ERROR(ret)){
-				sys_pipe_close(child_in_fd);
-				return;
-			}
+			_input_add_character(&input_state,buffer[i]);
 		}
 	}
 }
