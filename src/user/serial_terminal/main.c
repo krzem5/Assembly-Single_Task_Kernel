@@ -187,7 +187,7 @@ static void _input_thread(void* ctx){
 				continue;
 			}
 			if (buffer[i]==0x09){
-				sys_io_print_to_fd(out_fd,"<tab>");
+				sys_io_print_to_fd(out_fd,"<sequence: tab>");
 				continue;
 			}
 			if (buffer[i]==0x0a||buffer[i]==0x0d){
