@@ -31,6 +31,17 @@ SYS_PUBLIC u32 sys_io_print(const char* template,...){
 
 
 
+SYS_PUBLIC u32 sys_io_print_to_fd(sys_fd_t fd,const char* template,...){
+	sys_var_arg_list_t va;
+	sys_var_arg_init(va,template);
+	char buffer[4096];
+	u32 out=sys_format_string_va(buffer,sizeof(buffer)/sizeof(char),template,&va);
+	sys_var_arg_deinit(va);
+	return sys_fd_write(fd,buffer,out,0);
+}
+
+
+
 SYS_PUBLIC s32 sys_io_input(bool blocking){
 	char buffer[1];
 	return (sys_fd_read(sys_io_input_fd,buffer,1,(blocking?0:SYS_FD_FLAG_NONBLOCKING))==1?buffer[0]:-1);

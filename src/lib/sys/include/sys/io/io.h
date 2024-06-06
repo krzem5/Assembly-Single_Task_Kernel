@@ -18,6 +18,10 @@ u32 __attribute__((access(read_only,1),nonnull(1))) sys_io_print(const char* tem
 
 
 
+u32 __attribute__((access(read_only,2),nonnull(2))) sys_io_print_to_fd(sys_fd_t fd,const char* template,...);
+
+
+
 s32 sys_io_input(bool blocking);
 
 

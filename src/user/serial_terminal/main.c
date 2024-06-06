@@ -14,6 +14,23 @@
 
 
 
+#define ESCAPE_SEQUENCE_STATE_NONE 0
+#define ESCAPE_SEQUENCE_STATE_INIT 1
+#define ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS 2
+#define ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE 3
+
+#define MAX_ESCAPE_SEQUENCE_LENGTH 16
+
+
+
+typedef struct _ESCAPE_SEQUENCE_STATE{
+	u32 state;
+	u32 length;
+	char data[MAX_ESCAPE_SEQUENCE_LENGTH+1];
+} escape_sequence_state_t;
+
+
+
 static sys_fd_t in_fd=0;
 static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
@@ -24,6 +41,9 @@ static sys_fd_t child_out_fd=0;
 static void _input_thread(void* ctx){
 	char* line=NULL;
 	u32 line_length=0;
+	escape_sequence_state_t escape_sequence_state={
+		ESCAPE_SEQUENCE_STATE_NONE,
+	};
 	while (1){
 		u8 buffer[4096];
 		sys_error_t count=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
@@ -32,19 +52,51 @@ static void _input_thread(void* ctx){
 			return;
 		}
 		for (u32 i=0;i<count;i++){
+			if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_INIT){
+				if (buffer[i]=='['){
+					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS;
+					escape_sequence_state.length=0;
+					continue;
+				}
+				// non-CSI escape sequence
+				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
+			}
+			else if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS||escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE){
+				if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS&&buffer[i]>=0x30&&buffer[i]<=0x3f&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
+					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
+					escape_sequence_state.length++;
+					continue;
+				}
+				if (buffer[i]>=0x20&&buffer[i]<=0x2f&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
+					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE;
+					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
+					escape_sequence_state.length++;
+					continue;
+				}
+				if (buffer[i]>=0x40&&buffer[i]<=0x7e&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
+					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
+					escape_sequence_state.length++;
+					escape_sequence_state.data[escape_sequence_state.length]=0;
+					sys_io_print_to_fd(out_fd,"<CSI control sequence: '%s'>",escape_sequence_state.data);
+					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
+					continue;
+				}
+				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
+			}
 			if (buffer[i]==0x03){
 				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
 				sys_heap_dealloc(NULL,line);
 				line=NULL;
 				line_length=0;
+				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
 				continue;
 			}
 			if (buffer[i]==0x08){
-				// backspace
+				sys_io_print_to_fd(out_fd,"<backspace>");
 				continue;
 			}
 			if (buffer[i]==0x09){
-				// tab
+				sys_io_print_to_fd(out_fd,"<tab>");
 				continue;
 			}
 			if (buffer[i]==0x0a||buffer[i]==0x0d){
@@ -60,6 +112,7 @@ static void _input_thread(void* ctx){
 				sys_heap_dealloc(NULL,line);
 				line=NULL;
 				line_length=0;
+				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
 				if (!ret||SYS_IS_ERROR(ret)){
 					sys_pipe_close(child_in_fd);
 					return;
@@ -67,11 +120,11 @@ static void _input_thread(void* ctx){
 				continue;
 			}
 			if (buffer[i]==0x1b){
-				// escape sequence
+				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_INIT;
 				continue;
 			}
 			if (buffer[i]==0x7f){
-				// delete
+				sys_io_print_to_fd(out_fd,"<delete>");
 				continue;
 			}
 			line_length++;
