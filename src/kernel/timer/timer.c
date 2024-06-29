@@ -2,10 +2,12 @@
 #include <kernel/clock/clock.h>
 #include <kernel/cpu/cpu.h>
 #include <kernel/error/error.h>
+#include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/mp/event.h>
@@ -13,6 +15,7 @@
 #include <kernel/timer/timer.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "timer"
 
@@ -66,6 +69,7 @@ static void _timer_handle_destructor(handle_t* handle){
 		}
 		_remove_from_chain(timer);
 		event_delete(timer->event);
+		amm_dealloc(timer->_event_name);
 	}
 	omm_dealloc(_timer_allocator,timer);
 }
@@ -86,6 +90,10 @@ KERNEL_PUBLIC timer_t* timer_create(const char* name,u64 interval,u64 count){
 	timer_t* out=omm_alloc(_timer_allocator);
 	out->rb_node.key=0;
 	out->name=name;
+	char buffer[512];
+	u32 length=format_string(buffer,sizeof(buffer),"kernel.timer@%s",name)+1;
+	out->_event_name=amm_alloc(length);
+	mem_copy(out->_event_name,buffer,length);
 	out->prev=NULL;
 	out->next=NULL;
 	handle_new(timer_handle_type,&(out->handle));
@@ -94,7 +102,7 @@ KERNEL_PUBLIC timer_t* timer_create(const char* name,u64 interval,u64 count){
 		acl_set(out->handle.acl,THREAD_DATA->process,0,TIMER_ACL_FLAG_UPDATE|TIMER_ACL_FLAG_DELETE);
 	}
 	rwlock_init(&(out->lock));
-	out->event=event_create("kernel.timer");
+	out->event=event_create(out->_event_name);
 	out->interval=0;
 	out->count=0;
 	out->is_deleted=0;

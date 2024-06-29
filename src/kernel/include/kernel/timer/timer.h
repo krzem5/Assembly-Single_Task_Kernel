@@ -24,6 +24,7 @@
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
 	const char* name;
+	char* _event_name;
 	struct _TIMER* prev;
 	struct _TIMER* next;
 	handle_t handle;
