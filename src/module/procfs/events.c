@@ -77,7 +77,7 @@ static u64 _process_read_stderr_callback(void* ctx,u64 offset,void* buffer,u64 s
 
 static u64 _process_read_group_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	handle_t* handle=handle_lookup_and_acquire((u64)ctx,process_handle_type);
-	char group_buffer[4096]="";
+	char group_buffer[64]="";
 	u32 group_buffer_length=0;
 	if (handle){
 		const process_t* process=KERNEL_CONTAINEROF(handle,const process_t,handle);
