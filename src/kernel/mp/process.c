@@ -94,7 +94,7 @@ KERNEL_EARLY_INIT(){
 	process_kernel->image=smm_alloc("/boot/kernel",0);
 	process_kernel->uid=0;
 	process_kernel->gid=0;
-	process_kernel->event=event_create("kernel.process.termination",NULL);
+	process_kernel->event=event_create("kernel.process.termination","0");
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=vfs_get_root_node();
@@ -126,7 +126,9 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	thread_list_init(&(out->thread_list));
 	out->name=smm_alloc(name,0);
 	out->image=smm_alloc(image,0);
-	out->event=event_create("kernel.process.termination",NULL);
+	char buffer[32];
+	format_string(buffer,sizeof(buffer),"%lu",HANDLE_ID_GET_INDEX(out->handle.rb_node.key));
+	out->event=event_create("kernel.process.termination",buffer);
 	handle_list_init(&(out->handle_list));
 	if (THREAD_DATA->header.current_thread){
 		out->vfs_root=THREAD_DATA->process->vfs_root;
