@@ -1,5 +1,6 @@
 #include <sys/drive/drive.h>
 #include <sys/error/error.h>
+#include <sys/format/format.h>
 #include <sys/fs/fs.h>
 #include <sys/io/io.h>
 #include <sys/partition/partition.h>
@@ -8,7 +9,7 @@
 
 
 
-int main(int argc,const char** argv){
+static void _list_data(void){
 	sys_io_print("Unformatted drives:\n");
 	for (sys_drive_t drive=sys_drive_iter_start();drive;drive=sys_drive_iter_next(drive)){
 		sys_drive_data_t drive_data;
@@ -43,5 +44,92 @@ int main(int argc,const char** argv){
 		}
 		sys_io_print("\x1b[1m%s\x1b[0m\t%s\n",data.name,((data.flags&SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT)?"(can format)":""));
 	}
-	return 0;
+}
+
+
+
+int main(int argc,const char** argv){
+	if (argc<=1){
+		_list_data();
+		return 0;
+	}
+	if (!sys_string_compare(argv[1],"format")){
+		if (argc<4){
+			return 1;
+		}
+		sys_drive_t drive=sys_drive_iter_start();
+		for (;drive;drive=sys_drive_iter_next(drive)){
+			sys_drive_data_t drive_data;
+			if (SYS_IS_ERROR(sys_drive_get_data(drive,&drive_data))){
+				continue;
+			}
+			char buffer[64];
+			sys_format_string(buffer,sizeof(buffer),"%s%ud%u",drive_data.type,drive_data.controller_index,drive_data.device_index);
+			if (!sys_string_compare(buffer,argv[2])){
+				if (drive_data.partition_table_type[0]){
+					return 1;
+				}
+				break;
+			}
+		}
+		if (drive){
+			sys_partition_table_descriptor_t partition_table_descriptor=sys_partition_table_descriptor_iter_start();
+			for (;partition_table_descriptor;partition_table_descriptor=sys_partition_table_descriptor_iter_next(partition_table_descriptor)){
+				sys_partition_table_descriptor_data_t data;
+				if (SYS_IS_ERROR(sys_partition_table_descriptor_get_data(partition_table_descriptor,&data))){
+					continue;
+				}
+				if (!sys_string_compare(data.name,argv[3])){
+					if (!(data.flags&SYS_PARTITION_TABLE_DESCRIPTOR_FLAG_CAN_FORMAT)){
+						return 1;
+					}
+					break;
+				}
+			}
+			if (partition_table_descriptor){
+				sys_io_print("drive: %p, partition_table_descriptor: %p\n",drive,partition_table_descriptor);
+				return 0;
+			}
+			return 1;
+		}
+		sys_partition_t partition=sys_partition_iter_start();
+		for (;partition;partition=sys_partition_iter_next(partition)){
+			sys_partition_data_t partition_data;
+			sys_drive_data_t drive_data;
+			if (SYS_IS_ERROR(sys_partition_get_data(partition,&partition_data))||SYS_IS_ERROR(sys_drive_get_data(partition_data.drive,&drive_data))){
+				continue;
+			}
+			char buffer[64];
+			sys_format_string(buffer,sizeof(buffer),"%s%ud%up%u",drive_data.type,drive_data.controller_index,drive_data.device_index,partition_data.index);
+			if (!sys_string_compare(buffer,argv[2])){
+				sys_fs_data_t fs_data;
+				if (!SYS_IS_ERROR(sys_fs_get_data(partition_data.fs,&fs_data))){
+					return 1;
+				}
+				break;
+			}
+		}
+		if (partition){
+			sys_fs_descriptor_t fs_descriptor=sys_fs_descriptor_iter_start();
+			for (;fs_descriptor;fs_descriptor=sys_fs_descriptor_iter_next(fs_descriptor)){
+				sys_fs_descriptor_data_t data;
+				if (SYS_IS_ERROR(sys_fs_descriptor_get_data(fs_descriptor,&data))){
+					continue;
+				}
+				if (!sys_string_compare(data.name,argv[3])){
+					if (!(data.flags&SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT)){
+						return 1;
+					}
+					break;
+				}
+			}
+			if (fs_descriptor){
+				sys_io_print("partition: %p, fs_descriptor: %p\n",partition,fs_descriptor);
+				return 0;
+			}
+			return 1;
+		}
+		return 1;
+	}
+	return 1;
 }
