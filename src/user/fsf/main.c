@@ -55,6 +55,7 @@ int main(int argc,const char** argv){
 	}
 	if (!sys_string_compare(argv[1],"format")){
 		if (argc<4){
+			sys_io_print("Usage: fsf format <drive> <partition_table>\n       fsf format <partition> <filesystem>\n");
 			return 1;
 		}
 		sys_drive_t drive=sys_drive_iter_start();
@@ -67,6 +68,7 @@ int main(int argc,const char** argv){
 			sys_format_string(buffer,sizeof(buffer),"%s%ud%u",drive_data.type,drive_data.controller_index,drive_data.device_index);
 			if (!sys_string_compare(buffer,argv[2])){
 				if (drive_data.partition_table_type[0]){
+					sys_io_print("fsf: drive '%s' is already formatted\n",buffer);
 					return 1;
 				}
 				break;
@@ -81,6 +83,7 @@ int main(int argc,const char** argv){
 				}
 				if (!sys_string_compare(data.name,argv[3])){
 					if (!(data.flags&SYS_PARTITION_TABLE_DESCRIPTOR_FLAG_CAN_FORMAT)){
+						sys_io_print("fsf: partition table '%s' cannot be used for formatting\n",data.name);
 						return 1;
 					}
 					break;
@@ -90,6 +93,7 @@ int main(int argc,const char** argv){
 				sys_io_print("drive: %p, partition_table_descriptor: %p\n",drive,partition_table_descriptor);
 				return 0;
 			}
+			sys_io_print("fsf: partition table '%s' not found\n",argv[3]);
 			return 1;
 		}
 		sys_partition_t partition=sys_partition_iter_start();
@@ -104,6 +108,7 @@ int main(int argc,const char** argv){
 			if (!sys_string_compare(buffer,argv[2])){
 				sys_fs_data_t fs_data;
 				if (!SYS_IS_ERROR(sys_fs_get_data(partition_data.fs,&fs_data))){
+					sys_io_print("fsf: partition '%s' is already formatted\n",buffer);
 					return 1;
 				}
 				break;
@@ -118,6 +123,7 @@ int main(int argc,const char** argv){
 				}
 				if (!sys_string_compare(data.name,argv[3])){
 					if (!(data.flags&SYS_FS_DESCRIPTOR_FLAG_CAN_FORMAT)){
+						sys_io_print("fsf: filesystem '%s' cannot be used for formatting\n",data.name);
 						return 1;
 					}
 					break;
@@ -127,8 +133,10 @@ int main(int argc,const char** argv){
 				sys_io_print("partition: %p, fs_descriptor: %p\n",partition,fs_descriptor);
 				return 0;
 			}
+			sys_io_print("fsf: filesystem '%s' not found\n",argv[3]);
 			return 1;
 		}
+		sys_io_print("fsf: device '%s' not found\n",argv[2]);
 		return 1;
 	}
 	return 1;
