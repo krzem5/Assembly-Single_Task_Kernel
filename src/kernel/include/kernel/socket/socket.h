@@ -108,7 +108,7 @@ bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protoco
 
 
 
-bool socket_shutdown(vfs_node_t* node,u8 flags);
+bool socket_shutdown(vfs_node_t* node,u32 flags);
 
 
 

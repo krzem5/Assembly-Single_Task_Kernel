@@ -200,7 +200,7 @@ KERNEL_PUBLIC bool socket_create_pair(socket_domain_t domain,socket_type_t type,
 
 
 
-KERNEL_PUBLIC bool socket_shutdown(vfs_node_t* node,u8 flags){
+KERNEL_PUBLIC bool socket_shutdown(vfs_node_t* node,u32 flags){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
