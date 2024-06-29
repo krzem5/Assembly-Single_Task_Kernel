@@ -37,7 +37,7 @@ static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* add
 
 
 static void _socket_debind_callback(socket_vfs_node_t* socket_node){
-	panic("_socket_debind_callback");
+	panic("UDP:_socket_debind_callback");
 }
 
 
@@ -56,7 +56,7 @@ static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* 
 
 
 static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
-	panic("_socket_deconnect_callback");
+	panic("UDP:_socket_deconnect_callback");
 }
 
 

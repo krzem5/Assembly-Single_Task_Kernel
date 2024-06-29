@@ -6,4 +6,11 @@
 
 
 
+typedef struct _NET_TCP_ADDRESS{
+	net_ip4_address_t address;
+	socket_port_t port;
+} net_tcp_address_t;
+
+
+
 #endif

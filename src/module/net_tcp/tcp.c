@@ -19,6 +19,10 @@
 
 
 
+static omm_allocator_t* KERNEL_INIT_WRITE _net_tcp_address_allocator=NULL;
+
+
+
 static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	WARN("TCP:_socket_bind_callback");
 	return 0;
@@ -27,7 +31,7 @@ static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* add
 
 
 static void _socket_debind_callback(socket_vfs_node_t* socket_node){
-	panic("_socket_debind_callback");
+	panic("TCP:_socket_debind_callback");
 }
 
 
@@ -101,6 +105,13 @@ static const net_ip4_protocol_descriptor_t _net_tcp_ip4_protocol_descriptor={
 	PROTOCOL_TYPE,
 	_rx_callback
 };
+
+
+
+MODULE_INIT(){
+	_net_tcp_address_allocator=omm_init("net.tcp.address",sizeof(net_tcp_address_t),8,4);
+	rwlock_init(&(_net_tcp_address_allocator->lock));
+}
 
 
 
