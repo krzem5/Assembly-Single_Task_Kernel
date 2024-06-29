@@ -1,4 +1,5 @@
 #include <kernel/error/error.h>
+#include <kernel/event/process.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
@@ -20,11 +21,12 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE process_group_handle_type;
 
 
 static void _process_group_handle_destructor(handle_t* handle){
-	process_group_t* process_group=KERNEL_CONTAINEROF(handle,process_group_t,handle);
-	if (process_group->tree.root){
+	process_group_t* group=KERNEL_CONTAINEROF(handle,process_group_t,handle);
+	if (group->tree.root){
 		panic("Nonempty process group not referenced");
 	}
-	omm_dealloc(_process_group_allocator,process_group);
+	event_dispatch_process_group_delete_notification(group);
+	omm_dealloc(_process_group_allocator,group);
 }
 
 
@@ -44,6 +46,7 @@ KERNEL_PUBLIC process_group_t* process_group_create(process_t* process){
 	handle_new(process_group_handle_type,&(out->handle));
 	rwlock_init(&(out->lock));
 	rb_tree_init(&(out->tree));
+	event_dispatch_process_group_create_notification(out);
 	process_group_join(out,process);
 	return out;
 }
@@ -64,11 +67,13 @@ KERNEL_PUBLIC void process_group_join(process_group_t* group,process_t* process)
 	rb_tree_insert_node(&(group->tree),&(entry->rb_node));
 	process->process_group=group;
 	rwlock_release_write(&(group->lock));
+	event_dispatch_process_group_join_notification(group,process);
 }
 
 
 
 KERNEL_PUBLIC void process_group_leave(process_group_t* group,process_t* process){
+	event_dispatch_process_group_leave_notification(group,process);
 	rwlock_acquire_write(&(group->lock));
 	process_group_entry_t* entry=(process_group_entry_t*)rb_tree_lookup_node(&(group->tree),process->handle.rb_node.key);
 	if (!entry){
