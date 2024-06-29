@@ -49,6 +49,7 @@ extern u64 syscall_partition_get_data();
 extern u64 syscall_partition_get_next();
 extern u64 syscall_partition_table_descriptor_get_data();
 extern u64 syscall_partition_table_descriptor_get_next();
+extern u64 syscall_partition_table_descriptor_format();
 extern u64 syscall_pipe_close();
 extern u64 syscall_pipe_create();
 extern u64 syscall_process_get_event();
@@ -197,5 +198,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[95]=syscall_signal_set_handler,
 	[96]=syscall_signal_dispatch,
 	[97]=syscall_fs_format,
+	[98]=syscall_partition_table_descriptor_format,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

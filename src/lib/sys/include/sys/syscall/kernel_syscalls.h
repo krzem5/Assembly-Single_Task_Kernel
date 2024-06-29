@@ -575,4 +575,10 @@ static inline u64 _sys_syscall_fs_format(u64 partition,u64 fs_descriptor){
 
 
 
+static inline u64 _sys_syscall_partition_table_descriptor_format(u64 drive,u64 partition_table_descriptor){
+	return _sys_syscall2(0x100000062,drive,partition_table_descriptor);
+}
+
+
+
 #endif

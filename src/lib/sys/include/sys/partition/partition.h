@@ -1,5 +1,6 @@
 #ifndef _SYS_PARTITION_PARTITION_H_
 #define _SYS_PARTITION_PARTITION_H_ 1
+#include <sys/drive/drive.h>
 #include <sys/error/error.h>
 #include <sys/types.h>
 
@@ -45,6 +46,10 @@ sys_partition_t sys_partition_iter_next(sys_partition_t partition);
 
 
 sys_error_t __attribute__((access(write_only,2),nonnull)) sys_partition_get_data(sys_partition_t partition,sys_partition_data_t* out);
+
+
+
+sys_error_t sys_partition_table_descriptor_format(sys_drive_t drive,sys_partition_table_descriptor_t partition_table_descriptor);
 
 
 

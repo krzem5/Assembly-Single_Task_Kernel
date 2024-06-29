@@ -127,6 +127,11 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 }
 
 
+KERNEL_PUBLIC bool partition_format(drive_t* drive,partition_table_descriptor_t* descriptor){
+	return (descriptor->config->format_callback?descriptor->config->format_callback(drive):0);
+}
+
+
 
 error_t syscall_partition_get_next(handle_id_t partition_handle_id){
 	handle_descriptor_t* partition_handle_descriptor=handle_get_descriptor(partition_handle_type);
@@ -157,6 +162,24 @@ error_t syscall_partition_get_data(u64 partition_handle_id,KERNEL_USER_POINTER p
 	buffer->fs=(partition->fs?partition->fs->handle.rb_node.key:0);
 	handle_release(partition_handle);
 	return ERROR_OK;
+}
+
+
+
+error_t syscall_partition_table_descriptor_format(handle_id_t drive_handle_id,handle_id_t partition_table_descriptor_handle_id){
+	handle_t* drive_handle=handle_lookup_and_acquire(drive_handle_id,drive_handle_type);
+	if (!drive_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	handle_t* partition_table_descriptor_handle=handle_lookup_and_acquire(partition_table_descriptor_handle_id,partition_table_descriptor_handle_type);
+	if (!partition_table_descriptor_handle){
+		handle_release(drive_handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	error_t out=(partition_format(KERNEL_CONTAINEROF(drive_handle,drive_t,handle),KERNEL_CONTAINEROF(partition_table_descriptor_handle,partition_table_descriptor_t,handle))?ERROR_OK:ERROR_FAILED);
+	handle_release(drive_handle);
+	handle_release(partition_table_descriptor_handle);
+	return out;
 }
 
 

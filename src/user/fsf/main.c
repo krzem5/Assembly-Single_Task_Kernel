@@ -84,7 +84,10 @@ int main(int argc,const char** argv){
 				}
 			}
 			if (partition_table_descriptor){
-				sys_io_print("drive: %p, partition_table_descriptor: %p\n",drive,partition_table_descriptor);
+				if (SYS_IS_ERROR(sys_partition_table_descriptor_format(drive,partition_table_descriptor))){
+					sys_io_print("fsf: unable to format drive '%s' with partition table '%s'",argv[2],argv[3]);
+					return 1;
+				}
 				return 0;
 			}
 			sys_io_print("fsf: partition table '%s' not found\n",argv[3]);

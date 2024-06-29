@@ -7,7 +7,7 @@
 #include <kernel/partition/partition.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
-#define KERNEL_LOG_NAME "gpt_partition"
+#define KERNEL_LOG_NAME "gpt"
 
 
 
@@ -62,7 +62,8 @@ static bool _gpt_load_partitions(drive_t* drive){
 
 
 static bool _gpt_format_drive(drive_t* drive){
-	panic("_gpt_format_drive");
+	ERROR("_gpt_format_drive");
+	return 0;
 }
 
 

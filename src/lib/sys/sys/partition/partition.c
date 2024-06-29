@@ -1,3 +1,4 @@
+#include <sys/drive/drive.h>
 #include <sys/error/error.h>
 #include <sys/partition/partition.h>
 #include <sys/syscall/kernel_syscalls.h>
@@ -19,6 +20,12 @@ SYS_PUBLIC sys_partition_t sys_partition_iter_next(sys_partition_t partition){
 
 SYS_PUBLIC sys_error_t sys_partition_get_data(sys_partition_t partition,sys_partition_data_t* out){
 	return _sys_syscall_partition_get_data(partition,out,sizeof(sys_partition_data_t));
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_partition_table_descriptor_format(sys_drive_t drive,sys_partition_table_descriptor_t partition_table_descriptor){
+	return _sys_syscall_partition_table_descriptor_format(drive,partition_table_descriptor);
 }
 
 
