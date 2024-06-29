@@ -24,8 +24,14 @@ static omm_allocator_t* KERNEL_INIT_WRITE _net_tcp_address_allocator=NULL;
 
 
 static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
-	WARN("TCP:_socket_bind_callback");
-	return 0;
+	const net_tcp_address_t* tcp_address=(const net_tcp_address_t*)address;
+	if (address_length!=sizeof(net_tcp_address_t)||!socket_port_reserve(socket_node,tcp_address->port)){
+		return 0;
+	}
+	net_tcp_address_t* local_ctx=omm_alloc(_net_tcp_address_allocator);
+	*local_ctx=*tcp_address;
+	socket_node->local_ctx=local_ctx;
+	return 1;
 }
 
 
@@ -37,8 +43,14 @@ static void _socket_debind_callback(socket_vfs_node_t* socket_node){
 
 
 static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
-	WARN("TCP:_socket_connect_callback");
-	return 0;
+	const net_tcp_address_t* tcp_address=(const net_tcp_address_t*)address;
+	if (address_length!=sizeof(net_tcp_address_t)||!socket_port_reserve(socket_node,tcp_address->port)){
+		return 0;
+	}
+	net_tcp_address_t* remote_ctx=omm_alloc(_net_tcp_address_allocator);
+	*remote_ctx=*tcp_address;
+	socket_node->remote_ctx=remote_ctx;
+	return 1;
 }
 
 
