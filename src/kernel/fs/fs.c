@@ -163,7 +163,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 
 
 
-error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER_POINTER const char* path){
+error_t syscall_fs_mount(handle_id_t fs_handle_id,KERNEL_USER_POINTER const char* path){
 	u64 path_length=syscall_get_string_length((const char*)path);
 	if (!path_length||path_length>4095){
 		return ERROR_INVALID_ARGUMENT(1);
@@ -178,6 +178,13 @@ error_t syscall_fs_mount(u64 fs_handle_id,KERNEL_USER_POINTER const char* path){
 	error_t out=vfs_mount(KERNEL_CONTAINEROF(fs_handle,filesystem_t,handle),buffer,1);
 	handle_release(fs_handle);
 	return out;
+}
+
+
+
+error_t syscall_fs_format(handle_id_t partition_handle_id,handle_id_t fs_descriptor_handle_id){
+	ERROR("syscall_fs_format(%p,%p)",partition_handle_id,fs_descriptor_handle_id);
+	return 0;
 }
 
 

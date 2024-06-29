@@ -34,6 +34,7 @@ extern u64 syscall_fd_unlink();
 extern u64 syscall_fd_write();
 extern u64 syscall_fs_descriptor_get_data();
 extern u64 syscall_fs_descriptor_get_next();
+extern u64 syscall_fs_format();
 extern u64 syscall_fs_get_data();
 extern u64 syscall_fs_get_next();
 extern u64 syscall_fs_mount();
@@ -195,5 +196,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[94]=syscall_signal_set_mask,
 	[95]=syscall_signal_set_handler,
 	[96]=syscall_signal_dispatch,
+	[97]=syscall_fs_format,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

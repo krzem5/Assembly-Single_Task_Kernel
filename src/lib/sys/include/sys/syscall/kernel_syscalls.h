@@ -569,4 +569,10 @@ static inline u64 _sys_syscall_signal_dispatch(u64 handle,u32 signal){
 
 
 
+static inline u64 _sys_syscall_fs_format(u64 partition,u64 fs_descriptor){
+	return _sys_syscall2(0x100000061,partition,fs_descriptor);
+}
+
+
+
 #endif

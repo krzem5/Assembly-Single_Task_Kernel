@@ -130,7 +130,10 @@ int main(int argc,const char** argv){
 				}
 			}
 			if (fs_descriptor){
-				sys_io_print("partition: %p, fs_descriptor: %p\n",partition,fs_descriptor);
+				if (SYS_IS_ERROR(sys_fs_format(partition,fs_descriptor))){
+					sys_io_print("fsf: unable to format partition '%s' with filesystem '%s'",argv[2],argv[3]);
+					return 1;
+				}
 				return 0;
 			}
 			sys_io_print("fsf: filesystem '%s' not found\n",argv[3]);
