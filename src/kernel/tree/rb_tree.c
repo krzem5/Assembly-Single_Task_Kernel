@@ -59,26 +59,36 @@ KERNEL_PUBLIC void rb_tree_init(rb_tree_t* tree){
 
 
 KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
+	if (rb_tree_lookup_or_insert_node(tree,x)){
+		ERROR("rb_tree_insert_node: duplicated key: %p",x->key);
+		panic("rb_tree_insert_node: duplicated key");
+	}
+}
+
+
+
+KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_or_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 	rwlock_acquire_write(&(tree->lock));
 	x->rb_left=NULL;
 	x->rb_right=NULL;
 	if (!tree->root){
 		x->rb_parent_and_color=0;
 		tree->root=x;
-		goto _cleanup;
+		rwlock_release_write(&(tree->lock));
+		return NULL;
 	}
 	x->rb_parent_and_color=1;
 	rb_tree_node_t* y=tree->root;
 	while (y->rb_nodes[y->key<x->key]){
 		if (x->key==y->key){
-			ERROR("rb_tree_insert_node: duplicated key: %p",x->key);
-			panic("rb_tree_insert_node: duplicated key");
+			// keep tree lock held
+			return x;
 		}
 		y=y->rb_nodes[y->key<x->key];
 	}
 	if (x->key==y->key){
-		ERROR("rb_tree_insert_node: duplicated key: %p",x->key);
-		panic("rb_tree_insert_node: duplicated key");
+		// keep tree lock held
+		return x;
 	}
 	_set_parent(x,y);
 	y->rb_nodes[y->key<x->key]=x;
@@ -106,8 +116,8 @@ KERNEL_PUBLIC void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x){
 		x=z;
 		y=_get_parent(x);
 	}
-_cleanup:
 	rwlock_release_write(&(tree->lock));
+	return NULL;
 }
 
 

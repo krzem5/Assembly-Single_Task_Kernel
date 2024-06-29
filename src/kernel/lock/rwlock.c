@@ -19,6 +19,20 @@ KERNEL_PUBLIC void rwlock_init(rwlock_t* out){
 
 
 
+KERNEL_PUBLIC bool rwlock_try_acquire_write(rwlock_t* lock){
+	scheduler_pause();
+	bool out;
+	lock_profiling_acquire_start(lock);
+	out=!(__atomic_fetch_or(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST)&(1<<RWLOCK_LOCK_BIT));
+	if (out){
+		__atomic_store_n(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST);
+	}
+	lock_profiling_acquire_end(lock);
+	return out;
+}
+
+
+
 KERNEL_PUBLIC void rwlock_acquire_write(rwlock_t* lock){
 	scheduler_pause();
 	lock_profiling_acquire_start(lock);

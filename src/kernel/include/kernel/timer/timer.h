@@ -12,6 +12,10 @@
 #define TIMER_COUNT_ABSOLUTE_TIME 0
 #define TIMER_COUNT_INFINITE 0xffffffffffffffffull
 
+#define TIMER_SCHEDULE_TYPE_NONE 0
+#define TIMER_SCHEDULE_TYPE_TREE 1
+#define TIMER_SCHEDULE_TYPE_CHAIN 2
+
 #define TIMER_ACL_FLAG_UPDATE 1
 #define TIMER_ACL_FLAG_DELETE 2
 
@@ -19,11 +23,14 @@
 
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
+	struct _TIMER* prev;
+	struct _TIMER* next;
 	handle_t handle;
 	rwlock_t lock;
 	event_t* event;
 	u64 interval;
 	u64 count;
+	u32 schedule_type;
 	bool is_deleted;
 } timer_t;
 

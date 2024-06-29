@@ -20,6 +20,10 @@ void rwlock_init(rwlock_t* out);
 
 
 
+bool rwlock_try_acquire_write(rwlock_t* lock);
+
+
+
 void rwlock_acquire_write(rwlock_t* lock);
 
 
