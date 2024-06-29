@@ -4,12 +4,15 @@
 #include <kernel/handle/handle_list.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "event"
@@ -28,11 +31,29 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE event_handle_type=0;
 
 
 
+static char* _create_name(const char* name,const char* resource){
+	u32 name_length=smm_length(name);
+	if (!resource){
+		char* out=amm_alloc(name_length+1);
+		mem_copy(out,name,name_length+1);
+		return out;
+	}
+	u32 resource_length=smm_length(resource);
+	char* out=amm_alloc(name_length+1+resource_length+1);
+	mem_copy(out,name,name_length);
+	out[name_length]='@';
+	mem_copy(out+name_length+1,resource,resource_length+1);
+	return out;
+}
+
+
+
 static void _event_handle_destructor(handle_t* handle){
 	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
 	if (!event->is_deleted){
 		panic("_event_handle_destructor: unreferenced event not deleted");
 	}
+	amm_dealloc(event->name);
 	omm_dealloc(_event_allocator,event);
 }
 
@@ -81,9 +102,9 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC event_t* event_create(const char* name){
+KERNEL_PUBLIC event_t* event_create(const char* name,const char* resource){
 	event_t* out=omm_alloc(_event_allocator);
-	out->name=name;
+	out->name=_create_name(name,resource);
 	handle_new(event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
@@ -261,7 +282,7 @@ void event_await_thread_irq(thread_t* thread,event_t* event){
 
 
 error_t syscall_event_create(u32 is_active){
-	event_t* event=event_create("user");
+	event_t* event=event_create("user",NULL);
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(event->handle));
 	if (is_active){
 		event_set_active(event,is_active,0);

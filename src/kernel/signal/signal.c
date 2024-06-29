@@ -105,7 +105,7 @@ void signal_thread_state_init(signal_thread_state_t* state){
 	rwlock_init(&(state->lock));
 	state->mask=0;
 	state->pending=0;
-	state->event=event_create("kernel.signal");
+	state->event=event_create("kernel.signal",NULL);
 	state->handler=SIGNAL_HANDLER_NONE;
 }
 

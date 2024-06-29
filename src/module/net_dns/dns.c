@@ -191,7 +191,7 @@ MODULE_INIT(){
 	rwlock_init(&(_net_dns_cache_entry_allocator->lock));
 	_net_dns_request_allocator=omm_init("net.dns.request",sizeof(net_dns_request_t),8,4);
 	rwlock_init(&(_net_dns_request_allocator->lock));
-	_net_dns_cache_resolution_event=event_create("net.dns.resolution");
+	_net_dns_cache_resolution_event=event_create("net.dns.resolution",NULL);
 	rwlock_init(&_net_dns_cache_lock);
 	rb_tree_init(&_net_dns_cache_address_tree);
 	rwlock_init(&_net_dns_request_tree_lock);

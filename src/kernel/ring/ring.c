@@ -68,8 +68,8 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	out->write_count=capacity;
 	rwlock_init(&(out->read_lock));
 	rwlock_init(&(out->write_lock));
-	out->read_event=event_create("kernel.ring.read");
-	out->write_event=event_create("kernel.ring.write");
+	out->read_event=event_create("kernel.ring.read",NULL);
+	out->write_event=event_create("kernel.ring.write",NULL);
 	event_set_active(out->write_event,1,1);
 	return out;
 }

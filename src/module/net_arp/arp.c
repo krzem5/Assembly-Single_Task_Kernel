@@ -85,7 +85,7 @@ MODULE_INIT(){
 	LOG("Initializing ARP resolver...");
 	_net_arp_cache_entry_allocator=omm_init("net.arp.cache_entry",sizeof(net_arp_cache_entry_t),8,4);
 	rwlock_init(&(_net_arp_cache_entry_allocator->lock));
-	_net_arp_cache_resolution_event=event_create("net.arp.resolution");
+	_net_arp_cache_resolution_event=event_create("net.arp.resolution",NULL);
 	rwlock_init(&_net_arp_cache_lock);
 	rb_tree_init(&_net_arp_cache_address_tree);
 }

@@ -124,7 +124,7 @@ static thread_t* _thread_create(process_t* process){
 	out->priority=SCHEDULER_PRIORITY_NORMAL;
 	out->state=THREAD_STATE_TYPE_NONE;
 	out->event_sequence_id=0;
-	out->termination_event=event_create("kernel.thread.termination");
+	out->termination_event=event_create("kernel.thread.termination",NULL);
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
