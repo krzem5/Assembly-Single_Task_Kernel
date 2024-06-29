@@ -13,7 +13,7 @@ KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE event_device_notifica
 
 
 KERNEL_EARLY_INIT(){
-	event_device_notification_dispatcher=notification_dispatcher_create();
+	event_device_notification_dispatcher=notification_dispatcher_create("kernel.event.device");
 }
 
 

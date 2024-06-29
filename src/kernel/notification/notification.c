@@ -1,3 +1,4 @@
+#include <kernel/format/format.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -30,8 +31,9 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC notification_dispatcher_t* notification_dispatcher_create(void){
+KERNEL_PUBLIC notification_dispatcher_t* notification_dispatcher_create(const char* name){
 	notification_dispatcher_t* out=omm_alloc(_notification_dispatcher_allocator);
+	out->name=name;
 	rwlock_init(&(out->lock));
 	out->head=omm_alloc(_notification_container_allocator);
 	out->head->next=NULL;
@@ -73,9 +75,19 @@ KERNEL_PUBLIC notification_consumer_t* notification_consumer_create(notification
 	rwlock_init(&(out->lock));
 	out->dispatcher=dispatcher;
 	out->prev=NULL;
-	out->last=dispatcher->head;
-	out->event=event_create("kernel.notification.consumer");
 	dispatcher->head->rc++;
+	out->last=dispatcher->head;
+	if (!dispatcher->_consumer_name){
+		rwlock_acquire_write(&(dispatcher->lock));
+		if (!dispatcher->_consumer_name){
+			char buffer[512];
+			u32 length=format_string(buffer,sizeof(buffer),"kernel.notification.consumer@%s",dispatcher->name);
+			dispatcher->_consumer_name=amm_alloc(length);
+			mem_copy(dispatcher->_consumer_name,buffer,length);
+		}
+		rwlock_release_write(&(dispatcher->lock));
+	}
+	out->event=event_create(dispatcher->_consumer_name);
 	rwlock_acquire_write(&(dispatcher->lock));
 	out->next=dispatcher->consumer_head;
 	if (dispatcher->consumer_head){

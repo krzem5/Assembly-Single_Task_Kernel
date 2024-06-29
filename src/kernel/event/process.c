@@ -18,7 +18,7 @@ KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE event_process_notific
 
 
 KERNEL_EARLY_INIT(){
-	event_process_notification_dispatcher=notification_dispatcher_create();
+	event_process_notification_dispatcher=notification_dispatcher_create("kernel.event.process");
 }
 
 

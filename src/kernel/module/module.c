@@ -360,7 +360,7 @@ KERNEL_EARLY_INIT(){
 	module_handle_type=handle_alloc("kernel.module",0,_module_handle_destructor);
 	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
 	aslr_module_base=0;
-	module_notification_dispatcher=notification_dispatcher_create();
+	module_notification_dispatcher=notification_dispatcher_create("kernel.module");
 }
 
 

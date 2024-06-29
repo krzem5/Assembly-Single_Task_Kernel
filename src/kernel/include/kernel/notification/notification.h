@@ -34,6 +34,8 @@ typedef struct _NOTIFICATION_CONSUMER{
 
 
 typedef struct _NOTIFICATION_DISPATCHER{
+	const char* name;
+	char* _consumer_name;
 	rwlock_t lock;
 	notification_container_t* head;
 	notification_container_t* tail;
@@ -42,7 +44,7 @@ typedef struct _NOTIFICATION_DISPATCHER{
 
 
 
-notification_dispatcher_t* notification_dispatcher_create(void);
+notification_dispatcher_t* notification_dispatcher_create(const char* name);
 
 
 
