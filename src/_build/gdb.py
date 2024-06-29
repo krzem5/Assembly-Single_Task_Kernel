@@ -112,6 +112,12 @@ def handle_get_descriptor(type):
 
 
 
+def handle_lookup(handle_id,type):
+	thread_handle_descriptor=handle_get_descriptor(type)
+	return rb_tree_lookup_node(thread_handle_descriptor["tree"],handle_id)
+
+
+
 class KernelListThreads(gdb.Command):
 	def __init__(self):
 		super(KernelListThreads,self).__init__("kernel-list-threads",gdb.COMMAND_USER)
@@ -122,9 +128,13 @@ class KernelListThreads(gdb.Command):
 		for k in rb_tree_iter(event_handle_descriptor["tree"]):
 			event=gdb.Value(int(k.address)-offsetof(event_t,"handle")).cast(event_t.pointer())[0]
 			for e in iter_linked_list(event,event_thread_container_t):
-				if (e["sequence_id"]!=e["thread"].cast(thread_t.pointer())[0]["event_sequence_id"]):
+				thread=handle_lookup(e["thread"],thread_handle_type)
+				if (thread is None):
 					continue
-				key=int(e["thread"])
+				thread=gdb.Value(int(thread.address)-offsetof(thread_t,"handle")).cast(thread_t.pointer())[0]
+				if (e["sequence_id"]!=thread["event_sequence_id"]):
+					continue
+				key=int(thread.address)
 				if (key not in thread_to_event):
 					thread_to_event[key]=[]
 				thread_to_event[key].append(event["name"].string())
