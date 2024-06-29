@@ -34,6 +34,7 @@ KERNEL_EARLY_EARLY_INIT(){
 KERNEL_PUBLIC notification_dispatcher_t* notification_dispatcher_create(const char* name){
 	notification_dispatcher_t* out=omm_alloc(_notification_dispatcher_allocator);
 	out->name=name;
+	out->_consumer_name=NULL;
 	rwlock_init(&(out->lock));
 	out->head=omm_alloc(_notification_container_allocator);
 	out->head->next=NULL;
