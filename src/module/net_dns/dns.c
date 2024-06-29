@@ -162,7 +162,7 @@ _cleanup:
 
 
 static void _cache_cleanup_thread(void){
-	timer_t* timer=timer_create(DNS_CACHE_CLEAR_INTERVAL_NS,TIMER_COUNT_INFINITE);
+	timer_t* timer=timer_create("net.dns.cache_cleanup",DNS_CACHE_CLEAR_INTERVAL_NS,TIMER_COUNT_INFINITE);
 	while (1){
 		event_await(timer->event,0);
 		INFO("Cleaning-up expired cache...");
@@ -277,7 +277,7 @@ _invalid_cache_entry:
 	question->qclass=__builtin_bswap16(NET_DNS_QCLASS_IN);
 	udp_packet->length=sizeof(net_dns_packet_t)+offset+sizeof(net_dns_packet_question_t);
 	socket_push_packet(_net_dns_socket,udp_packet,sizeof(net_udp_socket_packet_t)+udp_packet->length);
-	timer_t* timer=timer_create(DNS_TIMEOUT_NS,1);
+	timer_t* timer=timer_create("net.dns.query.timeout",DNS_TIMEOUT_NS,1);
 	event_t* events[2]={
 		timer->event,
 		_net_dns_cache_resolution_event

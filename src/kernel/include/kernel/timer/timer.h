@@ -23,6 +23,7 @@
 
 typedef struct _TIMER{
 	rb_tree_node_t rb_node;
+	const char* name;
 	struct _TIMER* prev;
 	struct _TIMER* next;
 	handle_t handle;
@@ -40,7 +41,7 @@ extern handle_type_t timer_handle_type;
 
 
 
-timer_t* timer_create(u64 interval,u64 count);
+timer_t* timer_create(const char* name,u64 interval,u64 count);
 
 
 

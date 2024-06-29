@@ -143,7 +143,7 @@ KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address
 		arp_packet->tpa=__builtin_bswap32(address);
 		network_layer1_send_packet(packet);
 	}
-	timer_t* timer=timer_create(ARP_TIMEOUT_NS,1);
+	timer_t* timer=timer_create("net.arp.query.timeout",ARP_TIMEOUT_NS,1);
 	event_t* events[2]={
 		timer->event,
 		_net_arp_cache_resolution_event

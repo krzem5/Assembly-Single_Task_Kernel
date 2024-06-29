@@ -78,15 +78,14 @@ KERNEL_EARLY_INIT(){
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
 	timer_handle_type=handle_alloc("kernel.timer",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_timer_handle_destructor);
-	timer_create(1000000,TIMER_COUNT_ABSOLUTE_TIME);
-	timer_create(1000000,TIMER_COUNT_ABSOLUTE_TIME);
 }
 
 
 
-KERNEL_PUBLIC timer_t* timer_create(u64 interval,u64 count){
+KERNEL_PUBLIC timer_t* timer_create(const char* name,u64 interval,u64 count){
 	timer_t* out=omm_alloc(_timer_allocator);
 	out->rb_node.key=0;
+	out->name=name;
 	out->prev=NULL;
 	out->next=NULL;
 	handle_new(timer_handle_type,&(out->handle));
@@ -195,7 +194,7 @@ _return:
 
 
 error_t syscall_timer_create(u64 interval,u64 count){
-	timer_t* timer=timer_create(interval,count);
+	timer_t* timer=timer_create("user",interval,count);
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(timer->handle));
 	return timer->handle.rb_node.key;
 }
