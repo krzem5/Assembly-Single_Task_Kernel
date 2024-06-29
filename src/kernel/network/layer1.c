@@ -38,8 +38,8 @@ static void _packet_rx_thread(void){
 KERNEL_INIT(){
 	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("kernel.network.layer1.device",sizeof(network_layer1_device_t),8,1);
-	_network_layer1_packet_rx_ring=ring_init(16384);
-	_network_layer1_packet_tx_ring=ring_init(16384);
+	_network_layer1_packet_rx_ring=ring_init("kernel.network.layer1.packet.rx",16384);
+	_network_layer1_packet_tx_ring=ring_init("kernel.network.layer1.packet.tx",16384);
 	network_layer1_device_handle_type=handle_alloc("kernel.network.layer1.device",0,NULL);
 	thread_create_kernel_thread(NULL,"kernel.network.layer1.packet_rx",_packet_rx_thread,0)->priority=SCHEDULER_PRIORITY_HIGH;
 }

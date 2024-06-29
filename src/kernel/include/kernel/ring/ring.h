@@ -7,6 +7,7 @@
 
 
 typedef struct _RING{
+	const char* name;
 	void** buffer;
 	u32 capacity;
 	u32 read_index;
@@ -21,7 +22,7 @@ typedef struct _RING{
 
 
 
-ring_t* ring_init(u32 capacity);
+ring_t* ring_init(const char* name,u32 capacity);
 
 
 

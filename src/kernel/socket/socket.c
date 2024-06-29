@@ -53,7 +53,7 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 	out->descriptor=NULL;
 	out->local_ctx=NULL;
 	out->remote_ctx=NULL;
-	out->rx_ring=ring_init(256);
+	out->rx_ring=ring_init("kernel.socket.rx",256);
 	return (vfs_node_t*)out;
 }
 

@@ -50,7 +50,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
+KERNEL_PUBLIC ring_t* ring_init(const char* name,u32 capacity){
 	if (!capacity){
 		ERROR("Empty ring");
 		return NULL;
@@ -60,6 +60,7 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 		return NULL;
 	}
 	ring_t* out=omm_alloc(_ring_allocator);
+	out->name=name;
 	out->buffer=(void*)(pmm_alloc(pmm_align_up_address(capacity*sizeof(void*))>>PAGE_SIZE_SHIFT,_ring_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->capacity=capacity;
 	out->read_index=0;
@@ -68,8 +69,8 @@ KERNEL_PUBLIC ring_t* ring_init(u32 capacity){
 	out->write_count=capacity;
 	rwlock_init(&(out->read_lock));
 	rwlock_init(&(out->write_lock));
-	out->read_event=event_create("kernel.ring.read",NULL);
-	out->write_event=event_create("kernel.ring.write",NULL);
+	out->read_event=event_create("kernel.ring.read",name);
+	out->write_event=event_create("kernel.ring.write",name);
 	event_set_active(out->write_event,1,1);
 	return out;
 }
