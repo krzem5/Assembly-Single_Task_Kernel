@@ -167,7 +167,7 @@ KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64
 
 KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const char* name,void* func,u8 arg_count,...){
 	if (arg_count>6){
-		panic("Too many kernel thread arguments");
+		panic("thread_create_kernel_thread: too many arguments");
 	}
 	if (!scheduler_enabled){
 		return NULL;
