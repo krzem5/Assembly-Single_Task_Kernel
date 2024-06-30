@@ -20,11 +20,12 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC mutex_t* mutex_init(void){
+KERNEL_PUBLIC mutex_t* mutex_init(const char* name){
 	mutex_t* out=omm_alloc(_mutex_allocator);
+	out->name=name;
 	rwlock_init(&(out->lock));
 	out->holder=NULL;
-	out->event=event_create("kernel.mutex",NULL);
+	out->event=event_create("kernel.mutex",name);
 	lock_profiling_init(LOCK_PROFILING_FLAG_PREEMPTIBLE,out);
 	return out;
 }

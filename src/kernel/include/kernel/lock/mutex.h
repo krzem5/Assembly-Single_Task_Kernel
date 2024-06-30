@@ -9,6 +9,7 @@
 
 
 typedef struct _MUTEX{
+	const char* name;
 	rwlock_t lock;
 	thread_t* holder;
 	event_t* event;
@@ -17,7 +18,7 @@ typedef struct _MUTEX{
 
 
 
-mutex_t* mutex_init(void);
+mutex_t* mutex_init(const char* name);
 
 
 

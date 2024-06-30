@@ -72,7 +72,7 @@ KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
-	out->lock=mutex_init();
+	out->lock=mutex_init("kernel.fd");
 	out->node=node;
 	out->offset=((flags&FD_FLAG_APPEND)?vfs_node_resize(node,0,VFS_NODE_FLAG_RESIZE_RELATIVE):0);
 	out->flags=flags&(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_CLOSE_PIPE);
@@ -403,7 +403,7 @@ error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ACL_FLAG_STAT|FD_ACL_FLAG_DUP|FD_ACL_FLAG_IO|FD_ACL_FLAG_CLOSE);
-	out->lock=mutex_init();
+	out->lock=mutex_init("kernel.fd");
 	out->node=data->node;
 	out->offset=data->offset;
 	out->flags=(data->flags|FD_FLAG_CLOSE_PIPE)&flags;
@@ -496,7 +496,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,FD_ITERATOR_ACL_FLAG_ACCESS);
-	out->lock=mutex_init();
+	out->lock=mutex_init("kernel.fd.iterator");
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;

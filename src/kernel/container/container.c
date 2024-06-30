@@ -56,7 +56,7 @@ error_t syscall_container_create(void){
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,CONTAINER_ACL_FLAG_ACCESS|CONTAINER_ACL_FLAG_DELETE);
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
-	out->lock=mutex_init();
+	out->lock=mutex_init("kernel.container");
 	rb_tree_init(&(out->tree));
 	return out->handle.rb_node.key;
 }
