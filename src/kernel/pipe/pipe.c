@@ -6,9 +6,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
-#include <kernel/mmap/mmap.h>
 #include <kernel/mp/event.h>
-#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/pipe/pipe.h>
 #include <kernel/syscall/syscall.h>
@@ -35,6 +33,7 @@ typedef struct _PIPE_VFS_NODE{
 
 
 
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _pipe_buffer_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _pipe_vfs_node_allocator=NULL;
 static vfs_node_t* _pipe_root=NULL;
 static KERNEL_ATOMIC u64 _pipe_next_id=0;
@@ -47,11 +46,7 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 	}
 	pipe_vfs_node_t* out=omm_alloc(_pipe_vfs_node_allocator);
 	rwlock_init(&(out->lock));
-	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,PIPE_BUFFER_SIZE,MMAP_REGION_FLAG_VMM_WRITE,NULL);
-	if (!region){
-		panic("Unable to allocate pipe buffer");
-	}
-	out->buffer=(void*)(region->rb_node.key);
+	out->buffer=(void*)(pmm_alloc(pmm_align_up_address(PIPE_BUFFER_SIZE)>>PAGE_SIZE_SHIFT,_pipe_buffer_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	out->write_offset=0;
 	out->read_offset=0;
 	out->is_full=0;
@@ -65,7 +60,7 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 
 static void _pipe_delete(vfs_node_t* node){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
-	mmap_dealloc(process_kernel->mmap,(u64)(pipe->buffer),PIPE_BUFFER_SIZE);
+	pmm_dealloc(((u64)(pipe->buffer))-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(PIPE_BUFFER_SIZE)>>PAGE_SIZE_SHIFT,_pipe_buffer_pmm_counter);
 	event_delete(pipe->read_event);
 	event_delete(pipe->write_event);
 	omm_dealloc(_pipe_vfs_node_allocator,node);
@@ -172,6 +167,7 @@ static const vfs_functions_t _pipe_vfs_functions={
 
 KERNEL_INIT(){
 	LOG("Initializing pipes...");
+	_pipe_buffer_pmm_counter=pmm_alloc_counter("kernel.pipe.buffer");
 	_pipe_vfs_node_allocator=omm_init("kernel.pipe.vfs_node",sizeof(pipe_vfs_node_t),8,4);
 	rwlock_init(&(_pipe_vfs_node_allocator->lock));
 }

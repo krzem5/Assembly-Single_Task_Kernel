@@ -220,7 +220,7 @@ static void _input_thread(void* ctx){
 
 static void _output_thread(void* ctx){
 	while (1){
-		sys_fd_stream(child_out_fd,&out_fd,1,4096);
+		sys_fd_stream(child_out_fd,&out_fd,1,0);
 	}
 }
 
