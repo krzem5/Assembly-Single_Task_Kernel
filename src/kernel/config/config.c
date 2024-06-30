@@ -476,6 +476,7 @@ KERNEL_PUBLIC config_tag_t* config_tag_create(u32 type,const char* name){
 	out->parent=NULL;
 	out->name=smm_alloc(name,0);
 	out->type=type;
+	out->_index=0;
 	if (type==CONFIG_TAG_TYPE_ARRAY){
 		out->array=amm_alloc(sizeof(config_tag_array_t));
 		out->array->length=0;
@@ -543,6 +544,26 @@ KERNEL_PUBLIC u64 config_tag_find(config_tag_t* tag,const char* name,u64 pointer
 		}
 	}
 	return 0;
+}
+
+
+
+KERNEL_PUBLIC config_tag_t* config_tag_iter_start(config_tag_t* tag){
+	if (!tag||tag->type!=CONFIG_TAG_TYPE_ARRAY||!tag->array->length){
+		return NULL;
+	}
+	tag->array->data[0]->_index=0;
+	return tag->array->data[0];
+}
+
+
+
+KERNEL_PUBLIC config_tag_t* config_tag_iter_next(config_tag_t* tag,config_tag_t* child){
+	if (!tag||tag->type!=CONFIG_TAG_TYPE_ARRAY||!tag->array->length||!child||child->_index==tag->array->length-1){
+		return NULL;
+	}
+	tag->array->data[child->_index+1]->_index=child->_index+1;
+	return tag->array->data[child->_index+1];
 }
 
 

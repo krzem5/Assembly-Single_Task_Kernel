@@ -23,6 +23,7 @@ typedef struct _CONFIG_TAG{
 	struct _CONFIG_TAG* parent;
 	string_t* name;
 	u32 type;
+	u32 _index;
 	union{
 		struct _CONFIG_TAG_ARRAY* array;
 		string_t* string;
@@ -56,6 +57,14 @@ void config_tag_detach(config_tag_t* child);
 
 
 u64 config_tag_find(config_tag_t* tag,const char* name,u64 pointer,config_tag_t** out);
+
+
+
+config_tag_t* config_tag_iter_start(config_tag_t* tag);
+
+
+
+config_tag_t* config_tag_iter_next(config_tag_t* tag,config_tag_t* child);
 
 
 

@@ -23,16 +23,9 @@ static void _load_modules_from_order_file(bool early){
 	}
 	config_tag_t* root_tag=config_load_from_file(file,NULL);
 	vfs_node_unref(file);
-	if (!root_tag){
-		panic("Unable to parse module order file");
-	}
-	if (root_tag->type!=CONFIG_TAG_TYPE_ARRAY){
-		panic("Invalid tag type");
-	}
-	for (u32 i=0;i<root_tag->array->length;i++){
-		config_tag_t* tag=root_tag->array->data[i];
+	for (config_tag_t* tag=config_tag_iter_start(root_tag);tag;tag=config_tag_iter_next(root_tag,tag)){
 		if (tag->type!=CONFIG_TAG_TYPE_NONE&&tag->type!=CONFIG_TAG_TYPE_STRING){
-			panic("Invalid tag type");
+			continue;
 		}
 		if (early!=(tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"early"))){
 			continue;
