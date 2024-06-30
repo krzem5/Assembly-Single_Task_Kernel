@@ -42,6 +42,11 @@ def offsetof(type,field):
 
 
 
+def containerof(value,type,field):
+	return gdb.Value(int(value.address)-offsetof(type,field)).cast(type.pointer())[0]
+
+
+
 def string(value):
 	string=value.cast(string_t.pointer())[0]
 	return gdb.inferiors()[0].read_memory(int(string["data"].address),int(string["length"])).tobytes().decode("utf-8")
@@ -126,12 +131,12 @@ class KernelListThreads(gdb.Command):
 		thread_to_event={}
 		event_handle_descriptor=handle_get_descriptor(event_handle_type)
 		for k in rb_tree_iter(event_handle_descriptor["tree"]):
-			event=gdb.Value(int(k.address)-offsetof(event_t,"handle")).cast(event_t.pointer())[0]
+			event=containerof(k,event_t,"handle")
 			for e in iter_linked_list(event,event_thread_container_t):
-				thread=handle_lookup(e["thread"],thread_handle_type)
-				if (thread is None):
+				thread_handle=handle_lookup(e["thread"],thread_handle_type)
+				if (thread_handle is None):
 					continue
-				thread=gdb.Value(int(thread.address)-offsetof(thread_t,"handle")).cast(thread_t.pointer())[0]
+				thread=containerof(thread_handle,thread_t,"handle")
 				if (e["sequence_id"]!=thread["event_sequence_id"]):
 					continue
 				key=int(thread.address)
@@ -140,7 +145,7 @@ class KernelListThreads(gdb.Command):
 				thread_to_event[key].append(event["name"].string())
 		thread_handle_descriptor=handle_get_descriptor(thread_handle_type)
 		for k in rb_tree_iter(thread_handle_descriptor["tree"]):
-			thread=gdb.Value(int(k.address)-offsetof(thread_t,"handle")).cast(thread_t.pointer())[0]
+			thread=containerof(k,thread_t,"handle")
 			process=thread["process"].cast(process_t.pointer())[0]
 			line=string(process["name"])+": "+string(thread["name"])+": "+{
 				THREAD_STATE_TYPE_NONE: "<none>",
@@ -162,7 +167,7 @@ class KernelListModules(gdb.Command):
 	def invoke(self,arg,from_tty):
 		module_handle_descriptor=handle_get_descriptor(module_handle_type)
 		for k in rb_tree_iter(module_handle_descriptor["tree"]):
-			module=gdb.Value(int(k.address)-offsetof(module_t,"handle")).cast(module_t.pointer())[0]
+			module=containerof(k,module_t,"handle")
 			name=string(module["name"])
 			state=None
 			if (module["state"]==MODULE_STATE_LOADING):
@@ -183,7 +188,7 @@ KernelListModules()
 
 
 for k in rb_tree_iter(handle_get_descriptor(module_handle_type)["tree"]):
-	module=gdb.Value(int(k.address)-offsetof(module_t,"handle")).cast(module_t.pointer())[0]
+	module=containerof(k,module_t,"handle")
 	if (module["state"]!=MODULE_STATE_LOADED):
 		continue
 	name=string(module["name"])
