@@ -6,6 +6,7 @@
 #include <kernel/lock/mutex.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
@@ -22,6 +23,7 @@
 
 
 
+static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _fd_stream_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fd_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fd_iterator_allocator=NULL;
 static handle_type_t KERNEL_INIT_WRITE _fd_handle_type=0;
@@ -55,6 +57,7 @@ static void _fd_iterator_handle_destructor(handle_t* handle){
 
 KERNEL_INIT(){
 	LOG("Initializing file descriptors...");
+	_fd_stream_pmm_counter=pmm_alloc_counter("kernel.fd.stream");
 	_fd_allocator=omm_init("kernel.fd",sizeof(fd_t),8,4);
 	rwlock_init(&(_fd_allocator->lock));
 	_fd_iterator_allocator=omm_init("kernel.fd.iterator",sizeof(fd_iterator_t),8,4);
@@ -463,6 +466,90 @@ error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buff
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return (!out&&buffer_length?ERROR_NO_SPACE:out);
+}
+
+
+
+error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id_t* dst_fds,u32 dst_fd_count,u64 length){
+	if (!dst_fd_count){
+		return 0;
+	}
+	if (dst_fd_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((void*)dst_fds)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* src_fd_handle=handle_lookup_and_acquire(src_fd,_fd_handle_type);
+	if (!src_fd_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_t* src_fd_data=KERNEL_CONTAINEROF(src_fd_handle,fd_t,handle);
+	if (!(acl_get(src_fd_data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
+		handle_release(src_fd_handle);
+		return ERROR_DENIED;
+	}
+	if (!(src_fd_data->flags&FD_FLAG_READ)){
+		handle_release(src_fd_handle);
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	u64 out=0;
+	fd_t** dst_fd_data=amm_alloc(dst_fd_count*sizeof(fd_t*));
+	for (u32 i=0;i<dst_fd_count;i++){
+		handle_t* handle=handle_lookup_and_acquire(dst_fds[i],_fd_handle_type);
+		if (!handle){
+			out=ERROR_INVALID_HANDLE;
+			goto _cleanup;
+		}
+		dst_fd_data[i]=KERNEL_CONTAINEROF(handle,fd_t,handle);
+		if (!(acl_get(dst_fd_data[i]->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
+			out=ERROR_DENIED;
+			goto _cleanup;
+		}
+		if (!(dst_fd_data[i]->flags&FD_FLAG_WRITE)){
+			out=ERROR_UNSUPPORTED_OPERATION;
+			goto _cleanup;
+		}
+	}
+	u64 buffer_length=(!length||length>0x100000?0x100000:length); // if streaming over 1 Mb, use 1 Mb buffer
+	u64 buffer=pmm_alloc(pmm_align_up_address(buffer_length)>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter,0);
+	while (1){
+		mutex_acquire(src_fd_data->lock);
+		u64 count=vfs_node_read(src_fd_data->node,src_fd_data->offset,(void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(length&&buffer_length>length?length:buffer_length),0);
+		src_fd_data->offset+=count;
+		mutex_release(src_fd_data->lock);
+		if (!count){
+			break;
+		}
+		for (u32 i=0;i<dst_fd_count;i++){
+			mutex_acquire(dst_fd_data[i]->lock);
+			u64 write_count=count;
+			while (write_count){
+				u64 chunk_size=vfs_node_write(dst_fd_data[i]->node,dst_fd_data[i]->offset,(const void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),write_count,VFS_NODE_FLAG_GROW);
+				if (!chunk_size){
+					break;
+				}
+				dst_fd_data[i]->offset+=chunk_size;
+				write_count-=chunk_size;
+			}
+			mutex_release(dst_fd_data[i]->lock);
+		}
+		out+=count;
+		if (length){
+			length-=count;
+			if (!length){
+				break;
+			}
+		}
+	}
+	pmm_dealloc(buffer,pmm_align_up_address(buffer_length)>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter);
+_cleanup:
+	for (u32 i=0;i<dst_fd_count;i++){
+		if (!dst_fd_data[i]){
+			continue;
+		}
+		handle_release(&(dst_fd_data[i]->handle));
+	}
+	amm_dealloc(dst_fd_data);
+	handle_release(src_fd_handle);
+	return out;
 }
 
 

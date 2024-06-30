@@ -581,4 +581,10 @@ static inline u64 _sys_syscall_partition_table_descriptor_format(u64 drive,u64 p
 
 
 
+static inline u64 _sys_syscall_fd_stream(u64 src_fd,const u64* dst_fds,u32 dst_fd_count,u64 length){
+	return _sys_syscall4(0x100000063,src_fd,(u64)dst_fds,dst_fd_count,length);
+}
+
+
+
 #endif

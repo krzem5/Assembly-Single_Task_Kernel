@@ -30,6 +30,7 @@ extern u64 syscall_fd_read();
 extern u64 syscall_fd_resize();
 extern u64 syscall_fd_seek();
 extern u64 syscall_fd_stat();
+extern u64 syscall_fd_stream();
 extern u64 syscall_fd_unlink();
 extern u64 syscall_fd_write();
 extern u64 syscall_fs_descriptor_get_data();
@@ -47,9 +48,9 @@ extern u64 syscall_memory_map();
 extern u64 syscall_memory_unmap();
 extern u64 syscall_partition_get_data();
 extern u64 syscall_partition_get_next();
+extern u64 syscall_partition_table_descriptor_format();
 extern u64 syscall_partition_table_descriptor_get_data();
 extern u64 syscall_partition_table_descriptor_get_next();
-extern u64 syscall_partition_table_descriptor_format();
 extern u64 syscall_pipe_close();
 extern u64 syscall_pipe_create();
 extern u64 syscall_process_get_event();
@@ -199,5 +200,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[96]=syscall_signal_dispatch,
 	[97]=syscall_fs_format,
 	[98]=syscall_partition_table_descriptor_format,
+	[99]=syscall_fd_stream,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

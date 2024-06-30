@@ -126,6 +126,10 @@ sys_error_t __attribute__((access(write_only,2,3),nonnull)) sys_fd_path(sys_fd_t
 
 
 
+sys_error_t __attribute__((access(read_only,2,3),nonnull)) sys_fd_stream(sys_fd_t src_fd,const sys_fd_t* dst_fds,u32 dst_fd_count,u64 length);
+
+
+
 sys_fd_iterator_t sys_fd_iter_start(sys_fd_t fd);
 
 

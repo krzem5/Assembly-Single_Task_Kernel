@@ -220,23 +220,24 @@ static void _input_thread(void* ctx){
 
 static void _output_thread(void* ctx){
 	while (1){
-		u8 buffer[4096];
-		sys_error_t ret=sys_fd_read(child_out_fd,buffer,sizeof(buffer),0);
-		if (!ret||SYS_IS_ERROR(ret)){
-			sys_pipe_close(child_out_fd);
-			return;
-		}
-		u64 offset=0;
-		u64 remaining=ret;
-		while (remaining){
-			ret=sys_fd_write(out_fd,buffer+offset,remaining,0);
-			if (!ret||SYS_IS_ERROR(ret)){
-				sys_pipe_close(child_out_fd);
-				return;
-			}
-			offset+=ret;
-			remaining-=ret;
-		}
+		sys_fd_stream(child_out_fd,&out_fd,1,4096);
+		// u8 buffer[4096];
+		// sys_error_t ret=sys_fd_read(child_out_fd,buffer,sizeof(buffer),0);
+		// if (!ret||SYS_IS_ERROR(ret)){
+		// 	sys_pipe_close(child_out_fd);
+		// 	return;
+		// }
+		// u64 offset=0;
+		// u64 remaining=ret;
+		// while (remaining){
+		// 	ret=sys_fd_write(out_fd,buffer+offset,remaining,0);
+		// 	if (!ret||SYS_IS_ERROR(ret)){
+		// 		sys_pipe_close(child_out_fd);
+		// 		return;
+		// 	}
+		// 	offset+=ret;
+		// 	remaining-=ret;
+		// }
 	}
 }
 
