@@ -156,7 +156,7 @@ class KernelListThreads(gdb.Command):
 			}[int(thread["state"])]
 			if (thread["state"]==THREAD_STATE_TYPE_AWAITING_EVENT):
 				line+=" ("+", ".join(thread_to_event[int(thread.address)])+")"
-			print(line,thread.address)
+			print(line)
 
 
 
