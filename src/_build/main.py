@@ -600,7 +600,7 @@ def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_l
 		_execute_kfs2_command(["copy","/boot/kernel","0400","build/kernel/kernel.bin.compressed"])
 		_execute_kfs2_command(["copy","/boot/initramfs","0400","build/partitions/initramfs.img.compressed"])
 		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600",MODULE_ORDER_FILE_PATH])
-		_execute_kfs2_command(["copy","/etc/fs_list.config","0600",FS_LIST_FILE_PATH])
+		_execute_kfs2_command(["copy","/etc/fs_list.config","0644",FS_LIST_FILE_PATH])
 		_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
 		for module in os.listdir("build/module"):
 			_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
