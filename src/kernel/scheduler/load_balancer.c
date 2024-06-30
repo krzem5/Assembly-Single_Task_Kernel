@@ -56,14 +56,12 @@ KERNEL_EARLY_INIT(){
 
 
 thread_t* scheduler_load_balancer_get(u32* time_us){
-	while (_scheduler_load_balancer_bitmap){
-		u64 i=__builtin_ffsll(_scheduler_load_balancer_bitmap);
-		if (!i){
-			break;
-		}
-		i--;
+	for (u64 mask=_scheduler_load_balancer_bitmap;mask;mask&=mask-1){
+		u64 i=__builtin_ffsll(mask)-1;
 		scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+i;
-		rwlock_acquire_write(&(queue->lock));
+		if (!rwlock_try_acquire_write(&(queue->lock))){
+			continue;
+		}
 		if (!queue->head){
 			rwlock_release_write(&(queue->lock));
 			continue;

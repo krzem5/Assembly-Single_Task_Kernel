@@ -23,6 +23,10 @@
 
 
 
+#define STREAM_MAX_BUFFER_SIZE 0x100000 // 1 Mb
+
+
+
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _fd_stream_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fd_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fd_iterator_allocator=NULL;
@@ -508,7 +512,7 @@ error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id
 			goto _cleanup;
 		}
 	}
-	u64 buffer_length=(!length||length>0x100000?0x100000:length); // if streaming over 1 Mb, use 1 Mb buffer
+	u64 buffer_length=(!length||length>STREAM_MAX_BUFFER_SIZE?STREAM_MAX_BUFFER_SIZE:length);
 	u64 buffer=pmm_alloc(pmm_align_up_address(buffer_length)>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter,0);
 	while (1){
 		mutex_acquire(src_fd_data->lock);
