@@ -87,6 +87,7 @@ KERNEL_PUBLIC void net_ip6_unregister_protocol_descriptor(const net_ip6_protocol
 
 
 KERNEL_PUBLIC net_ip6_packet_t* net_ip6_create_packet(u16 length,const net_ip6_address_t* src_address,const net_ip6_address_t* dst_address,net_ip6_protocol_type_t protocol_type){
+	// this requires NDP/ICMPv6
 	panic("net_ip6_create_packet");
 }
 
