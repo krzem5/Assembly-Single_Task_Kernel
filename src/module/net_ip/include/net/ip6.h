@@ -1,5 +1,6 @@
 #ifndef _NET_IP6_H_
 #define _NET_IP6_H_ 1
+#include <kernel/network/layer1.h>
 #include <kernel/types.h>
 
 

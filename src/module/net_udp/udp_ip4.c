@@ -10,7 +10,6 @@
 #include <kernel/util/util.h>
 #include <net/checksum.h>
 #include <net/ip4.h>
-#include <net/ip6.h>
 #include <net/udp.h>
 #define KERNEL_LOG_NAME "net_udp_ip4"
 
@@ -94,14 +93,14 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 	udp_packet->length=__builtin_bswap16(length+sizeof(net_udp_packet_t));
 	mem_copy(udp_packet->data,buffer,length);
 	net_checksum_calculate_checksum(udp_packet,length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
-	net_udp_ipv4_pseudo_header_t pseudo_header={
+	net_udp_ip4_pseudo_header_t pseudo_header={
 		ip_packet->packet->src_address,
 		ip_packet->packet->dst_address,
 		0,
 		PROTOCOL_TYPE,
 		udp_packet->length
 	};
-	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(udp_packet->checksum));
+	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ip4_pseudo_header_t),&(udp_packet->checksum));
 	if (!udp_packet->checksum){
 		udp_packet->checksum=0xffff;
 	}
@@ -129,14 +128,14 @@ static bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const v
 	udp_packet->length=__builtin_bswap16(packet->length+sizeof(net_udp_packet_t));
 	mem_copy(udp_packet->data,packet->data,packet->length);
 	net_checksum_calculate_checksum(udp_packet,packet->length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
-	net_udp_ipv4_pseudo_header_t pseudo_header={
+	net_udp_ip4_pseudo_header_t pseudo_header={
 		ip_packet->packet->src_address,
 		ip_packet->packet->dst_address,
 		0,
 		PROTOCOL_TYPE,
 		udp_packet->length
 	};
-	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),&(udp_packet->checksum));
+	net_checksum_update_checksum(&pseudo_header,sizeof(net_udp_ip4_pseudo_header_t),&(udp_packet->checksum));
 	if (!udp_packet->checksum){
 		udp_packet->checksum=0xffff;
 	}
@@ -173,14 +172,14 @@ static void _rx_callback(net_ip4_packet_t* packet){
 		return;
 	}
 	if (udp_packet->checksum){
-		net_udp_ipv4_pseudo_header_t pseudo_header={
+		net_udp_ip4_pseudo_header_t pseudo_header={
 			packet->packet->src_address,
 			packet->packet->dst_address,
 			0,
 			PROTOCOL_TYPE,
 			udp_packet->length
 		};
-		if (net_checksum_verify_checksum(udp_packet,packet->length,net_checksum_verify_checksum(&pseudo_header,sizeof(net_udp_ipv4_pseudo_header_t),0))!=0xffff){
+		if (net_checksum_verify_checksum(udp_packet,packet->length,net_checksum_verify_checksum(&pseudo_header,sizeof(net_udp_ip4_pseudo_header_t),0))!=0xffff){
 			ERROR("Wrong UDP checksum");
 			return;
 		}
@@ -188,7 +187,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 	u16 port=__builtin_bswap16(udp_packet->dst_port);
 	socket_vfs_node_t* socket=socket_port_get(port);
 	if (!socket||socket->descriptor!=&_net_udp_socket_dtp_descriptor){
-		ERROR("No UDP socket on port %u",port);
+		ERROR("No UDP:IP4 socket on port %u",port);
 		if (socket){
 			vfs_node_unref(&(socket->node));
 		}
@@ -226,7 +225,7 @@ MODULE_INIT(){
 
 
 MODULE_POSTINIT(){
-	LOG("Registering UDP protocol...");
+	LOG("Registering UDP over IPv4 protocol...");
 	socket_register_dtp_descriptor(&_net_udp_socket_dtp_descriptor);
 	net_ip4_register_protocol_descriptor(&_net_udp_ip4_protocol_descriptor);
 }

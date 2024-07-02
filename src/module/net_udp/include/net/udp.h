@@ -14,6 +14,13 @@ typedef struct _NET_UDP_IP4_ADDRESS{
 
 
 
+typedef struct _NET_UDP_IP6_ADDRESS{
+	net_ip6_address_t address;
+	socket_port_t port;
+} net_udp_ip6_address_t;
+
+
+
 typedef struct _NET_UDP_IP4_SOCKET_PACKET{
 	net_udp_ip4_address_t src_address;
 	net_udp_ip4_address_t dst_address;
@@ -23,13 +30,22 @@ typedef struct _NET_UDP_IP4_SOCKET_PACKET{
 
 
 
-typedef struct KERNEL_PACKED _NET_UDP_IPV4_PSEUDO_HEADER{
+typedef struct _NET_UDP_IP6_SOCKET_PACKET{
+	net_udp_ip6_address_t src_address;
+	net_udp_ip6_address_t dst_address;
+	u16 length;
+	u8 data[];
+} net_udp_ip6_socket_packet_t;
+
+
+
+typedef struct KERNEL_PACKED _NET_UDP_IP4_PSEUDO_HEADER{
 	net_ip4_address_t src_address;
 	net_ip4_address_t dst_address;
 	u8 zero;
 	u8 protocol;
 	u16 length;
-} net_udp_ipv4_pseudo_header_t;
+} net_udp_ip4_pseudo_header_t;
 
 
 

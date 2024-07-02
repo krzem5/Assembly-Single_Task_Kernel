@@ -56,13 +56,32 @@ MODULE_POSTINIT(){
 
 
 KERNEL_PUBLIC void net_ip6_register_protocol_descriptor(const net_ip6_protocol_descriptor_t* descriptor){
-	panic("net_ip6_register_protocol_descriptor");
+	rwlock_acquire_write(&_net_ip6_protocol_lock);
+	LOG("Registering network IPv4 protocol '%s/%u'...",descriptor->name,descriptor->protocol_type);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip6_protocol_type_tree,descriptor->protocol_type);
+	if (node){
+		ERROR("IPv6 protocol %u is already allocated by '%s'",descriptor->protocol_type,((net_ip6_protocol_t*)node)->descriptor->name);
+		rwlock_release_write(&_net_ip6_protocol_lock);
+		return;
+	}
+	net_ip6_protocol_t* protocol=omm_alloc(_net_ip6_protocol_allocator);
+	protocol->rb_node.key=descriptor->protocol_type;
+	protocol->descriptor=descriptor;
+	rb_tree_insert_node(&_net_ip6_protocol_type_tree,&(protocol->rb_node));
+	rwlock_release_write(&_net_ip6_protocol_lock);
 }
 
 
 
 KERNEL_PUBLIC void net_ip6_unregister_protocol_descriptor(const net_ip6_protocol_descriptor_t* descriptor){
-	panic("net_ip6_unregister_protocol_descriptor");
+	rwlock_acquire_write(&_net_ip6_protocol_lock);
+	LOG("Unregistering network IPv6 protocol '%s/%u'...",descriptor->name,descriptor->protocol_type);
+	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip6_protocol_type_tree,descriptor->protocol_type);
+	if (node){
+		rb_tree_remove_node(&_net_ip6_protocol_type_tree,node);
+		omm_dealloc(_net_ip6_protocol_allocator,node);
+	}
+	rwlock_release_write(&_net_ip6_protocol_lock);
 }
 
 
@@ -74,11 +93,13 @@ KERNEL_PUBLIC net_ip6_packet_t* net_ip6_create_packet(u16 length,const net_ip6_a
 
 
 KERNEL_PUBLIC void net_ip6_delete_packet(net_ip6_packet_t* packet){
-	panic("net_ip6_delete_packet");
+	network_layer1_delete_packet(packet->raw_packet);
+	omm_dealloc(_net_ip6_packet_allocator,packet);
 }
 
 
 
 KERNEL_PUBLIC void net_ip6_send_packet(net_ip6_packet_t* packet){
-	panic("net_ip6_send_packet");
+	network_layer1_send_packet(packet->raw_packet);
+	omm_dealloc(_net_ip6_packet_allocator,packet);
 }

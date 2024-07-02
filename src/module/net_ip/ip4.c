@@ -84,10 +84,10 @@ MODULE_POSTINIT(){
 
 KERNEL_PUBLIC void net_ip4_register_protocol_descriptor(const net_ip4_protocol_descriptor_t* descriptor){
 	rwlock_acquire_write(&_net_ip4_protocol_lock);
-	LOG("Registering network IPv4 protocol '%s/%X'...",descriptor->name,descriptor->protocol_type);
+	LOG("Registering network IPv4 protocol '%s/%u'...",descriptor->name,descriptor->protocol_type);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip4_protocol_type_tree,descriptor->protocol_type);
 	if (node){
-		ERROR("IPv4 protocol %X is already allocated by '%s'",descriptor->protocol_type,((net_ip4_protocol_t*)node)->descriptor->name);
+		ERROR("IPv4 protocol %u is already allocated by '%s'",descriptor->protocol_type,((net_ip4_protocol_t*)node)->descriptor->name);
 		rwlock_release_write(&_net_ip4_protocol_lock);
 		return;
 	}
@@ -102,7 +102,7 @@ KERNEL_PUBLIC void net_ip4_register_protocol_descriptor(const net_ip4_protocol_d
 
 KERNEL_PUBLIC void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol_descriptor_t* descriptor){
 	rwlock_acquire_write(&_net_ip4_protocol_lock);
-	LOG("Unregistering network IPv4 protocol '%s/%X'...",descriptor->name,descriptor->protocol_type);
+	LOG("Unregistering network IPv4 protocol '%s/%u'...",descriptor->name,descriptor->protocol_type);
 	rb_tree_node_t* node=rb_tree_lookup_node(&_net_ip4_protocol_type_tree,descriptor->protocol_type);
 	if (node){
 		rb_tree_remove_node(&_net_ip4_protocol_type_tree,node);
