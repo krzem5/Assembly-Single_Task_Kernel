@@ -5,10 +5,8 @@
 #include <kernel/memory/smm.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/event.h>
-#include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/network/layer1.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/socket/socket.h>
 #include <kernel/timer/timer.h>
 #include <kernel/types.h>
