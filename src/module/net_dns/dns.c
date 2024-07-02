@@ -198,8 +198,11 @@ MODULE_INIT(){
 	rb_tree_init(&_net_dns_request_tree);
 	_net_dns_socket=socket_create(SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
-		0x00000000,
-		53
+		NET_UDP_ADDRESS_TYPE_IP4,
+		53,
+		{
+			.ip4=0x00000000,
+		}
 	};
 	if (!socket_bind(_net_dns_socket,&local_address,sizeof(net_udp_address_t))){
 		ERROR("Failed to bind DNS client socket");
@@ -256,10 +259,12 @@ _invalid_cache_entry:
 	INFO("DNS request: %s",name);
 	u8 buffer[sizeof(net_udp_socket_packet_t)+512];
 	net_udp_socket_packet_t* udp_packet=(net_udp_socket_packet_t*)buffer;
-	udp_packet->src_address=net_info_get_address();
-	udp_packet->dst_address=dns_entry->address;
-	udp_packet->src_port=53;
-	udp_packet->dst_port=53;
+	udp_packet->src_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	udp_packet->src_address.port=53;
+	udp_packet->src_address.address.ip4=net_info_get_address();
+	udp_packet->dst_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	udp_packet->dst_address.port=53;
+	udp_packet->dst_address.address.ip4=dns_entry->address;
 	net_dns_packet_t* header=(net_dns_packet_t*)(udp_packet->data);
 	header->id=__builtin_bswap16(request_id);
 	header->flags=__builtin_bswap16(NET_DNS_OPCODE_QUERY);

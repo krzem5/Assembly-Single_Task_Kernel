@@ -55,10 +55,12 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 static void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_address){
 	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1,1);
 	net_udp_socket_packet_t* udp_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
-	udp_packet->src_address=src_address;
-	udp_packet->dst_address=0xffffffff;
-	udp_packet->src_port=68;
-	udp_packet->dst_port=67;
+	udp_packet->src_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	udp_packet->src_address.port=68;
+	udp_packet->src_address.address.ip4=src_address;
+	udp_packet->dst_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	udp_packet->dst_address.port=67;
+	udp_packet->dst_address.address.ip4=0xffffffff;
 	udp_packet->length=sizeof(net_dhcp_packet_t)+option_size;
 	mem_copy(udp_packet->data,packet,udp_packet->length);
 	amm_dealloc(packet);
@@ -265,8 +267,11 @@ MODULE_INIT(){
 	LOG("Initializing DHCP client...");
 	_net_dhcp_socket=socket_create(SOCKET_DOMAIN_INET,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_UDP);
 	net_udp_address_t local_address={
-		0x00000000,
-		68
+		NET_UDP_ADDRESS_TYPE_IP4,
+		68,
+		{
+			.ip4=0x00000000,
+		}
 	};
 	if (!socket_bind(_net_dhcp_socket,&local_address,sizeof(net_udp_address_t))){
 		ERROR("Failed to bind DHCP client socket");

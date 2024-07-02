@@ -3,24 +3,32 @@
 #include <kernel/socket/port.h>
 #include <kernel/types.h>
 #include <net/ip4.h>
+#include <net/ip6.h>
 
 
 
-typedef struct _NET_UDP_SOCKET_PACKET{
-	net_ip4_address_t src_address;
-	net_ip4_address_t dst_address;
-	socket_port_t src_port;
-	socket_port_t dst_port;
-	u16 length;
-	u8 data[];
-} net_udp_socket_packet_t;
+#define NET_UDP_ADDRESS_TYPE_IP4 0
+#define NET_UDP_ADDRESS_TYPE_IP6 1
 
 
 
 typedef struct _NET_UDP_ADDRESS{
-	net_ip4_address_t address;
+	u32 type;
 	socket_port_t port;
+	union{
+		net_ip4_address_t ip4;
+		net_ip6_address_t ip6;
+	} address;
 } net_udp_address_t;
+
+
+
+typedef struct _NET_UDP_SOCKET_PACKET{
+	net_udp_address_t src_address;
+	net_udp_address_t dst_address;
+	u16 length;
+	u8 data[];
+} net_udp_socket_packet_t;
 
 
 

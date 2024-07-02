@@ -83,7 +83,10 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 	}
 	const net_udp_address_t* udp_local_address=(const net_udp_address_t*)(socket_node->local_ctx);
 	const net_udp_address_t* udp_remote_address=(const net_udp_address_t*)(socket_node->remote_ctx);
-	net_ip4_packet_t* ip_packet=net_ip4_create_packet(length+sizeof(net_udp_packet_t),udp_local_address->address,udp_remote_address->address,PROTOCOL_TYPE);
+	if (udp_local_address->type!=NET_UDP_ADDRESS_TYPE_IP4||udp_remote_address->type!=NET_UDP_ADDRESS_TYPE_IP4){
+		panic("UDP:_socket_write_callback:IPv6");
+	}
+	net_ip4_packet_t* ip_packet=net_ip4_create_packet(length+sizeof(net_udp_packet_t),udp_local_address->address.ip4,udp_remote_address->address.ip4,PROTOCOL_TYPE);
 	if (!ip_packet){
 		return 0;
 	}
@@ -118,13 +121,16 @@ static bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const v
 	if (packet->length+sizeof(net_udp_socket_packet_t)>length){
 		return 0;
 	}
-	net_ip4_packet_t* ip_packet=net_ip4_create_packet(packet->length+sizeof(net_udp_packet_t),packet->src_address,packet->dst_address,PROTOCOL_TYPE);
+	if (packet->src_address.type!=NET_UDP_ADDRESS_TYPE_IP4||packet->dst_address.type!=NET_UDP_ADDRESS_TYPE_IP4){
+		panic("UDP:_socket_write_packet_callback:IPv6");
+	}
+	net_ip4_packet_t* ip_packet=net_ip4_create_packet(packet->length+sizeof(net_udp_packet_t),packet->src_address.address.ip4,packet->dst_address.address.ip4,PROTOCOL_TYPE);
 	if (!ip_packet){
 		return 0;
 	}
 	net_udp_packet_t* udp_packet=(net_udp_packet_t*)(ip_packet->packet->data);
-	udp_packet->src_port=__builtin_bswap16(packet->src_port);
-	udp_packet->dst_port=__builtin_bswap16(packet->dst_port);
+	udp_packet->src_port=__builtin_bswap16(packet->src_address.port);
+	udp_packet->dst_port=__builtin_bswap16(packet->dst_address.port);
 	udp_packet->length=__builtin_bswap16(packet->length+sizeof(net_udp_packet_t));
 	mem_copy(udp_packet->data,packet->data,packet->length);
 	net_checksum_calculate_checksum(udp_packet,packet->length+sizeof(net_udp_packet_t),&(udp_packet->checksum));
@@ -194,10 +200,12 @@ static void _rx_callback(net_ip4_packet_t* packet){
 		return;
 	}
 	net_udp_socket_packet_t* socket_packet=amm_alloc(sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t));
-	socket_packet->src_address=__builtin_bswap32(packet->packet->src_address);
-	socket_packet->dst_address=__builtin_bswap32(packet->packet->dst_address);
-	socket_packet->src_port=__builtin_bswap16(udp_packet->src_port);
-	socket_packet->dst_port=__builtin_bswap16(udp_packet->dst_port);
+	socket_packet->src_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	socket_packet->src_address.port=__builtin_bswap16(udp_packet->src_port);
+	socket_packet->src_address.address.ip4=__builtin_bswap32(packet->packet->src_address);
+	socket_packet->dst_address.type=NET_UDP_ADDRESS_TYPE_IP4;
+	socket_packet->dst_address.port=__builtin_bswap16(udp_packet->dst_port);
+	socket_packet->dst_address.address.ip4=__builtin_bswap32(packet->packet->dst_address);
 	socket_packet->length=packet->length-sizeof(net_udp_packet_t);
 	mem_copy(socket_packet->data,udp_packet->data,packet->length-sizeof(net_udp_packet_t));
 	if (!socket_alloc_packet(&(socket->node),socket_packet,sizeof(net_udp_socket_packet_t)+packet->length-sizeof(net_udp_packet_t))){
