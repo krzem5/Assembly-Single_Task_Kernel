@@ -12,7 +12,7 @@
 #include <net/ip4.h>
 #include <net/ip6.h>
 #include <net/udp.h>
-#define KERNEL_LOG_NAME "net_udp"
+#define KERNEL_LOG_NAME "net_udp_ip4"
 
 
 
@@ -38,7 +38,7 @@ static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* add
 
 
 static void _socket_debind_callback(socket_vfs_node_t* socket_node){
-	panic("UDP:_socket_debind_callback");
+	panic("UDP:IPv4:_socket_debind_callback");
 }
 
 
@@ -57,7 +57,7 @@ static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* 
 
 
 static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
-	panic("UDP:_socket_deconnect_callback");
+	panic("UDP:IPv4:_socket_deconnect_callback");
 }
 
 
@@ -147,7 +147,7 @@ static bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const v
 
 
 static const socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
-	"UDP",
+	"UDP (IPv4)",
 	SOCKET_DOMAIN_INET,
 	SOCKET_TYPE_DGRAM,
 	SOCKET_PROTOCOL_UDP,
@@ -211,7 +211,7 @@ static void _rx_callback(net_ip4_packet_t* packet){
 
 
 static const net_ip4_protocol_descriptor_t _net_udp_ip4_protocol_descriptor={
-	"UDP",
+	"UDP (IPv4)",
 	PROTOCOL_TYPE,
 	_rx_callback
 };
