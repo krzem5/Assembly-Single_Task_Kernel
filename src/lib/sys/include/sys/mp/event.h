@@ -46,7 +46,7 @@ sys_event_t sys_event_iter_next(sys_event_t event);
 
 
 
-sys_error_t sys_event_iter_query(sys_event_t event,sys_event_query_result_t* out);
+sys_error_t sys_event_query(sys_event_t event,sys_event_query_result_t* out);
 
 
 

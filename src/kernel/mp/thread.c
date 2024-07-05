@@ -114,7 +114,7 @@ static thread_t* _thread_create(process_t* process){
 	thread_t* out=_thread_alloc();
 	handle_new(thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE|THREAD_ACL_FLAG_QUERY);
+	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE);
 	rwlock_init(&(out->lock));
 	out->process=process;
 	char buffer[128];
@@ -385,10 +385,6 @@ error_t syscall_thread_query(handle_id_t thread_handle,KERNEL_USER_POINTER threa
 		return ERROR_INVALID_HANDLE;
 	}
 	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
-	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_QUERY)){
-		handle_release(handle);
-		return ERROR_DENIED;
-	}
 	buffer->pid=thread->process->handle.rb_node.key;
 	buffer->tid=thread_handle;
 	str_copy(thread->name->data,(char*)(buffer->name),sizeof(buffer->name));

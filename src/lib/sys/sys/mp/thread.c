@@ -101,6 +101,6 @@ SYS_PUBLIC sys_thread_t sys_thread_iter_next(sys_process_t process,sys_thread_t 
 
 
 
-SYS_PUBLIC sys_error_t sys_thread_iter_query(sys_thread_t thread,sys_thread_query_result_t* out){
+SYS_PUBLIC sys_error_t sys_thread_query(sys_thread_t thread,sys_thread_query_result_t* out){
 	return _sys_syscall_thread_query(thread,out,sizeof(sys_thread_query_result_t));
 }

@@ -76,7 +76,7 @@ sys_process_t sys_process_iter_next(sys_process_t process);
 
 
 
-sys_error_t sys_process_iter_query(sys_process_t process,sys_process_query_result_t* out);
+sys_error_t sys_process_query(sys_process_t process,sys_process_query_result_t* out);
 
 
 

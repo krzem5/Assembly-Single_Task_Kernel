@@ -110,7 +110,7 @@ KERNEL_PUBLIC event_t* event_create(const char* name,const char* resource){
 	handle_new(event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
-		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE|EVENT_ACL_FLAG_QUERY);
+		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
 	}
 	rwlock_init(&(out->lock));
 	out->is_active=0;
@@ -373,10 +373,6 @@ error_t syscall_event_query(handle_id_t event_handle,KERNEL_USER_POINTER event_q
 		return ERROR_INVALID_HANDLE;
 	}
 	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
-	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_QUERY)){
-		handle_release(handle);
-		return ERROR_DENIED;
-	}
 	buffer->eid=event_handle;
 	str_copy(event->name,(char*)(buffer->name),sizeof(buffer->name));
 	buffer->is_active=event->is_active;

@@ -41,6 +41,6 @@ SYS_PUBLIC sys_event_t sys_event_iter_next(sys_event_t event){
 
 
 
-SYS_PUBLIC sys_error_t sys_event_iter_query(sys_event_t event,sys_event_query_result_t* out){
+SYS_PUBLIC sys_error_t sys_event_query(sys_event_t event,sys_event_query_result_t* out){
 	return _sys_syscall_event_query(event,out,sizeof(sys_event_query_result_t));
 }

@@ -14,6 +14,12 @@
 #define SYS_THREAD_PRIORITY_REALTIME 4
 #define SYS_THREAD_PRIORITY_TERMINATED 255
 
+#define SYS_THREAD_STATE_TYPE_NONE 0
+#define SYS_THREAD_STATE_TYPE_QUEUED 1
+#define SYS_THREAD_STATE_TYPE_RUNNING 2
+#define SYS_THREAD_STATE_TYPE_AWAITING_EVENT 3
+#define SYS_THREAD_STATE_TYPE_TERMINATED 255
+
 #define SYS_THREAD_ITER_ALL_PROCESSES 0
 
 
@@ -82,7 +88,7 @@ sys_thread_t sys_thread_iter_next(sys_process_t process,sys_thread_t thread);
 
 
 
-sys_error_t sys_thread_iter_query(sys_thread_t thread,sys_thread_query_result_t* out);
+sys_error_t sys_thread_query(sys_thread_t thread,sys_thread_query_result_t* out);
 
 
 

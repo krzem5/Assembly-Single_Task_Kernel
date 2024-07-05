@@ -407,10 +407,6 @@ error_t syscall_process_query(handle_id_t process_handle,KERNEL_USER_POINTER pro
 		return ERROR_INVALID_HANDLE;
 	}
 	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-	if (!(acl_get(process->handle.acl,THREAD_DATA->process)&PROCESS_ACL_FLAG_QUERY)){
-		handle_release(handle);
-		return ERROR_DENIED;
-	}
 	buffer->pid=process_handle;
 	buffer->ppid=process->parent->handle.rb_node.key;
 	str_copy(process->name->data,(char*)(buffer->name),sizeof(buffer->name));
