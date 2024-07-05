@@ -63,3 +63,21 @@ SYS_PUBLIC sys_error_t sys_process_get_main_thread(sys_process_t process){
 SYS_PUBLIC void* sys_process_get_return_value(sys_process_t process){
 	return (void*)_sys_syscall_process_get_return_value(process);
 }
+
+
+
+SYS_PUBLIC sys_process_t sys_process_iter_start(void){
+	return _sys_syscall_process_iter(0);
+}
+
+
+
+SYS_PUBLIC sys_process_t sys_process_iter_next(sys_process_t process){
+	return _sys_syscall_process_iter(process);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_process_iter_query(sys_process_t process,sys_process_query_result_t* out){
+	return _sys_syscall_process_query(process,out,sizeof(sys_process_query_result_t));
+}

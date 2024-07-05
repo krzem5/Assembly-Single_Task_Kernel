@@ -2,6 +2,7 @@
 #define _SYS_MP_THREAD_H_ 1
 #include <sys/error/error.h>
 #include <sys/mp/event.h>
+#include <sys/mp/process.h>
 #include <sys/types.h>
 
 
@@ -13,6 +14,8 @@
 #define SYS_THREAD_PRIORITY_REALTIME 4
 #define SYS_THREAD_PRIORITY_TERMINATED 255
 
+#define SYS_THREAD_ITER_ALL_PROCESSES 0
+
 
 
 typedef u64 sys_thread_t;
@@ -20,6 +23,18 @@ typedef u64 sys_thread_t;
 
 
 typedef u64 sys_thread_priority_t;
+
+
+
+typedef struct _SYS_THREAD_QUERY_RESULT{
+	sys_process_t pid;
+	sys_thread_t tid;
+	char name[256];
+	u8 state;
+	u8 priority;
+	u8 scheduler_priority;
+	void* return_value;
+} sys_thread_query_result_t;
 
 
 
@@ -56,6 +71,18 @@ sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value);
 
 
 void* sys_thread_get_return_value(sys_thread_t thread);
+
+
+
+sys_thread_t sys_thread_iter_start(sys_process_t process);
+
+
+
+sys_thread_t sys_thread_iter_next(sys_process_t process,sys_thread_t thread);
+
+
+
+sys_error_t sys_thread_iter_query(sys_thread_t thread,sys_thread_query_result_t* out);
 
 
 

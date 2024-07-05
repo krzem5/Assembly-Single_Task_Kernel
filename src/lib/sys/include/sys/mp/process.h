@@ -1,6 +1,8 @@
 #ifndef _SYS_MP_PROCESS_H_
 #define _SYS_MP_PROCESS_H_ 1
 #include <sys/fd/fd.h>
+#include <sys/id/group.h>
+#include <sys/id/user.h>
 #include <sys/mp/event.h>
 #include <sys/types.h>
 
@@ -15,6 +17,22 @@
 
 
 typedef u64 sys_process_t;
+
+
+
+typedef struct _SYS_PROCESS_QUERY_RESULT{
+	sys_process_t pid;
+	sys_process_t ppid;
+	char name[256];
+	char image[4096];
+	sys_uid_t uid;
+	sys_gid_t gid;
+	char vfs_root[4096];
+	char vfs_cwd[4096];
+	sys_fd_t fd_stdin;
+	sys_fd_t fd_stdout;
+	sys_fd_t fd_stderr;
+} sys_process_query_result_t;
 
 
 
@@ -47,6 +65,18 @@ sys_error_t sys_process_get_main_thread(sys_process_t process);
 
 
 void* sys_process_get_return_value(sys_process_t process);
+
+
+
+sys_process_t sys_process_iter_start(void);
+
+
+
+sys_process_t sys_process_iter_next(sys_process_t process);
+
+
+
+sys_error_t sys_process_iter_query(sys_process_t process,sys_process_query_result_t* out);
 
 
 

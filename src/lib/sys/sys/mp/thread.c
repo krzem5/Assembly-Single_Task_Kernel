@@ -86,3 +86,21 @@ SYS_PUBLIC sys_error_t sys_thread_stop(sys_thread_t thread,void* return_value){
 SYS_PUBLIC void* sys_thread_get_return_value(sys_thread_t thread){
 	return (void*)_sys_syscall_thread_get_return_value(thread);
 }
+
+
+
+SYS_PUBLIC sys_thread_t sys_thread_iter_start(sys_process_t process){
+	return _sys_syscall_thread_iter(process,0);
+}
+
+
+
+SYS_PUBLIC sys_thread_t sys_thread_iter_next(sys_process_t process,sys_thread_t thread){
+	return _sys_syscall_thread_iter(process,thread);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_thread_iter_query(sys_thread_t thread,sys_thread_query_result_t* out){
+	return _sys_syscall_thread_query(thread,out,sizeof(sys_thread_query_result_t));
+}

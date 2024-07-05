@@ -587,4 +587,40 @@ static inline u64 _sys_syscall_fd_stream(u64 src_fd,const u64* dst_fds,u32 dst_f
 
 
 
+static inline u64 _sys_syscall_thread_iter(u64 process,u64 thread){
+	return _sys_syscall2(0x100000064,process,thread);
+}
+
+
+
+static inline u64 _sys_syscall_thread_query(u64 thread,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000065,thread,(u64)buffer,buffer_length);
+}
+
+
+
+static inline u64 _sys_syscall_event_iter(u64 event){
+	return _sys_syscall1(0x100000066,event);
+}
+
+
+
+static inline u64 _sys_syscall_event_query(u64 event,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000067,event,(u64)buffer,buffer_length);
+}
+
+
+
+static inline u64 _sys_syscall_process_iter(u64 process){
+	return _sys_syscall1(0x100000068,process);
+}
+
+
+
+static inline u64 _sys_syscall_process_query(u64 process,void* buffer,u32 buffer_length){
+	return _sys_syscall3(0x100000069,process,(u64)buffer,buffer_length);
+}
+
+
+
 #endif
