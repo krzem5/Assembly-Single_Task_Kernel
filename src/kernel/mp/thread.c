@@ -23,6 +23,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "thread"
 
@@ -113,7 +114,7 @@ static thread_t* _thread_create(process_t* process){
 	thread_t* out=_thread_alloc();
 	handle_new(thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE);
+	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE|THREAD_ACL_FLAG_QUERY);
 	rwlock_init(&(out->lock));
 	out->process=process;
 	char buffer[128];
@@ -337,4 +338,64 @@ error_t syscall_thread_get_return_value(handle_id_t thread_handle){
 	u64 out=(u64)(KERNEL_CONTAINEROF(handle,thread_t,handle)->return_value);
 	handle_release(handle);
 	return out;
+}
+
+
+
+error_t syscall_thread_iter(handle_id_t process_handle_id,handle_id_t thread_handle_id){
+	if (!process_handle_id){
+		handle_descriptor_t* thread_handle_descriptor=handle_get_descriptor(thread_handle_type);
+		rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(thread_handle_descriptor->tree),(thread_handle_id?thread_handle_id+1:0));
+		return (rb_node?rb_node->key:0);
+	}
+	handle_t* thread_handle=handle_lookup_and_acquire(thread_handle_id,thread_handle_type);
+	if (!thread_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	thread_t* thread=KERNEL_CONTAINEROF(thread_handle,thread_t,handle);
+	if (thread->process->handle.rb_node.key!=process_handle_id){
+		handle_release(thread_handle);
+		return 0;
+	}
+	handle_t* process_handle=handle_lookup_and_acquire(process_handle_id,process_handle_type);
+	if (!process_handle){
+		handle_release(thread_handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=KERNEL_CONTAINEROF(process_handle,process_t,handle);
+	rwlock_acquire_read(&(process->thread_list.lock));
+	handle_id_t out=(thread->thread_list_next?thread->thread_list_next->handle.rb_node.key:0);
+	rwlock_release_read(&(process->thread_list.lock));
+	handle_release(process_handle);
+	handle_release(thread_handle);
+	return out;
+}
+
+
+
+error_t syscall_thread_query(handle_id_t thread_handle,KERNEL_USER_POINTER thread_query_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(thread_query_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_QUERY)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	buffer->pid=thread->process->handle.rb_node.key;
+	buffer->tid=thread_handle;
+	str_copy(thread->name->data,(char*)(buffer->name),sizeof(buffer->name));
+	buffer->state=thread->state;
+	buffer->priority=thread->priority;
+	buffer->scheduler_priority=thread->scheduler_load_balancer_queue_index;
+	buffer->return_value=thread->return_value;
+	handle_release(handle);
+	return ERROR_OK;
 }

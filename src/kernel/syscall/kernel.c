@@ -88,6 +88,8 @@ extern u64 syscall_thread_create();
 extern u64 syscall_thread_get_priority();
 extern u64 syscall_thread_get_return_value();
 extern u64 syscall_thread_get_tid();
+extern u64 syscall_thread_iter();
+extern u64 syscall_thread_query();
 extern u64 syscall_thread_set_priority();
 extern u64 syscall_thread_start();
 extern u64 syscall_thread_stop();
@@ -201,5 +203,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[97]=syscall_fs_format,
 	[98]=syscall_partition_table_descriptor_format,
 	[99]=syscall_fd_stream,
+	[100]=syscall_thread_iter,
+	[101]=syscall_thread_query,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

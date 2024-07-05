@@ -12,8 +12,21 @@
 #define THREAD_STATE_TYPE_TERMINATED 255
 
 #define THREAD_ACL_FLAG_TERMINATE 1
+#define THREAD_ACL_FLAG_QUERY 2
 
 #define THREAD_DATA ((volatile __seg_gs thread_t*)NULL)
+
+
+
+typedef struct _THREAD_QUERY_USER_DATA{
+	u64 pid;
+	u64 tid;
+	char name[256];
+	u8 state;
+	u8 priority;
+	u8 scheduler_priority;
+	KERNEL_USER_POINTER void* return_value;
+} thread_query_user_data_t;
 
 
 
