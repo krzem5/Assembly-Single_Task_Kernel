@@ -12,6 +12,15 @@
 
 #define EVENT_ACL_FLAG_DISPATCH 1
 #define EVENT_ACL_FLAG_DELETE 2
+#define EVENT_ACL_FLAG_QUERY 4
+
+
+
+typedef struct _EVENT_QUERY_USER_DATA{
+	u64 eid;
+	char name[256];
+	bool is_active;
+} event_query_user_data_t;
 
 
 

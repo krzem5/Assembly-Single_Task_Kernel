@@ -8,6 +8,23 @@
 #define PROCESS_ACL_FLAG_CREATE_THREAD 1
 #define PROCESS_ACL_FLAG_TERMINATE 2
 #define PROCESS_ACL_FLAG_SWITCH_USER 4
+#define PROCESS_ACL_FLAG_QUERY 8
+
+
+
+typedef struct _PROCESS_QUERY_USER_DATA{
+	u64 pid;
+	u64 ppid;
+	char name[256];
+	char image[4096];
+	u32 uid;
+	u32 gid;
+	char vfs_root[4096];
+	char vfs_cwd[4096];
+	u64 fd_stdin;
+	u64 fd_stdout;
+	u64 fd_stderr;
+} process_query_user_data_t;
 
 
 

@@ -27,6 +27,7 @@
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #include <kernel/vfs/vfs.h>
 #define KERNEL_LOG_NAME "process"
@@ -382,4 +383,45 @@ error_t syscall_process_get_return_value(handle_id_t process_handle){
 	u64 out=(u64)(KERNEL_CONTAINEROF(handle,process_t,handle)->return_value);
 	handle_release(handle);
 	return out;
+}
+
+
+
+error_t syscall_process_iter(handle_id_t process_handle_id){
+	handle_descriptor_t* process_handle_descriptor=handle_get_descriptor(process_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(process_handle_descriptor->tree),(process_handle_id?process_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_process_query(handle_id_t process_handle,KERNEL_USER_POINTER process_query_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(process_query_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* handle=handle_lookup_and_acquire(process_handle,process_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
+	if (!(acl_get(process->handle.acl,THREAD_DATA->process)&PROCESS_ACL_FLAG_QUERY)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	buffer->pid=process_handle;
+	buffer->ppid=process->parent->handle.rb_node.key;
+	str_copy(process->name->data,(char*)(buffer->name),sizeof(buffer->name));
+	str_copy(process->image->data,(char*)(buffer->image),sizeof(buffer->image));
+	buffer->uid=process->uid;
+	buffer->gid=process->gid;
+	vfs_path(process->vfs_root,(char*)(buffer->vfs_root),sizeof(buffer->vfs_root));
+	vfs_path(process->vfs_cwd,(char*)(buffer->vfs_cwd),sizeof(buffer->vfs_cwd));
+	buffer->fd_stdin=process->fd_stdin;
+	buffer->fd_stdout=process->fd_stdout;
+	buffer->fd_stderr=process->fd_stderr;
+	handle_release(handle);
+	return ERROR_OK;
 }

@@ -11,9 +11,11 @@
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/spinloop.h>
+#include <kernel/util/string.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "event"
 
@@ -108,7 +110,7 @@ KERNEL_PUBLIC event_t* event_create(const char* name,const char* resource){
 	handle_new(event_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
 	if (CPU_HEADER_DATA->current_thread){
-		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE);
+		acl_set(out->handle.acl,THREAD_DATA->process,0,EVENT_ACL_FLAG_DISPATCH|EVENT_ACL_FLAG_DELETE|EVENT_ACL_FLAG_QUERY);
 	}
 	rwlock_init(&(out->lock));
 	out->is_active=0;
@@ -345,6 +347,39 @@ error_t syscall_event_set_active(handle_id_t event_handle,u32 is_active){
 		return ERROR_DENIED;
 	}
 	event_set_active(event,is_active,0);
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_event_iter(handle_id_t event_handle_id){
+	handle_descriptor_t* event_handle_descriptor=handle_get_descriptor(event_handle_type);
+	rb_tree_node_t* rb_node=rb_tree_lookup_increasing_node(&(event_handle_descriptor->tree),(event_handle_id?event_handle_id+1:0));
+	return (rb_node?rb_node->key:0);
+}
+
+
+
+error_t syscall_event_query(handle_id_t event_handle,KERNEL_USER_POINTER event_query_user_data_t* buffer,u32 buffer_length){
+	if (buffer_length<sizeof(event_query_user_data_t)){
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	if (syscall_get_user_pointer_max_length((void*)buffer)<buffer_length){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_t* handle=handle_lookup_and_acquire(event_handle,event_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	event_t* event=KERNEL_CONTAINEROF(handle,event_t,handle);
+	if (!(acl_get(event->handle.acl,THREAD_DATA->process)&EVENT_ACL_FLAG_QUERY)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	buffer->eid=event_handle;
+	str_copy(event->name,(char*)(buffer->name),sizeof(buffer->name));
+	buffer->is_active=event->is_active;
 	handle_release(handle);
 	return ERROR_OK;
 }

@@ -16,6 +16,8 @@ extern u64 syscall_drive_get_next();
 extern u64 syscall_event_create();
 extern u64 syscall_event_delete();
 extern u64 syscall_event_dispatch();
+extern u64 syscall_event_iter();
+extern u64 syscall_event_query();
 extern u64 syscall_event_set_active();
 extern u64 syscall_fd_close();
 extern u64 syscall_fd_dup();
@@ -62,6 +64,8 @@ extern u64 syscall_process_group_get();
 extern u64 syscall_process_group_get_next();
 extern u64 syscall_process_group_iter();
 extern u64 syscall_process_group_set();
+extern u64 syscall_process_iter();
+extern u64 syscall_process_query();
 extern u64 syscall_process_set_cwd();
 extern u64 syscall_process_set_root();
 extern u64 syscall_process_start();
@@ -205,5 +209,9 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[99]=syscall_fd_stream,
 	[100]=syscall_thread_iter,
 	[101]=syscall_thread_query,
+	[102]=syscall_event_iter,
+	[103]=syscall_event_query,
+	[104]=syscall_process_iter,
+	[105]=syscall_process_query,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);
