@@ -3,6 +3,8 @@
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "load_balancer"
@@ -32,7 +34,7 @@ static CPU_LOCAL_DATA(scheduler_load_balancer_stats_t,_scheduler_load_balancer_s
 
 
 static u32 _get_queue_index_offset(const thread_t* thread){
-	return (thread->process->handle.rb_node.key?SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1:0);
+	return (thread->process==process_kernel?0:SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1);
 }
 
 

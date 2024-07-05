@@ -31,7 +31,26 @@ int main(int argc,const char** argv){
 		else if (thread_query_result.state==SYS_THREAD_STATE_TYPE_TERMINATED){
 			state="terminated";
 		}
-		sys_io_print("%s: \x1b[1m%s\x1b[0m: %s\n",process_query_result.name,thread_query_result.name,state);
+		const char* priority="<unknown>";
+		if (thread_query_result.priority==SYS_THREAD_PRIORITY_BACKGROUND){
+			priority="background";
+		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_LOW){
+			priority="low";
+		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_NORMAL){
+			priority="normal";
+		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_HIGH){
+			priority="high";
+		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_REALTIME){
+			priority="realtime";
+		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_TERMINATED){
+			priority="terminated";
+		}
+		sys_io_print("%s: \x1b[1m%s\x1b[0m: %s/%u, %s\n",process_query_result.name,thread_query_result.name,priority,thread_query_result.scheduler_priority,state);
 	}
 	return 0;
 }
