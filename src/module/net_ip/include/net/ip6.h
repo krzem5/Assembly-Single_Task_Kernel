@@ -10,8 +10,7 @@ typedef u8 net_ip6_protocol_type_t;
 
 
 typedef struct _NET_IP6_ADDRESS{
-	u64 prefix;
-	u64 identifier;
+	u16 data[8];
 } net_ip6_address_t;
 
 
@@ -21,8 +20,8 @@ typedef struct KERNEL_PACKED _NET_IP6_PACKET_DATA{
 	u16 payload_length;
 	u8 next_header;
 	u8 hop_limit;
-	u64 src_address[2];
-	u64 dst_address[2];
+	u16 src_address[8];
+	u16 dst_address[8];
 	u8 data[];
 } net_ip6_packet_data_t;
 
@@ -68,6 +67,14 @@ void net_ip6_delete_packet(net_ip6_packet_t* packet);
 
 
 void net_ip6_send_packet(net_ip6_packet_t* packet);
+
+
+
+bool net_ip6_address_from_string(const char* str,net_ip6_address_t* out);
+
+
+
+bool net_ip6_address_from_string_format(const char* template,net_ip6_address_t* out,...);
 
 
 

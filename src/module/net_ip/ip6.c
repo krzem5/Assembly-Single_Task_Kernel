@@ -1,3 +1,4 @@
+#include <kernel/format/format.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
@@ -103,4 +104,97 @@ KERNEL_PUBLIC void net_ip6_delete_packet(net_ip6_packet_t* packet){
 KERNEL_PUBLIC void net_ip6_send_packet(net_ip6_packet_t* packet){
 	network_layer1_send_packet(packet->raw_packet);
 	omm_dealloc(_net_ip6_packet_allocator,packet);
+}
+
+
+
+KERNEL_PUBLIC bool net_ip6_address_from_string(const char* str,net_ip6_address_t* out){
+	for (u32 i=0;i<8;i++){
+		out->data[i]=0;
+	}
+	if (!str[0]){
+		return 0;
+	}
+	u32 group_index=0;
+	u32 group_bits=0;
+	u32 expansion_index=0xffffffff;
+	for (;str[0];str++){
+		if (str[0]>='0'&&str[0]<='9'){
+			if (group_index>=8||group_bits>=16){
+				return 0;
+			}
+			out->data[group_index]=(out->data[group_index]<<4)|(str[0]-'0');
+			group_bits+=4;
+			continue;
+		}
+		if (str[0]>='A'&&str[0]<='Z'){
+			if (group_index>=8||group_bits>=16){
+				return 0;
+			}
+			out->data[group_index]=(out->data[group_index]<<4)|(str[0]-'A'+10);
+			group_bits+=4;
+			continue;
+		}
+		if (str[0]>='a'&&str[0]<='z'){
+			if (group_index>=8||group_bits>=16){
+				return 0;
+			}
+			out->data[group_index]=(out->data[group_index]<<4)|(str[0]-'a'+10);
+			group_bits+=4;
+			continue;
+		}
+		if (str[0]!=':'){
+			return 0;
+		}
+		if (group_bits){
+			group_index++;
+			group_bits=0;
+		}
+		if (str[1]!=':'){
+			continue;
+		}
+		str++;
+		if (str[1]==':'||expansion_index!=0xffffffff){
+			return 0;
+		}
+		expansion_index=group_index;
+	}
+	if (group_bits){
+		group_index++;
+	}
+	if (group_index>8){
+		return 0;
+	}
+	if (expansion_index==0xffffffff){
+		if (group_index!=8){
+			return 0;
+		}
+		return 1;
+	}
+	u32 expansion_length=8-group_index;
+	if (expansion_length<2){
+		return 0;
+	}
+	for (u32 i=group_index;i>expansion_index;){
+		i--;
+		out->data[i-group_index+8]=out->data[i];
+	}
+	for (u32 i=0;i<expansion_length;i++){
+		out->data[i+expansion_index]=0;
+	}
+	return 1;
+}
+
+
+
+KERNEL_PUBLIC bool net_ip6_address_from_string_format(const char* template,net_ip6_address_t* out,...){
+	char buffer[41];
+	__builtin_va_list va;
+	__builtin_va_start(va,out);
+	bool is_too_long=(format_string_va(buffer,sizeof(buffer),template,&va)>=40);
+	__builtin_va_end(va);
+	if (is_too_long){
+		return 0;
+	}
+	return net_ip6_address_from_string(buffer,out);
 }

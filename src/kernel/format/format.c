@@ -50,6 +50,22 @@ static KERNEL_INLINE void _format_base10_int(u64 value,format_buffer_state_t* ou
 
 
 
+static KERNEL_INLINE void _format_base16_int(u64 value,format_buffer_state_t* out){
+	char buffer[16];
+	u8 i=0;
+	do{
+		buffer[i]=_format_base16_char(value);
+		i++;
+		value>>=4;
+	} while (value);
+	while (i){
+		i--;
+		_buffer_state_add(out,buffer[i]);
+	}
+}
+
+
+
 static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* out){
 	u64 data;
 	if (flags&FLAG_SIGN){
@@ -83,17 +99,7 @@ static void _format_int(__builtin_va_list* va,u8 flags,format_buffer_state_t* ou
 		_format_base10_int(data,out);
 		return;
 	}
-	char buffer[16];
-	u8 i=0;
-	while (data){
-		buffer[i]=_format_base16_char(data);
-		i++;
-		data>>=4;
-	}
-	while (i){
-		i--;
-		_buffer_state_add(out,buffer[i]);
-	}
+	_format_base16_int(data,out);
 }
 
 
@@ -250,6 +256,47 @@ KERNEL_PUBLIC u32 format_string_va(char* buffer,u32 length,const char* template,
 					_buffer_state_add(&out,'.');
 				}
 				_format_base10_int((ip4>>(24-(i<<3)))&0xff,&out);
+			}
+		}
+		else if (*template=='j'){
+			const u16* ip6=__builtin_va_arg(*va,const u16*);
+			u8 contraction_index=0xff;
+			u8 contraction_length=0;
+			for (u8 i=0;i<8;i++){
+				if (ip6[i]){
+					continue;
+				}
+				u8 j=i+1;
+				for (;j<8&&!ip6[j];j++);
+				if (j-i>contraction_length){
+					contraction_index=i;
+					contraction_length=j-i;
+				}
+				i=j-1;
+			}
+			bool need_separator=0;
+			for (u8 i=0;i<8;i++){
+				if (i==contraction_index){
+					_buffer_state_add(&out,':');
+					_buffer_state_add(&out,':');
+					i+=contraction_length-1;
+					need_separator=0;
+					continue;
+				}
+				if (need_separator){
+					_buffer_state_add(&out,':');
+				}
+				_format_base16_int(ip6[i],&out);
+				need_separator=1;
+			}
+		}
+		else if (*template=='J'){
+			const u16* ip6=__builtin_va_arg(*va,const u16*);
+			for (u8 i=0;i<8;i++){
+				if (i){
+					_buffer_state_add(&out,':');
+				}
+				_format_base16_int(ip6[i],&out);
 			}
 		}
 		else{
