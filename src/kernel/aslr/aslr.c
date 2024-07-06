@@ -15,9 +15,9 @@
 
 
 
-static u64 KERNEL_EARLY_WRITE _aslr_offset=0;
+static volatile const u64* KERNEL_EARLY_READ __kernel_relocation_data=NULL;
 
-volatile const u64* KERNEL_EARLY_READ __kernel_relocation_data=NULL;
+static u64 KERNEL_EARLY_WRITE _aslr_offset=0;
 
 u64 KERNEL_EARLY_WRITE aslr_module_base=0;
 u64 KERNEL_EARLY_WRITE aslr_module_size=0;
@@ -56,6 +56,7 @@ void KERNEL_EARLY_EXEC KERNEL_NORETURN aslr_reloc_kernel(void (*KERNEL_NORETURN 
 	INFO("Kernel range: %p - %p",kernel_section_kernel_start(),kernel_section_kernel_end());
 	INFO("Module range: %p - %p",aslr_module_base,aslr_module_base+aslr_module_size);
 	(void)_finish_relocation;
+	(void)__kernel_relocation_data;
 	next_stage_callback();
 #else
 	LOG("Generating ASLR addresses...");
