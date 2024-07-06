@@ -624,7 +624,7 @@ static inline u64 _sys_syscall_process_query(u64 process,void* buffer,u32 buffer
 
 
 static inline u64 _sys_syscall_thread_set_name(u64 thread,const char* name){
-	return _sys_syscall2(0x100000070,thread,(u64)name);
+	return _sys_syscall2(0x10000006a,thread,(u64)name);
 }
 
 
