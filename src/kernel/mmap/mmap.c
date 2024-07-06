@@ -1,5 +1,6 @@
 #include <kernel/error/error.h>
 #include <kernel/fd/fd.h>
+#include <kernel/format/format.h>
 #include <kernel/isr/pf.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
@@ -333,7 +334,9 @@ u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state){
 	if (!CPU_HEADER_DATA->current_thread){
 		panic("mmap_handle_pf: scheduler file-backed memory page fault");
 	}
-	scheduler_irq_return_after_thread(isr_state,thread_create_kernel_thread(process_kernel,"kernel.pf.file_backend",vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0));
+	char buffer[256];
+	format_string(buffer,sizeof(buffer),"kernel.pf.file.read/%s",THREAD_DATA->name->data);
+	scheduler_irq_return_after_thread(isr_state,thread_create_kernel_thread(process_kernel,buffer,vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0));
 	return out;
 }
 
