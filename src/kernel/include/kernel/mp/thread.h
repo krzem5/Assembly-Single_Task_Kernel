@@ -12,6 +12,7 @@
 #define THREAD_STATE_TYPE_TERMINATED 255
 
 #define THREAD_ACL_FLAG_TERMINATE 1
+#define THREAD_ACL_FLAG_CONFIG 2
 
 #define THREAD_DATA ((volatile __seg_gs thread_t*)NULL)
 

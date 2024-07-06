@@ -251,6 +251,7 @@ error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERN
 	fd_allow_dup(process->fd_stdin,process);
 	fd_allow_dup(process->fd_stdout,process);
 	fd_allow_dup(process->fd_stderr,process);
+	acl_set(process->main_thread->handle.acl,THREAD_DATA->process,0,THREAD_ACL_FLAG_CONFIG);
 	if (!(flags&ELF_LOAD_FLAG_PAUSE_THREAD)){
 		scheduler_enqueue_thread(process->main_thread);
 	}

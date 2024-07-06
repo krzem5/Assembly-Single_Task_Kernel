@@ -114,7 +114,7 @@ static thread_t* _thread_create(process_t* process){
 	thread_t* out=_thread_alloc();
 	handle_new(thread_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE);
+	acl_set(out->handle.acl,process,0,THREAD_ACL_FLAG_TERMINATE|THREAD_ACL_FLAG_CONFIG);
 	rwlock_init(&(out->lock));
 	out->process=process;
 	char buffer[128];
@@ -265,7 +265,12 @@ error_t syscall_thread_get_priority(handle_id_t thread_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	u64 out=KERNEL_CONTAINEROF(handle,thread_t,handle)->priority;
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_CONFIG)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	u64 out=thread->priority;
 	handle_release(handle);
 	return out;
 }
@@ -281,6 +286,10 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 		return ERROR_INVALID_HANDLE;
 	}
 	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_CONFIG)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
 	if (thread->state==THREAD_STATE_TYPE_TERMINATED){
 		handle_release(handle);
 		return ERROR_UNSUPPORTED_OPERATION;
@@ -314,6 +323,10 @@ error_t syscall_thread_start(handle_id_t thread_handle){
 		return ERROR_INVALID_HANDLE;
 	}
 	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_CONFIG)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
 	rwlock_acquire_write(&(thread->lock));
 	error_t out=ERROR_UNSUPPORTED_OPERATION;
 	if (thread->state==THREAD_STATE_TYPE_NONE){
@@ -335,7 +348,12 @@ error_t syscall_thread_get_return_value(handle_id_t thread_handle){
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	u64 out=(u64)(KERNEL_CONTAINEROF(handle,thread_t,handle)->return_value);
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_CONFIG)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	u64 out=(u64)(thread->return_value);
 	handle_release(handle);
 	return out;
 }
@@ -411,6 +429,10 @@ error_t syscall_thread_set_name(handle_id_t thread_handle,KERNEL_USER_POINTER co
 		return ERROR_INVALID_HANDLE;
 	}
 	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	if (!(acl_get(thread->handle.acl,THREAD_DATA->process)&THREAD_ACL_FLAG_CONFIG)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
 	rwlock_acquire_write(&(thread->lock));
 	string_t* old_name=thread->name;
 	thread->name=smm_alloc(buffer,0);
