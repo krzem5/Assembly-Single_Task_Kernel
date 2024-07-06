@@ -94,6 +94,7 @@ extern u64 syscall_thread_get_return_value();
 extern u64 syscall_thread_get_tid();
 extern u64 syscall_thread_iter();
 extern u64 syscall_thread_query();
+extern u64 syscall_thread_set_name();
 extern u64 syscall_thread_set_priority();
 extern u64 syscall_thread_start();
 extern u64 syscall_thread_stop();
@@ -213,5 +214,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[103]=syscall_event_query,
 	[104]=syscall_process_iter,
 	[105]=syscall_process_query,
+	[106]=syscall_thread_set_name,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

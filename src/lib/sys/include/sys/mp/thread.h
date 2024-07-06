@@ -92,4 +92,8 @@ sys_error_t sys_thread_query(sys_thread_t thread,sys_thread_query_result_t* out)
 
 
 
+sys_error_t sys_thread_set_name(sys_thread_t thread,const char* name);
+
+
+
 #endif

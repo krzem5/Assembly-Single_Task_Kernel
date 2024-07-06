@@ -395,3 +395,27 @@ error_t syscall_thread_query(handle_id_t thread_handle,KERNEL_USER_POINTER threa
 	handle_release(handle);
 	return ERROR_OK;
 }
+
+
+
+error_t syscall_thread_set_name(handle_id_t thread_handle,KERNEL_USER_POINTER const char* name){
+	u64 name_length=syscall_get_string_length((const char*)name);
+	if (!name_length||name_length>255){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	char buffer[256];
+	mem_copy(buffer,(const char*)name,name_length);
+	buffer[name_length]=0;
+	handle_t* handle=handle_lookup_and_acquire(thread_handle,thread_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	thread_t* thread=KERNEL_CONTAINEROF(handle,thread_t,handle);
+	rwlock_acquire_write(&(thread->lock));
+	string_t* old_name=thread->name;
+	thread->name=smm_alloc(buffer,0);
+	smm_dealloc(old_name);
+	rwlock_release_write(&(thread->lock));
+	handle_release(handle);
+	return ERROR_OK;
+}
