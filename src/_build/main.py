@@ -202,7 +202,7 @@ LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 TOOL_FILE_DIRECTORY="src/tool"
 MODULE_ORDER_FILE_PATH="src/module/module_order.config"
-FS_LIST_FILE_PATH="src/module/fs_list.config"
+FS_LIST_FILE_PATH="src/config/fs_list.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
@@ -282,7 +282,8 @@ def _get_files(directories):
 
 
 def _get_kernel_build_name():
-	return "x86_64."+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]+"/"+os.environ.get("GITHUB_SHA","local")[:7]
+	root=config.parse("src/config/version.config")
+	return "x86_64."+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]+f"/{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-"+os.environ.get("GITHUB_SHA","local")[:7]
 
 
 
