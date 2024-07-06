@@ -16,19 +16,19 @@
 
 
 
-static filesystem_t* _match_fs(const char* guid,const char* type){
+static filesystem_t* _match_fs(const char* uuid,const char* type){
 	HANDLE_FOREACH(fs_handle_type){
 		filesystem_t* fs=KERNEL_CONTAINEROF(handle,filesystem_t,handle);
-		if (guid){
-			if (str_equal(guid,"boot")){
+		if (uuid){
+			if (str_equal(uuid,"boot")){
 				for (u8 i=0;i<16;i++){
-					if (fs->guid[i]!=kernel_get_boot_guid()[i]){
+					if (fs->uuid[i]!=kernel_get_boot_uuid()[i]){
 						goto _check_next_fs;
 					}
 				}
 			}
 			else{
-				ERROR("Unimplemented: _match_fs.guid");
+				ERROR("Unimplemented: _match_fs.uuid");
 			}
 		}
 		if (type&&!str_equal(fs->descriptor->config->name,type)){
@@ -55,15 +55,15 @@ MODULE_INIT(){
 			continue;
 		}
 		const char* path=NULL;
-		const char* guid=NULL;
+		const char* uuid=NULL;
 		const char* type=NULL;
 		bool required=1;
 		config_tag_t* tag=NULL;
 		if (config_tag_find(fs_tag,"path",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
 			path=tag->string->data;
 		}
-		if (config_tag_find(fs_tag,"guid",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
-			guid=tag->string->data;
+		if (config_tag_find(fs_tag,"uuid",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
+			uuid=tag->string->data;
 		}
 		if (config_tag_find(fs_tag,"type",0,&tag)&&tag->type==CONFIG_TAG_TYPE_STRING){
 			type=tag->string->data;
@@ -75,7 +75,7 @@ MODULE_INIT(){
 			ERROR("'path' tag missing");
 			continue;
 		}
-		filesystem_t* fs=_match_fs(guid,type);
+		filesystem_t* fs=_match_fs(uuid,type);
 		if (!fs&&required){
 			ERROR("Filesystem not found");
 		}

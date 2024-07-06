@@ -254,7 +254,7 @@ static filesystem_t* _kfs2_fs_load(partition_t* partition){
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=_create_node_from_kfs_node(out,root_name,&root_node);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
-	mem_copy(out->guid,extra_data->root_block.uuid,16);
+	mem_copy(out->uuid,extra_data->root_block.uuid,16);
 	return out;
 }
 

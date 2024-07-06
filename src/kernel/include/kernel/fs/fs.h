@@ -33,7 +33,7 @@ typedef struct _FILESYSTEM_DESCRIPTOR{
 typedef struct _FILESYSTEM_USER_DATA{
 	char type[64];
 	handle_id_t partition;
-	u8 guid[16];
+	u8 uuid[16];
 	char mount_path[256];
 } filesystem_user_data_t;
 

@@ -14,7 +14,7 @@ typedef struct _FILESYSTEM{
 	struct _PARTITION* partition;
 	void* extra_data;
 	vfs_node_t* root;
-	u8 guid[16];
+	u8 uuid[16];
 	bool is_mounted;
 } filesystem_t;
 

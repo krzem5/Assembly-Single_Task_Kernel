@@ -36,7 +36,7 @@ void test_sys_fs(void){
 	TEST_ASSERT(!sys_string_compare(fs_data.type,"test-fs-descriptor-config"));
 	TEST_ASSERT(!fs_data.partition);
 	for (u32 i=0;i<16;i++){
-		TEST_ASSERT(fs_data.guid[i]==i*17);
+		TEST_ASSERT(fs_data.uuid[i]==i*17);
 	}
 	TEST_ASSERT(!sys_string_compare(fs_data.mount_path,""));
 	TEST_FUNC("sys_fs_mount");

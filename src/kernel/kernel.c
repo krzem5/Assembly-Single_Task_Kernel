@@ -31,7 +31,7 @@ static void _unmap_section(u64 start,u64 end){
 static volatile const u64 KERNEL_INIT_WRITE __kernel_version=0;
 static volatile const char KERNEL_INIT_WRITE __kernel_build_name[32]="";
 
-static u8 KERNEL_INIT_WRITE _kernel_boot_guid[16];
+static u8 KERNEL_INIT_WRITE _kernel_boot_uuid[16];
 
 kernel_data_t KERNEL_EARLY_WRITE kernel_data;
 
@@ -59,8 +59,8 @@ void KERNEL_EARLY_EXEC kernel_init(const kernel_data_t* bootloader_kernel_data){
 	}
 	INFO("Total: %v (%lu B)",total,total);
 	INFO("First free address: %p",kernel_data.first_free_address);
-	mem_copy(_kernel_boot_guid,kernel_data.boot_fs_guid,16);
-	INFO("Boot filesystem UUID: %g",_kernel_boot_guid);
+	mem_copy(_kernel_boot_uuid,kernel_data.boot_fs_uuid,16);
+	INFO("Boot filesystem UUID: %g",_kernel_boot_uuid);
 }
 
 
@@ -126,6 +126,6 @@ KERNEL_PUBLIC const char* kernel_get_build_name(void){
 
 
 
-KERNEL_PUBLIC const u8* kernel_get_boot_guid(void){
-	return _kernel_boot_guid;
+KERNEL_PUBLIC const u8* kernel_get_boot_uuid(void){
+	return _kernel_boot_uuid;
 }

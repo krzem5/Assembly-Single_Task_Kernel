@@ -21,7 +21,7 @@ typedef u64 sys_fs_descriptor_t;
 typedef struct _SYS_FS_DATA{
 	char type[64];
 	u64 partition;
-	u8 guid[16];
+	u8 uuid[16];
 	char mount_path[256];
 } sys_fs_data_t;
 

@@ -101,7 +101,7 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->partition=NULL;
 	out->extra_data=NULL;
 	out->root=NULL;
-	mem_fill(out->guid,16,0);
+	mem_fill(out->uuid,16,0);
 	out->is_mounted=0;
 	return out;
 }
@@ -153,7 +153,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 	filesystem_t* fs=KERNEL_CONTAINEROF(fs_handle,filesystem_t,handle);
 	str_copy(fs->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
 	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
-	mem_copy((void*)(buffer->guid),fs->guid,sizeof(buffer->guid));
+	mem_copy((void*)(buffer->uuid),fs->uuid,sizeof(buffer->uuid));
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){
 		buffer->mount_path[0]=0;
 	}

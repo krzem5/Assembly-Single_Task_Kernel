@@ -19,9 +19,9 @@
 
 
 
-static EFI_GUID efi_block_io_protocol_guid=EFI_BLOCK_IO_PROTOCOL_GUID;
-static EFI_GUID efi_acpi_20_table_guid=ACPI_20_TABLE_GUID;
-static EFI_GUID efi_smbios_table_guid=SMBIOS_TABLE_GUID;
+static EFI_GUID efi_block_io_protocol_uuid=EFI_BLOCK_IO_PROTOCOL_GUID;
+static EFI_GUID efi_acpi_20_table_uuid=ACPI_20_TABLE_GUID;
+static EFI_GUID efi_smbios_table_uuid=SMBIOS_TABLE_GUID;
 
 EFI_SYSTEM_TABLE* uefi_global_system_table=NULL;
 
@@ -55,17 +55,17 @@ static u64 _decompress_data(const u8* data,u32 data_length,u64 address){
 
 
 static EFI_TCG2* _get_tpm2_handle(void){
-	EFI_GUID efi_tpm2_guid=EFI_TCG2_PROTOCOL_GUID;
+	EFI_GUID efi_tpm2_uuid=EFI_TCG2_PROTOCOL_GUID;
 	UINTN buffer_size=0;
-	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,NULL);
+	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_uuid,NULL,&buffer_size,NULL);
 	if (!buffer_size){
 		return NULL;
 	}
 	EFI_HANDLE* buffer;
 	uefi_global_system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
-	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_guid,NULL,&buffer_size,buffer);
+	uefi_global_system_table->BootServices->LocateHandle(ByProtocol,&efi_tpm2_uuid,NULL,&buffer_size,buffer);
 	EFI_TCG2* out;
-	bool is_error=EFI_ERROR(uefi_global_system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_guid,(void**)(&out)));
+	bool is_error=EFI_ERROR(uefi_global_system_table->BootServices->HandleProtocol(buffer[0],&efi_tpm2_uuid,(void**)(&out)));
 	uefi_global_system_table->BootServices->FreePool(buffer);
 	if (is_error){
 		return NULL;
@@ -192,18 +192,18 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	uefi_global_system_table=system_table;
 	system_table->ConOut->Reset(system_table->ConOut,0);
 	UINTN buffer_size=0;
-	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_guid,NULL,&buffer_size,NULL);
+	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_uuid,NULL,&buffer_size,NULL);
 	EFI_HANDLE* buffer;
 	system_table->BootServices->AllocatePool(0x80000000,buffer_size,(void**)(&buffer));
-	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_guid,NULL,&buffer_size,buffer);
+	system_table->BootServices->LocateHandle(ByProtocol,&efi_block_io_protocol_uuid,NULL,&buffer_size,buffer);
 	u64 first_free_address=0;
 	u64 initramfs_address=0;
 	u64 initramfs_size=0;
-	u8 boot_fs_guid[16];
+	u8 boot_fs_uuid[16];
 	u8 master_key[64];
 	for (UINTN i=0;i<buffer_size/sizeof(EFI_HANDLE);i++){
 		EFI_BLOCK_IO_PROTOCOL* block_io_protocol;
-		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_guid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
+		if (EFI_ERROR(system_table->BootServices->HandleProtocol(buffer[i],&efi_block_io_protocol_uuid,(void**)(&block_io_protocol)))||!block_io_protocol->Media->LastBlock||block_io_protocol->Media->BlockSize&(block_io_protocol->Media->BlockSize-1)){
 			continue;
 		}
 		const kfs2_filesystem_config_t fs_config={
@@ -239,7 +239,7 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 		}
 		initramfs_size=first_free_address-initramfs_address;
 		for (u32 j=0;j<16;j++){
-			boot_fs_guid[j]=fs.root_block.uuid[j];
+			boot_fs_uuid[j]=fs.root_block.uuid[j];
 		}
 		for (u32 j=0;j<64;j++){
 			master_key[j]=fs.root_block.master_key[j];
@@ -278,17 +278,17 @@ EFI_STATUS efi_main(EFI_HANDLE image,EFI_SYSTEM_TABLE* system_table){
 	kernel_data->rsdp_address=0;
 	kernel_data->smbios_address=0;
 	for (u64 i=0;i<system_table->NumberOfTableEntries;i++){
-		if (!kernel_data->rsdp_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_acpi_20_table_guid)){
+		if (!kernel_data->rsdp_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_acpi_20_table_uuid)){
 			kernel_data->rsdp_address=(u64)((system_table->ConfigurationTable+i)->VendorTable);
 		}
-		else if (!kernel_data->smbios_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_smbios_table_guid)){
+		else if (!kernel_data->smbios_address&&_equal_guid(&(system_table->ConfigurationTable+i)->VendorGuid,&efi_smbios_table_uuid)){
 			kernel_data->smbios_address=(u64)((system_table->ConfigurationTable+i)->VendorTable);
 		}
 	}
 	kernel_data->initramfs_address=initramfs_address;
 	kernel_data->initramfs_size=initramfs_size;
 	for (u32 i=0;i<16;i++){
-		kernel_data->boot_fs_guid[i]=boot_fs_guid[i];
+		kernel_data->boot_fs_uuid[i]=boot_fs_uuid[i];
 	}
 	for (u32 i=0;i<64;i++){
 		kernel_data->master_key[i]=master_key[i];

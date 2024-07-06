@@ -79,14 +79,14 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 	_test_fs_filesystem=fs_create(fs_descriptor);
 	TEST_ASSERT(_test_fs_filesystem);
 	for (u32 i=0;i<16;i++){
-		_test_fs_filesystem->guid[i]=i*17;
+		_test_fs_filesystem->uuid[i]=i*17;
 	}
 	TEST_ASSERT(syscall_fs_get_data(_test_fs_filesystem->handle.rb_node.key,buffer,2*PAGE_SIZE)==ERROR_OK);
 	const filesystem_user_data_t* fs_user_data=(const void*)buffer;
 	TEST_ASSERT(str_equal(fs_user_data->type,_test_fs_filesystem_descriptor_config.name));
 	TEST_ASSERT(!fs_user_data->partition);
 	for (u32 i=0;i<16;i++){
-		TEST_ASSERT(fs_user_data->guid[i]==i*17);
+		TEST_ASSERT(fs_user_data->uuid[i]==i*17);
 	}
 	TEST_ASSERT(str_equal(fs_user_data->mount_path,""));
 	TEST_FUNC("syscall_fs_mount");
@@ -122,7 +122,7 @@ void test_fs(void){
 	TEST_ASSERT(!fs->partition);
 	TEST_ASSERT(!fs->root);
 	for (u32 i=0;i<16;i++){
-		TEST_ASSERT(!fs->guid[i]);
+		TEST_ASSERT(!fs->uuid[i]);
 	}
 	TEST_ASSERT(!fs->is_mounted);
 	handle_release(&(fs->handle));

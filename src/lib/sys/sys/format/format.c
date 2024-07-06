@@ -251,12 +251,12 @@ SYS_PUBLIC u32 sys_format_string_va(char* buffer,u32 length,const char* template
 			}
 		}
 		else if (*template=='g'){
-			const u8* guid=sys_var_arg_get(*va,const u8*);
+			const u8* uuid=sys_var_arg_get(*va,const u8*);
 			for (u8 i=0;i<32;i++){
 				if (i==8||i==12||i==16||i==20){
 					_buffer_state_add(&out,'-');
 				}
-				_buffer_state_add(&out,_format_base16_char(guid[i>>1]>>((!(i&1))<<2)));
+				_buffer_state_add(&out,_format_base16_char(uuid[i>>1]>>((!(i&1))<<2)));
 			}
 		}
 		else if (*template=='M'){
