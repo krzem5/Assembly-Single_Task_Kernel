@@ -39,7 +39,6 @@ typedef struct _SYS_THREAD_QUERY_RESULT{
 	u8 state;
 	u8 priority;
 	u8 scheduler_priority;
-	void* return_value;
 } sys_thread_query_result_t;
 
 

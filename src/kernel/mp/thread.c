@@ -409,7 +409,6 @@ error_t syscall_thread_query(handle_id_t thread_handle,KERNEL_USER_POINTER threa
 	buffer->state=thread->state;
 	buffer->priority=thread->priority;
 	buffer->scheduler_priority=thread->scheduler_load_balancer_queue_index;
-	buffer->return_value=thread->return_value;
 	handle_release(handle);
 	return ERROR_OK;
 }

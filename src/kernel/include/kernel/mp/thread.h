@@ -25,7 +25,6 @@ typedef struct _THREAD_QUERY_USER_DATA{
 	u8 state;
 	u8 priority;
 	u8 scheduler_priority;
-	KERNEL_USER_POINTER void* return_value;
 } thread_query_user_data_t;
 
 
