@@ -281,6 +281,11 @@ def _get_files(directories):
 
 
 
+def _get_kernel_build_name():
+	return "x86_64."+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]+"/"+os.environ.get("GITHUB_SHA","local")[:7]
+
+
+
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(UEFI_HASH_FILE_PATH,UEFI_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	object_files=[]
@@ -332,7 +337,7 @@ def _compile_kernel(force_patch_kernel):
 	if (not changed_files and not force_patch_kernel and os.path.exists("build/kernel/kernel.elf")):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
-	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),"x86_64 "+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]])
+	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()])
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
 	if (error):
