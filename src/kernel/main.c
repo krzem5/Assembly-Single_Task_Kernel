@@ -21,10 +21,8 @@
 
 static void _main_thread(void){
 	LOG("Main thread started");
-	scheduler_pause();
 	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();
-	scheduler_resume(1);
 	module_load("module_loader");
 }
 
