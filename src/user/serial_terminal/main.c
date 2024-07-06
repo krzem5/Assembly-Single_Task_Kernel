@@ -283,6 +283,7 @@ s64 main(u32 argc,const char*const* argv){
 	sys_thread_set_priority(sys_thread_create(_input_thread,NULL,NULL),SYS_THREAD_PRIORITY_REALTIME);
 	sys_thread_set_priority(sys_thread_create(_output_thread,NULL,NULL),SYS_THREAD_PRIORITY_REALTIME);
 	sys_signal_set_mask(1<<SYS_SIGNAL_INTERRUPT,1);
+	sys_thread_set_priority(sys_thread_get_handle(),SYS_THREAD_PRIORITY_LOW);
 	sys_process_t process=sys_process_start(argv[first_argument_index],argc-first_argument_index,argv+first_argument_index,NULL,0,stdin,stdout_stderr,stdout_stderr);
 	sys_thread_await_event(sys_process_get_termination_event(process));
 	sys_fd_close(in_fd);
