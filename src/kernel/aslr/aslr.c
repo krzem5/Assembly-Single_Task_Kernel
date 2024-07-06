@@ -10,8 +10,8 @@
 
 
 
-#define KERNEL_ASLR_KERNEL_END 0xffffffffc8000000ull
-#define KERNEL_ASLR_MODULE_START 0xffffffffcc000000ull
+#define KERNEL_ASLR_KERNEL_END 0xffffffffc8000000ull // -896 MB
+#define KERNEL_ASLR_MODULE_START 0xffffffffcc000000ull // -832 MB
 
 
 
