@@ -32,7 +32,7 @@
 
 #define CONFIG_TEXT_FILE_IS_NUMBER(c) ((c)>='0'&&(c)<='9')
 
-#define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.'||(c)=='$'||(c)==':')
+#define CONFIG_TEXT_FILE_IS_IDENTIFIER_START(c) (((c)>='A'&&(c)<='Z')||((c)>='a'&&(c)<='z')||(c)=='_'||(c)=='.'||(c)=='$'||(c)==':'||(c)=='/')
 #define CONFIG_TEXT_FILE_IS_IDENTIFIER(c) (CONFIG_TEXT_FILE_IS_IDENTIFIER_START((c))||CONFIG_TEXT_FILE_IS_NUMBER((c))||(c)=='-')
 
 #define CONFIG_ENCRYPTION_PBKDF2_ITERATIONS 1024
