@@ -269,8 +269,6 @@ def _compile_kernel():
 
 
 def _compile_module(config_prefix,module,dependencies,changed_files,pool):
-	if (mode!=MODE_COVERAGE and module.startswith("test")):
-		return False
 	object_files=[]
 	included_directories=[f"-Isrc/module/{module}/include","-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/{tag.data if tag.data else 'module'}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
@@ -298,6 +296,8 @@ def _compile_all_modules():
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/module/dependencies.config").iter():
+		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
+			continue
 		out|=_compile_module(config_prefix,tag.name,tag,changed_files,pool)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,_get_build_config_option(config_prefix+".hash_file_path"))
