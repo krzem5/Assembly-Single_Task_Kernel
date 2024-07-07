@@ -32,25 +32,10 @@ MODE_NAME={
 	MODE_COVERAGE: "coverage",
 	MODE_RELEASE: "release"
 }[mode]
-KERNEL_HASH_FILE_PATH={
-	MODE_DEBUG: "build/hashes/kernel.debug.txt",
-	MODE_COVERAGE: "build/hashes/kernel.coverage.txt",
-	MODE_RELEASE: "build/hashes/kernel.release.txt"
-}[mode]
 KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_DEBUG: "build/objects/kernel_debug/",
 	MODE_COVERAGE: "build/objects/kernel_coverage/",
 	MODE_RELEASE: "build/objects/kernel/"
-}[mode]
-KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
-	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
-}[mode]
-KERNEL_EXTRA_LINKER_OPTIONS={
-	MODE_DEBUG: ["-g"],
-	MODE_COVERAGE: ["-g"],
-	MODE_RELEASE: []
 }[mode]
 MODULE_HASH_FILE={
 	MODE_DEBUG: "build/hashes/module.debug.txt",
@@ -251,16 +236,14 @@ def _compile_uefi():
 	object_files=[]
 	included_directories=["-Isrc/uefi/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option("uefi.common_libraries").iter()]
 	pool=process_pool.ProcessPool(file_hash_list)
-	rebuild_uefi_partition=False
 	for file in _get_files(["src/uefi"]+["src/common/"+tag.name for tag in _get_build_config_option("uefi.common_libraries").iter()]):
 		object_file=_get_build_config_option("uefi.object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.dispatch(object_file)
 			continue
-		rebuild_uefi_partition=True
 		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(f"uefi.command.compile.{file.split('.')[-1]}"))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
-	if (not rebuild_uefi_partition and os.path.exists("build/uefi/loader.efi")):
+	if (not changed_files and os.path.exists("build/uefi/loader.efi")):
 		return False
 	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.link"))+object_files)
 	pool.add(["build/uefi/loader.efi"],"build/uefi/loader.efi","P build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.patch")))
@@ -273,29 +256,26 @@ def _compile_uefi():
 
 
 def _compile_kernel():
-	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
+	config_prefix="kernel_"+MODE_NAME
+	changed_files,file_hash_list=_load_changed_files(_get_build_config_option(config_prefix+".hash_file_path"),"src/kernel","src/common")
 	object_files=[]
+	included_directories=["-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]
 	pool=process_pool.ProcessPool(file_hash_list)
-	for file in _get_files([KERNEL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY+"/aes",COMMON_FILE_DIRECTORY+"/hash",COMMON_FILE_DIRECTORY+"/hmac"]):
-		object_file=KERNEL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+	for file in _get_files(["src/kernel"]+["src/common/"+tag.name for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]):
+		object_file=_get_build_config_option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.dispatch(object_file)
 			continue
-		command=None
-		if (file.endswith(".c")):
-			command=["gcc-12",f"-Isrc/common/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-lto","-fplt","-fno-pie","-fno-pic","-fno-common","-fno-builtin","-fno-stack-protector","-fno-asynchronous-unwind-tables","-nostdinc","-nostdlib","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-Wno-frame-address","-c","-fdiagnostics-color=always","-ftree-loop-distribute-patterns","-O3","-g0","-fno-omit-frame-pointer","-DNULL=((void*)0)","-DBUILD_KERNEL=1","-o",object_file,file,f"-I{KERNEL_FILE_DIRECTORY}/include","-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0]]+KERNEL_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-O3","-Wall","-Werror","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
 			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 	if (not changed_files and os.path.exists("build/kernel/kernel.elf")):
 		return False
-	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
+	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",shlex.split(_get_build_config_option(config_prefix+".command.link"))+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()])
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,KERNEL_HASH_FILE_PATH)
+	_save_file_hash_list(file_hash_list,_get_build_config_option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return True
@@ -306,7 +286,7 @@ def _compile_module(module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return False
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data=='common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-Isrc/kernel/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data=='common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
 	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter() if tag.data=="common"]):
 		object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
