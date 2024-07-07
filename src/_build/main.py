@@ -161,9 +161,9 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 	if (dependencies_are_libraries):
 		for tag in dependencies.iter():
 			dependency_object_files.append((f"build/lib/lib{tag.name}.a" if tag.data=="static" else f"-l{tag.name}"))
-			extra_link_requirements.append(f"build/lib/lib{tag.name}.{("a" if tag.data=="static" else "so")}")
-		if (not dependencies_are_link_requirements):
-			extra_link_requirements.clear()
+	if (dependencies_are_link_requirements):
+		for tag in dependencies.iter():
+			extra_link_requirements.append(f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}")
 	if (option(config_prefix+".command.link")):
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
@@ -229,7 +229,7 @@ def _compile_modules():
 
 def _compile_libraries():
 	config_prefix="lib_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/lib")
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/lib","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/lib/dependencies.config").iter():
@@ -247,7 +247,7 @@ def _compile_libraries():
 
 def _compile_user_programs():
 	config_prefix="user_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/user","src/lib")
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/user","src/lib","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/user/dependencies.config").iter():
