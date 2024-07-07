@@ -32,31 +32,6 @@ MODE_NAME={
 	MODE_COVERAGE: "coverage",
 	MODE_RELEASE: "release"
 }[mode]
-TOOL_HASH_FILE={
-	MODE_DEBUG: "build/hashes/tool.debug.txt",
-	MODE_COVERAGE: "build/hashes/tool.debug.txt",
-	MODE_RELEASE: "build/hashes/tool.release.txt"
-}[mode]
-TOOL_OBJECT_FILE_DIRECTORY={
-	MODE_DEBUG: "build/objects/tool_debug/",
-	MODE_COVERAGE: "build/objects/tool_debug/",
-	MODE_RELEASE: "build/objects/tool/"
-}[mode]
-TOOL_EXTRA_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
-}[mode]
-TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3"]
-}[mode]
-TOOL_EXTRA_LINKER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","-Wl,--gc-sections","-Wl,-s"]
-}[mode]
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
@@ -181,7 +156,7 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.dispatch(object_file)
 			continue
-		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
+		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
 	dependency_object_files=[]
 	if (dependencies_are_libraries):
@@ -292,36 +267,14 @@ def _compile_user_programs():
 
 
 
-def _compile_tool(tool,dependencies,changed_files,pool):
-	object_files=[]
-	included_directories=[f"-Isrc/tool/{tool}/include"]+[f"-Isrc/common/{tag.name}/include" for tag in dependencies.iter()]
-	has_updates=False
-	for file in _get_files(["src/tool/"+tool]+["src/common/"+tag.name for tag in dependencies.iter()]):
-		object_file=TOOL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
-			continue
-		command=None
-		if (file.endswith(".c")):
-			command=["gcc-12",f"-Isrc/common/include","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DBUILD_TOOL=1","-DNULL=((void*)0)","-Wno-address-of-packed-member","-Wno-frame-address"]+included_directories+TOOL_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-		has_updates=True
-	if (os.path.exists(f"build/tool/{tool}") and not has_updates):
-		return False
-	pool.add(object_files,f"build/tool/{tool}",f"L build/tool/{tool}",["gcc-12","-Wl,-znoexecstack","-o",f"build/tool/{tool}"]+object_files+TOOL_EXTRA_LINKER_OPTIONS)
-
-
-
 def _compile_all_tools():
-	changed_files,file_hash_list=_load_changed_files(TOOL_HASH_FILE,"src/tool","src/common")
+	config_prefix="tool_"+MODE_NAME
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/tool","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	for tag in config.parse("src/tool/dependencies.config").iter():
-		_compile_tool(tag.name,tag,changed_files,pool)
+		_compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:None,name=tag.name,dependencies=tag)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,TOOL_HASH_FILE)
+	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 
