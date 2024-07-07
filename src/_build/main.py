@@ -131,14 +131,14 @@ KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
 
-def _get_build_config_option(option):
-	if (not hasattr(_get_build_config_option,"root")):
+def option(name):
+	if (not hasattr(option,"root")):
 		root=config.parse(f"src/config/build_{MODE_NAME}.config")
 		root.data.extend(config.parse("src/config/build_common.config").data)
-		setattr(_get_build_config_option,"root",root)
-	out=_get_build_config_option.root
-	for name in option.split("."):
-		out=next(out.find(name))
+		setattr(option,"root",root)
+	out=option.root
+	for part in name.split("."):
+		out=next(out.find(part))
 	return (out if out.type==config.CONFIG_TAG_TYPE_ARRAY else out.data)
 
 
@@ -213,26 +213,36 @@ def _get_kernel_build_name():
 
 
 
-def _compile_uefi():
-	changed_files,file_hash_list=_load_changed_files(_get_build_config_option("uefi.hash_file_path"),"src/uefi","src/common")
+def _compile_stage(config_prefix,pool,changed_files,patch_command=None,name="<null>",dependencies=None):
+	if (dependencies is None):
+		dependencies=option(config_prefix+".dependencies")
 	object_files=[]
-	included_directories=["-Isrc/uefi/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option("uefi.common_libraries").iter()]
-	pool=process_pool.ProcessPool(file_hash_list)
+	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if tag.data else 'module')}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files(["src/uefi"]+["src/common/"+tag.name for tag in _get_build_config_option("uefi.common_libraries").iter()]):
-		object_file=_get_build_config_option("uefi.object_file_directory")+file.replace("/","#")+".o"
+	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/{(tag.data if tag.data else 'module')}/{tag.name}" for tag in dependencies.iter() if tag.data=="common"]):
+		object_file=option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.dispatch(object_file)
 			continue
-		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(f"uefi.command.compile.{file.split('.')[-1]}"))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
+		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
-	if (not has_updates and os.path.exists("build/uefi/loader.efi")):
+	output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
+	if (not has_updates and os.path.exists(output_file_path)):
 		return False
-	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.link"))+object_files)
-	pool.add(["build/uefi/loader.efi"],"build/uefi/loader.efi","P build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.patch")))
+	pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files)
+	pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+	return True
+
+
+
+def _compile_uefi():
+	changed_files,file_hash_list=_load_changed_files(option("uefi.hash_file_path"),"src/uefi","src/common")
+	pool=process_pool.ProcessPool(file_hash_list)
+	if (not _compile_stage("uefi",pool,changed_files)):
+		return False
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,_get_build_config_option("uefi.hash_file_path"))
+	_save_file_hash_list(file_hash_list,option("uefi.hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return True
@@ -241,66 +251,29 @@ def _compile_uefi():
 
 def _compile_kernel():
 	config_prefix="kernel_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(_get_build_config_option(config_prefix+".hash_file_path"),"src/kernel","src/common")
-	object_files=[]
-	included_directories=["-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/kernel","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
-	has_updates=False
-	for file in _get_files(["src/kernel"]+["src/common/"+tag.name for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]):
-		object_file=_get_build_config_option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
-			continue
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
-		has_updates=True
-	if (not has_updates and os.path.exists("build/kernel/kernel.elf")):
+	if (not _compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:linker.link_kernel(output_file_path,"build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()))):
 		return False
-	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",shlex.split(_get_build_config_option(config_prefix+".command.link"))+object_files)
-	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()])
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,_get_build_config_option(config_prefix+".hash_file_path"))
+	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return True
 
 
 
-def _compile_module(config_prefix,module,dependencies,changed_files,pool):
-	object_files=[]
-	included_directories=[f"-Isrc/module/{module}/include","-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/{tag.data if tag.data else 'module'}/{tag.name}/include" for tag in dependencies.iter()]
-	has_updates=False
-	for file in _get_files(["src/module/"+module]+["src/common/"+tag.name for tag in dependencies.iter() if tag.data=="common"]):
-		object_file=_get_build_config_option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
-			continue
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
-		has_updates=True
-	if (not has_updates and os.path.exists(f"build/module/{module}.mod")):
-		return False
-	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",shlex.split(_get_build_config_option(config_prefix+".command.link"))+["-o",f"build/module/{module}.mod"]+object_files)
-	pool.add([f"build/module/{module}.mod"],f"build/module/{module}.mod",f"P build/module/{module}.mod",[linker.link_module_or_library,f"build/module/{module}.mod","module"])
-	return True
-
-
-
-def _compile_all_modules():
+def _compile_modules():
 	config_prefix="module_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(_get_build_config_option(config_prefix+".hash_file_path"),"src/module","src/kernel/include","src/common")
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/module","src/kernel/include","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out|=_compile_module(config_prefix,tag.name,tag,changed_files,pool)
+		out|=_compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,_get_build_config_option(config_prefix+".hash_file_path"))
+	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return out
@@ -475,7 +448,7 @@ def _get_early_modules():
 
 
 def _execute_compressor_command(file_path):
-	if (subprocess.run(["build/tool/compressor",file_path,_get_build_config_option("compression_level"),file_path+".compressed"]).returncode!=0):
+	if (subprocess.run(["build/tool/compressor",file_path,option("compression_level"),file_path+".compressed"]).returncode!=0):
 		sys.exit(1)
 
 
@@ -543,7 +516,7 @@ def _kvm_flags():
 		if (" vmx" not in rf.read()):
 			return []
 	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
-		if ("tsc" in rf.read() and not _get_build_config_option("vm.bypass_kvm_lock")):
+		if ("tsc" in rf.read() and not option("vm.bypass_kvm_lock")):
 			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
 			return []
 	return ["-accel","kvm"]
@@ -652,7 +625,7 @@ def _execute_vm():
 	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=0"])
 	while (not os.path.exists("/tmp/swtpm.sock")):
 		time.sleep(0.01)
-	if (_get_build_config_option("vm.file_server")):
+	if (option("vm.file_server")):
 		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -728,9 +701,9 @@ def _execute_vm():
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		*(["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"] if _get_build_config_option("vm.display") else ["-display","none"]),
+		*(["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"] if option("vm.display") else ["-display","none"]),
 		# Shared filesystem
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if _get_build_config_option("vm.file_server") else []),
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if option("vm.file_server") else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
@@ -757,27 +730,27 @@ def _execute_vm():
 
 
 
-empty_directories=_get_build_config_option("build_directories.empty").data[:]
+empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
 		if (int(rf.read())!=mode):
-			empty_directories.extend(_get_build_config_option("build_directories.empty_after_mode_change").data)
-for dir in _get_build_config_option("build_directories.required").iter():
+			empty_directories.extend(option("build_directories.empty_after_mode_change").data)
+for dir in option("build_directories.required").iter():
 	if (not os.path.exists(dir.data)):
 		os.mkdir(dir.data)
 for file in _get_files(map(lambda e:e.data,empty_directories),suffixes=None):
 	os.remove(file)
-for tag in _get_build_config_option("build_directories.delete_obsolete").iter():
+for tag in option("build_directories.delete_obsolete").iter():
 	_clear_if_obsolete(next(tag.find("path")).data,next(tag.find("src_path")).data,next(tag.find("prefix")).data)
 with open("build/last_mode","w") as wf:
 	wf.write(f"{mode}\n")
-for tag in _get_build_config_option("keys").iter():
+for tag in option("keys").iter():
 	signature.load_key(tag.name,tag.data)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi=_compile_uefi()
 rebuild_kernel=_compile_kernel()
-rebuild_modules=_compile_all_modules()
+rebuild_modules=_compile_modules()
 rebuild_libraries=_compile_all_libraries()
 rebuild_user_programs=_compile_all_user_programs()
 _compile_all_tools()

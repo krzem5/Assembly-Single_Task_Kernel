@@ -1,6 +1,6 @@
 CONFIG_WHITESPACE_CHARACTERS=b" \t\n\r"
 CONFIG_DIGIT_CHARACTERS=b"0123456789"
-CONFIG_IDENTIFIER_START_CHARACTERS=b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.$:"
+CONFIG_IDENTIFIER_START_CHARACTERS=b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.$:/"
 CONFIG_IDENTIFIER_CHARACTERS=CONFIG_IDENTIFIER_START_CHARACTERS+CONFIG_DIGIT_CHARACTERS+b"-"
 
 
@@ -30,7 +30,7 @@ class ConfigTag(object):
 		if (self.type==CONFIG_TAG_TYPE_INT):
 			out+=str(self.data)
 		elif (self.type==CONFIG_TAG_TYPE_STRING):
-			out+=str(self.data)[1:]
+			out+=self.data
 		elif (self.type==CONFIG_TAG_TYPE_ARRAY):
 			out+="{"+",".join(map(str,self.data))+"}"
 		return out
@@ -67,11 +67,11 @@ def parse(file_path):
 			i+=name_length
 		while (i<len(data) and data[i] not in b"\n" and data[i] in CONFIG_WHITESPACE_CHARACTERS):
 			i+=1
-		if (i==len(data) or data[i] in b"," or data[i] in b"\n"):
-			if (not name):
-				continue
+		if (i==len(data) or data[i] in b",\n"):
 			if (i<len(data)):
 				i+=1
+			if (not name):
+				continue
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_NONE,None))
 			continue
 		if (data[i] in b"}"):
@@ -130,7 +130,7 @@ def parse(file_path):
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,buffer.decode("utf-8")))
 			continue
 		string_length=0
-		while (i+string_length<len(data) and data[i+string_length] not in b"\n}"):
+		while (i+string_length<len(data) and data[i+string_length] not in b"\n,}"):
 			string_length+=1
 		out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,data[i:i+string_length].decode("utf-8")))
 		i+=string_length
