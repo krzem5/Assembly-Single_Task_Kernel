@@ -157,17 +157,17 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
 	dependency_object_files=[]
-	extra_link_requirements=[]
+	dependency_link_requirements=[]
 	if (dependencies_are_libraries):
 		for tag in dependencies.iter():
 			dependency_object_files.append((f"build/lib/lib{tag.name}.a" if tag.data=="static" else f"-l{tag.name}"))
 	if (dependencies_are_link_requirements):
 		for tag in dependencies.iter():
-			extra_link_requirements.append(f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}")
+			dependency_link_requirements.append(f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}")
 	if (option(config_prefix+".command.link")):
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
-			pool.add(object_files+extra_link_requirements,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
+			pool.add(object_files+dependency_link_requirements,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
 			has_updates=True
 		else:
@@ -263,7 +263,7 @@ def _compile_user_programs():
 
 
 
-def _compile_all_tools():
+def _compile_tools():
 	config_prefix="tool_"+MODE_NAME
 	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/tool","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
@@ -594,7 +594,7 @@ rebuild_kernel=_compile_kernel()
 rebuild_modules=_compile_modules()
 rebuild_libraries=_compile_libraries()
 rebuild_user_programs=_compile_user_programs()
-_compile_all_tools()
+_compile_tools()
 _generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
