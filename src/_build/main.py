@@ -142,7 +142,7 @@ def _get_kernel_build_name():
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False,dependencies_are_link_requirements=False):
+def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
 	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not dependencies_are_libraries and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
@@ -161,8 +161,6 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 	if (dependencies_are_libraries):
 		for tag in dependencies.iter():
 			dependency_object_files.append((f"build/lib/lib{tag.name}.a" if tag.data=="static" else f"-l{tag.name}"))
-	if (dependencies_are_link_requirements):
-		for tag in dependencies.iter():
 			dependency_link_requirements.append(f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}")
 	if (option(config_prefix+".command.link")):
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
@@ -183,96 +181,33 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 
 
 
-def _compile_uefi():
-	changed_files,file_hash_list=_load_changed_files(option("uefi.hash_file_path"),"src/uefi","src/common")
+def _compile():
+	changed_files,file_hash_list=_load_changed_files(option("hash_file_path."+MODE_NAME),"src")
 	pool=process_pool.ProcessPool(file_hash_list)
-	if (not _compile_stage("uefi",pool,changed_files)):
-		return False
-	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option("uefi.hash_file_path"))
-	if (error):
-		sys.exit(1)
-	return True
-
-
-
-def _compile_kernel():
-	config_prefix="kernel_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/kernel","src/common")
-	pool=process_pool.ProcessPool(file_hash_list)
-	if (not _compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:linker.link_kernel(output_file_path,"build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()))):
-		return False
-	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
-	if (error):
-		sys.exit(1)
-	return True
-
-
-
-def _compile_modules():
-	config_prefix="module_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/module","src/kernel/include","src/common")
-	pool=process_pool.ProcessPool(file_hash_list)
-	out=False
+	out={"efi":False,"data":False}
+	out["efi"]|=_compile_stage("uefi",pool,changed_files)
+	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files,patch_command=lambda output_file_path:linker.link_kernel(output_file_path,"build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()))
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="module",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
-	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
-	if (error):
-		sys.exit(1)
-	return out
-
-
-
-def _compile_libraries():
-	config_prefix="lib_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/lib","src/common")
-	pool=process_pool.ProcessPool(file_hash_list)
-	out=False
+		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,default_dependency_directory="module",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		_generate_header_files(f"src/lib/{tag.name}")
-		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True,dependencies_are_link_requirements=True)
-	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
-	if (error):
-		sys.exit(1)
-	return out
-
-
-
-def _compile_user_programs():
-	config_prefix="user_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/user","src/lib","src/common")
-	pool=process_pool.ProcessPool(file_hash_list)
-	out=False
+		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	for tag in config.parse("src/user/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
-		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+	for tag in config.parse("src/tool/dependencies.config").iter():
+		_compile_stage("tool_"+MODE_NAME,pool,changed_files,patch_command=lambda output_file_path:None,name=tag.name,dependencies=tag)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
+	_save_file_hash_list(file_hash_list,option("hash_file_path."+MODE_NAME))
 	if (error):
 		sys.exit(1)
 	return out
-
-
-
-def _compile_tools():
-	config_prefix="tool_"+MODE_NAME
-	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/tool","src/common")
-	pool=process_pool.ProcessPool(file_hash_list)
-	for tag in config.parse("src/tool/dependencies.config").iter():
-		_compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:None,name=tag.name,dependencies=tag)
-	error=pool.wait()
-	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
-	if (error):
-		sys.exit(1)
 
 
 
@@ -310,9 +245,7 @@ def _execute_kfs2_command(command):
 
 
 
-def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_libraries,rebuild_user_programs):
-	rebuild_uefi_partition=rebuild_uefi
-	rebuild_data_partition=rebuild_kernel|rebuild_modules|rebuild_libraries|rebuild_user_programs
+def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (not os.path.exists("build/install_disk.img")):
 		rebuild_uefi_partition=True
 		rebuild_data_partition=True
@@ -589,16 +522,11 @@ for tag in option("keys").iter():
 	signature.load_key(tag.name,tag.data)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
-rebuild_uefi=_compile_uefi()
-rebuild_kernel=_compile_kernel()
-rebuild_modules=_compile_modules()
-rebuild_libraries=_compile_libraries()
-rebuild_user_programs=_compile_user_programs()
-_compile_tools()
+install_disk_rebuild_parts=_compile()
 _generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
-_generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_libraries,rebuild_user_programs)
+_generate_install_disk(install_disk_rebuild_parts["efi"],install_disk_rebuild_parts["data"])
 if ("--run" not in sys.argv):
 	sys.exit(0)
 _execute_vm()
