@@ -2,6 +2,7 @@ import array
 import hashlib
 import struct
 import sys
+import time
 try:
 	import signature
 except ImportError:
@@ -323,7 +324,7 @@ def _generate_signature(ctx):
 
 
 
-def link_kernel(src_file_path,dst_file_path,build_version,build_name):
+def patch_kernel(src_file_path,dst_file_path,build_version,build_name):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
@@ -372,7 +373,7 @@ def link_kernel(src_file_path,dst_file_path,build_version,build_name):
 
 
 
-def link_module_or_library(file_path,key_name):
+def patch_module_or_library(file_path,key_name):
 	with open(file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)

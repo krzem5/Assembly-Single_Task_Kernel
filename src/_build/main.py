@@ -24,6 +24,12 @@ if ("--release" in sys.argv):
 	mode=MODE_RELEASE
 if ("--coverage" in sys.argv):
 	mode=MODE_COVERAGE
+if (len(sys.argv)>2 and sys.argv[1].startswith("__patch_")):
+	mode={
+		"debug": MODE_DEBUG,
+		"coverage": MODE_COVERAGE,
+		"release": MODE_RELEASE
+	}[sys.argv[2]]
 
 
 
@@ -142,7 +148,7 @@ def _get_kernel_build_name():
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False):
+def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",name="<null>",dependencies=None,dependencies_are_libraries=False):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
 	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not dependencies_are_libraries and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
@@ -166,7 +172,8 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
 			pool.add(object_files+dependency_link_requirements,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
-			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+			if (option(config_prefix+".command.patch")):
+				pool.add([output_file_path],output_file_path,"P "+output_file_path,shlex.split(option(config_prefix+".command.patch").replace("$NAME",name)))
 			has_updates=True
 		else:
 			pool.dispatch(output_file_path)
@@ -186,23 +193,23 @@ def _compile():
 	pool=process_pool.ProcessPool(file_hash_list)
 	out={"efi":False,"data":False}
 	out["efi"]|=_compile_stage("uefi",pool,changed_files)
-	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files,patch_command=lambda output_file_path:linker.link_kernel(output_file_path,"build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()))
+	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files)
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,default_dependency_directory="module",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
+		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,default_dependency_directory="module",name=tag.name,dependencies=tag)
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		_generate_header_files(f"src/lib/{tag.name}")
-		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	for tag in config.parse("src/user/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
-		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	for tag in config.parse("src/tool/dependencies.config").iter():
-		_compile_stage("tool_"+MODE_NAME,pool,changed_files,patch_command=lambda output_file_path:None,name=tag.name,dependencies=tag)
+		out["data"]|=_compile_stage("tool_"+MODE_NAME,pool,changed_files,name=tag.name,dependencies=tag)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option("hash_file_path."+MODE_NAME))
 	if (error):
@@ -516,10 +523,16 @@ for file in _get_files(map(lambda e:e.data,empty_directories),suffixes=None):
 	os.remove(file)
 for tag in option("build_directories.delete_obsolete").iter():
 	_clear_if_obsolete(next(tag.find("path")).data,next(tag.find("src_path")).data,next(tag.find("prefix")).data)
-with open("build/last_mode","w") as wf:
-	wf.write(f"{mode}\n")
 for tag in option("keys").iter():
 	signature.load_key(tag.name,tag.data)
+if (len(sys.argv)>1 and sys.argv[1]=="__patch_kernel"):
+	linker.patch_kernel(sys.argv[3],sys.argv[4],time.time_ns(),_get_kernel_build_name())
+	sys.exit(0)
+if (len(sys.argv)>1 and sys.argv[1]=="__patch_module_or_library"):
+	linker.patch_module_or_library(sys.argv[3],sys.argv[4])
+	sys.exit(0)
+with open("build/last_mode","w") as wf:
+	wf.write(f"{mode}\n")
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 install_disk_rebuild_parts=_compile()
