@@ -32,8 +32,6 @@ MODE_NAME={
 	MODE_COVERAGE: "coverage",
 	MODE_RELEASE: "release"
 }[mode]
-INSTALL_DISK_SIZE=262144
-INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 COVERAGE_FILE_SUCCESS_MARKER=0xb0b4b0b44b4f4b4f
 
@@ -309,7 +307,7 @@ def _execute_compressor_command(file_path):
 
 
 def _execute_kfs2_command(command):
-	if (subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{INSTALL_DISK_BLOCK_SIZE}:93720:{INSTALL_DISK_SIZE-34}"]+command).returncode!=0):
+	if (subprocess.run(["build/tool/kfs2","build/install_disk.img",f"{option('install_disk.block_size')}:93720:{option('install_disk.size')-34}"]+command).returncode!=0):
 		sys.exit(1)
 
 
@@ -320,20 +318,20 @@ def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_l
 	if (not os.path.exists("build/install_disk.img")):
 		rebuild_uefi_partition=True
 		rebuild_data_partition=True
-		subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}",f"count={INSTALL_DISK_SIZE}"])
+		subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={option('install_disk.block_size')}",f"count={option('install_disk.size')}"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT16","34s","93719s"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{INSTALL_DISK_SIZE-34}s"])
+		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{option('install_disk.size')-34}s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
 		_execute_kfs2_command(["format"])
 	if (not os.path.exists("build/partitions/efi.img")):
 		rebuild_uefi_partition=True
-		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686"])
+		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={option('install_disk.block_size')}","count=93686"])
 		subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1","-l","LABEL"])
 		subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
 	if (rebuild_uefi_partition):
 		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={INSTALL_DISK_BLOCK_SIZE}","count=93686","seek=34","conv=notrunc"])
+		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={option('install_disk.block_size')}","count=93686","seek=34","conv=notrunc"])
 	if (rebuild_data_partition):
 		files={}
 		for module in _get_early_modules():

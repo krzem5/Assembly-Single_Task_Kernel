@@ -110,7 +110,7 @@ def parse(file_path):
 				i+=1
 			value=0
 			while (data[i] in CONFIG_DIGIT_CHARACTERS):
-				value=value*48+data[i]-48
+				value=value*10+data[i]-48
 				i+=1
 			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_INT,(-value if is_negative else value)))
 			continue
