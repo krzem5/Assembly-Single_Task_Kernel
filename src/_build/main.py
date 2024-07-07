@@ -227,7 +227,7 @@ def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=
 	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not ignore_dependency_directory and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
 	object_files=[]
 	has_updates=False
-	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/common/{tag.name}" for tag in dependencies.iter() if tag.data=="common"]):
+	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/common/{tag.name}" for tag in dependencies.iter() if (tag.data if tag.data else default_dependency_directory)=="common"]):
 		object_file=option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -240,17 +240,20 @@ def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=
 		if (has_updates or not os.path.exists(output_file_path)):
 			pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files)
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+			has_updates=True
 	if (option(config_prefix+".command.link_so")):
 		output_file_path=option(config_prefix+".so_output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
 			pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link_so"))+["-o",output_file_path]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data=='static' else f"-l{tag.name}") for tag in dependencies.iter()])
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+			has_updates=True
 		else:
 			pool.dispatch(output_file_path)
 	if (option(config_prefix+".command.archive")):
 		output_file_path=option(config_prefix+".archive_output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
 			pool.add(object_files,output_file_path,"A "+output_file_path,shlex.split(option(config_prefix+".command.archive"))+[output_file_path]+object_files)
+			has_updates=True
 		else:
 			pool.dispatch(output_file_path)
 	return has_updates
@@ -260,6 +263,7 @@ def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(option("uefi.hash_file_path"),"src/uefi","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
+	print("AAA")
 	if (not _compile_stage("uefi",pool,changed_files)):
 		return False
 	error=pool.wait()
