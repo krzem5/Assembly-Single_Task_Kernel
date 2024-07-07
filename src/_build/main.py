@@ -32,51 +32,6 @@ MODE_NAME={
 	MODE_COVERAGE: "coverage",
 	MODE_RELEASE: "release"
 }[mode]
-KERNEL_OBJECT_FILE_DIRECTORY={
-	MODE_DEBUG: "build/objects/kernel_debug/",
-	MODE_COVERAGE: "build/objects/kernel_coverage/",
-	MODE_RELEASE: "build/objects/kernel/"
-}[mode]
-MODULE_OBJECT_FILE_DIRECTORY={
-	MODE_DEBUG: "build/objects/module_debug/",
-	MODE_COVERAGE: "build/objects/module_coverage/",
-	MODE_RELEASE: "build/objects/module/"
-}[mode]
-LIBRARY_OBJECT_FILE_DIRECTORY={
-	MODE_DEBUG: "build/objects/lib_debug/",
-	MODE_COVERAGE: "build/objects/lib_coverage/",
-	MODE_RELEASE: "build/objects/lib/"
-}[mode]
-LIBRARY_EXTRA_LINKER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","--gc-sections","-s"]
-}[mode]
-USER_HASH_FILE={
-	MODE_DEBUG: "build/hashes/user.debug.txt",
-	MODE_COVERAGE: "build/hashes/user.coverage.txt",
-	MODE_RELEASE: "build/hashes/user.release.txt"
-}[mode]
-USER_OBJECT_FILE_DIRECTORY={
-	MODE_DEBUG: "build/objects/user_debug/",
-	MODE_COVERAGE: "build/objects/user_coverage/",
-	MODE_RELEASE: "build/objects/user/"
-}[mode]
-USER_EXTRA_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
-	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
-}[mode]
-USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3"]
-}[mode]
-USER_EXTRA_LINKER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3","--gc-sections","-s"]
-}[mode]
 TOOL_HASH_FILE={
 	MODE_DEBUG: "build/hashes/tool.debug.txt",
 	MODE_COVERAGE: "build/hashes/tool.debug.txt",
@@ -102,17 +57,10 @@ TOOL_EXTRA_LINKER_OPTIONS={
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","-Wl,--gc-sections","-Wl,-s"]
 }[mode]
-SOURCE_FILE_SUFFIXES=[".asm",".c"]
-COMMON_FILE_DIRECTORY="src/common"
-MODULE_FILE_DIRECTORY="src/module"
-LIBRARY_FILE_DIRECTORY="src/lib"
-USER_FILE_DIRECTORY="src/user"
-TOOL_FILE_DIRECTORY="src/tool"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
 COVERAGE_FILE_SUCCESS_MARKER=0xb0b4b0b44b4f4b4f
-KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
 
@@ -185,11 +133,11 @@ def _file_not_changed(changed_files,deps_file_path):
 
 
 
-def _get_files(directories,suffixes=SOURCE_FILE_SUFFIXES):
+def _get_files(directories,suffixes=[".asm",".c"]):
 	for directory in directories:
 		for root,_,files in os.walk(directory):
 			for file_name in files:
-				if (suffixes is not None and file_name[file_name.rindex("."):] not in suffixes):
+				if ("." not in file_name or (suffixes is not None and file_name[file_name.rindex("."):] not in suffixes)):
 					continue
 				yield os.path.join(root,file_name)
 
@@ -221,10 +169,10 @@ def _get_kernel_build_name():
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=False,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None):
+def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
-	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not ignore_dependency_directory and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
+	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not dependencies_are_libraries and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
 	object_files=[]
 	has_updates=False
 	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/common/{tag.name}" for tag in dependencies.iter() if (tag.data if tag.data else default_dependency_directory)=="common"]):
@@ -235,16 +183,20 @@ def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=
 			continue
 		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
+	dependency_object_files=[]
+	if (dependencies_are_libraries):
+		for tag in dependencies.iter():
+			dependency_object_files.append((f"build/lib/lib{tag.name}.a" if tag.data=="static" else f"-l{tag.name}"))
 	if (option(config_prefix+".command.link")):
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
-			pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files)
+			pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
 			has_updates=True
 	if (option(config_prefix+".command.link_so")):
 		output_file_path=option(config_prefix+".so_output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
-			pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link_so"))+["-o",output_file_path]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data=='static' else f"-l{tag.name}") for tag in dependencies.iter()])
+			pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link_so"))+["-o",output_file_path]+object_files+dependency_object_files)
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
 			has_updates=True
 		else:
@@ -263,7 +215,6 @@ def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=
 def _compile_uefi():
 	changed_files,file_hash_list=_load_changed_files(option("uefi.hash_file_path"),"src/uefi","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
-	print("AAA")
 	if (not _compile_stage("uefi",pool,changed_files)):
 		return False
 	error=pool.wait()
@@ -314,7 +265,7 @@ def _compile_libraries():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			return False
 		_generate_header_files(f"src/lib/{tag.name}")
-		out|=_compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=True,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag)
+		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
@@ -323,44 +274,18 @@ def _compile_libraries():
 
 
 
-def _compile_user_program(program,dependencies,changed_files,pool):
-	if (mode!=MODE_COVERAGE and program.startswith("test")):
-		return False
-	dependencies.data.append(config.ConfigTag(dependencies,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
-	object_files=[]
-	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
-	has_updates=False
-	for file in _get_files([USER_FILE_DIRECTORY+"/"+program]):
-		object_file=USER_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
-			continue
-		command=None
-		if (file.endswith(".c")):
-			command=["gcc-12",f"-Isrc/common/include","-fno-common","-fno-builtin","-nostdlib","-ffreestanding","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+USER_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]+USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-		has_updates=True
-	if (os.path.exists(f"build/user/{program}") and not has_updates):
-		return False
-	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{tag.name}" if tag.data!="static" else f"build/lib/lib{tag.name}.a") for tag in dependencies.iter()]+object_files+USER_EXTRA_LINKER_OPTIONS)
-	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[linker.link_module_or_library,f"build/user/{program}","user"])
-	return True
-
-
-
 def _compile_all_user_programs():
-	changed_files,file_hash_list=_load_changed_files(USER_HASH_FILE,USER_FILE_DIRECTORY,LIBRARY_FILE_DIRECTORY)
+	config_prefix="user_"+MODE_NAME
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/user","src/lib")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/user/dependencies.config").iter():
-		out|=_compile_user_program(tag.name,tag,changed_files,pool)
+		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
+			return False
+		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
+		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,USER_HASH_FILE)
+	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return out
@@ -369,9 +294,9 @@ def _compile_all_user_programs():
 
 def _compile_tool(tool,dependencies,changed_files,pool):
 	object_files=[]
-	included_directories=[f"-I{TOOL_FILE_DIRECTORY}/{tool}/include"]+[f"-Isrc/common/{tag.name}/include" for tag in dependencies.iter()]
+	included_directories=[f"-Isrc/tool/{tool}/include"]+[f"-Isrc/common/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([TOOL_FILE_DIRECTORY+"/"+tool]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter()]):
+	for file in _get_files(["src/tool/"+tool]+["src/common/"+tag.name for tag in dependencies.iter()]):
 		object_file=TOOL_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -391,7 +316,7 @@ def _compile_tool(tool,dependencies,changed_files,pool):
 
 
 def _compile_all_tools():
-	changed_files,file_hash_list=_load_changed_files(TOOL_HASH_FILE,TOOL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
+	changed_files,file_hash_list=_load_changed_files(TOOL_HASH_FILE,"src/tool","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	for tag in config.parse("src/tool/dependencies.config").iter():
 		_compile_tool(tag.name,tag,changed_files,pool)
@@ -501,18 +426,8 @@ def _kvm_flags():
 
 
 def _generate_coverage_report(vm_output_file_path,output_file_path):
-	for file in os.listdir(KERNEL_OBJECT_FILE_DIRECTORY):
-		if (file.endswith(".gcda")):
-			os.remove(os.path.join(KERNEL_OBJECT_FILE_DIRECTORY,file))
-	for file in os.listdir(MODULE_OBJECT_FILE_DIRECTORY):
-		if (file.endswith(".gcda")):
-			os.remove(os.path.join(MODULE_OBJECT_FILE_DIRECTORY,file))
-	for file in os.listdir(LIBRARY_OBJECT_FILE_DIRECTORY):
-		if (file.endswith(".gcda")):
-			os.remove(os.path.join(LIBRARY_OBJECT_FILE_DIRECTORY,file))
-	for file in os.listdir(USER_OBJECT_FILE_DIRECTORY):
-		if (file.endswith(".gcda")):
-			os.remove(os.path.join(USER_OBJECT_FILE_DIRECTORY,file))
+	for file in _get_files(["build/objects"],suffixes=[".gcda"]):
+		os.remove(file)
 	file_list=set()
 	success=False
 	with open(vm_output_file_path,"rb") as rf:
