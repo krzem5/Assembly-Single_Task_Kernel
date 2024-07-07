@@ -301,7 +301,7 @@ def _compile_modules():
 
 
 
-def _compile_all_libraries():
+def _compile_libraries():
 	config_prefix="lib_"+MODE_NAME
 	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/lib")
 	pool=process_pool.ProcessPool(file_hash_list)
@@ -724,7 +724,7 @@ if (mode==MODE_COVERAGE):
 rebuild_uefi=_compile_uefi()
 rebuild_kernel=_compile_kernel()
 rebuild_modules=_compile_modules()
-rebuild_libraries=_compile_all_libraries()
+rebuild_libraries=_compile_libraries()
 rebuild_user_programs=_compile_all_user_programs()
 _compile_all_tools()
 _generate_shared_directory()
