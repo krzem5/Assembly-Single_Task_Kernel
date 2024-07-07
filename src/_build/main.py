@@ -42,25 +42,10 @@ MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_COVERAGE: "build/objects/module_coverage/",
 	MODE_RELEASE: "build/objects/module/"
 }[mode]
-LIBRARY_HASH_FILE={
-	MODE_DEBUG: "build/hashes/lib.debug.txt",
-	MODE_COVERAGE: "build/hashes/lib.coverage.txt",
-	MODE_RELEASE: "build/hashes/lib.release.txt"
-}[mode]
 LIBRARY_OBJECT_FILE_DIRECTORY={
 	MODE_DEBUG: "build/objects/lib_debug/",
 	MODE_COVERAGE: "build/objects/lib_coverage/",
 	MODE_RELEASE: "build/objects/lib/"
-}[mode]
-LIBRARY_EXTRA_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
-	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
-	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
-}[mode]
-LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-O0","-g"],
-	MODE_COVERAGE: ["-O0","-g"],
-	MODE_RELEASE: ["-O3"]
 }[mode]
 LIBRARY_EXTRA_LINKER_OPTIONS={
 	MODE_DEBUG: ["-O0","-g"],
@@ -136,10 +121,13 @@ def option(name):
 		root=config.parse(f"src/config/build_{MODE_NAME}.config")
 		root.data.extend(config.parse("src/config/build_common.config").data)
 		setattr(option,"root",root)
-	out=option.root
-	for part in name.split("."):
-		out=next(out.find(part))
-	return (out if out.type==config.CONFIG_TAG_TYPE_ARRAY else out.data)
+	try:
+		out=option.root
+		for part in name.split("."):
+			out=next(out.find(part))
+		return (out if out.type==config.CONFIG_TAG_TYPE_ARRAY else out.data)
+	except StopIteration:
+		return None
 
 
 
@@ -207,19 +195,39 @@ def _get_files(directories,suffixes=SOURCE_FILE_SUFFIXES):
 
 
 
+def _generate_header_files(directory):
+	for root,_,files in os.walk(f"{directory}/rsrc"):
+		for file_name in files:
+			if (not os.path.exists(f"{directory}/_generated")):
+				os.mkdir(f"{directory}/_generated")
+				os.mkdir(f"{directory}/_generated/include")
+			name=os.path.join(root,file_name).replace("/","_").replace(".","_")
+			with open(os.path.join(root,file_name),"rb") as rf,open(f"{directory}/_generated/include/{name}.h","w") as wf:
+				wf.write(f"#include <sys/types.h>\n\n\n\nstatic const u8 {name}[]={{")
+				size=0
+				while (True):
+					line=rf.read(16)
+					if (not line):
+						break
+					size+=len(line)
+					wf.write("\n\t"+"".join([f"0x{e:02x}," for e in line]))
+				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
+
+
+
 def _get_kernel_build_name():
 	root=config.parse("src/config/version.config")
 	return "x86_64."+MODE_NAME+f"/{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-"+os.environ.get("GITHUB_SHA","local")[:7]
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,patch_command=None,name="<null>",dependencies=None):
+def _compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=False,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
+	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not ignore_dependency_directory and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
 	object_files=[]
-	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if tag.data else 'module')}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/{(tag.data if tag.data else 'module')}/{tag.name}" for tag in dependencies.iter() if tag.data=="common"]):
+	for file in _get_files([option(config_prefix+".src_file_directory").replace("$NAME",name)]+[f"src/common/{tag.name}" for tag in dependencies.iter() if tag.data=="common"]):
 		object_file=option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -227,12 +235,25 @@ def _compile_stage(config_prefix,pool,changed_files,patch_command=None,name="<nu
 			continue
 		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
-	output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
-	if (not has_updates and os.path.exists(output_file_path)):
-		return False
-	pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files)
-	pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
-	return True
+	if (option(config_prefix+".command.link")):
+		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
+		if (has_updates or not os.path.exists(output_file_path)):
+			pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files)
+			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+	if (option(config_prefix+".command.link_so")):
+		output_file_path=option(config_prefix+".so_output_file_path").replace("$NAME",name)
+		if (has_updates or not os.path.exists(output_file_path)):
+			pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link_so"))+["-o",output_file_path]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data=='static' else f"-l{tag.name}") for tag in dependencies.iter()])
+			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
+		else:
+			pool.dispatch(output_file_path)
+	if (option(config_prefix+".command.archive")):
+		output_file_path=option(config_prefix+".archive_output_file_path").replace("$NAME",name)
+		if (has_updates or not os.path.exists(output_file_path)):
+			pool.add(object_files,output_file_path,"A "+output_file_path,shlex.split(option(config_prefix+".command.archive"))+[output_file_path]+object_files)
+		else:
+			pool.dispatch(output_file_path)
+	return has_updates
 
 
 
@@ -271,7 +292,7 @@ def _compile_modules():
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out|=_compile_stage(config_prefix,pool,changed_files,patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
+		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="module",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"module"),name=tag.name,dependencies=tag)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
@@ -280,66 +301,18 @@ def _compile_modules():
 
 
 
-def _compile_library(library,dependencies,changed_files,pool):
-	if (mode!=MODE_COVERAGE and library.startswith("test")):
-		return False
-	for root,_,files in os.walk(f"{LIBRARY_FILE_DIRECTORY}/{library}/rsrc"):
-		for file_name in files:
-			if (not os.path.exists(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")):
-				os.mkdir(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated")
-				os.mkdir(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include")
-			name=os.path.join(root,file_name).replace("/","_").replace(".","_")
-			with open(os.path.join(root,file_name),"rb") as rf,open(f"{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include/{name}.h","w") as wf:
-				wf.write(f"#include <sys/types.h>\n\n\n\nstatic const u8 {name}[]={{")
-				size=0
-				while (True):
-					line=rf.read(16)
-					if (not line):
-						break
-					size+=len(line)
-					wf.write("\n\t"+"".join([f"0x{e:02x}," for e in line]))
-				wf.write(f"\n\t0x00,\n}};\n\n\n\nstatic const u32 {name}_length={size};\n")
-	object_files=[]
-	included_directories=[f"-I{LIBRARY_FILE_DIRECTORY}/{library}/include",f"-I{LIBRARY_FILE_DIRECTORY}/{library}/_generated/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
-	has_updates=False
-	for file in _get_files([LIBRARY_FILE_DIRECTORY+"/"+library]):
-		object_file=LIBRARY_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
-		object_files.append(object_file)
-		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
-			continue
-		command=None
-		if (file.endswith(".c")):
-			command=["gcc-12",f"-Isrc/common/include","-fno-common","-fno-builtin","-nostdlib","-fvisibility=hidden","-ffreestanding","-shared","-fpic","-m64","-Wall","-Werror","-Wno-trigraphs","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)"]+included_directories+LIBRARY_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-Wall","-Werror","-DBUILD_SHARED=1","-O3","-o",object_file,file]+included_directories+LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS
-		if (os.path.exists(object_file+".gcno")):
-			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-		has_updates=True
-	if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
-		pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data=='static' else f"-l{tag.name}") for tag in dependencies.iter()]+LIBRARY_EXTRA_LINKER_OPTIONS)
-		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
-	else:
-		pool.dispatch(f"build/lib/lib{library}.so")
-	if (has_updates or not os.path.exists(f"build/lib/lib{library}.a")):
-		if (os.path.exists(f"build/lib/lib{library}.a")):
-			os.remove(f"build/lib/lib{library}.a")
-		pool.add(object_files,f"build/lib/lib{library}.a",f"L build/lib/lib{library}.a",["ar","rcs",f"build/lib/lib{library}.a"]+object_files)
-	else:
-		pool.dispatch(f"build/lib/lib{library}.a")
-	return has_updates
-
-
-
 def _compile_all_libraries():
-	changed_files,file_hash_list=_load_changed_files(LIBRARY_HASH_FILE,LIBRARY_FILE_DIRECTORY)
+	config_prefix="lib_"+MODE_NAME
+	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/lib")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/lib/dependencies.config").iter():
-		out|=_compile_library(tag.name,tag,changed_files,pool)
+		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
+			return False
+		_generate_header_files(f"src/lib/{tag.name}")
+		out|=_compile_stage(config_prefix,pool,changed_files,ignore_dependency_directory=True,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,LIBRARY_HASH_FILE)
+	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return out

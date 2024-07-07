@@ -86,4 +86,9 @@ class ProcessPool(object):
 		self._error=False
 		while (self._threads):
 			self._threads.pop().join()
+		for name in self._dependency_map.keys():
+			if (self._dependency_map[name] is not True):
+				sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(name,"utf-8")+b"\x1b[0m\n")
+				sys.stdout.buffer.flush()
+				self._error=True
 		return self._error or bool(self._process_count)
