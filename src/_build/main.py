@@ -112,7 +112,7 @@ def _get_files(directories,suffixes=[".asm",".c"]):
 	for directory in directories:
 		for root,_,files in os.walk(directory):
 			for file_name in files:
-				if ("." not in file_name or (suffixes is not None and file_name[file_name.rindex("."):] not in suffixes)):
+				if (suffixes is not None and ("." not in file_name or file_name[file_name.rindex("."):] not in suffixes)):
 					continue
 				yield os.path.join(root,file_name)
 
