@@ -15,17 +15,10 @@ import time
 
 
 
-BYPASS_KVM_LOCK=True
-NO_DISPLAY=True
-NO_FILE_SERVER=False
-COMPRESSION_LEVEL="fast"
-
-
-
-MODE_NORMAL=0
+MODE_DEBUG=0
 MODE_COVERAGE=1
 MODE_RELEASE=2
-mode=MODE_NORMAL
+mode=MODE_DEBUG
 if ("--release" in sys.argv):
 	mode=MODE_RELEASE
 if ("--coverage" in sys.argv):
@@ -33,6 +26,11 @@ if ("--coverage" in sys.argv):
 
 
 
+MODE_NAME={
+	MODE_DEBUG: "debug",
+	MODE_COVERAGE: "coverage",
+	MODE_RELEASE: "release"
+}[mode]
 BUILD_DIRECTORIES=[
 	"build",
 	"build/gdb",
@@ -80,117 +78,117 @@ UEFI_HASH_FILE_PATH="build/hashes/uefi.release.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
 KERNEL_HASH_FILE_PATH={
-	MODE_NORMAL: "build/hashes/kernel.debug.txt",
+	MODE_DEBUG: "build/hashes/kernel.debug.txt",
 	MODE_COVERAGE: "build/hashes/kernel.coverage.txt",
 	MODE_RELEASE: "build/hashes/kernel.release.txt"
 }[mode]
 KERNEL_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/kernel_debug/",
+	MODE_DEBUG: "build/objects/kernel_debug/",
 	MODE_COVERAGE: "build/objects/kernel_coverage/",
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
 KERNEL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
+	MODE_DEBUG: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
 	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 KERNEL_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-g"],
+	MODE_DEBUG: ["-g"],
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
 MODULE_HASH_FILE={
-	MODE_NORMAL: "build/hashes/module.debug.txt",
+	MODE_DEBUG: "build/hashes/module.debug.txt",
 	MODE_COVERAGE: "build/hashes/module.coverage.txt",
 	MODE_RELEASE: "build/hashes/module.release.txt"
 }[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/module_debug/",
+	MODE_DEBUG: "build/objects/module_debug/",
 	MODE_COVERAGE: "build/objects/module_coverage/",
 	MODE_RELEASE: "build/objects/module/"
 }[mode]
 MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
+	MODE_DEBUG: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
 	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
 }[mode]
 MODULE_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-g"],
+	MODE_DEBUG: ["-g"],
 	MODE_COVERAGE: ["-g"],
 	MODE_RELEASE: []
 }[mode]
 LIBRARY_HASH_FILE={
-	MODE_NORMAL: "build/hashes/lib.debug.txt",
+	MODE_DEBUG: "build/hashes/lib.debug.txt",
 	MODE_COVERAGE: "build/hashes/lib.coverage.txt",
 	MODE_RELEASE: "build/hashes/lib.release.txt"
 }[mode]
 LIBRARY_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/lib_debug/",
+	MODE_DEBUG: "build/objects/lib_debug/",
 	MODE_COVERAGE: "build/objects/lib_coverage/",
 	MODE_RELEASE: "build/objects/lib/"
 }[mode]
 LIBRARY_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 LIBRARY_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
 LIBRARY_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 USER_HASH_FILE={
-	MODE_NORMAL: "build/hashes/user.debug.txt",
+	MODE_DEBUG: "build/hashes/user.debug.txt",
 	MODE_COVERAGE: "build/hashes/user.coverage.txt",
 	MODE_RELEASE: "build/hashes/user.release.txt"
 }[mode]
 USER_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/user_debug/",
+	MODE_DEBUG: "build/objects/user_debug/",
 	MODE_COVERAGE: "build/objects/user_coverage/",
 	MODE_RELEASE: "build/objects/user/"
 }[mode]
 USER_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-DKERNEL_COVERAGE=1"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 USER_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
 USER_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","--gc-sections","-s"]
 }[mode]
 TOOL_HASH_FILE={
-	MODE_NORMAL: "build/hashes/tool.debug.txt",
+	MODE_DEBUG: "build/hashes/tool.debug.txt",
 	MODE_COVERAGE: "build/hashes/tool.debug.txt",
 	MODE_RELEASE: "build/hashes/tool.release.txt"
 }[mode]
 TOOL_OBJECT_FILE_DIRECTORY={
-	MODE_NORMAL: "build/objects/tool_debug/",
+	MODE_DEBUG: "build/objects/tool_debug/",
 	MODE_COVERAGE: "build/objects/tool_debug/",
 	MODE_RELEASE: "build/objects/tool/"
 }[mode]
 TOOL_EXTRA_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-ggdb","-fno-omit-frame-pointer"],
+	MODE_DEBUG: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_COVERAGE: ["-O0","-ggdb","-fno-omit-frame-pointer"],
 	MODE_RELEASE: ["-O3","-g0","-fdata-sections","-ffunction-sections","-fomit-frame-pointer"]
 }[mode]
 TOOL_EXTRA_ASSEMBLY_COMPILER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3"]
 }[mode]
 TOOL_EXTRA_LINKER_OPTIONS={
-	MODE_NORMAL: ["-O0","-g"],
+	MODE_DEBUG: ["-O0","-g"],
 	MODE_COVERAGE: ["-O0","-g"],
 	MODE_RELEASE: ["-O3","-Wl,--gc-sections","-Wl,-s"]
 }[mode]
@@ -211,17 +209,21 @@ KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 
 
+def _get_build_config_option(option):
+	if (not hasattr(_get_build_config_option,"root")):
+		setattr(_get_build_config_option,"root",config.parse(f"src/config/build_{MODE_NAME}.config"))
+	out=_get_build_config_option.root
+	for name in option.split("."):
+		out=next(out.find(name))
+	return out.data
+
+
+
 def _clear_if_obsolete(path,src_file_path,prefix):
 	for file in os.listdir(path):
 		if (not file.startswith(prefix) or os.path.exists(os.path.join(src_file_path,file[len(prefix):].split(".")[0]))):
 			continue
 		os.remove(os.path.join(path,file))
-
-
-
-def _copy_file(src,dst):
-	with open(src,"rb") as rf,open(dst,"wb") as wf:
-		wf.write(rf.read())
 
 
 
@@ -283,7 +285,7 @@ def _get_files(directories):
 
 def _get_kernel_build_name():
 	root=config.parse("src/config/version.config")
-	return "x86_64."+{MODE_NORMAL:"debug",MODE_COVERAGE:"coverage",MODE_RELEASE:"release"}[mode]+f"/{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-"+os.environ.get("GITHUB_SHA","local")[:7]
+	return "x86_64."+MODE_NAME+f"/{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-"+os.environ.get("GITHUB_SHA","local")[:7]
 
 
 
@@ -558,7 +560,7 @@ def _get_early_modules():
 
 
 def _execute_compressor_command(file_path):
-	if (subprocess.run(["build/tool/compressor",file_path,COMPRESSION_LEVEL,file_path+".compressed"]).returncode!=0):
+	if (subprocess.run(["build/tool/compressor",file_path,_get_build_config_option("compression_level"),file_path+".compressed"]).returncode!=0):
 		sys.exit(1)
 
 
@@ -626,7 +628,7 @@ def _kvm_flags():
 		if (" vmx" not in rf.read()):
 			return []
 	with open("/sys/devices/system/clocksource/clocksource0/current_clocksource","r") as rf:
-		if ("tsc" in rf.read() and not BYPASS_KVM_LOCK):
+		if ("tsc" in rf.read() and not _get_build_config_option("vm.bypass_kvm_lock")):
 			print("\x1b[1m\x1b[38;2;231;72;86mKVM support disabled due to kernel TSC clock source\x1b[0m")
 			return []
 	return ["-accel","kvm"]
@@ -735,7 +737,7 @@ def _execute_vm():
 	subprocess.Popen(["swtpm","socket","--tpmstate","dir=/tmp/tpm/","--ctrl","type=unixio,path=/tmp/swtpm.sock","--tpm2","--log","level=0"])
 	while (not os.path.exists("/tmp/swtpm.sock")):
 		time.sleep(0.01)
-	if (not NO_FILE_SERVER):
+	if (_get_build_config_option("vm.file_server")):
 		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
@@ -814,9 +816,9 @@ def _execute_vm():
 		"-numa","hmat-cache,node-id=1,size=10K,level=1,associativity=direct,policy=write-back,line=8",
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
-		*(["-display","none"] if NO_DISPLAY or os.getenv("GITHUB_ACTIONS","") else ["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"]),
+		*(["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"] if _get_build_config_option("vm.display") else ["-display","none"]),
 		# Shared directory
-		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if not NO_FILE_SERVER else []),
+		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if _get_build_config_option("vm.file_server") else []),
 		# Serial
 		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
@@ -829,7 +831,7 @@ def _execute_vm():
 		"-tpmdev","emulator,id=tpm0,chardev=tpm",
 		"-device","tpm-tis,tpmdev=tpm0",
 		# Debugging
-		*([] if mode!=MODE_NORMAL else ["-gdb","tcp::9000"]),
+		*([] if mode!=MODE_DEBUG else ["-gdb","tcp::9000"]),
 	]+_kvm_flags())
 	if (os.path.exists("build/vm/virtiofsd.sock")):
 		os.remove("build/vm/virtiofsd.sock")
@@ -843,9 +845,6 @@ def _execute_vm():
 
 
 
-if (mode==MODE_COVERAGE):
-	NO_FILE_SERVER=False
-	NO_DISPLAY=True
 force_patch_kernel=False
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
