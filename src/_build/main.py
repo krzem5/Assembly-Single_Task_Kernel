@@ -142,7 +142,7 @@ def _get_kernel_build_name():
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False):
+def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",patch_command=None,name="<null>",dependencies=None,dependencies_are_libraries=False,dependencies_are_link_requirements=False):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
 	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not dependencies_are_libraries and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
@@ -157,19 +157,17 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
 	dependency_object_files=[]
+	extra_link_requirements=[]
 	if (dependencies_are_libraries):
 		for tag in dependencies.iter():
 			dependency_object_files.append((f"build/lib/lib{tag.name}.a" if tag.data=="static" else f"-l{tag.name}"))
+			extra_link_requirements.append(f"build/lib/lib{tag.name}.{("a" if tag.data=="static" else "so")}")
+		if (not dependencies_are_link_requirements):
+			extra_link_requirements.clear()
 	if (option(config_prefix+".command.link")):
 		output_file_path=option(config_prefix+".output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
-			pool.add(object_files,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
-			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
-			has_updates=True
-	if (option(config_prefix+".command.link_so")):
-		output_file_path=option(config_prefix+".so_output_file_path").replace("$NAME",name)
-		if (has_updates or not os.path.exists(output_file_path)):
-			pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link_so"))+["-o",output_file_path]+object_files+dependency_object_files)
+			pool.add(object_files+extra_link_requirements,output_file_path,"L "+output_file_path,shlex.split(option(config_prefix+".command.link"))+["-o",output_file_path]+object_files+dependency_object_files)
 			pool.add([output_file_path],output_file_path,"P "+output_file_path,([patch_command,output_file_path] if patch_command is not None else shlex.split(option(config_prefix+".command.patch"))))
 			has_updates=True
 		else:
@@ -238,7 +236,7 @@ def _compile_libraries():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		_generate_header_files(f"src/lib/{tag.name}")
-		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True,dependencies_are_link_requirements=True)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option(config_prefix+".hash_file_path"))
 	if (error):
