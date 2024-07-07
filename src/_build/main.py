@@ -37,25 +37,10 @@ KERNEL_OBJECT_FILE_DIRECTORY={
 	MODE_COVERAGE: "build/objects/kernel_coverage/",
 	MODE_RELEASE: "build/objects/kernel/"
 }[mode]
-MODULE_HASH_FILE={
-	MODE_DEBUG: "build/hashes/module.debug.txt",
-	MODE_COVERAGE: "build/hashes/module.coverage.txt",
-	MODE_RELEASE: "build/hashes/module.release.txt"
-}[mode]
 MODULE_OBJECT_FILE_DIRECTORY={
 	MODE_DEBUG: "build/objects/module_debug/",
 	MODE_COVERAGE: "build/objects/module_coverage/",
 	MODE_RELEASE: "build/objects/module/"
-}[mode]
-MODULE_EXTRA_COMPILER_OPTIONS={
-	MODE_DEBUG: ["-ggdb","-O0","-DKERNEL_DEBUG=1"],
-	MODE_COVERAGE: ["-ggdb","--coverage","-fprofile-arcs","-ftest-coverage","-fprofile-info-section","-fprofile-update=atomic","-O0","-DKERNEL_COVERAGE=1"],
-	MODE_RELEASE: ["-O3","-g0","-DKERNEL_RELEASE=1"]
-}[mode]
-MODULE_EXTRA_LINKER_OPTIONS={
-	MODE_DEBUG: ["-g"],
-	MODE_COVERAGE: ["-g"],
-	MODE_RELEASE: []
 }[mode]
 LIBRARY_HASH_FILE={
 	MODE_DEBUG: "build/hashes/lib.debug.txt",
@@ -133,14 +118,11 @@ TOOL_EXTRA_LINKER_OPTIONS={
 	MODE_RELEASE: ["-O3","-Wl,--gc-sections","-Wl,-s"]
 }[mode]
 SOURCE_FILE_SUFFIXES=[".asm",".c"]
-KERNEL_FILE_DIRECTORY="src/kernel"
 COMMON_FILE_DIRECTORY="src/common"
 MODULE_FILE_DIRECTORY="src/module"
 LIBRARY_FILE_DIRECTORY="src/lib"
 USER_FILE_DIRECTORY="src/user"
 TOOL_FILE_DIRECTORY="src/tool"
-MODULE_ORDER_FILE_PATH="src/config/module_order.config"
-FS_LIST_FILE_PATH="src/config/fs_list.config"
 INSTALL_DISK_SIZE=262144
 INSTALL_DISK_BLOCK_SIZE=512
 COVERAGE_FILE_REPORT_MARKER=0xb8bcbbbe41444347
@@ -236,6 +218,7 @@ def _compile_uefi():
 	object_files=[]
 	included_directories=["-Isrc/uefi/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option("uefi.common_libraries").iter()]
 	pool=process_pool.ProcessPool(file_hash_list)
+	has_updates=False
 	for file in _get_files(["src/uefi"]+["src/common/"+tag.name for tag in _get_build_config_option("uefi.common_libraries").iter()]):
 		object_file=_get_build_config_option("uefi.object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
@@ -243,7 +226,8 @@ def _compile_uefi():
 			pool.dispatch(object_file)
 			continue
 		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(f"uefi.command.compile.{file.split('.')[-1]}"))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
-	if (not changed_files and os.path.exists("build/uefi/loader.efi")):
+		has_updates=True
+	if (not has_updates and os.path.exists("build/uefi/loader.efi")):
 		return False
 	pool.add(object_files,"build/uefi/loader.efi","L build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.link"))+object_files)
 	pool.add(["build/uefi/loader.efi"],"build/uefi/loader.efi","P build/uefi/loader.efi",shlex.split(_get_build_config_option("uefi.command.patch")))
@@ -261,6 +245,7 @@ def _compile_kernel():
 	object_files=[]
 	included_directories=["-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/common/{tag.name}/include" for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]
 	pool=process_pool.ProcessPool(file_hash_list)
+	has_updates=False
 	for file in _get_files(["src/kernel"]+["src/common/"+tag.name for tag in _get_build_config_option(config_prefix+".common_libraries").iter()]):
 		object_file=_get_build_config_option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
@@ -269,8 +254,9 @@ def _compile_kernel():
 			continue
 		if (os.path.exists(object_file+".gcno")):
 			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
-	if (not changed_files and os.path.exists("build/kernel/kernel.elf")):
+		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
+		has_updates=True
+	if (not has_updates and os.path.exists("build/kernel/kernel.elf")):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",shlex.split(_get_build_config_option(config_prefix+".command.link"))+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()])
@@ -282,43 +268,39 @@ def _compile_kernel():
 
 
 
-def _compile_module(module,dependencies,changed_files,pool):
+def _compile_module(config_prefix,module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return False
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-Isrc/kernel/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data=='common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
+	included_directories=[f"-Isrc/module/{module}/include","-Isrc/kernel/include","-Isrc/common/include"]+[f"-Isrc/{tag.data if tag.data else 'module'}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter() if tag.data=="common"]):
-		object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
+	for file in _get_files(["src/module/"+module]+["src/common/"+tag.name for tag in dependencies.iter() if tag.data=="common"]):
+		object_file=_get_build_config_option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.dispatch(object_file)
 			continue
-		command=None
-		if (file.endswith(".c")):
-			command=["gcc-12",f"-Isrc/common/include","-mcmodel=kernel","-mno-red-zone","-mno-mmx","-mno-sse","-mno-sse2","-mbmi","-mbmi2","-fno-common","-fno-builtin","-nostdlib","-fno-omit-frame-pointer","-fno-asynchronous-unwind-tables","-ffreestanding",f"-fvisibility={KERNEL_SYMBOL_VISIBILITY}","-fplt","-fno-pie","-fno-pic","-m64","-Wall","-Werror","-Wno-trigraphs","-Wno-address-of-packed-member","-Wno-frame-address","-c","-o",object_file,"-fdiagnostics-color=always",file,"-DNULL=((void*)0)","-DBUILD_MODULE=1","-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0]]+included_directories+MODULE_EXTRA_COMPILER_OPTIONS
-		else:
-			command=["nasm","-f","elf64","-Wall","-Werror","-O3","-o",object_file,file]
 		if (os.path.exists(object_file+".gcno")):
 			os.remove(os.path.exists(object_file+".gcno"))
-		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
+		pool.add([],object_file,"C "+file,shlex.split(_get_build_config_option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
-	if (os.path.exists(f"build/module/{module}.mod") and not has_updates):
+	if (not has_updates and os.path.exists(f"build/module/{module}.mod")):
 		return False
-	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-T","src/module/linker.ld","-o",f"build/module/{module}.mod"]+object_files+MODULE_EXTRA_LINKER_OPTIONS)
+	pool.add(object_files,f"build/module/{module}.mod",f"L build/module/{module}.mod",shlex.split(_get_build_config_option(config_prefix+".command.link"))+["-o",f"build/module/{module}.mod"]+object_files)
 	pool.add([f"build/module/{module}.mod"],f"build/module/{module}.mod",f"P build/module/{module}.mod",[linker.link_module_or_library,f"build/module/{module}.mod","module"])
 	return True
 
 
 
 def _compile_all_modules():
-	changed_files,file_hash_list=_load_changed_files(MODULE_HASH_FILE,MODULE_FILE_DIRECTORY,COMMON_FILE_DIRECTORY,KERNEL_FILE_DIRECTORY+"/include")
+	config_prefix="module_"+MODE_NAME
+	changed_files,file_hash_list=_load_changed_files(_get_build_config_option(config_prefix+".hash_file_path"),"src/module","src/kernel/include","src/common")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/module/dependencies.config").iter():
-		out|=_compile_module(tag.name,tag,changed_files,pool)
+		out|=_compile_module(config_prefix,tag.name,tag,changed_files,pool)
 	error=pool.wait()
-	_save_file_hash_list(file_hash_list,MODULE_HASH_FILE)
+	_save_file_hash_list(file_hash_list,_get_build_config_option(config_prefix+".hash_file_path"))
 	if (error):
 		sys.exit(1)
 	return out
@@ -488,7 +470,7 @@ def _generate_shared_directory():
 
 
 def _get_early_modules():
-	return ["module_loader"]+[tag.name for tag in config.parse(MODULE_ORDER_FILE_PATH).iter() if tag.data=="early"]
+	return ["module_loader"]+[tag.name for tag in config.parse("src/config/module_order.config").iter() if tag.data=="early"]
 
 
 
@@ -528,8 +510,8 @@ def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_l
 		files={}
 		for module in _get_early_modules():
 			files[f"/boot/module/{module}.mod"]=f"build/module/{module}.mod"
-		files["/boot/module/module_order.config"]=MODULE_ORDER_FILE_PATH
-		files["/etc/fs_list.config"]=FS_LIST_FILE_PATH
+		files["/boot/module/module_order.config"]="src/config/module_order.config"
+		files["/etc/fs_list.config"]="src/config/fs_list.config"
 		initramfs.create("build/partitions/initramfs.img",files)
 		_execute_compressor_command("build/kernel/kernel.bin")
 		_execute_compressor_command("build/partitions/initramfs.img")
@@ -540,8 +522,8 @@ def _generate_install_disk(rebuild_uefi,rebuild_kernel,rebuild_modules,rebuild_l
 		_execute_kfs2_command(["mkdir","/lib","0755"])
 		_execute_kfs2_command(["copy","/boot/kernel","0400","build/kernel/kernel.bin.compressed"])
 		_execute_kfs2_command(["copy","/boot/initramfs","0400","build/partitions/initramfs.img.compressed"])
-		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600",MODULE_ORDER_FILE_PATH])
-		_execute_kfs2_command(["copy","/etc/fs_list.config","0644",FS_LIST_FILE_PATH])
+		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600","src/config/module_order.config"])
+		_execute_kfs2_command(["copy","/etc/fs_list.config","0644","src/config/fs_list.config"])
 		_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
 		for module in os.listdir("build/module"):
 			_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
