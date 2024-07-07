@@ -127,11 +127,11 @@ def parse(file_path):
 			if (i==len(data)):
 				raise RuntimeError("Unbalanced quotes")
 			i+=1
-			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,buffer))
+			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,buffer.decode("utf-8")))
 			continue
 		string_length=0
 		while (i+string_length<len(data) and data[i+string_length] not in b"\n}"):
 			string_length+=1
-		out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,data[i:i+string_length]))
+		out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_STRING,data[i:i+string_length].decode("utf-8")))
 		i+=string_length
 	return out

@@ -28,10 +28,9 @@ def _decode_hex(data):
 
 
 
-def load_key(key,use_release_key):
-	file_path=SIGNATURE_KEY_PREFIX+key+(SIGNATURE_RELEASE_KEY_SUFFIX if use_release_key else SIGNATURE_KEY_SUFFIX)
+def load_key(key,file_path):
 	if (not os.path.exists(file_path)):
-		if (subprocess.run(["openssl","genpkey","-algorithm","rsa","-pkeyopt",f"rsa_keygen_bits:{4096 if use_release_key else 512}","-out",file_path]).returncode):
+		if (subprocess.run(["openssl","genpkey","-algorithm","rsa","-pkeyopt",f"rsa_keygen_bits:{4096 if '.release' in file_path else 512}","-out",file_path]).returncode):
 			sys.exit(1)
 	process=subprocess.run(["openssl","asn1parse","-in",file_path,"-inform","pem"],stdout=subprocess.PIPE)
 	if (process.returncode):

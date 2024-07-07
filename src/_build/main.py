@@ -31,49 +31,6 @@ MODE_NAME={
 	MODE_COVERAGE: "coverage",
 	MODE_RELEASE: "release"
 }[mode]
-BUILD_DIRECTORIES=[
-	"build",
-	"build/gdb",
-	"build/hashes",
-	"build/initramfs",
-	"build/initramfs/boot",
-	"build/initramfs/boot/module",
-	"build/initramfs/etc",
-	"build/kernel",
-	"build/keys",
-	"build/lib",
-	"build/module",
-	"build/objects",
-	"build/objects/kernel",
-	"build/objects/kernel_coverage",
-	"build/objects/kernel_debug",
-	"build/objects/lib",
-	"build/objects/lib_coverage",
-	"build/objects/lib_debug",
-	"build/objects/module",
-	"build/objects/module_coverage",
-	"build/objects/module_debug",
-	"build/objects/tool",
-	"build/objects/tool_debug",
-	"build/objects/uefi",
-	"build/objects/user",
-	"build/objects/user_coverage",
-	"build/objects/user_debug",
-	"build/partitions",
-	"build/share",
-	"build/share/bin",
-	"build/share/lib",
-	"build/share/test",
-	"build/tool",
-	"build/uefi",
-	"build/user",
-	"build/vm",
-	"build/vm/tpm"
-]
-CLEAR_BUILD_DIRECTORIES=[
-	"build/share/bin",
-	"build/share/lib"
-]
 UEFI_HASH_FILE_PATH="build/hashes/uefi.release.txt"
 UEFI_FILE_DIRECTORY="src/uefi/"
 UEFI_OBJECT_FILE_DIRECTORY="build/objects/uefi/"
@@ -211,11 +168,13 @@ KERNEL_SYMBOL_VISIBILITY=("hidden" if mode!=MODE_COVERAGE else "default")
 
 def _get_build_config_option(option):
 	if (not hasattr(_get_build_config_option,"root")):
-		setattr(_get_build_config_option,"root",config.parse(f"src/config/build_{MODE_NAME}.config"))
+		root=config.parse(f"src/config/build_{MODE_NAME}.config")
+		root.data.extend(config.parse("src/config/build_common.config").data)
+		setattr(_get_build_config_option,"root",root)
 	out=_get_build_config_option.root
 	for name in option.split("."):
 		out=next(out.find(name))
-	return out.data
+	return (out if out.type==config.CONFIG_TAG_TYPE_ARRAY else out.data)
 
 
 
@@ -273,11 +232,11 @@ def _file_not_changed(changed_files,deps_file_path):
 
 
 
-def _get_files(directories):
+def _get_files(directories,suffixes=SOURCE_FILE_SUFFIXES):
 	for directory in directories:
 		for root,_,files in os.walk(directory):
 			for file_name in files:
-				if (file_name[file_name.rindex("."):] not in SOURCE_FILE_SUFFIXES):
+				if (suffixes is not None and file_name[file_name.rindex("."):] not in suffixes):
 					continue
 				yield os.path.join(root,file_name)
 
@@ -319,7 +278,7 @@ def _compile_uefi():
 
 
 
-def _compile_kernel(force_patch_kernel):
+def _compile_kernel():
 	changed_files,file_hash_list=_load_changed_files(KERNEL_HASH_FILE_PATH,KERNEL_FILE_DIRECTORY,COMMON_FILE_DIRECTORY)
 	object_files=[]
 	pool=process_pool.ProcessPool(file_hash_list)
@@ -337,7 +296,7 @@ def _compile_kernel(force_patch_kernel):
 		if (os.path.exists(object_file+".gcno")):
 			os.remove(os.path.exists(object_file+".gcno"))
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
-	if (not changed_files and not force_patch_kernel and os.path.exists("build/kernel/kernel.elf")):
+	if (not changed_files and os.path.exists("build/kernel/kernel.elf")):
 		return False
 	pool.add(object_files,"build/kernel/kernel.elf","L build/kernel/kernel.elf",["ld","-znoexecstack","-melf_x86_64","-Bsymbolic","-r","-o","build/kernel/kernel.elf","-O3","-T","src/kernel/linker.ld"]+KERNEL_EXTRA_LINKER_OPTIONS+object_files)
 	pool.add(["build/kernel/kernel.elf"],"build/kernel/kernel.elf","P build/kernel/kernel.elf",[linker.link_kernel,"build/kernel/kernel.elf","build/kernel/kernel.bin",time.time_ns(),_get_kernel_build_name()])
@@ -353,9 +312,9 @@ def _compile_module(module,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and module.startswith("test")):
 		return False
 	object_files=[]
-	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data==b'common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
+	included_directories=[f"-I{MODULE_FILE_DIRECTORY}/{module}/include",f"-I{KERNEL_FILE_DIRECTORY}/include"]+[f"-I{(COMMON_FILE_DIRECTORY if tag.data=='common' else MODULE_FILE_DIRECTORY)}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
-	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter() if tag.data==b"common"]):
+	for file in _get_files([MODULE_FILE_DIRECTORY+"/"+module]+[COMMON_FILE_DIRECTORY+"/"+tag.name for tag in dependencies.iter() if tag.data=="common"]):
 		object_file=MODULE_OBJECT_FILE_DIRECTORY+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
@@ -430,7 +389,7 @@ def _compile_library(library,dependencies,changed_files,pool):
 		pool.add([],object_file,"C "+file,command+["-MD","-MT",object_file,"-MF",object_file+".deps"])
 		has_updates=True
 	if (has_updates or not os.path.exists(f"build/lib/lib{library}.so")):
-		pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data==b'static' else 'so')}" for tag in dependencies.iter()],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data==b'static' else f"-l{tag.name}") for tag in dependencies.iter()]+LIBRARY_EXTRA_LINKER_OPTIONS)
+		pool.add(object_files+[f"build/lib/lib{tag.name}.{('a' if tag.data=='static' else 'so')}" for tag in dependencies.iter()],f"build/lib/lib{library}.so",f"L build/lib/lib{library}.so",["ld","-znoexecstack","-melf_x86_64","-T","src/lib/linker.ld","--exclude-libs","ALL","-shared","-o",f"build/lib/lib{library}.so"]+object_files+[(f"build/lib/lib{tag.name}.a" if tag.data=='static' else f"-l{tag.name}") for tag in dependencies.iter()]+LIBRARY_EXTRA_LINKER_OPTIONS)
 		pool.add([f"build/lib/lib{library}.so"],f"build/lib/lib{library}.so",f"P build/lib/lib{library}.so",[linker.link_module_or_library,f"build/lib/lib{library}.so","user"])
 	else:
 		pool.dispatch(f"build/lib/lib{library}.so")
@@ -461,7 +420,7 @@ def _compile_all_libraries():
 def _compile_user_program(program,dependencies,changed_files,pool):
 	if (mode!=MODE_COVERAGE and program.startswith("test")):
 		return False
-	dependencies.data.append(config.ConfigTag(dependencies,b"runtime",config.CONFIG_TAG_TYPE_STRING,b"static"))
+	dependencies.data.append(config.ConfigTag(dependencies,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
 	object_files=[]
 	included_directories=[f"-I{USER_FILE_DIRECTORY}/{program}/include"]+[f"-I{LIBRARY_FILE_DIRECTORY}/{tag.name}/include" for tag in dependencies.iter()]
 	has_updates=False
@@ -482,7 +441,7 @@ def _compile_user_program(program,dependencies,changed_files,pool):
 		has_updates=True
 	if (os.path.exists(f"build/user/{program}") and not has_updates):
 		return False
-	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{tag.name}" if tag.data!=b"static" else f"build/lib/lib{tag.name}.a") for tag in dependencies.iter()]+object_files+USER_EXTRA_LINKER_OPTIONS)
+	pool.add(object_files,f"build/user/{program}",f"L build/user/{program}",["ld","-znoexecstack","-melf_x86_64","-I/lib/ld.so","-T","src/user/linker.ld","--exclude-libs","ALL","-o",f"build/user/{program}"]+[(f"-l{tag.name}" if tag.data!="static" else f"build/lib/lib{tag.name}.a") for tag in dependencies.iter()]+object_files+USER_EXTRA_LINKER_OPTIONS)
 	pool.add([f"build/user/{program}"],f"build/user/{program}",f"P build/user/{program}",[linker.link_module_or_library,f"build/user/{program}","user"])
 	return True
 
@@ -555,7 +514,7 @@ def _generate_shared_directory():
 
 
 def _get_early_modules():
-	return ["module_loader"]+[tag.name for tag in config.parse(MODULE_ORDER_FILE_PATH).iter() if tag.data==b"early"]
+	return ["module_loader"]+[tag.name for tag in config.parse(MODULE_ORDER_FILE_PATH).iter() if tag.data=="early"]
 
 
 
@@ -761,7 +720,6 @@ def _execute_vm():
 				sys.exit(1)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
-		# "/tmp/qemu/build/qemu-system-x86_64","--trace","enable=memory_region_ops_write",
 		# "-d","trace:virtio*,trace:virtio_blk*",
 		# "-d","trace:virtio*,trace:virtio_gpu*",
 		# "-d","trace:virtio*,trace:vhost*,trace:virtqueue*",
@@ -771,7 +729,6 @@ def _execute_vm():
 		# "--no-reboot",
 		# "-d","guest_errors",
 		# "-d","int,cpu_reset",
-		# "-d","trace:memory_region_ram_device_write",
 		# Bios
 		"-drive","if=pflash,format=raw,unit=0,file=build/vm/OVMF_CODE.fd,readonly=on",
 		"-drive","if=pflash,format=raw,unit=1,file=build/vm/OVMF_VARS.fd",
@@ -788,8 +745,7 @@ def _execute_vm():
 		"-device","usb-storage,bus=xhci.0,drive=bootusb,bootindex=0",
 		# Network
 		"-netdev","user,hostfwd=tcp::10023-:22,id=network",
-		"-device","e1000,netdev=network", ### 'Real' network card
-		# "-device","virtio-net,netdev=network",
+		"-device","e1000,netdev=network",
 		"-object","filter-dump,id=network-filter,netdev=network,file=build/vm/network.dat",
 		# Memory
 		"-m","2G,slots=2,maxmem=4G",
@@ -817,7 +773,7 @@ def _execute_vm():
 		"-numa","dist,src=0,dst=1,val=20",
 		# Graphics
 		*(["-device","virtio-vga-gl,xres=1280,yres=960","-display","sdl,gl=on"] if _get_build_config_option("vm.display") else ["-display","none"]),
-		# Shared directory
+		# Shared filesystem
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if _get_build_config_option("vm.file_server") else []),
 		# Serial
 		"-serial","mon:stdio",
@@ -845,29 +801,26 @@ def _execute_vm():
 
 
 
-force_patch_kernel=False
+empty_directories=_get_build_config_option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
 		if (int(rf.read())!=mode):
-			CLEAR_BUILD_DIRECTORIES.extend(["build/lib","build/module","build/tool","build/user"])
-			force_patch_kernel=True
-for dir_ in BUILD_DIRECTORIES:
-	if (not os.path.exists(dir_)):
-		os.mkdir(dir_)
-for dir_ in CLEAR_BUILD_DIRECTORIES:
-	for file in os.listdir(dir_):
-		os.remove(os.path.join(dir_,file))
-_clear_if_obsolete("build/lib","src/lib","lib")
-_clear_if_obsolete("build/module","src/module","")
-_clear_if_obsolete("build/user","src/user","")
+			empty_directories.extend(_get_build_config_option("build_directories.empty_after_mode_change").data)
+for dir in _get_build_config_option("build_directories.required").iter():
+	if (not os.path.exists(dir.data)):
+		os.mkdir(dir.data)
+for file in _get_files(map(lambda e:e.data,empty_directories),suffixes=None):
+	os.remove(file)
+for tag in _get_build_config_option("build_directories.delete_obsolete").iter():
+	_clear_if_obsolete(next(tag.find("path")).data,next(tag.find("src_path")).data,next(tag.find("prefix")).data)
 with open("build/last_mode","w") as wf:
 	wf.write(f"{mode}\n")
-signature.load_key("module",mode==MODE_RELEASE)
-signature.load_key("user",mode==MODE_RELEASE)
+for tag in _get_build_config_option("keys").iter():
+	signature.load_key(tag.name,tag.data)
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
 rebuild_uefi=_compile_uefi()
-rebuild_kernel=_compile_kernel(force_patch_kernel)
+rebuild_kernel=_compile_kernel()
 rebuild_modules=_compile_all_modules()
 rebuild_libraries=_compile_all_libraries()
 rebuild_user_programs=_compile_all_user_programs()
