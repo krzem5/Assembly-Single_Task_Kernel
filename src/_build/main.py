@@ -263,7 +263,7 @@ def _compile_libraries():
 	out=False
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
-			return False
+			continue
 		_generate_header_files(f"src/lib/{tag.name}")
 		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	error=pool.wait()
@@ -274,14 +274,14 @@ def _compile_libraries():
 
 
 
-def _compile_all_user_programs():
+def _compile_user_programs():
 	config_prefix="user_"+MODE_NAME
 	changed_files,file_hash_list=_load_changed_files(option(config_prefix+".hash_file_path"),"src/user","src/lib")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out=False
 	for tag in config.parse("src/user/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
-			return False
+			continue
 		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
 		out|=_compile_stage(config_prefix,pool,changed_files,default_dependency_directory="lib",patch_command=lambda output_file_path:linker.link_module_or_library(output_file_path,"user"),name=tag.name,dependencies=tag,dependencies_are_libraries=True)
 	error=pool.wait()
@@ -644,7 +644,7 @@ rebuild_uefi=_compile_uefi()
 rebuild_kernel=_compile_kernel()
 rebuild_modules=_compile_modules()
 rebuild_libraries=_compile_libraries()
-rebuild_user_programs=_compile_all_user_programs()
+rebuild_user_programs=_compile_user_programs()
 _compile_all_tools()
 _generate_shared_directory()
 if ("--share" in sys.argv):
