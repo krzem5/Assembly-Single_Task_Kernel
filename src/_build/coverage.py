@@ -62,30 +62,6 @@ def __builtin_ffsll(x):
 
 
 
-def copy_gcno_files():
-	with open("build/share/coverage_notes","wb") as wf:
-		for root,_,files in os.walk("build/objects"):
-			for file in files:
-				if (not file.endswith(".gcno")):
-					continue
-				file=os.path.join(root,file)
-				path=(file[:-5]+".gcda").encode("utf-8")
-				wf.write(struct.pack("<B",len(path))+path)
-				with open(file,"rb") as rf:
-					rf.read(struct.unpack("16xI",rf.read(20))[0]+4)
-					tags=[]
-					while (True):
-						buffer=rf.read(8)
-						if (len(buffer)<8):
-							break
-						tag,length=struct.unpack("II",buffer)
-						data=rf.read(length)
-						if (tag==0x01000000 or tag==0x01410000 or tag==0x01430000 or tag==0x01450000):
-							wf.write(buffer+data)
-					wf.write(b"\x00\x00\x00\x00")
-
-
-
 def generate(vm_output_file_path,output_file_path):
 	success=False
 	source_files={}
