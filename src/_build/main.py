@@ -314,7 +314,7 @@ def _kvm_flags():
 
 
 
-ARC_FLAG_ON_TREE=0x0
+ARC_FLAG_ON_TREE=0x01
 
 
 
