@@ -1,5 +1,4 @@
 import array
-import os
 import struct
 
 
