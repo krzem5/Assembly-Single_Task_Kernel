@@ -5,10 +5,12 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/thread.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #include <kernel/util/spinloop.h>
+#include <kernel/util/util.h>
+#include <kernel/vfs/lock.h>
 #include <kernel/vfs/node.h>
 #define KERNEL_LOG_NAME "vfs_node"
 
@@ -73,6 +75,7 @@ static vfs_node_t* _init_node(filesystem_t* fs,const vfs_functions_t* functions,
 	out->time_birth=time;
 	out->gid=0;
 	out->uid=0;
+	vfs_lock_init(out);
 	if (flags&VFS_NODE_FLAG_CREATE){
 		out->flags=(flags&VFS_NODE_TYPE_MASK)|VFS_NODE_FLAG_DIRTY;
 		vfs_node_flush(out);
@@ -206,7 +209,7 @@ KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node){
 
 
 KERNEL_PUBLIC u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
-	if (!size||!node->functions->read){
+	if (!size||!node->functions->read||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}
 	return node->functions->read(node,offset,buffer,size,flags);
@@ -215,7 +218,7 @@ KERNEL_PUBLIC u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 siz
 
 
 KERNEL_PUBLIC u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
-	if (!size||!node->functions->write){
+	if (!size||!node->functions->write||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}
 	return node->functions->write(node,offset,buffer,size,flags);
@@ -224,7 +227,7 @@ KERNEL_PUBLIC u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,
 
 
 KERNEL_PUBLIC u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
-	if (!node->functions->resize){
+	if (!node->functions->resize||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}
 	return node->functions->resize(node,offset,flags);

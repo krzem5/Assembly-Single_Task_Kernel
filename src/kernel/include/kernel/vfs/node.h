@@ -1,5 +1,6 @@
 #ifndef _KERNEL_VFS_NODE_H_
 #define _KERNEL_VFS_NODE_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/id/group.h>
 #include <kernel/id/user.h>
 #include <kernel/lock/rwlock.h>
@@ -25,9 +26,15 @@
 #define VFS_NODE_FLAG_CREATE 512
 #define VFS_NODE_FLAG_GROW 1024
 #define VFS_NODE_FLAG_TEMPORARY 2048
+#define VFS_NODE_FLAG_BYPASS_LOCK 4096
 
-#define VFS_NODE_PERMISSION_SHIFT 12
+#define VFS_NODE_PERMISSION_SHIFT 13
 #define VFS_NODE_PERMISSION_MASK (0x1ff<<VFS_NODE_PERMISSION_SHIFT)
+
+#define VFS_NODE_LOCK_TYPE_NONE 0
+#define VFS_NODE_LOCK_TYPE_PROCESS_GROUP 1
+#define VFS_NODE_LOCK_TYPE_PROCESS 2
+#define VFS_NODE_LOCK_TYPE_THREAD 3
 
 
 
@@ -55,6 +62,14 @@ typedef struct _VFS_NODE_RELATIVES{
 
 
 
+typedef struct _VFS_NODE_LOCK{
+	rwlock_t lock;
+	u32 type;
+	handle_id_t handle;
+} vfs_node_lock_t;
+
+
+
 typedef struct _VFS_NODE{
 	rwlock_t lock;
 	u32 flags;
@@ -69,6 +84,7 @@ typedef struct _VFS_NODE{
 	u64 time_birth;
 	gid_t gid;
 	uid_t uid;
+	vfs_node_lock_t io_lock;
 } vfs_node_t;
 
 
