@@ -681,7 +681,7 @@ def _execute_vm():
 
 
 
-_generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#############################
+# _generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#############################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
