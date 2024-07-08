@@ -612,15 +612,17 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 							out[src][line]=block.count
 						else:
 							out[src][line]+=block.count
+	# with open(output_file_path,"w") as wf:
+	# 	wf.write("TN:\n")
+	# 	for src,lines in out.items():
+	# 		wf.write(f"SF:{src}\n")
+	# 		if (src in source_files):
+	# 			for function in source_files[src].functions.values():
+	# 				wf.write(f"FN:{function.start_line},{function.name}\n")
+	# 		for line,count in lines.items():
+	# 			wf.write(f"DA:{line},{count}\n")
 	with open(output_file_path,"w") as wf:
-		wf.write("TN:\n")
-		for src,lines in out.items():
-			wf.write(f"SF:{src}\n")
-			if (src in source_files):
-				for function in source_files[src].functions.values():
-					wf.write(f"FN:{function.start_line},{function.name}\n")
-			for line,count in lines.items():
-				wf.write(f"DA:{line},{count}\n")
+		wf.write(subprocess.run(["gcov-12","-a","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8"))
 	# with open(output_file_path,"w") as wf:
 	# 	wf.write("TN:\n")
 	# 	current_src=None
@@ -767,12 +769,12 @@ def _execute_vm():
 	if (os.path.exists("/tmp/tpm/swtpm.sock")):
 		os.remove("/tmp/tpm/swtpm.sock")
 	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
+		_generate_coverage_report("build/raw_coverage","build/coverage.gcov")
 		os.remove("build/raw_coverage")
 
 
 
-# _generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#####################
+# _generate_coverage_report("build/raw_coverage","build/coverage.gcov");quit()#####################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
