@@ -346,7 +346,6 @@ class CoverageFunction(object):
 
 class CoverageFunctionBlock(object):
 	def __init__(self):
-		self.id=0
 		self.lines={}
 		self.prev=[]
 		self.next=[]
@@ -465,19 +464,19 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			invalid_chain=[]
 			valid_chain=[]
 			for block in function.blocks:
-				prev_dst=0
-				is_out_of_order=False
+				# prev_dst=0
+				# is_out_of_order=False
 				for arc in block.next:
 					if (not (arc.flags&ARC_FLAG_ON_TREE)):
 						arc.count=function.counters[counter_index]
 						counter_index+=1
 						block.next_count-=1
 						function.blocks[arc.dst].prev_count-=1
-					if (prev_dst>arc.dst):
-						is_out_of_order=True
-					prev_dst=arc.dst
-				if (is_out_of_order):
-					block.next=sorted(block.next,key=lambda arc:arc.dst)
+				# 	if (prev_dst>arc.dst):
+				# 		is_out_of_order=True
+				# 	prev_dst=arc.dst
+				# if (is_out_of_order):
+				# 	block.next=sorted(block.next,key=lambda arc:arc.dst)
 				invalid_chain.append(block)
 			while (invalid_chain or valid_chain):
 				if (invalid_chain):
