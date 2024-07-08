@@ -21,6 +21,17 @@ static const char* _stat_type_names[]={
 
 
 
+static bool _check_if_link(const char* path){
+	sys_fd_t fd=sys_fd_open(0,path,SYS_FD_FLAG_FIND_LINKS);
+	if (fd==SYS_ERROR_LINK_FOUND){
+		return 1;
+	}
+	sys_fd_close(fd);
+	return 0;
+}
+
+
+
 static const char* _get_lock_type(sys_handle_t handle){
 	if (!handle){
 		return "none";
@@ -49,7 +60,7 @@ int main(int argc,const char** argv){
 		return 1;
 	}
 	for (;i<argc;i++){
-		sys_fd_t fd=sys_fd_open(0,argv[i],/*SYS_FD_FLAG_IGNORE_LINKS|*/SYS_FD_FLAG_READ);
+		sys_fd_t fd=sys_fd_open(0,argv[i],0);
 		if (SYS_IS_ERROR(fd)){
 			sys_io_print("stat: unable to open file '%s': error %d\n",argv[i],fd);
 			return 1;
@@ -62,7 +73,21 @@ int main(int argc,const char** argv){
 			return 1;
 		}
 		sys_io_print("Name: ");
-		dircolor_get_color_with_link(&stat,argv[i],fd);
+		if (_check_if_link(argv[i])){
+			sys_fd_stat_t tmp_stat={
+				.type=SYS_FD_STAT_TYPE_LINK
+			};
+			char buffer[32];
+			dircolor_get_color(&tmp_stat,buffer);
+			sys_io_print("%s%s\x1b[0m -> ",buffer,argv[i]);
+		}
+		char buffer[32];
+		dircolor_get_color(&stat,buffer);
+		char path_buffer[4096];
+		if (SYS_IS_ERROR(sys_fd_path(fd,path_buffer,sizeof(path_buffer)))){
+			sys_string_copy(argv[i],path_buffer);
+		}
+		sys_io_print("%s%s\x1b[0m",buffer,path_buffer);
 		char uid_name_buffer[256]="???";
 		sys_uid_get_name(stat.uid,uid_name_buffer,256);
 		char gid_name_buffer[256]="???";

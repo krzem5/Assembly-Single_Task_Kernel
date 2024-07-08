@@ -126,8 +126,13 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		*parent=NULL;
 		*child_name=NULL;
 	}
+	vfs_node_t* out=NULL;
 	while (root&&path[0]){
-		if ((flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		if ((flags&(VFS_LOOKUP_FLAG_FOLLOW_LINKS|VFS_LOOKUP_FLAG_FIND_LINKS))&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+			if (flags&VFS_LOOKUP_FLAG_FIND_LINKS){
+				out=VFS_LOOKUP_LINK_FOUND;
+				goto _cleanup;
+			}
 			if (!_has_read_permissions(root,flags,uid,gid)){
 				goto _cleanup;
 			}
@@ -187,7 +192,11 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		vfs_node_unref(root);
 		root=child;
 	}
-	if (root&&(flags&VFS_LOOKUP_FLAG_FOLLOW_LINKS)&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+	if (root&&(flags&(VFS_LOOKUP_FLAG_FOLLOW_LINKS|VFS_LOOKUP_FLAG_FIND_LINKS))&&(root->flags&VFS_NODE_TYPE_MASK)==VFS_NODE_TYPE_LINK){
+		if (flags&VFS_LOOKUP_FLAG_FIND_LINKS){
+			out=VFS_LOOKUP_LINK_FOUND;
+			goto _cleanup;
+		}
 		if (!_has_read_permissions(root,flags,uid,gid)){
 			goto _cleanup;
 		}
@@ -208,7 +217,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 _cleanup:
 	vfs_node_unref(base_root_node);
 	vfs_node_unref(root);
-	return NULL;
+	return out;
 }
 
 

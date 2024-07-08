@@ -146,7 +146,7 @@ void fd_unref(handle_id_t fd){
 
 
 error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
-	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK|FD_FLAG_CLOSE_PIPE))){
+	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK|FD_FLAG_CLOSE_PIPE|FD_FLAG_FIND_LINKS))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
 	if ((flags&(FD_FLAG_DIRECTORY|FD_FLAG_LINK))==(FD_FLAG_DIRECTORY|FD_FLAG_LINK)){
@@ -173,8 +173,12 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 	if (flags&FD_FLAG_CREATE){
 		vfs_node_t* parent;
 		const char* child_name;
-		node=vfs_lookup_for_creation(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid,&parent,&child_name);
-		if (!node&&parent&&child_name){
+		node=vfs_lookup_for_creation(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS)|((flags&FD_FLAG_FIND_LINKS)?VFS_LOOKUP_FLAG_FIND_LINKS:0),THREAD_DATA->process->uid,THREAD_DATA->process->gid,&parent,&child_name);
+		if (node==VFS_LOOKUP_LINK_FOUND){
+			node=NULL;
+			error=ERROR_LINK_FOUND;
+		}
+		else if (!node&&parent&&child_name){
 			SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
 			node=vfs_node_create(NULL,parent,child_name_string,((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:((flags&FD_FLAG_LINK)?VFS_NODE_TYPE_LINK:VFS_NODE_TYPE_FILE))|VFS_NODE_FLAG_CREATE);
 			if (node){
@@ -193,7 +197,11 @@ error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u3
 		}
 	}
 	else{
-		node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+		node=vfs_lookup(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS)|((flags&FD_FLAG_FIND_LINKS)?VFS_LOOKUP_FLAG_FIND_LINKS:0),THREAD_DATA->process->uid,THREAD_DATA->process->gid);
+		if (node==VFS_LOOKUP_LINK_FOUND){
+			node=NULL;
+			error=ERROR_LINK_FOUND;
+		}
 	}
 	if (root_handle){
 		handle_release(root_handle);

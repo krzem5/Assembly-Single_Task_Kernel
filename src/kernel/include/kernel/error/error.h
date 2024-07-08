@@ -27,6 +27,7 @@
 #define ERROR_FAILED _ERROR(0x0010)
 #define ERROR_MASKED _ERROR(0x0011)
 #define ERROR_SIGNAL(signal) _ERROR((0x0012|((signal)<<16)))
+#define ERROR_LINK_FOUND _ERROR(0x0013)
 
 
 
