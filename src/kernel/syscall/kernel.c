@@ -26,6 +26,7 @@ extern u64 syscall_fd_iter_next();
 extern u64 syscall_fd_iter_start();
 extern u64 syscall_fd_iter_stop();
 extern u64 syscall_fd_link();
+extern u64 syscall_fd_lock();
 extern u64 syscall_fd_open();
 extern u64 syscall_fd_path();
 extern u64 syscall_fd_read();
@@ -44,6 +45,7 @@ extern u64 syscall_fs_mount();
 extern u64 syscall_gid_get();
 extern u64 syscall_gid_get_name();
 extern u64 syscall_gid_set();
+extern u64 syscall_handle_get_name();
 extern u64 syscall_memory_change_flags();
 extern u64 syscall_memory_get_size();
 extern u64 syscall_memory_map();
@@ -215,5 +217,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[104]=syscall_process_iter,
 	[105]=syscall_process_query,
 	[106]=syscall_thread_set_name,
+	[107]=syscall_fd_lock,
+	[108]=syscall_handle_get_name,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

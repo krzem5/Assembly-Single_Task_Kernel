@@ -629,4 +629,16 @@ static inline u64 _sys_syscall_thread_set_name(u64 thread,const char* name){
 
 
 
+static inline u64 _sys_syscall_fd_lock(u64 fd,u64 handle){
+	return _sys_syscall2(0x10000006b,fd,handle);
+}
+
+
+
+static inline u64 _sys_syscall_handle_get_name(u64 handle,char* buffer,u32 buffer_length){
+	return _sys_syscall3(0x10000006c,handle,(u64)buffer,buffer_length);
+}
+
+
+
 #endif

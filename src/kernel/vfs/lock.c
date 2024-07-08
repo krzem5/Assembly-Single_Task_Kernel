@@ -1,9 +1,11 @@
 #include <kernel/lock/rwlock.h>
+#include <kernel/log/log.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/process_group.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
+#define KERNEL_LOG_NAME "vfs_lock"
 
 
 
@@ -14,13 +16,13 @@ static bool _check_process_group(vfs_node_t* node,process_group_t* process_group
 
 
 static bool _check_process(vfs_node_t* node,process_t* process){
-	return (node->io_lock.type==VFS_NODE_LOCK_TYPE_NONE||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS_GROUP&&node->io_lock.handle==process->process_group->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS&&node->io_lock.handle==process->handle.rb_node.key));
+	return (node->io_lock.type==VFS_NODE_LOCK_TYPE_NONE||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS_GROUP&&node->io_lock.handle==process->process_group->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS&&node->io_lock.handle==process->handle.rb_node.key)||process==process_kernel);
 }
 
 
 
 static bool _check_thread(vfs_node_t* node,thread_t* thread){
-	return (node->io_lock.type==VFS_NODE_LOCK_TYPE_NONE||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS_GROUP&&node->io_lock.handle==thread->process->process_group->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS&&node->io_lock.handle==thread->process->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_THREAD&&node->io_lock.handle==thread->handle.rb_node.key));
+	return (node->io_lock.type==VFS_NODE_LOCK_TYPE_NONE||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS_GROUP&&node->io_lock.handle==thread->process->process_group->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_PROCESS&&node->io_lock.handle==thread->process->handle.rb_node.key)||(node->io_lock.type==VFS_NODE_LOCK_TYPE_THREAD&&node->io_lock.handle==thread->handle.rb_node.key)||thread->process==process_kernel);
 }
 
 

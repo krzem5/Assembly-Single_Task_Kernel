@@ -66,6 +66,7 @@ typedef struct _FD_STAT{
 	u64 time_birth;
 	u32 gid;
 	u32 uid;
+	u64 lock_handle;
 	char name[256];
 } fd_stat_t;
 

@@ -1,5 +1,6 @@
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
+#include <sys/handle/handle.h>
 #include <sys/syscall/kernel_syscalls.h>
 #include <sys/types.h>
 
@@ -73,6 +74,18 @@ SYS_PUBLIC sys_error_t sys_fd_path(sys_fd_t fd,char* path,u32 size){
 
 SYS_PUBLIC sys_error_t sys_fd_stream(sys_fd_t src_fd,const sys_fd_t* dst_fds,u32 dst_fd_count,u64 length){
 	return _sys_syscall_fd_stream(src_fd,dst_fds,dst_fd_count,length);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_fd_lock(sys_fd_t fd,sys_handle_t handle){
+	return _sys_syscall_fd_lock(fd,handle);
+}
+
+
+
+SYS_PUBLIC sys_error_t sys_fd_unlock(sys_fd_t fd){
+	return _sys_syscall_fd_lock(fd,0);
 }
 
 

@@ -16,6 +16,7 @@
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
+#include <kernel/vfs/lock.h>
 #include <kernel/vfs/node.h>
 #include <kernel/vfs/permissions.h>
 #include <kernel/vfs/vfs.h>
@@ -246,6 +247,11 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 coun
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	mutex_acquire(data->lock);
+	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
+		mutex_release(data->lock);
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
 	count=vfs_node_read(data->node,data->offset,(void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	mutex_release(data->lock);
@@ -276,6 +282,11 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
 	mutex_acquire(data->lock);
+	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
+		mutex_release(data->lock);
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
 	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|VFS_NODE_FLAG_GROW);
 	data->offset+=count;
 	mutex_release(data->lock);
@@ -330,6 +341,11 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 		return ERROR_DENIED;
 	}
 	mutex_acquire(data->lock);
+	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
+		mutex_release(data->lock);
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
 	error_t out=(vfs_node_resize(data->node,size,0)||!size?0:ERROR_NO_SPACE);
 	if (!out&&data->offset>size){
 		data->offset=size;
@@ -370,6 +386,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 	out->time_birth=data->node->time_birth;
 	out->gid=data->node->gid;
 	out->uid=data->node->uid;
+	out->lock_handle=data->node->io_lock.handle;
 	mem_copy((char*)(out->name),data->node->name->data,data->node->name->length+1);
 	mutex_release(data->lock);
 	handle_release(fd_handle);
@@ -553,6 +570,25 @@ _cleanup:
 	}
 	amm_dealloc(dst_fd_data);
 	handle_release(src_fd_handle);
+	return out;
+}
+
+
+
+error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
+	mutex_acquire(data->lock);
+	error_t out=(vfs_lock_lock_thread(data->node,THREAD_DATA->header.current_thread,handle)?ERROR_OK:ERROR_DENIED);
+	mutex_release(data->lock);
+	handle_release(fd_handle);
 	return out;
 }
 

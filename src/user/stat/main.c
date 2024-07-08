@@ -4,6 +4,7 @@
 #include <sys/id/group.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
+#include <sys/string/string.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
 
@@ -20,13 +21,35 @@ static const char* _stat_type_names[]={
 
 
 
+static const char* _get_lock_type(sys_handle_t handle){
+	if (!handle){
+		return "none";
+	}
+	char buffer[256];
+	if (SYS_IS_ERROR(sys_handle_get_name(handle,buffer,sizeof(buffer)))){
+		return "<unknown>";
+	}
+	if (!sys_string_compare(buffer,"kernel.thread")){
+		return "thread";
+	}
+	if (!sys_string_compare(buffer,"kernel.process")){
+		return "process";
+	}
+	if (!sys_string_compare(buffer,"kernel.process.group")){
+		return "process_group";
+	}
+	return "???";
+}
+
+
+
 int main(int argc,const char** argv){
 	u64 i=sys_options_parse(argc,argv,NULL);
 	if (!i){
 		return 1;
 	}
 	for (;i<argc;i++){
-		sys_fd_t fd=sys_fd_open(0,argv[i],SYS_FD_FLAG_IGNORE_LINKS|SYS_FD_FLAG_READ);
+		sys_fd_t fd=sys_fd_open(0,argv[i],/*SYS_FD_FLAG_IGNORE_LINKS|*/SYS_FD_FLAG_READ);
 		if (SYS_IS_ERROR(fd)){
 			sys_io_print("stat: unable to open file '%s': error %d\n",argv[i],fd);
 			return 1;
@@ -44,7 +67,7 @@ int main(int argc,const char** argv){
 		sys_uid_get_name(stat.uid,uid_name_buffer,256);
 		char gid_name_buffer[256]="???";
 		sys_gid_get_name(stat.gid,gid_name_buffer,256);
-		sys_io_print("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v\x1b[0m (\x1b[1m%lu B\x1b[0m)\nUid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\x1b[0m\nGid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\nAccess: \x1b[1m%t\x1b[0m\nModify: \x1b[1m%t\x1b[0m\nChange: \x1b[1m%t\x1b[0m\nBirth: \x1b[1m",
+		sys_io_print("\nType: \x1b[1m%s\x1b[0m\nFlags:\x1b[1m%s\x1b[0m\nPermissions: \x1b[1m%c%c%c%c%c%c%c%c%c\x1b[0m\nSize: \x1b[1m%v\x1b[0m (\x1b[1m%lu B\x1b[0m)\nUid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\x1b[0m\nGid: \x1b[1m%s\x1b[0m (\x1b[1m%u\x1b[0m)\nLock: \x1b[1m%s\x1b[0m (\x1b[1m%p\x1b[0m)\nAccess: \x1b[1m%t\x1b[0m\nModify: \x1b[1m%t\x1b[0m\nChange: \x1b[1m%t\x1b[0m\nBirth: \x1b[1m",
 			_stat_type_names[stat.type],
 			((stat.flags&SYS_FD_STAT_FLAG_VIRTUAL)?" virtual":""),
 			((stat.permissions&SYS_FD_PERMISSION_ROOT_READ)?'r':'-'),
@@ -62,6 +85,8 @@ int main(int argc,const char** argv){
 			stat.uid,
 			gid_name_buffer,
 			stat.gid,
+			_get_lock_type(stat.lock_handle),
+			stat.lock_handle,
 			stat.time_access,
 			stat.time_modify,
 			stat.time_change

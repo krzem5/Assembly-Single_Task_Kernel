@@ -1,12 +1,16 @@
 #include <kernel/acl/acl.h>
+#include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/memory/smm.h>
+#include <kernel/syscall/syscall.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
+#include <kernel/util/memory.h>
 #include <kernel/util/spinloop.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "handle"
@@ -153,4 +157,22 @@ KERNEL_PUBLIC handle_t* handle_iter_next(handle_descriptor_t* handle_descriptor,
 	}
 	rwlock_release_read(&(handle_descriptor->lock));
 	return out;
+}
+
+
+
+error_t syscall_handle_get_name(handle_id_t handle,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
+	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
+		return ERROR_INVALID_ARGUMENT(1);
+	}
+	handle_descriptor_t* handle_descriptor=handle_get_descriptor(HANDLE_ID_GET_TYPE(handle));
+	if (!handle_descriptor){
+		return ERROR_NOT_FOUND;
+	}
+	u32 length=smm_length(handle_descriptor->name)+1;
+	if (buffer_length<length){
+		return ERROR_NO_SPACE;
+	}
+	mem_copy((char*)buffer,handle_descriptor->name,length);
+	return ERROR_OK;
 }
