@@ -24,11 +24,15 @@ bool vfs_lock_verify_thread(vfs_node_t* node,thread_t* thread);
 
 
 
-void vfs_lock_lock(vfs_node_t* node,u32 type,handle_id_t handle);
+bool vfs_lock_lock_process_group(vfs_node_t* node,process_group_t* process_group,handle_id_t handle);
 
 
 
-void vfs_lock_unlock(vfs_node_t* node,u32 type);
+bool vfs_lock_lock_process(vfs_node_t* node,process_t* process,handle_id_t handle);
+
+
+
+bool vfs_lock_lock_thread(vfs_node_t* node,thread_t* thread,handle_id_t handle);
 
 
 
