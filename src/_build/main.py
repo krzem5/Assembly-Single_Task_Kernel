@@ -314,13 +314,7 @@ def _kvm_flags():
 
 
 
-ARC_FLAG_ON_TREE=0x01
-ARC_FLAG_FAKE=0x02
-ARC_FLAG_FALLTHROUGH=0x04
-ARC_FLAG_TRUE=0x08
-ARC_FLAG_FALSE=0x10
-ARC_FLAG_NORETURN=0x20
-ARC_FLAG_UNCONDITIONAL=0x40
+ARC_FLAG_ON_TREE=0x0
 
 
 
@@ -353,8 +347,6 @@ class CoverageFunction(object):
 class CoverageFunctionBlock(object):
 	def __init__(self):
 		self.id=0
-		self.is_call_site=False
-		self.is_call_return=False
 		self.lines={}
 		self.prev=[]
 		self.next=[]
@@ -434,12 +426,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 							function.blocks[src].index=src
 							for i in range(0,(length//4-1)//2):
 								dst,flags=struct.unpack("II",gcno_rf.read(8))
-								flags&=ARC_FLAG_ON_TREE|ARC_FLAG_FAKE|ARC_FLAG_FALLTHROUGH|ARC_FLAG_TRUE|ARC_FLAG_FALSE
-								if (flags&ARC_FLAG_FAKE):
-									if (not src):
-										raise RuntimeError("setjmp is unimplemented")
-									function.blocks[src].is_call_site=True
-									flags|=ARC_FLAG_NORETURN
 								if (not (flags&ARC_FLAG_ON_TREE)):
 									function.counters.append(0)
 								arc=CoverageFunctionBlockArc(src,dst,flags)
@@ -481,10 +467,7 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			for block in function.blocks:
 				prev_dst=0
 				is_out_of_order=False
-				non_fake_next_count=0
 				for arc in block.next:
-					if (not (arc.flags&ARC_FLAG_FAKE)):
-						non_fake_next_count+=1
 					if (not (arc.flags&ARC_FLAG_ON_TREE)):
 						arc.count=function.counters[counter_index]
 						counter_index+=1
@@ -493,13 +476,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					if (prev_dst>arc.dst):
 						is_out_of_order=True
 					prev_dst=arc.dst
-				if (non_fake_next_count==1):
-					for i,arc in enumerate(block.next):
-						if (arc.flags&ARC_FLAG_FAKE):
-							continue
-						arc.flags|=ARC_FLAG_UNCONDITIONAL
-						if (block.is_call_site and (arc.flags&ARC_FLAG_FALLTHROUGH) and len(function.blocks[arc.dst].prev)==1):
-							function.blocks[arc.dst].is_call_return=True
 				if (is_out_of_order):
 					block.next=sorted(block.next,key=lambda arc:arc.dst)
 				invalid_chain.append(block)
