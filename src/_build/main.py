@@ -622,44 +622,42 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 	# 		for line,count in lines.items():
 	# 			wf.write(f"DA:{line},{count}\n")
 	with open(output_file_path,"w") as wf:
-		wf.write(subprocess.run(["gcov-12","-a","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8"))
-	# with open(output_file_path,"w") as wf:
-	# 	wf.write("TN:\n")
-	# 	current_src=None
-	# 	current_fn=None
-	# 	function_stats=None
-	# 	for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-	# 		line=line.strip().split(":")
-	# 		if (len(line)<2):
-	# 			if (line[0].startswith("function ")):
-	# 				name,count=line[0][9:].split(" called ")
-	# 				function_stats=(name.strip(),int(count.split(" ")[0].strip()))
-	# 			continue
-	# 		code_line=line[1].strip()
-	# 		if ("%" in code_line):
-	# 			continue
-	# 		if (not code_line or code_line=="0"):
-	# 			if (len(line)<4):
-	# 				continue
-	# 			if (line[2]=="Source"):
-	# 				wf.write(f"SF:{line[3]}\n")
-	# 				current_src=line[3]
-	# 			continue
-	# 		code_line=int(code_line)
-	# 		type_=line[0].strip()
-	# 		if (function_stats):
-	# 			name,_=function_stats
-	# 			function_stats=None
-	# 			wf.write(f"FN:{code_line},{name}\n")
-	# 			current_fn=source_files[current_src].functions[name]
-	# 			if (current_fn.start_line!=code_line):
-	# 				raise RuntimeError
-	# 		if (line[0].isdigit()):
-	# 			wf.write(f"DA:{code_line},{line[0]}\n")
-	# 			# if (out[current_src][code_line]!=int(line[0])):
-	# 			# 	print(current_src,code_line,current_fn.name,out[current_src][code_line],int(line[0]))
-	# 		elif (line[0]=="#####"):
-	# 			wf.write(f"DA:{code_line},0\n")
+		wf.write("TN:\n")
+		current_src=None
+		current_fn=None
+		function_stats=None
+		for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+			line=line.strip().split(":")
+			if (len(line)<2):
+				if (line[0].startswith("function ")):
+					name,count=line[0][9:].split(" called ")
+					function_stats=(name.strip(),int(count.split(" ")[0].strip()))
+				continue
+			code_line=line[1].strip()
+			if ("%" in code_line):
+				continue
+			if (not code_line or code_line=="0"):
+				if (len(line)<4):
+					continue
+				if (line[2]=="Source"):
+					wf.write(f"SF:{line[3]}\n")
+					current_src=line[3]
+				continue
+			code_line=int(code_line)
+			type_=line[0].strip()
+			if (function_stats):
+				name,_=function_stats
+				function_stats=None
+				wf.write(f"FN:{code_line},{name}\n")
+				current_fn=source_files[current_src].functions[name]
+				if (current_fn.start_line!=code_line):
+					raise RuntimeError
+			if (line[0].isdigit()):
+				wf.write(f"DA:{code_line},{line[0]}\n")
+				# if (out[current_src][code_line]!=int(line[0])):
+				# 	print(current_src,code_line,current_fn.name,out[current_src][code_line],int(line[0]))
+			elif (line[0]=="#####"):
+				wf.write(f"DA:{code_line},0\n")
 
 
 
