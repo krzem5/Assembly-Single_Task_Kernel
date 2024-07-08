@@ -767,12 +767,12 @@ def _execute_vm():
 	if (os.path.exists("/tmp/tpm/swtpm.sock")):
 		os.remove("/tmp/tpm/swtpm.sock")
 	if (mode==MODE_COVERAGE):
-		_generate_coverage_report("build/raw_coverage","build/coverage.gcov")
+		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")
 
 
 
-# _generate_coverage_report("build/raw_coverage","build/coverage.gcov");quit()#####################
+# _generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#####################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
