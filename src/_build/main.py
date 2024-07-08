@@ -148,7 +148,7 @@ def _get_kernel_build_name():
 
 
 
-def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory="common",name="<null>",dependencies=None,dependencies_are_libraries=False):
+def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory,name,dependencies,dependencies_are_libraries):
 	if (dependencies is None):
 		dependencies=option(config_prefix+".dependencies")
 	included_directories=[f"-Isrc/{tag.name.replace('$NAME',name)}/include" for tag in option(config_prefix+".includes").iter()]+[f"-Isrc/{(tag.data if not dependencies_are_libraries and tag.data else default_dependency_directory)}/{tag.name}/include" for tag in dependencies.iter()]
@@ -192,24 +192,24 @@ def _compile():
 	changed_files,file_hash_list=_load_changed_files(option("hash_file_path."+MODE_NAME),"src")
 	pool=process_pool.ProcessPool(file_hash_list)
 	out={"efi":False,"data":False}
-	out["efi"]|=_compile_stage("uefi",pool,changed_files)
-	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files)
+	out["efi"]|=_compile_stage("uefi",pool,changed_files,"common","uefi",None,False)
+	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files,"common","kernel",None,False)
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,default_dependency_directory="module",name=tag.name,dependencies=tag)
+		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,"module",tag.name,tag,False)
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		_generate_header_files(f"src/lib/{tag.name}")
-		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
 	for tag in config.parse("src/user/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
-		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,default_dependency_directory="lib",name=tag.name,dependencies=tag,dependencies_are_libraries=True)
+		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
 	for tag in config.parse("src/tool/dependencies.config").iter():
-		out["data"]|=_compile_stage("tool_"+MODE_NAME,pool,changed_files,name=tag.name,dependencies=tag)
+		out["data"]|=_compile_stage("tool_"+MODE_NAME,pool,changed_files,"common",tag.name,tag,False)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option("hash_file_path."+MODE_NAME))
 	if (error):
@@ -314,11 +314,72 @@ def _kvm_flags():
 
 
 
+ARC_FLAG_ON_TREE=0x01
+ARC_FLAG_FAKE=0x02
+ARC_FLAG_FALLTHROUGH=0x04
+ARC_FLAG_TRUE=0x08
+ARC_FLAG_FALSE=0x10
+ARC_FLAG_NORETURN=0x20
+ARC_FLAG_UNCONDITIONAL=0x40
+
+
+
+class SourceFile(object):
+	def __init__(self,name):
+		self.name=name
+		self.functions={}
+
+
+
+class CoverageFile(object):
+	def __init__(self,name):
+		self.name=name
+		self.functions={}
+
+
+
+class CoverageFunction(object):
+	def __init__(self,lineno_checksum,cfg_checksum,name,src,start_line):
+		self.lineno_checksum=lineno_checksum
+		self.cfg_checksum=cfg_checksum
+		self.name=name
+		self.src=src
+		self.start_line=start_line
+		self.blocks=None
+		self.counters=[]
+
+
+
+class CoverageFunctionBlock(object):
+	def __init__(self):
+		self.id=0
+		self.is_call_site=False
+		self.is_call_return=False
+		self.lines={}
+		self.prev=[]
+		self.next=[]
+		self.prev_count=0
+		self.next_count=0
+		self.count=-1
+
+
+
+class CoverageFunctionBlockArc(object):
+	def __init__(self,src,dst,flags):
+		self.src=src
+		self.dst=dst
+		self.flags=flags
+		self.count=-1
+
+
+
 def _generate_coverage_report(vm_output_file_path,output_file_path):
 	for file in _get_files(["build/objects"],suffixes=[".gcda"]):
 		os.remove(file)
 	file_list=set()
 	success=False
+	source_files={}
+	coverage_files={}
 	with open(vm_output_file_path,"rb") as rf:
 		while (True):
 			buffer=rf.read(8)
@@ -334,11 +395,93 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
 			file_list.add(file_name)
-			gcno_file_name=file_name[:-5]+".gcno"
-			stat=os.stat(gcno_file_name)
-			os.utime(gcno_file_name,times=(stat.st_atime,time.time()))
-			with open(gcno_file_name,"rb") as gcno_rf:
+			if (file_name in coverage_files):
+				file=coverage_files[file_name]
+			else:
+				file=CoverageFile(file_name)
+				coverage_files[file_name]=file
+				with open(file_name[:-5]+".gcno","rb") as gcno_rf:
+					gcno_rf.seek(16)
+					gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0]+4)
+					function=None
+					while (True):
+						buffer=gcno_rf.read(8)
+						if (len(buffer)<8):
+							break
+						tag,length=struct.unpack("II",buffer)
+						if (tag==0x01000000):
+							ident,lineno_checksum,cfg_checksum=struct.unpack("III",gcno_rf.read(12))
+							name=gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0]-1).decode("utf-8")
+							gcno_rf.read(5)
+							src=gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0]-1).decode("utf-8")
+							gcno_rf.read(1)
+							start_line=struct.unpack("I",gcno_rf.read(4))[0]
+							gcno_rf.read(12)
+							if (src not in source_files):
+								source_files[src]=SourceFile(src)
+							if (name in source_files[src].functions):
+								fn=source_files[src].functions[name]
+								if (fn.lineno_checksum!=lineno_checksum or fn.cfg_checksum!=cfg_checksum):
+									raise RuntimeError("Duplicated function name")
+								function=None
+								file.functions[ident]=fn
+							else:
+								function=CoverageFunction(lineno_checksum,cfg_checksum,name,src,start_line)
+								source_files[src].functions[name]=function
+								file.functions[ident]=function
+						elif (function is None):
+							gcno_rf.seek(gcno_rf.tell()+length)
+						elif (tag==0x01410000):
+							function.blocks=[CoverageFunctionBlock() for _ in range(0,struct.unpack("I",gcno_rf.read(4))[0])]
+						elif (tag==0x01430000):
+							src=struct.unpack("I",gcno_rf.read(4))[0]
+							function.blocks[src].index=src
+							for i in range(0,(length//4-1)//2):
+								dst,flags=struct.unpack("II",gcno_rf.read(8))
+								flags&=ARC_FLAG_ON_TREE|ARC_FLAG_FAKE|ARC_FLAG_FALLTHROUGH|ARC_FLAG_TRUE|ARC_FLAG_FALSE
+								if (flags&ARC_FLAG_FAKE):
+									if (not src):
+										raise RuntimeError("setjmp is unimplemented")
+									function.blocks[src].is_call_site=True
+									flags|=ARC_FLAG_NORETURN
+								if (not (flags&ARC_FLAG_ON_TREE)):
+									function.counters.append(0)
+								arc=CoverageFunctionBlockArc(src,dst,flags)
+								function.blocks[src].next.append(arc)
+								function.blocks[src].next_count+=1
+								function.blocks[dst].prev.append(arc)
+								function.blocks[dst].prev_count+=1
+						elif (tag==0x01450000):
+							block=function.blocks[struct.unpack("I",gcno_rf.read(4))[0]]
+							current_src=function.src
+							while (current_src):
+								line=struct.unpack("I",gcno_rf.read(4))[0]
+								if (not line):
+									current_src=gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0])[:-1].decode("utf-8")
+									continue
+								if (current_src not in block.lines):
+									block.lines[current_src]=[]
+								block.lines[current_src].append(line)
+						else:
+							raise RuntimeError
+			#######################################
+			_TEMP_RESTART_POINT=rf.tell()
+			os.utime(file_name[:-5]+".gcno",times=(os.stat(file_name[:-5]+".gcno").st_atime,time.time()))
+			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
 				stamp=struct.unpack("III",gcno_rf.read(12))[2]
+			#######################################
+			for i in range(0,struct.unpack("I",rf.read(4))[0]):
+				ident,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
+				function=file.functions[ident]
+				if (function.lineno_checksum!=lineno_checksum or function.cfg_checksum!=cfg_checksum):
+					raise RuntimeError("Duplicated identification number")
+				counters=array.array("Q")
+				counters.frombytes(rf.read(counter_count<<3))
+				for i in range(0,counter_count):
+					function.counters[i]+=counters[i]
+			#######################################
+			rf.seek(_TEMP_RESTART_POINT)
+			#######################################
 			present_data={}
 			if (os.path.exists(file_name)):
 				with open(file_name,"rb") as out_rf:
@@ -347,16 +490,16 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 						buffer=out_rf.read(28)
 						if (not buffer):
 							break
-						_,_,id_,lineno_checksum,cfg_checksum,_,counter_byte_count=struct.unpack("IIIIIII",buffer)
-						present_data[(id_,lineno_checksum,cfg_checksum)]=out_rf.read(counter_byte_count)
+						_,_,ident,lineno_checksum,cfg_checksum,_,counter_byte_count=struct.unpack("IIIIIII",buffer)
+						present_data[(ident,lineno_checksum,cfg_checksum)]=out_rf.read(counter_byte_count)
 			with open(file_name,"wb") as wf:
 				wf.write(b"adcg")
 				wf.write(struct.pack("III",version,stamp,checksum))
 				for i in range(0,struct.unpack("I",rf.read(4))[0]):
-					id_,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
-					wf.write(struct.pack("IIIIIII",0x01000000,12,id_,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
+					ident,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
+					wf.write(struct.pack("IIIIIII",0x01000000,12,ident,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
 					counters=rf.read(counter_count<<3)
-					present_counters=present_data.get((id_,lineno_checksum,cfg_checksum),None)
+					present_counters=present_data.get((ident,lineno_checksum,cfg_checksum),None)
 					if (present_counters is not None):
 						dst=array.array("Q")
 						dst.frombytes(counters)
@@ -368,35 +511,153 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					wf.write(counters)
 	if (not success):
 		sys.exit(1)
+	for file in source_files.values():
+		for function in file.functions.values():
+			function.blocks[0].prev_count=0xffffffff
+			function.blocks[1].next_count=0xffffffff
+			counter_index=0
+			invalid_chain=[]
+			valid_chain=[]
+			for block in function.blocks:
+				prev_dst=0
+				is_out_of_order=False
+				non_fake_next_count=0
+				for arc in block.next:
+					if (not (arc.flags&ARC_FLAG_FAKE)):
+						non_fake_next_count+=1
+					if (not (arc.flags&ARC_FLAG_ON_TREE)):
+						arc.count=function.counters[counter_index]
+						counter_index+=1
+						block.next_count-=1
+						function.blocks[arc.dst].prev_count-=1
+					if (prev_dst>arc.dst):
+						is_out_of_order=True
+					prev_dst=arc.dst
+				if (non_fake_next_count==1):
+					for i,arc in enumerate(block.next):
+						if (arc.flags&ARC_FLAG_FAKE):
+							continue
+						arc.flags|=ARC_FLAG_UNCONDITIONAL
+						if (block.is_call_site and (arc.flags&ARC_FLAG_FALLTHROUGH) and len(function.blocks[arc.dst].prev)==1):
+							function.blocks[arc.dst].is_call_return=True
+				if (is_out_of_order):
+					block.next=sorted(block.next,key=lambda arc:arc.dst)
+				invalid_chain.append(block)
+			while (invalid_chain or valid_chain):
+				if (invalid_chain):
+					block=invalid_chain.pop(0)
+					total=0
+					if (not block.next_count):
+						for arc in block.next:
+							total+=arc.count
+					elif (not block.prev_count):
+						for arc in block.prev:
+							total+=arc.count
+					else:
+						continue
+					block.count=total
+					valid_chain.append(block)
+				if (valid_chain):
+					block=valid_chain.pop(0)
+					if (block.next_count==1):
+						total=block.count
+						inv_arc=None
+						for arc in block.next:
+							if (arc.count==-1):
+								inv_arc=arc
+							else:
+								total-=arc.count
+						inv_arc.count=total
+						block.next_count=0
+						dst_block=function.blocks[inv_arc.dst]
+						dst_block.prev_count-=1
+						if (dst_block.count!=-1):
+							if (dst_block.prev_count==1 and dst_block not in valid_chain):
+								valid_chain.append(dst_block)
+						else:
+							if (not dst_block.prev_count and dst_block not in invalid_chain):
+								invalid_chain.append(dst_block)
+					elif (block.prev_count==1):
+						total=block.count
+						inv_arc=None
+						for arc in block.prev:
+							if (arc.count==-1):
+								inv_arc=arc
+							else:
+								total-=arc.count
+						inv_arc.count=total
+						block.prev_count=0
+						src_block=function.blocks[inv_arc.src]
+						src_block.next_count-=1
+						if (src_block.count!=-1):
+							if (src_block.next_count==1 and src_block not in valid_chain):
+								valid_chain.append(src_block)
+						else:
+							if (not src_block.next_count and src_block not in invalid_chain):
+								invalid_chain.append(src_block)
+			for block in function.blocks:
+				if (block.count==-1):
+					raise RuntimeError("Unsolved graph")
+	out={}
+	for file in source_files.values():
+		for function in file.functions.values():
+			for block in function.blocks:
+				for src,lines in block.lines.items():
+					if (src not in out):
+						out[src]={}
+					for line in lines:
+						# if (function.name=="__einitializer_src_kernel_clock_clock"):
+						# 	print(function.blocks.index(block),src,line,block.count,[e.dst for e in block.next])
+						if (line not in out[src]):
+							out[src][line]=block.count
+						else:
+							out[src][line]+=block.count
 	with open(output_file_path,"w") as wf:
 		wf.write("TN:\n")
-		function_stats=None
-		for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-			line=line.strip().split(":")
-			if (len(line)<2):
-				if (line[0].startswith("function ")):
-					name,count=line[0][9:].split(" called ")
-					function_stats=(name.strip(),int(count.split(" ")[0].strip()))
-				continue
-			code_line=line[1].strip()
-			if ("%" in code_line):
-				continue
-			if (not code_line or code_line=="0"):
-				if (len(line)<4):
-					continue
-				if (line[2]=="Source"):
-					wf.write(f"SF:{line[3]}\n")
-				continue
-			code_line=int(code_line)
-			type_=line[0].strip()
-			if (function_stats):
-				name,_=function_stats
-				function_stats=None
-				wf.write(f"FN:{code_line},{name}\n")
-			if (line[0].isdigit()):
-				wf.write(f"DA:{code_line},{line[0]}\n")
-			elif (line[0]=="#####"):
-				wf.write(f"DA:{code_line},0\n")
+		for src,lines in out.items():
+			wf.write(f"SF:{src}\n")
+			if (src in source_files):
+				for function in source_files[src].functions.values():
+					wf.write(f"FN:{function.start_line},{function.name}\n")
+			for line,count in lines.items():
+				wf.write(f"DA:{line},{count}\n")
+	# with open(output_file_path,"w") as wf:
+	# 	wf.write("TN:\n")
+	# 	current_src=None
+	# 	current_fn=None
+	# 	function_stats=None
+	# 	for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
+	# 		line=line.strip().split(":")
+	# 		if (len(line)<2):
+	# 			if (line[0].startswith("function ")):
+	# 				name,count=line[0][9:].split(" called ")
+	# 				function_stats=(name.strip(),int(count.split(" ")[0].strip()))
+	# 			continue
+	# 		code_line=line[1].strip()
+	# 		if ("%" in code_line):
+	# 			continue
+	# 		if (not code_line or code_line=="0"):
+	# 			if (len(line)<4):
+	# 				continue
+	# 			if (line[2]=="Source"):
+	# 				wf.write(f"SF:{line[3]}\n")
+	# 				current_src=line[3]
+	# 			continue
+	# 		code_line=int(code_line)
+	# 		type_=line[0].strip()
+	# 		if (function_stats):
+	# 			name,_=function_stats
+	# 			function_stats=None
+	# 			wf.write(f"FN:{code_line},{name}\n")
+	# 			current_fn=source_files[current_src].functions[name]
+	# 			if (current_fn.start_line!=code_line):
+	# 				raise RuntimeError
+	# 		if (line[0].isdigit()):
+	# 			wf.write(f"DA:{code_line},{line[0]}\n")
+	# 			# if (out[current_src][code_line]!=int(line[0])):
+	# 			# 	print(current_src,code_line,current_fn.name,out[current_src][code_line],int(line[0]))
+	# 		elif (line[0]=="#####"):
+	# 			wf.write(f"DA:{code_line},0\n")
 
 
 
@@ -511,6 +772,7 @@ def _execute_vm():
 
 
 
+# _generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#####################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
