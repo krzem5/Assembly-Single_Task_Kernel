@@ -416,6 +416,7 @@ def _execute_vm():
 	if (os.path.exists("/tmp/tpm/swtpm.sock")):
 		os.remove("/tmp/tpm/swtpm.sock")
 	if (mode==MODE_COVERAGE):
+		coverage.copy_gcno_files()
 		coverage.generate("build/raw_coverage","build/coverage.lcov")
 		os.remove("build/raw_coverage")
 

@@ -1,4 +1,5 @@
 import array
+import os
 import struct
 
 
@@ -61,6 +62,30 @@ def __builtin_ffsll(x):
 
 
 
+def copy_gcno_files():
+	with open("build/share/coverage_notes","wb") as wf:
+		for root,_,files in os.walk("build/objects"):
+			for file in files:
+				if (not file.endswith(".gcno")):
+					continue
+				file=os.path.join(root,file)
+				path=(file[:-5]+".gcda").encode("utf-8")
+				wf.write(struct.pack("<B",len(path))+path)
+				with open(file,"rb") as rf:
+					rf.read(struct.unpack("16xI",rf.read(20))[0]+4)
+					tags=[]
+					while (True):
+						buffer=rf.read(8)
+						if (len(buffer)<8):
+							break
+						tag,length=struct.unpack("II",buffer)
+						data=rf.read(length)
+						if (tag==0x01000000 or tag==0x01410000 or tag==0x01430000 or tag==0x01450000):
+							wf.write(buffer+data)
+					wf.write(b"\x00\x00\x00\x00")
+
+
+
 def generate(vm_output_file_path,output_file_path):
 	success=False
 	source_files={}
@@ -85,8 +110,7 @@ def generate(vm_output_file_path,output_file_path):
 				file=CoverageFile(file_name)
 				coverage_files[file_name]=file
 				with open(file_name[:-5]+".gcno","rb") as gcno_rf:
-					gcno_rf.seek(16)
-					gcno_rf.read(struct.unpack("I",gcno_rf.read(4))[0]+4)
+					gcno_rf.read(struct.unpack("16xI",gcno_rf.read(20))[0]+4)
 					function=None
 					while (True):
 						buffer=gcno_rf.read(8)
