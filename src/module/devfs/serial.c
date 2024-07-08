@@ -57,8 +57,8 @@ MODULE_POSTINIT(){
 		format_string(buffer,8,"ser%u",i);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		vfs_node_unref(dynamicfs_create_data_node(node,"id","%u",i));
-		_create_pipe(node,i,"in",_stdin_callback,port)->flags|=0444<<VFS_NODE_PERMISSION_SHIFT;
-		_create_pipe(node,i,"out",_stdout_callback,port)->flags|=0222<<VFS_NODE_PERMISSION_SHIFT;
+		_create_pipe(node,i,"in",_stdin_callback,port)->flags|=0400<<VFS_NODE_PERMISSION_SHIFT;
+		_create_pipe(node,i,"out",_stdout_callback,port)->flags|=0200<<VFS_NODE_PERMISSION_SHIFT;
 		vfs_node_unref(node);
 		vfs_node_unref(dynamicfs_create_link_node(devfs->root,buffer,"serial/%s",buffer));
 	}
