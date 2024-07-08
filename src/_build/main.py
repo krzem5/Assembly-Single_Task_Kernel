@@ -140,7 +140,7 @@ def _generate_header_files(directory):
 
 def _get_kernel_build_name():
 	root=config.parse("src/config/version.config")
-	return "x86_64."+MODE_NAME+f"/{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-"+os.environ.get("GITHUB_SHA","local")[:7]
+	return "x86_64 "+MODE_NAME+f", v{next(root.find('major')).data}.{next(root.find('minor')).data}.{next(root.find('patch')).data}-{next(root.find('tag')).data}/"+os.environ.get("GITHUB_SHA","local")[:7]
 
 
 

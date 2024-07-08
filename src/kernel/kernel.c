@@ -29,7 +29,7 @@ static void _unmap_section(u64 start,u64 end){
 
 
 static volatile const u64 KERNEL_INIT_WRITE __kernel_version=0;
-static volatile const char KERNEL_INIT_WRITE __kernel_build_name[32]="";
+static volatile const char KERNEL_INIT_WRITE __kernel_build_name[64]="";
 
 static u8 KERNEL_INIT_WRITE _kernel_boot_uuid[16];
 

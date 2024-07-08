@@ -309,7 +309,7 @@ def _generate_build_info(ctx,build_version,build_name):
 	ctx.out[address:address+8]=struct.pack("<Q",build_version)
 	symbol=ctx.symbol_table.symbols_by_name["__kernel_build_name"]
 	address=symbol.section.address-KERNEL_START_ADDRESS+symbol.value
-	ctx.out[address:address+32]=build_name.encode("utf-8").ljust(32,b"\x00")
+	ctx.out[address:address+64]=build_name.encode("utf-8").ljust(64,b"\x00")
 
 
 
