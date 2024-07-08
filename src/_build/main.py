@@ -374,9 +374,6 @@ class CoverageFunctionBlockArc(object):
 
 
 def _generate_coverage_report(vm_output_file_path,output_file_path):
-	for file in _get_files(["build/objects"],suffixes=[".gcda"]):
-		os.remove(file)
-	file_list=set()
 	success=False
 	source_files={}
 	coverage_files={}
@@ -394,7 +391,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				continue
 			version,checksum,file_name_length=struct.unpack("III",rf.read(12))
 			file_name=rf.read(file_name_length).decode("utf-8")
-			file_list.add(file_name)
 			if (file_name in coverage_files):
 				file=coverage_files[file_name]
 			else:
@@ -464,12 +460,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 								block.lines[current_src].append(line)
 						else:
 							raise RuntimeError
-			#######################################
-			_TEMP_RESTART_POINT=rf.tell()
-			os.utime(file_name[:-5]+".gcno",times=(os.stat(file_name[:-5]+".gcno").st_atime,time.time()))
-			with open(file_name[:-5]+".gcno","rb") as gcno_rf:
-				stamp=struct.unpack("III",gcno_rf.read(12))[2]
-			#######################################
 			for i in range(0,struct.unpack("I",rf.read(4))[0]):
 				ident,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
 				function=file.functions[ident]
@@ -479,36 +469,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 				counters.frombytes(rf.read(counter_count<<3))
 				for i in range(0,counter_count):
 					function.counters[i]+=counters[i]
-			#######################################
-			rf.seek(_TEMP_RESTART_POINT)
-			#######################################
-			present_data={}
-			if (os.path.exists(file_name)):
-				with open(file_name,"rb") as out_rf:
-					out_rf.read(16)
-					while (True):
-						buffer=out_rf.read(28)
-						if (not buffer):
-							break
-						_,_,ident,lineno_checksum,cfg_checksum,_,counter_byte_count=struct.unpack("IIIIIII",buffer)
-						present_data[(ident,lineno_checksum,cfg_checksum)]=out_rf.read(counter_byte_count)
-			with open(file_name,"wb") as wf:
-				wf.write(b"adcg")
-				wf.write(struct.pack("III",version,stamp,checksum))
-				for i in range(0,struct.unpack("I",rf.read(4))[0]):
-					ident,lineno_checksum,cfg_checksum,counter_count=struct.unpack("IIII",rf.read(16))
-					wf.write(struct.pack("IIIIIII",0x01000000,12,ident,lineno_checksum,cfg_checksum,0x01a10000,counter_count<<3))
-					counters=rf.read(counter_count<<3)
-					present_counters=present_data.get((ident,lineno_checksum,cfg_checksum),None)
-					if (present_counters is not None):
-						dst=array.array("Q")
-						dst.frombytes(counters)
-						src=array.array("Q")
-						src.frombytes(present_counters)
-						for i in range(0,counter_count):
-							dst[i]+=src[i]
-						counters=dst.tobytes()
-					wf.write(counters)
 	if (not success):
 		sys.exit(1)
 	for file in source_files.values():
@@ -606,8 +566,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					if (src not in out):
 						out[src]={}
 					for line in lines:
-						# if (function.name=="__einitializer_src_kernel_clock_clock"):
-						# 	print(function.blocks.index(block),src,line,block.count,[e.dst for e in block.next])
 						if (line not in out[src]):
 							out[src][line]=block.count
 						else:
@@ -621,43 +579,6 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					wf.write(f"FN:{function.start_line},{function.name}\n")
 			for line,count in lines.items():
 				wf.write(f"DA:{line},{count}\n")
-	# with open(output_file_path,"w") as wf:
-	# 	wf.write("TN:\n")
-	# 	current_src=None
-	# 	current_fn=None
-	# 	function_stats=None
-	# 	for line in subprocess.run(["gcov-12","-b","-t"]+list(file_list),stdout=subprocess.PIPE).stdout.decode("utf-8").split("\n"):
-	# 		line=line.strip().split(":")
-	# 		if (len(line)<2):
-	# 			if (line[0].startswith("function ")):
-	# 				name,count=line[0][9:].split(" called ")
-	# 				function_stats=(name.strip(),int(count.split(" ")[0].strip()))
-	# 			continue
-	# 		code_line=line[1].strip()
-	# 		if ("%" in code_line):
-	# 			continue
-	# 		if (not code_line or code_line=="0"):
-	# 			if (len(line)<4):
-	# 				continue
-	# 			if (line[2]=="Source"):
-	# 				wf.write(f"SF:{line[3]}\n")
-	# 				current_src=line[3]
-	# 			continue
-	# 		code_line=int(code_line)
-	# 		type_=line[0].strip()
-	# 		if (function_stats):
-	# 			name,_=function_stats
-	# 			function_stats=None
-	# 			wf.write(f"FN:{code_line},{name}\n")
-	# 			current_fn=source_files[current_src].functions[name]
-	# 			if (current_fn.start_line!=code_line):
-	# 				raise RuntimeError
-	# 		if (line[0].isdigit()):
-	# 			wf.write(f"DA:{code_line},{line[0]}\n")
-	# 			# if (out[current_src][code_line]!=int(line[0])):
-	# 			# 	print(current_src,code_line,current_fn.name,out[current_src][code_line],int(line[0]))
-	# 		elif (line[0]=="#####"):
-	# 			wf.write(f"DA:{code_line},0\n")
 
 
 
@@ -772,7 +693,6 @@ def _execute_vm():
 
 
 
-# _generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#####################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
