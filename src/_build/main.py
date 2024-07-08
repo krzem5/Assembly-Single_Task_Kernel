@@ -364,6 +364,11 @@ class CoverageFunctionBlockArc(object):
 
 
 
+def __builtin_ffsll(x):
+	return (x&-x).bit_length()
+
+
+
 def _generate_coverage_report(vm_output_file_path,output_file_path):
 	success=False
 	source_files={}
@@ -461,26 +466,31 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 			function.blocks[0].prev_count=0xffffffff
 			function.blocks[1].next_count=0xffffffff
 			counter_index=0
-			invalid_chain=[]
-			valid_chain=[]
-			for block in function.blocks:
-				# prev_dst=0
-				# is_out_of_order=False
-				for arc in block.next:
-					if (not (arc.flags&ARC_FLAG_ON_TREE)):
-						arc.count=function.counters[counter_index]
-						counter_index+=1
-						block.next_count-=1
-						function.blocks[arc.dst].prev_count-=1
-				# 	if (prev_dst>arc.dst):
-				# 		is_out_of_order=True
-				# 	prev_dst=arc.dst
-				# if (is_out_of_order):
-				# 	block.next=sorted(block.next,key=lambda arc:arc.dst)
-				invalid_chain.append(block)
-			while (invalid_chain or valid_chain):
-				if (invalid_chain):
-					block=invalid_chain.pop(0)
+			LENGTH=(len(function.blocks)+63)>>6
+			unsolved_blocks=[0 for _ in range(0,LENGTH)]
+			solved_blocks=[0 for _ in range(0,LENGTH)]
+			remaining_blocks=len(function.blocks)
+			for src in range(0,len(function.blocks)):
+				unsolved_blocks[src>>6]|=1<<(src&63)
+				for arc in function.blocks[src].next:
+					if (arc.flags&ARC_FLAG_ON_TREE):
+						continue
+					arc.count=function.counters[counter_index]
+					counter_index+=1
+					function.blocks[src].next_count-=1
+					function.blocks[arc.dst].prev_count-=1
+			has_processed_input=True
+			while (has_processed_input):
+				has_processed_input=False
+				i=0
+				while (i<LENGTH):
+					if (not unsolved_blocks[i]):
+						i+=1
+						continue
+					has_processed_input=True
+					j=(i<<6)|(__builtin_ffsll(unsolved_blocks[i])-1)
+					unsolved_blocks[i]&=unsolved_blocks[i]-1
+					block=function.blocks[j]
 					total=0
 					if (not block.next_count):
 						for arc in block.next:
@@ -491,9 +501,16 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 					else:
 						continue
 					block.count=total
-					valid_chain.append(block)
-				if (valid_chain):
-					block=valid_chain.pop(0)
+					solved_blocks[i]|=1<<(j&63)
+				i=0
+				while (i<LENGTH):
+					if (not solved_blocks[i]):
+						i+=1
+						continue
+					has_processed_input=True
+					j=(i<<6)|(__builtin_ffsll(solved_blocks[i])-1)
+					solved_blocks[i]&=solved_blocks[i]-1
+					block=function.blocks[j]
 					if (block.next_count==1):
 						total=block.count
 						inv_arc=None
@@ -506,12 +523,10 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 						block.next_count=0
 						dst_block=function.blocks[inv_arc.dst]
 						dst_block.prev_count-=1
-						if (dst_block.count!=-1):
-							if (dst_block.prev_count==1 and dst_block not in valid_chain):
-								valid_chain.append(dst_block)
-						else:
-							if (not dst_block.prev_count and dst_block not in invalid_chain):
-								invalid_chain.append(dst_block)
+						if (dst_block.count!=-1 and dst_block.prev_count==1):
+							solved_blocks[inv_arc.dst>>6]|=1<<(inv_arc.dst&63)
+						elif (dst_block.count==-1 and not dst_block.prev_count):
+							unsolved_blocks[inv_arc.dst>>6]|=1<<(inv_arc.dst&63)
 					elif (block.prev_count==1):
 						total=block.count
 						inv_arc=None
@@ -524,12 +539,10 @@ def _generate_coverage_report(vm_output_file_path,output_file_path):
 						block.prev_count=0
 						src_block=function.blocks[inv_arc.src]
 						src_block.next_count-=1
-						if (src_block.count!=-1):
-							if (src_block.next_count==1 and src_block not in valid_chain):
-								valid_chain.append(src_block)
-						else:
-							if (not src_block.next_count and src_block not in invalid_chain):
-								invalid_chain.append(src_block)
+						if (src_block.count!=-1 and src_block.next_count==1):
+							solved_blocks[inv_arc.src>>6]|=1<<(inv_arc.src&63)
+						elif (src_block.count==-1 and not src_block.next_count):
+							unsolved_blocks[inv_arc.src>>6]|=1<<(inv_arc.src&63)
 			for block in function.blocks:
 				if (block.count==-1):
 					raise RuntimeError("Unsolved graph")
@@ -664,10 +677,11 @@ def _execute_vm():
 		os.remove("/tmp/tpm/swtpm.sock")
 	if (mode==MODE_COVERAGE):
 		_generate_coverage_report("build/raw_coverage","build/coverage.lcov")
-		os.remove("build/raw_coverage")
+		# os.remove("build/raw_coverage")
 
 
 
+_generate_coverage_report("build/raw_coverage","build/coverage.lcov");quit()#############################
 empty_directories=option("build_directories.empty").data[:]
 if (os.path.exists("build/last_mode")):
 	with open("build/last_mode","r") as rf:
