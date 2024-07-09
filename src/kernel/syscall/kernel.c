@@ -50,6 +50,11 @@ extern u64 syscall_memory_change_flags();
 extern u64 syscall_memory_get_size();
 extern u64 syscall_memory_map();
 extern u64 syscall_memory_unmap();
+extern u64 syscall_mutex_acquire();
+extern u64 syscall_mutex_create();
+extern u64 syscall_mutex_delete();
+extern u64 syscall_mutex_get_owner();
+extern u64 syscall_mutex_release();
 extern u64 syscall_partition_get_data();
 extern u64 syscall_partition_get_next();
 extern u64 syscall_partition_table_descriptor_format();
@@ -219,5 +224,10 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[106]=syscall_thread_set_name,
 	[107]=syscall_fd_lock,
 	[108]=syscall_handle_get_name,
+	[109]=syscall_mutex_create,
+	[110]=syscall_mutex_delete,
+	[111]=syscall_mutex_get_owner,
+	[112]=syscall_mutex_acquire,
+	[113]=syscall_mutex_release,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

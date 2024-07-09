@@ -26,6 +26,7 @@ static void _mutex_handle_destructor(handle_t* handle){
 	if (!mutex_handle->is_deleted){
 		panic("_mutex_handle_destructor: unreferenced mutex not deleted");
 	}
+	mutex_delete(mutex_handle->mutex);
 	omm_dealloc(_mutex_handle_allocator,mutex_handle);
 }
 
@@ -109,4 +110,95 @@ error_t syscall_mutex_create(void){
 	}
 	mutex_handle->mutex=mutex_create("user");
 	return mutex_handle->handle.rb_node.key;
+}
+
+
+
+error_t syscall_mutex_delete(handle_id_t mutex_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	mutex_handle_t* mutex_handle=KERNEL_CONTAINEROF(handle,mutex_handle_t,handle);
+	if (mutex_handle->is_deleted){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl_get(handle->acl,THREAD_DATA->process)&MUTEX_ACL_FLAG_DELETE)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	rwlock_acquire_write(&(mutex_handle->mutex->lock));
+	if (!mutex_handle->is_deleted){
+		mutex_handle->is_deleted=1;
+		handle_release(handle);
+	}
+	rwlock_release_write(&(mutex_handle->mutex->lock));
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_mutex_get_owner(handle_id_t mutex_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	mutex_handle_t* mutex_handle=KERNEL_CONTAINEROF(handle,mutex_handle_t,handle);
+	if (mutex_handle->is_deleted){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl_get(handle->acl,THREAD_DATA->process)&MUTEX_ACL_FLAG_QUERY)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	rwlock_acquire_read(&(mutex_handle->mutex->lock));
+	error_t out=(mutex_handle->mutex->holder?mutex_handle->mutex->holder->handle.rb_node.key:0);
+	rwlock_release_read(&(mutex_handle->mutex->lock));
+	handle_release(handle);
+	return out;
+}
+
+
+
+error_t syscall_mutex_acquire(handle_id_t mutex_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	mutex_handle_t* mutex_handle=KERNEL_CONTAINEROF(handle,mutex_handle_t,handle);
+	if (mutex_handle->is_deleted){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl_get(handle->acl,THREAD_DATA->process)&MUTEX_ACL_FLAG_IO)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	mutex_acquire(mutex_handle->mutex);
+	handle_release(handle);
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_mutex_release(handle_id_t mutex_handle_id){
+	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
+	if (!handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	mutex_handle_t* mutex_handle=KERNEL_CONTAINEROF(handle,mutex_handle_t,handle);
+	if (mutex_handle->is_deleted){
+		handle_release(handle);
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl_get(handle->acl,THREAD_DATA->process)&MUTEX_ACL_FLAG_IO)){
+		handle_release(handle);
+		return ERROR_DENIED;
+	}
+	mutex_release(mutex_handle->mutex);
+	handle_release(handle);
+	return ERROR_OK;
 }
