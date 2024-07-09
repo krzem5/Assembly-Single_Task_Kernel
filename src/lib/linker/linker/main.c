@@ -40,7 +40,7 @@ u64 main(const u64* data){
 		}
 	}
 	const elf_dyn_t* dynamic_section=NULL;
-	const char* interpreter="";
+	const char* interpreter="???";
 	for (u16 i=0;i<phdr_entry_count;i++){
 		const elf_phdr_t* program_header=phdr_entries+i*phdr_entry_size;
 		if (program_header->p_type==PT_DYNAMIC){

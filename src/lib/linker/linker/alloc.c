@@ -22,8 +22,7 @@ void* linker_alloc(u64 size){
 
 void linker_dealloc(void* ptr){
 	if (!_linker_alloc_initialized){
-		_linker_alloc_initialized=1;
-		sys_heap_init(&_linker_alloc_heap);
+		return;
 	}
 	sys_heap_dealloc(&_linker_alloc_heap,ptr);
 }
