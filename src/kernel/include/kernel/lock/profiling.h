@@ -23,6 +23,7 @@
 #define lock_profiling_acquire_start(lock)
 #define lock_profiling_acquire_end(lock)
 #define lock_profiling_release(lock)
+#define lock_profiling_assert_empty(thread)
 #else
 #define LOCK_PROFILING_LOCK_STACK __lock_profiling_lock_stack_t __lock_profiling_lock_stack;
 #define LOCK_PROFILING_DATA __lock_profiling_data_t __lock_profiling_data;
@@ -31,6 +32,7 @@
 #define lock_profiling_acquire_start(lock) {__lock_profiling_acquisition_context_t __lock_profiling_acquisition_context;__lock_profiling_acquire_start(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);
 #define lock_profiling_acquire_end(lock) __lock_profiling_acquire_end(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);}
 #define lock_profiling_release(lock) __lock_profiling_release(&((lock)->__lock_profiling_data));
+#define lock_profiling_assert_empty(thread) __lock_profiling_assert_empty(((thread)?&(((thread_t*)(thread))->__lock_profiling_lock_stack):NULL))
 #endif
 
 
@@ -92,6 +94,10 @@ void __lock_profiling_acquire_end(__lock_profiling_data_t* lock,__lock_profiling
 
 
 void __lock_profiling_release(__lock_profiling_data_t* lock);
+
+
+
+void __lock_profiling_assert_empty(__lock_profiling_lock_stack_t* stack);
 
 
 

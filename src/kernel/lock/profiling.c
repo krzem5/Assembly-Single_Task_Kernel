@@ -37,7 +37,7 @@ static KERNEL_INLINE __lock_profiling_lock_stack_t* KERNEL_NOCOVERAGE _get_lock_
 	if (CPU_HEADER_DATA->current_thread){
 		return &(CPU_HEADER_DATA->current_thread->__lock_profiling_lock_stack);
 	}
-	return NULL; // no profiling in the scheduler
+	// return NULL; // no profiling in the scheduler
 	return CPU_LOCAL(_lock_profiling_cpu_local_data);
 }
 
@@ -125,7 +125,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_st
 _skip_stat_alloc:
 	if (stack->size>=LOCK_PROFILING_MAX_NESTED_LOCKS){
 		log_direct("\x1b[1m\x1b[38;2;41;137;255m: Lock stack too small\x1b[0m\n");
-		for (;;);
+		panic("lock error");
 	}
 	for (u64 i=0;i<stack->size;i++){
 		if (stack->data[i]->id==lock->id&&stack->data[i]!=lock){
@@ -182,11 +182,28 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__
 	for (;i<stack->size&&stack->data[i]!=lock;i++);
 	if (i==stack->size){
 		log_direct("\x1b[1m\x1b[38;2;41;137;255mLock '%p' not acquired in this context\x1b[0m\n",lock);
-		for (;;);
+		panic("lock error");
 	}
 	stack->size--;
 	stack->data[i]=stack->data[stack->size];
 	stack->disabled=0;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_assert_empty(__lock_profiling_lock_stack_t* stack){
+	if (!stack){
+		stack=CPU_LOCAL(_lock_profiling_cpu_local_data);
+	}
+	if (!stack||stack->disabled||!stack->size){
+		return;
+	}
+	log_direct("\x1b[1m\x1b[38;2;41;137;255mLock stack not empty\x1b[0m\n");
+	for (u32 i=0;i<stack->size;i++){
+		const symbol_t* symbol=symbol_lookup(stack->data[i]->alloc_address|0xffffffff00000000ull);
+		log_direct("\x1b[1m\x1b[38;2;41;137;255m  [%u]: %s:%s+%u\x1b[0m\n",i,symbol->module,symbol->name->data,(stack->data[i]->alloc_address|0xffffffff00000000ull)-symbol->rb_node.key);
+	}
+	panic("lock error");
 }
 
 
@@ -250,6 +267,12 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_en
 
 
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__lock_profiling_data_t* lock){
+	return;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_assert_empty(__lock_profiling_lock_stack_t* stack){
 	return;
 }
 

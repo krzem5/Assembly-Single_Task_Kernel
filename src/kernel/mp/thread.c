@@ -57,6 +57,7 @@ static void _thread_handle_destructor(handle_t* handle){
 		panic("_thread_handle_destructor: Unterminated thread not referenced");
 	}
 	event_dispatch_thread_delete_notification(thread);
+	lock_profiling_assert_empty(thread);
 	process_t* process=thread->process;
 	smm_dealloc(thread->name);
 	thread->name=NULL;

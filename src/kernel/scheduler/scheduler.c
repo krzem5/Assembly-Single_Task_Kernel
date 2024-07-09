@@ -33,6 +33,7 @@ bool KERNEL_INIT_WRITE scheduler_enabled=0;
 
 
 static void _switch_thread(isr_state_t* state,thread_t* new_thread){
+	lock_profiling_assert_empty(NULL);
 	scheduler_set_timer(SCHEDULER_TIMER_SCHEDULER);
 	scheduler_t* scheduler=CPU_LOCAL(_scheduler_data);
 	scheduler->is_irq_context=1;
@@ -83,6 +84,7 @@ static void _switch_thread(isr_state_t* state,thread_t* new_thread){
 	else{
 		vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 	}
+	lock_profiling_assert_empty(NULL);
 	scheduler->is_irq_context=0;
 	if (!current_thread){
 		scheduler_set_timer(SCHEDULER_TIMER_NONE);
