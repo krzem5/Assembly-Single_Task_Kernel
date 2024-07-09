@@ -436,7 +436,7 @@ for tag in option("build_directories.delete_obsolete").iter():
 for tag in option("keys").iter():
 	signature.load_key(tag.name,tag.data)
 if (len(sys.argv)>1 and sys.argv[1]=="__patch_kernel"):
-	linker.patch_kernel(sys.argv[3],sys.argv[4],time.time_ns(),_get_kernel_build_name())
+	linker.patch_kernel(sys.argv[3],sys.argv[4],time.time_ns(),_get_kernel_build_name(),mode==MODE_RELEASE)
 	sys.exit(0)
 if (len(sys.argv)>1 and sys.argv[1]=="__patch_module_or_library"):
 	linker.patch_module_or_library(sys.argv[3],sys.argv[4])

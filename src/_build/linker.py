@@ -158,7 +158,7 @@ def _parse_headers(data,read_section_address=False):
 
 
 
-def _parse_symbol_table(ctx,allow_undefined=False):
+def _parse_symbol_table(ctx,allow_undefined=False,hide_private_symbols=False):
 	if (ctx.symbol_table is None):
 		return
 	error=False
@@ -178,7 +178,7 @@ def _parse_symbol_table(ctx,allow_undefined=False):
 		if (name.startswith("__kernel_section_")):
 			is_func=False
 			is_public=False
-		ctx.symbol_table.add_symbol((i-ctx.symbol_table.offset)//24,Symbol(name,st_value,ctx.section_headers[st_shndx],is_public,is_func or is_public))
+		ctx.symbol_table.add_symbol((i-ctx.symbol_table.offset)//24,Symbol(name,st_value,ctx.section_headers[st_shndx],is_public,(is_public if hide_private_symbols else is_func or is_public)))
 	if (error):
 		sys.exit(1)
 
@@ -324,11 +324,11 @@ def _generate_signature(ctx):
 
 
 
-def patch_kernel(src_file_path,dst_file_path,build_version,build_name):
+def patch_kernel(src_file_path,dst_file_path,build_version,build_name,hide_private_symbols):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
-	_parse_symbol_table(ctx)
+	_parse_symbol_table(ctx,hide_private_symbols=hide_private_symbols)
 	_parse_relocation_tables(ctx)
 	_generate_symbol_table(ctx)
 	_generate_relocation_table(ctx)

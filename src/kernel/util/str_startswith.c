@@ -2,7 +2,7 @@
 
 
 
-KERNEL_PUBLIC bool KERNEL_NOCOVERAGE str_startswith(const char* str,const char* prefix){
+KERNEL_PUBLIC bool KERNEL_NOCOVERAGE str_starts_with(const char* str,const char* prefix){
 	while (prefix[0]){
 		if (str[0]!=prefix[0]){
 			return 0;

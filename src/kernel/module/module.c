@@ -193,7 +193,7 @@ static bool _resolve_symbol_table(module_loader_context_t* ctx){
 			if (str_equal(name,"__module_header")){
 				ctx->module_descriptor=(void*)address;
 			}
-			else if (!str_startswith(name,"__module")){
+			else if (!str_starts_with(name,"__module")){
 				symbol_add(ctx->module->name->data,name,address,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 			}
 		}

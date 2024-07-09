@@ -8,7 +8,7 @@ bool str_equal(const char* a,const char* b);
 
 
 
-bool str_startswith(const char* str,const char* prefix);
+bool str_starts_with(const char* str,const char* prefix);
 
 
 
