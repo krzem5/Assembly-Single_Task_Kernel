@@ -1,4 +1,3 @@
-#include <linker/alloc.h>
 #include <linker/shared_object.h>
 #include <linker/symbol.h>
 #include <sys/elf/elf.h>
@@ -16,7 +15,7 @@ linker_shared_object_t* linker_shared_object_executable=NULL;
 
 
 u64 main(const u64* data){
-	const char* path=(data[0]?(const char*)(data[1]):"");
+	const char* path=(data[0]?(const char*)(data[1]):"???");
 	u64 interpreter_image_base=0;
 	u64 entry_address=0;
 	const void* phdr_entries=NULL;
@@ -55,11 +54,9 @@ u64 main(const u64* data){
 #ifdef KERNEL_COVERAGE
 	so->gcov_info_base=(u64)__gcov_info_start;
 	so->gcov_info_size=((u64)__gcov_info_end)-((u64)__gcov_info_start);
+#else
+	(void)so;
 #endif
-	so=linker_shared_object_load("libsys.so",LINKER_SHARED_OBJECT_FLAG_RESOLVE_GOT);
-	if (so){
-		linker_alloc_change_backend((void*)linker_symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
-	}
 	linker_shared_object_executable=linker_shared_object_init(0,dynamic_section,path,0);
 	return entry_address;
 }

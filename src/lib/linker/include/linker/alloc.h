@@ -4,19 +4,11 @@
 
 
 
-typedef void* (*linker_allocator_backend_t)(void* null,void* ptr,u64 size);
-
-
-
 void* linker_alloc(u64 size);
 
 
 
 void linker_dealloc(void* ptr);
-
-
-
-void linker_alloc_change_backend(linker_allocator_backend_t backend);
 
 
 
