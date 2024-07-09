@@ -53,7 +53,7 @@ extern u64 syscall_memory_unmap();
 extern u64 syscall_mutex_acquire();
 extern u64 syscall_mutex_create();
 extern u64 syscall_mutex_delete();
-extern u64 syscall_mutex_get_owner();
+extern u64 syscall_mutex_get_holder();
 extern u64 syscall_mutex_release();
 extern u64 syscall_partition_get_data();
 extern u64 syscall_partition_get_next();
@@ -226,7 +226,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[108]=syscall_handle_get_name,
 	[109]=syscall_mutex_create,
 	[110]=syscall_mutex_delete,
-	[111]=syscall_mutex_get_owner,
+	[111]=syscall_mutex_get_holder,
 	[112]=syscall_mutex_acquire,
 	[113]=syscall_mutex_release,
 };

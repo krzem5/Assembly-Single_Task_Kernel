@@ -641,4 +641,34 @@ static inline u64 _sys_syscall_handle_get_name(u64 handle,char* buffer,u32 buffe
 
 
 
+static inline u64 _sys_syscall_mutex_create(void){
+	return _sys_syscall0(0x10000006d);
+}
+
+
+
+static inline u64 _sys_syscall_mutex_delete(u64 mutex){
+	return _sys_syscall1(0x10000006e,mutex);
+}
+
+
+
+static inline u64 _sys_syscall_mutex_get_holder(u64 mutex){
+	return _sys_syscall1(0x10000006f,mutex);
+}
+
+
+
+static inline u64 _sys_syscall_mutex_acquire(u64 mutex){
+	return _sys_syscall1(0x100000070,mutex);
+}
+
+
+
+static inline u64 _sys_syscall_mutex_release(u64 mutex){
+	return _sys_syscall1(0x100000071,mutex);
+}
+
+
+
 #endif

@@ -140,7 +140,7 @@ error_t syscall_mutex_delete(handle_id_t mutex_handle_id){
 
 
 
-error_t syscall_mutex_get_owner(handle_id_t mutex_handle_id){
+error_t syscall_mutex_get_holder(handle_id_t mutex_handle_id){
 	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;
