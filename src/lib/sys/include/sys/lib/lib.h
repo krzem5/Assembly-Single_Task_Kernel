@@ -9,7 +9,7 @@
 
 
 
-typedef u64 sys_library_t;
+typedef u64 sys_library_t; // this is NOT a kernel handle
 
 
 
