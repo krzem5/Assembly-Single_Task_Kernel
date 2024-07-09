@@ -14,28 +14,28 @@
 
 
 
-static shared_object_t* _shared_object_tail=NULL;
+static linker_shared_object_t* _linker_shared_object_tail=NULL;
 
-shared_object_t* shared_object_root=NULL;
+linker_shared_object_t* linker_shared_object_root=NULL;
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags){
+linker_shared_object_t* linker_shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags){
 	u16 path_length=sys_string_length(path);
-	if (path_length>=sizeof(((shared_object_t*)NULL)->path)){
+	if (path_length>=sizeof(((linker_shared_object_t*)NULL)->path)){
 		sys_io_print("Shared object path too long\n");
 		return NULL;
 	}
-	shared_object_t* so=linker_alloc(sizeof(shared_object_t));
-	so->prev=_shared_object_tail;
+	linker_shared_object_t* so=linker_alloc(sizeof(linker_shared_object_t));
+	so->prev=_linker_shared_object_tail;
 	so->next=NULL;
-	if (_shared_object_tail){
-		_shared_object_tail->next=so;
+	if (_linker_shared_object_tail){
+		_linker_shared_object_tail->next=so;
 	}
 	else{
-		shared_object_root=so;
+		linker_shared_object_root=so;
 	}
-	_shared_object_tail=so;
+	_linker_shared_object_tail=so;
 	so->image_base=image_base;
 	sys_memory_copy(path,so->path,path_length);
 	so->path[path_length]=0;
@@ -107,7 +107,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 				so->dynamic_section.plt_relocations=so->image_base+dyn->d_un.d_ptr;
 				break;
 			case DT_BIND_NOW:
-				flags|=SHARED_OBJECT_FLAG_RESOLVE_GOT;
+				flags|=LINKER_SHARED_OBJECT_FLAG_RESOLVE_GOT;
 				break;
 			case DT_INIT_ARRAY:
 				so->dynamic_section.init_array=so->image_base+dyn->d_un.d_ptr;
@@ -128,19 +128,19 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 	}
 	if (so->dynamic_section.plt_got){
 		so->dynamic_section.plt_got[1]=(u64)so;
-		so->dynamic_section.plt_got[2]=(u64)symbol_resolve_plt_trampoline;
+		so->dynamic_section.plt_got[2]=(u64)linker_symbol_resolve_plt_trampoline;
 	}
 	if (so->dynamic_section.has_needed_libraries&&so->dynamic_section.string_table){
 		for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 			if (dyn->d_tag==DT_NEEDED){
-				shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val,flags);
+				linker_shared_object_load(so->dynamic_section.string_table+dyn->d_un.d_val,flags);
 			}
 		}
 	}
 	if (so->dynamic_section.plt_got&&so->dynamic_section.plt_relocations&&so->dynamic_section.plt_relocation_size&&so->dynamic_section.plt_relocation_entry_size){
 		for (u64 i=0;i<so->dynamic_section.plt_relocation_size/so->dynamic_section.plt_relocation_entry_size;i++){
-			if (flags&SHARED_OBJECT_FLAG_RESOLVE_GOT){
-				symbol_resolve_plt(so,i);
+			if (flags&LINKER_SHARED_OBJECT_FLAG_RESOLVE_GOT){
+				linker_symbol_resolve_plt(so,i);
 			}
 			else{
 				const elf_rela_t* relocation=so->dynamic_section.plt_relocations+i*so->dynamic_section.plt_relocation_entry_size;
@@ -156,11 +156,11 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 			switch (relocation->r_info&0xffffffff){
 				case R_X86_64_COPY:
-					sys_memory_copy((void*)symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),(void*)(so->image_base+relocation->r_offset),symbol->st_size);
+					sys_memory_copy((void*)linker_symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name),(void*)(so->image_base+relocation->r_offset),symbol->st_size);
 					break;
 				case R_X86_64_64:
 				case R_X86_64_GLOB_DAT:
-					*((u64*)(so->image_base+relocation->r_offset))=symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name);
+					*((u64*)(so->image_base+relocation->r_offset))=linker_symbol_lookup_by_name(so->dynamic_section.string_table+symbol->st_name);
 					break;
 				case R_X86_64_RELATIVE:
 					*((u64*)(so->image_base+relocation->r_offset))=so->image_base+relocation->r_addend;
@@ -186,14 +186,14 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 
 
 
-shared_object_t* shared_object_load(const char* name,u32 flags){
+linker_shared_object_t* linker_shared_object_load(const char* name,u32 flags){
 	char buffer[256];
-	sys_fd_t fd=search_path_find_library(name,buffer,256);
+	sys_fd_t fd=linker_search_path_find_library(name,buffer,256);
 	if (SYS_IS_ERROR(fd)){
 		sys_io_print("Unable to find library '%s'\n",name);
 		return NULL;
 	}
-	for (shared_object_t* so=shared_object_root;so;so=so->next){
+	for (linker_shared_object_t* so=linker_shared_object_root;so;so=so->next){
 		if (!sys_string_compare(so->path,buffer)){
 			return so;
 		}
@@ -253,7 +253,7 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 		sys_memory_copy(base_file_address+program_header->p_offset,image_base+program_header->p_vaddr,program_header->p_filesz);
 		sys_memory_change_flags(image_base+program_header->p_vaddr,program_header->p_memsz,flags);
 	}
-	shared_object_t* so=shared_object_init((u64)image_base,dynamic_section,buffer,flags);
+	linker_shared_object_t* so=linker_shared_object_init((u64)image_base,dynamic_section,buffer,flags);
 #ifdef KERNEL_COVERAGE
 	so->gcov_info_base=gcov_info_base;
 	so->gcov_info_size=gcov_info_size;
@@ -264,8 +264,8 @@ shared_object_t* shared_object_load(const char* name,u32 flags){
 
 
 
-void shared_object_execute_fini(void){
-	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
+void linker_shared_object_execute_fini(void){
+	for (linker_shared_object_t* so=_linker_shared_object_tail;so;so=so->prev){
 		if (so->dynamic_section.fini){
 			((void (*)(void))(so->dynamic_section.fini))();
 		}
@@ -285,7 +285,7 @@ void shared_object_execute_fini(void){
 #ifdef KERNEL_COVERAGE
 SYS_PUBLIC void SYS_DESTRUCTOR SYS_NOCOVERAGE __sys_linker_dump_coverage(void){
 	u64 syscall_table_offset=sys_syscall_get_table_offset("coverage");
-	for (shared_object_t* so=_shared_object_tail;so;so=so->prev){
+	for (linker_shared_object_t* so=_linker_shared_object_tail;so;so=so->prev){
 		if (so->gcov_info_base&&so->gcov_info_size){
 			_sys_syscall2(syscall_table_offset|0x00000001,so->gcov_info_base,so->gcov_info_size);
 		}

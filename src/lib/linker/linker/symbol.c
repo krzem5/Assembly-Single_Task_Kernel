@@ -22,7 +22,7 @@ static u32 NOFLOAT _calculate_hash(const char* name){
 
 
 
-static u64 NOFLOAT _lookup_symbol(const shared_object_t* so,u32 hash,const char* name){
+static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,u32 hash,const char* name){
 	if (!so->dynamic_section.hash_table||!so->dynamic_section.hash_table->nbucket){
 		return 0;
 	}
@@ -47,8 +47,8 @@ _skip_entry:
 
 
 
-u64 NOFLOAT symbol_lookup_by_name(const char* name){
-	const shared_object_t* so=shared_object_root;
+u64 NOFLOAT linker_symbol_lookup_by_name(const char* name){
+	const linker_shared_object_t* so=linker_shared_object_root;
 	if (!so){
 		return 0;
 	}
@@ -67,13 +67,13 @@ u64 NOFLOAT symbol_lookup_by_name(const char* name){
 
 
 
-u64 symbol_lookup_by_name_in_shared_object(const shared_object_t* so,const char* name){
+u64 linker_symbol_lookup_by_name_in_shared_object(const linker_shared_object_t* so,const char* name){
 	return _lookup_symbol(so,_calculate_hash(name),name);
 }
 
 
 
-u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
+u64 NOFLOAT linker_symbol_resolve_plt(const linker_shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
 		sys_io_print("Wrong plt relocation type '%u' in shared object '%s'\n",(u32)(relocation->r_info),so->path);
@@ -82,7 +82,7 @@ u64 NOFLOAT symbol_resolve_plt(const shared_object_t* so,u64 index){
 	}
 	const elf_sym_t* symbol=so->dynamic_section.symbol_table+(relocation->r_info>>32)*so->dynamic_section.symbol_table_entry_size;
 	const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
-	u64 resolved_symbol=symbol_lookup_by_name(symbol_name);
+	u64 resolved_symbol=linker_symbol_lookup_by_name(symbol_name);
 	if (!resolved_symbol){
 		sys_io_print("Unable to resolve symbol '%s' in shared object '%s'\n",symbol_name,so->path);
 		sys_thread_stop(0,NULL);

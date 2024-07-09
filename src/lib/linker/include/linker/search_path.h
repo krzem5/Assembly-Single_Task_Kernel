@@ -4,11 +4,11 @@
 
 
 
-u64 search_path_find_library(const char* name,char* buffer,u32 buffer_length);
+u64 linker_search_path_find_library(const char* name,char* buffer,u32 buffer_length);
 
 
 
-const char* search_path_update_search_directories(const char* new);
+const char* linker_search_path_update_search_directories(const char* new);
 
 
 

@@ -1,12 +1,12 @@
 %include "sys/types.inc"
-extern symbol_resolve_plt
-global symbol_resolve_plt_trampoline:function hidden
+extern linker_symbol_resolve_plt
+global linker_symbol_resolve_plt_trampoline:function hidden
 section .text exec nowrite
 
 
 
 [bits 64]
-symbol_resolve_plt_trampoline:
+linker_symbol_resolve_plt_trampoline:
 	push rax
 	push rcx
 	push rdx
@@ -18,7 +18,7 @@ symbol_resolve_plt_trampoline:
 	push r11
 	mov rdi, qword [rsp+0x48]
 	mov rsi, qword [rsp+0x50]
-	call [REF(symbol_resolve_plt)]
+	call [REF(linker_symbol_resolve_plt)]
 	mov qword [rsp+0x50], rax
 	pop r11
 	pop r10

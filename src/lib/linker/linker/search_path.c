@@ -13,7 +13,7 @@ static char* _library_search_directories=NULL;
 
 
 
-u64 search_path_find_library(const char* name,char* buffer,u32 buffer_length){
+u64 linker_search_path_find_library(const char* name,char* buffer,u32 buffer_length){
 	if (!_library_search_directories){
 		_library_search_directories_was_allocated=0;
 		_library_search_directories=(char*)_library_default_search_directories;
@@ -43,7 +43,7 @@ u64 search_path_find_library(const char* name,char* buffer,u32 buffer_length){
 
 
 
-const char* search_path_update_search_directories(const char* new){
+const char* linker_search_path_update_search_directories(const char* new){
 	if (!new){
 		return _library_search_directories;
 	}

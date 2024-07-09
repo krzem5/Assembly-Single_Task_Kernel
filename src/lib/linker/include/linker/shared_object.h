@@ -5,11 +5,11 @@
 
 
 
-#define SHARED_OBJECT_FLAG_RESOLVE_GOT 1
+#define LINKER_SHARED_OBJECT_FLAG_RESOLVE_GOT 1
 
 
 
-typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
+typedef struct _LINKER_SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 	bool has_needed_libraries;
 	u64 plt_relocation_size;
 	u64* plt_got;
@@ -28,38 +28,38 @@ typedef struct _SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 	u64 init_array_size;
 	const void* fini_array;
 	u64 fini_array_size;
-} shared_object_dynamic_section_data_t;
+} linker_shared_object_dynamic_section_data_t;
 
 
 
-typedef struct _SHARED_OBJECT{
-	struct _SHARED_OBJECT* prev;
-	struct _SHARED_OBJECT* next;
+typedef struct _LINKER_SHARED_OBJECT{
+	struct _LINKER_SHARED_OBJECT* prev;
+	struct _LINKER_SHARED_OBJECT* next;
 	char path[256];
 	u64 image_base;
-	shared_object_dynamic_section_data_t dynamic_section;
+	linker_shared_object_dynamic_section_data_t dynamic_section;
 #ifdef KERNEL_COVERAGE
 	u64 gcov_info_base;
 	u64 gcov_info_size;
 #endif
-} shared_object_t;
+} linker_shared_object_t;
 
 
 
-extern shared_object_t* shared_object_root;
-extern shared_object_t* shared_object_executable;
+extern linker_shared_object_t* linker_shared_object_root;
+extern linker_shared_object_t* linker_shared_object_executable;
 
 
 
-shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags);
+linker_shared_object_t* linker_shared_object_init(u64 image_base,const elf_dyn_t* dynamic_section,const char* path,u32 flags);
 
 
 
-shared_object_t* shared_object_load(const char* name,u32 flags);
+linker_shared_object_t* linker_shared_object_load(const char* name,u32 flags);
 
 
 
-void shared_object_execute_fini(void);
+void linker_shared_object_execute_fini(void);
 
 
 

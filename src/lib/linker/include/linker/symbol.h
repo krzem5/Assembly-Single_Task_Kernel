@@ -5,19 +5,19 @@
 
 
 
-u64 symbol_lookup_by_name(const char* name);
+u64 linker_symbol_lookup_by_name(const char* name);
 
 
 
-u64 symbol_lookup_by_name_in_shared_object(const shared_object_t* so,const char* name);
+u64 linker_symbol_lookup_by_name_in_shared_object(const linker_shared_object_t* so,const char* name);
 
 
 
-u64 symbol_resolve_plt(const shared_object_t* so,u64 index);
+u64 linker_symbol_resolve_plt(const linker_shared_object_t* so,u64 index);
 
 
 
-void symbol_resolve_plt_trampoline(void);
+void linker_symbol_resolve_plt_trampoline(void);
 
 
 
