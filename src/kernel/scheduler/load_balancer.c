@@ -40,7 +40,7 @@ static u32 _get_queue_index_offset(const thread_t* thread){
 
 
 static u32 _get_queue_time_us(u32 i){
-	return 968+((i&((SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1)-1))<<7);
+	return 970+130*(i&((SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1)-1));
 }
 
 
