@@ -48,11 +48,11 @@ const char* search_path_update_search_directories(const char* new){
 		return _library_search_directories;
 	}
 	if (_library_search_directories_was_allocated){
-		dealloc(_library_search_directories);
+		linker_dealloc(_library_search_directories);
 	}
 	u32 size=sys_string_length(new)+1;
 	_library_search_directories_was_allocated=1;
-	_library_search_directories=alloc(size);
+	_library_search_directories=linker_alloc(size);
 	sys_memory_copy(new,_library_search_directories,size);
 	return _library_search_directories;
 }

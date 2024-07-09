@@ -58,7 +58,7 @@ u64 main(const u64* data){
 #endif
 	so=shared_object_load("libsys.so",SHARED_OBJECT_FLAG_RESOLVE_GOT);
 	if (so){
-		alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
+		linker_alloc_change_backend((void*)symbol_lookup_by_name_in_shared_object(so,"sys_heap_realloc"));
 	}
 	shared_object_executable=shared_object_init(0,dynamic_section,path,0);
 	return entry_address;

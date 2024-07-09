@@ -26,7 +26,7 @@ shared_object_t* shared_object_init(u64 image_base,const elf_dyn_t* dynamic_sect
 		sys_io_print("Shared object path too long\n");
 		return NULL;
 	}
-	shared_object_t* so=alloc(sizeof(shared_object_t));
+	shared_object_t* so=linker_alloc(sizeof(shared_object_t));
 	so->prev=_shared_object_tail;
 	so->next=NULL;
 	if (_shared_object_tail){
