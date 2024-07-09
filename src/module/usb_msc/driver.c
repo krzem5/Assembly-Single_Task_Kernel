@@ -243,7 +243,7 @@ static void _setup_drive(usb_msc_driver_t* driver,u16 device_index,u8 lun){
 	INFO("Setting up LUN %u...",lun);
 	usb_msc_lun_context_t* context=omm_alloc(_usb_msc_lun_context_allocator);
 	context->driver=driver;
-	context->lock=mutex_init("usb.msc.context");
+	context->lock=mutex_create("usb.msc.context");
 	context->tag=0;
 	context->lun=lun;
 	void* buffer=(void*)(pmm_alloc(pmm_align_up_address(sizeof(usb_scsi_inquiry_responce_t)+sizeof(usb_scsi_read_capacity_10_responce_t))>>PAGE_SIZE_SHIFT,_usb_msc_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
@@ -302,7 +302,7 @@ static bool _usb_msc_load(usb_device_t* device,usb_interface_descriptor_t* inter
 	driver->device=device;
 	driver->input_pipe=usb_pipe_alloc(device,input_descriptor->address,input_descriptor->attributes,input_descriptor->max_packet_size);
 	driver->output_pipe=usb_pipe_alloc(device,output_descriptor->address,output_descriptor->attributes,output_descriptor->max_packet_size);
-	driver->lock=mutex_init("usb.msc");
+	driver->lock=mutex_create("usb.msc");
 	driver->lun_context=NULL;
 	interface_descriptor->driver=(usb_driver_t*)driver;
 	usb_raw_control_request_t request={

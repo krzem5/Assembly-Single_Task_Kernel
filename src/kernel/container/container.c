@@ -33,7 +33,7 @@ static void _container_handle_destructor(handle_t* handle){
 		}
 		omm_dealloc(_container_entry_allocator,entry);
 	}
-	mutex_deinit(data->lock);
+	mutex_delete(data->lock);
 	omm_dealloc(_container_allocator,data);
 }
 
@@ -56,7 +56,7 @@ error_t syscall_container_create(void){
 	out->handle.acl=acl_create();
 	acl_set(out->handle.acl,THREAD_DATA->process,0,CONTAINER_ACL_FLAG_ACCESS|CONTAINER_ACL_FLAG_DELETE);
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
-	out->lock=mutex_init("kernel.container");
+	out->lock=mutex_create("kernel.container");
 	rb_tree_init(&(out->tree));
 	return out->handle.rb_node.key;
 }

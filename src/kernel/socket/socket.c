@@ -45,8 +45,8 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 		return NULL;
 	}
 	socket_vfs_node_t* out=omm_alloc(_socket_vfs_node_allocator);
-	out->read_lock=mutex_init("kernel.socket.read");
-	out->write_lock=mutex_init("kernel.socket.write");
+	out->read_lock=mutex_create("kernel.socket.read");
+	out->write_lock=mutex_create("kernel.socket.write");
 	out->domain=SOCKET_DOMAIN_NONE;
 	out->type=SOCKET_TYPE_NONE;
 	out->protocol=SOCKET_PROTOCOL_NONE;

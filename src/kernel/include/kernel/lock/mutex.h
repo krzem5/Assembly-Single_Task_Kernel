@@ -1,10 +1,17 @@
 #ifndef _KERNEL_LOCK_MUTEX_H_
 #define _KERNEL_LOCK_MUTEX_H_ 1
+#include <kernel/handle/handle.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
+
+
+
+#define MUTEX_ACL_FLAG_DELETE 1
+#define MUTEX_ACL_FLAG_QUERY 2
+#define MUTEX_ACL_FLAG_IO 4
 
 
 
@@ -18,11 +25,19 @@ typedef struct _MUTEX{
 
 
 
-mutex_t* mutex_init(const char* name);
+typedef struct _MUTEX_HANDLE{
+	handle_t handle;
+	bool is_deleted;
+	mutex_t* mutex;
+} mutex_handle_t;
 
 
 
-void mutex_deinit(mutex_t* lock);
+mutex_t* mutex_create(const char* name);
+
+
+
+void mutex_delete(mutex_t* lock);
 
 
 
