@@ -162,9 +162,7 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 		timer->count=count;
 	}
 	if (timer->rb_node.key){
-		volatile u32 prev_lock_data=_timer_tree.lock.value;
 		_schedule_timer(timer);
-		asm("pause":"+r"(prev_lock_data)::"memory");
 	}
 	rwlock_release_write(&(timer->lock));
 	rwlock_release_write(&_timer_tree_lock);
@@ -193,9 +191,7 @@ u32 timer_dispatch_timers(void){
 	else{
 		timer->count--;
 		timer->rb_node.key=time+timer->interval;
-		volatile u32 prev_lock_data2=_timer_tree.lock.value;
 		_schedule_timer(timer);
-		asm("pause":"+r"(prev_lock_data2)::"memory");
 	}
 	rwlock_release_write(&(timer->lock));
 _return:
