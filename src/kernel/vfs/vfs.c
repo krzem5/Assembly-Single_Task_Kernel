@@ -116,7 +116,13 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		flags&=~VFS_LOOKUP_FLAG_CHECK_PERMISSIONS;
 	}
 	if (path[0]=='/'){
+		path++;
 		root=base_root_node;
+	}
+	else if (path[0]=='~'){
+		path++;
+		root=base_root_node;
+		ERROR("vfs_lookup_for_creation: user root");
 	}
 	else if (!root){
 		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:base_root_node);
