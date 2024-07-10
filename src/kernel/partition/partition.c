@@ -118,6 +118,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	out->name=smm_alloc(name,0);
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
+	out->fs=NULL;
 	out->fs=fs_load(out);
 	if (!out->fs){
 		WARN("No filesystem detected on partition '%s%ud%up%u/%s'",drive->type->name,drive->controller_index,drive->device_index,index,name);

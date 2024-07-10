@@ -11,6 +11,10 @@
 
 
 
+#define FORMAT_PARITION_TABLE_ENTRY_COUNT 128
+
+
+
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _gpt_driver_pmm_counter=NULL;
 
 
@@ -62,7 +66,11 @@ static bool _gpt_load_partitions(drive_t* drive){
 
 
 static bool _gpt_format_drive(drive_t* drive){
-	ERROR("_gpt_format_drive");
+	u64 required_space=3+2*((FORMAT_PARITION_TABLE_ENTRY_COUNT*sizeof(gpt_partition_entry_t)+drive->block_size-1)>>drive->block_size_shift);
+	if (drive->block_count<=required_space){
+		return 0;
+	}
+	ERROR("_gpt_format_drive %u",required_space);
 	return 0;
 }
 
