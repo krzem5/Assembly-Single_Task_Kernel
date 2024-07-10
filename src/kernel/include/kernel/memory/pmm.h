@@ -131,7 +131,7 @@ void pmm_init(void);
 
 
 
-void pmm_init_high_mem(void);
+void pmm_init_high_memory(void);
 
 
 

@@ -121,6 +121,7 @@ typedef struct _THREAD{
 	struct _THREAD* thread_list_next;
 	struct _THREAD* scheduler_load_balancer_thread_queue_next;
 	u32 scheduler_load_balancer_queue_index;
+	u32 scheduler_forced_queue_index;
 	bool scheduler_early_yield;
 	bool scheduler_io_yield;
 	KERNEL_USER_POINTER void* return_value;

@@ -88,6 +88,10 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 
 
 void scheduler_load_balancer_add(thread_t* thread){
+	if (thread->scheduler_forced_queue_index){
+		thread->scheduler_load_balancer_queue_index=thread->scheduler_forced_queue_index;
+		goto _skip_dynamic_queue_index;
+	}
 	if (!thread->scheduler_early_yield&&!thread->scheduler_io_yield&&thread->scheduler_load_balancer_queue_index<SCHEDULER_LOAD_BALANCER_QUEUE_COUNT-1){
 		thread->scheduler_load_balancer_queue_index++;
 	}
@@ -104,6 +108,7 @@ void scheduler_load_balancer_add(thread_t* thread){
 	else if (thread->scheduler_load_balancer_queue_index>max){
 		thread->scheduler_load_balancer_queue_index=max;
 	}
+_skip_dynamic_queue_index:
 	scheduler_load_balancer_thread_queue_t* queue=_scheduler_load_balancer_queues+thread->scheduler_load_balancer_queue_index;
 	rwlock_acquire_write(&(queue->lock));
 	thread->scheduler_load_balancer_thread_queue_next=NULL;

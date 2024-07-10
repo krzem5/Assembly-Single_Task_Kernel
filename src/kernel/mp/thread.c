@@ -131,6 +131,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
+	out->scheduler_forced_queue_index=0;
 	out->return_value=NULL;
 	signal_thread_state_init(&(out->signal_state));
 	lock_profiling_init_lock_stack(out);

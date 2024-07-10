@@ -7,9 +7,11 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/scheduler.h>
+#include <kernel/timer/timer.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
 #include <kernel/util/util.h>
@@ -20,6 +22,9 @@
 #define PMM_DEBUG_VALUE 0xde
 
 #define PMM_FLAG_PARTIALLY_INITIALIZED 1
+
+#define COOKIE_PAGE_DIRTY 0
+#define COOKIE_PAGE_CLEAN 1
 
 
 
@@ -145,6 +150,21 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 
+static void _background_memory_reset_thread(void){
+	timer_t* timer=timer_create("kernel.memory.reset.interval",1000000000,TIMER_COUNT_INFINITE);
+	while (1){
+		event_await(timer->event,0);
+	}
+}
+
+
+
+KERNEL_INIT(){
+	thread_create_kernel_thread(NULL,"kernel.memory.reset",_background_memory_reset_thread,0)->scheduler_forced_queue_index=63;
+}
+
+
+
 void KERNEL_EARLY_EXEC pmm_init(void){
 	LOG("Initializing physical memory manager...");
 	LOG("Scanning memory...");
@@ -173,7 +193,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	for (u64 i=0;i<((max_address+PAGE_SIZE)>>PAGE_SIZE_SHIFT);i++){
 		(_pmm_block_descriptors+i)->data=PMM_ALLOCATOR_BLOCK_DESCRIPTOR_INDEX_USED;
 		(_pmm_block_descriptors+i)->next=0;
-		(_pmm_block_descriptors+i)->cookie=0;
+		(_pmm_block_descriptors+i)->cookie=COOKIE_PAGE_DIRTY;
 		bitlock_init((u32*)(&((_pmm_block_descriptors+i)->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 	}
 	rwlock_init(&(_pmm_load_balancer.lock));
@@ -206,7 +226,7 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 
 
 
-void KERNEL_EARLY_EXEC pmm_init_high_mem(void){
+void KERNEL_EARLY_EXEC pmm_init_high_memory(void){
 	LOG("Registering high memory...");
 	u64 total_memory=0;
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -340,7 +360,10 @@ _retry_allocator:
 		if (block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE){
 			block_descriptor->data&=~PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE;
 			WARN("Flush cache @ %p [cookie: %p]",out+offset,block_descriptor->cookie);
-			block_descriptor->cookie=0;
+			block_descriptor->cookie=COOKIE_PAGE_DIRTY;
+		}
+		if (block_descriptor->cookie==COOKIE_PAGE_CLEAN){
+			ERROR("Clean page @ %p",out+offset);
 		}
 		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){

@@ -29,7 +29,7 @@ static void _main_thread(void){
 
 
 static void KERNEL_NORETURN KERNEL_EARLY_EXEC _main_relocated(void){
-	pmm_init_high_mem();
+	pmm_init_high_memory();
 	kernel_adjust_memory_flags();
 	vmm_alloc_counter();
 	cpu_init_early_header();
