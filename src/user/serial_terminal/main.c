@@ -23,7 +23,7 @@ static sys_fd_t child_out_fd=0;
 
 static void _input_thread(void* ctx){
 	readline_state_t state;
-	readline_state_init(out_fd,4096,&state);
+	readline_state_init(out_fd,4096,1024,&state);
 	while (1){
 		u8 buffer[4096];
 		sys_error_t length=sys_fd_read(in_fd,buffer,sizeof(buffer),0);

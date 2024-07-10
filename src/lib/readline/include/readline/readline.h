@@ -18,6 +18,14 @@
 
 
 
+typedef struct _READLINE_HISTORY{
+	char** data;
+	u32 length;
+	u32 max_length;
+} readline_history_t;
+
+
+
 typedef struct _READLINE_ESCAPE_SEQUENCE_STATE{
 	u32 state;
 	u32 length;
@@ -30,16 +38,18 @@ typedef struct _READLINE_STATE{
 	u32 event;
 	char* line;
 	u32 line_length;
+	readline_history_t _history;
 	sys_fd_t _output_fd;
 	u32 _max_line_length;
 	u32 _cursor;
+	u32 _history_index;
 	u32 _last_character_count;
 	readline_escape_sequence_state_t _escape_sequence;
 } readline_state_t;
 
 
 
-void readline_state_init(sys_fd_t output_fd,u32 max_line_length,readline_state_t* state);
+void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_state_t* state);
 
 
 

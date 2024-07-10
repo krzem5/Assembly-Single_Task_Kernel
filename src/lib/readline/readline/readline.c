@@ -76,13 +76,55 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 
 
 
+static void _expand_history(readline_state_t* state,const char* line){
+	u32 length=sys_string_length(line);
+	if (!length||(state->_history.length&&!sys_memory_compare(state->_history.data[0],line,length))){
+		return;
+	}
+	if (state->_history.length==state->_history.max_length){
+		sys_heap_dealloc(NULL,state->_history.data[state->_history.length-1]);
+	}
+	else{
+		state->_history.length++;
+	}
+	for (u32 i=state->_history.length-1;i;i--){
+		state->_history.data[i]=state->_history.data[i-1];
+	}
+	state->_history.data[0]=sys_heap_alloc(NULL,length+1);
+	sys_memory_copy(line,state->_history.data[0],length+1);
+}
+
+
+
 static void _process_csi_sequence(readline_state_t* state){
 	if (!sys_string_compare(state->_escape_sequence.data,"A")){
-		sys_io_print_to_fd(state->_output_fd,"<sequence: up>\n");
+		if (!state->_history.length){
+			return;
+		}
+		if (state->_history_index||(state->line_length&&!sys_memory_compare(state->line,state->_history.data[state->_history_index],state->line_length))){
+			state->_history_index++;
+		}
+		if (state->_history_index>=state->_history.length){
+			state->_history_index=state->_history.length-1;
+			return;
+		}
+		u32 length=sys_string_length(state->_history.data[state->_history_index]);
+		sys_memory_copy(state->_history.data[state->_history_index],state->line,length);
+		state->line_length=length;
+		state->_cursor=length;
+		_redraw_line(state,0);
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"B")){
-		sys_io_print_to_fd(state->_output_fd,"<sequence: down>\n");
+		if (!state->_history.length||!state->_history_index){
+			return;
+		}
+		state->_history_index--;
+		u32 length=sys_string_length(state->_history.data[state->_history_index]);
+		sys_memory_copy(state->_history.data[state->_history_index],state->line,length);
+		state->line_length=length;
+		state->_cursor=length;
+		_redraw_line(state,0);
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"C")){
@@ -125,13 +167,17 @@ static void _process_csi_sequence(readline_state_t* state){
 
 
 
-SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,readline_state_t* state){
+SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_state_t* state){
 	state->event=READLINE_EVENT_NONE;
 	state->line=sys_heap_alloc(NULL,max_line_length+2);
 	state->line_length=0;
+	state->_history.data=sys_heap_alloc(NULL,max_history_length*sizeof(char*));
+	state->_history.length=0;
+	state->_history.max_length=max_history_length;
 	state->_output_fd=output_fd;
 	state->_max_line_length=max_line_length;
 	state->_cursor=0;
+	state->_history_index=0;
 	state->_last_character_count=0;
 	state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_NONE;
 }
@@ -141,6 +187,11 @@ SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,readl
 SYS_PUBLIC void readline_state_deinit(readline_state_t* state){
 	sys_heap_dealloc(NULL,state->line);
 	state->line=NULL;
+	for (u32 i=0;i<state->_history.length;i++){
+		sys_heap_dealloc(NULL,state->_history.data[i]);
+	}
+	sys_heap_dealloc(NULL,state->_history.data);
+	state->_history.data=NULL;
 }
 
 
@@ -149,6 +200,7 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 	if (state->event==READLINE_EVENT_LINE){
 		state->line_length=0;
 		state->_cursor=0;
+		state->_history_index=0;
 		state->_last_character_count=0;
 	}
 	state->event=READLINE_EVENT_NONE;
@@ -203,6 +255,8 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 		if (buffer[i]==0x0a||buffer[i]==0x0d){
 			state->_cursor=state->line_length;
 			_redraw_line(state,1);
+			state->line[state->line_length]=0;
+			_expand_history(state,state->line);
 			state->line[state->line_length]='\n';
 			state->line_length++;
 			state->line[state->line_length]=0;
