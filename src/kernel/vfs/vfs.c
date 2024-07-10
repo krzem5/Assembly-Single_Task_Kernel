@@ -125,9 +125,9 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 		path++;
 		root=base_root_node;
 	}
-	else if (path[0]=='~'){
+	else if (path[0]=='~'&&(!path[1]||path[1]=='/')){
 		path++;
-		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_home:base_root_node);;
+		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_home:base_root_node);
 	}
 	else if (!root){
 		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:base_root_node);
