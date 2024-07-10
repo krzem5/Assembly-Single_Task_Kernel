@@ -5,6 +5,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/module/module.h>
 #include <kernel/partition/partition.h>
+#include <kernel/random/random.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "gpt"
@@ -138,9 +139,9 @@ static bool _gpt_format_drive(drive_t* drive){
 	header->backup_lba=drive->block_count-1;
 	header->first_lba=2+(partition_table_size>>drive->block_size_shift);
 	header->last_lba=drive->block_count-(partition_table_size>>drive->block_size_shift)-1;
-	for (u32 i=0;i<16;i++){
-		header->guid[i]=i*17;
-	}
+	random_generate(header->guid,16);
+	header->guid[6]=(header->guid[6]&0x0f)|0x40;
+	header->guid[8]=(header->guid[8]&0x3f)|0x80;
 	header->entry_lba=2;
 	header->entry_count=FORMAT_PARITION_TABLE_ENTRY_COUNT;
 	header->entry_size=sizeof(gpt_partition_entry_t);
