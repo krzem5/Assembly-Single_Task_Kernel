@@ -249,7 +249,7 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 			continue;
 		}
 		if (buffer[i]==0x09){
-			sys_io_print_to_fd(state->_output_fd,"<sequence: tab>");
+			sys_io_print_to_fd(state->_output_fd,"<sequence: tab>\n");
 			continue;
 		}
 		if (buffer[i]==0x0a||buffer[i]==0x0d){
