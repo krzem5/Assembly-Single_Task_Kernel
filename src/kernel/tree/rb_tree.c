@@ -81,13 +81,13 @@ KERNEL_PUBLIC rb_tree_node_t* rb_tree_lookup_or_insert_node(rb_tree_t* tree,rb_t
 	rb_tree_node_t* y=tree->root;
 	while (y->rb_nodes[y->key<x->key]){
 		if (x->key==y->key){
-			// keep tree lock held
+			rwlock_release_write(&(tree->lock));
 			return x;
 		}
 		y=y->rb_nodes[y->key<x->key];
 	}
 	if (x->key==y->key){
-		// keep tree lock held
+		rwlock_release_write(&(tree->lock));
 		return x;
 	}
 	_set_parent(x,y);

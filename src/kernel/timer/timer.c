@@ -20,6 +20,7 @@
 
 static omm_allocator_t* KERNEL_INIT_WRITE _timer_allocator=NULL;
 static rb_tree_t _timer_tree;
+static rwlock_t _timer_tree_lock;
 
 handle_type_t KERNEL_INIT_WRITE timer_handle_type=0;
 
@@ -52,7 +53,6 @@ static void _schedule_timer(timer_t* timer){
 	timer->prev=chain;
 	timer->next=chain->next;
 	chain->next=timer;
-	rwlock_release_write(&(_timer_tree.lock));
 }
 
 
@@ -60,10 +60,12 @@ static void _schedule_timer(timer_t* timer){
 static void _timer_handle_destructor(handle_t* handle){
 	timer_t* timer=KERNEL_CONTAINEROF(handle,timer_t,handle);
 	if (!timer->is_deleted){
+		rwlock_acquire_write(&_timer_tree_lock);
 		if (!timer->prev&&timer->rb_node.key){
 			rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 		}
 		_remove_from_chain(timer);
+		rwlock_release_write(&_timer_tree_lock);
 		event_delete(timer->event);
 	}
 	omm_dealloc(_timer_allocator,timer);
@@ -76,6 +78,7 @@ KERNEL_EARLY_INIT(){
 	_timer_allocator=omm_init("kernel.timer",sizeof(timer_t),8,4);
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);
+	rwlock_init(&_timer_tree_lock);
 	timer_handle_type=handle_alloc("kernel.timer",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_timer_handle_destructor);
 }
 
@@ -113,10 +116,12 @@ KERNEL_PUBLIC void timer_delete(timer_t* timer){
 		return;
 	}
 	timer->is_deleted=1;
+	rwlock_acquire_write(&_timer_tree_lock);
 	if (!timer->prev&&timer->rb_node.key){
 		rb_tree_remove_node(&_timer_tree,&(timer->rb_node));
 	}
 	_remove_from_chain(timer);
+	rwlock_release_write(&_timer_tree_lock);
 	event_delete(timer->event);
 	rwlock_release_write(&(timer->lock));
 	handle_release(&(timer->handle));
@@ -134,9 +139,11 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 	if (!bypass_acl&&CPU_HEADER_DATA->current_thread&&!(acl_get(timer->handle.acl,THREAD_DATA->process)&TIMER_ACL_FLAG_UPDATE)){
 		return;
 	}
+	rwlock_acquire_write(&_timer_tree_lock);
 	rwlock_acquire_write(&(timer->lock));
 	if (timer->is_deleted){
 		rwlock_release_write(&(timer->lock));
+		rwlock_release_write(&_timer_tree_lock);
 		return;
 	}
 	event_set_active(timer->event,0,0);
@@ -155,15 +162,19 @@ KERNEL_PUBLIC void timer_update(timer_t* timer,u64 interval,u64 count,bool bypas
 		timer->count=count;
 	}
 	if (timer->rb_node.key){
+		volatile u32 prev_lock_data=_timer_tree.lock.value;
 		_schedule_timer(timer);
+		asm("pause":"+r"(prev_lock_data)::"memory");
 	}
 	rwlock_release_write(&(timer->lock));
+	rwlock_release_write(&_timer_tree_lock);
 }
 
 
 
 u32 timer_dispatch_timers(void){
 	u64 time=clock_get_time();
+	rwlock_acquire_write(&_timer_tree_lock);
 	timer_t* timer=(timer_t*)rb_tree_lookup_decreasing_node(&_timer_tree,time);
 	if (!timer){
 		goto _return;
@@ -182,12 +193,16 @@ u32 timer_dispatch_timers(void){
 	else{
 		timer->count--;
 		timer->rb_node.key=time+timer->interval;
+		volatile u32 prev_lock_data2=_timer_tree.lock.value;
 		_schedule_timer(timer);
+		asm("pause":"+r"(prev_lock_data2)::"memory");
 	}
 	rwlock_release_write(&(timer->lock));
 _return:
 	timer=(timer_t*)rb_tree_iter_start(&_timer_tree);
-	return (timer?(timer->rb_node.key>time?(timer->rb_node.key-time)/1000:0):0xffffffff);
+	u32 out=(timer?(timer->rb_node.key>time?(timer->rb_node.key-time)/1000:0):0xffffffff);
+	rwlock_release_write(&_timer_tree_lock);
+	return out;
 }
 
 

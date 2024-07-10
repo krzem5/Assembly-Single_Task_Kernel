@@ -34,7 +34,7 @@ void rb_tree_insert_node(rb_tree_t* tree,rb_tree_node_t* x);
 
 
 
-rb_tree_node_t* rb_tree_lookup_or_insert_node(rb_tree_t* tree,rb_tree_node_t* x); // if successful, this does not release the tree lock
+rb_tree_node_t* rb_tree_lookup_or_insert_node(rb_tree_t* tree,rb_tree_node_t* x);
 
 
 

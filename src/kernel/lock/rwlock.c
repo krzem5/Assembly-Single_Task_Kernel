@@ -21,14 +21,14 @@ KERNEL_PUBLIC void rwlock_init(rwlock_t* out){
 
 KERNEL_PUBLIC bool rwlock_try_acquire_write(rwlock_t* lock){
 	scheduler_pause();
-	bool out;
-	out=!(__atomic_fetch_or(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST)&(1<<RWLOCK_LOCK_BIT));
-	if (out){
-		lock_profiling_acquire_start(lock);
-		__atomic_store_n(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST);
-		lock_profiling_acquire_end(lock);
+	if (__atomic_fetch_or(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST)&(1<<RWLOCK_LOCK_BIT)){
+		scheduler_resume(0);
+		return 0;
 	}
-	return out;
+	lock_profiling_acquire_start(lock);
+	__atomic_store_n(&(lock->value),1<<RWLOCK_LOCK_BIT,__ATOMIC_SEQ_CST);
+	lock_profiling_acquire_end(lock);
+	return 1;
 }
 
 

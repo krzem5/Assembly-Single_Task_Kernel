@@ -40,6 +40,7 @@
 typedef struct ___LOCK_PROFILING_DATA{
 	u32 alloc_address;
 	u32 id;
+	u64 holder;
 } __lock_profiling_data_t;
 
 

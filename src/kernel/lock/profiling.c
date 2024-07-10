@@ -151,6 +151,7 @@ _skip_stat_alloc:
 
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_end(__lock_profiling_data_t* lock,__lock_profiling_acquisition_context_t* ctx){
 	u64 end_ticks=clock_get_ticks();
+	lock->holder=(!_lock_profiling_cpu_local_data?0xffffffffffffffffull:(CPU_HEADER_DATA->current_thread?(u64)CPU_HEADER_DATA->current_thread:CPU_HEADER_DATA->index));
 	if (!_lock_profiling_dependency_matrix||!_lock_profiling_lock_stats){
 		return;
 	}
@@ -170,6 +171,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_acquire_en
 
 
 KERNEL_PUBLIC void KERNEL_NOCOVERAGE KERNEL_NOINLINE __lock_profiling_release(__lock_profiling_data_t* lock){
+	lock->holder=0;
 	if (!_lock_profiling_dependency_matrix||!_lock_profiling_lock_stats){
 		return;
 	}
