@@ -75,6 +75,14 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 
 
 static void _process_csi_sequence(readline_state_t* state){
+	if (!sys_string_compare(state->_escape_sequence.data,"A")){
+		sys_io_print_to_fd(state->_output_fd,"<sequence: up>\n");
+		return;
+	}
+	if (!sys_string_compare(state->_escape_sequence.data,"B")){
+		sys_io_print_to_fd(state->_output_fd,"<sequence: down>\n");
+		return;
+	}
 	if (!sys_string_compare(state->_escape_sequence.data,"C")){
 		if (state->_cursor<state->line_length){
 			state->_cursor++;
@@ -197,7 +205,7 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 			state->line_length++;
 			state->line[state->line_length]=0;
 			state->event=READLINE_EVENT_LINE;
-			continue;
+			return i+1;
 		}
 		if (buffer[i]==0x1b){
 			state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_INIT;

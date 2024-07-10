@@ -1,7 +1,6 @@
 #include <readline/readline.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
-#include <sys/heap/heap.h>
 #include <sys/io/io.h>
 #include <sys/mp/process.h>
 #include <sys/mp/process_group.h>
@@ -15,31 +14,6 @@
 
 
 
-#define ESCAPE_SEQUENCE_STATE_NONE 0
-#define ESCAPE_SEQUENCE_STATE_INIT 1
-#define ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS 2
-#define ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE 3
-
-#define MAX_ESCAPE_SEQUENCE_LENGTH 16
-
-
-
-typedef struct _ESCAPE_SEQUENCE_STATE{
-	u32 state;
-	u32 length;
-	char data[MAX_ESCAPE_SEQUENCE_LENGTH+1];
-} escape_sequence_state_t;
-
-
-
-typedef struct _INPUT_STATE{
-	char* line;
-	u32 line_length;
-	u32 cursor;
-} input_state_t;
-
-
-
 static sys_fd_t in_fd=0;
 static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
@@ -47,105 +21,20 @@ static sys_fd_t child_out_fd=0;
 
 
 
-static void _input_redraw_until_end_of_line(const input_state_t* input_state){
-	sys_io_print_to_fd(out_fd,"\x1b[J%s\x1b[%uD\x1b[C",input_state->line+input_state->cursor-1,input_state->line_length-input_state->cursor+1);
-}
-
-
-
-static void _input_add_character(input_state_t* input_state,char c){
-	input_state->line_length++;
-	input_state->line=sys_heap_realloc(NULL,input_state->line,input_state->line_length+1);
-	for (u32 i=input_state->line_length-1;i>input_state->cursor;i--){
-		input_state->line[i]=input_state->line[i-1];
-	}
-	input_state->line[input_state->cursor]=c;
-	input_state->line[input_state->line_length]=0;
-	input_state->cursor++;
-	_input_redraw_until_end_of_line(input_state);
-}
-
-
-
-static void _input_delete_character(input_state_t* input_state,bool is_backspace){
-	if (is_backspace){
-		input_state->cursor--;
-	}
-	if (input_state->cursor>=input_state->line_length){
-		return;
-	}
-	for (u32 i=input_state->cursor;i<input_state->line_length;i++){
-		input_state->line[i]=input_state->line[i+1];
-	}
-	input_state->line_length--;
-	input_state->line=sys_heap_realloc(NULL,input_state->line,input_state->line_length+1);
-	input_state->line[input_state->line_length]=0;
-	sys_io_print_to_fd(out_fd,"\x1b[%uD",(is_backspace?2:1));
-	_input_redraw_until_end_of_line(input_state);
-}
-
-
-
-static void _input_process_csi_sequence(input_state_t* input_state,const char* sequence,u32 length){
-	if (!sys_string_compare(sequence,"C")){
-		if (input_state->cursor<input_state->line_length){
-			input_state->cursor++;
-			sys_io_print_to_fd(out_fd,"\x1b[C");
-		}
-		return;
-	}
-	if (!sys_string_compare(sequence,"D")){
-		if (input_state->cursor){
-			input_state->cursor--;
-			sys_io_print_to_fd(out_fd,"\x1b[D");
-		}
-		return;
-	}
-	if (!sys_string_compare(sequence,"H")||!sys_string_compare(sequence,"1~")||!sys_string_compare(sequence,"7~")){
-		if (input_state->cursor){
-			sys_io_print_to_fd(out_fd,"\x1b[%uD",input_state->cursor);
-			input_state->cursor=0;
-		}
-		return;
-	}
-	if (!sys_string_compare(sequence,"F")||!sys_string_compare(sequence,"4~")||!sys_string_compare(sequence,"8~")){
-		if (input_state->cursor<input_state->line_length){
-			sys_io_print_to_fd(out_fd,"\x1b[%uC",input_state->line_length-input_state->cursor);
-			input_state->cursor=input_state->line_length;
-		}
-		return;
-	}
-	if (!sys_string_compare(sequence,"3~")){
-		_input_delete_character(input_state,0);
-		return;
-	}
-	sys_io_print_to_fd(out_fd,"<sequence: '%s'>",sequence);
-}
-
-
-
 static void _input_thread(void* ctx){
-	input_state_t input_state={
-		NULL,
-		0,
-		0
-	};
-	escape_sequence_state_t escape_sequence_state={
-		ESCAPE_SEQUENCE_STATE_NONE,
-	};
 	readline_state_t state;
 	readline_state_init(out_fd,4096,&state);
 	while (1){
 		u8 buffer[4096];
-		sys_error_t count=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
-		if (!count||SYS_IS_ERROR(count)){
+		sys_error_t length=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
+		if (!length||SYS_IS_ERROR(length)){
 			goto _error;
 		}
 		const char* ptr=(void*)buffer;
-		while (count){
-			u64 amount=readline_process(&state,ptr,count);
-			ptr+=amount;
-			count-=amount;
+		while (length){
+			u64 count=readline_process(&state,ptr,length);
+			ptr+=count;
+			length-=count;
 			if (state.event==READLINE_EVENT_CANCEL){
 				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
 			}
@@ -155,81 +44,6 @@ static void _input_thread(void* ctx){
 					goto _error;
 				}
 			}
-		}
-		continue;
-		for (u32 i=0;i<count;i++){
-			if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_INIT){
-				if (buffer[i]=='['){
-					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS;
-					escape_sequence_state.length=0;
-					continue;
-				}
-				// non-CSI escape sequence
-				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
-			}
-			else if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS||escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE){
-				if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS&&buffer[i]>=0x30&&buffer[i]<=0x3f&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
-					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
-					escape_sequence_state.length++;
-					continue;
-				}
-				if (buffer[i]>=0x20&&buffer[i]<=0x2f&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
-					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_CSI_INTERMEDIATE;
-					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
-					escape_sequence_state.length++;
-					continue;
-				}
-				if (buffer[i]>=0x40&&buffer[i]<=0x7e&&escape_sequence_state.length<MAX_ESCAPE_SEQUENCE_LENGTH){
-					escape_sequence_state.data[escape_sequence_state.length]=buffer[i];
-					escape_sequence_state.length++;
-					escape_sequence_state.data[escape_sequence_state.length]=0;
-					_input_process_csi_sequence(&input_state,escape_sequence_state.data,escape_sequence_state.length);
-					escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
-					continue;
-				}
-				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
-			}
-			if (buffer[i]==0x03){
-				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
-				sys_heap_dealloc(NULL,input_state.line);
-				input_state.line=NULL;
-				input_state.line_length=0;
-				input_state.cursor=0;
-				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
-				continue;
-			}
-			if (buffer[i]==0x08||buffer[i]==0x7f){
-				if (input_state.cursor){
-					_input_delete_character(&input_state,1);
-				}
-				continue;
-			}
-			if (buffer[i]==0x09){
-				sys_io_print_to_fd(out_fd,"<sequence: tab>");
-				continue;
-			}
-			if (buffer[i]==0x0a||buffer[i]==0x0d){
-				sys_io_print_to_fd(out_fd,"\x1b[E\n");
-				input_state.line_length++;
-				input_state.line=sys_heap_realloc(NULL,input_state.line,input_state.line_length);
-				input_state.line[input_state.line_length-1]='\n';
-				sys_error_t ret=sys_fd_write(child_in_fd,input_state.line,input_state.line_length,0);
-				sys_heap_dealloc(NULL,input_state.line);
-				input_state.line=NULL;
-				input_state.line_length=0;
-				input_state.cursor=0;
-				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_NONE;
-				if (!ret||SYS_IS_ERROR(ret)){
-					sys_pipe_close(child_in_fd);
-					return;
-				}
-				continue;
-			}
-			if (buffer[i]==0x1b){
-				escape_sequence_state.state=ESCAPE_SEQUENCE_STATE_INIT;
-				continue;
-			}
-			_input_add_character(&input_state,buffer[i]);
 		}
 	}
 _error:
