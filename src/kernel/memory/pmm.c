@@ -151,8 +151,40 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 static void _background_memory_reset_thread(void){
-	timer_t* timer=timer_create("kernel.memory.reset.interval",1000000000,TIMER_COUNT_INFINITE);
+	timer_t* timer=timer_create("kernel.memory.reset.interval",25000000,TIMER_COUNT_INFINITE);
+	u32 index=0;
+	u32 bucket_index=0;
 	while (1){
+		for (u64 address=_pmm_allocators[index].buckets[bucket_index].head;address;){
+			pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(address);
+			u64 next=block_descriptor->next;
+			if (_block_descriptor_get_idx(address)!=bucket_index){
+				break;
+			}
+			for (u64 i=0;i<(_get_block_size(bucket_index)>>PAGE_SIZE_SHIFT);i++){
+				bitlock_acquire((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+				if (!(block_descriptor->data&PMM_ALLOCATOR_BLOCK_DESCRIPTOR_FLAG_IS_CACHE)&&block_descriptor->cookie==COOKIE_PAGE_DIRTY){
+					u64* ptr=(u64*)(address+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+					for (u64 j=0;j<PAGE_SIZE/sizeof(u64);j++){
+#ifndef KERNEL_RELEASE
+						ptr[j]=PMM_DEBUG_VALUE*0x0101010101010101ull;
+#else
+						ptr[j]=0;
+#endif
+					}
+					block_descriptor->cookie=COOKIE_PAGE_CLEAN;
+				}
+				bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+				address+=PAGE_SIZE;
+				block_descriptor++;
+			}
+			address=next;
+		}
+		bucket_index++;
+		if (bucket_index>=PMM_ALLOCATOR_BUCKET_COUNT){
+			bucket_index=0;
+			index=(index+1>=_pmm_allocator_count?0:index+1);
+		}
 		event_await(timer->event,0);
 	}
 }
@@ -362,12 +394,21 @@ _retry_allocator:
 			WARN("Flush cache @ %p [cookie: %p]",out+offset,block_descriptor->cookie);
 			block_descriptor->cookie=COOKIE_PAGE_DIRTY;
 		}
-		if (block_descriptor->cookie==COOKIE_PAGE_CLEAN){
-			ERROR("Clean page @ %p",out+offset);
-		}
 		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
-		for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
-			ptr[k]=0;
+		if (block_descriptor->cookie==COOKIE_PAGE_CLEAN){
+#ifndef KERNEL_RELEASE
+			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
+				ptr[k]=0;
+			}
+#endif
+		}
+		else if (block_descriptor->cookie==COOKIE_PAGE_DIRTY){
+			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
+				ptr[k]=0;
+			}
+		}
+		else{
+			panic("Invalid page cookie");
 		}
 		bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
 		block_descriptor++;
@@ -388,6 +429,13 @@ KERNEL_PUBLIC void pmm_dealloc(u64 address,u64 count,pmm_counter_descriptor_t* c
 	u32 i=63-__builtin_clzll(count)+(!!(count&(count-1)));
 	if (i>=PMM_ALLOCATOR_BUCKET_COUNT){
 		panic("pmm_dealloc: trying to deallocate too many pages at once");
+	}
+	pmm_block_descriptor_t* block_descriptor=_get_block_descriptor(address);
+	for (u64 j=0;j<(_get_block_size(i)>>PAGE_SIZE_SHIFT);j++){
+		bitlock_acquire((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		block_descriptor->cookie=COOKIE_PAGE_DIRTY;
+		bitlock_release((u32*)(&(block_descriptor->data)),PMM_ALLOCATOR_BLOCK_DESCRIPTOR_LOCK_BIT);
+		block_descriptor++;
 	}
 	scheduler_pause();
 	counter->count-=_get_block_size(i)>>PAGE_SIZE_SHIFT;
