@@ -1,3 +1,4 @@
+#include <readline/readline.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/heap/heap.h>
@@ -132,13 +133,30 @@ static void _input_thread(void* ctx){
 	escape_sequence_state_t escape_sequence_state={
 		ESCAPE_SEQUENCE_STATE_NONE,
 	};
+	readline_state_t state;
+	readline_state_init(out_fd,4096,&state);
 	while (1){
 		u8 buffer[4096];
 		sys_error_t count=sys_fd_read(in_fd,buffer,sizeof(buffer),0);
 		if (!count||SYS_IS_ERROR(count)){
-			sys_pipe_close(child_in_fd);
-			return;
+			goto _error;
 		}
+		const char* ptr=(void*)buffer;
+		while (count){
+			u64 amount=readline_process(&state,ptr,count);
+			ptr+=amount;
+			count-=amount;
+			if (state.event==READLINE_EVENT_CANCEL){
+				sys_signal_dispatch(sys_process_group_get(0),SYS_SIGNAL_INTERRUPT);
+			}
+			else if (state.event==READLINE_EVENT_LINE){
+				sys_error_t ret=sys_fd_write(child_in_fd,state.line,state.line_length,0);
+				if (!ret||SYS_IS_ERROR(ret)){
+					goto _error;
+				}
+			}
+		}
+		continue;
 		for (u32 i=0;i<count;i++){
 			if (escape_sequence_state.state==ESCAPE_SEQUENCE_STATE_INIT){
 				if (buffer[i]=='['){
@@ -214,6 +232,9 @@ static void _input_thread(void* ctx){
 			_input_add_character(&input_state,buffer[i]);
 		}
 	}
+_error:
+	sys_pipe_close(child_in_fd);
+	readline_state_deinit(&state);
 }
 
 
