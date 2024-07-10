@@ -151,7 +151,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 static void _background_memory_reset_thread(void){
-	timer_t* timer=timer_create("kernel.memory.reset.interval",25000000,TIMER_COUNT_INFINITE);
+	timer_t* timer=timer_create("kernel.memory.reset.interval",10000000,TIMER_COUNT_INFINITE);
 	u32 index=0;
 	u32 bucket_index=0;
 	while (1){
@@ -233,6 +233,8 @@ void KERNEL_EARLY_EXEC pmm_init(void){
 	_pmm_load_balancer.stats.hit_count=0;
 	_pmm_load_balancer.stats.miss_count=0;
 	_pmm_load_balancer.stats.miss_locked_count=0;
+	_pmm_load_balancer.stats.clean_count=0;
+	_pmm_load_balancer.stats.dirty_count=0;
 	pmm_load_balancer_stats=&(_pmm_load_balancer.stats);
 	LOG("Registering low memory...");
 	for (u16 i=0;i<kernel_data.mmap_size;i++){
@@ -396,6 +398,7 @@ _retry_allocator:
 		}
 		u64* ptr=(u64*)(out+offset+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		if (block_descriptor->cookie==COOKIE_PAGE_CLEAN){
+			_pmm_load_balancer.stats.clean_count++;
 #ifndef KERNEL_RELEASE
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
@@ -403,6 +406,7 @@ _retry_allocator:
 #endif
 		}
 		else if (block_descriptor->cookie==COOKIE_PAGE_DIRTY){
+			_pmm_load_balancer.stats.dirty_count++;
 			for (u64 k=0;k<PAGE_SIZE/sizeof(u64);k++){
 				ptr[k]=0;
 			}

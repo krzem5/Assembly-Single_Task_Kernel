@@ -59,6 +59,8 @@ typedef struct _PMM_LOAD_BALANCER_STATS{
 	KERNEL_ATOMIC u64 hit_count;
 	KERNEL_ATOMIC u64 miss_count;
 	KERNEL_ATOMIC u64 miss_locked_count;
+	KERNEL_ATOMIC u64 clean_count;
+	KERNEL_ATOMIC u64 dirty_count;
 } pmm_load_balancer_stats_t;
 
 
