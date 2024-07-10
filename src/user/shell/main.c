@@ -38,7 +38,6 @@ s64 main(u32 argc,const char*const* argv){
 	sys_signal_set_mask(1<<SYS_SIGNAL_INTERRUPT,1);
 	shell_environment_t* env=shell_environment_init(argc,argv,_execute_callback,_exit_callback,_default_search_path);
 	shell_environment_add_builtin_commands_and_variables(env);
-	shell_interpreter_execute(env,"fsf format ahci0d0 gpt"); /************************************/
 	while (!env->close_current_session){
 		char cwd_buffer[4096]="???";
 		sys_fd_path(env->cwd_fd,cwd_buffer,sizeof(cwd_buffer));
