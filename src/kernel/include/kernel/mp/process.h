@@ -18,7 +18,6 @@ typedef struct _PROCESS_QUERY_USER_DATA{
 	char image[4096];
 	u32 uid;
 	u32 gid;
-	char vfs_root[4096];
 	char vfs_cwd[4096];
 	u64 fd_stdin;
 	u64 fd_stdout;

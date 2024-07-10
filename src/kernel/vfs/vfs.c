@@ -56,15 +56,21 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 		rwlock_release_write(&(_vfs_root_node->lock));
 		vfs_node_t* old_root=process_kernel->vfs_root;
 		vfs_node_t* old_cwd=process_kernel->vfs_cwd;
+		vfs_node_t* old_home=process_kernel->vfs_home;
+		vfs_node_ref(_vfs_root_node);
 		vfs_node_ref(_vfs_root_node);
 		vfs_node_ref(_vfs_root_node);
 		process_kernel->vfs_root=_vfs_root_node;
 		process_kernel->vfs_cwd=_vfs_root_node;
+		process_kernel->vfs_home=_vfs_root_node;
 		if (old_root){
 			vfs_node_unref(old_root);
 		}
 		if (old_cwd){
 			vfs_node_unref(old_cwd);
+		}
+		if (old_home){
+			vfs_node_unref(old_home);
 		}
 		fs->is_mounted=1;
 		if (fs->descriptor->config->mount_callback){
@@ -121,8 +127,7 @@ KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* p
 	}
 	else if (path[0]=='~'){
 		path++;
-		root=base_root_node;
-		ERROR("vfs_lookup_for_creation: user root");
+		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_home:base_root_node);;
 	}
 	else if (!root){
 		root=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_cwd:base_root_node);

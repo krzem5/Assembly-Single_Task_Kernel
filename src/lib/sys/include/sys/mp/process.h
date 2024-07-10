@@ -27,7 +27,6 @@ typedef struct _SYS_PROCESS_QUERY_RESULT{
 	char image[4096];
 	sys_uid_t uid;
 	sys_gid_t gid;
-	char vfs_root[4096];
 	char vfs_cwd[4096];
 	sys_fd_t fd_stdin;
 	sys_fd_t fd_stdout;

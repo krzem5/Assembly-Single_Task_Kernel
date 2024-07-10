@@ -64,6 +64,7 @@ static void _process_handle_destructor(handle_t* handle){
 	event_dispatch_process_delete_notification(process);
 	vfs_node_unref(process->vfs_root);
 	vfs_node_unref(process->vfs_cwd);
+	vfs_node_unref(process->vfs_home);
 	fd_unref(process->fd_stdin);
 	fd_unref(process->fd_stdout);
 	fd_unref(process->fd_stderr);
@@ -99,6 +100,7 @@ KERNEL_EARLY_INIT(){
 	handle_list_init(&(process_kernel->handle_list));
 	process_kernel->vfs_root=vfs_get_root_node();
 	process_kernel->vfs_cwd=vfs_get_root_node();
+	process_kernel->vfs_home=vfs_get_root_node();
 	process_kernel->fd_stdin=0;
 	process_kernel->fd_stdout=0;
 	process_kernel->fd_stderr=0;
@@ -131,15 +133,18 @@ KERNEL_PUBLIC process_t* process_create(const char* image,const char* name,u64 m
 	format_string(buffer,sizeof(buffer),"%lu",HANDLE_ID_GET_INDEX(out->handle.rb_node.key));
 	out->event=event_create("kernel.process.termination",buffer);
 	handle_list_init(&(out->handle_list));
-	if (THREAD_DATA->header.current_thread){
+	if (THREAD_DATA->header.current_thread&&THREAD_DATA->process!=process_kernel){
 		out->vfs_root=THREAD_DATA->process->vfs_root;
 		out->vfs_cwd=THREAD_DATA->process->vfs_cwd;
+		out->vfs_home=THREAD_DATA->process->vfs_home;
 		vfs_node_ref(THREAD_DATA->process->vfs_root);
 		vfs_node_ref(THREAD_DATA->process->vfs_cwd);
+		vfs_node_ref(THREAD_DATA->process->vfs_home);
 	}
 	else{
-		process_kernel->vfs_root=vfs_get_root_node();
-		process_kernel->vfs_cwd=vfs_get_root_node();
+		out->vfs_root=vfs_get_root_node();
+		out->vfs_cwd=vfs_get_root_node();
+		out->vfs_home=vfs_get_root_node();
 	}
 	out->fd_stdin=0;
 	out->fd_stdout=0;
@@ -414,7 +419,6 @@ error_t syscall_process_query(handle_id_t process_handle,KERNEL_USER_POINTER pro
 	str_copy(process->image->data,(char*)(buffer->image),sizeof(buffer->image));
 	buffer->uid=process->uid;
 	buffer->gid=process->gid;
-	vfs_path(process->vfs_root,(char*)(buffer->vfs_root),sizeof(buffer->vfs_root));
 	vfs_path(process->vfs_cwd,(char*)(buffer->vfs_cwd),sizeof(buffer->vfs_cwd));
 	buffer->fd_stdin=process->fd_stdin;
 	buffer->fd_stdout=process->fd_stdout;

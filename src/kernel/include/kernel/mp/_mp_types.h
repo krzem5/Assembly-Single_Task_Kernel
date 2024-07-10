@@ -78,6 +78,7 @@ typedef struct _PROCESS{
 	handle_list_t handle_list;
 	vfs_node_t* vfs_root;
 	vfs_node_t* vfs_cwd;
+	vfs_node_t* vfs_home;
 	handle_id_t fd_stdin;
 	handle_id_t fd_stdout;
 	handle_id_t fd_stderr;
