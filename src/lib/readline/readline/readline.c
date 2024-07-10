@@ -59,7 +59,9 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 	if (state->_last_character_count){
 		_dynamic_buffer_append(&buffer,tmp,sys_format_string(tmp,sizeof(tmp),"\x1b[%uD",state->_last_character_count));
 	}
-	_dynamic_buffer_append(&buffer,state->line,state->line_length);
+	if (state->line_length){
+		_dynamic_buffer_append(&buffer,state->line,state->line_length);
+	}
 	_dynamic_buffer_append(&buffer,"\x1b[0K",0);
 	if (state->_cursor!=state->line_length){
 		_dynamic_buffer_append(&buffer,tmp,sys_format_string(tmp,sizeof(tmp),"\x1b[%uD",state->line_length-state->_cursor));
