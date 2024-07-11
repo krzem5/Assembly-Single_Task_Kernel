@@ -96,8 +96,96 @@ static void _expand_history(readline_state_t* state,const char* line){
 
 
 
+static const char* _get_autocomplete_prefix(readline_state_t* state){
+	state->line[state->line_length]=0;
+	const char* out=state->line;
+	for (const char* ptr=state->line;*ptr;ptr++){
+		if (*ptr==' '||*ptr=='\t'||*ptr==';'||*ptr=='&'||*ptr=='|'||*ptr=='<'||*ptr=='>'){
+			out=ptr+1;
+		}
+		if (*ptr=='\"'){
+			for (ptr++;*ptr!='\"';ptr++){
+				if (*ptr=='\\'&&*(ptr+1)=='\"'){
+					ptr++;
+				}
+			}
+			continue;
+		}
+	}
+	return out;
+}
+
+
+
+static void _redraw_autocomplete(readline_state_t* state){
+	const char* suffix=state->_autocomplete.data[state->_autocomplete.index];
+	u32 length=sys_string_length(suffix);
+	if (length+state->_autocomplete.offset>state->_max_line_length){
+		length=state->_max_line_length-state->_autocomplete.offset;
+	}
+	sys_memory_copy(suffix,state->line+state->_autocomplete.offset,length);
+	state->line_length=state->_autocomplete.offset+length;
+	state->_cursor=state->line_length;
+	_redraw_line(state,0);
+}
+
+
+
+static void _start_autocomplete(readline_state_t* state){
+	if (!state->_autocomplete_callback){
+		return;
+	}
+	state->_autocomplete.offset=state->line_length;
+	state->_autocomplete.index=0;
+	state->_autocomplete.length=0;
+	state->_autocomplete.data=NULL;
+	state->_autocomplete_callback(state,_get_autocomplete_prefix(state));
+	if (!state->_autocomplete.length){
+		return;
+	}
+	_redraw_autocomplete(state);
+}
+
+
+
+static void _prev_autocomplete(readline_state_t* state){
+	state->_autocomplete.index=(state->_autocomplete.index?state->_autocomplete.index:state->_autocomplete.length)-1;
+	_redraw_autocomplete(state);
+}
+
+
+
+static void _next_autocomplete(readline_state_t* state){
+	state->_autocomplete.index=(state->_autocomplete.index+1>=state->_autocomplete.length?0:state->_autocomplete.index+1);
+	_redraw_autocomplete(state);
+}
+
+
+
+static void _keep_autocomplete(readline_state_t* state){
+	for (u32 i=0;i<state->_autocomplete.length;i++){
+		sys_heap_dealloc(NULL,state->_autocomplete.data[i]);
+	}
+	sys_heap_dealloc(NULL,state->_autocomplete.data);
+	state->_autocomplete.length=0;
+}
+
+
+
+static void _cancel_autocomplete(readline_state_t* state){
+	_keep_autocomplete(state);
+	state->line_length=state->_autocomplete.offset;
+	state->_cursor=state->line_length;
+	_redraw_line(state,0);
+}
+
+
+
 static void _process_csi_sequence(readline_state_t* state){
 	if (!sys_string_compare(state->_escape_sequence.data,"A")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (!state->_history.length){
 			return;
 		}
@@ -116,6 +204,9 @@ static void _process_csi_sequence(readline_state_t* state){
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"B")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (!state->_history.length||!state->_history_index){
 			return;
 		}
@@ -129,12 +220,18 @@ static void _process_csi_sequence(readline_state_t* state){
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"C")){
 		if (state->_cursor<state->line_length){
+			if (state->_autocomplete.length){
+				_keep_autocomplete(state);
+			}
 			state->_cursor++;
 			_redraw_line(state,0);
 		}
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"D")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (state->_cursor){
 			state->_cursor--;
 			_redraw_line(state,0);
@@ -142,6 +239,9 @@ static void _process_csi_sequence(readline_state_t* state){
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"H")||!sys_string_compare(state->_escape_sequence.data,"1~")||!sys_string_compare(state->_escape_sequence.data,"7~")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (state->_cursor){
 			state->_cursor=0;
 			_redraw_line(state,0);
@@ -149,13 +249,25 @@ static void _process_csi_sequence(readline_state_t* state){
 		return;
 	}
 	if (!sys_string_compare(state->_escape_sequence.data,"F")||!sys_string_compare(state->_escape_sequence.data,"4~")||!sys_string_compare(state->_escape_sequence.data,"8~")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (state->_cursor<state->line_length){
 			state->_cursor=state->line_length;
 			_redraw_line(state,0);
 		}
 		return;
 	}
+	if (!sys_string_compare(state->_escape_sequence.data,"Z")){
+		if (state->_autocomplete.length){
+			_prev_autocomplete(state);
+		}
+		return;
+	}
 	if (!sys_string_compare(state->_escape_sequence.data,"3~")){
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		if (state->_cursor<state->line_length){
 			_remove_character(state);
 			_redraw_line(state,0);
@@ -167,13 +279,18 @@ static void _process_csi_sequence(readline_state_t* state){
 
 
 
-SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_state_t* state){
+SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_autocomplete_callback_t autocomplete_callback,readline_state_t* state){
 	state->event=READLINE_EVENT_NONE;
 	state->line=sys_heap_alloc(NULL,max_line_length+2);
 	state->line_length=0;
+	state->_autocomplete.offset=0;
+	state->_autocomplete.index=0;
+	state->_autocomplete.length=0;
+	state->_autocomplete.data=NULL;
 	state->_history.data=sys_heap_alloc(NULL,max_history_length*sizeof(char*));
 	state->_history.length=0;
 	state->_history.max_length=max_history_length;
+	state->_autocomplete_callback=autocomplete_callback;
 	state->_output_fd=output_fd;
 	state->_max_line_length=max_line_length;
 	state->_cursor=0;
@@ -196,6 +313,14 @@ SYS_PUBLIC void readline_state_deinit(readline_state_t* state){
 
 
 
+SYS_PUBLIC void readline_add_autocomplete(readline_state_t* state,const char* suffix){
+	state->_autocomplete.length++;
+	state->_autocomplete.data=sys_heap_realloc(NULL,state->_autocomplete.data,state->_autocomplete.length*sizeof(char*));
+	state->_autocomplete.data[state->_autocomplete.length-1]=sys_string_duplicate(suffix);
+}
+
+
+
 SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 buffer_length){
 	if (state->event==READLINE_EVENT_LINE){
 		state->line_length=0;
@@ -210,6 +335,9 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 				state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_CSI_PARAMETERS;
 				state->_escape_sequence.length=0;
 				continue;
+			}
+			if (state->_escape_sequence.state==READLINE_ESCAPE_SEQUENCE_STATE_INIT&&state->_autocomplete.length){
+				_cancel_autocomplete(state);
 			}
 			// non-CSI escape sequence
 			state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_NONE;
@@ -235,12 +363,18 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 				continue;
 			}
 			state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_NONE;
+			if (state->_escape_sequence.state==READLINE_ESCAPE_SEQUENCE_STATE_INIT&&state->_autocomplete.length){
+				_cancel_autocomplete(state);
+			}
 		}
 		if (buffer[i]==0x03){
 			state->event=READLINE_EVENT_CANCEL;
 			return i+1;
 		}
 		if (buffer[i]==0x08||buffer[i]==0x7f){
+			if (state->_autocomplete.length){
+				_keep_autocomplete(state);
+			}
 			if (state->_cursor){
 				state->_cursor--;
 				_remove_character(state);
@@ -249,7 +383,12 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 			continue;
 		}
 		if (buffer[i]==0x09){
-			sys_io_print_to_fd(state->_output_fd,"<sequence: tab>\n");
+			if (!state->_autocomplete.length){
+				_start_autocomplete(state);
+			}
+			else{
+				_next_autocomplete(state);
+			}
 			continue;
 		}
 		if (buffer[i]==0x0a||buffer[i]==0x0d){
@@ -267,8 +406,14 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 			state->_escape_sequence.state=READLINE_ESCAPE_SEQUENCE_STATE_INIT;
 			continue;
 		}
+		if (state->_autocomplete.length){
+			_keep_autocomplete(state);
+		}
 		_emit_character(state,buffer[i]);
 		_redraw_line(state,0);
+	}
+	if (state->_escape_sequence.state==READLINE_ESCAPE_SEQUENCE_STATE_INIT&&state->_autocomplete.length){
+		_cancel_autocomplete(state);
 	}
 	return buffer_length;
 }

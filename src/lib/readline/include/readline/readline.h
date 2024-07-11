@@ -18,6 +18,23 @@
 
 
 
+struct _READLINE_STATE;
+
+
+
+typedef void (*readline_autocomplete_callback_t)(struct _READLINE_STATE*,const char*);
+
+
+
+typedef struct _READLINE_AUTOCOMPLETE{
+	u32 offset;
+	u32 index;
+	u32 length;
+	char** data;
+} readline_autocomplete_t;
+
+
+
 typedef struct _READLINE_HISTORY{
 	char** data;
 	u32 length;
@@ -38,7 +55,9 @@ typedef struct _READLINE_STATE{
 	u32 event;
 	char* line;
 	u32 line_length;
+	readline_autocomplete_t _autocomplete;
 	readline_history_t _history;
+	readline_autocomplete_callback_t _autocomplete_callback;
 	sys_fd_t _output_fd;
 	u32 _max_line_length;
 	u32 _cursor;
@@ -49,11 +68,15 @@ typedef struct _READLINE_STATE{
 
 
 
-void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_state_t* state);
+void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_length,readline_autocomplete_callback_t autocomplete_callback,readline_state_t* state);
 
 
 
 void readline_state_deinit(readline_state_t* state);
+
+
+
+void readline_add_autocomplete(readline_state_t* state,const char* suffix);
 
 
 
