@@ -346,6 +346,7 @@ def _execute_vm():
 		# "-d","trace:usb*",
 		# "-d","trace:nvme*,trace:pci_nvme*",
 		# "-d","trace:tpm*",
+		# "-d","trace:usb_xhci*",
 		# "--no-reboot",
 		# "-d","guest_errors",
 		# "-d","int,cpu_reset",
