@@ -6,6 +6,7 @@
 #include <sys/memory/memory.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
+#include <sys/util/sort.h>
 
 
 
@@ -56,7 +57,7 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 	if (state->_last_character_count){
 		_dynamic_buffer_append(&buffer,tmp,sys_format_string(tmp,sizeof(tmp),"\x1b[%uD",state->_last_character_count));
 	}
-	if (state->_autocomplete.prefix){
+	if (!add_newline&&state->_autocomplete.prefix){
 		_dynamic_buffer_append(&buffer,state->line,state->_autocomplete.offset);
 		_dynamic_buffer_append(&buffer,"\x1b[36m",5);
 		_dynamic_buffer_append(&buffer,state->line+state->_autocomplete.offset,state->line_length-state->_autocomplete.offset);
@@ -174,6 +175,44 @@ static char* _quote_string(const char* str,u32* length){
 
 
 
+static char* _unquote_string(const char* str){
+	dynamic_buffer_t buffer={
+		NULL,
+		0
+	};
+	const char* copy_start=str;
+	for (;*str;str++){
+		if (*str!='\\'){
+			continue;
+		}
+		_dynamic_buffer_append(&buffer,copy_start,str-copy_start);
+		str++;
+		copy_start=str+1;
+		if (*str=='\\'||*str=='\''||*str=='\"'||*str=='$'){
+			_dynamic_buffer_append(&buffer,str,1);
+		}
+		else if (*str=='e'){
+			_dynamic_buffer_append(&buffer,"\e",1);
+		}
+		else if (*str=='n'){
+			_dynamic_buffer_append(&buffer,"\n",1);
+		}
+		else if (*str=='r'){
+			_dynamic_buffer_append(&buffer,"\r",1);
+		}
+		else if (*str=='t'){
+			_dynamic_buffer_append(&buffer,"\t",1);
+		}
+		else{
+			copy_start=str-1;
+		}
+	}
+	_dynamic_buffer_append(&buffer,copy_start,str-copy_start+1);
+	return buffer.data;
+}
+
+
+
 static void _redraw_autocomplete(readline_state_t* state,const char* str,bool push_to_terminal){
 	u32 length=sys_string_length(str);
 	bool require_quotes=0;
@@ -202,22 +241,29 @@ static void _redraw_autocomplete(readline_state_t* state,const char* str,bool pu
 
 
 
+static bool _autocomplete_sort_callback(const void* a,const void* b){
+	return sys_string_compare(*((const char*const*)a),*((const char*const*)b))<0;
+}
+
+
+
 static void _start_autocomplete(readline_state_t* state){
 	if (!state->_autocomplete_callback){
 		return;
 	}
 	const char* prefix=_get_autocomplete_prefix(state);
-	state->_autocomplete.prefix=sys_string_duplicate(prefix);
+	state->_autocomplete.prefix=_unquote_string(prefix);
 	state->_autocomplete.offset=prefix-state->line;
 	state->_autocomplete.index=0;
 	state->_autocomplete.length=0;
 	state->_autocomplete.data=NULL;
-	state->_autocomplete_callback(state,prefix);
+	state->_autocomplete_callback(state,state->_autocomplete.prefix);
 	if (!state->_autocomplete.length){
 		sys_heap_dealloc(NULL,state->_autocomplete.prefix);
 		state->_autocomplete.prefix=NULL;
 		return;
 	}
+	sys_sort(state->_autocomplete.data,sizeof(char*),state->_autocomplete.length,_autocomplete_sort_callback);
 	_redraw_autocomplete(state,state->_autocomplete.data[0],1);
 }
 
@@ -472,6 +518,9 @@ SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 b
 			continue;
 		}
 		if (buffer[i]==0x0a||buffer[i]==0x0d){
+			if (state->_autocomplete.prefix){
+				_keep_autocomplete(state);
+			}
 			state->_cursor=state->line_length;
 			_redraw_line(state,1);
 			state->line[state->line_length]=0;

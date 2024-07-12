@@ -22,9 +22,28 @@ static sys_fd_t child_out_fd=0;
 
 
 static void _autocomplete_callback(readline_state_t* state,const char* prefix){
-	readline_add_autocomplete(state,"abc");
-	readline_add_autocomplete(state,"def\" ghi\\ xxx\t\n\r\e$");
-	readline_add_autocomplete(state,"XYZ");
+	char path[4096];
+	s32 j=-1;
+	for (u32 i=0;prefix[i]&&i<sizeof(path)-1;i++){
+		path[i]=prefix[i];
+		if (path[i]=='/'){
+			j=i;
+		}
+	}
+	path[j+1]=0;
+	u32 length=sys_string_length(prefix)-j-1;
+	sys_fd_t cwd_fd=sys_fd_dup(SYS_FD_DUP_CWD,0);
+	sys_fd_t fd=sys_fd_open(cwd_fd,(path[0]?path:"."),0);
+	sys_fd_close(cwd_fd);
+	for (sys_fd_iterator_t iter=sys_fd_iter_start(fd);!SYS_IS_ERROR(iter);iter=sys_fd_iter_next(iter)){
+		char name[256];
+		if (SYS_IS_ERROR(sys_fd_iter_get(iter,name,256))||sys_string_compare_up_to(name,prefix+j+1,length)){
+			continue;
+		}
+		sys_string_copy(name,path+j+1);
+		readline_add_autocomplete(state,path);
+	}
+	sys_fd_close(fd);
 }
 
 
