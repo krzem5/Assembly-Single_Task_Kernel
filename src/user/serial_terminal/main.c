@@ -23,7 +23,7 @@ static sys_fd_t child_out_fd=0;
 
 static void _autocomplete_callback(readline_state_t* state,const char* prefix){
 	readline_add_autocomplete(state,"abc");
-	readline_add_autocomplete(state,"defghi");
+	readline_add_autocomplete(state,"def\" ghi\\ xxx\t\n\r\e$");
 	readline_add_autocomplete(state,"XYZ");
 }
 

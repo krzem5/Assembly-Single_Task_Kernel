@@ -27,6 +27,7 @@ typedef void (*readline_autocomplete_callback_t)(struct _READLINE_STATE*,const c
 
 
 typedef struct _READLINE_AUTOCOMPLETE{
+	char* prefix;
 	u32 offset;
 	u32 index;
 	u32 length;
