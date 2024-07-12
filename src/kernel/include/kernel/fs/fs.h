@@ -51,7 +51,7 @@ extern handle_type_t fs_descriptor_handle_type;
 
 
 
-filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config);
+void fs_register_descriptor(const filesystem_descriptor_config_t* config,filesystem_descriptor_t** out);
 
 
 

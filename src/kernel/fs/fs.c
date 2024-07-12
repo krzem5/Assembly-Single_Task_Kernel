@@ -57,7 +57,7 @@ KERNEL_EARLY_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_descriptor_config_t* config){
+KERNEL_PUBLIC void fs_register_descriptor(const filesystem_descriptor_config_t* config,filesystem_descriptor_t** out){
 	LOG("Registering filesystem descriptor '%s'...",config->name);
 	if (!fs_descriptor_handle_type){
 		fs_descriptor_handle_type=handle_alloc("kernel.fs.descriptor",0,NULL);
@@ -66,11 +66,12 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 		_fs_descriptor_allocator=omm_init("kernel.fs.descriptor",sizeof(filesystem_descriptor_t),8,2);
 		rwlock_init(&(_fs_descriptor_allocator->lock));
 	}
-	filesystem_descriptor_t* out=omm_alloc(_fs_descriptor_allocator);
-	out->config=config;
-	handle_new(fs_descriptor_handle_type,&(out->handle));
+	filesystem_descriptor_t* descriptor=omm_alloc(_fs_descriptor_allocator);
+	descriptor->config=config;
+	handle_new(fs_descriptor_handle_type,&(descriptor->handle));
+	*out=descriptor;
 	if (!config->load_callback){
-		return out;
+		return;
 	}
 	HANDLE_FOREACH(partition_handle_type){
 		partition_t* partition=KERNEL_CONTAINEROF(handle,partition_t,handle);
@@ -79,7 +80,6 @@ KERNEL_PUBLIC filesystem_descriptor_t* fs_register_descriptor(const filesystem_d
 		}
 		config->load_callback(partition);
 	}
-	return out;
 }
 
 

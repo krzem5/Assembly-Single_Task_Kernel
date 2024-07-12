@@ -97,9 +97,7 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 	fs->root->name=smm_alloc(child_name,0);
 	rwlock_release_write(&(fs->root->lock));
 	vfs_node_attach_child(parent,fs->root);
-	if (parent){
-		vfs_node_unref(parent);
-	}
+	vfs_node_unref(parent);
 	fs->is_mounted=1;
 	if (fs->descriptor->config->mount_callback){
 		fs->descriptor->config->mount_callback(fs,path);

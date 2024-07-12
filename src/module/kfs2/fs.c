@@ -298,5 +298,5 @@ MODULE_INIT(){
 
 
 MODULE_POSTINIT(){
-	_kfs2_filesystem_descriptor=fs_register_descriptor(&_kfs2_filesystem_descriptor_config);
+	fs_register_descriptor(&_kfs2_filesystem_descriptor_config,&_kfs2_filesystem_descriptor);
 }

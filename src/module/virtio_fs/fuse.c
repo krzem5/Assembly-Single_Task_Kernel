@@ -260,7 +260,7 @@ MODULE_INIT(){
 	LOG("Initializing FUSE driver...");
 	_fuse_vfs_node_allocator=omm_init("fuse.vfs_node",sizeof(fuse_vfs_node_t),8,4);
 	rwlock_init(&(_fuse_vfs_node_allocator->lock));
-	_fuse_filesystem_descriptor=fs_register_descriptor(&_fuse_filesystem_descriptor_config);
+	fs_register_descriptor(&_fuse_filesystem_descriptor_config,&_fuse_filesystem_descriptor);
 }
 
 

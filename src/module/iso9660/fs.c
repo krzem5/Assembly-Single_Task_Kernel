@@ -244,5 +244,5 @@ MODULE_INIT(){
 
 
 MODULE_POSTINIT(){
-	_iso9660_filesystem_descriptor=fs_register_descriptor(&_iso9660_filesystem_descriptor_config);
+	fs_register_descriptor(&_iso9660_filesystem_descriptor_config,&_iso9660_filesystem_descriptor);
 }

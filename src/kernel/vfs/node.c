@@ -167,7 +167,7 @@ KERNEL_PUBLIC u64 vfs_node_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	if (!pointer||(pointer>>63)){
 		vfs_node_t* child=(pointer?((vfs_node_t*)pointer)->relatives.next_sibling:node->relatives.child);
 		for (;child;child=child->relatives.next_sibling){
-			if (child->flags&VFS_NODE_FLAG_VIRTUAL){
+			if (child->fs!=node->fs||(child->flags&VFS_NODE_FLAG_VIRTUAL)){
 				*out=smm_duplicate(child->name);
 				return (u64)child;
 			}

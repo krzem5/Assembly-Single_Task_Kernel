@@ -227,7 +227,7 @@ void KERNEL_EARLY_EXEC initramfs_fs_init(void){
 	INFO("Registering initramfs filesystem descriptor...");
 	_initramfs_vfs_node_allocator=omm_init("kernel.initramfs.vfs_node",sizeof(initramfs_vfs_node_t),8,2);
 	rwlock_init(&(_initramfs_vfs_node_allocator->lock));
-	_initramfs_filesystem_descriptor=fs_register_descriptor(&_initramfs_filesystem_descriptor_config);
+	fs_register_descriptor(&_initramfs_filesystem_descriptor_config,&_initramfs_filesystem_descriptor);
 }
 
 

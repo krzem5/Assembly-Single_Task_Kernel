@@ -99,7 +99,9 @@ MODULE_INIT(){
 
 
 KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config){
-	filesystem_t* out=fs_create(fs_register_descriptor(fs_descriptor_config));
+	filesystem_descriptor_t* descriptor;
+	fs_register_descriptor(fs_descriptor_config,&descriptor);
+	filesystem_t* out=fs_create(descriptor);
 	out->functions=&_dynamicfs_functions;
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);
 	out->root=vfs_node_create(out,NULL,name_string,0);

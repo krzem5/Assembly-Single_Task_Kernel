@@ -112,7 +112,8 @@ static void _thread(filesystem_descriptor_t* fs_descriptor){
 
 void test_fs(void){
 	TEST_MODULE("fs");
-	filesystem_descriptor_t* fs_descriptor=fs_register_descriptor(&_test_fs_filesystem_descriptor_config);
+	filesystem_descriptor_t* fs_descriptor;
+	fs_register_descriptor(&_test_fs_filesystem_descriptor_config,&fs_descriptor);
 	TEST_FUNC("fs_create");
 	TEST_GROUP("correct args");
 	filesystem_t* fs=fs_create(fs_descriptor);
