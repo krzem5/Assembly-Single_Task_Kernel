@@ -30,7 +30,11 @@ static log_buffer_t KERNEL_EARLY_WRITE _log_early_buffer={
 static rwlock_t _log_buffer_lock=RWLOCK_INIT_STRUCT;
 static log_buffer_t* _log_buffer_head=NULL;
 static log_buffer_t* _log_buffer_tail=&_log_early_buffer;
+#ifdef KERNEL_RELEASE
+static u32 _log_mask=(1<<LOG_TYPE_INFO)|(1<<LOG_TYPE_LOG);
+#else
 static u32 _log_mask=0;
+#endif
 
 
 

@@ -99,9 +99,9 @@ KERNEL_PUBLIC bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pc
 			size_high=pci_device_read_data(device,register_index+4);
 			pci_device_write_data(device,register_index+4,bar_high);
 		}
-		if (bar&8){
-			WARN("Prefeachable PCI BAR is unimplemented!");
-		}
+		// if (bar&8){
+		// 	WARN("Prefeachable PCI BAR is unimplemented!");
+		// }
 		mask=0xfffffff0;
 	}
 	out->address=(((u64)bar_high)<<32)|(bar&mask);
