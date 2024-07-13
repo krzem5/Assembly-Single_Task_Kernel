@@ -48,7 +48,7 @@ static void _update_notification_thread(void){
 			handle_release(handle);
 		}
 		else if (notification.type==EVENT_DRIVE_DELETE_NOTIFICATION&&notification.length==sizeof(event_drive_delete_notification_data_t)){
-			ERROR("DELETE DRIVE");
+			// ERROR("DELETE DRIVE");
 		}
 		else if (notification.type==EVENT_PARTITION_CREATE_NOTIFICATION&&notification.length==sizeof(event_partition_create_notification_data_t)){
 			const event_partition_create_notification_data_t* data=notification.data;
@@ -73,7 +73,7 @@ static void _update_notification_thread(void){
 			handle_release(handle);
 		}
 		else if (notification.type==EVENT_PARTITION_DELETE_NOTIFICATION&&notification.length==sizeof(event_partition_delete_notification_data_t)){
-			ERROR("DELETE PARTITION");
+			// ERROR("DELETE PARTITION");
 		}
 	}
 }
