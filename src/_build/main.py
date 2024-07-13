@@ -188,25 +188,24 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 def _compile():
 	changed_files,file_hash_list=_load_changed_files(option("hash_file_path."+MODE_NAME),"src")
 	pool=process_pool.ProcessPool(file_hash_list)
-	out={"efi":False,"data":False}
-	out["efi"]|=_compile_stage("uefi",pool,changed_files,"common","uefi",None,False)
-	out["data"]|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files,"common","kernel",None,False)
+	out=_compile_stage("uefi",pool,changed_files,"common","uefi",None,False)
+	out|=_compile_stage("kernel_"+MODE_NAME,pool,changed_files,"common","kernel",None,False)
 	for tag in config.parse("src/module/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
-		out["data"]|=_compile_stage("module_"+MODE_NAME,pool,changed_files,"module",tag.name,tag,False)
+		out|=_compile_stage("module_"+MODE_NAME,pool,changed_files,"module",tag.name,tag,False)
 	for tag in config.parse("src/lib/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		_generate_header_files(f"src/lib/{tag.name}")
-		out["data"]|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
+		out|=_compile_stage("lib_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
 	for tag in config.parse("src/user/dependencies.config").iter():
 		if (mode!=MODE_COVERAGE and tag.name.startswith("test")):
 			continue
 		tag.data.append(config.ConfigTag(tag,b"runtime",config.CONFIG_TAG_TYPE_STRING,"static"))
-		out["data"]|=_compile_stage("user_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
+		out|=_compile_stage("user_"+MODE_NAME,pool,changed_files,"lib",tag.name,tag,True)
 	for tag in config.parse("src/tool/dependencies.config").iter():
-		out["data"]|=_compile_stage("tool_"+MODE_NAME,pool,changed_files,"common",tag.name,tag,False)
+		out|=_compile_stage("tool_"+MODE_NAME,pool,changed_files,"common",tag.name,tag,False)
 	error=pool.wait()
 	_save_file_hash_list(file_hash_list,option("hash_file_path."+MODE_NAME))
 	if (error):
@@ -249,47 +248,46 @@ def _execute_kfs2_command(command):
 
 
 
-def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
+def _generate_install_disk(rebuild):
 	if (not os.path.exists("build/install_disk.img")):
-		rebuild_uefi_partition=True
-		rebuild_data_partition=True
+		rebuild=True
 		gpt.generate("build/install_disk.img",option("install_disk.block_size"),option("install_disk.size"),option("install_disk.partitions"))
 		_execute_kfs2_command(["format"])
 	if (not os.path.exists("build/partitions/efi.img")):
-		rebuild_uefi_partition=True
+		rebuild=True
 		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={option('install_disk.block_size')}","count=93686"])
 		subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1"])
 		subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
-	if (rebuild_uefi_partition):
-		subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-		subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={option('install_disk.block_size')}","count=93686","seek=34","conv=notrunc"])
-	if (rebuild_data_partition):
-		files={}
-		for module in _get_early_modules():
-			files[f"/boot/module/{module}.mod"]=f"build/module/{module}.mod"
-		files["/boot/module/module_order.config"]="src/config/module_order.config"
-		files["/etc/fs_list.config"]="src/config/fs_list.config"
-		initramfs.create("build/partitions/initramfs.img",files)
-		_execute_compressor_command("build/kernel/kernel.bin")
-		_execute_compressor_command("build/partitions/initramfs.img")
-		_execute_kfs2_command(["mkdir","/bin","0755"])
-		_execute_kfs2_command(["mkdir","/boot","0500"])
-		_execute_kfs2_command(["mkdir","/boot/module","0700"])
-		_execute_kfs2_command(["mkdir","/etc","0755"])
-		_execute_kfs2_command(["mkdir","/lib","0755"])
-		_execute_kfs2_command(["copy","/boot/kernel","0400","build/kernel/kernel.bin.compressed"])
-		_execute_kfs2_command(["copy","/boot/initramfs","0400","build/partitions/initramfs.img.compressed"])
-		_execute_kfs2_command(["copy","/boot/module/module_order.config","0600","src/config/module_order.config"])
-		_execute_kfs2_command(["copy","/etc/fs_list.config","0644","src/config/fs_list.config"])
-		_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
-		for module in os.listdir("build/module"):
-			_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
-		for library in os.listdir("build/lib"):
-			if (not library.endswith(".so")):
-				continue
-			_execute_kfs2_command(["copy",f"/lib/{library}","0755",f"build/lib/{library}"])
-		for program in os.listdir("build/user"):
-			_execute_kfs2_command(["copy",f"/bin/{program}","0755",f"build/user/{program}"])
+	if (not rebuild):
+		return
+	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
+	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={option('install_disk.block_size')}","count=93686","seek=34","conv=notrunc"])
+	files={}
+	for module in _get_early_modules():
+		files[f"/boot/module/{module}.mod"]=f"build/module/{module}.mod"
+	files["/boot/module/module_order.config"]="src/config/module_order.config"
+	files["/etc/fs_list.config"]="src/config/fs_list.config"
+	initramfs.create("build/initramfs/initramfs.img",files)
+	_execute_compressor_command("build/kernel/kernel.bin")
+	_execute_compressor_command("build/initramfs/initramfs.img")
+	_execute_kfs2_command(["mkdir","/bin","0755"])
+	_execute_kfs2_command(["mkdir","/boot","0500"])
+	_execute_kfs2_command(["mkdir","/boot/module","0700"])
+	_execute_kfs2_command(["mkdir","/etc","0755"])
+	_execute_kfs2_command(["mkdir","/lib","0755"])
+	_execute_kfs2_command(["copy","/boot/kernel","0400","build/kernel/kernel.bin.compressed"])
+	_execute_kfs2_command(["copy","/boot/initramfs","0400","build/initramfs/initramfs.img.compressed"])
+	_execute_kfs2_command(["copy","/boot/module/module_order.config","0600","src/config/module_order.config"])
+	_execute_kfs2_command(["copy","/etc/fs_list.config","0644","src/config/fs_list.config"])
+	_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
+	for module in os.listdir("build/module"):
+		_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
+	for library in os.listdir("build/lib"):
+		if (not library.endswith(".so")):
+			continue
+		_execute_kfs2_command(["copy",f"/lib/{library}","0755",f"build/lib/{library}"])
+	for program in os.listdir("build/user"):
+		_execute_kfs2_command(["copy",f"/bin/{program}","0755",f"build/user/{program}"])
 
 
 
@@ -443,11 +441,11 @@ with open("build/last_mode","w") as wf:
 	wf.write(f"{mode}\n")
 if (mode==MODE_COVERAGE):
 	test.generate_test_resource_files()
-install_disk_rebuild_parts=_compile()
+rebuild=_compile()
 _generate_shared_directory()
 if ("--share" in sys.argv):
 	sys.exit(0)
-_generate_install_disk(install_disk_rebuild_parts["efi"],install_disk_rebuild_parts["data"])
+_generate_install_disk(rebuild)
 if ("--run" not in sys.argv):
 	sys.exit(0)
 _execute_vm()
