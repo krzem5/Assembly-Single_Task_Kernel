@@ -86,6 +86,7 @@ static void _byteswap_guid(const u8* src,u8* dst){
 
 static bool _gpt_load_partitions(drive_t* drive){
 	gpt_table_header_t* header=(void*)(pmm_alloc(pmm_align_up_address(drive->block_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	void* entry_buffer=NULL;
 	bool out=0;
 	if (drive_read(drive,1,header,1)!=1||header->signature!=GPT_TABLE_HEADER_SIGNATURE||header->header_size>drive->block_size){
 		goto _cleanup;
@@ -101,10 +102,14 @@ static bool _gpt_load_partitions(drive_t* drive){
 		goto _cleanup;
 	}
 	u32 entry_buffer_size=header->entry_count*header->entry_size;
-	void* entry_buffer=(void*)(pmm_alloc(pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
+	entry_buffer=(void*)(pmm_alloc(pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	u32 aligned_entry_buffer_size=(entry_buffer_size+drive->block_size-1)>>drive->block_size_shift;
 	if (drive_read(drive,header->entry_lba,entry_buffer,aligned_entry_buffer_size)!=aligned_entry_buffer_size){
 		pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
+		goto _cleanup;
+	}
+	if (_calculate_crc(entry_buffer,entry_buffer_size)!=header->entry_crc){
+		ERROR("Incorrect entry crc");
 		goto _cleanup;
 	}
 	INFO("Found valid GPT partition table: %g",header->guid);
@@ -126,9 +131,11 @@ static bool _gpt_load_partitions(drive_t* drive){
 		_byteswap_guid(entry->type_guid,guid);
 		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba,guid);
 	}
-	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 	out=1;
 _cleanup:
+	if (entry_buffer){
+		pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
+	}
 	pmm_dealloc(((u64)header)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(drive->block_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 	return out;
 }

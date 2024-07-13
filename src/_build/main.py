@@ -1,5 +1,6 @@
 import config
 import coverage
+import gpt
 import hashlib
 import initramfs
 import linker
@@ -252,12 +253,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 	if (not os.path.exists("build/install_disk.img")):
 		rebuild_uefi_partition=True
 		rebuild_data_partition=True
-		subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={option('install_disk.block_size')}",f"count={option('install_disk.size')}"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT32","34s","93719s"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{option('install_disk.size')-34}s"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
-		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","type","2","754a1462-85cd-4a8a-9464-69c74b3ac9c4"]) ### fails on parted<3.6
+		gpt.generate("build/install_disk.img",option("install_disk.block_size"),option("install_disk.size"),option("install_disk.partitions"))
 		_execute_kfs2_command(["format"])
 	if (not os.path.exists("build/partitions/efi.img")):
 		rebuild_uefi_partition=True

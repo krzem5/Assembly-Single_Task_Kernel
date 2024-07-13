@@ -102,6 +102,7 @@ def parse(file_path):
 			out=tag
 			continue
 		if (data[i] in CONFIG_DIGIT_CHARACTERS or (data[i] in b"-+" and data[i+1] in CONFIG_DIGIT_CHARACTERS)):
+			start=i
 			is_negative=False
 			if (data[i] in b"-"):
 				is_negative=True
@@ -112,8 +113,10 @@ def parse(file_path):
 			while (data[i] in CONFIG_DIGIT_CHARACTERS):
 				value=value*10+data[i]-48
 				i+=1
-			out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_INT,(-value if is_negative else value)))
-			continue
+			if (data[i] in b"\n,#"):
+				out.data.append(ConfigTag(out,name,CONFIG_TAG_TYPE_INT,(-value if is_negative else value)))
+				continue
+			i=start
 		if (data[i] in b"\""):
 			buffer=b""
 			i+=1
