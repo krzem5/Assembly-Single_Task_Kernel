@@ -154,12 +154,13 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 	str_copy(fs->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
 	if (fs->partition){
 		buffer->partition=fs->partition->handle.rb_node.key;
-		mem_copy((void*)(buffer->uuid),fs->partition->uuid,sizeof(buffer->uuid));
+		mem_copy((void*)(buffer->guid),fs->partition->guid,sizeof(buffer->guid));
 	}
 	else{
 		buffer->partition=0;
-		mem_fill((void*)(buffer->uuid),sizeof(buffer->uuid),0);
+		mem_fill((void*)(buffer->guid),sizeof(buffer->guid),0);
 	}
+	mem_copy((void*)(buffer->uuid),fs->uuid,sizeof(buffer->uuid));
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){
 		buffer->mount_path[0]=0;
 	}

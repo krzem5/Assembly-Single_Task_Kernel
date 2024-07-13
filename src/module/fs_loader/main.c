@@ -80,7 +80,7 @@ static filesystem_t* _match_fs(const char* uuid,const char* guid,const char* typ
 				goto _check_next_fs;
 			}
 			for (u8 i=0;i<16;i++){
-				if (fs->partition->uuid[i]!=guid_data[i]){
+				if (fs->partition->guid[i]!=guid_data[i]){
 					goto _check_next_fs;
 				}
 			}

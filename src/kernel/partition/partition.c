@@ -101,7 +101,7 @@ void partition_load_from_drive(drive_t* drive){
 
 
 
-KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba,const u8* uuid){
+KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba,const u8* guid){
 	LOG("Creating partition '%s' on drive '%s'...",name,drive->model_number->data);
 	handle_acquire(&(drive->partition_table_descriptor->handle));
 	if (!_partition_allocator){
@@ -119,11 +119,11 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 	out->name=smm_alloc(name,0);
 	out->start_lba=start_lba;
 	out->end_lba=end_lba;
-	if (uuid){
-		mem_copy(out->uuid,uuid,16);
+	if (guid){
+		mem_copy(out->guid,guid,16);
 	}
 	else{
-		mem_fill(out->uuid,16,0);
+		mem_fill(out->guid,16,0);
 	}
 	out->fs=NULL;
 	out->fs=fs_load(out);

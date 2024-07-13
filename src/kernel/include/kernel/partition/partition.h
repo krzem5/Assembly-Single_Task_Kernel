@@ -22,7 +22,7 @@ typedef struct _PARTITION{
 	string_t* name;
 	u64 start_lba;
 	u64 end_lba;
-	u8 uuid[16];
+	u8 guid[16];
 	filesystem_t* fs;
 } partition_t;
 
@@ -64,7 +64,7 @@ void partition_load_from_drive(drive_t* drive);
 
 
 
-partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba,const u8* uuid);
+partition_t* partition_create(drive_t* drive,u32 index,const char* name,u64 start_lba,u64 end_lba,const u8* guid);
 
 
 
