@@ -253,6 +253,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		rebuild_uefi_partition=True
 		rebuild_data_partition=True
 		subprocess.run(["dd","if=/dev/zero","of=build/install_disk.img",f"bs={option('install_disk.block_size')}",f"count={option('install_disk.size')}"])
+		subprocess.run(["parted","build/install_disk.img","-a","minimal","version"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT32","34s","93719s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{option('install_disk.size')-34}s"])
