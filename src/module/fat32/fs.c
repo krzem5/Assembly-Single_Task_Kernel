@@ -40,9 +40,19 @@ static filesystem_descriptor_t* KERNEL_INIT_WRITE _fat32_filesystem_descriptor=N
 
 
 
-static u32 _lookup_next_cluster(fat32_filesystem_t* fs,u32 offset){
-	ERROR("_lookup_next_cluster: %u",offset);
-	return 0;
+static u32 _lookup_next_cluster(fat32_filesystem_t* fs,partition_t* partition,u32 offset){
+	if (offset<2||offset>=(fs->sector_count-fs->cluster_offset)/fs->sectors_per_cluster){
+		return 0;
+	}
+	u32 i=offset/(fs->sector_size/sizeof(u32));
+	if (!(fs->fat_bitmap[i>>6]&(1ull<<i))){
+		if (drive_read(partition->drive,partition->start_lba+fs->reserved_sectors+i,((void*)(fs->fat_data))+i*fs->sector_size,1)!=1){
+			return 0;
+		}
+		fs->fat_bitmap[i>>6]|=1ull<<i;
+	}
+	u32 next=fs->fat_data[offset]&0x0fffffff;
+	return (next<2||next>=(fs->sector_count-fs->cluster_offset)/fs->sectors_per_cluster?0:next);
 }
 
 
@@ -53,7 +63,7 @@ static u8* _lookup_dir_entry(fat32_filesystem_t* fs,partition_t* partition,u32 c
 	u32 buffer_offset=0;
 	while (1){
 		if ((pointer&0xffffffff)>=fs->sectors_per_cluster*fs->sector_size){
-			pointer=((u64)_lookup_next_cluster(fs,pointer>>32))<<32;
+			pointer=((u64)_lookup_next_cluster(fs,partition,pointer>>32))<<32;
 			if (!pointer){
 				return NULL;
 			}
@@ -109,7 +119,7 @@ static void _fat32_delete(vfs_node_t* node){
 
 
 static vfs_node_t* _fat32_lookup(vfs_node_t* node,const string_t* name){
-	if (name->length>12){
+	if (!(node->flags&VFS_NODE_TYPE_DIRECTORY)||name->length>12){
 		return NULL;
 	}
 	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
@@ -135,6 +145,9 @@ static vfs_node_t* _fat32_lookup(vfs_node_t* node,const string_t* name){
 
 
 static u64 _fat32_iterate(vfs_node_t* node,u64 pointer,string_t** out){
+	if (!(node->flags&VFS_NODE_TYPE_DIRECTORY)){
+		return 0;
+	}
 	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
 	u8 buffer[512];
 	char name[13]={0};
@@ -147,6 +160,61 @@ static u64 _fat32_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 
 
 
+static u64 _fat32_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
+	fat32_filesystem_t* fs=node->fs->extra_data;
+	partition_t* partition=node->fs->partition;
+	drive_t* drive=partition->drive;
+	if (!fat32_node->cluster||offset>=fat32_node->size){
+		return 0;
+	}
+	if (offset+size>=fat32_node->size){
+		size=fat32_node->size-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	u32 cluster_size=fs->sectors_per_cluster*fs->sector_size;
+	u32 cluster=fat32_node->cluster;
+	for (;cluster&&offset>=cluster_size;cluster=_lookup_next_cluster(fs,partition,cluster)){
+		offset-=cluster_size;
+	}
+	if (!cluster){
+		return 0;
+	}
+	u64 ret=0;
+	do{
+		u32 chunk=(size>cluster_size-offset?cluster_size-offset:size);
+		ret+=chunk;
+		// if (drive_read(drive,partition->start_lba+fs->cluster_offset+cluster*cluster_size,buffer,1)!=1){
+		// 	return ret;
+		// }
+		// check for unaligned chunk against fs->sector_size
+		(void)drive;
+		WARN("Read %u, %u, %u",cluster,offset,chunk);
+		offset=0;
+		buffer+=chunk;
+		size-=chunk;
+		cluster=_lookup_next_cluster(fs,partition,cluster);
+	} while (size);
+	return ret;
+}
+
+
+
+static u64 _fat32_resize(vfs_node_t* node,s64 size,u32 flags){
+	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
+	if (flags&VFS_NODE_FLAG_RESIZE_RELATIVE){
+		if (!size){
+			return fat32_node->size;
+		}
+		size+=fat32_node->size;
+	}
+	return 0;
+}
+
+
+
 static const vfs_functions_t _fat32_functions={
 	_fat32_create,
 	_fat32_delete,
@@ -154,9 +222,9 @@ static const vfs_functions_t _fat32_functions={
 	_fat32_iterate,
 	NULL,
 	NULL,
-	NULL, // _fat32_read
+	_fat32_read,
 	NULL,
-	NULL, // _fat32_resize
+	_fat32_resize,
 	NULL
 };
 
@@ -222,6 +290,7 @@ static filesystem_t* _fat32_fs_load(partition_t* partition){
 	out->root=vfs_node_create(out,NULL,root_name,0);
 	out->root->flags|=VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_PERMANENT|(0755<<VFS_NODE_PERMISSION_SHIFT);
 	((fat32_vfs_node_t*)(out->root))->cluster=root_directory_cluster;
+	((fat32_vfs_node_t*)(out->root))->size=0;
 	return out;
 }
 
