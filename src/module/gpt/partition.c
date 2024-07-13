@@ -68,6 +68,22 @@ static u32 _calculate_crc(const void* data,u32 size){
 
 
 
+static void _byteswap_guid(const u8* src,u8* dst){
+	dst[0]=src[3];
+	dst[1]=src[2];
+	dst[2]=src[1];
+	dst[3]=src[0];
+	dst[4]=src[5];
+	dst[5]=src[4];
+	dst[6]=src[7];
+	dst[7]=src[6];
+	for (u32 i=8;i<16;i++){
+		dst[i]=src[i];
+	}
+}
+
+
+
 static bool _gpt_load_partitions(drive_t* drive){
 	gpt_table_header_t* header=(void*)(pmm_alloc(pmm_align_up_address(drive->block_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter,0)+VMM_HIGHER_HALF_ADDRESS_OFFSET);
 	bool out=0;
@@ -106,7 +122,9 @@ static bool _gpt_load_partitions(drive_t* drive){
 			name_buffer[j]=entry->name[j];
 		}
 		name_buffer[36]=0;
-		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba,entry->type_guid);
+		u8 guid[16];
+		_byteswap_guid(entry->type_guid,guid);
+		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba,guid);
 	}
 	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 	out=1;
