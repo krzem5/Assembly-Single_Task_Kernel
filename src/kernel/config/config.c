@@ -277,7 +277,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 				value=value*10+data[0]-48;
 				data++;
 			} while (CONFIG_TEXT_FILE_IS_NUMBER(data[0]));
-			if (!data[0]||data[0]=='\n'||data[0]==','){
+			if (!data[0]||data[0]=='\n'||data[0]==','||data[0]=='#'){
 				config_tag_t* tag=omm_alloc(_config_tag_allocator);
 				tag->name=name;
 				tag->type=CONFIG_TAG_TYPE_INT;
@@ -337,7 +337,8 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		u32 string_length=0;
-		for (;data+string_length<end&&data[string_length]!='\n';string_length++);
+		for (;data+string_length<end&&data[string_length]!='\n'&&data[string_length]!='#'&&data[string_length]!=',';string_length++);
+		for (;string_length&&(data[string_length-1]==' '||data[string_length-1]=='\t');string_length--);
 		config_tag_t* tag=omm_alloc(_config_tag_allocator);
 		tag->name=name;
 		tag->type=CONFIG_TAG_TYPE_STRING;
