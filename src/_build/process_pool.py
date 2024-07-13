@@ -92,7 +92,7 @@ class ProcessPool(object):
 
 	def _dispatch(self,cmd):
 		self._lock.acquire()
-		if (len(self._pool_threads)<os.cpu_count()-1):
+		if (len(self._pool_threads)<os.cpu_count()):
 			thr=threading.Thread(target=self._pool_thread,args=(len(self._pool_threads),))
 			self._pool_threads.append(thr)
 			thr.start()
