@@ -10,109 +10,113 @@ __all__=["ProcessPool"]
 
 
 class ProcessPoolCommand(object):
-	def __init__(self,pool,file,dependencies,command,name):
+	def __init__(self,pool,file,command,name):
 		self.pool=pool
 		self.file=file
-		self.dependencies=set(dependencies)
+		self.dependencies=set()
 		self.command=command
 		self.name=(name if name else file)
-		if (not self.dependencies):
-			self._trigger()
+		self.fail=False
 
-	def drop_dependency(self,name):
-		self.dependencies.remove(name)
-		if (not self.dependencies):
-			self._trigger()
-
-	def fail(self):
-		self.pool.fail(self.file)
-
-	def _trigger(self):
-		thr=threading.Thread(target=self._thread)
-		thr.start()
-		self.pool._threads.append(thr)
-
-	def _thread(self):
-		error=False
-		output=b""
-		if (isinstance(self.command[0],str)):
-			process=subprocess.run(self.command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-			output=process.stdout
-			error=(process.returncode!=0)
-		else:
-			self.command[0](*self.command[1:])
-		sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(self.name,"utf-8")+b"\x1b[0m\n"+output)
-		sys.stdout.buffer.flush()
-		if (error):
-			if (self.name.split(" ")[-1] in self.pool._file_hash_list):
-				del self.pool._file_hash_list[self.name.split(" ")[-1]]
-			elif (self.file.startswith("build") and os.path.exists(self.file)):
-				os.remove(self.file)
-			self.pool._error=True
+	def update(self):
+		if (self.fail):
 			self.pool.fail(self.file)
-		else:
-			self.pool.dispatch(self.file)
-		self.pool._process_count-=1
+			return
+		if (not self.dependencies):
+			self.pool._dispatch(self)
 
 
 
 class ProcessPool(object):
 	def __init__(self,file_hash_list):
 		self._file_hash_list=file_hash_list
-		self._error=None
-		self._dependency_map={}
-		self._threads=[]
 		self._lock=threading.Lock()
-		self._process_count=0
+		self._dependency_map={}
+		self._ready_queue=[]
+		self._pool_threads=[]
+		self._has_error=False
 
 	def add(self,dependencies,file,name,command):
-		pool_command=ProcessPoolCommand(self,file,dependencies,command,name)
-		fail=False
+		cmd=ProcessPoolCommand(self,file,command,name)
 		self._lock.acquire()
-		for dep in dependencies:
-			dep_state=self._dependency_map.get(dep,[])
-			if (dep_state is True):
-				pool_command.drop_dependency(dep)
-			elif (dep_state is False):
-				fail=True
+		for dep in set(dependencies):
+			if (dep not in self._dependency_map):
+				self._dependency_map[dep]=[]
+			if (self._dependency_map[dep] is False):
+				cmd.fail=True
 				break
-			else:
-				dep_state.append(pool_command)
-				self._dependency_map[dep]=dep_state
-		self._process_count+=1
+			if (self._dependency_map[dep] is not True):
+				self._dependency_map[dep].append(cmd)
+				cmd.dependencies.add(dep)
 		self._lock.release()
-		if (fail):
-			self.fail(file)
+		cmd.update()
 
 	def fail(self,file):
+		update_list=[]
 		self._lock.acquire()
-		fail_list=[file]
-		while (fail_list):
-			file=fail_list.pop()
-			if (file in self._dependency_map and self._dependency_map[file] is not False):
-				for pool_command in self._dependency_map[file]:
-					fail_list.append(pool_command.file)
+		if (file not in self._dependency_map):
+			self._dependency_map[file]=False
+		elif (type(self._dependency_map[file])!=bool):
+			for cmd in self._dependency_map[file]:
+				cmd.fail=True
 			self._dependency_map[file]=False
 		self._lock.release()
+		for cmd in update_list:
+			cmd.update()
 
-	def dispatch(self,file):
+	def success(self,file):
+		update_list=[]
 		self._lock.acquire()
-		if (file in self._dependency_map):
-			if (type(self._dependency_map[file])!=bool):
-				for pool_command in self._dependency_map[file]:
-					pool_command.drop_dependency(file)
-				self._dependency_map[file]=True
-		else:
+		if (file not in self._dependency_map):
+			self._dependency_map[file]=True
+		elif (type(self._dependency_map[file])!=bool):
+			for cmd in self._dependency_map[file]:
+				if (file in cmd.dependencies):
+					cmd.dependencies.remove(file)
+					update_list.append(cmd)
 			self._dependency_map[file]=True
 		self._lock.release()
+		for cmd in update_list:
+			cmd.update()
 
 	def wait(self):
-		self._error=False
-		while (self._threads):
-			self._threads.pop().join()
-		for name in self._dependency_map.keys():
-			if (type(self._dependency_map[name])!=bool):
-				sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(name,"utf-8")+b"\x1b[0m\n")
+		while (self._ready_queue or self._pool_threads):
+			for thread in self._pool_threads[:]:
+				thread.join()
+		for file in self._dependency_map.keys():
+			if (type(self._dependency_map[file])!=bool):
+				sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(file,"utf-8")+b"\x1b[0m\n")
 				sys.stdout.buffer.flush()
-				self._error=True
-		return self._error or bool(self._process_count)
+				self._has_error=True
+		return self._has_error
+
+	def _dispatch(self,cmd):
+		self._lock.acquire()
+		if (len(self._pool_threads)<os.cpu_count()-1):
+			thr=threading.Thread(target=self._pool_thread,args=(len(self._pool_threads),))
+			self._pool_threads.append(thr)
+			thr.start()
+		self._ready_queue.append(cmd)
+		self._lock.release()
+
+	def _pool_thread(self,index):
+		while (True):
+			self._lock.acquire()
+			if (not self._ready_queue):
+				self._pool_threads.remove(threading.current_thread())
+				self._lock.release()
+				return
+			cmd=self._ready_queue.pop(0)
+			self._lock.release()
+			process=subprocess.run(cmd.command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+			sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(f"[{index:02d}] {cmd.name}","utf-8")+b"\x1b[0m\n"+process.stdout)
+			sys.stdout.buffer.flush()
+			if (process.returncode!=0):
+				if (cmd.name.split(" ")[-1] in self._file_hash_list):
+					del self._file_hash_list[cmd.name.split(" ")[-1]]
+				elif (cmd.file.startswith("build") and os.path.exists(cmd.file)):
+					os.remove(cmd.file)
+				self._has_error=True
+				self.fail(cmd.file)
+			else:
+				self.success(cmd.file)

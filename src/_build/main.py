@@ -155,7 +155,7 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		object_file=option(config_prefix+".object_file_directory")+file.replace("/","#")+".o"
 		object_files.append(object_file)
 		if (_file_not_changed(changed_files,object_file+".deps")):
-			pool.dispatch(object_file)
+			pool.success(object_file)
 			continue
 		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
@@ -173,14 +173,14 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 				pool.add([output_file_path],output_file_path,"P "+output_file_path,shlex.split(option(config_prefix+".command.patch").replace("$NAME",name)))
 			has_updates=True
 		else:
-			pool.dispatch(output_file_path)
+			pool.success(output_file_path)
 	if (option(config_prefix+".command.archive")):
 		output_file_path=option(config_prefix+".archive_output_file_path").replace("$NAME",name)
 		if (has_updates or not os.path.exists(output_file_path)):
 			pool.add(object_files,output_file_path,"A "+output_file_path,shlex.split(option(config_prefix+".command.archive"))+[output_file_path]+object_files)
 			has_updates=True
 		else:
-			pool.dispatch(output_file_path)
+			pool.success(output_file_path)
 	return has_updates
 
 
