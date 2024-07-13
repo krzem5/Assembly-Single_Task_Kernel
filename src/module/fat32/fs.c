@@ -275,7 +275,7 @@ static filesystem_t* _fat32_fs_load(partition_t* partition){
 		return NULL;
 	}
 	char oem_name[9];
-	str_copy_from_padded((const char*)buffer+3,oem_name,8);
+	str_copy_from_padded((const char*)(buffer+3),oem_name,8);
 	INFO("Found FAT32 filesystem '%s'",oem_name);
 	fat32_filesystem_t* extra_data=omm_alloc(_fat32_filesystem_allocator);
 	extra_data->sector_size=sector_size;
