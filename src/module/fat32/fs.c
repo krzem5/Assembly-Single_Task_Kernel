@@ -185,13 +185,14 @@ static u64 _fat32_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fla
 	u64 ret=0;
 	do{
 		u32 chunk=(size>cluster_size-offset?cluster_size-offset:size);
+		if (offset&(drive->block_size-1)){
+			ERROR("Unaligned access");
+			return 0;
+		}
+		if (drive_read(drive,partition->start_lba+fs->cluster_offset+(cluster*cluster_size+offset)/drive->block_size,buffer,chunk/drive->block_size)!=chunk/drive->block_size){
+			return ret;
+		}
 		ret+=chunk;
-		// if (drive_read(drive,partition->start_lba+fs->cluster_offset+cluster*cluster_size,buffer,1)!=1){
-		// 	return ret;
-		// }
-		// check for unaligned chunk against fs->sector_size
-		(void)drive;
-		WARN("Read %u, %u, %u",cluster,offset,chunk);
 		offset=0;
 		buffer+=chunk;
 		size-=chunk;
