@@ -152,8 +152,14 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 	}
 	filesystem_t* fs=KERNEL_CONTAINEROF(fs_handle,filesystem_t,handle);
 	str_copy(fs->descriptor->config->name,(char*)(buffer->type),sizeof(buffer->type));
-	buffer->partition=(fs->partition?fs->partition->handle.rb_node.key:0);
-	mem_copy((void*)(buffer->uuid),fs->uuid,sizeof(buffer->uuid));
+	if (fs->partition){
+		buffer->partition=fs->partition->handle.rb_node.key;
+		mem_copy((void*)(buffer->uuid),fs->partition->uuid,sizeof(buffer->uuid));
+	}
+	else{
+		buffer->partition=0;
+		mem_fill((void*)(buffer->uuid),sizeof(buffer->uuid),0);
+	}
 	if (!fs->is_mounted||!vfs_path(fs->root,(char*)(buffer->mount_path),sizeof(buffer->mount_path))){
 		buffer->mount_path[0]=0;
 	}

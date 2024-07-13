@@ -106,7 +106,7 @@ static bool _gpt_load_partitions(drive_t* drive){
 			name_buffer[j]=entry->name[j];
 		}
 		name_buffer[36]=0;
-		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba);
+		partition_create(drive,i/header->entry_size,name_buffer,entry->start_lba,entry->end_lba,entry->type_guid);
 	}
 	pmm_dealloc(((u64)entry_buffer)-VMM_HIGHER_HALF_ADDRESS_OFFSET,pmm_align_up_address(entry_buffer_size)>>PAGE_SIZE_SHIFT,_gpt_driver_pmm_counter);
 	out=1;

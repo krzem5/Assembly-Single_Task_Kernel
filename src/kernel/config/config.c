@@ -263,6 +263,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 			continue;
 		}
 		if (CONFIG_TEXT_FILE_IS_NUMBER(data[0])||((data[0]=='-'||data[0]=='+')&&CONFIG_TEXT_FILE_IS_NUMBER(data[1]))){
+			const char* start=data;
 			bool is_negative=0;
 			if (data[0]=='-'){
 				is_negative=1;
@@ -276,12 +277,15 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 				value=value*10+data[0]-48;
 				data++;
 			} while (CONFIG_TEXT_FILE_IS_NUMBER(data[0]));
-			config_tag_t* tag=omm_alloc(_config_tag_allocator);
-			tag->name=name;
-			tag->type=CONFIG_TAG_TYPE_INT;
-			tag->int_=(is_negative?-value:value);
-			config_tag_attach(out,tag);
-			continue;
+			if (!data[0]||data[0]=='\n'||data[0]==','){
+				config_tag_t* tag=omm_alloc(_config_tag_allocator);
+				tag->name=name;
+				tag->type=CONFIG_TAG_TYPE_INT;
+				tag->int_=(is_negative?-value:value);
+				config_tag_attach(out,tag);
+				continue;
+			}
+			data=start;
 		}
 		if (data[0]=='\"'){
 			char* buffer=NULL;

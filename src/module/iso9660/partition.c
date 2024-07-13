@@ -26,7 +26,7 @@ static bool _iso9660_load_partitions(drive_t* drive){
 			case 1:
 				char name_buffer[32];
 				str_copy_from_padded(volume_descriptor->primary_volume_descriptor.volume_name,name_buffer,32);
-				partition_create(drive,block_index-16,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size);
+				partition_create(drive,block_index-16,name_buffer,0,volume_descriptor->primary_volume_descriptor.volume_size,NULL);
 				return 1;
 			case 255:
 				return 0;
