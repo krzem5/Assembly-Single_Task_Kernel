@@ -130,9 +130,9 @@ static vfs_node_t* _fat32_lookup(vfs_node_t* node,const string_t* name){
 		return 0;
 	}
 	fat32_vfs_node_t* out=(fat32_vfs_node_t*)vfs_node_create(node->fs,NULL,name,0);
-	out->node.flags|=(0755<<VFS_NODE_PERMISSION_SHIFT);
+	out->node.flags|=(entry[11]&0x01?0444:0666)<<VFS_NODE_PERMISSION_SHIFT;
 	if (entry[11]&0x10){
-		out->node.flags|=VFS_NODE_TYPE_DIRECTORY;
+		out->node.flags|=VFS_NODE_TYPE_DIRECTORY|(0111<<VFS_NODE_PERMISSION_SHIFT);
 	}
 	else{
 		out->node.flags|=VFS_NODE_TYPE_FILE;
@@ -289,7 +289,7 @@ static filesystem_t* _fat32_fs_load(partition_t* partition){
 	out->extra_data=extra_data;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=vfs_node_create(out,NULL,root_name,0);
-	out->root->flags|=VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_PERMANENT|(0755<<VFS_NODE_PERMISSION_SHIFT);
+	out->root->flags|=VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_PERMANENT|(0777<<VFS_NODE_PERMISSION_SHIFT);
 	((fat32_vfs_node_t*)(out->root))->cluster=root_directory_cluster;
 	((fat32_vfs_node_t*)(out->root))->size=0;
 	return out;
