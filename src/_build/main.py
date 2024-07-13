@@ -256,6 +256,7 @@ def _generate_install_disk(rebuild_uefi_partition,rebuild_data_partition):
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mklabel","gpt"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","EFI","FAT32","34s","93719s"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","mkpart","DATA","93720s",f"{option('install_disk.size')-34}s"])
+		# subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","type","2","00112233-4455-6677-8899-aabbccddeeff"])
 		subprocess.run(["parted","build/install_disk.img","-s","-a","minimal","toggle","1","boot"])
 		_execute_kfs2_command(["format"])
 	if (not os.path.exists("build/partitions/efi.img")):
