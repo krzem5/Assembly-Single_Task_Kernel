@@ -84,7 +84,7 @@ void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 	fuse_init_in->major=FUSE_VERSION_MAJOR;
 	fuse_init_in->minor=FUSE_VERSION_MINOR;
 	fuse_init_in->max_readahead=0;
-	fuse_init_in->flags=0;
+	fuse_init_in->flags=FUSE_FLAG_SUBMOUNTS;
 	fuse_init_in->flags2=0;
 	fuse_init_out_t* fuse_init_out=amm_alloc(sizeof(fuse_init_out_t));
 	virtio_buffer_t buffers[2]={
