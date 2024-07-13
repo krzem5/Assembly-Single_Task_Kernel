@@ -4,6 +4,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/module/module.h>
+#include <kernel/time/time.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
 #include <kernel/util/util.h>
@@ -130,6 +131,15 @@ static vfs_node_t* _fat32_lookup(vfs_node_t* node,const string_t* name){
 		return 0;
 	}
 	fat32_vfs_node_t* out=(fat32_vfs_node_t*)vfs_node_create(node->fs,NULL,name,0);
+	u16 time_bits=*((const u16*)(entry+14));
+	u16 date_bits=*((const u16*)(entry+16));
+	out->node.time_birth=time_to_nanoseconds(1980+(date_bits>>9),(date_bits>>5)&15,date_bits&31,time_bits>>11,(time_bits>>5)&63,(time_bits&31)*2+entry[13]/100)+(entry[13]%100)*1000000;
+	time_bits=*((const u16*)(entry+22));
+	date_bits=*((const u16*)(entry+24));
+	out->node.time_modify=time_to_nanoseconds(1980+(date_bits>>9),(date_bits>>5)&15,date_bits&31,time_bits>>11,(time_bits>>5)&63,(time_bits&31)*2);
+	out->node.time_change=out->node.time_modify;
+	date_bits=*((const u16*)(entry+18));
+	out->node.time_access=time_to_nanoseconds(1980+(date_bits>>9),(date_bits>>5)&15,date_bits&31,0,0,0);
 	out->node.flags|=(entry[11]&0x01?0444:0666)<<VFS_NODE_PERMISSION_SHIFT;
 	if (entry[11]&0x10){
 		out->node.flags|=VFS_NODE_TYPE_DIRECTORY|(0111<<VFS_NODE_PERMISSION_SHIFT);
