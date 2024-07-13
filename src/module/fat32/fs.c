@@ -27,6 +27,7 @@ typedef struct _FAT32_FILESYSTEM{
 typedef struct _FAT32_VFS_NODE{
 	vfs_node_t node;
 	u32 cluster;
+	u32 size;
 } fat32_vfs_node_t;
 
 
@@ -36,6 +37,60 @@ static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _fat32_buffer_pmm_counter=NUL
 static omm_allocator_t* KERNEL_INIT_WRITE _fat32_vfs_node_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fat32_filesystem_allocator=NULL;
 static filesystem_descriptor_t* KERNEL_INIT_WRITE _fat32_filesystem_descriptor=NULL;
+
+
+
+static u32 _lookup_next_cluster(fat32_filesystem_t* fs,u32 offset){
+	ERROR("_lookup_next_cluster: %u",offset);
+	return 0;
+}
+
+
+
+static u8* _lookup_dir_entry(fat32_filesystem_t* fs,partition_t* partition,u32 cluster,u8* buffer,u64* ptr,char* name){
+	drive_t* drive=partition->drive;
+	u64 pointer=(*ptr?*ptr:((u64)cluster)<<32);
+	u32 buffer_offset=0;
+	while (1){
+		if ((pointer&0xffffffff)>=fs->sectors_per_cluster*fs->sector_size){
+			pointer=((u64)_lookup_next_cluster(fs,pointer>>32))<<32;
+			if (!pointer){
+				return NULL;
+			}
+		}
+		u32 pointer_offset=(pointer>>32)*fs->sectors_per_cluster+(pointer&0xffffffff)/fs->sector_size;
+		if (pointer_offset!=buffer_offset){
+			if (drive_read(drive,partition->start_lba+fs->cluster_offset+pointer_offset,buffer,1)!=1){
+				return NULL;
+			}
+			buffer_offset=pointer_offset;
+		}
+		u32 offset=pointer&(fs->sector_size-1);
+		if (buffer[offset]==0x05||buffer[offset]=='.'||buffer[offset]==0xe5||(buffer[offset+11]&0xc8)){
+			pointer+=32;
+			continue;
+		}
+		if (!buffer[offset]){
+			return NULL;
+		}
+		char entry_name[13];
+		str_copy_from_padded((const char*)(buffer+offset),entry_name,8);
+		if (!(buffer[offset+11]&0x10)){
+			char* end=entry_name+smm_length(entry_name);
+			*end='.';
+			str_copy_from_padded((const char*)(buffer+offset+8),end+1,3);
+		}
+		pointer+=32;
+		if (!name[0]||str_equal(name,entry_name)){
+			if (!name[0]){
+				str_copy(entry_name,name,13);
+			}
+			*ptr=pointer;
+			return buffer+((pointer-32)&(fs->sector_size-1));
+		}
+	}
+	return NULL;
+}
 
 
 
@@ -54,30 +109,40 @@ static void _fat32_delete(vfs_node_t* node){
 
 
 static vfs_node_t* _fat32_lookup(vfs_node_t* node,const string_t* name){
-	ERROR("Lookup: %s",name->data);
-	return NULL;
+	if (name->length>12){
+		return NULL;
+	}
+	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
+	u8 buffer[512];
+	u64 pointer=0;
+	const u8* entry=_lookup_dir_entry(node->fs->extra_data,node->fs->partition,fat32_node->cluster,buffer,&pointer,(char*)(name->data));
+	if (!entry){
+		return 0;
+	}
+	fat32_vfs_node_t* out=(fat32_vfs_node_t*)vfs_node_create(node->fs,NULL,name,0);
+	out->node.flags|=(0755<<VFS_NODE_PERMISSION_SHIFT);
+	if (entry[11]&0x10){
+		out->node.flags|=VFS_NODE_TYPE_DIRECTORY;
+	}
+	else{
+		out->node.flags|=VFS_NODE_TYPE_FILE;
+	}
+	out->cluster=(*((const u16*)(entry+26)))|((*((const u16*)(entry+20)))<<16);
+	out->size=*((const u32*)(entry+28));
+	return (vfs_node_t*)out;
 }
 
 
 
 static u64 _fat32_iterate(vfs_node_t* node,u64 pointer,string_t** out){
-	// upper 32 bits: cluster, lower 32 bits: offset
 	fat32_vfs_node_t* fat32_node=(fat32_vfs_node_t*)node;
-	fat32_filesystem_t* fs=node->fs->extra_data;
-	partition_t* partition=node->fs->partition;
-	drive_t* drive=partition->drive;
-	if (!pointer){
-		pointer=((u64)(fat32_node->cluster))<<32;
-	}
 	u8 buffer[512];
-	WARN("%u",(pointer>>32)*fs->sectors_per_cluster+(pointer&0xffffffff)/fs->sector_size);
-	if (drive_read(drive,partition->start_lba+fs->cluster_offset+(pointer>>32)*fs->sectors_per_cluster+(pointer&0xffffffff)/fs->sector_size,buffer,1)!=1){
+	char name[13]={0};
+	if (!_lookup_dir_entry(node->fs->extra_data,node->fs->partition,fat32_node->cluster,buffer,&pointer,name)){
 		return 0;
 	}
-	for (u32 i=0;i<512;i+=8){
-		WARN("[%u]: %X %X %X %X %X %X %X %X | %c %c %c %c %c %c %c %c",i,buffer[i],buffer[i+1],buffer[i+2],buffer[i+3],buffer[i+4],buffer[i+5],buffer[i+6],buffer[i+7],buffer[i],buffer[i+1],buffer[i+2],buffer[i+3],buffer[i+4],buffer[i+5],buffer[i+6],buffer[i+7]);
-	}
-	return 0;
+	*out=smm_alloc(name,0);
+	return pointer;
 }
 
 
@@ -155,7 +220,7 @@ static filesystem_t* _fat32_fs_load(partition_t* partition){
 	out->extra_data=extra_data;
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=vfs_node_create(out,NULL,root_name,0);
-	out->root->flags|=VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_PERMANENT|(0644<<VFS_NODE_PERMISSION_SHIFT);
+	out->root->flags|=VFS_NODE_TYPE_DIRECTORY|VFS_NODE_FLAG_PERMANENT|(0755<<VFS_NODE_PERMISSION_SHIFT);
 	((fat32_vfs_node_t*)(out->root))->cluster=root_directory_cluster;
 	return out;
 }
