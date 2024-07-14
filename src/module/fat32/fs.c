@@ -33,7 +33,6 @@ typedef struct _FAT32_VFS_NODE{
 
 
 
-
 static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _fat32_buffer_pmm_counter=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fat32_vfs_node_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _fat32_filesystem_allocator=NULL;
