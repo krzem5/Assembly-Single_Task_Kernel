@@ -262,16 +262,8 @@ def _generate_install_disk(rebuild):
 		gpt.generate("build/install_disk.img",option("install_disk.block_size"),option("install_disk.size"),option("install_disk.partitions"))
 		_execute_fat32_command(["format"])
 		_execute_kfs2_command(["format"])
-	if (not os.path.exists("build/partitions/efi.img")):
-		rebuild=True
-		# remove build/partitions from 'build_common.config'
-		subprocess.run(["dd","if=/dev/zero","of=build/partitions/efi.img",f"bs={option('install_disk.block_size')}","count=93686"])
-		subprocess.run(["mformat","-i","build/partitions/efi.img","-h","32","-t","32","-n","64","-c","1"])
-		subprocess.run(["mmd","-i","build/partitions/efi.img","::/EFI","::/EFI/BOOT"])
 	if (not rebuild):
 		return
-	subprocess.run(["mcopy","-i","build/partitions/efi.img","-D","o","build/uefi/loader.efi","::/EFI/BOOT/BOOTX64.EFI"])
-	subprocess.run(["dd","if=build/partitions/efi.img","of=build/install_disk.img",f"bs={option('install_disk.block_size')}","count=93686","seek=34","conv=notrunc"])
 	_execute_fat32_command(["mkdir","/EFI"])
 	_execute_fat32_command(["mkdir","/EFI/BOOT"])
 	_execute_fat32_command(["copy","/EFI/BOOT/BOOTX64.EFI","build/uefi/loader.efi"])

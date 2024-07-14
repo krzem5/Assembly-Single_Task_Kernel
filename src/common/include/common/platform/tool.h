@@ -22,7 +22,7 @@ static inline __attribute__((always_inline)) void mem_fill(void* ptr,u64 length,
 
 
 static inline __attribute__((always_inline,noreturn)) void panic(const char* msg){
-	printf("%s\n",msg);
+	printf("\x1b[1;91m%s\x1b[0m\n",msg);
 	exit(1);
 }
 
