@@ -393,10 +393,29 @@ bool fat32_node_unlink(fat32_filesystem_t* fs,fat32_node_t* parent,fat32_node_t*
 
 
 u64 fat32_node_read(fat32_filesystem_t* fs,fat32_node_t* node,u64 offset,void* buffer,u64 size){
-	if (node->flags&FAT32_NODE_FLAG_DIRECTORY){
+	if ((node->flags&FAT32_NODE_FLAG_DIRECTORY)||offset>=node->size){
 		return 0;
 	}
-	panic("fat32_node_read");
+	if (offset+size>=node->size){
+		size=node->size-offset;
+	}
+	if (!size){
+		return 0;
+	}
+	u64 out=size;
+	data_chunk_t chunk;
+	_chunk_init(&chunk);
+	size+=offset;
+	while (offset<size){
+		_chunk_read(fs,node,offset,1,&chunk);
+		u64 padding=offset&(fs->cluster_size-1);
+		u64 read_size=(fs->cluster_size-padding>size-offset?size-offset:fs->cluster_size-padding);
+		mem_copy(buffer,chunk.data+padding,read_size);
+		buffer+=read_size;
+		offset+=read_size;
+	}
+	_chunk_deinit(fs,&chunk);
+	return out;
 }
 
 
