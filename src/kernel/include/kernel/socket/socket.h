@@ -148,4 +148,8 @@ bool socket_move(vfs_node_t* node,const char* path);
 
 
 
+bool socket_move_direct(vfs_node_t* node,vfs_node_t* parent,const char* child_name);
+
+
+
 #endif

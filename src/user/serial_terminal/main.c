@@ -132,11 +132,12 @@ s64 main(u32 argc,const char*const* argv){
 	}
 	sys_fd_lock(in_fd,sys_process_get_handle());
 	sys_fd_lock(out_fd,sys_process_get_handle());
-	sys_fd_t child_pipes[2];
+	sys_fd_t child_pipes[3];
 	u64 devfs_syscall_table_offset=sys_syscall_get_table_offset("devfs");
 	if (SYS_IS_ERROR(devfs_syscall_table_offset)||SYS_IS_ERROR(_sys_syscall1(devfs_syscall_table_offset|0x00000001,(u64)child_pipes))){
 		child_pipes[0]=sys_pipe_create(NULL);
 		child_pipes[1]=sys_pipe_create(NULL);
+		child_pipes[2]=0;
 	}
 	child_in_fd=sys_fd_dup(child_pipes[0],SYS_FD_FLAG_WRITE);
 	sys_fd_t stdin=sys_fd_dup(child_pipes[0],SYS_FD_FLAG_READ);

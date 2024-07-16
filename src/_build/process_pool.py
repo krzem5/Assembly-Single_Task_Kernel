@@ -84,10 +84,18 @@ class ProcessPool(object):
 			for thread in self._pool_threads[:]:
 				thread.join()
 		for file in self._dependency_map.keys():
-			if (type(self._dependency_map[file])!=bool):
-				sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(file,"utf-8")+b"\x1b[0m\n")
-				sys.stdout.buffer.flush()
-				self._has_error=True
+			if (type(self._dependency_map[file])==bool):
+				continue
+			is_not_circular=False
+			for cmd in self._dependency_map[file]:
+				if (cmd.dependencies-{file}):
+					is_not_circular=True
+					break
+			if (not is_not_circular):
+				continue
+			sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(file,"utf-8")+b"\x1b[0m\n")
+			sys.stdout.buffer.flush()
+			self._has_error=True
 		return self._has_error
 
 	def _dispatch(self,cmd):

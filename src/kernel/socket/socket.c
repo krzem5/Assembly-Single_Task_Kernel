@@ -339,6 +339,16 @@ KERNEL_PUBLIC bool socket_move(vfs_node_t* node,const char* path){
 		ERROR("socket_move: node already exists");
 		return 0;
 	}
+	return socket_move_direct(node,parent,child_name);
+}
+
+
+
+KERNEL_PUBLIC bool socket_move_direct(vfs_node_t* node,vfs_node_t* parent,const char* child_name){
+	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
+		return 0;
+	}
+	vfs_node_dettach_child(node);
 	rwlock_acquire_write(&(node->lock));
 	smm_dealloc(node->name);
 	node->name=smm_alloc(child_name,0);
