@@ -39,6 +39,9 @@ static u64 _link_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 
 
 static error_t _syscall_create_terminal(KERNEL_USER_POINTER handle_id_t* pipes){
+	if (syscall_get_user_pointer_max_length((void*)pipes)<2*sizeof(handle_id_t)){
+		return ERROR_INVALID_ARGUMENT(0);
+	}
 	u64 id=__atomic_fetch_add(&_devfs_terminal_next_id,1,__ATOMIC_SEQ_CST);
 	char buffer[64];
 	format_string(buffer,sizeof(buffer),"ter%lu",id);
