@@ -12,6 +12,8 @@
 #include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <terminal/server.h>
+#include <terminal/session.h>
 #include <terminal/terminal.h>
 
 
@@ -94,23 +96,25 @@ static void _output_thread(void* ctx){
 
 
 
+static u32 _control_flag_update_callback(u32 clear,u32 set){
+	sys_io_print_to_fd(out_fd,"<_control_flag_update_callback: %x, %x>\n",clear,set);
+	return 0;
+}
+
+
+
 static void _control_thread(void* ctx){
 	terminal_session_t session;
-	if (!terminal_open_session_from_fd(ctrl_fd,&session)){
+	if (!terminal_session_open_from_fd(ctrl_fd,&session)){
 		sys_fd_close(ctrl_fd);
 		return;
 	}
-	while (1){
-		u8 buffer[4096];
-		sys_error_t length=sys_socket_recv(ctrl_fd,buffer,sizeof(buffer),0);
-		if (SYS_IS_ERROR(length)){
-			if (length==SYS_ERROR_NO_SPACE){
-				continue;
-			}
-			break;
-		}
-		sys_io_print_to_fd(out_fd,"<control message: %u | %s>\n",length,buffer);
-	}
+	terminal_server_state_t state={
+		.flags=0,
+		.flag_update_callback=_control_flag_update_callback
+	};
+	while (terminal_server_process_packet(&session,&state));
+	terminal_session_close(&session);
 }
 
 

@@ -64,13 +64,18 @@ static error_t _syscall_create_terminal(KERNEL_USER_POINTER handle_id_t* pipes){
 	output_pipe->gid=THREAD_DATA->process->gid;
 	pipes[1]=fd_from_node(output_pipe,FD_FLAG_READ|FD_FLAG_WRITE);
 	vfs_node_unref(output_pipe);
-	vfs_node_t* ctrl_socket=socket_create(SOCKET_DOMAIN_UNIX,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_NONE);
-	ctrl_socket->flags|=(0660<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_TEMPORARY;
-	ctrl_socket->uid=THREAD_DATA->process->uid;
-	ctrl_socket->gid=THREAD_DATA->process->gid;
-	socket_move_direct(ctrl_socket,node,"ctrl");
-	pipes[2]=fd_from_node(ctrl_socket,FD_FLAG_READ|FD_FLAG_WRITE);
-	vfs_node_unref(ctrl_socket);
+	socket_pair_t ctrl_pair;
+	if (socket_create_pair(SOCKET_DOMAIN_UNIX,SOCKET_TYPE_DGRAM,SOCKET_PROTOCOL_NONE,&ctrl_pair)){
+		ctrl_pair.sockets[0]->node.flags|=(0660<<VFS_NODE_PERMISSION_SHIFT)|VFS_NODE_FLAG_TEMPORARY;
+		ctrl_pair.sockets[0]->node.uid=THREAD_DATA->process->uid;
+		ctrl_pair.sockets[0]->node.gid=THREAD_DATA->process->gid;
+		socket_move_direct(&(ctrl_pair.sockets[0]->node),node,"ctrl");
+		pipes[2]=fd_from_node(&(ctrl_pair.sockets[1]->node),FD_FLAG_READ|FD_FLAG_WRITE);
+		vfs_node_unref(&(ctrl_pair.sockets[1]->node));
+	}
+	else{
+		pipes[2]=0;
+	}
 	vfs_node_unref(node);
 	vfs_node_t* link_node=dynamicfs_create_node(devfs->root,buffer,VFS_NODE_TYPE_LINK,NULL,_link_read_callback,NULL);
 	dynamicfs_change_ctx(link_node,link_node);
@@ -91,6 +96,3 @@ MODULE_POSTINIT(){
 	_devfs_terminal_root=dynamicfs_create_node(devfs->root,"terminal",VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 	syscall_create_table("devfs",_devfs_syscall_functions,sizeof(_devfs_syscall_functions)/sizeof(syscall_callback_t));
 }
-
-
-

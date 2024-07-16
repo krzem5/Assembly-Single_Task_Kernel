@@ -1,14 +1,15 @@
+#include <sys/error/error.h>
 #include <sys/fd/fd.h>
 #include <sys/io/io.h>
 #include <sys/memory/memory.h>
 #include <sys/socket/socket.h>
 #include <sys/string/string.h>
 #include <sys/types.h>
-#include <terminal/terminal.h>
+#include <terminal/session.h>
 
 
 
-SYS_PUBLIC bool terminal_open_session(const char* path,terminal_session_t* out){
+SYS_PUBLIC bool terminal_session_open(const char* path,terminal_session_t* out){
 	char buffer[4096];
 	if (path){
 		sys_string_copy(path,buffer);
@@ -21,9 +22,8 @@ SYS_PUBLIC bool terminal_open_session(const char* path,terminal_session_t* out){
 		return 0;
 	}
 	sys_memory_copy("/ctrl",buffer+length-4,6);
-	out->ctrl_fd=sys_socket_create(SYS_SOCKET_DOMAIN_UNIX,SYS_SOCKET_TYPE_DGRAM,SYS_SOCKET_PROTOCOL_NONE);
-	if (SYS_IS_ERROR(out->ctrl_fd)||SYS_IS_ERROR(sys_socket_connect(out->ctrl_fd,buffer,256))||SYS_IS_ERROR(sys_socket_send(out->ctrl_fd,"abc",3,0))){
-		sys_fd_close(out->ctrl_fd);
+	out->ctrl_fd=sys_fd_open(0,buffer,SYS_FD_FLAG_READ|SYS_FD_FLAG_WRITE);
+	if (SYS_IS_ERROR(out->ctrl_fd)){
 		out->ctrl_fd=0;
 		return 0;
 	}
@@ -32,14 +32,45 @@ SYS_PUBLIC bool terminal_open_session(const char* path,terminal_session_t* out){
 
 
 
-SYS_PUBLIC bool terminal_open_session_from_fd(sys_fd_t fd,terminal_session_t* out){
+SYS_PUBLIC bool terminal_session_open_from_fd(sys_fd_t fd,terminal_session_t* out){
 	out->ctrl_fd=fd;
 	return 1;
 }
 
 
 
-SYS_PUBLIC void terminal_close_session(terminal_session_t* session){
+SYS_PUBLIC void terminal_session_close(terminal_session_t* session){
 	sys_fd_close(session->ctrl_fd);
 	session->ctrl_fd=0;
+}
+
+
+
+SYS_PUBLIC u32 terminal_session_recv_packet(terminal_session_t* session,void* buffer,u32 buffer_size,u8 type){
+	if (!buffer_size){
+		return 0;
+	}
+	while (1){
+		sys_error_t length=sys_socket_recv(session->ctrl_fd,buffer,buffer_size,0);
+		if (!length){
+			continue;
+		}
+		if (SYS_IS_ERROR(length)){
+			if (length==SYS_ERROR_NO_SPACE){
+				continue;
+			}
+			return 0;
+		}
+		u8 msg_type=*((const u8*)buffer);
+		if (((type^msg_type)&0x80)||((type&0x7f)&&msg_type!=type)){
+			continue;
+		}
+		return length;
+	}
+}
+
+
+
+SYS_PUBLIC bool terminal_session_send_packet(terminal_session_t* session,const void* buffer,u32 buffer_size){
+	return !SYS_IS_ERROR(sys_socket_send(session->ctrl_fd,buffer,buffer_size,0));
 }
