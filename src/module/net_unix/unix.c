@@ -97,7 +97,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 	}
 	void* data=amm_alloc(length);
 	mem_copy(data,buffer,length);
-	if (socket_alloc_packet(&(socket_node->node),data,length)){
+	if (socket_alloc_packet(socket_node->remote_ctx,data,length)){
 		return length;
 	}
 	amm_dealloc(data);

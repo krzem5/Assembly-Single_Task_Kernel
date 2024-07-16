@@ -7,6 +7,7 @@
 #include <sys/mp/thread.h>
 #include <sys/pipe/pipe.h>
 #include <sys/signal/signal.h>
+#include <sys/socket/socket.h>
 #include <sys/string/string.h>
 #include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
@@ -18,6 +19,7 @@ static sys_fd_t in_fd=0;
 static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
 static sys_fd_t child_out_fd=0;
+static sys_fd_t ctrl_fd=0;
 
 
 
@@ -91,6 +93,22 @@ static void _output_thread(void* ctx){
 
 
 
+static void _control_thread(void* ctx){
+	while (1){
+		u8 buffer[4096];
+		sys_error_t length=sys_socket_recv(ctrl_fd,buffer,sizeof(buffer),0);
+		if (SYS_IS_ERROR(length)){
+			if (length==SYS_ERROR_NO_SPACE){
+				continue;
+			}
+			break;
+		}
+		sys_io_print_to_fd(out_fd,"<control message: %u>\n",length);
+	}
+}
+
+
+
 s64 main(u32 argc,const char*const* argv){
 	bool shutdown_after_process=0;
 	const char* in="/dev/ser/in";
@@ -151,6 +169,12 @@ s64 main(u32 argc,const char*const* argv){
 	thread=sys_thread_create(_output_thread,NULL,NULL);
 	sys_thread_set_name(thread,"serial_terminal.output");
 	sys_thread_set_priority(thread,SYS_THREAD_PRIORITY_REALTIME);
+	if (child_pipes[2]){
+		ctrl_fd=child_pipes[2];
+		thread=sys_thread_create(_control_thread,NULL,NULL);
+		sys_thread_set_name(thread,"serial_terminal.control");
+		sys_thread_set_priority(thread,SYS_THREAD_PRIORITY_REALTIME);
+	}
 	sys_signal_set_mask(1<<SYS_SIGNAL_INTERRUPT,1);
 	sys_process_t process=sys_process_start(argv[first_argument_index],argc-first_argument_index,argv+first_argument_index,NULL,0,stdin,stdout_stderr,stdout_stderr);
 	sys_thread_set_priority(sys_thread_get_handle(),SYS_THREAD_PRIORITY_LOW);
@@ -159,6 +183,7 @@ s64 main(u32 argc,const char*const* argv){
 	sys_fd_close(child_in_fd);
 	sys_fd_close(out_fd);
 	sys_fd_close(child_out_fd);
+	sys_fd_close(ctrl_fd);
 	if (shutdown_after_process){
 		sys_system_shutdown(0);
 	}
