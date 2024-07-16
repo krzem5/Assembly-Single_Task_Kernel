@@ -23,10 +23,14 @@ static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
 static sys_fd_t child_out_fd=0;
 static sys_fd_t ctrl_fd=0;
+static bool ctrl_autocomplete_enabled=1;
 
 
 
 static void _autocomplete_callback(readline_state_t* state,const char* prefix){
+	if (!ctrl_autocomplete_enabled){
+		return;
+	}
 	char path[4096];
 	s32 j=-1;
 	for (u32 i=0;prefix[i]&&i<sizeof(path)-1;i++){
@@ -96,7 +100,15 @@ static void _output_thread(void* ctx){
 
 
 
-static u32 _control_flag_update_callback(u32 clear,u32 set){
+static u32 _control_flag_update_callback(u32 clear,u32 set,u32 all){
+	// TERMINAL_FLAG_DIRECT_IO
+	// TERMINAL_FLAG_ECHO_INPUT
+	if (clear&TERMINAL_FLAG_DISABLE_AUTOCOMPLETE){
+		ctrl_autocomplete_enabled=1;
+	}
+	else if (set&TERMINAL_FLAG_DISABLE_AUTOCOMPLETE){
+		ctrl_autocomplete_enabled=0;
+	}
 	sys_io_print_to_fd(out_fd,"<_control_flag_update_callback: %x, %x>\n",clear,set);
 	return 0;
 }

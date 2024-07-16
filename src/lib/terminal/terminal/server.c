@@ -28,8 +28,7 @@ SYS_PUBLIC bool terminal_server_process_packet(terminal_session_t* session,termi
 		u32 clear=state->flags&(~new_flags);
 		u32 set=(~state->flags)&new_flags;
 		if (clear||set){
-			new_flags&=~state->flag_update_callback(clear,set);
-			state->flags=new_flags;
+			state->flags=new_flags&(~state->flag_update_callback(clear,set,new_flags));
 		}
 _skip_flag_update:
 		buffer[0]=TERMINAL_PROTOCOL_MESSAGE_TYPE_SERVER_FLAGS;
