@@ -36,3 +36,10 @@ SYS_PUBLIC bool terminal_open_session_from_fd(sys_fd_t fd,terminal_session_t* ou
 	out->ctrl_fd=fd;
 	return 1;
 }
+
+
+
+SYS_PUBLIC void terminal_close_session(terminal_session_t* session){
+	sys_fd_close(session->ctrl_fd);
+	session->ctrl_fd=0;
+}

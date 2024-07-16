@@ -12,6 +12,7 @@
 #include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <terminal/terminal.h>
 
 
 
@@ -94,6 +95,11 @@ static void _output_thread(void* ctx){
 
 
 static void _control_thread(void* ctx){
+	terminal_session_t session;
+	if (!terminal_open_session_from_fd(ctrl_fd,&session)){
+		sys_fd_close(ctrl_fd);
+		return;
+	}
 	while (1){
 		u8 buffer[4096];
 		sys_error_t length=sys_socket_recv(ctrl_fd,buffer,sizeof(buffer),0);
@@ -103,7 +109,7 @@ static void _control_thread(void* ctx){
 			}
 			break;
 		}
-		sys_io_print_to_fd(out_fd,"<control message: %u>\n",length);
+		sys_io_print_to_fd(out_fd,"<control message: %u | %s>\n",length,buffer);
 	}
 }
 

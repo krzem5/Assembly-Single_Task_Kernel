@@ -18,4 +18,8 @@ bool terminal_open_session_from_fd(sys_fd_t fd,terminal_session_t* out);
 
 
 
+void terminal_close_session(terminal_session_t* session);
+
+
+
 #endif

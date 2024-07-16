@@ -10,5 +10,6 @@ int main(int argc,const char** argv){
 		sys_io_print("terminfo: unable to open terminal session\n");
 		return 1;
 	}
+	terminal_close_session(&session);
 	return 0;
 }
