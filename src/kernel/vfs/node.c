@@ -5,6 +5,7 @@
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/smm.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/thread.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
@@ -45,7 +46,8 @@ static const vfs_functions_t _vfs_node_empty_functions={
 	NULL,
 	NULL,
 	NULL,
-	NULL
+	NULL,
+	NULL,
 };
 
 
@@ -239,6 +241,12 @@ KERNEL_PUBLIC void vfs_node_flush(vfs_node_t* node){
 	if (node->functions->flush){
 		node->functions->flush(node);
 	}
+}
+
+
+
+KERNEL_PUBLIC event_t* vfs_node_get_event(vfs_node_t* node,bool write){
+	return (node->functions->event?node->functions->event(node,write):NULL);
 }
 
 

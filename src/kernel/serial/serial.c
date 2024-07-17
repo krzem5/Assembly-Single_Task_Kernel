@@ -104,7 +104,7 @@ KERNEL_PUBLIC u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
 	for (u32 i=0;i<length;i++){
 		while (!(io_port_in8(port->io_port+5)&0x01)){
 			rwlock_release_write(&(port->read_lock));
-			event_await(_serial_irq_event,1);
+			event_await(&_serial_irq_event,1,1);
 			event_set_active(_serial_irq_event,0,0);
 			rwlock_acquire_write(&(port->read_lock));
 		}

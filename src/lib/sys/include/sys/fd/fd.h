@@ -141,6 +141,10 @@ sys_error_t sys_fd_unlock(sys_fd_t fd);
 
 
 
+sys_error_t sys_fd_get_event(sys_fd_t fd,bool is_write_event);
+
+
+
 sys_fd_iterator_t sys_fd_iter_start(sys_fd_t fd);
 
 

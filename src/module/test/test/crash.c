@@ -35,7 +35,7 @@ static void _execute_elf(const char* path){
 	if (!IS_ERROR(ret)){
 		handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
 		process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-		event_await(process->event,0);
+		event_await(&(process->event),1,0);
 		handle_release(handle);
 	}
 }
@@ -86,18 +86,18 @@ void test_crash(void){
 	_test_crash_state=0x00;
 	process_t* process=process_create("test-process","test-process",0x1000,0x3000);
 	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_no_crash",_thread_no_crash,0));
-	event_await(process->event,0);
+	event_await(&(process->event),1,0);
 	TEST_ASSERT(_test_crash_state==0x01);
 	TEST_GROUP("invalid kernel read");
 	_test_crash_state=0x00;
 	process=process_create("test-process","test-process",0x1000,0x3000);
 	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_invalid_read",_thread_crash_invalid_read,0));
-	event_await(process->event,0);
+	event_await(&(process->event),1,0);
 	TEST_ASSERT(_test_crash_state==0x00);
 	TEST_GROUP("invalid kernel write");
 	_test_crash_state=0x00;
 	process=process_create("test-process","test-process",0x1000,0x3000);
 	scheduler_enqueue_thread(thread_create_kernel_thread(process,"test.crash.kernel_invalid_write",_thread_crash_invalid_write,0));
-	event_await(process->event,0);
+	event_await(&(process->event),1,0);
 	TEST_ASSERT(_test_crash_state==0x00);
 }

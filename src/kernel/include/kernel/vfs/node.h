@@ -50,6 +50,7 @@ typedef struct _VFS_FUNCTIONS{
 	u64 (*write)(struct _VFS_NODE*,u64,const void*,u64,u32);
 	u64 (*resize)(struct _VFS_NODE*,s64,u32);
 	void (*flush)(struct _VFS_NODE*);
+	struct _EVENT* (*event)(struct _VFS_NODE*,bool);
 } vfs_functions_t;
 
 
@@ -131,6 +132,10 @@ u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags);
 
 
 void vfs_node_flush(vfs_node_t* node);
+
+
+
+struct _EVENT* vfs_node_get_event(vfs_node_t* node,bool write);
 
 
 

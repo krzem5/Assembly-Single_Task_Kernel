@@ -89,7 +89,8 @@ static const vfs_functions_t _socket_vfs_functions={
 	_socket_read,
 	_socket_write,
 	NULL,
-	NULL
+	NULL,
+	NULL,
 };
 
 

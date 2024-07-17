@@ -102,7 +102,7 @@ KERNEL_PUBLIC bool notification_consumer_get(notification_consumer_t* consumer,b
 		if (!wait){
 			return 0;
 		}
-		event_await(consumer->event,0);
+		event_await(&(consumer->event),1,0);
 		rwlock_acquire_write(&(consumer->lock));
 	}
 	notification_container_t* last_container=consumer->last;

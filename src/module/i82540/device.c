@@ -49,7 +49,7 @@ static void _rx_thread(i82540_device_t* device){
 		i82540_rx_descriptor_t* desc=I82540_DEVICE_GET_DESCRIPTOR(device,rx,tail);
 		while (!(desc->status&RDESC_DD)){
 			rwlock_release_write(&(device->lock));
-			event_await(device->irq_event,1);
+			event_await(&(device->irq_event),1,1);
 			rwlock_acquire_write(&(device->lock));
 			event_set_active(device->irq_event,0,0);
 			u32 icr=device->mmio[REG_ICR];

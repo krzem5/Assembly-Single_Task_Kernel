@@ -90,6 +90,12 @@ SYS_PUBLIC sys_error_t sys_fd_unlock(sys_fd_t fd){
 
 
 
+SYS_PUBLIC sys_error_t sys_fd_get_event(sys_fd_t fd,bool is_write_event){
+	return _sys_syscall_fd_get_event(fd,is_write_event);
+}
+
+
+
 SYS_PUBLIC sys_fd_iterator_t sys_fd_iter_start(sys_fd_t fd){
 	return _sys_syscall_fd_iter_start(fd);
 }

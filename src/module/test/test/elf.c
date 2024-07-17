@@ -85,7 +85,7 @@ static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,c
 	if (!IS_ERROR(ret)){
 		handle_t* handle=handle_lookup_and_acquire(ret,process_handle_type);
 		process_t* process=KERNEL_CONTAINEROF(handle,process_t,handle);
-		event_await(process->event,0);
+		event_await(&(process->event),1,0);
 		handle_release(handle);
 	}
 }

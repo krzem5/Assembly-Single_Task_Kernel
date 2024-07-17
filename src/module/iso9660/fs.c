@@ -174,7 +174,8 @@ static const vfs_functions_t _iso9660_functions={
 	_iso9660_read,
 	NULL,
 	_iso9660_resize,
-	NULL
+	NULL,
+	NULL,
 };
 
 

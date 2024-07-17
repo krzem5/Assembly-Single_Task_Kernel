@@ -53,6 +53,7 @@ static vfs_node_t* _pipe_create(vfs_node_t* parent,const string_t* name,u32 flag
 	out->is_closed=0;
 	out->read_event=event_create("kernel.pipe.read",NULL);
 	out->write_event=event_create("kernel.pipe.write",NULL);
+	event_set_active(out->write_event,1,1);
 	return (vfs_node_t*)out;
 }
 
@@ -81,7 +82,7 @@ _retry_read:
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
 			return 0;
 		}
-		event_await(pipe->read_event,1);
+		event_await(&(pipe->read_event),1,1);
 		goto _retry_read;
 	}
 	u32 max_read_size=(pipe->write_offset-pipe->read_offset)&(PIPE_BUFFER_SIZE-1);
@@ -101,8 +102,11 @@ _retry_read:
 	}
 	if (!(flags&VFS_NODE_FLAG_PIPE_PEEK)){
 		pipe->read_offset=(pipe->read_offset+size)&(PIPE_BUFFER_SIZE-1);
+		if (pipe->write_offset==pipe->read_offset){
+			event_set_active(pipe->read_event,0,1);
+		}
 		pipe->is_full=0;
-		event_dispatch(pipe->write_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		event_dispatch(pipe->write_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	}
 	rwlock_release_write(&(pipe->lock));
 	return size;
@@ -123,7 +127,7 @@ _retry_write:
 		if (flags&VFS_NODE_FLAG_NONBLOCKING){
 			return 0;
 		}
-		event_await(pipe->write_event,1);
+		event_await(&(pipe->write_event),1,1);
 		goto _retry_write;
 	}
 	u32 max_write_size=(pipe->read_offset-pipe->write_offset)&(PIPE_BUFFER_SIZE-1);
@@ -143,9 +147,19 @@ _retry_write:
 	}
 	pipe->write_offset=(pipe->write_offset+size)&(PIPE_BUFFER_SIZE-1);
 	pipe->is_full=(pipe->write_offset==pipe->read_offset);
-	event_dispatch(pipe->read_event,EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	if (pipe->is_full){
+		event_set_active(pipe->write_event,0,1);
+	}
+	event_dispatch(pipe->read_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	rwlock_release_write(&(pipe->lock));
 	return size;
+}
+
+
+
+static event_t* _pipe_event(vfs_node_t* node,bool is_write){
+	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
+	return (is_write?pipe->write_event:pipe->read_event);
 }
 
 
@@ -160,7 +174,8 @@ static const vfs_functions_t _pipe_vfs_functions={
 	_pipe_read,
 	_pipe_write,
 	NULL,
-	NULL
+	NULL,
+	_pipe_event,
 };
 
 

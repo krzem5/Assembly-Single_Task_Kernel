@@ -155,7 +155,8 @@ static const vfs_functions_t _fat32_functions={
 	_fat32_read,
 	_fat32_write,
 	_fat32_resize,
-	_fat32_flush
+	_fat32_flush,
+	NULL,
 };
 
 

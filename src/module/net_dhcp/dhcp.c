@@ -155,7 +155,7 @@ static void _rx_thread(void){
 	while (1){
 		socket_packet_t* socket_packet=socket_pop_packet(_net_dhcp_socket,1);
 		if (!socket_packet){
-			if (!event_await_multiple(events,2)){
+			if (!event_await(events,2,0)){
 				if (net_info_get_address()){
 					LOG("IPv4 lease expired");
 					net_info_reset();

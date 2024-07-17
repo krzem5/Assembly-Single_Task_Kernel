@@ -69,7 +69,7 @@ KERNEL_PUBLIC void mutex_acquire(mutex_t* lock){
 	rwlock_acquire_write(&(lock->lock));
 	while (lock->holder){
 		rwlock_release_write(&(lock->lock));
-		event_await(lock->event,0);
+		event_await(&(lock->event),1,0);
 		rwlock_acquire_write(&(lock->lock));
 	}
 	lock->holder=THREAD_DATA->header.current_thread;

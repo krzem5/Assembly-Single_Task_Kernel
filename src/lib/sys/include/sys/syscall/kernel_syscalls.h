@@ -671,4 +671,10 @@ static inline u64 _sys_syscall_mutex_release(u64 mutex){
 
 
 
+static inline u64 _sys_syscall_fd_get_event(u64 fd,u32 is_write_event){
+	return _sys_syscall2(0x100000072,fd,is_write_event);
+}
+
+
+
 #endif

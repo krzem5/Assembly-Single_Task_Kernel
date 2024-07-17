@@ -177,7 +177,8 @@ static const vfs_functions_t _initramfs_functions={
 	_initramfs_read,
 	NULL,
 	_initramfs_resize,
-	NULL
+	NULL,
+	NULL,
 };
 
 

@@ -23,7 +23,7 @@ _retry_pop:
 		if (!wait){
 			return NULL;
 		}
-		event_await(ring->read_event,0);
+		event_await(&(ring->read_event),1,0);
 		goto _retry_pop;
 	}
 	void* out=ring->buffer[ring->read_index];
@@ -94,7 +94,7 @@ _retry_push:
 		if (!wait){
 			return 0;
 		}
-		event_await(ring->write_event,0);
+		event_await(&(ring->write_event),1,0);
 		goto _retry_push;
 	}
 	ring->buffer[ring->write_index]=item;

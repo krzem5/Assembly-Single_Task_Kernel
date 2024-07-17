@@ -185,7 +185,7 @@ static void _background_memory_reset_thread(void){
 			bucket_index=0;
 			index=(index+1>=_pmm_allocator_count?0:index+1);
 		}
-		event_await(timer->event,0);
+		event_await(&(timer->event),1,0);
 	}
 }
 

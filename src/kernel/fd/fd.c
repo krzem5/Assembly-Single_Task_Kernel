@@ -602,6 +602,26 @@ error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
 
 
 
+error_t syscall_fd_get_event(handle_id_t fd,u32 is_write_event){
+	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
+	if (!fd_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+	if (!(acl_get(data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)){
+		handle_release(fd_handle);
+		return ERROR_DENIED;
+	}
+	mutex_acquire(data->lock);
+	event_t* event=vfs_node_get_event(data->node,!!is_write_event);
+	error_t out=(event?event->handle.rb_node.key:0);
+	mutex_release(data->lock);
+	handle_release(fd_handle);
+	return out;
+}
+
+
+
 error_t syscall_fd_iter_start(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){

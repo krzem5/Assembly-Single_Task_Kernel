@@ -118,6 +118,15 @@ void signal_thread_state_deinit(signal_thread_state_t* state){
 
 
 
+error_t signal_thread_state_get_error(signal_thread_state_t* state){
+	rwlock_acquire_read(&(state->lock));
+	error_t out=(state->pending?ERROR_SIGNAL(__builtin_ffsll(state->pending)-1):ERROR_INTERRUPTED);
+	rwlock_release_read(&(state->lock));
+	return out;
+}
+
+
+
 KERNEL_PUBLIC error_t signal_dispatch(handle_id_t handle,signal_t signal){
 	if (signal==SIGNAL_KILL){
 		panic("signal_dispatch: SIGNAL_KILL");

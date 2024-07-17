@@ -69,7 +69,7 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 	_ui_permission_request_list_tail=request;
 	rwlock_release_write(&_ui_permission_request_list_lock);
 	event_dispatch(_ui_permission_request_list_event,EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	event_await(request->event,0);
+	event_await(&(request->event),1,0);
 	event_delete(request->event);
 	LOG("Request %s/%s:%u was %s",request->process,request->handle,request->flags,(request->accepted?"accepted":"denied"));
 	error_t out=(request->accepted?ERROR_OK:ERROR_DENIED);
@@ -89,7 +89,7 @@ static error_t _syscall_get_permission_request(KERNEL_USER_POINTER ui_permission
 	if (THREAD_DATA->process->handle.rb_node.key!=ui_common_get_process()){
 		return ERROR_DENIED;
 	}
-	event_await(_ui_permission_request_list_event,0);
+	event_await(&_ui_permission_request_list_event,1,0);
 	buffer->id=_ui_permission_request_list_head->id;
 	mem_copy((char*)(buffer->process),_ui_permission_request_list_head->process,sizeof(buffer->process));
 	mem_copy((char*)(buffer->handle),_ui_permission_request_list_head->handle,sizeof(buffer->handle));

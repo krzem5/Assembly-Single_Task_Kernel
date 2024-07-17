@@ -148,7 +148,7 @@ KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address
 		timer->event,
 		_net_arp_cache_resolution_event
 	};
-	while (event_await_multiple(events,2)&&!cache_entry->resolved);
+	while (event_await(events,2,0)&&!cache_entry->resolved);
 	timer_delete(timer);
 	if (!cache_entry->resolved){
 		return 0;

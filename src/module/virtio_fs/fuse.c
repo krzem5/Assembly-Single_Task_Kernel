@@ -235,7 +235,8 @@ static const vfs_functions_t _fuse_functions={
 	_fuse_read,
 	NULL,
 	_fuse_resize,
-	NULL
+	NULL,
+	NULL,
 };
 
 

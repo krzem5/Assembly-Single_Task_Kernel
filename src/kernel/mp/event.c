@@ -133,10 +133,21 @@ KERNEL_PUBLIC void event_delete(event_t* event){
 	}
 	event->is_deleted=1;
 	while (event->head){
-		WARN("Event deleted; update thread and possibly wake it up with event_wakeup_index=EVENT_INDEX_CANCELLED");
 		event_thread_container_t* container=event->head;
 		event->head=container->next;
+		u64 sequence_id=container->sequence_id;
+		handle_t* thread_handle=handle_lookup_and_acquire(container->thread,thread_handle_type);
 		omm_dealloc(_event_thread_container_allocator,container);
+		if (!thread_handle){
+			continue;
+		}
+		thread_t* thread=KERNEL_CONTAINEROF(thread_handle,thread_t,handle);
+		if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT||thread->event_sequence_id!=sequence_id){
+			handle_release(thread_handle);
+			continue;
+		}
+		ERROR("Event deleted (%s): update thread (%s) and possibly wake it up with event_wakeup_index=EVENT_INDEX_CANCELLED",event->name,thread->name->data);
+		handle_release(thread_handle);
 	}
 	rwlock_release_write(&(event->lock));
 	handle_release(&(event->handle));
@@ -191,20 +202,13 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 
 
 
-KERNEL_PUBLIC void event_await(event_t* event,bool is_io_wait){
-	THREAD_DATA->scheduler_io_yield=is_io_wait;
-	event_await_multiple(&event,1);
-	THREAD_DATA->scheduler_io_yield=0;
-}
-
-
-
-KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
+KERNEL_PUBLIC u32 event_await(event_t*const* events,u32 count,bool is_io_wait){
 	if (!count||!CPU_HEADER_DATA->current_thread){
 		return 0;
 	}
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	scheduler_pause();
+	THREAD_DATA->scheduler_io_yield=is_io_wait;
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_AWAITING_EVENT;
 	thread->reg_state.reg_state_not_present=1;
@@ -217,16 +221,18 @@ KERNEL_PUBLIC u32 event_await_multiple(event_t*const* events,u32 count){
 		thread->state=THREAD_STATE_TYPE_RUNNING;
 		thread->event_wakeup_index=i;
 		rwlock_release_write(&(thread->lock));
+		THREAD_DATA->scheduler_io_yield=0;
 		scheduler_resume(1);
 		return i;
 	}
 	scheduler_yield();
+	THREAD_DATA->scheduler_io_yield=0;
 	return thread->event_wakeup_index;
 }
 
 
 
-KERNEL_PUBLIC u32 event_await_multiple_handles(const handle_id_t* handles,u32 count){
+KERNEL_PUBLIC u32 event_await_handles(const handle_id_t* handles,u32 count){
 	if (!count||!CPU_HEADER_DATA->current_thread){
 		return 0;
 	}

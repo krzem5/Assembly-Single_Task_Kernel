@@ -312,7 +312,7 @@ error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 e
 	}
 	handle_id_t* buffer=amm_alloc(event_count*sizeof(handle_id_t));
 	mem_copy(buffer,(const void*)events,event_count*sizeof(handle_id_t));
-	u32 out=event_await_multiple_handles(buffer,event_count);
+	u32 out=event_await_handles(buffer,event_count);
 	amm_dealloc(buffer);
 	return out;
 }

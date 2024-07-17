@@ -216,7 +216,8 @@ static const vfs_functions_t _kfs2_functions={
 	_kfs2_read,
 	_kfs2_write,
 	_kfs2_resize,
-	_kfs2_flush
+	_kfs2_flush,
+	NULL,
 };
 
 

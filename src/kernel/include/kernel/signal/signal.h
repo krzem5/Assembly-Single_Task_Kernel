@@ -53,6 +53,10 @@ void signal_thread_state_deinit(signal_thread_state_t* state);
 
 
 
+error_t signal_thread_state_get_error(signal_thread_state_t* state);
+
+
+
 error_t signal_dispatch(handle_id_t handle,signal_t signal);
 
 

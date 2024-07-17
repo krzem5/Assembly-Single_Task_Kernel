@@ -21,6 +21,7 @@ extern u64 syscall_event_query();
 extern u64 syscall_event_set_active();
 extern u64 syscall_fd_close();
 extern u64 syscall_fd_dup();
+extern u64 syscall_fd_get_event();
 extern u64 syscall_fd_iter_get();
 extern u64 syscall_fd_iter_next();
 extern u64 syscall_fd_iter_start();
@@ -229,5 +230,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[111]=syscall_mutex_get_holder,
 	[112]=syscall_mutex_acquire,
 	[113]=syscall_mutex_release,
+	[114]=syscall_fd_get_event,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

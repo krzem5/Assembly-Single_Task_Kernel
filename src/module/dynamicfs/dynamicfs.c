@@ -86,7 +86,8 @@ static const vfs_functions_t _dynamicfs_functions={
 	_dynamicfs_read,
 	NULL,
 	_dynamicfs_resize,
-	NULL
+	NULL,
+	NULL,
 };
 
 
