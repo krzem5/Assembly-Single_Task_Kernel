@@ -76,6 +76,12 @@ static void _input_thread(void* ctx){
 				}
 				readline_state_reset(&state);
 			}
+			if (ctrl_echo_input){
+				sys_error_t ret=sys_fd_write(out_fd,buffer,length,0);
+				if (!ret||SYS_IS_ERROR(ret)){
+					goto _error;
+				}
+			}
 			sys_error_t ret=sys_fd_write(child_in_fd,buffer,length,0);
 			if (!ret||SYS_IS_ERROR(ret)){
 				goto _error;
