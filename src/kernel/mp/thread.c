@@ -2,6 +2,7 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/error/error.h>
 #include <kernel/event/process.h>
+#include <kernel/exception/exception.h>
 #include <kernel/format/format.h>
 #include <kernel/fpu/fpu.h>
 #include <kernel/handle/handle.h>
@@ -218,6 +219,7 @@ KERNEL_PUBLIC void thread_delete(thread_t* thread){
 
 KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void* return_value){
 	scheduler_pause();
+	exception_unwind();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;

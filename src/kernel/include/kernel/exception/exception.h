@@ -9,15 +9,15 @@
 
 
 #define exception_unwind_push(vars) \
-	const void* __exception_unwind_args[1]=vars; \
-	auto void __exception_unwind_callback(void**); \
+	void*const __exception_unwind_args[1]=vars; \
+	auto void __exception_unwind_callback(void*const*); \
 	exception_unwind_frame_t __exception_unwind_frame={ \
 		NULL, \
 		__exception_unwind_args, \
 		__exception_unwind_callback \
 	}; \
 	_exception_push_unwind_frame(&__exception_unwind_frame); \
-	void __exception_unwind_callback(void** __exception_args)
+	void __exception_unwind_callback(void*const* __exception_args)
 
 #define exception_unwind_pop() \
 	_exception_pop_unwind_frame(&__exception_unwind_frame);
@@ -26,9 +26,13 @@
 
 typedef struct _EXCEPTION_UNWIND_FRAME{
 	struct _EXCEPTION_UNWIND_FRAME* next;
-	const void** args;
-	void (*callback)(void**);
+	void*const* args;
+	void (*callback)(void*const*);
 } exception_unwind_frame_t;
+
+
+
+void exception_unwind(void);
 
 
 

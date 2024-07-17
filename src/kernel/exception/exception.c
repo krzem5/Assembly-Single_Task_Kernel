@@ -7,6 +7,14 @@
 
 
 
+void exception_unwind(void){
+	for (exception_unwind_frame_t* frame=THREAD_DATA->exception_unwind_frame;frame;frame=frame->next){
+		frame->callback(frame->args);
+	}
+}
+
+
+
 void _exception_push_unwind_frame(exception_unwind_frame_t* frame){
 	frame->next=THREAD_DATA->exception_unwind_frame;
 	THREAD_DATA->exception_unwind_frame=frame;
