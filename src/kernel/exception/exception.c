@@ -12,7 +12,7 @@ void exception_unwind(void){
 	for (exception_unwind_frame_t* frame=THREAD_DATA->exception_unwind_frame;frame;frame=frame->next){
 		frame->callback(frame->args);
 	}
-	lock_profiling_assert_empty(THREAD_DATA);
+	lock_profiling_assert_empty(THREAD_DATA->header.current_thread);
 }
 
 

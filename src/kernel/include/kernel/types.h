@@ -13,8 +13,10 @@
 #define KERNEL_NOINLINE __attribute__((noinline))
 #ifdef KERNEL_RELEASE
 #define KERNEL_INLINE inline __attribute__((always_inline))
+#define KERNEL_AWAITS
 #else
 #define KERNEL_INLINE inline
+#define KERNEL_AWAITS
 #endif
 #define KERNEL_PUBLIC __attribute__((visibility("default")))
 #define KERNEL_PACKED __attribute__((packed))
