@@ -351,7 +351,7 @@ static config_tag_t* _parse_text_config(const char* data,u64 length){
 
 
 
-static void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
+static KERNEL_AWAITS void _save_binary_tag(writer_t* writer,const config_tag_t* tag){
 	u32 tag_type=tag->type;
 	u32 tag_length=0;
 	if (tag->type==CONFIG_TAG_TYPE_ARRAY){
@@ -410,7 +410,7 @@ static void _check_tag_name(const config_tag_t* tag){
 
 
 
-static void _save_level(writer_t* writer,u32 level){
+static KERNEL_AWAITS void _save_level(writer_t* writer,u32 level){
 	for (u32 i=0;i<level;i++){
 		writer_append_char(writer,'\t');
 	}
@@ -418,7 +418,7 @@ static void _save_level(writer_t* writer,u32 level){
 
 
 
-static void _save_text_tag(writer_t* writer,const config_tag_t* tag,u32 level){
+static KERNEL_AWAITS void _save_text_tag(writer_t* writer,const config_tag_t* tag,u32 level){
 	_check_tag_name(tag);
 	_save_level(writer,level);
 	writer_append(writer,tag->name->data,tag->name->length);
@@ -582,7 +582,7 @@ KERNEL_PUBLIC config_tag_t* config_load(const void* data,u64 length,const char* 
 
 
 
-KERNEL_PUBLIC config_tag_t* config_load_from_file(vfs_node_t* file,const char* password){
+KERNEL_PUBLIC KERNEL_AWAITS config_tag_t* config_load_from_file(vfs_node_t* file,const char* password){
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK,file);
 	config_tag_t* out=config_load((const void*)(region->rb_node.key),region->length,password);
 	mmap_dealloc_region(process_kernel->mmap,region);
@@ -595,7 +595,7 @@ KERNEL_PUBLIC bool config_save(const config_tag_t* tag,void** data,u64* length,c
 
 
 
-KERNEL_PUBLIC bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
+KERNEL_PUBLIC KERNEL_AWAITS bool config_save_to_file(const config_tag_t* tag,vfs_node_t* file,const char* password,u32 flags){
 	if (tag->type!=CONFIG_TAG_TYPE_ARRAY||tag->name->length){
 		WARN("Root tag is not an unnamed array; results may be undefined");
 	}

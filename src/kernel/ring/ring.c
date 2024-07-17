@@ -15,7 +15,7 @@ static pmm_counter_descriptor_t* KERNEL_INIT_WRITE _ring_buffer_pmm_counter=NULL
 
 
 
-static void* _get_item(ring_t* ring,bool wait,bool pop){
+static KERNEL_AWAITS void* _get_item(ring_t* ring,bool wait,bool pop){
 _retry_pop:
 	rwlock_acquire_write(&(ring->read_lock));
 	if (!ring->read_count){
@@ -86,7 +86,7 @@ KERNEL_PUBLIC void ring_deinit(ring_t* ring){
 
 
 
-KERNEL_PUBLIC bool ring_push(ring_t* ring,void* item,bool wait){
+KERNEL_PUBLIC KERNEL_AWAITS bool ring_push(ring_t* ring,void* item,bool wait){
 _retry_push:
 	rwlock_acquire_write(&(ring->write_lock));
 	if (!ring->write_count){
@@ -111,12 +111,12 @@ _retry_push:
 
 
 
-KERNEL_PUBLIC void* ring_pop(ring_t* ring,bool wait){
+KERNEL_PUBLIC KERNEL_AWAITS void* ring_pop(ring_t* ring,bool wait){
 	return _get_item(ring,wait,1);
 }
 
 
 
-KERNEL_PUBLIC void* ring_peek(ring_t* ring,bool wait){
+KERNEL_PUBLIC KERNEL_AWAITS void* ring_peek(ring_t* ring,bool wait){
 	return _get_item(ring,wait,0);
 }

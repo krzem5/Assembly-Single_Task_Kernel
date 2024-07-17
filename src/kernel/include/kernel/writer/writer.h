@@ -38,31 +38,31 @@ void writer_flush(writer_t* writer);
 
 
 
-static KERNEL_INLINE void writer_append_char(writer_t* writer,char value){
+static KERNEL_INLINE KERNEL_AWAITS void writer_append_char(writer_t* writer,char value){
 	writer_append(writer,&value,sizeof(value));
 }
 
 
 
-static KERNEL_INLINE void writer_append_u8(writer_t* writer,u8 value){
+static KERNEL_INLINE KERNEL_AWAITS void writer_append_u8(writer_t* writer,u8 value){
 	writer_append(writer,&value,sizeof(value));
 }
 
 
 
-static KERNEL_INLINE void writer_append_u16(writer_t* writer,u16 value){
+static KERNEL_INLINE KERNEL_AWAITS void writer_append_u16(writer_t* writer,u16 value){
 	writer_append(writer,&value,sizeof(value));
 }
 
 
 
-static KERNEL_INLINE void writer_append_u32(writer_t* writer,u32 value){
+static KERNEL_INLINE KERNEL_AWAITS void writer_append_u32(writer_t* writer,u32 value){
 	writer_append(writer,&value,sizeof(value));
 }
 
 
 
-static KERNEL_INLINE void writer_append_u64(writer_t* writer,u64 value){
+static KERNEL_INLINE KERNEL_AWAITS void writer_append_u64(writer_t* writer,u64 value){
 	writer_append(writer,&value,sizeof(value));
 }
 

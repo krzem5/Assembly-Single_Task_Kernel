@@ -22,7 +22,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _writer_omm_allocator=NULL;
 
 
 
-static void _emit_data(writer_t* writer,const void* buffer,u64 size){
+static KERNEL_AWAITS void _emit_data(writer_t* writer,const void* buffer,u64 size){
 	writer->size+=size;
 	if (writer->is_file_backed){
 		vfs_node_resize(writer->backend.node,writer->size,0);
@@ -44,7 +44,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node,void** buffer){
+KERNEL_PUBLIC KERNEL_NO_AWAITS writer_t* writer_init(vfs_node_t* node,void** buffer){
 	writer_t* out=omm_alloc(_writer_omm_allocator);
 	rwlock_init(&(out->lock));
 	if (node){
@@ -64,7 +64,7 @@ KERNEL_PUBLIC writer_t* writer_init(vfs_node_t* node,void** buffer){
 
 
 
-KERNEL_PUBLIC u64 writer_deinit(writer_t* writer){
+KERNEL_PUBLIC KERNEL_AWAITS u64 writer_deinit(writer_t* writer){
 	if (writer->offset){
 		_emit_data(writer,writer->buffer,writer->offset);
 	}
@@ -76,7 +76,7 @@ KERNEL_PUBLIC u64 writer_deinit(writer_t* writer){
 
 
 
-KERNEL_PUBLIC void writer_append(writer_t* writer,const void* data,u64 length){
+KERNEL_PUBLIC KERNEL_AWAITS void writer_append(writer_t* writer,const void* data,u64 length){
 	if (!length){
 		return;
 	}
@@ -108,7 +108,7 @@ _skip_flush:
 
 
 
-KERNEL_PUBLIC void writer_flush(writer_t* writer){
+KERNEL_PUBLIC KERNEL_AWAITS void writer_flush(writer_t* writer){
 	rwlock_acquire_write(&(writer->lock));
 	if (writer->offset){
 		_emit_data(writer,writer->buffer,writer->offset);

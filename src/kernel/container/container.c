@@ -79,7 +79,7 @@ error_t syscall_container_delete(handle_id_t container){
 
 
 
-error_t syscall_container_add(handle_id_t container,KERNEL_USER_POINTER const handle_id_t* handles,u64 handle_count){
+KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_POINTER const handle_id_t* handles,u64 handle_count){
 	handle_t* container_handle=handle_lookup_and_acquire(container,_container_handle_type);
 	if (!container_handle){
 		return ERROR_INVALID_HANDLE;

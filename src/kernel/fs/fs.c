@@ -170,7 +170,7 @@ error_t syscall_fs_get_data(u64 fs_handle_id,KERNEL_USER_POINTER filesystem_user
 
 
 
-error_t syscall_fs_mount(handle_id_t fs_handle_id,KERNEL_USER_POINTER const char* path){
+KERNEL_AWAITS error_t syscall_fs_mount(handle_id_t fs_handle_id,KERNEL_USER_POINTER const char* path){
 	u64 path_length=syscall_get_string_length((const char*)path);
 	if (!path_length||path_length>4095){
 		return ERROR_INVALID_ARGUMENT(1);

@@ -99,7 +99,7 @@ KERNEL_PUBLIC void KERNEL_NOCOVERAGE serial_send(serial_port_t* port,const void*
 
 
 
-KERNEL_PUBLIC u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
+KERNEL_PUBLIC KERNEL_AWAITS u32 serial_recv(serial_port_t* port,void* buffer,u32 length){
 	rwlock_acquire_write(&(port->read_lock));
 	for (u32 i=0;i<length;i++){
 		while (!(io_port_in8(port->io_port+5)&0x01)){

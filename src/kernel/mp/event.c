@@ -202,7 +202,7 @@ KERNEL_PUBLIC void event_dispatch(event_t* event,u32 flags){
 
 
 
-KERNEL_PUBLIC u32 event_await(event_t*const* events,u32 count,bool is_io_wait){
+KERNEL_PUBLIC KERNEL_AWAITS u32 event_await(event_t*const* events,u32 count,bool is_io_wait){
 	if (!count||!CPU_HEADER_DATA->current_thread){
 		return 0;
 	}
@@ -232,7 +232,7 @@ KERNEL_PUBLIC u32 event_await(event_t*const* events,u32 count,bool is_io_wait){
 
 
 
-KERNEL_PUBLIC u32 event_await_handles(const handle_id_t* handles,u32 count){
+KERNEL_PUBLIC KERNEL_AWAITS u32 event_await_handles(const handle_id_t* handles,u32 count){
 	if (!count||!CPU_HEADER_DATA->current_thread){
 		return 0;
 	}

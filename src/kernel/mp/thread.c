@@ -84,7 +84,7 @@ static void _thread_handle_destructor(handle_t* handle){
 
 
 
-static thread_t* _thread_alloc(void){
+static KERNEL_NO_AWAITS thread_t* _thread_alloc(void){
 	rwlock_acquire_write(&_thread_cache_lock);
 	if (_thread_cache_size){
 		_thread_cache_size--;
@@ -306,7 +306,7 @@ error_t syscall_thread_set_priority(handle_id_t thread_handle,u64 priority){
 
 
 
-error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 event_count){
+KERNEL_AWAITS error_t syscall_thread_await_events(KERNEL_USER_POINTER const void* events,u64 event_count){
 	if (!event_count){
 		return ERROR_INVALID_ARGUMENT(1);
 	}

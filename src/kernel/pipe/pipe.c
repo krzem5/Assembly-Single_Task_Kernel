@@ -69,7 +69,7 @@ static void _pipe_delete(vfs_node_t* node){
 
 
 
-static u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _pipe_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_read:
 	rwlock_acquire_write(&(pipe->lock));
@@ -114,7 +114,7 @@ _retry_read:
 
 
 
-static u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _pipe_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	pipe_vfs_node_t* pipe=(pipe_vfs_node_t*)node;
 _retry_write:
 	rwlock_acquire_write(&(pipe->lock));
@@ -189,7 +189,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
+KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 	vfs_node_t* out;
 	if (parent&&name){
 		out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);
@@ -226,7 +226,7 @@ KERNEL_PUBLIC error_t pipe_close(vfs_node_t* node){
 
 
 
-error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
+KERNEL_AWAITS error_t syscall_pipe_create(KERNEL_USER_POINTER const char* path){
 	vfs_node_t* parent=NULL;
 	SMM_TEMPORARY_STRING name_string=NULL;
 	if (path){

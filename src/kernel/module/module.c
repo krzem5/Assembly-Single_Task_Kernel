@@ -87,7 +87,7 @@ static bool _check_elf_header(module_loader_context_t* ctx){
 
 
 
-static bool _map_sections(module_loader_context_t* ctx){
+static KERNEL_AWAITS bool _map_sections(module_loader_context_t* ctx){
 	INFO("Mapping sections...");
 	u64 region_size=0;
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
@@ -365,7 +365,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC module_t* module_load(const char* name){
+KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	if (!name){
 		return NULL;
 	}

@@ -3,7 +3,7 @@ SECTIONS{
 	. = 0;
 	.kernel_ue : {
 		*(.entry)
-		*(.etext .etext*)
+		*(.etext .etext* .await_text .await_text*)
 	}
 	.kernel_ur : {
 		*(.ap_startup)
@@ -49,6 +49,12 @@ SECTIONS{
 	}
 	.kernel_early_pointer : {
 		*(.epointer)
+	}
+	.kernel_await : {
+		*(.init_array)
+	}
+	.kernel_no_await : {
+		*(.fini_array)
 	}
 	.text : { /* prevent GDB from crashing */
 		. += 1;

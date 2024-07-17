@@ -19,7 +19,7 @@
 
 
 
-static void _main_thread(void){
+static KERNEL_AWAITS void _main_thread(void){
 	LOG("Main thread started");
 	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();

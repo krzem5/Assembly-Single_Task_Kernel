@@ -186,7 +186,7 @@ void mmap_deinit(mmap_t* mmap){
 
 
 
-KERNEL_PUBLIC mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 flags,vfs_node_t* file){
+KERNEL_PUBLIC KERNEL_AWAITS mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u64 length,u32 flags,vfs_node_t* file){
 	if ((address|length)&(PAGE_SIZE-1)){
 		return NULL;
 	}
@@ -282,7 +282,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_lookup(mmap_t* mmap,u64 address){
 
 
 
-KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 length){
+KERNEL_PUBLIC KERNEL_AWAITS mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 length){
 	mmap_region_t* out=mmap_alloc(process_kernel->mmap,0,length,MMAP_REGION_FLAG_EXTERNAL|MMAP_REGION_FLAG_VMM_WRITE,NULL);
 	for (u64 offset=address;offset<address+length;offset+=PAGE_SIZE){
 		u64 physical_address=vmm_virtual_to_physical(mmap->pagemap,offset);
@@ -300,7 +300,7 @@ KERNEL_PUBLIC mmap_region_t* mmap_map_to_kernel(mmap_t* mmap,u64 address,u64 len
 
 
 
-u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state){
+KERNEL_NO_AWAITS u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state){
 	if (!mmap){
 		return 0;
 	}
@@ -358,7 +358,7 @@ void mmap_unmap_address(mmap_t* mmap,u64 address){
 
 
 
-error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
+KERNEL_AWAITS error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	u64 mmap_flags=MMAP_REGION_FLAG_VMM_USER;
 	vfs_node_t* file=NULL;
 	if (flags&USER_MEMORY_FLAG_WRITE){
@@ -392,7 +392,7 @@ error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 
 
 
-error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
+KERNEL_AWAITS error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	u64 vmm_set_flags=0;
 	if (flags&USER_MEMORY_FLAG_WRITE){
 		vmm_set_flags|=VMM_PAGE_FLAG_READWRITE;

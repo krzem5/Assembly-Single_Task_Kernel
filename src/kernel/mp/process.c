@@ -186,7 +186,7 @@ error_t syscall_process_get_pid(void){
 
 
 
-error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERNEL_USER_POINTER const char*const* argv,KERNEL_USER_POINTER const char*const* environ,u32 flags,KERNEL_USER_POINTER const syscall_process_start_extra_data_t* user_extra_data){
+KERNEL_AWAITS error_t syscall_process_start(KERNEL_USER_POINTER const char* path,u32 argc,KERNEL_USER_POINTER const char*const* argv,KERNEL_USER_POINTER const char*const* environ,u32 flags,KERNEL_USER_POINTER const syscall_process_start_extra_data_t* user_extra_data){
 	if (!syscall_get_string_length((const char*)path)){
 		return ERROR_INVALID_ARGUMENT(0);
 	}

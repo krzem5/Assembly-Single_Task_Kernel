@@ -95,7 +95,7 @@ KERNEL_PUBLIC void notification_consumer_delete(notification_consumer_t* consume
 
 
 
-KERNEL_PUBLIC bool notification_consumer_get(notification_consumer_t* consumer,bool wait,notification_t* out){
+KERNEL_PUBLIC KERNEL_AWAITS bool notification_consumer_get(notification_consumer_t* consumer,bool wait,notification_t* out){
 	rwlock_acquire_write(&(consumer->lock));
 	while (!consumer->last->next){
 		rwlock_release_write(&(consumer->lock));

@@ -13,7 +13,7 @@ static partition_t* _initramfs_partition=NULL;
 
 
 
-static bool _initramfs_init_partitions(drive_t* drive){
+static KERNEL_NO_AWAITS bool _initramfs_init_partitions(drive_t* drive){
 	if (!str_equal(drive->type->name,"initramfs")){
 		return 0;
 	}

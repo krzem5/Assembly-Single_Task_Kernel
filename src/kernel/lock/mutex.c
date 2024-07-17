@@ -64,7 +64,7 @@ KERNEL_PUBLIC void mutex_delete(mutex_t* lock){
 
 
 
-KERNEL_PUBLIC void mutex_acquire(mutex_t* lock){
+KERNEL_PUBLIC KERNEL_AWAITS void mutex_acquire(mutex_t* lock){
 	lock_profiling_acquire_start(lock);
 	rwlock_acquire_write(&(lock->lock));
 	while (lock->holder){
@@ -163,7 +163,7 @@ error_t syscall_mutex_get_holder(handle_id_t mutex_handle_id){
 
 
 
-error_t syscall_mutex_acquire(handle_id_t mutex_handle_id){
+KERNEL_AWAITS error_t syscall_mutex_acquire(handle_id_t mutex_handle_id){
 	handle_t* handle=handle_lookup_and_acquire(mutex_handle_id,_mutex_handle_type);
 	if (!handle){
 		return ERROR_INVALID_HANDLE;

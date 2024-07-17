@@ -25,7 +25,7 @@ KERNEL_PUBLIC network_layer1_device_t* network_layer1_device=NULL;
 
 
 
-static void _packet_rx_thread(void){
+static KERNEL_AWAITS void _packet_rx_thread(void){
 	while (1){
 		network_layer1_packet_t* packet=ring_pop(_network_layer1_packet_rx_ring,1);
 		network_layer2_process_packet(packet);
@@ -81,7 +81,7 @@ KERNEL_PUBLIC void network_layer1_delete_packet(network_layer1_packet_t* packet)
 
 
 
-KERNEL_PUBLIC void network_layer1_send_packet(network_layer1_packet_t* packet){
+KERNEL_PUBLIC KERNEL_AWAITS void network_layer1_send_packet(network_layer1_packet_t* packet){
 	if (network_layer1_device){
 		ring_push(_network_layer1_packet_tx_ring,packet,1);
 	}
@@ -92,12 +92,12 @@ KERNEL_PUBLIC void network_layer1_send_packet(network_layer1_packet_t* packet){
 
 
 
-KERNEL_PUBLIC void network_layer1_push_packet(network_layer1_packet_t* packet){
+KERNEL_PUBLIC KERNEL_AWAITS void network_layer1_push_packet(network_layer1_packet_t* packet){
 	ring_push(_network_layer1_packet_rx_ring,packet,1);
 }
 
 
 
-KERNEL_PUBLIC network_layer1_packet_t* network_layer1_pop_packet(void){
+KERNEL_PUBLIC KERNEL_AWAITS network_layer1_packet_t* network_layer1_pop_packet(void){
 	return ring_pop(_network_layer1_packet_tx_ring,1);
 }

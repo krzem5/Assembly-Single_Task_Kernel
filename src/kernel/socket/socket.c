@@ -59,7 +59,7 @@ static vfs_node_t* _socket_create(vfs_node_t* parent,const string_t* name,u32 fl
 
 
 
-static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
 	mutex_acquire(socket->read_lock);
 	u64 out=(socket->local_ctx?socket->descriptor->read(socket,buffer,size,flags):0);
@@ -69,7 +69,7 @@ static u64 _socket_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 fl
 
 
 
-static u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _socket_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	socket_vfs_node_t* socket=(socket_vfs_node_t*)node;
 	mutex_acquire(socket->write_lock);
 	u64 out=(socket->remote_ctx?socket->descriptor->write(socket,buffer,size):0);
@@ -102,7 +102,7 @@ static string_t* _get_unique_id(void){
 
 
 
-static vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
+static KERNEL_AWAITS vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
 	if (!_socket_root){
 		SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
 		_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
@@ -168,7 +168,7 @@ KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_
 
 
 
-KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
 	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	rwlock_release_read(&_socket_dtp_lock);
@@ -181,7 +181,7 @@ KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t typ
 
 
 
-KERNEL_PUBLIC bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
 	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	rwlock_release_read(&_socket_dtp_lock);
@@ -246,7 +246,7 @@ KERNEL_PUBLIC bool socket_connect(vfs_node_t* node,const void* remote_address,u3
 
 
 
-KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblocking){
+KERNEL_PUBLIC KERNEL_AWAITS socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblocking){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
@@ -259,7 +259,7 @@ KERNEL_PUBLIC socket_packet_t* socket_peek_packet(vfs_node_t* node,bool nonblock
 
 
 
-KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocking){
+KERNEL_PUBLIC KERNEL_AWAITS socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocking){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return NULL;
 	}
@@ -272,7 +272,7 @@ KERNEL_PUBLIC socket_packet_t* socket_pop_packet(vfs_node_t* node,bool nonblocki
 
 
 
-KERNEL_PUBLIC bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_push_packet(vfs_node_t* node,const void* packet,u32 size){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -288,7 +288,7 @@ KERNEL_PUBLIC bool socket_push_packet(vfs_node_t* node,const void* packet,u32 si
 
 
 
-KERNEL_PUBLIC bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_alloc_packet(vfs_node_t* node,void* data,u32 size){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -321,7 +321,7 @@ KERNEL_PUBLIC event_t* socket_get_event(vfs_node_t* node){
 
 
 
-KERNEL_PUBLIC bool socket_move(vfs_node_t* node,const char* path){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_move(vfs_node_t* node,const char* path){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET){
 		return 0;
 	}
@@ -360,14 +360,14 @@ KERNEL_PUBLIC bool socket_move_direct(vfs_node_t* node,vfs_node_t* parent,const 
 
 
 
-error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+KERNEL_AWAITS error_t syscall_socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
 	vfs_node_t* out=socket_create(domain,type,protocol);
 	return (out?fd_from_node(out,FD_FLAG_READ|FD_FLAG_WRITE):ERROR_INVALID_FORMAT);
 }
 
 
 
-error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,KERNEL_USER_POINTER u64* out){
+KERNEL_AWAITS error_t syscall_socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,KERNEL_USER_POINTER u64* out){
 	if (syscall_get_user_pointer_max_length((u64*)out)<2*sizeof(handle_id_t)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
@@ -457,7 +457,7 @@ error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER_POINTER const void* ad
 
 
 
-error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 buffer_length,u32 flags){
+KERNEL_AWAITS error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}
@@ -501,7 +501,7 @@ error_t syscall_socket_recv(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u32 
 
 
 
-error_t syscall_socket_send(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u32 buffer_length,u32 flags){
+KERNEL_AWAITS error_t syscall_socket_send(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u32 buffer_length,u32 flags){
 	if (flags&(~FD_FLAG_NONBLOCKING)){
 		return ERROR_INVALID_ARGUMENT(3);
 	}

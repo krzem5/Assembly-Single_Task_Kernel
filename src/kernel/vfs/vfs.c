@@ -31,7 +31,7 @@ static bool _has_read_permissions(vfs_node_t* node,u32 flags,uid_t uid,gid_t gid
 
 
 
-KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode){
+KERNEL_PUBLIC KERNEL_AWAITS error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode){
 	if (fs->is_mounted){
 		if (user_mode){
 			return ERROR_ALREADY_MOUNTED;
@@ -107,13 +107,13 @@ KERNEL_PUBLIC error_t vfs_mount(filesystem_t* fs,const char* path,bool user_mode
 
 
 
-KERNEL_PUBLIC vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
+KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* vfs_lookup(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid){
 	return vfs_lookup_for_creation(root,path,flags,uid,gid,NULL,NULL);
 }
 
 
 
-KERNEL_PUBLIC vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
+KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* vfs_lookup_for_creation(vfs_node_t* root,const char* path,u32 flags,uid_t uid,gid_t gid,vfs_node_t** parent,const char** child_name){
 	vfs_node_t* base_root_node=(THREAD_DATA->header.current_thread?THREAD_DATA->process->vfs_root:_vfs_root_node);
 	vfs_node_ref(base_root_node);
 	if ((flags&VFS_LOOKUP_FLAG_CHECK_PERMISSIONS)&&((uid_get_flags(uid)|gid_get_flags(gid))&ID_FLAG_BYPASS_VFS_PERMISSIONS)){

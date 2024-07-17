@@ -210,7 +210,7 @@ KERNEL_PUBLIC bool vfs_node_unlink(vfs_node_t* node){
 
 
 
-KERNEL_PUBLIC u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+KERNEL_PUBLIC KERNEL_AWAITS u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->read||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}
@@ -219,7 +219,7 @@ KERNEL_PUBLIC u64 vfs_node_read(vfs_node_t* node,u64 offset,void* buffer,u64 siz
 
 
 
-KERNEL_PUBLIC u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
+KERNEL_PUBLIC KERNEL_AWAITS u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,u64 size,u32 flags){
 	if (!size||!node->functions->write||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}
@@ -228,7 +228,7 @@ KERNEL_PUBLIC u64 vfs_node_write(vfs_node_t* node,u64 offset,const void* buffer,
 
 
 
-KERNEL_PUBLIC u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
+KERNEL_PUBLIC KERNEL_AWAITS u64 vfs_node_resize(vfs_node_t* node,s64 offset,u32 flags){
 	if (!node->functions->resize||(!(flags&VFS_NODE_FLAG_BYPASS_LOCK)&&!vfs_lock_verify_thread(node,THREAD_DATA->header.current_thread))){
 		return 0;
 	}

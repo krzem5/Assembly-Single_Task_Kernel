@@ -72,7 +72,7 @@ static u32 KERNEL_INIT_WRITE _elf_hwcap=0;
 
 
 
-static vfs_node_t* _get_executable_file(const char* path){
+static KERNEL_AWAITS vfs_node_t* _get_executable_file(const char* path){
 	vfs_node_t* out=vfs_lookup(NULL,path,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|VFS_LOOKUP_FLAG_FOLLOW_LINKS,THREAD_DATA->process->uid,THREAD_DATA->process->gid);
 	if (!out){
 		ERROR("Unable to find executable '%s'",path);
@@ -97,7 +97,7 @@ static error_t _check_elf_header(elf_loader_context_t* ctx){
 
 
 
-static void _create_executable_process(elf_loader_context_t* ctx,const char* image,const char* name){
+static KERNEL_NO_AWAITS void _create_executable_process(elf_loader_context_t* ctx,const char* image,const char* name){
 	INFO("Creating process...");
 	u64 highest_address=0;
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
@@ -119,7 +119,7 @@ static void _create_executable_process(elf_loader_context_t* ctx,const char* ima
 
 
 
-static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
+static KERNEL_AWAITS error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 	INFO("Mapping and locating sections...");
 	const elf_dyn_t* dyn=NULL;
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
@@ -209,7 +209,7 @@ static error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 
 
 
-static error_t _load_interpreter(elf_loader_context_t* ctx){
+static KERNEL_AWAITS error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!ctx->interpreter_path){
 		return ERROR_OK;
 	}
@@ -351,7 +351,7 @@ static void _create_executable_thread(elf_loader_context_t* ctx){
 
 
 
-static error_t _generate_input_data(elf_loader_context_t* ctx){
+static KERNEL_NO_AWAITS error_t _generate_input_data(elf_loader_context_t* ctx){
 	INFO("Generating input data...");
 	u64 size=sizeof(u64);
 	u64 string_table_size=0;
@@ -420,7 +420,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC error_t elf_load(const char* path,u32 argc,const char*const* argv,u32 environ_length,const char*const* environ,u32 flags){
+KERNEL_PUBLIC KERNEL_AWAITS error_t elf_load(const char* path,u32 argc,const char*const* argv,u32 environ_length,const char*const* environ,u32 flags){
 	if (!path){
 		return ERROR_INVALID_ARGUMENT(0);
 	}

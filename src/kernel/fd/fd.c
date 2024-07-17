@@ -74,7 +74,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC error_t fd_from_node(vfs_node_t* node,u32 flags){
+KERNEL_PUBLIC KERNEL_NO_AWAITS error_t fd_from_node(vfs_node_t* node,u32 flags){
 	vfs_node_ref(node);
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(_fd_handle_type,&(out->handle));
@@ -146,7 +146,7 @@ void fd_unref(handle_id_t fd){
 
 
 
-error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
+KERNEL_AWAITS error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const char* path,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_APPEND|FD_FLAG_CREATE|FD_FLAG_DIRECTORY|FD_FLAG_IGNORE_LINKS|FD_FLAG_DELETE_ON_EXIT|FD_FLAG_EXCLUSIVE_CREATE|FD_FLAG_LINK|FD_FLAG_CLOSE_PIPE|FD_FLAG_FIND_LINKS))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -235,7 +235,7 @@ error_t syscall_fd_close(handle_id_t fd){
 
 
 
-error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 count,u32 flags){
+KERNEL_AWAITS error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 count,u32 flags){
 	if (count>syscall_get_user_pointer_max_length((void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -280,7 +280,7 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 coun
 
 
 
-error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u64 count,u32 flags){
+KERNEL_AWAITS error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u64 count,u32 flags){
 	if (count>syscall_get_user_pointer_max_length((const void*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -325,7 +325,7 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 
 
 
-error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
+KERNEL_AWAITS error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -359,7 +359,7 @@ error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 
 
 
-error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
+KERNEL_AWAITS error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -386,7 +386,7 @@ error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 
 
 
-error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 buffer_length){
+KERNEL_AWAITS error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 buffer_length){
 	if (buffer_length<sizeof(fd_stat_t)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -424,7 +424,7 @@ error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat_t* out,u32 bu
 
 
 
-error_t syscall_fd_dup(handle_id_t fd,u32 flags){
+KERNEL_AWAITS error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	if (flags&(~(FD_FLAG_READ|FD_FLAG_WRITE|FD_FLAG_CLOSE_PIPE))){
 		return ERROR_INVALID_ARGUMENT(2);
 	}
@@ -473,7 +473,7 @@ error_t syscall_fd_link(handle_id_t parent,handle_id_t fd){
 
 
 
-error_t syscall_fd_unlink(handle_id_t fd){
+KERNEL_AWAITS error_t syscall_fd_unlink(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -495,7 +495,7 @@ error_t syscall_fd_unlink(handle_id_t fd){
 
 
 
-error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
+KERNEL_AWAITS error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -520,7 +520,7 @@ error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* buffer,u32 buff
 
 
 
-error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id_t* dst_fds,u32 dst_fd_count,u64 length){
+KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id_t* dst_fds,u32 dst_fd_count,u64 length){
 	if (!dst_fd_count){
 		return 0;
 	}
@@ -604,7 +604,7 @@ _cleanup:
 
 
 
-error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
+KERNEL_AWAITS error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -623,7 +623,7 @@ error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
 
 
 
-error_t syscall_fd_get_event(handle_id_t fd,u32 is_write_event){
+KERNEL_AWAITS error_t syscall_fd_get_event(handle_id_t fd,u32 is_write_event){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -643,7 +643,7 @@ error_t syscall_fd_get_event(handle_id_t fd,u32 is_write_event){
 
 
 
-error_t syscall_fd_iter_start(handle_id_t fd){
+KERNEL_AWAITS error_t syscall_fd_iter_start(handle_id_t fd){
 	handle_t* fd_handle=handle_lookup_and_acquire(fd,_fd_handle_type);
 	if (!fd_handle){
 		return ERROR_INVALID_HANDLE;
@@ -683,7 +683,7 @@ error_t syscall_fd_iter_start(handle_id_t fd){
 
 
 
-error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
+KERNEL_AWAITS error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffer,u32 buffer_length){
 	if (buffer_length>syscall_get_user_pointer_max_length((char*)buffer)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -717,7 +717,7 @@ error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINTER char* buffe
 
 
 
-error_t syscall_fd_iter_next(handle_id_t iterator){
+KERNEL_AWAITS error_t syscall_fd_iter_next(handle_id_t iterator){
 	handle_t* fd_iterator_handle=handle_lookup_and_acquire(iterator,_fd_iterator_handle_type);
 	if (!fd_iterator_handle){
 		return ERROR_INVALID_HANDLE;

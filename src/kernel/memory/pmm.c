@@ -150,7 +150,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 
 
-static void _background_memory_reset_thread(void){
+static KERNEL_AWAITS void _background_memory_reset_thread(void){
 	timer_t* timer=timer_create("kernel.memory.reset.interval",10000000,TIMER_COUNT_INFINITE);
 	u32 index=0;
 	u32 bucket_index=0;
