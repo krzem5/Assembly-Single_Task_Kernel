@@ -255,15 +255,25 @@ error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* buffer,u64 coun
 		handle_release(fd_handle);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
+	exception_unwind_push({fd_handle}){
+		handle_t* fd_handle=EXCEPTION_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
 		mutex_release(data->lock);
+		exception_unwind_pop();
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
 	count=vfs_node_read(data->node,data->offset,(void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
 	mutex_release(data->lock);
+	exception_unwind_pop();
 	handle_release(fd_handle);
 	return count;
 }

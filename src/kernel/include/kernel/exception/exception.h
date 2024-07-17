@@ -12,7 +12,6 @@
 	void*const __exception_unwind_args[1]=vars; \
 	auto void __exception_unwind_callback(void*const*); \
 	exception_unwind_frame_t __exception_unwind_frame={ \
-		NULL, \
 		__exception_unwind_args, \
 		__exception_unwind_callback \
 	}; \
@@ -25,9 +24,9 @@
 
 
 typedef struct _EXCEPTION_UNWIND_FRAME{
-	struct _EXCEPTION_UNWIND_FRAME* next;
 	void*const* args;
 	void (*callback)(void*const*);
+	struct _EXCEPTION_UNWIND_FRAME* next;
 } exception_unwind_frame_t;
 
 

@@ -1,4 +1,5 @@
 #include <kernel/exception/exception.h>
+#include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
@@ -11,6 +12,7 @@ void exception_unwind(void){
 	for (exception_unwind_frame_t* frame=THREAD_DATA->exception_unwind_frame;frame;frame=frame->next){
 		frame->callback(frame->args);
 	}
+	lock_profiling_assert_empty(THREAD_DATA);
 }
 
 
