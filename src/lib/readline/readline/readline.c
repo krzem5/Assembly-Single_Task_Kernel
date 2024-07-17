@@ -49,6 +49,9 @@ static void _remove_character(readline_state_t* state){
 
 
 static void _redraw_line(readline_state_t* state,bool add_newline){
+	if (!state->echo_input){
+		return;
+	}
 	dynamic_buffer_t buffer={
 		NULL,
 		0
@@ -408,6 +411,7 @@ SYS_PUBLIC void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 m
 	state->event=READLINE_EVENT_NONE;
 	state->line=sys_heap_alloc(NULL,max_line_length+2);
 	state->line_length=0;
+	state->echo_input=1;
 	state->_autocomplete.prefix=NULL;
 	state->_autocomplete.offset=0;
 	state->_autocomplete.index=0;
@@ -439,6 +443,18 @@ SYS_PUBLIC void readline_state_deinit(readline_state_t* state){
 
 
 
+SYS_PUBLIC void readline_state_reset(readline_state_t* state){
+	if (state->_autocomplete.prefix){
+		_keep_autocomplete(state);
+	}
+	state->line_length=0;
+	state->_cursor=0;
+	state->_history_index=0;
+	state->_last_character_count=0;
+}
+
+
+
 SYS_PUBLIC void readline_add_autocomplete(readline_state_t* state,const char* suffix){
 	state->_autocomplete.length++;
 	state->_autocomplete.data=sys_heap_realloc(NULL,state->_autocomplete.data,state->_autocomplete.length*sizeof(char*));
@@ -449,10 +465,7 @@ SYS_PUBLIC void readline_add_autocomplete(readline_state_t* state,const char* su
 
 SYS_PUBLIC u64 readline_process(readline_state_t* state,const char* buffer,u64 buffer_length){
 	if (state->event==READLINE_EVENT_LINE){
-		state->line_length=0;
-		state->_cursor=0;
-		state->_history_index=0;
-		state->_last_character_count=0;
+		readline_state_reset(state);
 	}
 	state->event=READLINE_EVENT_NONE;
 	for (u64 i=0;i<buffer_length;i++){

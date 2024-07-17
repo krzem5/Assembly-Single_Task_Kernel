@@ -23,6 +23,8 @@ static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
 static sys_fd_t child_out_fd=0;
 static sys_fd_t ctrl_fd=0;
+static bool ctrl_direct_io=0;
+static bool ctrl_echo_input=1;
 static bool ctrl_autocomplete_enabled=1;
 
 
@@ -66,6 +68,21 @@ static void _input_thread(void* ctx){
 		if (!length||SYS_IS_ERROR(length)){
 			goto _error;
 		}
+		if (ctrl_direct_io){
+			if (state.line_length){
+				sys_error_t ret=sys_fd_write(child_in_fd,state.line,state.line_length,0);
+				if (!ret||SYS_IS_ERROR(ret)){
+					goto _error;
+				}
+				readline_state_reset(&state);
+			}
+			sys_error_t ret=sys_fd_write(child_in_fd,buffer,length,0);
+			if (!ret||SYS_IS_ERROR(ret)){
+				goto _error;
+			}
+			continue;
+		}
+		state.echo_input=ctrl_echo_input;
 		const char* ptr=(void*)buffer;
 		while (length){
 			u64 count=readline_process(&state,ptr,length);
@@ -101,15 +118,24 @@ static void _output_thread(void* ctx){
 
 
 static u32 _control_flag_update_callback(u32 clear,u32 set,u32 all){
-	// TERMINAL_FLAG_DIRECT_IO
-	// TERMINAL_FLAG_ECHO_INPUT
+	if (clear&TERMINAL_FLAG_DIRECT_IO){
+		ctrl_direct_io=0;
+	}
+	else if (set&TERMINAL_FLAG_DIRECT_IO){
+		ctrl_direct_io=1;
+	}
+	if (clear&TERMINAL_FLAG_ECHO_INPUT){
+		ctrl_echo_input=0;
+	}
+	else if (set&TERMINAL_FLAG_ECHO_INPUT){
+		ctrl_echo_input=1;
+	}
 	if (clear&TERMINAL_FLAG_DISABLE_AUTOCOMPLETE){
 		ctrl_autocomplete_enabled=1;
 	}
 	else if (set&TERMINAL_FLAG_DISABLE_AUTOCOMPLETE){
 		ctrl_autocomplete_enabled=0;
 	}
-	sys_io_print_to_fd(out_fd,"<_control_flag_update_callback: %x, %x>\n",clear,set);
 	return 0;
 }
 
@@ -122,7 +148,7 @@ static void _control_thread(void* ctx){
 		return;
 	}
 	terminal_server_state_t state={
-		.flags=0,
+		.flags=TERMINAL_FLAG_ECHO_INPUT,
 		.flag_update_callback=_control_flag_update_callback
 	};
 	while (terminal_server_process_packet(&session,&state));

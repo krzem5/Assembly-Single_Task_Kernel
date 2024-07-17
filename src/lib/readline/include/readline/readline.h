@@ -56,6 +56,7 @@ typedef struct _READLINE_STATE{
 	u32 event;
 	char* line;
 	u32 line_length;
+	bool echo_input;
 	readline_autocomplete_t _autocomplete;
 	readline_history_t _history;
 	readline_autocomplete_callback_t _autocomplete_callback;
@@ -74,6 +75,10 @@ void readline_state_init(sys_fd_t output_fd,u32 max_line_length,u32 max_history_
 
 
 void readline_state_deinit(readline_state_t* state);
+
+
+
+void readline_state_reset(readline_state_t* state);
 
 
 
