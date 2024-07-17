@@ -134,6 +134,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_forced_queue_index=0;
 	out->return_value=NULL;
 	signal_thread_state_init(&(out->signal_state));
+	out->exception_unwind_frame=NULL;
 	lock_profiling_init_lock_stack(out);
 	thread_list_add(&(process->thread_list),out);
 	return out;

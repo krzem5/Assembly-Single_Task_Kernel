@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/fd/fd.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
@@ -295,7 +296,11 @@ error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const void* buffer,u
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push({fd_handle}){
+		WARN("Unwind %p",EXCEPTION_ARG(0));
+	}
 	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|VFS_NODE_FLAG_GROW);
+	exception_unwind_pop();
 	data->offset+=count;
 	mutex_release(data->lock);
 	handle_release(fd_handle);

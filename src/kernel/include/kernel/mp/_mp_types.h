@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MP__MP_TYPES_H_
 #define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
+#include <kernel/exception/exception.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
 #include <kernel/id/group.h>
@@ -126,6 +127,7 @@ typedef struct _THREAD{
 	bool scheduler_io_yield;
 	KERNEL_USER_POINTER void* return_value;
 	signal_thread_state_t signal_state;
+	exception_unwind_frame_t* exception_unwind_frame;
 	LOCK_PROFILING_LOCK_STACK
 } thread_t;
 
