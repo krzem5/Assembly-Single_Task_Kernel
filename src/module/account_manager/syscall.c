@@ -211,7 +211,7 @@ static syscall_callback_t const _account_manager_syscall_functions[]={
 
 
 
-MODULE_POSTPOSTINIT(){
+MODULE_POSTINIT(){
 	LOG("Initializing account manager syscalls...");
 	syscall_create_table("account_manager",_account_manager_syscall_functions,sizeof(_account_manager_syscall_functions)/sizeof(syscall_callback_t));
 }

@@ -138,7 +138,7 @@ static syscall_callback_t const _coverage_syscall_functions[]={
 
 
 
-MODULE_PREINIT(){
+MODULE_INIT(){
 	LOG("Initializing coverage reporting module...");
 	INFO("Checking serial port...");
 	if (!COVERAGE_SERIAL_PORT->io_port){

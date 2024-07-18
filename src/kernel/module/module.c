@@ -311,15 +311,6 @@ static KERNEL_AWAITS void _execute_initializers(module_loader_context_t* ctx){
 		ctx->module->state=MODULE_STATE_LOADED;
 		module_unload(ctx->module);
 	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->preinit_end-ctx->module_descriptor->preinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->preinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
-				goto _unload_module;
-			}
-		}
-	}
 	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->init_end-ctx->module_descriptor->init_start;i+=sizeof(void*)){
 		void* func=*((void*const*)(ctx->module_descriptor->init_start+i));
 		if (func){

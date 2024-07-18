@@ -24,7 +24,7 @@
 
 
 
-MODULE_INIT(){
+MODULE_POSTINIT(){
 	test_acl();
 	test_amm();
 	test_cpu();

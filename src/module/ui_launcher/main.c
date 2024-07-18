@@ -13,7 +13,7 @@
 
 
 
-MODULE_PREINIT(){
+MODULE_INIT(){
 	if (!vfs_lookup(NULL,"/bin/ui",0,0,0)){
 		WARN("UI executable not found");
 		module_unload(module_self);

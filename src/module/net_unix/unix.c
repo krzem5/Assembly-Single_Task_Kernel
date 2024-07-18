@@ -129,7 +129,7 @@ static const socket_dtp_descriptor_t _net_unix_socket_dtp_descriptor={
 
 
 
-MODULE_POSTINIT(){
+MODULE_INIT(){
 	LOG("Registering UNIX datagram sockets...");
 	socket_register_dtp_descriptor(&_net_unix_socket_dtp_descriptor);
 }
