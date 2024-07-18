@@ -1,4 +1,5 @@
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/fd/fd.h>
 #include <kernel/format/format.h>
 #include <kernel/isr/pf.h>
@@ -230,9 +231,13 @@ KERNEL_PUBLIC KERNEL_AWAITS mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u
 	rb_tree_insert_node(&(mmap->address_tree),&(out->rb_node));
 	rwlock_release_write(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
+		exception_unwind_push(mmap,out){
+			mmap_dealloc_region(EXCEPTION_UNWIND_ARG(0),EXCEPTION_UNWIND_ARG(1));
+		}
 		for (u64 offset=address+guard_page_size;offset<address+length;offset+=PAGE_SIZE){
 			mmap_handle_pf(mmap,offset,NULL);
 		}
+		exception_unwind_pop();
 	}
 	return out;
 }
@@ -358,7 +363,7 @@ void mmap_unmap_address(mmap_t* mmap,u64 address){
 
 
 
-KERNEL_AWAITS error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
+KERNEL_NO_AWAITS error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 	u64 mmap_flags=MMAP_REGION_FLAG_VMM_USER;
 	vfs_node_t* file=NULL;
 	if (flags&USER_MEMORY_FLAG_WRITE){
@@ -392,7 +397,7 @@ KERNEL_AWAITS error_t syscall_memory_map(u64 size,u64 flags,handle_id_t fd){
 
 
 
-KERNEL_AWAITS error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
+KERNEL_NO_AWAITS error_t syscall_memory_change_flags(u64 address,u64 size,u64 flags){
 	u64 vmm_set_flags=0;
 	if (flags&USER_MEMORY_FLAG_WRITE){
 		vmm_set_flags|=VMM_PAGE_FLAG_READWRITE;
