@@ -17,14 +17,14 @@ void exception_unwind(void){
 
 
 
-void _exception_push_unwind_frame(exception_unwind_frame_t* frame){
+KERNEL_PUBLIC void _exception_push_unwind_frame(exception_unwind_frame_t* frame){
 	frame->next=THREAD_DATA->exception_unwind_frame;
 	THREAD_DATA->exception_unwind_frame=frame;
 }
 
 
 
-void _exception_pop_unwind_frame(exception_unwind_frame_t* frame){
+KERNEL_PUBLIC void _exception_pop_unwind_frame(exception_unwind_frame_t* frame){
 	if (THREAD_DATA->exception_unwind_frame!=frame){
 		panic("Broken exception chain");
 	}

@@ -1,3 +1,4 @@
+#include <kernel/exception/exception.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -223,7 +224,12 @@ KERNEL_AWAITS virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_inf
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->header.type==VIRTIO_GPU_RESP_OK_DISPLAY_INFO){
@@ -260,7 +266,12 @@ KERNEL_AWAITS virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(vir
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -290,7 +301,12 @@ KERNEL_AWAITS void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_de
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -324,7 +340,12 @@ KERNEL_AWAITS void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_devic
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -357,7 +378,12 @@ KERNEL_AWAITS void virtio_gpu_command_resource_flush(virtio_gpu_device_t* gpu_de
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -391,7 +417,12 @@ KERNEL_AWAITS void virtio_gpu_command_transfer_to_host_2d(virtio_gpu_device_t* g
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -423,7 +454,12 @@ KERNEL_AWAITS void virtio_gpu_command_resource_attach_backing(virtio_gpu_device_
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -452,7 +488,12 @@ KERNEL_AWAITS void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -481,7 +522,12 @@ KERNEL_AWAITS virtio_gpu_resp_capset_info_t* virtio_gpu_command_get_capset_info(
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->header.type==VIRTIO_GPU_RESP_OK_CAPSET_INFO){
@@ -513,7 +559,12 @@ KERNEL_AWAITS virtio_gpu_resp_capset_t* virtio_gpu_command_get_capset(virtio_gpu
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->header.type==VIRTIO_GPU_RESP_OK_CAPSET){
@@ -544,7 +595,12 @@ KERNEL_AWAITS virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_dev
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->header.type==VIRTIO_GPU_RESP_OK_EDID){
@@ -578,7 +634,12 @@ KERNEL_AWAITS void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -607,7 +668,12 @@ KERNEL_AWAITS void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_devic
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -637,7 +703,12 @@ KERNEL_AWAITS void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* g
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -667,7 +738,12 @@ KERNEL_AWAITS void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* g
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -709,7 +785,12 @@ KERNEL_AWAITS virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(vir
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -744,7 +825,12 @@ KERNEL_AWAITS void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* g
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -778,7 +864,12 @@ KERNEL_AWAITS void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t*
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -812,7 +903,12 @@ KERNEL_AWAITS void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,2,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -844,7 +940,12 @@ KERNEL_AWAITS void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_dev
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){
@@ -873,7 +974,12 @@ KERNEL_AWAITS void virtio_gpu_command_move_cursor(virtio_gpu_device_t* gpu_devic
 		}
 	};
 	virtio_queue_transfer(gpu_device->controlq,buffers,1,1);
+	exception_unwind_push(request,response){
+		amm_dealloc(request);
+		amm_dealloc(response);
+	}
 	virtio_queue_wait(gpu_device->controlq);
+	exception_unwind_pop();
 	virtio_queue_pop(gpu_device->controlq,NULL);
 	amm_dealloc(request);
 	if (response->type!=VIRTIO_GPU_RESP_OK_NODATA){

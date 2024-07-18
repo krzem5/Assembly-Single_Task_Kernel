@@ -255,8 +255,8 @@ KERNEL_AWAITS error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* b
 		handle_release(fd_handle);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	exception_unwind_push({fd_handle}){
-		handle_t* fd_handle=EXCEPTION_ARG(0);
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
 		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 		if (mutex_is_held(data->lock)){
 			mutex_release(data->lock);
@@ -300,8 +300,8 @@ KERNEL_AWAITS error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const 
 		handle_release(fd_handle);
 		return ERROR_UNSUPPORTED_OPERATION;
 	}
-	exception_unwind_push({fd_handle}){
-		handle_t* fd_handle=EXCEPTION_ARG(0);
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
 		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
 		if (mutex_is_held(data->lock)){
 			mutex_release(data->lock);

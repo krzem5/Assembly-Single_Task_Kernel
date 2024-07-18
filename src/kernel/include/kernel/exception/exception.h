@@ -4,12 +4,12 @@
 
 
 
-#define EXCEPTION_ARG(index) __exception_args[(index)]
+#define EXCEPTION_UNWIND_ARG(index) __exception_args[(index)]
 
 
 
-#define exception_unwind_push(vars) \
-	void*const __exception_unwind_args[1]=vars; \
+#define exception_unwind_push(...) \
+	void*const __exception_unwind_args[]={__VA_ARGS__}; \
 	auto void __exception_unwind_callback(void*const*); \
 	exception_unwind_frame_t __exception_unwind_frame={ \
 		__exception_unwind_args, \
