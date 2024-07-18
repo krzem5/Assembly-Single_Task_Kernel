@@ -16,14 +16,15 @@
 MODULE_PREINIT(){
 	if (!vfs_lookup(NULL,"/bin/ui",0,0,0)){
 		WARN("UI executable not found");
-		return 0;
+		module_unload(module_self);
+		return;
 	}
 	error_t process=elf_load(UI_EXECUTABLE_FILE_PATH,0,NULL,0,NULL,0);
 	if (IS_ERROR(process)){
 		panic("Unable to load UI");
 	}
 	ui_common_set_process(process);
-	return 0;
+	module_unload(module_self);
 }
 
 

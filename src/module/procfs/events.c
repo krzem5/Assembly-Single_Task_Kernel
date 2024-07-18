@@ -240,7 +240,7 @@ static KERNEL_AWAITS void _update_notification_thread(void){
 
 
 
-MODULE_POSTPOSTINIT(){
+MODULE_POSTINIT(){
 	LOG("Creating process subsystem...");
 	vfs_node_unref(dynamicfs_create_node(procfs->root,"self",VFS_NODE_TYPE_LINK,NULL,_process_self_read_callback,NULL));
 	LOG("Creating group subsystem...");

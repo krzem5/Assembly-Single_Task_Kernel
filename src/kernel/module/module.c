@@ -1,5 +1,6 @@
 #include <kernel/aslr/aslr.h>
 #include <kernel/elf/structures.h>
+#include <kernel/exception/exception.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
@@ -11,6 +12,7 @@
 #include <kernel/mmap/mmap.h>
 #include <kernel/module/module.h>
 #include <kernel/mp/process.h>
+#include <kernel/mp/thread.h>
 #include <kernel/signature/signature.h>
 #include <kernel/symbol/symbol.h>
 #include <kernel/types.h>
@@ -287,37 +289,6 @@ static void _process_module_header(module_loader_context_t* ctx){
 
 
 
-static bool _execute_initializers(module_loader_context_t* ctx){
-	INFO("Executing initializers...");
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->preinit_end-ctx->module_descriptor->preinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->preinit_start+i));
-		if (func&&!((bool (*)(void))func)()){
-			return 0;
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->init_end-ctx->module_descriptor->init_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->init_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postinit_end-ctx->module_descriptor->postinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->postinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postpostinit_end-ctx->module_descriptor->postpostinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->postpostinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-		}
-	}
-	return 1;
-}
-
-
-
 static void _unmap_region(module_loader_context_t* ctx,module_region_t* region){
 	for (u64 address=pmm_align_down_address(region->base);address<pmm_align_up_address(region->base+region->size);address+=PAGE_SIZE){
 		mmap_unmap_address(_module_image_mmap,address);
@@ -329,6 +300,66 @@ static void _unmap_region(module_loader_context_t* ctx,module_region_t* region){
 static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* region){
 	u64 address=pmm_align_down_address(region->base);
 	vmm_adjust_flags(&vmm_kernel_pagemap,address,VMM_PAGE_FLAG_NOEXECUTE,VMM_PAGE_FLAG_READWRITE,pmm_align_up_address(region->base+region->size-address)>>PAGE_SIZE_SHIFT,1);
+}
+
+
+
+static KERNEL_AWAITS void _execute_initializers(module_loader_context_t* ctx){
+	INFO("Executing initializers...");
+	exception_unwind_push(ctx){
+		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
+		ctx->module->state=MODULE_STATE_LOADED;
+		module_unload(ctx->module);
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->preinit_end-ctx->module_descriptor->preinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->preinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+				goto _unload_module;
+			}
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->init_end-ctx->module_descriptor->init_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->init_start+i));
+		if (func){
+			((void (*)(void))func)();
+			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+				goto _unload_module;
+			}
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postinit_end-ctx->module_descriptor->postinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->postinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+				goto _unload_module;
+			}
+		}
+	}
+	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postpostinit_end-ctx->module_descriptor->postpostinit_start;i+=sizeof(void*)){
+		void* func=*((void*const*)(ctx->module_descriptor->postpostinit_start+i));
+		if (func){
+			((void (*)(void))func)();
+			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+				goto _unload_module;
+			}
+		}
+	}
+	exception_unwind_pop();
+	INFO("Adjusting sections...");
+	_unmap_region(ctx,&(ctx->elf_region_ue));
+	_unmap_region(ctx,&(ctx->elf_region_ur));
+	_unmap_region(ctx,&(ctx->elf_region_uw));
+	_adjust_region_flags(ctx,&(ctx->elf_region_iw));
+	ctx->module->state=MODULE_STATE_LOADED;
+	LOG("Module '%s' loaded successfully at %p",ctx->module->name->data,ctx->module->region->rb_node.key);
+	return;
+_unload_module:
+	exception_unwind_pop();
+	ctx->module->state=MODULE_STATE_LOADED;
+	module_unload(ctx->module);
 }
 
 
@@ -376,6 +407,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 		return module;
 	}
 	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0,0,0);
+	// ================> exception unwinding <================
 	// vfs_node_unref(directory)
 	// smm_dealloc(name_string)
 	// symbol_remove(name);
@@ -386,6 +418,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	// 	handle_release(&(module->handle));
 	// }
 	// mmap_dealloc_region(process_kernel->mmap,region);
+	// ================> exception unwinding <================
 	if (!directory){
 		panic("Unable to find module root directory");
 	}
@@ -451,18 +484,14 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	mmap_dealloc_region(process_kernel->mmap,region);
 	_process_module_header(&ctx);
 	_send_load_notification(module);
-	if (!_execute_initializers(&ctx)){ // make initializers non-awaitable
-		module_unload(module);
-		return NULL;
+	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
+	thread_t* thread=thread_create_kernel_thread(NULL,buffer,_execute_initializers,1,&ctx);
+	event_await(&(thread->termination_event),1,0);
+	if (module->state==MODULE_STATE_LOADED){
+		return module;
 	}
-	INFO("Adjusting sections...");
-	_unmap_region(&ctx,&(ctx.elf_region_ue));
-	_unmap_region(&ctx,&(ctx.elf_region_ur));
-	_unmap_region(&ctx,&(ctx.elf_region_uw));
-	_adjust_region_flags(&ctx,&(ctx.elf_region_iw));
-	module->state=MODULE_STATE_LOADED;
-	LOG("Module '%s' loaded successfully at %p",name,module->region->rb_node.key);
-	return module;
+	handle_release(&(module->handle));
+	return NULL;
 _error:
 	symbol_remove(name);
 	if (module->region){
@@ -480,6 +509,10 @@ _error:
 KERNEL_PUBLIC bool module_unload(module_t* module){
 	if (module->state==MODULE_STATE_UNLOADING||module->state==MODULE_STATE_UNLOADED){
 		return 0;
+	}
+	if (module->state==MODULE_STATE_LOADING){
+		module->flags|=_MODULE_FLAG_EARLY_UNLOAD;
+		return 1;
 	}
 	LOG("Unloading module '%s'...",module->name->data);
 	_send_unload_notification(module);

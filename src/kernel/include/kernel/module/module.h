@@ -18,6 +18,7 @@
 #define MODULE_FLAG_PREVENT_LOADS 1
 #define MODULE_FLAG_NO_SIGNATURE 2
 #define MODULE_FLAG_TAINTED 4
+#define _MODULE_FLAG_EARLY_UNLOAD 8
 
 #define MODULE_DECLARE(flags) \
 	extern u64 __module_section_preinit_start[1]; \
@@ -51,7 +52,7 @@
 	}; \
 	static const u8 __attribute__((used,section(".signature"))) _module_signature[(((flags)&MODULE_FLAG_NO_SIGNATURE)?0:4096)]
 
-#define MODULE_PREINIT() static KERNEL_EARLY_EXEC bool _KERNEL_INITIALIZER_NAME(__preinit_)(void);static void* __attribute__((section(".module_preinit"),used)) __preinit_ptr=_KERNEL_INITIALIZER_NAME(__preinit_);static KERNEL_EARLY_EXEC __attribute__((constructor)) bool _KERNEL_INITIALIZER_NAME(__preinit_)(void)
+#define MODULE_PREINIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__preinit_)(void);static void* __attribute__((section(".module_preinit"),used)) __preinit_ptr=_KERNEL_INITIALIZER_NAME(__preinit_);static KERNEL_EARLY_EXEC __attribute__((constructor)) void _KERNEL_INITIALIZER_NAME(__preinit_)(void)
 #define MODULE_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__init_)(void);static void* __attribute__((section(".module_init"),used)) __init_ptr=_KERNEL_INITIALIZER_NAME(__init_);static KERNEL_EARLY_EXEC __attribute__((constructor)) void _KERNEL_INITIALIZER_NAME(__init_)(void)
 #define MODULE_POSTINIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__postinit_)(void);static void* __attribute__((section(".module_postinit"),used)) __postinit_ptr=_KERNEL_INITIALIZER_NAME(__postinit_);static KERNEL_EARLY_EXEC __attribute__((constructor)) void _KERNEL_INITIALIZER_NAME(__postinit_)(void)
 #define MODULE_POSTPOSTINIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__postpostinit_)(void);static void* __attribute__((section(".module_postpostinit"),used)) __postpostinit_ptr=_KERNEL_INITIALIZER_NAME(__postpostinit_);static KERNEL_EARLY_EXEC __attribute__((constructor)) void _KERNEL_INITIALIZER_NAME(__postpostinit_)(void)

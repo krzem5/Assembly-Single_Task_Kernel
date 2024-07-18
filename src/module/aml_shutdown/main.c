@@ -42,14 +42,12 @@ static void _aml_shutdown_function(void){
 
 
 
-MODULE_PREINIT(){
-	aml_namespace_t* s5_package=aml_namespace_lookup(NULL,"\\_S5_",0);
-	return s5_package&&s5_package->value;
-}
-
-
-
 MODULE_INIT(){
+	aml_namespace_t* s5_package=aml_namespace_lookup(NULL,"\\_S5_",0);
+	if (!s5_package||!s5_package->value){
+		module_unload(module_self);
+		return;
+	}
 	shutdown_register_shutdown_function(_aml_shutdown_function,1);
 }
 

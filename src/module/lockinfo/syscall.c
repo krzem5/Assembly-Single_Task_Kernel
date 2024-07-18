@@ -86,14 +86,12 @@ static syscall_callback_t const _lockinfo_syscall_functions[]={
 
 
 
-MODULE_PREINIT(){
-	lock_profiling_descriptor_t tmp;
-	return lock_profiling_get_descriptor(0,&tmp);
-}
-
-
-
 MODULE_INIT(){
+	lock_profiling_descriptor_t tmp;
+	if (!lock_profiling_get_descriptor(0,&tmp)){
+		module_unload(module_self);
+		return;
+	}
 	LOG("Initializing lockinfo syscalls...");
 	syscall_create_table("lockinfo",_lockinfo_syscall_functions,sizeof(_lockinfo_syscall_functions)/sizeof(syscall_callback_t));
 }

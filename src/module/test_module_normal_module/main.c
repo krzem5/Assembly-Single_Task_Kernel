@@ -7,8 +7,8 @@ extern void test_module_mark_deinit_triggered(void);
 
 
 
-MODULE_PREINIT(){
-	return 1;
+MODULE_INIT(){
+	return;
 }
 
 

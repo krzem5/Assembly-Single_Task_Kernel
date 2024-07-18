@@ -39,14 +39,17 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 			continue;
 		}
 #endif
-		module_load(tag->name->data);
+		module_t* module=module_load(tag->name->data);
+		if (module){
+			handle_release(&(module->handle));
+		}
 	}
 	config_tag_delete(root_tag);
 }
 
 
 
-MODULE_PREINIT(){
+MODULE_INIT(){
 	LOG("Loading early modules...");
 	_load_modules_from_order_file(1);
 	LOG("Unloading initramfs...");
@@ -72,7 +75,7 @@ MODULE_PREINIT(){
 	log_mask_type(LOG_TYPE_LOG);
 #endif
 #endif
-	return 0;
+	module_unload(module_self);
 }
 
 

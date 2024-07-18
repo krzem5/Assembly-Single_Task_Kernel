@@ -238,15 +238,15 @@ static KERNEL_AWAITS void _keyring_update_thread(void){
 
 
 
-MODULE_PREINIT(){
+MODULE_INIT(){
 	LOG("Initializing keyringstore...");
 	_keyringstore_root_dir=_get_store_directory();
 	if (!_keyringstore_root_dir){
 		ERROR("Unable to create keyringstore directory");
-		return 0;
+		module_unload(module_self);
+		return;
 	}
 	INFO("Loading keyrings...");
 	_load_keyrings();
 	thread_create_kernel_thread(NULL,"keyringstore.update",_keyring_update_thread,0);
-	return 1;
 }

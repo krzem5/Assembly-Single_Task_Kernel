@@ -146,7 +146,6 @@ MODULE_PREINIT(){
 	}
 	rwlock_init(&_coverage_lock);
 	syscall_create_table("coverage",_coverage_syscall_functions,sizeof(_coverage_syscall_functions)/sizeof(syscall_callback_t));
-	return 1;
 }
 
 
