@@ -273,8 +273,8 @@ static void _process_module_header(module_loader_context_t* ctx){
 	INFO("Processing module header...");
 	ctx->module->flags=ctx->module_descriptor->flags;
 	*(ctx->module_descriptor->module_self_ptr)=ctx->module;
-	ctx->module->deinit_array_base=ctx->module_descriptor->deinit_start;
-	ctx->module->deinit_array_size=ctx->module_descriptor->deinit_end-ctx->module_descriptor->deinit_start;
+	ctx->module->deinit_array_base=ctx->module_descriptor->deinit.start;
+	ctx->module->deinit_array_size=ctx->module_descriptor->deinit.end-ctx->module_descriptor->deinit.start;
 #ifdef KERNEL_COVERAGE
 	ctx->module->gcov_info_base=ctx->module_descriptor->gcov_info_start;
 	ctx->module->gcov_info_size=ctx->module_descriptor->gcov_info_end-ctx->module_descriptor->gcov_info_start;
@@ -311,30 +311,14 @@ static KERNEL_AWAITS void _execute_initializers(module_loader_context_t* ctx){
 		ctx->module->state=MODULE_STATE_LOADED;
 		module_unload(ctx->module);
 	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->init_end-ctx->module_descriptor->init_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->init_start+i));
-		if (func){
-			((void (*)(void))func)();
-			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
-				goto _unload_module;
-			}
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postinit_end-ctx->module_descriptor->postinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->postinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
-				goto _unload_module;
-			}
-		}
-	}
-	for (u64 i=0;i+sizeof(void*)<=ctx->module_descriptor->postpostinit_end-ctx->module_descriptor->postpostinit_start;i+=sizeof(void*)){
-		void* func=*((void*const*)(ctx->module_descriptor->postpostinit_start+i));
-		if (func){
-			((void (*)(void))func)();
-			if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
-				goto _unload_module;
+	for (u32 i=0;i<3;i++){
+		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
+			void* func=*((void*const*)(ctx->module_descriptor->init_arrays[i].start+j));
+			if (func){
+				((void (*)(void))func)();
+				if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+					goto _unload_module;
+				}
 			}
 		}
 	}

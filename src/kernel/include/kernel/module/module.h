@@ -35,14 +35,24 @@
 	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
 		(flags), \
 		&module_self, \
-		(u64)(__module_section_init_start), \
-		(u64)(__module_section_init_end), \
-		(u64)(__module_section_postinit_start), \
-		(u64)(__module_section_postinit_end), \
-		(u64)(__module_section_postpostinit_start), \
-		(u64)(__module_section_postpostinit_end), \
-		(u64)(__module_section_deinit_start), \
-		(u64)(__module_section_deinit_end), \
+		{ \
+			{ \
+				(u64)(__module_section_init_start), \
+				(u64)(__module_section_init_end), \
+			}, \
+			{ \
+				(u64)(__module_section_postinit_start), \
+				(u64)(__module_section_postinit_end), \
+			}, \
+			{ \
+				(u64)(__module_section_postpostinit_start), \
+				(u64)(__module_section_postpostinit_end), \
+			} \
+		}, \
+		{ \
+			(u64)(__module_section_deinit_start), \
+			(u64)(__module_section_deinit_end), \
+		}, \
 		(u64)(__module_section_gcov_info_start), \
 		(u64)(__module_section_gcov_info_end) \
 	}; \
@@ -76,17 +86,18 @@ typedef struct _MODULE{
 
 
 
+typedef struct _MODULE_DESCRIPTOR_INIT_ARRAYS{
+	u64 start;
+	u64 end;
+} module_descriptor_init_arrays_t;
+
+
+
 typedef struct _MODULE_DESCRIPTOR{
 	u32 flags;
 	module_t** module_self_ptr;
-	u64 init_start;
-	u64 init_end;
-	u64 postinit_start;
-	u64 postinit_end;
-	u64 postpostinit_start;
-	u64 postpostinit_end;
-	u64 deinit_start;
-	u64 deinit_end;
+	module_descriptor_init_arrays_t init_arrays[3];
+	module_descriptor_init_arrays_t deinit;
 	u64 gcov_info_start;
 	u64 gcov_info_end;
 } module_descriptor_t;
