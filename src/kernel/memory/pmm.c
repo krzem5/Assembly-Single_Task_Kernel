@@ -153,7 +153,7 @@ static void KERNEL_EARLY_EXEC _add_memory_range(u64 address,u64 end){
 
 static KERNEL_AWAITS void _background_memory_reset_thread(void){
 	exception_unwind_push(){
-		panic("_background_memory_reset_thread terminated by a signal");
+		panic("kernel.memory.reset thread terminated by a signal");
 	}
 	timer_t* timer=timer_create("kernel.memory.reset.interval",10000000,TIMER_COUNT_INFINITE);
 	u32 index=0;
