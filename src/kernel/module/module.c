@@ -376,6 +376,16 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 		return module;
 	}
 	vfs_node_t* directory=vfs_lookup(NULL,MODULE_ROOT_DIRECTORY,0,0,0);
+	// vfs_node_unref(directory)
+	// smm_dealloc(name_string)
+	// symbol_remove(name);
+	// if (module->region){
+	// 	mmap_dealloc_region(_module_image_mmap,module->region);
+	// }
+	// if (handle_release(&(module->handle))){
+	// 	handle_release(&(module->handle));
+	// }
+	// mmap_dealloc_region(process_kernel->mmap,region);
 	if (!directory){
 		panic("Unable to find module root directory");
 	}
@@ -441,7 +451,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	mmap_dealloc_region(process_kernel->mmap,region);
 	_process_module_header(&ctx);
 	_send_load_notification(module);
-	if (!_execute_initializers(&ctx)){
+	if (!_execute_initializers(&ctx)){ // make initializers non-awaitable
 		module_unload(module);
 		return NULL;
 	}
