@@ -380,8 +380,9 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 		panic("Unable to find module root directory");
 	}
 	char buffer[256];
-	SMM_TEMPORARY_STRING name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
+	string_t* name_string=smm_alloc(buffer,format_string(buffer,256,"%s.mod",name));
 	vfs_node_t* module_file=vfs_node_lookup(directory,name_string);
+	smm_dealloc(name_string);
 	vfs_node_unref(directory);
 #ifdef KERNEL_COVERAGE
 	if (!module_file&&name[0]=='/'){
