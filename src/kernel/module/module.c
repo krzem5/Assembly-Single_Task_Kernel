@@ -476,8 +476,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	_process_module_header(&ctx);
 	_send_load_notification(module);
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
-	thread_t* thread=thread_create_kernel_thread(NULL,buffer,_execute_initializers,1,&ctx);
-	event_await(&(thread->termination_event),1,0);
+	event_await(&(thread_create_kernel_thread(NULL,buffer,_execute_initializers,1,&ctx)->termination_event),1,0);
 	if (module->state==MODULE_STATE_LOADED){
 		return module;
 	}
