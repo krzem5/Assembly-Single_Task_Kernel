@@ -286,15 +286,15 @@ KERNEL_AWAITS error_t syscall_fd_read(handle_id_t fd,KERNEL_USER_POINTER void* b
 	}
 	mutex_acquire(data->lock);
 	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
-		mutex_release(data->lock);
 		exception_unwind_pop();
+		mutex_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
 	count=vfs_node_read(data->node,data->offset,(void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|((flags&FD_FLAG_PIPE_PEEK)?VFS_NODE_FLAG_PIPE_PEEK:0));
 	data->offset+=count;
-	mutex_release(data->lock);
 	exception_unwind_pop();
+	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return count;
 }
@@ -331,15 +331,15 @@ KERNEL_AWAITS error_t syscall_fd_write(handle_id_t fd,KERNEL_USER_POINTER const 
 	}
 	mutex_acquire(data->lock);
 	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
-		mutex_release(data->lock);
 		exception_unwind_pop();
+		mutex_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
 	count=vfs_node_write(data->node,data->offset,(const void*)buffer,count,((flags&FD_FLAG_NONBLOCKING)?VFS_NODE_FLAG_NONBLOCKING:0)|VFS_NODE_FLAG_GROW);
 	data->offset+=count;
-	mutex_release(data->lock);
 	exception_unwind_pop();
+	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return count;
 }
@@ -356,6 +356,14 @@ KERNEL_AWAITS error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	switch (type){
 		case FD_SEEK_SET:
@@ -368,11 +376,13 @@ KERNEL_AWAITS error_t syscall_fd_seek(handle_id_t fd,s64 offset,u32 type){
 			data->offset=vfs_node_resize(data->node,0,VFS_NODE_FLAG_RESIZE_RELATIVE)-offset;
 			break;
 		default:
+			exception_unwind_pop();
 			mutex_release(data->lock);
 			handle_release(fd_handle);
 			return ERROR_INVALID_ARGUMENT(2);
 	}
 	u64 out=data->offset;
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out;
@@ -390,8 +400,17 @@ KERNEL_AWAITS error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	if (!vfs_lock_verify_thread(data->node,THREAD_DATA->header.current_thread)){
+		exception_unwind_pop();
 		mutex_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -400,6 +419,7 @@ KERNEL_AWAITS error_t syscall_fd_resize(handle_id_t fd,u64 size,u32 flags){
 	if (!out&&data->offset>size){
 		data->offset=size;
 	}
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out;
@@ -423,6 +443,14 @@ KERNEL_AWAITS error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	out->type=data->node->flags&VFS_NODE_TYPE_MASK;
 	out->flags=((data->node->flags&VFS_NODE_FLAG_VIRTUAL)?FD_STAT_FLAG_VIRTUAL:0);
@@ -438,6 +466,7 @@ KERNEL_AWAITS error_t syscall_fd_stat(handle_id_t fd,KERNEL_USER_POINTER fd_stat
 	out->uid=data->node->uid;
 	out->lock_handle=data->node->io_lock.handle;
 	mem_copy((char*)(out->name),data->node->name->data,data->node->name->length+1);
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return ERROR_OK;
@@ -470,6 +499,9 @@ KERNEL_AWAITS error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	mutex_acquire(data->lock);
 	vfs_node_ref(data->node);
 	fd_t* out=omm_alloc(_fd_allocator);
@@ -481,6 +513,7 @@ KERNEL_AWAITS error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	out->node=data->node;
 	out->offset=data->offset;
 	out->flags=(data->flags|FD_FLAG_CLOSE_PIPE)&flags;
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
@@ -504,11 +537,20 @@ KERNEL_AWAITS error_t syscall_fd_unlink(handle_id_t fd){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	error_t out=ERROR_DENIED;
 	if (vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_WRITE){
 		out=(vfs_node_unlink(data->node)?ERROR_OK:ERROR_FAILED);
 	}
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out;
@@ -532,8 +574,17 @@ KERNEL_AWAITS error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* b
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	u32 out=vfs_path(data->node,(char*)buffer,buffer_length);
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return (!out&&buffer_length?ERROR_NO_SPACE:out);
@@ -542,6 +593,7 @@ KERNEL_AWAITS error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* b
 
 
 KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id_t* dst_fds,u32 dst_fd_count,u64 length){
+	// no exception handling implemented
 	if (!dst_fd_count){
 		return 0;
 	}
@@ -635,8 +687,17 @@ KERNEL_AWAITS error_t syscall_fd_lock(handle_id_t fd,handle_id_t handle){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	error_t out=(vfs_lock_lock_thread(data->node,THREAD_DATA->header.current_thread,handle)?ERROR_OK:ERROR_DENIED);
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out;
@@ -654,9 +715,13 @@ KERNEL_AWAITS error_t syscall_fd_get_event(handle_id_t fd,u32 is_write_event){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	mutex_acquire(data->lock);
 	event_t* event=vfs_node_get_event(data->node,!!is_write_event);
 	error_t out=(event?event->handle.rb_node.key:0);
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out;
