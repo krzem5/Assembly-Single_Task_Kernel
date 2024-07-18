@@ -22,7 +22,7 @@ static u64 _devfs_terminal_next_id=0;
 
 
 
-static u64 _link_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
+static KERNEL_AWAITS u64 _link_read_callback(void* ctx,u64 offset,void* buffer,u64 size){
 	if (!ctx){
 		return 0;
 	}

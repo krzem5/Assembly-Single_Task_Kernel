@@ -32,7 +32,7 @@ SECTIONS{
 	}
 	. = ALIGN(4096);
 	.module_ex : {
-		*(.text .text.*)
+		*(.text .text*)
 	}
 	. = ALIGN(4096);
 	.module_nx : {
@@ -62,6 +62,12 @@ SECTIONS{
 	.signature : {
 		*(.signature)
 		. = ALIGN(4096);
+	}
+	.kernel_await : {
+		*(.init_array)
+	}
+	.kernel_no_await : {
+		*(.fini_array)
 	}
 	/DISCARD/ : {
 		*(.comment .gnu .gnu.* .note .note.*)

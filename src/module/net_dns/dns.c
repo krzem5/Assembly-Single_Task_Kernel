@@ -110,7 +110,7 @@ static u32 _encode_name(const char* name,u8* out,u32 max_size){
 
 
 
-static void _rx_thread(void){
+static KERNEL_AWAITS void _rx_thread(void){
 	while (1){
 		socket_packet_t* socket_packet=socket_pop_packet(_net_dns_socket,0);
 		net_udp_ip4_socket_packet_t* packet=socket_packet->data;
@@ -161,7 +161,7 @@ _cleanup:
 
 
 
-static void _cache_cleanup_thread(void){
+static KERNEL_AWAITS void _cache_cleanup_thread(void){
 	timer_t* timer=timer_create("net.dns.cache_cleanup",DNS_CACHE_CLEAR_INTERVAL_NS,TIMER_COUNT_INFINITE);
 	while (1){
 		event_await(&(timer->event),1,0);
@@ -211,7 +211,7 @@ MODULE_INIT(){
 
 
 
-KERNEL_PUBLIC net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblocking){
+KERNEL_PUBLIC KERNEL_AWAITS net_ip4_address_t net_dns_lookup_name(const char* name,bool nonblocking){
 	string_t* name_string=smm_alloc(name,0);
 	u64 key=(((u64)(name_string->length))<<32)|name_string->hash;
 	rwlock_acquire_write(&_net_dns_cache_lock);

@@ -24,7 +24,7 @@ static vfs_node_t* KERNEL_INIT_WRITE _keyringstore_root_dir=NULL;
 
 
 
-static vfs_node_t* KERNEL_EARLY_EXEC _get_store_directory(void){
+static vfs_node_t* KERNEL_AWAITS_EARLY _get_store_directory(void){
 	vfs_node_t* parent;
 	const char* child_name;
 	vfs_node_t* out=vfs_lookup_for_creation(NULL,KEYRING_STORE_DIRECTORY,0,0,0,&parent,&child_name);
@@ -47,7 +47,7 @@ static vfs_node_t* KERNEL_EARLY_EXEC _get_store_directory(void){
 
 
 
-static void KERNEL_EARLY_EXEC _load_keyring(config_tag_t* root_tag){
+static void KERNEL_AWAITS_EARLY _load_keyring(config_tag_t* root_tag){
 	config_tag_t* name_tag;
 	if (!config_tag_find(root_tag,"name",0,&name_tag)||name_tag->type!=CONFIG_TAG_TYPE_STRING){
 		return;
@@ -102,7 +102,7 @@ static void KERNEL_EARLY_EXEC _load_keyring(config_tag_t* root_tag){
 
 
 
-static void KERNEL_EARLY_EXEC _load_keyrings(void){
+static void KERNEL_AWAITS_EARLY _load_keyrings(void){
 	u64 pointer=0;
 	string_t* name;
 	while (1){
@@ -188,7 +188,7 @@ static config_tag_t* _generate_keyring_config(keyring_t* keyring){
 
 
 
-static void _store_keyring(keyring_t* keyring){
+static KERNEL_AWAITS void _store_keyring(keyring_t* keyring){
 	INFO("Storing keyring '%s'...",keyring->name->data);
 	config_tag_t* root_tag=_generate_keyring_config(keyring);
 	char buffer[32];
@@ -216,7 +216,7 @@ static void _store_keyring(keyring_t* keyring){
 
 
 
-static void _keyring_update_thread(void){
+static KERNEL_AWAITS void _keyring_update_thread(void){
 	notification_consumer_t* consumer=notification_consumer_create(keyring_notification_dispatcher);
 	HANDLE_FOREACH(keyring_handle_type){
 		_store_keyring(KERNEL_CONTAINEROF(handle,keyring_t,handle));

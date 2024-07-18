@@ -101,7 +101,7 @@ KERNEL_PUBLIC void net_ip6_delete_packet(net_ip6_packet_t* packet){
 
 
 
-KERNEL_PUBLIC void net_ip6_send_packet(net_ip6_packet_t* packet){
+KERNEL_PUBLIC KERNEL_AWAITS void net_ip6_send_packet(net_ip6_packet_t* packet){
 	network_layer1_send_packet(packet->raw_packet);
 	omm_dealloc(_net_ip6_packet_allocator,packet);
 }

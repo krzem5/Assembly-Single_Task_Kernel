@@ -75,7 +75,7 @@ static syscall_callback_t const _test_sys_acl_syscall_functions[]={
 
 
 
-static void _thread(void){
+static KERNEL_AWAITS void _thread(void){
 	TEST_FUNC("syscall_acl_get_permissions");
 	TEST_GROUP("null arguments");
 	TEST_ASSERT(syscall_acl_get_permissions(0,0)==ERROR_INVALID_HANDLE);
@@ -162,7 +162,7 @@ static void _thread(void){
 
 
 
-void test_acl(void){
+KERNEL_AWAITS void test_acl(void){
 	TEST_MODULE("acl");
 	TEST_FUNC("acl_create");
 	TEST_GROUP("correct args");

@@ -11,7 +11,6 @@
 #include <kernel/util/memory.h>
 #include <net/arp.h>
 #include <net/info.h>
-#include <net/ip4.h>
 #define KERNEL_LOG_NAME "net_arp"
 
 
@@ -44,7 +43,7 @@ static void _rx_callback(network_layer1_packet_t* packet){
 		reply_arp_packet->htype=__builtin_bswap16(NET_ARP_HTYPE_ETHERNET);
 		reply_arp_packet->ptype=__builtin_bswap16(NET_ARP_PTYPE_IPV4);
 		reply_arp_packet->hlen=sizeof(mac_address_t);
-		reply_arp_packet->plen=sizeof(net_ip4_address_t);
+		reply_arp_packet->plen=sizeof(u32);
 		reply_arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REPLY);
 		mem_copy(reply_arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
 		reply_arp_packet->spa=arp_packet->tpa;
@@ -98,7 +97,7 @@ MODULE_POSTINIT(){
 
 
 
-KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,bool nonblocking){
+KERNEL_PUBLIC KERNEL_AWAITS bool net_arp_resolve_address(u32 address,mac_address_t* out,bool nonblocking){
 	if (!address){
 		mem_fill(out,sizeof(mac_address_t),0);
 		return 1;
@@ -135,7 +134,7 @@ KERNEL_PUBLIC bool net_arp_resolve_address(net_ip4_address_t address,mac_address
 		arp_packet->htype=__builtin_bswap16(NET_ARP_HTYPE_ETHERNET);
 		arp_packet->ptype=__builtin_bswap16(NET_ARP_PTYPE_IPV4);
 		arp_packet->hlen=sizeof(mac_address_t);
-		arp_packet->plen=sizeof(net_ip4_address_t);
+		arp_packet->plen=sizeof(u32);
 		arp_packet->oper=__builtin_bswap16(NET_ARP_OPER_REQUEST);
 		mem_copy(arp_packet->sha,network_layer1_device->mac_address,sizeof(mac_address_t));
 		arp_packet->spa=__builtin_bswap32(net_info_get_address());

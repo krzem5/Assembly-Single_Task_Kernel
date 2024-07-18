@@ -117,6 +117,6 @@ KERNEL_PUBLIC KERNEL_AWAITS void* ring_pop(ring_t* ring,bool wait){
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS void* ring_peek(ring_t* ring,bool wait){
+KERNEL_PUBLIC KERNEL_NO_AWAITS void* ring_peek(ring_t* ring,bool wait){
 	return _get_item(ring,wait,0);
 }

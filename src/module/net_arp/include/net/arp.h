@@ -3,7 +3,6 @@
 #include <kernel/network/layer1.h>
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
-#include <net/ip4.h>
 
 
 
@@ -26,9 +25,9 @@ typedef struct KERNEL_PACKED _NET_ARP_PACKET{
 	u8 plen;
 	u16 oper;
 	mac_address_t sha;
-	net_ip4_address_t spa;
+	u32 spa;
 	mac_address_t tha;
-	net_ip4_address_t tpa;
+	u32 tpa;
 } net_arp_packet_t;
 
 
@@ -41,7 +40,7 @@ typedef struct _NET_ARP_CACHE_ENTRY{
 
 
 
-bool net_arp_resolve_address(net_ip4_address_t address,mac_address_t* out,bool nonblocking);
+bool net_arp_resolve_address(u32 address,mac_address_t* out,bool nonblocking);
 
 
 

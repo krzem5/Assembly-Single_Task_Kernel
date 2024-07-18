@@ -43,7 +43,7 @@ static u64 _sysfs_module_state_read_callback(void* ctx,u64 offset,void* buffer,u
 
 
 
-static void _update_notification_thread(void){
+static KERNEL_AWAITS void _update_notification_thread(void){
 	notification_consumer_t* consumer=notification_consumer_create(module_notification_dispatcher);
 	while (1){
 		notification_t notification;

@@ -322,7 +322,7 @@ KERNEL_PUBLIC void virtio_queue_transfer(virtio_queue_t* queue,const virtio_buff
 
 
 
-KERNEL_PUBLIC void virtio_queue_wait(virtio_queue_t* queue){
+KERNEL_PUBLIC KERNEL_AWAITS void virtio_queue_wait(virtio_queue_t* queue){
 	// timer_t* timer=timer_create("virtio.queue.timeout",1000000000,TIMER_COUNT_INFINITE);
 	while (queue->last_used_index==queue->used->index){
 		event_t* events[2]={

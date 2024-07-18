@@ -113,7 +113,7 @@ KERNEL_PUBLIC void net_ip4_unregister_protocol_descriptor(const net_ip4_protocol
 
 
 
-KERNEL_PUBLIC net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address_t src_address,net_ip4_address_t dst_address,net_ip4_protocol_type_t protocol_type){
+KERNEL_PUBLIC KERNEL_AWAITS net_ip4_packet_t* net_ip4_create_packet(u16 length,net_ip4_address_t src_address,net_ip4_address_t dst_address,net_ip4_protocol_type_t protocol_type){
 	mac_address_t dst_mac_address;
 	if (!net_arp_resolve_address(dst_address,&dst_mac_address,0)){
 		return NULL;
@@ -143,7 +143,7 @@ KERNEL_PUBLIC void net_ip4_delete_packet(net_ip4_packet_t* packet){
 
 
 
-KERNEL_PUBLIC void net_ip4_send_packet(net_ip4_packet_t* packet){
+KERNEL_PUBLIC KERNEL_AWAITS void net_ip4_send_packet(net_ip4_packet_t* packet){
 	net_checksum_calculate_checksum(packet->packet,sizeof(net_ip4_packet_data_t),&(packet->packet->checksum));
 	network_layer1_send_packet(packet->raw_packet);
 	omm_dealloc(_net_ip4_packet_allocator,packet);

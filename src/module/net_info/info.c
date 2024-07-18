@@ -4,13 +4,12 @@
 #include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <net/info.h>
-#include <net/ip4.h>
 
 
 
 static omm_allocator_t* KERNEL_INIT_WRITE _net_info_address_list_entry_allocator=NULL;
-static net_ip4_address_t _net_info_address=0;
-static net_ip4_address_t _net_info_subnet_mask=0;
+static u32 _net_info_address=0;
+static u32 _net_info_subnet_mask=0;
 static net_info_address_list_t _net_info_dns_address_list;
 static net_info_address_list_t _net_info_router_address_list;
 
@@ -38,7 +37,7 @@ static void _clear_address_list(net_info_address_list_t* address_list){
 
 
 
-static void _extend_address_list(net_info_address_list_t* address_list,net_ip4_address_t address){
+static void _extend_address_list(net_info_address_list_t* address_list,u32 address){
 	rwlock_acquire_write(&(address_list->lock));
 	net_info_address_list_entry_t* entry=omm_alloc(_net_info_address_list_entry_allocator);
 	entry->next=NULL;
@@ -79,37 +78,37 @@ KERNEL_PUBLIC void net_info_reset(void){
 
 
 
-KERNEL_PUBLIC void net_info_set_address(net_ip4_address_t address){
+KERNEL_PUBLIC void net_info_set_address(u32 address){
 	_net_info_address=address;
 }
 
 
 
-KERNEL_PUBLIC void net_info_set_subnet_mask(net_ip4_address_t subnet_mask){
+KERNEL_PUBLIC void net_info_set_subnet_mask(u32 subnet_mask){
 	_net_info_subnet_mask=subnet_mask;
 }
 
 
 
-KERNEL_PUBLIC void net_info_add_dns(net_ip4_address_t dns){
+KERNEL_PUBLIC void net_info_add_dns(u32 dns){
 	_extend_address_list(&_net_info_dns_address_list,dns);
 }
 
 
 
-KERNEL_PUBLIC void net_info_add_router(net_ip4_address_t router){
+KERNEL_PUBLIC void net_info_add_router(u32 router){
 	_extend_address_list(&_net_info_router_address_list,router);
 }
 
 
 
-KERNEL_PUBLIC net_ip4_address_t net_info_get_address(void){
+KERNEL_PUBLIC u32 net_info_get_address(void){
 	return _net_info_address;
 }
 
 
 
-KERNEL_PUBLIC net_ip4_address_t net_info_get_subnet_mask(void){
+KERNEL_PUBLIC u32 net_info_get_subnet_mask(void){
 	return _net_info_subnet_mask;
 }
 

@@ -52,7 +52,7 @@ static net_dhcp_packet_t* _create_packet(u32 option_size){
 
 
 
-static void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_address){
+static KERNEL_AWAITS void _send_packet(net_dhcp_packet_t* packet,u32 option_size,u32 src_address){
 	timer_update(_net_dhcp_timeout_timer,DHCP_TIMEOUT_NS,1,1);
 	net_udp_ip4_socket_packet_t* udp_packet=amm_alloc(sizeof(net_udp_ip4_socket_packet_t)+sizeof(net_dhcp_packet_t)+option_size);
 	udp_packet->src_address.address=src_address;
@@ -97,7 +97,7 @@ static void _send_discover_request(void){
 
 
 
-static void _load_config(void){
+static KERNEL_AWAITS void _load_config(void){
 	vfs_node_t* node=vfs_lookup(NULL,"/etc/net_dhcp.config",0,0,0);
 	if (!node){
 		return;
@@ -119,7 +119,7 @@ static void _load_config(void){
 
 
 
-static void _store_config(void){
+static KERNEL_AWAITS void _store_config(void){
 	INFO("Saving DHCP config...");
 	vfs_node_t* parent;
 	const char* child_name;
@@ -147,7 +147,7 @@ static void _store_config(void){
 
 
 
-static void _rx_thread(void){
+static KERNEL_AWAITS void _rx_thread(void){
 	event_t* events[2]={
 		_net_dhcp_timeout_timer->event,
 		socket_get_event(_net_dhcp_socket)
@@ -288,7 +288,7 @@ MODULE_POSTINIT(){
 
 
 
-KERNEL_PUBLIC void net_dhcp_negotiate_address(void){
+KERNEL_PUBLIC KERNEL_AWAITS void net_dhcp_negotiate_address(void){
 	LOG("Negotiating IPv4 address...");
 	net_info_reset();
 	if (!network_layer1_device){

@@ -21,7 +21,7 @@ static void _socket_create_pair_callback(socket_pair_t* pair){
 
 
 
-static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
+static KERNEL_AWAITS bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	if (address_length!=sizeof(net_unix_address_t)){
 		return 0;
 	}
@@ -32,13 +32,13 @@ static bool _socket_bind_callback(socket_vfs_node_t* socket_node,const void* add
 
 
 
-static void _socket_debind_callback(socket_vfs_node_t* socket_node){
+static KERNEL_NO_AWAITS void _socket_debind_callback(socket_vfs_node_t* socket_node){
 	socket_move(&(socket_node->node),NULL);
 }
 
 
 
-static bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
+static KERNEL_AWAITS bool _socket_connect_callback(socket_vfs_node_t* socket_node,const void* address,u32 address_length){
 	if (address_length!=sizeof(net_unix_address_t)){
 		return 0;
 	}
@@ -76,7 +76,7 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 
-static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
+static KERNEL_AWAITS u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
 	socket_packet_t* socket_packet=socket_pop_packet(&(socket_node->node),!(flags&VFS_NODE_FLAG_NONBLOCKING));
 	if (!socket_packet){
 		return 0;
@@ -91,7 +91,7 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 
 
 
-static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
+static KERNEL_AWAITS u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
 	if (!socket_node->remote_ctx){
 		return 0;
 	}

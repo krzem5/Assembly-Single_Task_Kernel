@@ -20,7 +20,7 @@ class ProcessPoolCommand(object):
 
 	def update(self):
 		if (self.fail):
-			self.pool.fail(self.file)
+			self.pool.fail(self.name,self.file)
 			return
 		if (not self.dependencies):
 			self.pool._dispatch(self)
@@ -51,7 +51,12 @@ class ProcessPool(object):
 		self._lock.release()
 		cmd.update()
 
-	def fail(self,file):
+	def fail(self,name,file):
+		self._has_error=True
+		if (name.split(" ")[-1] in self._file_hash_list):
+			del self._file_hash_list[name.split(" ")[-1]]
+		elif (file.startswith("build") and os.path.exists(file.replace(".patched",""))):
+			os.remove(file.replace(".patched",""))
 		update_list=[]
 		self._lock.acquire()
 		if (file not in self._dependency_map):
@@ -59,6 +64,7 @@ class ProcessPool(object):
 		elif (type(self._dependency_map[file])!=bool):
 			for cmd in self._dependency_map[file]:
 				cmd.fail=True
+				update_list.append(cmd)
 			self._dependency_map[file]=False
 		self._lock.release()
 		for cmd in update_list:
@@ -83,16 +89,11 @@ class ProcessPool(object):
 		while (self._ready_queue or self._pool_threads):
 			for thread in self._pool_threads[:]:
 				thread.join()
-		for file in self._dependency_map.keys():
+		for file in list(self._dependency_map.keys()):
 			if (type(self._dependency_map[file])==bool):
 				continue
-			is_not_circular=False
 			for cmd in self._dependency_map[file]:
-				if (cmd.dependencies-{file}):
-					is_not_circular=True
-					break
-			if (not is_not_circular):
-				continue
+				self.fail(cmd.name,cmd.file)
 			sys.stdout.buffer.write(b"\x1b[1;91mUnresolved condition: "+bytes(file,"utf-8")+b"\x1b[0m\n")
 			sys.stdout.buffer.flush()
 			self._has_error=True
@@ -120,11 +121,6 @@ class ProcessPool(object):
 			sys.stdout.buffer.write(b"\x1b[1;94m"+bytes(f"[{index:02d}] {cmd.name}","utf-8")+b"\x1b[0m\n"+process.stdout)
 			sys.stdout.buffer.flush()
 			if (process.returncode!=0):
-				if (cmd.name.split(" ")[-1] in self._file_hash_list):
-					del self._file_hash_list[cmd.name.split(" ")[-1]]
-				elif (cmd.file.startswith("build") and os.path.exists(cmd.file)):
-					os.remove(cmd.file)
-				self._has_error=True
-				self.fail(cmd.file)
+				self.fail(cmd.name,cmd.file)
 			else:
 				self.success(cmd.file)

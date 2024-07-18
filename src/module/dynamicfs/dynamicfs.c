@@ -43,7 +43,7 @@ static void _dynamicfs_delete(vfs_node_t* node){
 
 
 
-static u64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	if (!size){
 		return 0;
 	}
@@ -63,7 +63,7 @@ static u64 _dynamicfs_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32
 
 
 
-static u64 _dynamicfs_resize(vfs_node_t* node,s64 size,u32 flags){
+static KERNEL_AWAITS u64 _dynamicfs_resize(vfs_node_t* node,s64 size,u32 flags){
 	dynamicfs_vfs_node_t* dynamicfs_node=(dynamicfs_vfs_node_t*)node;
 	if (!dynamicfs_node->data&&!dynamicfs_node->read_callback){
 		return 0;
@@ -99,7 +99,7 @@ MODULE_INIT(){
 
 
 
-KERNEL_PUBLIC filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config){
+KERNEL_PUBLIC KERNEL_AWAITS filesystem_t* dynamicfs_init(const char* path,const filesystem_descriptor_config_t* fs_descriptor_config){
 	filesystem_descriptor_t* descriptor;
 	fs_register_descriptor(fs_descriptor_config,&descriptor);
 	filesystem_t* out=fs_create(descriptor);

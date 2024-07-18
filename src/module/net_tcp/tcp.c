@@ -61,7 +61,7 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 
-static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
+static KERNEL_AWAITS u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
 	socket_packet_t* socket_packet=socket_pop_packet(&(socket_node->node),!(flags&VFS_NODE_FLAG_NONBLOCKING));
 	if (!socket_packet){
 		return 0;

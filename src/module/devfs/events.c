@@ -20,7 +20,7 @@ static vfs_node_t* KERNEL_INIT_WRITE _devfs_partition_root=NULL;
 
 
 
-static void _update_notification_thread(void){
+static KERNEL_AWAITS void _update_notification_thread(void){
 	notification_consumer_t* consumer=notification_consumer_create(event_device_notification_dispatcher);
 	while (1){
 		notification_t notification;

@@ -126,7 +126,7 @@ static u16 _usb_msc_index=0;
 
 
 
-static bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
+static KERNEL_AWAITS bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	mutex_acquire(context->lock);
 	mem_fill(context->cbw.CBWCB._data,16,0);
@@ -151,7 +151,7 @@ static bool _fetch_inquiry(usb_msc_lun_context_t* context,usb_scsi_inquiry_respo
 
 
 
-static bool _wait_for_device(usb_msc_lun_context_t* context){
+static KERNEL_AWAITS bool _wait_for_device(usb_msc_lun_context_t* context){
 	usb_msc_driver_t* driver=context->driver;
 	mutex_acquire(context->lock);
 	while (1){
@@ -180,7 +180,7 @@ static bool _wait_for_device(usb_msc_lun_context_t* context){
 
 
 
-static bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
+static KERNEL_AWAITS bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read_capacity_10_responce_t* out){
 	usb_msc_driver_t* driver=context->driver;
 	mutex_acquire(context->lock);
 	mem_fill(context->cbw.CBWCB._data,16,0);
@@ -204,7 +204,7 @@ static bool _fetch_read_capacity_10(usb_msc_lun_context_t* context,usb_scsi_read
 
 
 
-static u64 _usb_msc_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
+static KERNEL_AWAITS u64 _usb_msc_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	usb_msc_lun_context_t* context=drive->extra_data;
 	usb_msc_driver_t* driver=context->driver;
 	mutex_acquire(context->lock);

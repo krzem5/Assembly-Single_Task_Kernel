@@ -64,8 +64,9 @@ class LinkerContext(object):
 		self.symbol_table=None
 		self.relocation_tables=[]
 		self.relocation_entries=[]
-		self.await_functions=[]
-		self.no_await_functions=[]
+		self.await_functions=set()
+		self.no_await_functions=set()
+		self.await_functions_by_name=set()
 		self.out=bytearray()
 
 	def add_section_header(self,section_header):
@@ -103,6 +104,7 @@ class SymbolTable(object):
 		self.string_table_section=string_table_section
 		self.symbols={}
 		self.symbols_by_name={}
+		self.undefined_symbol_names={}
 
 	def add_symbol(self,index,symbol):
 		symbol.index=index
@@ -174,6 +176,7 @@ def _parse_symbol_table(ctx,allow_undefined=False,hide_private_symbols=False):
 			if (not allow_undefined):
 				print(f"\x1b[1;91mUndefined symbol: {name}\x1b[0m")
 				error=True
+			ctx.symbol_table.undefined_symbol_names[(i-ctx.symbol_table.offset)//24]=name
 			continue
 		is_func=((st_info&0x0f)==STT_FUNC)
 		is_public=((st_info>>4)==STB_GLOBAL and st_other==STV_DEFAULT)
@@ -186,23 +189,32 @@ def _parse_symbol_table(ctx,allow_undefined=False,hide_private_symbols=False):
 
 
 
-def _check_await_functions(ctx):
-	pass
-	# section=ctx.section_headers_by_name[".rela.kernel_await"]
-	# for i in range(section.offset,section.offset+section.size,24):
-	# 	r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
-	# 	ctx.await_functions.append(ctx.symbol_table.symbols[r_info>>32].value+r_addend)
-	# section=ctx.section_headers_by_name[".rela.kernel_no_await"]
-	# for i in range(section.offset,section.offset+section.size,24):
-	# 	r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
-	# 	ctx.no_await_functions.append(ctx.symbol_table.symbols[r_info>>32].value+r_addend)
+def _parse_await_functions(ctx,await_function_file_name,dependencies=[]):
+	with open(await_function_file_name,"w") as wf:
+		if (".rela.kernel_await" in ctx.section_headers_by_name):
+			section=ctx.section_headers_by_name[".rela.kernel_await"]
+			for i in range(section.offset,section.offset+section.size,24):
+				r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
+				symbol=ctx.symbol_table.symbols[r_info>>32]
+				ctx.await_functions.add(symbol.value+r_addend)
+				if (not r_addend):
+					wf.write(f"{symbol.name}\n")
+	if (".rela.kernel_no_await" in ctx.section_headers_by_name):
+		section=ctx.section_headers_by_name[".rela.kernel_no_await"]
+		for i in range(section.offset,section.offset+section.size,24):
+			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
+			symbol=ctx.symbol_table.symbols[r_info>>32]
+			ctx.no_await_functions.add(symbol.value+r_addend)
+	for dep in dependencies:
+		with open(dep+".await_functions.txt","r") as rf:
+			ctx.await_functions_by_name.update(set([e.strip() for e in rf.read().split("\n") if e.strip()]))
 
 
 
 def _get_symbol_from_offset(ctx,section,offset):
 	out=None
 	for sym in ctx.symbol_table.symbols.values():
-		if (sym.section!=section or sym.value>offset or (out is not None and out.value>sym.value)):
+		if ((section is not None and sym.section!=section) or sym.value>offset or (out is not None and out.value>sym.value)):
 			continue
 		out=sym
 	return out
@@ -213,22 +225,28 @@ def _parse_relocation_tables(ctx):
 	error=False
 	for relocation_table in ctx.relocation_tables:
 		section=ctx.section_headers_by_name[relocation_table.target_section]
-		if (section.name==".kernel_await" or section.name==".kernel_no_await"):
+		if ("await" in section.name):
 			continue
 		for i in range(relocation_table.offset,relocation_table.offset+relocation_table.size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
-			if ((r_info>>32) not in ctx.symbol_table.symbols):
-				continue
-			ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,ctx.symbol_table.symbols[r_info>>32],r_addend,(section.name not in KERNEL_SECTION_ORDER))
-			if (section.name in KERNEL_SECTION_ORDER and ((r_info&0xffffffff)==R_X86_64_PC32 or (r_info&0xffffffff)==R_X86_64_PLT32) and ctx.symbol_table.symbols[r_info>>32].value+r_addend+4 in ctx.await_functions):
-				symbol=_get_symbol_from_offset(ctx,section,r_offset)
-				if (symbol.value in ctx.await_functions or symbol.value in ctx.no_await_functions):
+			if ((r_info>>32) in ctx.symbol_table.undefined_symbol_names):
+				if (ctx.symbol_table.undefined_symbol_names[r_info>>32] not in ctx.await_functions_by_name):
 					continue
-				print(f"\x1b[1;91mNon-await function: {symbol.name}\x1b[0m",r_offset,symbol.value)
-				error=True
+				await_called_function=ctx.symbol_table.undefined_symbol_names[r_info>>32]
+			elif ((r_info>>32) in ctx.symbol_table.symbols):
+				symbol=ctx.symbol_table.symbols[r_info>>32]
+				ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,symbol,r_addend,(section.name not in KERNEL_SECTION_ORDER))
+				if (section.name not in KERNEL_SECTION_ORDER or (r_info&0xffffffff)!=R_X86_64_PLT32 or symbol.value+r_addend+4 not in ctx.await_functions):
+					continue
+				await_called_function=_get_symbol_from_offset(ctx,None,ctx.symbol_table.symbols[r_info>>32].value+r_addend+4).name
+			else:
+				continue
+			symbol=_get_symbol_from_offset(ctx,section,r_offset)
+			if (symbol.value in ctx.await_functions or symbol.value in ctx.no_await_functions):
+				continue
+			print(f"\x1b[1;91mNon-await function: {symbol.name} (called {await_called_function})\x1b[0m")
+			error=True
 	if (error):
-		# with open("build/kernel/kernel2.elf","wb") as wf,open("build/kernel/kernel.elf","rb") as rf:
-		# 	wf.write(rf.read())
 		sys.exit(1)
 
 
@@ -365,9 +383,11 @@ def _generate_signature(ctx):
 def patch_kernel(src_file_path,dst_file_path,build_version,build_name,hide_private_symbols):
 	with open(src_file_path,"rb") as rf:
 		data=bytearray(rf.read())
+		with open(src_file_path[:-4]+"2.elf","wb") as wf:
+			wf.write(data)
 	ctx=_parse_headers(data)
 	_parse_symbol_table(ctx,hide_private_symbols=hide_private_symbols)
-	_check_await_functions(ctx)
+	_parse_await_functions(ctx,src_file_path+".await_functions.txt")
 	_parse_relocation_tables(ctx)
 	_generate_symbol_table(ctx)
 	_generate_relocation_table(ctx)
@@ -412,7 +432,7 @@ def patch_kernel(src_file_path,dst_file_path,build_version,build_name,hide_priva
 
 
 
-def patch_module_or_library(file_path,key_name):
+def patch_module_or_library(file_path,key_name,dependencies):
 	with open(file_path,"rb") as rf:
 		data=bytearray(rf.read())
 	ctx=_parse_headers(data)
@@ -422,6 +442,9 @@ def patch_module_or_library(file_path,key_name):
 	if (section.size!=SIGNATURE_SECTION_SIZE):
 		return
 	_parse_symbol_table(ctx,allow_undefined=True)
+	if (key_name=="module"):
+		_parse_await_functions(ctx,file_path+".await_functions.txt",dependencies=dependencies)
+		_parse_relocation_tables(ctx)
 	with open(file_path,"r+b") as wf:
 		wf.seek(ctx.e_shoff+section.index*ctx.e_shentsize+8)
 		wf.write(struct.pack("<Q",0))

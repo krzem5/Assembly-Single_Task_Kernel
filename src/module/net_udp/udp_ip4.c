@@ -61,7 +61,7 @@ static void _socket_deconnect_callback(socket_vfs_node_t* socket_node){
 
 
 
-static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
+static KERNEL_AWAITS u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64 length,u32 flags){
 	socket_packet_t* socket_packet=socket_pop_packet(&(socket_node->node),!(flags&VFS_NODE_FLAG_NONBLOCKING));
 	if (!socket_packet){
 		return 0;
@@ -77,7 +77,7 @@ static u64 _socket_read_callback(socket_vfs_node_t* socket_node,void* buffer,u64
 
 
 
-static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
+static KERNEL_AWAITS u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buffer,u64 length){
 	if (!socket_node->local_ctx||!socket_node->remote_ctx){
 		return 0;
 	}
@@ -110,7 +110,7 @@ static u64 _socket_write_callback(socket_vfs_node_t* socket_node,const void* buf
 
 
 
-static bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
+static KERNEL_AWAITS bool _socket_write_packet_callback(socket_vfs_node_t* socket_node,const void* buffer,u32 length){
 	if (length<sizeof(net_udp_ip4_socket_packet_t)){
 		return 0;
 	}
@@ -162,7 +162,7 @@ static const socket_dtp_descriptor_t _net_udp_socket_dtp_descriptor={
 
 
 
-static void _rx_callback(net_ip4_packet_t* packet){
+static KERNEL_AWAITS void _rx_callback(net_ip4_packet_t* packet){
 	if (packet->length<sizeof(net_udp_packet_t)){
 		return;
 	}

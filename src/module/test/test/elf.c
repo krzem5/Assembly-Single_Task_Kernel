@@ -70,7 +70,7 @@ static syscall_callback_t const _test_elf_syscall_functions[]={
 
 
 
-static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,const char*const* environ){
+static KERNEL_AWAITS void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,const char*const* environ){
 	const char* path="/bin/test_elf_send_results";
 	error_t ret=elf_load(path,argc,argv,environ_length,environ,0);
 	if (!argc){
@@ -92,7 +92,7 @@ static void _test_arguments(u32 argc,const char*const* argv,u32 environ_length,c
 
 
 
-void test_elf(void){
+KERNEL_AWAITS void test_elf(void){
 	TEST_MODULE("elf");
 	TEST_FUNC("elf_load");
 	TEST_GROUP("invalid path");

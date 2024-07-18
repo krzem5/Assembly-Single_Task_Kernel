@@ -189,7 +189,7 @@ KERNEL_INIT(){
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
+KERNEL_PUBLIC KERNEL_NO_AWAITS vfs_node_t* pipe_create(vfs_node_t* parent,const string_t* name){
 	vfs_node_t* out;
 	if (parent&&name){
 		out=vfs_node_create_virtual(parent,&_pipe_vfs_functions,name);

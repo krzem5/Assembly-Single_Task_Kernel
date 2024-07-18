@@ -38,7 +38,7 @@ static void _irq_handler(void* ctx){
 
 
 
-static void _rx_thread(i82540_device_t* device){
+static KERNEL_AWAITS void _rx_thread(i82540_device_t* device){
 	while (1){
 		rwlock_acquire_write(&(device->lock));
 		u16 tail=device->mmio[REG_RDT];
@@ -76,7 +76,7 @@ static void _rx_thread(i82540_device_t* device){
 
 
 
-static void _tx_thread(i82540_device_t* device){
+static KERNEL_AWAITS void _tx_thread(i82540_device_t* device){
 	while (1){
 		network_layer1_packet_t* packet=network_layer1_pop_packet();
 		u16 length=(packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE>PAGE_SIZE?PAGE_SIZE:packet->length+NETWORK_LAYER1_PACKET_HEADER_SIZE);

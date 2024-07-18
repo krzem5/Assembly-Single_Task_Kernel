@@ -31,7 +31,7 @@ SECTIONS{
 		*(.edata .edata*)
 	}
 	.kernel_ex : {
-		*(.text .text* .await_text .await_text*)
+		*(.text .text*)
 	}
 	.kernel_nx : {
 		*(.rodata .rodata* .rdata .rdata*)

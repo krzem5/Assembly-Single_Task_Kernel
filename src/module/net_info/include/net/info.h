@@ -2,13 +2,12 @@
 #define _NET_INFO_H_ 1
 #include <kernel/lock/rwlock.h>
 #include <kernel/types.h>
-#include <net/ip4.h>
 
 
 
 typedef struct _NET_INFO_ADDRESS_LIST_ENTRY{
 	struct _NET_INFO_ADDRESS_LIST_ENTRY* next;
-	net_ip4_address_t address;
+	u32 address;
 } net_info_address_list_entry_t;
 
 
@@ -25,27 +24,27 @@ void net_info_reset(void);
 
 
 
-void net_info_set_address(net_ip4_address_t address);
+void net_info_set_address(u32 address);
 
 
 
-void net_info_set_subnet_mask(net_ip4_address_t subnet_mask);
+void net_info_set_subnet_mask(u32 subnet_mask);
 
 
 
-void net_info_add_dns(net_ip4_address_t dns);
+void net_info_add_dns(u32 dns);
 
 
 
-void net_info_add_router(net_ip4_address_t router);
+void net_info_add_router(u32 router);
 
 
 
-net_ip4_address_t net_info_get_address(void);
+u32 net_info_get_address(void);
 
 
 
-net_ip4_address_t net_info_get_subnet_mask(void);
+u32 net_info_get_subnet_mask(void);
 
 
 

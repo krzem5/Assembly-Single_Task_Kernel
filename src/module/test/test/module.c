@@ -16,7 +16,7 @@ KERNEL_PUBLIC void test_module_mark_deinit_triggered(void){
 
 
 
-void test_module(void){
+KERNEL_AWAITS void test_module(void){
 	TEST_MODULE("module");
 	TEST_FUNC("module_load");
 	TEST_GROUP("module already loaded");

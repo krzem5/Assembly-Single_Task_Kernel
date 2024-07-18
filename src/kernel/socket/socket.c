@@ -212,7 +212,7 @@ KERNEL_PUBLIC bool socket_shutdown(vfs_node_t* node,u32 flags){
 
 
 
-KERNEL_PUBLIC bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_bind(vfs_node_t* node,const void* local_address,u32 local_address_length){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!local_address||!local_address_length){
 		return 0;
 	}
@@ -229,7 +229,7 @@ KERNEL_PUBLIC bool socket_bind(vfs_node_t* node,const void* local_address,u32 lo
 
 
 
-KERNEL_PUBLIC bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length){
+KERNEL_PUBLIC KERNEL_AWAITS bool socket_connect(vfs_node_t* node,const void* remote_address,u32 remote_address_length){
 	if ((node->flags&VFS_NODE_TYPE_MASK)!=VFS_NODE_TYPE_SOCKET||!remote_address||!remote_address_length){
 		return 0;
 	}
@@ -409,7 +409,7 @@ error_t syscall_socket_shutdown(handle_id_t fd,u32 flags){
 
 
 
-error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
+KERNEL_AWAITS error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}
@@ -433,7 +433,7 @@ error_t syscall_socket_bind(handle_id_t fd,KERNEL_USER_POINTER const void* addre
 
 
 
-error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
+KERNEL_AWAITS error_t syscall_socket_connect(handle_id_t fd,KERNEL_USER_POINTER const void* address,u32 address_length){
 	if (address_length>syscall_get_user_pointer_max_length((const void*)address)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}

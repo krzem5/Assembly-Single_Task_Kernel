@@ -206,7 +206,7 @@ MODULE_POSTINIT(){
 
 
 
-virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_info(virtio_gpu_device_t* gpu_device){
+KERNEL_AWAITS virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_info(virtio_gpu_device_t* gpu_device){
 	virtio_gpu_control_header_t* request=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	request->type=VIRTIO_GPU_CMD_GET_DISPLAY_INFO;
 	request->flags=VIRTIO_GPU_FLAG_FENCE;
@@ -236,7 +236,7 @@ virtio_gpu_resp_display_info_t* virtio_gpu_command_get_display_info(virtio_gpu_d
 
 
 
-virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device_t* gpu_device,u32 format,u32 width,u32 height,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device_t* gpu_device,u32 format,u32 width,u32 height,virtio_gpu_resource_id_t resource_id){
 	if (!resource_id){
 		resource_id=resource_alloc(gpu_device->resource_manager);
 	}
@@ -272,7 +272,7 @@ virtio_gpu_resource_id_t virtio_gpu_command_resource_create_2d(virtio_gpu_device
 
 
 
-void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_resource_unref_t* request=amm_alloc(sizeof(virtio_gpu_resource_unref_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_UNREF;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -301,7 +301,7 @@ void virtio_gpu_command_resource_unref(virtio_gpu_device_t* gpu_device,virtio_gp
 
 
 
-void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t* display,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_set_scanout_t* request=amm_alloc(sizeof(virtio_gpu_set_scanout_t));
 	request->header.type=VIRTIO_GPU_CMD_SET_SCANOUT;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -335,7 +335,7 @@ void virtio_gpu_command_set_scanout(virtio_gpu_device_t* gpu_device,ui_display_t
 
 
 
-void virtio_gpu_command_resource_flush(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 width,u32 height){
+KERNEL_AWAITS void virtio_gpu_command_resource_flush(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 width,u32 height){
 	virtio_gpu_resource_flush_t* request=amm_alloc(sizeof(virtio_gpu_resource_flush_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_FLUSH;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -368,7 +368,7 @@ void virtio_gpu_command_resource_flush(virtio_gpu_device_t* gpu_device,virtio_gp
 
 
 
-void virtio_gpu_command_transfer_to_host_2d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 width,u32 height){
+KERNEL_AWAITS void virtio_gpu_command_transfer_to_host_2d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 width,u32 height){
 	virtio_gpu_transfer_to_host_2d_t* request=amm_alloc(sizeof(virtio_gpu_transfer_to_host_2d_t));
 	request->header.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_2D;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -402,7 +402,7 @@ void virtio_gpu_command_transfer_to_host_2d(virtio_gpu_device_t* gpu_device,virt
 
 
 
-void virtio_gpu_command_resource_attach_backing(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u64 address,u32 length){
+KERNEL_AWAITS void virtio_gpu_command_resource_attach_backing(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u64 address,u32 length){
 	virtio_gpu_resource_attach_backing_t* request=amm_alloc(sizeof(virtio_gpu_resource_attach_backing_t)+sizeof(virtio_gpu_mem_entry_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -434,7 +434,7 @@ void virtio_gpu_command_resource_attach_backing(virtio_gpu_device_t* gpu_device,
 
 
 
-void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_resource_detach_backing_t* request=amm_alloc(sizeof(virtio_gpu_resource_detach_backing_t));
 	request->header.type=VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -463,7 +463,7 @@ void virtio_gpu_command_resource_detach_backing(virtio_gpu_device_t* gpu_device,
 
 
 
-virtio_gpu_resp_capset_info_t* virtio_gpu_command_get_capset_info(virtio_gpu_device_t* gpu_device,u32 index){
+KERNEL_AWAITS virtio_gpu_resp_capset_info_t* virtio_gpu_command_get_capset_info(virtio_gpu_device_t* gpu_device,u32 index){
 	virtio_gpu_get_capset_info_t* request=amm_alloc(sizeof(virtio_gpu_get_capset_info_t));
 	request->header.type=VIRTIO_GPU_CMD_GET_CAPSET_INFO;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -494,7 +494,7 @@ virtio_gpu_resp_capset_info_t* virtio_gpu_command_get_capset_info(virtio_gpu_dev
 
 
 
-virtio_gpu_resp_capset_t* virtio_gpu_command_get_capset(virtio_gpu_device_t* gpu_device,u32 capset_id,u32 capset_version,u32 capset_size){
+KERNEL_AWAITS virtio_gpu_resp_capset_t* virtio_gpu_command_get_capset(virtio_gpu_device_t* gpu_device,u32 capset_id,u32 capset_version,u32 capset_size){
 	virtio_gpu_get_capset_t* request=amm_alloc(sizeof(virtio_gpu_get_capset_t));
 	request->header.type=VIRTIO_GPU_CMD_GET_CAPSET;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -526,7 +526,7 @@ virtio_gpu_resp_capset_t* virtio_gpu_command_get_capset(virtio_gpu_device_t* gpu
 
 
 
-virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_device_t* gpu_device,u32 scanout){
+KERNEL_AWAITS virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_device_t* gpu_device,u32 scanout){
 	virtio_gpu_get_edid_t* request=amm_alloc(sizeof(virtio_gpu_get_edid_t));
 	request->header.type=VIRTIO_GPU_CMD_GET_EDID;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -557,7 +557,7 @@ virtio_gpu_resp_edid_t* virtio_gpu_command_get_edid(virtio_gpu_device_t* gpu_dev
 
 
 
-void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device,u32 ctx,u32 type){
+KERNEL_AWAITS void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device,u32 ctx,u32 type){
 	virtio_gpu_ctx_create_t* request=amm_alloc(sizeof(virtio_gpu_ctx_create_t));
 	request->header.type=VIRTIO_GPU_CMD_CTX_CREATE;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -589,7 +589,7 @@ void virtio_gpu_command_ctx_create(virtio_gpu_device_t* gpu_device,u32 ctx,u32 t
 
 
 
-void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_device,u32 ctx){
+KERNEL_AWAITS void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_device,u32 ctx){
 	virtio_gpu_control_header_t* request=amm_alloc(sizeof(virtio_gpu_control_header_t));
 	request->type=VIRTIO_GPU_CMD_CTX_DESTROY;
 	request->flags=VIRTIO_GPU_FLAG_FENCE;
@@ -618,7 +618,7 @@ void virtio_gpu_command_ctx_destroy(virtio_gpu_device_t* gpu_device,u32 ctx){
 
 
 
-void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_ctx_attach_resource_t* request=amm_alloc(sizeof(virtio_gpu_ctx_attach_resource_t));
 	request->header.type=VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -648,7 +648,7 @@ void virtio_gpu_command_ctx_attach_resource(virtio_gpu_device_t* gpu_device,u32 
 
 
 
-void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
+KERNEL_AWAITS void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 ctx,virtio_gpu_resource_id_t resource_id){
 	virtio_gpu_ctx_detach_resource_t* request=amm_alloc(sizeof(virtio_gpu_ctx_detach_resource_t));
 	request->header.type=VIRTIO_GPU_CMD_CTX_DETACH_RESOURCE;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -678,7 +678,7 @@ void virtio_gpu_command_ctx_detach_resource(virtio_gpu_device_t* gpu_device,u32 
 
 
 
-virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
+KERNEL_AWAITS virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,u32 target,u32 format,u32 bind,u32 width,u32 height,u32 depth,u32 array_size,u32 last_level,u32 nr_samples){
 	if (!resource_id){
 		resource_id=resource_alloc(gpu_device->resource_manager);
 	}
@@ -721,7 +721,7 @@ virtio_gpu_resource_id_t virtio_gpu_command_resource_create_3d(virtio_gpu_device
 
 
 
-void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
+KERNEL_AWAITS void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
 	virtio_gpu_transfer_to_host_3d_t* request=amm_alloc(sizeof(virtio_gpu_transfer_to_host_3d_t));
 	request->header.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -755,7 +755,7 @@ void virtio_gpu_command_transfer_to_host_3d(virtio_gpu_device_t* gpu_device,virt
 
 
 
-void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
+KERNEL_AWAITS void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_box_t* box,u32 level,u32 stride,u32 layer_stride){
 	virtio_gpu_transfer_from_host_3d_t* request=amm_alloc(sizeof(virtio_gpu_transfer_from_host_3d_t));
 	request->header.type=VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -789,7 +789,7 @@ void virtio_gpu_command_transfer_from_host_3d(virtio_gpu_device_t* gpu_device,vi
 
 
 
-void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,u32 ctx,u64 buffer,u32 size){
+KERNEL_AWAITS void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,u32 ctx,u64 buffer,u32 size){
 	virtio_gpu_cmd_submit_3d_t* request=amm_alloc(sizeof(virtio_gpu_cmd_submit_3d_t));
 	request->header.type=VIRTIO_GPU_CMD_SUBMIT_3D;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -823,7 +823,7 @@ void virtio_gpu_command_submit_3d(virtio_gpu_device_t* gpu_device,u32 ctx,u64 bu
 
 
 
-void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_cursor_pos_t* pos,u32 hot_x,u32 hot_y){
+KERNEL_AWAITS void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_device,virtio_gpu_resource_id_t resource_id,const virtio_gpu_cursor_pos_t* pos,u32 hot_x,u32 hot_y){
 	virtio_gpu_cmd_update_cursor_t* request=amm_alloc(sizeof(virtio_gpu_cmd_update_cursor_t));
 	request->header.type=VIRTIO_GPU_CMD_UPDATE_CURSOR;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;
@@ -855,7 +855,7 @@ void virtio_gpu_command_update_cursor(virtio_gpu_device_t* gpu_device,virtio_gpu
 
 
 
-void virtio_gpu_command_move_cursor(virtio_gpu_device_t* gpu_device,const virtio_gpu_cursor_pos_t* pos){
+KERNEL_AWAITS void virtio_gpu_command_move_cursor(virtio_gpu_device_t* gpu_device,const virtio_gpu_cursor_pos_t* pos){
 	virtio_gpu_cmd_move_cursor_t* request=amm_alloc(sizeof(virtio_gpu_cmd_move_cursor_t));
 	request->header.type=VIRTIO_GPU_CMD_MOVE_CURSOR;
 	request->header.flags=VIRTIO_GPU_FLAG_FENCE;

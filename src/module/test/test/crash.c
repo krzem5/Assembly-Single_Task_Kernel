@@ -29,7 +29,7 @@ static syscall_callback_t const _test_crash_syscall_functions[]={
 
 
 
-static void _execute_elf(const char* path){
+static KERNEL_AWAITS void _execute_elf(const char* path){
 	error_t ret=elf_load(path,0,NULL,0,NULL,0);
 	TEST_ASSERT(!IS_ERROR(ret));
 	if (!IS_ERROR(ret)){
@@ -62,7 +62,7 @@ static void _thread_crash_invalid_write(void){
 
 
 
-void test_crash(void){
+KERNEL_AWAITS void test_crash(void){
 	TEST_MODULE("crash");
 	syscall_create_table("test_crash",_test_crash_syscall_functions,sizeof(_test_crash_syscall_functions)/sizeof(syscall_callback_t));
 	TEST_FUNC("_isr_handler");

@@ -45,7 +45,7 @@ static void _set_acl_flags(handle_id_t handle_id,u64 clear,u64 set){
 
 
 
-static void _thread(void){
+static KERNEL_AWAITS void _thread(void){
 	mmap_region_t* temp_mmap_region=mmap_alloc(THREAD_DATA->process->mmap,0,2*PAGE_SIZE,MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	vfs_node_t* root=vfs_lookup(NULL,"/",0,0,0);
@@ -391,7 +391,7 @@ static void _thread(void){
 
 
 
-void test_fd(void){
+KERNEL_AWAITS void test_fd(void){
 	TEST_MODULE("fd");
 	process_t* test_process=process_create("test-process","test-process",0x1000,0x3000);
 	handle_acquire(&(test_process->handle));

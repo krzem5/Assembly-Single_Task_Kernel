@@ -48,7 +48,7 @@ static event_t* KERNEL_INIT_WRITE _ui_permission_request_list_event=NULL;
 
 
 
-static error_t _acl_permission_request_callback(handle_t* handle,process_t* process,u64 flags){
+static KERNEL_AWAITS error_t _acl_permission_request_callback(handle_t* handle,process_t* process,u64 flags){
 	INFO("Forwarding permission request to the UI...");
 	ui_permission_request_t* request=omm_alloc(_ui_permission_request_allocator);
 	request->next=NULL;
@@ -79,7 +79,7 @@ static error_t _acl_permission_request_callback(handle_t* handle,process_t* proc
 
 
 
-static error_t _syscall_get_permission_request(KERNEL_USER_POINTER ui_permission_user_request_t* buffer,u32 buffer_length){
+static KERNEL_AWAITS error_t _syscall_get_permission_request(KERNEL_USER_POINTER ui_permission_user_request_t* buffer,u32 buffer_length){
 	if (buffer_length<sizeof(ui_permission_user_request_t)){
 		return ERROR_INVALID_ARGUMENT(1);
 	}

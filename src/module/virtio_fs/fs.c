@@ -71,7 +71,7 @@ MODULE_POSTINIT(){
 
 
 
-void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
+KERNEL_AWAITS void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 	fuse_init_in_t* fuse_init_in=amm_alloc(sizeof(fuse_init_in_t));
 	fuse_init_in->header.len=sizeof(fuse_init_in_t);
 	fuse_init_in->header.opcode=FUSE_OPCODE_INIT;
@@ -109,7 +109,7 @@ void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 
 
 
-fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle){
+KERNEL_AWAITS fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle){
 	fuse_getattr_in_t* fuse_getattr_in=amm_alloc(sizeof(fuse_getattr_in_t));
 	fuse_getattr_in->header.len=sizeof(fuse_getattr_in_t);
 	fuse_getattr_in->header.opcode=FUSE_OPCODE_GETATTR;
@@ -141,7 +141,7 @@ fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_device,fuse_no
 
 
 
-fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
+KERNEL_AWAITS fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id){
 	fuse_open_in_t* fuse_open_in=amm_alloc(sizeof(fuse_open_in_t));
 	fuse_open_in->header.len=sizeof(fuse_open_in_t);
 	fuse_open_in->header.opcode=FUSE_OPCODE_OPEN;
@@ -175,7 +175,7 @@ fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_device,fuse_node_i
 
 
 
-void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,u32 type){
+KERNEL_AWAITS void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,fuse_file_handle_t fuse_file_handle,u64 offset,fuse_read_out_t* buffer,u32 buffer_size,u32 type){
 	fuse_read_in_t* fuse_read_in=amm_alloc(sizeof(fuse_read_in_t));
 	fuse_read_in->header.len=sizeof(fuse_read_in_t);
 	fuse_read_in->header.opcode=type;
@@ -208,7 +208,7 @@ void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_
 
 
 
-fuse_lookup_out_t* virtio_fs_fuse_lookup(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,const char* name,u32 name_length){
+KERNEL_AWAITS fuse_lookup_out_t* virtio_fs_fuse_lookup(virtio_fs_device_t* fs_device,fuse_node_id_t fuse_node_id,const char* name,u32 name_length){
 	fuse_in_header_t* fuse_lookup_in=amm_alloc(sizeof(fuse_in_header_t));
 	fuse_lookup_in->len=sizeof(fuse_in_header_t)+name_length;
 	fuse_lookup_in->opcode=FUSE_OPCODE_LOOKUP;

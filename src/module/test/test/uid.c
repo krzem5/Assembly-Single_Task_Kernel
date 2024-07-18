@@ -36,7 +36,7 @@ static syscall_callback_t const _test_sys_uid_syscall_functions[]={
 
 
 
-static void _thread(void){
+static KERNEL_AWAITS void _thread(void){
 	mmap_region_t* temp_mmap_region=mmap_alloc(THREAD_DATA->process->mmap,0,PAGE_SIZE,MMAP_REGION_FLAG_VMM_WRITE|MMAP_REGION_FLAG_VMM_USER,NULL);
 	char* buffer=(void*)(temp_mmap_region->rb_node.key);
 	TEST_FUNC("syscall_uid_get");
@@ -72,7 +72,7 @@ static void _thread(void){
 
 
 
-void test_uid(void){
+KERNEL_AWAITS void test_uid(void){
 	TEST_MODULE("uid");
 	TEST_FUNC("uid_create");
 	TEST_GROUP("already present");

@@ -185,7 +185,7 @@ error_t syscall_acl_set_permissions(handle_id_t handle_id,handle_id_t process_ha
 
 
 
-error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
+KERNEL_AWAITS error_t syscall_acl_request_permissions(handle_id_t handle_id,handle_id_t process_handle_id,u64 flags){
 	if (flags&(~ACL_PERMISSION_MASK)){
 		return ERROR_INVALID_ARGUMENT(2);
 	}

@@ -110,7 +110,7 @@ static u64 _thread_self_read_callback(void* ctx,u64 offset,void* buffer,u64 size
 
 
 
-static void _update_notification_thread(void){
+static KERNEL_AWAITS void _update_notification_thread(void){
 	notification_consumer_t* consumer=notification_consumer_create(event_process_notification_dispatcher);
 	while (1){
 		notification_t notification;

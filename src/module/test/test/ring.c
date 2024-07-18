@@ -12,7 +12,7 @@
 
 
 
-void test_ring(void){
+KERNEL_AWAITS void test_ring(void){
 	TEST_MODULE("ring");
 	TEST_FUNC("ring_create");
 	TEST_GROUP("empty ring");

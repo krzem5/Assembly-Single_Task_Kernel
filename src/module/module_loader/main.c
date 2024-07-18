@@ -16,7 +16,7 @@
 
 
 
-static void _load_modules_from_order_file(bool early){
+static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 	vfs_node_t* file=vfs_lookup(NULL,MODULE_ORDER_FILE,0,0,0);
 	if (!file){
 		panic("Unable to locate module order file");

@@ -141,7 +141,7 @@ static void KERNEL_EARLY_EXEC _load_database_config(config_tag_t* root_tag){
 
 
 
-static void KERNEL_EARLY_EXEC _load_account_manager_database(void){
+static void KERNEL_AWAITS_EARLY _load_account_manager_database(void){
 	LOG("Loading account database...");
 	vfs_node_t* node=vfs_lookup(NULL,ACCOUNT_MANAGER_DATABASE_FILE,0,0,0);
 	if (!node){
@@ -218,7 +218,7 @@ static config_tag_t* _generate_database_config(void){
 
 
 
-static void _save_account_manager_database(void){
+static KERNEL_AWAITS void _save_account_manager_database(void){
 	LOG("Saving account database...");
 	config_tag_t* root_tag=_generate_database_config();
 	vfs_node_t* parent;
