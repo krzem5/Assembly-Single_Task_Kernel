@@ -1,3 +1,4 @@
+#include <kernel/exception/exception.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -65,13 +66,24 @@ KERNEL_PUBLIC KERNEL_NO_AWAITS writer_t* writer_init(vfs_node_t* node,void** buf
 
 
 KERNEL_PUBLIC KERNEL_AWAITS u64 writer_deinit(writer_t* writer){
+	exception_unwind_push(writer){
+		writer_deinit_exception(EXCEPTION_UNWIND_ARG(0));
+	}
 	if (writer->offset){
 		_emit_data(writer,writer->buffer,writer->offset);
 	}
+	exception_unwind_pop();
 	mmap_dealloc_region(process_kernel->mmap,writer->buffer_region);
 	u64 out=writer->size;
 	omm_dealloc(_writer_omm_allocator,writer);
 	return out;
+}
+
+
+
+KERNEL_PUBLIC void writer_deinit_exception(writer_t* writer){
+	mmap_dealloc_region(process_kernel->mmap,writer->buffer_region);
+	omm_dealloc(_writer_omm_allocator,writer);
 }
 
 

@@ -28,7 +28,7 @@ static rb_tree_t _net_arp_cache_address_tree;
 
 
 
-static void _rx_callback(network_layer1_packet_t* packet){
+static KERNEL_AWAITS void _rx_callback(network_layer1_packet_t* packet){
 	if (packet->length<sizeof(net_arp_packet_t)){
 		return;
 	}

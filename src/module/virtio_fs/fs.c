@@ -20,7 +20,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _virtio_fs_device_allocator=NULL;
 
 
 
-static bool _virtio_driver_init(virtio_device_t* device,u64 features){
+static KERNEL_AWAITS bool _virtio_driver_init(virtio_device_t* device,u64 features){
 	virtio_fs_config_t config;
 	for (u32 i=0;i<sizeof(config.raw_data)/sizeof(u32);i++){
 		config.raw_data[i]=virtio_read(device->device_field+i*sizeof(u32),4);
@@ -98,7 +98,12 @@ KERNEL_AWAITS void virtio_fs_fuse_init(virtio_fs_device_t* fs_device){
 		}
 	};
 	virtio_queue_transfer(fs_device->hiprioq,buffers,1,1);
+	exception_unwind_push(fuse_init_in,fuse_init_out){
+		amm_dealloc(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	virtio_queue_wait(fs_device->hiprioq);
+	exception_unwind_pop();
 	virtio_queue_pop(fs_device->hiprioq,NULL);
 	amm_dealloc(fuse_init_in);
 	if (fuse_init_out->header.len!=sizeof(fuse_init_out_t)||fuse_init_out->major!=FUSE_VERSION_MAJOR||fuse_init_out->minor!=FUSE_VERSION_MINOR){
@@ -133,7 +138,12 @@ KERNEL_AWAITS fuse_getattr_out_t* virtio_fs_fuse_getattr(virtio_fs_device_t* fs_
 		}
 	};
 	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	exception_unwind_push(fuse_getattr_in,fuse_getattr_out){
+		amm_dealloc(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	virtio_queue_wait(fs_device->loprioq);
+	exception_unwind_pop();
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_getattr_in);
 	return fuse_getattr_out;
@@ -165,7 +175,12 @@ KERNEL_AWAITS fuse_file_handle_t virtio_fs_fuse_open(virtio_fs_device_t* fs_devi
 		}
 	};
 	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	exception_unwind_push(fuse_open_in,fuse_open_out){
+		amm_dealloc(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	virtio_queue_wait(fs_device->loprioq);
+	exception_unwind_pop();
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_open_in);
 	fuse_file_handle_t out=fuse_open_out->fh;
@@ -201,7 +216,11 @@ KERNEL_AWAITS void virtio_fs_fuse_read(virtio_fs_device_t* fs_device,fuse_node_i
 		}
 	};
 	virtio_queue_transfer(fs_device->loprioq,buffers,1,1);
+	exception_unwind_push(fuse_read_in){
+		amm_dealloc(EXCEPTION_UNWIND_ARG(0));
+	}
 	virtio_queue_wait(fs_device->loprioq);
+	exception_unwind_pop();
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_read_in);
 }
@@ -234,7 +253,12 @@ KERNEL_AWAITS fuse_lookup_out_t* virtio_fs_fuse_lookup(virtio_fs_device_t* fs_de
 		}
 	};
 	virtio_queue_transfer(fs_device->loprioq,buffers,2,1);
+	exception_unwind_push(fuse_lookup_in,fuse_lookup_out){
+		amm_dealloc(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	virtio_queue_wait(fs_device->loprioq);
+	exception_unwind_pop();
 	virtio_queue_pop(fs_device->loprioq,NULL);
 	amm_dealloc(fuse_lookup_in);
 	return fuse_lookup_out;

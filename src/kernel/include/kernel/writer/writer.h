@@ -30,6 +30,10 @@ u64 writer_deinit(writer_t* writer);
 
 
 
+void writer_deinit_exception(writer_t* writer);
+
+
+
 void writer_append(writer_t* writer,const void* data,u64 length);
 
 

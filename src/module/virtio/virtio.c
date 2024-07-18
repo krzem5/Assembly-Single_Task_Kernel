@@ -115,7 +115,7 @@ static void _virtio_init_device(pci_device_t* device){
 
 
 
-KERNEL_PUBLIC bool virtio_register_device_driver(const virtio_device_driver_t* driver){
+KERNEL_PUBLIC KERNEL_AWAITS bool virtio_register_device_driver(const virtio_device_driver_t* driver){
 	rwlock_acquire_write(&_virtio_device_driver_tree_lock);
 	LOG("Registering VirtIO device driver '%s/%X%X'...",driver->name,driver->type>>8,driver->type);
 	virtio_device_driver_node_t* node=(virtio_device_driver_node_t*)rb_tree_lookup_node(&_virtio_device_driver_tree,driver->type);

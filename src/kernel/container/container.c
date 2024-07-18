@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/container/container.h>
+#include <kernel/exception/exception.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/mutex.h>
 #include <kernel/log/log.h>
@@ -99,6 +100,12 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 	handle_id_t* buffer=amm_alloc(handle_count*sizeof(handle_id_t));
 	mem_copy(buffer,(const void*)handles,handle_count*sizeof(handle_id_t));
 	container_t* data=KERNEL_CONTAINEROF(container_handle,container_t,handle);
+	exception_unwind_push(container_handle,buffer){
+		container_t* data=KERNEL_CONTAINEROF(EXCEPTION_UNWIND_ARG(0),container_t,handle);
+		mutex_release(data->lock);
+		mutex_release(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	mutex_acquire(data->lock);
 	error_t out=ERROR_OK;
 	for (u64 i=0;i<handle_count;i++){
@@ -120,6 +127,7 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 		entry->rb_node.key=buffer[i];
 		rb_tree_insert_node(&(data->tree),&(entry->rb_node));
 	}
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(container_handle);
 	amm_dealloc(buffer);

@@ -45,6 +45,7 @@ KERNEL_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_uw",".kernel_ex",".kern
 KERNEL_HASH_SECTION_ORDER=[".kernel_ue",".kernel_ur",".kernel_ex",".kernel_nx"]
 KERNEL_EARLY_READ_ONLY_SECTION_NAME=".kernel_ur"
 MODULE_SECTION_ORDER=[".module_ue",".module_ur",".module_uw",".module_ex",".module_nx",".module_rw",".module_iw",".module_zw"]
+AWAITABLE_SECTIONS=[".kernel_ue",".kernel_ex",".module_ue",".module_ex"]
 SIGNATURE_SECTION_NAME=".signature"
 SIGNATURE_SECTION_SIZE=4096
 
@@ -196,15 +197,15 @@ def _parse_await_functions(ctx,await_function_file_name,dependencies=[]):
 			for i in range(section.offset,section.offset+section.size,24):
 				r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
 				symbol=ctx.symbol_table.symbols[r_info>>32]
-				ctx.await_functions.add(symbol.value+r_addend)
-				if (not r_addend):
+				ctx.await_functions.add(symbol.section.address+symbol.value+r_addend)
+				if (not r_addend and symbol.name):
 					wf.write(f"{symbol.name}\n")
 	if (".rela.kernel_no_await" in ctx.section_headers_by_name):
 		section=ctx.section_headers_by_name[".rela.kernel_no_await"]
 		for i in range(section.offset,section.offset+section.size,24):
 			r_offset,r_info,r_addend=struct.unpack("<QQq",ctx.data[i:i+24])
 			symbol=ctx.symbol_table.symbols[r_info>>32]
-			ctx.no_await_functions.add(symbol.value+r_addend)
+			ctx.no_await_functions.add(symbol.section.address+symbol.value+r_addend)
 	for dep in dependencies:
 		with open(dep+".await_functions.txt","r") as rf:
 			ctx.await_functions_by_name.update(set([e.strip() for e in rf.read().split("\n") if e.strip()]))
@@ -236,13 +237,13 @@ def _parse_relocation_tables(ctx):
 			elif ((r_info>>32) in ctx.symbol_table.symbols):
 				symbol=ctx.symbol_table.symbols[r_info>>32]
 				ctx.add_relocation_entry(r_info&0xffffffff,section,r_offset,symbol,r_addend,(section.name not in KERNEL_SECTION_ORDER))
-				if (section.name not in KERNEL_SECTION_ORDER or (r_info&0xffffffff)!=R_X86_64_PLT32 or symbol.value+r_addend+4 not in ctx.await_functions):
+				if (section.name not in AWAITABLE_SECTIONS or (r_info&0xffffffff)!=R_X86_64_PLT32 or symbol.section.address+symbol.value+r_addend+4 not in ctx.await_functions):
 					continue
 				await_called_function=_get_symbol_from_offset(ctx,None,ctx.symbol_table.symbols[r_info>>32].value+r_addend+4).name
 			else:
 				continue
 			symbol=_get_symbol_from_offset(ctx,section,r_offset)
-			if (symbol.value in ctx.await_functions or symbol.value in ctx.no_await_functions):
+			if (symbol.section.address+symbol.value in ctx.await_functions or symbol.section.address+symbol.value in ctx.no_await_functions):
 				continue
 			print(f"\x1b[1;91mNon-await function: {symbol.name} (called {await_called_function})\x1b[0m")
 			error=True
@@ -435,7 +436,7 @@ def patch_kernel(src_file_path,dst_file_path,build_version,build_name,hide_priva
 def patch_module_or_library(file_path,key_name,dependencies):
 	with open(file_path,"rb") as rf:
 		data=bytearray(rf.read())
-	ctx=_parse_headers(data)
+	ctx=_parse_headers(data,read_section_address=True)
 	if (SIGNATURE_SECTION_NAME not in ctx.section_headers_by_name):
 		return
 	section=ctx.section_headers_by_name[SIGNATURE_SECTION_NAME]

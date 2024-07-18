@@ -38,7 +38,7 @@ static filesystem_descriptor_t* KERNEL_INIT_WRITE _fuse_filesystem_descriptor=NU
 
 
 
-static void _update_attr(fuse_vfs_node_t* fuse_node){
+static KERNEL_AWAITS void _update_attr(fuse_vfs_node_t* fuse_node){
 	fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fuse_node->header.fs->extra_data,fuse_node->node_id,fuse_node->file_handle);
 	fuse_node->header.flags&=~(VFS_NODE_TYPE_MASK|VFS_NODE_PERMISSION_MASK);
 	fuse_node->header.flags|=(fuse_getattr_out->attr.mode&0777)<<VFS_NODE_PERMISSION_SHIFT;
@@ -67,7 +67,7 @@ static void _update_attr(fuse_vfs_node_t* fuse_node){
 
 
 
-static void _check_for_updates(fuse_vfs_node_t* fuse_node){
+static KERNEL_AWAITS void _check_for_updates(fuse_vfs_node_t* fuse_node){
 	if (clock_get_time()>=fuse_node->data_valid_end_time){
 		fuse_getattr_out_t* fuse_getattr_out=virtio_fs_fuse_getattr(fuse_node->header.fs->extra_data,fuse_node->node_id,fuse_node->file_handle);
 		fuse_node->header.flags&=~(VFS_NODE_TYPE_MASK|VFS_NODE_PERMISSION_MASK);
@@ -110,7 +110,7 @@ static void _check_for_updates(fuse_vfs_node_t* fuse_node){
 
 
 
-static vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
+static KERNEL_AWAITS vfs_node_t* _open_node(filesystem_t* fs,fuse_node_id_t node_id,const string_t* name){
 	virtio_fs_device_t* fs_device=fs->extra_data;
 	fuse_vfs_node_t* out=(fuse_vfs_node_t*)vfs_node_create(fs,NULL,name,0);
 	out->node_id=node_id;
@@ -142,7 +142,7 @@ static void _fuse_delete(vfs_node_t* node){
 
 
 
-static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
+static KERNEL_AWAITS vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
 	if (!fuse_node->node_id){
 		return NULL;
@@ -161,7 +161,7 @@ static vfs_node_t* _fuse_lookup(vfs_node_t* node,const string_t* name){
 
 
 
-static u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
+static KERNEL_AWAITS u64 _fuse_iterate(vfs_node_t* node,u64 pointer,string_t** out){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
 	if (!fuse_node->node_id){
 		return 0;
@@ -188,7 +188,7 @@ _retry_read:
 
 
 
-static u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
+static KERNEL_AWAITS u64 _fuse_read(vfs_node_t* node,u64 offset,void* buffer,u64 size,u32 flags){
 	fuse_vfs_node_t* fuse_node=(fuse_vfs_node_t*)node;
 	if (!fuse_node->node_id){
 		return 0;

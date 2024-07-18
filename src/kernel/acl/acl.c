@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/handle/handle.h>
 #include <kernel/id/flags.h>
 #include <kernel/lock/rwlock.h>
@@ -207,7 +208,14 @@ KERNEL_AWAITS error_t syscall_acl_request_permissions(handle_id_t handle_id,hand
 	process_t* process=(process_handle?KERNEL_CONTAINEROF(process_handle,process_t,handle):THREAD_DATA->process);
 	LOG("'%s' requested permissions '%x' for handle '%s'",process->name->data,flags,handle_get_descriptor(HANDLE_ID_GET_TYPE(handle->rb_node.key))->name);
 	acl_request_callback_t callback=_acl_request_callback;
+	exception_unwind_push(handle,process_handle){
+		if (EXCEPTION_UNWIND_ARG(1)){
+			handle_release(EXCEPTION_UNWIND_ARG(1));
+		}
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	u64 out=(callback?callback(handle,process,flags):ERROR_DENIED);
+	exception_unwind_pop();
 	if (out==ERROR_OK){
 		acl_set(handle->acl,process,0,flags);
 	}

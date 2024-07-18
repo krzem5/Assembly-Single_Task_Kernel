@@ -1,5 +1,6 @@
 #include <kernel/aes/aes.h>
 #include <kernel/config/config.h>
+#include <kernel/exception/exception.h>
 #include <kernel/hmac/hmac.h>
 #include <kernel/hmac/sha256.h>
 #include <kernel/keyring/master_key.h>
@@ -604,6 +605,9 @@ KERNEL_PUBLIC KERNEL_AWAITS bool config_save_to_file(const config_tag_t* tag,vfs
 		if (password||(flags&(~CONFIG_SAVE_FLAG_TEXT))){
 			WARN("Saving in text mode; password encryption and other flags ignored");
 		}
+		exception_unwind_push(writer){
+			writer_deinit_exception(EXCEPTION_UNWIND_ARG(0));
+		}
 		if (tag->type!=CONFIG_TAG_TYPE_ARRAY){
 			_save_text_tag(writer,tag,0);
 			writer_append_char(writer,'\n');
@@ -614,9 +618,11 @@ KERNEL_PUBLIC KERNEL_AWAITS bool config_save_to_file(const config_tag_t* tag,vfs
 				writer_append_char(writer,'\n');
 			}
 		}
+		exception_unwind_pop();
 		writer_deinit(writer);
 		return 1;
 	}
+	// this code is not exception-protected
 	config_file_header_t header={
 		CONFIG_BINARY_FILE_SIGNATURE,
 		CONFIG_BINARY_FILE_VERSION,

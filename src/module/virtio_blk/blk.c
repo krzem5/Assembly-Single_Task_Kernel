@@ -24,7 +24,7 @@ static omm_allocator_t* KERNEL_INIT_WRITE _virtio_blk_device_allocator=NULL;
 
 
 
-static u64 _virtio_blk_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
+static KERNEL_AWAITS u64 _virtio_blk_read_write(drive_t* drive,u64 offset,u64 buffer,u64 count){
 	virtio_blk_device_t* blk_device=drive->extra_data;
 	bool is_write=!!(offset&DRIVE_OFFSET_FLAG_WRITE);
 	offset&=DRIVE_OFFSET_MASK;
