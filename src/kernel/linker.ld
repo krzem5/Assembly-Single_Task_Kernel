@@ -3,7 +3,7 @@ SECTIONS{
 	. = 0;
 	.kernel_ue : {
 		*(.entry)
-		*(.etext .etext* .await_text .await_text*)
+		*(.etext .etext*)
 	}
 	.kernel_ur : {
 		*(.ap_startup)
@@ -31,7 +31,7 @@ SECTIONS{
 		*(.edata .edata*)
 	}
 	.kernel_ex : {
-		*(.text .text*)
+		*(.text .text* .await_text .await_text*)
 	}
 	.kernel_nx : {
 		*(.rodata .rodata* .rdata .rdata*)

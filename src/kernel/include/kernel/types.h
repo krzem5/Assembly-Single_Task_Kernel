@@ -13,12 +13,12 @@
 #define KERNEL_NOINLINE __attribute__((noinline))
 #ifdef KERNEL_RELEASE
 #define KERNEL_INLINE inline __attribute__((always_inline))
-#define KERNEL_AWAITS //__attribute__((constructor,section(".await_text")))
+#define KERNEL_AWAITS __attribute__((constructor,section(".await_text")))
 #else
 #define KERNEL_INLINE inline
-#define KERNEL_AWAITS //__attribute__((constructor,section(".await_text"),patchable_function_entry(5)))
+#define KERNEL_AWAITS __attribute__((constructor,section(".await_text"),patchable_function_entry(5)))
 #endif
-#define KERNEL_NO_AWAITS //__attribute__((destructor,section(".await_text")))
+#define KERNEL_NO_AWAITS __attribute__((destructor,section(".await_text")))
 #define KERNEL_PUBLIC __attribute__((visibility("default")))
 #define KERNEL_PACKED __attribute__((packed))
 #define KERNEL_ATOMIC _Atomic
