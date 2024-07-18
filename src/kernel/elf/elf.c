@@ -119,7 +119,7 @@ static KERNEL_NO_AWAITS void _create_executable_process(elf_loader_context_t* ct
 
 
 
-static KERNEL_AWAITS error_t _map_and_locate_sections(elf_loader_context_t* ctx){
+static KERNEL_NO_AWAITS error_t _map_and_locate_sections(elf_loader_context_t* ctx){
 	INFO("Mapping and locating sections...");
 	const elf_dyn_t* dyn=NULL;
 	for (u16 i=0;i<ctx->elf_header->e_phnum;i++){
@@ -209,7 +209,7 @@ static KERNEL_AWAITS error_t _map_and_locate_sections(elf_loader_context_t* ctx)
 
 
 
-static KERNEL_AWAITS error_t _load_interpreter(elf_loader_context_t* ctx){
+static KERNEL_NO_AWAITS error_t _load_interpreter(elf_loader_context_t* ctx){
 	if (!ctx->interpreter_path){
 		return ERROR_OK;
 	}

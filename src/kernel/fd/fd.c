@@ -171,17 +171,33 @@ KERNEL_AWAITS error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const
 	}
 	error_t error=ERROR_NOT_FOUND;
 	vfs_node_t* node=NULL;
+	vfs_node_t* parent=NULL;
+	string_t* child_name_string=NULL;
+	exception_unwind_push(root_handle,node,parent,child_name_string){
+		if (EXCEPTION_UNWIND_ARG(0)){
+			handle_release(EXCEPTION_UNWIND_ARG(0));
+		}
+		if (EXCEPTION_UNWIND_ARG(1)){
+			vfs_node_unref(EXCEPTION_UNWIND_ARG(1));
+		}
+		if (EXCEPTION_UNWIND_ARG(2)){
+			vfs_node_unref(EXCEPTION_UNWIND_ARG(2));
+		}
+		if (EXCEPTION_UNWIND_ARG(3)){
+			smm_dealloc(EXCEPTION_UNWIND_ARG(3));
+		}
+	}
 	if (flags&FD_FLAG_CREATE){
-		vfs_node_t* parent;
-		const char* child_name;
+		const char* child_name=NULL;
 		node=vfs_lookup_for_creation(root_node,buffer,VFS_LOOKUP_FLAG_CHECK_PERMISSIONS|((flags&FD_FLAG_IGNORE_LINKS)?0:VFS_LOOKUP_FLAG_FOLLOW_LINKS)|((flags&FD_FLAG_FIND_LINKS)?VFS_LOOKUP_FLAG_FIND_LINKS:0),THREAD_DATA->process->uid,THREAD_DATA->process->gid,&parent,&child_name);
 		if (node==VFS_LOOKUP_LINK_FOUND){
 			node=NULL;
 			error=ERROR_LINK_FOUND;
 		}
 		else if (!node&&parent&&child_name){
-			SMM_TEMPORARY_STRING child_name_string=smm_alloc(child_name,0);
+			child_name_string=smm_alloc(child_name,0);
 			node=vfs_node_create(NULL,parent,child_name_string,((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:((flags&FD_FLAG_LINK)?VFS_NODE_TYPE_LINK:VFS_NODE_TYPE_FILE))|VFS_NODE_FLAG_CREATE);
+			smm_dealloc(child_name_string);
 			if (node){
 				node->uid=THREAD_DATA->process->uid;
 				node->gid=THREAD_DATA->process->gid;
@@ -195,6 +211,7 @@ KERNEL_AWAITS error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const
 		}
 		if (parent){
 			vfs_node_unref(parent);
+			parent=NULL;
 		}
 	}
 	else{
@@ -206,11 +223,14 @@ KERNEL_AWAITS error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const
 	}
 	if (root_handle){
 		handle_release(root_handle);
+		root_handle=NULL;
 	}
 	if (!node){
+		exception_unwind_pop();
 		return error;
 	}
 	error_t out=fd_from_node(node,flags);
+	exception_unwind_pop();
 	vfs_node_unref(node);
 	return out;
 }
