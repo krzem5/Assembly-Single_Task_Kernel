@@ -86,18 +86,18 @@ typedef struct _MODULE{
 
 
 
-typedef struct _MODULE_DESCRIPTOR_INIT_ARRAYS{
+typedef struct _MODULE_DESCRIPTOR_INIT_ARRAY{
 	u64 start;
 	u64 end;
-} module_descriptor_init_arrays_t;
+} module_descriptor_init_array_t;
 
 
 
 typedef struct _MODULE_DESCRIPTOR{
 	u32 flags;
 	module_t** module_self_ptr;
-	module_descriptor_init_arrays_t init_arrays[3];
-	module_descriptor_init_arrays_t deinit;
+	module_descriptor_init_array_t init_arrays[3];
+	module_descriptor_init_array_t deinit;
 	u64 gcov_info_start;
 	u64 gcov_info_end;
 } module_descriptor_t;
