@@ -2,4 +2,4 @@
 
 
 
-MODULE_DECLARE(0);
+MODULE_DECLARE(0,opengl,ui_display,virtio);

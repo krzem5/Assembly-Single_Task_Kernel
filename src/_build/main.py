@@ -297,6 +297,8 @@ def _generate_install_disk(rebuild):
 	_execute_kfs2_command(["copy","/etc/fs_list.config","0644","src/config/fs_list.config"])
 	_execute_kfs2_command(["link","/lib/ld.so","0755","/lib/liblinker.so"])
 	for module in os.listdir("build/module"):
+		if (not module.endswith(".mod")):
+			continue
 		_execute_kfs2_command(["copy",f"/boot/module/{module}","0400",f"build/module/{module}"])
 	for library in os.listdir("build/lib"):
 		if (not library.endswith(".so")):

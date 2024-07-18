@@ -20,7 +20,20 @@
 #define MODULE_FLAG_TAINTED 4
 #define _MODULE_FLAG_EARLY_UNLOAD 8
 
-#define MODULE_DECLARE(flags) \
+#define _MODULE_QUOTE_DEPENDENCY(arg) #arg
+#define _MODULE_QUOTE_DEPENDENCIES_0(arg) NULL
+#define _MODULE_QUOTE_DEPENDENCIES_1(arg) _MODULE_QUOTE_DEPENDENCY(arg),NULL
+#define _MODULE_QUOTE_DEPENDENCIES_2(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_1(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_3(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_2(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_4(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_3(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_5(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_4(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_6(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_5(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_7(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_6(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_8(arg,...) _MODULE_QUOTE_DEPENDENCY(arg),_MODULE_QUOTE_DEPENDENCIES_7(__VA_ARGS__)
+#define _MODULE_QUOTE_DEPENDENCIES_(_1,_2,_3,_4,_5,_6,_7,_8,_9,N,...) _MODULE_QUOTE_DEPENDENCIES_##N
+#define _MODULE_QUOTE_DEPENDENCIES(...) _MODULE_QUOTE_DEPENDENCIES_(,##__VA_ARGS__,8,7,6,5,4,3,2,1,0,0)(__VA_ARGS__)
+
+#define MODULE_DECLARE(flags,...) \
 	extern u64 __module_section_init_start[1]; \
 	extern u64 __module_section_init_end[1]; \
 	extern u64 __module_section_postinit_start[1]; \
@@ -32,8 +45,10 @@
 	extern u64 __module_section_gcov_info_start[1]; \
 	extern u64 __module_section_gcov_info_end[1]; \
 	module_t* module_self=NULL; \
+	static const char*const __module_dependencies[]={_MODULE_QUOTE_DEPENDENCIES(__VA_ARGS__)}; \
 	static const module_descriptor_t KERNEL_EARLY_READ __attribute__((used)) __module_header={ \
 		(flags), \
+		__module_dependencies, \
 		&module_self, \
 		{ \
 			{ \
@@ -95,6 +110,7 @@ typedef struct _MODULE_DESCRIPTOR_INIT_ARRAY{
 
 typedef struct _MODULE_DESCRIPTOR{
 	u32 flags;
+	const char*const* dependencies;
 	module_t** module_self_ptr;
 	module_descriptor_init_array_t init_arrays[3];
 	module_descriptor_init_array_t deinit;

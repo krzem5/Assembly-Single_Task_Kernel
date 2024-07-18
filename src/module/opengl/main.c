@@ -2,4 +2,4 @@
 
 
 
-MODULE_DECLARE(0);
+MODULE_DECLARE(0,ui_common,ui_display);

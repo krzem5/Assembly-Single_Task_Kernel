@@ -285,6 +285,9 @@ static void _process_module_header(module_loader_context_t* ctx){
 		ctx->module->gcov_info_base=0;
 	}
 #endif
+	for (u32 i=0;ctx->module_descriptor->dependencies[i];i++){
+		WARN("Wait for %s",ctx->module_descriptor->dependencies[i]);
+	}
 }
 
 
