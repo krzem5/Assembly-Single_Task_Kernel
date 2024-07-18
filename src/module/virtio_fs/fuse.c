@@ -273,5 +273,6 @@ filesystem_t* fuse_create_filesystem(virtio_fs_device_t* fs_device){
 	SMM_TEMPORARY_STRING root_name=smm_alloc("",0);
 	out->root=_open_node(out,FUSE_ROOT_ID,root_name);
 	out->root->flags|=VFS_NODE_FLAG_PERMANENT;
+	fs_send_create_notification(out);
 	return out;
 }

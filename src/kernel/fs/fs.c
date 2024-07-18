@@ -6,8 +6,10 @@
 #include <kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>
+#include <kernel/notification/notification.h>
 #include <kernel/partition/partition.h>
 #include <kernel/syscall/syscall.h>
 #include <kernel/types.h>
@@ -23,6 +25,38 @@ static omm_allocator_t* KERNEL_INIT_WRITE _fs_descriptor_allocator=NULL;
 
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE fs_handle_type=0;
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE fs_descriptor_handle_type=0;
+KERNEL_PUBLIC notification_dispatcher_t* fs_notification_dispatcher=NULL;
+
+
+
+static void _send_create_notification(filesystem_t* fs){
+	filesystem_create_notification_data_t* data=amm_alloc(sizeof(filesystem_create_notification_data_t));
+	data->fs_handle=fs->handle.rb_node.key;
+	data->fs_descriptor_handle=fs->descriptor->handle.rb_node.key;
+	notification_dispatcher_dispatch(fs_notification_dispatcher,FS_CREATE_NOTIFICATION,data,sizeof(filesystem_create_notification_data_t));
+	amm_dealloc(data);
+}
+
+
+
+static void _send_delete_notification(filesystem_t* fs){
+	filesystem_delete_notification_data_t* data=amm_alloc(sizeof(filesystem_delete_notification_data_t));
+	data->fs_handle=fs->handle.rb_node.key;
+	data->fs_descriptor_handle=fs->descriptor->handle.rb_node.key;
+	notification_dispatcher_dispatch(fs_notification_dispatcher,FS_DELETE_NOTIFICATION,data,sizeof(filesystem_delete_notification_data_t));
+	amm_dealloc(data);
+}
+
+
+
+static void _send_mount_notification(filesystem_t* fs,const char* path){
+	u32 length=smm_length(path)+1;
+	filesystem_mount_notification_data_t* data=amm_alloc(sizeof(filesystem_mount_notification_data_t)+length);
+	data->fs_handle=fs->handle.rb_node.key;
+	mem_copy(data->path,path,length);
+	notification_dispatcher_dispatch(fs_notification_dispatcher,FS_MOUNT_NOTIFICATION,data,sizeof(filesystem_mount_notification_data_t)+length);
+	amm_dealloc(data);
+}
 
 
 
@@ -41,6 +75,7 @@ static void _fs_handle_destructor(handle_t* handle){
 	if (fs->descriptor->config->deinit_callback){
 		fs->descriptor->config->deinit_callback(fs);
 	}
+	_send_delete_notification(fs);
 	if (fs->root){
 		_delete_nodes_recursive(fs->root);
 	}
@@ -50,10 +85,11 @@ static void _fs_handle_destructor(handle_t* handle){
 
 
 
-KERNEL_EARLY_EARLY_INIT(){
+KERNEL_EARLY_INIT(){
 	_fs_allocator=omm_init("kernel.fs",sizeof(filesystem_t),8,4);
 	rwlock_init(&(_fs_allocator->lock));
 	fs_handle_type=handle_alloc("kernel.fs",0,_fs_handle_destructor);
+	fs_notification_dispatcher=notification_dispatcher_create("kernel.fs");
 }
 
 
@@ -105,6 +141,18 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	mem_fill(out->uuid,16,0);
 	out->is_mounted=0;
 	return out;
+}
+
+
+
+KERNEL_PUBLIC void fs_send_create_notification(filesystem_t* fs){
+	_send_create_notification(fs);
+}
+
+
+
+void fs_send_mount_notification(filesystem_t* fs,const char* path){
+	_send_mount_notification(fs,path);
 }
 
 

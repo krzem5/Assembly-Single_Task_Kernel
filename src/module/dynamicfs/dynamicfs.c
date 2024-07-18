@@ -107,6 +107,7 @@ KERNEL_PUBLIC KERNEL_AWAITS filesystem_t* dynamicfs_init(const char* path,const 
 	SMM_TEMPORARY_STRING name_string=smm_alloc("",0);
 	out->root=vfs_node_create(out,NULL,name_string,0);
 	out->root->flags|=VFS_NODE_FLAG_VIRTUAL|VFS_NODE_TYPE_DIRECTORY|(0555<<VFS_NODE_PERMISSION_SHIFT);
+	fs_send_create_notification(out);
 	vfs_mount(out,path,0);
 	return out;
 }

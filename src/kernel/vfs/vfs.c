@@ -76,6 +76,7 @@ KERNEL_PUBLIC KERNEL_AWAITS error_t vfs_mount(filesystem_t* fs,const char* path,
 		if (fs->descriptor->config->mount_callback){
 			fs->descriptor->config->mount_callback(fs,"/");
 		}
+		fs_send_mount_notification(fs,"/");
 		return ERROR_OK;
 	}
 	vfs_node_t* parent;
@@ -102,6 +103,7 @@ KERNEL_PUBLIC KERNEL_AWAITS error_t vfs_mount(filesystem_t* fs,const char* path,
 	if (fs->descriptor->config->mount_callback){
 		fs->descriptor->config->mount_callback(fs,path);
 	}
+	fs_send_mount_notification(fs,path);
 	return ERROR_OK;
 }
 

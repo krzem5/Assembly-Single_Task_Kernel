@@ -209,6 +209,7 @@ static filesystem_t* _initramfs_fs_load(partition_t* partition){
 	((initramfs_vfs_node_t*)(_initramfs_fs->root))->child_count=node.child_count;
 	((initramfs_vfs_node_t*)(_initramfs_fs->root))->name_length=node.name_length;
 	((initramfs_vfs_node_t*)(_initramfs_fs->root))->flags=node.flags;
+	fs_send_create_notification(_initramfs_fs);
 	return _initramfs_fs;
 }
 
