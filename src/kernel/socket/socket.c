@@ -102,7 +102,7 @@ static string_t* _get_unique_id(void){
 
 
 
-static KERNEL_AWAITS vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
+static KERNEL_NO_AWAITS vfs_node_t* _create_socket_node(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,const socket_dtp_descriptor_t* descriptor){
 	if (!_socket_root){
 		SMM_TEMPORARY_STRING dir_name=smm_alloc("sockets",0);
 		_socket_root=vfs_node_create_virtual(vfs_lookup(NULL,"/",0,0,0),NULL,dir_name);
@@ -168,7 +168,7 @@ KERNEL_PUBLIC void socket_unregister_dtp_descriptor(const socket_dtp_descriptor_
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
+KERNEL_PUBLIC vfs_node_t* socket_create(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol){
 	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	rwlock_release_read(&_socket_dtp_lock);
@@ -181,7 +181,7 @@ KERNEL_PUBLIC KERNEL_AWAITS vfs_node_t* socket_create(socket_domain_t domain,soc
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
+KERNEL_PUBLIC bool socket_create_pair(socket_domain_t domain,socket_type_t type,socket_protocol_t protocol,socket_pair_t* out){
 	rwlock_acquire_read(&_socket_dtp_lock);
 	socket_dtp_handler_t* handler=(socket_dtp_handler_t*)rb_tree_lookup_node(&_socket_dtp_tree,CREATE_DTP_KEY(domain,type,protocol));
 	rwlock_release_read(&_socket_dtp_lock);
