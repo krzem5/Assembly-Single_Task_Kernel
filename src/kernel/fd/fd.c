@@ -198,6 +198,7 @@ KERNEL_AWAITS error_t syscall_fd_open(handle_id_t root,KERNEL_USER_POINTER const
 			child_name_string=smm_alloc(child_name,0);
 			node=vfs_node_create(NULL,parent,child_name_string,((flags&FD_FLAG_DIRECTORY)?VFS_NODE_TYPE_DIRECTORY:((flags&FD_FLAG_LINK)?VFS_NODE_TYPE_LINK:VFS_NODE_TYPE_FILE))|VFS_NODE_FLAG_CREATE);
 			smm_dealloc(child_name_string);
+			child_name_string=NULL;
 			if (node){
 				node->uid=THREAD_DATA->process->uid;
 				node->gid=THREAD_DATA->process->gid;
