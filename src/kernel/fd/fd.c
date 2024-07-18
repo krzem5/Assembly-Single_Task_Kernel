@@ -739,8 +739,17 @@ KERNEL_AWAITS error_t syscall_fd_iter_start(handle_id_t fd){
 		handle_release(fd_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_handle){
+		handle_t* fd_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_t* data=KERNEL_CONTAINEROF(fd_handle,fd_t,handle);
+		if (mutex_is_held(data->lock)){
+			mutex_release(data->lock);
+		}
+		handle_release(fd_handle);
+	}
 	mutex_acquire(data->lock);
 	if (!(vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_READ)){
+		exception_unwind_pop();
 		mutex_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_DENIED;
@@ -748,6 +757,7 @@ KERNEL_AWAITS error_t syscall_fd_iter_start(handle_id_t fd){
 	string_t* current_name;
 	u64 pointer=((vfs_permissions_get(data->node,THREAD_DATA->process->uid,THREAD_DATA->process->gid)&VFS_PERMISSION_EXEC)?vfs_node_iterate(data->node,0,&current_name):0);
 	if (!pointer){
+		exception_unwind_pop();
 		mutex_release(data->lock);
 		handle_release(fd_handle);
 		return ERROR_NO_DATA;
@@ -762,6 +772,7 @@ KERNEL_AWAITS error_t syscall_fd_iter_start(handle_id_t fd){
 	out->node=data->node;
 	out->pointer=pointer;
 	out->current_name=current_name;
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
@@ -782,6 +793,9 @@ KERNEL_AWAITS error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINT
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_iterator_handle){
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	mutex_acquire(data->lock);
 	if (data->current_name){
 		if (buffer_length>data->current_name->length+1){
@@ -796,6 +810,7 @@ KERNEL_AWAITS error_t syscall_fd_iter_get(handle_id_t iterator,KERNEL_USER_POINT
 	else{
 		buffer_length=0;
 	}
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_iterator_handle);
 	return buffer_length;
@@ -813,6 +828,18 @@ KERNEL_AWAITS error_t syscall_fd_iter_next(handle_id_t iterator){
 		handle_release(fd_iterator_handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(fd_iterator_handle){
+		handle_t* fd_iterator_handle=EXCEPTION_UNWIND_ARG(0);
+		fd_iterator_t* data=KERNEL_CONTAINEROF(fd_iterator_handle,fd_iterator_t,handle);
+		if (mutex_is_held(data->lock)){
+			data->current_name=NULL;
+			data->pointer=0;
+			handle_list_pop(&(THREAD_DATA->process->handle_list),fd_iterator_handle);
+			handle_release(fd_iterator_handle);
+			mutex_release(data->lock);
+		}
+		handle_release(fd_iterator_handle);
+	}
 	mutex_acquire(data->lock);
 	s64 out=ERROR_NO_DATA;
 	if (data->current_name){
@@ -827,6 +854,7 @@ KERNEL_AWAITS error_t syscall_fd_iter_next(handle_id_t iterator){
 			out=fd_iterator_handle->rb_node.key;
 		}
 	}
+	exception_unwind_pop();
 	mutex_release(data->lock);
 	handle_release(fd_iterator_handle);
 	return out;

@@ -1,5 +1,6 @@
 #include <kernel/drive/drive.h>
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
 #include <kernel/kernel.h>
@@ -182,7 +183,11 @@ KERNEL_AWAITS error_t syscall_fs_mount(handle_id_t fs_handle_id,KERNEL_USER_POIN
 	if (!fs_handle){
 		return ERROR_INVALID_HANDLE;
 	}
+	exception_unwind_push(fs_handle){
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	error_t out=vfs_mount(KERNEL_CONTAINEROF(fs_handle,filesystem_t,handle),buffer,1);
+	exception_unwind_pop();
 	handle_release(fs_handle);
 	return out;
 }

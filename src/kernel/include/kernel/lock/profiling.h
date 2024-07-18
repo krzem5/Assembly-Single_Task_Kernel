@@ -22,16 +22,18 @@
 #define lock_profiling_init_lock_stack(thread)
 #define lock_profiling_acquire_start(lock)
 #define lock_profiling_acquire_end(lock)
+#define lock_profiling_acquire_end_exception(lock,ctx)
 #define lock_profiling_release(lock)
 #define lock_profiling_assert_empty(thread)
 #else
 #define LOCK_PROFILING_LOCK_STACK __lock_profiling_lock_stack_t __lock_profiling_lock_stack;
 #define LOCK_PROFILING_DATA __lock_profiling_data_t __lock_profiling_data;
-#define lock_profiling_init(flags,lock) __lock_profiling_init((flags),&((lock)->__lock_profiling_data));
-#define lock_profiling_init_lock_stack(thread) __lock_profiling_init_lock_stack(&((thread)->__lock_profiling_lock_stack));
-#define lock_profiling_acquire_start(lock) {__lock_profiling_acquisition_context_t __lock_profiling_acquisition_context;__lock_profiling_acquire_start(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);
+#define lock_profiling_init(flags,lock) __lock_profiling_init((flags),&((lock)->__lock_profiling_data))
+#define lock_profiling_init_lock_stack(thread) __lock_profiling_init_lock_stack(&((thread)->__lock_profiling_lock_stack))
+#define lock_profiling_acquire_start(lock) {__lock_profiling_acquisition_context_t __lock_profiling_acquisition_context;__lock_profiling_acquire_start(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context)
 #define lock_profiling_acquire_end(lock) __lock_profiling_acquire_end(&((lock)->__lock_profiling_data),&__lock_profiling_acquisition_context);}
-#define lock_profiling_release(lock) __lock_profiling_release(&((lock)->__lock_profiling_data));
+#define lock_profiling_acquire_end_exception(lock,ctx) __lock_profiling_acquire_end(&((lock)->__lock_profiling_data),(ctx))
+#define lock_profiling_release(lock) __lock_profiling_release(&((lock)->__lock_profiling_data))
 #define lock_profiling_assert_empty(thread) __lock_profiling_assert_empty(((thread)?&(((thread_t*)(thread))->__lock_profiling_lock_stack):NULL))
 #endif
 

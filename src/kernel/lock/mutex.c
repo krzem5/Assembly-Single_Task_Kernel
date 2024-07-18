@@ -1,5 +1,6 @@
 #include <kernel/acl/acl.h>
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
 #include <kernel/lock/mutex.h>
@@ -67,11 +68,20 @@ KERNEL_PUBLIC void mutex_delete(mutex_t* lock){
 KERNEL_PUBLIC KERNEL_AWAITS void mutex_acquire(mutex_t* lock){
 	lock_profiling_acquire_start(lock);
 	rwlock_acquire_write(&(lock->lock));
+#ifndef KERNEL_RELEASE
+	__lock_profiling_acquisition_context_t* __lock_profiling_acquisition_context_ptr=&__lock_profiling_acquisition_context;
+	exception_unwind_push(lock,__lock_profiling_acquisition_context_ptr){
+		lock_profiling_acquire_end_exception(((mutex_t*)EXCEPTION_UNWIND_ARG(0)),EXCEPTION_UNWIND_ARG(1));
+	}
+#endif
 	while (lock->holder){
 		rwlock_release_write(&(lock->lock));
 		event_await(&(lock->event),1,0);
 		rwlock_acquire_write(&(lock->lock));
 	}
+#ifndef KERNEL_RELEASE
+	exception_unwind_pop();
+#endif
 	lock->holder=THREAD_DATA->header.current_thread;
 	handle_acquire(&(lock->holder->handle));
 	rwlock_release_write(&(lock->lock));
@@ -177,7 +187,11 @@ KERNEL_AWAITS error_t syscall_mutex_acquire(handle_id_t mutex_handle_id){
 		handle_release(handle);
 		return ERROR_DENIED;
 	}
+	exception_unwind_push(handle){
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+	}
 	mutex_acquire(mutex_handle->mutex);
+	exception_unwind_pop();
 	handle_release(handle);
 	return ERROR_OK;
 }
