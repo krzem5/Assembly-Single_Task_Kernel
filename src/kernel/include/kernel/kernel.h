@@ -44,6 +44,7 @@ _KERNEL_DECLARE_SECTION(cpu_local);
 _KERNEL_DECLARE_SECTION(early_early_initializers);
 _KERNEL_DECLARE_SECTION(early_initializers);
 _KERNEL_DECLARE_SECTION(initializers);
+_KERNEL_DECLARE_SECTION(async_initializers);
 _KERNEL_DECLARE_SECTION(gcov_info);
 
 

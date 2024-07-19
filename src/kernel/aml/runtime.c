@@ -1861,7 +1861,7 @@ static aml_object_t*(*const _aml_opcode_table[512])(aml_runtime_context_t*)={
 
 
 
-KERNEL_INIT(){
+KERNEL_ASYNC_INIT(){
 	if (!acpi_dsdt||!acpi_dsdt->header.length){
 		WARN("No AML code present");
 		return;

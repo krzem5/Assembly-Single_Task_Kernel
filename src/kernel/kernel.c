@@ -1,7 +1,10 @@
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/mp/event.h>
+#include <kernel/mp/thread.h>
 #include <kernel/time/time.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
@@ -89,10 +92,22 @@ void KERNEL_EARLY_EXEC kernel_early_execute_initializers(void){
 
 
 
-void KERNEL_EARLY_EXEC kernel_execute_initializers(void){
+void KERNEL_AWAITS_EARLY kernel_execute_initializers(void){
+	u32 thread_count=(kernel_section_async_initializers_end()-kernel_section_async_initializers_start())/sizeof(const kernel_initializer_t);
+	thread_t** threads=amm_alloc(thread_count*sizeof(thread_t*));
+	u32 i=0;
+	for (const kernel_initializer_t* func=(void*)kernel_section_async_initializers_start();(u64)func<kernel_section_async_initializers_end();func++){
+		threads[i]=thread_create_kernel_thread(NULL,"kernel.init",*func,0);
+		i++;
+	}
 	for (const kernel_initializer_t* func=(void*)kernel_section_initializers_start();(u64)func<kernel_section_initializers_end();func++){
 		(*func)();
 	}
+	for (i=0;i<thread_count;i++){
+		event_await(&(threads[i]->termination_event),1,0);
+		handle_release(&(threads[i]->handle));
+	}
+	amm_dealloc(threads);
 }
 
 

@@ -30,6 +30,7 @@
 #define _KERNEL_INITIALIZER_NAME__(a,b) a##b
 #define _KERNEL_INITIALIZER_NAME_(a,b) _KERNEL_INITIALIZER_NAME__(a,b)
 #define _KERNEL_INITIALIZER_NAME(type) _KERNEL_INITIALIZER_NAME_(type,__UNIQUE_FILE_NAME__)
+#define KERNEL_ASYNC_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__ainitializer_)(void);static void* __attribute__((section(".ainitializer"),used)) __ainitializer_ptr=_KERNEL_INITIALIZER_NAME(__ainitializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__ainitializer_)(void)
 #define KERNEL_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__initializer_)(void);static void* __attribute__((section(".initializer"),used)) __initializer_ptr=_KERNEL_INITIALIZER_NAME(__initializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__initializer_)(void)
 #define KERNEL_EARLY_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__einitializer_)(void);static void* __attribute__((section(".einitializer"),used)) __einitializer_ptr=_KERNEL_INITIALIZER_NAME(__einitializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__einitializer_)(void)
 #define KERNEL_EARLY_EARLY_INIT() static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__eeinitializer_)(void);static void* __attribute__((section(".eeinitializer"),used)) __eeinitializer_ptr=_KERNEL_INITIALIZER_NAME(__eeinitializer_);static KERNEL_EARLY_EXEC void _KERNEL_INITIALIZER_NAME(__eeinitializer_)(void)

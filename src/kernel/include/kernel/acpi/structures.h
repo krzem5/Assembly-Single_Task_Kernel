@@ -168,4 +168,18 @@ typedef struct KERNEL_PACKED _ACPI_TPM2{
 
 
 
+typedef struct KERNEL_PACKED _ACPI_MCFG{
+	acpi_sdt_t header;
+	u8 _padding[8];
+	struct KERNEL_PACKED{
+		u64 base_address;
+		u16 pci_segment_group_number;
+		u8 start_pci_bus;
+		u8 end_pci_bus;
+		u32 _padding[4];
+	} entries[];
+} acpi_mcfg_t;
+
+
+
 #endif

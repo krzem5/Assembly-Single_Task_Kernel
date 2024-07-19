@@ -9,6 +9,7 @@
 
 
 
+static const acpi_mcfg_t* KERNEL_EARLY_WRITE _pci_mcfg=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _pci_device_allocator=NULL;
 static rwlock_t _pci_device_io_lock;
 
@@ -16,7 +17,7 @@ KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pci_device_handle_type=0;
 
 
 
-KERNEL_INIT(){
+KERNEL_ASYNC_INIT(){
 	LOG("Scanning PCI devices...");
 	pci_device_handle_type=handle_alloc("kernel.pci.device",0,NULL);
 	_pci_device_allocator=omm_init("kernel.pci.device",sizeof(pci_device_t),8,1);
@@ -77,9 +78,18 @@ KERNEL_INIT(){
 				}
 _skip_msix_discovery:
 				INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%X%X:%X%X",device->address.bus,device->address.slot,device->address.func,device->class,device->subclass,device->progif,device->revision_id,device->device_id>>8,device->device_id,device->vendor_id>>8,device->vendor_id);
+				if (!(device->header_type&0x80)){
+					break;
+				}
 			}
 		}
 	}
+}
+
+
+
+void pci_set_pcie_table(const acpi_mcfg_t* mcfg){
+	_pci_mcfg=mcfg;
 }
 
 

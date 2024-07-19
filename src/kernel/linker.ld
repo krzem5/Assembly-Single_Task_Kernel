@@ -26,6 +26,10 @@ SECTIONS{
 		*(.initializer)
 		. = ALIGN(8);
 		PROVIDE_HIDDEN(__kernel_section_initializers_end = .);
+		PROVIDE_HIDDEN(__kernel_section_async_initializers_start = .);
+		*(.ainitializer)
+		. = ALIGN(8);
+		PROVIDE_HIDDEN(__kernel_section_async_initializers_end = .);
 	}
 	.kernel_uw : {
 		*(.edata .edata*)

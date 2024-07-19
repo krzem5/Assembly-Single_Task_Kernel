@@ -203,6 +203,7 @@ KERNEL_PUBLIC thread_t* thread_create_kernel_thread(process_t* process,const cha
 	out->reg_state.fs_gs_state.fs=0;
 	out->reg_state.fs_gs_state.gs=(u64)out;
 	event_dispatch_thread_create_notification(out);
+	handle_acquire(&(out->handle));
 	if (start_thread){
 		scheduler_enqueue_thread(out);
 	}

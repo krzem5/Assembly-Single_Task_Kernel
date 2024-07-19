@@ -1,5 +1,6 @@
 #ifndef _KERNEL_PCI_PCI_H_
 #define _KERNEL_PCI_PCI_H_ 1
+#include <kernel/acpi/structures.h>
 #include <kernel/handle/handle.h>
 #include <kernel/io/io.h>
 #include <kernel/types.h>
@@ -67,6 +68,10 @@ typedef struct _PCI_BAR{
 
 
 extern handle_type_t pci_device_handle_type;
+
+
+
+void pci_set_pcie_table(const acpi_mcfg_t* mcfg);
 
 
 

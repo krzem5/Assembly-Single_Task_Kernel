@@ -8,6 +8,7 @@
 #include <kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
+#include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "acpi"
 
@@ -36,6 +37,7 @@ KERNEL_EARLY_EARLY_INIT(){
 	const acpi_srat_t* srat=NULL;
 	const acpi_slit_t* slit=NULL;
 	const acpi_tpm2_t* tpm2=NULL;
+	const acpi_mcfg_t* mcfg=NULL;
 	for (u32 i=0;i<entry_count;i++){
 		const acpi_sdt_t* sdt=(void*)(is_xsdt?rsdt->xsdt_data[i]:rsdt->rsdt_data[i]);
 		sdt=(void*)vmm_identity_map((u64)sdt,((const acpi_sdt_t*)vmm_identity_map((u64)sdt,sizeof(acpi_sdt_t)))->length);
@@ -63,6 +65,10 @@ KERNEL_EARLY_EARLY_INIT(){
 			tpm2=(const acpi_tpm2_t*)sdt;
 			INFO("Found TPM2 at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
 		}
+		else if (sdt->signature==0x4746434d){
+			mcfg=(const acpi_mcfg_t*)sdt;
+			INFO("Found MCFG at %p",((u64)sdt)-VMM_HIGHER_HALF_ADDRESS_OFFSET);
+		}
 	}
 	if (madt){
 		acpi_madt_load(madt);
@@ -81,5 +87,8 @@ KERNEL_EARLY_EARLY_INIT(){
 	}
 	if (tpm2){
 		acpi_tpm2_load(tpm2);
+	}
+	if (mcfg){
+		pci_set_pcie_table(mcfg);
 	}
 }
