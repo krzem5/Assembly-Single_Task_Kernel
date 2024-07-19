@@ -413,7 +413,6 @@ _load_error:
 	amm_dealloc(ctx);
 	return;
 _early_unload:
-	exception_unwind_pop();
 	ctx->module->state=MODULE_STATE_LOADED;
 	module_unload(ctx->module);
 	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);

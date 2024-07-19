@@ -15,6 +15,9 @@
 
 
 static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
+	if (thread->process==process_kernel){
+		return 0;
+	}
 	rwlock_acquire_write(&(thread->signal_state.lock));
 	if (thread->signal_state.mask&(1<<signal)){
 		rwlock_release_write(&(thread->signal_state.lock));
@@ -29,6 +32,9 @@ static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 
 
 static bool _dispatch_signal_to_process(process_t* process,signal_t signal){
+	if (process==process_kernel){
+		return 0;
+	}
 	event_t* event_to_dispatch=NULL;
 	rwlock_acquire_write(&(process->signal_state.lock));
 	if (process->signal_state.mask&(1<<signal)){
@@ -59,6 +65,9 @@ _signal_dispatched:
 
 
 static bool _dispatch_signal_to_process_group(process_group_t* process_group,signal_t signal){
+	if (process_group==process_kernel->process_group){
+		return 0;
+	}
 	bool out=0;
 	rwlock_acquire_read(&(process_group->lock));
 	for (process_group_entry_t* entry=(process_group_entry_t*)rb_tree_iter_start(&(process_group->tree));entry;entry=(process_group_entry_t*)rb_tree_iter_next(&(process_group->tree),&(entry->rb_node))){
