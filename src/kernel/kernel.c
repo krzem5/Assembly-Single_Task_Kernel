@@ -91,7 +91,6 @@ void KERNEL_EARLY_EXEC kernel_early_execute_initializers(void){
 }
 
 
-
 void KERNEL_AWAITS_EARLY kernel_execute_initializers(void){
 	u32 thread_count=(kernel_section_async_initializers_end()-kernel_section_async_initializers_start())/sizeof(const kernel_initializer_t);
 	thread_t** threads=amm_alloc(thread_count*sizeof(thread_t*));
