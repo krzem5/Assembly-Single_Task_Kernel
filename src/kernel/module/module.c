@@ -335,47 +335,6 @@ static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* r
 
 
 
-static KERNEL_AWAITS void _initialization_thread(module_loader_context_t* ctx){
-	INFO("Executing initializers...");
-	exception_unwind_push(ctx){
-		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
-		ctx->module->state=MODULE_STATE_LOADED;
-		module_unload(ctx->module);
-	}
-	for (u32 i=0;i<3;i++){
-		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
-			void* func=*((void*const*)(ctx->module_descriptor->init_arrays[i].start+j));
-			if (func){
-				((void (*)(void))func)();
-				if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
-					goto _unload_module;
-				}
-			}
-		}
-	}
-	exception_unwind_pop();
-	INFO("Adjusting sections...");
-	_unmap_region(ctx,&(ctx->elf_region_ue));
-	_unmap_region(ctx,&(ctx->elf_region_ur));
-	_unmap_region(ctx,&(ctx->elf_region_uw));
-	_adjust_region_flags(ctx,&(ctx->elf_region_iw));
-	ctx->module->state=MODULE_STATE_LOADED;
-	LOG("Module '%s' loaded successfully at %p",ctx->module->name->data,ctx->module->region->rb_node.key);
-	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	handle_release(&(ctx->module->handle));
-	amm_dealloc(ctx);
-	return;
-_unload_module:
-	exception_unwind_pop();
-	ctx->module->state=MODULE_STATE_LOADED;
-	module_unload(ctx->module);
-	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-	handle_release(&(ctx->module->handle));
-	amm_dealloc(ctx);
-}
-
-
-
 static void _send_load_notification(module_t* module){
 	module_load_notification_data_t* data=amm_alloc(sizeof(module_load_notification_data_t)+module->name->length+1);
 	data->module_handle=module->handle.rb_node.key;
@@ -392,6 +351,81 @@ static void _send_unload_notification(module_t* module){
 	mem_copy(data->name,module->name->data,module->name->length+1);
 	notification_dispatcher_dispatch(module_notification_dispatcher,MODULE_UNLOAD_NOTIFICATION,data,sizeof(module_unload_notification_data_t)+module->name->length+1);
 	amm_dealloc(data);
+}
+
+
+
+static KERNEL_AWAITS void _async_initialization_thread(module_loader_context_t* ctx){
+	if (!_map_sections(ctx)){
+		goto _load_error;
+	}
+	if (!_find_elf_sections(ctx)){
+		goto _load_error;
+	}
+	if (!_apply_relocations(ctx,0)){
+		goto _load_error;
+	}
+	if (!_resolve_dependencies(ctx)){
+		goto _load_error;
+	}
+	if (!_resolve_symbol_table(ctx)){
+		goto _load_error;
+	}
+	if (!_apply_relocations(ctx,1)){
+		goto _load_error;
+	}
+	_adjust_memory_flags(ctx);
+	mmap_dealloc(process_kernel->mmap,(u64)(ctx->data),0);
+	_process_module_header(ctx);
+	_send_load_notification(ctx->module);
+	INFO("Executing initializers...");
+	exception_unwind_push(ctx){
+		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
+		ctx->module->state=MODULE_STATE_LOADED;
+		module_unload(ctx->module);
+	}
+	for (u32 i=0;i<3;i++){
+		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
+			void* func=*((void*const*)(ctx->module_descriptor->init_arrays[i].start+j));
+			if (func){
+				((void (*)(void))func)();
+				if (ctx->module->flags&_MODULE_FLAG_EARLY_UNLOAD){
+					goto _early_unload;
+				}
+			}
+		}
+	}
+	exception_unwind_pop();
+	INFO("Adjusting sections...");
+	_unmap_region(ctx,&(ctx->elf_region_ue));
+	_unmap_region(ctx,&(ctx->elf_region_ur));
+	_unmap_region(ctx,&(ctx->elf_region_uw));
+	_adjust_region_flags(ctx,&(ctx->elf_region_iw));
+	ctx->module->state=MODULE_STATE_LOADED;
+	LOG("Module '%s' loaded successfully at %p",ctx->module->name->data,ctx->module->region->rb_node.key);
+	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	handle_release(&(ctx->module->handle));
+	amm_dealloc(ctx);
+	return;
+_load_error:
+	symbol_remove(ctx->name);
+	ctx->module->state=MODULE_STATE_UNLOADED;
+	if (ctx->module->region){
+		mmap_dealloc_region(_module_image_mmap,ctx->module->region);
+	}
+	mmap_dealloc(process_kernel->mmap,(u64)(ctx->data),0);
+	if (handle_release(&(ctx->module->handle))/* module self-handle */){
+		handle_release(&(ctx->module->handle)); /* initializer thread handle */
+	}
+	amm_dealloc(ctx);
+	return;
+_early_unload:
+	exception_unwind_pop();
+	ctx->module->state=MODULE_STATE_LOADED;
+	module_unload(ctx->module);
+	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	handle_release(&(ctx->module->handle));
+	amm_dealloc(ctx);
 }
 
 
@@ -461,72 +495,37 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,bool async){
 	vfs_node_unref(module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
-	handle_new(module_handle_type,&(module->handle));
-	handle_acquire(&(module->handle));
-	handle_acquire(&(module->handle));
+	handle_new(module_handle_type,&(module->handle)); /* user handle */
 	module->name=smm_alloc(name,0);
 	module->region=NULL;
 	module->flags=0;
 	module->state=MODULE_STATE_LOADING;
 	module->load_event=event_create("kernel.module.load",NULL);
 	mutex_release(_module_load_lock);
-	module_loader_context_t ctx={
-		name,
-		module,
-		NULL,
-		(void*)(region->rb_node.key)
-	};
-	_find_static_elf_sections(&ctx);
-	if (!_check_elf_header(&ctx)){
-		goto _error;
-	}
+	module_loader_context_t* ctx=amm_alloc(sizeof(module_loader_context_t));
+	ctx->name=name;
+	ctx->module=module;
+	ctx->module_descriptor=NULL;
+	ctx->data=(void*)(region->rb_node.key);
+	_find_static_elf_sections(ctx);
 	bool is_tainted=1;
-	if (!(module->flags&MODULE_FLAG_NO_SIGNATURE)&&!signature_verify_module(name,region,&is_tainted)){
-		goto _error;
+	if (!_check_elf_header(ctx)||(!(module->flags&MODULE_FLAG_NO_SIGNATURE)&&!signature_verify_module(name,region,&is_tainted))){
+		handle_release(&(module->handle));
+		mmap_dealloc_region(process_kernel->mmap,region);
+		amm_dealloc(ctx);
+		return NULL;
 	}
 	if (is_tainted){
 		module->flags|=MODULE_FLAG_TAINTED;
 	}
-	if (!_map_sections(&ctx)){
-		goto _error;
-	}
-	if (!_find_elf_sections(&ctx)){
-		goto _error;
-	}
-	if (!_apply_relocations(&ctx,0)){
-		goto _error;
-	}
-	if (!_resolve_dependencies(&ctx)){
-		goto _error;
-	}
-	if (!_resolve_symbol_table(&ctx)){
-		goto _error;
-	}
-	if (!_apply_relocations(&ctx,1)){
-		goto _error;
-	}
-	_adjust_memory_flags(&ctx);
-	mmap_dealloc_region(process_kernel->mmap,region);
-	_process_module_header(&ctx);
-	_send_load_notification(module);
+	handle_acquire(&(module->handle)); /* module self-handle */
+	handle_acquire(&(module->handle)); /* initializer thread handle */
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
-	module_loader_context_t* ctx_ptr=amm_alloc(sizeof(module_loader_context_t));
-	*ctx_ptr=ctx;
-	thread_create_kernel_thread(NULL,buffer,_initialization_thread,1,ctx_ptr);
+	thread_create_kernel_thread(NULL,buffer,_async_initialization_thread,1,ctx);
 	if (async){
 		event_await(&(module->load_event),1,0);
 	}
 	return module;
-_error:
-	symbol_remove(name);
-	if (module->region){
-		mmap_dealloc_region(_module_image_mmap,module->region);
-	}
-	if (handle_release(&(module->handle))){
-		handle_release(&(module->handle));
-	}
-	mmap_dealloc_region(process_kernel->mmap,region);
-	return NULL;
 }
 
 
