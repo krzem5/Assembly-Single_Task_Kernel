@@ -241,7 +241,7 @@ static void _ata_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,4,&pci_bar)){
 		return;
 	}
-	LOG("Attached ATA driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
+	LOG("Attached ATA driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	for (u8 i=0;i<4;i++){
 		ata_device_t* ata_device=omm_alloc(_ata_device_allocator);
 		ata_device->dma_address=(void*)(pci_bar.address);

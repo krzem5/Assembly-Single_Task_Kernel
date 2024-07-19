@@ -42,7 +42,7 @@ static void KERNEL_NORETURN KERNEL_EARLY_EXEC _main_relocated(void){
 	scheduler_enable();
 	cpu_start_all_cores();
 	lock_profiling_enable_dependency_graph();
-	thread_create_kernel_thread(NULL,"kernel.main",_main_thread,0);
+	handle_release(&(thread_create_kernel_thread(NULL,"kernel.main",_main_thread,0)->handle));
 	scheduler_yield();
 	scheduler_task_wait_loop();
 }

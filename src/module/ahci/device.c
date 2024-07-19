@@ -174,7 +174,7 @@ static void _ahci_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,5,&pci_bar)){
 		return;
 	}
-	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
+	LOG("Attached AHCI driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	ahci_controller_t* controller=omm_alloc(_ahci_controller_allocator);
 	controller->registers=(void*)vmm_identity_map(pci_bar.address,sizeof(ahci_registers_t));
 	INFO("AHCI controller version: %x.%x",controller->registers->vs>>16,controller->registers->vs&0xffff);

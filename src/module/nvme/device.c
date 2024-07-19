@@ -180,7 +180,7 @@ static void _nvme_init_device(pci_device_t* device){
 	if (!pci_device_get_bar(device,0,&pci_bar)){
 		return;
 	}
-	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
+	LOG("Attached NVMe driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	nvme_registers_t* registers=(void*)vmm_identity_map(pci_bar.address,pci_bar.size);
 	if (!(registers->cap&CAP_CSS_NVME)){
 		WARN("NVMe instruction set not supported");

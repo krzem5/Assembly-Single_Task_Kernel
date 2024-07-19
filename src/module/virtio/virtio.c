@@ -47,7 +47,7 @@ static void _virtio_init_device(pci_device_t* device){
 	if (device->device_id<0x1000||device->device_id>0x107f||device->vendor_id!=0x1af4){
 		return;
 	}
-	LOG("Attached root virtio driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
+	LOG("Attached root virtio driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	pci_device_enable_bus_mastering(device);
 	pci_device_enable_memory_access(device);
 	virtio_device_t* virtio_device=omm_alloc(_virtio_device_allocator);

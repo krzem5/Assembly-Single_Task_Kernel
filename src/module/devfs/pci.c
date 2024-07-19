@@ -16,7 +16,7 @@ MODULE_POSTINIT(){
 	HANDLE_FOREACH(pci_device_handle_type){
 		const pci_device_t* device=KERNEL_CONTAINEROF(handle,const pci_device_t,handle);
 		char buffer[32];
-		format_string(buffer,32,"pci%us%uf%u",device->address.bus,device->address.slot,device->address.func);
+		format_string(buffer,32,"pci%ub%us%uf%u",device->segment_group,device->bus,device->slot,device->func);
 		vfs_node_t* node=dynamicfs_create_node(root,buffer,VFS_NODE_TYPE_DIRECTORY,NULL,NULL,NULL);
 		vfs_node_unref(dynamicfs_create_data_node(node,"id","%lu",HANDLE_ID_GET_INDEX(handle->rb_node.key)));
 		vfs_node_unref(dynamicfs_create_data_node(node,"device_id","%X%X",device->device_id>>8,device->device_id));

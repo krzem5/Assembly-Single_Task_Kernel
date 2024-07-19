@@ -109,7 +109,7 @@ static void _i82540_init_device(pci_device_t* device){
 	if (device->class!=0x02||device->subclass!=0x00||device->device_id!=0x100e||device->vendor_id!=0x8086){
 		return;
 	}
-	LOG("Attached i82540 driver to PCI device %x:%x:%x",device->address.bus,device->address.slot,device->address.func);
+	LOG("Attached i82540 driver to PCI device %x:%x:%x",device->bus,device->slot,device->func);
 	pci_device_enable_bus_mastering(device);
 	pci_device_enable_memory_access(device);
 	pci_bar_t pci_bar;

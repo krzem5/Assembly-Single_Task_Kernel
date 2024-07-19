@@ -176,7 +176,7 @@ typedef struct KERNEL_PACKED _ACPI_MCFG{
 		u16 pci_segment_group_number;
 		u8 start_pci_bus;
 		u8 end_pci_bus;
-		u32 _padding[4];
+		u8 _padding[4];
 	} entries[];
 } acpi_mcfg_t;
 

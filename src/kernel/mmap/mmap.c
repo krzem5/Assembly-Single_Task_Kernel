@@ -341,7 +341,9 @@ KERNEL_NO_AWAITS u64 mmap_handle_pf(mmap_t* mmap,u64 address,void* isr_state){
 	}
 	char buffer[256];
 	format_string(buffer,sizeof(buffer),"kernel.pf.file.read/%s",THREAD_DATA->name->data);
-	scheduler_irq_return_after_thread(isr_state,thread_create_kernel_thread(process_kernel,buffer,vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0));
+	thread_t* thread=thread_create_kernel_thread(process_kernel,buffer,vfs_node_read,5,region->file,address-region->rb_node.key,(void*)(out+VMM_HIGHER_HALF_ADDRESS_OFFSET),PAGE_SIZE,0);
+	scheduler_irq_return_after_thread(isr_state,thread);
+	handle_release(&(thread->handle));
 	return out;
 }
 
