@@ -39,10 +39,6 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 		if (tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"not-test")){
 			continue;
 		}
-#else
-		if (tag->type==CONFIG_TAG_TYPE_STRING&&str_equal(tag->string->data,"test")){
-			continue;
-		}
 #endif
 		module_t* module=module_load(tag->name->data,MODULE_LOAD_FLAG_ASYNC);
 		if (!module){
@@ -89,6 +85,8 @@ MODULE_INIT(){
 	log_mask_type(LOG_TYPE_INFO);
 	log_mask_type(LOG_TYPE_LOG);
 #endif
+#else
+	handle_release(&(module_load("test",MODULE_LOAD_FLAG_REQUIRED)->handle));
 #endif
 	module_unload(module_self);
 }

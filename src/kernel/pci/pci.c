@@ -74,7 +74,7 @@ static pci_device_t* KERNEL_EARLY_EXEC _load_device_from_offset(u64 base_offset,
 		device->interrupt_state.msix.table_size=(pci_device_read_data(device,msix_offset)>>16)&0x1ff;
 	}
 _skip_msix_discovery:
-	INFO("Found PCI device at [%X:%X:%X]: %X/%X/%X/%X/%X%X:%X%X",device->bus,device->slot,device->func,device->class,device->subclass,device->progif,device->revision_id,device->device_id>>8,device->device_id,device->vendor_id>>8,device->vendor_id);
+	INFO("Found PCI device at [%X%X:%X:%X:%X]: %X/%X/%X/%X/%X%X:%X%X",device->segment_group>>8,device->segment_group,device->bus,device->slot,device->func,device->class,device->subclass,device->progif,device->revision_id,device->device_id>>8,device->device_id,device->vendor_id>>8,device->vendor_id);
 	return device;
 }
 

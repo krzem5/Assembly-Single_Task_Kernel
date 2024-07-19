@@ -517,7 +517,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,u32 flags){
 	handle_acquire(&(module->handle)); /* initializer thread handle */
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
 	handle_release(&(thread_create_kernel_thread(NULL,buffer,_async_initialization_thread,1,ctx)->handle));
-	if (flags&MODULE_LOAD_FLAG_ASYNC){
+	if (!(flags&MODULE_LOAD_FLAG_ASYNC)){
 		event_await(&(module->load_event),1,0);
 	}
 	return module;
