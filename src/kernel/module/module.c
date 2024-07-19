@@ -1,6 +1,5 @@
 #include <kernel/aslr/aslr.h>
 #include <kernel/elf/structures.h>
-#include <kernel/exception/exception.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
 #include <kernel/lock/mutex.h>
@@ -379,14 +378,6 @@ static KERNEL_AWAITS void _async_initialization_thread(module_loader_context_t* 
 	_process_module_header(ctx);
 	_send_load_notification(ctx->module);
 	INFO("Executing initializers...");
-	exception_unwind_push(ctx){
-		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
-		ctx->module->state=MODULE_STATE_LOADED;
-		module_unload(ctx->module);
-		event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
-		handle_release(&(ctx->module->handle));
-		amm_dealloc(ctx);
-	}
 	for (u32 i=0;i<3;i++){
 		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
 			void* func=*((void*const*)(ctx->module_descriptor->init_arrays[i].start+j));
@@ -398,7 +389,6 @@ static KERNEL_AWAITS void _async_initialization_thread(module_loader_context_t* 
 			}
 		}
 	}
-	exception_unwind_pop();
 	INFO("Adjusting sections...");
 	_unmap_region(ctx,&(ctx->elf_region_ue));
 	_unmap_region(ctx,&(ctx->elf_region_ur));
