@@ -70,50 +70,40 @@ extern handle_type_t pci_device_handle_type;
 
 
 
+bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
+
+
+
+u8 pci_device_get_cap(const pci_device_t* device,u8 cap,u8 offset);
+
+
+
+u8 pci_device_read_config8(u32 offset);
+
+
+
+u16 pci_device_read_config16(u32 offset);
+
+
+
+u32 pci_device_read_config32(u32 offset);
+
+
+
+void pci_device_write_config8(u32 offset,u8 value);
+
+
+
+void pci_device_write_config16(u32 offset,u16 value);
+
+
+
+void pci_device_write_config32(u32 offset,u32 value);
+
+
+
 static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_get_offset(const pci_device_address_t* device_address){
 	return (device_address->bus<<16)|(device_address->slot<<11)|(device_address->func<<8)|0x80000000;
-}
-
-
-
-static KERNEL_INLINE u8 KERNEL_NOCOVERAGE pci_device_read_config8(u32 offset){
-	io_port_out32(0xcf8,offset);
-	return io_port_in8(0xcfc);
-}
-
-
-
-static KERNEL_INLINE u16 KERNEL_NOCOVERAGE pci_device_read_config16(u32 offset){
-	io_port_out32(0xcf8,offset);
-	return io_port_in16(0xcfc);
-}
-
-
-
-static KERNEL_INLINE u32 KERNEL_NOCOVERAGE pci_device_read_config32(u32 offset){
-	io_port_out32(0xcf8,offset);
-	return io_port_in32(0xcfc);
-}
-
-
-
-static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config8(u32 offset,u8 value){
-	io_port_out32(0xcf8,offset);
-	io_port_out8(0xcfc,value);
-}
-
-
-
-static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config16(u32 offset,u16 value){
-	io_port_out32(0xcf8,offset);
-	io_port_out16(0xcfc,value);
-}
-
-
-
-static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_write_config32(u32 offset,u32 value){
-	io_port_out32(0xcf8,offset);
-	io_port_out32(0xcfc,value);
 }
 
 
@@ -157,14 +147,6 @@ static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_memory_access(cons
 static KERNEL_INLINE void KERNEL_NOCOVERAGE pci_device_enable_bus_mastering(const pci_device_t* device){
 	pci_device_write_data(device,4,pci_device_read_data(device,4)|4);
 }
-
-
-
-bool pci_device_get_bar(const pci_device_t* device,u8 bar_index,pci_bar_t* out);
-
-
-
-u8 pci_device_get_cap(const pci_device_t* device,u8 cap,u8 offset);
 
 
 

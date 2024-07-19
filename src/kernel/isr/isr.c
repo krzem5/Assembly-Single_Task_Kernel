@@ -129,16 +129,16 @@ _crash:
 		while (1){
 			const symbol_t* symbol=symbol_lookup(rip);
 			if (symbol){
-				LOG("[%u] %s:%s+%u",CPU_HEADER_DATA->index,symbol->module,symbol->name->data,rip-symbol->rb_node.key);
+				WARN("[%u] %s:%s+%u",CPU_HEADER_DATA->index,symbol->module,symbol->name->data,rip-symbol->rb_node.key);
 			}
 			else{
-				LOG("[%u] %p",CPU_HEADER_DATA->index,rip);
+				WARN("[%u] %p",CPU_HEADER_DATA->index,rip);
 			}
 			if (!rbp){
 				break;
 			}
 			if (!vmm_virtual_to_physical(&current_pagemap,rbp)||!vmm_virtual_to_physical(&current_pagemap,rbp+8)){
-				LOG("[%u] <rbp: %p>",CPU_HEADER_DATA->index,rbp);
+				WARN("[%u] <rbp: %p>",CPU_HEADER_DATA->index,rbp);
 				break;
 			}
 			rip=*((u64*)(rbp+8));

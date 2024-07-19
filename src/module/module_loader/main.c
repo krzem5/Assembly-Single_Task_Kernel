@@ -3,6 +3,7 @@
 #include <kernel/error/error.h>
 #include <kernel/initramfs/initramfs.h>
 #include <kernel/log/log.h>
+#include <kernel/memory/amm.h>
 #include <kernel/module/module.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
@@ -21,6 +22,8 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 	if (!file){
 		panic("Unable to locate module order file");
 	}
+	module_t** modules=NULL;
+	u32 module_count=0;
 	config_tag_t* root_tag=config_load_from_file(file,NULL);
 	vfs_node_unref(file);
 	for (config_tag_t* tag=config_tag_iter_start(root_tag);tag;tag=config_tag_iter_next(root_tag,tag)){
@@ -40,11 +43,19 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 		}
 #endif
 		module_t* module=module_load(tag->name->data);
-		if (module){
-			handle_release(&(module->handle));
+		if (!module){
+			continue;
 		}
+		module_count++;
+		modules=amm_realloc(modules,module_count*sizeof(module_t*));
+		modules[module_count-1]=module;
 	}
 	config_tag_delete(root_tag);
+	for (u32 i=0;i<module_count;i++){
+		event_await(&(modules[i]->load_event),1,0);
+		handle_release(&(modules[i]->handle));
+	}
+	amm_dealloc(modules);
 }
 
 

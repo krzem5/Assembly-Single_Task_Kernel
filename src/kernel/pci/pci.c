@@ -1,14 +1,16 @@
 #include <kernel/io/io.h>
+#include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
-#include <kernel/pci/pci.h>
-#include <kernel/memory/pmm.h>
 #include <kernel/memory/omm.h>
+#include <kernel/memory/pmm.h>
+#include <kernel/pci/pci.h>
 #include <kernel/types.h>
 #define KERNEL_LOG_NAME "pci"
 
 
 
 static omm_allocator_t* KERNEL_INIT_WRITE _pci_device_allocator=NULL;
+static rwlock_t _pci_device_io_lock;
 
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE pci_device_handle_type=0;
 
@@ -19,6 +21,7 @@ KERNEL_INIT(){
 	pci_device_handle_type=handle_alloc("kernel.pci.device",0,NULL);
 	_pci_device_allocator=omm_init("kernel.pci.device",sizeof(pci_device_t),8,1);
 	rwlock_init(&(_pci_device_allocator->lock));
+	rwlock_init(&_pci_device_io_lock);
 	pci_device_address_t device_address={
 		0,
 		0,
@@ -127,4 +130,61 @@ KERNEL_PUBLIC u8 pci_device_get_cap(const pci_device_t* device,u8 cap,u8 offset)
 		offset=header>>8;
 	}
 	return 0;
+}
+
+
+
+KERNEL_PUBLIC u8 KERNEL_NOCOVERAGE pci_device_read_config8(u32 offset){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	u8 out=io_port_in8(0xcfc);
+	rwlock_release_write(&_pci_device_io_lock);
+	return out;
+}
+
+
+
+KERNEL_PUBLIC u16 KERNEL_NOCOVERAGE pci_device_read_config16(u32 offset){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	u16 out=io_port_in16(0xcfc);
+	rwlock_release_write(&_pci_device_io_lock);
+	return out;
+}
+
+
+
+KERNEL_PUBLIC u32 KERNEL_NOCOVERAGE pci_device_read_config32(u32 offset){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	u32 out=io_port_in32(0xcfc);
+	rwlock_release_write(&_pci_device_io_lock);
+	return out;
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE pci_device_write_config8(u32 offset,u8 value){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	io_port_out8(0xcfc,value);
+	rwlock_release_write(&_pci_device_io_lock);
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE pci_device_write_config16(u32 offset,u16 value){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	io_port_out16(0xcfc,value);
+	rwlock_release_write(&_pci_device_io_lock);
+}
+
+
+
+KERNEL_PUBLIC void KERNEL_NOCOVERAGE pci_device_write_config32(u32 offset,u32 value){
+	rwlock_acquire_write(&_pci_device_io_lock);
+	io_port_out32(0xcf8,offset);
+	io_port_out32(0xcfc,value);
+	rwlock_release_write(&_pci_device_io_lock);
 }

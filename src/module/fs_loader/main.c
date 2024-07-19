@@ -115,6 +115,9 @@ static bool _parse_uuid(const char* uuid,u8* out){
 
 
 static KERNEL_AWAITS void _match_filesystem(const filesystem_t* fs){
+	if (!fs->is_ready){
+		return;
+	}
 	mutex_acquire(_fs_loader_list.lock);
 	bool after_barrier=0;
 	for (list_entry_t* entry=_fs_loader_list.head;entry;entry=entry->next){

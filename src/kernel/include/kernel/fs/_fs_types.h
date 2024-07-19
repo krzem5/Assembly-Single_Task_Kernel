@@ -16,6 +16,7 @@ typedef struct _FILESYSTEM{
 	vfs_node_t* root;
 	u8 uuid[16];
 	bool is_mounted;
+	bool is_ready;
 } filesystem_t;
 
 

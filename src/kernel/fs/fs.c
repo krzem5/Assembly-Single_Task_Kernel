@@ -140,12 +140,14 @@ KERNEL_PUBLIC filesystem_t* fs_create(filesystem_descriptor_t* descriptor){
 	out->root=NULL;
 	mem_fill(out->uuid,16,0);
 	out->is_mounted=0;
+	out->is_ready=0;
 	return out;
 }
 
 
 
 KERNEL_PUBLIC void fs_send_create_notification(filesystem_t* fs){
+	fs->is_ready=1;
 	_send_create_notification(fs);
 }
 

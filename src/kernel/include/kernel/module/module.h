@@ -3,6 +3,7 @@
 #include <kernel/handle/handle.h>
 #include <kernel/memory/smm.h>
 #include <kernel/mmap/mmap.h>
+#include <kernel/mp/event.h>
 #include <kernel/notification/notification.h>
 #include <kernel/types.h>
 #include <kernel/vfs/node.h>
@@ -97,6 +98,7 @@ typedef struct _MODULE{
 #endif
 	u32 flags;
 	u32 state;
+	event_t* load_event;
 } module_t;
 
 

@@ -3,6 +3,7 @@
 #include <kernel/exception/exception.h>
 #include <kernel/format/format.h>
 #include <kernel/kernel.h>
+#include <kernel/lock/mutex.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
@@ -11,6 +12,7 @@
 #include <kernel/memory/vmm.h>
 #include <kernel/mmap/mmap.h>
 #include <kernel/module/module.h>
+#include <kernel/mp/event.h>
 #include <kernel/mp/process.h>
 #include <kernel/mp/thread.h>
 #include <kernel/signature/signature.h>
@@ -56,6 +58,7 @@ typedef struct _MODULE_LOADER_CONTEXT{
 
 static omm_allocator_t* KERNEL_INIT_WRITE _module_allocator=NULL;
 static mmap_t* KERNEL_INIT_WRITE _module_image_mmap=NULL;
+static mutex_t* KERNEL_INIT_WRITE _module_load_lock=NULL;
 
 KERNEL_PUBLIC handle_type_t KERNEL_INIT_WRITE module_handle_type=0;
 KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE module_notification_dispatcher=NULL;
@@ -65,6 +68,7 @@ KERNEL_PUBLIC notification_dispatcher_t* KERNEL_INIT_WRITE module_notification_d
 static void _module_handle_destructor(handle_t* handle){
 	module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 	smm_dealloc(module->name);
+	event_delete(module->load_event);
 	omm_dealloc(_module_allocator,module);
 }
 
@@ -174,6 +178,36 @@ static bool _find_elf_sections(module_loader_context_t* ctx){
 
 
 
+static KERNEL_AWAITS bool _resolve_dependencies(module_loader_context_t* ctx){
+	INFO("Resolving dependencies...");
+	for (u64 i=1;i<ctx->elf_symbol_table_size/sizeof(elf_sym_t);i++){
+		elf_sym_t* elf_symbol=ctx->elf_symbol_table+i;
+		const char* name=ctx->elf_symbol_string_table+elf_symbol->st_name;
+		if (str_equal(name,"__module_header")){
+			ctx->module_descriptor=(void*)(elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr);
+		}
+	}
+	if (!ctx->module_descriptor){
+		ERROR("module header not present");
+		return 0;
+	}
+	bool ret=1;
+	for (u32 i=0;ctx->module_descriptor->dependencies[i];i++){
+		module_t* module=module_load(ctx->module_descriptor->dependencies[i]);
+		if (!module||(module->state!=MODULE_STATE_LOADING&&module->state!=MODULE_STATE_LOADED)){
+			ERROR("%s: failed dependency: %s",ctx->name,ctx->module_descriptor->dependencies[i]);
+			ret=0;
+		}
+		if (module){
+			event_await(&(module->load_event),1,0);
+			handle_release(&(module->handle));
+		}
+	}
+	return ret;
+}
+
+
+
 static bool _resolve_symbol_table(module_loader_context_t* ctx){
 	INFO("Resolving symbol table...");
 	bool ret=1;
@@ -192,37 +226,34 @@ static bool _resolve_symbol_table(module_loader_context_t* ctx){
 		}
 		else if (ret&&elf_symbol->st_shndx!=SHN_UNDEF&&(elf_symbol->st_info&0x0f)!=STT_SECTION&&(elf_symbol->st_info&0x0f)!=STT_FILE){
 			u64 address=elf_symbol->st_value+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+elf_symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
-			if (str_equal(name,"__module_header")){
-				ctx->module_descriptor=(void*)address;
-			}
-			else if (!str_starts_with(name,"__module")){
+			if (!str_starts_with(name,"__module")){
 				symbol_add(ctx->module->name->data,name,address,(elf_symbol->st_info>>4)==STB_GLOBAL&&elf_symbol->st_other==STV_DEFAULT);
 			}
 		}
-	}
-	if (ret&&!ctx->module_descriptor){
-		ERROR("module header not present");
-		return 0;
 	}
 	return ret;
 }
 
 
 
-static bool _apply_relocations(module_loader_context_t* ctx){
+static bool _apply_relocations(module_loader_context_t* ctx,bool resolve_undefined){
 	INFO("Applying relocations...");
 	for (u16 i=0;i<ctx->elf_header->e_shnum;i++){
 		const elf_shdr_t* section_header=ctx->data+ctx->elf_header->e_shoff+i*ctx->elf_header->e_shentsize;
-		if (!section_header->sh_info||section_header->sh_info>=ctx->elf_header->e_shnum){
+		if (!section_header->sh_info||section_header->sh_info>=ctx->elf_header->e_shnum||section_header->sh_type!=SHT_RELA){
 			continue;
 		}
 		u64 base=((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+section_header->sh_info*ctx->elf_header->e_shentsize))->sh_addr;
-		if (!base||section_header->sh_type!=SHT_RELA){
+		if (!base){
 			continue;
 		}
 		const elf_rela_t* entry=ctx->data+section_header->sh_offset;
 		for (u64 j=0;j<section_header->sh_size;j+=sizeof(elf_rela_t)){
 			const elf_sym_t* symbol=ctx->elf_symbol_table+(entry->r_info>>32);
+			if (resolve_undefined^(symbol->st_shndx==SHN_UNDEF)){
+				entry++;
+				continue;
+			}
 			u64 relocation_address=base+entry->r_offset;
 			u64 value=symbol->st_value+entry->r_addend+((const elf_shdr_t*)(ctx->data+ctx->elf_header->e_shoff+symbol->st_shndx*ctx->elf_header->e_shentsize))->sh_addr;
 			switch (entry->r_info&0xffffffff){
@@ -285,9 +316,6 @@ static void _process_module_header(module_loader_context_t* ctx){
 		ctx->module->gcov_info_base=0;
 	}
 #endif
-	for (u32 i=0;ctx->module_descriptor->dependencies[i];i++){
-		WARN("Wait for %s",ctx->module_descriptor->dependencies[i]);
-	}
 }
 
 
@@ -307,7 +335,7 @@ static void _adjust_region_flags(module_loader_context_t* ctx,module_region_t* r
 
 
 
-static KERNEL_AWAITS void _execute_initializers(module_loader_context_t* ctx){
+static KERNEL_AWAITS void _initialization_thread(module_loader_context_t* ctx){
 	INFO("Executing initializers...");
 	exception_unwind_push(ctx){
 		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
@@ -333,11 +361,17 @@ static KERNEL_AWAITS void _execute_initializers(module_loader_context_t* ctx){
 	_adjust_region_flags(ctx,&(ctx->elf_region_iw));
 	ctx->module->state=MODULE_STATE_LOADED;
 	LOG("Module '%s' loaded successfully at %p",ctx->module->name->data,ctx->module->region->rb_node.key);
+	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	handle_release(&(ctx->module->handle));
+	amm_dealloc(ctx);
 	return;
 _unload_module:
 	exception_unwind_pop();
 	ctx->module->state=MODULE_STATE_LOADED;
 	module_unload(ctx->module);
+	event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+	handle_release(&(ctx->module->handle));
+	amm_dealloc(ctx);
 }
 
 
@@ -368,6 +402,7 @@ KERNEL_EARLY_INIT(){
 	rwlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("kernel.module",0,_module_handle_destructor);
 	_module_image_mmap=mmap_init(&vmm_kernel_pagemap,aslr_module_base,aslr_module_base+aslr_module_size);
+	_module_load_lock=mutex_create("kernel.module.load.lock");
 	aslr_module_base=0;
 	module_notification_dispatcher=notification_dispatcher_create("kernel.module");
 }
@@ -379,8 +414,10 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 		return NULL;
 	}
 	LOG("Loading module '%s'...",name);
+	mutex_acquire(_module_load_lock);
 	module_t* module=module_lookup(name);
 	if (module){
+		mutex_release(_module_load_lock);
 		INFO("Module '%s' is already loaded",name);
 		return module;
 	}
@@ -416,6 +453,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	}
 #endif
 	if (!module_file){
+		mutex_release(_module_load_lock);
 		ERROR("Unable to find module '%s'",name);
 		return NULL;
 	}
@@ -425,10 +463,13 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	module=omm_alloc(_module_allocator);
 	handle_new(module_handle_type,&(module->handle));
 	handle_acquire(&(module->handle));
+	handle_acquire(&(module->handle));
 	module->name=smm_alloc(name,0);
 	module->region=NULL;
 	module->flags=0;
 	module->state=MODULE_STATE_LOADING;
+	module->load_event=event_create("kernel.module.load",NULL);
+	mutex_release(_module_load_lock);
 	module_loader_context_t ctx={
 		name,
 		module,
@@ -452,10 +493,16 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	if (!_find_elf_sections(&ctx)){
 		goto _error;
 	}
+	if (!_apply_relocations(&ctx,0)){
+		goto _error;
+	}
+	if (!_resolve_dependencies(&ctx)){
+		goto _error;
+	}
 	if (!_resolve_symbol_table(&ctx)){
 		goto _error;
 	}
-	if (!_apply_relocations(&ctx)){
+	if (!_apply_relocations(&ctx,1)){
 		goto _error;
 	}
 	_adjust_memory_flags(&ctx);
@@ -463,12 +510,10 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	_process_module_header(&ctx);
 	_send_load_notification(module);
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
-	event_await(&(thread_create_kernel_thread(NULL,buffer,_execute_initializers,1,&ctx)->termination_event),1,0);
-	if (module->state==MODULE_STATE_LOADED){
-		return module;
-	}
-	handle_release(&(module->handle));
-	return NULL;
+	module_loader_context_t* ctx_ptr=amm_alloc(sizeof(module_loader_context_t));
+	*ctx_ptr=ctx;
+	thread_create_kernel_thread(NULL,buffer,_initialization_thread,1,ctx_ptr);
+	return module;
 _error:
 	symbol_remove(name);
 	if (module->region){
@@ -519,7 +564,6 @@ KERNEL_PUBLIC module_t* module_lookup(const char* name){
 	HANDLE_FOREACH(module_handle_type){
 		module_t* module=KERNEL_CONTAINEROF(handle,module_t,handle);
 		if (str_equal(module->name->data,name)){
-			handle_release(handle);
 			return module;
 		}
 	}
