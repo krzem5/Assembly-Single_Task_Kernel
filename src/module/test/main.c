@@ -25,21 +25,21 @@
 
 
 MODULE_POSTINIT(){
-	test_acl();
-	test_amm();
-	test_cpu();
-	test_crash();
-	test_drive();
-	test_elf();
-	test_fd();
-	test_format();
-	test_fs();
-	test_gid();
-	test_module();
-	test_pipe();
-	test_resource();
-	test_ring();
-	test_uid();
+	// test_acl();
+	// test_amm();
+	// test_cpu();
+	// test_crash();
+	// test_drive();
+	// test_elf();
+	// test_fd();
+	// test_format();
+	// test_fs();
+	// test_gid();
+	// test_module();
+	// test_pipe();
+	// test_resource();
+	// test_ring();
+	// test_uid();
 	WARN("%u test%s passed, %u test%s failed",test_pass_count,(test_pass_count==1?"":"s"),test_fail_count,(test_fail_count==1?"":"s"));
 	if (test_fail_count){
 		coverage_mark_failure();

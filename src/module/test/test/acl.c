@@ -158,6 +158,7 @@ static KERNEL_AWAITS void _thread(void){
 	TEST_ASSERT(acl_register_request_callback(NULL)==1);
 	acl_set(_test_acl_handle.acl,THREAD_DATA->process,ACL_PERMISSION_MASK,0);
 	acl_set(_test_acl_handle.acl,_test_acl_second_test_process,ACL_PERMISSION_MASK,0);
+	handle_release(&(THREAD_DATA->header.current_thread->handle));
 }
 
 

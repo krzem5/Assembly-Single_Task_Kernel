@@ -31,6 +31,7 @@ static void _thread(void){
 	TEST_FUNC("syscall_cpu_get_count");
 	TEST_GROUP("correct args");
 	TEST_ASSERT(syscall_cpu_get_count()==cpu_count);
+	handle_release(&(THREAD_DATA->header.current_thread->handle));
 }
 
 

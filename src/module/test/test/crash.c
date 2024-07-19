@@ -44,11 +44,13 @@ static KERNEL_AWAITS void _execute_elf(const char* path){
 
 static void _thread_no_crash(void){
 	_test_crash_state=0x01;
+	handle_release(&(THREAD_DATA->header.current_thread->handle));
 }
 
 
 
 static void _thread_crash_invalid_read(void){
+	handle_release(&(THREAD_DATA->header.current_thread->handle));
 	(void)(*((volatile const u8*)NULL));
 	_test_crash_state=0x01;
 }
@@ -56,6 +58,7 @@ static void _thread_crash_invalid_read(void){
 
 
 static void _thread_crash_invalid_write(void){
+	handle_release(&(THREAD_DATA->header.current_thread->handle));
 	*((volatile u8*)NULL)=0x00;
 	_test_crash_state=0x01;
 }
