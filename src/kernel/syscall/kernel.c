@@ -106,7 +106,7 @@ extern u64 syscall_thread_set_name();
 extern u64 syscall_thread_set_priority();
 extern u64 syscall_thread_start();
 extern u64 syscall_thread_stop();
-extern u64 syscall_time_get_boot_offset();
+extern u64 syscall_time_get();
 extern u64 syscall_timer_create();
 extern u64 syscall_timer_delete();
 extern u64 syscall_timer_get_deadline();
@@ -142,7 +142,7 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[22]=syscall_thread_get_priority,
 	[24]=syscall_thread_set_priority,
 	[25]=syscall_thread_stop,
-	[26]=syscall_time_get_boot_offset,
+	[26]=syscall_time_get,
 	[27]=syscall_uid_get,
 	[28]=syscall_gid_get,
 	[29]=syscall_uid_set,

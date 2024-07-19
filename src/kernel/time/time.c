@@ -8,7 +8,15 @@
 
 
 
-KERNEL_PUBLIC u64 KERNEL_INIT_WRITE time_boot_offset;
+#define TIME_TYPE_BOOT 0
+#define TIME_TYPE_EARLY_INIT 1
+#define TIME_TYPE_INIT 2
+
+
+
+KERNEL_PUBLIC u64 KERNEL_INIT_WRITE time_boot_offset=0;
+KERNEL_PUBLIC u64 time_early_init_offset=0;
+KERNEL_PUBLIC u64 time_init_offset=0;
 
 
 
@@ -33,6 +41,15 @@ KERNEL_PUBLIC s64 time_to_nanoseconds(s16 year,u8 month,u8 day,u8 hour,u8 minute
 
 
 
-error_t syscall_time_get_boot_offset(void){
-	return time_boot_offset;
+error_t syscall_time_get(u32 type){
+	if (type==TIME_TYPE_BOOT){
+		return time_boot_offset;
+	}
+	if (type==TIME_TYPE_EARLY_INIT){
+		return time_early_init_offset;
+	}
+	if (type==TIME_TYPE_INIT){
+		return time_init_offset;
+	}
+	return ERROR_NOT_FOUND;
 }

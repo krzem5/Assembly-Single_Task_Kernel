@@ -1,3 +1,4 @@
+#include <kernel/clock/clock.h>
 #include <kernel/config/config.h>
 #include <kernel/elf/elf.h>
 #include <kernel/error/error.h>
@@ -5,6 +6,7 @@
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/module/module.h>
+#include <kernel/time/time.h>
 #include <kernel/types.h>
 #include <kernel/util/string.h>
 #include <kernel/util/util.h>
@@ -63,11 +65,13 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 MODULE_INIT(){
 	LOG("Loading early modules...");
 	_load_modules_from_order_file(1);
+	time_early_init_offset=clock_get_time();
 	LOG("Unloading initramfs...");
 	initramfs_unload();
 	LOG("Loading modules...");
 	_load_modules_from_order_file(0);
 	LOG("Loading user shell...");
+	time_init_offset=clock_get_time();
 #ifndef KERNEL_COVERAGE
 	const char*const argv[]={
 		"/bin/serial_terminal",

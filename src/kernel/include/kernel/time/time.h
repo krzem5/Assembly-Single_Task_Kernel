@@ -5,6 +5,8 @@
 
 
 extern u64 time_boot_offset;
+extern u64 time_early_init_offset;
+extern u64 time_init_offset;
 
 
 
