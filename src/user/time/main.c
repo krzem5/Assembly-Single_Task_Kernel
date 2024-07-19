@@ -9,6 +9,8 @@
 int main(int argc,const char** argv){
 	bool raw=0;
 	bool uptime=0;
+	bool early_init=0;
+	bool init=0;
 	sys_option_t options[]={
 		{
 			.short_name='r',
@@ -25,6 +27,20 @@ int main(int argc,const char** argv){
 			.var_switch=&uptime
 		},
 		{
+			.short_name='e',
+			.long_name="early",
+			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
+			.flags=0,
+			.var_switch=&early_init
+		},
+		{
+			.short_name='i',
+			.long_name="init",
+			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
+			.flags=0,
+			.var_switch=&init
+		},
+		{
 			.var_type=SYS_OPTION_VAR_TYPE_LAST
 		}
 	};
@@ -32,8 +48,14 @@ int main(int argc,const char** argv){
 		return 1;
 	}
 	u64 time=sys_clock_get_time_ns();
-	if (!uptime){
-		time+=sys_time_get_boot_offset();
+	if (early_init){
+		time=sys_time_get(SYS_TIME_TYPE_EARLY_INIT);
+	}
+	else if (init){
+		time=sys_time_get(SYS_TIME_TYPE_INIT);
+	}
+	else if (!uptime){
+		time+=sys_time_get(SYS_TIME_TYPE_BOOT);
 	}
 	if (raw){
 		sys_io_print("%lu\n",time);
@@ -41,7 +63,7 @@ int main(int argc,const char** argv){
 	}
 	sys_time_t split_time;
 	sys_time_from_nanoseconds(time,&split_time);
-	if (uptime){
+	if (uptime||early_init||init){
 		split_time.years=0;
 		split_time.months=0;
 		split_time.days=time/86400000000000ull;

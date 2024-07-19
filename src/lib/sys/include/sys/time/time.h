@@ -4,6 +4,12 @@
 
 
 
+#define SYS_TIME_TYPE_BOOT 0
+#define SYS_TIME_TYPE_EARLY_INIT 1
+#define SYS_TIME_TYPE_INIT 2
+
+
+
 typedef struct _SYS_TIME{
 	s16 years;
 	u8 months;
@@ -18,7 +24,7 @@ typedef struct _SYS_TIME{
 
 
 
-u64 sys_time_get_boot_offset(void);
+u64 sys_time_get(u32 type);
 
 
 

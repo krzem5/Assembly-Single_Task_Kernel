@@ -143,8 +143,8 @@ static inline u64 _sys_syscall_thread_stop(u64 thread,void* return_value){
 
 
 
-static inline u64 _sys_syscall_time_get_boot_offset(void){
-	return _sys_syscall0(0x10000001a);
+static inline u64 _sys_syscall_time_get(u32 type){
+	return _sys_syscall1(0x10000001a,type);
 }
 
 
