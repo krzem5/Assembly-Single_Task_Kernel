@@ -142,7 +142,7 @@ extern notification_dispatcher_t* module_notification_dispatcher;
 
 
 
-module_t* module_load(const char* name);
+module_t* module_load(const char* name,bool async);
 
 
 

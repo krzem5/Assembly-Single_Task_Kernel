@@ -193,7 +193,7 @@ static KERNEL_AWAITS bool _resolve_dependencies(module_loader_context_t* ctx){
 	}
 	bool ret=1;
 	for (u32 i=0;ctx->module_descriptor->dependencies[i];i++){
-		module_t* module=module_load(ctx->module_descriptor->dependencies[i]);
+		module_t* module=module_load(ctx->module_descriptor->dependencies[i],1);
 		if (!module||(module->state!=MODULE_STATE_LOADING&&module->state!=MODULE_STATE_LOADED)){
 			ERROR("%s: failed dependency: %s",ctx->name,ctx->module_descriptor->dependencies[i]);
 			ret=0;
@@ -409,7 +409,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
+KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,bool async){
 	if (!name){
 		return NULL;
 	}
@@ -513,6 +513,9 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name){
 	module_loader_context_t* ctx_ptr=amm_alloc(sizeof(module_loader_context_t));
 	*ctx_ptr=ctx;
 	thread_create_kernel_thread(NULL,buffer,_initialization_thread,1,ctx_ptr);
+	if (async){
+		event_await(&(module->load_event),1,0);
+	}
 	return module;
 _error:
 	symbol_remove(name);

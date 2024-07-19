@@ -23,7 +23,7 @@ static KERNEL_AWAITS void _main_thread(void){
 	LOG("Main thread started");
 	kernel_execute_initializers();
 	kernel_adjust_memory_flags_after_init();
-	module_t* module=module_load("module_loader");
+	module_t* module=module_load("module_loader",1);
 	if (module){
 		handle_release(&(module->handle));
 	}

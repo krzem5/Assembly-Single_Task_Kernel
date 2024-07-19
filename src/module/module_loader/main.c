@@ -42,7 +42,7 @@ static KERNEL_AWAITS void _load_modules_from_order_file(bool early){
 			continue;
 		}
 #endif
-		module_t* module=module_load(tag->name->data);
+		module_t* module=module_load(tag->name->data,1);
 		if (!module){
 			continue;
 		}
