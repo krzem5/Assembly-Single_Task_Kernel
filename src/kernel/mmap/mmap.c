@@ -131,7 +131,6 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,bool push_free_re
 
 
 KERNEL_EARLY_EARLY_INIT(){
-	LOG("Initializing mmap allocator...");
 	_mmap_pmm_counter=pmm_alloc_counter("kernel.mmap");
 	_mmap_allocator=omm_init("kernel.mmap",sizeof(mmap_t),8,4);
 	rwlock_init(&(_mmap_allocator->lock));

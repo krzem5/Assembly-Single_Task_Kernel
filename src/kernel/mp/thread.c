@@ -144,7 +144,6 @@ static thread_t* _thread_create(process_t* process){
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing thread allocator...");
 	_thread_allocator=omm_init("kernel.thread",sizeof(thread_t),8,4);
 	rwlock_init(&(_thread_allocator->lock));
 	thread_handle_type=handle_alloc("kernel.thread",HANDLE_DESCRIPTOR_FLAG_ALLOW_CONTAINER,_thread_handle_destructor);

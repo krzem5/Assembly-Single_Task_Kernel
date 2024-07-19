@@ -424,7 +424,6 @@ _early_unload:
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing module loader...");
 	_module_allocator=omm_init("kernel.module",sizeof(module_t),8,4);
 	rwlock_init(&(_module_allocator->lock));
 	module_handle_type=handle_alloc("kernel.module",0,_module_handle_destructor);

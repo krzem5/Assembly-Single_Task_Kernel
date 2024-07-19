@@ -393,7 +393,6 @@ static void _enumerate_system_bus(aml_namespace_t* bus,aml_bus_device_t* bus_aml
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing AML System Bus...");
 	_aml_bus_device_allocator=omm_init("kernel.aml.bus.device",sizeof(aml_bus_device_t),8,2);
 	rwlock_init(&(_aml_bus_device_allocator->lock));
 	_aml_bus_device_resource_allocator=omm_init("kernel.aml.bus.device_resource",sizeof(aml_bus_device_resource_t),8,2);

@@ -74,7 +74,6 @@ static void _timer_handle_destructor(handle_t* handle){
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing timers...");
 	_timer_allocator=omm_init("kernel.timer",sizeof(timer_t),8,4);
 	rwlock_init(&(_timer_allocator->lock));
 	rb_tree_init(&_timer_tree);

@@ -100,7 +100,6 @@ static void _switch_thread(isr_state_t* state,thread_t* new_thread){
 
 
 KERNEL_EARLY_INIT(){
-	LOG("Initializing scheduler...");
 	for (u16 i=0;i<cpu_count;i++){
 		(_scheduler_data+i)->current_timer_start=clock_get_ticks();
 		(_scheduler_data+i)->current_timer=SCHEDULER_TIMER_NONE;
