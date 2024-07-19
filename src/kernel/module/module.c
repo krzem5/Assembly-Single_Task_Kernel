@@ -378,7 +378,7 @@ static KERNEL_AWAITS void _async_initialization_thread(module_loader_context_t* 
 	_process_module_header(ctx);
 	_send_load_notification(ctx->module);
 	INFO("Executing initializers...");
-	for (u32 i=0;i<3;i++){
+	for (u32 i=0;i<sizeof(ctx->module_descriptor->init_arrays)/sizeof(module_descriptor_init_array_t);i++){
 		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
 			void* func=*((void*const*)(ctx->module_descriptor->init_arrays[i].start+j));
 			if (func){
