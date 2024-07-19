@@ -192,7 +192,7 @@ static KERNEL_AWAITS bool _resolve_dependencies(module_loader_context_t* ctx){
 	}
 	bool ret=1;
 	for (u32 i=0;ctx->module_descriptor->dependencies[i];i++){
-		module_t* module=module_load(ctx->module_descriptor->dependencies[i],1);
+		module_t* module=module_load(ctx->module_descriptor->dependencies[i],MODULE_LOAD_FLAG_ASYNC);
 		if (!module||(module->state!=MODULE_STATE_LOADING&&module->state!=MODULE_STATE_LOADED)){
 			ERROR("%s: failed dependency: %s",ctx->name,ctx->module_descriptor->dependencies[i]);
 			ret=0;
@@ -435,7 +435,7 @@ KERNEL_EARLY_INIT(){
 
 
 
-KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,bool async){
+KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,u32 flags){
 	if (!name||!name[0]){
 		return NULL;
 	}
@@ -481,6 +481,9 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,bool async){
 	if (!module_file){
 		mutex_release(_module_load_lock);
 		ERROR("Unable to find module '%s'",name);
+		if (flags&MODULE_LOAD_FLAG_REQUIRED){
+			panic("Module not found");
+		}
 		return NULL;
 	}
 	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file);
@@ -514,7 +517,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,bool async){
 	handle_acquire(&(module->handle)); /* initializer thread handle */
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
 	handle_release(&(thread_create_kernel_thread(NULL,buffer,_async_initialization_thread,1,ctx)->handle));
-	if (async){
+	if (flags&MODULE_LOAD_FLAG_ASYNC){
 		event_await(&(module->load_event),1,0);
 	}
 	return module;

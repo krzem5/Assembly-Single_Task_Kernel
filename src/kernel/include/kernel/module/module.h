@@ -21,6 +21,9 @@
 #define MODULE_FLAG_TAINTED 4
 #define _MODULE_FLAG_EARLY_UNLOAD 8
 
+#define MODULE_LOAD_FLAG_ASYNC 1
+#define MODULE_LOAD_FLAG_REQUIRED 2
+
 #define _MODULE_QUOTE_DEPENDENCY(arg) #arg
 #define _MODULE_QUOTE_DEPENDENCIES_0(arg) NULL
 #define _MODULE_QUOTE_DEPENDENCIES_1(arg) _MODULE_QUOTE_DEPENDENCY(arg),NULL
@@ -142,7 +145,7 @@ extern notification_dispatcher_t* module_notification_dispatcher;
 
 
 
-module_t* module_load(const char* name,bool async);
+module_t* module_load(const char* name,u32 flags);
 
 
 
