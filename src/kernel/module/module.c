@@ -84,7 +84,7 @@ static void _find_static_elf_sections(module_loader_context_t* ctx){
 
 static bool _check_elf_header(module_loader_context_t* ctx){
 	if (ctx->elf_header->e_ident.signature!=0x464c457f||ctx->elf_header->e_ident.word_size!=2||ctx->elf_header->e_ident.endianess!=1||ctx->elf_header->e_ident.header_version!=1||ctx->elf_header->e_ident.abi!=0||ctx->elf_header->e_type!=ET_REL||ctx->elf_header->e_machine!=0x3e||ctx->elf_header->e_version!=1){
-		ERROR("Invalid ELF header");
+		ERROR("Invalid ELF header [%s]",ctx->name);
 		return 0;
 	}
 	return 1;
@@ -409,7 +409,7 @@ _load_error:
 	}
 	mmap_dealloc(process_kernel->mmap,(u64)(ctx->data),0);
 	if (handle_release(&(ctx->module->handle))/* module self-handle */){
-		handle_release(&(ctx->module->handle)); /* initializer thread handle */
+		handle_release(&(ctx->module->handle)); /* initialization thread handle */
 	}
 	amm_dealloc(ctx);
 	return;
@@ -514,7 +514,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,u32 flags){
 		module->flags|=MODULE_FLAG_TAINTED;
 	}
 	handle_acquire(&(module->handle)); /* module self-handle */
-	handle_acquire(&(module->handle)); /* initializer thread handle */
+	handle_acquire(&(module->handle)); /* initialization thread handle */
 	format_string(buffer,sizeof(buffer),"kernel.module.%s.init",name);
 	handle_release(&(thread_create_kernel_thread(NULL,buffer,_async_initialization_thread,1,ctx)->handle));
 	if (!(flags&MODULE_LOAD_FLAG_ASYNC)){
