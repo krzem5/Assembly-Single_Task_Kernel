@@ -413,7 +413,6 @@ static KERNEL_NO_AWAITS error_t _generate_input_data(elf_loader_context_t* ctx){
 
 
 KERNEL_INIT(){
-	LOG("Initializing ELF loader...");
 	_user_image_pmm_counter=pmm_alloc_counter("kernel.image.user");
 	_elf_hwcap=elf_get_hwcap();
 }

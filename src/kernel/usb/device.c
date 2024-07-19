@@ -162,7 +162,6 @@ static void _configure_device(usb_device_t* device){
 
 
 KERNEL_INIT(){
-	LOG("Initializing USB devices...");
 	_usb_buffer_pmm_counter=pmm_alloc_counter("kernel.usb.buffer");
 	_usb_device_allocator=omm_init("kernel.usb.device",sizeof(usb_device_t),8,2);
 	rwlock_init(&(_usb_device_allocator->lock));

@@ -62,7 +62,6 @@ static void _fd_iterator_handle_destructor(handle_t* handle){
 
 
 KERNEL_INIT(){
-	LOG("Initializing file descriptors...");
 	_fd_stream_pmm_counter=pmm_alloc_counter("kernel.fd.stream");
 	_fd_allocator=omm_init("kernel.fd",sizeof(fd_t),8,4);
 	rwlock_init(&(_fd_allocator->lock));

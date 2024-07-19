@@ -14,7 +14,6 @@ static omm_allocator_t* KERNEL_INIT_WRITE _usb_controller_allocator=NULL;
 
 
 KERNEL_INIT(){
-	LOG("Initializing USB controllers...");
 	_usb_root_controller_allocator=omm_init("kernel.usb.root_controller",sizeof(usb_root_controller_t),8,2);
 	rwlock_init(&(_usb_root_controller_allocator->lock));
 	_usb_controller_allocator=omm_init("kernel.usb.controller",sizeof(usb_controller_t),8,2);

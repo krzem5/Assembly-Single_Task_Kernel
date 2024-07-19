@@ -15,7 +15,6 @@ static omm_allocator_t* KERNEL_INIT_WRITE _resource_region_allocator=NULL;
 
 
 KERNEL_INIT(){
-	LOG("Initializing resources...");
 	_resource_manager_allocator=omm_init("kernel.resource.manager",sizeof(resource_manager_t),8,1);
 	rwlock_init(&(_resource_manager_allocator->lock));
 	_resource_region_allocator=omm_init("kernel.resource.region",sizeof(resource_region_t),8,1);

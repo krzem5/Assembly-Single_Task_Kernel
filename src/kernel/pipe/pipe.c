@@ -181,7 +181,6 @@ static const vfs_functions_t _pipe_vfs_functions={
 
 
 KERNEL_INIT(){
-	LOG("Initializing pipes...");
 	_pipe_buffer_pmm_counter=pmm_alloc_counter("kernel.pipe.buffer");
 	_pipe_vfs_node_allocator=omm_init("kernel.pipe.vfs_node",sizeof(pipe_vfs_node_t),8,4);
 	rwlock_init(&(_pipe_vfs_node_allocator->lock));

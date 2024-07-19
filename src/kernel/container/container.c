@@ -41,7 +41,6 @@ static void _container_handle_destructor(handle_t* handle){
 
 
 KERNEL_INIT(){
-	LOG("Initializing containers...");
 	_container_allocator=omm_init("kernel.container",sizeof(container_t),8,4);
 	rwlock_init(&(_container_allocator->lock));
 	_container_entry_allocator=omm_init("kernel.container.entry",sizeof(container_entry_t),8,4);

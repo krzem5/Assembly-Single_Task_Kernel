@@ -21,7 +21,6 @@ static rwlock_t _shutdown_function_lock;
 
 
 KERNEL_INIT(){
-	LOG("Initializing shutdown list...");
 	_shutdown_function_allocator=omm_init("kernel.shutdown.function",sizeof(shutdown_function_t),8,1);
 	rwlock_init(&_shutdown_function_lock);
 }

@@ -36,7 +36,6 @@ static KERNEL_AWAITS void _packet_rx_thread(void){
 
 
 KERNEL_INIT(){
-	LOG("Initializing network layer1...");
 	_network_layer1_device_allocator=omm_init("kernel.network.layer1.device",sizeof(network_layer1_device_t),8,1);
 	_network_layer1_packet_rx_ring=ring_init("kernel.network.layer1.packet.rx",16384);
 	_network_layer1_packet_tx_ring=ring_init("kernel.network.layer1.packet.tx",16384);

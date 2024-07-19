@@ -469,7 +469,6 @@ static KERNEL_AWAITS void _save_text_tag(writer_t* writer,const config_tag_t* ta
 
 
 KERNEL_INIT(){
-	LOG("Initializing config tags...");
 	_config_buffer_pmm_counter=pmm_alloc_counter("kernel.config.buffer");
 	_config_tag_allocator=omm_init("kernel.config.tag",sizeof(config_tag_t),8,4);
 	rwlock_init(&(_config_tag_allocator->lock));

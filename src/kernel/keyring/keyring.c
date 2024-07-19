@@ -47,7 +47,7 @@ static void _dispatch_update_notification(keyring_t* keyring){
 
 
 
-KERNEL_INIT(){
+KERNEL_ASYNC_INIT(){
 	LOG("Initializing keyrings...");
 	_keyring_allocator=omm_init("kernel.keyring",sizeof(keyring_t),8,2);
 	rwlock_init(&(_keyring_allocator->lock));

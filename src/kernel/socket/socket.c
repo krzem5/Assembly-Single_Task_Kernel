@@ -122,7 +122,6 @@ static KERNEL_NO_AWAITS vfs_node_t* _create_socket_node(socket_domain_t domain,s
 
 
 KERNEL_INIT(){
-	LOG("Initializing sockets...");
 	rwlock_init(&_socket_dtp_lock);
 	rb_tree_init(&_socket_dtp_tree);
 	_socket_dtp_handler_allocator=omm_init("kernel.socket.dtp_handler",sizeof(socket_dtp_handler_t),8,1);
