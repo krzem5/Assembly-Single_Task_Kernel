@@ -383,6 +383,9 @@ static KERNEL_AWAITS void _async_initialization_thread(module_loader_context_t* 
 		module_loader_context_t* ctx=EXCEPTION_UNWIND_ARG(0);
 		ctx->module->state=MODULE_STATE_LOADED;
 		module_unload(ctx->module);
+		event_dispatch(ctx->module->load_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
+		handle_release(&(ctx->module->handle));
+		amm_dealloc(ctx);
 	}
 	for (u32 i=0;i<3;i++){
 		for (u64 j=0;j+sizeof(void*)<=ctx->module_descriptor->init_arrays[i].end-ctx->module_descriptor->init_arrays[i].start;j+=sizeof(void*)){
