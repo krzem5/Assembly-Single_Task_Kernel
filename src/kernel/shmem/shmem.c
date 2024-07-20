@@ -130,7 +130,59 @@ KERNEL_PUBLIC error_t shmem_region_map(shmem_region_t* region){
 
 
 
-error_t syscall_shmem_map(handle_id_t shmem_region_handle_id){
+KERNEL_PUBLIC error_t shmem_region_unmap(shmem_region_t* region){
+	rwlock_acquire_write(&(region->lock));
+	if (region->flags&SHMEM_REGION_FLAG_DELETED){
+		rwlock_release_write(&(region->lock));
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!region->region){
+		rwlock_release_write(&(region->lock));
+		return ERROR_UNSUPPORTED_OPERATION;
+	}
+	WARN("Unmap region");
+	rwlock_release_write(&(region->lock));
+	return ERROR_OK;
+}
+
+
+
+error_t syscall_shmem_create_parent(u64 size){
+	WARN("syscall_shmem_create_parent");
+	return 0;
+}
+
+
+
+error_t syscall_shmem_delete_parent(handle_id_t shmem_parent_region){
+	WARN("syscall_shmem_delete_parent");
+	return 0;
+}
+
+
+
+error_t syscall_shmem_create(handle_id_t shmem_parent_region){
+	WARN("syscall_shmem_create");
+	return 0;
+}
+
+
+
+error_t syscall_shmem_delete(handle_id_t shmem_parent_region){
+	WARN("syscall_shmem_delete");
+	return 0;
+}
+
+
+
+error_t syscall_shmem_map(handle_id_t shmem_region){
 	WARN("syscall_shmem_map");
+	return 0;
+}
+
+
+
+error_t syscall_shmem_unmap(handle_id_t shmem_region){
+	WARN("syscall_shmem_unmap");
 	return 0;
 }

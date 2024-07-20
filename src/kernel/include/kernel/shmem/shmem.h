@@ -59,4 +59,8 @@ error_t shmem_region_map(shmem_region_t* region);
 
 
 
+error_t shmem_region_unmap(shmem_region_t* region);
+
+
+
 #endif
