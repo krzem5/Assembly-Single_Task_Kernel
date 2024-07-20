@@ -29,6 +29,7 @@
 #define ERROR_SIGNAL(signal) _ERROR((0x0012|((signal)<<16)))
 #define ERROR_LINK_FOUND _ERROR(0x0013)
 #define ERROR_INTERRUPTED _ERROR(0x0014)
+#define ERROR_ALREADY_MAPPED _ERROR(0x0015)
 
 
 

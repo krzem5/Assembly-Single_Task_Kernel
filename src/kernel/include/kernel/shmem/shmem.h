@@ -1,5 +1,6 @@
 #ifndef _KERNEL_SHMEM_SHMEM_H_
 #define _KERNEL_SHMEM_SHMEM_H_ 1
+#include <kernel/error/error.h>
 #include <kernel/handle/handle.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/mmap/mmap.h>
@@ -10,6 +11,7 @@
 #define SHMEM_REGION_FLAG_WRITABLE 1
 #define SHMEM_REGION_FLAG_DELETABLE 2
 #define SHMEM_REGION_FLAG_DELETED 4
+#define SHMEM_REGION_FLAG_ALLOCATED 8
 
 #define SHMEM_BYPASS_FLAG_REGION_FLAGS 1
 #define SHMEM_BYPASS_FLAG_ACL 2
@@ -53,7 +55,7 @@ void shmem_region_delete(shmem_region_t* region,u32 bypass_flags);
 
 
 
-void shmem_region_map(shmem_region_t* region);
+error_t shmem_region_map(shmem_region_t* region);
 
 
 

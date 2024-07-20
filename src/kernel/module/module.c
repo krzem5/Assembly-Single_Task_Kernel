@@ -486,7 +486,7 @@ KERNEL_PUBLIC KERNEL_AWAITS module_t* module_load(const char* name,u32 flags){
 		}
 		return NULL;
 	}
-	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file);
+	mmap_region_t* region=mmap_alloc(process_kernel->mmap,0,0,MMAP_REGION_FLAG_NO_WRITEBACK|MMAP_REGION_FLAG_VMM_WRITE,module_file); // memory is sometimes corrupted
 	vfs_node_unref(module_file);
 	INFO("Module file size: %v",region->length);
 	module=omm_alloc(_module_allocator);
