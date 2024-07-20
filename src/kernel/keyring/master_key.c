@@ -1,5 +1,5 @@
 #include <kernel/aes/aes.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/random/random.h>
 #include <kernel/types.h>

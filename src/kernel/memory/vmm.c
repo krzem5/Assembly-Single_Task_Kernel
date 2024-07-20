@@ -1,6 +1,6 @@
 #include <kernel/cpu/cpu.h>
 #include <kernel/isr/pf.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/pmm.h>

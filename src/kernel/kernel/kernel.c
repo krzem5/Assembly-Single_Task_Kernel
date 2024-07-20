@@ -1,4 +1,4 @@
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>
 #include <kernel/memory/pmm.h>

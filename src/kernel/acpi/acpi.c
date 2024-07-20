@@ -5,7 +5,7 @@
 #include <kernel/acpi/srat.h>
 #include <kernel/acpi/structures.h>
 #include <kernel/acpi/tpm2.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/pci/pci.h>

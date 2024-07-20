@@ -3,7 +3,7 @@
 #include <kernel/apic/ioapic.h>
 #include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>

@@ -1,6 +1,6 @@
 #include <coverage/coverage.h>
 #include <kernel/handle/handle.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>

@@ -1,6 +1,6 @@
 #include <kernel/bios/bios.h>
 #include <kernel/format/format.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
 #include <kernel/memory/vmm.h>

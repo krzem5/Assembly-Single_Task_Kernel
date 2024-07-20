@@ -10,7 +10,7 @@
 #include <kernel/handle/handle_list.h>
 #include <kernel/id/flags.h>
 #include <kernel/id/user.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>

@@ -1,7 +1,7 @@
 #include <kernel/initramfs/drive.h>
 #include <kernel/initramfs/fs.h>
 #include <kernel/initramfs/partition.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>
 #include <kernel/types.h>

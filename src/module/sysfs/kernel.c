@@ -1,5 +1,5 @@
 #include <dynamicfs/dynamicfs.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/module/module.h>
 #include <kernel/vfs/node.h>

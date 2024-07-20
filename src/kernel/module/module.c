@@ -1,7 +1,7 @@
 #include <kernel/aslr/aslr.h>
 #include <kernel/elf/structures.h>
 #include <kernel/format/format.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/mutex.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>

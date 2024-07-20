@@ -3,7 +3,7 @@
 #include <kernel/exception/exception.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>

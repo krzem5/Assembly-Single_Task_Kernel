@@ -1,7 +1,7 @@
 #include <kernel/exception/exception.h>
 #include <kernel/format/format.h>
 #include <kernel/handle/handle.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/bitlock.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>

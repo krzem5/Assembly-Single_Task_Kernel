@@ -1,7 +1,7 @@
 #include <kernel/acl/acl.h>
 #include <kernel/aslr/aslr.h>
 #include <kernel/cpu/cpu.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>

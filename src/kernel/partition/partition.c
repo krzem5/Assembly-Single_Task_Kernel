@@ -3,7 +3,7 @@
 #include <kernel/format/format.h>
 #include <kernel/fs/fs.h>
 #include <kernel/handle/handle.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/omm.h>
 #include <kernel/memory/pmm.h>

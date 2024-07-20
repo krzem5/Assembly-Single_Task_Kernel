@@ -3,7 +3,7 @@
 #include <kernel/cpu/local.h>
 #include <kernel/isr/isr.h>
 #include <kernel/isr/pf.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/vmm.h>

@@ -1,6 +1,6 @@
 #include <kernel/elf/structures.h>
 #include <kernel/hash/sha256.h>
-#include <kernel/kernel.h>
+#include <kernel/kernel/kernel.h>
 #include <kernel/keyring/keyring.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/smm.h>
