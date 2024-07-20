@@ -9,8 +9,7 @@ _start:
 	cli
 	mov rax, 0x1ffff
 	shl rax, 47
-	or rdx, rax
-	mov rsp, rdx
+	lea rsp, [rax+rdx]
 	xor rbp, rbp
 	mov cr3, rsi
 	mov rax, main
