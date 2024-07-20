@@ -14,6 +14,15 @@
 
 
 
+static void _thread_wakeup_if_waiting(thread_t* thread){
+	if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT){
+		return;
+	}
+	WARN("break thread %s",thread->name->data);
+}
+
+
+
 static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 	if (thread->process==process_kernel){
 		return 0;
@@ -24,6 +33,7 @@ static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 		return 0;
 	}
 	thread->signal_state.pending|=1<<signal;
+	_thread_wakeup_if_waiting(thread);
 	rwlock_release_write(&(thread->signal_state.lock));
 	event_dispatch(thread->signal_state.event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE|EVENT_DISPATCH_FLAG_BYPASS_ACL);
 	return 1;
@@ -47,6 +57,7 @@ static bool _dispatch_signal_to_process(process_t* process,signal_t signal){
 		if (!(thread->signal_state.mask&(1<<signal))){
 			thread->signal_state.pending|=1<<signal;
 			event_to_dispatch=thread->signal_state.event;
+			_thread_wakeup_if_waiting(thread);
 			rwlock_release_write(&(thread->signal_state.lock));
 			goto _signal_dispatched;
 		}

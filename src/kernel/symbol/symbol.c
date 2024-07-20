@@ -64,7 +64,6 @@ void symbol_remove(const char* module){
 
 
 
-
 KERNEL_PUBLIC const symbol_t* symbol_lookup(u64 address){
 	return (const symbol_t*)rb_tree_lookup_decreasing_node(&_symbol_tree,address);
 }
