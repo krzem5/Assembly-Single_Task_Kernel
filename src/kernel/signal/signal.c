@@ -301,6 +301,6 @@ error_t syscall_signal_dispatch(handle_id_t handle,signal_t signal){
 error_t syscall_signal_return(u64 rip,u64 rflags,u64 rax){
 	volatile u64* args=(void*)(__builtin_frame_address(0)+16);
 	args[8]=rip;
-	args[9]=rflags;
+	args[9]=(rflags&0x00000cd5)|0x00000202;
 	return rax;
 }
