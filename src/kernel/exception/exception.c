@@ -2,6 +2,7 @@
 #include <kernel/lock/profiling.h>
 #include <kernel/log/log.h>
 #include <kernel/mp/thread.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "exception"
@@ -13,6 +14,7 @@ void exception_unwind(void){
 		frame->callback(frame->args);
 	}
 	lock_profiling_assert_empty(THREAD_DATA->header.current_thread);
+	THREAD_DATA->exception_unwind_frame=NULL;
 }
 
 
@@ -29,4 +31,14 @@ KERNEL_PUBLIC void _exception_pop_unwind_frame(exception_unwind_frame_t* frame){
 		panic("Broken exception chain");
 	}
 	THREAD_DATA->exception_unwind_frame=frame->next;
+}
+
+
+
+void _exception_signal_interrupt_handler(u64 error){
+	exception_unwind();
+	if (THREAD_DATA->exception_is_user){
+		_exception_user_return(error);
+	}
+	thread_terminate((void*)error);
 }

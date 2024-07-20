@@ -9,16 +9,33 @@
 #include <kernel/mp/thread.h>
 #include <kernel/signal/signal.h>
 #include <kernel/types.h>
+#include <kernel/util/spinloop.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "signal"
 
 
 
+static error_t _get_error(const signal_thread_state_t* state){
+	return (state->pending?ERROR_SIGNAL(__builtin_ffsll(state->pending)-1):ERROR_INTERRUPTED);
+}
+
+
+
 static void _thread_wakeup_if_waiting(thread_t* thread){
+	rwlock_acquire_write(&(thread->lock));
 	if (thread->state!=THREAD_STATE_TYPE_AWAITING_EVENT){
+		rwlock_release_write(&(thread->lock));
 		return;
 	}
-	WARN("break thread %s",thread->name->data);
+	thread->state=THREAD_STATE_TYPE_NONE;
+	thread->event_sequence_id++;
+	thread->event_wakeup_index=0;
+	rwlock_release_write(&(thread->lock));
+	SPINLOOP(thread->reg_state.reg_state_not_present);
+	thread->reg_state.gpr_state.rip=(u64)_exception_signal_interrupt_handler;
+	thread->reg_state.gpr_state.rdi=_get_error(&(thread->signal_state));
+	scheduler_enqueue_thread(thread);
 }
 
 
@@ -140,7 +157,7 @@ void signal_thread_state_deinit(signal_thread_state_t* state){
 
 error_t signal_thread_state_get_error(signal_thread_state_t* state){
 	rwlock_acquire_read(&(state->lock));
-	error_t out=(state->pending?ERROR_SIGNAL(__builtin_ffsll(state->pending)-1):ERROR_INTERRUPTED);
+	error_t out=_get_error(state);
 	rwlock_release_read(&(state->lock));
 	return out;
 }

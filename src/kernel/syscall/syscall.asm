@@ -33,6 +33,7 @@ extern _syscall_invalid
 extern _syscall_table_list
 extern _syscall_table_list_length
 extern scheduler_set_timer
+global _exception_user_return:function
 section .text exec nowrite
 
 
@@ -91,6 +92,7 @@ _syscall_handler:
 	jz ._syscall_return
 	sti
 	call rax
+._exception_return:
 	cli
 	mov rdi, rax
 	lea rsi, [rsp+16]
@@ -124,3 +126,9 @@ _syscall_handler:
 	mov rsp, qword [gs:16]
 	swapgs
 	o64 sysret
+
+
+
+_exception_user_return:
+	mov rax, rdi
+	jmp _syscall_handler._exception_return

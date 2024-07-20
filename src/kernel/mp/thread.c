@@ -132,6 +132,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_load_balancer_queue_index=0;
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
+	out->exception_is_user=0;
 	out->scheduler_forced_queue_index=0;
 	out->return_value=NULL;
 	signal_thread_state_init(&(out->signal_state));
@@ -163,6 +164,7 @@ KERNEL_PUBLIC thread_t* thread_create_user_thread(process_t* process,u64 rip,u64
 	out->reg_state.gpr_state.rflags=0x0000000202;
 	out->reg_state.fs_gs_state.fs=0;
 	out->reg_state.fs_gs_state.gs=0;
+	out->exception_is_user=1;
 	event_dispatch_thread_create_notification(out);
 	return out;
 }

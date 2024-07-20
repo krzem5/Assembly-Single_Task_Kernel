@@ -54,4 +54,12 @@ void _exception_pop_unwind_frame(exception_unwind_frame_t* frame);
 
 
 
+void _exception_signal_interrupt_handler(u64 error);
+
+
+
+KERNEL_NORETURN void _exception_user_return(u64 error);
+
+
+
 #endif
