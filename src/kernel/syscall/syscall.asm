@@ -70,12 +70,12 @@ _syscall_handler:
 	mov rbx, rax
 	mov edi, 1 ; SCHEDULER_TIMER_KERNEL
 	call scheduler_set_timer
-	pop rdi
-	pop rsi
-	pop rdx
-	pop rcx
-	pop r8
-	pop r9
+	mov rdi, qword [rsp]
+	mov rsi, qword [rsp+8]
+	mov rdx, qword [rsp+16]
+	mov rcx, qword [rsp+24]
+	mov r8, qword [rsp+32]
+	mov r9, qword [rsp+40]
 	mov eax, ebx
 	shr rbx, 32
 	cmp ebx, dword [_syscall_table_list_length]
@@ -95,7 +95,6 @@ _syscall_handler:
 ._exception_return:
 	cli
 	mov rdi, rax
-	lea rsi, [rsp+16]
 	call _signal_return_from_syscall
 	mov r15, rax
 ._syscall_return:
@@ -109,12 +108,12 @@ _syscall_handler:
 	mov ds, bx
 	mov es, bx
 	mov rax, r15
-	xor rdx, rdx
-	xor rdi, rdi
-	xor rsi, rsi
-	xor r8, r8
-	xor r9, r9
-	xor r10, r10
+	pop rdi
+	pop rsi
+	pop rdx
+	pop r10
+	pop r8
+	pop r9
 	pop rbx
 	pop rbp
 	pop rcx
@@ -130,5 +129,7 @@ _syscall_handler:
 
 
 _exception_user_return:
+	mov rsp, qword [gs:8]
+	sub rsp, 112
 	mov rax, rdi
 	jmp _syscall_handler._exception_return

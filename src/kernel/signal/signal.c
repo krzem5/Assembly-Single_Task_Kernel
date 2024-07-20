@@ -112,20 +112,29 @@ static bool _dispatch_signal_to_process_group(process_group_t* process_group,sig
 
 
 
-u64 _signal_return_from_syscall(u64 rax,u64* rip_and_rflags){
+u64 _signal_return_from_syscall(u64 rax){
 	if (!THREAD_DATA->signal_state.pending||THREAD_DATA->signal_state.handler==SIGNAL_HANDLER_SYNC){
 		return rax;
 	}
 	rwlock_acquire_write(&(THREAD_DATA->header.current_thread->signal_state.lock));
 	signal_t signal=__builtin_ffsll(THREAD_DATA->signal_state.pending)-1;
 	THREAD_DATA->signal_state.pending&=THREAD_DATA->signal_state.pending-1;
+	KERNEL_USER_POINTER void* handler=THREAD_DATA->signal_state.handler;
+	u64 handler_ctx=THREAD_DATA->signal_state.handler_ctx;
 	rwlock_release_write(&(THREAD_DATA->header.current_thread->signal_state.lock));
-	if (THREAD_DATA->signal_state.handler==SIGNAL_HANDLER_NONE){
+	if (handler==SIGNAL_HANDLER_NONE){
 		asm volatile("sti":::"memory");
 		thread_terminate((void*)ERROR_SIGNAL(signal));
 	}
-	ERROR("_signal_return_from_syscall: rax=%p rip=%p rflags=%p signal=%u",rax,rip_and_rflags[0],rip_and_rflags[1],signal);
-	return rax;
+	volatile u64* args=(void*)(__builtin_frame_address(0)+16);
+	args[0]=args[8];
+	args[1]=args[9];
+	args[2]=rax;
+	args[3]=signal;
+	args[4]=handler_ctx;
+	args[8]=(u64)handler;
+	args[9]=0x0000000202;
+	return 0;
 }
 
 
@@ -273,9 +282,10 @@ error_t syscall_signal_set_mask(u64 mask,u32 is_process_mask){
 
 
 
-error_t syscall_signal_set_handler(KERNEL_USER_POINTER void* handler){
+error_t syscall_signal_set_handler(KERNEL_USER_POINTER void* handler,u64 ctx){
 	rwlock_acquire_write(&(THREAD_DATA->header.current_thread->signal_state.lock));
 	THREAD_DATA->signal_state.handler=handler;
+	THREAD_DATA->signal_state.handler_ctx=ctx;
 	rwlock_release_write(&(THREAD_DATA->header.current_thread->signal_state.lock));
 	return ERROR_OK;
 }
@@ -284,4 +294,13 @@ error_t syscall_signal_set_handler(KERNEL_USER_POINTER void* handler){
 
 error_t syscall_signal_dispatch(handle_id_t handle,signal_t signal){
 	return signal_dispatch(handle,signal);
+}
+
+
+
+error_t syscall_signal_return(u64 rip,u64 rflags,u64 rax){
+	volatile u64* args=(void*)(__builtin_frame_address(0)+16);
+	args[8]=rip;
+	args[9]=rflags;
+	return rax;
 }

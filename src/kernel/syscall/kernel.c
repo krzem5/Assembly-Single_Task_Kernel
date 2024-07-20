@@ -83,6 +83,7 @@ extern u64 syscall_signal_get_event();
 extern u64 syscall_signal_get_mask();
 extern u64 syscall_signal_get_pending_signals();
 extern u64 syscall_signal_get_signal();
+extern u64 syscall_signal_return();
 extern u64 syscall_signal_set_handler();
 extern u64 syscall_signal_set_mask();
 extern u64 syscall_signature_verify();
@@ -231,5 +232,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[112]=syscall_mutex_acquire,
 	[113]=syscall_mutex_release,
 	[114]=syscall_fd_get_event,
+	[115]=syscall_signal_return,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

@@ -557,8 +557,8 @@ static inline u64 _sys_syscall_signal_set_mask(u64 mask,u32 is_process_mask){
 
 
 
-static inline u64 _sys_syscall_signal_set_handler(void* handler){
-	return _sys_syscall1(0x10000005f,(u64)handler);
+static inline u64 _sys_syscall_signal_set_handler(void* handler,u64 ctx){
+	return _sys_syscall2(0x10000005f,(u64)handler,ctx);
 }
 
 

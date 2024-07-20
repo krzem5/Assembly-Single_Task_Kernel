@@ -23,6 +23,15 @@ typedef u64 sys_signal_mask_t;
 
 
 
+typedef struct _SYS_SIGNAL_HANDLER_CONTEXT{
+	u64 signal;
+	u64 return_code;
+	u64 rflags;
+	u64 rip;
+} sys_signal_handler_context_t;
+
+
+
 sys_event_t sys_signal_get_event(void);
 
 

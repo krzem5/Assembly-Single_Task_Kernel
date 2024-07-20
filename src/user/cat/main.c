@@ -3,10 +3,18 @@
 #include <sys/io/io.h>
 #include <sys/types.h>
 #include <sys/util/options.h>
+#include <sys/signal/signal.h>
+
+
+
+static void _signal_handler(sys_signal_handler_context_t* ctx){
+	sys_io_print("Signal %u [rip=%p rflags=%p rax=%p]\n",ctx->signal,ctx->rip,ctx->rflags,ctx->return_code);
+}
 
 
 
 int main(int argc,const char** argv){
+	sys_signal_set_handler(_signal_handler);
 	u32 i=sys_options_parse(argc,argv,NULL);
 	if (!i){
 		return 1;

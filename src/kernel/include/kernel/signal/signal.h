@@ -37,6 +37,7 @@ typedef struct _SIGNAL_THREAD_STATE{
 	u64 pending;
 	struct _EVENT* event;
 	KERNEL_USER_POINTER void* handler;
+	u64 handler_ctx;
 } signal_thread_state_t;
 
 
