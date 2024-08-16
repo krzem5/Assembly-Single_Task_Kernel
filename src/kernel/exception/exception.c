@@ -4,7 +4,6 @@
 #include <kernel/mp/thread.h>
 #include <kernel/mp/thread.h>
 #include <kernel/types.h>
-#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "exception"
 
 
@@ -15,22 +14,6 @@ void exception_unwind(void){
 	}
 	lock_profiling_assert_empty(THREAD_DATA->header.current_thread);
 	THREAD_DATA->exception_unwind_frame=NULL;
-}
-
-
-
-KERNEL_PUBLIC void _exception_push_unwind_frame(exception_unwind_frame_t* frame){
-	frame->next=THREAD_DATA->exception_unwind_frame;
-	THREAD_DATA->exception_unwind_frame=frame;
-}
-
-
-
-KERNEL_PUBLIC void _exception_pop_unwind_frame(exception_unwind_frame_t* frame){
-	if (THREAD_DATA->exception_unwind_frame!=frame){
-		panic("Broken exception chain");
-	}
-	THREAD_DATA->exception_unwind_frame=frame->next;
 }
 
 

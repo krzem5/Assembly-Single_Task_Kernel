@@ -1,4 +1,5 @@
 #include <kernel/error/error.h>
+#include <kernel/exception/exception.h>
 #include <kernel/handle/handle.h>
 #include <kernel/isr/isr.h>
 #include <kernel/lock/rwlock.h>
@@ -7,10 +8,10 @@
 #include <kernel/mp/process.h>
 #include <kernel/mp/process_group.h>
 #include <kernel/mp/thread.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/signal/signal.h>
 #include <kernel/types.h>
 #include <kernel/util/spinloop.h>
-#include <kernel/scheduler/scheduler.h>
 #include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "signal"
 

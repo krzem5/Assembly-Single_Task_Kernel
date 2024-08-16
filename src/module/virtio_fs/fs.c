@@ -1,5 +1,6 @@
 #include <fuse/fuse.h>
 #include <fuse/fuse_registers.h>
+#include <kernel/exception/exception.h>
 #include <kernel/lock/rwlock.h>
 #include <kernel/log/log.h>
 #include <kernel/memory/amm.h>

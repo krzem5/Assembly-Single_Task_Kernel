@@ -1,7 +1,7 @@
 #ifndef _KERNEL_MP__MP_TYPES_H_
 #define _KERNEL_MP__MP_TYPES_H_ 1
 #include <kernel/cpu/cpu.h>
-#include <kernel/exception/exception.h>
+#include <kernel/exception/_exception_types.h>
 #include <kernel/handle/handle.h>
 #include <kernel/handle/handle_list.h>
 #include <kernel/id/group.h>

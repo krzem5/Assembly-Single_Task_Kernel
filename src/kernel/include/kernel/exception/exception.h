@@ -1,5 +1,7 @@
 #ifndef _KERNEL_EXCEPTION_EXCEPTION_H_
 #define _KERNEL_EXCEPTION_EXCEPTION_H_ 1
+#include <kernel/exception/_exception_types.h>
+#include <kernel/mp/thread.h>
 #include <kernel/types.h>
 
 
@@ -19,38 +21,25 @@
 #define _EXCEPTION_UNWIND_REF_ARGS_(_1,_2,_3,_4,_5,_6,_7,_8,_9,N,...) _EXCEPTION_UNWIND_REF_ARGS_##N
 #define _EXCEPTION_UNWIND_REF_ARGS(...) _EXCEPTION_UNWIND_REF_ARGS_(,##__VA_ARGS__,8,7,6,5,4,3,2,1,0,0)(__VA_ARGS__)
 
+
+
 #define exception_unwind_push(...) \
 	void**const __exception_unwind_args[]={_EXCEPTION_UNWIND_REF_ARGS(__VA_ARGS__)}; \
 	auto void __exception_unwind_callback(void**const*); \
 	exception_unwind_frame_t __exception_unwind_frame={ \
+		THREAD_DATA->exception_unwind_frame, \
 		__exception_unwind_args,\
 		__exception_unwind_callback \
 	}; \
-	_exception_push_unwind_frame(&__exception_unwind_frame); \
+	THREAD_DATA->exception_unwind_frame=&__exception_unwind_frame; \
 	void __exception_unwind_callback(void**const* __exception_args)
 
 #define exception_unwind_pop() \
-	_exception_pop_unwind_frame(&__exception_unwind_frame);
-
-
-
-typedef struct _EXCEPTION_UNWIND_FRAME{
-	void**const* args;
-	void (*callback)(void**const*);
-	struct _EXCEPTION_UNWIND_FRAME* next;
-} exception_unwind_frame_t;
+	THREAD_DATA->exception_unwind_frame=__exception_unwind_frame.next;
 
 
 
 void exception_unwind(void);
-
-
-
-void _exception_push_unwind_frame(exception_unwind_frame_t* frame);
-
-
-
-void _exception_pop_unwind_frame(exception_unwind_frame_t* frame);
 
 
 
