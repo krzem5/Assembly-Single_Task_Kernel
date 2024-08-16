@@ -6,6 +6,11 @@
 #include <sys/un.h>
 #include <termios.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+
+
+#define KERNEL_SERIAL_OUTPUT_START_MARKER "\x1b[0m"
 
 
 
@@ -42,13 +47,14 @@ int main(int argc,const char** argv){
 			.events=POLLIN|POLLERR
 		}
 	};
+	int tmp=open("build/aaa",O_RDWR|O_CREAT,0666);
 	while (1){
 		if (poll(poll_fds,2,-1)<0||((poll_fds[0].revents|poll_fds[1].revents)&(POLLERR|POLLHUP))){
 			break;
 		}
 		if (poll_fds[0].revents&POLLIN){
 			ssize_t length=read(client,buffer,sizeof(buffer));
-			if (length<0||write(1,buffer,length)!=length){
+			if (length<0||write(1,buffer,length)!=length||write(tmp,buffer,length)!=length){
 				break;
 			}
 		}

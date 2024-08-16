@@ -46,6 +46,7 @@ static void KERNEL_EARLY_EXEC _init_port(u16 io_port,serial_port_t* out){
 	out->io_port=io_port;
 	if (!serial_default_port){
 		serial_default_port=out;
+		serial_send(out,"\x1b[0m",4);
 	}
 }
 
