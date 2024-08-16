@@ -351,7 +351,7 @@ def _execute_vm():
 		else:
 			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS_4M.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 				sys.exit(1)
-	terminal=subprocess.Popen(["build/tool/ovmf_terminal_patch","build/vm/terminal"])
+	terminal=(subprocess.Popen(["build/tool/ovmf_terminal_patch","build/vm/terminal"]) if mode!=MODE_COVERAGE else None)
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
@@ -412,9 +412,7 @@ def _execute_vm():
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if option("vm.file_server") else []),
 		# Serial
 		# "-serial","mon:stdio",
-		"-chardev","socket,path=build/vm/terminal,mux=on,id=input0",
-		"-mon","chardev=input0,mode=readline",
-		"-serial","chardev:input0",
+		*(["-chardev","socket,path=build/vm/terminal,mux=on,id=input0","-mon","chardev=input0,mode=readline","-serial","chardev:input0"] if mode!=MODE_COVERAGE else ["-serial","mon:stdio"]),
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
 		"-machine","q35,hmat=on",
@@ -427,7 +425,8 @@ def _execute_vm():
 		# Debugging
 		*([] if mode!=MODE_DEBUG else ["-gdb","tcp::9000"]),
 	]+_kvm_flags())
-	terminal.wait()
+	if (terminal is not None):
+		terminal.wait()
 	if (os.path.exists("build/vm/virtiofsd.sock")):
 		os.remove("build/vm/virtiofsd.sock")
 	if (os.path.exists("build/vm/virtiofsd.sock.pid")):
