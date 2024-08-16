@@ -6,7 +6,6 @@
 #include <sys/un.h>
 #include <termios.h>
 #include <unistd.h>
-#include <fcntl.h>
 
 
 
@@ -47,14 +46,23 @@ int main(int argc,const char** argv){
 			.events=POLLIN|POLLERR
 		}
 	};
-	int tmp=open("build/aaa",O_RDWR|O_CREAT,0666);
+	u32 start_marker_parser_state=0;
 	while (1){
 		if (poll(poll_fds,2,-1)<0||((poll_fds[0].revents|poll_fds[1].revents)&(POLLERR|POLLHUP))){
 			break;
 		}
 		if (poll_fds[0].revents&POLLIN){
 			ssize_t length=read(client,buffer,sizeof(buffer));
-			if (length<0||write(1,buffer,length)!=length||write(tmp,buffer,length)!=length){
+			if (length<0){
+				break;
+			}
+			u8* ptr=buffer;
+			while (length&&KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state]){
+				start_marker_parser_state=(*ptr==KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state]?start_marker_parser_state+1:0);
+				ptr++;
+				length--;
+			}
+			if (length&&write(1,ptr,length)!=length){
 				break;
 			}
 		}
