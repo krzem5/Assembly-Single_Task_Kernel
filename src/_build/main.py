@@ -323,26 +323,6 @@ def _kvm_flags():
 
 
 
-import socket
-import threading
-def _start_terminal():
-	def _AAA(server):
-		connection=server.accept()[0]
-		while (True):
-			data=connection.recv(4096)
-			sys.__stdout__.write(data.decode("utf-8"))
-			sys.__stdout__.flush()
-	if (os.path.exists("build/vm/terminal")):
-		os.remove("build/vm/terminal")
-	server=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
-	server.bind("build/vm/terminal")
-	server.listen(1)
-	thr=threading.Thread(target=_AAA,args=(server,))
-	thr.daemon=True
-	thr.start()
-
-
-
 def _execute_vm():
 	if (not os.path.exists("/tmp/tpm")):
 		os.mkdir("/tmp/tpm")
@@ -371,7 +351,6 @@ def _execute_vm():
 		else:
 			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS_4M.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 				sys.exit(1)
-	_start_terminal()
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
@@ -431,8 +410,7 @@ def _execute_vm():
 		# Shared filesystem
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if option("vm.file_server") else []),
 		# Serial
-		# "-serial","mon:stdio",
-		"-serial","unix:build/vm/terminal",
+		"-serial","mon:stdio",
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
 		"-machine","q35,hmat=on",
