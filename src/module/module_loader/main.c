@@ -74,7 +74,7 @@ MODULE_INIT(){
 		"-i","/dev/ser/in",
 		"-o","/dev/ser/out",
 		"-s",
-		"-",
+		"--",
 		"/bin/shell"
 	};
 	if (IS_ERROR(elf_load("/bin/serial_terminal",sizeof(argv)/sizeof(const char*),argv,0,NULL,0))){

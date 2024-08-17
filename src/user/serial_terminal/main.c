@@ -186,7 +186,7 @@ s64 main(u32 argc,const char*const* argv){
 			}
 			out=argv[i];
 		}
-		else if (!sys_string_compare(argv[i],"-")){
+		else if (!sys_string_compare(argv[i],"--")){
 			first_argument_index=i+1;
 			if (first_argument_index==argc){
 				goto _error;
