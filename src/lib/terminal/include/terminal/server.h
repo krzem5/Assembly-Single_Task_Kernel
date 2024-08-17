@@ -7,6 +7,7 @@
 typedef struct _TERMINAL_SERVER_STATE{
 	u32 flags;
 	u32 (*flag_update_callback)(u32,u32,u32);
+	void (*size_inquiry_callback)(u32*);
 } terminal_server_state_t;
 
 

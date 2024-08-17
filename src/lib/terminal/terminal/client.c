@@ -30,3 +30,26 @@ SYS_PUBLIC u32 terminal_client_set_flags(terminal_session_t* session,u32 clear,u
 	};
 	return (terminal_session_send_packet(session,buffer,9)&&terminal_session_recv_packet(session,buffer,5,TERMINAL_PROTOCOL_MESSAGE_TYPE_SERVER_FLAGS)==5?*((const u32*)(buffer+1)):0);
 }
+
+
+
+SYS_PUBLIC bool terminal_client_get_size(terminal_session_t* session,u32* width,u32* height){
+	u8 buffer[9]={
+		TERMINAL_PROTOCOL_MESSAGE_TYPE_CLIENT_GET_SIZE
+	};
+	if (!terminal_session_send_packet(session,buffer,1)||terminal_session_recv_packet(session,buffer,9,TERMINAL_PROTOCOL_MESSAGE_TYPE_SERVER_SIZE)!=9){
+		return 0;
+	}
+	u32 w=*((const u32*)(buffer+1));
+	u32 h=*((const u32*)(buffer+5));
+	if (!w||!h){
+		return 0;
+	}
+	if (width){
+		*width=w;
+	}
+	if (height){
+		*height=h;
+	}
+	return 1;
+}

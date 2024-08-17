@@ -35,5 +35,15 @@ _skip_flag_update:
 		*((u32*)(buffer+1))=state->flags;
 		return terminal_session_send_packet(session,buffer,5);
 	}
+	if (buffer[0]==TERMINAL_PROTOCOL_MESSAGE_TYPE_CLIENT_GET_SIZE&&length==1){
+		u32 size[2]={0,0};
+		if (state->size_inquiry_callback){
+			state->size_inquiry_callback(size);
+		}
+		buffer[0]=TERMINAL_PROTOCOL_MESSAGE_TYPE_SERVER_SIZE;
+		*((u32*)(buffer+1))=size[0];
+		*((u32*)(buffer+5))=size[1];
+		return terminal_session_send_packet(session,buffer,9);
+	}
 	return 1;
 }

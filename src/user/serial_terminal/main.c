@@ -37,7 +37,52 @@ static u32 ctrl_terminal_size[2]={80,24};
 
 
 static bool _parse_cursor_position(sys_fd_t fd,u32* out){
-	// TERMINAL_SIZE_PROBE_MAX_INPUT_LENGTH
+	out[0]=0;
+	out[1]=0;
+	u32 state=0;
+	for (u32 i=0;i<TERMINAL_SIZE_PROBE_MAX_INPUT_LENGTH;i++){
+		char c;
+		if (!sys_fd_read(fd,&c,1,0)){
+			return 0;
+		}
+_reset_state:
+		if (!state){
+			state+=(c=='\x1b');
+		}
+		else if (state==1){
+			if (c=='['){
+				state++;
+			}
+			else{
+				state=0;
+				goto _reset_state;
+			}
+		}
+		else if (state==2){
+			if (c==';'){
+				state++;
+			}
+			else if (c<'0'||c>'9'){
+				state=0;
+				goto _reset_state;
+			}
+			else{
+				out[1]=out[1]*10+c-48;
+			}
+		}
+		else if (state==3){
+			if (c=='R'){
+				return 1;
+			}
+			else if (c<'0'||c>'9'){
+				state=0;
+				goto _reset_state;
+			}
+			else{
+				out[0]=out[0]*10+c-48;
+			}
+		}
+	}
 	return 0;
 }
 
@@ -46,11 +91,11 @@ static bool _parse_cursor_position(sys_fd_t fd,u32* out){
 static void _probe_terminal_size(sys_fd_t in,sys_fd_t out){
 	u32 xy[2];
 	u32 wh[2];
-	if (sys_fd_write(out,"\x1b[6n",4,0)!=4||!_parse_cursor_position(in,xy)||sys_fd_write(out,"\x1b[9999;9999H\x1b[6n",16,0)!=16||!_parse_cursor_position(out,wh)){
+	if (sys_fd_write(out,"\x1b[6n",4,0)!=4||!_parse_cursor_position(in,xy)||sys_fd_write(out,"\x1b[9999;9999H\x1b[6n",16,0)!=16||!_parse_cursor_position(in,wh)){
 		return;
 	}
 	char buffer[32];
-	u32 buffer_length=sys_format_string(buffer,sizeof(buffer),"\x1b[%u;%uH",xy[0],xy[1]);
+	u32 buffer_length=sys_format_string(buffer,sizeof(buffer),"\x1b[%u;%uH",xy[1],xy[0]);
 	if (sys_fd_write(out,buffer,buffer_length,0)!=buffer_length){
 		return;
 	}
@@ -178,6 +223,13 @@ static u32 _control_flag_update_callback(u32 clear,u32 set,u32 all){
 
 
 
+static void _control_size_inquiry_callback(u32* out){
+	out[0]=ctrl_terminal_size[0];
+	out[1]=ctrl_terminal_size[1];
+}
+
+
+
 static void _control_thread(void* ctx){
 	terminal_session_t session;
 	if (!terminal_session_open_from_fd(ctrl_fd,&session)){
@@ -186,7 +238,8 @@ static void _control_thread(void* ctx){
 	}
 	terminal_server_state_t state={
 		.flags=TERMINAL_FLAG_ECHO_INPUT,
-		.flag_update_callback=_control_flag_update_callback
+		.flag_update_callback=_control_flag_update_callback,
+		.size_inquiry_callback=_control_size_inquiry_callback
 	};
 	while (terminal_server_process_packet(&session,&state));
 	terminal_session_close(&session);

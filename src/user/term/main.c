@@ -15,7 +15,9 @@ int main(int argc,const char** argv){
 	}
 	if (argc<2){
 		u16 version=terminal_client_get_version(&session);
-		sys_io_print("Version: %u.%u\nFlags: %x\n",version>>8,version&0xff,terminal_client_get_flags(&session));
+		u32 size[2]={0,0};
+		terminal_client_get_size(&session,size,size+1);
+		sys_io_print("Version: %u.%u\nFlags: %x\nSize: %ux%u\n",version>>8,version&0xff,terminal_client_get_flags(&session),size[0],size[1]);
 	}
 	else if (!sys_string_compare(argv[1],"autocomplete")){
 		bool change=0;

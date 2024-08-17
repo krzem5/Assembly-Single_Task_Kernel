@@ -73,6 +73,7 @@ MODULE_INIT(){
 		"/bin/serial_terminal",
 		"-i","/dev/ser/in",
 		"-o","/dev/ser/out",
+		"-p",
 		"-s",
 		"--",
 		"/bin/shell"

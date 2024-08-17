@@ -16,4 +16,8 @@ u32 terminal_client_set_flags(terminal_session_t* session,u32 clear,u32 set);
 
 
 
+bool terminal_client_get_size(terminal_session_t* session,u32* width,u32* height);
+
+
+
 #endif
