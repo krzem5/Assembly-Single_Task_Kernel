@@ -9,7 +9,15 @@
 
 
 
+#define DISABLE_FILTER 0
+
+
+
+#if DISABLE_FILTER
+#define KERNEL_SERIAL_OUTPUT_START_MARKER ""
+#else
 #define KERNEL_SERIAL_OUTPUT_START_MARKER "\x1b[0m"
+#endif
 
 
 
