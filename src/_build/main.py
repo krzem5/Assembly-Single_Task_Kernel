@@ -411,7 +411,6 @@ def _execute_vm():
 		# Shared filesystem
 		*(["-chardev","socket,id=virtio-fs-sock,path=build/vm/virtiofsd.sock","-device","vhost-user-fs-pci,queue-size=1024,chardev=virtio-fs-sock,tag=build-fs"] if option("vm.file_server") else []),
 		# Serial
-		# "-serial","mon:stdio",
 		*(["-chardev","socket,path=build/vm/terminal,mux=on,id=input0","-mon","chardev=input0,mode=readline","-serial","chardev:input0"] if mode!=MODE_COVERAGE else ["-serial","mon:stdio"]),
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
 		# Config
