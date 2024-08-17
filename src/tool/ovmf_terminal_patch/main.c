@@ -9,7 +9,7 @@
 
 
 
-#define DISABLE_FILTER 0
+// #define DISABLE_FILTER 1
 
 
 
@@ -46,7 +46,6 @@ int main(int argc,const char** argv){
 	listen(server,1);
 	client_qemu_host=accept(server,NULL,NULL);
 	client_qemu_guest=accept(server,NULL,NULL);
-	u8 buffer[4096];
 	struct pollfd poll_fds[3]={
 		{
 			.fd=client_qemu_host,
@@ -62,6 +61,7 @@ int main(int argc,const char** argv){
 		}
 	};
 	u32 start_marker_parser_state=0;
+	u8 buffer[4096];
 	while (1){
 		if (poll(poll_fds,3,-1)<0||((poll_fds[0].revents|poll_fds[1].revents|poll_fds[2].revents)&(POLLERR|POLLHUP))){
 			break;
@@ -75,10 +75,9 @@ int main(int argc,const char** argv){
 				goto _close;
 			}
 			u8* ptr=buffer;
-			while (length&&KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state]){
+			for (;length&&KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state];length--){
 				start_marker_parser_state=(*ptr==KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state]?start_marker_parser_state+1:0);
 				ptr++;
-				length--;
 			}
 			if (length&&write(1,ptr,length)!=length){
 				goto _close;
