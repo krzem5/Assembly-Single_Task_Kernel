@@ -32,31 +32,17 @@ typedef struct _OPTION_DATA{
 
 
 
-/*
- * Syntax:
- * {<name_1a>:<name_1b>:...}<format_modifier_1><format_character_1>{<name_2a>:<name_2b>:...}<format_modifier_2><format_character_2>
- *
- * Format modifiers:
- * <empty>
- * * - accumulate options instead of overriding them
- * ! - required option
- *
- * Format characters:
- * a - u32 (aggregate options, end of argument processing)
- * b - bool (0/1/false/true)
- * i - s32
- * I - u32
- * q - s64
- * Q - u64
- * f - double
- * s - const char*
- * n - bool=0 (no following argument)
- * y - bool=1 (no following argument)
- */
+static bool _parse_option(option_data_t* option,const char* arg){
+	return 0;
+}
+
+
+
 SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char* template,...){
 	if (!argc){
 		return 0;
 	}
+	option_data_t* unnamed=NULL;
 	option_data_t* short_head=NULL;
 	option_data_t* short_tail=NULL;
 	option_data_t* long_head=NULL;
@@ -65,7 +51,7 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 	sys_var_arg_list_t va_list;
 	sys_var_arg_init(va_list,template);
 	for (;template[0];template++){
-		if (template[0]!='{'||template[1]=='}'){
+		if (template[0]!='{'){
 			goto _error;
 		}
 		template++;
@@ -87,6 +73,16 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 			goto _error;
 		}
 		void* out_ptr=sys_var_arg_get(va_list,void*);
+		if (ptr[0]=='}'){
+			if (unnamed){
+				goto _error;
+			}
+			option_data_t* option=sys_heap_alloc(NULL,sizeof(option_data_t)+1);
+			option->type=template[0];
+			option->flags=flags;
+			option->ptr=out_ptr;
+			goto _skip_option_names;
+		}
 		while (1){
 			u32 i=0;
 			for (;ptr[i]&&ptr[i]!='}'&&ptr[i]!=':';i++);
@@ -97,13 +93,14 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 				ptr++;
 				i=0;
 			}
-			option_data_t* option=sys_heap_alloc(NULL,sizeof(option_data_t)+i);
+			option_data_t* option=sys_heap_alloc(NULL,sizeof(option_data_t)+i+1);
 			option->next=NULL;
 			option->type=template[0];
 			option->flags=flags;
 			option->name_length=i;
 			option->ptr=out_ptr;
 			sys_memory_copy(ptr,option->name,i);
+			option->name[i]=0;
 			if (i==1){
 				if (short_tail){
 					short_tail->next=option;
@@ -133,17 +130,51 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 			}
 			goto _error;
 		}
+_skip_option_names:
 	}
 	sys_var_arg_deinit(va_list);
-
+	for (u32 i=1;i<argc;i++){
+		if (argv[i][0]!='-'){
+			if (!_parse_option(unnamed,argv[i])){
+				goto _cleanup;
+			}
+			continue;
+		}
+		u32 j=0;
+		for (;argv[i][j]&&argv[i][j]!='=';j++);
+		u32 k=(argv[i][1]=='-')+1;
+		option_data_t* option=(k==2?long_head:short_head);
+		for (;option&&(option->name_length!=j-k||sys_memory_compare(argv[i]+k,option->name,j-k));option=option->next);
+		if (argv[i][j]!='='&&i+1==argc){
+			sys_io_print("%s: missing argument for option '%s'\n",argv[0],argv[i]);
+			goto _error;
+		}
+		if (!_parse_option(option,(argv[i][j]=='='?argv[i]+j+1:argv[i+1]))){
+			goto _cleanup;
+		}
+		i+=argv[i][j]=='=';
+	}
 	out=1;
 _cleanup:
+	if (out&&unnamed&&(unnamed->flags&OPTION_DATA_FLAG_REQUIRED)){
+		sys_io_print("%s: missing required non-option argument\n",argv[0]);
+		out=0;
+	}
+	sys_heap_dealloc(NULL,unnamed);
 	for (option_data_t* option=short_head;option;){
+		if (out&&(option->flags&OPTION_DATA_FLAG_REQUIRED)){
+			sys_io_print("%s: missing required argument: '-%s'\n",argv[0],option->name);
+			out=0;
+		}
 		option_data_t* next=option->next;
 		sys_heap_dealloc(NULL,option);
 		option=next;
 	}
 	for (option_data_t* option=long_head;option;){
+		if (out&&(option->flags&OPTION_DATA_FLAG_REQUIRED)){
+			sys_io_print("%s: missing required argument: '--%s'\n",argv[0],option->name);
+			out=0;
+		}
 		option_data_t* next=option->next;
 		sys_heap_dealloc(NULL,option);
 		option=next;
