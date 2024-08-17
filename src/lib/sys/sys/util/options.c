@@ -71,6 +71,14 @@ static bool _parse_option(option_data_t* option,const char* exe_name,const char*
 		OPTION_EMIT_DATA(str,arg);
 		return 1;
 	}
+	if (option->type=='n'){
+		*(option->data_bool)=0;
+		return 1;
+	}
+	if (option->type=='y'){
+		*(option->data_bool)=1;
+		return 1;
+	}
 	if (option->type=='i'||option->type=='q'){
 		const char* base=arg;
 		bool negative=0;
@@ -170,6 +178,9 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 		if ((flags&(OPTION_DATA_FLAG_SIGNED|OPTION_DATA_FLAG_NONZERO))&&template[0]!='i'&&template[0]!='q'&&template[0]!='f'&&template[0]!='d'){
 			goto _error;
 		}
+		if ((flags&OPTION_DATA_FLAG_ACCUMULATE)&&template[0]=='a'){
+			goto _error;
+		}
 		void* out_ptr=sys_var_arg_get(va_list,void*);
 		u32* out_ptr_length=((flags&OPTION_DATA_FLAG_ACCUMULATE)?sys_var_arg_get(va_list,u32*):NULL);
 		option_group_t* group=sys_heap_alloc(NULL,sizeof(option_group_t)+option_name_length+1);
@@ -256,8 +267,27 @@ _skip_option_name:
 		u32 k=(argv[i][1]=='-')+1;
 		option_data_t* option=(k==2?long_head:short_head);
 		for (;option&&(option->name_length!=j-k||sys_memory_compare(argv[i]+k,option->name,j-k));option=option->next);
+		if (option&&(option->type=='a'||option->type=='n'||option->type=='y')){
+			if (argv[i][j]=='='){
+				sys_io_print("%s: unexpected argument for option '%s'\n",argv[0],option->group->name);
+				goto _cleanup;
+			}
+			if (option->type=='a'){
+				if (i+1==argc){
+					sys_io_print("%s: missing argument for option '%s'\n",argv[0],option->group->name);
+					goto _cleanup;
+				}
+				option->group->seen=1;
+				*(option->data_u32)=i+1;
+				break;
+			}
+			if (!_parse_option(option,argv[0],argv[i],NULL)){
+				goto _cleanup;
+			}
+			continue;
+		}
 		if (argv[i][j]!='='&&i+1==argc){
-			sys_io_print("%s: missing argument for option '%s'\n",argv[0],argv[i]);
+			sys_io_print("%s: missing argument for option '%s'\n",argv[0],option->group->name);
 			goto _cleanup;
 		}
 		if (!_parse_option(option,argv[0],argv[i],(argv[i][j]=='='?argv[i]+j+1:argv[i+1]))){

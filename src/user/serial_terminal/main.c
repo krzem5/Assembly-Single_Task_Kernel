@@ -12,6 +12,7 @@
 #include <sys/syscall/syscall.h>
 #include <sys/system/system.h>
 #include <sys/types.h>
+#include <sys/util/options.h>
 #include <terminal/server.h>
 #include <terminal/session.h>
 #include <terminal/terminal.h>
@@ -164,38 +165,12 @@ static void _control_thread(void* ctx){
 
 
 s64 main(u32 argc,const char*const* argv){
-	bool shutdown_after_process=0;
 	const char* in="/dev/ser/in";
 	const char* out="/dev/ser/out";
+	bool shutdown_after_process=0;
 	u32 first_argument_index=0;
-	for (u32 i=1;i<argc;i++){
-		if (!sys_string_compare(argv[i],"-s")){
-			shutdown_after_process=1;
-		}
-		else if (!sys_string_compare(argv[i],"-i")){
-			i++;
-			if (i==argc){
-				goto _error;
-			}
-			in=argv[i];
-		}
-		else if (!sys_string_compare(argv[i],"-o")){
-			i++;
-			if (i==argc){
-				goto _error;
-			}
-			out=argv[i];
-		}
-		else if (!sys_string_compare(argv[i],"--")){
-			first_argument_index=i+1;
-			if (first_argument_index==argc){
-				goto _error;
-			}
-			break;
-		}
-	}
-	if (!first_argument_index){
-		goto _error;
+	if (!sys_options_parse_NEW(argc,argv,"{i:input}s{o:output}s{s:shutdown-on-close}y{-}!a",&in,&out,&shutdown_after_process,&first_argument_index)){
+		return 1;
 	}
 	in_fd=sys_fd_open(0,in,SYS_FD_FLAG_READ);
 	out_fd=sys_fd_open(0,out,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);

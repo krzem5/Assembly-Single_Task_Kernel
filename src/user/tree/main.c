@@ -70,24 +70,23 @@ static void _list_files(sys_fd_t fd,u32 level,frame_t* frame){
 
 
 int main(int argc,const char** argv){
-	u32 i=sys_options_parse(argc,argv,NULL);
-	if (!i){
+	const char* path=".";
+	if (!sys_options_parse_NEW(argc,argv,"{:p:path}s",&path)){
 		return 1;
 	}
-	const char* directory=(i<argc?argv[i]:".");
-	sys_fd_t fd=sys_fd_open(0,directory,0);
+	sys_fd_t fd=sys_fd_open(0,path,0);
 	if (SYS_IS_ERROR(fd)){
-		sys_io_print("tree: unable to open file '%s': error %d\n",directory,fd);
+		sys_io_print("tree: unable to open file '%s': error %d\n",path,fd);
 		return 1;
 	}
 	sys_fd_stat_t stat;
 	if (SYS_IS_ERROR(sys_fd_stat(fd,&stat))){
-		sys_io_print("tree: unable to stat file '%s'\n",directory);
+		sys_io_print("tree: unable to stat file '%s'\n",path);
 		return 1;
 	}
 	char prefix[32];
 	dircolor_get_color(&stat,prefix);
-	sys_io_print("%s%s\x1b[0m\n",prefix,directory);
+	sys_io_print("%s%s\x1b[0m\n",prefix,path);
 	frame_t frame={
 		.file_count=0,
 		.directory_count=0

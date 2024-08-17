@@ -11,40 +11,7 @@ int main(int argc,const char** argv){
 	bool uptime=0;
 	bool early_init=0;
 	bool init=0;
-	sys_option_t options[]={
-		{
-			.short_name='r',
-			.long_name="raw",
-			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
-			.flags=0,
-			.var_switch=&raw
-		},
-		{
-			.short_name='u',
-			.long_name="uptime",
-			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
-			.flags=0,
-			.var_switch=&uptime
-		},
-		{
-			.short_name='e',
-			.long_name="early",
-			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
-			.flags=0,
-			.var_switch=&early_init
-		},
-		{
-			.short_name='i',
-			.long_name="init",
-			.var_type=SYS_OPTION_VAR_TYPE_SWITCH,
-			.flags=0,
-			.var_switch=&init
-		},
-		{
-			.var_type=SYS_OPTION_VAR_TYPE_LAST
-		}
-	};
-	if (!sys_options_parse(argc,argv,options)){
+	if (!sys_options_parse_NEW(argc,argv,"{r:raw}y{u:uptime}y{e:early}y{i:init}y",&raw,&uptime,&early_init,&init)){
 		return 1;
 	}
 	u64 time=sys_clock_get_time_ns();

@@ -7,13 +7,13 @@
 
 
 int main(int argc,const char** argv){
-	u32 i=sys_options_parse(argc,argv,NULL);
-	if (!i||i>=argc){
+	const char* path=NULL;
+	if (!sys_options_parse_NEW(argc,argv,"{:p:path}!s",&path)){
 		return 1;
 	}
-	sys_fd_t fd=sys_fd_open(0,argv[i],0);
+	sys_fd_t fd=sys_fd_open(0,path,0);
 	if (SYS_IS_ERROR(fd)){
-		sys_io_print("rm: unable to open file '%s': error %d\n",argv[i],fd);
+		sys_io_print("rm: unable to open file '%s': error %d\n",path,fd);
 		return 1;
 	}
 	sys_fd_unlink(fd);

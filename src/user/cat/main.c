@@ -8,12 +8,14 @@
 
 
 int main(int argc,const char** argv){
+	u64 buffer_size=4096;
 	const char** files=NULL;
 	u32 file_count=0;
-	if (!sys_options_parse_NEW(argc,argv,"{:f:file}!*s",&files,&file_count)){
+	if (!sys_options_parse_NEW(argc,argv,"{b:buffer-size}+q{:f:file}!*s",&buffer_size,&files,&file_count)){
 		return 1;
 	}
 	int ret=0;
+	u8* buffer=sys_heap_alloc(NULL,buffer_size);
 	for (u32 i=0;i<file_count;i++){
 		sys_fd_t fd=(files[i][0]=='-'&&!files[i][1]?sys_fd_dup(SYS_FD_DUP_STDIN,SYS_FD_FLAG_READ):sys_fd_open(0,files[i],SYS_FD_FLAG_READ));
 		if (SYS_IS_ERROR(fd)){
@@ -21,9 +23,8 @@ int main(int argc,const char** argv){
 			ret=1;
 			goto _cleanup;
 		}
-		char buffer[512];
 		while (1){
-			u64 length=sys_fd_read(fd,buffer,512,0);
+			u64 length=sys_fd_read(fd,buffer,buffer_size,0);
 			if (SYS_IS_ERROR(length)){
 				sys_io_print("cat: unable to read from file '%s': error %lld\n",files[i],length);
 				sys_fd_close(fd);
@@ -45,5 +46,6 @@ int main(int argc,const char** argv){
 	}
 _cleanup:
 	sys_heap_dealloc(NULL,files);
+	sys_heap_dealloc(NULL,buffer);
 	return ret;
 }

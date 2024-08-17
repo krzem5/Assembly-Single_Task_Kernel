@@ -1,6 +1,7 @@
 #include <dircolor/dircolor.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
+#include <sys/heap/heap.h>
 #include <sys/id/group.h>
 #include <sys/id/user.h>
 #include <sys/io/io.h>
@@ -55,37 +56,41 @@ static const char* _get_lock_type(sys_handle_t handle){
 
 
 int main(int argc,const char** argv){
-	u64 i=sys_options_parse(argc,argv,NULL);
-	if (!i){
+	const char** files=NULL;
+	u32 file_count=0;
+	if (!sys_options_parse_NEW(argc,argv,"{:f:file}!*s",&files,&file_count)){
 		return 1;
 	}
-	for (;i<argc;i++){
-		sys_fd_t fd=sys_fd_open(0,argv[i],0);
+	int ret=0;
+	for (u32 i=0;i<file_count;i++){
+		sys_fd_t fd=sys_fd_open(0,files[i],0);
 		if (SYS_IS_ERROR(fd)){
-			sys_io_print("stat: unable to open file '%s': error %d\n",argv[i],fd);
-			return 1;
+			sys_io_print("stat: unable to open file '%s': error %d\n",files[i],fd);
+			ret=1;
+			goto _cleanup;
 		}
 		sys_fd_stat_t stat;
 		sys_error_t error=sys_fd_stat(fd,&stat);
 		if (SYS_IS_ERROR(error)){
-			sys_io_print("stat: unable to read data from file '%s': error %d\n",argv[i],error);
+			sys_io_print("stat: unable to read data from file '%s': error %d\n",files[i],error);
 			sys_fd_close(fd);
-			return 1;
+			ret=1;
+			goto _cleanup;
 		}
-		sys_io_print("Name: ");
-		if (_check_if_link(argv[i])){
+		sys_io_print("%sName: ",(i?"\n":""));
+		if (_check_if_link(files[i])){
 			sys_fd_stat_t tmp_stat={
 				.type=SYS_FD_STAT_TYPE_LINK
 			};
 			char buffer[32];
 			dircolor_get_color(&tmp_stat,buffer);
-			sys_io_print("%s%s\x1b[0m -> ",buffer,argv[i]);
+			sys_io_print("%s%s\x1b[0m -> ",buffer,files[i]);
 		}
 		char buffer[32];
 		dircolor_get_color(&stat,buffer);
 		char path_buffer[4096];
 		if (SYS_IS_ERROR(sys_fd_path(fd,path_buffer,sizeof(path_buffer)))){
-			sys_string_copy(argv[i],path_buffer);
+			sys_string_copy(files[i],path_buffer);
 		}
 		sys_io_print("%s%s\x1b[0m",buffer,path_buffer);
 		char uid_name_buffer[256]="???";
@@ -124,5 +129,7 @@ int main(int argc,const char** argv){
 		}
 		sys_fd_close(fd);
 	}
-	return 0;
+_cleanup:
+	sys_heap_dealloc(NULL,files);
+	return ret;
 }
