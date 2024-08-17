@@ -8,7 +8,7 @@
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse_NEW(argc,argv,"")){
+	if (!sys_options_parse(argc,argv,"")){
 		return 1;
 	}
 	for (sys_fs_t fs=sys_fs_iter_start();fs;fs=sys_fs_iter_next(fs)){

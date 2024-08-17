@@ -11,7 +11,7 @@ int main(int argc,const char** argv){
 	bool uptime=0;
 	bool early_init=0;
 	bool init=0;
-	if (!sys_options_parse_NEW(argc,argv,"{r:raw}y{u:uptime}y{e:early}y{i:init}y",&raw,&uptime,&early_init,&init)){
+	if (!sys_options_parse(argc,argv,"{r:raw}y{u:uptime}y{e:early}y{i:init}y",&raw,&uptime,&early_init,&init)){
 		return 1;
 	}
 	u64 time=sys_clock_get_time_ns();

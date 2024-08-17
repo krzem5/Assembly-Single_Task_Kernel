@@ -12,7 +12,7 @@ int main(int argc,const char** argv){
 	u64 columns=16;
 	const char** files=NULL;
 	u32 file_count=0;
-	if (!sys_options_parse_NEW(argc,argv,"{b:buffer-size}+q{c:columns}+q{:f:file}!*s",&buffer_size,&columns,&files,&file_count)){
+	if (!sys_options_parse(argc,argv,"{b:buffer-size}+q{c:columns}+q{:f:file}!*s",&buffer_size,&columns,&files,&file_count)){
 		return 1;
 	}
 	int ret=0;

@@ -169,7 +169,7 @@ s64 main(u32 argc,const char*const* argv){
 	const char* out="/dev/ser/out";
 	bool shutdown_after_process=0;
 	u32 first_argument_index=0;
-	if (!sys_options_parse_NEW(argc,argv,"{i:input}s{o:output}s{s:shutdown-on-close}y{-}!a",&in,&out,&shutdown_after_process,&first_argument_index)){
+	if (!sys_options_parse(argc,argv,"{i:input}s{o:output}s{s:shutdown-on-close}y{-}!a",&in,&out,&shutdown_after_process,&first_argument_index)){
 		return 1;
 	}
 	in_fd=sys_fd_open(0,in,SYS_FD_FLAG_READ);

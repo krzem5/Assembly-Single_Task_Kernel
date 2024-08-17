@@ -58,7 +58,7 @@ static const char* _get_lock_type(sys_handle_t handle){
 int main(int argc,const char** argv){
 	const char** files=NULL;
 	u32 file_count=0;
-	if (!sys_options_parse_NEW(argc,argv,"{:f:file}!*s",&files,&file_count)){
+	if (!sys_options_parse(argc,argv,"{:f:file}!*s",&files,&file_count)){
 		return 1;
 	}
 	int ret=0;

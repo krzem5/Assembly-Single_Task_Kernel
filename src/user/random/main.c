@@ -10,7 +10,7 @@ int main(int argc,const char** argv){
 	u64 bytes=0;
 	u64 columns=16;
 	u64 buffer_size=512;
-	if (!sys_options_parse_NEW(argc,argv,"{:b:bytes}!+q{c:columns}+q{s:buffer-size}+q",&bytes,&columns,&buffer_size)){
+	if (!sys_options_parse(argc,argv,"{:b:bytes}!+q{c:columns}+q{s:buffer-size}+q",&bytes,&columns,&buffer_size)){
 		return 1;
 	}
 	sys_fd_t fd=sys_fd_open(0,"/dev/random",SYS_FD_FLAG_READ);

@@ -8,7 +8,7 @@
 
 int main(int argc,const char** argv){
 	const char* path=NULL;
-	if (!sys_options_parse_NEW(argc,argv,"{:p:path}!s",&path)){
+	if (!sys_options_parse(argc,argv,"{:p:path}!s",&path)){
 		return 1;
 	}
 	sys_fd_t fd=sys_fd_open(0,path,SYS_FD_FLAG_CREATE);

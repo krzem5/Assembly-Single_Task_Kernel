@@ -114,7 +114,7 @@ void main(void){ \n\
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse_NEW(argc,argv,"")){
+	if (!sys_options_parse(argc,argv,"")){
 		return 1;
 	}
 	sys_library_t backend_lib=sys_lib_load(BACKEND_LIB_NAME,SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS);

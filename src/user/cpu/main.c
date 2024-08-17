@@ -36,7 +36,7 @@ static inline void _execute_cpuid_count(u32 level,u32 count,cpuid_data_t* out){
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse_NEW(argc,argv,"")){
+	if (!sys_options_parse(argc,argv,"")){
 		return 1;
 	}
 	cpuid_data_t cpuid;
