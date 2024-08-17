@@ -501,7 +501,6 @@ KERNEL_AWAITS error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	exception_unwind_push(fd_handle){
 		handle_release(EXCEPTION_UNWIND_ARG(0));
 	}
-	mutex_acquire(data->lock);
 	vfs_node_ref(data->node);
 	fd_t* out=omm_alloc(_fd_allocator);
 	handle_new(_fd_handle_type,&(out->handle));
@@ -513,7 +512,6 @@ KERNEL_AWAITS error_t syscall_fd_dup(handle_id_t fd,u32 flags){
 	out->offset=data->offset;
 	out->flags=(data->flags|FD_FLAG_CLOSE_PIPE)&flags;
 	exception_unwind_pop();
-	mutex_release(data->lock);
 	handle_release(fd_handle);
 	return out->handle.rb_node.key;
 }
