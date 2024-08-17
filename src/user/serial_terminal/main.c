@@ -1,6 +1,7 @@
 #include <readline/readline.h>
 #include <sys/error/error.h>
 #include <sys/fd/fd.h>
+#include <sys/format/format.h>
 #include <sys/io/io.h>
 #include <sys/mp/process.h>
 #include <sys/mp/process_group.h>
@@ -19,6 +20,10 @@
 
 
 
+#define TERMINAL_SIZE_PROBE_MAX_INPUT_LENGTH 128
+
+
+
 static sys_fd_t in_fd=0;
 static sys_fd_t child_in_fd=0;
 static sys_fd_t out_fd=0;
@@ -27,16 +32,30 @@ static sys_fd_t ctrl_fd=0;
 static bool ctrl_direct_io=0;
 static bool ctrl_echo_input=1;
 static bool ctrl_autocomplete_enabled=1;
+static u32 ctrl_terminal_size[2]={80,24};
+
+
+
+static bool _parse_cursor_position(sys_fd_t fd,u32* out){
+	// TERMINAL_SIZE_PROBE_MAX_INPUT_LENGTH
+	return 0;
+}
 
 
 
 static void _probe_terminal_size(sys_fd_t in,sys_fd_t out){
-	// out: "\x1b[6n"
-	// in:  "\x1b[{x};{y}R"
-	// out: "\x1b[9999;9999H\x1b[6n"
-	// in:  "\x1b[{w};{h}R"
-	// out: "\x1b[{x};{y}H"
-	return;
+	u32 xy[2];
+	u32 wh[2];
+	if (sys_fd_write(out,"\x1b[6n",4,0)!=4||!_parse_cursor_position(in,xy)||sys_fd_write(out,"\x1b[9999;9999H\x1b[6n",16,0)!=16||!_parse_cursor_position(out,wh)){
+		return;
+	}
+	char buffer[32];
+	u32 buffer_length=sys_format_string(buffer,sizeof(buffer),"\x1b[%u;%uH",xy[0],xy[1]);
+	if (sys_fd_write(out,buffer,buffer_length,0)!=buffer_length){
+		return;
+	}
+	ctrl_terminal_size[0]=wh[0];
+	ctrl_terminal_size[1]=wh[1];
 }
 
 
