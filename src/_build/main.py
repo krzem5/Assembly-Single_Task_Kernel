@@ -421,7 +421,7 @@ def _execute_vm():
 		# Serial
 		*(["-chardev","socket,path=build/vm/terminal,mux=on,id=input0","-mon","chardev=input0,mode=readline","-serial","chardev:input0"] if mode!=MODE_COVERAGE else ["-serial","mon:stdio"]),
 		"-serial",("file:build/raw_coverage" if mode==MODE_COVERAGE else "null"),
-		# Config
+		# Motherboard
 		"-machine","q35,hmat=on",
 		"-uuid","00112233-4455-6677-8899-aabbccddeeff",
 		"-smbios","type=2,serial=SERIAL_NUMBER",
