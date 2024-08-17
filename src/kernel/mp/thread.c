@@ -414,7 +414,7 @@ error_t syscall_thread_query(handle_id_t thread_handle,KERNEL_USER_POINTER threa
 	buffer->tid=thread_handle;
 	str_copy(thread->name->data,(char*)(buffer->name),sizeof(buffer->name));
 	buffer->state=thread->state;
-	buffer->priority=thread->priority;
+	buffer->priority=(thread->scheduler_forced_queue_index?THREAD_PRIORITY_FIXED:thread->priority);
 	buffer->scheduler_priority=thread->scheduler_load_balancer_queue_index;
 	handle_release(handle);
 	return ERROR_OK;

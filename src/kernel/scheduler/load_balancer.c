@@ -33,13 +33,13 @@ static CPU_LOCAL_DATA(scheduler_load_balancer_stats_t,_scheduler_load_balancer_s
 
 
 
-static u32 _get_queue_index_offset(const thread_t* thread){
+static KERNEL_INLINE u32 _get_queue_index_offset(const thread_t* thread){
 	return (thread->process==process_kernel?0:SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1);
 }
 
 
 
-static u32 _get_queue_time_us(u32 i){
+static KERNEL_INLINE u32 _get_queue_time_us(u32 i){
 	return 970+130*(i&((SCHEDULER_LOAD_BALANCER_QUEUE_COUNT>>1)-1));
 }
 
@@ -64,7 +64,7 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 			continue;
 		}
 		if (!queue->head){
-			__atomic_and_fetch(&_scheduler_load_balancer_bitmap,~(1ull<<i),__ATOMIC_SEQ_CST);
+			__atomic_and_fetch(&_scheduler_load_balancer_bitmap,(~mask)|(mask-1),__ATOMIC_SEQ_CST);
 			rwlock_release_write(&(queue->lock));
 			continue;
 		}
@@ -72,7 +72,7 @@ thread_t* scheduler_load_balancer_get(u32* time_us){
 		queue->head=out->scheduler_load_balancer_thread_queue_next;
 		if (!queue->head){
 			queue->tail=NULL;
-			__atomic_and_fetch(&_scheduler_load_balancer_bitmap,~(1ull<<i),__ATOMIC_SEQ_CST);
+			__atomic_and_fetch(&_scheduler_load_balancer_bitmap,(~mask)|(mask-1),__ATOMIC_SEQ_CST);
 		}
 		rwlock_release_write(&(queue->lock));
 		((scheduler_load_balancer_stats_t*)CPU_LOCAL(_scheduler_load_balancer_stats))->used_slot_count++;

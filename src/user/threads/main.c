@@ -47,6 +47,9 @@ int main(int argc,const char** argv){
 		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_REALTIME){
 			priority="realtime";
 		}
+		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_FIXED){
+			priority="fixed";
+		}
 		else if (thread_query_result.priority==SYS_THREAD_PRIORITY_TERMINATED){
 			priority="terminated";
 		}
