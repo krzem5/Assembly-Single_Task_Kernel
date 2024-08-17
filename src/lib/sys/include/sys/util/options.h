@@ -39,6 +39,7 @@ typedef struct _SYS_OPTION{
  * <empty>
  * * - accumulate options instead of overriding them
  * ! - required option
+ * - - signed value
  *
  * Format characters:
  * a - u32 (aggregate options, end of argument processing)
@@ -47,7 +48,8 @@ typedef struct _SYS_OPTION{
  * I - u32
  * q - s64
  * Q - u64
- * f - double
+ * f - float
+ * d - double
  * s - const char*
  * n - bool=0 (no following argument)
  * y - bool=1 (no following argument)

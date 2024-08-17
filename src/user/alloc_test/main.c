@@ -24,7 +24,7 @@ typedef struct _SINGLE_TEST_DATA{
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse(argc,argv,NULL)){
+	if (!sys_options_parse_NEW(argc,argv,"")){
 		return 1;
 	}
 	sys_fd_t random_fd=sys_fd_open(0,"/dev/random",SYS_FD_FLAG_READ);
