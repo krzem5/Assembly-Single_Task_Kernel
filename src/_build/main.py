@@ -8,6 +8,7 @@ import os
 import process_pool
 import shlex
 import signature
+import socket
 import subprocess
 import sys
 import test
@@ -330,7 +331,7 @@ def _execute_vm():
 	while (not os.path.exists("/tmp/swtpm.sock")):
 		time.sleep(0.01)
 	if (option("vm.file_server")):
-		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory"])
+		subprocess.Popen((["/usr/libexec/virtiofsd",f"--socket-group={os.getlogin()}"] if not os.getenv("GITHUB_ACTIONS","") else ["sudo","build/external/virtiofsd"])+["--socket-path=build/vm/virtiofsd.sock","--shared-dir","build/share","--inode-file-handles=mandatory","--log-level","off"])
 	if (not os.path.exists("build/vm/hdd.qcow2")):
 		if (subprocess.run(["qemu-img","create","-q","-f","qcow2","build/vm/hdd.qcow2","16G"]).returncode!=0):
 			sys.exit(1)
@@ -351,7 +352,14 @@ def _execute_vm():
 		else:
 			if (subprocess.run(["cp","/usr/share/OVMF/OVMF_VARS_4M.fd","build/vm/OVMF_VARS.fd"]).returncode!=0):
 				sys.exit(1)
-	terminal=(subprocess.Popen(["build/tool/ovmf_terminal_patch","build/vm/terminal"]) if mode!=MODE_COVERAGE else None)
+	terminal=None
+	terminal_file=None
+	if (mode!=MODE_COVERAGE):
+		terminal=subprocess.Popen(["build/tool/ovmf_terminal_patch","build/vm/terminal"])
+		while (not os.path.exists("build/vm/terminal")):
+			time.sleep(0.01)
+		terminal_file=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+		terminal_file.connect("build/vm/terminal")
 	subprocess.run(([] if not os.getenv("GITHUB_ACTIONS","") else ["sudo"])+[
 		"qemu-system-x86_64",
 		# "-d","trace:virtio*,trace:virtio_blk*",
@@ -423,7 +431,9 @@ def _execute_vm():
 		"-device","tpm-tis,tpmdev=tpm0",
 		# Debugging
 		*([] if mode!=MODE_DEBUG else ["-gdb","tcp::9000"]),
-	]+_kvm_flags())
+	]+_kvm_flags(),stderr=(terminal_file.fileno() if terminal_file is not None else None))
+	if (terminal_file is not None):
+		terminal_file.close()
 	if (terminal is not None):
 		terminal.wait()
 	if (os.path.exists("build/vm/virtiofsd.sock")):

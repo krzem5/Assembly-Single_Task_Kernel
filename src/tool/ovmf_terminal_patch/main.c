@@ -35,6 +35,8 @@ int main(int argc,const char** argv){
 	new_config.c_lflag|=IEXTEN;
 	tcsetattr(0,TCSANOW,&new_config);
 	int server=socket(AF_UNIX,SOCK_STREAM,0);
+	int client_qemu_host=-1;
+	int client_qemu_guest=-1;
 	struct sockaddr_un address;
 	address.sun_family=AF_UNIX;
 	strcpy(address.sun_path,argv[1]);
@@ -42,11 +44,16 @@ int main(int argc,const char** argv){
 		goto _close;
 	}
 	listen(server,1);
-	int client=accept(server,NULL,NULL);
+	client_qemu_host=accept(server,NULL,NULL);
+	client_qemu_guest=accept(server,NULL,NULL);
 	u8 buffer[4096];
-	struct pollfd poll_fds[2]={
+	struct pollfd poll_fds[3]={
 		{
-			.fd=client,
+			.fd=client_qemu_host,
+			.events=POLLIN|POLLERR
+		},
+		{
+			.fd=client_qemu_guest,
 			.events=POLLIN|POLLERR
 		},
 		{
@@ -56,13 +63,16 @@ int main(int argc,const char** argv){
 	};
 	u32 start_marker_parser_state=0;
 	while (1){
-		if (poll(poll_fds,2,-1)<0||((poll_fds[0].revents|poll_fds[1].revents)&(POLLERR|POLLHUP))){
+		if (poll(poll_fds,3,-1)<0||((poll_fds[0].revents|poll_fds[1].revents|poll_fds[2].revents)&(POLLERR|POLLHUP))){
 			break;
 		}
-		if (poll_fds[0].revents&POLLIN){
-			ssize_t length=read(client,buffer,sizeof(buffer));
+		for (u32 i=0;i<2;i++){
+			if (!(poll_fds[i].revents&POLLIN)){
+				continue;
+			}
+			ssize_t length=read(poll_fds[i].fd,buffer,sizeof(buffer));
 			if (length<0){
-				break;
+				goto _close;
 			}
 			u8* ptr=buffer;
 			while (length&&KERNEL_SERIAL_OUTPUT_START_MARKER[start_marker_parser_state]){
@@ -71,18 +81,21 @@ int main(int argc,const char** argv){
 				length--;
 			}
 			if (length&&write(1,ptr,length)!=length){
-				break;
+				goto _close;
 			}
 		}
-		if (poll_fds[1].revents&POLLIN){
+		if (poll_fds[2].revents&POLLIN){
 			ssize_t length=read(0,buffer,sizeof(buffer));
-			if (length<0||write(client,buffer,length)!=length){
+			if (length<0||write(client_qemu_guest,buffer,length)!=length){
 				break;
 			}
 		}
 	}
 _close:
+	close(client_qemu_host);
+	close(client_qemu_guest);
 	close(server);
+	unlink(argv[1]);
 	tcsetattr(0,TCSANOW,&old_config);
 	return 0;
 }
