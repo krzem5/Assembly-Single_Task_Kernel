@@ -7,13 +7,13 @@
 
 
 int main(int argc,const char** argv){
-	u32 i=sys_options_parse(argc,argv,NULL);
-	if (!i||i>=argc){
+	const char* path=NULL;
+	if (!sys_options_parse_NEW(argc,argv,"{:p:path}!s",&path)){
 		return 1;
 	}
-	sys_fd_t fd=sys_fd_open(0,argv[i],SYS_FD_FLAG_CREATE|SYS_FD_FLAG_DIRECTORY|SYS_FD_FLAG_EXCLUSIVE_CREATE);
+	sys_fd_t fd=sys_fd_open(0,path,SYS_FD_FLAG_CREATE|SYS_FD_FLAG_DIRECTORY|SYS_FD_FLAG_EXCLUSIVE_CREATE);
 	if (SYS_IS_ERROR(fd)){
-		sys_io_print("mkdir: unable to create file '%s': error %d\n",argv[i],fd);
+		sys_io_print("mkdir: unable to create file '%s': error %d\n",path,fd);
 		return 1;
 	}
 	sys_fd_close(fd);

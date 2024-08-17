@@ -10,6 +10,7 @@
 #define OPTION_DATA_FLAG_ACCUMULATE 0x01
 #define OPTION_DATA_FLAG_REQUIRED 0x02
 #define OPTION_DATA_FLAG_SIGNED 0x04
+#define OPTION_DATA_FLAG_NONZERO 0x08
 
 
 
@@ -30,17 +31,13 @@ typedef struct _OPTION_DATA{
 	union{
 		void* ptr;
 		bool* data_bool;
-		s32* data_s32;
 		u32* data_u32;
-		s64* data_s64;
 		u64* data_u64;
 		float* data_float;
 		double* data_double;
 		const char** data_str;
 		bool** data_bool_array;
-		s32** data_s32_array;
 		u32** data_u32_array;
-		s64** data_s64_array;
 		u64** data_u64_array;
 		float** data_float_array;
 		double** data_double_array;
@@ -52,6 +49,18 @@ typedef struct _OPTION_DATA{
 
 
 
+#define OPTION_EMIT_DATA(type,value) \
+	if (option->flags&OPTION_DATA_FLAG_ACCUMULATE){ \
+		(*(option->data_length))++; \
+		*(option->data_##type##_array)=sys_heap_realloc(NULL,*(option->data_##type##_array),(*(option->data_length))*sizeof(*(option->data_##type))); \
+		(*(option->data_##type##_array))[*(option->data_length)-1]=value; \
+	} \
+	else{ \
+		*(option->data_##type)=value; \
+	}
+
+
+
 static bool _parse_option(option_data_t* option,const char* exe_name,const char* option_name,const char* arg){
 	if (!option){
 		sys_io_print("%s: unknown option '%s'\n",exe_name,(option_name?option_name:arg));
@@ -59,13 +68,53 @@ static bool _parse_option(option_data_t* option,const char* exe_name,const char*
 	}
 	option->group->seen=1;
 	if (option->type=='s'){
-		if (!(option->flags&OPTION_DATA_FLAG_ACCUMULATE)){
-			*(option->data_str)=arg;
-			return 1;
+		OPTION_EMIT_DATA(str,arg);
+		return 1;
+	}
+	if (option->type=='i'||option->type=='q'){
+		const char* base=arg;
+		bool negative=0;
+		if (arg[0]=='-'||arg[0]=='+'){
+			negative=(arg[0]=='-');
+			arg++;
 		}
-		(*(option->data_length))++;
-		*(option->data_str_array)=sys_heap_realloc(NULL,*(option->data_str_array),(*(option->data_length))*sizeof(const char*));
-		(*(option->data_str_array))[*(option->data_length)-1]=arg;
+		if (!arg[0]){
+			sys_io_print("%s: '%s' is not a valid integer\n",exe_name,base);
+			return 0;
+		}
+		u64 mask=(option->type=='i'?0xffffffff:0xffffffffffffffffull);
+		u64 value=0;
+		do{
+			if (arg[0]<'0'||arg[0]>'9'){
+				sys_io_print("%s: invalid base-10 character: '%c'\n",exe_name,arg[0]);
+				return 0;
+			}
+			u64 tmp=(value*10+arg[0]-'0')&mask;
+			if (tmp<value){
+				sys_io_print("%s: integer overflow: '%s'\n",exe_name,base);
+				return 0;
+			}
+			value=tmp;
+			arg++;
+		} while (arg[0]);
+		if (negative&&(value>>(option->type=='i'?31:63))){
+			sys_io_print("%s: integer underflow: '%s'\n",exe_name,base);
+			return 0;
+		}
+		if (!(option->flags&OPTION_DATA_FLAG_SIGNED)&&negative){
+			sys_io_print("%s: option '%s' requires an unsigned integer\n",exe_name,option->group->name);
+			return 0;
+		}
+		if (!(option->flags&OPTION_DATA_FLAG_NONZERO)&&!value){
+			sys_io_print("%s: option '%s' requires a nonzero integer\n",exe_name,option->group->name);
+			return 0;
+		}
+		if (option->type=='i'){
+			OPTION_EMIT_DATA(u32,(negative?-value:value));
+		}
+		else{
+			OPTION_EMIT_DATA(u64,(negative?-value:value));
+		}
 		return 1;
 	}
 	sys_io_print("<UNIMPLEMENTED:'%s':'%s','%c',0x%x>\n",arg,option->name,option->type,option->flags);
@@ -101,7 +150,7 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 		u32 option_name_length=template-ptr;
 		template++;
 		u32 flags=0;
-		for (;template[0]=='*'||template[0]=='!'||template[0]=='-';template++){
+		for (;template[0]=='*'||template[0]=='!'||template[0]=='-'||template[0]=='+';template++){
 			if (template[0]=='*'){
 				flags|=OPTION_DATA_FLAG_ACCUMULATE;
 			}
@@ -111,34 +160,18 @@ SYS_PUBLIC bool sys_options_parse_NEW(u32 argc,const char*const* argv,const char
 			else if (template[0]=='-'){
 				flags|=OPTION_DATA_FLAG_SIGNED;
 			}
+			else if (template[0]=='+'){
+				flags|=OPTION_DATA_FLAG_NONZERO;
+			}
 		}
 		if (template[0]!='a'&&template[0]!='b'&&template[0]!='i'&&template[0]!='q'&&template[0]!='f'&&template[0]!='d'&&template[0]!='s'&&template[0]!='n'&&template[0]!='y'){
-			sys_io_print("<%u %s>\n",__LINE__,template);goto _error;
+			goto _error;
 		}
-		if ((flags&OPTION_DATA_FLAG_SIGNED)&&template[0]!='i'&&template[0]!='q'){
+		if ((flags&(OPTION_DATA_FLAG_SIGNED|OPTION_DATA_FLAG_NONZERO))&&template[0]!='i'&&template[0]!='q'&&template[0]!='f'&&template[0]!='d'){
 			goto _error;
 		}
 		void* out_ptr=sys_var_arg_get(va_list,void*);
 		u32* out_ptr_length=((flags&OPTION_DATA_FLAG_ACCUMULATE)?sys_var_arg_get(va_list,u32*):NULL);
-		if (flags&OPTION_DATA_FLAG_ACCUMULATE){
-			*((void**)out_ptr)=NULL;
-			*out_ptr_length=0;
-		}
-		else if (template[0]=='a'||template[0]=='i'){
-			*((u32*)out_ptr)=0;
-		}
-		else if (template[0]=='b'||template[0]=='n'||template[0]=='y'){
-			*((bool*)out_ptr)=0;
-		}
-		else if (template[0]=='q'||template[0]=='s'){
-			*((u64*)out_ptr)=0;
-		}
-		else if (template[0]=='f'){
-			*((float*)out_ptr)=0;
-		}
-		else if (template[0]=='d'){
-			*((double*)out_ptr)=0;
-		}
 		option_group_t* group=sys_heap_alloc(NULL,sizeof(option_group_t)+option_name_length+1);
 		group->next=NULL;
 		group->seen=!(flags&OPTION_DATA_FLAG_REQUIRED);

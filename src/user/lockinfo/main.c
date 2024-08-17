@@ -77,7 +77,7 @@ static bool _descriptor_switch_callback(const void* a,const void* b){
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse(argc,argv,NULL)){
+	if (!sys_options_parse_NEW(argc,argv,"")){
 		return 1;
 	}
 	u64 offset=sys_syscall_get_table_offset("lockinfo");

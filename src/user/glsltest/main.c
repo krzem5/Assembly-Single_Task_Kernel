@@ -8,6 +8,7 @@
 #include <glsl/preprocessor.h>
 #include <sys/io/io.h>
 #include <sys/lib/lib.h>
+#include <sys/util/options.h>
 
 
 
@@ -112,7 +113,10 @@ void main(void){ \n\
 
 
 
-int main(void){
+int main(int argc,const char** argv){
+	if (!sys_options_parse_NEW(argc,argv,"")){
+		return 1;
+	}
 	sys_library_t backend_lib=sys_lib_load(BACKEND_LIB_NAME,SYS_LIB_LOAD_FLAG_RESOLVE_SYMBOLS);
 	if (SYS_IS_ERROR(backend_lib)){
 		sys_io_print("Unable to open backend library '%s'\n",BACKEND_LIB_NAME);

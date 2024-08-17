@@ -4,7 +4,7 @@
 
 
 int main(int argc,const char** argv){
-	if (!sys_options_parse(argc,argv,NULL)){
+	if (!sys_options_parse_NEW(argc,argv,"")){
 		return 1;
 	}
 	sys_system_shutdown(SYS_SYSTEM_SHUTDOWN_FLAG_RESTART);
