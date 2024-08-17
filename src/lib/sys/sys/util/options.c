@@ -124,6 +124,7 @@ static bool _parse_option(option_data_t* option,const char* exe_name,const char*
 		}
 		return 1;
 	}
+	// b, f, d
 	sys_io_print("<UNIMPLEMENTED:'%s':'%s','%c',0x%x>\n",arg,option->name,option->type,option->flags);
 	return 0;
 }

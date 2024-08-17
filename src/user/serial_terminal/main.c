@@ -30,6 +30,17 @@ static bool ctrl_autocomplete_enabled=1;
 
 
 
+static void _probe_terminal_size(sys_fd_t in,sys_fd_t out){
+	// out: "\x1b[6n"
+	// in:  "\x1b[{x};{y}R"
+	// out: "\x1b[9999;9999H\x1b[6n"
+	// in:  "\x1b[{w};{h}R"
+	// out: "\x1b[{x};{y}H"
+	return;
+}
+
+
+
 static void _autocomplete_callback(readline_state_t* state,const char* prefix){
 	if (!ctrl_autocomplete_enabled){
 		return;
@@ -168,14 +179,18 @@ s64 main(u32 argc,const char*const* argv){
 	const char* in="/dev/ser/in";
 	const char* out="/dev/ser/out";
 	bool shutdown_after_process=0;
+	bool probe_size=0;
 	u32 first_argument_index=0;
-	if (!sys_options_parse(argc,argv,"{i:input}s{o:output}s{s:shutdown-on-close}y{-}!a",&in,&out,&shutdown_after_process,&first_argument_index)){
+	if (!sys_options_parse(argc,argv,"{i:input}s{o:output}s{s:shutdown-on-close}y{p:probe-size}y{-}!a",&in,&out,&shutdown_after_process,&probe_size,&first_argument_index)){
 		return 1;
 	}
 	in_fd=sys_fd_open(0,in,SYS_FD_FLAG_READ);
 	out_fd=sys_fd_open(0,out,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
 	if (SYS_IS_ERROR(in_fd)||SYS_IS_ERROR(out_fd)){
 		goto _error;
+	}
+	if (probe_size){
+		_probe_terminal_size(in_fd,out_fd);
 	}
 	sys_fd_lock(in_fd,sys_process_get_handle());
 	sys_fd_lock(out_fd,sys_process_get_handle());
