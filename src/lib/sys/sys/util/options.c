@@ -287,7 +287,7 @@ _skip_option_name:
 			continue;
 		}
 		if (argv[i][j]!='='&&i+1==argc){
-			sys_io_print("%s: missing argument for option '%s'\n",argv[0],option->group->name);
+			sys_io_print("%s: missing argument for option '%s'\n",argv[0],argv[i]);
 			goto _cleanup;
 		}
 		if (!_parse_option(option,argv[0],argv[i],(argv[i][j]=='='?argv[i]+j+1:argv[i+1]))){
