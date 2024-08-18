@@ -479,7 +479,6 @@ if ("--share" in sys.argv):
 _generate_install_disk(rebuild)
 if ("--run" not in sys.argv):
 	sys.exit(0)
-# for _ in range(16):
 _execute_vm()
 for root,_,files in os.walk("build/share",followlinks=False):
 	for file in files:
