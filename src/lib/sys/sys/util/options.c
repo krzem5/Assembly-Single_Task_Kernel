@@ -256,7 +256,7 @@ _skip_option_name:
 	}
 	sys_var_arg_deinit(va_list);
 	for (u32 i=1;i<argc;i++){
-		if (argv[i][0]!='-'){
+		if (argv[i][0]!='-'||!argv[i][1]){
 			if (!_parse_option(unnamed,argv[0],NULL,argv[i])){
 				goto _cleanup;
 			}
