@@ -21,7 +21,8 @@
 
 
 
-#define MMAP_STACK_GUARD_PAGE_COUNT 4
+// #define MMAP_STACK_GUARD_PAGE_COUNT 4
+#define MMAP_STACK_GUARD_PAGE_COUNT 0
 
 #define USER_MEMORY_FLAG_READ 1
 #define USER_MEMORY_FLAG_WRITE 2
@@ -37,6 +38,36 @@ static omm_allocator_t* KERNEL_INIT_WRITE _mmap_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _mmap_region_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _mmap_length_group_allocator=NULL;
 static omm_allocator_t* KERNEL_INIT_WRITE _mmap_free_region_allocator=NULL;
+
+
+
+static void _AAA(mmap_t* mmap){
+	if (!(mmap->heap_address>>63)){
+		bool err=0;
+		for (u64 i=mmap->heap_address;i<mmap->top_address;i+=4096){
+			u64 j=0;
+			for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->address_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->address_tree),rb_node)){
+				mmap_region_t* reg=KERNEL_CONTAINEROF(rb_node,mmap_region_t,rb_node);
+				if (reg->rb_node.key<=i&&reg->rb_node.key+reg->length>i){
+					j++;
+				}
+			}
+			for (rb_tree_node_t* rb_node=rb_tree_iter_start(&(mmap->free_address_tree));rb_node;rb_node=rb_tree_iter_next(&(mmap->free_address_tree),rb_node)){
+				mmap_free_region_t* reg=KERNEL_CONTAINEROF(rb_node,mmap_free_region_t,rb_node);
+				if (reg->rb_node.key<=i&&reg->rb_node.key+reg->group->rb_node.key>i){
+					j++;
+				}
+			}
+			if (j!=1){
+				WARN("%p [%p-%p] ~ %u",i,mmap->heap_address,mmap->top_address,j);
+				err=1;
+			}
+		}
+		if (err){
+			panic("A");
+		}
+	}
+}
 
 
 
@@ -64,7 +95,6 @@ static void _pop_free_region(mmap_t* mmap,mmap_free_region_t* free_region){
 static void _push_free_region(mmap_t* mmap,u64 address,u64 length){
 	mmap_free_region_t* free_region=(void*)rb_tree_lookup_node(&(mmap->free_address_tree),address+length);
 	if (free_region){
-		// ERROR("%v",free_region->group->rb_node.key);
 		// length+=free_region->group->rb_node.key;
 		// _pop_free_region(mmap,free_region);
 	}
@@ -128,6 +158,7 @@ static void _dealloc_region(mmap_t* mmap,mmap_region_t* region,bool push_free_re
 		_push_free_region(mmap,region->rb_node.key-guard_page_size,region->length+guard_page_size);
 	}
 	omm_dealloc(_mmap_region_allocator,region);
+	_AAA(mmap);
 }
 
 
@@ -230,6 +261,7 @@ KERNEL_PUBLIC KERNEL_AWAITS mmap_region_t* mmap_alloc(mmap_t* mmap,u64 address,u
 	out->flags=flags;
 	out->file=file;
 	rb_tree_insert_node(&(mmap->address_tree),&(out->rb_node));
+	_AAA(mmap);
 	rwlock_release_write(&(mmap->lock));
 	if (flags&MMAP_REGION_FLAG_COMMIT){
 		exception_unwind_push(mmap,out){
