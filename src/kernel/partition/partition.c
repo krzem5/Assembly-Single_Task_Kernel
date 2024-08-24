@@ -135,6 +135,7 @@ KERNEL_PUBLIC partition_t* partition_create(drive_t* drive,u32 index,const char*
 }
 
 
+
 KERNEL_PUBLIC bool partition_format(drive_t* drive,partition_table_descriptor_t* descriptor){
 	return (descriptor->config->format_callback?descriptor->config->format_callback(drive):0);
 }

@@ -259,7 +259,7 @@ s64 main(u32 argc,const char*const* argv){
 	in_fd=sys_fd_open(0,in,SYS_FD_FLAG_READ);
 	out_fd=sys_fd_open(0,out,SYS_FD_FLAG_WRITE|SYS_FD_FLAG_APPEND);
 	if (SYS_IS_ERROR(in_fd)||SYS_IS_ERROR(out_fd)){
-		goto _error;
+		return 1;
 	}
 	if (probe_size){
 		_probe_terminal_size(in_fd,out_fd);
@@ -304,6 +304,4 @@ s64 main(u32 argc,const char*const* argv){
 		sys_system_shutdown(0);
 	}
 	return 0;
-_error:
-	return 1;
 }
