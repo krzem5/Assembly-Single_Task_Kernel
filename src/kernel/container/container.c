@@ -103,7 +103,7 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 	exception_unwind_push(container_handle,buffer){
 		container_t* data=KERNEL_CONTAINEROF(EXCEPTION_UNWIND_ARG(0),container_t,handle);
 		mutex_release(data->lock);
-		mutex_release(EXCEPTION_UNWIND_ARG(0));
+		handle_release(EXCEPTION_UNWIND_ARG(0));
 		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
 	}
 	mutex_acquire(data->lock);
