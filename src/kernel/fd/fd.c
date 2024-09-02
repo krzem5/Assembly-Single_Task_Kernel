@@ -590,7 +590,6 @@ KERNEL_AWAITS error_t syscall_fd_path(handle_id_t fd,KERNEL_USER_POINTER char* b
 
 
 KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER const handle_id_t* dst_fds,u32 dst_fd_count,u64 length){
-	// no exception handling implemented
 	if (!dst_fd_count){
 		return 0;
 	}
@@ -630,7 +629,20 @@ KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER c
 	}
 	u64 buffer_length=(!length||length>STREAM_MAX_BUFFER_SIZE?STREAM_MAX_BUFFER_SIZE:length);
 	u64 buffer=pmm_alloc(pmm_align_up_address(buffer_length)>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter,0);
-	while (1){
+	exception_unwind_push(buffer,buffer_length,dst_fd_data,dst_fd_count,src_fd_handle){
+		fd_t** dst_fd_data=EXCEPTION_UNWIND_ARG(2);
+		u32 dst_fd_count=(u64)EXCEPTION_UNWIND_ARG(3);
+		pmm_dealloc((u64)(EXCEPTION_UNWIND_ARG(0)),pmm_align_up_address((u64)EXCEPTION_UNWIND_ARG(1))>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter);
+		for (u32 i=0;i<dst_fd_count;i++){
+			if (!dst_fd_data[i]){
+				continue;
+			}
+			handle_release(&(dst_fd_data[i]->handle));
+		}
+		amm_dealloc(dst_fd_data);
+		handle_release(EXCEPTION_UNWIND_ARG(4));
+	}
+	while ((acl_get(src_fd_data->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)&&(src_fd_data->flags&FD_FLAG_READ)){
 		mutex_acquire(src_fd_data->lock);
 		u64 count=vfs_node_read(src_fd_data->node,src_fd_data->offset,(void*)(buffer+VMM_HIGHER_HALF_ADDRESS_OFFSET),(length&&buffer_length>length?length:buffer_length),0);
 		src_fd_data->offset+=count;
@@ -639,6 +651,9 @@ KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER c
 			break;
 		}
 		for (u32 i=0;i<dst_fd_count;i++){
+			if (!(acl_get(dst_fd_data[i]->handle.acl,THREAD_DATA->process)&FD_ACL_FLAG_IO)||!(dst_fd_data[i]->flags&FD_FLAG_WRITE)){
+				continue;
+			}
 			mutex_acquire(dst_fd_data[i]->lock);
 			u64 write_count=count;
 			while (write_count){
@@ -659,6 +674,7 @@ KERNEL_AWAITS error_t syscall_fd_stream(handle_id_t src_fd,KERNEL_USER_POINTER c
 			}
 		}
 	}
+	exception_unwind_pop();
 	pmm_dealloc(buffer,pmm_align_up_address(buffer_length)>>PAGE_SIZE_SHIFT,_fd_stream_pmm_counter);
 _cleanup:
 	for (u32 i=0;i<dst_fd_count;i++){
