@@ -45,6 +45,13 @@ static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 	if (thread->process==process_kernel){
 		return 0;
 	}
+	if (signal==SIGNAL_KILL){
+		// THREAD_STATE_TYPE_NONE, THREAD_STATE_TYPE_AWAITING_EVENT: <static interrupt (cs==0x08, fast path)>
+		// THREAD_STATE_TYPE_QUEUED: <static interrupt + unschedule>
+		// THREAD_STATE_TYPE_RUNNING: <live interrupt>
+		// THREAD_STATE_TYPE_TERMINATED: <ignore>
+		return 1;
+	}
 	rwlock_acquire_write(&(thread->signal_state.lock));
 	if (thread->signal_state.mask&(1<<signal)){
 		rwlock_release_write(&(thread->signal_state.lock));
@@ -62,6 +69,10 @@ static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 static bool _dispatch_signal_to_process(process_t* process,signal_t signal){
 	if (process==process_kernel){
 		return 0;
+	}
+	if (signal==SIGNAL_KILL){
+		// forward to all threads
+		return 1;
 	}
 	event_t* event_to_dispatch=NULL;
 	rwlock_acquire_write(&(process->signal_state.lock));
@@ -96,6 +107,10 @@ _signal_dispatched:
 static bool _dispatch_signal_to_process_group(process_group_t* process_group,signal_t signal){
 	if (process_group==process_kernel->process_group){
 		return 0;
+	}
+	if (signal==SIGNAL_KILL){
+		// forward to all processes
+		return 1;
 	}
 	bool out=0;
 	rwlock_acquire_read(&(process_group->lock));
