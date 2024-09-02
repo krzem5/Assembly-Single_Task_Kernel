@@ -156,6 +156,12 @@ KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KER
 	handle_id_t* buffer=amm_alloc(handle_count*sizeof(handle_id_t));
 	container_t* data=KERNEL_CONTAINEROF(container_handle,container_t,handle);
 	u64 out=0;
+	exception_unwind_push(container_handle,buffer){
+		container_t* data=KERNEL_CONTAINEROF(EXCEPTION_UNWIND_ARG(0),container_t,handle);
+		mutex_release(data->lock);
+		handle_release(EXCEPTION_UNWIND_ARG(0));
+		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
+	}
 	mutex_acquire(data->lock);
 	container_entry_t* entry=KERNEL_CONTAINEROF(rb_tree_lookup_increasing_node(&(data->tree),offset+1),container_entry_t,rb_node);
 	for (;entry&&out<handle_count;out++){
@@ -163,6 +169,8 @@ KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KER
 		entry=KERNEL_CONTAINEROF(rb_tree_iter_next(&(data->tree),&(entry->rb_node)),container_entry_t,rb_node);
 	}
 	mutex_release(data->lock);
+	exception_unwind_pop();
+	handle_release(container_handle);
 	mem_copy((void*)handles,buffer,out*sizeof(handle_id_t));
 	amm_dealloc(buffer);
 	return out;
