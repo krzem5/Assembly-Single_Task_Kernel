@@ -84,8 +84,8 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 
 
 static void _expand_history(readline_state_t* state,const char* line){
-	u32 length=sys_string_length(line);
-	if (!length||(state->_history.length&&!sys_memory_compare(state->_history.data[0],line,length+1))){
+	u32 length=sys_string_length(line)+1;
+	if (length==1||(state->_history.length&&!sys_memory_compare(state->_history.data[0],line,length))){
 		return;
 	}
 	if (state->_history.length==state->_history.max_length){
@@ -97,8 +97,8 @@ static void _expand_history(readline_state_t* state,const char* line){
 	for (u32 i=state->_history.length-1;i;i--){
 		state->_history.data[i]=state->_history.data[i-1];
 	}
-	state->_history.data[0]=sys_heap_alloc(NULL,length+1);
-	sys_memory_copy(line,state->_history.data[0],length+1);
+	state->_history.data[0]=sys_heap_alloc(NULL,length);
+	sys_memory_copy(line,state->_history.data[0],length);
 }
 
 

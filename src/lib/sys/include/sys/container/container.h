@@ -21,4 +21,8 @@ sys_error_t __attribute__((access(read_only,2,3),nonnull)) sys_container_add(sys
 
 
 
+sys_error_t __attribute__((access(write_only,3,4),nonnull)) sys_container_get(sys_container_t container,u64 offset,u64* handles,u64 handle_count);
+
+
+
 #endif

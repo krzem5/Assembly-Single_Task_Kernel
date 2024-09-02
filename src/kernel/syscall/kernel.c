@@ -10,6 +10,7 @@ extern u64 syscall_clock_get_converion();
 extern u64 syscall_container_add();
 extern u64 syscall_container_create();
 extern u64 syscall_container_delete();
+extern u64 syscall_container_get();
 extern u64 syscall_cpu_get_count();
 extern u64 syscall_drive_get_data();
 extern u64 syscall_drive_get_next();
@@ -233,5 +234,6 @@ const syscall_callback_t _syscall_kernel_functions[]={
 	[113]=syscall_mutex_release,
 	[114]=syscall_fd_get_event,
 	[115]=syscall_signal_return,
+	[116]=syscall_container_get,
 };
 const u64 _syscall_kernel_count=sizeof(_syscall_kernel_functions)/sizeof(syscall_callback_t);

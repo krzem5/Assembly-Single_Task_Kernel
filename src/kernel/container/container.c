@@ -10,6 +10,7 @@
 #include <kernel/tree/rb_tree.h>
 #include <kernel/types.h>
 #include <kernel/util/memory.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "container"
 
 
@@ -131,4 +132,10 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 	handle_release(container_handle);
 	amm_dealloc(buffer);
 	return out;
+}
+
+
+
+KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KERNEL_USER_POINTER handle_id_t* buffer,u64 count){
+	panic("syscall_container_get");
 }

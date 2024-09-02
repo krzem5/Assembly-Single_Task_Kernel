@@ -677,4 +677,10 @@ static inline u64 _sys_syscall_fd_get_event(u64 fd,u32 is_write_event){
 
 
 
+static inline u64 _sys_syscall_container_get(u64 container,u64 offset,void* buffer,u64 count){
+	return _sys_syscall4(0x100000074,container,offset,(u64)buffer,count);
+}
+
+
+
 #endif
