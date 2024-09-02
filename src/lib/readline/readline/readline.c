@@ -85,7 +85,7 @@ static void _redraw_line(readline_state_t* state,bool add_newline){
 
 static void _expand_history(readline_state_t* state,const char* line){
 	u32 length=sys_string_length(line);
-	if (!length||(state->_history.length&&!sys_memory_compare(state->_history.data[0],line,length))){
+	if (!length||(state->_history.length&&!sys_memory_compare(state->_history.data[0],line,length+1))){
 		return;
 	}
 	if (state->_history.length==state->_history.max_length){
