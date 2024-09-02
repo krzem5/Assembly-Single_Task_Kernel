@@ -39,7 +39,7 @@
 
 
 
-void exception_unwind(void);
+void exception_unwind(thread_t* thread);
 
 
 

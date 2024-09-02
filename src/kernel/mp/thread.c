@@ -221,8 +221,8 @@ KERNEL_PUBLIC void thread_delete(thread_t* thread){
 
 KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void* return_value){
 	scheduler_pause();
-	exception_unwind();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
+	exception_unwind(thread);
 	rwlock_acquire_write(&(thread->lock));
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
 	thread->return_value=return_value;

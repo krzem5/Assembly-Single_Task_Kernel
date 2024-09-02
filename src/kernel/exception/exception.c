@@ -8,18 +8,18 @@
 
 
 
-void exception_unwind(void){
-	for (exception_unwind_frame_t* frame=THREAD_DATA->exception_unwind_frame;frame;frame=frame->next){
+void exception_unwind(thread_t* thread){
+	for (exception_unwind_frame_t* frame=thread->exception_unwind_frame;frame;frame=frame->next){
 		frame->callback(frame->args);
 	}
-	lock_profiling_assert_empty(THREAD_DATA->header.current_thread);
-	THREAD_DATA->exception_unwind_frame=NULL;
+	lock_profiling_assert_empty(thread);
+	thread->exception_unwind_frame=NULL;
 }
 
 
 
 void _exception_signal_interrupt_handler(u64 error){
-	exception_unwind();
+	exception_unwind(THREAD_DATA->header.current_thread);
 	if (THREAD_DATA->exception_is_user){
 		_exception_user_return(error);
 	}
