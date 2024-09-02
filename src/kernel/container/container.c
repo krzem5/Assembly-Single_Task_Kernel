@@ -55,7 +55,7 @@ error_t syscall_container_create(void){
 	container_t* out=omm_alloc(_container_allocator);
 	handle_new(_container_handle_type,&(out->handle));
 	out->handle.acl=acl_create();
-	acl_set(out->handle.acl,THREAD_DATA->process,0,CONTAINER_ACL_FLAG_ACCESS|CONTAINER_ACL_FLAG_DELETE);
+	acl_set(out->handle.acl,THREAD_DATA->process,0,CONTAINER_ACL_FLAG_ACCESS|CONTAINER_ACL_FLAG_MODIFY|CONTAINER_ACL_FLAG_DELETE);
 	handle_list_push(&(THREAD_DATA->process->handle_list),&(out->handle));
 	out->lock=mutex_create("kernel.container");
 	rb_tree_init(&(out->tree));
@@ -85,7 +85,7 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 	if (!container_handle){
 		return ERROR_INVALID_HANDLE;
 	}
-	if (!(acl_get(container_handle->acl,THREAD_DATA->process)&CONTAINER_ACL_FLAG_DELETE)){
+	if (!(acl_get(container_handle->acl,THREAD_DATA->process)&CONTAINER_ACL_FLAG_MODIFY)){
 		handle_release(container_handle);
 		return ERROR_DENIED;
 	}
@@ -136,6 +136,34 @@ KERNEL_AWAITS error_t syscall_container_add(handle_id_t container,KERNEL_USER_PO
 
 
 
-KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KERNEL_USER_POINTER handle_id_t* buffer,u64 count){
-	panic("syscall_container_get");
+KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KERNEL_USER_POINTER handle_id_t* handles,u64 handle_count){
+	handle_t* container_handle=handle_lookup_and_acquire(container,_container_handle_type);
+	if (!container_handle){
+		return ERROR_INVALID_HANDLE;
+	}
+	if (!(acl_get(container_handle->acl,THREAD_DATA->process)&CONTAINER_ACL_FLAG_ACCESS)){
+		handle_release(container_handle);
+		return ERROR_DENIED;
+	}
+	if (!handle_count){
+		handle_release(container_handle);
+		return ERROR_INVALID_ARGUMENT(3);
+	}
+	if (handle_count*sizeof(handle_id_t)>syscall_get_user_pointer_max_length((void*)handles)){
+		handle_release(container_handle);
+		return ERROR_INVALID_ARGUMENT(2);
+	}
+	handle_id_t* buffer=amm_alloc(handle_count*sizeof(handle_id_t));
+	container_t* data=KERNEL_CONTAINEROF(container_handle,container_t,handle);
+	u64 out=0;
+	mutex_acquire(data->lock);
+	container_entry_t* entry=KERNEL_CONTAINEROF(rb_tree_lookup_increasing_node(&(data->tree),offset+1),container_entry_t,rb_node);
+	for (;entry&&out<handle_count;out++){
+		buffer[out]=entry->rb_node.key;
+		entry=KERNEL_CONTAINEROF(rb_tree_iter_next(&(data->tree),&(entry->rb_node)),container_entry_t,rb_node);
+	}
+	mutex_release(data->lock);
+	mem_copy((void*)handles,buffer,out*sizeof(handle_id_t));
+	amm_dealloc(buffer);
+	return out;
 }
