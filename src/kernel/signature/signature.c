@@ -43,7 +43,7 @@ void KERNEL_EARLY_EXEC signature_verify_kernel(void){
 	u32 mask=0;
 	for (u32 i=0;i<8;i++){
 		mask|=state.result32[i]^__kernel_signature[i];
-		state.result[i]=0;
+		state.result32[i]=0;
 		__kernel_signature[i]=0;
 	}
 	if (mask){

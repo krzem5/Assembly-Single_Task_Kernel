@@ -163,8 +163,7 @@ KERNEL_AWAITS error_t syscall_container_get(handle_id_t container,u64 offset,KER
 		amm_dealloc(EXCEPTION_UNWIND_ARG(1));
 	}
 	mutex_acquire(data->lock);
-	container_entry_t* entry=KERNEL_CONTAINEROF(rb_tree_lookup_increasing_node(&(data->tree),offset+1),container_entry_t,rb_node);
-	for (;entry&&out<handle_count;out++){
+	for (container_entry_t* entry=KERNEL_CONTAINEROF(rb_tree_lookup_increasing_node(&(data->tree),offset+1),container_entry_t,rb_node);entry&&out<handle_count;out++){
 		buffer[out]=entry->rb_node.key;
 		entry=KERNEL_CONTAINEROF(rb_tree_iter_next(&(data->tree),&(entry->rb_node)),container_entry_t,rb_node);
 	}
