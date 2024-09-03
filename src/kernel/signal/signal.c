@@ -47,19 +47,14 @@ static bool _dispatch_signal_to_thread(thread_t* thread,signal_t signal){
 	}
 	if (signal==SIGNAL_KILL){
 		rwlock_acquire_write(&(thread->lock));
-		if (thread->state==THREAD_STATE_TYPE_NONE||thread->state==THREAD_STATE_TYPE_AWAITING_EVENT){
-			// THREAD_STATE_TYPE_NONE, THREAD_STATE_TYPE_AWAITING_EVENT: <static interrupt (cs==0x08, fast path)>
+		if (thread->state==THREAD_STATE_TYPE_RUNNING){
+			thread->scheduler_kill_thread=1;
+			rwlock_release_write(&(thread->lock));
+			return 1;
 		}
-		else if (thread->state==THREAD_STATE_TYPE_QUEUED){
-			// THREAD_STATE_TYPE_QUEUED: <static interrupt + unschedule>
-		}
-		else if (thread->state==THREAD_STATE_TYPE_RUNNING){
-			// THREAD_STATE_TYPE_RUNNING: <live interrupt>
-		}
-		else if (thread->state==THREAD_STATE_TYPE_TERMINATED);
-		else{
-			panic("_dispatch_signal_to_thread: SIGNAL_KILL: invalid thread type");
-		}
+		exception_unwind(thread);
+		scheduler_dequeue_thread_locked(thread);
+		thread_terminate_remote_locked(thread,(void*)SIGNAL_KILL);
 		rwlock_release_write(&(thread->lock));
 		return 1;
 	}

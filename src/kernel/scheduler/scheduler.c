@@ -216,6 +216,16 @@ KERNEL_PUBLIC void scheduler_enqueue_thread(thread_t* thread){
 
 
 
+void scheduler_dequeue_thread_locked(thread_t* thread){
+	if (thread->state!=THREAD_STATE_TYPE_QUEUED){
+		return;
+	}
+	scheduler_load_balancer_remove(thread);
+	thread->state=THREAD_STATE_TYPE_NONE;
+}
+
+
+
 KERNEL_PUBLIC const scheduler_timers_t* scheduler_get_timers(u16 cpu_index){
 	if (cpu_index>=cpu_count){
 		return NULL;

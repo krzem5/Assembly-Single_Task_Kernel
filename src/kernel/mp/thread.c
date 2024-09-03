@@ -133,6 +133,7 @@ static thread_t* _thread_create(process_t* process){
 	out->scheduler_early_yield=0;
 	out->scheduler_io_yield=0;
 	out->exception_is_user=0;
+	out->scheduler_kill_thread=0;
 	out->scheduler_forced_queue_index=0;
 	out->return_value=NULL;
 	signal_thread_state_init(&(out->signal_state));
@@ -223,17 +224,21 @@ KERNEL_PUBLIC void KERNEL_NORETURN thread_terminate(void* return_value){
 	scheduler_pause();
 	thread_t* thread=CPU_HEADER_DATA->current_thread;
 	exception_unwind(thread);
-	rwlock_acquire_write(&(thread->lock));
+	thread_terminate_remote_locked(thread,return_value);
+	scheduler_yield();
+	for (;;);
+}
+
+
+
+void thread_terminate_remote_locked(thread_t* thread,void* return_value){
 	thread->state=THREAD_STATE_TYPE_TERMINATED;
 	thread->return_value=return_value;
 	if (thread->process->main_thread==thread){
 		thread->process->return_value=return_value;
 	}
-	rwlock_release_write(&(thread->lock));
 	event_dispatch_thread_terminate_notification(thread);
 	event_dispatch(thread->termination_event,EVENT_DISPATCH_FLAG_DISPATCH_ALL|EVENT_DISPATCH_FLAG_SET_ACTIVE);
-	scheduler_yield();
-	for (;;);
 }
 
 

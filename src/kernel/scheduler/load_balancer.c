@@ -7,6 +7,7 @@
 #include <kernel/mp/thread.h>
 #include <kernel/scheduler/load_balancer.h>
 #include <kernel/types.h>
+#include <kernel/util/util.h>
 #define KERNEL_LOG_NAME "load_balancer"
 
 
@@ -120,6 +121,12 @@ _skip_dynamic_queue_index:
 	queue->tail=thread;
 	__atomic_or_fetch(&_scheduler_load_balancer_bitmap,1ull<<thread->scheduler_load_balancer_queue_index,__ATOMIC_SEQ_CST);
 	rwlock_release_write(&(queue->lock));
+}
+
+
+
+void scheduler_load_balancer_remove(thread_t* thread){
+	panic("scheduler_load_balancer_remove");
 }
 
 

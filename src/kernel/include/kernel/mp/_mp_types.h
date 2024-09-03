@@ -125,6 +125,7 @@ typedef struct _THREAD{
 	u32 scheduler_forced_queue_index;
 	bool scheduler_early_yield;
 	bool scheduler_io_yield;
+	bool scheduler_kill_thread;
 	bool exception_is_user;
 	KERNEL_USER_POINTER void* return_value;
 	signal_thread_state_t signal_state;

@@ -51,6 +51,10 @@ void KERNEL_NORETURN thread_terminate(void* return_value);
 
 
 
+void thread_terminate_remote_locked(thread_t* thread,void* return_value);
+
+
+
 void KERNEL_NORETURN _thread_bootstrap_kernel_thread(void);
 
 

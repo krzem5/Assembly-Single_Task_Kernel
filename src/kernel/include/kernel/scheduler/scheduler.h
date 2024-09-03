@@ -66,6 +66,10 @@ void scheduler_enqueue_thread(thread_t* thread);
 
 
 
+void scheduler_dequeue_thread_locked(thread_t* thread);
+
+
+
 const scheduler_timers_t* scheduler_get_timers(u16 cpu_index);
 
 
