@@ -43,6 +43,9 @@ static void _switch_thread(isr_state_t* state,thread_t* new_thread){
 	if (current_thread){
 		msr_set_gs_base((u64)CPU_LOCAL(cpu_extra_data),0);
 		rwlock_acquire_write(&(current_thread->lock));
+		if (current_thread->scheduler_kill_thread){
+			panic("Kill thread");
+		}
 		if (current_thread->state==THREAD_STATE_TYPE_TERMINATED){
 			vmm_switch_to_pagemap(&vmm_kernel_pagemap);
 			rwlock_release_write(&(current_thread->lock));
