@@ -22,7 +22,7 @@
 
 
 #define SCHEDULER_MIN_TIME_QUANTUM_US 5
-#define SCHEDULER_IRQ_THREAD_START_TIME_QUANTUM_US 1000
+#define SCHEDULER_IRQ_THREAD_START_TIME_QUANTUM_US 1000 // slightly higher to allow for a fast path regarding file-backed memory
 
 
 
