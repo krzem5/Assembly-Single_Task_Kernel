@@ -22,7 +22,7 @@
 
 
 #define SCHEDULER_MIN_TIME_QUANTUM_US 5
-#define SCHEDULER_IRQ_THREAD_START_TIME_QUANTUM_US 1000 // slightly higher to decrease response time of file-backed memory
+#define SCHEDULER_IRQ_THREAD_START_TIME_QUANTUM_US 1000 // slightly higher to improve response time of cached file-backed memory
 
 
 
