@@ -41,6 +41,13 @@ MODE_NAME={
 
 
 
+dynamic_flag_patch={
+	"c": "",
+	"asm": (" -W-reloc-rel-dword -W-reloc-rel-qword -W-reloc-abs-dword -W-reloc-abs-qword" if not os.getenv("GITHUB_ACTIONS","") else "")
+}
+
+
+
 def option(name):
 	if (not hasattr(option,"root")):
 		root=config.parse(f"src/config/build_{MODE_NAME}.config")
@@ -158,7 +165,7 @@ def _compile_stage(config_prefix,pool,changed_files,default_dependency_directory
 		if (_file_not_changed(changed_files,object_file+".deps")):
 			pool.success(object_file)
 			continue
-		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1]))+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
+		pool.add([],object_file,"C "+file,shlex.split(option(config_prefix+".command.compile."+file.split(".")[-1])+dynamic_flag_patch[file.split(".")[-1]])+included_directories+["-D__UNIQUE_FILE_NAME__="+file.replace("/","_").split(".")[0],"-MD","-MT",object_file,"-MF",object_file+".deps","-o",object_file,file])
 		has_updates=True
 	dependency_object_files=[]
 	dependency_link_requirements=[]
