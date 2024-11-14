@@ -355,6 +355,8 @@ def _execute_vm():
 	terminal=None
 	terminal_file=None
 	if (mode!=MODE_COVERAGE):
+		if (os.path.exists("build/vm/terminal")):
+			os.unlink("build/vm/terminal")
 		terminal=subprocess.Popen(["build/tool/ovmf_terminal_patch","build/vm/terminal"])
 		while (not os.path.exists("build/vm/terminal")):
 			time.sleep(0.01)

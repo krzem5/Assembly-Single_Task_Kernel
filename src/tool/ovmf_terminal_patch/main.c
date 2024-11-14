@@ -9,7 +9,7 @@
 
 
 
-// #define DISABLE_FILTER 1
+#define DISABLE_FILTER 0
 
 
 
