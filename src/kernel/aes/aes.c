@@ -440,6 +440,7 @@ KERNEL_PUBLIC void aes_cbc_process(const void* key,u32 key_length,const void* iv
 	if (!data_length){
 		return;
 	}
+	// upgrade to PCBC/GCM mode
 	if (iv_length!=16){
 		panic("Invalid AES CBC IV length");
 	}

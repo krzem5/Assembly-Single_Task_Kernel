@@ -29,16 +29,11 @@ static u64 NOINLINE_NOFLOAT _lookup_symbol(const linker_shared_object_t* so,cons
 			if (!((mask>>(new_hash&63))&(mask>>((new_hash>>so->dynamic_section.gnu_hash_table->shift2)&63))&1)){
 				continue;
 			}
-			u32 i=so->dynamic_section.gnu_hash_table_buckets[new_hash%so->dynamic_section.gnu_hash_table->nbucket];
-			if (!i){
-				continue;
-			}
-			const u32* chain=so->dynamic_section.gnu_hash_table_values+i-so->dynamic_section.gnu_hash_table->symndx;
-			for (u32 j=0;!j||!(chain[j-1]&1);j++){
-				if ((new_hash^chain[j])>>1){
-					continue;
+			for (u32 i=so->dynamic_section.gnu_hash_table_buckets[new_hash%so->dynamic_section.gnu_hash_table->nbucket];i;i++){
+				if ((new_hash^so->dynamic_section.gnu_hash_table_values[i])>>1){
+					goto _skip_new_entry;
 				}
-				const elf_sym_t* symbol=so->dynamic_section.symbol_table+(i+j)*so->dynamic_section.symbol_table_entry_size;
+				const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
 				const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
 				for (u32 k=0;1;k++){
 					if (name[k]!=symbol_name[k]){
@@ -49,6 +44,9 @@ static u64 NOINLINE_NOFLOAT _lookup_symbol(const linker_shared_object_t* so,cons
 					}
 				}
 _skip_new_entry:
+				if (so->dynamic_section.gnu_hash_table_values[i]&1){
+					break;
+				}
 			}
 			continue;
 		}
