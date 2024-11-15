@@ -7,11 +7,11 @@
 
 
 
-#define NOFLOAT __attribute__((noinline,target("no-mmx","no-sse","no-sse2")))
+#define NOINLINE_NOFLOAT __attribute__((noinline,target("no-mmx","no-sse","no-sse2")))
 
 
 
-static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,const char* name,_Bool nested){
+static u64 NOINLINE_NOFLOAT _lookup_symbol(const linker_shared_object_t* so,const char* name,_Bool nested){
 	if (!so){
 		return 0;
 	}
@@ -83,7 +83,7 @@ _skip_entry:
 
 
 
-u64 NOFLOAT linker_symbol_lookup_by_name(const char* name){
+u64 NOINLINE_NOFLOAT linker_symbol_lookup_by_name(const char* name){
 	return _lookup_symbol(linker_shared_object_root,name,1);
 }
 
@@ -95,7 +95,7 @@ u64 linker_symbol_lookup_by_name_in_shared_object(const linker_shared_object_t* 
 
 
 
-u64 NOFLOAT linker_symbol_resolve_plt(const linker_shared_object_t* so,u64 index){
+u64 NOINLINE_NOFLOAT linker_symbol_resolve_plt(const linker_shared_object_t* so,u64 index){
 	const elf_rela_t* relocation=so->dynamic_section.plt_relocations+index*so->dynamic_section.plt_relocation_entry_size;
 	if ((relocation->r_info&0xffffffff)!=R_X86_64_JUMP_SLOT){
 		sys_io_print("Wrong plt relocation type '%u' in shared object '%s'\n",(u32)(relocation->r_info),so->path);
