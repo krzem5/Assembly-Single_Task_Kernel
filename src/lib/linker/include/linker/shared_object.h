@@ -28,6 +28,10 @@ typedef struct _LINKER_SHARED_OBJECT_DYNAMIC_SECTION_DATA{
 	u64 init_array_size;
 	const void* fini_array;
 	u64 fini_array_size;
+	const elf_gnu_hash_t* gnu_hash_table;
+	const u64* gnu_hash_table_bloom_filter;
+	const u32* gnu_hash_table_buckets;
+	const u32* gnu_hash_table_values;
 } linker_shared_object_dynamic_section_data_t;
 
 

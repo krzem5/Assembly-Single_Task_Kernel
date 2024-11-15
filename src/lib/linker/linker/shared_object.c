@@ -62,6 +62,10 @@ linker_shared_object_t* linker_shared_object_init(u64 image_base,const elf_dyn_t
 	so->dynamic_section.init_array_size=0;
 	so->dynamic_section.fini_array=NULL;
 	so->dynamic_section.fini_array_size=0;
+	so->dynamic_section.gnu_hash_table=NULL;
+	so->dynamic_section.gnu_hash_table_bloom_filter=NULL;
+	so->dynamic_section.gnu_hash_table_buckets=NULL;
+	so->dynamic_section.gnu_hash_table_values=NULL;
 	for (const elf_dyn_t* dyn=dynamic_section;dyn->d_tag!=DT_NULL;dyn++){
 		switch (dyn->d_tag){
 			case DT_NEEDED:
@@ -121,10 +125,19 @@ linker_shared_object_t* linker_shared_object_init(u64 image_base,const elf_dyn_t
 			case DT_FINI_ARRAYSZ:
 				so->dynamic_section.fini_array_size=dyn->d_un.d_val;
 				break;
+			case DT_GNU_HASH:
+				so->dynamic_section.gnu_hash_table=so->image_base+dyn->d_un.d_ptr;
+				break;
 		}
 	}
-	if (!so->dynamic_section.string_table||!so->dynamic_section.hash_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
+	if (!so->dynamic_section.string_table||!so->dynamic_section.symbol_table||!so->dynamic_section.symbol_table_entry_size){
 		so->dynamic_section.hash_table=NULL;
+		so->dynamic_section.gnu_hash_table=NULL;
+	}
+	if (so->dynamic_section.gnu_hash_table){
+		so->dynamic_section.gnu_hash_table_bloom_filter=(void*)(so->dynamic_section.gnu_hash_table->data);
+		so->dynamic_section.gnu_hash_table_buckets=so->dynamic_section.gnu_hash_table->data+(so->dynamic_section.gnu_hash_table->maskwords<<1);
+		so->dynamic_section.gnu_hash_table_values=so->dynamic_section.gnu_hash_table_buckets+so->dynamic_section.gnu_hash_table->nbucket;
 	}
 	if (so->dynamic_section.plt_got){
 		so->dynamic_section.plt_got[1]=(u64)so;

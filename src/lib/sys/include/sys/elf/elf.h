@@ -73,6 +73,7 @@
 #define	DT_INIT_ARRAYSZ 27
 #define	DT_FINI_ARRAYSZ 28
 #define DT_ENCODING 32
+#define DT_GNU_HASH 0x6ffffef5
 
 #define AT_NULL 0
 #define AT_IGNORE 1
@@ -236,6 +237,16 @@ typedef struct _ELF_HASH{
 	u32 nchain;
 	u32 data[];
 } elf_hash_t;
+
+
+
+typedef struct _ELF_GNU_HASH{
+	u32 nbucket;
+	u32 symndx;
+	u32 maskwords;
+	u32 shift2;
+	u32 data[];
+} elf_gnu_hash_t;
 
 
 

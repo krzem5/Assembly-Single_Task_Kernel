@@ -22,25 +22,67 @@ static u32 NOFLOAT _calculate_hash(const char* name){
 
 
 
-static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,u32 hash,const char* name){
-	if (!so->dynamic_section.hash_table||!so->dynamic_section.hash_table->nbucket){
-		return 0;
+static u32 NOFLOAT _calculate_new_hash(const char* name){
+	u64 out=5381;
+	for (;name[0];name++){
+		out=out*33+name[0];
 	}
-	for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+	return out;
+}
+
+
+
+static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,u32 hash,const char* name){
+	if (so->dynamic_section.gnu_hash_table&&so->dynamic_section.gnu_hash_table->nbucket){
+		u32 h1=_calculate_new_hash(name);
+		u64 mask=so->dynamic_section.gnu_hash_table_bloom_filter[(h1>>6)&(so->dynamic_section.gnu_hash_table->maskwords-1)];
+		if (!((mask>>(h1&63))&(mask>>((h1>>so->dynamic_section.gnu_hash_table->shift2)&63)))){
+			goto _not_found;
+		}
+		u32 i=so->dynamic_section.gnu_hash_table_buckets[h1%so->dynamic_section.gnu_hash_table->nbucket];
+		if (!i){
+			goto _not_found;
+		}
 		const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
-		if (symbol->st_shndx==SHN_UNDEF){
-			continue;
-		}
-		const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
-		for (u32 j=0;1;j++){
-			if (name[j]!=symbol_name[j]){
-				goto _skip_entry;
+		const u32* ptr=so->dynamic_section.gnu_hash_table_values+i-so->dynamic_section.gnu_hash_table->symndx;
+		for (h1>>=1;1;symbol++){
+			u32 h2=*ptr;
+			if (h1==(h2>>1)){
+				const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
+				for (u32 j=0;1;j++){
+					if (name[j]!=symbol_name[j]){
+						goto _skip_new_entry;
+					}
+					if (!name[j]){
+						return so->image_base+symbol->st_value;
+					}
+				}
 			}
-			if (!name[j]){
-				return so->image_base+symbol->st_value;
+_skip_new_entry:
+			if (h2&1){
+				break;
 			}
+			ptr++;
 		}
+_not_found:
+	}
+	if (so->dynamic_section.hash_table&&so->dynamic_section.hash_table->nbucket){
+		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
+			if (symbol->st_shndx==SHN_UNDEF){
+				continue;
+			}
+			const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
+			for (u32 j=0;1;j++){
+				if (name[j]!=symbol_name[j]){
+					goto _skip_entry;
+				}
+				if (!name[j]){
+					return so->image_base+symbol->st_value;
+				}
+			}
 _skip_entry:
+		}
 	}
 	return 0;
 }
