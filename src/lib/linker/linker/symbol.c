@@ -26,7 +26,7 @@ static u64 NOINLINE_NOFLOAT _lookup_symbol(const linker_shared_object_t* so,cons
 		}
 		if (so->dynamic_section.gnu_hash_table){
 			u64 mask=so->dynamic_section.gnu_hash_table_bloom_filter[(new_hash>>6)&(so->dynamic_section.gnu_hash_table->maskwords-1)];
-			if (!((mask>>(new_hash&63))&(mask>>((new_hash>>so->dynamic_section.gnu_hash_table->shift2)&63)))){
+			if (!((mask>>(new_hash&63))&(mask>>((new_hash>>so->dynamic_section.gnu_hash_table->shift2)&63))&1)){
 				continue;
 			}
 			u32 i=so->dynamic_section.gnu_hash_table_buckets[new_hash%so->dynamic_section.gnu_hash_table->nbucket];
