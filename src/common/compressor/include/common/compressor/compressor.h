@@ -1,6 +1,7 @@
 #ifndef _COMMON_COMPRESSOR_COMPRESSOR_H_
 #define _COMMON_COMPRESSOR_COMPRESSOR_H_ 1
 #include <common/types.h>
+#if !BUILD_UEFI
 #if BUILD_MODULE
 #include <kernel/writer/writer.h>
 #else
@@ -26,6 +27,7 @@ typedef struct _COMPRESSOR_OUTPUT{
 
 
 void compressor_compress(const u8* data,u32 data_length,u32 compression_level,compressor_output_t* out);
+#endif
 
 
 
