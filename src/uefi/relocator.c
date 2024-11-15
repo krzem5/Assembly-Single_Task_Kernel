@@ -3,7 +3,7 @@
 
 
 
-extern u64 ImageBase;
+extern u64 _IMAGE_BASE;
 extern Elf64_Dyn* _DYNAMIC;
 
 
@@ -15,7 +15,7 @@ void relocate_executable(void){
 	for (Elf64_Dyn* dyn=_DYNAMIC;dyn->d_tag!=DT_NULL;dyn++){
 		switch (dyn->d_tag){
 			case DT_RELA:
-				relocations=(Elf64_Rel*)(dyn->d_un.d_ptr+ImageBase);
+				relocations=(Elf64_Rel*)(dyn->d_un.d_ptr+_IMAGE_BASE);
 				break;
 			case DT_RELASZ:
 				relocation_size=dyn->d_un.d_val;
@@ -30,7 +30,7 @@ void relocate_executable(void){
 	}
 	while (1){
 		if (ELF64_R_TYPE(relocations->r_info)==R_X86_64_RELATIVE){
-			*((u64*)(ImageBase+relocations->r_offset))+=ImageBase;
+			*((u64*)(_IMAGE_BASE+relocations->r_offset))+=_IMAGE_BASE;
 		}
 		if (relocation_size<=relocation_entry_size){
 			return;

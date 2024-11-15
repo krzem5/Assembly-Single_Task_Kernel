@@ -1,3 +1,4 @@
+#if !BUILD_UEFI
 #include <common/compressor/compressor.h>
 #include <common/types.h>
 #if BUILD_MODULE
@@ -150,3 +151,7 @@ void compressor_compress(const u8* data,u32 data_length,u32 compression_level,co
 	free(kmp_search_table);
 #endif
 }
+
+
+
+#endif
