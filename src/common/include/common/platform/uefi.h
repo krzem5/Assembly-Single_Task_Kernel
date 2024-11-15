@@ -7,7 +7,7 @@
 
 
 
-extern EFI_SYSTEM_TABLE* uefi_global_system_table;
+extern efi_system_table_t* uefi_global_system_table;
 
 
 
