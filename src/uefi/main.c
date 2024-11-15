@@ -296,7 +296,7 @@ efi_status_t efi_main(void* image,efi_system_table_t* system_table){
 	for (u32 i=0;i<64;i++){
 		kernel_data->master_key[i]=master_key[i];
 	}
-	EFI_TIME time;
+	efi_time_t time;
 	if (EFI_IS_ERROR(system_table->RuntimeServices->GetTime(&time,NULL))){
 		return EFI_SUCCESS;
 	}
