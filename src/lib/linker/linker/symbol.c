@@ -11,63 +11,51 @@
 
 
 
-static u32 NOFLOAT _calculate_hash(const char* name){
-	u32 out=0;
+static u64 NOFLOAT _calculate_hash(const char* name){
+	u32 old=0;
+	u32 new=5381;
 	for (;name[0];name++){
-		out=(out<<4)+name[0];
-		out^=(out>>24)&0xf0;
+		old=(old<<4)+name[0];
+		old^=(old>>24)&0xf0;
+		new=new*33+name[0];
 	}
-	return out&0x0fffffff;
+	return (((u64)(old&0x0fffffff))<<32)|new;
 }
 
 
 
-static u32 NOFLOAT _calculate_new_hash(const char* name){
-	u64 out=5381;
-	for (;name[0];name++){
-		out=out*33+name[0];
-	}
-	return out;
-}
-
-
-
-static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,u32 hash,const char* name){
-	if (so->dynamic_section.gnu_hash_table&&so->dynamic_section.gnu_hash_table->nbucket){
-		u32 h1=_calculate_new_hash(name);
-		u64 mask=so->dynamic_section.gnu_hash_table_bloom_filter[(h1>>6)&(so->dynamic_section.gnu_hash_table->maskwords-1)];
-		if (!((mask>>(h1&63))&(mask>>((h1>>so->dynamic_section.gnu_hash_table->shift2)&63)))){
+static u64 NOFLOAT _lookup_symbol(const linker_shared_object_t* so,u64 hash,const char* name){
+	if (so->dynamic_section.gnu_hash_table){
+		u32 new_hash=hash&0xffffffff;
+		u64 mask=so->dynamic_section.gnu_hash_table_bloom_filter[(new_hash>>6)&(so->dynamic_section.gnu_hash_table->maskwords-1)];
+		if (!((mask>>(new_hash&63))&(mask>>((new_hash>>so->dynamic_section.gnu_hash_table->shift2)&63)))){
 			goto _not_found;
 		}
-		u32 i=so->dynamic_section.gnu_hash_table_buckets[h1%so->dynamic_section.gnu_hash_table->nbucket];
+		u32 i=so->dynamic_section.gnu_hash_table_buckets[new_hash%so->dynamic_section.gnu_hash_table->nbucket];
 		if (!i){
 			goto _not_found;
 		}
-		const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
-		const u32* ptr=so->dynamic_section.gnu_hash_table_values+i-so->dynamic_section.gnu_hash_table->symndx;
-		for (h1>>=1;1;symbol++){
-			u32 h2=*ptr;
-			if (h1==(h2>>1)){
-				const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
-				for (u32 j=0;1;j++){
-					if (name[j]!=symbol_name[j]){
-						goto _skip_new_entry;
-					}
-					if (!name[j]){
-						return so->image_base+symbol->st_value;
-					}
+		const u32* chain=so->dynamic_section.gnu_hash_table_values+i-so->dynamic_section.gnu_hash_table->symndx;
+		for (u32 j=0;!j||!(chain[j-1]&1);j++){
+			if ((new_hash^chain[j])>>1){
+				continue;
+			}
+			const elf_sym_t* symbol=so->dynamic_section.symbol_table+(i+j)*so->dynamic_section.symbol_table_entry_size;
+			const char* symbol_name=so->dynamic_section.string_table+symbol->st_name;
+			for (u32 k=0;1;k++){
+				if (name[k]!=symbol_name[k]){
+					goto _skip_new_entry;
+				}
+				if (!name[k]){
+					return so->image_base+symbol->st_value;
 				}
 			}
 _skip_new_entry:
-			if (h2&1){
-				break;
-			}
-			ptr++;
 		}
 _not_found:
 	}
-	if (so->dynamic_section.hash_table&&so->dynamic_section.hash_table->nbucket){
-		for (u32 i=so->dynamic_section.hash_table->data[hash%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
+	if (so->dynamic_section.hash_table){
+		for (u32 i=so->dynamic_section.hash_table->data[(hash>>32)%so->dynamic_section.hash_table->nbucket];i;i=so->dynamic_section.hash_table->data[i+so->dynamic_section.hash_table->nbucket]){
 			const elf_sym_t* symbol=so->dynamic_section.symbol_table+i*so->dynamic_section.symbol_table_entry_size;
 			if (symbol->st_shndx==SHN_UNDEF){
 				continue;
@@ -97,7 +85,7 @@ u64 NOFLOAT linker_symbol_lookup_by_name(const char* name){
 	if (name[0]!='_'||name[1]!='_'){
 		so=so->next;
 	}
-	u32 hash=_calculate_hash(name);
+	u64 hash=_calculate_hash(name);
 	for (;so;so=so->next){
 		u64 address=_lookup_symbol(so,hash,name);
 		if (address){

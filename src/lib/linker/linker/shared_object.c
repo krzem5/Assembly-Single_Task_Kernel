@@ -134,6 +134,12 @@ linker_shared_object_t* linker_shared_object_init(u64 image_base,const elf_dyn_t
 		so->dynamic_section.hash_table=NULL;
 		so->dynamic_section.gnu_hash_table=NULL;
 	}
+	if (so->dynamic_section.hash_table&&!so->dynamic_section.hash_table->nbucket){
+		so->dynamic_section.hash_table=NULL;
+	}
+	if (so->dynamic_section.gnu_hash_table&&!so->dynamic_section.gnu_hash_table->nbucket){
+		so->dynamic_section.gnu_hash_table=NULL;
+	}
 	if (so->dynamic_section.gnu_hash_table){
 		so->dynamic_section.gnu_hash_table_bloom_filter=(void*)(so->dynamic_section.gnu_hash_table->data);
 		so->dynamic_section.gnu_hash_table_buckets=so->dynamic_section.gnu_hash_table->data+(so->dynamic_section.gnu_hash_table->maskwords<<1);
