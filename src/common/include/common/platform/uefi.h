@@ -3,7 +3,7 @@
 #ifndef BUILD_UEFI
 #error Wrong build mode
 #endif
-#include <efi.h>
+#include <uefi/efi/system_table.h>
 
 
 

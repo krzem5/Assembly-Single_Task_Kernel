@@ -2,9 +2,10 @@
 #include <common/kernel/kernel.h>
 #include <common/kfs2/api.h>
 #include <common/types.h>
-#include <efi.h>
+// #include <efi.h>
+#include <uefi/efi/guid.h>
+#include <uefi/efi/tcg2.h>
 #include <uefi/relocator.h>
-#include <uefi/tpm2.h>
 
 
 
